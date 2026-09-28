@@ -15,7 +15,7 @@
 
 import type { VisitType } from "../config/visit-types.ts";
 import { indiaDate } from "../lib/india-time.ts";
-import { canCloseAsNoShow, noShowWaitEnds, type NoShowDecision, type Waits } from "../policy/no-show.ts";
+import { canCloseAsNoShow, noShowWaitEnds, type NoShowDecision, type Waiver, type Waits } from "../policy/no-show.ts";
 import type { PaymentsProvider } from "../providers/payments.ts";
 import type { AlertOnce } from "./alerts.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
@@ -260,15 +260,15 @@ export interface WaivedVisit {
 export interface Ruled {
   /** The client's WhatsApp about the ruling, to queue; null for a visit with no client on our records. */
   readonly messageId: string | null;
-  /** A waiver that gives back what the visit took (WAIVER_GIVES_BACK): the visit whose payment to refund now. */
+  /** A waiver that refunds the visit's payment, as ops set it: the visit whose payment to refund now. */
   readonly refund: WaivedVisit | null;
 }
 
 /**
  * Ops charge or waive the visit, with their reason. Ruled once: a second ruling on the same case changes nothing.
- * In the one batch: the ruling, its audit entry (src/domain/audit.ts), the client's message about it, and, for a
- * waiver that gives back, the credit the visit used. The reason stays with the ruling and reaches no message. A
- * charge moves nothing: the visit keeps what it took, as a cancel inside 24 hours does.
+ * In the one batch: the ruling, with what a waiver gave back; its audit entry (src/domain/audit.ts); the client's
+ * message about it; and, for a waiver that returns it, the credit the visit used. The reason stays with the ruling
+ * and reaches no message. A charge moves nothing: the visit keeps what it took, as a cancel inside 24 hours does.
  */
 export async function decideNoShow(
   db: D1Database,
@@ -279,8 +279,8 @@ export async function decideNoShow(
     actor: string;
     audit: AuditEntry;
     now: Date;
-    /** Whether a waiver gives back the payment and the credit: the owner's ruling (src/policy/no-show.ts). */
-    waiverGivesBack: boolean;
+    /** What a waiver gives back of the payment and the credit, as ops set it (src/policy/no-show.ts). */
+    waiver: Waiver;
   },
 ): Promise<Ruled | null> {
   const open = await db
@@ -302,22 +302,32 @@ export async function decideNoShow(
           kind: "no_show_decided",
           now: input.now,
         });
-  const givesBack = input.decision === "waived" && input.waiverGivesBack;
+  const waiver = input.decision === "waived" ? input.waiver : null;
+  const refunds = waiver?.payment === "refunded";
   await db.batch([
     db
       .prepare(
-        `UPDATE no_show_cases SET decision = ?2, decided_by = ?3, decided_at = ?4, decision_reason = ?5
+        `UPDATE no_show_cases SET decision = ?2, decided_by = ?3, decided_at = ?4, decision_reason = ?5,
+           waiver_payment = ?6, waiver_credit = ?7
          WHERE id = ?1 AND decision = 'undecided'`,
       )
-      .bind(input.caseId, input.decision, input.actor, at, input.reason),
+      .bind(
+        input.caseId,
+        input.decision,
+        input.actor,
+        at,
+        input.reason,
+        waiver?.payment ?? null,
+        waiver?.credit ?? null,
+      ),
     auditStatement(db, input.audit, input.now),
     ...(message === null ? [] : [message.statement]),
-    ...(givesBack ? [creditBack(db, open.appointment_id, input.now)] : []),
+    ...(waiver?.credit === "returned" ? [creditBack(db, open.appointment_id, input.now)] : []),
   ]);
   return {
     messageId: message?.id ?? null,
     refund:
-      givesBack && open.person_id !== null ? { appointmentId: open.appointment_id, personId: open.person_id } : null,
+      refunds && open.person_id !== null ? { appointmentId: open.appointment_id, personId: open.person_id } : null,
   };
 }
 

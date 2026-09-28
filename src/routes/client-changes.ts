@@ -12,21 +12,24 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
-import { cancelVisit, changeableVisit, changeTerms, type ChangeTerms } from "../domain/visit-changes.ts";
+import { cancelVisit, changeableVisit, changeTerms, termsInForce, type ChangeTerms } from "../domain/visit-changes.ts";
+import { opsInputs } from "../http/ops-inputs.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { requireSelfServe } from "../http/self-serve.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import { BookingSchema, moveTermsFor, PriceSchema, startCheckout } from "./client-booking.ts";
 
-const NoticeSchema = z
-  .enum(["free", "late"])
-  .openapi({ description: "free: more than 24 hours before the window starts; late: inside 24 hours." });
+const NoticeSchema = z.enum(["free", "late"]).openapi({
+  description:
+    "free: before the notice the visit was booked under starts, counted back from its window; late: inside it.",
+});
 
 const termsOf = (terms: ChangeTerms) => ({
   visit_id: terms.visit.id,
   type: terms.visit.type,
   notice: terms.notice,
+  notice_hours: terms.noticeHours,
   free_until: terms.freeUntil.toISOString(),
   paid: terms.payment?.paid ?? 0,
   credit: terms.credit?.outcome ?? null,
@@ -36,6 +39,9 @@ const common = {
   visit_id: z.uuid(),
   type: z.enum(VISIT_TYPES),
   notice: NoticeSchema,
+  notice_hours: z.number().int().openapi({
+    description: "The notice the visit was booked under, in hours: 24 unless ops had set another when it was booked.",
+  }),
   free_until: z.iso.datetime(),
   paid: z.number().int().openapi({ description: "In paise: what the visit's payment holds, carried over or kept." }),
   credit: z.union([z.enum(["restored", "lost"]), z.null()]).openapi({
@@ -165,7 +171,7 @@ export function registerClientChanges(app: App): void {
     const now = deps.now();
     const visit = await changeableVisit(c.env.DB, session.subjectId, c.req.valid("param").id, now);
     if (visit === null) return c.json(errorBody("not_changeable", requestId), 409);
-    const terms = await changeTerms(c.env.DB, visit, now);
+    const terms = await changeTerms(c.env.DB, visit, now, termsInForce(await opsInputs(c), visit.type));
     const body = c.req.valid("json");
     const shown = {
       ...termsOf(terms),

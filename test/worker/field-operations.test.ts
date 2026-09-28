@@ -485,6 +485,23 @@ describe("the phone's clock", () => {
     });
   });
 
+  // The owner kept the hour on 27 September 2026, as a console setting (docs/decisions/0088-every-policy-in-the-console.md).
+  it("bounds a back-dated check-in to the margin ops set", async () => {
+    await env.DB.prepare(
+      `INSERT INTO ops_settings (name, value, set_by, set_at)
+       VALUES ('phone_clock', '{"before_start": 30, "held_offline": 24}', 'ops', ?1)`,
+    )
+      .bind(NOW.toISOString())
+      .run();
+    const answer = await postAt(
+      minutesAfterStart(10),
+      `/api/tech/jobs/${TODAY_JOB}/checkin`,
+      { ...AT_THE_DOOR, at: minutesAfterStart(-180).toISOString() },
+      "event-checkin-01",
+    );
+    expect((await answer.json<{ checked_in_at: string }>()).checked_in_at).toBe(minutesAfterStart(-30).toISOString());
+  });
+
   it("keeps the phone's times for a job worked offline and replayed at once, so its duration is real", async () => {
     // Worked from 13:05 to 14:20 with no signal, and sent at 14:30 in one go.
     const replayedAt = minutesAfterStart(90);

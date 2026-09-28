@@ -11,10 +11,11 @@
 // "A no-show is charged under the 24-hour policy. The charge is applied by ops
 // from the evidence, never automatically": nothing here charges anybody. The
 // decision is recorded, and a charge keeps what the visit took, as a client's
-// own late cancel does (src/policy/moving-a-visit.ts). A waiver refunds the
-// payment and returns the credit, as the owner ruled on 27 September 2026
-// (src/policy/no-show.ts, WAIVER_GIVES_BACK). Either way
-// the client is told on WhatsApp, with their consent to messages about visits.
+// own late cancel does (src/policy/moving-a-visit.ts). A waiver gives back what
+// ops set it to (no_show_waiver): the payment refunded and the credit returned,
+// as the owner ruled on 27 September 2026 (src/policy/no-show.ts), and the ruling
+// keeps what it gave. Either way the client is told on WhatsApp, with their
+// consent to messages about visits.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import { staffOf } from "../http/audit.ts";
@@ -29,7 +30,7 @@ import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { needsReason, REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
-import { NO_SHOW_DECISIONS, WAIVER_GIVES_BACK } from "../policy/no-show.ts";
+import { NO_SHOW_DECISIONS } from "../policy/no-show.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import { dueAt } from "../policy/tasks.ts";
 import { PieceSchema } from "./tech-pieces.ts";
@@ -81,7 +82,13 @@ const NoShowCaseSchema = z
   .openapi("NoShowCase", { description: "The three facts ops rule on, and nothing else." });
 
 const NoShowsSchema = z
-  .object({ cases: z.array(NoShowCaseSchema) })
+  .object({
+    cases: z.array(NoShowCaseSchema),
+    waiver: z
+      .object({ payment: z.enum(["refunded", "kept"]), credit: z.enum(["returned", "spent"]) })
+      .strict()
+      .openapi({ description: "What waiving a case gives back now, as ops set it in Settings (no_show_waiver)." }),
+  })
   .strict()
   .openapi("NoShowCases");
 
@@ -256,7 +263,10 @@ export function registerOpsField(app: App): void {
     const { decision } = c.req.valid("query");
     const [cases, inputs] = await Promise.all([listNoShowCases(c.env.DB, decision, 200), opsInputs(c)]);
     const due = (openedAt: string) => dueAt(new Date(openedAt), "no_show_decision", inputs.taskSlaHours).toISOString();
-    return c.json({ cases: cases.map((each) => ({ ...each, due: due(each.opened_at) })) }, 200);
+    return c.json(
+      { cases: cases.map((each) => ({ ...each, due: due(each.opened_at) })), waiver: inputs.noShowWaiver },
+      200,
+    );
   });
 
   app.openapi(decisionRoute, async (c) => {
@@ -282,7 +292,7 @@ export function registerOpsField(app: App): void {
         detail: { decision },
       },
       now,
-      waiverGivesBack: WAIVER_GIVES_BACK,
+      waiver: (await opsInputs(c)).noShowWaiver,
     });
     if (ruled === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     if (ruled.refund !== null) await refundWaivedVisit(c.env.DB, c.var.deps, ruled.refund);

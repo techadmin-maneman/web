@@ -22,6 +22,7 @@ import { registerClientChanges } from "./routes/client-changes.ts";
 import { registerClientNotes } from "./routes/client-notes.ts";
 import { registerClientData } from "./routes/client-data.ts";
 import { registerClientRefer } from "./routes/client-refer.ts";
+import { registerOpsBlackouts } from "./routes/ops-blackouts.ts";
 import { registerOpsClientReferral } from "./routes/ops-client-referral.ts";
 import { registerOpsClients } from "./routes/ops-clients.ts";
 import { registerOpsConsumables } from "./routes/ops-consumables.ts";
@@ -114,6 +115,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsPayments,
     registerOpsTechnicians,
     registerOpsSettings,
+    // The days no visit is offered (docs/decisions/0088-every-policy-in-the-console.md).
+    registerOpsBlackouts,
     // The services clients book (docs/decisions/0085-services-ops-can-edit.md).
     registerOpsServices,
     // The consumables, the job sheet and the stock (docs/decisions/0087-consumables-and-stock.md).

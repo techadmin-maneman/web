@@ -559,3 +559,12 @@
 .quiet {
   padding: 0 var(--sp-14);
 }
+
+/* ---- Blackout days ------------------------------------------------------- */
+
+/* Each period blacked out is laid out as a rule is: its days and why, who added it, and what is still booked on it. */
+.period {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--fs-18);
+}

@@ -340,7 +340,7 @@ function Queue() {
       items={loaded.value.cases}
       rowKind="case"
       empty={copy.empty}
-      note={copy.note}
+      note={copy.note(loaded.value.waiver)}
     >
       {(each, ruled) => <Case each={each} now={now} onDecided={ruled} />}
     </DecisionQueue>

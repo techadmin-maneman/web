@@ -67,6 +67,8 @@ interface HoldRow {
   amount: number;
   state: "held" | "booked" | "released";
   expires_at: string;
+  /** The grace it was made with; null for a hold made before holds kept one. */
+  grace_seconds: number | null;
   confirmed_at: string | null;
   razorpay_order_id: string | null;
   appointment_id: string | null;
@@ -86,7 +88,7 @@ async function holdOf(db: D1Database, holdId: string): Promise<HoldRow | null> {
     .prepare(
       `SELECT h.id, h.person_id, p.name AS person_name, h.type, h.tier, h.minutes, s.name AS service_name, h.date,
               h.start_unit, h.technician_id, t.fsm_id AS technician_fsm_id, h.amount, h.state, h.expires_at,
-              h.confirmed_at, h.razorpay_order_id, h.appointment_id, h.moves_appointment_id, h.move_kind,
+              h.grace_seconds, h.confirmed_at, h.razorpay_order_id, h.appointment_id, h.moves_appointment_id, h.move_kind,
               h.use_credit, h.fsm_tried_at, h.fsm_work_order_id, h.fsm_appointment_id, h.pincode, sp.city
        FROM slot_holds h JOIN technicians t ON t.id = h.technician_id JOIN people p ON p.id = h.person_id
        LEFT JOIN serviceable_pincodes sp ON sp.pincode = h.pincode
@@ -181,9 +183,10 @@ async function capturedFor(db: D1Database, orderId: string | null): Promise<Capt
     .first<CapturedPayment>();
 }
 
-/** Whether Razorpay made the payment after the hold ran out and the grace after it. */
+/** Whether Razorpay made the payment after the hold ran out and the grace it was made with. */
 function paidTooLate(hold: HoldRow, payment: CapturedPayment): boolean {
-  const lastMoment = new Date(Date.parse(hold.expires_at) + PAYMENT_GRACE_SECONDS * 1000);
+  const grace = hold.grace_seconds ?? PAYMENT_GRACE_SECONDS;
+  const lastMoment = new Date(Date.parse(hold.expires_at) + grace * 1000);
   return Date.parse(payment.paid_at) > lastMoment.getTime();
 }
 
@@ -539,7 +542,7 @@ async function retireReplaced(
     .first<{ id: string; fsm_work_order_id: string | null; window_start: string }>();
   if (old === null) return;
   if (old.fsm_work_order_id !== null) {
-    const note = `${options.labelAsTest ? "Staging test: " : ""}Moved by the client inside 24 hours, to a new visit; charged.`;
+    const note = `${options.labelAsTest ? "Staging test: " : ""}Moved by the client too late to move it free, to a new visit; charged.`;
     if (!(await fsm.cancelVisit(old.fsm_work_order_id, note))) {
       await options.alertOnce?.({
         key: `replaced_not_cancelled:${old.id}`,

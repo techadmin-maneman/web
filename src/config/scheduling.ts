@@ -70,8 +70,16 @@ export const HOLD_SECONDS = 600;
  * How long after the countdown a payment still counts as made in time, by
  * Razorpay's own clock for it, and how long an unpaid hold with an order keeps
  * its time before anyone else may take it (docs/decisions/0068-a-paid-hold-is-kept.md).
+ * A hold keeps the grace it was made with (slot_holds.grace_seconds); this is a
+ * hold's that was made before holds kept one.
  */
 export const PAYMENT_GRACE_SECONDS = 120;
+
+export const PAYMENT_HOLD_KEYS = ["countdown", "grace"] as const;
+/** The countdown and the grace, in minutes, as ops set them in the console (docs/decisions/0088-every-policy-in-the-console.md). */
+export type PaymentHold = Readonly<Record<(typeof PAYMENT_HOLD_KEYS)[number], number>>;
+
+export const PAYMENT_HOLD: PaymentHold = { countdown: HOLD_SECONDS / 60, grace: PAYMENT_GRACE_SECONDS / 60 };
 
 /**
  * How long a move on the dispatch board holds the time it is moving a job to

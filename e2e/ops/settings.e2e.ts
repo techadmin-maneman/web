@@ -11,7 +11,17 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { answer, fails, json, PRICE_ROWS, SERVICE_AREA, SERVICES, SETTINGS, type Answers } from "./fixtures.ts";
+import {
+  answer,
+  BLACKOUTS,
+  fails,
+  json,
+  PRICE_ROWS,
+  SERVICE_AREA,
+  SERVICES,
+  SETTINGS,
+  type Answers,
+} from "./fixtures.ts";
 
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
@@ -19,7 +29,10 @@ const ROUTES: Answers = {
   "GET /api/settings": json(SETTINGS),
   "GET /api/services": json(SERVICES),
   "GET /api/service-area": json(SERVICE_AREA),
+  "GET /api/blackouts": json(BLACKOUTS),
 };
+
+const PANELS = ["/settings", "/settings/prices", "/settings/area", "/settings/blackouts"];
 
 async function open(page: Page, path = "/settings", extra: Answers = {}): Promise<void> {
   await answer(page, { ...ROUTES, ...extra });
@@ -163,6 +176,48 @@ test.describe("the rules", () => {
         horizon: 45,
         invoice_prompt: 14,
       },
+    });
+    await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
+  });
+
+  // Every figure a rule of the code held is ops' now (docs/decisions/0088-every-policy-in-the-console.md).
+  test("says each box's own unit where a rule's figures count in two", async ({ page }) => {
+    await open(page);
+    const clock = page.getByRole("group", { name: "How far a phone is trusted about time" });
+    await expect(clock.getByLabel("Earliest check-in, before the booked start")).toHaveValue("60");
+    await expect(clock).toContainText("0 to 240 minutes, a whole number");
+    await expect(clock.getByLabel("Longest a phone may hold what was done offline")).toHaveValue("24");
+    await expect(clock).toContainText("1 to 72 hours, a whole number");
+  });
+
+  test("offers each kind of visit only what it may cost, in the console's words, and sends the one chosen", async ({
+    page,
+  }) => {
+    await open(page, "/settings", {
+      "POST /api/settings/late_change_charge": (route) => {
+        const charges = SETTINGS.settings.find((rule) => rule.name === "late_change_charge");
+        const { value } = route.request().postDataJSON() as { value: unknown };
+        return json({ ...charges, value, set_by: "ops@maneman.in", set_at: "2027-09-21T06:00:00.000Z" })(route);
+      },
+    });
+    const charges = page.getByRole("group", { name: "What a late move or cancel costs" });
+    const service = charges.getByLabel("Service visit", { exact: true });
+    await expect(service).toHaveValue("visit");
+    await expect(service.locator("option")).toHaveText(["Nothing", "The visit itself"]);
+    await expect(charges.getByLabel("First fit", { exact: true }).locator("option")).toHaveText([
+      "Nothing",
+      "Its late fee",
+      "The visit itself",
+    ]);
+
+    await service.selectOption("nothing");
+    await page.getByRole("listitem").filter({ has: charges }).getByRole("button", { name: "Save" }).click();
+    const check = page.getByRole("group", { name: "Check the change" });
+    await expect(check).toContainText("Service visit: The visit itself → Nothing.");
+    const request = posted(page, "/api/settings/late_change_charge");
+    await check.getByRole("button", { name: "Save" }).click();
+    expect((await request).postDataJSON()).toEqual({
+      value: { consultation: "nothing", first_fit: "late_fee", service: "nothing", replacement: "late_fee" },
     });
     await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
   });
@@ -535,9 +590,90 @@ test.describe("the service area", () => {
   });
 });
 
+// The days no visit is offered, which the runbook's SQL set before (docs/decisions/0088-every-policy-in-the-console.md).
+test.describe("the blackout days", () => {
+  test("lists the days run together, why, who added them, and what is still booked on them", async ({ page }) => {
+    await open(page, "/settings/blackouts");
+    const diwali = page.getByRole("listitem").filter({ hasText: "Fri 29 Oct to Sat 30 Oct · Diwali" });
+    await expect(diwali).toContainText("Added by ops@maneman.in on 20 Sep 2027");
+    await expect(diwali).toContainText("3 visits are still booked on these days. Move them on the dispatch board.");
+    const training = page.getByRole("listitem").filter({ hasText: "Mon 15 Nov · Staff training" });
+    await expect(training).toContainText("Added before this screen, so who added it is not recorded.");
+    await expect(training).not.toContainText("still booked");
+  });
+
+  test("blacks out the days from the first to the last, with the reason, and shows the list the API answers", async ({
+    page,
+  }) => {
+    const christmas = {
+      date: "2027-12-24",
+      reason: "Christmas",
+      set_by: "ops@maneman.in",
+      set_at: "2027-09-21T06:00:00.000Z",
+      booked: 0,
+    };
+    const added = { ...BLACKOUTS, blackouts: [...BLACKOUTS.blackouts, christmas] };
+    await open(page, "/settings/blackouts", { "POST /api/blackouts": json(added) });
+    const add = page.getByRole("button", { name: "Black out these days" });
+    await expect(add).toBeDisabled();
+    await page.getByLabel("First day").fill("2027-12-24");
+    await page.getByLabel("Last day").fill("2027-12-24");
+    await page.getByLabel("Why").fill("  Christmas ");
+    const request = posted(page, "/api/blackouts");
+    await add.click();
+    expect((await request).postDataJSON()).toEqual({ from: "2027-12-24", to: "2027-12-24", reason: "Christmas" });
+    await expect(page.getByRole("status").filter({ hasText: "Added." })).toBeVisible();
+    await expect(page.getByRole("listitem").filter({ hasText: "Fri 24 Dec · Christmas" })).toBeVisible();
+    await expect(page.getByLabel("Why")).toHaveValue("");
+  });
+
+  test("says why the API refused the days, of the box it refused", async ({ page }) => {
+    await open(page, "/settings/blackouts", { "POST /api/blackouts": fails(400, "invalid_request", ["to"]) });
+    await page.getByLabel("First day").fill("2027-10-01");
+    await page.getByLabel("Last day").fill("2027-12-01");
+    await page.getByLabel("Why").fill("Too long");
+    await page.getByRole("button", { name: "Black out these days" }).click();
+    await expect(page.getByRole("alert")).toHaveText(
+      "The last day cannot come before the first, and one go covers a month at most.",
+    );
+  });
+
+  // Review of #145, item 7: a run named only its first day's setter.
+  test("names who added each run, keeping apart days added by someone else", async ({ page }) => {
+    const later = {
+      date: "2027-10-31",
+      reason: "Diwali",
+      set_by: "owner@maneman.in",
+      set_at: "2027-09-21T06:00:00.000Z",
+      booked: 0,
+    };
+    const split = {
+      ...BLACKOUTS,
+      blackouts: [...BLACKOUTS.blackouts.slice(0, 2), later, ...BLACKOUTS.blackouts.slice(2)],
+    };
+    await open(page, "/settings/blackouts", { "GET /api/blackouts": json(split) });
+    await expect(page.getByRole("listitem").filter({ hasText: "Fri 29 Oct to Sat 30 Oct · Diwali" })).toContainText(
+      "Added by ops@maneman.in on 20 Sep 2027",
+    );
+    await expect(page.getByRole("listitem").filter({ hasText: "Sun 31 Oct · Diwali" })).toContainText(
+      "Added by owner@maneman.in on 21 Sep 2027",
+    );
+  });
+
+  test("offers a run of days again, the whole run in one press", async ({ page }) => {
+    const left = { ...BLACKOUTS, blackouts: BLACKOUTS.blackouts.slice(2) };
+    await open(page, "/settings/blackouts", { "POST /api/blackouts/remove": json(left) });
+    const request = posted(page, "/api/blackouts/remove");
+    await page.getByRole("button", { name: "Offer Fri 29 Oct to Sat 30 Oct again" }).click();
+    expect((await request).postDataJSON()).toEqual({ from: "2027-10-29", to: "2027-10-30" });
+    await expect(page.getByRole("listitem").filter({ hasText: "Diwali" })).toHaveCount(0);
+    await expect(page.getByRole("listitem").filter({ hasText: "Staff training" })).toBeVisible();
+  });
+});
+
 // FEO-33 and VIS-21: the fields ran past the panel and cut "consultation" and the date's year.
 test("keeps every panel inside its frame, at the width the console is drawn", async ({ page }) => {
-  for (const path of ["/settings", "/settings/prices", "/settings/area"]) {
+  for (const path of PANELS) {
     await open(page, path);
     const overflow = await page.getByRole("main").evaluate((main) =>
       [...main.querySelectorAll("section, table, input, select")]
@@ -552,8 +688,8 @@ test("keeps every panel inside its frame, at the width the console is drawn", as
   }
 });
 
-test("meets WCAG 2.2 AA on all three panels", async ({ page }) => {
-  for (const path of ["/settings", "/settings/prices", "/settings/area"]) {
+test("meets WCAG 2.2 AA on every panel", async ({ page }) => {
+  for (const path of PANELS) {
     await open(page, path);
     const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
     expect(

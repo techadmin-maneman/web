@@ -6,12 +6,15 @@
 // prices sit with the services they price, which ops keep in the same panel
 // (docs/decisions/0085-services-ops-can-edit.md). Two more hold what the
 // technician app reads with a job: the consumables with each service's
-// expected use, and the job sheet (docs/decisions/0087-consumables-and-stock.md).
+// expected use, and the job sheet (docs/decisions/0087-consumables-and-stock.md). And
+// the days no visit is offered, which the runbook's SQL set before
+// (docs/decisions/0088-every-policy-in-the-console.md).
 
 import { Tabs, TAB } from "@maneman/ui/Tabs";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { settings } from "../content.ts";
 import { settingsPath, SETTINGS_TAB_NAMES, SETTINGS_TABS, type SettingsTab } from "../route.ts";
+import { Blackouts } from "./Blackouts.tsx";
 import { Consumables } from "./Consumables.tsx";
 import { JobSheet } from "./JobSheet.tsx";
 import { Services } from "./Services.tsx";
@@ -22,6 +25,7 @@ import styles from "./settings.module.css";
 function Panel({ tab }: { tab: SettingsTab }) {
   if (tab === "prices") return <Services />;
   if (tab === "area") return <ServiceArea />;
+  if (tab === "blackouts") return <Blackouts />;
   if (tab === "consumables") return <Consumables />;
   if (tab === "job-sheet") return <JobSheet />;
   return <Rules />;
