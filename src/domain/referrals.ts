@@ -216,8 +216,10 @@ export async function attribute(
 
 /**
  * How a client ops attach an invite to reached us, as the landing would have recorded it: through the waitlist while
- * they wait on one and have no visit, booked or asked for; otherwise a consultation. So the waitlist's lapse rule
- * still reaches only an invite held on a waitlist. The pincode is the list's, or else their address's.
+ * they wait on a list for an area we still do not serve, and have no visit booked or asked for; otherwise a
+ * consultation. So the waitlist's lapse rule reaches only an invite held on a list before its area launched, and one
+ * attached afterwards is not born lapsed. The pincode is the list's while they wait, else their address's, else the
+ * list's they last joined.
  */
 export async function howTheyCame(db: D1Database, personId: string): Promise<{ via: Via; pincode: string | null }> {
   const row = await db
@@ -226,14 +228,18 @@ export async function howTheyCame(db: D1Database, personId: string): Promise<{ v
          EXISTS (SELECT 1 FROM appointments WHERE person_id = ?1 AND deleted_at IS NULL)
            OR EXISTS (SELECT 1 FROM slot_holds WHERE person_id = ?1)
            OR EXISTS (SELECT 1 FROM consultation_requests WHERE person_id = ?1) AS asked,
-         (SELECT pincode FROM waitlist_entries WHERE person_id = ?1 ORDER BY created_at DESC LIMIT 1) AS waiting_in,
+         (SELECT w.pincode FROM waitlist_entries w LEFT JOIN serviceable_pincodes pin ON pin.pincode = w.pincode
+          WHERE w.person_id = ?1 AND COALESCE(pin.served, 0) = 0
+          ORDER BY w.created_at DESC LIMIT 1) AS waiting_in,
+         (SELECT pincode FROM waitlist_entries WHERE person_id = ?1 ORDER BY created_at DESC LIMIT 1) AS listed_in,
          (SELECT pincode FROM addresses WHERE person_id = ?1 AND replaced_at IS NULL
           ORDER BY created_at DESC LIMIT 1) AS lives_in`,
     )
     .bind(personId)
-    .first<{ asked: number; waiting_in: string | null; lives_in: string | null }>();
-  if (row?.asked === 0 && row.waiting_in !== null) return { via: "waitlist", pincode: row.waiting_in };
-  return { via: "consultation", pincode: row?.lives_in ?? null };
+    .first<{ asked: number; waiting_in: string | null; listed_in: string | null; lives_in: string | null }>();
+  if (row === null) return { via: "consultation", pincode: null };
+  if (row.asked === 0 && row.waiting_in !== null) return { via: "waitlist", pincode: row.waiting_in };
+  return { via: "consultation", pincode: row.lives_in ?? row.listed_in };
 }
 
 /** Where a referral's grant stands (migration 0021). */

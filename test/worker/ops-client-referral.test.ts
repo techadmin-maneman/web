@@ -143,6 +143,27 @@ describe("POST /api/clients/:id/referral", () => {
     expect((await attributions()).results).toMatchObject([{ via: "waitlist", pincode: "400050" }]);
   });
 
+  // An invite held on a list lapses 12 months after its area launched. One attached after the launch was never held
+  // on the list, so it starts no clock and is not born expired.
+  it("attaches a consultation's invite, pending, for a client whose list's area launched over 12 months ago", async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO serviceable_pincodes (pincode, area, city, served, launched_at)
+         VALUES ('400051', 'Bandra East', 'Mumbai', 1, '2025-06-30T18:30:00.000Z')`,
+      ),
+      env.DB.prepare(
+        `INSERT INTO waitlist_entries (id, pincode, person_id, contact_consent_at, launch_alert, created_at)
+         VALUES ('entry-1', '400051', ?1, '2025-03-01T06:00:00.000Z', 0, '2025-03-01T06:00:00.000Z')`,
+      ).bind(FRIEND),
+    ]);
+    const answer = await attach({ code: "RM4K7P", reason: REASON });
+    expect(answer.status).toBe(201);
+    expect(await answer.json()).toMatchObject({ grant: "pending" });
+    expect((await attributions()).results).toMatchObject([
+      { via: "consultation", pincode: "400051", grant_state: "pending" },
+    ]);
+  });
+
   describe("refuses, in words ops read, writing nothing", () => {
     async function nothingWritten() {
       expect((await audits()).results).toEqual([]);
