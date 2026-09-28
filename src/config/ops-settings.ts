@@ -13,9 +13,10 @@
 // issued depends on what was true then; the ADR gives the split.
 
 import { CHECKIN_RADIUS_M } from "../policy/check-in.ts";
-import { UNLOCK_HOUR } from "../policy/job-visibility.ts";
+import { DAY_BEFORE_REMINDER_HOUR, UNLOCK_HOUR } from "../policy/job-visibility.ts";
 import { NEXT_VISIT_DAY_BOUNDS, NEXT_VISIT_DAY_KEYS, NEXT_VISIT_DAYS } from "../policy/next-visit.ts";
 import { NO_SHOW_WAIT_MIN } from "../policy/no-show.ts";
+import { PHONE_CLOCK, PHONE_CLOCK_KEYS } from "../policy/phone-clock.ts";
 import { TASK_GROUPS, TASK_SLA_HOURS } from "../policy/tasks.ts";
 import { DEFAULT_PIECE_CYCLE_DAYS, PIECE_CYCLE_DAYS } from "./pieces.ts";
 import { VISIT_TYPES } from "./visit-types.ts";
@@ -114,6 +115,36 @@ export const OPS_SETTINGS = [
     keys: null,
     fallback: UNLOCK_HOUR,
     source: "src/policy/job-visibility.ts",
+  },
+  {
+    name: "reminder_hour",
+    title: "When reminders go",
+    note: "The hour from which the WhatsApp reminder of tomorrow's visit goes, and the reminder of a next service falling due. The address unlocks at its own hour, so moving one does not move the other.",
+    unit: "hour of the day, in India",
+    // Not in the night: a message about a visit wakes nobody.
+    min: 8,
+    max: 21,
+    keys: null,
+    fallback: DAY_BEFORE_REMINDER_HOUR,
+    source: "src/policy/job-visibility.ts",
+  },
+  {
+    // The owner's three bounds on the phone's clock (docs/open-points.md, item 58). The third, that the no-show wait
+    // runs on our clock too, is the wait above, measured from when the check-in reached us.
+    name: "phone_clock",
+    title: "How far a phone is trusted about time",
+    note: "How long before the booked start a check-in may say the technician arrived, and how long a phone may hold something done without signal and still have its time believed. A time earlier than either is taken as the bound. The no-show wait also runs from when a check-in reaches us, whatever time the phone gave it.",
+    unit: "minutes",
+    min: 0,
+    max: 240,
+    keys: PHONE_CLOCK_KEYS,
+    bounds: {
+      before_start: { min: 0, max: 240 },
+      // A day covers any genuine replay, since the app keeps today's and tomorrow's jobs; three at the most.
+      held_offline: { min: 1, max: 72, unit: "hours" },
+    },
+    fallback: PHONE_CLOCK,
+    source: "src/policy/phone-clock.ts",
   },
   {
     name: "task_sla_hours",

@@ -85,8 +85,8 @@ export const ARRIVAL_NOTICE_WITHIN_MINUTES = 10;
 /** Why an arrival notice was not sent: the no-show evidence reads it back. */
 export const ARRIVAL_TOO_LATE = "the check-in reached us too late to tell the client";
 
-/** The day before a visit, reminders go from this time in India. */
-export const REMINDERS_FROM = `${String(DAY_BEFORE_REMINDER_HOUR)}:00`;
+/** The time in India reminders go from, on the day before a visit: "18:00" for the hour 18, "08:00" for 8. */
+export const remindersFrom = (hour: number): string => `${String(hour).padStart(2, "0")}:00`;
 /** How many reminders a cron pass queues, well inside its 50 outside calls. */
 const REMINDERS_PER_PASS = 20;
 
@@ -305,11 +305,15 @@ async function creditOnCancel(db: D1Database, appointmentId: string): Promise<"r
 }
 
 /**
- * Queues the reminders for tomorrow's visits, from 6 pm in India the day before: each booked visit once. Returns
- * the messages' IDs, for the queue.
+ * Queues the reminders for tomorrow's visits, from the reminder hour in India the day before, 6 pm unless ops set
+ * another: each booked visit once. Returns the messages' IDs, for the queue.
  */
-export async function queueReminders(db: D1Database, now: Date): Promise<string[]> {
-  if (indiaTime(now) < REMINDERS_FROM) return [];
+export async function queueReminders(
+  db: D1Database,
+  now: Date,
+  hour: number = DAY_BEFORE_REMINDER_HOUR,
+): Promise<string[]> {
+  if (indiaTime(now) < remindersFrom(hour)) return [];
   const tomorrow = addDays(indiaDate(now), 1);
   const { results } = await db
     .prepare(

@@ -24,6 +24,7 @@ import {
 import type { Cycles } from "../config/pieces.ts";
 import type { NextVisitDays } from "../policy/next-visit.ts";
 import type { Waits } from "../policy/no-show.ts";
+import type { PhoneClock } from "../policy/phone-clock.ts";
 import type { Slas } from "../policy/tasks.ts";
 import { auditStatement, type AuditActor } from "./audit.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
@@ -35,7 +36,9 @@ export const SETTINGS_TTL_MS = MINUTE_MS;
 export interface OpsInputs {
   readonly checkinRadiusM: number;
   readonly noShowWaitMin: Waits;
+  readonly phoneClock: PhoneClock;
   readonly addressUnlockHour: number;
+  readonly reminderHour: number;
   readonly taskSlaHours: Slas;
   readonly pieceCycleDays: Cycles;
   readonly nextVisitDays: NextVisitDays;
@@ -66,7 +69,9 @@ function shape(values: Readonly<Record<OpsSettingName, SettingValue>>): OpsInput
   return {
     checkinRadiusM: values.checkin_radius_m as number,
     noShowWaitMin: values.no_show_wait_min as Waits,
+    phoneClock: values.phone_clock as PhoneClock,
     addressUnlockHour: values.address_unlock_hour as number,
+    reminderHour: values.reminder_hour as number,
     taskSlaHours: values.task_sla_hours as Slas,
     pieceCycleDays: values.piece_cycle_days as Cycles,
     nextVisitDays: values.booking_days as NextVisitDays,

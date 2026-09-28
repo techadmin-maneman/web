@@ -1240,6 +1240,11 @@ export const settings = {
     keyNames: {
       no_show_wait_min: dispatch.typeNames,
       task_sla_hours: tasks.groups,
+      // PLACEHOLDER: the phone's two bounds (docs/decisions/0088-every-policy-in-the-console.md).
+      phone_clock: {
+        before_start: "Earliest check-in, before the booked start",
+        held_offline: "Longest a phone may hold what was done offline",
+      },
       // PLACEHOLDER: the days the next visit turns on (docs/decisions/0086-the-next-visit-is-offered.md).
       booking_days: {
         first_fit_lead: "From a consultation to the first fit",

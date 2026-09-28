@@ -17,7 +17,7 @@ import { recordUtilisation } from "../domain/dispatch.ts";
 import { deleteLeftFiles } from "../domain/erasure.ts";
 import { raiseInvoices } from "../domain/fsm-invoices.ts";
 import { queueNextServiceReminders } from "../domain/next-visit.ts";
-import { readOpsInputs } from "../domain/ops-settings.ts";
+import { readOpsInputs, type OpsInputs } from "../domain/ops-settings.ts";
 import { queueReminders } from "../domain/visit-messages.ts";
 import type { StaticConfig } from "../guard.ts";
 import { createCallBudget, type CallBudget } from "../lib/call-budget.ts";
@@ -142,19 +142,27 @@ async function referralsJob({ env, deps, log }: CronContext): Promise<void> {
   await queueMessages(env.MESSAGE_QUEUE, messages, "referrals");
 }
 
-async function remindersJob({ env, deps, log }: CronContext): Promise<void> {
-  const reminders = await queueReminders(env.DB, deps.now());
+/** The figures ops set; the committed ones if the store cannot be read, which is said once in the log. */
+function opsInputsFor({ env, log }: CronContext, now: Date): Promise<OpsInputs> {
+  return readOpsInputs(env.DB, now, (error) => {
+    log.error("ops_settings_unreadable", { error });
+  });
+}
+
+async function remindersJob(context: CronContext): Promise<void> {
+  const { env, deps, log } = context;
+  const now = deps.now();
+  const inputs = await opsInputsFor(context, now);
+  const reminders = await queueReminders(env.DB, now, inputs.reminderHour);
   await queueMessages(env.MESSAGE_QUEUE, reminders, "reminders");
   if (reminders.length > 0) log.info("visit_reminders_queued", { count: reminders.length });
 }
 
-async function nextServiceRemindersJob({ env, deps, log }: CronContext): Promise<void> {
+async function nextServiceRemindersJob(context: CronContext): Promise<void> {
+  const { env, deps, log } = context;
   const now = deps.now();
-  // The figures ops set; the committed ones if the store cannot be read, which is said once in the log.
-  const inputs = await readOpsInputs(env.DB, now, (error) => {
-    log.error("ops_settings_unreadable", { error });
-  });
-  const reminders = await queueNextServiceReminders(env.DB, now, inputs.nextVisitDays);
+  const inputs = await opsInputsFor(context, now);
+  const reminders = await queueNextServiceReminders(env.DB, now, inputs.nextVisitDays, inputs.reminderHour);
   await queueMessages(env.MESSAGE_QUEUE, reminders, "next-service-reminders");
   if (reminders.length > 0) log.info("next_service_reminders_queued", { count: reminders.length });
 }

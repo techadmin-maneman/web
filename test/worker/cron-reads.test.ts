@@ -17,7 +17,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const AGO = new Date(NOW.getTime() - 60 * DAY_MS).toISOString();
 const AGO_PLUS_HOUR = new Date(NOW.getTime() - 60 * DAY_MS + 60 * 60 * 1000).toISOString();
 const IN_TWO_MONTHS = new Date(NOW.getTime() + 60 * DAY_MS).toISOString();
-/** 6:30 pm in India, when the evening's reminders go (src/domain/visit-messages.ts, REMINDERS_FROM). */
+/** 6:30 pm in India, when the evening's reminders go (DAY_BEFORE_REMINDER_HOUR, src/policy/job-visibility.ts). */
 const EVENING = new Date(NOW.getTime() + 6.5 * 60 * 60 * 1000);
 /** A visit 25 days ago, whose next service falls due within the reminder's week (ADR 0086), and an hour later. */
 const DUE_SOON = new Date(NOW.getTime() - 25 * DAY_MS).toISOString();

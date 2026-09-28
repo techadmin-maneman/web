@@ -15,6 +15,7 @@ import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
 import type { MessagingProvider } from "../../src/providers/messaging.ts";
 import { createStubPayments } from "../../src/providers/payments.ts";
 import { sendMessage } from "../../src/queues/messaging.ts";
+import { CRON_JOBS, runCronJobs } from "../../src/scheduled/cron.ts";
 import {
   appFor,
   captureLogs,
@@ -266,6 +267,42 @@ describe("the day-before reminders", () => {
       "UPDATE appointments SET window_start = '2026-09-22T06:30:00.000Z', status = 'cancelled'",
     ).run();
     expect(await queueReminders(env.DB, new Date("2026-09-21T12:30:00Z"))).toEqual([]);
+  });
+
+  // The owner's 6 pm is a console setting (docs/open-points.md, item 40; docs/decisions/0088-every-policy-in-the-console.md).
+  it("goes from the hour ops set, not before it", async () => {
+    await visit("service", "2026-09-22T06:30:00.000Z");
+    expect(await queueReminders(env.DB, new Date("2026-09-21T12:30:00Z"), 20)).toEqual([]); // 6 pm
+    expect(await queueReminders(env.DB, new Date("2026-09-21T14:30:00Z"), 20)).toHaveLength(1); // 8 pm
+  });
+
+  it("goes from a morning hour, which has one figure before the colon", async () => {
+    await visit("service", "2026-09-22T06:30:00.000Z");
+    expect(await queueReminders(env.DB, new Date("2026-09-21T02:00:00Z"), 8)).toEqual([]); // 7:30 am
+    expect(await queueReminders(env.DB, new Date("2026-09-21T03:00:00Z"), 8)).toHaveLength(1); // 8:30 am
+  });
+
+  it("is sent by the cron at the hour set in the console", async () => {
+    await visit("service", "2026-09-22T06:30:00.000Z");
+    await env.DB.prepare(
+      "INSERT INTO ops_settings (name, value, set_by, set_at) VALUES ('reminder_hour', '20', 'ops', ?1)",
+    )
+      .bind(NOW.toISOString())
+      .run();
+    const run = (at: string) =>
+      runCronJobs(
+        CRON_JOBS.filter((job) => job.name === "visit_reminders"),
+        {
+          env: { ...env, MESSAGE_QUEUE: fakeQueue() },
+          deps: fakeDependencies({ now: () => new Date(at) }),
+          config: LOCAL_CONFIG,
+          log,
+        },
+      );
+    await run("2026-09-21T12:30:00Z"); // 6 pm
+    expect((await messages()).results).toEqual([]);
+    await run("2026-09-21T14:30:00Z"); // 8 pm
+    expect((await messages()).results).toHaveLength(1);
   });
 });
 
