@@ -5155,6 +5155,29 @@
         ],
         "additionalProperties": false
       },
+      "Storage": {
+        "type": "object",
+        "properties": {
+          "held_bytes": {
+            "type": "integer",
+            "description": "What the client-photos and referral-cards buckets hold."
+          },
+          "share_bytes": {
+            "type": "integer",
+            "description": "Phase 2's share of R2's free 10 GB (ADR 0039); past it R2 bills, as the owner accepted."
+          },
+          "ceiling_bytes": {
+            "type": "integer",
+            "description": "Past this the technician app's photographs are refused and wait on the phones."
+          }
+        },
+        "required": [
+          "held_bytes",
+          "share_bytes",
+          "ceiling_bytes"
+        ],
+        "additionalProperties": false
+      },
       "Whoami": {
         "type": "object",
         "properties": {
@@ -9036,6 +9059,33 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/storage": {
+      "get": {
+        "summary": "What the photographs and referral cards hold in R2, against their share",
+        "responses": {
+          "200": {
+            "description": "The storage meter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Storage"
                 }
               }
             }

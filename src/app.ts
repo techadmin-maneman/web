@@ -50,6 +50,7 @@ import { registerRazorpayHook } from "./routes/razorpay-hook.ts";
 import { registerHealth } from "./routes/health.ts";
 import { registerLead } from "./routes/lead.ts";
 import { registerOpsProfile } from "./routes/ops-profile.ts";
+import { registerOpsStorage } from "./routes/ops-storage.ts";
 import { registerOpsWhoami } from "./routes/ops-whoami.ts";
 import { registerPublishedPrices } from "./routes/published-prices.ts";
 import { registerTechAuth } from "./routes/tech-auth.ts";
@@ -120,6 +121,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsConsumables,
     registerOpsJobSheet,
     registerOpsStock,
+    // What the photographs and cards hold in R2 (docs/decisions/0093-the-storage-meter.md).
+    registerOpsStorage,
     registerOpsWhoami,
   ],
   tech: [registerHealth, registerTechAuth, registerTechJobs, registerTechPieces],

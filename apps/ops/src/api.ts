@@ -276,6 +276,8 @@ export const api = {
     client.post("/api/technicians/{id}/leave/{leave}/cancel", { path: { id, leave: leaveId } }),
   /** Every rule ops may change, with its unit, its bounds and who last set it (ADR 0061). */
   settings: () => client.get("/api/settings"),
+  /** What the photographs and referral cards hold in R2, against their share (ADR 0093). */
+  storage: () => client.get("/api/storage"),
   /** One rule. A null value puts the figure in the code back and removes the row. */
   setSetting: (name: OpsSetting["name"], value: SettingValue | null) =>
     client.post("/api/settings/{name}", { path: { name }, body: { value } }),
