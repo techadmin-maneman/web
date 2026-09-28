@@ -2,15 +2,15 @@
 // scripts/lib/release.ts; see docs/decisions/0006-deployment-pipeline.md.
 //
 //   node scripts/release.ts current --worker mm-api --env production
-//       Prints the version serving 100% of traffic. Prints "" only for an app
-//       whose surface is not switched on there and that has never been deployed;
-//       anything else Cloudflare cannot answer is an error.
+//       Prints the version serving 100% of traffic. Prints "" for an app whose
+//       surface is not switched on there, deployed or not; anything else
+//       Cloudflare cannot answer is an error.
 //   node scripts/release.ts upload --worker mm-api --env production --tag <git-sha>
 //       Uploads a new version without sending it any traffic. Prints its ID.
 //   node scripts/release.ts deploy --worker mm-api --env production --split <id>@10 --split <id>@90
 //       Sets how traffic is split between versions. Percentages must total 100.
 //   node scripts/release.ts ship --worker mm-app --env staging --tag <git-sha>
-//       Uploads a version and sends it all traffic; an app not yet deployed is left alone.
+//       Uploads a version and sends it all traffic; an app whose surface is off is left alone.
 //   node scripts/release.ts restore --env production --to mm-api=<id> --to mm-app=<id-or-empty> …
 //       Puts each Worker back on the version recorded before a release. Tries every one, then fails if any failed.
 

@@ -32,7 +32,7 @@ import {
 } from "../domain/bookings.ts";
 import { pushCatalogue } from "../domain/fsm-catalogue.ts";
 import { sendLeadToFsm } from "../domain/fsm-leads.ts";
-import { syncAppointment } from "../domain/fsm-mirror.ts";
+import { logDeactivated, syncAppointment } from "../domain/fsm-mirror.ts";
 import { streetOf } from "../domain/profile.ts";
 import { eventById, markFsmWrite, nextPending, rejectPendingAfter, unwrittenBefore } from "../domain/job-events.ts";
 import { writeEventToFsm, type JobForFsm } from "../domain/job-sheet.ts";
@@ -150,6 +150,7 @@ export async function handleFsmSyncBatch(
 
     try {
       const result = await syncAppointment(db, deps.fsm, fsmId, deps.now());
+      logDeactivated(messageLog, result.techniciansDeactivated);
       const photos =
         result.appointmentId !== null && (result.status === "completed" || result.status === "terminated")
           ? await exportVisitPhotos(db, env.CLIENT_PHOTOS, deps.fsm, { id: result.appointmentId, fsmId }, deps.now())

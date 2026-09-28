@@ -49,13 +49,19 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   audit_log:
     "Every ops action that reads or changes a client's data, and who took it. An entry is never changed (ADR 0031).",
   checkins: 'Each "I have arrived", passed or not, with the distance measured and the radius in force (ADR 0065).',
+  checklist_items:
+    "Each kind of visit's checklist as ops set it, an item they took off kept as retired; a kind with no rows takes the committed list (ADR 0087).",
   cities: "The cities Phase 1's booking form offered; `GET /api/cities` still reads them (open point 107).",
   consents:
     "What each person agreed to, and under which notice's version. Rows are only ever added (ADR 0042, ADR 0049).",
   consultation_requests:
     "A consultation asked for while self-serve booking is off, for ops to fix the hour (ADR 0060).",
+  consumable_usage:
+    "What each service, a kind of visit at a tier of the price book, is expected to use of each consumable: where the technician's steppers start (ADR 0087).",
+  consumables:
+    "The consumables ops keep: name, unit, what one costs, the reorder levels, the day it is retired from, and FSM's part for it (ADR 0087).",
   consumables_used:
-    "The consumables a technician entered at a job's third step, kept to replay the write and to count stock (ADR 0038).",
+    "The consumables a technician recorded at a job's third step, with what its service expected and what one cost that day (ADR 0038, ADR 0087).",
   counters: "Fixed-window counters for the rate limits and the daily ceilings (ADR 0011).",
   credit_ledger:
     "Service-visit credits, entry by entry, each drawing on the grant it spends; a balance is summed, never kept (ADR 0033).",
@@ -65,6 +71,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   dispatch_moves:
     "Every move ops make on the dispatch board: from where to where, by whom, why, what FSM said, and whether the client was told (ADR 0069).",
   events: "What happened, for analysis, with no personal data in its payload.",
+  first_fit_requests:
+    "A first fit asked for on the site's form with the consultation, for the app to offer once the consultation is done; a person's latest stands (ADR 0086).",
   fsm_items:
     "FSM's catalogue, to read each appointment's visit type from its service item and to compare FSM's prices with the price book (ADR 0032, ADR 0073).",
   grievances: "A client's grievance, and the answer ops recorded (ADR 0049, ADR 0078).",
@@ -79,6 +87,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   ops_settings:
     "The business inputs ops set in the console, a row each; a row that is not there means the committed default (ADR 0061).",
   otp_challenges: "Each one-time code sent, as a hash, with its sends and attempts (ADR 0030, ADR 0052).",
+  partial_reasons:
+    "The reasons a job may be left partly done, as ops set them, one they took off kept as retired; none means the committed list (ADR 0087).",
   outbound_messages: "Each WhatsApp message, from queued to sent, delivered and read (ADR 0041).",
   payments: "The mirror of Razorpay's payments, and where each stands in Books (ADR 0044).",
   people:
@@ -96,15 +106,20 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   refunds: "The mirror of Razorpay's refunds, and where each stands in Books (ADR 0044).",
   serviceable_pincodes:
     "Every NCR pincode, its area and city, and whether and since when we serve it (ADR 0048, ADR 0061).",
+  services:
+    "What clients may book: each kind of visit's services, their names, lengths and order, when each is retired, and its item in FSM's catalogue; the price book prices each by its kind and tier (ADR 0085).",
   sessions:
     "The client app's and the technician app's sessions: whose, from which device, and when each ends or was revoked (ADR 0029, ADR 0052).",
   slot_claims:
     "What a hold or a visit takes of a technician's day, a row per half-slot and window, so no time is taken twice (ADR 0034, ADR 0069).",
   slot_holds: "A slot held while a client pays, and what became of it (ADR 0045, ADR 0068).",
+  stock_movements:
+    "Every movement of a consumable into or out of the central store or a technician's kit, never changed; what a place holds is the sum of its rows (ADR 0087).",
   sync_cursors: "Where each pass of the reconciliation with FSM has reached (ADR 0032).",
   technician_devices: "The phones technicians work from, each bound to a session and revocable by ops (ADR 0052).",
   technician_leave: "A technician's leave in whole days, which the clash check reads beside `slot_claims` (ADR 0062).",
-  technicians: "The mirror of FSM's technicians: name, initials, mobile number and zone (ADR 0032, ADR 0052).",
+  technicians:
+    "The mirror of FSM's technicians: name, initials, mobile number and zone; and on staging the few written by hand for a test, which the sync leaves alone (ADR 0032, ADR 0052).",
   tryon_jobs: "One try-on render: the photograph, the look, the provider's job and the result (ADR 0014, ADR 0015).",
   tryon_sessions: "The try-on gate's session, which shows a visitor their result without the gate again (ADR 0014).",
   visit_blackouts: "Days on which no visit is offered.",

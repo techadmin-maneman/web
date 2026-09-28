@@ -4,7 +4,16 @@ import { statusOf, syncAppointment } from "../../src/domain/fsm-mirror.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubFsm, type FsmAppointment, type FsmProvider, type StubFsmWorld } from "../../src/providers/fsm.ts";
 import { handleFsmSyncBatch } from "../../src/queues/fsm-sync.ts";
-import { LOCAL_SETTINGS, NOW, appFor, fakeDependencies, fakeQueue, markDatabase, request } from "./helpers.ts";
+import {
+  LOCAL_SETTINGS,
+  NOW,
+  appFor,
+  captureLogs,
+  fakeDependencies,
+  fakeQueue,
+  markDatabase,
+  request,
+} from "./helpers.ts";
 
 const appointment = (overrides: Partial<FsmAppointment> = {}): FsmAppointment => ({
   id: "ap-1",
@@ -153,6 +162,60 @@ describe("the mirror: one appointment", () => {
     const other = world({ appointments: [appointment({ id: "ap-2", serviceIds: ["item-other"] })] });
     await syncAppointment(env.DB, createStubFsm(other), "ap-2", NOW);
     expect((await mirrored("ap-2"))?.type).toBeNull();
+  });
+
+  // docs/decisions/0085-services-ops-can-edit.md: an item is a service's, by the ID kept on it or by its name.
+  it("reads the service an appointment is from its item: by the ID kept on a service, then by its name", async () => {
+    await env.DB.prepare(
+      `INSERT INTO services (kind, tier, name, minutes, sort, fsm_item_id, updated_by, updated_at)
+       VALUES ('first_fit', 'premium', 'Premium first fit', 240, 1, 'item-thin', 'ops@localhost', ?1),
+              ('replacement', 'lace', 'Lace replacement', 150, 1, NULL, 'ops@localhost', ?1)`,
+    )
+      .bind(NOW.toISOString())
+      .run();
+    const items = [
+      ...world().items,
+      // Renamed in FSM since: found by its ID all the same.
+      { id: "item-thin", name: "Thin skin", type: "Service" as const, price: null },
+      { id: "item-lace", name: "Lace replacement", type: "Service" as const, price: null },
+    ];
+    const byId = world({ items, appointments: [appointment({ serviceIds: ["item-thin"] })] });
+    await syncAppointment(env.DB, createStubFsm(byId), "ap-1", NOW);
+    expect(await mirrored()).toMatchObject({ type: "first_fit", tier: "premium" });
+
+    const byName = world({ items, appointments: [appointment({ id: "ap-2", serviceIds: ["item-lace"] })] });
+    await syncAppointment(env.DB, createStubFsm(byName), "ap-2", NOW);
+    expect(await mirrored("ap-2")).toMatchObject({ type: "replacement", tier: "lace" });
+
+    // An item scripts/setup-fsm.ts made for a kind is its standard service, as it always was.
+    await syncAppointment(env.DB, createStubFsm(world({ appointments: [appointment({ id: "ap-3" })] })), "ap-3", NOW);
+    expect(await mirrored("ap-3")).toMatchObject({ type: "service", tier: "standard" });
+  });
+
+  it("keeps the tier of the hold that booked a visit, whatever item FSM holds it on", async () => {
+    await syncAppointment(env.DB, createStubFsm(world()), "ap-1", NOW);
+    const visit = (await mirrored()) as { id: string };
+    const person = await env.DB.prepare("SELECT person_id FROM appointments WHERE id = ?1")
+      .bind(visit.id)
+      .first<{ person_id: string }>();
+    await env.DB.prepare(
+      "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t9', 'sr-9', 'X', 'X', 1, ?1)",
+    )
+      .bind(NOW.toISOString())
+      .run();
+    // Booked as a premium service visit, which FSM had no item for, so it went on the standard one.
+    await env.DB.prepare(
+      `INSERT INTO slot_holds (id, person_id, type, tier, date, window_label, technician_id, start_unit, amount,
+         amount_ex_gst, gst_percent, state, appointment_id, expires_at, created_at, updated_at)
+       VALUES ('hold-1', ?1, 'service', 'premium', '2026-09-24', 'morning', 't9', 1, 250000, 250000, 0, 'booked', ?2,
+         ?3, ?3, ?3)`,
+    )
+      .bind(person?.person_id, visit.id, NOW.toISOString())
+      .run();
+
+    await syncAppointment(env.DB, createStubFsm(world()), "ap-1", NOW);
+
+    expect(await mirrored()).toMatchObject({ type: "service", tier: "premium" });
   });
 
   it("records a completed appointment's visit, done, with its duration", async () => {
@@ -317,6 +380,38 @@ describe("the fsm-sync queue", () => {
     const nextNight = batchOf([{ fsm_id: "ap-1", request_id: "reconcile" }], 5);
     await handleFsmSyncBatch(nextNight as unknown as MessageBatch, env, deps, createLogger());
     expect(deps.alerts).toHaveLength(1);
+  });
+
+  // An appointment naming a technician new to the mirror reads FSM's list again, and that read stops anyone the
+  // list no longer names, as the sign-in's and the night's do; the line says who. One written by hand is left alone.
+  it("logs whom a read of the technician list stopped, and leaves a technician written by hand alone", async () => {
+    await env.DB.prepare(
+      `INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, hand_written)
+       VALUES ('t-left', 'sr-gone', 'Vikram Sethi', 'VS', 1, ?1, 0),
+              ('t-tester', 'tech-tester-1a2b3c4d', 'Test Technician', 'TT', 1, ?1, 1)`,
+    )
+      .bind(NOW.toISOString())
+      .run();
+    const logs = captureLogs();
+    const batch = batchOf([{ fsm_id: "ap-1", request_id: "r1" }]);
+
+    await handleFsmSyncBatch(
+      batch as unknown as MessageBatch,
+      env,
+      fakeDependencies({ fsm: createStubFsm(world()) }),
+      createLogger(),
+    );
+
+    expect(batch.messages[0]?.ack).toHaveBeenCalled();
+    const rows = await env.DB.prepare("SELECT fsm_id, active FROM technicians ORDER BY fsm_id").all();
+    expect(rows.results).toEqual([
+      { fsm_id: "sr-1", active: 1 },
+      { fsm_id: "sr-gone", active: 0 },
+      { fsm_id: "tech-tester-1a2b3c4d", active: 1 },
+    ]);
+    expect(logs.lines()).toContainEqual(
+      expect.objectContaining({ event: "technicians_deactivated", count: 1, fsm_ids: ["sr-gone"] }),
+    );
   });
 
   it("drops a message it cannot read", async () => {

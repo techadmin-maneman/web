@@ -23,15 +23,19 @@ import { registerClientNotes } from "./routes/client-notes.ts";
 import { registerClientData } from "./routes/client-data.ts";
 import { registerClientRefer } from "./routes/client-refer.ts";
 import { registerOpsClients } from "./routes/ops-clients.ts";
+import { registerOpsConsumables } from "./routes/ops-consumables.ts";
 import { registerOpsCredits } from "./routes/ops-credits.ts";
 import { registerOpsDispatch } from "./routes/ops-dispatch.ts";
 import { registerOpsField } from "./routes/ops-field.ts";
 import { registerOpsGrievances } from "./routes/ops-grievances.ts";
+import { registerOpsJobSheet } from "./routes/ops-job-sheet.ts";
 import { registerOpsPayments } from "./routes/ops-payments.ts";
 import { registerOpsReferrals } from "./routes/ops-referrals.ts";
 import { registerOpsTasks } from "./routes/ops-tasks.ts";
 import { registerOpsTechnicians } from "./routes/ops-technicians.ts";
+import { registerOpsServices } from "./routes/ops-services.ts";
 import { registerOpsSettings } from "./routes/ops-settings.ts";
+import { registerOpsStock } from "./routes/ops-stock.ts";
 import { registerOpsWaitlist } from "./routes/ops-waitlist.ts";
 import { registerConsultations } from "./routes/consultations.ts";
 import { registerReferralLanding } from "./routes/referral-landing.ts";
@@ -108,6 +112,12 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsPayments,
     registerOpsTechnicians,
     registerOpsSettings,
+    // The services clients book (docs/decisions/0085-services-ops-can-edit.md).
+    registerOpsServices,
+    // The consumables, the job sheet and the stock (docs/decisions/0087-consumables-and-stock.md).
+    registerOpsConsumables,
+    registerOpsJobSheet,
+    registerOpsStock,
     registerOpsWhoami,
   ],
   tech: [registerHealth, registerTechAuth, registerTechJobs, registerTechPieces],

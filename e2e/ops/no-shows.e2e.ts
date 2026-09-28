@@ -246,13 +246,13 @@ test("waives a case with its reason, and the case leaves the queue", async ({ pa
   await expect(page.getByText(FIRST)).toBeHidden();
 });
 
-test("shows no amount in the queue, and says what a charge keeps and a waiver does not yet give back", async ({
-  page,
-}) => {
+test("shows no amount in the queue, and says what a charge keeps and a waiver gives back", async ({ page }) => {
   await open(page);
   await expect(page.getByRole("region", { name: QUEUE }).getByText("Rs.")).toBeHidden();
-  // BIZ-28: what a waiver gives back waits for the owner, so ops are told it refunds nothing yet.
-  await expect(page.getByText(/keeps what the visit took\. Waiving records it too, but refunds nothing/)).toBeVisible();
+  // BIZ-28: the owner ruled on 27 September 2026 that a waiver refunds the payment and returns the credit.
+  await expect(
+    page.getByText(/keeps what the visit took\. Waiving records it too, refunds what the visit/),
+  ).toBeVisible();
 });
 
 test("says so when someone else has ruled on the case already", async ({ page }) => {

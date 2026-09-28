@@ -19,7 +19,6 @@ import { VISIT_BLOCKS } from "../../src/config/scheduling.ts";
 
 const BLOCKS: Record<PlaceholderBlockName, { publish: boolean }> = {
   whatsapp: site.whatsapp,
-  phone: site.phone,
   heroFootage: site.heroFootage,
   whatPlate: site.whatPlate,
   norwoodPhotos: site.norwoodPhotos,
@@ -150,7 +149,7 @@ describe("content", () => {
     const published = Object.entries(BLOCKS)
       .filter(([, block]) => block.publish)
       .map(([name]) => name);
-    expect(published).toEqual(["whatsapp", "phone", "privacy", "terms"]);
+    expect(published).toEqual(["whatsapp", "privacy", "terms"]);
   });
 });
 

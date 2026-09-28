@@ -5,7 +5,9 @@
 // "Rows are technicians; columns are seven days; each day has config
 // SLOTS_PER_DAY (4) slots." The blocks come from the FSM mirror, the holds from
 // slot_claims, and the clash check is the same one self-serve booking runs, so
-// the two cannot disagree.
+// the two cannot disagree. A job is as long as its service, or as FSM books it
+// where that is longer, and is sized, placed and moved by that length
+// (docs/decisions/0085-services-ops-can-edit.md).
 //
 // "A technician cannot hold two live jobs in one window on one date. This check
 // runs on the server before any write to FSM": the refusal below happens before
@@ -16,7 +18,7 @@
 // is never charged for a move ops make", so no amount is read or written here
 // at all: a visit carries a badge, never a figure.
 
-import { BOOKING_WINDOWS, SLOTS_PER_DAY, VISIT_BLOCKS, type BookingWindow } from "../config/scheduling.ts";
+import { BOOKING_WINDOWS, SLOTS_PER_DAY, type BookingWindow } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaIso, indiaTime } from "../lib/india-time.ts";
 import {
@@ -28,6 +30,7 @@ import {
   type MoveRefusal,
 } from "../policy/dispatch.ts";
 import { paymentBadge, type PaymentBadge } from "../policy/job-visibility.ts";
+import { unitsFor } from "../policy/visit-length.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import { listCities } from "./cities.ts";
@@ -35,6 +38,7 @@ import { syncAppointment, type AppointmentStatus } from "./fsm-mirror.ts";
 import { leaveBetween } from "./leave.ts";
 import {
   activeTechnicians,
+  bookedMinutes,
   claimsOf,
   fitsAt,
   lettingGo,
@@ -79,7 +83,7 @@ interface Visit {
   readonly pincode: string | null;
   readonly person: BoardClient | null;
   readonly badge: PaymentBadge;
-  /** The visit's size on the board: 1, 1, 1.5 or 2. */
+  /** The visit's size on the board, from its length: 1, 1, 1.5 and 2 for the kinds' own. */
   readonly slots: number;
 }
 
@@ -157,14 +161,15 @@ const LIVE = "('scheduled', 'dispatched', 'in_progress')";
 const ON_THE_BOARD = "('scheduled', 'dispatched', 'in_progress', 'completed')";
 
 /**
- * Each job on the board, with its client, the area its pincode is in, and its
- * badge: Credit where a service-visit credit paid for it, Free where the price
- * book charges nothing for it on its day, as the technician's card reads them
- * (src/domain/tech-jobs.ts). No amount leaves the database.
+ * Each job on the board, with its client, the area its pincode is in, its
+ * length, and its badge: Credit where a service-visit credit paid for it, Free
+ * where the price book charges nothing for its own service on its day, as the
+ * technician's card reads them (src/domain/tech-jobs.ts). No amount leaves the
+ * database. A job is the standard tier's where the mirror knows no other.
  */
 const BOARD_JOBS = `
-  SELECT a.id, a.type, a.status, a.window_start, a.technician_id, a.service_city, a.service_pincode, a.asked_window,
-    a.person_id, d.locality, sp.area,
+  SELECT a.id, a.type, a.status, a.window_start, a.window_end, a.technician_id, a.service_city, a.service_pincode,
+    a.asked_window, a.person_id, d.locality, sp.area, s.minutes AS service_minutes,
     p.name AS client_name, p.mobile_e164 AS client_mobile, p.erased_at AS client_erased_at,
     ${LATEST_VISITS_CONSENT} AS whatsapp_visits,
     (SELECT referrer.name FROM referral_attributions r
@@ -173,12 +178,14 @@ const BOARD_JOBS = `
      WHERE r.referred_person_id = a.person_id AND referrer.erased_at IS NULL) AS referred_by,
     EXISTS (SELECT 1 FROM credit_ledger l WHERE l.kind = 'redeem' AND l.source_id = a.id) AS on_credit,
     COALESCE((SELECT b.amount_ex_gst = 0 FROM price_book b
-              WHERE b.item = a.type AND b.tier = 'standard' AND b.valid_from <= date(a.window_start, '+330 minutes')
+              WHERE b.item = a.type AND b.tier = COALESCE(a.tier, 'standard')
+                AND b.valid_from <= date(a.window_start, '+330 minutes')
               ORDER BY b.valid_from DESC LIMIT 1), 0) AS free
   FROM appointments a
   LEFT JOIN people p ON p.id = a.person_id
   LEFT JOIN addresses d ON d.person_id = a.person_id AND d.replaced_at IS NULL
   LEFT JOIN serviceable_pincodes sp ON sp.pincode = a.service_pincode
+  LEFT JOIN services s ON s.kind = a.type AND s.tier = COALESCE(a.tier, 'standard')
   WHERE a.deleted_at IS NULL AND a.status IN ${ON_THE_BOARD} AND a.window_start >= ?1 AND a.window_start < ?2
     AND (?3 IS NULL OR a.service_city = ?3)
   ORDER BY a.window_start`;
@@ -257,6 +264,8 @@ interface BoardJobRow {
   type: VisitType | null;
   status: AppointmentStatus;
   window_start: string;
+  window_end: string | null;
+  service_minutes: number | null;
   technician_id: string | null;
   service_city: string | null;
   service_pincode: string | null;
@@ -282,7 +291,7 @@ function visitOf(job: BoardJobRow): Visit {
     pincode: job.service_pincode,
     person: clientOf(job),
     badge: paymentBadge({ onCredit: job.on_credit === 1, free: job.free === 1 }),
-    slots: slotsFor(job.type ?? "service"),
+    slots: slotsFor(unitsFor(bookedMinutes(job))),
   };
 }
 
@@ -406,15 +415,22 @@ interface Target {
 type Landing =
   { readonly kind: "lands"; readonly start: number } | { readonly kind: "refused"; readonly reason: MoveRefusal };
 
+/** A job as a move places it: how long it is, and when it starts now. */
+interface Placing {
+  readonly minutes: number;
+  readonly start: Date;
+}
+
 /** The half-slot a job would start in on the target's day, or null where it has no room. */
-function startOn(day: Day, job: { type: VisitType; start: Date }, target: Target): number | null {
-  if (!target.keepsTime) return placement(day, target.window, job.type);
+function startOn(day: Day, job: Placing, target: Target): number | null {
+  const units = unitsFor(job.minutes);
+  if (!target.keepsTime) return placement(day, target.window, units);
   const start = unitAt(indiaTime(job.start));
-  return fitsAt(day, start, job.type) ? start : null;
+  return fitsAt(day, start, units) ? start : null;
 }
 
 /** Where the job lands on the target's day, or why it cannot. */
-function landingOf(day: Day, job: { type: VisitType; start: Date }, target: Target): Landing {
+function landingOf(day: Day, job: Placing, target: Target): Landing {
   const start = startOn(day, job, target);
   const refusal = moveRefusal(day, target.window, { fits: start !== null });
   if (refusal !== null) return { kind: "refused", reason: refusal };
@@ -435,15 +451,20 @@ interface LiveJob {
   type: VisitType;
   status: AppointmentStatus;
   window_start: string;
+  window_end: string | null;
   technician_id: string | null;
+  service_minutes: number | null;
 }
 
 /** A job that can still be moved; null for one done, cancelled, gone from FSM, or with no type or time. */
 function liveJob(db: D1Database, appointmentId: string): Promise<LiveJob | null> {
   return db
     .prepare(
-      `SELECT id, fsm_id, person_id, type, status, window_start, technician_id FROM appointments
-       WHERE id = ?1 AND deleted_at IS NULL AND status IN ${LIVE} AND type IS NOT NULL AND window_start IS NOT NULL`,
+      `SELECT a.id, a.fsm_id, a.person_id, a.type, a.status, a.window_start, a.window_end, a.technician_id,
+         s.minutes AS service_minutes
+       FROM appointments a LEFT JOIN services s ON s.kind = a.type AND s.tier = COALESCE(a.tier, 'standard')
+       WHERE a.id = ?1 AND a.deleted_at IS NULL AND a.status IN ${LIVE} AND a.type IS NOT NULL
+         AND a.window_start IS NOT NULL`,
     )
     .bind(appointmentId)
     .first<LiveJob>();
@@ -484,10 +505,11 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
   // The check runs on the server before any write to FSM. The job's own time
   // does not count against its own move.
   const held = await occupancy(db, date, date, now, job.id);
-  const landing = landingOf(held(technicianId, date), { type: job.type, start: wasStart }, target);
+  const minutes = bookedMinutes(job);
+  const landing = landingOf(held(technicianId, date), { minutes, start: wasStart }, target);
   if (landing.kind === "refused") return landing;
 
-  const times = target.keepsTime ? null : visitTimes(date, landing.start, job.type);
+  const times = target.keepsTime ? null : visitTimes(date, landing.start, minutes);
   const nowStart = times?.start ?? wasStart;
   const moveId = crypto.randomUUID();
   const opened = await openMove(
@@ -500,7 +522,7 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
       reason: input.reason,
       actor: input.actor,
     },
-    { date, claims: claimsOf(landing.start, job.type, window) },
+    { date, claims: claimsOf(landing.start, unitsFor(minutes), window) },
     now,
   );
   if (opened === "moving") return { kind: "superseded", changed: ["moving"] };
@@ -552,7 +574,7 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
         job.id,
         technicianId,
         nowStart.toISOString(),
-        (times?.end ?? new Date(nowStart.getTime() + VISIT_BLOCKS[job.type].minutes * MINUTE_MS)).toISOString(),
+        (times?.end ?? new Date(nowStart.getTime() + minutes * MINUTE_MS)).toISOString(),
         at,
       ),
     // The mirror now holds the new time, so the claim on it goes in the same batch.
@@ -696,7 +718,7 @@ export async function roomFor(
     activeTechnicians(db),
     occupancy(db, input.from, dates[dates.length - 1] ?? input.from, now, job.id),
   ]);
-  const visit = { type: job.type, start: new Date(job.window_start) };
+  const visit = { minutes: bookedMinutes(job), start: new Date(job.window_start) };
   const windowsFor = (technicianId: string, date: string) =>
     BOOKING_WINDOWS.filter((window) => {
       const target = targetOf(job, technicianId, date, window);

@@ -20,6 +20,7 @@ import {
   type SettingValue,
 } from "../config/ops-settings.ts";
 import type { Cycles } from "../config/pieces.ts";
+import type { NextVisitDays } from "../policy/next-visit.ts";
 import type { Waits } from "../policy/no-show.ts";
 import type { Slas } from "../policy/tasks.ts";
 import { auditStatement, type AuditActor } from "./audit.ts";
@@ -35,6 +36,7 @@ export interface OpsInputs {
   readonly addressUnlockHour: number;
   readonly taskSlaHours: Slas;
   readonly pieceCycleDays: Cycles;
+  readonly nextVisitDays: NextVisitDays;
 }
 
 /** What one input is at this moment, and whether anybody set it. */
@@ -65,6 +67,7 @@ function shape(values: Readonly<Record<OpsSettingName, SettingValue>>): OpsInput
     addressUnlockHour: values.address_unlock_hour as number,
     taskSlaHours: values.task_sla_hours as Slas,
     pieceCycleDays: values.piece_cycle_days as Cycles,
+    nextVisitDays: values.booking_days as NextVisitDays,
   };
 }
 

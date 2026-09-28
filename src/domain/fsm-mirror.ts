@@ -2,10 +2,18 @@
 // time, read fresh from FSM and written over its copy in D1, with the client,
 // technician and visit type it names. A webhook or the reconciliation only
 // says which appointment to read; FSM's answer is what is stored.
+//
+// The visit's service, its kind and its tier, comes from its FSM item: the
+// service whose item it is by the ID kept on it, else the one of its name,
+// else, for an item scripts/setup-fsm.ts made, its kind's standard service.
+// A visit a hold booked keeps the hold's tier, since the hold is what was
+// sold, and FSM may hold it on its kind's item where it had none of its own
+// (docs/decisions/0085-services-ops-can-edit.md).
 
-import { visitTypeOfService, type VisitType } from "../config/visit-types.ts";
+import { STANDARD_TIER, visitTypeOfService, type VisitType } from "../config/visit-types.ts";
 import { toE164 } from "../lib/mobile.ts";
 import { initialsOf } from "../lib/names.ts";
+import type { Logger } from "../log.ts";
 import type { FsmAppointment, FsmProvider } from "../providers/fsm.ts";
 import { minutesBetween } from "../lib/durations.ts";
 
@@ -32,6 +40,8 @@ export interface SyncResult {
   readonly appointmentId: string | null;
   /** The appointment's status as written; null when it is gone. */
   readonly status: AppointmentStatus | null;
+  /** FSM IDs of the technicians made inactive when the appointment named one new to us and the list was read again. */
+  readonly techniciansDeactivated: readonly string[];
 }
 
 /** Reads one appointment from FSM and makes the mirror match it. */
@@ -45,13 +55,13 @@ export async function syncAppointment(db: D1Database, fsm: FsmProvider, fsmId: s
       )
       .bind(fsmId, at)
       .first<{ id: string }>();
-    return { outcome: "gone", appointmentId: existing?.id ?? null, status: null };
+    return { outcome: "gone", appointmentId: existing?.id ?? null, status: null, techniciansDeactivated: [] };
   }
 
   const personId = appointment.contactId === null ? null : await personFor(db, fsm, appointment.contactId, at);
   const leadTechnician = appointment.technicianIds[0];
-  const technicianId = leadTechnician === undefined ? null : await technicianFor(db, fsm, leadTechnician, at);
-  const type = await visitTypeOf(db, fsm, appointment.serviceIds, at);
+  const lead = leadTechnician === undefined ? null : await technicianFor(db, fsm, leadTechnician, at);
+  const service = await serviceOfItems(db, fsm, appointment.serviceIds, at);
 
   const existing = await db
     .prepare("SELECT id FROM appointments WHERE fsm_id = ?1")
@@ -66,13 +76,17 @@ export async function syncAppointment(db: D1Database, fsm: FsmProvider, fsmId: s
         // fsm_invoice_id is not written here: FSM leaves the appointment's own Invoice_Id
         // null, and the invoice pass fills the column with Books' ID (ADR 0055). Where FSM
         // holds no place for it yet, the visit keeps the one our booking gave it (ADR 0068).
-        // first_seen_at is the first sync's alone, so an update leaves it.
-        `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, window_start, window_end,
+        // first_seen_at is the first sync's alone, so an update leaves it. The tier is the hold's that booked the
+        // visit, where one did, else its item's.
+        `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, tier, window_start, window_end,
            technician_id, status, fsm_status, service_city, service_pincode, fsm_modified_at, synced_at, first_seen_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?14)
+         VALUES (?1, ?2, ?3, ?4, ?5,
+           COALESCE((SELECT h.tier FROM slot_holds h WHERE h.appointment_id = ?1 AND h.state = 'booked'
+             ORDER BY h.created_at LIMIT 1), ?15),
+           ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?14)
          ON CONFLICT (fsm_id) DO UPDATE SET
            fsm_work_order_id = excluded.fsm_work_order_id, person_id = excluded.person_id, type = excluded.type,
-           window_start = excluded.window_start, window_end = excluded.window_end,
+           tier = excluded.tier, window_start = excluded.window_start, window_end = excluded.window_end,
            technician_id = excluded.technician_id, status = excluded.status, fsm_status = excluded.fsm_status,
            service_city = COALESCE(excluded.service_city, appointments.service_city),
            service_pincode = COALESCE(excluded.service_pincode, appointments.service_pincode),
@@ -83,16 +97,17 @@ export async function syncAppointment(db: D1Database, fsm: FsmProvider, fsmId: s
         fsmId,
         appointment.workOrderId,
         personId,
-        type,
+        service?.type ?? null,
         utc(appointment.scheduledStart),
         utc(appointment.scheduledEnd),
-        technicianId,
+        lead?.id ?? null,
         status,
         appointment.status,
         appointment.serviceCity,
         appointment.servicePincode,
         utc(appointment.modifiedAt),
         at,
+        service?.tier ?? null,
       ),
   ];
   const visit = visitOf(appointment, status);
@@ -122,7 +137,7 @@ export async function syncAppointment(db: D1Database, fsm: FsmProvider, fsmId: s
     );
   }
   await db.batch(statements);
-  return { outcome: "written", appointmentId: id, status };
+  return { outcome: "written", appointmentId: id, status, techniciansDeactivated: lead?.deactivated ?? [] };
 }
 
 /** An instant as UTC, as every other time in D1 is kept. FSM sends India's offset. */
@@ -206,14 +221,22 @@ async function personFor(db: D1Database, fsm: FsmProvider, contactId: string, at
   return id;
 }
 
-/** Our technician for an FSM service resource, refreshing the list from FSM when it is new to us. */
-async function technicianFor(db: D1Database, fsm: FsmProvider, fsmId: string, at: string): Promise<string | null> {
+/**
+ * Our technician for an FSM service resource, refreshing the list from FSM when it is new to us, with the FSM IDs
+ * that refresh made inactive.
+ */
+async function technicianFor(
+  db: D1Database,
+  fsm: FsmProvider,
+  fsmId: string,
+  at: string,
+): Promise<{ id: string | null; deactivated: string[] }> {
   const known = await db.prepare("SELECT id FROM technicians WHERE fsm_id = ?1").bind(fsmId).first<{ id: string }>();
-  if (known !== null) return known.id;
+  if (known !== null) return { id: known.id, deactivated: [] };
 
-  await syncTechnicians(db, fsm, at);
+  const deactivated = await syncTechnicians(db, fsm, at);
   const found = await db.prepare("SELECT id FROM technicians WHERE fsm_id = ?1").bind(fsmId).first<{ id: string }>();
-  return found?.id ?? null;
+  return { id: found?.id ?? null, deactivated };
 }
 
 /**
@@ -223,14 +246,19 @@ async function technicianFor(db: D1Database, fsm: FsmProvider, fsmId: string, at
  *
  * FSM's list leaves out a user whose service resource was removed, so a
  * technician missing from it is one FSM no longer lists at all, and is made
- * inactive here too (ADR 0052). An empty list is taken as a failed read, never
- * as an org with nobody in it, and changes nothing.
+ * inactive here too (ADR 0052). A technician written by hand into staging's
+ * database for a test (`hand_written`, migration 0046) was never FSM's to list,
+ * so his absence from the list says nothing, and he is left alone. An empty list
+ * is taken as a failed read, never as an org with nobody in it, and changes
+ * nothing.
+ *
+ * Answers the FSM IDs of the technicians it made inactive, for the caller to log.
  */
-export async function syncTechnicians(db: D1Database, fsm: FsmProvider, at: string): Promise<number> {
+export async function syncTechnicians(db: D1Database, fsm: FsmProvider, at: string): Promise<string[]> {
   const technicians = await fsm.technicians();
-  if (technicians.length === 0) return 0;
+  if (technicians.length === 0) return [];
   const listed = JSON.stringify(technicians.map((technician) => technician.id));
-  await db.batch([
+  const results = await db.batch<{ fsm_id: string }>([
     ...technicians.map((technician) =>
       db
         .prepare(
@@ -254,20 +282,29 @@ export async function syncTechnicians(db: D1Database, fsm: FsmProvider, at: stri
     db
       .prepare(
         `UPDATE technicians SET active = 0, updated_at = ?2
-         WHERE active = 1 AND fsm_id NOT IN (SELECT value FROM json_each(?1))`,
+         WHERE active = 1 AND hand_written = 0 AND fsm_id NOT IN (SELECT value FROM json_each(?1))
+         RETURNING fsm_id`,
       )
       .bind(listed, at),
   ]);
-  return technicians.length;
+  return (results.at(-1)?.results ?? []).map((row) => row.fsm_id);
 }
 
-/** The visit type of the first of an appointment's services that is one of ours. */
-async function visitTypeOf(
+/**
+ * The one line each caller of syncTechnicians writes when it made anyone inactive, so a technician who can no
+ * longer sign in can be traced to the read that stopped him. FSM's IDs only: never a name or a number.
+ */
+export function logDeactivated(log: Logger, fsmIds: readonly string[]): void {
+  if (fsmIds.length > 0) log.info("technicians_deactivated", { count: fsmIds.length, fsm_ids: fsmIds });
+}
+
+/** The service of the first of an appointment's service items that is one of ours: its kind and its tier. */
+async function serviceOfItems(
   db: D1Database,
   fsm: FsmProvider,
   serviceIds: readonly string[],
   at: string,
-): Promise<VisitType | null> {
+): Promise<{ type: VisitType; tier: string } | null> {
   if (serviceIds.length === 0) return null;
   let names = await itemNames(db, serviceIds);
   if (names.size < new Set(serviceIds).size) {
@@ -286,10 +323,32 @@ async function visitTypeOf(
     names = await itemNames(db, serviceIds);
   }
   for (const serviceId of serviceIds) {
-    const type = visitTypeOfService(names.get(serviceId) ?? "");
-    if (type !== null) return type;
+    const service = await serviceByItem(db, serviceId, names.get(serviceId) ?? null);
+    if (service !== null) return service;
   }
   return null;
+}
+
+/**
+ * The service an FSM item is: the one its ID is kept on, else the one of its name, else, for an item named as
+ * scripts/setup-fsm.ts names a kind's, that kind's standard service. Null for an item that is no service of ours.
+ */
+async function serviceByItem(
+  db: D1Database,
+  itemId: string,
+  name: string | null,
+): Promise<{ type: VisitType; tier: string } | null> {
+  const service = await db
+    .prepare(
+      `SELECT kind AS type, tier, 0 AS rank FROM services WHERE fsm_item_id = ?1
+       UNION ALL SELECT kind AS type, tier, 1 AS rank FROM services WHERE name = ?2 COLLATE NOCASE
+       ORDER BY rank LIMIT 1`,
+    )
+    .bind(itemId, name)
+    .first<{ type: VisitType; tier: string }>();
+  if (service !== null) return service;
+  const type = visitTypeOfService(name ?? "");
+  return type === null ? null : { type, tier: STANDARD_TIER };
 }
 
 async function itemNames(db: D1Database, ids: readonly string[]): Promise<Map<string, string>> {

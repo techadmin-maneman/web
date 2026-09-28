@@ -897,7 +897,7 @@ A visit's invoice, as a PDF from Books
 
 ### GET /api/availability
 
-The windows open for a kind of visit over 14 days
+The windows open for a service over 14 days
 
 **200**: Each day's three windows
 
@@ -923,7 +923,7 @@ The windows open for a kind of visit over 14 days
 }
 ```
 
-**422**: not_bookable: the client may not book this kind of visit
+**422**: not_bookable: the client may not book this kind of visit, or the service is not offered
 
 ```json
 {
@@ -949,6 +949,11 @@ Request body:
         "service",
         "replacement"
       ]
+    },
+    "tier": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,31}$",
+      "description": "The service's code within its kind; left out, the kind's standard service while offered."
     },
     "date": {
       "type": "string",
@@ -1001,7 +1006,7 @@ Request body:
 }
 ```
 
-**422**: not_bookable: this kind of visit, or that day, is not open to the client
+**422**: not_bookable: this kind of visit, this service, or that day, is not open to the client
 
 ```json
 {
@@ -1276,6 +1281,28 @@ Request body:
 }
 ```
 
+### GET /api/refer/card
+
+The client's own card while it is live: the JPEG the invite shows
+
+**200**: The card
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no card of theirs is live: none made, taken down, the consent off, or erased
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### PUT /api/refer/card
 
 Upload the client's referral card: the body is the JPEG itself
@@ -1474,7 +1501,10 @@ Request body:
             "fsm_refused",
             "fsm_partly",
             "too_early_to_close",
-            "no_service_area"
+            "no_service_area",
+            "service_exists",
+            "last_of_kind",
+            "service_retired"
           ]
         },
         "request_id": {
@@ -1822,17 +1852,79 @@ Request body:
             "kind": {
               "type": "string",
               "enum": [
+                "next_visit"
+              ]
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "service",
+                "replacement"
+              ],
+              "description": "The next service, or the replacement where the piece in wear falls due first."
+            },
+            "tier": {
+              "type": "string",
+              "description": "The service of its kind it offers, as booking.next's (ADR 0085)."
+            },
+            "date": {
+              "type": "string",
+              "format": "date",
+              "description": "India's day it falls due: the last visit's day and the cadence; tomorrow once passed."
+            },
+            "window": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "morning",
+                    "afternoon",
+                    "evening"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The last visit's window, where this kind of visit can start in it."
+            }
+          },
+          "required": [
+            "kind",
+            "type",
+            "tier",
+            "date",
+            "window"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
                 "replacement_due"
               ]
             },
             "month": {
               "type": "string",
               "pattern": "^\\d{4}-\\d{2}$"
+            },
+            "tier": {
+              "type": "string",
+              "description": "The replacement service it offers: the client's last one while that is offered, else the first in the console's order (ADR 0085)."
+            },
+            "bookable": {
+              "type": "boolean",
+              "description": "The month begins within how far ahead a visit may be booked, so it can be booked now."
             }
           },
           "required": [
             "kind",
-            "month"
+            "month",
+            "tier",
+            "bookable"
           ],
           "additionalProperties": false
         },
@@ -1883,7 +1975,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "Board B1's one contextual prompt, the first that applies: no address given while something is booked; the month the piece in wear falls due, never the day (ADR 0059); an invoice issued in the last fortnight. Null when none applies."
+      "description": "Board B1's one contextual prompt, the first that applies, in the owner's order: no address given while something is booked; the next service due and not booked; the month the piece in wear falls due, never the day (ADR 0059); an invoice issued in the last fortnight, which ops may lengthen or shorten. Null when none applies."
     },
     "booking": {
       "type": "object",
@@ -1904,11 +1996,72 @@ Request body:
             ]
           },
           "description": "What the client may book now."
+        },
+        "services": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/OfferedService"
+          },
+          "description": "Every service of those kinds offered and priced now, a kind at a time, in the console's order."
+        },
+        "next": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "first_fit",
+                    "service",
+                    "replacement"
+                  ]
+                },
+                "tier": {
+                  "type": "string",
+                  "description": "The service it is offered as: the one the client's last visit of its kind was, while that is offered, else its kind's first in the console's order (ADR 0085)."
+                },
+                "date": {
+                  "type": "string",
+                  "format": "date",
+                  "description": "India's day it is offered on."
+                },
+                "window": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "morning",
+                        "afternoon",
+                        "evening"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "type",
+                "tier",
+                "date",
+                "window"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "What the app offers next, with nothing booked, for the booking sheet to open with: the first fit once the consultation is done, from the lead time and in the window the site's request asked for; or the next service on its due day, in the last visit's window, or the replacement where the piece falls due first (ADR 0086)."
         }
       },
       "required": [
         "self_serve",
-        "types"
+        "types",
+        "services",
+        "next"
       ],
       "additionalProperties": false
     }
@@ -2093,6 +2246,75 @@ Request body:
     "earliest_expiry"
   ],
   "additionalProperties": false
+}
+```
+
+### OfferedService
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement"
+      ]
+    },
+    "tier": {
+      "type": "string",
+      "description": "Its code within its kind, which booking it names."
+    },
+    "name": {
+      "type": "string"
+    },
+    "minutes": {
+      "type": "integer",
+      "description": "How long the visit is booked for."
+    },
+    "price": {
+      "$ref": "#/components/schemas/Price"
+    }
+  },
+  "required": [
+    "type",
+    "tier",
+    "name",
+    "minutes",
+    "price"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Price
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "amount_ex_gst": {
+      "type": "integer",
+      "description": "In paise, before GST: the main figure."
+    },
+    "amount": {
+      "type": "integer",
+      "description": "In paise, GST included: what the client pays."
+    },
+    "gst_percent": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "amount_ex_gst",
+    "amount",
+    "gst_percent"
+  ],
+  "additionalProperties": false,
+  "description": "Its price tomorrow, the first day it can be booked."
 }
 ```
 
@@ -4102,8 +4324,18 @@ Request body:
         "replacement"
       ]
     },
+    "service": {
+      "$ref": "#/components/schemas/VisitService"
+    },
     "price": {
-      "$ref": "#/components/schemas/Price"
+      "allOf": [
+        {
+          "$ref": "#/components/schemas/Price"
+        },
+        {
+          "description": "The first day's price."
+        }
+      ]
     },
     "regular": {
       "anyOf": [
@@ -4196,6 +4428,7 @@ Request body:
   },
   "required": [
     "type",
+    "service",
     "price",
     "regular",
     "days"
@@ -4204,31 +4437,31 @@ Request body:
 }
 ```
 
-### Price
+### VisitService
 
 ```json
 {
   "type": "object",
   "properties": {
-    "amount_ex_gst": {
-      "type": "integer",
-      "description": "In paise, before GST: the main figure."
+    "tier": {
+      "type": "string",
+      "description": "Its code within its kind, which never changes."
     },
-    "amount": {
-      "type": "integer",
-      "description": "In paise, GST included: what the client pays."
+    "name": {
+      "type": "string"
     },
-    "gst_percent": {
-      "type": "number"
+    "minutes": {
+      "type": "integer",
+      "description": "How long the visit is booked for."
     }
   },
   "required": [
-    "amount_ex_gst",
-    "amount",
-    "gst_percent"
+    "tier",
+    "name",
+    "minutes"
   ],
   "additionalProperties": false,
-  "description": "The first day's price."
+  "description": "The service the windows are for: a move's is its visit's."
 }
 ```
 
@@ -4249,6 +4482,16 @@ Request body:
         "first_fit",
         "service",
         "replacement"
+      ]
+    },
+    "service": {
+      "allOf": [
+        {
+          "$ref": "#/components/schemas/VisitService"
+        },
+        {
+          "description": "What it is for, with the length it is held and booked for."
+        }
       ]
     },
     "date": {
@@ -4372,6 +4615,7 @@ Request body:
   "required": [
     "id",
     "type",
+    "service",
     "date",
     "window",
     "starts_at",

@@ -16,7 +16,8 @@ const STOPPED: Readonly<Record<Ceiling, string>> = {
   upload: "try-ons",
   render: "try-ons",
   result_read: "try-ons",
-  login_code: "client app login codes",
+  // One ceiling for every code sent: the client's login and change of number, and the technician's login.
+  login_code: "the client and technician apps' login codes",
   geocode: "address suggestions",
 };
 

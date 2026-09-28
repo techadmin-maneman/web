@@ -4,6 +4,13 @@
 // consultation, from the mirror or from their booking on the site before FSM
 // has it; else nothing is booked. The next visit comes from the mirror, and
 // the credit tile and board B1's one prompt beneath it (src/domain/home-prompt.ts).
+// What the client may book now is every service offered of each kind open to
+// them, for the booking sheet to offer (docs/decisions/0085-services-ops-can-edit.md).
+//
+// With nothing booked, it says what the app offers next, which the booking
+// sheet opens pre-filled with: the first fit once the consultation is done, or
+// the next service once a visit is (docs/decisions/0086-the-next-visit-is-offered.md),
+// each as one of the services ops offer.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
@@ -13,12 +20,17 @@ import { VISIT_TYPES } from "../config/visit-types.ts";
 import { CLIENT_STATES, clientStateOf, isFitted, nextVisit } from "../domain/client-visits.ts";
 import { creditBalance } from "../domain/credits.ts";
 import { homePrompt } from "../domain/home-prompt.ts";
+import { nextVisitFacts } from "../domain/next-visit.ts";
 import { bookableTypes } from "../domain/scheduling.ts";
+import { offeredServices } from "../domain/services.ts";
 import { currentAddress, liveContact } from "../domain/profile.ts";
 import { hasFsmVisit, latestProposal, windowAskedFor } from "../domain/proposed-visits.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { opsInputs } from "../http/ops-inputs.ts";
+import { addDays, indiaDate } from "../lib/india-time.ts";
 import { firstNameOf, initialsOf } from "../lib/names.ts";
+import { PriceSchema } from "./client-booking.ts";
 import { CreditsSchema } from "./client-refer.ts";
 import { VisitSummarySchema } from "./client-visits.ts";
 
@@ -61,7 +73,37 @@ export const MeSchema = z
     prompt: z
       .union([
         z.object({ kind: z.literal("address") }).strict(),
-        z.object({ kind: z.literal("replacement_due"), month: z.string().regex(/^\d{4}-\d{2}$/) }).strict(),
+        z
+          .object({
+            kind: z.literal("next_visit"),
+            type: z.enum(["service", "replacement"]).openapi({
+              description: "The next service, or the replacement where the piece in wear falls due first.",
+            }),
+            tier: z
+              .string()
+              .openapi({ description: "The service of its kind it offers, as booking.next's (ADR 0085)." }),
+            date: z.iso.date().openapi({
+              description: "India's day it falls due: the last visit's day and the cadence; tomorrow once passed.",
+            }),
+            window: z
+              .union([z.enum(BOOKING_WINDOWS), z.null()])
+              .openapi({ description: "The last visit's window, where this kind of visit can start in it." }),
+          })
+          .strict(),
+        z
+          .object({
+            kind: z.literal("replacement_due"),
+            month: z.string().regex(/^\d{4}-\d{2}$/),
+            tier: z.string().openapi({
+              description:
+                "The replacement service it offers: the client's last one while that is offered, else the first " +
+                "in the console's order (ADR 0085).",
+            }),
+            bookable: z.boolean().openapi({
+              description: "The month begins within how far ahead a visit may be booked, so it can be booked now.",
+            }),
+          })
+          .strict(),
         z
           .object({
             kind: z.literal("invoice_ready"),
@@ -74,14 +116,55 @@ export const MeSchema = z
       ])
       .openapi({
         description:
-          "Board B1's one contextual prompt, the first that applies: no address given while something is booked; " +
-          "the month the piece in wear falls due, never the day (ADR 0059); an invoice issued in the last " +
-          "fortnight. Null when none applies.",
+          "Board B1's one contextual prompt, the first that applies, in the owner's order: no address given while " +
+          "something is booked; the next service due and not booked; the month the piece in wear falls due, never " +
+          "the day (ADR 0059); an invoice issued in the last fortnight, which ops may lengthen or shorten. Null " +
+          "when none applies.",
       }),
     booking: z
       .object({
         self_serve: z.boolean().openapi({ description: "Booking in the app is on; off, the app opens WhatsApp." }),
         types: z.array(z.enum(VISIT_TYPES)).openapi({ description: "What the client may book now." }),
+        services: z
+          .array(
+            z
+              .object({
+                type: z.enum(VISIT_TYPES),
+                tier: z.string().openapi({ description: "Its code within its kind, which booking it names." }),
+                name: z.string(),
+                minutes: z.number().int().openapi({ description: "How long the visit is booked for." }),
+                price: PriceSchema.openapi({ description: "Its price tomorrow, the first day it can be booked." }),
+              })
+              .strict()
+              .openapi("OfferedService"),
+          )
+          .openapi({
+            description:
+              "Every service of those kinds offered and priced now, a kind at a time, in the console's order.",
+          }),
+        next: z
+          .union([
+            z
+              .object({
+                type: z.enum(["first_fit", "service", "replacement"]),
+                tier: z.string().openapi({
+                  description:
+                    "The service it is offered as: the one the client's last visit of its kind was, while that is " +
+                    "offered, else its kind's first in the console's order (ADR 0085).",
+                }),
+                date: z.iso.date().openapi({ description: "India's day it is offered on." }),
+                window: z.union([z.enum(BOOKING_WINDOWS), z.null()]),
+              })
+              .strict(),
+            z.null(),
+          ])
+          .openapi({
+            description:
+              "What the app offers next, with nothing booked, for the booking sheet to open with: the first fit " +
+              "once the consultation is done, from the lead time and in the window the site's request asked for; " +
+              "or the next service on its due day, in the last visit's window, or the replacement where the piece " +
+              "falls due first (ADR 0086).",
+          }),
       })
       .strict(),
   })
@@ -125,6 +208,19 @@ export function registerClientMe(app: App): void {
     const address = proposal === null ? null : await currentAddress(db, session.subjectId);
     const place = address === null ? (booking?.city ?? "") : `${address.locality}, ${address.city} ${address.pincode}`;
     const state = clientStateOf(fitted, upcoming !== null || booking !== null);
+    const types = await bookableTypes(db, session.subjectId);
+    const services = (await offeredServices(db, addDays(indiaDate(now), 1), types)).map((service) => ({
+      type: service.kind,
+      tier: service.tier,
+      name: service.name,
+      minutes: service.minutes,
+      price: service.price,
+    }));
+    const days = (await opsInputs(c)).nextVisitDays;
+    const facts = await nextVisitFacts(db, session.subjectId, now, days);
+    // A booking's consultation, not yet in FSM, is booked as much as a visit FSM has.
+    const booked = facts.booked || upcoming !== null || proposal !== null;
+    const offer = booked ? null : facts.offer;
 
     return c.json(
       {
@@ -138,11 +234,8 @@ export function registerClientMe(app: App): void {
             : { date: proposal.proposed_visit_date, window, window_label: PHASE1_WORDS[window] ?? null, place },
         next_visit: upcoming,
         credits: credits.visits > 0 ? { visits: credits.visits, earliest_expiry: credits.earliestExpiry } : null,
-        prompt: await homePrompt(db, session.subjectId, state, now),
-        booking: {
-          self_serve: c.var.config.settings.selfServeBooking,
-          types: await bookableTypes(db, session.subjectId),
-        },
+        prompt: await homePrompt(db, session.subjectId, { booked, offer }, now, days),
+        booking: { self_serve: c.var.config.settings.selfServeBooking, types, services, next: offer },
       },
       200,
     );

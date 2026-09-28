@@ -61,7 +61,7 @@ Production still runs on the Zoho CRM Developer Edition org (ADR 0020). FSM and 
 5. Whether a reschedule uses up another appointment from the monthly allowance.
 6. Whether the availability APIs respect technicians' shifts and leave.
 7. Whether a technician who has been invited but never logged in can be assigned work.
-8. _You:_ build the job-sheet template in FSM, with the checklist per visit type, the consumables list and the full list of partial reasons. This is also a P2-M4 input.
+8. _You:_ build the job-sheet template in FSM, with the checklist per visit type, the consumables list and the full list of partial reasons. This is also a P2-M4 input. **Settled 27 September 2026:** not in FSM. Ops set the checklists, the consumables and the partial reasons in the console, and the consumables reach FSM's catalogue as parts (open point 28; ADR 0087).
 9. _You:_ mark the technicians as field technicians and set up their zone (territory).
 
 ### 3. FSM and Books API credentials

@@ -2,9 +2,14 @@
 // (ADR 0025, item 62; docs/decisions/0081-the-site-takes-the-address.md). The form needs no login, only a number,
 // so whoever types a number must not be able to move where that person's visits go. src/domain/public-booking.ts
 // applies it.
+//
+// The form books the consultation, and with it may ask for the first fit to follow (ADR 0025, item 68;
+// docs/decisions/0086-the-next-visit-is-offered.md): a request, written with the booking, which the app then
+// offers to book and take payment for once the consultation is done. Nothing is paid on the site.
 
 export const RULES = [
   "A booking from the site saves the address typed into it only when the person has no saved address. One they already have is kept, and the visit goes to it.",
+  "the form offers the consultation alone or with the first fit; the second records a request for the fit, which the client books and pays for in the app once the consultation is done. The site still takes no money.",
 ] as const;
 
 /**

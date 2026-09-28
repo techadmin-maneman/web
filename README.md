@@ -112,7 +112,7 @@ apps/ops/             mm-ops: the ops console
 apps/tech/            mm-tech: the technician app, and its service worker
 packages/brand/       the tokens, fonts, icons and marks every front end shares
 packages/ui/          the React components and hooks the three apps share
-packages/web-kit/     the apps' API client and security headers, India's dates, rupees, WhatsApp's links
+packages/web-kit/     the apps' API client and security headers, India's dates, rupees, mobile numbers, WhatsApp's links
 test/worker/          mm-api's tests, inside workerd, each on a freshly migrated D1
 test/node/            everything else: the scripts, the policies, the front ends' logic, the free-tier budget
 e2e/                  the browser tests: the site at its root, then app/, ops/ and tech/

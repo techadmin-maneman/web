@@ -93,7 +93,23 @@ const CHECKLIST = [
   { id: "cut_and_styled", label: "Trim and style" },
 ];
 
-const PARTIAL_REASONS = ["client_stopped_it", "piece_not_ready", "client_unwell", "more_time_needed"];
+const PARTIAL_REASONS = [
+  { id: "client_stopped_it", label: "Client stopped it partway" },
+  { id: "piece_not_ready", label: "The piece was not ready" },
+  { id: "client_unwell", label: "Client unwell" },
+  { id: "more_time_needed", label: "More time needed" },
+];
+
+/**
+ * Board B3's four consumables, the counts it draws as what a service visit is expected to use. The one it draws at
+ * nought is behind "Add another", which the board does not draw (docs/decisions/0087-consumables-and-stock.md).
+ */
+const CONSUMABLES = [
+  { code: "tape_strips", name: "Tape strips", unit: "strip", expected: 6 },
+  { code: "bonding_glue", name: "Bonding glue", unit: "ml", expected: 1 },
+  { code: "solvent", name: "Solvent", unit: "ml", expected: 1 },
+  { code: "shampoo_sachet", name: "Shampoo sachet", unit: "sachet", expected: 0 },
+];
 
 interface Progress {
   checked_in_at: string | null;
@@ -162,6 +178,7 @@ const cardFor = (id: string, progress: Progress = NOTHING_DONE) => {
       : ["before_photos", "checklist", "consumables", "after_photos", "outcome"],
     checklist: CHECKLIST,
     partial_reasons: PARTIAL_REASONS,
+    consumables: CONSUMABLES,
   };
 };
 

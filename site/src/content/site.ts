@@ -124,13 +124,6 @@ export const whatsapp = {
   label: "WhatsApp · +91 90079 73247",
 };
 
-/** The footer's phone number: the business number, the owner's on 22 September 2026. */
-export const phone = {
-  publish: true,
-  number: `+${WHATSAPP_NUMBER}`,
-  label: "Phone · +91 90079 73247",
-};
-
 export const heroFootage = {
   publish: false,
   video: "hero.mp4",
@@ -657,7 +650,8 @@ export const faq = {
     },
     {
       q: "What does the first year cost in total?",
-      a: "A standard base: {firstFit} for the first fit plus twelve monthly service visits at {service}, so {firstYear}. Premium: {premiumFirstFit} plus twelve at {premiumService}, so {premiumFirstYear}. A replacement piece at six months is separate.",
+      // The bracketed clause is said only once the price book prices a premium first fit (src/lib/prices.ts).
+      a: "A standard base: {firstFit} for the first fit plus twelve monthly service visits at {service}, so {firstYear}.[ Premium: {premiumFirstFit} plus twelve at {premiumService}, so {premiumFirstYear}.] A replacement piece at six months is separate.",
     },
     {
       q: "Is this the same thing as a wig?",
@@ -930,6 +924,6 @@ export const business = {
   description: hero.body,
   /** The cities the FAQ says are covered. */
   areaServed: ["Gurgaon", "Delhi", "Noida", "Faridabad", "Ghaziabad"],
-  /** A first fit, from the cheaper tier to the dearer. */
+  /** A first fit, from the cheaper tier to the dearer; the standard alone until the book prices a premium one. */
   priceRange: "{firstFitRange}",
 };

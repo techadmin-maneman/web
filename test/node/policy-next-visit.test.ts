@@ -1,0 +1,130 @@
+// The next visit, offered in the app and booked by the client, each rule named by the owner's own words
+// (src/policy/next-visit.ts; ADR 0025, item 69; docs/owner-answers-2026-09-27.md). The days are India's calendar days.
+
+import { describe, expect, it } from "vitest";
+import { FIRST_FIT_WINDOWS, windowsFor } from "../../src/config/scheduling.ts";
+import {
+  atRiskFrom,
+  atRiskIfDoneBy,
+  firstFitOpens,
+  firstFitToBookFrom,
+  firstFitToBookIfConsultedBy,
+  lastBookableDay,
+  NEXT_VISIT_DAY_BOUNDS,
+  NEXT_VISIT_DAY_KEYS,
+  NEXT_VISIT_DAYS,
+  nextVisitType,
+  offeredDay,
+  remindedIfDoneBetween,
+  RULES,
+  serviceDue,
+} from "../../src/policy/next-visit.ts";
+import { RULES as SITE_RULES } from "../../src/policy/site-booking.ts";
+import { TASK_GROUPS, TASK_SLA_HOURS } from "../../src/policy/tasks.ts";
+
+/** Monday 21 September 2026, and the Tuesday after it. */
+const TODAY = "2026-09-21";
+const TOMORROW = "2026-09-22";
+
+describe("the next visit", () => {
+  it(RULES[0], () => {
+    // Due 30 days after the last first fit, service or replacement.
+    expect(NEXT_VISIT_DAYS.service_cadence).toBe(30);
+    expect(serviceDue("2026-09-10", NEXT_VISIT_DAYS)).toBe("2026-10-10");
+    // The reminder 7 days before it is due, and the At-risk client task 7 days after.
+    expect(NEXT_VISIT_DAYS.reminder_before_due).toBe(7);
+    expect(NEXT_VISIT_DAYS.at_risk_after_due).toBe(7);
+    expect(atRiskFrom("2026-09-10", NEXT_VISIT_DAYS)).toBe("2026-10-17");
+    expect(TASK_GROUPS).toContain("at_risk_client");
+  });
+
+  // "If the client's piece falls due before, offer the replacement instead."
+  it(RULES[2], () => {
+    expect(nextVisitType("2026-10-10", "2026-10-05")).toBe("replacement");
+    expect(nextVisitType("2026-10-10", "2026-10-10")).toBe("replacement");
+    expect(nextVisitType("2026-10-10", "2026-10-11")).toBe("service");
+    expect(nextVisitType("2026-10-10", null)).toBe("service");
+  });
+
+  it(RULES[1], () => {
+    // Offered on the day it falls due, or tomorrow once that has passed: the client books it, on the day they choose.
+    expect(offeredDay("2026-10-10", TOMORROW)).toBe("2026-10-10");
+    expect(offeredDay("2026-09-01", TOMORROW)).toBe(TOMORROW);
+  });
+
+  it(RULES[3], () => {
+    expect(NEXT_VISIT_DAYS.first_fit_lead).toBe(0);
+    // No minimum: tomorrow, the first day anything is booked on, even after a consultation done today.
+    expect(firstFitOpens(TODAY, TOMORROW, NEXT_VISIT_DAYS)).toBe(TOMORROW);
+    // A lead time ops set counts from the consultation's day.
+    expect(firstFitOpens("2026-09-18", TOMORROW, { ...NEXT_VISIT_DAYS, first_fit_lead: 10 })).toBe("2026-09-28");
+    expect(firstFitOpens("2026-09-01", TOMORROW, { ...NEXT_VISIT_DAYS, first_fit_lead: 10 })).toBe(TOMORROW);
+  });
+
+  it(RULES[4], () => {
+    expect(TASK_GROUPS).toContain("first_fit_to_book");
+    expect(firstFitToBookFrom("2026-09-10", NEXT_VISIT_DAYS)).toBe("2026-09-17");
+    expect(firstFitToBookIfConsultedBy(TODAY, NEXT_VISIT_DAYS)).toBe("2026-09-14");
+  });
+
+  it(RULES[5], () => {
+    expect(NEXT_VISIT_DAYS.horizon).toBe(45);
+    const last = lastBookableDay(TOMORROW, NEXT_VISIT_DAYS);
+    expect(last).toBe("2026-11-05");
+    // A service due 30 days after a visit done today is inside it.
+    expect(serviceDue(TODAY, NEXT_VISIT_DAYS) <= last).toBe(true);
+  });
+
+  it("reminds of a service due from today to a week from now, and never of one done today", () => {
+    expect(remindedIfDoneBetween(TODAY, NEXT_VISIT_DAYS)).toEqual({ from: "2026-08-22", to: "2026-08-29" });
+    // A reminder as long as the cadence would fall the day the visit was done: it goes the day after instead.
+    expect(remindedIfDoneBetween(TODAY, { ...NEXT_VISIT_DAYS, service_cadence: 14, reminder_before_due: 14 })).toEqual({
+      from: "2026-09-07",
+      to: "2026-09-20",
+    });
+  });
+
+  it("makes a client at risk the day that is a week past their due day", () => {
+    // Done 15 August, due 14 September, at risk from 21 September.
+    expect(atRiskIfDoneBy(TODAY, NEXT_VISIT_DAYS)).toBe("2026-08-15");
+    expect(atRiskFrom("2026-08-15", NEXT_VISIT_DAYS)).toBe(TODAY);
+  });
+
+  it("gives both of ops' new groups the allowance every group starts with", () => {
+    expect(TASK_SLA_HOURS.at_risk_client).toBe(48);
+    expect(TASK_SLA_HOURS.first_fit_to_book).toBe(48);
+  });
+});
+
+describe("the figures ops set", () => {
+  it("are one of each key, each committed figure inside its own bounds", () => {
+    expect(Object.keys(NEXT_VISIT_DAYS)).toEqual([...NEXT_VISIT_DAY_KEYS]);
+    expect(Object.keys(NEXT_VISIT_DAY_BOUNDS)).toEqual([...NEXT_VISIT_DAY_KEYS]);
+    for (const key of NEXT_VISIT_DAY_KEYS) {
+      const { min, max } = NEXT_VISIT_DAY_BOUNDS[key];
+      expect(NEXT_VISIT_DAYS[key], key).toBeGreaterThanOrEqual(min);
+      expect(NEXT_VISIT_DAYS[key], key).toBeLessThanOrEqual(max);
+    }
+  });
+
+  it("never let the horizon be shorter than the fortnight the date strip shows", () => {
+    expect(NEXT_VISIT_DAY_BOUNDS.horizon.min).toBe(14);
+  });
+
+  it("let the lead time be nought, and no other figure", () => {
+    expect(NEXT_VISIT_DAY_BOUNDS.first_fit_lead.min).toBe(0);
+    for (const key of NEXT_VISIT_DAY_KEYS.filter((each) => each !== "first_fit_lead")) {
+      expect(NEXT_VISIT_DAY_BOUNDS[key].min, key).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("the first fit asked for on the site's form", () => {
+  it(SITE_RULES[1], () => {
+    // A request, in a window a first fit can start in: its two slots do not fit in the evening's.
+    expect([...FIRST_FIT_WINDOWS]).toEqual(windowsFor("first_fit"));
+    expect(windowsFor("first_fit")).not.toContain("evening");
+    expect(windowsFor("replacement")).not.toContain("evening");
+    expect(windowsFor("service")).toEqual(["morning", "afternoon", "evening"]);
+  });
+});

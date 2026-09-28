@@ -257,6 +257,32 @@ describe("FSM: records with fields nobody filled", () => {
   });
 });
 
+// A part's create has not been read on the org (docs/decisions/0087-consumables-and-stock.md), so the ID is taken from
+// each shape FSM's creates answer in, and an answer with none is a failure rather than a part with no ID.
+describe("FSM: a consumable added as a part", () => {
+  it.each([
+    ["a list of new records", { data: [{ id: "part-7" }] }],
+    ["the records under the module's name", { data: { Service_And_Parts: [{ id: "part-7" }] } }],
+    ["the records under the items' other name", { data: { Products: [{ id: "part-7" }] } }],
+  ])("reads the new ID from %s", async (_, answer) => {
+    const { provider } = fsm({ [`${FSM_API}/Service_And_Parts`]: () => json(answer, 201) });
+    expect(await provider.createPart("Solvent")).toBe("part-7");
+  });
+
+  it("fails a part FSM answered without its ID, so the next hour looks for it by name", async () => {
+    const { provider } = fsm({ [`${FSM_API}/Service_And_Parts`]: () => json({ data: [{ code: "SUCCESS" }] }, 201) });
+    await expect(provider.createPart("Solvent")).rejects.toThrow(/NO_ID: create_part answered without the new ID/);
+  });
+
+  it("names FSM's refusal of a part", async () => {
+    const { provider } = fsm({
+      [`${FSM_API}/Service_And_Parts`]: () =>
+        json({ data: [{ code: "DUPLICATE_DATA", message: "duplicate data", status: "error" }] }, 400),
+    });
+    await expect(provider.createPart("Solvent")).rejects.toThrow(/400/);
+  });
+});
+
 describe("FSM: refusals the client names instead of passing on", () => {
   it("fails a create FSM answered without the new record's ID", async () => {
     const { provider } = fsm({ [`${FSM_API}/Assets`]: () => json({ data: { Assets: [] } }, 201) });

@@ -6,7 +6,7 @@
 //   GET /fsm/v1/Service_Appointments?page=&per_page=   { data: [...], info: { more_records } }, or 204 when empty
 //   GET /fsm/v1/Contacts/{id}                          { data: [contact] }
 //   GET /fsm/v1/users                                  { users: [user with Service_Resources] }
-//   GET /fsm/v1/Service_And_Parts?per_page=200         { data: [item] }
+//   GET /fsm/v1/Service_And_Parts?per_page=200         { data: [item] }; read now a page at a time, below
 //   GET /fsm/v1/Service_Appointments/{id}/Attachments  { data: [attachment] }, or 204
 //   GET /fsm/v1/files?file_id=                         the file itself
 //   GET /fsm/v1/Territories                            { data: [territory] }
@@ -44,11 +44,27 @@
 //   GET  /fsm/v1/Requests?page=1&per_page=&sort_by=Modified_Time&sort_order=desc
 //   GET  /fsm/v1/Work_Orders?page=1&per_page=&sort_by=Modified_Time&sort_order=desc
 //
-// Nor has the write that sets an item's price from the price book, which runs only once the owner switches the push
-// on (docs/decisions/0073-prices-from-the-price-book.md). The trial deletes an item at /Products/{id}, not at
-// /Service_And_Parts/{id}, so it is written there; the hourly catalogue check reads it back.
+// Nor have the writes that keep FSM's catalogue in line with the console's services and the price book, which run
+// only once the owner switches the push on (docs/decisions/0073-prices-from-the-price-book.md,
+// 0085-services-ops-can-edit.md; docs/open-points.md, item 25). The trial deletes an item at /Products/{id}, not at
+// /Service_And_Parts/{id}, so an item is written there; whether Name is written with its price has not been tried.
+// scripts/setup-fsm.ts made the org's first items with the POST below and read only its status, so where its answer
+// carries the new item's ID has not been read: either shape a create answers is taken. Nor has the catalogue been
+// read past its first page of 200, which the org's dozen items have never needed: a page is asked for as the
+// appointments are, and the next one while info.more_records says there is one, up to FSM_ITEM_PAGES. The hourly
+// catalogue check reads each write back.
 //
-//   PUT  /fsm/v1/Products/{id}                                   { data: [{ Unit_Price }] }, rupees before GST
+//   GET  /fsm/v1/Service_And_Parts?page=&per_page=200            { data: [item], info: { more_records } }
+//   POST /fsm/v1/Service_And_Parts                               { data: [{ Name, Type: "Service", Unit_Price }] }
+//   PUT  /fsm/v1/Products/{id}                                   { data: [{ Name, Unit_Price }] }, rupees before GST
+//
+// Nor have the two that keep ops' consumables in the catalogue as parts, which run behind the same switch
+// (docs/decisions/0087-consumables-and-stock.md). scripts/setup-fsm.ts added the catalogue's items with the same
+// create and read only its status, so the new ID is taken from whichever of the shapes FSM's creates answer in;
+// a rename is written where the price is. The next hourly check reads both back by name.
+//
+//   POST /fsm/v1/Service_And_Parts                               { data: [{ Name, Type: "Part", Unit_Price: 0 }] }
+//   PUT  /fsm/v1/Products/{id}                                   { data: [{ Name }] }
 //
 // Only the fields the mirror uses are read; anything else FSM sends is ignored.
 
@@ -73,6 +89,12 @@ import type {
   NewFsmWorkOrder,
 } from "./fsm.ts";
 import { createZohoRequester, ZohoError, zohoErrorFrom, type ZohoRequesterDependencies } from "./zoho-http.ts";
+
+/**
+ * How many pages of 200 items the catalogue is read in at most: a thousand items, far past the dozen it holds, and
+ * the most calls one read of it costs.
+ */
+export const FSM_ITEM_PAGES = 5;
 
 const Reference = z.object({ id: z.string() }).nullish();
 
@@ -163,6 +185,21 @@ const Addresses = z.object({
 const Created = z.object({
   data: z.union([z.array(z.object({ id: z.string() })), z.record(z.string(), z.array(z.object({ id: z.string() })))]),
 });
+
+/**
+ * What adding a catalogue item answers, which no call here has read yet: the
+ * trial's `data[0].details.id`, a list of new records, or the records under
+ * the module's name.
+ */
+const ItemCreated = z.object({
+  data: z.union([
+    z.array(z.object({ id: z.string().optional(), details: z.object({ id: z.string() }).optional() })),
+    z.record(z.string(), z.array(z.object({ id: z.string() }))),
+  ]),
+});
+
+/** What FSM's catalogue says of a part a consumable is: used on jobs, and never on an invoice. */
+const PART_DESCRIPTION = "A consumable used on jobs. Never invoiced.";
 
 /** A blueprint's next steps from a record's state; a closed record offers none. */
 const Transitions = z.object({ transitions: z.array(z.object({ id: z.string(), name: z.string() })).default([]) });
@@ -385,20 +422,57 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDepe
     },
 
     async items() {
-      return records(await json("items", "/Service_And_Parts?per_page=200"), "data", Item).map((item): FsmItem => ({
-        id: item.id,
-        name: item.Name,
-        type: item.Type,
-        // FSM's prices are rupees; ours are paise.
-        price: item.Unit_Price === null || item.Unit_Price === undefined ? null : Math.round(item.Unit_Price * 100),
-      }));
+      const found: FsmItem[] = [];
+      for (let page = 1; page <= FSM_ITEM_PAGES; page += 1) {
+        const answer = await json("items", `/Service_And_Parts?page=${String(page)}&per_page=200`);
+        for (const item of records(answer, "data", Item)) {
+          found.push({
+            id: item.id,
+            name: item.Name,
+            type: item.Type,
+            // FSM's prices are rupees; ours are paise.
+            price: item.Unit_Price === null || item.Unit_Price === undefined ? null : Math.round(item.Unit_Price * 100),
+          });
+        }
+        if ((answer as { info?: { more_records?: unknown } } | null)?.info?.more_records !== true) break;
+      }
+      return found;
     },
 
-    async setItemPrice(itemId, amountExGst) {
-      await request("set_item_price", `/fsm/v1/Products/${itemId}`, {
-        method: "PUT",
-        body: { data: [{ Unit_Price: amountExGst / 100 }] },
+    async createItem(item) {
+      const response = await request("create_item", "/fsm/v1/Service_And_Parts", {
+        method: "POST",
+        body: { data: [{ Name: item.name, Type: "Service", Unit_Price: item.price / 100 }] },
       });
+      const { data } = Created.parse(await response.json());
+      // Under the module's name, as a Contact's is, or a list, as an appointment's is: the org has not said which.
+      const id = Array.isArray(data) ? data[0]?.id : Object.values(data).flat()[0]?.id;
+      if (id === undefined) throw new ZohoError(response.status, "NO_ID", "create_item answered without the new ID");
+      return id;
+    },
+
+    async updateItem(itemId, item) {
+      await request("update_item", `/fsm/v1/Products/${itemId}`, {
+        method: "PUT",
+        body: { data: [{ Name: item.name, Unit_Price: item.price / 100 }] },
+      });
+    },
+
+    // Rs. 0: a job's use stays in our records and on FSM's summary, and never reaches a work order's lines.
+    async createPart(name) {
+      const response = await request("create_part", "/fsm/v1/Service_And_Parts", {
+        method: "POST",
+        body: { data: [{ Name: name, Type: "Part", Unit_Price: 0, Description: PART_DESCRIPTION }] },
+      });
+      const { data } = ItemCreated.parse(await response.json());
+      const [first] = Array.isArray(data) ? data : [];
+      const id = Array.isArray(data) ? (first?.id ?? first?.details?.id) : Object.values(data)[0]?.[0]?.id;
+      if (id === undefined) throw new ZohoError(response.status, "NO_ID", "create_part answered without the new ID");
+      return id;
+    },
+
+    async renameItem(itemId, name) {
+      await request("rename_item", `/fsm/v1/Products/${itemId}`, { method: "PUT", body: { data: [{ Name: name }] } });
     },
 
     async attachments(appointmentId) {

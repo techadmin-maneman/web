@@ -15,8 +15,8 @@ import { useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { fullDate, listMonth, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { api, type Me, type VisitSummary, type Visits } from "../api.ts";
-import { BookButton } from "../booking/BookButton.tsx";
-import { home, messages, VISIT_TYPES, visits, WINDOW_HOURS } from "../content.ts";
+import { BookNext } from "../booking/BookNext.tsx";
+import { home, VISIT_TYPES, visits, WINDOW_HOURS } from "../content.ts";
 import { AppLink, Shell } from "../home/Shell.tsx";
 import { hasBegun } from "../home/VisitCard.tsx";
 import { CHEVRON } from "../icons.ts";
@@ -161,13 +161,8 @@ export function VisitsScreen() {
   const firstFit = me.booking.types.includes("first_fit");
   // While a visit is under way or being closed, another is not booked in its place.
   const begun = me.next_visit !== null && hasBegun(me.next_visit);
-  const book = (
-    <BookButton
-      className={styles.book}
-      label={firstFit ? home.next.bookFirstFit : visits.book}
-      message={firstFit ? messages.bookFirstFit : messages.book}
-    />
-  );
+  // The visit the app offers, with its day and window chosen, and the other kind beside it for a fitted client (ADR 0086).
+  const book = <BookNext className={styles.book} otherClassName={styles.other} />;
   return (
     <Shell
       header={{ kind: "tab", title: visits.title }}

@@ -274,7 +274,8 @@
   background: var(--paper-light);
 }
 
-.group .check {
+.group .check,
+.rule .check {
   margin-left: 0;
   margin-right: 0;
 }
@@ -370,6 +371,82 @@
   font: inherit;
   font-size: var(--fs-13);
   cursor: pointer;
+}
+
+/* ---- The services, kind by kind ----------------------------------------- */
+
+/* A kind is a heading over its services, each a block of lines and its own buttons, on the panel's rules. */
+.kind {
+  margin-top: var(--sp-20);
+  border-top: var(--hairline) solid var(--text);
+}
+
+.kindTitle {
+  margin: var(--sp-14) var(--sp-20) 0;
+  font-family: var(--font-serif);
+  font-weight: var(--weight-regular);
+  font-size: var(--fs-18);
+}
+
+.services {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.service {
+  padding: var(--sp-14) var(--sp-20) var(--sp-16);
+  border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+.serviceName {
+  margin: 0;
+  font-size: var(--fs-16);
+  font-weight: var(--weight-medium);
+}
+
+.facts,
+.priceNow,
+.priceToCome {
+  margin: var(--sp-6) 0 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-160);
+}
+
+.facts {
+  color: var(--text-muted);
+}
+
+.priceToCome .inline:first-child {
+  margin-left: var(--sp-10);
+}
+
+.service .actions {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.history {
+  margin-top: var(--sp-8);
+  font-size: var(--fs-14);
+}
+
+.history summary {
+  min-height: var(--tap);
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.history summary:focus-visible {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
+}
+
+.history .table th:first-child,
+.history .table td:first-child {
+  padding-left: 0;
 }
 
 /* ---- The service area ---------------------------------------------------- */

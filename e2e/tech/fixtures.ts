@@ -151,11 +151,23 @@ const CHECKLIST: Card["checklist"] = [
   { id: "piece_cleaned", label: "PLACEHOLDER Piece cleaned" },
 ];
 
+/** The reasons as the console set them: the committed four, in src/config/job-sheet.ts's words. */
 const PARTIAL_REASONS: Card["partial_reasons"] = [
-  "client_stopped_it",
-  "piece_not_ready",
-  "client_unwell",
-  "more_time_needed",
+  { id: "client_stopped_it", label: "Client stopped it partway" },
+  { id: "piece_not_ready", label: "PLACEHOLDER The piece was not ready" },
+  { id: "client_unwell", label: "PLACEHOLDER Client unwell" },
+  { id: "more_time_needed", label: "PLACEHOLDER More time needed" },
+];
+
+/**
+ * The consumables the console lists, as a service visit's card carries them: the two it is expected to use first,
+ * at what it expects, then every other one (docs/decisions/0087-consumables-and-stock.md).
+ */
+export const CONSUMABLES: Card["consumables"] = [
+  { code: "tape_strips", name: "Tape strips", unit: "strip", expected: 4 },
+  { code: "solvent", name: "Solvent", unit: "ml", expected: 10 },
+  { code: "bonding_glue", name: "Bonding glue", unit: "ml", expected: 0 },
+  { code: "shampoo_sachet", name: "Shampoo sachet", unit: "sachet", expected: 0 },
 ];
 
 /** The API's piece label (src/config/pieces.ts), which it refuses a write for. */
@@ -233,6 +245,7 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
     steps: stepsFor(type),
     checklist: CHECKLIST,
     partial_reasons: PARTIAL_REASONS,
+    consumables: CONSUMABLES,
   };
 }
 
@@ -251,6 +264,7 @@ export function lockedCard(date: string): Card {
     steps: stepsFor("first_fit"),
     checklist: CHECKLIST,
     partial_reasons: PARTIAL_REASONS,
+    consumables: CONSUMABLES,
   };
 }
 

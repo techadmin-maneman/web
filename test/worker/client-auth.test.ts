@@ -156,6 +156,13 @@ describe("POST /api/auth/otp", () => {
       expect({ ...body, challenge_id: "" }).toEqual({ ...booked.body, challenge_id: "" });
     }
     expect(deps.sentCodes.map((sent) => sent.to)).toEqual([BOOKED]);
+    // The log alone says why, once for each, and never with the number.
+    const notSent = logs.lines().filter((line) => line.event === "login_code_not_sent");
+    expect(notSent).toEqual([
+      expect.objectContaining({ surface: "client", channel: "whatsapp", reason: "no account holds the number" }),
+      expect.objectContaining({ surface: "client", channel: "whatsapp", reason: "no account holds the number" }),
+    ]);
+    expect(JSON.stringify(notSent)).not.toMatch(/9810000002|9810000009/);
   });
 
   it("gives no code to a number whose person was erased", async () => {
@@ -170,7 +177,9 @@ describe("POST /api/auth/otp", () => {
     const { res } = await start("98100 00001");
     expect(res.status).toBe(202);
     expect(deps.sentCodes).toEqual([]);
-    expect(logs.lines()).toContainEqual(expect.objectContaining({ event: "login_code_skipped" }));
+    expect(logs.lines()).toContainEqual(
+      expect.objectContaining({ event: "login_code_not_sent", reason: "number not on the allowlist" }),
+    );
   });
 
   it("limits codes per number a day, booked or not, and per address an hour", async () => {
@@ -191,7 +200,7 @@ describe("POST /api/auth/otp", () => {
     for (const mobile of ["98100 00001", "98100 00002", "98100 00009"]) {
       expect((await start(mobile)).res.status).toBe(503);
     }
-    expect(deps.alerts).toEqual([expect.stringContaining("client app login codes") as string]);
+    expect(deps.alerts).toEqual([expect.stringContaining("the client and technician apps' login codes") as string]);
   });
 
   it("counts only codes that are sent against the ceiling, so numbers nobody knows cannot use it up", async () => {
@@ -382,7 +391,22 @@ describe("the session", () => {
       credits: null,
       // A consultation is booked and no address given: board B1's prompt asks for one.
       prompt: { kind: "address" },
-      booking: { self_serve: true, types: ["consultation"] },
+      // Every service of the kinds open to them, with its length and price (docs/decisions/0085-services-ops-can-edit.md);
+      // nothing is offered next while a visit is booked (ADR 0086).
+      booking: {
+        self_serve: true,
+        types: ["consultation"],
+        services: [
+          {
+            type: "consultation",
+            tier: "standard",
+            name: "Consultation",
+            minutes: 60,
+            price: { amount_ex_gst: 0, amount: 0, gst_percent: 0 },
+          },
+        ],
+        next: null,
+      },
     });
   });
 

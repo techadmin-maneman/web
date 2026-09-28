@@ -19,6 +19,9 @@
 //
 // Nothing is written to FSM, and nothing needs to be: the login reads
 // `technicians` in D1 and nowhere else (docs/decisions/0052-technician-sessions.md).
+// FSM's list never names this technician, so his row is marked `hand_written`,
+// and the sync, which makes inactive every technician FSM leaves out, leaves him
+// alone (migration 0046). Before that mark it switched him off within a night.
 // The jobs are mirror rows with no Zoho record behind them, so each job event's
 // write to FSM will fail; docs/technician-test-setup.md says what that looks
 // like and who sees it.
@@ -127,8 +130,13 @@ if (options.clear) {
   );
   const persons = people.map((person) => quote(person.person_id)).join(", ") || "NULL";
   await execute([
-    `DELETE FROM job_events WHERE appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
+    // A job's use and what was used point at its events, and the kit's stock at the technician. A
+    // transfer goes with both its rows, so the central store holds what it held before it.
+    `DELETE FROM stock_movements WHERE technician_id IN (${ids})
+       OR appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}))
+       OR transfer_id IN (SELECT transfer_id FROM stock_movements WHERE technician_id IN (${ids}));`,
     `DELETE FROM consumables_used WHERE appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
+    `DELETE FROM job_events WHERE appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
     `DELETE FROM no_show_cases WHERE appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
     `DELETE FROM checkins WHERE technician_id IN (${ids});`,
     `DELETE FROM photos WHERE photo_set_id IN (SELECT id FROM photo_sets WHERE appointment_id IN
@@ -195,8 +203,8 @@ const appointment = (jobId: string, date: string) => {
 };
 
 await execute([
-  `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, mobile_e164, updated_at)
-     VALUES ${row(technicianId, `${FSM_ID_PREFIX}${tag}`, "Test Technician", "TT", 1, ZONE, mobileE164, now)};`,
+  `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, mobile_e164, updated_at, hand_written)
+     VALUES ${row(technicianId, `${FSM_ID_PREFIX}${tag}`, "Test Technician", "TT", 1, ZONE, mobileE164, now, 1)};`,
   `INSERT INTO people (id, created_at, mobile_e164, name, contactable)
      VALUES ${row(personId, now, `+91${clientMobile}`, "Staging test", 1)};`,
   // No lat or lng, on purpose. An address with no coordinates cannot be measured

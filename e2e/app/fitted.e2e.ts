@@ -103,7 +103,7 @@ test("Home keeps a visit being closed, and shows the credit tile and the prompt 
   const read = (path: string) =>
     page.evaluate(async (url) => (await fetch(url)).json() as Promise<Record<string, unknown>>, path);
   const [me, visits] = [await read("/api/me"), await read("/api/visits")];
-  let prompt: object = { kind: "replacement_due", month: client.piece.due.slice(0, 7) };
+  let prompt: object = { kind: "replacement_due", month: client.piece.due.slice(0, 7), bookable: false };
   await page.route("**/api/me", (route) =>
     route.fulfill({
       json: {
@@ -124,10 +124,10 @@ test("Home keeps a visit being closed, and shows the credit tile and the prompt 
   await expect(page.getByText("Expire 3 Jan 2028")).toBeVisible();
   const month = listMonth(client.piece.due.slice(0, 7), new Date().getFullYear());
   await expect(page.getByText(`Your replacement piece is due in ${month}.`)).toBeVisible();
-  await expect(page.getByRole("link", { name: "See what that involves" })).toHaveAttribute(
-    "href",
-    /^https:\/\/wa\.me\/\d+\?text=/,
-  );
+  // The app's own page on what a replacement involves, in place of WhatsApp (docs/decisions/0086-…); the month is
+  // past how far ahead a visit may be booked, so there is nothing to book yet.
+  await expect(page.getByRole("link", { name: "See what that involves" })).toHaveAttribute("href", "/replacement");
+  await expect(page.getByRole("button", { name: "Book the replacement" })).toHaveCount(0);
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();

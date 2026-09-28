@@ -35,6 +35,7 @@ export {
   TASKS_READ_ON,
 } from "./fixtures/queues.ts";
 export { HELD, REFERRERS } from "./fixtures/referrals.ts";
-export { PRICES, SERVICE_AREA, SETTINGS } from "./fixtures/settings.ts";
+export { PRICE_ROWS, SERVICE_AREA, SERVICES, SETTINGS } from "./fixtures/settings.ts";
+export { CONSUMABLES, IMRAN, JOB_SHEET, SAMEER, STOCK } from "./fixtures/stock.ts";
 export { LEAVE_CANCELLED, LEAVE_RECORDED, TECHNICIANS, TECHNICIAN_WORK } from "./fixtures/technicians.ts";
 export { AREAS, LAUNCHED, PREVIEW } from "./fixtures/waitlist.ts";

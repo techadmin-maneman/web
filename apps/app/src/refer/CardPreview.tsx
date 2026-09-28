@@ -9,6 +9,9 @@ import type { FirstFitPair } from "./card.ts";
 import houseCard from "./invite-house.jpg";
 import styles from "./refer.module.css";
 
+/** The house example as the app bundles it, the same file as the site's (scripts/make-house-card.ts). */
+export { houseCard };
+
 /** What a card preview shows: the house example, the client's own before it is made, or a card already made. */
 export type Shown =
   | { readonly kind: "house" }

@@ -11,13 +11,13 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { answer, fails, json, PRICES, SERVICE_AREA, SETTINGS, type Answers } from "./fixtures.ts";
+import { answer, fails, json, PRICE_ROWS, SERVICE_AREA, SERVICES, SETTINGS, type Answers } from "./fixtures.ts";
 
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
 const ROUTES: Answers = {
   "GET /api/settings": json(SETTINGS),
-  "GET /api/prices": json(PRICES),
+  "GET /api/services": json(SERVICES),
   "GET /api/service-area": json(SERVICE_AREA),
 };
 
@@ -55,26 +55,56 @@ test.describe("the rules", () => {
     await expect(wait).not.toContainText("first_fit");
   });
 
-  test("sends the figure ops typed, and says it saved", async ({ page }) => {
+  test("shows the old figure beside the new before it sends it, and says it saved", async ({ page }) => {
+    let sent = 0;
     await open(page, "/settings", {
-      "POST /api/settings/checkin_radius_m": json({
-        ...SETTINGS.settings[0],
-        value: 150,
-        set_by: "ops@maneman.in",
-        set_at: "2027-09-21T06:00:00.000Z",
-      }),
+      "POST /api/settings/checkin_radius_m": (route) => {
+        sent += 1;
+        return json({
+          ...SETTINGS.settings[0],
+          value: 150,
+          set_by: "ops@maneman.in",
+          set_at: "2027-09-21T06:00:00.000Z",
+        })(route);
+      },
     });
-    const sent = posted(page, "/api/settings/checkin_radius_m");
     await page.getByLabel("Check-in radius").fill("150");
     await page.getByRole("button", { name: "Save" }).first().click();
-    expect((await sent).postDataJSON()).toEqual({ value: 150 });
+
+    // ADR 0071's rule for a price, followed for a rule (docs/decisions/0086-the-next-visit-is-offered.md).
+    const check = page.getByRole("group", { name: "Check the change" });
+    await expect(check).toBeFocused();
+    await expect(check).toContainText("Check-in radius: 200 metres → 150 metres.");
+    expect(sent).toBe(0);
+
+    const request = posted(page, "/api/settings/checkin_radius_m");
+    await check.getByRole("button", { name: "Save" }).click();
+    expect((await request).postDataJSON()).toEqual({ value: 150 });
     await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
   });
 
-  test("will not send an empty box, which would read as nought", async ({ page }) => {
+  test("goes back to the figures without sending when the change is not the one meant", async ({ page }) => {
     await open(page);
+    await page.getByLabel("Check-in radius").fill("150");
+    await page.getByRole("button", { name: "Save" }).first().click();
+    await page.getByRole("group", { name: "Check the change" }).getByRole("button", { name: "Change it" }).click();
+    await expect(page.getByRole("group", { name: "Check the change" })).toHaveCount(0);
+    await expect(page.getByLabel("Check-in radius")).toHaveValue("150");
+  });
+
+  test("will not send an empty box, which would read as nought, nor a figure that has not changed", async ({
+    page,
+  }) => {
+    await open(page);
+    const save = page
+      .getByRole("listitem")
+      .filter({ has: page.getByLabel("Check-in radius") })
+      .getByRole("button", {
+        name: "Save",
+      });
+    await expect(save).toBeDisabled();
     await page.getByLabel("Check-in radius").fill("");
-    await expect(page.getByRole("button", { name: "Save" }).first()).toBeDisabled();
+    await expect(save).toBeDisabled();
   });
 
   // FEO-06: the refusal named its field and the console dropped it, so every refusal read the same.
@@ -85,9 +115,56 @@ test.describe("the rules", () => {
     const wait = page.getByRole("group", { name: "No-show wait" });
     await wait.getByLabel("First fit", { exact: true }).fill("90");
     await page.getByRole("listitem").filter({ has: wait }).getByRole("button", { name: "Save" }).click();
+    await page.getByRole("group", { name: "Check the change" }).getByRole("button", { name: "Save" }).click();
     await expect(page.getByRole("alert")).toHaveText(
       "First fit is outside what this rule allows. Nothing was changed.",
     );
+  });
+
+  // One input for the next visit's days, each box with its own range (docs/decisions/0086-the-next-visit-is-offered.md).
+  test("gives each of the next visit's days its own box and range, and sends the one changed", async ({ page }) => {
+    await open(page, "/settings", {
+      "POST /api/settings/booking_days": (route) => {
+        const days = SETTINGS.settings.find((rule) => rule.name === "booking_days");
+        const { value } = route.request().postDataJSON() as { value: unknown };
+        return json({ ...days, value, set_by: "ops@maneman.in" })(route);
+      },
+    });
+    const days = page.getByRole("group", { name: "Booking and the next visit" });
+    await expect(days.getByLabel("Between service visits")).toHaveValue("30");
+    await expect(days).toContainText("14 to 90 days, a whole number");
+    await expect(days.getByLabel("From a consultation to the first fit")).toHaveValue("0");
+    await expect(days).toContainText("0 to 30 days, a whole number");
+    await expect(days.getByLabel("How far ahead a visit may be booked")).toHaveValue("45");
+    await expect(days).not.toContainText("service_cadence");
+
+    // A horizon shorter than the fortnight the strip shows is not offered.
+    const rule = page.getByRole("listitem").filter({ has: days });
+    await days.getByLabel("How far ahead a visit may be booked").fill("10");
+    await expect(rule.getByRole("button", { name: "Save" })).toBeDisabled();
+    await days.getByLabel("How far ahead a visit may be booked").fill("45");
+
+    await days.getByLabel("Between service visits").fill("28");
+    await rule.getByRole("button", { name: "Save" }).click();
+    const check = page.getByRole("group", { name: "Check the change" });
+    await expect(check.getByRole("listitem")).toHaveText(["Between service visits: 30 days → 28 days."]);
+    const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+    expect(results.violations.map((violation) => violation.id)).toEqual([]);
+
+    const request = posted(page, "/api/settings/booking_days");
+    await check.getByRole("button", { name: "Save" }).click();
+    expect((await request).postDataJSON()).toEqual({
+      value: {
+        first_fit_lead: 0,
+        service_cadence: 28,
+        reminder_before_due: 7,
+        at_risk_after_due: 7,
+        first_fit_to_book: 7,
+        horizon: 45,
+        invoice_prompt: 14,
+      },
+    });
+    await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
   });
 
   test("offers a base of its own on the open rule, and none where the keys are fixed", async ({ page }) => {
@@ -101,33 +178,45 @@ test.describe("the rules", () => {
   });
 });
 
-test.describe("the price book", () => {
-  test("marks the price in force, and the one still to come, in words", async ({ page }) => {
+// The services clients book, kind by kind, each with its prices (docs/decisions/0085-services-ops-can-edit.md). A
+// price is still a row from its day, shown in force, to come and spent; a service is added, renamed, timed, retired,
+// restored and moved, and every change shows what it was beside what it will be before it is sent.
+test.describe("the services and their prices", () => {
+  const block = (page: Page, name: string) =>
+    page.getByRole("listitem").filter({ has: page.getByRole("heading", { name, exact: true }) });
+
+  test("lists each kind's services with their length, whether FSM has them, and whether they are offered", async ({
+    page,
+  }) => {
     await open(page, "/settings/prices");
-    const inForce = page.getByRole("row").filter({ hasText: "Rs. 2,000" });
-    await expect(inForce).toContainText("Service visit");
-    await expect(inForce).toContainText("In force");
-    const scheduled = page.getByRole("row").filter({ hasText: "Rs. 2,500" });
-    await expect(scheduled).toContainText("To come");
-    await expect(scheduled).toContainText("1 Oct 2027");
+    for (const kind of ["Consultation", "First fit", "Service visit", "Replacement"]) {
+      await expect(page.getByRole("heading", { level: 3, name: kind, exact: true })).toBeVisible();
+    }
+    await expect(block(page, "Service visit")).toContainText(
+      "90 minutes · code standard · In FSM's catalogue · Offered",
+    );
+    await expect(block(page, "Premium")).toContainText("240 minutes · code premium · Not found in FSM's catalogue yet");
+    await expect(block(page, "Lace replacement")).toContainText("Retired from 1 Sep 2027");
+  });
+
+  test("marks the price in force, and the one still to come, in words, and folds the spent ones away", async ({
+    page,
+  }) => {
+    await open(page, "/settings/prices");
+    const visit = block(page, "Service visit");
+    await expect(visit).toContainText("Now Rs. 2,000 + 18% GST, since 22 Sep 2026.");
+    await expect(visit).toContainText("Rs. 2,500 + 18% GST from 1 Oct 2027");
+    await expect(visit.getByRole("row").filter({ hasText: "Rs. 1,500" })).toBeHidden();
+    await visit.getByText("1 earlier price").click();
+    await expect(visit.getByRole("row").filter({ hasText: "Rs. 1,500" })).toContainText("1 Jan 2026");
   });
 
   // OPS-15: GST opened at nought and the amount blank, whatever the item, so an 18% item was saved GST-free.
-  test("starts the form from the price in force for the item and tier chosen, its GST included", async ({ page }) => {
+  test("starts a new price from the price in force, its GST included", async ({ page }) => {
     await open(page, "/settings/prices");
-    await page.getByLabel("Item").selectOption({ label: "Service visit" });
+    await page.getByRole("button", { name: "Change the price of Service visit" }).click();
     await expect(page.getByLabel("Price before GST, in rupees")).toHaveValue("2000");
     await expect(page.getByLabel("GST", { exact: true })).toHaveValue("18");
-    await expect(page.getByText("Now Rs. 2,000 + 18% GST, since 22 Sep 2026.")).toBeVisible();
-  });
-
-  test("offers the tiers the book holds, and a new one by name", async ({ page }) => {
-    await open(page, "/settings/prices");
-    const tier = page.getByLabel("Tier", { exact: true });
-    await expect(tier.getByRole("option")).toHaveText(["standard", "A new tier"]);
-    await tier.selectOption({ label: "A new tier" });
-    await expect(page.getByLabel("The new tier's name")).toBeVisible();
-    await expect(page.getByText("Nothing is priced for this tier yet.")).toBeVisible();
   });
 
   test("shows the old price beside the new, and GST changing, before anything is sent", async ({ page }) => {
@@ -135,20 +224,18 @@ test.describe("the price book", () => {
     await open(page, "/settings/prices", {
       "POST /api/prices": (route) => {
         sent += 1;
-        return json({ prices: PRICES.prices })(route);
+        return json({ prices: PRICE_ROWS })(route);
       },
     });
-    await page.getByLabel("Item").selectOption({ label: "Service visit" });
+    await page.getByRole("button", { name: "Change the price of Service visit" }).click();
     await page.getByLabel("Price before GST, in rupees").fill("2500");
     await page.getByLabel("GST", { exact: true }).fill("0");
     await page.getByLabel("Applies from").fill("2027-11-01");
-    await page.getByRole("button", { name: "Set this price" }).click();
+    await page.getByRole("button", { name: "Check the change" }).click();
 
     const check = page.getByRole("group", { name: "Check the change" });
     await expect(check).toBeFocused();
-    await expect(check).toContainText(
-      "Service visit, standard: Rs. 2,000 + 18% GST → Rs. 2,500 + 0% GST, from 1 Nov 2027.",
-    );
+    await expect(check).toContainText("Service visit: Rs. 2,000 + 18% GST → Rs. 2,500 + 0% GST, from 1 Nov 2027.");
     await expect(check).toContainText("GST changes from 18% to 0%.");
     expect(sent).toBe(0);
 
@@ -166,23 +253,33 @@ test.describe("the price book", () => {
 
   test("goes back to the form without sending when the change is not the one meant", async ({ page }) => {
     await open(page, "/settings/prices");
-    await page.getByRole("button", { name: "Set this price" }).click();
+    await page.getByRole("button", { name: "Change the price of Service visit" }).click();
+    await page.getByRole("button", { name: "Check the change" }).click();
     await page.getByRole("button", { name: "Change it" }).click();
     await expect(page.getByRole("group", { name: "Check the change" })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Set this price" })).toBeEnabled();
+    await expect(page.getByRole("button", { name: "Check the change" })).toBeEnabled();
   });
 
   test("says a price cannot be back-dated when the API refuses the date", async ({ page }) => {
     await open(page, "/settings/prices", {
       "POST /api/prices": fails(400, "invalid_request", ["valid_from"]),
     });
-    await page.getByRole("button", { name: "Set this price" }).click();
+    await page.getByRole("button", { name: "Change the price of Service visit" }).click();
+    await page.getByRole("button", { name: "Check the change" }).click();
     await page.getByRole("group", { name: "Check the change" }).getByRole("button", { name: "Set this price" }).click();
     await expect(page.getByRole("alert")).toContainText("applies from today or a day after it");
   });
 
+  test("says why a price for a retired service is refused", async ({ page }) => {
+    await open(page, "/settings/prices", { "POST /api/prices": fails(400, "service_retired", ["valid_from"]) });
+    await page.getByRole("button", { name: "Change the price of Premium" }).click();
+    await page.getByRole("button", { name: "Check the change" }).click();
+    await page.getByRole("button", { name: "Set this price" }).click();
+    await expect(page.getByRole("alert")).toContainText("The service is retired by that day");
+  });
+
   test("takes back a price still to come, once asked", async ({ page }) => {
-    const left = PRICES.prices.filter((price) => price.valid_from !== "2027-10-01");
+    const left = PRICE_ROWS.filter((price) => price.valid_from !== "2027-10-01");
     await open(page, "/settings/prices", { "POST /api/prices/withdraw": json({ prices: left }) });
     await page.getByRole("button", { name: "Take back the Service visit price from 1 Oct 2027" }).click();
     const asked = page.getByRole("group", { name: /Take back the price from 1 Oct 2027/ });
@@ -191,13 +288,130 @@ test.describe("the price book", () => {
     const request = posted(page, "/api/prices/withdraw");
     await asked.getByRole("button", { name: "Take it back" }).click();
     expect((await request).postDataJSON()).toEqual({ item: "service", tier: "standard", valid_from: "2027-10-01" });
-    await expect(page.getByRole("row").filter({ hasText: "Rs. 2,500" })).toHaveCount(0);
+    await expect(block(page, "Service visit")).not.toContainText("Rs. 2,500");
     await expect(page.getByRole("status").filter({ hasText: "The price is taken back." })).toBeVisible();
   });
 
-  test("offers no way to take back the price in force or a spent one", async ({ page }) => {
+  test("corrects a price still to come in one go, from the day it had or another", async ({ page }) => {
+    await open(page, "/settings/prices", { "POST /api/prices/correct": json({ prices: PRICE_ROWS }) });
+    await page.getByRole("button", { name: "Correct the Service visit price from 1 Oct 2027" }).click();
+    await expect(page.getByLabel("Price before GST, in rupees")).toHaveValue("2500");
+    await expect(page.getByLabel("Applies from")).toHaveValue("2027-10-01");
+    await page.getByLabel("Applies from").fill("2027-10-05");
+    await page.getByRole("button", { name: "Check the change" }).click();
+    await expect(page.getByRole("group", { name: "Check the change" })).toContainText(
+      "Service visit: Rs. 2,500 + 18% GST from 1 Oct 2027 → Rs. 2,500 + 18% GST from 5 Oct 2027.",
+    );
+
+    const request = posted(page, "/api/prices/correct");
+    await page.getByRole("button", { name: "Set this price" }).click();
+    expect((await request).postDataJSON()).toEqual({
+      item: "service",
+      tier: "standard",
+      amount_ex_gst: 250_000,
+      gst_percent: 18,
+      valid_from: "2027-10-05",
+      was_valid_from: "2027-10-01",
+    });
+  });
+
+  test("offers no way to take back or correct the price in force or a spent one", async ({ page }) => {
     await open(page, "/settings/prices");
     await expect(page.getByRole("button", { name: /^Take back/ })).toHaveCount(1);
+    await expect(page.getByRole("button", { name: /^Correct/ })).toHaveCount(1);
+  });
+
+  test("adds a service to a kind, its code made from its name and its length its kind's", async ({ page }) => {
+    await open(page, "/settings/prices", { "POST /api/services": json(SERVICES, 201) });
+    await page.getByRole("button", { name: "Add a service to First fit" }).click();
+    await page.getByLabel("Name", { exact: true }).fill("Thin skin");
+    await expect(page.getByLabel("Code")).toHaveValue("thin_skin");
+    await expect(page.getByLabel("Length, in minutes")).toHaveValue("180");
+    await page.getByRole("button", { name: "Check the change" }).click();
+    await expect(page.getByRole("group", { name: "Check the change" })).toContainText(
+      "Add Thin skin to First fit: 180 minutes, code thin_skin. Clients see it once it has a price.",
+    );
+
+    const request = posted(page, "/api/services");
+    await page.getByRole("button", { name: "Save it" }).click();
+    expect((await request).postDataJSON()).toEqual({
+      kind: "first_fit",
+      name: "Thin skin",
+      tier: "thin_skin",
+      minutes: 180,
+    });
+    await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
+  });
+
+  test("renames a service and says its code, and so its prices, stay", async ({ page }) => {
+    await open(page, "/settings/prices", { "POST /api/services/first_fit/premium/name": json(SERVICES) });
+    await page.getByRole("button", { name: "Rename Premium" }).click();
+    await page.getByLabel("Name", { exact: true }).fill("Premium first fit");
+    await page.getByRole("button", { name: "Check the change" }).click();
+    await expect(page.getByRole("group", { name: "Check the change" })).toContainText(
+      "Premium → Premium first fit. Its code stays premium",
+    );
+    const request = posted(page, "/api/services/first_fit/premium/name");
+    await page.getByRole("button", { name: "Save it" }).click();
+    expect((await request).postDataJSON()).toEqual({ name: "Premium first fit" });
+  });
+
+  test("gives a service another length, inside what the day holds", async ({ page }) => {
+    await open(page, "/settings/prices", { "POST /api/services/first_fit/premium/length": json(SERVICES) });
+    await page.getByRole("button", { name: "Change the length of Premium" }).click();
+    await expect(page.getByLabel("Length, in minutes")).toHaveAttribute("max", "360");
+    await page.getByLabel("Length, in minutes").fill("300");
+    await page.getByRole("button", { name: "Check the change" }).click();
+    await expect(page.getByRole("group", { name: "Check the change" })).toContainText("Premium: 240 → 300 minutes.");
+    const request = posted(page, "/api/services/first_fit/premium/length");
+    await page.getByRole("button", { name: "Save it" }).click();
+    expect((await request).postDataJSON()).toEqual({ minutes: 300 });
+  });
+
+  test("retires a service from a day, and says why a kind's last one stays", async ({ page }) => {
+    await open(page, "/settings/prices", {
+      "POST /api/services/first_fit/standard/retire": fails(409, "last_of_kind"),
+    });
+    await page.getByRole("button", { name: "Retire First fit" }).click();
+    await page.getByLabel("Clients stop seeing it from").fill("2027-10-01");
+    await page.getByRole("button", { name: "Check the change" }).click();
+    await expect(page.getByRole("group", { name: "Check the change" })).toContainText(
+      "Clients stop seeing First fit from 1 Oct 2027. Visits already sold stay as they were sold.",
+    );
+    const request = posted(page, "/api/services/first_fit/standard/retire");
+    await page.getByRole("button", { name: "Save it" }).click();
+    expect((await request).postDataJSON()).toEqual({ from: "2027-10-01" });
+    await expect(page.getByRole("alert")).toContainText("Each kind keeps one service that is never retired");
+  });
+
+  test("offers a retired service again, once asked", async ({ page }) => {
+    await open(page, "/settings/prices", { "POST /api/services/replacement/lace/restore": json(SERVICES) });
+    await page.getByRole("button", { name: "Restore Lace replacement" }).click();
+    const asked = page.getByRole("group", { name: /Offer Lace replacement again/ });
+    await expect(asked).toBeFocused();
+    const request = posted(page, "/api/services/replacement/lace/restore");
+    await asked.getByRole("button", { name: "Save it" }).click();
+    await request;
+    await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
+  });
+
+  test("moves a service up its kind, showing the new order before it is sent", async ({ page }) => {
+    await open(page, "/settings/prices", { "POST /api/services/first_fit/order": json(SERVICES) });
+    await expect(page.getByRole("button", { name: "Move First fit up" })).toHaveCount(0);
+    await page.getByRole("button", { name: "Move Premium up" }).click();
+    const asked = page.getByRole("group", { name: "First fit: First fit, Premium → Premium, First fit." });
+    await expect(asked).toBeFocused();
+    const request = posted(page, "/api/services/first_fit/order");
+    await asked.getByRole("button", { name: "Save it" }).click();
+    expect((await request).postDataJSON()).toEqual({ tiers: ["premium", "standard"] });
+  });
+
+  test("prices a late fee beside its kind, one figure a kind", async ({ page }) => {
+    await open(page, "/settings/prices");
+    const fee = block(page, "Late fee on a first fit");
+    await expect(fee).toContainText("Now Rs. 4,000 + 0% GST, since 22 Sep 2026.");
+    await fee.getByRole("button", { name: "Change the price of Late fee on a first fit" }).click();
+    await expect(page.getByLabel("Price before GST, in rupees")).toHaveValue("4000");
   });
 });
 

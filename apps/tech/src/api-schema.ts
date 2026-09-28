@@ -1283,7 +1283,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -1448,11 +1448,12 @@ export interface components {
             } | null;
             /** @description The steps this visit type runs, in order. */
             steps: ("check_in" | "start" | "before_photos" | "checklist" | "consumables" | "piece" | "after_photos" | "outcome")[];
-            checklist: {
-                id: string;
-                label: string;
-            }[];
-            partial_reasons: ("client_stopped_it" | "piece_not_ready" | "client_unwell" | "more_time_needed")[];
+            /** @description This kind of visit's checklist, as ops set it in the console, in its order. */
+            checklist: components["schemas"]["JobSheetItem"][];
+            /** @description The reasons a job may be left partly done, as ops set them, in their order. */
+            partial_reasons: components["schemas"]["JobSheetItem"][];
+            /** @description Every consumable the technician may record, those this job's service is expected to use first, each with the count its stepper starts at. */
+            consumables: components["schemas"]["TechnicianConsumable"][];
         };
         TechnicianJobProgress: {
             checked_in_at: string | null;
@@ -1472,6 +1473,19 @@ export interface components {
             replacement_due_at: string | null;
             failed_at: string | null;
             failure_reason: string | null;
+        };
+        JobSheetItem: {
+            id: string;
+            label: string;
+        };
+        TechnicianConsumable: {
+            /** @description What the consumables step sends back. */
+            code: string;
+            name: string;
+            /** @description What one is counted in: strip, ml, sachet. */
+            unit: string;
+            /** @description How many this job's service is expected to use; 0 for one it lists no use for. */
+            expected: number;
         };
         CheckIn: {
             passed: boolean;
@@ -1521,11 +1535,15 @@ export interface components {
         ChecklistRequest: {
             done: string[];
         };
+        /** @description What was used, each by the code the job's card gave it. None used is an empty list. A code the catalogue does not hold is refused, fields items. */
         ConsumablesRequest: {
-            items: {
+            items: ({
+                code: string;
+                quantity: number;
+            } | {
                 name: string;
                 quantity: number;
-            }[];
+            })[];
         };
         /** @description The piece fitted, with its base and lot, and on a replacement the one that came off. A failure_reason on the piece itself marks it as failed and fits nothing. */
         PieceRequest: {
@@ -1545,8 +1563,8 @@ export interface components {
         } | {
             /** @enum {string} */
             outcome: "partial";
-            /** @enum {string} */
-            reason: "client_stopped_it" | "piece_not_ready" | "client_unwell" | "more_time_needed";
+            /** @description One of the card's partial_reasons, by its id; one ops have since taken off is still taken. */
+            reason: string;
         };
         NoShowClose: {
             closed: boolean;

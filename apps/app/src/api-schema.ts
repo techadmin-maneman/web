@@ -1429,12 +1429,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The windows open for a kind of visit over 14 days */
+        /** The windows open for a service over 14 days */
         get: {
             parameters: {
                 query: {
                     type: "consultation" | "first_fit" | "service" | "replacement";
-                    /** @description The first day; tomorrow if left out, or if earlier. */
+                    /** @description The service's code within its kind; left out, the kind's standard service while offered. */
+                    tier?: string;
+                    /** @description The first day; the first bookable day if left out, or if earlier. The 14 days end within how far ahead a visit may be booked, and a day outside it, or before a first fit may be booked, has no window open. */
                     from?: string;
                     /** @description One of the client's visits, to move: its own type. */
                     moving?: string;
@@ -1472,7 +1474,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_bookable: the client may not book this kind of visit */
+                /** @description not_bookable: the client may not book this kind of visit, or the service is not offered */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -1513,6 +1515,8 @@ export interface paths {
                     "application/json": {
                         /** @enum {string} */
                         type: "consultation" | "first_fit" | "service" | "replacement";
+                        /** @description The service's code within its kind; left out, the kind's standard service while offered. */
+                        tier?: string;
                         /** Format: date */
                         date: string;
                         /** @enum {string} */
@@ -1553,7 +1557,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_bookable: this kind of visit, or that day, is not open to the client */
+                /** @description not_bookable: this kind of visit, this service, or that day, is not open to the client */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -1979,7 +1983,48 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** The client's own card while it is live: the JPEG the invite shows */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description The card's version, from GET /api/refer. The route does not read it: a new version is a new link, so the day the phone may keep the card never shows an older one. */
+                    v?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The card */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "image/jpeg": string;
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no card of theirs is live: none made, taken down, the consent off, or erased */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
         /** Upload the client's referral card: the body is the JPEG itself */
         put: {
             parameters: {
@@ -2214,7 +2259,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -2300,14 +2345,35 @@ export interface components {
             next_visit: components["schemas"]["VisitSummary"] | null;
             /** @description The credit tile: balance and earliest expiry; null with none left. */
             credits: components["schemas"]["Credits"] | null;
-            /** @description Board B1's one contextual prompt, the first that applies: no address given while something is booked; the month the piece in wear falls due, never the day (ADR 0059); an invoice issued in the last fortnight. Null when none applies. */
+            /** @description Board B1's one contextual prompt, the first that applies, in the owner's order: no address given while something is booked; the next service due and not booked; the month the piece in wear falls due, never the day (ADR 0059); an invoice issued in the last fortnight, which ops may lengthen or shorten. Null when none applies. */
             prompt: {
                 /** @enum {string} */
                 kind: "address";
             } | {
                 /** @enum {string} */
+                kind: "next_visit";
+                /**
+                 * @description The next service, or the replacement where the piece in wear falls due first.
+                 * @enum {string}
+                 */
+                type: "service" | "replacement";
+                /** @description The service of its kind it offers, as booking.next's (ADR 0085). */
+                tier: string;
+                /**
+                 * Format: date
+                 * @description India's day it falls due: the last visit's day and the cadence; tomorrow once passed.
+                 */
+                date: string;
+                /** @description The last visit's window, where this kind of visit can start in it. */
+                window: ("morning" | "afternoon" | "evening") | null;
+            } | {
+                /** @enum {string} */
                 kind: "replacement_due";
                 month: string;
+                /** @description The replacement service it offers: the client's last one while that is offered, else the first in the console's order (ADR 0085). */
+                tier: string;
+                /** @description The month begins within how far ahead a visit may be booked, so it can be booked now. */
+                bookable: boolean;
             } | {
                 /** @enum {string} */
                 kind: "invoice_ready";
@@ -2325,6 +2391,21 @@ export interface components {
                 self_serve: boolean;
                 /** @description What the client may book now. */
                 types: ("consultation" | "first_fit" | "service" | "replacement")[];
+                /** @description Every service of those kinds offered and priced now, a kind at a time, in the console's order. */
+                services: components["schemas"]["OfferedService"][];
+                /** @description What the app offers next, with nothing booked, for the booking sheet to open with: the first fit once the consultation is done, from the lead time and in the window the site's request asked for; or the next service on its due day, in the last visit's window, or the replacement where the piece falls due first (ADR 0086). */
+                next: {
+                    /** @enum {string} */
+                    type: "first_fit" | "service" | "replacement";
+                    /** @description The service it is offered as: the one the client's last visit of its kind was, while that is offered, else its kind's first in the console's order (ADR 0085). */
+                    tier: string;
+                    /**
+                     * Format: date
+                     * @description India's day it is offered on.
+                     */
+                    date: string;
+                    window: ("morning" | "afternoon" | "evening") | null;
+                } | null;
             };
         };
         VisitSummary: {
@@ -2363,6 +2444,24 @@ export interface components {
             visits: number;
             /** @description When the soonest expire. */
             earliest_expiry: string | null;
+        };
+        OfferedService: {
+            /** @enum {string} */
+            type: "consultation" | "first_fit" | "service" | "replacement";
+            /** @description Its code within its kind, which booking it names. */
+            tier: string;
+            name: string;
+            /** @description How long the visit is booked for. */
+            minutes: number;
+            price: components["schemas"]["Price"];
+        };
+        /** @description Its price tomorrow, the first day it can be booked. */
+        Price: {
+            /** @description In paise, before GST: the main figure. */
+            amount_ex_gst: number;
+            /** @description In paise, GST included: what the client pays. */
+            amount: number;
+            gst_percent: number;
         };
         Profile: {
             name: string;
@@ -2838,7 +2937,8 @@ export interface components {
         Availability: {
             /** @enum {string} */
             type: "consultation" | "first_fit" | "service" | "replacement";
-            price: components["schemas"]["Price"];
+            service: components["schemas"]["VisitService"];
+            price: components["schemas"]["Price"] & unknown;
             /** @description Whoever did the client's latest visit. */
             regular: {
                 name: string;
@@ -2856,19 +2956,20 @@ export interface components {
                 }[];
             }[];
         };
-        /** @description The first day's price. */
-        Price: {
-            /** @description In paise, before GST: the main figure. */
-            amount_ex_gst: number;
-            /** @description In paise, GST included: what the client pays. */
-            amount: number;
-            gst_percent: number;
+        /** @description The service the windows are for: a move's is its visit's. */
+        VisitService: {
+            /** @description Its code within its kind, which never changes. */
+            tier: string;
+            name: string;
+            /** @description How long the visit is booked for. */
+            minutes: number;
         };
         Hold: {
             /** Format: uuid */
             id: string;
             /** @enum {string} */
             type: "consultation" | "first_fit" | "service" | "replacement";
+            service: components["schemas"]["VisitService"] & unknown;
             /** Format: date */
             date: string;
             /** @enum {string} */

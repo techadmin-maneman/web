@@ -233,3 +233,29 @@
   padding-bottom: var(--sp-3);
   border-bottom: var(--hairline) solid var(--brass);
 }
+
+/* The prompt's ways on, side by side where they fit: a booking, and what a replacement involves (ADR 0086). */
+.promptActions {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: var(--sp-24);
+}
+
+/* A way on that opens the booking sheet is a button, drawn as the prompt's link. */
+.promptLink:is(button) {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.promptLink:is(button):disabled {
+  color: var(--text-quiet);
+  cursor: default;
+}
+
+/* The page on what a replacement involves: its one action, across the foot. */
+.footerBook {
+  width: 100%;
+}

@@ -234,6 +234,122 @@ describe("smoke suite", () => {
   });
 });
 
+/** How the public host misbehaves for a crawler. Anything left out answers as WhatsApp needs. */
+interface PreviewFaults {
+  /** Paths Access guards, sending a request without its token to the sign-in, as staging's did. */
+  access?: readonly string[];
+  /** The landing: `image` is what its og:image names, and `html` the page whole, in place of one naming it. */
+  page?: { status?: number; type?: string; image?: string; html?: string };
+  card?: { status?: number; type?: string; bytes?: number };
+}
+
+const CARD = "https://staging.maneman.in/api/og/RM4K7P.jpg?v=3";
+const SIGN_IN = "https://maneman.cloudflareaccess.com/cdn-cgi/access/login/staging.maneman.in";
+
+/** Staging's public host as a crawler meets it: the landing at /r/RM4K7P, and the card its og:image names. */
+function previewHost(faults: PreviewFaults = {}) {
+  const seen: { url: string; init: RequestInit | undefined }[] = [];
+  const answer = (url: string): Response => {
+    const path = new URL(url).pathname;
+    if (faults.access?.some((guarded) => path.startsWith(guarded)) === true) {
+      return new Response(null, { status: 302, headers: { location: `${SIGN_IN}?redirect_url=${path}` } });
+    }
+    if (path === "/r/RM4K7P") {
+      const html =
+        faults.page?.html ??
+        `<html><head><meta property="og:image" content="${faults.page?.image ?? CARD}"></head></html>`;
+      const type = faults.page?.type ?? "text/html; charset=utf-8";
+      return new Response(html, { status: faults.page?.status ?? 200, headers: { "content-type": type } });
+    }
+    if (path === "/api/og/RM4K7P.jpg") {
+      const body = new Uint8Array(faults.card?.bytes ?? 20_000);
+      const type = faults.card?.type ?? "image/jpeg";
+      return new Response(body, { status: faults.card?.status ?? 200, headers: { "content-type": type } });
+    }
+    return new Response("Not found", { status: 404 });
+  };
+  const fakeFetch = (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
+    const url = input instanceof Request ? input.url : input.toString();
+    seen.push({ url, init });
+    return Promise.resolve(answer(url));
+  };
+  return { fetch: fakeFetch, seen };
+}
+
+/** The staging run the runbook gives, for the invite RM4K7P (docs/runbook.md, step 10b). */
+function previewOptions(faults?: PreviewFaults, extra: Partial<SmokeOptions> = {}): SmokeOptions {
+  return {
+    apiBase: "https://staging.maneman.in",
+    siteBase: "https://staging.maneman.in",
+    environment: "staging",
+    linkPreview: "RM4K7P",
+    fetch: previewHost(faults).fetch,
+    attempts: 2,
+    retryDelayMs: 1,
+    ...extra,
+  };
+}
+
+// On 27 September 2026 the owner's invites reached WhatsApp with no image: every staging host is behind Access, and
+// WhatsApp's crawler has no token, so it never saw the landing or the card. Nothing checked it as the crawler does.
+describe("smoke suite, --link-preview", () => {
+  it("passes when the landing and its card reach WhatsApp's crawler, and checks nothing else", async () => {
+    expect(await runSmoke(previewOptions())).toEqual([
+      { name: "link preview", ok: true, detail: `/r/RM4K7P names ${CARD}, a JPEG of 20 KB` },
+    ]);
+  });
+
+  it("is no part of the smoke a deploy runs", async () => {
+    const names = (await runSmoke(smokeOptions("staging"))).map((result) => result.name);
+    expect(names).not.toContain("link preview");
+  });
+
+  it("asks as WhatsApp does: its user agent, no Access token though one is configured, and no redirect followed", async () => {
+    const host = previewHost();
+    const access = { "CF-Access-Client-Id": "id", "CF-Access-Client-Secret": "secret" };
+    await runSmoke({ ...previewOptions(), fetch: host.fetch, headers: access });
+
+    expect(host.seen.map((call) => call.url)).toEqual(["https://staging.maneman.in/r/RM4K7P", CARD]);
+    for (const { init } of host.seen) {
+      const headers = new Headers(init?.headers);
+      expect(headers.get("user-agent")).toMatch(/^WhatsApp\//);
+      expect([headers.get("cf-access-client-id"), headers.get("cf-access-client-secret")]).toEqual([null, null]);
+      expect(init?.redirect).toBe("manual");
+    }
+  });
+
+  it("fails when Access sends the crawler to its sign-in, before the landing or before the card", async () => {
+    expect(await failures(previewOptions({ access: ["/"] }))).toEqual([
+      `link preview: /r/RM4K7P answered 302 to ${SIGN_IN}?redirect_url=/r/RM4K7P`,
+    ]);
+    expect(await failures(previewOptions({ access: ["/api/og/"] }))).toEqual([
+      `link preview: ${CARD} answered 302 to ${SIGN_IN}?redirect_url=/api/og/RM4K7P.jpg`,
+    ]);
+  });
+
+  it("fails when the landing is not a page, names no card, or names it by no absolute address", async () => {
+    expect(await failures(previewOptions({ page: { type: "application/json" } }))).toEqual([
+      'link preview: /r/RM4K7P is "application/json", not a page',
+    ]);
+    expect(await failures(previewOptions({ page: { html: "<html><head></head></html>" } }))).toEqual([
+      "link preview: /r/RM4K7P has no og:image",
+    ]);
+    expect(await failures(previewOptions({ page: { image: "/api/og/RM4K7P.jpg?v=3" } }))).toEqual([
+      'link preview: /r/RM4K7P names its card "/api/og/RM4K7P.jpg?v=3", not by an absolute address',
+    ]);
+  });
+
+  it("fails when the card is missing, not a JPEG, or 300 KB or more", async () => {
+    expect(await failures(previewOptions({ card: { status: 404 } }))).toEqual([`link preview: ${CARD} answered 404`]);
+    expect(await failures(previewOptions({ card: { type: "text/html" } }))).toEqual([
+      `link preview: ${CARD} is "text/html", not a JPEG`,
+    ]);
+    expect(await failures(previewOptions({ card: { bytes: 300 * 1024 } }))).toEqual([
+      `link preview: ${CARD} is 307200 bytes, over the 300 KB WhatsApp takes`,
+    ]);
+  });
+});
+
 /** The page a Phase 2 app's build writes at /, naming its Worker, environment and commit (apps/<app>/vite.config.ts). */
 function appPage(worker: string, environment: string, version: string): string {
   return (

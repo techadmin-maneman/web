@@ -1,5 +1,7 @@
 ---
 // Two bases, two prices: a photograph, v2's cross-section drawing, and four rows.
+// Premium's price is built hidden and shown by mm-site's Worker once the price
+// book prices a first fit coded premium (docs/decisions/0085-services-ops-can-edit.md).
 import { basePhotos, bases, placeholderTag } from "../../content/site.ts";
 import { SHOW_PLACEHOLDER_TAGS, isShown } from "../../lib/build.ts";
 import { asBuilt, priceTemplate } from "../../lib/prices.ts";
@@ -14,6 +16,7 @@ const { rowLabels } = bases;
   <div class="grid">
     {bases.kinds.map((kind) => {
       const photo = basePhotos[kind.id];
+      const premium = kind.id === "premium";
       return (
         <article class="base">
           <div class="inner">
@@ -73,8 +76,15 @@ const { rowLabels } = bases;
               <dd>{kind.breath}</dd>
               <dt>{rowLabels.life}</dt>
               <dd>{kind.life}</dd>
-              <dt>{rowLabels.price}</dt>
-              <dd class="price" data-price={priceTemplate(kind.price)}>
+              <dt data-premium={premium ? "" : undefined} hidden={premium}>
+                {rowLabels.price}
+              </dt>
+              <dd
+                class="price"
+                data-price={priceTemplate(kind.price)}
+                data-premium={premium ? "" : undefined}
+                hidden={premium}
+              >
                 {asBuilt(kind.price)}
               </dd>
             </dl>

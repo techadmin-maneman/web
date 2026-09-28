@@ -28,17 +28,19 @@ const TEMPLATES: Readonly<Record<string, string>> = {
   // At the technician's check-in (docs/decisions/0074-hand-offs-and-messages.md), the no-show's evidence.
   technician_arrived_v1: "Hello {{1}}, {{5}} has arrived for your {{2}}.",
   // Ops' ruling on a visit the client was not home for (docs/decisions/0074-hand-offs-and-messages.md), with {{9}}
-  // the minutes the technician waited. A charge keeps what was paid, as a cancel inside 24 hours does; what a waiver
-  // gives back is the owner's to rule, so until then the client is asked to message us about it
-  // (src/policy/no-show.ts, WAIVER_GIVES_BACK). Never ops' reason, which stays with the ruling.
+  // the minutes the technician waited. A charge keeps what was paid, as a cancel inside 24 hours does; a waiver
+  // refunds the payment and returns the credit, as the owner ruled on 27 September 2026 (src/policy/no-show.ts,
+  // WAIVER_GIVES_BACK), and the two texts that ask the client to message us stand only for the switch turned off.
+  // Booking again is in the app, never a message to us: the owner ruled on 27 September 2026 that "Message us" is for
+  // problems only (ADR 0025, item 70). Never ops' reason, which stays with the ruling.
   no_show_missed_v1:
-    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. Message us to book again.",
+    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. You can book again in the Mane Man app.",
   no_show_charged_paid_v1:
     "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. As with a cancel inside 24 hours, the {{6}} you paid for it is kept. Message us if this is wrong.",
   no_show_charged_credit_v1:
     "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. As with a cancel inside 24 hours, the visit credit it used is gone. Message us if this is wrong.",
   no_show_waived_v1:
-    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it. Message us to book again.",
+    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it. You can book again in the Mane Man app.",
   no_show_waived_paid_v1:
     "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it. Message us about the {{6}} you paid for it.",
   no_show_waived_credit_v1:
@@ -47,6 +49,11 @@ const TEMPLATES: Readonly<Record<string, string>> = {
     "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it: {{6}} is on its way back to your {{8}}, in 5 to 7 working days.",
   no_show_waived_credit_back_v1:
     "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it, and your visit credit is back.",
+  // The next visit falls due in a few days and nothing is booked (docs/decisions/0086-the-next-visit-is-offered.md),
+  // sent once a last visit, only with the client's consent to WhatsApp about their visits. PLACEHOLDER COPY, pending
+  // the owner's wording: {{1}} the client's first name, {{2}} the visit ("service visit", or "replacement" where the
+  // piece falls due first), {{3}} the day it falls due ("Tue 27 Oct").
+  next_visit_due_v1: "Hello {{1}}, your next {{2}} is due on {{3}}. You can book it in the Mane Man app.",
   visit_cancelled_v1: "Hello {{1}}, your {{2}} on {{3}} is cancelled.",
   visit_cancelled_credit_v1: "Hello {{1}}, your {{2}} on {{3}} is cancelled. Your visit credit is back.",
   // A credit-paid visit cancelled inside 24 hours keeps its credit, as the cancel sheet warned; one cancelled in time

@@ -1,0 +1,90 @@
+/*
+ * Stock (docs/decisions/0087-consumables-and-stock.md). No board draws it, so
+ * it is built from what the console draws elsewhere: the queues' panel with
+ * its head on a rule, board C2's table at 34 px a row, and Settings' form and
+ * its check before a change (apps/ops/src/settings/settings.module.css).
+ *
+ * The table carries a column for the central store and one for each kit, so
+ * it scrolls sideways inside its panel rather than past it when a team grows.
+ */
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-20);
+  min-width: 0;
+}
+
+.scroll {
+  overflow-x: auto;
+}
+
+/* A place's figure, and beneath it when it was last counted. */
+.held {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* At or below its level: said in words, and in oxblood, never by colour alone. */
+.low {
+  margin-left: var(--sp-6);
+  font-size: var(--fs-13);
+  font-weight: var(--weight-medium);
+  color: var(--error-on-paper);
+}
+
+/* Less than nothing: a delivery or a count is missing, and the figure says so in the same oxblood. */
+.below {
+  color: var(--error-on-paper);
+}
+
+.counted {
+  display: block;
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+/* A consumable no longer offered, still held somewhere. */
+.retired {
+  display: block;
+  font-size: var(--fs-13);
+  font-weight: var(--weight-regular);
+  color: var(--text-muted);
+}
+
+/* The kinds of movement, as a row of choices above the form's boxes. */
+.kinds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-8) var(--sp-20);
+  margin: var(--sp-10) 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.kind {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-8);
+  min-height: var(--tap);
+  font-size: var(--fs-15);
+  cursor: pointer;
+}
+
+.radio {
+  width: var(--ops-box);
+  height: var(--ops-box);
+  margin: 0;
+  accent-color: var(--ink);
+}
+
+.radio:focus-visible {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
+}
+
+.kindsLegend {
+  padding: 0;
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}

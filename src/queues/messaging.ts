@@ -1,8 +1,11 @@
-// The messaging consumer: the only caller of the WhatsApp provider. It sends a
-// person the result they asked for at the gate, as the result template with a
-// signed result link that expires an hour after sending; a client's messages
-// about their visits (src/domain/visit-messages.ts); and the referral, waitlist
-// and launch messages, each composed where its subject lives.
+// The messaging consumer: the WhatsApp provider's caller for every message but
+// a login code, which src/http/send-code.ts hands to the provider itself once
+// the response has gone, never through this queue (ADR 0030). It sends a person
+// the result they asked for at the gate, as the result template with a signed
+// result link that expires an hour after sending; a client's messages about
+// their visits (src/domain/visit-messages.ts) and the reminder of their next one
+// (src/domain/next-visit.ts); and the referral, waitlist and launch messages,
+// each composed where its subject lives.
 //
 // Skipped, never sent: messaging off, a person erased, a number outside the
 // staging allowlist, or the daily cap reached. A transient failure is retried
@@ -19,6 +22,8 @@ import { takeOne } from "../domain/rate-limit.ts";
 import { saltedHash } from "../lib/hash.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { signToken } from "../lib/signed-token.ts";
+import { composeNextServiceReminder } from "../domain/next-visit.ts";
+import { readOpsInputs } from "../domain/ops-settings.ts";
 import { composeFriendCredited, composeFriendFitted, composeReferralRejected } from "../domain/referral-grants.ts";
 import { composeLaunchAlert, composeWaitlistConfirmation } from "../domain/waitlist.ts";
 import { composeVisitMessage, VISIT_MESSAGE_KINDS, type VisitMessageKind } from "../domain/visit-messages.ts";
@@ -119,6 +124,10 @@ async function resultContent(db: D1Database, config: StaticConfig, row: MessageR
 async function contentOf(db: D1Database, config: StaticConfig, row: MessageRow, now: Date): Promise<Content> {
   if (row.kind === "tryon_result") return resultContent(db, config, row, now);
   if (isVisitKind(row.kind)) return composeVisitMessage(db, row.kind, row.subject_id, row.person_id);
+  if (row.kind === "next_service_reminder") {
+    const days = (await readOpsInputs(db, now)).nextVisitDays;
+    return composeNextServiceReminder(db, row.subject_id, row.person_id, days);
+  }
   if (row.kind === "friend_fitted") return composeFriendFitted(db, row.subject_id, row.person_id);
   if (row.kind === "friend_credited") return composeFriendCredited(db, row.subject_id, row.person_id);
   if (row.kind === "referral_rejected") return composeReferralRejected(db, row.subject_id, row.person_id);

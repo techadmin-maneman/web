@@ -23,6 +23,7 @@ describe("the ops console's routes", () => {
       "Waitlist",
       "Tasks",
       "Technicians",
+      "Stock",
       "Grievances",
       "Deletion requests",
       "Number changes",
@@ -34,6 +35,9 @@ describe("the ops console's routes", () => {
     expect(routeOf("/settings")).toEqual({ page: "settings", tab: "rules" });
     expect(routeOf(settingsPath("prices"))).toEqual({ page: "settings", tab: "prices" });
     expect(routeOf(settingsPath("area"))).toEqual({ page: "settings", tab: "area" });
+    expect(routeOf("/settings/consumables")).toEqual({ page: "settings", tab: "consumables" });
+    expect(routeOf("/settings/job-sheet")).toEqual({ page: "settings", tab: "job-sheet" });
+    expect(routeOf("/stock")).toEqual({ page: "stock" });
     expect(routeOf("/clients")).toEqual({ page: "clients", clientId: null, tab: "pieces" });
     expect(routeOf(`/clients/${CLIENT}/photos`)).toEqual({ page: "clients", clientId: CLIENT, tab: "photos" });
   });
@@ -46,7 +50,7 @@ describe("the ops console's routes", () => {
 
   it("titles each page by what it is, never by whom, so no two sections share a title (WCAG 2.4.2)", () => {
     expect(titleOf(routeOf("/"))).toBe("Dispatch · Mane Man operations");
-    expect(titleOf(routeOf("/settings/prices"))).toBe("Prices · Settings · Mane Man operations");
+    expect(titleOf(routeOf("/settings/prices"))).toBe("Services and prices · Settings · Mane Man operations");
     expect(titleOf(routeOf(`/clients/${CLIENT}/consents`))).toBe("Consents · Clients · Mane Man operations");
     const titles = SECTIONS.map((section) => titleOf(routeOf(section.path)));
     expect(new Set(titles).size).toBe(SECTIONS.length);

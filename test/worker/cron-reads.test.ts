@@ -17,6 +17,11 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const AGO = new Date(NOW.getTime() - 60 * DAY_MS).toISOString();
 const AGO_PLUS_HOUR = new Date(NOW.getTime() - 60 * DAY_MS + 60 * 60 * 1000).toISOString();
 const IN_TWO_MONTHS = new Date(NOW.getTime() + 60 * DAY_MS).toISOString();
+/** 6:30 pm in India, when the evening's reminders go (src/domain/visit-messages.ts, REMINDERS_FROM). */
+const EVENING = new Date(NOW.getTime() + 6.5 * 60 * 60 * 1000);
+/** A visit 25 days ago, whose next service falls due within the reminder's week (ADR 0086), and an hour later. */
+const DUE_SOON = new Date(NOW.getTime() - 25 * DAY_MS).toISOString();
+const DUE_SOON_PLUS_HOUR = new Date(NOW.getTime() - 25 * DAY_MS + 60 * 60 * 1000).toISOString();
 /** Every tenth person was erased, everywhere, long ago. */
 const IF_ERASED = `CASE WHEN i % 10 = 0 THEN '${AGO}' END`;
 
@@ -125,11 +130,11 @@ function countRowsRead(): () => number {
   return () => read;
 }
 
-async function rowsReadByOneRun(): Promise<number> {
+async function rowsReadByOneRun(now = NOW): Promise<number> {
   const rowsRead = countRowsRead();
   const outcomes = await runCronJobs(CRON_JOBS, {
     env: { ...env, CRM_QUEUE: fakeQueue(), RENDER_QUEUE: fakeQueue(), MESSAGE_QUEUE: fakeQueue() },
-    deps: fakeDependencies(),
+    deps: fakeDependencies({ now: () => now }),
     config: LOCAL_CONFIG,
     log: createLogger(),
   });
@@ -156,5 +161,29 @@ describe("one cron run", () => {
 
     expect({ before, after }).toEqual({ before, after: before });
     expect(after).toBeLessThanOrEqual(CRON_ROWS_READ_PER_QUIET_RUN);
+  });
+
+  // The next service's reminders run from the evening's reminder hour and read the week of last visits they cover,
+  // through migration 0048's index, never the visits before it (docs/decisions/0086-the-next-visit-is-offered.md).
+  it("reads no more in the evening, when the next service's reminders run, as the history doubles", async () => {
+    await history(1, 400);
+    // Three clients' last visits moved into the week whose next service is due (none of the first ten is erased).
+    await env.DB.prepare(
+      "UPDATE appointments SET window_start = ?1, window_end = ?2 WHERE rowid IN (SELECT rowid FROM appointments ORDER BY rowid LIMIT 3)",
+    )
+      .bind(DUE_SOON, DUE_SOON_PLUS_HOUR)
+      .run();
+    await rowsReadByOneRun(EVENING); // the day's once-only work, and the three reminders written
+    const before = await rowsReadByOneRun(EVENING);
+
+    await history(401, 800);
+    const after = await rowsReadByOneRun(EVENING);
+
+    expect({ before, after }).toEqual({ before, after: before });
+    expect(after).toBeLessThanOrEqual(CRON_ROWS_READ_PER_QUIET_RUN);
+    const reminders = await env.DB.prepare(
+      "SELECT COUNT(*) AS n FROM outbound_messages WHERE kind = 'next_service_reminder'",
+    ).first<{ n: number }>();
+    expect(reminders?.n).toBe(3);
   });
 });

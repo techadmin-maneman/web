@@ -47,13 +47,35 @@ export type NumberChange = Body<paths["/api/number-changes"]["get"]>["changes"][
 /** The business inputs ops set for themselves (docs/decisions/0061-ops-editable-inputs.md). */
 export type OpsSetting = Body<paths["/api/settings"]["get"]>["settings"][number];
 export type SettingValue = OpsSetting["value"];
-export type PriceBook = Body<paths["/api/prices"]["get"]>;
-export type Price = PriceBook["prices"][number];
+export type Price = Body<paths["/api/prices"]["post"]>["prices"][number];
 export type PriceChange = Sent<paths["/api/prices"]["post"]>;
 export type PriceWithdrawal = Sent<paths["/api/prices/withdraw"]["post"]>;
+export type PriceCorrection = Sent<paths["/api/prices/correct"]["post"]>;
+/** The services clients book, kind by kind, each with its prices (docs/decisions/0085-services-ops-can-edit.md). */
+export type ServiceBook = Body<paths["/api/services"]["get"]>;
+export type OpsService = ServiceBook["services"][number];
+export type LateFee = ServiceBook["late_fees"][number];
+export type Kind = OpsService["kind"];
+export type ServiceAdd = Sent<paths["/api/services"]["post"]>;
 export type ServedPincode = Body<paths["/api/service-area"]["get"]>["pincodes"][number];
 export type AreaChange = Sent<paths["/api/service-area"]["post"]>["changes"][number];
 export type AreaChanged = Body<paths["/api/service-area"]["post"]>;
+
+/** The consumables, each service's expected use, the job sheet, and the stock (docs/decisions/0087-consumables-and-stock.md). */
+export type Consumables = Body<paths["/api/consumables"]["get"]>;
+export type Consumable = Consumables["consumables"][number];
+export type ServiceUse = Consumables["services"][number];
+export type NewConsumable = Sent<paths["/api/consumables"]["post"]>;
+export type ConsumableChange = Sent<paths["/api/consumables/{code}"]["post"]>;
+export type ServiceUsage = Sent<paths["/api/service-usage"]["post"]>;
+export type JobSheet = Body<paths["/api/job-sheet"]["get"]>;
+export type JobSheetList = JobSheet["partial_reasons"];
+export type JobSheetItemSent = Sent<paths["/api/job-sheet/partial-reasons"]["post"]>["items"][number];
+export type Stock = Body<paths["/api/stock"]["get"]>;
+export type StockDelivery = Sent<paths["/api/stock/deliveries"]["post"]>;
+export type StockTransfer = Sent<paths["/api/stock/transfers"]["post"]>;
+export type StockCount = Sent<paths["/api/stock/counts"]["post"]>;
+export type StockWriteOff = Sent<paths["/api/stock/write-offs"]["post"]>;
 
 export type NoShowCase = Body<paths["/api/no-shows"]["get"]>["cases"][number];
 export type DayMoney = Body<paths["/api/payments"]["get"]>;
@@ -252,11 +274,30 @@ export const api = {
   /** One rule. A null value puts the figure in the code back and removes the row. */
   setSetting: (name: OpsSetting["name"], value: SettingValue | null) =>
     client.post("/api/settings/{name}", { path: { name }, body: { value } }),
-  prices: () => client.get("/api/prices"),
   /** A price from the day it applies. The book gains a row; nothing already invoiced moves. */
   setPrice: (price: PriceChange) => client.post("/api/prices", { body: price }),
   /** A price still to come, taken back. The route refuses the one in force and every spent one. */
   withdrawPrice: (row: PriceWithdrawal) => client.post("/api/prices/withdraw", { body: row }),
+  /** A price still to come, taken back and set again, from its own day or another, in one go. */
+  correctPrice: (correction: PriceCorrection) => client.post("/api/prices/correct", { body: correction }),
+  /** Every service, offered or retired, with every price it has had and is to have, and the two late fees. */
+  services: () => client.get("/api/services"),
+  /** Added last in its kind; clients see it once it has a price. */
+  addService: (service: ServiceAdd) => client.post("/api/services", { body: service }),
+  /** Its code stays, and with it every price it has and every visit sold under them. */
+  renameService: (kind: Kind, tier: string, name: string) =>
+    client.post("/api/services/{kind}/{tier}/name", { path: { kind, tier }, body: { name } }),
+  /** How long visits booked from now on are held and booked for. */
+  setServiceLength: (kind: Kind, tier: string, minutes: number) =>
+    client.post("/api/services/{kind}/{tier}/length", { path: { kind, tier }, body: { minutes } }),
+  /** Every one of a kind's codes, once, first to last. */
+  orderServices: (kind: Kind, tiers: readonly string[]) =>
+    client.post("/api/services/{kind}/order", { path: { kind }, body: { tiers: [...tiers] } }),
+  /** No longer offered from a day, today or later. The route keeps every kind one service to book. */
+  retireService: (kind: Kind, tier: string, from: string) =>
+    client.post("/api/services/{kind}/{tier}/retire", { path: { kind, tier }, body: { from } }),
+  restoreService: (kind: Kind, tier: string) =>
+    client.post("/api/services/{kind}/{tier}/restore", { path: { kind, tier } }),
   /** Every pincode, with how many wait there and how many serving it would tell. */
   serviceArea: () => client.get("/api/service-area"),
   /**
@@ -266,4 +307,29 @@ export const api = {
    */
   setServiceArea: (changes: readonly AreaChange[]) =>
     client.post("/api/service-area", { body: { changes: [...changes] } }),
+  /** Every consumable, where each stands in FSM's catalogue, and each service's expected use. */
+  consumables: () => client.get("/api/consumables"),
+  addConsumable: (added: NewConsumable) => client.post("/api/consumables", { body: added }),
+  /** Only the fields sent change; a null level clears it. */
+  changeConsumable: (code: string, change: ConsumableChange) =>
+    client.post("/api/consumables/{code}", { path: { code }, body: change }),
+  /** No longer offered from the day given, today or later. Nothing already recorded moves. */
+  retireConsumable: (code: string, from: string) =>
+    client.post("/api/consumables/{code}/retire", { path: { code }, body: { from } }),
+  restoreConsumable: (code: string) => client.post("/api/consumables/{code}/restore", { path: { code } }),
+  /** A service's whole list: a consumable left out is expected no more. */
+  setServiceUsage: (usage: ServiceUsage) => client.post("/api/service-usage", { body: usage }),
+  jobSheet: () => client.get("/api/job-sheet"),
+  /** A kind of visit's whole checklist, in its order. An item left out is retired, not forgotten. */
+  setChecklist: (type: VisitType, items: readonly JobSheetItemSent[]) =>
+    client.post("/api/job-sheet/checklists/{visit_type}", { path: { visit_type: type }, body: { items: [...items] } }),
+  setPartialReasons: (items: readonly JobSheetItemSent[]) =>
+    client.post("/api/job-sheet/partial-reasons", { body: { items: [...items] } }),
+  /** What each place holds, what is low, and the latest movements. */
+  stock: () => client.get("/api/stock"),
+  recordDelivery: (delivery: StockDelivery) => client.post("/api/stock/deliveries", { body: delivery }),
+  recordTransfer: (moved: StockTransfer) => client.post("/api/stock/transfers", { body: moved }),
+  /** The ledger takes the difference from what it held. */
+  recordCount: (counted: StockCount) => client.post("/api/stock/counts", { body: counted }),
+  recordWriteOff: (lost: StockWriteOff) => client.post("/api/stock/write-offs", { body: lost }),
 };

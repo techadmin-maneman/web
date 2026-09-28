@@ -16,10 +16,13 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [appointments](#appointments): The mirror of FSM's appointments: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice (ADR 0032).
 - [audit_log](#audit_log): Every ops action that reads or changes a client's data, and who took it. An entry is never changed (ADR 0031).
 - [checkins](#checkins): Each "I have arrived", passed or not, with the distance measured and the radius in force (ADR 0065).
+- [checklist_items](#checklist_items): Each kind of visit's checklist as ops set it, an item they took off kept as retired; a kind with no rows takes the committed list (ADR 0087).
 - [cities](#cities): The cities Phase 1's booking form offered; `GET /api/cities` still reads them (open point 107).
 - [consents](#consents): What each person agreed to, and under which notice's version. Rows are only ever added (ADR 0042, ADR 0049).
 - [consultation_requests](#consultation_requests): A consultation asked for while self-serve booking is off, for ops to fix the hour (ADR 0060).
-- [consumables_used](#consumables_used): The consumables a technician entered at a job's third step, kept to replay the write and to count stock (ADR 0038).
+- [consumable_usage](#consumable_usage): What each service, a kind of visit at a tier of the price book, is expected to use of each consumable: where the technician's steppers start (ADR 0087).
+- [consumables](#consumables): The consumables ops keep: name, unit, what one costs, the reorder levels, the day it is retired from, and FSM's part for it (ADR 0087).
+- [consumables_used](#consumables_used): The consumables a technician recorded at a job's third step, with what its service expected and what one cost that day (ADR 0038, ADR 0087).
 - [counters](#counters): Fixed-window counters for the rate limits and the daily ceilings (ADR 0011).
 - [credit_ledger](#credit_ledger): Service-visit credits, entry by entry, each drawing on the grant it spends; a balance is summed, never kept (ADR 0033).
 - [cron_jobs](#cron_jobs): Each job of the five-minute cron, and how many runs in a row it has failed (ADR 0067).
@@ -27,6 +30,7 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [deployment_identity](#deployment_identity): Which environment's database this is, so a Worker refuses to serve on another's (ADR 0003).
 - [dispatch_moves](#dispatch_moves): Every move ops make on the dispatch board: from where to where, by whom, why, what FSM said, and whether the client was told (ADR 0069).
 - [events](#events): What happened, for analysis, with no personal data in its payload.
+- [first_fit_requests](#first_fit_requests): A first fit asked for on the site's form with the consultation, for the app to offer once the consultation is done; a person's latest stands (ADR 0086).
 - [fsm_items](#fsm_items): FSM's catalogue, to read each appointment's visit type from its service item and to compare FSM's prices with the price book (ADR 0032, ADR 0073).
 - [grievances](#grievances): A client's grievance, and the answer ops recorded (ADR 0049, ADR 0078).
 - [idempotency](#idempotency): The stored answer to each `Idempotency-Key`, so a request sent again gets its first answer (ADR 0011).
@@ -37,6 +41,7 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [ops_settings](#ops_settings): The business inputs ops set in the console, a row each; a row that is not there means the committed default (ADR 0061).
 - [otp_challenges](#otp_challenges): Each one-time code sent, as a hash, with its sends and attempts (ADR 0030, ADR 0052).
 - [outbound_messages](#outbound_messages): Each WhatsApp message, from queued to sent, delivered and read (ADR 0041).
+- [partial_reasons](#partial_reasons): The reasons a job may be left partly done, as ops set them, one they took off kept as retired; none means the committed list (ADR 0087).
 - [payments](#payments): The mirror of Razorpay's payments, and where each stands in Books (ADR 0044).
 - [people](#people): One row per person, keyed by mobile number. D1 owns the identity; the CRM's ID is only a reference (ADR 0011).
 - [photo_sets](#photo_sets): A visit's set of photographs, before or after (ADR 0028).
@@ -48,13 +53,15 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [referral_codes](#referral_codes): A client's invite code, the version of their card, and how often the invite was opened (ADR 0048).
 - [refunds](#refunds): The mirror of Razorpay's refunds, and where each stands in Books (ADR 0044).
 - [serviceable_pincodes](#serviceable_pincodes): Every NCR pincode, its area and city, and whether and since when we serve it (ADR 0048, ADR 0061).
+- [services](#services): What clients may book: each kind of visit's services, their names, lengths and order, when each is retired, and its item in FSM's catalogue; the price book prices each by its kind and tier (ADR 0085).
 - [sessions](#sessions): The client app's and the technician app's sessions: whose, from which device, and when each ends or was revoked (ADR 0029, ADR 0052).
 - [slot_claims](#slot_claims): What a hold or a visit takes of a technician's day, a row per half-slot and window, so no time is taken twice (ADR 0034, ADR 0069).
 - [slot_holds](#slot_holds): A slot held while a client pays, and what became of it (ADR 0045, ADR 0068).
+- [stock_movements](#stock_movements): Every movement of a consumable into or out of the central store or a technician's kit, never changed; what a place holds is the sum of its rows (ADR 0087).
 - [sync_cursors](#sync_cursors): Where each pass of the reconciliation with FSM has reached (ADR 0032).
 - [technician_devices](#technician_devices): The phones technicians work from, each bound to a session and revocable by ops (ADR 0052).
 - [technician_leave](#technician_leave): A technician's leave in whole days, which the clash check reads beside `slot_claims` (ADR 0062).
-- [technicians](#technicians): The mirror of FSM's technicians: name, initials, mobile number and zone (ADR 0032, ADR 0052).
+- [technicians](#technicians): The mirror of FSM's technicians: name, initials, mobile number and zone; and on staging the few written by hand for a test, which the sync leaves alone (ADR 0032, ADR 0052).
 - [tryon_jobs](#tryon_jobs): One try-on render: the photograph, the look, the provider's job and the result (ADR 0014, ADR 0015).
 - [tryon_sessions](#tryon_sessions): The try-on gate's session, which shows a visitor their result without the gate again (ADR 0014).
 - [visit_blackouts](#visit_blackouts): Days on which no visit is offered.
@@ -124,7 +131,7 @@ Indexes:
 
 The mirror of FSM's appointments: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice (ADR 0032).
 
-Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -153,6 +160,7 @@ Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_i
 | `client_note` | TEXT | yes |  |  |
 | `client_note_at` | TEXT | yes |  |  |
 | `first_seen_at` | TEXT | yes |  |  |
+| `tier` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -161,6 +169,7 @@ Indexes:
 - `appointments_by_technician`: on (`technician_id`, `window_start`)
 - `appointments_by_window_end`: on (`window_end`)
 - `appointments_by_window_start`: on (`window_start`)
+- `appointments_done_visits`: on (`window_start`), where `status = 'completed' AND type IN ('first_fit', 'service', 'replacement') AND deleted_at IS NULL`
 - `appointments_to_invoice`: on (`window_start`), where `status = 'completed' AND invoice_issued_at IS NULL AND fsm_work_order_id IS NOT NULL AND deleted_at IS NULL`
 - A `UNIQUE` constraint: unique on (`fsm_id`)
 
@@ -216,6 +225,22 @@ Indexes:
 
 - `checkins_by_address`: on (`address_id`), where `address_id IS NOT NULL`
 - `checkins_by_appointment`: on (`appointment_id`, `at`)
+
+## checklist_items
+
+Each kind of visit's checklist as ops set it, an item they took off kept as retired; a kind with no rows takes the committed list (ADR 0087).
+
+Made by `0049_consumables_and_stock.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `visit_type` | TEXT | no |  | primary key |
+| `code` | TEXT | no |  | primary key |
+| `label` | TEXT | no |  |  |
+| `position` | INTEGER | no |  |  |
+| `retired_at` | TEXT | yes |  |  |
+| `set_by` | TEXT | no |  |  |
+| `set_at` | TEXT | no |  |  |
 
 ## cities
 
@@ -273,11 +298,51 @@ Indexes:
 - `consultation_requests_by_created`: on (`created_at`)
 - A `UNIQUE` constraint: unique on (`person_id`, `requested_date`, `requested_window`)
 
+## consumable_usage
+
+What each service, a kind of visit at a tier of the price book, is expected to use of each consumable: where the technician's steppers start (ADR 0087).
+
+Made by `0049_consumables_and_stock.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `visit_type` | TEXT | no |  | primary key |
+| `tier` | TEXT | no | `'standard'` | primary key |
+| `consumable_code` | TEXT | no |  | primary key; → `consumables.code` |
+| `quantity` | INTEGER | no |  |  |
+| `set_by` | TEXT | no |  |  |
+| `set_at` | TEXT | no |  |  |
+
+## consumables
+
+The consumables ops keep: name, unit, what one costs, the reorder levels, the day it is retired from, and FSM's part for it (ADR 0087).
+
+Made by `0049_consumables_and_stock.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `code` | TEXT | no |  | primary key |
+| `name` | TEXT | no |  |  |
+| `unit` | TEXT | no |  |  |
+| `unit_cost` | INTEGER | no |  |  |
+| `reorder_kit` | INTEGER | yes |  |  |
+| `reorder_central` | INTEGER | yes |  |  |
+| `retired_date` | TEXT | yes |  |  |
+| `fsm_item_id` | TEXT | yes |  |  |
+| `fsm_name` | TEXT | yes |  |  |
+| `fsm_checked_at` | TEXT | yes |  |  |
+| `created_at` | TEXT | no |  |  |
+| `updated_at` | TEXT | no |  |  |
+
+Indexes:
+
+- `consumables_name`: unique on (`name`)
+
 ## consumables_used
 
-The consumables a technician entered at a job's third step, kept to replay the write and to count stock (ADR 0038).
+The consumables a technician recorded at a job's third step, with what its service expected and what one cost that day (ADR 0038, ADR 0087).
 
-Made by `0026_field_operations.sql`.
+Made by `0026_field_operations.sql`; changed by `0049_consumables_and_stock.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -288,10 +353,14 @@ Made by `0026_field_operations.sql`.
 | `name` | TEXT | no |  |  |
 | `quantity` | INTEGER | no |  |  |
 | `created_at` | TEXT | no |  |  |
+| `consumable_code` | TEXT | yes |  | → `consumables.code` |
+| `expected_quantity` | INTEGER | yes |  |  |
+| `unit_cost` | INTEGER | yes |  |  |
 
 Indexes:
 
 - `consumables_used_by_appointment`: on (`appointment_id`)
+- `consumables_used_by_event_and_code`: unique on (`job_event_id`, `consumable_code`), where `consumable_code IS NOT NULL`
 - A `UNIQUE` constraint: unique on (`job_event_id`, `name`)
 
 ## counters
@@ -435,6 +504,23 @@ Indexes:
 
 - `events_by_name`: on (`name`, `created_at`)
 - `events_utilisation_by_day`: on (`subject_id`), where `name = 'dispatch_utilisation'`
+
+## first_fit_requests
+
+A first fit asked for on the site's form with the consultation, for the app to offer once the consultation is done; a person's latest stands (ADR 0086).
+
+Made by `0047_first_fit_requests.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `person_id` | TEXT | no |  | → `people.id` |
+| `preferred_window` | TEXT | yes |  |  |
+| `created_at` | TEXT | no |  |  |
+
+Indexes:
+
+- `first_fit_requests_by_person`: unique on (`person_id`)
 
 ## fsm_items
 
@@ -682,6 +768,21 @@ Indexes:
 - `outbound_messages_by_state`: on (`state`, `queued_at`)
 - `outbound_messages_by_subject`: on (`subject_id`)
 - `outbound_messages_one_arrival`: unique on (`subject_id`), where `kind = 'arrival_notice'`
+
+## partial_reasons
+
+The reasons a job may be left partly done, as ops set them, one they took off kept as retired; none means the committed list (ADR 0087).
+
+Made by `0049_consumables_and_stock.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `code` | TEXT | no |  | primary key |
+| `label` | TEXT | no |  |  |
+| `position` | INTEGER | no |  |  |
+| `retired_at` | TEXT | yes |  |  |
+| `set_by` | TEXT | no |  |  |
+| `set_at` | TEXT | no |  |  |
 
 ## payments
 
@@ -952,6 +1053,28 @@ Made by `0021_referrals.sql`; changed by `0043_area_names.sql`.
 | `launched_at` | TEXT | yes |  |  |
 | `area_named_by` | TEXT | yes |  |  |
 
+## services
+
+What clients may book: each kind of visit's services, their names, lengths and order, when each is retired, and its item in FSM's catalogue; the price book prices each by its kind and tier (ADR 0085).
+
+Made by `0050_services.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `kind` | TEXT | no |  | primary key |
+| `tier` | TEXT | no |  | primary key |
+| `name` | TEXT | no |  |  |
+| `minutes` | INTEGER | no |  |  |
+| `sort` | INTEGER | no | `0` |  |
+| `retired_date` | TEXT | yes |  |  |
+| `fsm_item_id` | TEXT | yes |  |  |
+| `updated_by` | TEXT | no |  |  |
+| `updated_at` | TEXT | no |  |  |
+
+Indexes:
+
+- A `UNIQUE` constraint: unique on (`name`)
+
 ## sessions
 
 The client app's and the technician app's sessions: whose, from which device, and when each ends or was revoked (ADR 0029, ADR 0052).
@@ -998,7 +1121,7 @@ Indexes:
 
 A slot held while a client pays, and what became of it (ADR 0045, ADR 0068).
 
-Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`.
+Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1031,6 +1154,8 @@ Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_chan
 | `pincode` | TEXT | yes |  |  |
 | `late_fee_ex_gst` | INTEGER | yes |  |  |
 | `late_fee_gst_percent` | INTEGER | yes |  |  |
+| `tier` | TEXT | no | `'standard'` |  |
+| `minutes` | INTEGER | yes |  |  |
 
 Indexes:
 
@@ -1039,6 +1164,34 @@ Indexes:
 - `slot_holds_confirmed`: on (`queued_at`), where `state = 'held' AND confirmed_at IS NOT NULL`
 - `slot_holds_held`: on (`expires_at`), where `state = 'held'`
 - A `UNIQUE` constraint: unique on (`razorpay_order_id`)
+
+## stock_movements
+
+Every movement of a consumable into or out of the central store or a technician's kit, never changed; what a place holds is the sum of its rows (ADR 0087).
+
+Made by `0049_consumables_and_stock.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `consumable_code` | TEXT | no |  | → `consumables.code` |
+| `location` | TEXT | no |  |  |
+| `technician_id` | TEXT | yes |  | → `technicians.id` |
+| `quantity` | INTEGER | no |  |  |
+| `reason` | TEXT | no |  |  |
+| `transfer_id` | TEXT | yes |  |  |
+| `appointment_id` | TEXT | yes |  | → `appointments.id` |
+| `job_event_id` | TEXT | yes |  | → `job_events.id` |
+| `actor_kind` | TEXT | no |  |  |
+| `actor` | TEXT | no |  |  |
+| `note` | TEXT | yes |  |  |
+| `created_at` | TEXT | no |  |  |
+
+Indexes:
+
+- `stock_movements_by_job`: on (`appointment_id`), where `reason = 'used'`
+- `stock_movements_held`: on (`technician_id`, `consumable_code`)
+- `stock_movements_used`: unique on (`job_event_id`, `consumable_code`), where `reason = 'used'`
 
 ## sync_cursors
 
@@ -1103,9 +1256,9 @@ Indexes:
 
 ## technicians
 
-The mirror of FSM's technicians: name, initials, mobile number and zone (ADR 0032, ADR 0052).
+The mirror of FSM's technicians: name, initials, mobile number and zone; and on staging the few written by hand for a test, which the sync leaves alone (ADR 0032, ADR 0052).
 
-Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`, `0046_hand_written_technicians.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1117,6 +1270,7 @@ Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`.
 | `updated_at` | TEXT | no |  |  |
 | `zone` | TEXT | yes |  |  |
 | `mobile_e164` | TEXT | yes |  |  |
+| `hand_written` | INTEGER | no | `0` |  |
 
 Indexes:
 

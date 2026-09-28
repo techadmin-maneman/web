@@ -12,7 +12,7 @@
 // grant that can still take it: not one clawed back or expired.
 
 import { WINDOW_TIMES } from "../config/scheduling.ts";
-import type { VisitType } from "../config/visit-types.ts";
+import { STANDARD_TIER, type VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
 import type { Logger } from "../log.ts";
 import { withGst } from "../config/gst.ts";
@@ -32,6 +32,7 @@ import type { FsmProvider } from "../providers/fsm.ts";
 import type { PaymentsProvider } from "../providers/payments.ts";
 import type { AlertOnce } from "./alerts.ts";
 import { priceOf, type Price } from "./price-book.ts";
+import { bookedMinutes } from "./scheduling.ts";
 import { windowAt } from "../policy/windows.ts";
 import { visitMessage } from "./visit-messages.ts";
 
@@ -39,6 +40,10 @@ export interface ChangeableVisit {
   readonly id: string;
   readonly personId: string;
   readonly type: VisitType;
+  /** Its service's tier: the standard tier's where the mirror knows no other. */
+  readonly tier: string;
+  /** How long it is, which a move keeps (src/policy/visit-length.ts). */
+  readonly minutes: number;
   readonly start: Date;
   readonly technicianId: string | null;
   readonly fsmId: string;
@@ -54,25 +59,32 @@ export async function changeableVisit(
 ): Promise<ChangeableVisit | null> {
   const row = await db
     .prepare(
-      `SELECT id, person_id, type, window_start, technician_id, fsm_id, fsm_work_order_id FROM appointments
-       WHERE id = ?1 AND person_id = ?2 AND deleted_at IS NULL AND status IN ('scheduled', 'dispatched')
-         AND type IS NOT NULL AND window_start > ?3 AND fsm_work_order_id IS NOT NULL`,
+      `SELECT a.id, a.person_id, a.type, a.tier, a.window_start, a.window_end, a.technician_id, a.fsm_id,
+         a.fsm_work_order_id, s.minutes AS service_minutes
+       FROM appointments a LEFT JOIN services s ON s.kind = a.type AND s.tier = COALESCE(a.tier, 'standard')
+       WHERE a.id = ?1 AND a.person_id = ?2 AND a.deleted_at IS NULL AND a.status IN ('scheduled', 'dispatched')
+         AND a.type IS NOT NULL AND a.window_start > ?3 AND a.fsm_work_order_id IS NOT NULL`,
     )
     .bind(visitId, personId, now.toISOString())
     .first<{
       id: string;
       person_id: string;
       type: VisitType;
+      tier: string | null;
       window_start: string;
+      window_end: string | null;
       technician_id: string | null;
       fsm_id: string;
       fsm_work_order_id: string;
+      service_minutes: number | null;
     }>();
   if (row === null) return null;
   return {
     id: row.id,
     personId: row.person_id,
     type: row.type,
+    tier: row.tier ?? STANDARD_TIER,
+    minutes: bookedMinutes(row),
     start: new Date(row.window_start),
     technicianId: row.technician_id,
     fsmId: row.fsm_id,
@@ -192,7 +204,8 @@ export async function changeTerms(
     lateFeeItem === undefined
       ? null
       : ((await lateFeeBookedAt(db, visit.id)) ?? (await priceOf(db, lateFeeItem, indiaDate(visit.start))));
-  const visitPrice = await priceOf(db, visit.type, on);
+  // A charged move books a new visit of the same service, at its price on the day.
+  const visitPrice = await priceOf(db, visit.type, on, visit.tier);
   const gst = visitPrice?.gst_percent ?? 0;
 
   const cost = moveCost(visit.type, notice, "client");

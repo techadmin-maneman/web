@@ -45,7 +45,9 @@ export const referral = {
       },
       {
         what: "Service visit",
-        note: "Every four weeks, at home",
+        // Monthly, as the main site sells twelve service visits a year: the owner ruled the cadence 30 days on
+        // 27 September 2026 (docs/owner-answers-2026-09-27.md).
+        note: "Every month, at home",
         amount: "{service}",
         incl: "Lifted, cleaned, re-bonded, trimmed",
       },
@@ -67,7 +69,7 @@ export const referral = {
       },
       {
         n: "3",
-        title: "A service visit every four weeks",
+        title: "A service visit every month",
         body: `Lifted, cleaned, re-bonded, trimmed. ${capitalised(visitLength.service)}.`,
       },
     ],
@@ -98,6 +100,28 @@ export const referral = {
       { id: "afternoon", label: "Afternoon", hours: "12 to 4 pm" },
       { id: "evening", label: "Evening", hours: "4 to 8 pm" },
     ],
+    /**
+     * Not drawn: what to book, the consultation alone or with the first fit to follow (ADR 0025, item 68;
+     * docs/decisions/0086-the-next-visit-is-offered.md). The two choices are the owner's own words; the rest are
+     * placeholder words for the owner to approve (open point 45), not marked as the apps' are, since the mark
+     * refuses the site's production build (ADR 0081). The consent line recorded is the consultation's, unchanged,
+     * and whether it covers the fit is counsel's (open point 41).
+     */
+    plan: {
+      legend: "What to book",
+      options: [
+        { id: "consultation", label: "A consultation" },
+        { id: "first_fit", label: "The consultation, then my first fit" },
+      ],
+      note: "The fit is booked and paid for in the app once the consultation is done. Nothing is paid now.",
+      // A first fit takes two slots, which do not fit in the evening's (docs/decisions/0035-window-slot-map.md).
+      fitLegend: "The fit, if you have a time in mind",
+      fitWindows: [
+        { id: "any", label: "Either", hours: "" },
+        { id: "morning", label: "Morning", hours: "9 am to 12 pm" },
+        { id: "afternoon", label: "Afternoon", hours: "12 to 4 pm" },
+      ],
+    },
     consent: lineOf(notices.consultation),
     submit: "Book the consultation",
     sending: "Booking",
@@ -171,6 +195,10 @@ export const referral = {
     // words (open point 45).
     addressOnAccount:
       "We come to the address already on your account, not the one given here. To change it, message us on WhatsApp.",
+    // Not drawn: the first fit was asked for with the consultation (ADR 0086). The owner approves the words (open
+    // point 45).
+    firstFit:
+      "You asked for your first fit too. Once the consultation is done, you book the fit in the app and pay for it there.",
     calendar: "Add to calendar",
     calendarFile: "mane-man-consultation.ics",
     calendarTitle: "Mane Man consultation",

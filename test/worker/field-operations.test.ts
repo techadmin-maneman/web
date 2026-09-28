@@ -293,6 +293,28 @@ describe("the day's jobs", () => {
     expect(body).not.toMatch(/amount|price|rupee|"paise"/i);
   });
 
+  // docs/decisions/0085-services-ops-can-edit.md: the badge is the visit's own service's, not the standard tier's.
+  it("reads the badge from the visit's own service's price on its day", async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
+         VALUES ('consultation', 'at_home', 'Consultation at home', 60, 1, 'ops@localhost', ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from)
+         VALUES ('consultation', 'at_home', 50000, 0, '2026-01-01')`,
+      ),
+    ]);
+    await insertJob(OTHER_JOB, { fsmId: "ap-other", start: "2026-09-21T10:30:00.000Z", type: "consultation" });
+    await env.DB.prepare("UPDATE appointments SET tier = 'at_home' WHERE id = ?1").bind(OTHER_JOB).run();
+
+    const { jobs } = await (
+      await get("/api/tech/jobs?date=2026-09-21")
+    ).json<{ jobs: { id: string; badge: string }[] }>();
+
+    expect(jobs.find((job) => job.id === OTHER_JOB)?.badge).toBe("prepaid");
+  });
+
   it("carries a badge and never an amount", async () => {
     const answer = await get("/api/tech/jobs?date=2026-09-21");
     const body = await answer.text();
@@ -1267,8 +1289,9 @@ describe("leave", () => {
 
     const held = await occupancy(env.DB, "2026-09-24", "2026-09-24", NOW);
     expect(held(IMRAN, "2026-09-24").onLeave).toBe(true);
-    expect(placement(held(IMRAN, "2026-09-24"), "morning", "service")).toBeNull();
-    expect(placement(held(IMRAN, "2026-09-25"), "morning", "service")).not.toBeNull();
+    // A service visit's two half-slots (src/policy/visit-length.ts).
+    expect(placement(held(IMRAN, "2026-09-24"), "morning", 2)).toBeNull();
+    expect(placement(held(IMRAN, "2026-09-25"), "morning", 2)).not.toBeNull();
   });
 });
 

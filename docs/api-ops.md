@@ -1639,7 +1639,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names what was refused
+**400**: invalid_request: fields names what was refused, tier where no service of the kind has it; service_retired: the service is retired by the day it would apply from
 
 ```json
 {
@@ -1648,6 +1648,62 @@ Request body:
 ```
 
 **403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/prices/correct
+
+Correct a price still to come: take it back and set its replacement, from any day from today, at once
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/PriceCorrection"
+}
+```
+
+**200**: The book as it now stands
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "prices": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/Price"
+      }
+    }
+  },
+  "required": [
+    "prices"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request: fields names what was refused, was_valid_from when that row applies today or applied before; service_retired: the service is retired by the new day
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: the book holds no such row to correct
 
 ```json
 {
@@ -1797,6 +1853,794 @@ Request body:
 }
 ```
 
+### GET /api/services
+
+Every service, offered or retired, with every price it has had and is to have, and the late fees
+
+**200**: Every service as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/OpsServices"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/services
+
+Add a service to a kind of visit. Clients see it once it has a price
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ServiceAdd"
+}
+```
+
+**201**: Every service as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/OpsServices"
+}
+```
+
+**400**: invalid_request: fields names the box refused
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no service of that kind has that code
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/services/{kind}/{tier}/name
+
+Rename a service. Its code stays, and so do its prices and what was sold under them
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ServiceRename"
+}
+```
+
+**200**: Every service as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/OpsServices"
+}
+```
+
+**400**: invalid_request: fields names the box refused
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no service of that kind has that code
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/services/{kind}/{tier}/length
+
+How long a service is booked for, from now on. A visit held or booked before keeps its own
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ServiceLength"
+}
+```
+
+**200**: Every service as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/OpsServices"
+}
+```
+
+**400**: invalid_request: fields names the box refused
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no service of that kind has that code
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/services/{kind}/order
+
+A kind's services in another order, as the console and the app list them
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ServiceOrder"
+}
+```
+
+**200**: Every service as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/OpsServices"
+}
+```
+
+**400**: invalid_request: fields names the box refused
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no service of that kind has that code
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/services/{kind}/{tier}/retire
+
+Stop offering a service from a day, today or later. Nothing already sold changes
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ServiceRetire"
+}
+```
+
+**200**: Every service as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/OpsServices"
+}
+```
+
+**400**: invalid_request: fields names the box refused
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no service of that kind has that code
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/services/{kind}/{tier}/restore
+
+Offer a retired service again, or take back a retirement still to come
+
+**200**: Every service as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/OpsServices"
+}
+```
+
+**400**: invalid_request: fields names the box refused
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no service of that kind has that code
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/consumables
+
+Every consumable, where each stands in FSM's catalogue, and what each service is expected to use
+
+**200**: Every consumable and each service's expected use
+
+```json
+{
+  "$ref": "#/components/schemas/Consumables"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/consumables
+
+Add a consumable. The technician app offers it from now on
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/NewConsumable"
+}
+```
+
+**200**: Every consumable and each service's expected use
+
+```json
+{
+  "$ref": "#/components/schemas/Consumables"
+}
+```
+
+**400**: invalid_request: fields names what was refused, such as a name already taken
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/consumables/{code}
+
+Rename a consumable, or change its unit, its cost or its reorder levels. Only the fields sent change
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ConsumableChange"
+}
+```
+
+**200**: Every consumable and each service's expected use
+
+```json
+{
+  "$ref": "#/components/schemas/Consumables"
+}
+```
+
+**400**: invalid_request: fields names what was refused, such as a name already taken
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such consumable
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/consumables/{code}/retire
+
+Stop offering a consumable from a day. Nothing already recorded moves
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ConsumableRetirement"
+}
+```
+
+**200**: Every consumable and each service's expected use
+
+```json
+{
+  "$ref": "#/components/schemas/Consumables"
+}
+```
+
+**400**: invalid_request: fields names from, a day before today
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such consumable
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/consumables/{code}/restore
+
+Offer a retired consumable again
+
+**200**: Every consumable and each service's expected use
+
+```json
+{
+  "$ref": "#/components/schemas/Consumables"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such consumable
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/service-usage
+
+What one service is expected to use. The whole list: a consumable left out is expected no more
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ServiceUsage"
+}
+```
+
+**200**: Every consumable and each service's expected use
+
+```json
+{
+  "$ref": "#/components/schemas/Consumables"
+}
+```
+
+**400**: invalid_request: fields names tier for a service the console does not hold, or items.N.code for a consumable nobody added or one named twice
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/job-sheet
+
+Each kind of visit's checklist and the partial reasons, as the technician app reads them
+
+**200**: The job sheet as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/JobSheet"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/job-sheet/checklists/{visit_type}
+
+One kind of visit's checklist, the whole list in its order
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/JobSheetListChange"
+}
+```
+
+**200**: The job sheet as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/JobSheet"
+}
+```
+
+**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/job-sheet/partial-reasons
+
+The reasons a job may be left partly done, the whole list in its order
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/JobSheetListChange"
+}
+```
+
+**200**: The job sheet as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/JobSheet"
+}
+```
+
+**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/stock
+
+What each kit and the central store hold of each consumable, what is low, and the latest movements
+
+**200**: What every place holds
+
+```json
+{
+  "$ref": "#/components/schemas/Stock"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/stock/deliveries
+
+Stock received into the central store
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/StockDelivery"
+}
+```
+
+**200**: What every place holds
+
+```json
+{
+  "$ref": "#/components/schemas/Stock"
+}
+```
+
+**400**: invalid_request: fields names consumable_code for one nobody added, or the place no technician is
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/stock/transfers
+
+Stock moved from one place to another: out of one, into the other
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/StockTransfer"
+}
+```
+
+**200**: What every place holds
+
+```json
+{
+  "$ref": "#/components/schemas/Stock"
+}
+```
+
+**400**: invalid_request: fields names consumable_code, from, or to for the place it came from
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/stock/counts
+
+What ops counted at a place. The ledger takes the difference from what it held
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/StockCount"
+}
+```
+
+**200**: What every place holds
+
+```json
+{
+  "$ref": "#/components/schemas/Stock"
+}
+```
+
+**400**: invalid_request: fields names consumable_code for one nobody added, or the place no technician is
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/stock/write-offs
+
+A loss somebody saw at a place, with what happened
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/StockWriteOff"
+}
+```
+
+**200**: What every place holds
+
+```json
+{
+  "$ref": "#/components/schemas/Stock"
+}
+```
+
+**400**: invalid_request: fields names consumable_code for one nobody added, or the place no technician is
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/whoami
 
 Who Access let through, and where signing out goes
@@ -1868,7 +2712,10 @@ Who Access let through, and where signing out goes
             "fsm_refused",
             "fsm_partly",
             "too_early_to_close",
-            "no_service_area"
+            "no_service_area",
+            "service_exists",
+            "last_of_kind",
+            "service_retired"
           ]
         },
         "request_id": {
@@ -4890,7 +5737,9 @@ Who Access let through, and where signing out goes
               "leave_conflict",
               "address_to_confirm",
               "consultation_request",
+              "first_fit_to_book",
               "replacement_order",
+              "at_risk_client",
               "partial_visit",
               "referral_review",
               "no_show_decision",
@@ -4977,7 +5826,7 @@ Who Access let through, and where signing out goes
           "type": "null"
         }
       ],
-      "description": "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM contact."
+      "description": "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM contact; for a consultation asked for, its day and window and, where a first fit was asked for with it, \"first_fit\" and the window wanted (\"any\" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window wanted."
     },
     "since": {
       "type": "string",
@@ -5275,7 +6124,8 @@ Who Access let through, and where signing out goes
         "no_show_wait_min",
         "address_unlock_hour",
         "task_sla_hours",
-        "piece_cycle_days"
+        "piece_cycle_days",
+        "booking_days"
       ]
     },
     "title": {
@@ -5312,6 +6162,33 @@ Who Access let through, and where signing out goes
         }
       ],
       "description": "null for one number, a list where the keys are fixed, \"open\" where ops name them."
+    },
+    "bounds": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "min": {
+                "type": "integer"
+              },
+              "max": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "min",
+              "max"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Each key's own bounds, where a keyed rule's figures measure different things; null where every figure takes min to max."
     },
     "value": {
       "anyOf": [
@@ -5374,6 +6251,7 @@ Who Access let through, and where signing out goes
     "min",
     "max",
     "keys",
+    "bounds",
     "value",
     "default",
     "source",
@@ -5482,7 +6360,8 @@ Who Access let through, and where signing out goes
     },
     "tier": {
       "type": "string",
-      "pattern": "^[a-z][a-z0-9_]{0,31}$"
+      "pattern": "^[a-z][a-z0-9_]{0,31}$",
+      "description": "For a visit, the code of one of its kind's services; for a late fee, standard."
     },
     "amount_ex_gst": {
       "type": "integer",
@@ -5505,6 +6384,61 @@ Who Access let through, and where signing out goes
     "amount_ex_gst",
     "gst_percent",
     "valid_from"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PriceCorrection
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "item": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement",
+        "late_fee_first_fit",
+        "late_fee_replacement"
+      ],
+      "description": "A kind of visit, or one of the two late fees."
+    },
+    "tier": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,31}$",
+      "description": "For a visit, the code of one of its kind's services; for a late fee, standard."
+    },
+    "amount_ex_gst": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000000
+    },
+    "gst_percent": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 28
+    },
+    "valid_from": {
+      "type": "string",
+      "format": "date"
+    },
+    "was_valid_from": {
+      "type": "string",
+      "format": "date",
+      "description": "The day the price still to come applies from."
+    }
+  },
+  "required": [
+    "item",
+    "tier",
+    "amount_ex_gst",
+    "gst_percent",
+    "valid_from",
+    "was_valid_from"
   ],
   "additionalProperties": false
 }
@@ -5644,6 +6578,1381 @@ Who Access let through, and where signing out goes
   },
   "required": [
     "changes"
+  ],
+  "additionalProperties": false
+}
+```
+
+### OpsServices
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "today": {
+      "type": "string",
+      "format": "date"
+    },
+    "kinds": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "consultation",
+              "first_fit",
+              "service",
+              "replacement"
+            ]
+          },
+          "minutes": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "minutes"
+        ],
+        "additionalProperties": false
+      },
+      "description": "The four kinds, in their order, each with the length a new service of it starts at."
+    },
+    "services": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/OpsService"
+      }
+    },
+    "late_fees": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "consultation",
+              "first_fit",
+              "service",
+              "replacement"
+            ]
+          },
+          "item": {
+            "type": "string",
+            "enum": [
+              "late_fee_first_fit",
+              "late_fee_replacement"
+            ]
+          },
+          "prices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Price"
+            }
+          }
+        },
+        "required": [
+          "kind",
+          "item",
+          "prices"
+        ],
+        "additionalProperties": false
+      },
+      "description": "The two late fees, each one figure for its kind of visit, with every price it has had."
+    },
+    "min_minutes": {
+      "type": "integer"
+    },
+    "max_minutes": {
+      "type": "integer"
+    },
+    "max_amount_ex_gst": {
+      "type": "integer"
+    },
+    "max_gst_percent": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "today",
+    "kinds",
+    "services",
+    "late_fees",
+    "min_minutes",
+    "max_minutes",
+    "max_amount_ex_gst",
+    "max_gst_percent"
+  ],
+  "additionalProperties": false
+}
+```
+
+### OpsService
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement"
+      ]
+    },
+    "tier": {
+      "type": "string",
+      "description": "Its code within its kind, which the price book prices it by; never changed."
+    },
+    "name": {
+      "type": "string"
+    },
+    "minutes": {
+      "type": "integer",
+      "description": "How long FSM books it for, and the time the day keeps."
+    },
+    "sort": {
+      "type": "integer"
+    },
+    "retired_date": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "India's date from which clients no longer see it or book it; null while it is offered."
+    },
+    "offered": {
+      "type": "boolean",
+      "description": "Offered today: not retired by today. Priced or not."
+    },
+    "fsm_item_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Its item in FSM's catalogue, once found by its name or made; null until then."
+    },
+    "updated_by": {
+      "type": "string"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "prices": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/Price"
+      },
+      "description": "Every price it has had and is to have, newest first."
+    }
+  },
+  "required": [
+    "kind",
+    "tier",
+    "name",
+    "minutes",
+    "sort",
+    "retired_date",
+    "offered",
+    "fsm_item_id",
+    "updated_by",
+    "updated_at",
+    "prices"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ServiceAdd
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement"
+      ]
+    },
+    "name": {
+      "type": "string",
+      "maxLength": 60
+    },
+    "tier": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,31}$",
+      "description": "Its code; left out, made from its name, e.g. premium."
+    },
+    "minutes": {
+      "type": "integer",
+      "description": "Left out, its kind's length."
+    }
+  },
+  "required": [
+    "kind",
+    "name"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ServiceRename
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "maxLength": 60
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ServiceLength
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "minutes": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "minutes"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ServiceOrder
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "tiers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]{0,31}$"
+      },
+      "minItems": 1,
+      "maxItems": 64,
+      "description": "Every one of the kind's codes, once."
+    }
+  },
+  "required": [
+    "tiers"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ServiceRetire
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "from": {
+      "type": "string",
+      "format": "date",
+      "description": "India's date from which clients no longer see it."
+    }
+  },
+  "required": [
+    "from"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Consumables
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "consumables": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/Consumable"
+      },
+      "description": "Every consumable, retired ones too, by name."
+    },
+    "services": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/ServiceUse"
+      }
+    },
+    "today": {
+      "type": "string",
+      "format": "date"
+    },
+    "fsm_push": {
+      "type": "boolean",
+      "description": "Whether FSM's catalogue follows by itself (FSM_CATALOGUE_PUSH); off, ops set it there by hand."
+    },
+    "max_unit_cost": {
+      "type": "integer"
+    },
+    "max_expected": {
+      "type": "integer"
+    },
+    "max_reorder_level": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "consumables",
+    "services",
+    "today",
+    "fsm_push",
+    "max_unit_cost",
+    "max_expected",
+    "max_reorder_level"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Consumable
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "unit": {
+      "type": "string"
+    },
+    "unit_cost": {
+      "type": "integer",
+      "description": "In paise, for one unit. Ours alone: no invoice carries it."
+    },
+    "reorder_kit": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A kit is low at or below this, in the consumable's unit; null for no level."
+    },
+    "reorder_central": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The central store is low at or below this; null for no level."
+    },
+    "retired_from": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The day in India it is no longer offered from; null while it is."
+    },
+    "offered": {
+      "type": "boolean",
+      "description": "Whether the technician app offers it today."
+    },
+    "fsm": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "type": "string",
+          "enum": [
+            "linked",
+            "renamed",
+            "missing",
+            "unchecked"
+          ],
+          "description": "A part by this name; a part still under another name; no part by this name; or not read yet. The hourly check reads FSM's catalogue."
+        },
+        "item_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "What FSM calls the part."
+        }
+      },
+      "required": [
+        "state",
+        "item_id",
+        "name"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "code",
+    "name",
+    "unit",
+    "unit_cost",
+    "reorder_kit",
+    "reorder_central",
+    "retired_from",
+    "offered",
+    "fsm"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ServiceUse
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "visit_type": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement"
+      ]
+    },
+    "tier": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string",
+      "description": "The service's name, as the console names it."
+    },
+    "retired_date": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "India's date it is retired from, for a service no longer offered: a visit sold before is still done, and reads what it uses. Null while it is offered."
+    },
+    "expected": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "quantity"
+        ],
+        "additionalProperties": false
+      },
+      "description": "What it is expected to use, by the consumable's name."
+    }
+  },
+  "required": [
+    "visit_type",
+    "tier",
+    "name",
+    "retired_date",
+    "expected"
+  ],
+  "additionalProperties": false,
+  "description": "A service the console holds: a kind of visit at a tier (docs/decisions/0085-services-ops-can-edit.md)."
+}
+```
+
+### NewConsumable
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[\\p{L}\\p{N}][\\p{L}\\p{N} .,'()&/+%-]{0,59}$/u",
+      "description": "A letter or a digit first, then letters, digits, spaces and . , ' ( ) & / + % -; at most 60."
+    },
+    "unit": {
+      "type": "string",
+      "pattern": "^\\p{L}[\\p{L} .]{0,19}$/u",
+      "description": "strip, ml, sachet: at most 20 letters."
+    },
+    "unit_cost": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000000,
+      "description": "In paise."
+    },
+    "reorder_kit": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "reorder_central": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "name",
+    "unit",
+    "unit_cost"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ConsumableChange
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[\\p{L}\\p{N}][\\p{L}\\p{N} .,'()&/+%-]{0,59}$/u",
+      "description": "A letter or a digit first, then letters, digits, spaces and . , ' ( ) & / + % -; at most 60."
+    },
+    "unit": {
+      "type": "string",
+      "pattern": "^\\p{L}[\\p{L} .]{0,19}$/u",
+      "description": "strip, ml, sachet: at most 20 letters."
+    },
+    "unit_cost": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000000,
+      "description": "In paise."
+    },
+    "reorder_kit": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "reorder_central": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "additionalProperties": false
+}
+```
+
+### ConsumableRetirement
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "from": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "from"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ServiceUsage
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "visit_type": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement"
+      ]
+    },
+    "tier": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,31}$"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 999
+          }
+        },
+        "required": [
+          "code",
+          "quantity"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 50
+    }
+  },
+  "required": [
+    "visit_type",
+    "tier",
+    "items"
+  ],
+  "additionalProperties": false
+}
+```
+
+### JobSheet
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "checklists": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/JobSheetChecklist"
+      }
+    },
+    "partial_reasons": {
+      "$ref": "#/components/schemas/JobSheetList"
+    },
+    "max_checklist_items": {
+      "type": "integer"
+    },
+    "max_partial_reasons": {
+      "type": "integer"
+    },
+    "max_label": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "checklists",
+    "partial_reasons",
+    "max_checklist_items",
+    "max_partial_reasons",
+    "max_label"
+  ],
+  "additionalProperties": false
+}
+```
+
+### JobSheetChecklist
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "visit_type": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement"
+      ]
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "label"
+        ],
+        "additionalProperties": false
+      },
+      "description": "What the technician is offered, in order."
+    },
+    "retired": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "label"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Taken off by ops, and still understood: a phone may have queued one before it knew."
+    },
+    "set_by": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Null while the committed list stands."
+    },
+    "set_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "visit_type",
+    "items",
+    "retired",
+    "set_by",
+    "set_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+### JobSheetList
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "label"
+        ],
+        "additionalProperties": false
+      },
+      "description": "What the technician is offered, in order."
+    },
+    "retired": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "label"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Taken off by ops, and still understood: a phone may have queued one before it knew."
+    },
+    "set_by": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Null while the committed list stands."
+    },
+    "set_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "items",
+    "retired",
+    "set_by",
+    "set_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+### JobSheetListChange
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "An item already on the list, or retired from it, keeps its code; a new one sends none."
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "^[^\\p{Cc}]+$/u"
+          }
+        },
+        "required": [
+          "label"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "maxItems": 20
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "additionalProperties": false,
+  "description": "The whole list, in its order. An item left out is retired."
+}
+```
+
+### Stock
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "consumables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "retired": {
+            "type": "boolean",
+            "description": "No longer offered, and still held somewhere."
+          },
+          "reorder_kit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reorder_central": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "unit",
+          "retired",
+          "reorder_kit",
+          "reorder_central"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "places": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "technician_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A technician's kit, by the technician's ID; null for the central store."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The technician's; null for the store."
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "technician_id",
+          "name",
+          "active"
+        ],
+        "additionalProperties": false
+      },
+      "description": "The central store first, then each active technician's kit, and any other still holding stock."
+    },
+    "holdings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "consumable_code": {
+            "type": "string"
+          },
+          "technician_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A technician's kit, by the technician's ID; null for the central store."
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "The sum of the place's rows; below nought is a gap."
+          },
+          "low": {
+            "type": "boolean",
+            "description": "At or below the level for its kind of place."
+          },
+          "counted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When it was last counted there."
+          }
+        },
+        "required": [
+          "consumable_code",
+          "technician_id",
+          "quantity",
+          "low",
+          "counted_at"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "movements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "consumable_code": {
+            "type": "string"
+          },
+          "technician_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A technician's kit, by the technician's ID; null for the central store."
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "Into the place, positive; out of it, negative."
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "received",
+              "transferred",
+              "used",
+              "counted",
+              "written_off"
+            ]
+          },
+          "by": {
+            "type": "string",
+            "description": "Who: ops' Access identity, or the technician's ID for a job's use."
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "at",
+          "consumable_code",
+          "technician_id",
+          "quantity",
+          "reason",
+          "by",
+          "note"
+        ],
+        "additionalProperties": false
+      },
+      "description": "The latest movements, newest first."
+    },
+    "today": {
+      "type": "string",
+      "format": "date"
+    },
+    "max_quantity": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "consumables",
+    "places",
+    "holdings",
+    "movements",
+    "today",
+    "max_quantity"
+  ],
+  "additionalProperties": false
+}
+```
+
+### StockDelivery
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "consumable_code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "quantity": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100000
+    },
+    "note": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\p{Cc}]+$/u"
+    }
+  },
+  "required": [
+    "consumable_code",
+    "quantity"
+  ],
+  "additionalProperties": false
+}
+```
+
+### StockTransfer
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "consumable_code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "quantity": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100000
+    },
+    "from": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A technician's kit, by the technician's ID; null for the central store."
+    },
+    "to": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A technician's kit, by the technician's ID; null for the central store."
+    }
+  },
+  "required": [
+    "consumable_code",
+    "quantity",
+    "from",
+    "to"
+  ],
+  "additionalProperties": false
+}
+```
+
+### StockCount
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "consumable_code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "technician_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A technician's kit, by the technician's ID; null for the central store."
+    },
+    "counted": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "note": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\p{Cc}]+$/u"
+    }
+  },
+  "required": [
+    "consumable_code",
+    "technician_id",
+    "counted"
+  ],
+  "additionalProperties": false
+}
+```
+
+### StockWriteOff
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "consumable_code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "technician_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A technician's kit, by the technician's ID; null for the central store."
+    },
+    "quantity": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100000
+    },
+    "note": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\p{Cc}]+$/u"
+    }
+  },
+  "required": [
+    "consumable_code",
+    "technician_id",
+    "quantity",
+    "note"
   ],
   "additionalProperties": false
 }

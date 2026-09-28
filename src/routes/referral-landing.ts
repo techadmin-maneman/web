@@ -10,7 +10,8 @@
 //                                     house card; the version in the link is what makes a revoke reach new shares
 //
 // Posting takes a Turnstile token, and the same limits per number and address as the booking form. A consultation
-// takes the full address it is at, as the booking form's does (docs/decisions/0081-the-site-takes-the-address.md).
+// takes the full address it is at, as the booking form's does (docs/decisions/0081-the-site-takes-the-address.md),
+// and may ask for the first fit to follow, as it may there (docs/decisions/0086-the-next-visit-is-offered.md).
 // An unknown code still books or waits, without an invite. The same submission sent again under its
 // Idempotency-Key gets its first answer.
 
@@ -26,7 +27,14 @@ import { errorBody, errorResponse } from "../http/errors.ts";
 import { IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
 import { formRequest } from "../http/public-form.ts";
 import { addressOf } from "./client-profile.ts";
-import { AddressOutcomeSchema, takenOrBooked, TypedAddressSchema } from "./consultations.ts";
+import {
+  AddressOutcomeSchema,
+  FirstFitOutcomeSchema,
+  firstFitOf,
+  FirstFitRequestSchema,
+  takenOrBooked,
+  TypedAddressSchema,
+} from "./consultations.ts";
 
 const CodeParams = z.object({ code: z.string().regex(/^[A-Za-z0-9]{4,12}$/) });
 
@@ -80,6 +88,7 @@ const ConsultationRequestSchema = z
     date: z.iso.date(),
     window: z.enum(BOOKING_WINDOWS),
     address: TypedAddressSchema,
+    first_fit: FirstFitRequestSchema,
     consent: z.literal(true).openapi({ description: '"You may contact me on WhatsApp about this consultation."' }),
   })
   .strict();
@@ -153,6 +162,7 @@ const consultationRoute = createRoute({
               credits: z.boolean().openapi({ description: "Whether the invite's 3 service visits apply." }),
               invite: InviteStateSchema,
               address: AddressOutcomeSchema,
+              first_fit: FirstFitOutcomeSchema,
             })
             .strict()
             .openapi("ReferralConsultation"),
@@ -231,8 +241,13 @@ export function registerReferralLanding(app: App): void {
       .toUpperCase();
     const card = await liveCard(c.env.DB, c.env.REFERRAL_CARDS, code);
     if (card === null) return c.redirect(HOUSE_CARD, 302);
-    // A version's card never changes: a new one gets a new link.
-    return c.body(card.body, 200, { "Content-Type": "image/jpeg", "Cache-Control": "public, max-age=86400" });
+    // A version's card never changes: a new one gets a new link. The length tells a chat's crawler the card's size
+    // before it reads it, as the house card's static file does.
+    return c.body(card.body, 200, {
+      "Content-Type": "image/jpeg",
+      "Content-Length": String(card.size),
+      "Cache-Control": "public, max-age=86400",
+    });
   });
 
   app.openapi(pincodeRoute, async (c) => {
@@ -260,6 +275,7 @@ export function registerReferralLanding(app: App): void {
         turnstileToken: body.turnstile_token,
         attribution: {},
         invite: await invite(c, code),
+        firstFit: firstFitOf(body.first_fit),
       });
       if (!booked.ok) return booked;
       return {
@@ -272,6 +288,7 @@ export function registerReferralLanding(app: App): void {
           credits: booked.credits,
           invite: booked.invite,
           address: booked.address,
+          first_fit: booked.firstFit,
         },
       };
     });

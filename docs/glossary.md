@@ -14,6 +14,18 @@ The words the code, the database and the API use for the same few things, and wh
 | **request**     | A day and window asked for while self-serve booking is off, which ops confirm (`consultation_requests`, ADR 0060). FSM has a Request too: a lead sent to FSM before it is a work order (`src/domain/fsm-leads.ts`). |
 | **work order**  | FSM's container for an appointment and its invoice. We create one with each booking (`src/domain/bookings.ts`).                                                                                                     |
 
+## Services and prices
+
+| Word           | Means                                                                                                                                                                                                                                                                                    |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **kind**       | One of the four kinds of visit: consultation, first fit, service visit, replacement (`VISIT_TYPES`). It decides the technician's steps, the booking rules and the fees, and a new one needs a release. A hold, an appointment and the API call it `type`; the `services` table, `kind`.  |
+| **service**    | What a client books: a kind and a tier of it, with its own name, length, place in the kind's order and FSM item (`services`, ADR 0085). Ops add, rename, time, order, retire and restore them. Also the kind `service`, a service visit: new prose says "service visit" for the kind.    |
+| **tier**       | A service's code within its kind: `standard`, `premium`, or another ops add, made from its first name and never changed. The price book's second key, so a service's prices stay its own whatever it is renamed.                                                                         |
+| **standard**   | Each kind's first service, the one there has always been: what a hold with no tier books, and the site's Standard column. The site's Premium is the services coded `premium`.                                                                                                            |
+| **offered**    | A service not retired by a day (`isOffered`). Clients see one only while it is offered and priced; one retired from a day stays as it was sold to anyone who bought it before.                                                                                                           |
+| **price book** | `price_book`: every price by what it prices (a kind or a late fee), its tier, and the day it applies from, with GST. Never back-dated, so what was sold stays readable; a hold keeps the price it was sold at (ADR 0068). Set in the console's Services and prices (ADR 0061, ADR 0085). |
+| **FSM item**   | A service's item in FSM's catalogue, which FSM books the visit on and invoices it from (`fsm_item_id`). Found by the ID kept on the service, else by its name.                                                                                                                           |
+
 ## Time
 
 | Word                  | Means                                                                                                                                                                                                                                                                                                               |

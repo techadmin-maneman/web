@@ -790,7 +790,10 @@ The piece a label names
             "fsm_refused",
             "fsm_partly",
             "too_early_to_close",
-            "no_service_area"
+            "no_service_area",
+            "service_exists",
+            "last_of_kind",
+            "service_retired"
           ]
         },
         "request_id": {
@@ -1595,33 +1598,23 @@ The piece a label names
     "checklist": {
       "type": "array",
       "items": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "label": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "label"
-        ],
-        "additionalProperties": false
-      }
+        "$ref": "#/components/schemas/JobSheetItem"
+      },
+      "description": "This kind of visit's checklist, as ops set it in the console, in its order."
     },
     "partial_reasons": {
       "type": "array",
       "items": {
-        "type": "string",
-        "enum": [
-          "client_stopped_it",
-          "piece_not_ready",
-          "client_unwell",
-          "more_time_needed"
-        ]
-      }
+        "$ref": "#/components/schemas/JobSheetItem"
+      },
+      "description": "The reasons a job may be left partly done, as ops set them, in their order."
+    },
+    "consumables": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/TechnicianConsumable"
+      },
+      "description": "Every consumable the technician may record, those this job's service is expected to use first, each with the count its stepper starts at."
     }
   },
   "required": [
@@ -1648,7 +1641,8 @@ The piece a label names
     "reminder",
     "steps",
     "checklist",
-    "partial_reasons"
+    "partial_reasons",
+    "consumables"
   ],
   "additionalProperties": false
 }
@@ -1825,6 +1819,59 @@ The piece a label names
     "replacement_due_at",
     "failed_at",
     "failure_reason"
+  ],
+  "additionalProperties": false
+}
+```
+
+### JobSheetItem
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "label"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianConsumable
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "What the consumables step sends back."
+    },
+    "name": {
+      "type": "string"
+    },
+    "unit": {
+      "type": "string",
+      "description": "What one is counted in: strip, ml, sachet."
+    },
+    "expected": {
+      "type": "integer",
+      "description": "How many this job's service is expected to use; 0 for one it lists no use for."
+    }
+  },
+  "required": [
+    "code",
+    "name",
+    "unit",
+    "expected"
   ],
   "additionalProperties": false
 }
@@ -2073,24 +2120,49 @@ The piece a label names
     "items": {
       "type": "array",
       "items": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 80
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "quantity": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 999
+              }
+            },
+            "required": [
+              "code",
+              "quantity"
+            ],
+            "additionalProperties": false
           },
-          "quantity": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 999
+          {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "quantity": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 999
+              }
+            },
+            "required": [
+              "name",
+              "quantity"
+            ],
+            "additionalProperties": false,
+            "description": "A consumable by the name the technician gave it, as a phone queued it before codes."
           }
-        },
-        "required": [
-          "name",
-          "quantity"
-        ],
-        "additionalProperties": false
+        ]
       },
       "maxItems": 30
     }
@@ -2098,7 +2170,8 @@ The piece a label names
   "required": [
     "items"
   ],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "description": "What was used, each by the code the job's card gave it. None used is an empty list. A code the catalogue does not hold is refused, fields items."
 }
 ```
 
@@ -2201,12 +2274,9 @@ The piece a label names
         },
         "reason": {
           "type": "string",
-          "enum": [
-            "client_stopped_it",
-            "piece_not_ready",
-            "client_unwell",
-            "more_time_needed"
-          ]
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "One of the card's partial_reasons, by its id; one ops have since taken off is still taken."
         }
       },
       "required": [

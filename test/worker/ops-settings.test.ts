@@ -13,6 +13,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/http/context.ts";
 import { renderMessage } from "../../src/config/message-templates.ts";
 import { COMMITTED, createCachedOpsInputs, SETTINGS_TTL_MS } from "../../src/domain/ops-settings.ts";
+import { NEXT_VISIT_DAY_BOUNDS, NEXT_VISIT_DAYS } from "../../src/policy/next-visit.ts";
 import { composeLaunchAlert } from "../../src/domain/waitlist.ts";
 import { pincodeUpsert } from "../../scripts/lib/pincodes.ts";
 import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
@@ -214,6 +215,61 @@ describe("what the routes that read them do", () => {
   });
 });
 
+// The seven figures the next visit turns on, as one input with each figure's own bounds, since the register holds
+// ten inputs at most (docs/decisions/0086-the-next-visit-is-offered.md).
+describe("the next visit's days", () => {
+  it("answers the committed figures, each key with its own bounds, before anybody sets them", async () => {
+    const days = await named("booking_days");
+    expect(days).toMatchObject({
+      unit: "days",
+      value: NEXT_VISIT_DAYS,
+      default: NEXT_VISIT_DAYS,
+      source: "src/policy/next-visit.ts",
+      set_by: null,
+    });
+    expect((days as Setting & { bounds: unknown }).bounds).toEqual(NEXT_VISIT_DAY_BOUNDS);
+    expect(COMMITTED.nextVisitDays).toEqual(NEXT_VISIT_DAYS);
+  });
+
+  it("takes a figure inside its own key's bounds, a lead time of nought among them", async () => {
+    const value = { ...NEXT_VISIT_DAYS, first_fit_lead: 0, service_cadence: 28, horizon: 60 };
+    const answer = await post("/api/settings/booking_days", { value });
+    expect(answer.status).toBe(200);
+    expect(await answer.json<Setting>()).toMatchObject({ value, set_by: "ops@localhost" });
+    expect((await createCachedOpsInputs()(env.DB, NOW)).nextVisitDays).toEqual(value);
+  });
+
+  it("refuses a figure outside its own key's bounds, though inside another's, naming the box", async () => {
+    // Nought is a lead time ops may set; a horizon of nought, or of ten days, is shorter than the date strip.
+    const answer = await post("/api/settings/booking_days", { value: { ...NEXT_VISIT_DAYS, horizon: 10 } });
+    expect(answer.status).toBe(400);
+    expect(await answer.json()).toMatchObject({ error: { fields: ["booking_days.horizon"] } });
+    const cadence = await post("/api/settings/booking_days", { value: { ...NEXT_VISIT_DAYS, service_cadence: 0 } });
+    expect(await cadence.json()).toMatchObject({ error: { fields: ["booking_days.service_cadence"] } });
+    expect((await named("booking_days")).value).toEqual(NEXT_VISIT_DAYS);
+    expect((await auditFor("setting.change")).results).toHaveLength(0);
+  });
+
+  it("wants every figure, and refuses a set that leaves one out", async () => {
+    const { invoice_prompt: _left_out, ...short } = NEXT_VISIT_DAYS;
+    expect((await post("/api/settings/booking_days", { value: short })).status).toBe(400);
+  });
+
+  it("records who changed them, the old figures beside the new, and puts the committed ones back", async () => {
+    await post("/api/settings/booking_days", { value: { ...NEXT_VISIT_DAYS, service_cadence: 28 } });
+    await post("/api/settings/booking_days", { value: null });
+    const { results } = await auditFor("setting.change");
+    expect(results.map((entry) => entry.subject_id)).toEqual(["booking_days", "booking_days"]);
+    expect(JSON.parse(results[0]?.detail ?? "{}")).toEqual({
+      from: JSON.stringify(NEXT_VISIT_DAYS),
+      to: JSON.stringify({ ...NEXT_VISIT_DAYS, service_cadence: 28 }),
+      reset: false,
+    });
+    expect(JSON.parse(results[1]?.detail ?? "{}")).toMatchObject({ to: JSON.stringify(NEXT_VISIT_DAYS), reset: true });
+    expect(await named("booking_days")).toMatchObject({ value: NEXT_VISIT_DAYS, set_by: null });
+  });
+});
+
 describe("the price book", () => {
   it("marks the one row that applies today, and leaves the rest past or still to come", async () => {
     await post("/api/prices", {
@@ -264,7 +320,9 @@ describe("the price book", () => {
     expect((await post("/api/prices", { ...base, amount_ex_gst: 250_000, gst_percent: 40 })).status).toBe(400);
   });
 
-  it("prices a tier the book has never held, which is how a new kind of base is priced", async () => {
+  // A tier is a service now, added in the console before it is priced (docs/decisions/0085-services-ops-can-edit.md).
+  it("prices a service ops added to a kind, which is how a new kind of base is priced", async () => {
+    expect((await post("/api/services", { kind: "first_fit", name: "Lace" })).status).toBe(201);
     const answer = await post("/api/prices", {
       item: "first_fit",
       tier: "lace",
@@ -277,6 +335,28 @@ describe("the price book", () => {
     expect(body.prices).toContainEqual(
       expect.objectContaining({ item: "first_fit", tier: "lace", amount_ex_gst: 4_000_000 }),
     );
+  });
+
+  // BIZ-10 again: a price for a tier no service carries is a price nobody could ever be sold.
+  it("refuses a tier no service of the kind carries, and names the box", async () => {
+    const answer = await post("/api/prices", {
+      item: "first_fit",
+      tier: "lace",
+      amount_ex_gst: 4_000_000,
+      gst_percent: 0,
+      valid_from: "2026-09-21",
+    });
+    expect(answer.status).toBe(400);
+    expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["tier"] } });
+    expect((await auditFor("price.set")).results).toHaveLength(0);
+  });
+
+  it("keeps a late fee to one figure a kind, its standard tier's", async () => {
+    const fee = { item: "late_fee_first_fit", amount_ex_gst: 500_000, gst_percent: 0, valid_from: "2026-09-21" };
+    expect((await post("/api/prices", { ...fee, tier: "standard" })).status).toBe(200);
+    const answer = await post("/api/prices", { ...fee, tier: "premium" });
+    expect(answer.status).toBe(400);
+    expect(await answer.json()).toMatchObject({ error: { fields: ["tier"] } });
   });
 
   it("records who set it, from what and from when", async () => {

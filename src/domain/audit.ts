@@ -44,10 +44,30 @@ export const AUDIT_ACTIONS = [
   "price.withdraw",
   "pincode.set",
   "pincode.rename",
+  // The services clients book (docs/decisions/0085-services-ops-can-edit.md): one added to a kind, renamed, given
+  // another length, a kind's put in another order, one retired from a day, and one offered again.
+  "service.add",
+  "service.rename",
+  "service.length",
+  "service.reorder",
+  "service.retire",
+  "service.restore",
   // Ops putting a client's service-visit credits right by hand (docs/decisions/0068-a-paid-hold-is-kept.md).
   "credit.adjust",
   // Ops calling a client about a move he had not heard of (docs/decisions/0069-dispatch-under-concurrency.md).
   "dispatch.client_told",
+  // The consumables ops keep and what each service is expected to use, the job sheet the technician
+  // app reads, and the stock in each kit and the central store (docs/decisions/0087-consumables-and-stock.md).
+  "consumable.add",
+  "consumable.change",
+  "consumable.retire",
+  "consumable.restore",
+  "consumable.usage",
+  "job_sheet.set",
+  "stock.receive",
+  "stock.transfer",
+  "stock.count",
+  "stock.write_off",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
