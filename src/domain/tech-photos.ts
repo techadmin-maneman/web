@@ -170,7 +170,7 @@ export async function storeThumbnail(
     .bind(slot.appointmentId, slot.phase, slot.angle)
     .first<{ id: string; r2_key: string; thumbnail_key: string | null }>();
   const photograph = takeKey(slot, take);
-  if (photo === null || !photo.r2_key.startsWith(`${photograph}.`)) return "no_photograph";
+  if (!photo?.r2_key.startsWith(`${photograph}.`)) return "no_photograph";
   const key = `${photograph}-small.jpg`;
   if (photo.thumbnail_key === key) return "held_already";
 
