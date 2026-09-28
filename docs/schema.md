@@ -62,7 +62,7 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [stock_movements](#stock_movements): Every movement of a consumable into or out of the central store or a technician's kit, never changed; what a place holds is the sum of its rows (ADR 0087).
 - [sync_cursors](#sync_cursors): Where each pass of the reconciliation with FSM has reached (ADR 0032).
 - [task_closures](#task_closures): A task on the Tasks board ops closed without doing its thing, a visit left partly done alone, with why, who and when, by the task's group and its row's id (ADR 0092).
-- [task_owners](#task_owners): The member of staff a task on the Tasks board is theirs, by Access e-mail, by the task's group and its row's id; a task with no row is nobody's (ADR 0092).
+- [task_owners](#task_owners): The member of staff a task on the Tasks board is theirs, by Access e-mail, by the task's group, its row's id and, where that row can be a new task again, its episode; a task with no row for it is nobody's (ADR 0092).
 - [technician_devices](#technician_devices): The phones technicians work from, each bound to a session and revocable by ops (ADR 0052).
 - [technician_leave](#technician_leave): A technician's leave in whole days, which the clash check reads beside `slot_claims` (ADR 0062).
 - [technicians](#technicians): The mirror of FSM's technicians: name, initials, mobile number and zone; and on staging the few written by hand for a test, which the sync leaves alone (ADR 0032, ADR 0052).
@@ -1283,7 +1283,7 @@ Indexes:
 
 ## task_owners
 
-The member of staff a task on the Tasks board is theirs, by Access e-mail, by the task's group and its row's id; a task with no row is nobody's (ADR 0092).
+The member of staff a task on the Tasks board is theirs, by Access e-mail, by the task's group, its row's id and, where that row can be a new task again, its episode; a task with no row for it is nobody's (ADR 0092).
 
 Made by `0054_task_owners.sql`.
 
@@ -1291,6 +1291,7 @@ Made by `0054_task_owners.sql`.
 | --- | --- | --- | --- | --- |
 | `task_group` | TEXT | no |  | primary key |
 | `subject_id` | TEXT | no |  | primary key |
+| `episode` | TEXT | no |  |  |
 | `owner` | TEXT | no |  |  |
 | `assigned_by` | TEXT | no |  |  |
 | `assigned_at` | TEXT | no |  |  |

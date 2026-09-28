@@ -693,7 +693,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access token, or a service token, which names no member of staff */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -2180,7 +2180,7 @@ export interface paths {
                         "application/json": components["schemas"]["TaskOwner"];
                     };
                 };
-                /** @description invalid_request: nobody has signed in to the console with that e-mail */
+                /** @description invalid_request: nobody has used the console lately with that e-mail */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -2189,7 +2189,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access token, or a service token, which names no member of staff */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -2258,7 +2258,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access token, or a service token, which names no member of staff */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -4949,7 +4949,7 @@ export interface components {
             overdue: number;
             /** @description More were waiting than one look reads (2000 a statement), so a count may be short. */
             truncated: boolean;
-            /** @description The members of staff a task may be given to: everyone who has signed in to the console, by e-mail. */
+            /** @description The members of staff a task may be given to: those who have used the console in the last 90 days, by e-mail. */
             staff: string[];
             groups: {
                 /** @enum {string} */
@@ -4994,7 +4994,7 @@ export interface components {
             owner: string | null;
         };
         TaskOwnerChange: {
-            /** @description A member of staff who has signed in to the console, by their Access e-mail: one's own to take the task, another's to give it to them; null to hand it back. */
+            /** @description A member of staff who has used the console in the last 90 days, by their Access e-mail: one's own to take the task, another's to give it to them; null to hand it back. */
             owner: string | null;
         };
         TaskClosing: {

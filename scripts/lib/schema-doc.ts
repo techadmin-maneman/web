@@ -123,7 +123,7 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   task_closures:
     "A task on the Tasks board ops closed without doing its thing, a visit left partly done alone, with why, who and when, by the task's group and its row's id (ADR 0092).",
   task_owners:
-    "The member of staff a task on the Tasks board is theirs, by Access e-mail, by the task's group and its row's id; a task with no row is nobody's (ADR 0092).",
+    "The member of staff a task on the Tasks board is theirs, by Access e-mail, by the task's group, its row's id and, where that row can be a new task again, its episode; a task with no row for it is nobody's (ADR 0092).",
   technician_devices: "The phones technicians work from, each bound to a session and revocable by ops (ADR 0052).",
   technician_leave: "A technician's leave in whole days, which the clash check reads beside `slot_claims` (ADR 0062).",
   technicians:

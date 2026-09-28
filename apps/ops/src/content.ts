@@ -1047,7 +1047,7 @@ export const tasks = {
     cancel: "Cancel",
     errors: {
       not_found: "This task has left the list meanwhile: its thing was done. Reload the page to see the list now.",
-      invalid_request: "Nobody has signed in to the console with that e-mail, so the task cannot be theirs.",
+      invalid_request: "Nobody has used the console lately with that e-mail, so the task cannot be theirs.",
       unknown: "That did not save. Try again.",
     } as Readonly<Record<string, string>>,
   },

@@ -76,7 +76,9 @@ const TasksSchema = z
       description: `More were waiting than one look reads (${String(READ_CAP)} a statement), so a count may be short.`,
     }),
     staff: z.array(z.string()).openapi({
-      description: "The members of staff a task may be given to: everyone who has signed in to the console, by e-mail.",
+      description:
+        "The members of staff a task may be given to: those who have used the console in the last " +
+        `${String(STAFF_SEEN_WITHIN_DAYS)} days, by e-mail.`,
     }),
     groups: z.array(
       z
@@ -122,7 +124,8 @@ const ownerRoute = createRoute({
           .object({
             owner: OwnerSchema.openapi({
               description:
-                "A member of staff who has signed in to the console, by their Access e-mail: one's own to take " +
+                `A member of staff who has used the console in the last ${String(STAFF_SEEN_WITHIN_DAYS)} days, by their ` +
+                "Access e-mail: one's own to take " +
                 "the task, another's to give it to them; null to hand it back.",
             }),
           })
@@ -136,7 +139,7 @@ const ownerRoute = createRoute({
       description: "Whose it is now",
       ...json(z.object({ owner: OwnerSchema }).strict().openapi("TaskOwner")),
     },
-    400: errorResponse("invalid_request: nobody has signed in to the console with that e-mail"),
+    400: errorResponse("invalid_request: nobody has used the console lately with that e-mail"),
     403: errorResponse("access_required: no Access token, or a service token, which names no member of staff"),
     404: errorResponse("not_found: no such task on the board now; its thing may be done already"),
   },

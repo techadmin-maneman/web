@@ -420,7 +420,7 @@ Request body:
 }
 ```
 
-**403**: access_required
+**403**: access_required: no Access token, or a service token, which names no member of staff
 
 ```json
 {
@@ -1621,7 +1621,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: nobody has signed in to the console with that e-mail
+**400**: invalid_request: nobody has used the console lately with that e-mail
 
 ```json
 {
@@ -1629,7 +1629,7 @@ Request body:
 }
 ```
 
-**403**: access_required
+**403**: access_required: no Access token, or a service token, which names no member of staff
 
 ```json
 {
@@ -1667,7 +1667,7 @@ Request body:
 }
 ```
 
-**403**: access_required
+**403**: access_required: no Access token, or a service token, which names no member of staff
 
 ```json
 {
@@ -6517,7 +6517,7 @@ Who Access let through, and where signing out goes
       "items": {
         "type": "string"
       },
-      "description": "The members of staff a task may be given to: everyone who has signed in to the console, by e-mail."
+      "description": "The members of staff a task may be given to: those who have used the console in the last 90 days, by e-mail."
     },
     "groups": {
       "type": "array",
@@ -6708,7 +6708,7 @@ Who Access let through, and where signing out goes
           "type": "null"
         }
       ],
-      "description": "A member of staff who has signed in to the console, by their Access e-mail: one's own to take the task, another's to give it to them; null to hand it back."
+      "description": "A member of staff who has used the console in the last 90 days, by their Access e-mail: one's own to take the task, another's to give it to them; null to hand it back."
     }
   },
   "required": [
