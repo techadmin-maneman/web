@@ -85,6 +85,20 @@ test("draws the week, every technician and the jobs on their days", async ({ pag
   );
 });
 
+// Open point 67, ruled by the owner on 27 September 2026: "block heights follow their slots, about 42, 63 and 84 px".
+test("draws each job as tall as the slots it takes, so its size reads from its height", async ({ page }) => {
+  await open(page);
+  const heightOf = async (name: string) => (await page.getByRole("button", { name }).boundingBox())?.height ?? 0;
+
+  const oneSlot = await heightOf(ROHIT_BLOCK);
+  const slotAndAHalf = await heightOf("Kunal M., Tue 23 Sep, afternoon");
+  const twoSlots = await heightOf("Sanjay B., Sat 20 Sep, morning");
+
+  expect(Math.abs(oneSlot - 42)).toBeLessThanOrEqual(1);
+  expect(Math.abs(slotAndAHalf - 63)).toBeLessThanOrEqual(1);
+  expect(Math.abs(twoSlots - 84)).toBeLessThanOrEqual(1);
+});
+
 test("marks the days a technician is away, and still shows the jobs already on them", async ({ page }) => {
   await open(page);
   // Faizan is away on the Sunday and the Monday, and holds a job on each.
