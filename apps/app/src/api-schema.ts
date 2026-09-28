@@ -2468,6 +2468,8 @@ export interface components {
             /** @description Masked: +91 98xxx x4417. */
             mobile: string;
             address: components["schemas"]["Address"] | null;
+            /** @description When the client gave this address to ops on the phone, who saved it for them; null for one they saved themselves. */
+            address_given_to_ops: string | null;
             /** @description The five purposes, in order. Off until the client first switches one on. */
             consents: {
                 /** @enum {string} */

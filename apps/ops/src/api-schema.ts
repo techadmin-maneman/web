@@ -572,6 +572,153 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/clients/{id}/address/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Buildings matching what ops have typed of the address a client is giving them */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["OpsAddressSuggestionsAsk"];
+                };
+            };
+            responses: {
+                /** @description The suggestions, which may be empty */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AddressSuggestions"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such client, or the client has been erased */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description busy: today's address-lookup ceiling is reached; unavailable: Google could not be reached */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clients/{id}/address": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Save an address the client gave ops on the phone as theirs, marked as given to ops */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["AddressSave"];
+                };
+            };
+            responses: {
+                /** @description Saved, and now the address visits go to */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ClientAddress"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such client, or the client has been erased */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/number-changes": {
         parameters: {
             query?: never;
@@ -4082,6 +4229,19 @@ export interface components {
             pincode: string;
             /** @description For the technician: gate code, parking and the like. */
             access_notes: string | null;
+            /** @description The building as chosen from the suggestions; null if typed. */
+            building: string | null;
+            flat: string | null;
+            floor: string | null;
+            tower: string | null;
+            landmark: string | null;
+            /** @description Where the client gave it to ops on the phone: who saved it, and when. */
+            given_to_ops: {
+                /** @description The Access e-mail of the member of staff who saved it. */
+                by: string;
+                /** Format: date-time */
+                at: string;
+            } | null;
         };
         ClientVisit: {
             /** Format: uuid */
@@ -4400,6 +4560,39 @@ export interface components {
             code: string;
             /** @description Why, in ops' words: kept with the invite, and blanked if either side is erased. */
             reason: string;
+        };
+        AddressSuggestions: {
+            suggestions: {
+                place_id: string;
+                primary: string;
+                secondary: string;
+            }[];
+            /** @enum {string} */
+            attribution: "Google Maps";
+        };
+        OpsAddressSuggestionsAsk: {
+            /** @description What ops have typed so far. */
+            q: string;
+            /** @description One token for the whole search, sent again when the address is saved. */
+            session: string;
+        };
+        AddressSave: {
+            line1: string;
+            line2: string | null;
+            locality: string;
+            city: string;
+            pincode: string;
+            /** @description For the technician, from the day before the visit: gate code, parking. */
+            access_notes: string | null;
+            /** @description The building as chosen from the suggestions; null if typed. */
+            building?: string | null;
+            flat?: string | null;
+            floor?: string | null;
+            tower?: string | null;
+            landmark?: string | null;
+            /** @description Google's Place ID for the building, if one was chosen. */
+            place_id?: string | null;
+            session_token?: string | null;
         };
         NumberChangeDecision: {
             /** @enum {string} */

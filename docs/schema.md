@@ -11,7 +11,7 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 
 ## Tables
 
-- [addresses](#addresses): Each address a client has given. The current one has `replaced_at` empty; earlier ones stay for the visits booked to them (ADR 0042, ADR 0054).
+- [addresses](#addresses): Each address a client has given, in the app or to ops on the phone, who then saved it for them (`given_to_staff`). The current one has `replaced_at` empty; earlier ones stay for the visits booked to them (ADR 0042, ADR 0054, ADR 0092).
 - [alerts](#alerts): One row per alert while it is open, kept once it is resolved; raising it again counts it (ADR 0067).
 - [appointments](#appointments): The mirror of FSM's appointments: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice (ADR 0032).
 - [audit_log](#audit_log): Every ops action that reads or changes a client's data, and who took it. An entry is never changed (ADR 0031).
@@ -61,6 +61,8 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [stock_balances](#stock_balances): What each place holds of each consumable, and when it last counted it: the sum of its rows in `stock_movements`, kept by triggers as each is written (ADR 0087).
 - [stock_movements](#stock_movements): Every movement of a consumable into or out of the central store or a technician's kit, never changed; what a place holds is the sum of its rows (ADR 0087).
 - [sync_cursors](#sync_cursors): Where each pass of the reconciliation with FSM has reached (ADR 0032).
+- [task_closures](#task_closures): A task on the Tasks board ops closed without doing its thing, a visit left partly done alone, with why, who and when, by the task's group and its row's id (ADR 0092).
+- [task_owners](#task_owners): The member of staff a task on the Tasks board is theirs, by Access e-mail, by the task's group and its row's id; a task with no row is nobody's (ADR 0092).
 - [technician_devices](#technician_devices): The phones technicians work from, each bound to a session and revocable by ops (ADR 0052).
 - [technician_leave](#technician_leave): A technician's leave in whole days, which the clash check reads beside `slot_claims` (ADR 0062).
 - [technicians](#technicians): The mirror of FSM's technicians: name, initials, mobile number and zone; and on staging the few written by hand for a test, which the sync leaves alone (ADR 0032, ADR 0052).
@@ -77,9 +79,9 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 
 ## addresses
 
-Each address a client has given. The current one has `replaced_at` empty; earlier ones stay for the visits booked to them (ADR 0042, ADR 0054).
+Each address a client has given, in the app or to ops on the phone, who then saved it for them (`given_to_staff`). The current one has `replaced_at` empty; earlier ones stay for the visits booked to them (ADR 0042, ADR 0054, ADR 0092).
 
-Made by `0008_profile.sql`; changed by `0028_address_pin.sql`.
+Made by `0008_profile.sql`; changed by `0028_address_pin.sql`, `0053_task_owners.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -103,6 +105,7 @@ Made by `0008_profile.sql`; changed by `0028_address_pin.sql`.
 | `landmark` | TEXT | yes |  |  |
 | `place_id` | TEXT | yes |  |  |
 | `geocode_source` | TEXT | yes |  |  |
+| `given_to_staff` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -133,7 +136,7 @@ Indexes:
 
 The mirror of FSM's appointments: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice (ADR 0032).
 
-Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0052_balances_and_last_visits.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0052_balances_and_last_visits.sql`, `0053_task_owners.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -176,7 +179,7 @@ Indexes:
 - `appointments_to_invoice`: on (`window_start`), where `status = 'completed' AND invoice_issued_at IS NULL AND fsm_work_order_id IS NOT NULL AND deleted_at IS NULL`
 - A `UNIQUE` constraint: unique on (`fsm_id`)
 
-Triggers: `appointments_last_visits_added`, `appointments_last_visits_changed`, `appointments_last_visits_taken_out`.
+Triggers: `appointments_consultation_booked_added`, `appointments_consultation_booked_changed`, `appointments_consultation_booked_taken_out`, `appointments_last_visits_added`, `appointments_last_visits_changed`, `appointments_last_visits_taken_out`.
 
 ## audit_log
 
@@ -286,7 +289,7 @@ Triggers: `consents_no_delete`, `consents_no_update`.
 
 A consultation asked for while self-serve booking is off, for ops to fix the hour (ADR 0060).
 
-Made by `0032_consultation_requests.sql`.
+Made by `0032_consultation_requests.sql`; changed by `0053_task_owners.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -297,11 +300,15 @@ Made by `0032_consultation_requests.sql`.
 | `requested_window` | TEXT | no |  |  |
 | `referral_code` | TEXT | yes |  | → `referral_codes.code` |
 | `created_at` | TEXT | no |  |  |
+| `booked` | INTEGER | no | `0` |  |
 
 Indexes:
 
 - `consultation_requests_by_created`: on (`created_at`)
+- `consultation_requests_waiting`: on (`created_at`), where `booked = 0`
 - A `UNIQUE` constraint: unique on (`person_id`, `requested_date`, `requested_window`)
+
+Triggers: `consultation_requests_booked_asked`.
 
 ## consumable_usage
 
@@ -514,7 +521,7 @@ Indexes:
 
 A first fit asked for on the site's form with the consultation, for the app to offer once the consultation is done; a person's latest stands (ADR 0086).
 
-Made by `0047_first_fit_requests.sql`.
+Made by `0047_first_fit_requests.sql`; changed by `0053_task_owners.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -522,10 +529,14 @@ Made by `0047_first_fit_requests.sql`.
 | `person_id` | TEXT | no |  | → `people.id` |
 | `preferred_window` | TEXT | yes |  |  |
 | `created_at` | TEXT | no |  |  |
+| `fitted_since` | INTEGER | no | `0` |  |
 
 Indexes:
 
 - `first_fit_requests_by_person`: unique on (`person_id`)
+- `first_fit_requests_unfitted`: on (`person_id`), where `fitted_since = 0`
+
+Triggers: `first_fit_requests_fitted_asked`.
 
 ## fsm_items
 
@@ -611,7 +622,7 @@ Indexes:
 
 Each client's last first fit, service or replacement done, and last consultation done, kept by triggers from the view `last_visits_now` as their visits change; the Tasks board's At-risk client and First fit to book read it (ADR 0086).
 
-Made by `0052_balances_and_last_visits.sql`.
+Made by `0052_balances_and_last_visits.sql`; changed by `0053_task_owners.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -623,6 +634,8 @@ Made by `0052_balances_and_last_visits.sql`.
 Indexes:
 
 - `last_visits_by_visit_start`: on (`visit_start`)
+
+Triggers: `last_visits_fitted_added`, `last_visits_fitted_changed`.
 
 ## leads
 
@@ -1248,6 +1261,39 @@ Made by `0012_fsm_reconciliation.sql`.
 | `pass_started_at` | TEXT | yes |  |  |
 | `repaired` | INTEGER | no | `0` |  |
 | `updated_at` | TEXT | no |  |  |
+
+## task_closures
+
+A task on the Tasks board ops closed without doing its thing, a visit left partly done alone, with why, who and when, by the task's group and its row's id (ADR 0092).
+
+Made by `0053_task_owners.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `task_group` | TEXT | no |  |  |
+| `subject_id` | TEXT | no |  |  |
+| `reason` | TEXT | yes |  |  |
+| `closed_by` | TEXT | no |  |  |
+| `closed_at` | TEXT | no |  |  |
+
+Indexes:
+
+- A `UNIQUE` constraint: unique on (`task_group`, `subject_id`)
+
+## task_owners
+
+The member of staff a task on the Tasks board is theirs, by Access e-mail, by the task's group and its row's id; a task with no row is nobody's (ADR 0092).
+
+Made by `0053_task_owners.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `task_group` | TEXT | no |  | primary key |
+| `subject_id` | TEXT | no |  | primary key |
+| `owner` | TEXT | no |  |  |
+| `assigned_by` | TEXT | no |  |  |
+| `assigned_at` | TEXT | no |  |  |
 
 ## technician_devices
 

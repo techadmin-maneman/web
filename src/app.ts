@@ -22,6 +22,7 @@ import { registerClientChanges } from "./routes/client-changes.ts";
 import { registerClientNotes } from "./routes/client-notes.ts";
 import { registerClientData } from "./routes/client-data.ts";
 import { registerClientRefer } from "./routes/client-refer.ts";
+import { registerOpsClientAddress } from "./routes/ops-client-address.ts";
 import { registerOpsClientReferral } from "./routes/ops-client-referral.ts";
 import { registerOpsClients } from "./routes/ops-clients.ts";
 import { registerOpsConsumables } from "./routes/ops-consumables.ts";
@@ -104,6 +105,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsClients,
     registerOpsCredits,
     registerOpsClientReferral,
+    // An address a client gives ops on the phone (docs/decisions/0092-task-owners.md).
+    registerOpsClientAddress,
     registerOpsProfile,
     registerOpsReferrals,
     registerOpsGrievances,

@@ -340,6 +340,102 @@ Request body:
 }
 ```
 
+### POST /api/clients/{id}/address/suggestions
+
+Buildings matching what ops have typed of the address a client is giving them
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/OpsAddressSuggestionsAsk"
+}
+```
+
+**200**: The suggestions, which may be empty
+
+```json
+{
+  "$ref": "#/components/schemas/AddressSuggestions"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such client, or the client has been erased
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**503**: busy: today's address-lookup ceiling is reached; unavailable: Google could not be reached
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/clients/{id}/address
+
+Save an address the client gave ops on the phone as theirs, marked as given to ops
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/AddressSave"
+}
+```
+
+**200**: Saved, and now the address visits go to
+
+```json
+{
+  "$ref": "#/components/schemas/ClientAddress"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such client, or the client has been erased
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/number-changes
 
 Number changes waiting for ops: both numbers proven by code
@@ -3213,6 +3309,83 @@ Who Access let through, and where signing out goes
         }
       ],
       "description": "For the technician: gate code, parking and the like."
+    },
+    "building": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The building as chosen from the suggestions; null if typed."
+    },
+    "flat": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "floor": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "tower": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "landmark": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "given_to_ops": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "by": {
+              "type": "string",
+              "description": "The Access e-mail of the member of staff who saved it."
+            },
+            "at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          "required": [
+            "by",
+            "at"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Where the client gave it to ops on the phone: who saved it, and when."
     }
   },
   "required": [
@@ -3221,7 +3394,13 @@ Who Access let through, and where signing out goes
     "locality",
     "city",
     "pincode",
-    "access_notes"
+    "access_notes",
+    "building",
+    "flat",
+    "floor",
+    "tower",
+    "landmark",
+    "given_to_ops"
   ],
   "additionalProperties": false
 }
@@ -4560,6 +4739,181 @@ Who Access let through, and where signing out goes
   "required": [
     "code",
     "reason"
+  ],
+  "additionalProperties": false
+}
+```
+
+### AddressSuggestions
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "suggestions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "place_id": {
+            "type": "string"
+          },
+          "primary": {
+            "type": "string"
+          },
+          "secondary": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "place_id",
+          "primary",
+          "secondary"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "attribution": {
+      "type": "string",
+      "enum": [
+        "Google Maps"
+      ]
+    }
+  },
+  "required": [
+    "suggestions",
+    "attribution"
+  ],
+  "additionalProperties": false
+}
+```
+
+### OpsAddressSuggestionsAsk
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "q": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "What ops have typed so far."
+    },
+    "session": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "description": "One token for the whole search, sent again when the address is saved."
+    }
+  },
+  "required": [
+    "q",
+    "session"
+  ],
+  "additionalProperties": false
+}
+```
+
+### AddressSave
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "line1": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "line2": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 120
+    },
+    "locality": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "city": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40
+    },
+    "pincode": {
+      "type": "string",
+      "pattern": "^\\d{6}$"
+    },
+    "access_notes": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 300,
+      "description": "For the technician, from the day before the visit: gate code, parking."
+    },
+    "building": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 120,
+      "description": "The building as chosen from the suggestions; null if typed."
+    },
+    "flat": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 40
+    },
+    "floor": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 20
+    },
+    "tower": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 40
+    },
+    "landmark": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 120
+    },
+    "place_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 300,
+      "description": "Google's Place ID for the building, if one was chosen."
+    },
+    "session_token": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 100
+    }
+  },
+  "required": [
+    "line1",
+    "line2",
+    "locality",
+    "city",
+    "pincode",
+    "access_notes"
   ],
   "additionalProperties": false
 }

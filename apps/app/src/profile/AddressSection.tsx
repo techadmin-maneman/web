@@ -1,6 +1,9 @@
 // "Where we come" (board G1): the address and its access notes, and the form to
-// change them (AddressForm.tsx), which the booking sheet asks with too.
+// change them (AddressForm.tsx), which the booking sheet asks with too. An
+// address the client gave ops on the phone says so, so the client can check what
+// was typed for them (docs/decisions/0092-task-owners.md).
 
+import { longDate } from "@maneman/web-kit/dates";
 import { useRef, useState } from "react";
 import type { Address } from "../api.ts";
 import { profile } from "../content.ts";
@@ -18,7 +21,16 @@ function written(address: Address): string {
   return [...new Set(parts.filter(given))].concat(address.locality).join(", ");
 }
 
-export function AddressSection({ address, onSaved }: { address: Address | null; onSaved: () => void }) {
+export function AddressSection({
+  address,
+  givenToOps,
+  onSaved,
+}: {
+  address: Address | null;
+  /** When the client gave the address to ops on the phone; null for one they saved themselves. */
+  givenToOps: string | null;
+  onSaved: () => void;
+}) {
   const copy = profile;
   const heading = useRef<HTMLHeadingElement>(null);
   const [editing, setEditing] = useState(false);
@@ -58,6 +70,7 @@ export function AddressSection({ address, onSaved }: { address: Address | null; 
               </p>
               {given(address.landmark) && <p className={styles.muted}>{copy.near(address.landmark)}</p>}
               {address.access_notes !== null && <p className={styles.muted}>{address.access_notes}</p>}
+              {givenToOps !== null && <p className={styles.muted}>{copy.givenToOps(longDate(givenToOps))}</p>}
             </>
           )}
           <button

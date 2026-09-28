@@ -393,6 +393,83 @@
               }
             ],
             "description": "For the technician: gate code, parking and the like."
+          },
+          "building": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The building as chosen from the suggestions; null if typed."
+          },
+          "flat": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "floor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tower": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "landmark": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "given_to_ops": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "by": {
+                    "type": "string",
+                    "description": "The Access e-mail of the member of staff who saved it."
+                  },
+                  "at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "by",
+                  "at"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Where the client gave it to ops on the phone: who saved it, and when."
           }
         },
         "required": [
@@ -401,7 +478,13 @@
           "locality",
           "city",
           "pincode",
-          "access_notes"
+          "access_notes",
+          "building",
+          "flat",
+          "floor",
+          "tower",
+          "landmark",
+          "given_to_ops"
         ],
         "additionalProperties": false
       },
@@ -1660,6 +1743,166 @@
         "required": [
           "code",
           "reason"
+        ],
+        "additionalProperties": false
+      },
+      "AddressSuggestions": {
+        "type": "object",
+        "properties": {
+          "suggestions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "place_id": {
+                  "type": "string"
+                },
+                "primary": {
+                  "type": "string"
+                },
+                "secondary": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "place_id",
+                "primary",
+                "secondary"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "attribution": {
+            "type": "string",
+            "enum": [
+              "Google Maps"
+            ]
+          }
+        },
+        "required": [
+          "suggestions",
+          "attribution"
+        ],
+        "additionalProperties": false
+      },
+      "OpsAddressSuggestionsAsk": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "What ops have typed so far."
+          },
+          "session": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "One token for the whole search, sent again when the address is saved."
+          }
+        },
+        "required": [
+          "q",
+          "session"
+        ],
+        "additionalProperties": false
+      },
+      "AddressSave": {
+        "type": "object",
+        "properties": {
+          "line1": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "line2": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 120
+          },
+          "locality": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "city": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "pincode": {
+            "type": "string",
+            "pattern": "^\\d{6}$"
+          },
+          "access_notes": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 300,
+            "description": "For the technician, from the day before the visit: gate code, parking."
+          },
+          "building": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 120,
+            "description": "The building as chosen from the suggestions; null if typed."
+          },
+          "flat": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 40
+          },
+          "floor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 20
+          },
+          "tower": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 40
+          },
+          "landmark": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 120
+          },
+          "place_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 300,
+            "description": "Google's Place ID for the building, if one was chosen."
+          },
+          "session_token": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "line1",
+          "line2",
+          "locality",
+          "city",
+          "pincode",
+          "access_notes"
         ],
         "additionalProperties": false
       },
@@ -5814,6 +6057,152 @@
           },
           "422": {
             "description": "unknown_invite: no invite has that code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/clients/{id}/address/suggestions": {
+      "post": {
+        "summary": "Buildings matching what ops have typed of the address a client is giving them",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpsAddressSuggestionsAsk"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The suggestions, which may be empty",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddressSuggestions"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such client, or the client has been erased",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "busy: today's address-lookup ceiling is reached; unavailable: Google could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/clients/{id}/address": {
+      "post": {
+        "summary": "Save an address the client gave ops on the phone as theirs, marked as given to ops",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddressSave"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved, and now the address visits go to",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientAddress"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such client, or the client has been erased",
             "content": {
               "application/json": {
                 "schema": {

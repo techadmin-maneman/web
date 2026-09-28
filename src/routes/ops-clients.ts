@@ -33,7 +33,7 @@ import {
 import { creditBalance } from "../domain/credits.ts";
 import { clientInviteOf } from "../domain/referrals.ts";
 import { VISIT_OUTCOMES } from "../domain/fsm-mirror.ts";
-import { consentRecordsOf, currentAddress, type ConsentState } from "../domain/profile.ts";
+import { consentRecordsOf, currentAddress, type ConsentState, type SavedAddress } from "../domain/profile.ts";
 import { partialVisitsClosed } from "../domain/task-closures.ts";
 import { ANGLES, PHASES } from "../domain/visit-photos.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
@@ -51,19 +51,51 @@ import { HISTORY_FIGURES, VisitSummarySchema } from "./client-visits.ts";
 const clientId = z.object({ id: z.uuid() });
 const unknownClient = errorResponse("not_found: no such client, or the client has been erased");
 
-const AddressSchema = z
+const nullable = z.union([z.string(), z.null()]);
+
+export const ClientAddressSchema = z
   .object({
     line1: z.string(),
-    line2: z.union([z.string(), z.null()]),
+    line2: nullable,
     locality: z.string(),
     city: z.string(),
     pincode: z.string(),
-    access_notes: z
-      .union([z.string(), z.null()])
-      .openapi({ description: "For the technician: gate code, parking and the like." }),
+    access_notes: nullable.openapi({ description: "For the technician: gate code, parking and the like." }),
+    building: nullable.openapi({ description: "The building as chosen from the suggestions; null if typed." }),
+    flat: nullable,
+    floor: nullable,
+    tower: nullable,
+    landmark: nullable,
+    given_to_ops: z
+      .union([
+        z
+          .object({
+            by: z.string().openapi({ description: "The Access e-mail of the member of staff who saved it." }),
+            at: z.iso.datetime(),
+          })
+          .strict(),
+        z.null(),
+      ])
+      .openapi({ description: "Where the client gave it to ops on the phone: who saved it, and when." }),
   })
   .strict()
   .openapi("ClientAddress");
+
+/** The address visits go to now, as the client's page shows it. */
+export const clientAddressOf = (address: SavedAddress) => ({
+  line1: address.line1,
+  line2: address.line2,
+  locality: address.locality,
+  city: address.city,
+  pincode: address.pincode,
+  access_notes: address.accessNotes,
+  building: address.building,
+  flat: address.flat,
+  floor: address.floor,
+  tower: address.tower,
+  landmark: address.landmark,
+  given_to_ops: address.givenToOps === null ? null : { by: address.givenToOps.staff, at: address.givenToOps.at },
+});
 
 const ClientVisitSchema = VisitSummarySchema.extend({
   outcome: z
@@ -107,7 +139,7 @@ const ClientRecordSchema = z
     mobile: z.string().openapi({ description: "E.164, as ops need it to call or message." }),
     state: z.enum(CLIENT_STATES),
     known_since: z.iso.datetime().openapi({ description: "When the person's record was first written." }),
-    address: z.union([AddressSchema, z.null()]).openapi({ description: "The address visits go to now." }),
+    address: z.union([ClientAddressSchema, z.null()]).openapi({ description: "The address visits go to now." }),
     credits: z
       .union([z.object({ visits: z.number().int(), earliest_expiry: z.iso.datetime().nullable() }).strict(), z.null()])
       .openapi({ description: "Service visits left and when the soonest expires; null with none left." }),
@@ -437,17 +469,7 @@ export function registerOpsClients(app: App): void {
         mobile: person.mobile_e164,
         state: clientStateOf(fitted, visits.upcoming.length > 0 || proposal !== null),
         known_since: person.created_at,
-        address:
-          address === null
-            ? null
-            : {
-                line1: address.line1,
-                line2: address.line2,
-                locality: address.locality,
-                city: address.city,
-                pincode: address.pincode,
-                access_notes: address.accessNotes,
-              },
+        address: address === null ? null : clientAddressOf(address),
         credits: credits.visits > 0 ? { visits: credits.visits, earliest_expiry: credits.earliestExpiry } : null,
         visits: { upcoming: withOutcome(visits.upcoming), past: withOutcome(visits.past) },
         payments,

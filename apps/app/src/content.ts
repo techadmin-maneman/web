@@ -770,6 +770,9 @@ export const profile = {
   addAddress: "Add your address and access notes",
   // PLACEHOLDER: the design draws no landmark line (ADR 0054).
   near: (landmark: string) => `Near ${landmark}`,
+  // PLACEHOLDER: an address the client gave ops on the phone, which ops saved for them (ADR 0092).
+  givenToOps: (date: string) =>
+    `You gave us this address on the phone on ${date}. If anything is wrong, change it here.`,
   form: {
     // PLACEHOLDER: the design draws no address form at all, so none of the
     // building search's words are drawn either (ADR 0054). The search is an

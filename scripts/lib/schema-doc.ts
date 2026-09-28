@@ -42,7 +42,7 @@ export interface Table {
 /** What each table holds, in a line. */
 export const PURPOSES: Readonly<Record<string, string>> = {
   addresses:
-    "Each address a client has given. The current one has `replaced_at` empty; earlier ones stay for the visits booked to them (ADR 0042, ADR 0054).",
+    "Each address a client has given, in the app or to ops on the phone, who then saved it for them (`given_to_staff`). The current one has `replaced_at` empty; earlier ones stay for the visits booked to them (ADR 0042, ADR 0054, ADR 0092).",
   alerts: "One row per alert while it is open, kept once it is resolved; raising it again counts it (ADR 0067).",
   appointments:
     "The mirror of FSM's appointments: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice (ADR 0032).",
@@ -120,6 +120,10 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   stock_movements:
     "Every movement of a consumable into or out of the central store or a technician's kit, never changed; what a place holds is the sum of its rows (ADR 0087).",
   sync_cursors: "Where each pass of the reconciliation with FSM has reached (ADR 0032).",
+  task_closures:
+    "A task on the Tasks board ops closed without doing its thing, a visit left partly done alone, with why, who and when, by the task's group and its row's id (ADR 0092).",
+  task_owners:
+    "The member of staff a task on the Tasks board is theirs, by Access e-mail, by the task's group and its row's id; a task with no row is nobody's (ADR 0092).",
   technician_devices: "The phones technicians work from, each bound to a session and revocable by ops (ADR 0052).",
   technician_leave: "A technician's leave in whole days, which the clash check reads beside `slot_claims` (ADR 0062).",
   technicians:

@@ -172,6 +172,42 @@ test("refuses an address without a six-digit pincode", async ({ page, request })
 });
 
 // Saved, the form closes on its own heading, so the client lands where they were rather than mid-page (CLI-30).
+// An address the client gave ops on the phone, which ops saved for them (docs/decisions/0092-task-owners.md).
+test("says an address was given to us on the phone, so the client can check it", async ({ page, request }) => {
+  await signIn(page, request);
+  await page.route("**/api/profile", async (route) => {
+    const answered = (await (await route.fetch()).json()) as Record<string, unknown>;
+    await route.fulfill({
+      json: {
+        ...answered,
+        address: {
+          line1: "Sunrise Greens",
+          line2: null,
+          locality: "Sector 65",
+          city: "Gurgaon",
+          pincode: "122018",
+          access_notes: null,
+          building: "Sunrise Greens",
+          flat: "Flat 1203",
+          floor: null,
+          tower: null,
+          landmark: null,
+          place_id: null,
+        },
+        address_given_to_ops: "2026-09-21T06:30:00.000Z",
+      },
+    });
+  });
+  await page.getByRole("link", { name: "Your profile" }).click();
+  await expect(page.getByText("Flat 1203, Sunrise Greens, Sector 65, Gurgaon 122018")).toBeVisible();
+  await expect(page.getByText("You gave us this address on the phone on 21 Sep 2026.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Edit address and access notes" })).toBeVisible();
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+});
+
 test("lands on where we come once the address is saved", async ({ page, request }) => {
   await loggedIn(page, request);
   await page.getByRole("button", { name: "Add your address and access notes" }).click();
