@@ -95,7 +95,7 @@ const gilded = (page: Page) =>
         const drawn = [style.color, style.backgroundColor, style.borderLeftColor, style.fill, style.stroke];
         return drawn.includes("rgb(201, 163, 99)");
       })
-      .map((element) => element.textContent?.trim() ?? ""),
+      .map((element) => element.textContent.trim()),
   );
 
 // Ruling 59 (ADR 0025), 27 September 2026: "gold marks only the one primary action". The boards also gild a ticked

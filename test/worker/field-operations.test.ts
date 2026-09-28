@@ -613,11 +613,11 @@ describe("the outbox", () => {
     const answer = await post(`/api/tech/jobs/${TODAY_JOB}/start`, undefined, "event-start-01");
 
     expect(answer.status).toBe(409);
-    const { error } = (await answer.json()) as { error: Record<string, unknown> };
+    const { error } = await answer.json<{ error: Record<string, unknown> }>();
     // Nothing else of Sameer's: not his whole name, his number or his zone.
     expect(error).toEqual({
       code: "superseded",
-      request_id: expect.any(String),
+      request_id: expect.any(String) as string,
       fields: ["technician"],
       moved: { technician: "Sameer", at: NOW.toISOString() },
     });
@@ -631,7 +631,7 @@ describe("the outbox", () => {
     const answer = await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
 
     expect(answer.status).toBe(409);
-    const { error } = (await answer.json()) as { error: Record<string, unknown> };
+    const { error } = await answer.json<{ error: Record<string, unknown> }>();
     expect(error).toMatchObject({ code: "superseded", fields: ["status", "technician"] });
     expect(error).not.toHaveProperty("moved");
   });
