@@ -277,6 +277,8 @@ export interface paths {
                             referrer?: string;
                             landing_path?: string;
                         };
+                        /** @description The code of an invite this browser opened in the last 30 days. One we do not have, or not shaped like a code, is ignored: the booking goes ahead without an invite. */
+                        invite_code?: string;
                         /** Format: date */
                         date: string;
                         /** @enum {string} */
@@ -405,6 +407,8 @@ export interface paths {
                             referrer?: string;
                             landing_path?: string;
                         };
+                        /** @description The code of an invite this browser opened in the last 30 days. One we do not have, or not shaped like a code, is ignored: the booking goes ahead without an invite. */
+                        invite_code?: string;
                         /**
                          * @description "You may contact me about this request." Required.
                          * @enum {boolean}
@@ -1825,6 +1829,13 @@ export interface components {
             /** @enum {string} */
             window: "morning" | "afternoon" | "evening";
             area: string;
+            /** @description Whether the invite's 3 service visits apply. */
+            credits: boolean;
+            /**
+             * @description valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown: no invite came with it, or a code we do not have.
+             * @enum {string}
+             */
+            invite: "valid" | "expired" | "unknown";
             /**
              * @description saved: the address sent is now the person's; on_account: the person already had one, which the visit goes to, and the one sent was not written. The address on the account is never sent back.
              * @enum {string}
@@ -1869,6 +1880,13 @@ export interface components {
         };
         Waitlist: {
             area: string | null;
+            /** @description Whether the invite's 3 service visits apply. */
+            credits: boolean;
+            /**
+             * @description valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown: no invite came with it, or a code we do not have.
+             * @enum {string}
+             */
+            invite: "valid" | "expired" | "unknown";
         };
         Invite: {
             /** @enum {string} */
@@ -1903,7 +1921,7 @@ export interface components {
             /** @description Whether the invite's 3 service visits apply. */
             credits: boolean;
             /**
-             * @description valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown, a code we do not have.
+             * @description valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown: no invite came with it, or a code we do not have.
              * @enum {string}
              */
             invite: "valid" | "expired" | "unknown";
@@ -1917,9 +1935,10 @@ export interface components {
         };
         ReferralWaitlist: {
             area: string | null;
+            /** @description Whether the invite's 3 service visits apply. */
             credits: boolean;
             /**
-             * @description valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown, a code we do not have.
+             * @description valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown: no invite came with it, or a code we do not have.
              * @enum {string}
              */
             invite: "valid" | "expired" | "unknown";

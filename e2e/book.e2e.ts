@@ -1,7 +1,8 @@
 // The site's own booking page against a mocked API, so every answer the API can
 // give is covered (docs/decisions/0051-booking-from-the-site.md). It is the
 // referral landing without the invite: e2e/refer-landing.e2e.ts covers that one,
-// and e2e/book-api.e2e.ts books against the real local API.
+// and e2e/book-api.e2e.ts books against the real local API. It books with an
+// invite only when this browser remembers one (docs/decisions/0089-an-invite-is-not-lost.md).
 
 import AxeBuilder from "@axe-core/playwright";
 import type { Page, Request } from "@playwright/test";
@@ -16,9 +17,14 @@ const BOOKED = {
   date: "2026-09-25",
   window: "morning",
   area: SERVED.area,
+  credits: false,
+  invite: "unknown",
   address: "saved",
   first_fit: false,
 };
+
+const CODE = "RM4K7P";
+const INVITE = { state: "valid", referrer_first_name: "Rohit", card: { state: "house", version: 1 } };
 
 /** Mocks the page's three calls; returns the requests it made. */
 async function mockApi(
@@ -38,10 +44,33 @@ async function mockApi(
   });
   await page.route("**/api/waitlist", (route) => {
     requests.push(route.request());
-    const answer = answers.waitlist ?? { status: 201, body: { area: UNSERVED.area } };
+    const answer = answers.waitlist ?? {
+      status: 201,
+      body: { area: UNSERVED.area, credits: false, invite: "unknown" },
+    };
     return route.fulfill({ status: answer.status, json: answer.body });
   });
   return requests;
+}
+
+/** Opens a friend's invite, which this browser then remembers, before the page books. */
+async function openInvite(page: Page): Promise<void> {
+  await page.route(`**/api/r/${CODE}`, (route) => route.fulfill({ json: INVITE }));
+  await visit(page, `/r/${CODE}`);
+  await expect(page.getByText("Rohit sent you this")).toBeVisible();
+}
+
+const remembered = (page: Page) => page.evaluate(() => localStorage.getItem("mm_invite"));
+
+async function bookHere(page: Page): Promise<void> {
+  await visit(page, "/book");
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  await fillAddress(page);
+  await page.getByLabel("Name").fill("Test Visitor");
+  await page.getByLabel("Mobile").fill("9810000000");
+  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByRole("button", { name: "Book the consultation" }).click();
 }
 
 test("the page introduces itself, with no invite and no card", async ({ page }) => {
@@ -306,6 +335,72 @@ test("a booking and a waitlist are both counted, with nothing personal", async (
     ["waitlist_submitted", { page: "book", area: "Bandra" }],
   ]);
   await expectNoPersonalData(page, ["Test Visitor", "9810000000", "98100 00000"]);
+});
+
+// A friend who opened an invite, left, and booked here later: the invite came with the booking, and the confirmation
+// says what the landing's does (ADR 0089).
+test("a friend who opened an invite books here with it, and is told the invite's visits land when fitted", async ({
+  page,
+}) => {
+  const requests = await mockApi(page, {
+    consultation: { status: 201, body: { ...BOOKED, credits: true, invite: "valid" } },
+  });
+  await openInvite(page);
+  expect(JSON.parse((await remembered(page)) ?? "{}")).toMatchObject({ code: CODE });
+
+  await visit(page, "/book");
+  // The page itself still shows no card and no invite.
+  await expect(page.getByText("sent you this")).toBeHidden();
+  await expect(page.locator("img[width='1200']")).toHaveCount(0);
+  await bookHere(page);
+
+  await expect(page.getByText("Consultation booked")).toBeVisible();
+  expect(requests[0]?.postDataJSON()).toMatchObject({ invite_code: CODE, loss_extent: "crown" });
+  await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeVisible();
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  // Used, it is forgotten: a second booking from this browser carries nothing.
+  expect(await remembered(page)).toBeNull();
+});
+
+test("a friend who opened an invite joins a waitlist here with it, and is told the invite holds", async ({ page }) => {
+  const requests = await mockApi(page, {
+    waitlist: { status: 201, body: { area: UNSERVED.area, credits: true, invite: "valid" } },
+  });
+  await openInvite(page);
+  await visit(page, "/book");
+  await page.getByLabel("Pincode").fill(UNSERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  await page.getByLabel("Name").fill("Test Visitor");
+  await page.getByLabel("Mobile").fill("9810000000");
+  await page.getByText("You may contact me about this request.").click();
+  await page.getByRole("button", { name: "Add me to the list" }).click();
+
+  await expect(page.getByRole("heading", { name: "You are on the Bandra list" })).toBeVisible();
+  expect(requests[0]?.postDataJSON()).toMatchObject({ invite_code: CODE });
+  await expect(page.getByText(/The invite holds for 12 months after that\./)).toBeVisible();
+  expect(await remembered(page)).toBeNull();
+});
+
+test("an invite opened more than 30 days ago, or one we do not know, is not sent", async ({ page }) => {
+  const requests = await mockApi(page);
+  await page.route(`**/api/r/ZZ9999`, (route) =>
+    route.fulfill({ json: { state: "unknown", referrer_first_name: null, card: { state: "house", version: 1 } } }),
+  );
+  await visit(page, "/r/ZZ9999");
+  await expect(page.getByText("We do not recognise this invite")).toBeVisible();
+  expect(await remembered(page)).toBeNull();
+
+  const opened = new Date(Date.now() - 31 * 86_400_000).toISOString();
+  await page.evaluate((savedAt) => {
+    localStorage.setItem("mm_invite", JSON.stringify({ code: "RM4K7P", saved_at: savedAt }));
+  }, opened);
+  await bookHere(page);
+  await expect(page.getByText("Consultation booked")).toBeVisible();
+  expect(requests[0]?.postDataJSON()).not.toHaveProperty("invite_code");
+  await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeHidden();
 });
 
 // While self-serve booking is off the page asks rather than books, and the day

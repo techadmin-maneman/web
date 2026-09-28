@@ -1,7 +1,9 @@
 // Booking a free consultation, and joining the waitlist where we do not come yet
 // (docs/decisions/0051-booking-from-the-site.md). Two pages do this, and they do
 // it the same way: the public site's /book, and a friend's invite at /r/:code.
-// The only difference is the invite, which the landing passes and the site does not.
+// The only difference is the invite, which the landing passes always and the site
+// only when the visitor's browser remembers one they opened
+// (docs/decisions/0089-an-invite-is-not-lost.md).
 //
 // Each booking leaves three records:
 //

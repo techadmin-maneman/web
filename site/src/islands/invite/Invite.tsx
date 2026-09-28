@@ -14,6 +14,9 @@
 // The pincode check is usePincode.ts, the two forms Consultation.tsx and
 // Waitlist.tsx, which send through useTurnstileForm.ts, and the confirmations
 // Done.tsx. Outside production, ?state= opens each state directly (preview.ts).
+//
+// A valid invite is remembered in this browser for 30 days, so /book carries it
+// if the friend leaves and books there later (site/src/lib/remembered-invite.ts).
 
 import { useEffect, useRef, useState } from "preact/hooks";
 import { referral } from "../../content/referral.ts";
@@ -21,6 +24,7 @@ import { booking } from "../../content/site.ts";
 import { fetchInvite, fetchPublishedPrices, type Invite as InviteAnswer } from "../../lib/api.ts";
 import { cardPath, HOUSE_CARD, isInvite } from "../../lib/invite.ts";
 import { BUILT_WORDS, isPublishedPrices, priceWords, standardOf, type PriceWords } from "../../lib/prices.ts";
+import { rememberInvite } from "../../lib/remembered-invite.ts";
 import { fill } from "../../lib/text.ts";
 import { Consultation } from "./Consultation.tsx";
 import { Booked, Listed, type Booking, type Listing } from "./Done.tsx";
@@ -39,9 +43,10 @@ interface Props {
   allowStateSwitch: boolean;
   /**
    * "invited" is /r/:code, where a friend arrives with someone's invite. "public"
-   * is the site's own /book, which shows no card and no invite, asks where the
-   * hair loss is as Phase 1's form did, and books without one
-   * (docs/decisions/0051-booking-from-the-site.md).
+   * is the site's own /book, which shows no card and no invite, and asks where the
+   * hair loss is as Phase 1's form did (docs/decisions/0051-booking-from-the-site.md).
+   * It books with the invite this browser remembers, if any, and its confirmation
+   * then says what the landing's does (docs/decisions/0089-an-invite-is-not-lost.md).
    */
   mode?: "invited" | "public";
 }
@@ -81,6 +86,10 @@ export default function Invite(props: Props) {
       if (found.ok && isInvite(found.body)) setInvite(found.body);
     });
   }, [invited]);
+
+  useEffect(() => {
+    if (invited && invite?.state === "valid") rememberInvite(codeInPath());
+  }, [invited, invite]);
 
   // The prices: from the page where the Worker wrote them, otherwise from the API.
   useEffect(() => {

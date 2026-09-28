@@ -11,6 +11,7 @@ import {
 } from "../../lib/api.ts";
 import { dayStrip, indiaTomorrow } from "../../lib/dates.ts";
 import { mobileDigits } from "../../lib/phone.ts";
+import { forgetInvite, rememberedInvite } from "../../lib/remembered-invite.ts";
 import { fill } from "../../lib/text.ts";
 import { readAttribution } from "../../lib/visit.ts";
 import { AddressFieldset } from "./AddressFieldset.tsx";
@@ -57,9 +58,17 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
       ...(plan === "first_fit" ? { first_fit: { window: fitWindow === "any" ? null : fitWindow } } : {}),
       consent: true as const,
     };
-    // The site's own page carries where this visit came from and where the hair loss is; the invite, the invite.
+    // The site's own page carries where this visit came from, where the hair loss is, and the invite this browser
+    // remembers; the invite's page, its own invite.
     const attribution = readAttribution();
-    const onBook = { ...request, loss_extent: extent, ...(attribution === undefined ? {} : { attribution }) };
+    const remembered = props.invited ? null : rememberedInvite();
+    const onBook = {
+      ...request,
+      loss_extent: extent,
+      ...(attribution === undefined ? {} : { attribution }),
+      ...(remembered === null ? {} : { invite_code: remembered }),
+    };
+    const invite = props.invited ? codeInPath() : remembered;
     void form.submit(
       event,
       (token, keyFor) =>
@@ -71,8 +80,8 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
         const loss_extent = props.invited ? null : extent;
         track({ name: "lead_submitted", page, served: true, area: props.answer.area, window, loss_extent });
         track({ name: "booking_confirmed", page, area: booked.area, window: booked.window, state: booked.state });
-        const place = placeOf(props.answer);
-        props.onBooked({ result: { credits: false, invite: "unknown", ...booked }, mobile: fields.mobile, place });
+        if (invite !== null) forgetInvite(invite);
+        props.onBooked({ result: booked, mobile: fields.mobile, place: placeOf(props.answer) });
       },
       missingParts(address).length === 0,
     );

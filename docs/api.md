@@ -224,6 +224,11 @@ Request body:
       },
       "additionalProperties": false
     },
+    "invite_code": {
+      "type": "string",
+      "maxLength": 64,
+      "description": "The code of an invite this browser opened in the last 30 days. One we do not have, or not shaped like a code, is ignored: the booking goes ahead without an invite."
+    },
     "date": {
       "type": "string",
       "format": "date"
@@ -403,6 +408,11 @@ Request body:
         }
       },
       "additionalProperties": false
+    },
+    "invite_code": {
+      "type": "string",
+      "maxLength": 64,
+      "description": "The code of an invite this browser opened in the last 30 days. One we do not have, or not shaped like a code, is ignored: the booking goes ahead without an invite."
     },
     "contact_consent": {
       "type": "boolean",
@@ -1694,6 +1704,19 @@ Razorpay's webhook: payments and refunds
     "area": {
       "type": "string"
     },
+    "credits": {
+      "type": "boolean",
+      "description": "Whether the invite's 3 service visits apply."
+    },
+    "invite": {
+      "type": "string",
+      "enum": [
+        "valid",
+        "expired",
+        "unknown"
+      ],
+      "description": "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown: no invite came with it, or a code we do not have."
+    },
     "address": {
       "type": "string",
       "enum": [
@@ -1712,6 +1735,8 @@ Razorpay's webhook: payments and refunds
     "date",
     "window",
     "area",
+    "credits",
+    "invite",
     "address",
     "first_fit"
   ],
@@ -1957,10 +1982,25 @@ Razorpay's webhook: payments and refunds
           "type": "null"
         }
       ]
+    },
+    "credits": {
+      "type": "boolean",
+      "description": "Whether the invite's 3 service visits apply."
+    },
+    "invite": {
+      "type": "string",
+      "enum": [
+        "valid",
+        "expired",
+        "unknown"
+      ],
+      "description": "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown: no invite came with it, or a code we do not have."
     }
   },
   "required": [
-    "area"
+    "area",
+    "credits",
+    "invite"
   ],
   "additionalProperties": false
 }
@@ -2105,7 +2145,7 @@ Razorpay's webhook: payments and refunds
         "expired",
         "unknown"
       ],
-      "description": "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown, a code we do not have."
+      "description": "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown: no invite came with it, or a code we do not have."
     },
     "address": {
       "type": "string",
@@ -2151,7 +2191,8 @@ Razorpay's webhook: payments and refunds
       ]
     },
     "credits": {
-      "type": "boolean"
+      "type": "boolean",
+      "description": "Whether the invite's 3 service visits apply."
     },
     "invite": {
       "type": "string",
@@ -2160,7 +2201,7 @@ Razorpay's webhook: payments and refunds
         "expired",
         "unknown"
       ],
-      "description": "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown, a code we do not have."
+      "description": "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown: no invite came with it, or a code we do not have."
     }
   },
   "required": [

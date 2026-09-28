@@ -22,21 +22,23 @@ import { HOUSE_CARD } from "../config/house-card.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { bookConsultation, joinTheWaitlist, pincodeOf } from "../domain/public-booking.ts";
 import { liveCard } from "../domain/referral-cards.ts";
-import { inviteOf, type Invite } from "../domain/referrals.ts";
+import { CODE_PATTERN, inviteOf, type Invite } from "../domain/referrals.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
 import { formRequest } from "../http/public-form.ts";
 import { addressOf } from "./client-profile.ts";
 import {
   AddressOutcomeSchema,
+  CreditsSchema,
   FirstFitOutcomeSchema,
   firstFitOf,
   FirstFitRequestSchema,
+  InviteStateSchema,
   takenOrBooked,
   TypedAddressSchema,
 } from "./consultations.ts";
 
-const CodeParams = z.object({ code: z.string().regex(/^[A-Za-z0-9]{4,12}$/) });
+const CodeParams = z.object({ code: z.string().regex(CODE_PATTERN) });
 
 /** Six digits, and never starting with 0 or 9: India's pincodes. */
 const PincodeSchema = z
@@ -57,13 +59,6 @@ const InviteSchema = z
   })
   .strict()
   .openapi("Invite");
-
-/** The invite as it stands for the person who used it. */
-const InviteStateSchema = z.enum(["valid", "expired", "unknown"]).openapi({
-  description:
-    "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so " +
-    "the consultation is still free and the 3 visits do not apply; or unknown, a code we do not have.",
-});
 
 const PincodeAnswerSchema = z
   .object({
@@ -159,7 +154,7 @@ const consultationRoute = createRoute({
               date: z.iso.date(),
               window: z.enum(BOOKING_WINDOWS),
               area: z.string(),
-              credits: z.boolean().openapi({ description: "Whether the invite's 3 service visits apply." }),
+              credits: CreditsSchema,
               invite: InviteStateSchema,
               address: AddressOutcomeSchema,
               first_fit: FirstFitOutcomeSchema,
@@ -197,7 +192,7 @@ const waitlistRoute = createRoute({
       content: {
         "application/json": {
           schema: z
-            .object({ area: z.union([z.string(), z.null()]), credits: z.boolean(), invite: InviteStateSchema })
+            .object({ area: z.union([z.string(), z.null()]), credits: CreditsSchema, invite: InviteStateSchema })
             .strict()
             .openapi("ReferralWaitlist"),
         },
