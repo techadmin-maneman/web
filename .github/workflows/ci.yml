@@ -124,10 +124,17 @@ jobs:
 
       - name: Dependency audit
         run: npm audit --audit-level=high
-      # npm now and then fails this with EMISSINGSIGNATUREKEY, a registry blip a re-run clears. So it tries once
-      # more after a failure, and a second failure fails the step (test/node/ci-workflow.test.ts).
+      # npm now and then fails this with EMISSINGSIGNATUREKEY, a registry blip a later try clears; on 28 September
+      # 2026 one more try 15 seconds on was not enough three runs in a row. So it tries four times, half a minute
+      # apart, and fails the step only if every try fails (test/node/ci-workflow.test.ts).
       - name: Registry signatures
-        run: npm audit signatures || { echo "::warning::the signatures did not verify; trying once more"; sleep 15; npm audit signatures; }
+        run: |
+          for try in 1 2 3 4; do
+            if npm audit signatures; then exit 0; fi
+            echo "::warning::the signatures did not verify on try $try of 4"
+            if [ "$try" -lt 4 ]; then sleep 30; fi
+          done
+          exit 1
 
   # One run of the whole suite, so coverage still measures all of src/: 90% of lines and 80% of branches, with
   # floors of their own for the vendor clients (vitest.config.ts).
