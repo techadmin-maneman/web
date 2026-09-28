@@ -1255,6 +1255,13 @@ export const numberChanges = {
 export const settings = {
   title: "Settings",
   sub: "A change takes effect within a minute. No release is needed.",
+  /**
+   * PLACEHOLDER: no board draws the storage meter's line (docs/decisions/0093-the-storage-meter.md). Gigabytes as
+   * Cloudflare bills them, a thousand million bytes.
+   */
+  storage: (held: number, share: number) =>
+    `Photographs and referral cards hold ${(held / 1e9).toFixed(2)} GB in R2, ${String(Math.round((held / share) * 100))}% ` +
+    `of their ${String(share / 1e9)} GB share. Past it R2 bills, as the owner accepted; ops are told at 50%, 80% and 100%.`,
   // PLACEHOLDER: the prices tab holds the services too (docs/decisions/0085-services-ops-can-edit.md), and no board
   // draws the last three tabs' names (docs/decisions/0087-consumables-and-stock.md,
   // docs/decisions/0088-every-policy-in-the-console.md).

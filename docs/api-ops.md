@@ -2808,6 +2808,26 @@ Request body:
 }
 ```
 
+### GET /api/storage
+
+What the photographs and referral cards hold in R2, against their share
+
+**200**: The storage meter
+
+```json
+{
+  "$ref": "#/components/schemas/Storage"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/whoami
 
 Who Access let through, and where signing out goes
@@ -8689,6 +8709,34 @@ Who Access let through, and where signing out goes
     "technician_id",
     "quantity",
     "note"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Storage
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "held_bytes": {
+      "type": "integer",
+      "description": "What the client-photos and referral-cards buckets hold."
+    },
+    "share_bytes": {
+      "type": "integer",
+      "description": "Phase 2's share of R2's free 10 GB (ADR 0039); past it R2 bills, as the owner accepted."
+    },
+    "ceiling_bytes": {
+      "type": "integer",
+      "description": "Past this the technician app's photographs are refused and wait on the phones."
+    }
+  },
+  "required": [
+    "held_bytes",
+    "share_bytes",
+    "ceiling_bytes"
   ],
   "additionalProperties": false
 }

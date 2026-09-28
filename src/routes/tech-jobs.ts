@@ -8,6 +8,7 @@
 //   POST /api/tech/jobs/:id/start                start the job
 //   POST /api/tech/jobs/:id/photos/upload-url    a link to PUT one photograph to
 //   PUT  /api/tech/photos/:token                 the photograph itself
+//   PUT  /api/tech/photos/:token/small           its small copy, for the client app's rows
 //   POST /api/tech/jobs/:id/photos               the set is complete: attach it to FSM
 //   POST /api/tech/jobs/:id/checklist            the service checklist
 //   POST /api/tech/jobs/:id/consumables          what was used, with quantities
@@ -38,9 +39,18 @@ import { landJobEvent, type Landing } from "../domain/job-events.ts";
 import { jobSheet, knownCodes } from "../domain/job-sheet-settings.ts";
 import { recordJobUse } from "../domain/job-use.ts";
 import { tellOfLowStock } from "../domain/stock.ts";
+import { roomFor } from "../domain/storage-meter.ts";
 import { noShowReadiness, openNoShowCase } from "../domain/no-shows.ts";
 import { jobDetail, jobsOn, lastVisitPhoto, progressOf, workableJob, type WorkableJob } from "../domain/tech-jobs.ts";
-import { anglesHeld, MAX_PHOTO_BYTES, slotOfLink, storeTechnicianPhoto, uploadLink } from "../domain/tech-photos.ts";
+import {
+  anglesHeld,
+  MAX_PHOTO_BYTES,
+  slotOfLink,
+  storeTechnicianPhoto,
+  storeThumbnail,
+  uploadLink,
+  type PhotoSlot,
+} from "../domain/tech-photos.ts";
 import { ANGLES, PHASES } from "../domain/visit-photos.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
@@ -256,6 +266,9 @@ const UploadUrlRequestSchema = z
 const UploadUrlSchema = z
   .object({
     upload_url: z.string().openapi({ description: "A path on this host. PUT the photograph there." }),
+    small_upload_url: z.string().openapi({
+      description: "A path on this host. PUT the photograph's small copy there, once the photograph is in.",
+    }),
     expires_at: z.iso.datetime(),
   })
   .strict()
@@ -432,16 +445,46 @@ const uploadUrlRoute = createRoute({
   },
 });
 
+const PhotoTakenSchema = z
+  .object({
+    take: z
+      .uuid()
+      .openapi({ description: "This upload of the angle's photograph, which its small copy's upload names." }),
+  })
+  .strict()
+  .openapi("TechnicianPhotoTaken");
+
 const uploadRoute = createRoute({
   method: "put",
   path: "/api/tech/photos/{token}",
-  summary: "The photograph itself: a JPEG or PNG, at most 12 MB",
+  summary: "The photograph itself: a JPEG or PNG, at most 2 MB",
   request: { params: z.object({ token: z.string().min(1).max(500) }) },
   responses: {
-    204: { description: "Received" },
+    200: { description: "Received", ...json(PhotoTakenSchema) },
     401: errorResponse("session_required; device_revoked"),
     404: errorResponse("not_found: the link is wrong or expired"),
-    422: errorResponse("photo_invalid_file: not a JPEG or PNG, or over 12 MB"),
+    422: errorResponse("photo_invalid_file: not a JPEG or PNG, or over 2 MB"),
+    503: errorResponse("busy: R2 holds past the runaway ceiling; the phone keeps the photograph and sends it later"),
+  },
+});
+
+const smallUploadRoute = createRoute({
+  method: "put",
+  path: "/api/tech/photos/{token}/small",
+  summary: "The photograph's small copy, for the client app's rows: a JPEG of at most 64 KB and 800 px a side",
+  request: {
+    params: z.object({ token: z.string().min(1).max(500) }),
+    query: z.object({ take: z.uuid().openapi({ description: "The take the photograph's upload answered." }) }),
+  },
+  responses: {
+    204: { description: "Received, or held already" },
+    401: errorResponse("session_required; device_revoked"),
+    404: errorResponse("not_found: the link is wrong or expired"),
+    409: errorResponse(
+      "upload_missing: that take is not the angle's photograph: not arrived yet, or taken again since",
+    ),
+    422: errorResponse("photo_invalid_file: not a JPEG, or over 64 KB or 800 px a side"),
+    503: errorResponse("busy: R2 holds past the runaway ceiling"),
   },
 });
 
@@ -645,26 +688,43 @@ export function registerTechJobs(app: App): void {
     if (job === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     const { phase, angle } = c.req.valid("json");
     const link = await uploadLink(c.var.config.settings.tryon.linkSigningKey, { appointmentId: id, phase, angle }, now);
-    return c.json({ upload_url: link.url, expires_at: link.expiresAt.toISOString() }, 201);
+    return c.json(
+      { upload_url: link.url, small_upload_url: link.smallUrl, expires_at: link.expiresAt.toISOString() },
+      201,
+    );
   });
 
   app.openapi(uploadRoute, async (c) => {
-    const { technicianId } = technicianOf(c);
     const { deps, requestId } = c.var;
     const now = deps.now();
-    const slot = await slotOfLink(c.var.config.settings.tryon.linkSigningKey, c.req.valid("param").token, now);
+    const slot = await uploadSlot(c, c.req.valid("param").token);
     if (slot === null) return c.json(errorBody("not_found", requestId), 404);
-    // The link names the job; the job must still be this technician's.
-    const job = await workableJob(c.env.DB, slot.appointmentId);
-    if (job?.technicianId !== technicianId) return c.json(errorBody("not_found", requestId), 404);
 
     const bytes = new Uint8Array(await c.req.arrayBuffer());
     if (bytes.byteLength === 0 || bytes.byteLength > MAX_PHOTO_BYTES) {
       return c.json(errorBody("photo_invalid_file", requestId), 422);
     }
+    if (!(await roomFor(c.env.DB, deps.alertOnce, bytes.byteLength))) {
+      return c.json(errorBody("busy", requestId), 503);
+    }
     const stored = await storeTechnicianPhoto(c.env.DB, c.env.CLIENT_PHOTOS, slot, bytes, now, now);
     if (stored.kind === "not_an_image") return c.json(errorBody("photo_invalid_file", requestId), 422);
     c.var.log.info("technician_photo_stored", { appointment_id: slot.appointmentId, phase: slot.phase });
+    return c.json({ take: stored.take }, 200);
+  });
+
+  app.openapi(smallUploadRoute, async (c) => {
+    const { deps, requestId } = c.var;
+    const slot = await uploadSlot(c, c.req.valid("param").token);
+    if (slot === null) return c.json(errorBody("not_found", requestId), 404);
+
+    const bytes = new Uint8Array(await c.req.arrayBuffer());
+    if (!(await roomFor(c.env.DB, deps.alertOnce, bytes.byteLength))) {
+      return c.json(errorBody("busy", requestId), 503);
+    }
+    const stored = await storeThumbnail(c.env.DB, c.env.CLIENT_PHOTOS, slot, c.req.valid("query").take, bytes);
+    if (stored === "not_a_thumbnail") return c.json(errorBody("photo_invalid_file", requestId), 422);
+    if (stored === "no_photograph") return c.json(errorBody("upload_missing", requestId), 409);
     return c.body(null, 204);
   });
 
@@ -773,6 +833,14 @@ export function registerTechJobs(app: App): void {
 }
 
 type Ctx = Context<AppEnv>;
+
+/** The slot an upload link names, while its job is still this technician's; null for any other link. */
+async function uploadSlot(c: Ctx, token: string): Promise<PhotoSlot | null> {
+  const slot = await slotOfLink(c.var.config.settings.tryon.linkSigningKey, token, c.var.deps.now());
+  if (slot === null) return null;
+  const job = await workableJob(c.env.DB, slot.appointmentId);
+  return job?.technicianId === technicianOf(c).technicianId ? slot : null;
+}
 
 /**
  * The job a write names. Not narrowed to this technician: a job that moved to

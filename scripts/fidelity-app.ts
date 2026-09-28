@@ -117,7 +117,13 @@ const ANGLES = ["front", "top", "left", "right", "hair"];
 /** The five angles after a visit, each answered with a block of `ink` (see PHOTO_FILES). */
 const photoSet = (ink: string) => ({
   before: [],
-  after: ANGLES.map((angle) => ({ angle, url: `/api/photos/file/${ink}`, width: 600, height: 800 })),
+  after: ANGLES.map((angle) => ({
+    angle,
+    url: `/api/photos/file/${ink}`,
+    thumbnail_url: null,
+    width: 600,
+    height: 800,
+  })),
 });
 const PHOTO_FILES = { ink: "#16233a", frame: "#131c2e", raised: "#1a2740" } as const;
 
@@ -757,8 +763,8 @@ async function referPairs(browser: Browser, design: Page): Promise<void> {
     date: NOVEMBER.date,
     type: "first_fit",
     photos: {
-      before: [{ angle: "front", url: "/api/photos/file/frame", width: 600, height: 800 }],
-      after: [{ angle: "front", url: "/api/photos/file/raised", width: 600, height: 800 }],
+      before: [{ angle: "front", url: "/api/photos/file/frame", thumbnail_url: null, width: 600, height: 800 }],
+      after: [{ angle: "front", url: "/api/photos/file/raised", thumbnail_url: null, width: 600, height: 800 }],
     },
   };
   const files: Record<string, (route: Route) => Promise<void>> = {};

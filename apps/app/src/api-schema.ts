@@ -1119,6 +1119,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/photos/small/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A photograph's small copy, through a link that lasts 15 minutes; the photograph itself if the copy is gone */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    token: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The image */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "image/jpeg": string;
+                        "image/png": string;
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: the link is wrong, expired, or not this client's */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/photos/try-on/{image}/{token}": {
         parameters: {
             query?: never;
@@ -2641,6 +2698,8 @@ export interface components {
             angle: "front" | "top" | "left" | "right" | "hair";
             /** @description Lasts 15 minutes; only the signed-in client can open it. */
             url: string;
+            /** @description Its small copy, for a row of thumbnails, likewise; null for a photograph with none, such as one copied from FSM, which the row shows itself. */
+            thumbnail_url: string | null;
             width: number | null;
             height: number | null;
         };

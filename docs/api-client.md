@@ -709,6 +709,28 @@ A photograph, through a link that lasts 15 minutes
 }
 ```
 
+### GET /api/photos/small/{token}
+
+A photograph's small copy, through a link that lasts 15 minutes; the photograph itself if the copy is gone
+
+**200**: The image
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: the link is wrong, expired, or not this client's
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/photos/try-on/{image}/{token}
 
 A try-on's photograph or look, through a link that lasts 15 minutes
@@ -3218,6 +3240,17 @@ Request body:
       "type": "string",
       "description": "Lasts 15 minutes; only the signed-in client can open it."
     },
+    "thumbnail_url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Its small copy, for a row of thumbnails, likewise; null for a photograph with none, such as one copied from FSM, which the row shows itself."
+    },
     "width": {
       "anyOf": [
         {
@@ -3242,6 +3275,7 @@ Request body:
   "required": [
     "angle",
     "url",
+    "thumbnail_url",
     "width",
     "height"
   ],

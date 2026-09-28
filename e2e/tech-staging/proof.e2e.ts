@@ -323,7 +323,8 @@ test("the before set: a link for each angle, the PUT, then the set", async ({ pa
   record("upload-url answers", links);
   record("PUT answers", puts);
   expect(links).toEqual([201, 201, 201, 201, 201]);
-  expect(puts).toEqual([204, 204, 204, 204, 204]);
+  // Each photograph, answered with its take, then its thumbnail (docs/decisions/0093-the-storage-meter.md).
+  expect(puts).toEqual([200, 204, 200, 204, 200, 204, 200, 204, 200, 204]);
 
   const stored = await query<{ angle: string; bytes: number; r2_key: string; content_type: string }>(
     `SELECT p.angle, p.bytes, p.r2_key, p.content_type FROM photos p JOIN photo_sets s ON s.id = p.photo_set_id

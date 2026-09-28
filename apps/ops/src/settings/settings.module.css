@@ -560,6 +560,14 @@
   padding: 0 var(--sp-14);
 }
 
+/* The storage meter's line above the tabs (docs/decisions/0093-the-storage-meter.md); no board draws it. */
+.storage {
+  margin: 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-160);
+  color: var(--text-muted);
+}
+
 /* ---- Blackout days ------------------------------------------------------- */
 
 /* Each period blacked out is laid out as a rule is: its days and why, who added it, and what is still booked on it. */

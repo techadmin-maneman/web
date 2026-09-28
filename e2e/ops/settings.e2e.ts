@@ -43,6 +43,16 @@ async function open(page: Page, path = "/settings", extra: Answers = {}): Promis
 const posted = (page: Page, path: string) =>
   page.waitForRequest((request) => request.url().endsWith(path) && request.method() === "POST");
 
+// The storage meter (docs/decisions/0093-the-storage-meter.md): one line above the tabs, which no board draws.
+test("says what the photographs and referral cards hold in R2, against their share", async ({ page }) => {
+  await open(page, "/settings", {
+    "GET /api/storage": json({ held_bytes: 1_240_000_000, share_bytes: 4e9, ceiling_bytes: 20e9 }),
+  });
+  await expect(
+    page.getByText("Photographs and referral cards hold 1.24 GB in R2, 31% of their 4 GB share."),
+  ).toBeVisible();
+});
+
 test.describe("the rules", () => {
   test("shows each rule with its unit and what it may be, before anything is typed", async ({ page }) => {
     await open(page);

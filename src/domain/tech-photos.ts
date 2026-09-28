@@ -10,17 +10,38 @@
 // minutes and for one phase and angle. Each angle's latest upload is the
 // visit's photograph for that angle; the one it replaces stays in the bucket,
 // as a photograph is deleted only on purpose and audited.
+//
+// The phone also makes a small copy of each photograph for the client app's
+// rows (docs/decisions/0093-the-storage-meter.md). Each upload of a photograph
+// is a take, which its answer names; the phone PUTs the small copy to the same
+// link's /small with that take, and it is kept beside that take alone. A
+// photograph taken again, in either app, forgets the one before's, so a row
+// never shows another take's copy. A photograph with none, such as one copied
+// from FSM, is shown itself.
 
 import { fileExtension, inspectImage } from "../lib/image-bytes.ts";
 import { signToken, verifyToken } from "../lib/signed-token.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
+import { deleteCounted, putCounted } from "./storage-meter.ts";
 import type { Angle, Phase } from "./visit-photos.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
 
 /** How long an upload link lasts. */
 export const PHOTO_UPLOAD_LINK_TTL_MS = 15 * MINUTE_MS;
-/** A photograph from a phone, at most. */
-export const MAX_PHOTO_BYTES = 12 * 1024 * 1024;
+/**
+ * A photograph from the technician's phone, at most. The app sends about 250 KB, and when a frame will not come down
+ * to that it sends the smallest it tried, 900 px on its long side at its lowest quality, well under 1 MB even from a
+ * phone that ignores the quality it is asked for. Twice that leaves room for such a phone, and keeps a broken build
+ * or a misused link from spending R2 at 12 MB a time, as the limit once allowed (docs/decisions/0093). A photograph
+ * copied from FSM keeps FSM's size and does not come through here (src/domain/visit-photos.ts).
+ */
+export const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
+/**
+ * A photograph's small copy, at most. The phone draws it 300 px on its short side, enough to fill the client app's
+ * rows at three device pixels to one, and encodes it to about 32 KB (@maneman/web-kit/small-jpeg).
+ */
+export const MAX_THUMBNAIL_BYTES = 64 * 1024;
+const THUMBNAIL_MAX_SIDE_PX = 800;
 
 export interface PhotoSlot {
   readonly appointmentId: string;
@@ -33,10 +54,11 @@ export async function uploadLink(
   secret: string,
   slot: PhotoSlot,
   now: Date,
-): Promise<{ url: string; expiresAt: Date }> {
+): Promise<{ url: string; smallUrl: string; expiresAt: Date }> {
   const expiresAt = new Date(now.getTime() + PHOTO_UPLOAD_LINK_TTL_MS);
   const token = await signToken(secret, "tech_photo", `${slot.appointmentId}:${slot.phase}:${slot.angle}`, expiresAt);
-  return { url: `/api/tech/photos/${token}`, expiresAt };
+  const url = `/api/tech/photos/${token}`;
+  return { url, smallUrl: `${url}/small`, expiresAt };
 }
 
 /** The slot a link names, or null when the token is wrong, forged or expired. */
@@ -49,8 +71,18 @@ export async function slotOfLink(secret: string, token: string, now: Date): Prom
 }
 
 export type Stored =
-  | { readonly kind: "stored"; readonly photoId: string; readonly width: number | null; readonly height: number | null }
+  | {
+      readonly kind: "stored";
+      readonly photoId: string;
+      /** This upload of the slot's photograph, which its small copy names. */
+      readonly take: string;
+      readonly width: number | null;
+      readonly height: number | null;
+    }
   | { readonly kind: "not_an_image" };
+
+/** Where a take of a slot is kept, less its extension: the photograph adds its own, its small copy "-small.jpg". */
+const takeKey = (slot: PhotoSlot, take: string) => `visits/${slot.appointmentId}/${slot.phase}-${slot.angle}-${take}`;
 
 /** Puts one photograph in its slot: R2 first, then the row that names it. */
 export async function storeTechnicianPhoto(
@@ -78,8 +110,9 @@ export async function storeTechnicianPhoto(
     .first<{ id: string }>();
   if (set === null) throw new Error("the photo set was not written");
 
-  const key = `visits/${slot.appointmentId}/${slot.phase}-${slot.angle}-${crypto.randomUUID()}.${fileExtension(info.type)}`;
-  await bucket.put(key, bytes, { httpMetadata: { contentType: info.type } });
+  const take = crypto.randomUUID();
+  const key = `${takeKey(slot, take)}.${fileExtension(info.type)}`;
+  await putCounted(db, bucket, key, bytes, info.type);
   const row = await db
     .prepare(
       `INSERT INTO photos (id, photo_set_id, angle, r2_key, content_type, bytes, width, height, taken_at, created_at)
@@ -87,7 +120,7 @@ export async function storeTechnicianPhoto(
        ON CONFLICT (photo_set_id, angle) DO UPDATE SET
          r2_key = excluded.r2_key, content_type = excluded.content_type, bytes = excluded.bytes,
          width = excluded.width, height = excluded.height, taken_at = excluded.taken_at,
-         fsm_attachment_id = NULL
+         fsm_attachment_id = NULL, thumbnail_key = NULL
        RETURNING id`,
     )
     .bind(
@@ -104,7 +137,51 @@ export async function storeTechnicianPhoto(
     )
     .first<{ id: string }>();
   if (row === null) throw new Error("the photograph was not written");
-  return { kind: "stored", photoId: row.id, width: info.width, height: info.height };
+  return { kind: "stored", photoId: row.id, take, width: info.width, height: info.height };
+}
+
+/** A JPEG no larger than a small copy needs to be, in bytes and in pixels. */
+function isThumbnail(bytes: Uint8Array): boolean {
+  if (bytes.byteLength > MAX_THUMBNAIL_BYTES) return false;
+  const info = inspectImage(bytes);
+  if (info?.type !== "image/jpeg" || info.width === null || info.height === null) return false;
+  return Math.max(info.width, info.height) <= THUMBNAIL_MAX_SIDE_PX;
+}
+
+export type StoredThumbnail = "stored" | "held_already" | "no_photograph" | "not_a_thumbnail";
+
+/**
+ * Keeps a take's small copy beside it. The take must still be the slot's photograph: a small copy is never held
+ * without its own, and never beside a newer take, from the phone or from FSM.
+ */
+export async function storeThumbnail(
+  db: D1Database,
+  bucket: R2Bucket,
+  slot: PhotoSlot,
+  take: string,
+  bytes: Uint8Array,
+): Promise<StoredThumbnail> {
+  if (!isThumbnail(bytes)) return "not_a_thumbnail";
+  const photo = await db
+    .prepare(
+      `SELECT p.id, p.r2_key, p.thumbnail_key FROM photos p JOIN photo_sets s ON s.id = p.photo_set_id
+       WHERE s.appointment_id = ?1 AND s.phase = ?2 AND p.angle = ?3`,
+    )
+    .bind(slot.appointmentId, slot.phase, slot.angle)
+    .first<{ id: string; r2_key: string; thumbnail_key: string | null }>();
+  const photograph = takeKey(slot, take);
+  if (!photo?.r2_key.startsWith(`${photograph}.`)) return "no_photograph";
+  const key = `${photograph}-small.jpg`;
+  if (photo.thumbnail_key === key) return "held_already";
+
+  await putCounted(db, bucket, key, bytes, "image/jpeg");
+  const claimed = await db
+    .prepare("UPDATE photos SET thumbnail_key = ?3 WHERE id = ?1 AND r2_key = ?2 RETURNING id")
+    .bind(photo.id, photo.r2_key, key)
+    .first();
+  // The photograph was taken again while this was stored: it is not needed.
+  if (claimed === null) await deleteCounted(db, bucket, [key]);
+  return "stored";
 }
 
 /** Which angles of a phase this job already holds. */

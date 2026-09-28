@@ -1658,6 +1658,17 @@
             "type": "string",
             "description": "Lasts 15 minutes; only the signed-in client can open it."
           },
+          "thumbnail_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Its small copy, for a row of thumbnails, likewise; null for a photograph with none, such as one copied from FSM, which the row shows itself."
+          },
           "width": {
             "anyOf": [
               {
@@ -1682,6 +1693,7 @@
         "required": [
           "angle",
           "url",
+          "thumbnail_url",
           "width",
           "height"
         ],
@@ -4383,6 +4395,58 @@
     "/api/photos/file/{token}": {
       "get": {
         "summary": "A photograph, through a link that lasts 15 minutes",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "token",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The image",
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: the link is wrong, expired, or not this client's",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/photos/small/{token}": {
+      "get": {
+        "summary": "A photograph's small copy, through a link that lasts 15 minutes; the photograph itself if the copy is gone",
         "parameters": [
           {
             "schema": {

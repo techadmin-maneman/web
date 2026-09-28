@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { HOUSE_CARD } from "../../src/config/house-card.ts";
 import { renderMessage } from "../../src/config/message-templates.ts";
 import { openSession } from "../../src/domain/sessions.ts";
+import { readMeter } from "../../src/domain/storage-meter.ts";
 import { composeLaunchAlert } from "../../src/domain/waitlist.ts";
 import { REFERRERS_PAGE, WAITLIST_AREAS } from "../../src/routes/ops-waitlist.ts";
 import {
@@ -84,6 +85,8 @@ describe("the referral card", () => {
     const stored = await put(jpegOf(1200, 630));
     expect(await stored.json()).toEqual({ version: 2 });
     expect(await card()).toMatchObject({ card_state: "personal", card_version: 2, card_key: `cards/${CODE}/v2.jpg` });
+    // Counted on the storage meter (docs/decisions/0093-the-storage-meter.md).
+    expect((await readMeter(env.DB)).bytes).toBe(jpegOf(1200, 630).byteLength);
 
     const preview = await request(site(), `/api/og/${CODE}.jpg`);
     expect(preview.status).toBe(200);
@@ -98,6 +101,7 @@ describe("the referral card", () => {
     expect(revoked.status).toBe(204);
     expect(await card()).toMatchObject({ card_state: "house", card_version: 3, card_key: null });
     expect(await env.REFERRAL_CARDS.get(`cards/${CODE}/v2.jpg`)).toBeNull();
+    expect((await readMeter(env.DB)).bytes).toBe(0);
     // The house card in its own version, so a chat that cached an older one fetches it afresh.
     const house = await request(site(), `/api/og/${CODE}.jpg?v=3`);
     expect(house.status).toBe(302);
@@ -121,12 +125,17 @@ describe("the referral card", () => {
     });
     expect(off.status).toBe(200);
     expect(await card()).toMatchObject({ card_state: "house", card_key: null });
+    expect((await readMeter(env.DB)).bytes).toBe(0);
 
     await consent("photos_referral_cards", true);
     await put(jpegOf(1200, 630));
     expect((await card())?.card_state).toBe("personal");
+    // A new card replaces the one before it, which is counted no more.
+    await put(jpegOf(1200, 630));
+    expect((await readMeter(env.DB)).bytes).toBe(jpegOf(1200, 630).byteLength);
     await eraseByMobile("+919810000001", NOW);
     expect(await card()).toMatchObject({ card_state: "house", card_key: null });
+    expect((await readMeter(env.DB)).bytes).toBe(0);
   });
 });
 

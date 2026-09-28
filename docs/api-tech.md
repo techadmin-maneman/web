@@ -363,9 +363,15 @@ Request body:
 
 ### PUT /api/tech/photos/{token}
 
-The photograph itself: a JPEG or PNG, at most 12 MB
+The photograph itself: a JPEG or PNG, at most 2 MB
 
-**204**: Received
+**200**: Received
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianPhotoTaken"
+}
+```
 
 **401**: session_required; device_revoked
 
@@ -383,7 +389,61 @@ The photograph itself: a JPEG or PNG, at most 12 MB
 }
 ```
 
-**422**: photo_invalid_file: not a JPEG or PNG, or over 12 MB
+**422**: photo_invalid_file: not a JPEG or PNG, or over 2 MB
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**503**: busy: R2 holds past the runaway ceiling; the phone keeps the photograph and sends it later
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### PUT /api/tech/photos/{token}/small
+
+The photograph's small copy, for the client app's rows: a JPEG of at most 64 KB and 800 px a side
+
+**204**: Received, or held already
+
+**401**: session_required; device_revoked
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: the link is wrong or expired
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: upload_missing: that take is not the angle's photograph: not arrived yet, or taken again since
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**422**: photo_invalid_file: not a JPEG, or over 64 KB or 800 px a side
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**503**: busy: R2 holds past the runaway ceiling
 
 ```json
 {
@@ -2026,6 +2086,10 @@ The piece a label names
       "type": "string",
       "description": "A path on this host. PUT the photograph there."
     },
+    "small_upload_url": {
+      "type": "string",
+      "description": "A path on this host. PUT the photograph's small copy there, once the photograph is in."
+    },
     "expires_at": {
       "type": "string",
       "format": "date-time"
@@ -2033,6 +2097,7 @@ The piece a label names
   },
   "required": [
     "upload_url",
+    "small_upload_url",
     "expires_at"
   ],
   "additionalProperties": false
@@ -2066,6 +2131,25 @@ The piece a label names
   "required": [
     "phase",
     "angle"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianPhotoTaken
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "take": {
+      "type": "string",
+      "format": "uuid",
+      "description": "This upload of the angle's photograph, which its small copy's upload names."
+    }
+  },
+  "required": [
+    "take"
   ],
   "additionalProperties": false
 }
