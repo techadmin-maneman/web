@@ -59,8 +59,9 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   await expect(page.getByRole("term").filter({ hasText: "What was done" }).locator("+ dd")).toHaveText(
     "PLACEHOLDER Piece removed, PLACEHOLDER Scalp cleaned, PLACEHOLDER Piece cleaned.",
   );
+  // The row shows the thumbnail the technician's phone made, not the whole photograph (ADR 0093).
   const front = page.getByRole("button", { name: `Front, after the visit, ${fullDate(client.service.date)}` });
-  await expect.poll(() => front.locator("img").evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(600);
+  await expect.poll(() => front.locator("img").evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(300);
   await page.getByRole("link", { name: "Back to visits" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Visits" })).toBeVisible();
 
