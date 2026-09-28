@@ -178,6 +178,7 @@ export const stopped: Readonly<Record<string, string>> = {
  * itself has no time.
  */
 function movedTo(moved: Moved, now: Date): string {
+  // PLACEHOLDER: the prompt's example has a time on the day; the line without one, and the one with a day, are ours.
   if (moved.at === null) return `Ops moved this job to ${moved.technician}.`;
   const day = todayInIndia(new Date(moved.at));
   const time = clock(moved.at);
