@@ -568,11 +568,52 @@ describe("the outbox", () => {
     const answer = await post(`/api/tech/jobs/${TODAY_JOB}/checklist`, { done: [] }, "event-late-01");
 
     expect(answer.status).toBe(409);
-    expect(await answer.json()).toMatchObject({ error: { code: "superseded", fields: ["technician"] } });
+    // Moved in FSM itself, so nothing of ours says when.
+    expect(await answer.json()).toMatchObject({
+      error: { code: "superseded", fields: ["technician"], moved: { technician: "Sameer", at: null } },
+    });
     const row = await env.DB.prepare(
       "SELECT superseded, fsm_write_state FROM job_events WHERE event_id = 'event-late-01'",
     ).first<{ superseded: number; fsm_write_state: string }>();
     expect(row).toEqual({ superseded: 1, fsm_write_state: "rejected" });
+  });
+
+  // Open point 92, ruled by the owner on 27 September 2026: "the other technician's first name may reach the phone.
+  // Name the technician the job went to, and when."
+  it("names the technician ops gave the job to, by first name alone, and when they moved it", async () => {
+    await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
+    const moved = await opsPost("/api/dispatch/move", {
+      appointment_id: TODAY_JOB,
+      ...AS_THE_BOARD_SHOWS_IT,
+      technician_id: SAMEER,
+      reason: "technician_unavailable",
+    });
+    expect(moved.status).toBe(200);
+
+    const answer = await post(`/api/tech/jobs/${TODAY_JOB}/start`, undefined, "event-start-01");
+
+    expect(answer.status).toBe(409);
+    const { error } = (await answer.json()) as { error: Record<string, unknown> };
+    // Nothing else of Sameer's: not his whole name, his number or his zone.
+    expect(error).toEqual({
+      code: "superseded",
+      request_id: expect.any(String),
+      fields: ["technician"],
+      moved: { technician: "Sameer", at: NOW.toISOString() },
+    });
+  });
+
+  it("names nobody for a job that was cancelled, whoever it was left with", async () => {
+    await env.DB.prepare("UPDATE appointments SET status = 'cancelled', technician_id = ?2 WHERE id = ?1")
+      .bind(TODAY_JOB, SAMEER)
+      .run();
+
+    const answer = await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
+
+    expect(answer.status).toBe(409);
+    const { error } = (await answer.json()) as { error: Record<string, unknown> };
+    expect(error).toMatchObject({ code: "superseded", fields: ["status", "technician"] });
+    expect(error).not.toHaveProperty("moved");
   });
 
   it("rejects a write as superseded once ops have moved the job to another time", async () => {

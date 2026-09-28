@@ -34,7 +34,7 @@ import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
 import { latestArrival, recordArrival } from "../domain/check-ins.ts";
 import { allConsumables, offeredForJob, serviceOfJob } from "../domain/consumables.ts";
-import { landJobEvent, type Landing } from "../domain/job-events.ts";
+import { landJobEvent, type Landing, type MovedTo } from "../domain/job-events.ts";
 import { jobSheet, knownCodes } from "../domain/job-sheet-settings.ts";
 import { recordJobUse } from "../domain/job-use.ts";
 import { tellOfLowStock } from "../domain/stock.ts";
@@ -42,7 +42,7 @@ import { noShowReadiness, openNoShowCase } from "../domain/no-shows.ts";
 import { jobDetail, jobsOn, lastVisitPhoto, progressOf, workableJob, type WorkableJob } from "../domain/tech-jobs.ts";
 import { anglesHeld, MAX_PHOTO_BYTES, slotOfLink, storeTechnicianPhoto, uploadLink } from "../domain/tech-photos.ts";
 import { ANGLES, PHASES } from "../domain/visit-photos.ts";
-import { errorBody, errorResponse } from "../http/errors.ts";
+import { errorBody, errorResponse, type ErrorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { requireTechnicianSession, technicianOf } from "../http/technician-session.ts";
 import { indiaDate } from "../lib/india-time.ts";
@@ -613,7 +613,7 @@ export function registerTechJobs(app: App): void {
     }
 
     const landing = await land(c, job, "check_in", { at: arrival.at, distance_m: arrival.distanceM }, at);
-    if (!landing.ok) return c.json(errorBody(landing.code, requestId, landing.fields), 409);
+    if (!landing.ok) return c.json(refusalOf(c, landing), 409);
     if (job.personId !== null) await tellOfArrival(c, { personId: job.personId, appointmentId: job.id, arrivedAt: at });
     return c.json(
       {
@@ -753,7 +753,7 @@ export function registerTechJobs(app: App): void {
 
     // The close lands first, so a job started, superseded or moved opens no case.
     const landing = await land(c, job, "outcome", { outcome: "no_show" });
-    if (!landing.ok) return c.json(errorBody(landing.code, requestId, landing.fields), 409);
+    if (!landing.ok) return c.json(refusalOf(c, landing), 409);
     const caseId = await openNoShowCase(c.env.DB, {
       appointmentId: job.id,
       checkIn: readiness.checkIn,
@@ -802,7 +802,7 @@ async function step(
     return c.json(errorBody("invalid_request", c.var.requestId, built.invalid), 400);
   }
   const landing = await land(c, job, kind, built);
-  if (!landing.ok) return c.json(errorBody(landing.code, c.var.requestId, landing.fields), 409);
+  if (!landing.ok) return c.json(refusalOf(c, landing), 409);
   if (landed !== undefined) await landed(job);
   return c.json(landing.accepted, 202);
 }
@@ -814,7 +814,16 @@ type Landed =
       readonly ok: false;
       readonly code: "superseded" | "out_of_order" | "not_today" | "already_started";
       readonly fields?: string[];
+      /** On a job given to another technician: whom, by first name, and when (docs/open-points.md, item 92). */
+      readonly moved?: MovedTo;
     };
+
+/** A refused write's 409: its code and fields, and, for a job given to another technician, whom and when. */
+function refusalOf(c: Ctx, refused: Extract<Landed, { ok: false }>): ErrorResponse {
+  const body = errorBody(refused.code, c.var.requestId, refused.fields);
+  if (refused.moved === undefined) return body;
+  return { error: { ...body.error, moved: refused.moved } };
+}
 
 /**
  * The client's WhatsApp that his technician has arrived, the no-show's evidence (ADR 0047), once per visit. One
@@ -872,7 +881,9 @@ async function land(
   });
   if (landing.kind === "superseded") {
     c.var.log.info("job_event_superseded", { appointment_id: job.id, kind, changed: landing.changed });
-    return { ok: false, code: "superseded", fields: [...landing.changed] };
+    const fields = [...landing.changed];
+    if (landing.moved === null) return { ok: false, code: "superseded", fields };
+    return { ok: false, code: "superseded", fields, moved: landing.moved };
   }
   if (landing.kind === "out_of_order") return { ok: false, code: "out_of_order", fields: [landing.needs] };
   if (landing.kind === "not_today" || landing.kind === "already_started") return { ok: false, code: landing.kind };
