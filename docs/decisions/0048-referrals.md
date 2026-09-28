@@ -1,6 +1,6 @@
 # 0048. Referrals and the waitlist
 
-- Status: accepted. Amended by ADR 0060: while self-serve booking is off, the landing records a request for ops rather than refusing. The landing page and the app's Refer screens were built in P2-F3. Amended by ADR 0080: a consent to cards given by booking a visit, on the pay step's lines, names the referrer too. Amended 27 September 2026: where the phone can share files, the card goes with the invite as a photograph (below).
+- Status: accepted. Amended by ADR 0060: while self-serve booking is off, the landing records a request for ops rather than refusing. The landing page and the app's Refer screens were built in P2-F3. Amended by ADR 0080: a consent to cards given by booking a visit, on the pay step's lines, names the referrer too. Amended 27 September 2026: where the phone can share files, the card goes with the invite as a photograph (below). Amended by [ADR 0089](0089-an-invite-is-not-lost.md): attribution also happens on `/book`, with an invite the friend's browser remembered for 30 days, and when ops attach an invite on the client's page, under the same rule.
 - Date: 2026-09-22
 
 ## Context

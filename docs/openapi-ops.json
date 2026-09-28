@@ -74,7 +74,11 @@
                   "no_service_area",
                   "service_exists",
                   "last_of_kind",
-                  "service_retired"
+                  "service_retired",
+                  "unknown_invite",
+                  "own_invite",
+                  "already_invited",
+                  "already_fitted"
                 ]
               },
               "request_id": {
@@ -326,6 +330,17 @@
           },
           "history": {
             "$ref": "#/components/schemas/ClientRecordHistory"
+          },
+          "invite": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClientInvite"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The invite they came with, or ops attached; null for none."
           }
         },
         "required": [
@@ -338,7 +353,8 @@
           "credits",
           "visits",
           "payments",
-          "history"
+          "history",
+          "invite"
         ],
         "additionalProperties": false
       },
@@ -1058,6 +1074,98 @@
         ],
         "additionalProperties": false
       },
+      "ClientInvite": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "referrer": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Who sent it; null once they have been erased."
+          },
+          "grant": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "held",
+              "approved",
+              "rejected",
+              "granted",
+              "expired",
+              "clawed_back"
+            ],
+            "description": "pending until the client's first fit; held for ops' review; approved or granted, the 3 visits given; rejected; expired, lapsed on a waitlist; clawed_back, the first fit refunded."
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the client first came with it, or ops attached it."
+          },
+          "attached": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "by": {
+                    "type": "string",
+                    "description": "The Access identity of the member of staff who attached it."
+                  },
+                  "reason": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Null once either side is erased."
+                  }
+                },
+                "required": [
+                  "by",
+                  "reason"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Who attached it and why; null for an invite the client used themselves."
+          }
+        },
+        "required": [
+          "code",
+          "referrer",
+          "grant",
+          "since",
+          "attached"
+        ],
+        "additionalProperties": false
+      },
       "ClientPhotos": {
         "type": "object",
         "properties": {
@@ -1390,6 +1498,128 @@
         },
         "required": [
           "visits",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "AlreadyInvited": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "not_found",
+                  "invalid_request",
+                  "turnstile_failed",
+                  "rate_limited",
+                  "idempotency_in_progress",
+                  "idempotency_key_reused",
+                  "environment_mismatch",
+                  "unavailable",
+                  "internal_error",
+                  "busy",
+                  "photo_invalid_file",
+                  "upload_already_received",
+                  "upload_missing",
+                  "session_required",
+                  "job_not_claimable",
+                  "look_limit_reached",
+                  "unauthorized",
+                  "visit_booked",
+                  "payment_held",
+                  "forbidden_origin",
+                  "access_required",
+                  "code_expired",
+                  "too_early",
+                  "number_in_use",
+                  "not_ready",
+                  "ops_assisted",
+                  "taken",
+                  "not_bookable",
+                  "hold_expired",
+                  "address_required",
+                  "already_booked",
+                  "not_changeable",
+                  "terms_changed",
+                  "consent_required",
+                  "device_revoked",
+                  "superseded",
+                  "out_of_order",
+                  "not_today",
+                  "already_started",
+                  "clash",
+                  "on_leave",
+                  "does_not_fit",
+                  "fsm_refused",
+                  "fsm_partly",
+                  "too_early_to_close",
+                  "no_service_area",
+                  "service_exists",
+                  "last_of_kind",
+                  "service_retired",
+                  "unknown_invite",
+                  "own_invite",
+                  "already_invited",
+                  "already_fitted"
+                ]
+              },
+              "request_id": {
+                "type": "string"
+              },
+              "fields": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller."
+              }
+            },
+            "required": [
+              "code",
+              "request_id"
+            ],
+            "additionalProperties": false
+          },
+          "invite": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code"
+            ],
+            "additionalProperties": false,
+            "description": "The invite the client came with first."
+          }
+        },
+        "required": [
+          "error",
+          "invite"
+        ],
+        "additionalProperties": false
+      },
+      "InviteAttachment": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9]{4,12}$",
+            "description": "The invite's code, in either case."
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "description": "Why, in ops' words: kept with the invite, and blanked if either side is erased."
+          }
+        },
+        "required": [
+          "code",
           "reason"
         ],
         "additionalProperties": false
@@ -5085,7 +5315,7 @@
     },
     "/api/clients/{id}": {
       "get": {
-        "summary": "The client's record: who they are, their address, their visits, their payments and their history",
+        "summary": "The client's record: who they are, their address, their visits, their payments, their history and their invite",
         "parameters": [
           {
             "schema": {
@@ -5364,6 +5594,101 @@
           },
           "404": {
             "description": "not_found: no such client, or one who has been erased",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/clients/{id}/referral": {
+      "post": {
+        "summary": "Attach an invite to a client who booked away from its page, with the reason",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteAttachment"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Attached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientInvite"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: no reason, or a code that is not shaped like one",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such client, or one who has been erased",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "own_invite: the client is the code's own referrer; already_invited: the client came with an invite already, which the answer names; already_fitted: the client has had their first fit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AlreadyInvited"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "unknown_invite: no invite has that code",
             "content": {
               "application/json": {
                 "schema": {
