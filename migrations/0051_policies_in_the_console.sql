@@ -37,3 +37,9 @@ END;
 -- What ops have set so far, so the first read finds it.
 INSERT INTO ops_settings_snapshot (id, inputs)
 SELECT 1, json_group_object(name, json(value)) FROM ops_settings;
+
+-- The grace a hold was made with, in seconds: how long after its countdown a payment Razorpay made still counts as in
+-- time, and how long an unpaid hold keeps its time (docs/decisions/0068-a-paid-hold-is-kept.md). Ops set it in the
+-- console now; a hold keeps the one it was made with. Null for a hold made before, which had the committed two
+-- minutes (PAYMENT_GRACE_SECONDS, src/config/scheduling.ts).
+ALTER TABLE slot_holds ADD COLUMN grace_seconds INTEGER;

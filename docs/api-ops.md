@@ -6154,6 +6154,7 @@ Who Access let through, and where signing out goes
         "phone_clock",
         "task_sla_hours",
         "piece_cycle_days",
+        "payment_hold",
         "technician_work",
         "booking_days"
       ]
@@ -6319,6 +6320,7 @@ Who Access let through, and where signing out goes
         "phone_clock",
         "task_sla_hours",
         "piece_cycle_days",
+        "payment_hold",
         "technician_work",
         "booking_days"
       ]

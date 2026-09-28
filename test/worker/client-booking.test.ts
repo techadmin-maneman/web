@@ -206,6 +206,39 @@ describe("POST /api/holds", () => {
     expect(moved.id).toBeDefined();
   });
 
+  // The countdown and the grace are ops' to set; a hold keeps the ones it was made with
+  // (docs/decisions/0088-every-policy-in-the-console.md).
+  const paymentHold = (minutes: { countdown: number; grace: number }) =>
+    env.DB.prepare(
+      "INSERT OR REPLACE INTO ops_settings (name, value, set_by, set_at) VALUES ('payment_hold', ?1, 'ops', ?2)",
+    )
+      .bind(JSON.stringify(minutes), NOW.toISOString())
+      .run();
+
+  it("holds a slot for the minutes ops set, and keeps its time for the grace they set after them", async () => {
+    await paymentHold({ countdown: 15, grace: 5 });
+    const [first, second] = [await client(), await client()];
+    const held = await hold(first, TUESDAY_AFTERNOON);
+    expect(await held.json()).toMatchObject({ expires_at: "2026-09-21T06:45:00.000Z" });
+    await hold(second, TUESDAY_AFTERNOON);
+    const third = await client();
+    expect((await hold(third, TUESDAY_AFTERNOON, later(19))).status).toBe(409);
+    expect((await hold(third, TUESDAY_AFTERNOON, later(21))).status).toBe(201);
+  });
+
+  it("keeps a hold to the grace it was made with, whatever ops set after", async () => {
+    await paymentHold({ countdown: 10, grace: 5 });
+    const [first, second, third] = [await client(), await client(), await client()];
+    await hold(first, TUESDAY_AFTERNOON);
+    await hold(second, TUESDAY_AFTERNOON);
+    await paymentHold({ countdown: 10, grace: 1 });
+    // Thirteen minutes on is past a minute's grace, but not the five these two holds were made with.
+    expect((await hold(third, TUESDAY_AFTERNOON, later(13))).status).toBe(409);
+    expect(await env.DB.prepare("SELECT grace_seconds FROM slot_holds").all()).toMatchObject({
+      results: [{ grace_seconds: 300 }, { grace_seconds: 300 }],
+    });
+  });
+
   // The horizon is ops' to set, 45 days from tomorrow to begin with (docs/decisions/0086-the-next-visit-is-offered.md).
   it("carries a first fit's late fee, and refuses a day past the 45 days from tomorrow", async () => {
     const lead = await client(true);

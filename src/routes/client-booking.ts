@@ -37,7 +37,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
 import { PRICE_TIER } from "../config/ops-settings.ts";
-import { BOOKING_DAYS, BOOKING_WINDOWS, HOLD_SECONDS } from "../config/scheduling.ts";
+import { BOOKING_DAYS, BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { FSM_SERVICE_NAMES, VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
 import { recordBookingConsents } from "../domain/booking-consents.ts";
 import { startBooking } from "../domain/bookings.ts";
@@ -445,6 +445,7 @@ export function registerClientBooking(app: App): void {
     const useCredit =
       takesCredit(type, moves?.kind ?? null) && (await creditBalance(c.env.DB, session.subjectId, now)).visits > 0;
     const lateFeeItem = LATE_FEES[type];
+    const paymentHold = (await opsInputs(c)).paymentHold;
     const hold = await holdSlot(
       c.env.DB,
       {
@@ -460,7 +461,8 @@ export function registerClientBooking(app: App): void {
         ...(moves === undefined ? {} : { moves }),
       },
       now,
-      HOLD_SECONDS,
+      paymentHold.countdown * 60,
+      paymentHold.grace * 60,
     );
     if (hold === null) return c.json(errorBody("taken", c.var.requestId), 409);
     c.var.log.info("slot_held", { hold_id: hold.id, type, tier: service.tier, date, window });

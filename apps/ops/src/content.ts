@@ -1238,6 +1238,11 @@ export const settings = {
         before_start: "Earliest check-in, before the booked start",
         held_offline: "Longest a phone may hold what was done offline",
       },
+      // PLACEHOLDER: board C4's countdown and the grace after it (docs/decisions/0068-a-paid-hold-is-kept.md).
+      payment_hold: {
+        countdown: "The countdown the client sees",
+        grace: "A payment still in time, after it",
+      },
       // PLACEHOLDER: board D3's two figures (docs/open-points.md, item 59).
       technician_work: {
         period: "Jobs and average service, counted over",

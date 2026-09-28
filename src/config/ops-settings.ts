@@ -20,6 +20,7 @@ import { PHONE_CLOCK, PHONE_CLOCK_KEYS } from "../policy/phone-clock.ts";
 import { TECHNICIAN_WORK, TECHNICIAN_WORK_KEYS } from "../policy/technician-work.ts";
 import { TASK_GROUPS, TASK_SLA_HOURS } from "../policy/tasks.ts";
 import { DEFAULT_PIECE_CYCLE_DAYS, PIECE_CYCLE_DAYS } from "./pieces.ts";
+import { PAYMENT_HOLD, PAYMENT_HOLD_KEYS } from "./scheduling.ts";
 import { VISIT_TYPES } from "./visit-types.ts";
 
 /** One number, or one per key; or, for a rule of choices, one choice per key. */
@@ -169,6 +170,22 @@ export const OPS_SETTINGS = [
     keys: "open",
     fallback: { ...PIECE_CYCLE_DAYS, [DEFAULT_KEY]: DEFAULT_PIECE_CYCLE_DAYS },
     source: "src/config/pieces.ts",
+  },
+  {
+    // Board C4's ten minutes, and the two minutes' grace of ADR 0025, ruling 42 (docs/decisions/0068-a-paid-hold-is-kept.md).
+    name: "payment_hold",
+    title: "Holding a slot while the client pays",
+    note: "How long the app holds a slot while the client pays, which is the countdown they see, and how long after it a payment still counts as made in time, since a payment begun at the last moment lands a little later. A slot not paid for is free to others once both have passed. A hold keeps the figures it was made with.",
+    unit: "minutes",
+    min: 1,
+    max: 30,
+    keys: PAYMENT_HOLD_KEYS,
+    bounds: {
+      countdown: { min: 5, max: 30 },
+      grace: { min: 1, max: 10 },
+    },
+    fallback: PAYMENT_HOLD,
+    source: "src/config/scheduling.ts",
   },
   {
     // Board D3's two figures, the owner's of 27 September 2026 (docs/open-points.md, item 59).

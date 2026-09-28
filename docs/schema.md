@@ -1135,7 +1135,7 @@ Indexes:
 
 A slot held while a client pays, and what became of it (ADR 0045, ADR 0068).
 
-Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`.
+Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0051_policies_in_the_console.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1170,6 +1170,7 @@ Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_chan
 | `late_fee_gst_percent` | INTEGER | yes |  |  |
 | `tier` | TEXT | no | `'standard'` |  |
 | `minutes` | INTEGER | yes |  |  |
+| `grace_seconds` | INTEGER | yes |  |  |
 
 Indexes:
 
