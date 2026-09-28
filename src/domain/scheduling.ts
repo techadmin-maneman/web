@@ -42,7 +42,6 @@ import { clashes } from "../policy/dispatch.ts";
 import { bookedLength, unitsFor } from "../policy/visit-length.ts";
 import { windowAt } from "../policy/windows.ts";
 import { isFitted } from "./client-visits.ts";
-import { loadBlackouts } from "./leads.ts";
 import type { Price } from "./price-book.ts";
 import { MINUTE_MS, minutesBetween } from "../lib/durations.ts";
 
@@ -55,6 +54,15 @@ export interface Day {
 }
 
 const emptyDay = (): Day => ({ units: new Set(), windows: new Set(), onLeave: false });
+
+/** The days ops black out between two dates: nobody is offered a visit on them. */
+async function loadBlackouts(db: D1Database, from: string, to: string): Promise<Set<string>> {
+  const { results } = await db
+    .prepare("SELECT date FROM visit_blackouts WHERE date BETWEEN ?1 AND ?2")
+    .bind(from, to)
+    .all<{ date: string }>();
+  return new Set(results.map((row) => row.date));
+}
 
 /** The half-slot a time of day in India falls in: the last one starting at or before it. */
 export function unitAt(time: string): number {

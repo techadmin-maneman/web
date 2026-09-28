@@ -29,30 +29,55 @@ beforeEach(async () => {
   await markDatabase();
   // Tried on, and the CRM has them as the try-on's delivery-only record.
   await insertPerson(PERSON, "+919810000001");
-  await env.DB.prepare("UPDATE people SET zoho_lead_id = 'zoho-7' WHERE id = ?1").bind(PERSON).run();
+  await env.DB.batch([
+    env.DB.prepare("UPDATE people SET zoho_lead_id = 'zoho-7' WHERE id = ?1").bind(PERSON),
+    env.DB.prepare(
+      `INSERT INTO serviceable_pincodes (pincode, area, city, served, launched_at)
+       VALUES ('122018', 'Gurgaon South City II', 'Gurgaon', 1, ?1)`,
+    ).bind(NOW.toISOString()),
+    env.DB.prepare(
+      `INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at)
+       VALUES ('t1', 'resource-1', 'Imran Qureshi', 'IQ', 1, ?1)`,
+    ).bind(NOW.toISOString()),
+  ]);
 });
 
+/** Books a consultation on the site's form for the person's number; the lead it leaves. */
 async function book(): Promise<string> {
   const answer = await request(
     appFor(),
-    "/api/lead",
+    "/api/consultation",
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: "Arjun Mehta",
         mobile: "9810000001",
-        city: "Gurgaon",
-        first_choice_window: "weekday_am",
+        pincode: "122018",
         loss_extent: "crown",
-        consent: true,
         turnstile_token: "token",
+        date: "2026-09-23",
+        window: "morning",
+        address: {
+          flat: "House 12",
+          floor: null,
+          tower: null,
+          line1: "Palm Grove Society",
+          line2: null,
+          landmark: null,
+          locality: "Sector 65",
+          city: "Gurgaon",
+          pincode: "122018",
+          access_notes: null,
+        },
+        consent: true,
       }),
     },
     { CRM_QUEUE: fakeQueue(), FSM_QUEUE: fakeQueue() },
   );
   expect(answer.status).toBe(201);
-  return (await answer.json<{ lead_id: string }>()).lead_id;
+  const lead = await env.DB.prepare("SELECT id FROM leads WHERE person_id = ?1").bind(PERSON).first<string>("id");
+  return lead ?? "";
 }
 
 describe("a try-on-only person who books", () => {
@@ -64,7 +89,7 @@ describe("a try-on-only person who books", () => {
     const consent = await env.DB.prepare("SELECT purpose, granted FROM consents WHERE person_id = ?1")
       .bind(PERSON)
       .all();
-    expect(consent.results).toContainEqual({ purpose: "contact", granted: 1 });
+    expect(consent.results).toContainEqual({ purpose: "whatsapp_visits", granted: 1 });
   });
 
   it("turns their CRM record into a New lead that may be contacted", async () => {

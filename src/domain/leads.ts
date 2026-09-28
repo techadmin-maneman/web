@@ -1,10 +1,10 @@
-// Writing a booking or waitlist lead. Everything for one submission (the
-// person, their consent, the lead and an event) goes in one D1 batch, which
-// D1 applies as a single transaction: all of it lands, or none of it does.
-// The CRM hears about it afterwards, from the crm-sync queue.
+// Writing a booking or waitlist lead. The person, the lead and an event go in
+// one D1 batch, which D1 applies as a single transaction: all of it lands, or
+// none of it does. The consent was recorded before this, under the notice the
+// page showed (src/domain/public-booking.ts). The CRM hears about the lead
+// afterwards, from the crm-sync queue.
 
-import type { LossExtent, VisitWindow } from "../config/booking.ts";
-import { CURRENT_NOTICE } from "../config/notices.ts";
+import type { LossExtent } from "../config/booking.ts";
 
 export interface Attribution {
   readonly utm_source?: string | undefined;
@@ -27,39 +27,18 @@ export interface BookingLead {
   readonly city: string | null;
   /** "form" for a served pincode or city, "waitlist" otherwise. */
   readonly source: "form" | "waitlist";
-  /** Phase 1's rough preference. A booking has a date and a window of its own, so it has none. */
-  readonly window: VisitWindow | null;
   /** The public form asks; an invited friend is never asked. */
   readonly lossExtent: LossExtent | null;
   readonly proposedVisitDate: string | null;
   readonly attribution: Attribution;
-  readonly ipHash: string;
   readonly requestId: string;
   readonly now: Date;
-  /**
-   * Phase 1's form agrees to be contacted here, under the booking notice. A Phase 2
-   * booking has already recorded the consent it showed, which is a different notice,
-   * so it asks for none to be written (src/domain/public-booking.ts).
-   */
-  readonly recordConsent?: boolean;
 }
 
 export async function saveBookingLead(db: D1Database, lead: BookingLead): Promise<void> {
   const at = lead.now.toISOString();
   const personId = "(SELECT id FROM people WHERE mobile_e164 = ?)";
   const attribution = lead.attribution;
-
-  const consent =
-    lead.recordConsent === false
-      ? []
-      : [
-          db
-            .prepare(
-              `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash)
-               VALUES (?, ${personId}, 'contact', ?, 1, ?, ?)`,
-            )
-            .bind(crypto.randomUUID(), lead.mobileE164, CURRENT_NOTICE.contact, at, lead.ipHash),
-        ];
 
   await db.batch([
     // A returning person keeps their ID and their name, and becomes contactable. A form anyone can fill in with
@@ -71,14 +50,11 @@ export async function saveBookingLead(db: D1Database, lead: BookingLead): Promis
       )
       .bind(lead.newPersonId, at, lead.mobileE164, lead.name),
 
-    ...consent,
-
     db
       .prepare(
-        `INSERT INTO leads (id, person_id, created_at, source, city, first_choice_window, loss_extent,
-           proposed_visit_date, utm_source, utm_medium, utm_campaign, utm_content, gclid, fbclid,
-           referrer, landing_path, request_id)
-         VALUES (?, ${personId}, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO leads (id, person_id, created_at, source, city, loss_extent, proposed_visit_date,
+           utm_source, utm_medium, utm_campaign, utm_content, gclid, fbclid, referrer, landing_path, request_id)
+         VALUES (?, ${personId}, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .bind(
         lead.leadId,
@@ -86,7 +62,6 @@ export async function saveBookingLead(db: D1Database, lead: BookingLead): Promis
         at,
         lead.source,
         lead.city,
-        lead.window,
         lead.lossExtent,
         lead.proposedVisitDate,
         attribution.utm_source ?? null,
@@ -106,12 +81,4 @@ export async function saveBookingLead(db: D1Database, lead: BookingLead): Promis
       )
       .bind(crypto.randomUUID(), at, lead.leadId, JSON.stringify({ source: lead.source, city: lead.city })),
   ]);
-}
-
-export async function loadBlackouts(db: D1Database, from: string, to: string): Promise<Set<string>> {
-  const { results } = await db
-    .prepare("SELECT date FROM visit_blackouts WHERE date BETWEEN ?1 AND ?2")
-    .bind(from, to)
-    .all<{ date: string }>();
-  return new Set(results.map((row) => row.date));
 }

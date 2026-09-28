@@ -300,6 +300,6 @@ export function registerConsultations(app: App): void {
 
     const listed = run.outcome;
     if (listed.ok) return c.json(listed.body, 201);
-    return c.json(errorBody(listed.code, requestId), listed.status);
+    return c.json(errorBody(listed.code, requestId, listed.fields), listed.status);
   });
 }

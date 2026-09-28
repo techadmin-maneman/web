@@ -204,7 +204,6 @@ async function recordLead(
     lossExtent: LossExtent | null;
     date: string | null;
     attribution: Attribution;
-    ipHash: string;
     served: boolean;
     now: Date;
   },
@@ -218,15 +217,11 @@ async function recordLead(
     mobileE164: input.mobile,
     city: input.pincode === null ? null : await leadCity(db, input.pincode.city),
     source: input.served ? "form" : "waitlist",
-    window: null,
     lossExtent: input.lossExtent,
     proposedVisitDate: input.date,
     attribution: input.attribution,
-    ipHash: input.ipHash,
     requestId,
     now: input.now,
-    // The consent was recorded with the notice the page showed, before this.
-    recordConsent: false,
   });
   try {
     await form.queues.crm.send({ lead_id: leadId, request_id: requestId });
@@ -408,7 +403,6 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     lossExtent: request.lossExtent,
     date: request.date,
     attribution: request.attribution,
-    ipHash: checked.ipHash,
     served: true,
     now,
   });
@@ -522,7 +516,6 @@ export async function joinTheWaitlist(
     lossExtent: request.lossExtent,
     date: null,
     attribution: request.attribution,
-    ipHash: checked.ipHash,
     served: false,
     now,
   });

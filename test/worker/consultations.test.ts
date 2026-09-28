@@ -8,6 +8,7 @@ import { confirmBooking } from "../../src/domain/bookings.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
 import { createStubPayments } from "../../src/providers/payments.ts";
+import { consultationBody, lastBookableDay } from "../../scripts/lib/test-booking.ts";
 import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
 
 const VISITOR = {
@@ -103,6 +104,28 @@ describe("POST /api/consultation", () => {
       first_choice_window: null,
       city: "Gurgaon",
     });
+  });
+
+  // The staging check and the load test book this way (scripts/staging-lead.ts, scripts/load-test-leads.ts).
+  it("takes the booking a script sends on staging, with Cloudflare's dummy token", async () => {
+    await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
+    const body = consultationBody({
+      name: "Staging test",
+      mobile: "9810000009",
+      pincode: "122018",
+      city: "Gurgaon",
+      date: lastBookableDay(NOW),
+      window: "evening",
+    });
+    const staging = site({ turnstileSecret: "0x4AAAAAAA-the-real-widget-secret", acceptTurnstileTestToken: true });
+
+    const answer = await request(staging, "/api/consultation", post(body), {
+      FSM_QUEUE: fakeQueue(),
+      CRM_QUEUE: fakeQueue(),
+    });
+
+    expect(answer.status).toBe(201);
+    expect(await answer.json()).toMatchObject({ state: "booked", date: "2026-10-05", window: "evening" });
   });
 
   // As the landing answers them, and as the form words them: "That day is no longer open" (open point 105).

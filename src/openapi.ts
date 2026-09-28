@@ -21,7 +21,6 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
     GEOCODE_PROVIDER: "stub",
   },
   settings: {
-    visitLeadDays: 2,
     leadMobileDailyLimit: 5,
     leadIpDailyLimit: 20,
     turnstileSecret: "",

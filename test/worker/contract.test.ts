@@ -127,6 +127,12 @@ describe("the error codes", () => {
     expect(codesNamedIn("not_found: none made, taken down, or erased")).toEqual(["not_found"]);
   });
 
+  // An answer that names no code cannot be held to one status by the test below.
+  it("are each named by the description of every error answer", () => {
+    const unnamed = errorAnswers().filter(({ description }) => codesNamedIn(description).length === 0);
+    expect(unnamed).toEqual([]);
+  });
+
   it("each answer with one status, on every surface", () => {
     const whereByStatusByCode = new Map<string, Map<string, string[]>>();
     for (const { where, status, description } of errorAnswers()) {

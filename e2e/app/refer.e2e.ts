@@ -347,8 +347,8 @@ test("makes their own card, records one consent and stores one card, when Allow 
 
 // Board B2: before their first fit a client has nothing to vouch for, and the invite's own words would not be
 // true, so Refer is reachable but empty (CLI-07).
-test("a client not yet fitted sees Refer's empty state, with no invite to send", async ({ page, request }) => {
-  await signIn(page, request);
+test("a client not yet fitted sees Refer's empty state, with no invite to send", async ({ page }) => {
+  await signIn(page);
   await page.getByRole("navigation").getByRole("link", { name: "Refer" }).click();
   await expect(page.getByText("Nobody you have referred has been fitted yet.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Share an invite" })).toHaveCount(0);

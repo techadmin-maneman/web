@@ -1,19 +1,19 @@
-# Creates one test lead on staging through the real API, to check that the
-# lead path reaches Zoho: after a Zoho change, a token rotation, or a deploy.
-# Then look for it in the CRM, in the real Zoho org since ADR 0050 (docs/runbook.md,
-# "Checking the lead path on staging").
+# Books one test consultation on staging through the site's form, POST /api/consultation,
+# to check that the booking path reaches Zoho: after a Zoho change, a token rotation,
+# or a deploy. Then look for its lead in the CRM and its visit in FSM, both in the
+# owner's real org (docs/runbook.md, "Checking the booking path on staging").
 name: staging-lead
 
 on:
   workflow_dispatch:
     inputs:
-      city:
-        description: A city from GET /api/cities. Mumbai or Bengaluru joins the waitlist.
-        default: Gurgaon
+      pincode:
+        description: A pincode staging serves.
+        default: "122018"
         type: string
       window:
-        description: weekday_am, weekday_pm, weekend_am or weekend_pm
-        default: weekday_am
+        description: morning, afternoon or evening, on the last day the form offers
+        default: morning
         type: string
 
 permissions:
@@ -21,16 +21,16 @@ permissions:
 
 jobs:
   lead:
-    name: create a test lead on staging
+    name: book a test consultation on staging
     runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
     timeout-minutes: 5
     environment: staging
     env:
       CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
       CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-      CITY: ${{ inputs.city }}
+      PINCODE: ${{ inputs.pincode }}
       WINDOW: ${{ inputs.window }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup
-      - run: node scripts/staging-lead.ts --city "$CITY" --window "$WINDOW"
+      - run: node scripts/staging-lead.ts --pincode "$PINCODE" --window "$WINDOW"

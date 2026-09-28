@@ -752,9 +752,9 @@ The chat shows the message; the `alerts` table keeps it under its key. Most aler
 
 ## Leads and Zoho
 
-### Checking the lead path on staging
+### Checking the booking path on staging
 
-Actions → **staging-lead** → Run workflow, with a city and window. It books a test lead through the real API. The name is "Staging test" and the mobile number is random. Within a minute the lead should be in the real Zoho org (ADR 0050): assigned, with its proposed date, or as Waitlist for Mumbai and Bengaluru. In D1:
+Actions → **staging-lead** → Run workflow, with a pincode staging serves and a window. It books a test consultation through the site's form, `POST /api/consultation` (`scripts/staging-lead.ts`), on the last day the form offers. The name is "Staging test", the mobile number is random, and the address is made up. Within a minute the lead should be in the real Zoho org (ADR 0050), with the day booked, and the consultation in FSM as a work order and an appointment, each "Staging test: Consultation for Staging test": staging shares the owner's org, and its records are the owner's to clear before go-live (`docs/open-points.md`, item 19). Cancel the appointment in FSM once it is seen, so no technician keeps it. A `409` means the window has gone: run it again with another. In D1:
 
 ```sql
 SELECT id, sync_state, sync_attempts, last_sync_error, created_at, synced_at FROM leads ORDER BY created_at DESC LIMIT 5;
@@ -1171,27 +1171,23 @@ The DPDP Act and its Rules require us to tell the Data Protection Board and each
 
 ## Cities and visit days
 
-Opening a city is a data change, not a deploy. These are Phase 1's cities, which `POST /api/lead` and `GET /api/cities` still read; no page of the site calls either since the booking form asks for a pincode (ADR 0051), and the pincodes it checks are opened from the ops console (Settings · Service area, ADR 0061).
+Where we come is decided by the pincode, which ops open from the console (Settings · Service area, ADR 0061), and serving a pincode tells its waitlist. The `cities` table is Phase 1's: its form offered them, and `POST /api/lead` and `GET /api/cities`, which read it, were removed on 28 September 2026 (`docs/open-points.md`, item 107). A booking's lead still names its pincode's city where it is one of these, and the dispatch board filters by them, so a city is a data change, not a deploy:
 
 ```sql
--- Open a waitlisted city: new leads get a proposed visit day and go to the technicians.
-UPDATE cities SET served = 1 WHERE name = 'Mumbai';
--- Add a city to the list, waitlisted, after Bengaluru.
-INSERT INTO cities (name, served, active, sort) VALUES ('Pune', 0, 1, 80);
--- Take a city off the form. Existing leads keep it.
+-- Add a city the dispatch board can filter by, after Bengaluru.
+INSERT INTO cities (name, served, active, sort) VALUES ('Pune', 1, 1, 80);
+-- Take a city off the board's filter. Existing leads keep it.
 UPDATE cities SET active = 0 WHERE name = 'Pune';
 ```
 
-People already on a city's waitlist are not told automatically when it opens; that is out of Phase 1's scope. Find them with `SELECT l.id, l.created_at FROM leads l WHERE l.source = 'waitlist' AND l.city = 'Mumbai';` and work from Zoho.
-
-Blackout dates are days ops will not offer as the proposed visit:
+Blackout dates are days nobody is offered a visit on, in the app or on the site's forms:
 
 ```sql
 INSERT INTO visit_blackouts (date, reason) VALUES ('2026-10-20', 'Diwali');
 DELETE FROM visit_blackouts WHERE date = '2026-10-20';
 ```
 
-A blackout changes only proposals made after it is added.
+A blackout leaves a visit already booked on the day where it is: move it from the dispatch board.
 
 ---
 
