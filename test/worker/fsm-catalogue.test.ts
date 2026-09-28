@@ -7,7 +7,13 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createAlertOnce, createResolveAlert } from "../../src/domain/alerts.ts";
-import { checkCatalogue, itemForService, PART_WRITES_A_PASS, pushCatalogue } from "../../src/domain/fsm-catalogue.ts";
+import {
+  checkCatalogue,
+  itemForService,
+  PART_WRITES_A_PASS,
+  pushCatalogue,
+  UNREAD_ALERT,
+} from "../../src/domain/fsm-catalogue.ts";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
 import type { ZohoFsmSettings } from "../../src/config/settings.ts";
@@ -15,7 +21,6 @@ import {
   createFsmProvider,
   createStubFsm,
   EMPTY_FSM,
-  FSM_ITEM_PAGES,
   type FsmItem,
   type FsmProvider,
 } from "../../src/providers/fsm.ts";
@@ -201,12 +206,14 @@ describe("the hourly catalogue check", () => {
     expect(alerted.find((message) => message.includes('still has no service item named "First fit"'))).toBeDefined();
   });
 
-  it("reads FSM only on the hour, and only from what the cron run has left for a whole catalogue", async () => {
+  // The list is read a page at a time from what the run has left (plan piece C28), so it waits only for a run with
+  // no call left at all, where it once waited for one with five.
+  it("reads FSM only on the hour, and only while the cron run has a call left", async () => {
     const fsm = createStubFsm({ ...EMPTY_FSM, items: CATALOGUE });
     fsm.failNext("items");
 
     expect(await check(fsm, { push: false, now: OFF_THE_HOUR }).done).toBeNull();
-    expect(await check(fsm, { push: false, calls: 4 }).done).toBeNull();
+    expect(await check(fsm, { push: false, calls: 0 }).done).toBeNull();
     expect(alerted).toEqual([]);
   });
 
@@ -427,8 +434,8 @@ describe("the consumables, as parts", () => {
   const agreeing = CATALOGUE.map((item) => (item.name === "Replacement" ? { ...item, price: 1_500_000 } : item));
 
   // The review of 27 September 2026: a part past the catalogue's first page must still be found, or with the push on
-  // it would be added again every hour. Zoho's catalogue is read a page of 200 at a time, up to FSM_ITEM_PAGES
-  // (docs/decisions/0085-services-ops-can-edit.md), and the parts are checked against all of it.
+  // it would be added again every hour. Zoho's catalogue is read a page of 200 at a time, while FSM says there are
+  // more (docs/decisions/0085-services-ops-can-edit.md; plan piece C28), and the parts are checked against all of it.
   it("finds a part on the catalogue's second page, and adds no second one with the push on", async () => {
     await consumable("tape_strips", "Tape strips");
     const record = (item: FsmItem) => ({
@@ -552,8 +559,8 @@ describe("the consumables, as parts", () => {
     await check(fsm, { push: true }).done;
     expect(fsm.made.parts).toHaveLength(PART_WRITES_A_PASS);
 
-    // A run with the list's pages and one call more left spends the pages on the list and one on a part.
-    await check(fsm, { push: true, now: AN_HOUR_ON, calls: FSM_ITEM_PAGES + 1 }).done;
+    // A run with a call for the list's one page and one more spends the one on the list and the other on a part.
+    await check(fsm, { push: true, now: AN_HOUR_ON, calls: 2 }).done;
     expect(fsm.made.parts).toHaveLength(PART_WRITES_A_PASS + 1);
   });
 
@@ -686,5 +693,93 @@ describe("a price set in the console", () => {
     ["a late fee, which is not a catalogue item", { valid_from: "2026-09-26", item: "late_fee_first_fit" }],
   ])("queues nothing for %s", async (_, body) => {
     expect(await setPrice(body, true)).toEqual([]);
+  });
+});
+
+// Past five pages of 200 the check saw nothing, and with the push on added each part beyond them again every hour.
+// It now reads on while FSM says there are more, a call a page from what the cron run has left, and where that ends
+// before FSM's last page, what it did not read is neither missing nor added (plan piece C28).
+describe("a catalogue past a thousand items", () => {
+  /** A thousand and a hundred items of FSM's own, and then ours: the six pages' last. */
+  const FILLER: FsmItem[] = Array.from({ length: 1_100 }, (_, n) => ({
+    id: `other-${String(n)}`,
+    name: `Other ${String(n)}`,
+    type: "Part",
+    price: 10_000,
+  }));
+  const TAPE: FsmItem = { id: "fsm-part-tape", name: "Tape strips", type: "Part", price: 0 };
+  const LARGE = [...FILLER, ...AGREEING, TAPE];
+
+  async function consumable(code: string, name: string, linkedTo: string | null = null) {
+    await env.DB.prepare(
+      `INSERT INTO consumables (code, name, unit, unit_cost, fsm_item_id, created_at, updated_at)
+       VALUES (?1, ?2, 'strip', 1200, ?3, ?4, ?4)`,
+    )
+      .bind(code, name, linkedTo, "2026-09-25T06:00:00.000Z")
+      .run();
+  }
+
+  const linkOf = async (code: string) =>
+    (
+      await env.DB.prepare("SELECT fsm_item_id FROM consumables WHERE code = ?1")
+        .bind(code)
+        .first<{ fsm_item_id: string | null }>()
+    )?.fsm_item_id;
+
+  it("reads on while FSM says there are more, and finds each service's item and each part on the sixth page", async () => {
+    await consumable("tape_strips", "Tape strips");
+    const fsm = createStubFsm({ ...EMPTY_FSM, items: LARGE });
+
+    const first = check(fsm, { push: true });
+
+    expect(await first.done).toEqual({ differs: [], queued: false });
+    expect(first.queue.sent).toEqual([]);
+    expect(fsm.made.parts).toEqual([]);
+    expect(await linkOf("tape_strips")).toBe("fsm-part-tape");
+    expect(await itemKept("replacement", "standard")).toBe("fsm-item-replacement");
+    expect(alerted).toEqual([]);
+  });
+
+  it("checks only what it read when the run's calls end first: nothing unseen is told missing, added or unlinked", async () => {
+    await consumable("tape_strips", "Tape strips", "fsm-part-tape");
+    await consumable("solvent", "Solvent");
+    const fsm = createStubFsm({ ...EMPTY_FSM, items: LARGE });
+    const logs = captureLogs();
+
+    const partial = check(fsm, { push: true, calls: 3 });
+
+    expect(await partial.done).toEqual({ differs: [], queued: false });
+    expect(partial.queue.sent).toEqual([]);
+    expect(fsm.made.parts).toEqual([]);
+    expect(await linkOf("tape_strips")).toBe("fsm-part-tape");
+    expect(await linkOf("solvent")).toBeNull();
+    expect(logs.lines()).toContainEqual(expect.objectContaining({ event: "fsm_catalogue_unread", pages: 3 }));
+    expect(alerted).toEqual([]);
+
+    // Ops hear once the next hour cannot read it whole either.
+    await check(fsm, { push: true, now: AN_HOUR_ON, calls: 3 }).done;
+    expect(alerted).toEqual([expect.stringContaining("FSM's catalogue holds more than the 3 pages of 200 items")]);
+    expect(await openAlert(UNREAD_ALERT)).not.toBeNull();
+
+    // A run with the calls for it reads it whole, adds what is missing, and closes the alert.
+    await check(fsm, { push: true, now: AN_HOUR_ON, calls: 40 }).done;
+    expect(fsm.made.parts).toEqual(["Solvent"]);
+    expect(await linkOf("tape_strips")).toBe("fsm-part-tape");
+    expect(await openAlert(UNREAD_ALERT)).toBeNull();
+  });
+
+  it("makes no service item where the push could not read the whole catalogue, and writes over what it found", async () => {
+    await service("first_fit", "premium", "Premium first fit", 4_000_000);
+    const fsm = createStubFsm({ ...EMPTY_FSM, items: [...FILLER, ...CATALOGUE] });
+
+    await pushCatalogue(env.DB, fsm, "2026-09-26");
+
+    expect(fsm.made.itemsMade).toEqual([]);
+    expect(fsm.made.itemUpdates).toEqual([]);
+
+    const found = createStubFsm({ ...EMPTY_FSM, items: [...CATALOGUE, ...FILLER] });
+    await pushCatalogue(env.DB, found, "2026-09-26");
+    expect(found.made.itemsMade).toEqual([]);
+    expect(found.made.itemUpdates).toEqual([{ itemId: "fsm-item-replacement", name: "Replacement", price: 1_500_000 }]);
   });
 });
