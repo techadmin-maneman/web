@@ -6,7 +6,9 @@
 // the row's own id, the client it concerns, the one fact behind it, the moment
 // it started waiting, and, for a task about a visit still to come, the visit's
 // start. The due date follows from that moment and the group's allowance, and
-// is never later than the visit; nothing is written anywhere.
+// is never later than the visit; nothing is written anywhere. Whose each task
+// is, where ops made it someone's, is kept apart and read beside it
+// (src/domain/task-owners.ts).
 
 import { PARTIAL_REASONS } from "../config/job-sheet.ts";
 import { addDays, indiaDate, indiaInstant } from "../lib/india-time.ts";
@@ -36,6 +38,8 @@ export interface Task {
   readonly detail: string | null;
   readonly since: string;
   readonly due: string;
+  /** The Access e-mail of the member of staff it is theirs; null while nobody has taken it. */
+  readonly owner: string | null;
 }
 
 /**
@@ -53,6 +57,15 @@ export const NUMBER_CHANGE_WAITING_SINCE = "COALESCE(nc.new_verified_at, nc.crea
 export const READ_CAP = 2000;
 
 /**
+ * One statement's arms, each task with the member of staff ops made it theirs, and the longest wait first. The
+ * owner is found by the task's group and id (docs/decisions/0092-task-owners.md), so one left behind by a task since
+ * done is never read, and never lands on another.
+ */
+const withOwners = (arms: string) => `SELECT t.*, o.owner FROM (${arms}) t
+  LEFT JOIN task_owners o ON o.task_group = t."group" AND o.subject_id = t.id
+ ORDER BY t.since LIMIT ?2`;
+
+/**
  * Every queue, in three statements sent together. D1 takes at most five arms in one
  * compound SELECT, so the queues are split between statements; a batch is still
  * one round trip. A person who has been erased is left out everywhere: their
@@ -68,9 +81,14 @@ export const READ_CAP = 2000;
  * to `?7`, below). Each takes READ_CAP as `?2`, which bounds what one look at the
  * board can cost. All three hold five arms now: a group added next needs a
  * fourth statement.
+ *
+ * A consultation asked for is read only while the client has no consultation
+ * booked or done, `booked`, which the database keeps as their consultations are
+ * written (migration 0053): a look reads the requests still waiting, not every
+ * request a lead ever made.
  */
 const OUTSTANDING = [
-  `SELECT * FROM (
+  withOwners(`
   SELECT 'untold_move' AS "group", m.id AS id, a.person_id AS person_id, pe.name AS person_name,
          m.now_start AS detail, m.created_at AS since, NULL AS due_by
     FROM appointments a JOIN dispatch_moves m ON m.appointment_id = a.id JOIN people pe ON pe.id = a.person_id
@@ -83,11 +101,7 @@ const OUTSTANDING = [
          r.created_at, NULL
     FROM consultation_requests r JOIN people pe ON pe.id = r.person_id
     LEFT JOIN first_fit_requests f ON f.person_id = r.person_id
-   WHERE pe.erased_at IS NULL
-     AND NOT EXISTS (
-       SELECT 1 FROM appointments a
-        WHERE a.person_id = r.person_id AND a.type = 'consultation' AND a.deleted_at IS NULL
-          AND a.status NOT IN ('cancelled', 'terminated'))
+   WHERE r.booked = 0 AND pe.erased_at IS NULL
   UNION ALL
   SELECT 'replacement_order', p.id, p.person_id, pe.name, p.piece_code, p.replacement_due_at, NULL
     FROM pieces p JOIN people pe ON pe.id = p.person_id
@@ -105,9 +119,9 @@ const OUTSTANDING = [
   SELECT 'grievance', g.id, g.person_id, pe.name, NULL, g.created_at, NULL
     FROM grievances g JOIN people pe ON pe.id = g.person_id
    WHERE g.state = 'open' AND pe.erased_at IS NULL
-) ORDER BY since LIMIT ?2`,
+`),
 
-  `SELECT * FROM (
+  withOwners(`
   SELECT 'no_show_decision' AS "group", n.id AS id, pe.id AS person_id, pe.name AS person_name, t.name AS detail,
          n.created_at AS since, NULL AS due_by
     FROM no_show_cases n JOIN checkins ci ON ci.id = n.checkin_id JOIN appointments a ON a.id = n.appointment_id
@@ -132,7 +146,7 @@ const OUTSTANDING = [
     FROM people p
    WHERE p.erased_at IS NOT NULL AND p.fsm_contact_id IS NOT NULL AND p.fsm_erased_at IS NULL
      AND p.fsm_erasure_attempts >= ?1
-) ORDER BY since LIMIT ?2`,
+`),
 
   // A job still booked on a day its technician is away: leave moves nothing, so ops move it (OPS-07). It waits from
   // when the leave was recorded, and falls due by the job. The client is named where there is one on our records.
@@ -141,8 +155,9 @@ const OUTSTANDING = [
   // app tells the client "We confirm it with you before your visit" (LIFE-04). It waits from when the visit first
   // reached us, and falls due by the visit itself.
   //
-  // A visit left partly done waits for the one that finishes it: any visit of the client's booked after it. A
-  // no-show is its own outcome and group; one the Worker before migration 0044 stored as partial is left out too.
+  // A visit left partly done waits for the one that finishes it: any visit of the client's booked after it, or ops
+  // closing it without one, with why (docs/decisions/0092-task-owners.md). A no-show is its own outcome and group;
+  // one the Worker before migration 0044 stored as partial is left out too.
   //
   // An At-risk client is a fitted one with nothing booked since their last first fit, service or replacement, done
   // on or before ?3's day in India: `at_risk_after_due` days past the day their next service fell due. It waits
@@ -155,8 +170,10 @@ const OUTSTANDING = [
   //
   // Both read each client's last visits from last_visits, which the database keeps as each visit closes (migration
   // 0052), and look for a visit booked since along indexes that hold only the visits to come or those after it: so a
-  // look reads about a row a client, however many visits each has had.
-  `SELECT * FROM (
+  // look reads about a row a client, however many visits each has had. A First fit to book reads only the requests
+  // of clients not fitted since their consultation, `fitted_since`, kept from last_visits (migration 0053), and not
+  // every request a client who has long since been fitted once made.
+  withOwners(`
   SELECT 'leave_conflict' AS "group", a.id AS id, pe.id AS person_id, pe.name AS person_name,
          a.window_start || ' ' || t.name AS detail,
          (SELECT MIN(l.created_at) FROM technician_leave l WHERE ${LEAVE_ON_THE_DAY}) AS since,
@@ -183,6 +200,7 @@ const OUTSTANDING = [
        SELECT 1 FROM appointments later
         WHERE later.person_id = a.person_id AND later.deleted_at IS NULL
           AND later.status NOT IN ('cancelled', 'terminated') AND later.window_start > a.window_start)
+     AND NOT EXISTS (SELECT 1 FROM task_closures c WHERE c.task_group = 'partial_visit' AND c.subject_id = a.id)
   UNION ALL
   SELECT 'at_risk_client', s.visit_id, s.person_id, pe.name,
          s.visit_start || ' ' || date(s.visit_start, '+330 minutes', ?7),
@@ -204,7 +222,7 @@ const OUTSTANDING = [
          s.consulted_start || ' ' || COALESCE(r.preferred_window, 'any'),
          date(s.consulted_start, '+330 minutes', ?6), NULL
     FROM first_fit_requests r JOIN last_visits s ON s.person_id = r.person_id JOIN people pe ON pe.id = r.person_id
-   WHERE s.consulted_start < ?5 AND pe.erased_at IS NULL
+   WHERE r.fitted_since = 0 AND s.consulted_start < ?5 AND pe.erased_at IS NULL
      AND NOT EXISTS (
        SELECT 1 FROM appointments live
         WHERE live.person_id = r.person_id AND live.status IN ('scheduled', 'dispatched', 'in_progress')
@@ -215,7 +233,7 @@ const OUTSTANDING = [
           AND later.status NOT IN ('cancelled', 'terminated'))
      AND NOT EXISTS (
        SELECT 1 FROM slot_holds h WHERE h.person_id = r.person_id AND h.state = 'held' AND h.confirmed_at IS NOT NULL)
-) ORDER BY since LIMIT ?2`,
+`),
 ] as const;
 
 interface Row {
@@ -227,6 +245,7 @@ interface Row {
   since: string;
   /** The start of the visit a task is about, which it may fall due no later than. */
   due_by: string | null;
+  owner: string | null;
 }
 
 /** The rules a held grant met, of which the board shows the first (src/domain/referral-grants.ts). */
@@ -313,6 +332,7 @@ function taskOf(row: Row, sla: Slas): Task {
     detail: detailOf(row),
     since,
     due: dueOf(row, since, sla).toISOString(),
+    owner: row.owner,
   };
 }
 

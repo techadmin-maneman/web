@@ -3,7 +3,15 @@
 // say which they are and how long each may wait.
 
 import { describe, expect, it } from "vitest";
-import { dueAt, RULES, TASK_GROUPS, TASK_SLA_HOURS } from "../../src/policy/tasks.ts";
+import {
+  CLOSABLE_TASK_GROUPS,
+  dueAt,
+  isClosable,
+  mayOwnTasks,
+  RULES,
+  TASK_GROUPS,
+  TASK_SLA_HOURS,
+} from "../../src/policy/tasks.ts";
 
 /** A task starts waiting at 10:00 on Monday 21 September, in India. */
 const SINCE = new Date("2026-09-21T04:30:00Z");
@@ -64,5 +72,18 @@ describe("tasks", () => {
 
   it("names no group twice, so a task belongs to one queue", () => {
     expect(new Set(TASK_GROUPS).size).toBe(TASK_GROUPS.length);
+  });
+
+  // The owner's answer to open point 61, 27 September 2026. Which members of staff may be named is the domain's:
+  // those who have signed in to the console (src/domain/task-owners.ts).
+  it(RULES[4], () => {
+    expect(mayOwnTasks({ kind: "staff" })).toBe(true);
+    expect(mayOwnTasks({ kind: "service" })).toBe(false);
+  });
+
+  // The owner's answer to open point 62. Every other task leaves the board only when its thing is done.
+  it(RULES[5], () => {
+    expect(CLOSABLE_TASK_GROUPS).toEqual(["partial_visit"]);
+    expect(TASK_GROUPS.filter(isClosable)).toEqual(["partial_visit"]);
   });
 });

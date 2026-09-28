@@ -54,6 +54,11 @@
 // (src/policy/next-visit.ts). First fit to book is ours: a first fit asked for
 // on the site's form, still not booked days after the consultation. Both go as
 // soon as a later visit is booked, as a visit left partly done does.
+//
+// Two things about a task are kept, both as the owner ruled on 27 September
+// 2026 (docs/decisions/0092-task-owners.md): whose it is, a member of staff ops
+// name by their Access e-mail; and, for a visit left partly done alone, that ops
+// closed it without a follow-up, with why. Neither is a copy of the task.
 
 import { HOUR_MS } from "../lib/durations.ts";
 import { DELETION_DECIDED_WITHIN_DAYS } from "./account-deletion.ts";
@@ -63,6 +68,8 @@ export const RULES = [
   "GET /no-shows and POST /no-shows/:id/decision, for ops to charge or waive from the evidence.",
   "number-change confirmations and deletion-request processing",
   "Partial reasons. Four in the design. The design says ops need the full set because these drive the task queue.",
+  "ops take or assign a task to a named member of staff (their Access e-mail) and the board shows whose it is",
+  "ops may close a partial visit's task without a follow-up, with a required reason kept under who closed it",
 ] as const;
 
 /** The queues a task is read from, in the order the console lists them. */
@@ -123,3 +130,14 @@ export const TASK_SLA_HOURS: Slas = {
  */
 export const dueAt = (since: Date, group: TaskGroup, sla: Slas = TASK_SLA_HOURS): Date =>
   new Date(since.getTime() + sla[group] * HOUR_MS);
+
+/**
+ * The groups ops may close without doing the thing, with a reason: a visit left partly done, whose follow-up the
+ * client may never want. Every other group leaves the board only when its thing is done.
+ */
+export const CLOSABLE_TASK_GROUPS = ["partial_visit"] as const satisfies readonly TaskGroup[];
+
+export const isClosable = (group: TaskGroup): boolean => (CLOSABLE_TASK_GROUPS as readonly TaskGroup[]).includes(group);
+
+/** Who may own a task: a member of staff, named by the e-mail Access signs them in with, never a service token. */
+export const mayOwnTasks = (identity: { readonly kind: string }): boolean => identity.kind === "staff";

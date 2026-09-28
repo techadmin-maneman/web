@@ -201,13 +201,17 @@ describe("one cron run", () => {
 // The Tasks board and the Stock page are read all day, and each movement of stock checks its place for low stock.
 // Their At-risk client and First fit to book read a summary of each client's last visits, kept as each visit closes,
 // and the Stock page a balance for each place, kept with each movement: never the history behind either
-// (docs/decisions/0086-the-next-visit-is-offered.md, 0087-consumables-and-stock.md; plan piece C27).
+// (docs/decisions/0086-the-next-visit-is-offered.md, 0087-consumables-and-stock.md; plan piece C27). Consultation
+// request and First fit to book read only the requests that can still be a task, by flags kept as the visits behind
+// them are written (docs/decisions/0092-task-owners.md).
 describe("a look at the Tasks board or the Stock page", () => {
   const ops = appFor("local", fakeDependencies(), {}, "ops");
   const CLIENTS = 30;
   /** `?3` days before NOW, in the form the mirror keeps a visit's start. */
   const DAYS_AGO = `strftime('%Y-%m-%dT%H:%M:%fZ', '${NOW.toISOString()}', '-' || ?3 || ' days')`;
   const CONSULTED = new Date(NOW.getTime() - 400 * DAY_MS).toISOString();
+  /** Ten days ago: a first fit done then is not yet past its next service, so its client is not at risk. */
+  const FITTED = new Date(NOW.getTime() - 10 * DAY_MS).toISOString();
   /** Two technicians, numbered as the clients are. */
   const TECHNICIAN = "'44444444-4444-4444-8444-' || printf('%012d', i)";
   const FIRST_TECHNICIAN = "44444444-4444-4444-8444-000000000001";
@@ -337,6 +341,58 @@ describe("a look at the Tasks board or the Stock page", () => {
     );
 
     await visits(2, 10);
+    const after = await rowsReadBy(tasks);
+
+    expect({ before, after }).toEqual({ before, after: before });
+  });
+
+  /**
+   * The leads numbered ?1 to ?2, each of whom asked on the site's form for a consultation and a first fit, had the
+   * consultation, and was fitted after it: nothing any of them asked for is still a task.
+   */
+  const ANSWERED_LEADS_SQL = [
+    `INSERT INTO people (id, created_at, mobile_e164, name)
+     SELECT 'lead-' || i, '${AGO}', '+9173' || printf('%08d', i), 'Lead ' || i FROM n`,
+    `INSERT INTO consultation_requests (id, person_id, pincode, requested_date, requested_window, created_at)
+     SELECT 'cr-' || i, 'lead-' || i, '122018', date('${CONSULTED}'), 'morning', '${CONSULTED}' FROM n`,
+    `INSERT INTO first_fit_requests (id, person_id, preferred_window, created_at)
+     SELECT 'lead-ff-' || i, 'lead-' || i, 'morning', '${CONSULTED}' FROM n`,
+    `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, status, fsm_status,
+       fsm_modified_at, synced_at)
+     SELECT 'lead-c-' || i, 'fsm-lead-c-' || i, 'lead-' || i, 'consultation', '${CONSULTED}', '${CONSULTED}',
+       'completed', 'Completed', '${AGO}', '${AGO}' FROM n`,
+    `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, status, fsm_status,
+       fsm_modified_at, synced_at)
+     SELECT 'lead-fit-' || i, 'fsm-lead-fit-' || i, 'lead-' || i, 'first_fit', '${FITTED}', '${FITTED}', 'completed',
+       'Completed', '${AGO}', '${AGO}' FROM n`,
+  ];
+
+  /** Three people whose consultation was asked for and never booked, each a Consultation request. */
+  const WAITING_REQUESTS_SQL = [
+    `INSERT INTO people (id, created_at, mobile_e164, name)
+     SELECT 'asked-' || i, '${AGO}', '+9174' || printf('%08d', i), 'Asked ' || i FROM n`,
+    `INSERT INTO consultation_requests (id, person_id, pincode, requested_date, requested_window, created_at)
+     SELECT 'asked-cr-' || i, 'asked-' || i, '122018', date('${AGO}'), 'evening', '${AGO}' FROM n`,
+  ];
+
+  it("reads no more for Consultation requests and First fits to book when ten times the leads were answered", async () => {
+    await env.DB.batch([
+      ...CLIENTS_SQL.map((sql) => over(sql, 1, 5)),
+      ...WAITING_REQUESTS_SQL.map((sql) => over(sql, 1, 3)),
+      ...ANSWERED_LEADS_SQL.map((sql) => over(sql, 1, 20)),
+    ]);
+    await rowsReadBy(tasks); // the console's settings, read once and kept
+    const before = await rowsReadBy(tasks);
+    const board = await (await tasks()).json<{ groups: { group: string; tasks: unknown[] }[] }>();
+    expect(board.groups.map((group) => [group.group, group.tasks.length])).toEqual(
+      expect.arrayContaining([
+        ["consultation_request", 3],
+        // The clients consulted with nothing booked since, and the leads consulted and never fitted.
+        ["first_fit_to_book", 3 + 5],
+      ]),
+    );
+
+    await env.DB.batch(ANSWERED_LEADS_SQL.map((sql) => over(sql, 21, 200)));
     const after = await rowsReadBy(tasks);
 
     expect({ before, after }).toEqual({ before, after: before });
