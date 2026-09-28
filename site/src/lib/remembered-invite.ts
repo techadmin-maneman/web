@@ -56,13 +56,24 @@ export function rememberInvite(code: string): void {
   }
 }
 
-/** The invite this browser remembers; null for none, one too old, or storage blocked. */
+/**
+ * The invite this browser remembers; null for none, one too old, or storage blocked. One too old, or of a shape we
+ * cannot read, is removed as it is found: the privacy page says the code is kept for thirty days.
+ */
 export function rememberedInvite(): string | null {
   try {
-    return codeIn(localStorage.getItem(KEY), new Date());
+    const stored = localStorage.getItem(KEY);
+    const code = codeIn(stored, new Date());
+    if (stored !== null && code === null) localStorage.removeItem(KEY);
+    return code;
   } catch {
     return null;
   }
+}
+
+/** Removes a remembered invite past its thirty days. Every page runs it, so none is kept beyond the next visit. */
+export function forgetStaleInvite(): void {
+  rememberedInvite();
 }
 
 /** Forgets the remembered invite once a booking or a place on a waitlist has carried it. */

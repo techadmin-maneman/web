@@ -401,6 +401,43 @@ test("an invite opened more than 30 days ago, or one we do not know, is not sent
   await expect(page.getByText("Consultation booked")).toBeVisible();
   expect(requests[0]?.postDataJSON()).not.toHaveProperty("invite_code");
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeHidden();
+  // Past its thirty days it is not kept either, as the privacy page says.
+  expect(await remembered(page)).toBeNull();
+});
+
+// A browser can refuse storage outright (private windows, a setting, a policy): both pages still book.
+test("a browser that blocks storage books on the invite's page and here, and sends no remembered invite", async ({
+  page,
+}) => {
+  const requests = await mockApi(page);
+  await page.route(`**/api/r/${CODE}/consultation`, (route) => {
+    requests.push(route.request());
+    return route.fulfill({ status: 201, json: { ...BOOKED, credits: true, invite: "valid" } });
+  });
+  await page.addInitScript(() => {
+    Object.defineProperty(window, "localStorage", {
+      get() {
+        throw new DOMException("blocked", "SecurityError");
+      },
+    });
+  });
+
+  await openInvite(page);
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  await fillAddress(page);
+  await page.getByLabel("Name").fill("Test Visitor");
+  await page.getByLabel("Mobile").fill("9810000000");
+  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByRole("button", { name: "Book the consultation" }).click();
+  await expect(page.getByText("Consultation booked")).toBeVisible();
+  await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeVisible();
+  expect(new URL(requests[0]?.url() ?? "").pathname).toBe(`/api/r/${CODE}/consultation`);
+
+  await bookHere(page);
+  await expect(page.getByText("Consultation booked")).toBeVisible();
+  expect(new URL(requests[1]?.url() ?? "").pathname).toBe("/api/consultation");
+  expect(requests[1]?.postDataJSON()).not.toHaveProperty("invite_code");
 });
 
 // While self-serve booking is off the page asks rather than books, and the day

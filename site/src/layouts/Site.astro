@@ -99,10 +99,13 @@ const ogImage = new URL(image.path, SITE_ORIGIN).href;
     {home && <StickyBar />}
     <script>
       // Where this visit came from, kept for the booking or the try-on to send,
-      // read before the analytics tags tidy the address.
+      // read before the analytics tags tidy the address; and an invite this
+      // browser has remembered for more than thirty days, taken away.
       import { startAnalytics } from "../lib/analytics.ts";
+      import { forgetStaleInvite } from "../lib/remembered-invite.ts";
       import { captureAttribution } from "../lib/visit.ts";
       captureAttribution();
+      forgetStaleInvite();
       startAnalytics();
     </script>
   </body>
