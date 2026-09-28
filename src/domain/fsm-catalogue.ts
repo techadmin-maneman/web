@@ -90,12 +90,23 @@ async function readCatalogue(fsm: FsmProvider, budget: CallBudget): Promise<Cata
 
 /**
  * The services a catalogue read can speak for: every one, once it was read to FSM's last page; else only those whose
- * item it found. One whose item it did not reach may be in FSM all the same, and making that again would give FSM two.
+ * own item it read. One whose item it did not reach may be in FSM all the same: making it again would give FSM two,
+ * and taking another of its name on a page it did read would move the service off its own.
  */
 function checkable(services: readonly ServiceOnDay[], catalogue: Catalogue): ServiceOnDay[] {
   if (catalogue.whole) return [...services];
-  return services.filter((service) => itemOf(catalogue.items, service) !== undefined);
+  return services.filter((service) => ownItemRead(catalogue.items, service));
 }
+
+/** Whether the items read hold the service's own: the one kept on it, where one is, else one found by its name. */
+function ownItemRead(items: readonly FsmItem[], service: Service): boolean {
+  if (service.fsm_item_id === null) return itemOf(items, service) !== undefined;
+  return items.some((item) => item.id === service.fsm_item_id);
+}
+
+/** Whether the part found for a consumable is its own: the one linked to it, where one is, else one of its name. */
+const isOwnPart = (consumable: Consumable, part: FsmItem | undefined): boolean =>
+  part !== undefined && (consumable.fsmItemId === null || part.id === consumable.fsmItemId);
 
 /** A service offered today whose FSM item does not hold what the console and the book do. */
 interface Gap {
@@ -324,8 +335,9 @@ async function checkParts(
     let part =
       parts.find((item) => item.id === consumable.fsmItemId) ??
       parts.find((item) => item.name === consumable.name && free(item, consumable.code));
-    // Not on the pages read, of a catalogue not read to its end: it may be in FSM all the same.
-    if (part === undefined && !catalogue.whole) continue;
+    // Of a catalogue not read to its end, a part not on the pages read may be in FSM all the same, and one of its
+    // name is not its own while the part linked to it was not read.
+    if (!catalogue.whole && !isOwnPart(consumable, part)) continue;
     if (part === undefined && mayWrite()) part = await added(deps, consumable);
     else if (part !== undefined && part.name !== consumable.name && mayWrite())
       part = await renamed(deps, consumable, part);
@@ -426,19 +438,31 @@ function gapMessage(gap: Gap, pushed: boolean): string {
   return lines.join(" ");
 }
 
+/** What one push did: how many items it made or wrote over, and each service offered today whose item it did not reach. */
+export interface Pushed {
+  readonly written: number;
+  /** As kind/tier. */
+  readonly unreached: readonly string[];
+}
+
 /**
- * Makes each missing item and writes the console's name and the book's price over each item that differs today;
- * how many it wrote. However often it runs, it writes the same figures, so a repeated or concurrent sync changes
- * nothing, and an item it made is found by its name if its answer never came.
+ * Makes each missing item and writes the console's name and the book's price over each item that differs today.
+ * However often it runs, it writes the same figures, so a repeated or concurrent sync changes nothing, and an item it
+ * made is found by its name if its answer never came.
  *
  * It reads the catalogue a page at a time, as many pages as a read of all of it at once may take (FSM_ITEM_PAGES),
- * from the fsm-sync queue's own calls. Where that ends before FSM's last page, it writes over each item it found and
- * makes none: an item it did not reach may be there, and the hourly check tells ops of one still missing.
+ * from the fsm-sync queue's own calls, which the invocation shares with the other messages of its batch. Where that
+ * ends before FSM's last page, it writes over each item it found and makes none: an item it did not reach may be
+ * there. It answers the services it did not reach, for the queue to log; the hourly check tells ops of one that still
+ * differs, to set by hand.
  */
-export async function pushCatalogue(db: D1Database, fsm: FsmProvider, today: string): Promise<number> {
+export async function pushCatalogue(db: D1Database, fsm: FsmProvider, today: string): Promise<Pushed> {
   const catalogue = await readCatalogue(fsm, createCallBudget(FSM_ITEM_PAGES));
-  const services = checkable(await servicesOnDay(db, today), catalogue);
-  const gaps = await gapsBetween(db, catalogue.items, services, today);
+  const all = await servicesOnDay(db, today);
+  const unreached = catalogue.whole
+    ? []
+    : offeredAmong(all, today).filter((service) => !ownItemRead(catalogue.items, service));
+  const gaps = await gapsBetween(db, catalogue.items, checkable(all, catalogue), today);
   let written = 0;
   for (const { service, item } of gaps) {
     const wanted = { name: service.name, price: service.price.amount_ex_gst };
@@ -446,7 +470,7 @@ export async function pushCatalogue(db: D1Database, fsm: FsmProvider, today: str
     else await fsm.updateItem(item.id, wanted);
     written += 1;
   }
-  return written;
+  return { written, unreached: unreached.map((service) => `${service.kind}/${service.tier}`) };
 }
 
 /** Whether a price ops set changes what FSM's catalogue should hold today: a service's, from today or before. */

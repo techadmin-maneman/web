@@ -92,6 +92,23 @@ const itemKept = async (kind: string, tier: string) =>
       .first<{ fsm_item_id: string | null }>()
   )?.fsm_item_id;
 
+/** The push's message on the fsm-sync queue, as the check or a price set in the console queues it. */
+function syncMessage() {
+  const acked: string[] = [];
+  const retried: string[] = [];
+  const message = {
+    id: "message-1",
+    attempts: 1,
+    body: { catalogue_sync: true, request_id: "request-1" },
+    ack: () => acked.push("message-1"),
+    retry: () => retried.push("message-1"),
+  };
+  const batch = { queue: "mm-fsm-sync-local", messages: [message] } as unknown as MessageBatch;
+  return { batch, acked, retried };
+}
+
+const queueEnv = () => ({ ...env, MESSAGE_QUEUE: fakeQueue(), FSM_QUEUE: fakeQueue() });
+
 beforeEach(async () => {
   await markDatabase();
   captureLogs();
@@ -235,8 +252,8 @@ describe("the push", () => {
   it("writes the book's price over each item that differs, and nothing else, however often it runs", async () => {
     const fsm = createStubFsm({ ...EMPTY_FSM, items: CATALOGUE });
 
-    expect(await pushCatalogue(env.DB, fsm, "2026-09-26")).toBe(1);
-    expect(await pushCatalogue(env.DB, fsm, "2026-09-26")).toBe(0);
+    expect(await pushCatalogue(env.DB, fsm, "2026-09-26")).toEqual({ written: 1, unreached: [] });
+    expect(await pushCatalogue(env.DB, fsm, "2026-09-26")).toEqual({ written: 0, unreached: [] });
 
     expect(fsm.made.itemUpdates).toEqual([{ itemId: "fsm-item-replacement", name: "Replacement", price: 1_500_000 }]);
     expect(fsm.made.itemsMade).toEqual([]);
@@ -246,8 +263,8 @@ describe("the push", () => {
     await service("first_fit", "premium", "Premium first fit", 4_000_000);
     const fsm = createStubFsm({ ...EMPTY_FSM, items: AGREEING });
 
-    expect(await pushCatalogue(env.DB, fsm, "2026-09-26")).toBe(1);
-    expect(await pushCatalogue(env.DB, fsm, "2026-09-26")).toBe(0);
+    expect(await pushCatalogue(env.DB, fsm, "2026-09-26")).toEqual({ written: 1, unreached: [] });
+    expect(await pushCatalogue(env.DB, fsm, "2026-09-26")).toEqual({ written: 0, unreached: [] });
 
     expect(fsm.made.itemsMade).toEqual([{ name: "Premium first fit", price: 4_000_000 }]);
     expect(await itemKept("first_fit", "premium")).toMatch(/^stub-item-/);
@@ -258,26 +275,10 @@ describe("the push", () => {
     await pushCatalogue(env.DB, fsm, "2026-09-26");
     await env.DB.prepare("UPDATE services SET name = 'Monthly service' WHERE kind = 'service'").run();
 
-    expect(await pushCatalogue(env.DB, fsm, "2026-09-26")).toBe(1);
+    expect(await pushCatalogue(env.DB, fsm, "2026-09-26")).toEqual({ written: 1, unreached: [] });
 
     expect(fsm.made.itemUpdates).toEqual([{ itemId: "fsm-item-service", name: "Monthly service", price: 200_000 }]);
   });
-
-  function syncMessage() {
-    const acked: string[] = [];
-    const retried: string[] = [];
-    const message = {
-      id: "message-1",
-      attempts: 1,
-      body: { catalogue_sync: true, request_id: "request-1" },
-      ack: () => acked.push("message-1"),
-      retry: () => retried.push("message-1"),
-    };
-    const batch = { queue: "mm-fsm-sync-local", messages: [message] } as unknown as MessageBatch;
-    return { batch, acked, retried };
-  }
-
-  const queueEnv = () => ({ ...env, MESSAGE_QUEUE: fakeQueue(), FSM_QUEUE: fakeQueue() });
 
   it("runs from the fsm-sync queue while the push is on", async () => {
     const fsm = createStubFsm({ ...EMPTY_FSM, items: CATALOGUE });
@@ -772,8 +773,18 @@ describe("a catalogue past a thousand items", () => {
     await service("first_fit", "premium", "Premium first fit", 4_000_000);
     const fsm = createStubFsm({ ...EMPTY_FSM, items: [...FILLER, ...CATALOGUE] });
 
-    await pushCatalogue(env.DB, fsm, "2026-09-26");
+    const pushed = await pushCatalogue(env.DB, fsm, "2026-09-26");
 
+    expect(pushed).toEqual({
+      written: 0,
+      unreached: [
+        "consultation/standard",
+        "first_fit/standard",
+        "first_fit/premium",
+        "service/standard",
+        "replacement/standard",
+      ],
+    });
     expect(fsm.made.itemsMade).toEqual([]);
     expect(fsm.made.itemUpdates).toEqual([]);
 
@@ -781,5 +792,49 @@ describe("a catalogue past a thousand items", () => {
     await pushCatalogue(env.DB, found, "2026-09-26");
     expect(found.made.itemsMade).toEqual([]);
     expect(found.made.itemUpdates).toEqual([{ itemId: "fsm-item-replacement", name: "Replacement", price: 1_500_000 }]);
+  });
+
+  // The review of 28 September 2026: an item kept on a service or a part linked to a consumable, on a page a short
+  // run did not reach, was matched instead by its name to another on a page it did, and the push queued over it.
+  it("keeps a service or a part on the item it holds when a short run reads another of its name, not its own", async () => {
+    await consumable("tape_strips", "Tape strips");
+    await check(createStubFsm({ ...EMPTY_FSM, items: LARGE }), { push: false }).done;
+    expect(await linkOf("tape_strips")).toBe("fsm-part-tape");
+    expect(await itemKept("replacement", "standard")).toBe("fsm-item-replacement");
+    const duplicates: FsmItem[] = [
+      { id: "dup-tape", name: "Tape strips", type: "Part", price: 0 },
+      { id: "dup-replacement", name: "Replacement", type: "Service", price: 3_000_000 },
+    ];
+    const fsm = createStubFsm({ ...EMPTY_FSM, items: [...duplicates, ...LARGE] });
+
+    const partial = check(fsm, { push: true, now: AN_HOUR_ON, calls: 3 });
+
+    expect(await partial.done).toEqual({ differs: [], queued: false });
+    expect(partial.queue.sent).toEqual([]);
+    expect(await linkOf("tape_strips")).toBe("fsm-part-tape");
+    expect(await itemKept("replacement", "standard")).toBe("fsm-item-replacement");
+    expect(fsm.made.renamedItems).toEqual([]);
+  });
+
+  // The push reads what a read of the whole list at once may take; past that, ops are told to set the item by hand,
+  // and the log it names says which services the push did not reach.
+  it("logs each service whose item the push did not reach, as the check's alert tells ops to look for", async () => {
+    const fsm = createStubFsm({ ...EMPTY_FSM, items: [...FILLER, ...CATALOGUE] });
+    const logs = captureLogs();
+    const { batch, acked } = syncMessage();
+
+    await handleFsmSyncBatch(batch, queueEnv(), fakeDependencies({ fsm, now: () => ON_THE_HOUR }), createLogger(), {
+      labelAsTest: true,
+      cataloguePush: true,
+    });
+
+    expect(acked).toEqual(["message-1"]);
+    expect(logs.lines()).toContainEqual(
+      expect.objectContaining({
+        event: "fsm_catalogue_push_failed",
+        reason: "catalogue_unread",
+        services: expect.arrayContaining(["replacement/standard"]) as unknown,
+      }),
+    );
   });
 });
