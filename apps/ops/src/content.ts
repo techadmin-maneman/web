@@ -853,9 +853,14 @@ export const noShows = {
     deciding: "Deciding",
     /**
      * PLACEHOLDER: the board draws no note beneath the queue, and no amount anywhere. A charge keeps what the visit
-     * took, as a cancel inside 24 hours does; a waiver gives it back, as the owner ruled on 27 September 2026 (BIZ-28).
+     * took, as a late cancel does; a waiver gives back what ops set it to, which the owner ruled on 27 September 2026
+     * is the payment and the credit (BIZ-28; docs/decisions/0088-every-policy-in-the-console.md).
      */
-    note: "Charging records the decision and keeps what the visit took. Waiving records it too, refunds what the visit was paid with and returns its credit. Either way the client is told on WhatsApp, never your note.",
+    note: (waiver: { readonly payment: "refunded" | "kept"; readonly credit: "returned" | "spent" }) =>
+      "Charging records the decision and keeps what the visit took. Waiving records it too, " +
+      `${waiver.payment === "refunded" ? "refunds what the visit was paid with" : "keeps what the visit was paid with"} ` +
+      `and ${waiver.credit === "returned" ? "returns its credit" : "leaves its credit spent"}. ` +
+      "Either way the client is told on WhatsApp, never your note.",
     /** PLACEHOLDER: the board draws no empty queue. */
     empty: "No no-show is waiting for a decision.",
     errors: {
@@ -1024,13 +1029,6 @@ export const technicians = {
       if (minutes === 0) return `${String(hours)} h`;
       return `${String(hours)} h ${String(minutes)} m`;
     },
-    /**
-     * PLACEHOLDER: how far over the planned length reads as running over. The
-     * board letters 1 h 48 m in oxblood, 18 minutes past the 90 a service visit
-     * is planned for, and leaves 1 h 31 m quiet. It writes no rule, and this is
-     * where we have drawn it, as the dispatch board's peak is drawn.
-     */
-    overBy: 15,
     /** When the phone timed fewer jobs than were finished, the average says what it is of. */
     base: (timed: number, jobs: number) => `${String(timed)} of ${String(jobs)}`,
     /** Beneath the table, where the board writes its own note: what the two columns count. */
@@ -1265,11 +1263,13 @@ export const settings = {
     `Photographs and referral cards hold ${(held / 1e9).toFixed(2)} GB in R2, ${String(Math.round((held / share) * 100))}% ` +
     `of their ${String(share / 1e9)} GB share. Past it R2 bills, as the owner accepted; ops are told at 50%, 80% and 100%.`,
   // PLACEHOLDER: the prices tab holds the services too (docs/decisions/0085-services-ops-can-edit.md), and no board
-  // draws the last two tabs' names (docs/decisions/0087-consumables-and-stock.md).
+  // draws the last three tabs' names (docs/decisions/0087-consumables-and-stock.md,
+  // docs/decisions/0088-every-policy-in-the-console.md).
   tabs: {
     rules: "Rules",
     prices: "Services and prices",
     area: "Service area",
+    blackouts: "Blackout days",
     consumables: "Consumables",
     "job-sheet": "Job sheet",
   },
@@ -1294,7 +1294,26 @@ export const settings = {
      */
     keyNames: {
       no_show_wait_min: dispatch.typeNames,
+      late_change_charge: dispatch.typeNames,
+      no_show_charge: dispatch.typeNames,
+      // PLACEHOLDER: what a waiver gives back (docs/decisions/0088-every-policy-in-the-console.md).
+      no_show_waiver: { payment: "The visit's payment", credit: "The visit credit it used" },
       task_sla_hours: tasks.groups,
+      // PLACEHOLDER: the phone's two bounds (docs/decisions/0088-every-policy-in-the-console.md).
+      phone_clock: {
+        before_start: "Earliest check-in, before the booked start",
+        held_offline: "Longest a phone may hold what was done offline",
+      },
+      // PLACEHOLDER: board C4's countdown and the grace after it (docs/decisions/0068-a-paid-hold-is-kept.md).
+      payment_hold: {
+        countdown: "The countdown the client sees",
+        grace: "A payment still in time, after it",
+      },
+      // PLACEHOLDER: board D3's two figures (docs/open-points.md, item 59).
+      technician_work: {
+        period: "Jobs and average service, counted over",
+        over_by: "Shown as running over, from",
+      },
       // PLACEHOLDER: the days the next visit turns on (docs/decisions/0086-the-next-visit-is-offered.md).
       booking_days: {
         first_fit_lead: "From a consultation to the first fit",
@@ -1307,15 +1326,27 @@ export const settings = {
       },
     } as Readonly<Record<string, Readonly<Record<string, string>>>>,
     /**
+     * PLACEHOLDER: each choice a rule of choices offers, in the console's words, by the rule's name
+     * (docs/decisions/0088-every-policy-in-the-console.md).
+     */
+    choiceNames: {
+      late_change_charge: { nothing: "Nothing", late_fee: "Its late fee", visit: "The visit itself" },
+      no_show_charge: { nothing: "Nothing", late_fee: "Its late fee", visit: "The visit itself" },
+      no_show_waiver: { refunded: "Refunded", kept: "Kept", returned: "Returned", spent: "Spent" },
+    } as Readonly<Record<string, Readonly<Record<string, string>>>>,
+    /**
      * PLACEHOLDER: the check before a rule is sent, as a price's (docs/decisions/0071-what-ops-see-before-a-setting-
      * changes.md): each figure that moves, the old beside the new.
      */
     confirm: {
       title: "Check the change",
-      change: (label: string, was: number | null, now: number | null, unit: string) =>
-        `${label}: ${was === null ? "none" : `${String(was)} ${unit}`} → ${
-          now === null ? "the figure for every other base" : `${String(now)} ${unit}`
-        }.`,
+      change: (label: string, was: string, now: string) => `${label}: ${was} → ${now}.`,
+      /** A figure as the check writes it: "200 metres". */
+      figure: (value: number, unit: string) => `${String(value)} ${unit}`,
+      /** A base ops are naming for the first time had no figure of its own. */
+      noFigure: "none",
+      /** A base whose own figure is taken away takes the one for every other base. */
+      otherBases: "the figure for every other base",
       standard: "This puts the standard figures back.",
       send: "Save",
       back: "Change it",
@@ -1324,6 +1355,43 @@ export const settings = {
     outside: (field: string) => `${field} is outside what this rule allows. Nothing was changed.`,
     errors: {
       invalid_request: "That figure is outside what this rule allows. Nothing was changed.",
+      offline: "You are offline. Connect, then try again.",
+      unknown: "That did not go through. Nothing was changed.",
+    } as Readonly<Record<string, string>>,
+  },
+  /**
+   * PLACEHOLDER, every line of it: no board draws the days no visit is offered, which the runbook's SQL set before
+   * (docs/decisions/0088-every-policy-in-the-console.md).
+   */
+  blackouts: {
+    title: "Blackout days",
+    note:
+      "Days no visit is offered, in the app or from the site. Blacking out a day moves no visit already booked on " +
+      "it: move those on the dispatch board.",
+    from: "First day",
+    to: "Last day",
+    reason: "Why",
+    add: "Black out these days",
+    adding: "Adding",
+    added: "Added.",
+    none: "No day is blacked out.",
+    /** "Tue 20 Oct to Thu 22 Oct", and "Tue 20 Oct" for one day. */
+    period: (from: string, to: string) => (from === to ? from : `${from} to ${to}`),
+    setBy: (who: string, when: string) => `Added by ${who} on ${when}`,
+    unrecorded: "Added before this screen, so who added it is not recorded.",
+    booked: (visits: number) =>
+      `${String(visits)} ${visits === 1 ? "visit is" : "visits are"} still booked on these days. Move ${
+        visits === 1 ? "it" : "them"
+      } on the dispatch board.`,
+    remove: "Offer these days again",
+    /** The button's whole name, since the list holds many and each button says the same. */
+    removeLabel: (period: string) => `Offer ${period} again`,
+    removing: "Offering them again",
+    errors: {
+      from: "The first day cannot be before today.",
+      to: "The last day cannot come before the first, and one go covers a month at most.",
+      reason: "Say why, in letters and figures, up to 60 of them.",
+      not_found: "Those days are no longer blacked out. Reload to see the list as it stands.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Nothing was changed.",
     } as Readonly<Record<string, string>>,
@@ -1362,7 +1430,9 @@ export const settings = {
       late_fee_first_fit: "Late fee on a first fit",
       late_fee_replacement: "Late fee on a replacement",
     } as Readonly<Record<string, string>>,
-    lateFeeNote: "Charged for moving or cancelling inside 24 hours, whichever of the kind's services it is.",
+    lateFeeNote:
+      "Charged for moving or cancelling inside the notice set in Rules, where Rules charge the kind its late fee, " +
+      "whichever of its services it is.",
     actions: {
       price: "Change price",
       correct: "Correct",

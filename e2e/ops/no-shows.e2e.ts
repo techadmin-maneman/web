@@ -147,7 +147,10 @@ test("says how long the case had been with us when the check-in reached us late"
 
 test("shows what the phone said when the bounds would not take its time", async ({ page }) => {
   const claimed = { ...NO_SHOWS.cases[0], phone_checked_in_at: "2027-09-19T04:00:00.000Z" };
-  await answer(page, { "GET /api/payments": json(DAY_MONEY), "GET /api/no-shows": json({ cases: [claimed] }) });
+  await answer(page, {
+    "GET /api/payments": json(DAY_MONEY),
+    "GET /api/no-shows": json({ ...NO_SHOWS, cases: [claimed] }),
+  });
   await page.goto("/no-shows");
   await expect(fact(page, FIRST, "The phone said")).toHaveText("Sun 19 Sep, 9:30 am");
 });
@@ -165,7 +168,7 @@ test("tells a reminder sent and never delivered from one that was never sent", a
     { ...NO_SHOWS.cases[0], message_state: "sent", message_delivered_at: null },
     { ...NO_SHOWS.cases[1], message_state: "none" },
   ];
-  await answer(page, { "GET /api/payments": json(DAY_MONEY), "GET /api/no-shows": json({ cases }) });
+  await answer(page, { "GET /api/payments": json(DAY_MONEY), "GET /api/no-shows": json({ ...NO_SHOWS, cases }) });
   await page.goto("/no-shows");
   await expect(fact(page, FIRST, "WhatsApp")).toHaveText("Sent, and never delivered");
   await expect(fact(page, SECOND, "WhatsApp")).toHaveText("No reminder was sent");
@@ -270,8 +273,18 @@ test("brings the case a task named into view, and gives it the keyboard", async 
   await expect(caseOf(page, FIRST)).toBeFocused();
 });
 
+// What a waiver gives back is ops' to set (docs/decisions/0088-every-policy-in-the-console.md).
+test("says beneath the queue what waiving gives back, as ops set it", async ({ page }) => {
+  await open(page);
+  await expect(page.getByText("refunds what the visit was paid with and returns its credit")).toBeVisible();
+  const kept = { ...NO_SHOWS, waiver: { payment: "kept", credit: "spent" } };
+  await answer(page, { "GET /api/payments": json(DAY_MONEY), "GET /api/no-shows": json(kept) });
+  await page.goto("/no-shows");
+  await expect(page.getByText("keeps what the visit was paid with and leaves its credit spent")).toBeVisible();
+});
+
 test("says nothing is waiting when the queue is empty", async ({ page }) => {
-  await answer(page, { "GET /api/payments": json(DAY_MONEY), "GET /api/no-shows": json({ cases: [] }) });
+  await answer(page, { "GET /api/payments": json(DAY_MONEY), "GET /api/no-shows": json({ ...NO_SHOWS, cases: [] }) });
   await page.goto("/no-shows");
   await expect(page.getByText("No no-show is waiting for a decision.")).toBeVisible();
 });

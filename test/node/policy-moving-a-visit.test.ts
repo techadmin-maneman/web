@@ -1,7 +1,16 @@
 // Moving or cancelling a visit, each rule named by the prompt's own words (src/policy/moving-a-visit.ts).
 
 import { describe, expect, it } from "vitest";
-import { cancelRefund, creditOnChange, freeUntil, moveCost, noticeAt, RULES } from "../../src/policy/moving-a-visit.ts";
+import {
+  cancelRefund,
+  chargesFor,
+  creditOnChange,
+  freeUntil,
+  LATE_CHANGE_CHARGES,
+  moveCost,
+  noticeAt,
+  RULES,
+} from "../../src/policy/moving-a-visit.ts";
 
 /** A window starting at noon on Thursday 24 September, in India. */
 const WINDOW = new Date("2026-09-24T06:30:00Z");
@@ -48,5 +57,44 @@ describe("moving a visit", () => {
   it("leaves a free consultation free, whenever it moves or is cancelled", () => {
     expect(moveCost("consultation", "late", "client")).toBe("free");
     expect(cancelRefund("consultation", "late")).toBe("all");
+  });
+});
+
+// Every figure of these terms is ops' to set (docs/decisions/0088-every-policy-in-the-console.md): the notice, and what
+// each kind of visit costs inside it. The rules above are the committed terms, which stand until ops set others.
+describe("the terms ops set", () => {
+  it("counts the notice in the hours ops set", () => {
+    expect(freeUntil(WINDOW, 48)).toEqual(hoursBefore(48));
+    expect(noticeAt(WINDOW, hoursBefore(30), 48)).toBe("late");
+    expect(noticeAt(WINDOW, hoursBefore(30))).toBe("free");
+  });
+
+  it("starts from the terms as the prompt states them", () => {
+    expect(LATE_CHANGE_CHARGES).toEqual({
+      consultation: "nothing",
+      first_fit: "late_fee",
+      replacement: "late_fee",
+      service: "visit",
+    });
+  });
+
+  it("charges inside the notice what ops set for the kind of visit", () => {
+    expect(moveCost("service", "late", "client", "nothing")).toBe("free");
+    expect(cancelRefund("service", "late", "nothing")).toBe("all");
+    expect(creditOnChange("late", "nothing")).toBe("restored");
+    expect(moveCost("first_fit", "late", "client", "visit")).toBe("charged");
+    expect(cancelRefund("first_fit", "late", "visit")).toBe("none");
+    expect(moveCost("consultation", "late", "client", "visit")).toBe("charged");
+  });
+
+  it("never charges for a move ops make, whatever they set", () => {
+    expect(moveCost("service", "late", "ops", "visit")).toBe("free");
+  });
+
+  it("offers a late fee only to a kind of visit that has one", () => {
+    expect(chargesFor("first_fit")).toEqual(["nothing", "late_fee", "visit"]);
+    expect(chargesFor("replacement")).toEqual(["nothing", "late_fee", "visit"]);
+    expect(chargesFor("service")).toEqual(["nothing", "visit"]);
+    expect(chargesFor("consultation")).toEqual(["nothing", "visit"]);
   });
 });

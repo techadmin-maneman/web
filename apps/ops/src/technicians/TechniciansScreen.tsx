@@ -32,7 +32,8 @@ const lastDay = (exclusiveEnd: string) =>
  * How long the technician's visits took, on average. A technician the phone
  * timed none of reads as a gap, never as a nought: the jobs were done and
  * nothing timed them. One who runs over the length their visits were planned
- * for reads in oxblood, as the board letters its own long average.
+ * for, by as much as ops set (docs/decisions/0088-every-policy-in-the-console.md),
+ * reads in oxblood, as the board letters its own long average.
  */
 function Service({ figures }: { figures: TechnicianWork | undefined }) {
   const copy = technicians.work;
@@ -44,7 +45,7 @@ function Service({ figures }: { figures: TechnicianWork | undefined }) {
 
   return (
     <>
-      <span className={average - planned >= copy.overBy ? styles.over : undefined}>
+      <span className={figures.runs_over ? styles.over : undefined}>
         {copy.average(Math.floor(average / 60), average % 60)}
       </span>
       {/* The average is of the jobs the phone timed, so it says so when that is not all of them. */}

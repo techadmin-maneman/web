@@ -1196,14 +1196,7 @@ UPDATE cities SET active = 0 WHERE name = 'Pune';
 
 People already on a city's waitlist are not told automatically when it opens; that is out of Phase 1's scope. Find them with `SELECT l.id, l.created_at FROM leads l WHERE l.source = 'waitlist' AND l.city = 'Mumbai';` and work from Zoho.
 
-Blackout dates are days ops will not offer as the proposed visit:
-
-```sql
-INSERT INTO visit_blackouts (date, reason) VALUES ('2026-10-20', 'Diwali');
-DELETE FROM visit_blackouts WHERE date = '2026-10-20';
-```
-
-A blackout changes only proposals made after it is added.
+Blackout days are days no visit is offered, in the app or from the site. Ops add and remove them in the console, Settings · Blackout days, with a reason; each change is audited under the Access identity that made it (ADR 0088), and the runbook's SQL is no longer the way. A blackout moves no visit already booked on the day: the screen says how many are, and ops move them on the dispatch board.
 
 ---
 

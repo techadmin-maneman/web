@@ -10,6 +10,7 @@ import {
   EARLIEST_BEFORE_START_MIN,
   MAX_OFFLINE_HOURS,
   onTheVisitsDay,
+  PHONE_CLOCK,
   RULES,
 } from "../../src/policy/phone-clock.ts";
 
@@ -57,6 +58,16 @@ describe("the bounds on the phone's clock", () => {
     expect(boundedPhoneTime(minutes(VISIT_START, 10), { visitStart: VISIT_START, receivedAt: lateReceipt })).toEqual(
       minutes(lateReceipt, -MAX_OFFLINE_HOURS * 60),
     );
+  });
+
+  it("holds the phone to the bounds ops set, in place of the committed ones", () => {
+    const received = minutes(VISIT_START, 100);
+    const bounds = { visitStart: VISIT_START, receivedAt: received };
+    const halfAnHourEarly = { before_start: 30, held_offline: 24 };
+    expect(boundedPhoneTime(minutes(VISIT_START, -6 * 60), bounds, halfAnHourEarly)).toEqual(minutes(VISIT_START, -30));
+    const anHourHeld = { before_start: 60, held_offline: 1 };
+    expect(boundedPhoneTime(minutes(VISIT_START, 10), bounds, anHourHeld)).toEqual(minutes(received, -60));
+    expect(PHONE_CLOCK).toEqual({ before_start: EARLIEST_BEFORE_START_MIN, held_offline: MAX_OFFLINE_HOURS });
   });
 
   it("takes the server's own time when the phone gave none", () => {

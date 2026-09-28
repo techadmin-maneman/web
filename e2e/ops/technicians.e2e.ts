@@ -95,7 +95,8 @@ test("says what the average is of when the phone timed fewer jobs than were fini
 });
 
 // The board letters 1 h 48 m in oxblood, #8A3A2E, and leaves 1 h 31 m quiet, so a
-// minute over the planned length is not a technician running over (content.ts, overBy).
+// minute over the planned length is not a technician running over: the API says
+// which run over, by the minutes ops set (technician_work.over_by).
 test("letters an average that runs over in oxblood, and leaves one a minute over quiet", async ({ page }) => {
   await open(page);
   const oxblood = "rgb(138, 58, 46)"; // --error-on-paper
@@ -112,6 +113,7 @@ test("reads as a gap, never as a nought, when the phone timed none of the jobs",
     timed_jobs: 0,
     average_minutes: null,
     average_planned_minutes: null,
+    runs_over: false,
   }));
   await answer(page, {
     [READ_ROSTER]: json(TECHNICIANS),

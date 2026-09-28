@@ -4,6 +4,7 @@
 // and a person decides it.
 
 import type { VisitType } from "../config/visit-types.ts";
+import { LATE_CHANGE_CHARGES, type Charges } from "./moving-a-visit.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
 
 export const RULES = [
@@ -82,14 +83,23 @@ export const NO_SHOW_DECISIONS = ["undecided", "charged", "waived"] as const;
 export type NoShowDecision = (typeof NO_SHOW_DECISIONS)[number];
 
 /**
- * Whether waiving a no-show gives the client back what the visit took: its
+ * What a charged no-show costs, by kind of visit: to begin with what a late cancellation of the same visit costs, as
+ * the owner ruled on 27 September 2026 (docs/open-points.md, item 60), and set in the console apart from it so either
+ * can change alone (docs/decisions/0088-every-policy-in-the-console.md). A booking keeps the charge it was made under.
+ */
+export const NO_SHOW_CHARGES: Charges = { ...LATE_CHANGE_CHARGES };
+
+/**
+ * What waiving a no-show gives the client back of what the visit took: its
  * payment refunded, its credit returned. The prompt's rule (RULES[3]) says a
  * charge keeps it, as a cancel inside 24 hours does; it says nothing of a
  * waiver, which the owner ruled on 27 September 2026: a waiver refunds the
  * payment and returns the credit (docs/owner-answers-2026-09-27.md). A waiver
- * means we accept the fault, so keeping the money would contradict it. Under
- * the owner's standing rule this becomes a console setting with the other
- * policies (docs/open-points.md, item 12).
+ * means we accept the fault, so keeping the money would contradict it. Ops set
+ * it in the console with every other policy; each ruling keeps what it gave back.
  */
-// Widened from its literal, so the code for either answer stays checked while the switch stands at one.
-export const WAIVER_GIVES_BACK = true as boolean;
+export type Waiver = Readonly<{ payment: "refunded" | "kept"; credit: "returned" | "spent" }>;
+
+export const WAIVER_KEYS = ["payment", "credit"] as const;
+
+export const WAIVER_GIVES_BACK: Waiver = { payment: "refunded", credit: "returned" };

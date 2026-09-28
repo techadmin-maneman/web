@@ -46,6 +46,9 @@ export const AUDIT_ACTIONS = [
   "price.withdraw",
   "pincode.set",
   "pincode.rename",
+  // The days no visit is offered, which the runbook's SQL set before (docs/decisions/0088-every-policy-in-the-console.md).
+  "blackout.add",
+  "blackout.remove",
   // The services clients book (docs/decisions/0085-services-ops-can-edit.md): one added to a kind, renamed, given
   // another length, a kind's put in another order, one retired from a day, and one offered again.
   "service.add",

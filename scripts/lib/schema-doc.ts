@@ -88,6 +88,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "A client's change of mobile number: the codes proven on both numbers, and what ops decided (ADR 0042, ADR 0078).",
   ops_settings:
     "The business inputs ops set in the console, a row each; a row that is not there means the committed default (ADR 0061).",
+  ops_settings_snapshot:
+    "One row holding every `ops_settings` value, kept by that table's triggers: the one row a request reads (ADR 0088).",
   otp_challenges: "Each one-time code sent, as a hash, with its sends and attempts (ADR 0030, ADR 0052).",
   partial_reasons:
     "The reasons a job may be left partly done, as ops set them, one they took off kept as retired; none means the committed list (ADR 0087).",

@@ -37,7 +37,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
 import { PRICE_TIER } from "../config/ops-settings.ts";
-import { BOOKING_DAYS, BOOKING_WINDOWS, HOLD_SECONDS } from "../config/scheduling.ts";
+import { BOOKING_DAYS, BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { FSM_SERVICE_NAMES, VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
 import { recordBookingConsents } from "../domain/booking-consents.ts";
 import { startBooking } from "../domain/bookings.ts";
@@ -54,15 +54,22 @@ import {
   type Moving,
 } from "../domain/scheduling.ts";
 import { bookableService, serviceOf, type PricedService } from "../domain/services.ts";
-import { changeableVisit, changeTerms, type ChangeableVisit, type ChangeTerms } from "../domain/visit-changes.ts";
+import {
+  changeableVisit,
+  changeTerms,
+  termsInForce,
+  type ChangeableVisit,
+  type ChangeTerms,
+} from "../domain/visit-changes.ts";
 import { bookableDays } from "../domain/next-visit.ts";
+import type { OpsInputs } from "../domain/ops-settings.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { requireSelfServe } from "../http/self-serve.ts";
 import { visitorOf } from "../http/visitor.ts";
 import { GIVEN_BY_BOOKING, isFullAddress } from "../policy/booking.ts";
-import { LATE_FEES } from "../policy/moving-a-visit.ts";
+import { CHARGES, LATE_FEES, type SoldTerms } from "../policy/moving-a-visit.ts";
 import { stripStart } from "../policy/next-visit.ts";
 import { takesCredit } from "../policy/referral-reward.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
@@ -134,10 +141,23 @@ const HoldSchema = z
     ends_at: z.iso.datetime(),
     technician: TechnicianSchema,
     price: PriceSchema,
-    late_fee: z
-      .union([PriceSchema, z.null()])
-      .openapi({ description: "What moving it inside 24 hours costs: a first fit's or a replacement's late fee." }),
+    late_fee: z.union([PriceSchema, z.null()]).openapi({
+      description: "The late fee moving it inside the notice costs, where it is sold to charge one; else null.",
+    }),
     free_until: z.iso.datetime().openapi({ description: "Until then, moving or cancelling is free." }),
+    change_notice_hours: z
+      .number()
+      .int()
+      .openapi({
+        description:
+          "The notice it is sold under: how many hours before its window moving or cancelling stops being free, as " +
+          "ops set it when the hold was made (24 to begin with).",
+      }),
+    late_change_charge: z.enum(CHARGES).openapi({
+      description:
+        "What moving or cancelling it inside the notice costs, as it is sold: nothing, its late fee (late_fee), or " +
+        "the visit itself, whose payment is kept or whose credit is spent (visit).",
+    }),
     expires_at: z.iso.datetime(),
     state: z.enum(["held", "expired", "booked", "released"]),
     paid: z.boolean().openapi({ description: "Razorpay has confirmed the payment; the visit is being booked." }),
@@ -338,9 +358,28 @@ export async function moveTermsFor(
   const now = c.var.deps.now();
   const visit = await changeableVisit(c.env.DB, personId, visitId, now);
   if (visit === null || (type !== null && visit.type !== type) || visit.technicianId === null) return null;
+  const inForce = termsInForce(await opsInputs(c), visit.type);
   return {
-    terms: await changeTerms(c.env.DB, visit, now, on),
+    terms: await changeTerms(c.env.DB, visit, now, inForce, on),
     moving: { visitId: visit.id, technicianId: visit.technicianId },
+  };
+}
+
+/**
+ * What a hold is sold under: a move in place carries the moved visit's own terms and late fee to its new time, since
+ * it is the same visit, sold once; any other hold, a new booking or a charged move's new visit, is sold under the
+ * terms in force and its kind's late fee on its day (docs/decisions/0088-every-policy-in-the-console.md).
+ */
+async function soldAs(
+  c: Context<AppEnv>,
+  hold: { type: VisitType; date: string; move: ChangeTerms | null; kind: "move" | "replace" | null },
+  inputs: OpsInputs,
+): Promise<{ terms: SoldTerms; lateFee: Price | null }> {
+  if (hold.move !== null && hold.kind === "move") return { terms: hold.move.sold, lateFee: hold.move.lateFee };
+  const lateFeeItem = LATE_FEES[hold.type];
+  return {
+    terms: termsInForce(inputs, hold.type),
+    lateFee: lateFeeItem === undefined ? null : await priceOf(c.env.DB, lateFeeItem, hold.date),
   };
 }
 
@@ -444,7 +483,8 @@ export function registerClientBooking(app: App): void {
         : { visit: move.moving, kind: move.terms.move.cost === "charged" ? ("replace" as const) : ("move" as const) };
     const useCredit =
       takesCredit(type, moves?.kind ?? null) && (await creditBalance(c.env.DB, session.subjectId, now)).visits > 0;
-    const lateFeeItem = LATE_FEES[type];
+    const inputs = await opsInputs(c);
+    const sold = await soldAs(c, { type, date, move: move?.terms ?? null, kind: moves?.kind ?? null }, inputs);
     const hold = await holdSlot(
       c.env.DB,
       {
@@ -453,14 +493,16 @@ export function registerClientBooking(app: App): void {
         date,
         window,
         price,
-        lateFee: lateFeeItem === undefined ? null : await priceOf(c.env.DB, lateFeeItem, date),
+        lateFee: sold.lateFee,
+        terms: sold.terms,
         pincode: address.pincode,
         useCredit,
         from: "app",
         ...(moves === undefined ? {} : { moves }),
       },
       now,
-      HOLD_SECONDS,
+      inputs.paymentHold.countdown * 60,
+      inputs.paymentHold.grace * 60,
     );
     if (hold === null) return c.json(errorBody("taken", c.var.requestId), 409);
     c.var.log.info("slot_held", { hold_id: hold.id, type, tier: service.tier, date, window });

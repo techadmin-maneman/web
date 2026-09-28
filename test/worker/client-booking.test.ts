@@ -176,8 +176,10 @@ describe("POST /api/holds", () => {
       technician: { name: "Imran Qureshi", initials: "IQ" },
       price: { amount_ex_gst: 200000, amount: 200000, gst_percent: 0 },
       late_fee: null,
-      // Moving is free until 24 hours before the window opens.
+      // Moving is free until 24 hours before the window opens, and a service visit moved later is charged.
       free_until: "2026-09-21T06:30:00.000Z",
+      change_notice_hours: 24,
+      late_change_charge: "visit",
       expires_at: "2026-09-21T06:40:00.000Z",
       state: "held",
     });
@@ -204,6 +206,95 @@ describe("POST /api/holds", () => {
     // The first client now holds Wednesday instead, which lets Tuesday's claim go even before it lapses.
     const moved = await (await hold(first, { ...TUESDAY_AFTERNOON, date: "2026-09-23" })).json<{ id: string }>();
     expect(moved.id).toBeDefined();
+  });
+
+  // The countdown and the grace are ops' to set; a hold keeps the ones it was made with
+  // (docs/decisions/0088-every-policy-in-the-console.md).
+  const paymentHold = (minutes: { countdown: number; grace: number }) =>
+    env.DB.prepare(
+      "INSERT OR REPLACE INTO ops_settings (name, value, set_by, set_at) VALUES ('payment_hold', ?1, 'ops', ?2)",
+    )
+      .bind(JSON.stringify(minutes), NOW.toISOString())
+      .run();
+
+  it("holds a slot for the minutes ops set, and keeps its time for the grace they set after them", async () => {
+    await paymentHold({ countdown: 15, grace: 5 });
+    const [first, second] = [await client(), await client()];
+    const held = await hold(first, TUESDAY_AFTERNOON);
+    expect(await held.json()).toMatchObject({ expires_at: "2026-09-21T06:45:00.000Z" });
+    await hold(second, TUESDAY_AFTERNOON);
+    const third = await client();
+    expect((await hold(third, TUESDAY_AFTERNOON, later(19))).status).toBe(409);
+    expect((await hold(third, TUESDAY_AFTERNOON, later(21))).status).toBe(201);
+  });
+
+  it("sells a hold under the terms ops set, and keeps them on it", async () => {
+    const opsSet = (name: string, value: unknown) =>
+      env.DB.prepare("INSERT INTO ops_settings (name, value, set_by, set_at) VALUES (?1, ?2, 'ops', ?3)")
+        .bind(name, JSON.stringify(value), NOW.toISOString())
+        .run();
+    await opsSet("change_notice_hours", 12);
+    await opsSet("late_change_charge", {
+      consultation: "nothing",
+      first_fit: "late_fee",
+      service: "nothing",
+      replacement: "visit",
+    });
+    await opsSet("no_show_charge", {
+      consultation: "nothing",
+      first_fit: "visit",
+      service: "visit",
+      replacement: "visit",
+    });
+    const rohit = await client();
+    const held = await (await hold(rohit, TUESDAY_AFTERNOON)).json<{ id: string }>();
+    expect(held).toMatchObject({
+      free_until: "2026-09-21T18:30:00.000Z",
+      change_notice_hours: 12,
+      late_change_charge: "nothing",
+    });
+    const kept = await env.DB.prepare(
+      "SELECT change_notice_hours, late_change_charge, no_show_charge FROM slot_holds WHERE id = ?1",
+    )
+      .bind(held.id)
+      .first();
+    expect(kept).toEqual({ change_notice_hours: 12, late_change_charge: "nothing", no_show_charge: "visit" });
+  });
+
+  // What the pay step says a late change costs is what the hold was sold under (docs/decisions/0088-every-policy-in-the-console.md).
+  it("answers a late fee only where the hold was sold to charge one", async () => {
+    const lead = await client(true);
+    const byFee = await (await hold(lead, { type: "first_fit", date: "2026-09-24", window: "morning" })).json();
+    expect(byFee).toMatchObject({ late_change_charge: "late_fee", late_fee: { amount_ex_gst: 400000 } });
+
+    await env.DB.prepare(
+      "INSERT INTO ops_settings (name, value, set_by, set_at) VALUES ('late_change_charge', ?1, 'ops', ?2)",
+    )
+      .bind(
+        JSON.stringify({ consultation: "nothing", first_fit: "visit", service: "visit", replacement: "late_fee" }),
+        NOW.toISOString(),
+      )
+      .run();
+    const other = await client(true);
+    // A new isolate, so the setting is read afresh rather than from the minute's cache.
+    const afresh = later(0);
+    const byVisit = await (
+      await hold(other, { type: "first_fit", date: "2026-09-25", window: "morning" }, afresh)
+    ).json();
+    expect(byVisit).toMatchObject({ late_change_charge: "visit", late_fee: null });
+  });
+
+  it("keeps a hold to the grace it was made with, whatever ops set after", async () => {
+    await paymentHold({ countdown: 10, grace: 5 });
+    const [first, second, third] = [await client(), await client(), await client()];
+    await hold(first, TUESDAY_AFTERNOON);
+    await hold(second, TUESDAY_AFTERNOON);
+    await paymentHold({ countdown: 10, grace: 1 });
+    // Thirteen minutes on is past a minute's grace, but not the five these two holds were made with.
+    expect((await hold(third, TUESDAY_AFTERNOON, later(13))).status).toBe(409);
+    expect(await env.DB.prepare("SELECT grace_seconds FROM slot_holds").all()).toMatchObject({
+      results: [{ grace_seconds: 300 }, { grace_seconds: 300 }],
+    });
   });
 
   // The horizon is ops' to set, 45 days from tomorrow to begin with (docs/decisions/0086-the-next-visit-is-offered.md).

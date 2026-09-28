@@ -622,8 +622,8 @@ export function registerTechJobs(app: App): void {
 
     const eventId = c.req.valid("header")["x-client-event-id"];
     const claimed = body.at === undefined ? timeOfUuidV7(eventId) : new Date(body.at);
-    const at = boundedPhoneTime(claimed, { visitStart: job.windowStart, receivedAt: now });
     const inputs = await opsInputs(c);
+    const at = boundedPhoneTime(claimed, { visitStart: job.windowStart, receivedAt: now }, inputs.phoneClock);
     const arrival = await recordArrival(c.env.DB, {
       appointmentId: job.id,
       technicianId,
@@ -926,6 +926,8 @@ async function land(
   const now = c.var.deps.now();
   const eventId = c.req.header(EVENT_ID_HEADER) ?? "";
   const heldStart = c.req.header(JOB_STARTS_AT_HEADER);
+  const { noShowWaitMin, phoneClock } = await opsInputs(c);
+  const bounds = { visitStart: job.windowStart, receivedAt: now };
 
   const landing: Landing = await landJobEvent(c.env.DB, {
     job,
@@ -934,7 +936,7 @@ async function land(
     eventId,
     kind,
     body,
-    occurredAt: phoneTime ?? boundedPhoneTime(timeOfUuidV7(eventId), { visitStart: job.windowStart, receivedAt: now }),
+    occurredAt: phoneTime ?? boundedPhoneTime(timeOfUuidV7(eventId), bounds, phoneClock),
     expectedStart: heldStart === undefined ? null : new Date(heldStart),
     now,
   });
@@ -947,7 +949,6 @@ async function land(
 
   // A replay landed nothing new, so nothing new goes to FSM either.
   if (!landing.replayed) await queueFsmWrite(c, landing.event.id);
-  const { noShowWaitMin } = await opsInputs(c);
   return {
     ok: true,
     accepted: {
