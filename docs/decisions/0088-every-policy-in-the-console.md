@@ -2,20 +2,76 @@
 
 - Status: accepted, on the owner's standing rule of 27 September 2026
 - Date: 2026-09-28
-- Amends [0061](0061-ops-editable-inputs.md), whose store read a row per input and so held ten inputs at most
+- Amends [0061](0061-ops-editable-inputs.md), whose store read a row per input and so held ten inputs at most, and whose register held numbers alone; extends [0068](0068-a-paid-hold-is-kept.md), whose hold kept the late fee it was sold under and now keeps its terms and its grace too; records the owner's rulings of 27 September 2026 on open points 7, 12, 15, 40, 53, 58, 59 and 60, and ADR 0025's items 42 and 66
 
 ## Context
 
-The owner, on 27 September 2026: "All the policies can change and I want them to be an ops update, not a tech update" (ADR 0025, item 66; `docs/open-points.md`, item 12).
+The owner, on 27 September 2026: "All the policies can change and I want them to be an ops update, not a tech update" (ADR 0025, item 66; `docs/open-points.md`, item 12). The console is the source of truth for every price and every business rule.
 
-ADR 0061's store read one row per input on every cache miss, so it claimed a fifth of D1's day for at most ten inputs, and held six.
+ADR 0061 built the register and moved six rules into it. What was still a figure in code: the move and cancel terms (the 24-hour notice, and what each kind of visit costs inside it), what a no-show costs, what a waiver gives back, the reminder's hour, the phone's clock bounds, board D3's two figures, the payment hold and its grace, the slot map and the window times, and the blackout days, which the runbook's own SQL edited. Two things stood in the way: ADR 0061's store read a row per input on every cache miss, so it claimed a fifth of D1's day for ten inputs at most; and its register held numbers only, while a charge is a choice (nothing, a late fee, the visit itself) and a waiver a pair of them.
 
 ## Decision
 
 ### The store: one row a request reads
 
-`ops_settings` keeps one row per input, as the record of who set what and when, audited as before. Beside it, `ops_settings_snapshot` (migration 0051) holds one row: a JSON object of every input's value. Three triggers on `ops_settings` rewrite it from the rows in the same transaction as any insert, update or delete, so no write — the console's, a script's or one by hand — leaves the two apart. The request path reads the snapshot row alone: one row a cache miss, whatever the register's length. A snapshot that has gone missing is built again from the rows on the first read that finds it gone.
+`ops_settings` keeps a row per input, as the record of who set what and when, audited as before (`setting.change`). Beside it, `ops_settings_snapshot` (migration 0051) holds one row: a JSON object of every input's value. Three triggers on `ops_settings` rewrite it from the rows in the same transaction as any insert, update or delete, so no write, the console's, a script's or one by hand, leaves the two apart. The request path reads the snapshot alone, through the same per-isolate minute's cache (`createCachedOpsInputs`), and a queue consumer or a cron job reads it straight (`readOpsInputs`). A snapshot that has gone missing is built again from the rows by the first read that finds it gone.
 
-ADR 0061's three safe defaults stand: a store that cannot be read gives the last good read or the committed defaults; a figure the register would no longer accept, in a row or in the snapshot, is ignored for its committed default; the console holds every draft as text.
+ADR 0061's three safe defaults stand: a store that cannot be read gives the last good read or the committed defaults, never a nought; a figure the register would no longer accept, in a row or in the snapshot, gives way to its committed default; the console holds every draft as text.
 
-**What it costs.** The free plan stops the day at 100,000 requests, and a request reads the store at most once, so the ceiling is 100,000 rows a day however the cache behaves: a fiftieth of D1's 5,000,000. The register's length now costs the snapshot's size, which every miss parses; `MAX_SNAPSHOT_BYTES` (16 KiB) bounds it with every input at its widest, and `test/node/ops-settings.test.ts` fails past it.
+**What it costs.** The free plan stops the day at 100,000 requests, and a request reads the store at most once, so the ceiling is 100,000 rows a day however the cache behaves: a fiftieth of D1's 5,000,000 (`test/worker/ops-settings.test.ts` measures one row a read). The register's length now costs the snapshot's size, which every miss parses: `MAX_SNAPSHOT_BYTES` bounds it at 16 KiB with every input at its widest, and `test/node/ops-settings.test.ts` fails past it. The register holds fourteen inputs; the widest snapshot they can make is under 4 KiB.
+
+### Numbers and choices
+
+A rule is numbers, as before, or choices. A **rule of choices** (`ChoiceSetting`, `src/config/ops-settings.ts`) has a closed set of keys, each offered its own choices: a kind of visit with no late fee in the price book is never offered one. The API answers each rule with its `kind`, a number rule's `unit`, `min`, `max` and each key's `bounds`, and a choice rule's `choices`; the console draws a number's box with its unit and bounds, and a choice as a list in its own words (`settings.rules.choiceNames`, `apps/ops/src/content.ts`). **A key's bounds may carry their own unit**, since the phone's clock bounds count minutes and hours, and board D3's days and minutes.
+
+### What moved, and where each is kept
+
+Every committed figure stays beside its rule, in `src/policy/` or `src/config/`, as the default in force while ops set nothing; `test/node/policy-quotes.test.ts` holds the rules to their words unchanged.
+
+| Setting               | Figure to begin with                                                                                                            | Bounds                                                  | Open point, or ruling       | Where a promise is kept                                         |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | --------------------------- | --------------------------------------------------------------- |
+| `change_notice_hours` | 24 hours (`FREE_CHANGE_NOTICE_HOURS`, `src/policy/moving-a-visit.ts`)                                                           | 1 to 168                                                | Item 7                      | On the hold (`slot_holds.change_notice_hours`)                  |
+| `late_change_charge`  | First fit and replacement their late fee, service visit the visit itself, consultation nothing (`LATE_CHANGE_CHARGES`)          | Nothing, the late fee where the kind has one, the visit | Item 7                      | On the hold (`slot_holds.late_change_charge`)                   |
+| `no_show_charge`      | The same as a late change, set apart from it (`NO_SHOW_CHARGES`, `src/policy/no-show.ts`)                                       | As above                                                | Item 60                     | On the hold (`slot_holds.no_show_charge`)                       |
+| `no_show_waiver`      | Payment refunded, credit returned (`WAIVER_GIVES_BACK`)                                                                         | Refunded or kept; returned or spent                     | Item 15                     | On the ruling (`no_show_cases.waiver_payment`, `waiver_credit`) |
+| `reminder_hour`       | 18:00 (`DAY_BEFORE_REMINDER_HOUR`, `src/policy/job-visibility.ts`)                                                              | 8 to 21                                                 | Item 40                     | Nothing to keep                                                 |
+| `phone_clock`         | A check-in at most 60 minutes before the booked start; a write held up to 24 hours (`PHONE_CLOCK`, `src/policy/phone-clock.ts`) | 0 to 240 minutes; 1 to 72 hours                         | Item 58                     | Each event keeps its bounded time                               |
+| `technician_work`     | Counts over 90 days; an average flagged at 15 minutes over (`TECHNICIAN_WORK`, `src/policy/technician-work.ts`)                 | 7 to 365 days; 1 to 120 minutes                         | Item 59                     | Nothing to keep                                                 |
+| `payment_hold`        | A 10-minute countdown and 2 minutes' grace (`PAYMENT_HOLD`, `src/config/scheduling.ts`)                                         | 5 to 30; 1 to 10 minutes                                | Board C4; ADR 0025, item 42 | On the hold (`expires_at`, and `slot_holds.grace_seconds`)      |
+| Blackout days         | None                                                                                                                            | From today, a month a press                             | Item 12                     | `visit_blackouts`, with who set each day                        |
+
+- **The phone's third bound**, that a check-in reaching us late starts the no-show wait from when it reached us, is not a figure of its own: its figure is the no-show wait, which ops already set per kind of visit. That the wait runs on our clock too is a safety rule, not a policy (ADR 0065): without it a back-dated check-in could close a no-show at once.
+- **Board D3** no longer decides in the console whether an average runs over: `GET /api/technicians/work` answers `runs_over` for each technician by the rule in `src/policy/technician-work.ts`, and counts back as many days as ops set. `content.ts`' `overBy` is gone.
+- **The reminder's hour** is apart from the address's unlock hour (`address_unlock_hour`, ADR 0061): both begin at 6 pm, and moving one does not move the other.
+- **A no-show's charge is the setting alone.** Nothing charges a no-show by it yet: a charge still keeps what the visit took, as before. Plan piece C3 builds the charge, the amount on board D1 and the dispute on it, and reads the charge each booking kept.
+
+### What a client was sold stays sold
+
+ADR 0068's principle, "a hold keeps the late fee it was made under", now covers every figure that decides money a client pays or loses:
+
+- **A hold keeps the notice and the two charges** in force when it was made, as it keeps its late fee, and a visit's move and cancel terms read them from the hold that booked it. A term changed in the console reaches only bookings made after it. A visit ops booked in FSM, which no hold sold, takes the terms in force when it is changed; one booked before holds kept terms takes the committed ones, which it was sold under. A move re-sells the visit, as it already re-prices the late fee: the move's hold keeps the terms in force at the move.
+- **A hold keeps its grace** (`slot_holds.grace_seconds`). Its countdown was already its own (`expires_at`). The grace was read at each use, so a change between a hold's making and its payment could have let the clash check give its time away while the webhook still counted the payment in time, or refunded a payment the client made inside the grace they were given. With the grace on the hold, the clash check, letting go and the webhook judge each hold by the same figure. The site's consultation hold, confirmed as it is made, keeps the committed countdown, grace and terms; nothing it books is paid for.
+- **A waiver's ruling keeps what it gave back**, so the refund, the credit and the client's message follow the ruling, whatever ops set afterwards. A waiver is ops' decision in the client's favour at the time, not a term the client was sold, so it is read when ops rule.
+- **The reminder's hour, the phone's bounds and board D3's figures** decide no money, and are read when used.
+
+The app names the notice the visit was sold under, from the hold (`change_notice_hours`) and from the change terms (`notice_hours`): "Moving inside 24 hours costs Rs. 4,000". The WhatsApp texts and FSM's notes no longer state a figure ops can move ("As with a late cancel", "It was too close to the visit"), and the cancel note FSM keeps names the notice the visit was booked under.
+
+### Blackout days
+
+A list, not a figure, so a tab of its own, Settings · Blackout days (`GET /api/blackouts`, `POST /api/blackouts`, `POST /api/blackouts/remove`): a run of days added with its reason, listed run together with who added it and the visits still booked on it, offered again in one press. A blackout moves no visit already booked, as leave does not (ADR 0062); the list says how many are, and ops move them on the dispatch board. Each change is audited in its batch (`blackout.add`, `blackout.remove`). A day in the past is neither added nor removed, and one press covers a month at most. The runbook's SQL step is gone.
+
+### What stays in code, and why
+
+- **The slot map and the window times.** The owner kept the design's slots and windows (item 53), and asked that they become a setting. They do not, yet, because they cannot move alone. The windows' edges are half-slot starts (`UNIT_STARTS`: the afternoon opens at 12:00, the third half-slot's start), and `windowAt` reads a booked visit's window from its time; a window moved without its half-slots would put a visit booked in one window into another for the 24 hours, the reminder's words and the clash check's one job a window, while the board and FSM kept the half-slot, which is the disagreement ADR 0061 warned of. And the hours are printed at build time in five places the API does not reach: the site's booking form and the referral landing, the app's and the console's copy, and the site's calendar file. A setting would move what is booked while every page still promised the old hours. Making them settable is one input for the half-slot starts and the day's end, with the windows read from it, and every surface reading the hours from the API; that is owed, as `docs/open-points.md` records (ADR 0025, item 74).
+- **The half-slot arithmetic** (`WINDOW_SLOT_MAP`, `UNITS_PER_DAY`), as ADR 0061 and ADR 0085 decided.
+- **"A move by ops never charges."** A rule, not a figure (plan piece C10 builds on it).
+- **Visit lengths** are done (ADR 0085): each service's own, in Settings · Services and prices. The site's words for how long each visit takes are built from the kinds' committed lengths (`site/src/content/service.ts`), so a standard service ops lengthen still reads at its old length on the site until it is built again; the same open point records it.
+- **Engineering figures**: how long a dispatch move holds its time while FSM is written (`MOVE_CLAIM_SECONDS`), the sweep's timings, every ceiling ADR 0009 holds the account to. None is a business decision.
+- **The dispatch board's peak** (`dispatch.peak`, `apps/ops/src/content.ts`) is where we drew the board's brass figures; no rule of the owner's stands behind it. The move panel's line "This visit is inside 24 hours. The client is not charged, because we moved it." names the committed notice, and plan piece C10, which gives a visit ops moved the client's free change, rewrites it.
+
+## Consequences
+
+- The register holds fourteen inputs: ADR 0061's six and eight here. Adding one is still one entry in `OPS_SETTINGS`, one field in `OpsInputs`, and passing it where the default already sits; no migration, no console change.
+- Migration 0051: the snapshot and its triggers; `slot_holds.grace_seconds`, `change_notice_hours`, `late_change_charge`, `no_show_charge`; `no_show_cases.waiver_payment`, `waiver_credit`; `visit_blackouts.set_by`, `set_at`. Every column is nullable, and null reads as the committed figure the row was made under, so the Worker already deployed keeps working on the new schema.
+- The contract: `GET /api/settings` answers each rule's `kind` and a key's `unit`; `POST /api/settings/{name}` takes a choice per key; the hold answers `change_notice_hours` and the change terms `notice_hours`; `GET /api/no-shows` answers the `waiver` in force, which the console's note beneath the queue follows; `GET /api/technicians/work` answers `runs_over`; three blackout routes.
+- ADR 0061's "What is left" is done, but for the window times above and the message texts, which ADR 0061 decided not to make editable.

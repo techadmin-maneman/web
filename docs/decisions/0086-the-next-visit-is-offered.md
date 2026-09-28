@@ -66,7 +66,7 @@ The consultation form, on `/book` and on an invite's landing alike, begins with 
 
 ### The reminder
 
-**One WhatsApp a last visit** (`next_service_reminder`, template `next_visit_due_v1`, "Hello {{1}}, your next {{2}} is due on {{3}}. You can book it in the Mane Man app.", placeholder copy). The five-minute cron's `next_service_reminders` job writes it from the evening's reminder hour in India (`REMINDERS_FROM`, the day-before reminder's 6 pm), for each client whose last first fit, service or replacement has its next service due from today to `reminder_before_due` days from now, with nothing booked since, and never twice for one visit. Twenty a pass at most.
+**One WhatsApp a last visit** (`next_service_reminder`, template `next_visit_due_v1`, "Hello {{1}}, your next {{2}} is due on {{3}}. You can book it in the Mane Man app.", placeholder copy). The five-minute cron's `next_service_reminders` job writes it from the evening's reminder hour in India (the day-before reminder's 6 pm; ops set it since ADR 0088, `reminder_hour`), for each client whose last first fit, service or replacement has its next service due from today to `reminder_before_due` days from now, with nothing booked since, and never twice for one visit. Twenty a pass at most.
 
 **The consumer decides at sending**, as it does for every message about a visit (ADR 0047): it sends only with the client's consent to WhatsApp about their visits, taken as it stands then, and not once a visit has been booked, paid for or done since; each skip records why. The words name the visit, "service visit", or "replacement" where the piece falls due first, and the day.
 
@@ -89,7 +89,7 @@ A visit may be booked in the app from tomorrow to `horizon` days on, 45 to begin
 
 ### One setting for the seven figures
 
-ADR 0061's register holds ten inputs at most, for its read budget, and five were used. The seven figures are **one closed-keyed input**, `booking_days`, "Booking and the next visit", whose committed figures live beside their rules in `src/policy/next-visit.ts`:
+ADR 0061's register held ten inputs at most, for its read budget, and five were used (ADR 0088 has since lifted the cap). The seven figures are **one closed-keyed input**, `booking_days`, "Booking and the next visit", whose committed figures live beside their rules in `src/policy/next-visit.ts`:
 
 | Key                   | Figure | May be   |
 | --------------------- | ------ | -------- |
