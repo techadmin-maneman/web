@@ -60,3 +60,8 @@ ALTER TABLE no_show_cases ADD COLUMN waiver_credit TEXT;
 ALTER TABLE slot_holds ADD COLUMN change_notice_hours INTEGER;
 ALTER TABLE slot_holds ADD COLUMN late_change_charge TEXT;
 ALTER TABLE slot_holds ADD COLUMN no_show_charge TEXT;
+
+-- Blackout days are set in the console now, where the runbook's SQL set them: who set each and when, as every ops
+-- change records it (ADR 0031). Null for a day the runbook's SQL wrote before.
+ALTER TABLE visit_blackouts ADD COLUMN set_by TEXT;
+ALTER TABLE visit_blackouts ADD COLUMN set_at TEXT;

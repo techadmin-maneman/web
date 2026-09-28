@@ -5,7 +5,9 @@ import type { OpsReply } from "../answer.ts";
 
 /**
  * The rules are the register's own, one of each shape: a single number nobody
- * has set, a set of keys somebody has, and the open-keyed cycles.
+ * has set, a set of keys somebody has, the open-keyed cycles, a set whose keys
+ * count in two units, and a rule of choices
+ * (docs/decisions/0088-every-policy-in-the-console.md).
  */
 export const SETTINGS = {
   settings: [
@@ -106,8 +108,59 @@ export const SETTINGS = {
       set_by: null,
       set_at: null,
     },
+    {
+      name: "phone_clock",
+      kind: "number",
+      title: "How far a phone is trusted about time",
+      note: "How long before the booked start a check-in may say the technician arrived.",
+      unit: "minutes",
+      min: 0,
+      max: 240,
+      keys: ["before_start", "held_offline"],
+      bounds: {
+        before_start: { min: 0, max: 240, unit: "minutes" },
+        held_offline: { min: 1, max: 72, unit: "hours" },
+      },
+      value: { before_start: 60, held_offline: 24 },
+      default: { before_start: 60, held_offline: 24 },
+      source: "src/policy/phone-clock.ts",
+      set_by: null,
+      set_at: null,
+    },
+    {
+      name: "late_change_charge",
+      kind: "choice",
+      title: "What a late move or cancel costs",
+      note: "What each kind of visit costs when the client moves or cancels it inside that notice.",
+      keys: ["consultation", "first_fit", "service", "replacement"],
+      choices: {
+        consultation: ["nothing", "visit"],
+        first_fit: ["nothing", "late_fee", "visit"],
+        service: ["nothing", "visit"],
+        replacement: ["nothing", "late_fee", "visit"],
+      },
+      value: { consultation: "nothing", first_fit: "late_fee", service: "visit", replacement: "late_fee" },
+      default: { consultation: "nothing", first_fit: "late_fee", service: "visit", replacement: "late_fee" },
+      source: "src/policy/moving-a-visit.ts",
+      set_by: null,
+      set_at: null,
+    },
   ],
 } satisfies OpsReply<"/api/settings">;
+
+/**
+ * The days no visit is offered (docs/decisions/0088-every-policy-in-the-console.md): two days of Diwali added in the
+ * console with visits still booked on them, and a day the runbook's SQL wrote before the screen, which records nobody.
+ */
+export const BLACKOUTS = {
+  today: "2027-09-21",
+  max_days: 31,
+  blackouts: [
+    { date: "2027-10-29", reason: "Diwali", set_by: "ops@maneman.in", set_at: "2027-09-20T06:00:00.000Z", booked: 2 },
+    { date: "2027-10-30", reason: "Diwali", set_by: "ops@maneman.in", set_at: "2027-09-20T06:00:00.000Z", booked: 1 },
+    { date: "2027-11-15", reason: "Staff training", set_by: null, set_at: null, booked: 0 },
+  ],
+} satisfies OpsReply<"/api/blackouts">;
 
 /**
  * The services, kind by kind (docs/decisions/0085-services-ops-can-edit.md): each kind's standard service, a

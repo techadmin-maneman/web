@@ -1374,12 +1374,14 @@ Indexes:
 
 Days on which no visit is offered.
 
-Made by `0002_lead_path.sql`.
+Made by `0002_lead_path.sql`; changed by `0051_policies_in_the_console.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
 | `date` | TEXT | no |  | primary key |
 | `reason` | TEXT | no |  |  |
+| `set_by` | TEXT | yes |  |  |
+| `set_at` | TEXT | yes |  |  |
 
 ## visit_changes
 

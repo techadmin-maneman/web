@@ -1208,11 +1208,13 @@ export const settings = {
   title: "Settings",
   sub: "A change takes effect within a minute. No release is needed.",
   // PLACEHOLDER: the prices tab holds the services too (docs/decisions/0085-services-ops-can-edit.md), and no board
-  // draws the last two tabs' names (docs/decisions/0087-consumables-and-stock.md).
+  // draws the last three tabs' names (docs/decisions/0087-consumables-and-stock.md,
+  // docs/decisions/0088-every-policy-in-the-console.md).
   tabs: {
     rules: "Rules",
     prices: "Services and prices",
     area: "Service area",
+    blackouts: "Blackout days",
     consumables: "Consumables",
     "job-sheet": "Job sheet",
   },
@@ -1298,6 +1300,43 @@ export const settings = {
     outside: (field: string) => `${field} is outside what this rule allows. Nothing was changed.`,
     errors: {
       invalid_request: "That figure is outside what this rule allows. Nothing was changed.",
+      offline: "You are offline. Connect, then try again.",
+      unknown: "That did not go through. Nothing was changed.",
+    } as Readonly<Record<string, string>>,
+  },
+  /**
+   * PLACEHOLDER, every line of it: no board draws the days no visit is offered, which the runbook's SQL set before
+   * (docs/decisions/0088-every-policy-in-the-console.md).
+   */
+  blackouts: {
+    title: "Blackout days",
+    note:
+      "Days no visit is offered, in the app or from the site. Blacking out a day moves no visit already booked on " +
+      "it: move those on the dispatch board.",
+    from: "First day",
+    to: "Last day",
+    reason: "Why",
+    add: "Black out these days",
+    adding: "Adding",
+    added: "Added.",
+    none: "No day is blacked out.",
+    /** "Tue 20 Oct to Thu 22 Oct", and "Tue 20 Oct" for one day. */
+    period: (from: string, to: string) => (from === to ? from : `${from} to ${to}`),
+    setBy: (who: string, when: string) => `Added by ${who} on ${when}`,
+    unrecorded: "Added before this screen, so who added it is not recorded.",
+    booked: (visits: number) =>
+      `${String(visits)} ${visits === 1 ? "visit is" : "visits are"} still booked on these days. Move ${
+        visits === 1 ? "it" : "them"
+      } on the dispatch board.`,
+    remove: "Offer these days again",
+    /** The button's whole name, since the list holds many and each button says the same. */
+    removeLabel: (period: string) => `Offer ${period} again`,
+    removing: "Offering them again",
+    errors: {
+      from: "The first day cannot be before today.",
+      to: "The last day cannot come before the first, and one go covers a month at most.",
+      reason: "Say why, in letters and figures, up to 60 of them.",
+      not_found: "Those days are no longer blacked out. Reload to see the list as it stands.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Nothing was changed.",
     } as Readonly<Record<string, string>>,

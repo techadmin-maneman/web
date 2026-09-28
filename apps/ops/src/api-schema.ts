@@ -2462,6 +2462,160 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/blackouts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every day from today on that no visit is offered, with the visits still booked on each */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The days */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Blackouts"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Black out every day from one date to another. A day already blacked out takes the reason given now */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["BlackoutAdd"];
+                };
+            };
+            responses: {
+                /** @description The days as they now stand */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Blackouts"];
+                    };
+                };
+                /** @description invalid_request: fields names from when it is before today, to when it is before from or more than a month on, and reason when there is none or it is not one a list can hold */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blackouts/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Offer the days from one date to another again */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["BlackoutRemove"];
+                };
+            };
+            responses: {
+                /** @description The days as they now stand */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Blackouts"];
+                    };
+                };
+                /** @description invalid_request: fields names from when it is before today, or to as for adding */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: none of those days is blacked out */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/services": {
         parameters: {
             query?: never;
@@ -4735,6 +4889,51 @@ export interface components {
                 /** @description A better name for the area than its post office's. Left out, the name stays. */
                 area?: string;
             }[];
+        };
+        Blackouts: {
+            blackouts: components["schemas"]["Blackout"][];
+            /**
+             * Format: date
+             * @description India's date, the first a day may be blacked out from.
+             */
+            today: string;
+            /** @description The most days one change may cover. */
+            max_days: number;
+        };
+        Blackout: {
+            /** Format: date */
+            date: string;
+            reason: string;
+            /** @description The Access identity that set it; null for a day the runbook's SQL wrote before this screen. */
+            set_by: string | null;
+            set_at: string | null;
+            /** @description Visits still booked on the day. Blacking a day out moves none of them: ops do. */
+            booked: number;
+        };
+        BlackoutAdd: {
+            /**
+             * Format: date
+             * @description The first day, today or later.
+             */
+            from: string;
+            /**
+             * Format: date
+             * @description The last day, the first included; a month on at most.
+             */
+            to: string;
+            reason: string;
+        };
+        BlackoutRemove: {
+            /**
+             * Format: date
+             * @description The first day, today or later.
+             */
+            from: string;
+            /**
+             * Format: date
+             * @description The last day, the first included; a month on at most.
+             */
+            to: string;
         };
         OpsServices: {
             /** Format: date */

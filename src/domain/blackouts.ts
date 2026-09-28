@@ -1,0 +1,129 @@
+// Blackout days: the days no visit is offered on, set by ops in Settings
+// (visit_blackouts; docs/decisions/0088-every-policy-in-the-console.md).
+//
+// A day blacked out is offered to nobody and held for nobody, in the app or from
+// the site (loadBlackouts, src/domain/leads.ts; docs/decisions/0068-a-paid-hold-is-kept.md).
+// It moves no visit already booked on it: ops are told how many there are, and
+// move them on the dispatch board. Each change is written in one batch with its
+// audit entry (ADR 0031).
+
+import { addDays } from "../lib/india-time.ts";
+import { auditStatement, type AuditActor } from "./audit.ts";
+
+/** The most days one press blacks out: a month, so a typed year cannot close the diary. */
+export const BLACKOUT_MAX_DAYS = 31;
+
+export interface Blackout {
+  readonly date: string;
+  readonly reason: string;
+  /** Null for a day written by the runbook's SQL before the console had a screen for it. */
+  readonly set_by: string | null;
+  readonly set_at: string | null;
+  /** Visits still booked on the day, which the blackout did not move. */
+  readonly booked: number;
+}
+
+/**
+ * Each blacked-out day from `today` on, with the visits still booked on it: those whose start falls on the day in
+ * India, from its midnight (18:30 the day before in UTC) to the next.
+ */
+export async function blackoutsFrom(db: D1Database, today: string): Promise<Blackout[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT b.date, b.reason, b.set_by, b.set_at,
+         (SELECT COUNT(*) FROM appointments a
+          WHERE a.deleted_at IS NULL AND a.status IN ('scheduled', 'dispatched')
+            AND a.window_start >= strftime('%Y-%m-%dT%H:%M:%fZ', b.date, '-330 minutes')
+            AND a.window_start < strftime('%Y-%m-%dT%H:%M:%fZ', b.date, '+1 day', '-330 minutes')) AS booked
+       FROM visit_blackouts b WHERE b.date >= ?1 ORDER BY b.date`,
+    )
+    .bind(today)
+    .all<Blackout>();
+  return results;
+}
+
+/** Every date from `from` to `to`, both ends included. */
+function datesBetween(from: string, to: string): string[] {
+  const dates: string[] = [];
+  for (let date = from; date <= to; date = addDays(date, 1)) dates.push(date);
+  return dates;
+}
+
+/** Why a period was refused: the field that is wrong. */
+export type PeriodRefusal = "from" | "to";
+
+/** A period ops may black out or open again: from today on, the right way round, a month at most. */
+export function periodRefusal(period: { from: string; to: string }, today: string): PeriodRefusal | null {
+  if (period.from < today) return "from";
+  if (period.to < period.from) return "to";
+  if (datesBetween(period.from, period.to).length > BLACKOUT_MAX_DAYS) return "to";
+  return null;
+}
+
+interface Change {
+  readonly from: string;
+  readonly to: string;
+  readonly actor: AuditActor;
+  readonly requestId: string;
+  readonly now: Date;
+}
+
+/**
+ * Blacks out every day from `from` to `to`. A day already blacked out takes the reason given now. The period has
+ * passed periodRefusal.
+ */
+export async function addBlackouts(db: D1Database, change: Change & { readonly reason: string }): Promise<void> {
+  const dates = datesBetween(change.from, change.to);
+  const at = change.now.toISOString();
+  await db.batch([
+    ...dates.map((date) =>
+      db
+        .prepare(
+          `INSERT INTO visit_blackouts (date, reason, set_by, set_at) VALUES (?1, ?2, ?3, ?4)
+           ON CONFLICT (date) DO UPDATE SET reason = excluded.reason, set_by = excluded.set_by, set_at = excluded.set_at`,
+        )
+        .bind(date, change.reason, change.actor.id, at),
+    ),
+    auditStatement(
+      db,
+      {
+        surface: "ops",
+        actor: change.actor,
+        action: "blackout.add",
+        subject: { kind: "blackout", id: change.from },
+        requestId: change.requestId,
+        detail: { from: change.from, to: change.to, days: dates.length },
+      },
+      change.now,
+    ),
+  ]);
+}
+
+/**
+ * Offers the blacked-out days from `from` to `to` again. "not_found" when none of them is blacked out, and then
+ * nothing is recorded. The period has passed periodRefusal.
+ */
+export async function removeBlackouts(db: D1Database, change: Change): Promise<"removed" | "not_found"> {
+  const held = await db
+    .prepare("SELECT COUNT(*) AS days FROM visit_blackouts WHERE date BETWEEN ?1 AND ?2")
+    .bind(change.from, change.to)
+    .first<{ days: number }>();
+  const days = held?.days ?? 0;
+  if (days === 0) return "not_found";
+  await db.batch([
+    db.prepare("DELETE FROM visit_blackouts WHERE date BETWEEN ?1 AND ?2").bind(change.from, change.to),
+    auditStatement(
+      db,
+      {
+        surface: "ops",
+        actor: change.actor,
+        action: "blackout.remove",
+        subject: { kind: "blackout", id: change.from },
+        requestId: change.requestId,
+        detail: { from: change.from, to: change.to, days },
+      },
+      change.now,
+    ),
+  ]);
+  return "removed";
+}

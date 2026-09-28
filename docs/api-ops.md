@@ -1853,6 +1853,106 @@ Request body:
 }
 ```
 
+### GET /api/blackouts
+
+Every day from today on that no visit is offered, with the visits still booked on each
+
+**200**: The days
+
+```json
+{
+  "$ref": "#/components/schemas/Blackouts"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/blackouts
+
+Black out every day from one date to another. A day already blacked out takes the reason given now
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/BlackoutAdd"
+}
+```
+
+**200**: The days as they now stand
+
+```json
+{
+  "$ref": "#/components/schemas/Blackouts"
+}
+```
+
+**400**: invalid_request: fields names from when it is before today, to when it is before from or more than a month on, and reason when there is none or it is not one a list can hold
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/blackouts/remove
+
+Offer the days from one date to another again
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/BlackoutRemove"
+}
+```
+
+**200**: The days as they now stand
+
+```json
+{
+  "$ref": "#/components/schemas/Blackouts"
+}
+```
+
+**400**: invalid_request: fields names from when it is before today, or to as for adding
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: none of those days is blacked out
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/services
 
 Every service, offered or retired, with every price it has had and is to have, and the late fees
@@ -6765,6 +6865,143 @@ Who Access let through, and where signing out goes
   },
   "required": [
     "changes"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Blackouts
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "blackouts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/Blackout"
+      }
+    },
+    "today": {
+      "type": "string",
+      "format": "date",
+      "description": "India's date, the first a day may be blacked out from."
+    },
+    "max_days": {
+      "type": "integer",
+      "description": "The most days one change may cover."
+    }
+  },
+  "required": [
+    "blackouts",
+    "today",
+    "max_days"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Blackout
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "set_by": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The Access identity that set it; null for a day the runbook's SQL wrote before this screen."
+    },
+    "set_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "booked": {
+      "type": "integer",
+      "description": "Visits still booked on the day. Blacking a day out moves none of them: ops do."
+    }
+  },
+  "required": [
+    "date",
+    "reason",
+    "set_by",
+    "set_at",
+    "booked"
+  ],
+  "additionalProperties": false
+}
+```
+
+### BlackoutAdd
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "from": {
+      "type": "string",
+      "format": "date",
+      "description": "The first day, today or later."
+    },
+    "to": {
+      "type": "string",
+      "format": "date",
+      "description": "The last day, the first included; a month on at most."
+    },
+    "reason": {
+      "type": "string",
+      "pattern": "^[\\p{L}\\p{N}][\\p{L}\\p{N} .,'()&/-]{0,59}$/u"
+    }
+  },
+  "required": [
+    "from",
+    "to",
+    "reason"
+  ],
+  "additionalProperties": false
+}
+```
+
+### BlackoutRemove
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "from": {
+      "type": "string",
+      "format": "date",
+      "description": "The first day, today or later."
+    },
+    "to": {
+      "type": "string",
+      "format": "date",
+      "description": "The last day, the first included; a month on at most."
+    }
+  },
+  "required": [
+    "from",
+    "to"
   ],
   "additionalProperties": false
 }
