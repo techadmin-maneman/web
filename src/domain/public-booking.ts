@@ -295,7 +295,10 @@ export interface ConsultationRequest {
   readonly attribution: Attribution;
   /** The invite the friend arrived with, where there is one. */
   readonly invite: Invite | null;
-  /** Where the consent on the form is given: the site's /book, or an invite's page (docs/decisions/0094). */
+  /**
+   * Where the consent on the form is given: the site's /book, or an invite's page
+   * (docs/decisions/0094-where-a-consent-was-given.md).
+   */
   readonly source: Extract<ConsentSource, "site_booking" | "referral_landing">;
   /**
    * The first fit asked for with the consultation, in the window wanted, if any; null for the consultation alone.
@@ -448,7 +451,10 @@ export interface WaitlistRequest {
   readonly turnstileToken: string;
   readonly attribution: Attribution;
   readonly invite: Invite | null;
-  /** Where the consents on the form are given: the site's waitlist, or an invite's page (docs/decisions/0094). */
+  /**
+   * Where the consents on the form are given: the site's waitlist, or an invite's page
+   * (docs/decisions/0094-where-a-consent-was-given.md).
+   */
   readonly source: Extract<ConsentSource, "site_waitlist" | "referral_landing">;
 }
 

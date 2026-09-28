@@ -172,7 +172,10 @@ export interface ConsentState {
 export interface ConsentRecord extends ConsentState {
   /** The notice the client saw when they last switched it; null if they never have. */
   readonly noticeVersion: string | null;
-  /** Where they last switched it; null if they never have, or it was not recorded (docs/decisions/0094). */
+  /**
+   * Where they last switched it; null if they never have, or it was not recorded
+   * (docs/decisions/0094-where-a-consent-was-given.md).
+   */
   readonly source: ConsentSource | null;
 }
 
