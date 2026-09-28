@@ -7,14 +7,17 @@
 // transfer, a count and a write-off each write what they say, with the Access
 // identity behind them; a job's use comes out of the technician's kit once,
 // however often his step is replayed, and a later step corrects it by the
-// difference; the old step by names is still taken; and a kit that falls to
-// its level raises one alert, which closes once it is stocked again.
+// difference; the old step by names is still taken; a count and a job's use,
+// or two of a job's steps, landing together, each count once; and a kit that
+// falls to its level raises one alert, which closes once it is stocked again.
 
 import { env } from "cloudflare:workers";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { recordJobUse } from "../../src/domain/job-use.ts";
+import { count } from "../../src/domain/stock.ts";
 import { createLogger } from "../../src/log.ts";
 import { handleFsmSyncBatch } from "../../src/queues/fsm-sync.ts";
-import { fakeQueue, markDatabase, request } from "./helpers.ts";
+import { fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
 import { IMRAN, JOB, SAMEER, working, type Working } from "./job-fixtures.ts";
 
 interface Stock {
@@ -404,6 +407,125 @@ describe("a job's use", () => {
     );
     expect(job.fsm.made.workOrders).toEqual([]);
     expect(job.fsm.made.invoiced).toEqual([]);
+  });
+});
+
+// Two writes to one kit at once: each read the kit's rows before the other wrote. The Worker serves requests
+// concurrently, so a count and a job's use, or two of a job's consumables steps, can land so (ADR 0087, C26).
+describe("writes that land together", () => {
+  /** D1's batch, on the prototype every statement's database shares, and the real method a spy calls on to. */
+  function d1Batch() {
+    const database = Object.getPrototypeOf(env.DB) as D1Database;
+    const real = Reflect.get(database, "batch") as (
+      this: D1Database,
+      statements: D1PreparedStatement[],
+    ) => Promise<D1Result[]>;
+    return { database, real };
+  }
+
+  /**
+   * Holds the next batch written until `release`: a write whose rows were read before another lands, and whose
+   * statements run after it.
+   */
+  function holdNextWrite(): { arrived: Promise<undefined>; release: () => void } {
+    const { database, real } = d1Batch();
+    const arrived = Promise.withResolvers<undefined>();
+    const released = Promise.withResolvers<undefined>();
+    vi.spyOn(database, "batch").mockImplementationOnce(async function (this: D1Database, statements) {
+      arrived.resolve(undefined);
+      await released.promise;
+      return real.call(this, statements);
+    });
+    return {
+      arrived: arrived.promise,
+      release: () => {
+        released.resolve(undefined);
+      },
+    };
+  }
+
+  // The spies are on D1's own prototype, which every test shares.
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const byOps = { actor: { kind: "staff" as const, id: "ops@localhost" }, requestId: "count-1", now: NOW };
+
+  it("leaves a kit holding what ops counted when a job's use lands between the count's read and its write", async () => {
+    await job.opsPost("/api/stock/transfers", { consumable_code: "tape_strips", quantity: 12, from: null, to: IMRAN });
+    await job.workTo("consumables");
+
+    // Ops count 8 in the kit: 12 less the 4 the job used, whose step reaches us while the count is written.
+    const waiting = holdNextWrite();
+    const counting = count(env.DB, { code: "tape_strips", place: IMRAN, counted: 8, note: null }, byOps);
+    await waiting.arrived;
+    await job.post(
+      `/api/tech/jobs/${JOB}/consumables`,
+      { items: [{ code: "tape_strips", quantity: 4 }] },
+      "event-consumables-01",
+    );
+    waiting.release();
+    expect(await counting).toEqual({ ok: true, lowered: [] });
+
+    expect(await held("tape_strips", IMRAN)).toEqual({ quantity: 8, low: false });
+    const audit = await env.DB.prepare("SELECT detail FROM audit_log WHERE action = 'stock.count'").all<{
+      detail: string;
+    }>();
+    expect(audit.results.map((row) => JSON.parse(row.detail) as unknown)).toEqual([
+      { place: IMRAN, counted: 8, held: 8, difference: 0 },
+    ]);
+  });
+
+  it("gives up on a count, writing nothing, if the place moves each time it is read", async () => {
+    await job.opsPost("/api/stock/deliveries", { consumable_code: "solvent", quantity: 500 });
+    // Before each of the count's writes, a delivery lands in the store.
+    const { database, real } = d1Batch();
+    vi.spyOn(database, "batch").mockImplementation(async function (this: D1Database, statements) {
+      await env.DB.prepare(
+        `INSERT INTO stock_movements (id, consumable_code, location, quantity, reason, actor_kind, actor, created_at)
+         VALUES (?1, 'solvent', 'central', 10, 'received', 'staff', 'someone@localhost', ?2)`,
+      )
+        .bind(crypto.randomUUID(), NOW.toISOString())
+        .run();
+      return real.call(this, statements);
+    });
+
+    await expect(count(env.DB, { code: "solvent", place: null, counted: 480, note: null }, byOps)).rejects.toThrow(
+      "the stock of solvent moved each time it was counted",
+    );
+    vi.restoreAllMocks(); // the Stock screen's own read is a batch too
+    expect(await held("solvent", null)).toMatchObject({ quantity: 530 });
+    const audit = await env.DB.prepare("SELECT COUNT(*) AS n FROM audit_log WHERE action = 'stock.count'").first();
+    expect(audit).toEqual({ n: 0 });
+  });
+
+  it("takes a job's use once when an older step is written after a newer one landed", async () => {
+    await job.opsPost("/api/stock/transfers", { consumable_code: "tape_strips", quantity: 12, from: null, to: IMRAN });
+    await job.workTo("consumables");
+    // The phone's first step, read and held before its write.
+    await env.DB.prepare(
+      `INSERT INTO job_events (id, appointment_id, event_id, technician_id, kind, body, occurred_at, received_at,
+         updated_at)
+       VALUES ('row-consumables-01', ?1, 'event-consumables-01', ?2, 'consumables', ?3, ?4, ?4, ?4)`,
+    )
+      .bind(JOB, IMRAN, JSON.stringify({ items: [{ code: "tape_strips", quantity: 4 }] }), NOW.toISOString())
+      .run();
+    const waiting = holdNextWrite();
+    const first = recordJobUse(env.DB, { job: { id: JOB, type: "service" }, technicianId: IMRAN, now: NOW });
+    await waiting.arrived;
+
+    // The corrected step lands whole while the first waits.
+    const corrected = await job.post(
+      `/api/tech/jobs/${JOB}/consumables`,
+      { items: [{ code: "tape_strips", quantity: 6 }] },
+      "event-consumables-02",
+    );
+    expect(corrected.status).toBe(202);
+    waiting.release();
+    await first;
+
+    expect(await held("tape_strips", IMRAN)).toEqual({ quantity: 6, low: false });
+    expect((await usedRows()).results.map((row) => row.quantity)).toEqual([-6]);
   });
 });
 

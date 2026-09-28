@@ -16,7 +16,7 @@
 import { indiaDate } from "../lib/india-time.ts";
 import { countDifference, isLow } from "../policy/stock.ts";
 import type { AlertOnce, ResolveAlert } from "./alerts.ts";
-import { auditStatement, type AuditActor } from "./audit.ts";
+import { auditStatement, auditStatementIfWritten, type AuditActor } from "./audit.ts";
 import { allConsumables, isOffered, type Consumable } from "./consumables.ts";
 
 /** Where stock is kept: a technician's kit, by his ID, or the central store, null. */
@@ -49,26 +49,50 @@ interface Movement {
   readonly note: string | null;
 }
 
+const MOVEMENT_COLUMNS =
+  "id, consumable_code, location, technician_id, quantity, reason, transfer_id, actor_kind, actor, note, created_at";
+
+/** The row's values, `?1` to `?11`: its consumable is `?2` and its place `?4`. */
+function movementValues(id: string, movement: Movement, written: Written) {
+  return [
+    id,
+    movement.code,
+    where(movement.place),
+    movement.place,
+    movement.quantity,
+    movement.reason,
+    movement.transferId ?? null,
+    written.actor.kind,
+    written.actor.id,
+    movement.note,
+    written.now.toISOString(),
+  ];
+}
+
 function movementStatement(db: D1Database, movement: Movement, written: Written): D1PreparedStatement {
   return db
+    .prepare(`INSERT INTO stock_movements (${MOVEMENT_COLUMNS}) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)`)
+    .bind(...movementValues(crypto.randomUUID(), movement, written));
+}
+
+/** What a place, `?4`, holds of a consumable, `?2`, as a statement about one movement reads it. */
+const HELD_THERE =
+  "SELECT COALESCE(SUM(quantity), 0) FROM stock_movements WHERE technician_id IS ?4 AND consumable_code = ?2";
+
+/** A count's row, `id`, written only while the place still holds what the count was worked out from. */
+function countStatement(
+  db: D1Database,
+  id: string,
+  movement: Movement,
+  held: number,
+  written: Written,
+): D1PreparedStatement {
+  return db
     .prepare(
-      `INSERT INTO stock_movements (id, consumable_code, location, technician_id, quantity, reason, transfer_id,
-         actor_kind, actor, note, created_at)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)`,
+      `INSERT INTO stock_movements (${MOVEMENT_COLUMNS})
+       SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11 WHERE (${HELD_THERE}) = ?12`,
     )
-    .bind(
-      crypto.randomUUID(),
-      movement.code,
-      where(movement.place),
-      movement.place,
-      movement.quantity,
-      movement.reason,
-      movement.transferId ?? null,
-      written.actor.kind,
-      written.actor.id,
-      movement.note,
-      written.now.toISOString(),
-    );
+    .bind(...movementValues(id, movement, written), held);
 }
 
 async function consumableExists(db: D1Database, code: string): Promise<boolean> {
@@ -140,38 +164,67 @@ export async function transfer(
   return { ok: true, lowered: [input.from] };
 }
 
+interface Counted {
+  readonly code: string;
+  readonly place: Place;
+  readonly counted: number;
+  readonly note: string | null;
+}
+
+/**
+ * How often a count reads its place again when stock moved there between its
+ * read and its write. Each try loses only to a movement landing in the same
+ * moment, so a third is never expected to be needed.
+ */
+const COUNT_TRIES = 3;
+
 /**
  * What ops counted at a place. The row is the difference from what the ledger
  * said, nought when they agree, so the ledger then holds exactly what was
  * counted and says when it was last counted.
+ *
+ * The difference is written only while the place still holds what it was
+ * worked out from: a job's use landing between the read and the write would
+ * otherwise be taken twice, once by its own row and once in the difference.
+ * The place is then read again, and the count worked out afresh.
  */
-export async function count(
-  db: D1Database,
-  input: { readonly code: string; readonly place: Place; readonly counted: number; readonly note: string | null },
-  written: Written,
-): Promise<Moved> {
+export async function count(db: D1Database, input: Counted, written: Written): Promise<Moved> {
   if (!(await consumableExists(db, input.code))) return { ok: false, fields: ["consumable_code"] };
   if (!(await placeExists(db, input.place))) return { ok: false, fields: ["technician_id"] };
-  const held = await heldOf(db, input.code, input.place);
-  const difference = countDifference(input.counted, held);
-  await db.batch([
-    auditStatement(
-      db,
-      entry("stock.count", input.code, written, {
-        place: input.place ?? "central",
-        counted: input.counted,
-        held,
-        difference,
-      }),
-      written.now,
-    ),
-    movementStatement(
-      db,
-      { code: input.code, place: input.place, quantity: difference, reason: "counted", note: input.note },
-      written,
-    ),
+  for (let tries = 0; tries < COUNT_TRIES; tries += 1) {
+    const held = await heldOf(db, input.code, input.place);
+    const difference = countDifference(input.counted, held);
+    if (await writeCount(db, input, { held, difference }, written)) {
+      return { ok: true, lowered: difference < 0 ? [input.place] : [] };
+    }
+  }
+  throw new Error(`the stock of ${input.code} moved each time it was counted`);
+}
+
+/** The count's row and its audit entry, or neither if the place no longer holds `held`; whether they were written. */
+async function writeCount(
+  db: D1Database,
+  input: Counted,
+  found: { readonly held: number; readonly difference: number },
+  written: Written,
+): Promise<boolean> {
+  const id = crypto.randomUUID();
+  const movement: Movement = {
+    code: input.code,
+    place: input.place,
+    quantity: found.difference,
+    reason: "counted",
+    note: input.note,
+  };
+  const detail = { place: input.place ?? "central", counted: input.counted, ...found };
+  const [row] = await db.batch([
+    countStatement(db, id, movement, found.held, written),
+    auditStatementIfWritten(db, entry("stock.count", input.code, written, detail), written.now, {
+      table: "stock_movements",
+      id,
+    }),
   ]);
-  return { ok: true, lowered: difference < 0 ? [input.place] : [] };
+  return row?.meta.changes === 1;
 }
 
 /** A loss somebody saw at a place, with what happened: a tube dropped, a batch spoilt. */
