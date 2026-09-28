@@ -55,8 +55,8 @@ export async function saveBookingLead(db: D1Database, lead: BookingLead): Promis
       : [
           db
             .prepare(
-              `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash)
-               VALUES (?, ${personId}, 'contact', ?, 1, ?, ?)`,
+              `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash, source)
+               VALUES (?, ${personId}, 'contact', ?, 1, ?, ?, 'site_booking')`,
             )
             .bind(crypto.randomUUID(), lead.mobileE164, CURRENT_NOTICE.contact, at, lead.ipHash),
         ];

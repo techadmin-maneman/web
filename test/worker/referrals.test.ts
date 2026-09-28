@@ -208,7 +208,7 @@ describe("POST /api/r/:code/consultation", () => {
     });
     expect(queue.sent).toEqual([{ hold_id: expect.any(String) as string, request_id: expect.any(String) as string }]);
     const friend = await env.DB.prepare(
-      `SELECT p.name, c.purpose, c.notice_version, r.code, r.via, r.grant_state, h.type, h.amount
+      `SELECT p.name, c.purpose, c.notice_version, c.source, r.code, r.via, r.grant_state, h.type, h.amount
        FROM people p JOIN consents c ON c.person_id = p.id JOIN referral_attributions r ON r.referred_person_id = p.id
        JOIN slot_holds h ON h.person_id = p.id WHERE p.mobile_e164 = '+919810000002'`,
     ).first();
@@ -216,6 +216,7 @@ describe("POST /api/r/:code/consultation", () => {
       name: "Karan Bhatia",
       purpose: "whatsapp_visits",
       notice_version: "referral-consultation-v1",
+      source: "referral_landing",
       code,
       via: "consultation",
       grant_state: "pending",
@@ -477,12 +478,20 @@ describe("POST /api/r/:code/waitlist", () => {
     const entries = await env.DB.prepare("SELECT pincode, referral_code, launch_alert FROM waitlist_entries").all();
     expect(entries.results).toEqual([{ pincode: "400050", referral_code: code, launch_alert: 1 }]);
     const consents = await env.DB.prepare(
-      "SELECT purpose, notice_version FROM consents WHERE person_id != ?1 ORDER BY created_at, rowid",
+      "SELECT purpose, notice_version, source FROM consents WHERE person_id != ?1 ORDER BY created_at, rowid",
     )
       .bind(REFERRER)
       .all();
-    expect(consents.results).toContainEqual({ purpose: "whatsapp_launches", notice_version: "whatsapp-launches-v1" });
-    expect(consents.results).toContainEqual({ purpose: "contact", notice_version: "waitlist-v1" });
+    expect(consents.results).toContainEqual({
+      purpose: "whatsapp_launches",
+      notice_version: "whatsapp-launches-v1",
+      source: "referral_landing",
+    });
+    expect(consents.results).toContainEqual({
+      purpose: "contact",
+      notice_version: "waitlist-v1",
+      source: "referral_landing",
+    });
   });
 
   it("sends a served pincode to booking instead", async () => {

@@ -316,8 +316,10 @@ test("makes their own card, records one consent and stores one card, when Allow 
   // The consent itself is answered here too, so the shared client is not left agreeing to anything. The card is
   // composed before it is asked for, so a second tap lands while the first is still at work.
   let consents = 0;
+  const sent: unknown[] = [];
   await page.route("**/api/consents/*", (route) => {
     consents += 1;
+    sent.push(route.request().postDataJSON());
     return route.fulfill({
       json: { purpose: "photos_referral_cards", granted: true, since: new Date().toISOString() },
     });
@@ -336,6 +338,8 @@ test("makes their own card, records one consent and stores one card, when Allow 
   await expect(preview.getByRole("alert")).toHaveCount(0);
   await expect(preview.locator("img").first()).toHaveAttribute("src", /^blob:/);
   expect({ consents, stored: stored.length }).toEqual({ consents: 1, stored: 1 });
+  // Kept as given on the share sheet (docs/decisions/0094-where-a-consent-was-given.md).
+  expect(sent).toEqual([{ granted: true, source: "app_share_sheet" }]);
   // A JPEG, and under the 300 KB WhatsApp takes.
   expect(stored[0]).toBeGreaterThan(0);
   expect(stored[0]).toBeLessThan(300 * 1024);

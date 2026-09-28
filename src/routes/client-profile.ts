@@ -47,7 +47,7 @@ import { visitorOf } from "../http/visitor.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import type { LookupFailure } from "../providers/geocode.ts";
-import { CONSENT_PURPOSES } from "../policy/consents.ts";
+import { APP_SWITCH_SOURCES, CONSENT_PURPOSES } from "../policy/consents.ts";
 import { revokeCard } from "../domain/referral-cards.ts";
 
 /** Number changes a client may start in a day. */
@@ -267,7 +267,16 @@ export const addressRoute = createRoute({
   },
 });
 
-const ConsentSwitchSchema = z.object({ granted: z.boolean() }).strict().openapi("ConsentSwitch");
+const ConsentSwitchSchema = z
+  .object({
+    granted: z.boolean(),
+    source: z.enum(APP_SWITCH_SOURCES).optional().openapi({
+      description:
+        "The app's screen the switch was made on: the profile, the booking sheet or the share sheet. Kept on the consent; one sent without it is kept with no place.",
+    }),
+  })
+  .strict()
+  .openapi("ConsentSwitch");
 
 export const consentRoute = createRoute({
   method: "patch",
@@ -519,11 +528,11 @@ export function registerClientProfile(app: App): void {
   app.openapi(consentRoute, async (c) => {
     const personId = clientOf(c).subjectId;
     const { purpose } = c.req.valid("param");
-    const { granted } = c.req.valid("json");
+    const { granted, source = null } = c.req.valid("json");
     const now = c.var.deps.now();
     const db = c.env.DB;
     const [switched] = await db.batch<{ created_at: string }>([
-      switchConsent(db, { personId, purpose, granted, ipHash: (await visitorOf(c)).ipHash, now }),
+      switchConsent(db, { personId, purpose, granted, source, ipHash: (await visitorOf(c)).ipHash, now }),
       auditStatement(
         db,
         audit(personId, c.var.requestId, { action: "consent.switch", detail: { purpose, granted } }),

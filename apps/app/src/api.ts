@@ -19,6 +19,8 @@ export type AddressSave = Schemas["AddressSave"];
 export type Suggestion = Schemas["AddressSuggestions"]["suggestions"][number];
 export type NumberChange = Schemas["NumberChange"];
 export type ConsentPurpose = Profile["consents"][number]["purpose"];
+/** The screen a consent is switched on, which the consent keeps (docs/decisions/0094-where-a-consent-was-given.md). */
+export type ConsentScreen = NonNullable<Schemas["ConsentSwitch"]["source"]>;
 export type VisitSummary = Schemas["VisitSummary"];
 export type Visits = Schemas["Visits"];
 export type VisitDetail = Schemas["VisitDetail"];
@@ -123,8 +125,8 @@ export const api = {
   /** One session token for every keystroke of a search, so Google bills the session and not the letters. */
   addressSuggestions: (query: string, session: string) =>
     client.post("/api/address/suggestions", { body: { q: query, session } }),
-  switchConsent: (purpose: ConsentPurpose, granted: boolean) =>
-    client.patch("/api/consents/{purpose}", { path: { purpose }, body: { granted } }),
+  switchConsent: (purpose: ConsentPurpose, granted: boolean, source: ConsentScreen) =>
+    client.patch("/api/consents/{purpose}", { path: { purpose }, body: { granted, source } }),
   startNumberChange: (newMobile: string) => client.post("/api/number-change", { body: { new_mobile: newMobile } }),
   verifyNumberChange: (requestId: string, number: "old" | "new", code: string) =>
     client.post("/api/number-change/verify", { body: { request_id: requestId, number, code } }),

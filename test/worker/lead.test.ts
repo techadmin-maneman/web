@@ -71,6 +71,7 @@ describe("POST /api/lead: a served city", () => {
       purpose: "contact",
       notice_version: CURRENT_NOTICE.contact,
       granted: 1,
+      source: "site_booking",
     });
     expect(consent?.ip_hash).toMatch(/^[0-9a-f]{64}$/);
 

@@ -49,6 +49,7 @@ import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import { firstFitRequestStatement } from "./next-visit.ts";
 import { bookableService } from "./services.ts";
+import type { ConsentSource } from "../policy/consents.ts";
 import { typedAddress, type TypedAddress } from "../policy/site-booking.ts";
 import { currentAddress, firstAddressStatement, type Address } from "./profile.ts";
 import { attribute, type Invite, type InviteState, type Via } from "./referrals.ts";
@@ -125,8 +126,8 @@ async function personWithMobile(db: D1Database, mobile: string): Promise<string 
 }
 
 /**
- * The person with this number, new or known, and the consent they gave. A person we know keeps their name: a
- * form anyone can fill in with a number never renames the one it belongs to.
+ * The person with this number, new or known, and the consent they gave, on the page they gave it. A person we know
+ * keeps their name: a form anyone can fill in with a number never renames the one it belongs to.
  */
 function formPerson(
   db: D1Database,
@@ -136,6 +137,7 @@ function formPerson(
     name: string;
     purpose: "whatsapp_visits" | "contact";
     notice: string;
+    source: ConsentSource;
     ipHash: string;
     now: Date;
   },
@@ -150,10 +152,10 @@ function formPerson(
       : db.prepare("UPDATE people SET contactable = 1 WHERE id = ?1").bind(id);
   const consent = db
     .prepare(
-      `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash)
-       VALUES (?1, ?2, ?3, ?4, 1, ?5, ?6)`,
+      `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash, source)
+       VALUES (?1, ?2, ?3, ?4, 1, ?5, ?6, ?7)`,
     )
-    .bind(crypto.randomUUID(), id, input.purpose, input.notice, at, input.ipHash);
+    .bind(crypto.randomUUID(), id, input.purpose, input.notice, at, input.ipHash, input.source);
   return { id, statements: [person, consent] };
 }
 
@@ -293,6 +295,8 @@ export interface ConsultationRequest {
   readonly attribution: Attribution;
   /** The invite the friend arrived with, where there is one. */
   readonly invite: Invite | null;
+  /** Where the consent on the form is given: the site's /book, or an invite's page (docs/decisions/0094). */
+  readonly source: Extract<ConsentSource, "site_booking" | "referral_landing">;
   /**
    * The first fit asked for with the consultation, in the window wanted, if any; null for the consultation alone.
    * It is booked and paid for in the app once the consultation is done.
@@ -346,6 +350,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     name: request.name,
     purpose: "whatsapp_visits",
     notice: LANDING_NOTICES.consultation,
+    source: request.source,
     ipHash: checked.ipHash,
     now,
   });
@@ -443,6 +448,8 @@ export interface WaitlistRequest {
   readonly turnstileToken: string;
   readonly attribution: Attribution;
   readonly invite: Invite | null;
+  /** Where the consents on the form are given: the site's waitlist, or an invite's page (docs/decisions/0094). */
+  readonly source: Extract<ConsentSource, "site_waitlist" | "referral_landing">;
 }
 
 export interface Listed {
@@ -469,6 +476,7 @@ export async function joinTheWaitlist(
     name: request.name,
     purpose: "contact",
     notice: LANDING_NOTICES.waitlist,
+    source: request.source,
     ipHash: checked.ipHash,
     now,
   });
@@ -478,10 +486,10 @@ export async function joinTheWaitlist(
     ? [
         db
           .prepare(
-            `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash)
-             VALUES (?1, ?2, 'whatsapp_launches', ?3, 1, ?4, ?5)`,
+            `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash, source)
+             VALUES (?1, ?2, 'whatsapp_launches', ?3, 1, ?4, ?5, ?6)`,
           )
-          .bind(crypto.randomUUID(), personId, CURRENT_NOTICE.whatsapp_launches, at, checked.ipHash),
+          .bind(crypto.randomUUID(), personId, CURRENT_NOTICE.whatsapp_launches, at, checked.ipHash, request.source),
       ]
     : [];
   const written = await db.batch<{ id: string }>([

@@ -49,7 +49,7 @@ async function decided(purpose: string, granted: boolean, notice: string) {
 const ledger = async () =>
   (
     await env.DB.prepare(
-      "SELECT purpose, granted, notice_version, created_at FROM consents WHERE person_id = ?1 ORDER BY rowid",
+      "SELECT purpose, granted, notice_version, created_at, source FROM consents WHERE person_id = ?1 ORDER BY rowid",
     )
       .bind(PERSON)
       .all()
@@ -98,12 +98,14 @@ describe("POST /api/bookings with the consents the pay step showed", () => {
         granted: 1,
         notice_version: "photos-own-record-booking-v1",
         created_at: NOW.toISOString(),
+        source: "app_booking",
       },
       {
         purpose: "photos_referral_cards",
         granted: 1,
         notice_version: "photos-referral-cards-booking-v1",
         created_at: NOW.toISOString(),
+        source: "app_booking",
       },
     ]);
     // The profile then shows each as given, with its date.

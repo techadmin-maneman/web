@@ -142,7 +142,7 @@ const MEASURED_AGAINST = "EXISTS (SELECT 1 FROM checkins c WHERE c.address_id = 
  * points at a row is dealt with before the row is deleted.
  */
 async function personalDataStatements(db: D1Database, personId: string, at: string): Promise<D1PreparedStatement[]> {
-  // One withdrawal row for each purpose the person had agreed to. Consents are append-only.
+  // One withdrawal row for each purpose the person had agreed to, recorded as the erasure's. Consents are append-only.
   const { results: granted } = await db
     .prepare("SELECT DISTINCT purpose FROM consents WHERE person_id = ?1 AND granted = 1")
     .bind(personId)
@@ -150,8 +150,8 @@ async function personalDataStatements(db: D1Database, personId: string, at: stri
   const withdrawals = granted.map(({ purpose }) =>
     db
       .prepare(
-        `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at)
-         VALUES (?1, ?2, ?3, 'withdrawal', 0, ?4)`,
+        `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, source)
+         VALUES (?1, ?2, ?3, 'withdrawal', 0, ?4, 'erasure')`,
       )
       .bind(crypto.randomUUID(), personId, purpose, at),
   );

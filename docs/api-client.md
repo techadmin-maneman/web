@@ -2792,6 +2792,15 @@ Request body:
   "properties": {
     "granted": {
       "type": "boolean"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "app_profile",
+        "app_booking",
+        "app_share_sheet"
+      ],
+      "description": "The app's screen the switch was made on: the profile, the booking sheet or the share sheet. Kept on the consent; one sent without it is kept with no place."
     }
   },
   "required": [

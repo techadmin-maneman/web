@@ -382,6 +382,29 @@ describe("PATCH /api/consents/:purpose", () => {
     ]);
   });
 
+  // docs/decisions/0094-where-a-consent-was-given.md
+  it("records which of the app's screens the switch was made on", async () => {
+    await send(client, "PATCH", "/api/consents/photos_marketing", { granted: true, source: "app_profile" });
+    await send(client, "PATCH", "/api/consents/whatsapp_visits", { granted: true, source: "app_booking" });
+    await send(client, "PATCH", "/api/consents/photos_referral_cards", { granted: true, source: "app_share_sheet" });
+    const rows = await env.DB.prepare("SELECT purpose, source FROM consents ORDER BY rowid").all();
+    expect(rows.results).toEqual([
+      { purpose: "photos_marketing", source: "app_profile" },
+      { purpose: "whatsapp_visits", source: "app_booking" },
+      { purpose: "photos_referral_cards", source: "app_share_sheet" },
+    ]);
+  });
+
+  it("records no place for a switch from an app that named none, and takes none but the app's own", async () => {
+    await send(client, "PATCH", "/api/consents/photos_marketing", { granted: true });
+    expect(await env.DB.prepare("SELECT source FROM consents").first()).toEqual({ source: null });
+    const claimed = await send(client, "PATCH", "/api/consents/photos_marketing", {
+      granted: false,
+      source: "technician",
+    });
+    expect(claimed.status).toBe(400);
+  });
+
   it("switches only the five purposes, never a Phase 1 agreement", async () => {
     expect((await send(client, "PATCH", "/api/consents/contact", { granted: false })).status).toBe(400);
   });

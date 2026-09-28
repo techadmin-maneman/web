@@ -337,11 +337,11 @@ describe("POST /api/tryon/claim", () => {
     const person = await env.DB.prepare("SELECT mobile_e164, contactable FROM people").first();
     expect(person).toEqual({ mobile_e164: "+919810000001", contactable: 0 }); // a try-on alone is not contact consent
     const consents = await env.DB.prepare(
-      "SELECT purpose, notice_version, created_at FROM consents ORDER BY purpose",
+      "SELECT purpose, notice_version, created_at, source FROM consents ORDER BY purpose",
     ).all();
     expect(consents.results).toEqual([
-      { purpose: "result_delivery", notice_version: "gate-v1", created_at: NOW.toISOString() },
-      { purpose: "tryon_photo", notice_version: "photo-v1", created_at: NOW.toISOString() },
+      { purpose: "result_delivery", notice_version: "gate-v1", created_at: NOW.toISOString(), source: "try_on" },
+      { purpose: "tryon_photo", notice_version: "photo-v1", created_at: NOW.toISOString(), source: "try_on" },
     ]);
     expect(await jobRow(jobId)).toMatchObject({ lead_id: leadId, claimed_at: NOW.toISOString() });
     const message = await env.DB.prepare("SELECT state, subject_id FROM outbound_messages").first();

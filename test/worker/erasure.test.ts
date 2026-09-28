@@ -148,11 +148,14 @@ describe("POST /api/erasure", () => {
     expect(sessions?.n).toBe(0);
 
     const withdrawals = await env.DB.prepare(
-      "SELECT purpose FROM consents WHERE person_id = ? AND notice_version = 'withdrawal' AND granted = 0 ORDER BY purpose",
+      "SELECT purpose, source FROM consents WHERE person_id = ? AND notice_version = 'withdrawal' AND granted = 0 ORDER BY purpose",
     )
       .bind(personId)
-      .all<{ purpose: string }>();
-    expect(withdrawals.results.map((row) => row.purpose)).toEqual(["contact", "result_delivery"]);
+      .all();
+    expect(withdrawals.results).toEqual([
+      { purpose: "contact", source: "erasure" },
+      { purpose: "result_delivery", source: "erasure" },
+    ]);
     const event = await env.DB.prepare(
       "SELECT payload_json FROM events WHERE name = 'person_erased' AND subject_id = ?",
     )

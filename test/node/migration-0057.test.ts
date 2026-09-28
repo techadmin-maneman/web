@@ -113,8 +113,12 @@ describe("migration 0057", () => {
 
   it("keeps the consents append-only, and takes one the deployed code writes, with no source", () => {
     const db = migrated();
-    expect(() => db.exec("UPDATE consents SET source = 'app_profile'")).toThrow(/append-only/);
-    expect(() => db.exec("DELETE FROM consents")).toThrow(/append-only/);
+    expect(() => {
+      db.exec("UPDATE consents SET source = 'app_profile'");
+    }).toThrow(/append-only/);
+    expect(() => {
+      db.exec("DELETE FROM consents");
+    }).toThrow(/append-only/);
     consent(db, "photos-marketing-v1", "photos_marketing");
     expect(db.prepare("SELECT COUNT(*) AS rows FROM consents WHERE source IS NULL").get()).toEqual({ rows: 7 });
     db.close();

@@ -372,10 +372,13 @@ describe("POST /api/waitlist", () => {
       proposed_visit_date: null,
     });
     const consents = await env.DB.prepare(
-      `SELECT purpose FROM consents c JOIN people p ON p.id = c.person_id
+      `SELECT purpose, source FROM consents c JOIN people p ON p.id = c.person_id
        WHERE p.mobile_e164 = '+919810000002' ORDER BY purpose`,
-    ).all<{ purpose: string }>();
-    expect(consents.results.map((row) => row.purpose)).toEqual(["contact", "whatsapp_launches"]);
+    ).all();
+    expect(consents.results).toEqual([
+      { purpose: "contact", source: "site_waitlist" },
+      { purpose: "whatsapp_launches", source: "site_waitlist" },
+    ]);
   });
 
   // ADR 0041 lists the waitlist confirmation among Phase 2's messages; nothing wrote one (REQ-03).
@@ -664,8 +667,10 @@ describe("the consultation, then the first fit", () => {
     expect(await count("SELECT COUNT(*) AS n FROM payments")).toBe(0);
     expect((await requests()).results).toEqual([{ preferred_window: "afternoon", mobile_e164: "+919810000002" }]);
     // The consent recorded is the consultation's own, which counsel is asked to confirm covers the fit.
-    const consent = await env.DB.prepare("SELECT purpose, notice_version FROM consents").all();
-    expect(consent.results).toEqual([{ purpose: "whatsapp_visits", notice_version: "referral-consultation-v1" }]);
+    const consent = await env.DB.prepare("SELECT purpose, notice_version, source FROM consents").all();
+    expect(consent.results).toEqual([
+      { purpose: "whatsapp_visits", notice_version: "referral-consultation-v1", source: "site_booking" },
+    ]);
   });
 
   it("takes either window for the fit", async () => {
