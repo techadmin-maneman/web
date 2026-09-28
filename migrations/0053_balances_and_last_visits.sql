@@ -29,7 +29,9 @@ SELECT consumable_code, COALESCE(technician_id, 'central'), SUM(quantity),
   FROM stock_movements
  GROUP BY consumable_code, technician_id;
 
--- Each row written moves its place's balance, and a count says when the place counted.
+-- Each row written moves its place's balance, and a count says when the place
+-- counted: the later of it and the count already kept, as the backfill takes
+-- the latest, so a count that lands after a later one leaves the later.
 CREATE TRIGGER stock_movements_balance AFTER INSERT ON stock_movements
 BEGIN
   INSERT INTO stock_balances (consumable_code, place, quantity, counted_at)
@@ -37,7 +39,11 @@ BEGIN
           CASE WHEN NEW.reason = 'counted' THEN NEW.created_at END)
   ON CONFLICT (consumable_code, place) DO UPDATE SET
     quantity = stock_balances.quantity + excluded.quantity,
-    counted_at = COALESCE(excluded.counted_at, stock_balances.counted_at);
+    counted_at = CASE
+      WHEN stock_balances.counted_at IS NULL OR excluded.counted_at > stock_balances.counted_at
+        THEN excluded.counted_at
+      ELSE stock_balances.counted_at
+    END;
 END;
 
 -- A movement is never changed. The staging fixtures take their own rows out

@@ -129,6 +129,16 @@ describe("migration 0053: the balances", () => {
     expect(balances(db)).toEqual(sums(db));
   });
 
+  it("keeps the later of two counts as when a place last counted, whichever lands first", () => {
+    const db = migrated();
+    const count = { location: "kit", technician_id: "t1", quantity: 0, reason: "counted" };
+    movement(db, { ...count, created_at: "2026-09-25T06:30:00.000Z" });
+    movement(db, { ...count, created_at: "2026-09-24T06:30:00.000Z" });
+
+    expect(balances(db)).toContainEqual({ place: "t1", quantity: 28, counted_at: "2026-09-25T06:30:00.000Z" });
+    expect(balances(db)).toEqual(sums(db));
+  });
+
   it("starts a place's balance with its first row", () => {
     const db = migrated();
     db.exec(`INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at)
@@ -205,6 +215,28 @@ describe("migration 0053: each client's last visits", () => {
       visit_start: "2026-06-01T04:30:00.000Z",
       consulted_start: null,
     });
+  });
+
+  // src/domain/fsm-mirror.ts writes each appointment FSM holds so, and src/domain/bookings.ts the visit it booked.
+  it("follows a visit the mirror closes, or first writes already done, through its insert or update by FSM's ID", () => {
+    const db = migrated();
+    const mirror = db.prepare(
+      `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, status, fsm_status, fsm_modified_at,
+         synced_at)
+       VALUES (?, ?, 'p1', 'service', ?, ?, ?, '${AT}', '${AT}')
+       ON CONFLICT (fsm_id) DO UPDATE SET person_id = excluded.person_id, type = excluded.type,
+         window_start = excluded.window_start, status = excluded.status, fsm_status = excluded.fsm_status`,
+    );
+
+    mirror.run("new-id", "fsm-a4", "2026-09-10T04:30:00.000Z", "scheduled", "Scheduled");
+    expect(lastVisits(db)).toContainEqual(expect.objectContaining({ person_id: "p1", visit_id: "a2" }));
+    mirror.run("another-id", "fsm-a4", "2026-09-10T04:30:00.000Z", "completed", "Completed");
+    expect(lastVisits(db)).toContainEqual(
+      expect.objectContaining({ person_id: "p1", visit_id: "new-id", visit_start: "2026-09-10T04:30:00.000Z" }),
+    );
+    mirror.run("a5", "fsm-a5", "2026-09-20T04:30:00.000Z", "completed", "Completed");
+    expect(lastVisits(db)).toContainEqual(expect.objectContaining({ person_id: "p1", visit_id: "a5" }));
+    expect(lastVisits(db)).toEqual(workedOut(db));
   });
 
   it("writes nothing for a visit the mirror writes again as it was", () => {

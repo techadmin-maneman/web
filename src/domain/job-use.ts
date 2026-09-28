@@ -73,10 +73,13 @@ async function expectedOf(
   return new Map(results.map((row) => [row.consumable_code, row.quantity]));
 }
 
-/** The job's latest consumables step from the technician, the job being `?1` and the technician `?2`. */
-const LATEST_STEP = `SELECT id FROM job_events
-  WHERE appointment_id = ?1 AND technician_id = ?2 AND kind = 'consumables' AND superseded = 0
-  ORDER BY received_at DESC, rowid DESC LIMIT 1`;
+/** The job's latest consumables step from the technician, each named by the placeholder its statement binds it to. */
+function latestStep(placeholders: { readonly job: string; readonly technician: string }): string {
+  return `SELECT id FROM job_events
+    WHERE appointment_id = ${placeholders.job} AND technician_id = ${placeholders.technician}
+      AND kind = 'consumables' AND superseded = 0
+    ORDER BY received_at DESC, rowid DESC LIMIT 1`;
+}
 
 /** What the technician's kit has already given the job, by consumable. */
 async function takenFor(db: D1Database, jobId: string, technicianId: string): Promise<Map<string, number>> {
@@ -118,7 +121,7 @@ export async function recordJobUse(
 ): Promise<{ readonly lowered: boolean }> {
   const { job, technicianId, now } = input;
   const latest = await db
-    .prepare(`SELECT id, body FROM job_events WHERE id = (${LATEST_STEP})`)
+    .prepare(`SELECT id, body FROM job_events WHERE id = (${latestStep({ job: "?1", technician: "?2" })})`)
     .bind(job.id, technicianId)
     .first<{ id: string; body: string }>();
   if (latest === null) return { lowered: false };
@@ -136,11 +139,12 @@ export async function recordJobUse(
       .prepare(
         `INSERT INTO stock_movements (id, consumable_code, location, technician_id, quantity, reason,
            appointment_id, job_event_id, actor_kind, actor, created_at)
-         SELECT ?3, ?4, 'kit', ?2, ?5, 'used', ?1, ?6, 'technician', ?2, ?7 WHERE ?6 = (${LATEST_STEP})
+         SELECT ?1, ?2, 'kit', ?3, ?4, 'used', ?5, ?6, 'technician', ?3, ?7
+          WHERE ?6 = (${latestStep({ job: "?5", technician: "?3" })})
          ON CONFLICT (job_event_id, consumable_code) WHERE reason = 'used' DO NOTHING
          RETURNING quantity`,
       )
-      .bind(job.id, technicianId, crypto.randomUUID(), code, quantity, latest.id, at),
+      .bind(crypto.randomUUID(), code, technicianId, quantity, job.id, latest.id, at),
   );
   const recorded = used.map((line) =>
     db
