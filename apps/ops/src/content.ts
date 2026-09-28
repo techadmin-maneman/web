@@ -479,6 +479,54 @@ export const clients = {
       unknown: "That did not go through. Nothing was changed.",
     } as Readonly<Record<string, string>>,
   },
+  /*
+   * PLACEHOLDER, all of it: no board draws a client's invite. The invite they came with, under Payments beside the
+   * credits it grants, or a way to attach one for a friend who booked away from its page
+   * (POST /api/clients/{id}/referral; docs/decisions/0089-an-invite-is-not-lost.md).
+   */
+  invite: {
+    title: "Invite",
+    code: "Code",
+    from: "Sent by",
+    erased: "A client since erased",
+    grant: "Their 3 visits",
+    grants: {
+      pending: "Given to both when this client is fitted",
+      held: "Held for review",
+      approved: "Given",
+      granted: "Given",
+      rejected: "Rejected",
+      expired: "None: the invite lapsed while they waited",
+      clawed_back: "Taken back: the first fit was refunded",
+    },
+    since: "Since",
+    attachedBy: "Attached by",
+    why: "Why",
+    none: "They came with no invite. If a friend sent them and they booked another way, attach the friend's invite here.",
+    form: {
+      code: "Invite code",
+      codeHint: "The letters and digits after maneman.in/r/ in the friend's link.",
+      reason: "Why",
+      reasonHint: "What the client or their friend told you.",
+      note: "Kept with the invite and in the audit log, under your name. The invite's own rules apply: never the code's own referrer, never a client who came with an invite already, and never one already fitted.",
+      save: "Attach the invite",
+      saving: "Attaching",
+      errors: {
+        unknown_invite: "No invite has that code. Check it with the client. Nothing was attached.",
+        own_invite: "That is this client's own invite. Nothing was attached.",
+        already_fitted:
+          "They have had their first fit, so no invite can be attached now. Whether one may be is the owner's to rule.",
+        invalid_request: "Type the code as letters and digits, and say why. Nothing was attached.",
+        not_found: "This client is no longer on our records. Nothing was attached.",
+        offline: "You are offline. Connect, then try again.",
+        unknown: "That did not go through. Nothing was attached.",
+      } as Readonly<Record<string, string>>,
+    },
+    news: {
+      attached: "Attached. The CRM is sent it too.",
+      already_invited: "They came with this invite already, so nothing was attached.",
+    },
+  },
   /** Board B1: every piece the client has been fitted with, from FSM's assets. */
   pieces: {
     title: "Pieces",

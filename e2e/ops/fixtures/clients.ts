@@ -94,6 +94,14 @@ export const RECORD = {
     spend: 4_956_000,
     replacement_due: { on: "2028-03-01", month: "2028-03", piece_code: "MM-STD-4417-C" },
   },
+  /** He came through a friend's invite, whose 3 visits were given at his first fit. */
+  invite: {
+    code: "VSAB23",
+    referrer: { id: "22000000-0000-4000-8000-000000000009", name: "Vikram Sethi" },
+    grant: "granted",
+    since: "2026-10-20T06:00:00.000Z",
+    attached: null,
+  },
 } satisfies ClientRecord;
 
 /** The same client before any of it: no visit done, no piece in wear, nothing paid. */
@@ -112,6 +120,7 @@ export const NEW_RECORD = {
     spend: 0,
     replacement_due: null,
   },
+  invite: null,
 } satisfies ClientRecord;
 
 const ANGLES = ["front", "top", "left", "right", "hair"] as const;
