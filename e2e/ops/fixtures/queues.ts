@@ -115,15 +115,18 @@ export const DAY_MONEY = {
  * run set their clock to. Four have run over, as the board's head writes, and
  * each task's `due` is its `since` plus the placeholder two days
  * (src/policy/tasks.ts), so the days left are the board's own: "2 days",
- * "Today", "Overdue 3".
+ * "Today", "Overdue 3". Five are Priya's or Anil's, as the board's owners are, and
+ * three nobody's yet.
  */
 export const TASKS = {
   overdue: 4,
   truncated: false,
+  staff: ["anil@maneman.in", "ops@localhost", "priya@maneman.in"],
   groups: [
     {
       group: "replacement_order",
       count: 2,
+      closable: false,
       tasks: [
         {
           id: "91000000-0000-4000-8000-000000000001",
@@ -131,6 +134,7 @@ export const TASKS = {
           detail: "MM-STD-4417-K",
           since: "2027-09-16T18:30:00.000Z",
           due: "2027-09-18T18:30:00.000Z",
+          owner: "priya@maneman.in",
         },
         {
           id: "91000000-0000-4000-8000-000000000002",
@@ -138,12 +142,14 @@ export const TASKS = {
           detail: "MM-STD-4417-C",
           since: "2027-09-21T18:30:00.000Z",
           due: "2027-09-23T18:30:00.000Z",
+          owner: "priya@maneman.in",
         },
       ],
     },
     {
       group: "referral_review",
       count: 2,
+      closable: false,
       tasks: [
         {
           id: "92000000-0000-4000-8000-000000000001",
@@ -151,6 +157,7 @@ export const TASKS = {
           detail: "shared_address",
           since: "2027-09-17T06:00:00.000Z",
           due: "2027-09-19T06:00:00.000Z",
+          owner: "anil@maneman.in",
         },
         {
           id: "92000000-0000-4000-8000-000000000002",
@@ -158,12 +165,14 @@ export const TASKS = {
           detail: "monthly_cap",
           since: "2027-09-20T06:00:00.000Z",
           due: "2027-09-22T06:00:00.000Z",
+          owner: "anil@maneman.in",
         },
       ],
     },
     {
       group: "no_show_decision",
       count: 2,
+      closable: false,
       tasks: [
         {
           id: "66000000-0000-4000-8000-000000000001",
@@ -171,6 +180,7 @@ export const TASKS = {
           detail: "Imran Qureshi",
           since: "2027-09-19T06:17:00.000Z",
           due: "2027-09-21T06:17:00.000Z",
+          owner: null,
         },
         {
           id: "66000000-0000-4000-8000-000000000002",
@@ -178,12 +188,14 @@ export const TASKS = {
           detail: "Sandeep Yadav",
           since: "2027-09-20T04:46:00.000Z",
           due: "2027-09-22T04:46:00.000Z",
+          owner: null,
         },
       ],
     },
     {
       group: "number_change",
       count: 1,
+      closable: false,
       tasks: [
         {
           id: "94000000-0000-4000-8000-000000000001",
@@ -191,12 +203,14 @@ export const TASKS = {
           detail: null,
           since: "2027-09-18T06:00:00.000Z",
           due: "2027-09-20T06:00:00.000Z",
+          owner: "priya@maneman.in",
         },
       ],
     },
     {
       group: "erasure_request",
       count: 1,
+      closable: false,
       tasks: [
         {
           id: "95000000-0000-4000-8000-000000000001",
@@ -204,6 +218,7 @@ export const TASKS = {
           detail: null,
           since: "2027-09-21T06:00:00.000Z",
           due: "2027-09-23T06:00:00.000Z",
+          owner: null,
         },
       ],
     },

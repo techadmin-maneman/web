@@ -1,9 +1,10 @@
 /*
  * Board D2's list, on the panel the board draws it on and at its width: a head
  * with the count of what has run over in oxblood, then each group on its own
- * shaded band with its count, then the tasks under it. The board's third column
- * is an owner in ops, which nothing records, so a row is what it is and when it
- * is due.
+ * shaded band with its count, then the tasks under it, each in the board's three
+ * columns: what it is, whose it is, and when it is due. The actions on a task,
+ * which the board does not draw, sit under its lines as the way to where it is
+ * decided does (docs/decisions/0092-task-owners.md).
  */
 
 .column {
@@ -84,9 +85,9 @@
 }
 
 .task {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr var(--ops-task-owner) var(--ops-task-due);
   align-items: center;
-  justify-content: space-between;
   gap: var(--sp-12);
   min-height: var(--ops-row);
   padding: var(--sp-12) var(--sp-20);
@@ -141,8 +142,79 @@ a.subject:focus-visible {
   color: var(--text-muted);
 }
 
+/* The member of staff it is theirs, by first name, as the board writes "Priya". */
+.owner {
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+/* ---- What ops do with a task (TaskActions.tsx) ---------------------------- */
+
+.acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3) var(--sp-14);
+}
+
+/* Drawn as the way to where a task is decided is: quiet, underlined words. */
+.act {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+  text-decoration: underline;
+  text-decoration-color: var(--paper-line);
+  text-underline-offset: var(--sp-4);
+  cursor: pointer;
+}
+
+.act:focus-visible {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+  margin-top: var(--sp-8);
+}
+
+.select {
+  min-height: var(--ops-row);
+  padding: 0 var(--sp-10);
+  border: var(--hairline) solid var(--paper-control);
+  border-radius: 0;
+  background: var(--paper-light);
+  font: inherit;
+  font-size: var(--fs-14);
+  color: var(--text);
+}
+
+.select:focus-visible {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
+}
+
+.reason {
+  min-height: var(--sp-48);
+  resize: vertical;
+}
+
+.formActions {
+  display: flex;
+  gap: var(--sp-10);
+}
+
+.error {
+  font-size: var(--fs-14);
+  color: var(--error-on-paper);
+}
+
 .sla {
-  flex-shrink: 0;
   font-size: var(--fs-14);
   color: var(--text-muted);
   text-align: right;

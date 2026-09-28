@@ -243,6 +243,14 @@
   color: var(--text-muted);
 }
 
+/* A visit left partly done that ops closed without a follow-up, beneath its state. */
+.closedLine {
+  display: block;
+  margin-top: var(--sp-3);
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
 .figureCell {
   font-variant-numeric: tabular-nums;
   text-align: right;

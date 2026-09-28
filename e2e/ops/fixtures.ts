@@ -12,7 +12,7 @@
 // docs/openapi-ops.json as it is sent (e2e/contract.ts), so none can drift from
 // what mm-api answers.
 
-export { answer, fails, jpeg, json, type Answer, type Answers, type Call, type OpsReply } from "./answer.ts";
+export { answer, empty, fails, jpeg, json, type Answer, type Answers, type Call, type OpsReply } from "./answer.ts";
 export {
   CLIENT,
   CONSENTS,

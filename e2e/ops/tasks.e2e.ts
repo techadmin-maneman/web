@@ -7,7 +7,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { answer, fails, json, TASKS, TASKS_READ_ON, type OpsReply } from "./fixtures.ts";
+import { answer, empty, fails, json, TASKS, TASKS_READ_ON, type OpsReply } from "./fixtures.ts";
 
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
@@ -66,10 +66,12 @@ test("names the day and window a consultation was asked for", async ({ page }) =
   await open(page, {
     overdue: 0,
     truncated: false,
+    staff: [],
     groups: [
       {
         group: "consultation_request",
         count: 1,
+        closable: false,
         tasks: [
           {
             id: "96000000-0000-4000-8000-000000000001",
@@ -77,6 +79,7 @@ test("names the day and window a consultation was asked for", async ({ page }) =
             detail: "2027-09-24 afternoon",
             since: "2027-09-21T06:00:00.000Z",
             due: "2027-09-23T06:00:00.000Z",
+            owner: null,
           },
         ],
       },
@@ -94,10 +97,12 @@ test("names an At-risk client's weeks since the last visit, a first fit to book,
   const body: OpsReply<"/api/tasks"> = {
     overdue: 1,
     truncated: false,
+    staff: [],
     groups: [
       {
         group: "consultation_request",
         count: 1,
+        closable: false,
         tasks: [
           {
             id: "96000000-0000-4000-8000-000000000011",
@@ -105,12 +110,14 @@ test("names an At-risk client's weeks since the last visit, a first fit to book,
             detail: "2027-09-24 afternoon first_fit morning",
             since: "2027-09-21T06:00:00.000Z",
             due: "2027-09-23T06:00:00.000Z",
+            owner: null,
           },
         ],
       },
       {
         group: "first_fit_to_book",
         count: 1,
+        closable: false,
         tasks: [
           {
             id: "96000000-0000-4000-8000-000000000012",
@@ -118,12 +125,14 @@ test("names an At-risk client's weeks since the last visit, a first fit to book,
             detail: "2027-09-10T04:30:00.000Z afternoon",
             since: "2027-09-16T18:30:00.000Z",
             due: "2027-09-18T18:30:00.000Z",
+            owner: null,
           },
         ],
       },
       {
         group: "at_risk_client",
         count: 1,
+        closable: false,
         tasks: [
           {
             id: "96000000-0000-4000-8000-000000000013",
@@ -131,6 +140,7 @@ test("names an At-risk client's weeks since the last visit, a first fit to book,
             detail: "2027-07-21T04:30:00.000Z 2027-08-20",
             since: "2027-08-26T18:30:00.000Z",
             due: "2027-08-28T18:30:00.000Z",
+            owner: null,
           },
         ],
       },
@@ -164,10 +174,12 @@ test("names a draft invoice's visit, and heads an unfinished erasure with the da
   await open(page, {
     overdue: 0,
     truncated: false,
+    staff: [],
     groups: [
       {
         group: "draft_invoice",
         count: 1,
+        closable: false,
         tasks: [
           {
             id: "96000000-0000-4000-8000-000000000002",
@@ -175,12 +187,14 @@ test("names a draft invoice's visit, and heads an unfinished erasure with the da
             detail: "8229000000411007",
             since: "2027-09-20T07:30:00.000Z",
             due: "2027-09-22T07:30:00.000Z",
+            owner: null,
           },
         ],
       },
       {
         group: "erasure_unfinished",
         count: 1,
+        closable: false,
         tasks: [
           {
             id: "22000000-0000-4000-8000-000000000009",
@@ -188,6 +202,7 @@ test("names a draft invoice's visit, and heads an unfinished erasure with the da
             detail: "8229000000500123",
             since: "2027-09-20T06:00:00.000Z",
             due: "2027-09-22T06:00:00.000Z",
+            owner: null,
           },
         ],
       },
@@ -247,10 +262,12 @@ test("counts an open grievance down, and leads to it in Grievances", async ({ pa
   await open(page, {
     overdue: 0,
     truncated: false,
+    staff: [],
     groups: [
       {
         group: "grievance",
         count: 1,
+        closable: false,
         tasks: [
           {
             id: "97000000-0000-4000-8000-000000000001",
@@ -258,6 +275,7 @@ test("counts an open grievance down, and leads to it in Grievances", async ({ pa
             detail: null,
             since: "2027-09-14T06:00:00.000Z",
             due: "2027-10-14T06:00:00.000Z",
+            owner: null,
           },
         ],
       },
@@ -289,14 +307,126 @@ test("counts a group whole when it lists only its longest waits, and says when i
   await expect(page.getByText("More are waiting than one look reads, so a count here may be short.")).toBeVisible();
 });
 
-test("says nothing is closed here, since a task leaves when its own row is decided", async ({ page }) => {
+test("says a task leaves when its own row is decided, and that only a visit left partly done closes here", async ({
+  page,
+}) => {
   await open(page);
-  await expect(page.getByText("Nothing is closed here.")).toBeVisible();
-  await expect(page.getByRole("button")).toHaveCount(0);
+  await expect(page.getByText("A task leaves this list when the thing itself is decided")).toBeVisible();
+  // Nothing in the board's own groups closes here.
+  await expect(list(page).getByRole("button", { name: /^Close without a follow-up/ })).toHaveCount(0);
+});
+
+// Whose each task is (docs/decisions/0092-task-owners.md): board D2's own column, by first name.
+test("writes each task's owner in the board's column, by first name, and none where nobody has it", async ({
+  page,
+}) => {
+  await open(page);
+  await expect(row(page, "Kunal Mehta")).toContainText("Priya");
+  await expect(row(page, "Karan Bose")).toContainText("Anil");
+  await expect(row(page, "Deepak Rao")).not.toContainText("Priya");
+  await expect(row(page, "Deepak Rao").getByText("Owner: nobody yet")).toBeAttached();
+});
+
+test("takes a task, and hands it back, from the row", async ({ page }) => {
+  const sent: unknown[] = [];
+  await open(page);
+  await answer(page, {
+    "GET /api/tasks": json(TASKS),
+    "PUT /api/tasks/{group}/{id}/owner": async (route) => {
+      const body = route.request().postDataJSON() as { owner: string | null };
+      sent.push(body);
+      await json({ owner: body.owner })(route);
+    },
+  });
+  const deepak = row(page, "Deepak Rao");
+  await deepak.getByRole("button", { name: "Take it · Deepak Rao" }).click();
+  await expect(deepak).toContainText("Ops");
+  await deepak.getByRole("button", { name: "Hand it back · Deepak Rao" }).click();
+  await expect(deepak.getByRole("button", { name: "Take it · Deepak Rao" })).toBeVisible();
+  expect(sent).toEqual([{ owner: "ops@localhost" }, { owner: null }]);
+});
+
+test("gives a task to another member of staff who has signed in, and says so when it cannot", async ({ page }) => {
+  await open(page);
+  await answer(page, {
+    "GET /api/tasks": json(TASKS),
+    "PUT /api/tasks/{group}/{id}/owner": json({ owner: "anil@maneman.in" }),
+  });
+  const deepak = row(page, "Deepak Rao");
+  await deepak.getByRole("button", { name: "Give it to… · Deepak Rao" }).click();
+  const whom = deepak.getByLabel("Give it to · Deepak Rao");
+  await expect(whom).toBeFocused();
+  await whom.selectOption("anil@maneman.in");
+  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  await deepak.getByRole("button", { name: "Give it", exact: true }).click();
+  await expect(deepak).toContainText("Anil");
+  await expect(deepak.getByRole("button", { name: "Give it to… · Deepak Rao" })).toBeFocused();
+
+  await answer(page, { "PUT /api/tasks/{group}/{id}/owner": fails(404, "not_found") });
+  await row(page, "Sanjay Bhatia").getByRole("button", { name: "Take it · Sanjay Bhatia" }).click();
+  await expect(row(page, "Sanjay Bhatia").getByRole("alert")).toContainText("This task has left the list meanwhile");
+});
+
+// A visit left partly done may be closed without a follow-up, with why, as the owner ruled (open point 62).
+test("closes a visit left partly done with a reason, and it leaves the list", async ({ page }) => {
+  const partlyDone: OpsReply<"/api/tasks"> = {
+    overdue: 1,
+    truncated: false,
+    staff: ["ops@localhost"],
+    groups: [
+      {
+        group: "partial_visit",
+        count: 2,
+        closable: true,
+        tasks: [
+          {
+            id: "98000000-0000-4000-8000-000000000001",
+            person: { id: "22000000-0000-4000-8000-000000000014", name: "Manish Tandon" },
+            detail: "Client unwell",
+            since: "2027-09-18T06:00:00.000Z",
+            due: "2027-09-20T06:00:00.000Z",
+            owner: null,
+          },
+          {
+            id: "98000000-0000-4000-8000-000000000002",
+            person: { id: "22000000-0000-4000-8000-000000000015", name: "Arjun Sood" },
+            detail: "The piece was not ready",
+            since: "2027-09-21T06:00:00.000Z",
+            due: "2027-09-23T06:00:00.000Z",
+            owner: null,
+          },
+        ],
+      },
+    ],
+  };
+  const reasons: unknown[] = [];
+  await open(page, partlyDone);
+  await answer(page, {
+    "POST /api/tasks/{group}/{id}/close": async (route) => {
+      reasons.push(route.request().postDataJSON());
+      await empty()(route);
+    },
+  });
+  const manish = row(page, "Manish Tandon");
+  await manish.getByRole("button", { name: "Close without a follow-up · Manish Tandon" }).click();
+  const why = manish.getByLabel("Why no visit is booked to finish it · Manish Tandon");
+  await expect(why).toBeFocused();
+  const closeIt = manish.getByRole("button", { name: "Close it" });
+  await expect(closeIt).toBeDisabled();
+  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+
+  await why.fill("Moving to Pune; wants no more visits.");
+  await closeIt.click();
+  await expect(list(page).getByRole("listitem")).toHaveCount(1);
+  await expect(page.getByText("0 overdue")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "Tasks" })).toBeFocused();
+  expect(reasons).toEqual([{ reason: "Moving to Pune; wants no more visits." }]);
 });
 
 test("says so when no queue holds anything", async ({ page }) => {
-  await open(page, { overdue: 0, truncated: false, groups: [] });
+  await open(page, { overdue: 0, truncated: false, staff: [], groups: [] });
   await expect(page.getByText("Nothing is waiting.")).toBeVisible();
   await expect(page.getByText("0 overdue")).toBeVisible();
 });
@@ -317,7 +447,7 @@ test("meets WCAG 2.2 AA with a list, and with none", async ({ page }) => {
   const full = await new AxeBuilder({ page }).withTags(WCAG).analyze();
   expect(full.violations.map((violation) => violation.id)).toEqual([]);
 
-  await open(page, { overdue: 0, truncated: false, groups: [] });
+  await open(page, { overdue: 0, truncated: false, staff: [], groups: [] });
   const none = await new AxeBuilder({ page }).withTags(WCAG).analyze();
   expect(none.violations.map((violation) => violation.id)).toEqual([]);
 });

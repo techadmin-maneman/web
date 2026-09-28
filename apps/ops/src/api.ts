@@ -40,6 +40,11 @@ export type Piece = Body<paths["/api/clients/{id}/pieces"]["get"]>["pieces"][num
 export type Tasks = Body<paths["/api/tasks"]["get"]>;
 export type TaskGroup = Tasks["groups"][number];
 export type Task = TaskGroup["tasks"][number];
+/** The groups ops may close a task of without doing its thing (docs/decisions/0092-task-owners.md). */
+export type ClosableGroup = paths["/api/tasks/{group}/{id}/close"]["post"]["parameters"]["path"]["group"];
+/** An address a client gives ops on the phone, as the page sends it. */
+export type AddressGiven = Sent<paths["/api/clients/{id}/address"]["post"]>;
+export type Suggestion = Body<paths["/api/clients/{id}/address/suggestions"]["post"]>["suggestions"][number];
 
 /** The three queues a client's rights over their data put in front of ops (docs/decisions/0049-dpdp.md). */
 export type Grievance = Body<paths["/api/grievances"]["get"]>["grievances"][number];
@@ -217,6 +222,12 @@ export const api = {
   /** Visits added or taken away by hand, with the reason; the answer is the balance after it. */
   adjustCredits: (id: string, adjustment: CreditAdjustment) =>
     client.post("/api/clients/{id}/credits", { path: { id }, body: adjustment }),
+  /** Buildings matching what ops have typed of the address a client is giving them, in one billed session. */
+  addressSuggestions: (id: string, q: string, session: string) =>
+    client.post("/api/clients/{id}/address/suggestions", { path: { id }, body: { q, session } }),
+  /** The address a client gave on the phone, saved as theirs, marked as given to ops (ADR 0092). */
+  saveGivenAddress: (id: string, address: AddressGiven) =>
+    client.post("/api/clients/{id}/address", { path: { id }, body: address }),
   /** An invite attached by hand, with why; the answer is the invite as the client's page shows it (ADR 0089). */
   attachInvite: (id: string, attachment: InviteAttachment) =>
     client.post("/api/clients/{id}/referral", { path: { id }, body: attachment }),
@@ -232,8 +243,14 @@ export const api = {
   clientConsents: (id: string) => client.get("/api/clients/{id}/consents", { path: { id } }),
   /** The client's pieces. The route reads FSM afresh first, since FSM is the record. */
   clientPieces: (id: string) => client.get("/api/clients/{id}/pieces", { path: { id } }),
-  /** Every queue ops still have to work through. Nothing is closed here: a task leaves when its row is decided. */
+  /** Every queue ops still have to work through, and whose each task is. A task leaves when its row is decided. */
   tasks: () => client.get("/api/tasks"),
+  /** A task made a member of staff's, by their Access e-mail, or nobody's with null (ADR 0092). */
+  setTaskOwner: (group: TaskGroup["group"], id: string, owner: string | null) =>
+    client.put("/api/tasks/{group}/{id}/owner", { path: { group, id }, body: { owner } }),
+  /** A visit left partly done, closed without a follow-up; the reason is kept with it, under the caller's name. */
+  closeTask: (group: ClosableGroup, id: string, reason: string) =>
+    client.post("/api/tasks/{group}/{id}/close", { path: { group, id }, body: { reason } }),
   /** The cases nobody has ruled on yet. The route also answers the decided ones; the board draws a queue. */
   noShows: () => client.get("/api/no-shows", { query: { decision: "undecided" } }),
   /** Today's money, as board D1 heads it. The route takes a date; the board draws no way of asking for another. */

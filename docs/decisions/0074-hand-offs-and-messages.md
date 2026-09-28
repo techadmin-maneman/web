@@ -1,6 +1,6 @@
 # 0074. What each person learns when something changes for them
 
-- Status: accepted
+- Status: accepted; amended 28 September 2026 by [0092](0092-task-owners.md), under which ops close a visit left partly done without a follow-up, with a reason, and record an address a client gives them on the phone
 - Date: 2026-09-26
 - Amends [0047](0047-visit-messages.md), [0048](0048-referrals.md), [0049](0049-dpdp.md), [0062](0062-leave-on-the-dispatch-board.md) and [0063](0063-the-asked-window.md); follows [0060](0060-an-invited-friend-reaches-ops-and-the-crm.md), [0067](0067-alerts-and-silent-failures.md), [0070](0070-vendor-correctness.md) and [0072](0072-ops-clients-and-queues.md)
 
@@ -69,7 +69,7 @@ The no-show evidence reads the delivered one of the day-before reminder and the 
 | Address to confirm (LIFE-04)    | a visit to come has a client with no address saved                               | the visit first reached our records (`appointments.first_seen_at`) | the client saves one, in the app, whose Home asks for it |
 | Visit left partly done (BIZ-21) | a visit closed partial, not a no-show, has no later visit of the client's booked | the technician closed it                                           | another visit is booked                                  |
 
-Only the client can save an address, and nothing marks a partial visit's task done without a follow-up visit: both are the owner's to decide (`docs/open-points.md`, item 62).
+Only the client can save an address, and nothing marks a partial visit's task done without a follow-up visit: both are the owner's to decide (`docs/open-points.md`, item 62). **Amended 28 September 2026 ([0092](0092-task-owners.md)):** the owner ruled yes to both; ops record on the client's page an address the client gives them on the phone, saved as the app's save saves one and marked as given to ops, and close a visit left partly done without a follow-up, with a required reason kept under who closed it.
 
 **Leave over jobs already booked names them** (OPS-07). `POST /api/technicians/{id}/leave` answers the jobs still booked on those days; the Technicians panel lists them beneath the form, with the way to the dispatch board; and the board writes such a day "Away · 1 job to move" in oxblood, where a day off with nothing on it reads "Away". The job stays on the technician's phone until it is moved: taking it off would be a move by another name, and ops choose where it goes.
 

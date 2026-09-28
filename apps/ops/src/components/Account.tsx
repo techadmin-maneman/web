@@ -10,7 +10,7 @@ import styles from "./shell.module.css";
 let asked: Promise<Answer<Whoami>> | null = null;
 
 /** The one answer for this load of the console; a failed one is asked again on the next page. */
-function whoami(): Promise<Answer<Whoami>> {
+export function whoami(): Promise<Answer<Whoami>> {
   asked ??= api.whoami().then((answer) => {
     if (!answer.ok) asked = null;
     return answer;
