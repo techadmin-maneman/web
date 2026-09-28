@@ -349,7 +349,13 @@ describe("Zoho record and note contents", () => {
 });
 
 describe("Zoho: a person's changed number, address or invite", () => {
-  const CONTACT = { personId: "person-1", mobileE164: "+919810000003", city: "Gurgaon", inviteCode: null };
+  const CONTACT = {
+    personId: "person-1",
+    mobileE164: "+919810000003",
+    city: "Gurgaon",
+    inviteCode: null,
+    inviteAttached: false,
+  };
 
   it("writes the number and city onto the known record, with workflows off, and adds no note", async () => {
     const { crm, calls } = zoho({ [TOKEN_URL]: () => tokenIssued(), [LEADS_URL]: () => updated("zoho-9") });
@@ -365,6 +371,27 @@ describe("Zoho: a person's changed number, address or invite", () => {
     const { crm, calls } = zoho({ [TOKEN_URL]: () => tokenIssued(), [SEARCH_URL]: noMatch });
     expect(await crm.updateContact({ ...CONTACT, city: null }, null)).toEqual({ crmLeadId: null });
     expect(calls).toHaveLength(2);
+  });
+
+  // A note needs no field of the org's, so an invite ops attach reaches the record while the referral fields do not
+  // exist, as a new lead's invite does (noteFor). It names no one, and no code, as every note: an erasure keeps notes.
+  it("notes an invite ops just attached, whether or not the org has the referral fields", async () => {
+    const { crm, calls } = zoho({ [TOKEN_URL]: () => tokenIssued(), [LEADS_URL]: () => updated("zoho-9") });
+    await crm.updateContact({ ...CONTACT, inviteCode: "VSAB23", inviteAttached: true }, "zoho-9");
+    expect(calls.map((call) => `${call.method} ${new URL(call.url).pathname}`)).toEqual([
+      "POST /oauth/v2/token",
+      "PUT /crm/v8/Leads/zoho-9",
+      "POST /crm/v8/Leads/zoho-9/Notes",
+    ]);
+    expect(bodyOf(calls[2]).data).toEqual([
+      { Note_Title: "Invite attached", Note_Content: "Came through a friend's invite, which ops attached by hand." },
+    ]);
+  });
+
+  it("adds no note for a person who carries an invite and changed only their number or address", async () => {
+    const { crm, calls } = zoho({ [TOKEN_URL]: () => tokenIssued(), [LEADS_URL]: () => updated("zoho-9") });
+    await crm.updateContact({ ...CONTACT, inviteCode: "VSAB23" }, "zoho-9");
+    expect(calls.map((call) => call.method)).toEqual(["POST", "PUT"]);
   });
 
   // An invite ops attached (ADR 0089), in the field the org gains with scripts/setup-crm.ts (src/config/crm.ts).

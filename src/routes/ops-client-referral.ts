@@ -16,6 +16,7 @@ import type { App, AppEnv } from "../http/context.ts";
 import { attribute, clientInviteOf, CODE_PATTERN, GRANT_STATES, howTheyCame, inviteOf } from "../domain/referrals.ts";
 import { errorBody, errorResponse, ErrorResponseSchema } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
+import { CRM_ORG_HAS_REFERRAL_FIELDS } from "../config/crm.ts";
 import { REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
 import type { CrmSyncMessage } from "../queues/crm-sync.ts";
 
@@ -91,16 +92,30 @@ const attachRoute = createRoute({
   },
 });
 
-/** Sends the client to the CRM again, which then reads the invite they now carry (src/queues/crm-sync.ts). */
+/**
+ * What ops write on the client's CRM lead by hand when the queue would not take the update: what the sync writes, the
+ * note, and the code's field only once the org has it (src/config/crm.ts).
+ */
+function writtenByHand(): string {
+  const note = "add a note to their CRM lead that ops attached a friend's invite";
+  if (!CRM_ORG_HAS_REFERRAL_FIELDS) return note;
+  return `${note}, and write the invite's code, shown on their page, in Referral_Code`;
+}
+
+/** Sends the client to the CRM again, which then reads the invite they now carry and notes it (src/queues/crm-sync.ts). */
 async function queueCrmUpdate(c: Context<AppEnv>, personId: string): Promise<void> {
   const { requestId, log, deps } = c.var;
   try {
-    await c.env.CRM_QUEUE.send({ update_person_id: personId, request_id: requestId } satisfies CrmSyncMessage);
+    await c.env.CRM_QUEUE.send({
+      update_person_id: personId,
+      request_id: requestId,
+      invite_attached: true,
+    } satisfies CrmSyncMessage);
   } catch (error) {
     log.warn("crm_enqueue_failed", { person_id: personId, error });
     await deps.alertOnce({
       key: `crm_contact_update:${personId}`,
-      message: `Client ${personId}'s invite could not be sent on to the CRM. Write its code on their CRM lead by hand.`,
+      message: `Client ${personId}'s invite could not be sent on to the CRM. By hand, ${writtenByHand()}.`,
       link: `/clients/${personId}`,
     });
   }

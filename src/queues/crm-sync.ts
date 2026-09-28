@@ -26,9 +26,13 @@ export const CrmSyncMessageSchema = z.union([
   z.object({ erase_person_id: z.uuid(), request_id: z.string() }),
   /**
    * A person whose number or address changed (src/http/contact-sync.ts), or whom ops attached an invite to
-   * (src/routes/ops-client-referral.ts), written onto their record.
+   * (src/routes/ops-client-referral.ts), written onto their record; the second is noted on it too.
    */
-  z.object({ update_person_id: z.string().min(1), request_id: z.string() }),
+  z.object({
+    update_person_id: z.string().min(1),
+    request_id: z.string(),
+    invite_attached: z.literal(true).optional(),
+  }),
 ]);
 export type CrmSyncMessage = z.infer<typeof CrmSyncMessageSchema>;
 
@@ -47,7 +51,8 @@ export async function handleCrmSyncBatch(
     }
     const messageLog = log.child({ request_id: parsed.data.request_id });
     if ("update_person_id" in parsed.data) {
-      await updateContact(message, db, deps, messageLog, parsed.data.update_person_id);
+      const { update_person_id: personId, invite_attached: inviteAttached = false } = parsed.data;
+      await updateContact(message, db, deps, messageLog, { personId, inviteAttached });
       continue;
     }
     const { retrySoon } =
@@ -64,16 +69,16 @@ export const MAX_CONTACT_UPDATE_ATTEMPTS = 5;
 
 /**
  * Writes a person's number, the city of their address and the invite they came
- * through onto their CRM record, read afresh from D1. Nothing is written for an
- * erased person or one the CRM never had. A failure is tried again on the queue,
- * and the fifth tells ops.
+ * through onto their CRM record, read afresh from D1, with a note when ops have
+ * just attached the invite. Nothing is written for an erased person or one the
+ * CRM never had. A failure is tried again on the queue, and the fifth tells ops.
  */
 async function updateContact(
   message: Message,
   db: D1Database,
   deps: Dependencies,
   log: Logger,
-  personId: string,
+  { personId, inviteAttached }: { personId: string; inviteAttached: boolean },
 ): Promise<void> {
   const person = await db
     .prepare(
@@ -91,7 +96,7 @@ async function updateContact(
   }
   try {
     const { crmLeadId } = await deps.crm.updateContact(
-      { personId, mobileE164: person.mobile_e164, city: person.city, inviteCode: person.invite_code },
+      { personId, mobileE164: person.mobile_e164, city: person.city, inviteCode: person.invite_code, inviteAttached },
       person.zoho_lead_id,
     );
     if (crmLeadId !== null && crmLeadId !== person.zoho_lead_id) {

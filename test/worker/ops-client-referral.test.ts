@@ -118,7 +118,9 @@ describe("POST /api/clients/:id/referral", () => {
 
   it("sends the client to the CRM again, which reads the invite they now carry", async () => {
     await attach({ code: "RM4K7P", reason: REASON });
-    expect(crm.sent).toEqual([{ update_person_id: FRIEND, request_id: expect.any(String) as string }]);
+    expect(crm.sent).toEqual([
+      { update_person_id: FRIEND, request_id: expect.any(String) as string, invite_attached: true },
+    ]);
   });
 
   it("keeps the invite when the CRM's queue will not take the client, and tells ops to write it by hand", async () => {
@@ -128,6 +130,9 @@ describe("POST /api/clients/:id/referral", () => {
     expect((await attach({ code: "RM4K7P", reason: REASON })).status).toBe(201);
     expect((await attributions()).results).toHaveLength(1);
     expect(deps.alerts).toEqual([expect.stringContaining(`Client ${FRIEND}'s invite could not be sent on to the CRM`)]);
+    // The org has no referral fields yet (src/config/crm.ts), so the alert asks for what the sync would have written.
+    expect(deps.alerts[0]).toContain("add a note to their CRM lead that ops attached a friend's invite");
+    expect(deps.alerts[0]).not.toContain("Referral_Code");
   });
 
   // The waitlist's lapse rule is for an invite held on a waitlist (src/policy/invites.ts), so a client who is only

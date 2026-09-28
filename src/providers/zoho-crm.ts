@@ -94,6 +94,7 @@ export function createZohoCrm(settings: ZohoSettings, deps: ZohoDependencies): C
       const record = contactRecordFor(contact);
       const write = async (id: string) => {
         await api.updateLead(id, record, { runWorkflows: false });
+        if (contact.inviteAttached) await api.addNote(id, INVITE_ATTACHED_NOTE);
         return { crmLeadId: id };
       };
       const id = knownCrmLeadId ?? (await api.findLeadByPersonId(contact.personId));
@@ -138,6 +139,16 @@ function sourceOf(lead: CrmLead, fields: OrgFields): string {
 export interface OrgFields {
   readonly referral: boolean;
 }
+
+/**
+ * The note an invite ops attach leaves on the record. A note needs no field of the org's, so the invite reaches the
+ * record while the referral fields do not exist, as a new lead's does (noteFor). No code and no name: an erasure
+ * keeps a record's notes.
+ */
+export const INVITE_ATTACHED_NOTE = {
+  title: "Invite attached",
+  content: "Came through a friend's invite, which ops attached by hand.",
+} as const;
 
 /** The Zoho Leads fields a change of number, address or invite writes: the invite's only where the org has it. */
 export function contactRecordFor(

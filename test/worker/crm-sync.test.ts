@@ -447,8 +447,8 @@ describe("crm-sync: a changed number, address or invite", () => {
     ]);
   });
 
-  function update(crm: CrmProvider, attempts = 1) {
-    const body = { update_person_id: PERSON, request_id: "r" };
+  function update(crm: CrmProvider, attempts = 1, more: { invite_attached?: true } = {}) {
+    const body = { update_person_id: PERSON, request_id: "r", ...more };
     const message = { id: "m1", body, attempts, ack: vi.fn(), retry: vi.fn() };
     const batch = { queue: "mm-crm-sync-local", messages: [message], ackAll: vi.fn(), retryAll: vi.fn() };
     const deps = fakeDependencies({ crm });
@@ -461,7 +461,13 @@ describe("crm-sync: a changed number, address or invite", () => {
     await done;
     expect(crm.updates).toEqual([
       {
-        contact: { personId: PERSON, mobileE164: "+919810000003", city: "Gurgaon", inviteCode: null },
+        contact: {
+          personId: PERSON,
+          mobileE164: "+919810000003",
+          city: "Gurgaon",
+          inviteCode: null,
+          inviteAttached: false,
+        },
         knownId: "zoho-9",
       },
     ]);
@@ -485,8 +491,8 @@ describe("crm-sync: a changed number, address or invite", () => {
       ).bind(PERSON, NOW.toISOString()),
     ]);
     const crm = recordingCrm();
-    await update(crm).done;
-    expect(crm.updates).toMatchObject([{ contact: { personId: PERSON, inviteCode: "VSAB23" } }]);
+    await update(crm, 1, { invite_attached: true }).done;
+    expect(crm.updates).toMatchObject([{ contact: { personId: PERSON, inviteCode: "VSAB23", inviteAttached: true } }]);
   });
 
   it("writes nothing for a person erased since", async () => {
