@@ -73,4 +73,26 @@ describe("migration check", () => {
     const unnamed = ["-- withdrawn:", "SELECT 1;"].join("\n");
     expect(checkMigrations([create("0001_a.sql", unnamed)], { atBase })[0]).toContain("must not be edited");
   });
+
+  it("refuses CASE inside a trigger's body, which remote D1 refuses, and accepts it elsewhere", () => {
+    const trigger = (body: string) =>
+      `CREATE TRIGGER t_added AFTER INSERT ON t
+BEGIN
+  UPDATE totals SET n = ${body};
+END;`;
+    expect(checkMigrations([create("0001_x.sql", trigger("CASE WHEN NEW.a THEN 1 ELSE 0 END"))])).toEqual([
+      "0001_x.sql: CASE inside the body of trigger t_added; remote D1 refuses it (migration 0052), use iif()",
+    ]);
+    expect(checkMigrations([create("0001_x.sql", trigger("iif(NEW.a, 1, 0)"))])).toEqual([]);
+    expect(checkMigrations([create("0001_x.sql", "SELECT CASE WHEN 1 THEN 2 END;")])).toEqual([]);
+    expect(
+      checkMigrations([
+        create(
+          "0001_x.sql",
+          `-- a CASE in a comment
+${trigger("1")}`,
+        ),
+      ]),
+    ).toEqual([]);
+  });
 });

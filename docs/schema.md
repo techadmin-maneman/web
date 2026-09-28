@@ -134,7 +134,7 @@ Indexes:
 
 The mirror of FSM's appointments: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice (ADR 0032).
 
-Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0052_balances_and_last_visits.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -612,7 +612,7 @@ Indexes:
 
 Each client's last first fit, service or replacement done, and last consultation done, kept by triggers from the view `last_visits_now` as their visits change; the Tasks board's At-risk client and First fit to book read it (ADR 0086).
 
-Made by `0052_balances_and_last_visits.sql`.
+Made by `0053_balances_and_last_visits.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -669,7 +669,7 @@ Indexes:
 
 The evidence a no-show is ruled on, and the ruling (ADR 0065, ADR 0072).
 
-Made by `0026_field_operations.sql`; changed by `0042_no_show_reasons.sql`, `0044_hand_offs_and_messages.sql`, `0053_policies_in_the_console.sql`.
+Made by `0026_field_operations.sql`; changed by `0042_no_show_reasons.sql`, `0044_hand_offs_and_messages.sql`, `0054_policies_in_the_console.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -724,7 +724,7 @@ Indexes:
 
 The business inputs ops set in the console, a row each; a row that is not there means the committed default (ADR 0061).
 
-Made by `0033_ops_settings.sql`; changed by `0053_policies_in_the_console.sql`.
+Made by `0033_ops_settings.sql`; changed by `0054_policies_in_the_console.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -739,7 +739,7 @@ Triggers: `ops_settings_snapshot_on_delete`, `ops_settings_snapshot_on_insert`, 
 
 One row holding every `ops_settings` value, kept by that table's triggers: the one row a request reads (ADR 0088).
 
-Made by `0053_policies_in_the_console.sql`.
+Made by `0054_policies_in_the_console.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1161,7 +1161,7 @@ Indexes:
 
 A slot held while a client pays, and what became of it (ADR 0045, ADR 0068).
 
-Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0052_balances_and_last_visits.sql`, `0053_policies_in_the_console.sql`.
+Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1214,7 +1214,7 @@ Indexes:
 
 What each place holds of each consumable, and when it last counted it: the sum of its rows in `stock_movements`, kept by triggers as each is written (ADR 0087).
 
-Made by `0052_balances_and_last_visits.sql`.
+Made by `0053_balances_and_last_visits.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1227,7 +1227,7 @@ Made by `0052_balances_and_last_visits.sql`.
 
 Every movement of a consumable into or out of the central store or a technician's kit, never changed; what a place holds is the sum of its rows (ADR 0087).
 
-Made by `0049_consumables_and_stock.sql`; changed by `0052_balances_and_last_visits.sql`.
+Made by `0049_consumables_and_stock.sql`; changed by `0053_balances_and_last_visits.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1415,7 +1415,7 @@ Indexes:
 
 Days on which no visit is offered.
 
-Made by `0002_lead_path.sql`; changed by `0053_policies_in_the_console.sql`.
+Made by `0002_lead_path.sql`; changed by `0054_policies_in_the_console.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
