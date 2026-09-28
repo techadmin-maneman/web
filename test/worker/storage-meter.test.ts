@@ -3,7 +3,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { deleteAllUnder, deleteCounted, putCounted, readMeter, tellOfStorage } from "../../src/domain/storage-meter.ts";
+import { deleteCounted, keysUnder, putCounted, readMeter, tellOfStorage } from "../../src/domain/storage-meter.ts";
 import { PHASE_2_SHARE_BYTES } from "../../src/policy/storage-share.ts";
 import { fakeDependencies, markDatabase, type TestDependencies } from "./helpers.ts";
 
@@ -40,13 +40,13 @@ describe("counting what is stored", () => {
     expect(await env.CLIENT_PHOTOS.head("tryons/j1/before.jpg")).toBeNull();
   });
 
-  it("deletes everything under a visit's prefix, a photograph taken again and every small copy with it", async () => {
+  it("finds everything under a visit's prefix, a photograph taken again and every small copy with it", async () => {
     await putCounted(env.DB, env.CLIENT_PHOTOS, "visits/a1/after-front-1.jpg", bytes(1000), "image/jpeg");
     await putCounted(env.DB, env.CLIENT_PHOTOS, "visits/a1/after-front-1-small.jpg", bytes(40), "image/jpeg");
     await putCounted(env.DB, env.CLIENT_PHOTOS, "visits/a1/after-front-2.jpg", bytes(1100), "image/jpeg");
     await putCounted(env.DB, env.CLIENT_PHOTOS, "visits/a2/after-front-3.jpg", bytes(700), "image/jpeg");
 
-    await deleteAllUnder(env.DB, env.CLIENT_PHOTOS, "visits/a1/");
+    await deleteCounted(env.DB, env.CLIENT_PHOTOS, await keysUnder(env.CLIENT_PHOTOS, "visits/a1/"));
 
     expect(await held()).toBe(700);
     expect((await env.CLIENT_PHOTOS.list({ prefix: "visits/" })).objects.map((object) => object.key)).toEqual([
@@ -54,9 +54,43 @@ describe("counting what is stored", () => {
     ]);
   });
 
-  it("never counts below nought", async () => {
+  it("takes nothing off for an object it never counted", async () => {
+    await putCounted(env.DB, env.CLIENT_PHOTOS, "visits/a1/counted.jpg", bytes(300), "image/jpeg");
     await env.CLIENT_PHOTOS.put("visits/a1/uncounted.jpg", bytes(500));
     await deleteCounted(env.DB, env.CLIENT_PHOTOS, ["visits/a1/uncounted.jpg"]);
+    expect(await held()).toBe(300);
+    expect(await env.CLIENT_PHOTOS.head("visits/a1/uncounted.jpg")).toBeNull();
+  });
+
+  // R2 replaces an object stored again under its key: a sweep or a queue message retried after its store.
+  it("counts an object stored again under the same key as what it holds now, not twice", async () => {
+    await putCounted(env.DB, env.CLIENT_PHOTOS, "tryons/j1/look.png", bytes(5000), "image/png");
+    await putCounted(env.DB, env.CLIENT_PHOTOS, "tryons/j1/look.png", bytes(5000), "image/png");
+    expect(await held()).toBe(5000);
+    await putCounted(env.DB, env.CLIENT_PHOTOS, "tryons/j1/look.png", bytes(3000), "image/png");
+    expect(await held()).toBe(3000);
+  });
+
+  it("takes an object off once when two deletes of it race, as an erasure and the sweeper can", async () => {
+    await putCounted(env.DB, env.CLIENT_PHOTOS, "tryons/j1/before.jpg", bytes(900), "image/jpeg");
+    await putCounted(env.DB, env.CLIENT_PHOTOS, "tryons/j2/before.jpg", bytes(400), "image/jpeg");
+    await Promise.all([
+      deleteCounted(env.DB, env.CLIENT_PHOTOS, ["tryons/j1/before.jpg"]),
+      deleteCounted(env.DB, env.CLIENT_PHOTOS, ["tryons/j1/before.jpg"]),
+    ]);
+    expect(await held()).toBe(400);
+  });
+
+  it("reads no object to learn its size", async () => {
+    await putCounted(env.DB, env.CLIENT_PHOTOS, "tryons/j1/before.jpg", bytes(900), "image/jpeg");
+    const photos = env.CLIENT_PHOTOS;
+    const bucket = {
+      put: (key: string, value: Uint8Array, options: R2PutOptions) => photos.put(key, value, options),
+      delete: (keys: string[]) => photos.delete(keys),
+      head: () => Promise.reject(new Error("a head read, which costs a Class B operation")),
+    } as unknown as R2Bucket;
+    await putCounted(env.DB, bucket, "tryons/j1/before.jpg", bytes(800), "image/jpeg");
+    await deleteCounted(env.DB, bucket, ["tryons/j1/before.jpg"]);
     expect(await held()).toBe(0);
   });
 });

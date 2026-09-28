@@ -60,7 +60,7 @@ export const CRON_ROWS_READ_PER_QUIET_RUN = 100;
  * A run at its busiest, every lookup coming back full: the sweep's eight
  * lookups of 100 and what it expires and deletes (about 1,600); the
  * reconciliation's page of 50, and on the hour the photographs of three days'
- * visits (about 1,700); erased people's files, 20 at a time (about 500); and
+ * visits (about 1,700); erased people's files, 5 at a time (about 150); and
  * the referral, reminder, next-service reminder, invoice, asked-window and
  * Books passes of 5 to 20 each, with their joins (about 700).
  */

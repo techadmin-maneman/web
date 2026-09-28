@@ -3,12 +3,15 @@
 // photographs and their small copies, a try-on's small copy and a client's
 // kept look, and the referral cards.
 //
-// It is one running figure in D1, added to as each object is stored and taken
-// from as each is deleted, so reading it never lists a bucket, which R2 bills
-// as a Class A operation. Every write to those two buckets goes through here,
-// and so does every delete of what was written, except an erasure's sweep of
-// keys that may never have been written (src/domain/erasure.ts). When ops are
-// told, and what is refused, is src/policy/storage-share.ts.
+// It is one running figure in D1, beside a row for each object and its size
+// (stored_objects, migration 0055). Both are written in one batch as an object
+// is stored and as it is deleted, so reading the figure never lists a bucket,
+// which R2 bills as a Class A operation, and a delete never reads an object to
+// learn its size. An object stored again under its key is counted as it is now,
+// and a delete takes off only what a row says, so neither a retry nor two
+// deletes of one key at once can count an object twice. Every write to and
+// delete from those two buckets goes through here. When ops are told, and what
+// is refused, is src/policy/storage-share.ts.
 
 import {
   hasRoom,
@@ -36,12 +39,7 @@ export async function readMeter(db: D1Database): Promise<Meter> {
   return { bytes: row.bytes, toldPercent: row.told_percent };
 }
 
-async function count(db: D1Database, bytes: number): Promise<void> {
-  if (bytes === 0) return;
-  await db.prepare("UPDATE storage_meter SET bytes = MAX(0, bytes + ?1) WHERE id = 1").bind(bytes).run();
-}
-
-/** Stores an object in one of Phase 2's buckets, and counts it. */
+/** Stores an object in one of Phase 2's buckets, and counts what it holds now: an object it replaces no longer counts. */
 export async function putCounted(
   db: D1Database,
   bucket: R2Bucket,
@@ -50,40 +48,56 @@ export async function putCounted(
   contentType: string,
 ): Promise<void> {
   await bucket.put(key, bytes, { httpMetadata: { contentType } });
-  await count(db, bytes.byteLength);
+  await db.batch([
+    db
+      .prepare(
+        `UPDATE storage_meter
+         SET bytes = MAX(0, bytes + ?2 - COALESCE((SELECT bytes FROM stored_objects WHERE key = ?1), 0))
+         WHERE id = 1`,
+      )
+      .bind(key, bytes.byteLength),
+    db
+      .prepare(
+        "INSERT INTO stored_objects (key, bytes) VALUES (?1, ?2) ON CONFLICT (key) DO UPDATE SET bytes = excluded.bytes",
+      )
+      .bind(key, bytes.byteLength),
+  ]);
 }
 
 /**
- * Deletes these objects from one of Phase 2's buckets, and takes what they held off the meter. R2's delete does not
- * say what it freed, so each object is looked at first; a key that holds nothing takes nothing off.
+ * Deletes these objects from one of Phase 2's buckets, and takes off what their rows say they held: one R2 call for
+ * each thousand keys, and one D1 batch. A key with no row, never stored or stored before the meter, takes nothing off.
  */
 export async function deleteCounted(db: D1Database, bucket: R2Bucket, keys: readonly string[]): Promise<void> {
-  const found = await Promise.all([...new Set(keys)].map((key) => bucket.head(key)));
-  await deleteObjects(
-    db,
-    bucket,
-    found.filter((object) => object !== null),
-  );
+  const unique = [...new Set(keys)];
+  if (unique.length === 0) return;
+  for (let start = 0; start < unique.length; start += R2_DELETE_BATCH) {
+    await bucket.delete(unique.slice(start, start + R2_DELETE_BATCH));
+  }
+  const listed = JSON.stringify(unique);
+  const theirs = "SELECT value FROM json_each(?1)";
+  await db.batch([
+    db
+      .prepare(
+        `UPDATE storage_meter
+         SET bytes = MAX(0, bytes - (SELECT COALESCE(SUM(bytes), 0) FROM stored_objects WHERE key IN (${theirs})))
+         WHERE id = 1`,
+      )
+      .bind(listed),
+    db.prepare(`DELETE FROM stored_objects WHERE key IN (${theirs})`).bind(listed),
+  ]);
 }
 
-/** Deletes every object under a prefix, such as one visit's photographs, the ones taken again and their small copies. */
-export async function deleteAllUnder(db: D1Database, bucket: R2Bucket, prefix: string): Promise<void> {
-  const objects: R2Object[] = [];
+/** Every key under a prefix, such as one visit's: its photographs, those taken again, and their small copies. */
+export async function keysUnder(bucket: R2Bucket, prefix: string): Promise<string[]> {
+  const keys: string[] = [];
   let listed = await bucket.list({ prefix });
-  objects.push(...listed.objects);
+  keys.push(...listed.objects.map((object) => object.key));
   while (listed.truncated) {
     listed = await bucket.list({ prefix, cursor: listed.cursor });
-    objects.push(...listed.objects);
+    keys.push(...listed.objects.map((object) => object.key));
   }
-  await deleteObjects(db, bucket, objects);
-}
-
-async function deleteObjects(db: D1Database, bucket: R2Bucket, objects: readonly R2Object[]): Promise<void> {
-  for (let start = 0; start < objects.length; start += R2_DELETE_BATCH) {
-    const batch = objects.slice(start, start + R2_DELETE_BATCH);
-    await bucket.delete(batch.map((object) => object.key));
-    await count(db, -batch.reduce((sum, object) => sum + object.size, 0));
-  }
+  return keys;
 }
 
 const gigabytes = (bytes: number) => (bytes / 1e9).toFixed(2);

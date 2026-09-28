@@ -73,6 +73,7 @@ export function heldTryOn(tryOn: TryOnFacts): HeldTryOn {
 export interface ExpiringTryOn extends TryOnFacts {
   readonly person_id: string | null;
   readonly copy_key: string | null;
+  readonly kept_look_key: string | null;
 }
 
 /**
@@ -130,6 +131,8 @@ async function keepOnItsDay(env: KeepEnv, tryOn: ExpiringTryOn, now: Date): Prom
     .bind(tryOn.id, now.toISOString(), personId)
     .first();
   if (claimed === null) return false;
+  // Kept on an earlier run that stopped before the try-on was expired: its look was moved then.
+  if (tryOn.kept_look_key !== null) return true;
   if (await firstFitPhotographed(db, personId)) return true;
 
   const look = tryOn.result_key === null ? null : await env.RESULTS.get(tryOn.result_key);

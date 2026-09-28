@@ -22,13 +22,17 @@ import type { VisitType } from "../config/visit-types.ts";
 import type { Logger } from "../log.ts";
 import { LIVE_VISIT_STATUSES } from "../policy/account-deletion.ts";
 import { copyKey, keptLookKey } from "./kept-try-ons.ts";
-import { deleteAllUnder, deleteCounted } from "./storage-meter.ts";
+import { deleteCounted, keysUnder } from "./storage-meter.ts";
 import { recordEvent } from "./tryon.ts";
 
 /** R2 deletes at most 1,000 keys a call. */
 const R2_DELETE_BATCH = 1000;
-/** Most erased people whose files one cron run finishes. */
-const LEFT_FILES_PER_RUN = 20;
+/**
+ * Most erased people whose files one cron run finishes. Each costs about fifteen calls to D1 and R2 and one list for
+ * each of their visits, and a run shares Cloudflare's 1,000 such calls an invocation with every other cron job: five
+ * clients of five years' monthly visits come to under 400.
+ */
+const LEFT_FILES_PER_RUN = 5;
 
 export interface ErasureSummary {
   readonly personId: string;
@@ -254,18 +258,10 @@ async function deleteErasedFiles(env: ErasureEnv, personId: string, now: Date): 
 
 async function deleteTryOnFiles(env: ErasureEnv, personId: string, now: Date): Promise<void> {
   const { results: jobs } = await env.DB.prepare(
-    `SELECT id, upload_key, upload_deleted_at, result_key, copy_key, kept_look_key FROM tryon_jobs
-     WHERE person_id = ?1`,
+    "SELECT id, upload_key, upload_deleted_at, result_key FROM tryon_jobs WHERE person_id = ?1",
   )
     .bind(personId)
-    .all<{
-      id: string;
-      upload_key: string;
-      upload_deleted_at: string | null;
-      result_key: string | null;
-      copy_key: string | null;
-      kept_look_key: string | null;
-    }>();
+    .all<{ id: string; upload_key: string; upload_deleted_at: string | null; result_key: string | null }>();
   const photos = jobs.filter((job) => job.upload_deleted_at === null).map((job) => job.upload_key);
   // Both keys a render can store its result under, for a render that stored one after it was read.
   const results = jobs.flatMap((job) => [
@@ -273,10 +269,8 @@ async function deleteTryOnFiles(env: ErasureEnv, personId: string, now: Date): P
     `results/${job.id}.png`,
     `results/${job.id}.jpg`,
   ]);
-  // A client's kept copy and look (docs/decisions/0084-a-clients-try-on-is-kept.md): those the rows name, taken off
-  // the storage meter, then every key either can have, for a sweep that stored one and was stopped before it said so.
-  // One of those was counted as it was stored and is not taken off, so the meter errs high.
-  const held = jobs.flatMap((job) => [job.copy_key, job.kept_look_key].filter((key) => key !== null));
+  // A client's kept copy and look (docs/decisions/0084-a-clients-try-on-is-kept.md), under every key either can
+  // have, for a sweep that stored one and was stopped before it said so.
   const kept = jobs.flatMap((job) => [
     copyKey(job.id),
     keptLookKey(job.id, "image/png"),
@@ -284,8 +278,7 @@ async function deleteTryOnFiles(env: ErasureEnv, personId: string, now: Date): P
   ]);
   await deleteKeys(env.UPLOADS, photos);
   await deleteKeys(env.RESULTS, results);
-  await deleteCounted(env.DB, env.CLIENT_PHOTOS, held);
-  await deleteKeys(env.CLIENT_PHOTOS, kept);
+  await deleteCounted(env.DB, env.CLIENT_PHOTOS, kept);
   await env.DB.prepare(
     `UPDATE tryon_jobs SET result_key = NULL, upload_deleted_at = COALESCE(upload_deleted_at, ?2), copy_key = NULL,
        kept_look_key = NULL
@@ -296,10 +289,10 @@ async function deleteTryOnFiles(env: ErasureEnv, personId: string, now: Date): P
 }
 
 /**
- * Everything under each of the person's visits in the bucket, which a listing counts off the storage meter: the
- * photographs, their thumbnails, and a photograph taken again at the same angle, which no row names any more
- * (docs/decisions/0028-photographs-from-the-app.md). Then any photograph a row names under another key, as older
- * records and the browser tests' seed have. One list and one delete a visit, however many photographs it holds.
+ * Every photograph and thumbnail the person's rows name, and everything else under each of their visits in the
+ * bucket: a photograph taken again at the same angle, which no row names any more
+ * (docs/decisions/0028-photographs-from-the-app.md), and its thumbnail. One list a visit, then one delete for each
+ * thousand keys and one update of the storage meter, however many visits there were.
  */
 async function deleteVisitPhotos(env: ErasureEnv, personId: string): Promise<void> {
   const db = env.DB;
@@ -310,14 +303,14 @@ async function deleteVisitPhotos(env: ErasureEnv, personId: string): Promise<voi
     )
     .bind(personId)
     .all<{ appointment_id: string; r2_key: string; thumbnail_key: string | null }>();
-  for (const visit of new Set(photos.map((photo) => photo.appointment_id))) {
-    await deleteAllUnder(db, env.CLIENT_PHOTOS, `visits/${visit}/`);
-  }
-  const named = photos.flatMap((photo) => [
+  const keys = photos.flatMap((photo) => [
     photo.r2_key,
     ...(photo.thumbnail_key === null ? [] : [photo.thumbnail_key]),
   ]);
-  await deleteKeys(env.CLIENT_PHOTOS, named);
+  for (const visit of new Set(photos.map((photo) => photo.appointment_id))) {
+    keys.push(...(await keysUnder(env.CLIENT_PHOTOS, `visits/${visit}/`)));
+  }
+  await deleteCounted(db, env.CLIENT_PHOTOS, keys);
   const theirSets =
     "SELECT s.id FROM photo_sets s JOIN appointments a ON a.id = s.appointment_id WHERE a.person_id = ?1";
   // The sets go after their photographs, for the foreign key. An empty set holds no personal data,

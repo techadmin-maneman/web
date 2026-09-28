@@ -33,11 +33,16 @@ const photo = (angle: string, bytes: number) =>
    VALUES ('p-${angle}', 's1', '${angle}', 'visits/a1/after-${angle}.jpg', 'image/jpeg', ${String(bytes)}, '${AT}', '${AT}');`;
 
 const meter = (db: DatabaseSync) => db.prepare("SELECT bytes, told_percent FROM storage_meter").all();
+const ledger = (db: DatabaseSync) => db.prepare("SELECT key, bytes FROM stored_objects ORDER BY key").all();
 
 describe("migration 0055", () => {
   it("starts the meter at what the photographs' rows say they hold", () => {
     const db = migrated(photo("front", 240_000) + photo("hair", 260_000));
     expect(meter(db)).toEqual([{ bytes: 500_000, told_percent: 0 }]);
+    expect(ledger(db)).toEqual([
+      { key: "visits/a1/after-front.jpg", bytes: 240_000 },
+      { key: "visits/a1/after-hair.jpg", bytes: 260_000 },
+    ]);
   });
 
   it("counts a card, a kept copy and a kept look, whose sizes no row records, at their upload limits", () => {
@@ -50,11 +55,17 @@ describe("migration 0055", () => {
           'tryons/j1/before.jpg', '${AT}', 'tryons/j1/look.png');`);
     // A card at 300 KB, a copy at 250 KB and a look at 5 MB (MAX_CARD_BYTES, MAX_COPY_BYTES, MAX_RESULT_BYTES).
     expect(meter(db)).toEqual([{ bytes: 300 * 1024 + 250 * 1024 + 5 * 1024 * 1024, told_percent: 0 }]);
+    expect(ledger(db)).toEqual([
+      { key: "cards/ROHIT7/v2.jpg", bytes: 300 * 1024 },
+      { key: "tryons/j1/before.jpg", bytes: 250 * 1024 },
+      { key: "tryons/j1/look.png", bytes: 5 * 1024 * 1024 },
+    ]);
   });
 
   it("starts at nought on an empty database, and holds one row", () => {
     const db = migrated("");
     expect(meter(db)).toEqual([{ bytes: 0, told_percent: 0 }]);
+    expect(ledger(db)).toEqual([]);
     expect(() => {
       db.exec("INSERT INTO storage_meter (id, bytes) VALUES (2, 0)");
     }).toThrow(/CHECK/);
