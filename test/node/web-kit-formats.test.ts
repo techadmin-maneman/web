@@ -14,7 +14,7 @@ import {
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { mobileDigits, typedDigits } from "../../packages/web-kit/mobile.ts";
-import { rupees, rupeeSign } from "../../packages/web-kit/money.ts";
+import { rupees } from "../../packages/web-kit/money.ts";
 import { WHATSAPP_NUMBER, whatsappChat, whatsappShare } from "../../packages/web-kit/whatsapp.ts";
 
 describe("web-kit dates", () => {
@@ -89,21 +89,20 @@ describe("web-kit money", () => {
     expect(rupees(paise)).toBe(written);
   });
 
-  // VIS-24: the public site writes a price with its own sign, as its design does, and the apps with "Rs.", as the
-  // Phase 2 boards do; the figure is grouped and rounded the same way under both.
-  it.each([
-    [3000000, "₹30,000"],
-    [10000000, "₹1,00,000"],
-    [235932, "₹2,359.32"],
-  ])("writes %i paise as the public site does: %s", (paise, written) => {
-    expect(rupeeSign(paise)).toBe(written);
-  });
-
   it("is the one way any front end writes rupees", () => {
     const formatting = ["apps", "site/src", "packages/ui"]
       .flatMap(sourcesUnder)
       .filter((path) => readFileSync(path, "utf8").includes("new Intl.NumberFormat("));
     expect(formatting).toEqual([]);
+  });
+
+  // The owner's ruling of 27 September 2026 (ADR 0025, item 51): the site and the landing write "Rs." as the apps do.
+  it("leaves no front end, and no message, writing the rupee sign", () => {
+    const TYPED_PRICE_CHECK = "site/src/lib/publish-gate.ts";
+    const writingTheSign = ["apps", "site/src", "packages/ui", "src"]
+      .flatMap(sourcesUnder)
+      .filter((path) => path !== TYPED_PRICE_CHECK && readFileSync(path, "utf8").includes("₹"));
+    expect(writingTheSign).toEqual([]);
   });
 });
 

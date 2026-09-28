@@ -173,7 +173,7 @@ The Phase 2 prompts (`docs/prompts/phase2-*.md`) and designs (`design/phase2/`) 
     - **Rupees are written as each design writes them**: "Rs. 2,000" in the three apps, as the Phase 2 boards do, and "₹25,000" on the public site and the landing, as the site's own design does, from one formatter (VIS-24).
     - **A browser that has had its look is shown it on arrival at /try** (CLI-29). v2 draws the flow from the upload, and the visitor used to choose a photograph and agree to its use before being told.
     - **"Still working on it" sits in the part of the comparison the photograph leaves showing, and follows the handle** (CLI-28). No board draws a result still rendering.
-    - **Confirmed by the owner on 27 September 2026, with rupees written "Rs." everywhere:** the site and the landing write "Rs. 25,000" as the apps do, from the same formatter (`docs/owner-answers-2026-09-27.md`).
+    - **Confirmed by the owner on 27 September 2026, with rupees written "Rs." everywhere:** the site and the landing write "Rs. 25,000" as the apps do, from the same formatter (`docs/owner-answers-2026-09-27.md`). **Built 28 September 2026:** `rupees` in `packages/web-kit/money.ts` writes every amount on every surface, the site's prices, the landing's and the search engines' price range included, and the site's own sign is gone (`test/node/web-kit-formats.test.ts` fails a front end or a message that writes ₹). What a transplant and medication cost, in the site's comparison, is typed "Rs." too. This departs from the site's own design, v2, which writes ₹ (`docs/fidelity-method.md`).
 
 ## Departures recorded after the audit of 24 September 2026
 
