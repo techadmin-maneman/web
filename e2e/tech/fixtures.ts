@@ -9,6 +9,7 @@
 // The people are the design's own invented ones. No real name, number or
 // photograph is used anywhere.
 
+import { randomUUID } from "node:crypto";
 import type { BrowserContext, Page, Route } from "@playwright/test";
 import type { paths } from "../../apps/tech/src/api-schema.ts";
 import { assertInContract, type Reply } from "../contract.ts";
@@ -338,6 +339,8 @@ export interface Fake {
   readonly writes: Write[];
   /** Every photograph PUT to an upload link, by its angle. */
   readonly photos: string[];
+  /** Every thumbnail PUT beside a photograph, by its angle. */
+  readonly thumbnails: string[];
   /** What the job's card reports, which the fake moves on as writes land. */
   progress: Progress;
 }
@@ -398,6 +401,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     tomorrow: false,
     writes: [],
     photos: [],
+    thumbnails: [],
     progress: NOTHING_DONE,
   };
 
@@ -437,11 +441,16 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     if (fake.revoked) return refuse(route, 401, "device_revoked");
     if (!fake.signedIn) return refuse(route, 401, "session_required");
 
-    // The photograph itself: PUT to the link the API handed out.
+    // The photograph itself, and its thumbnail: PUT to the links the API handed out.
     if (method === "PUT" && path.startsWith("/api/tech/photos/")) {
       if (fake.moved) return refuse(route, 404, "not_found");
-      fake.photos.push(path.slice("/api/tech/photos/".length));
-      return reply(route, 204);
+      const slot = path.slice("/api/tech/photos/".length);
+      if (slot.endsWith("/small")) {
+        fake.thumbnails.push(slot.slice(0, -"/small".length));
+        return reply(route, 204);
+      }
+      fake.photos.push(slot);
+      return reply(route, 200, { take: randomUUID() });
     }
 
     if (method === "POST") {
@@ -451,6 +460,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
         const body = route.request().postDataJSON() as { phase: string; angle: string };
         return reply(route, 201, {
           upload_url: `/api/tech/photos/${body.phase}-${body.angle}`,
+          small_upload_url: `/api/tech/photos/${body.phase}-${body.angle}/small`,
           expires_at: new Date(Date.now() + 900_000).toISOString(),
         });
       }
@@ -559,7 +569,9 @@ function stepOf(path: string, body: { phase?: string } | null): Step | null {
 }
 
 /** Everything the phone is holding in its own store, read from the page. */
-export function heldOnPhone(page: Page): Promise<{ outbox: number; frames: number; frameSizes: number[] }> {
+export function heldOnPhone(
+  page: Page,
+): Promise<{ outbox: number; frames: number; frameSizes: number[]; smallSizes: number[] }> {
   return page.evaluate(async () => {
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open("mm-tech");
@@ -578,8 +590,13 @@ export function heldOnPhone(page: Page): Promise<{ outbox: number; frames: numbe
         };
       });
     const outbox = await read<unknown>("outbox");
-    const frames = await read<{ frame: Blob }>("frames");
-    return { outbox: outbox.length, frames: frames.length, frameSizes: frames.map((kept) => kept.frame.size) };
+    const frames = await read<{ frame: Blob; small?: Blob }>("frames");
+    return {
+      outbox: outbox.length,
+      frames: frames.length,
+      frameSizes: frames.map((kept) => kept.frame.size),
+      smallSizes: frames.map((kept) => kept.small?.size ?? 0),
+    };
   });
 }
 

@@ -5,6 +5,7 @@
 
 import { inspectImage } from "../lib/image-bytes.ts";
 import { consentGiven } from "./messages.ts";
+import { deleteCounted, putCounted } from "./storage-meter.ts";
 
 export const CARD_WIDTH = 1200;
 export const CARD_HEIGHT = 630;
@@ -42,7 +43,7 @@ export async function storeCard(
   if (row === null) throw new Error("the client has no code");
   const version = row.card_version + 1;
   const key = cardKey(input.code, version);
-  await bucket.put(key, input.bytes, { httpMetadata: { contentType: "image/jpeg" } });
+  await putCounted(db, bucket, key, input.bytes, "image/jpeg");
   await db
     .prepare(
       `UPDATE referral_codes SET card_state = 'personal', card_version = ?2, card_key = ?3, updated_at = ?4
@@ -50,7 +51,7 @@ export async function storeCard(
     )
     .bind(input.code, version, key, input.now.toISOString())
     .run();
-  if (row.card_key !== null) await bucket.delete(row.card_key);
+  if (row.card_key !== null) await deleteCounted(db, bucket, [row.card_key]);
   return { version };
 }
 
@@ -69,7 +70,7 @@ export async function revokeCard(db: D1Database, bucket: R2Bucket, personId: str
     )
     .bind(row.code, now.toISOString())
     .run();
-  if (row.card_key !== null) await bucket.delete(row.card_key);
+  if (row.card_key !== null) await deleteCounted(db, bucket, [row.card_key]);
 }
 
 /** The personal card to show for a code, if it has one still live; otherwise the house card is shown. */

@@ -658,15 +658,27 @@ If an R2 alert fires: set `UPLOAD_DAILY_CEILING`, `RENDER_DAILY_CEILING` and `RE
 
 R2's 10 GB a month is the account's, both environments together, and past it R2 bills. What fills it:
 
-| Bucket                            | What                                                                       | Kept                                                                                                                             |
-| --------------------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `mm-<t>-tryon-uploads`            | Try-on photographs                                                         | Deleted within the hour; the bucket's 30-day rule behind that                                                                    |
-| `mm-<t>-tryon-results`            | Try-on results                                                             | `RESULT_RETENTION_DAYS`: 3 on staging, 14 in production; the 30-day rule behind that                                             |
-| `mm-<t>-client-photos`            | Visit photographs, ten a visit, from the technician app or copied from FSM | For good: deleted only by an erasure                                                                                             |
-| `mm-<t>-client-photos`, `tryons/` | A try-on photograph's small copy, and a client's kept look (ADR 0084)      | The copy as long as its look; a client's for good, and their look until their first fit is photographed; an erasure deletes both |
-| `mm-<t>-referral-cards`           | One card for each referrer who made one                                    | Until its referrer revokes it or is erased                                                                                       |
+| Bucket                            | What                                                                                                                       | Kept                                                                                                                             |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `mm-<t>-tryon-uploads`            | Try-on photographs                                                                                                         | Deleted within the hour; the bucket's 30-day rule behind that                                                                    |
+| `mm-<t>-tryon-results`            | Try-on results                                                                                                             | `RESULT_RETENTION_DAYS`: 3 on staging, 14 in production; the 30-day rule behind that                                             |
+| `mm-<t>-client-photos`            | Visit photographs, ten a visit, each with its thumbnail from the technician app, or copied from FSM without one (ADR 0093) | For good: deleted only by an erasure, which deletes everything under the visit                                                   |
+| `mm-<t>-client-photos`, `tryons/` | A try-on photograph's small copy, and a client's kept look (ADR 0084)                                                      | The copy as long as its look; a client's for good, and their look until their first fit is photographed; an erasure deletes both |
+| `mm-<t>-referral-cards`           | One card for each referrer who made one                                                                                    | Until its referrer revokes it or is erased                                                                                       |
 
-ADR 0039 gives the photographs and the cards 4 GB, about 1,480 visits at 250 KB a photograph, which is what the technician app sends. A client's kept try-on is paid from the same share, and while its look is kept at full size, the share holds about 460 visits at worst (ADR 0084; open point 151). Two things spend it faster: a photograph copied from FSM keeps FSM's size, several MB (open point 125), and the API takes one from the technician app up to 12 MB. The storage meter ADR 0039 planned, warning at 50% and 80% of the share, has not been built. The usage notifications above, at 5 GB, are the only warning.
+ADR 0039 gives the photographs and the cards 4 GB. At 250 KB a photograph and 32 KB its thumbnail, which is what the technician app sends, that is about 1,312 visits. A client's kept try-on is paid from the same share, and while its look is kept at full size, the share holds about 444 visits at worst (ADR 0084, ADR 0093). A photograph copied from FSM keeps FSM's size, several MB (open point 125), and spends it faster. One from the technician app is at most 2 MB.
+
+**The storage meter** (ADR 0093) is a running figure of what this environment's `client-photos` and `referral-cards` hold. It tells ops once at 50%, 80% and 100% of the share (the alerts `r2_share:50`, `r2_share:80` and `r2_share:100`), and Settings shows it. **Past the share R2 bills, as the owner accepted** (open point 151): nothing is refused. Past the runaway ceiling, 20 GB, the technician app's uploads answer `503 busy` and wait on the phones, and ops are told (`r2_runaway_ceiling`): something is writing far more than the business makes. Find it before anything else. The usage notifications above, at 5 GB for the account, stay as the backstop.
+
+Each environment's meter counts its own buckets against the whole share, which staging and production share. Staging holds little, but read both on the dashboard before trusting one.
+
+```sql
+SELECT ROUND(bytes / 1e9, 2) AS gb, told_percent FROM storage_meter;
+```
+
+The figure is the sum of `stored_objects`, a row for each object with its size, kept beside it. It can drift from the bucket: an object written outside the meter's helpers, or a write whose D1 batch failed after R2 took it, is not counted until its key is written again. It started from the rows (migration 0055), with cards, copies and kept looks at their upload limits and without the photographs a retake replaced. The largest objects it counts: `SELECT key, bytes FROM stored_objects ORDER BY bytes DESC LIMIT 20;`. If the figure and the rows disagree, after a correction by hand or a batch that failed half-way, set the figure back to the rows' sum: `UPDATE storage_meter SET bytes = (SELECT COALESCE(SUM(bytes), 0) FROM stored_objects) WHERE id = 1;`.
+
+The bucket sizes on the dashboard's R2 page are what bills, and they read higher than the rows: a photograph a retake replaced before migration 0055 has no row. Setting the figure to the bucket sizes instead (`UPDATE storage_meter SET bytes = <client-photos + referral-cards> WHERE id = 1;`) makes it tell ops at the true share, but the surplus over the rows is never taken off again, since an erasure takes off only what rows hold, so the figure stays that much high for good. Do it only knowing that, and note the surplus and the date where the team keeps such notes. A mark is told once for good; to hear of one again after the figure fell below it, `UPDATE storage_meter SET told_percent = 0 WHERE id = 1;`.
 
 Where it stands: the dashboard's R2 page gives each bucket's size, which is the figure that bills. The photographs the database knows of:
 
@@ -682,7 +694,7 @@ A bucket much larger than its rows is holding files nothing points at any more; 
 If the total nears 8 GB:
 
 1. Stop the try-on as above. Its results then leave over the retention days and give their share back.
-2. Never delete a client's photographs to make room: they are the client's record, promised kept. The owner decides between Workers Paid and keeping photographs in FSM (ADR 0039), and that decision is due before the share runs out.
+2. Never delete a client's photographs to make room: they are the client's record, promised kept. The owner decided on 27 September 2026 to pay for R2 past the free allowance (open point 151; ADR 0093), so the bill is the cost of keeping them.
 
 ---
 
@@ -1180,14 +1192,7 @@ INSERT INTO cities (name, served, active, sort) VALUES ('Pune', 1, 1, 80);
 UPDATE cities SET active = 0 WHERE name = 'Pune';
 ```
 
-Blackout dates are days nobody is offered a visit on, in the app or on the site's forms:
-
-```sql
-INSERT INTO visit_blackouts (date, reason) VALUES ('2026-10-20', 'Diwali');
-DELETE FROM visit_blackouts WHERE date = '2026-10-20';
-```
-
-A blackout leaves a visit already booked on the day where it is: move it from the dispatch board.
+Blackout days are days no visit is offered, in the app or from the site. Ops add and remove them in the console, Settings · Blackout days, with a reason; each change is audited under the Access identity that made it (ADR 0088), and the runbook's SQL is no longer the way. A blackout moves no visit already booked on the day: the screen says how many are, and ops move them on the dispatch board.
 
 ---
 

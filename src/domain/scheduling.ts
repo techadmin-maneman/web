@@ -39,6 +39,7 @@ import {
 import type { VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
 import { clashes } from "../policy/dispatch.ts";
+import type { SoldTerms } from "../policy/moving-a-visit.ts";
 import { bookedLength, unitsFor } from "../policy/visit-length.ts";
 import { windowAt } from "../policy/windows.ts";
 import { isFitted } from "./client-visits.ts";
@@ -56,7 +57,7 @@ export interface Day {
 const emptyDay = (): Day => ({ units: new Set(), windows: new Set(), onLeave: false });
 
 /** The days ops black out between two dates: nobody is offered a visit on them. */
-async function loadBlackouts(db: D1Database, from: string, to: string): Promise<Set<string>> {
+export async function loadBlackouts(db: D1Database, from: string, to: string): Promise<Set<string>> {
   const { results } = await db
     .prepare("SELECT date FROM visit_blackouts WHERE date BETWEEN ?1 AND ?2")
     .bind(from, to)
@@ -149,8 +150,12 @@ export interface Moving {
   readonly technicianId: string;
 }
 
-/** Until when an unpaid hold made before `now` keeps its time: its ten minutes, then the grace. */
-const graceStart = (now: Date): string => new Date(now.getTime() - PAYMENT_GRACE_SECONDS * 1000).toISOString();
+/**
+ * When an unpaid hold stops keeping its time: its countdown, then the grace it was made with, or the committed two
+ * minutes for a hold made before holds kept one. `hold` names the slot_holds row in the query it goes into.
+ */
+const graceEnds = (hold: string): string =>
+  `strftime('%Y-%m-%dT%H:%M:%fZ', ${hold}.expires_at, '+' || COALESCE(${hold}.grace_seconds, ${String(PAYMENT_GRACE_SECONDS)}) || ' seconds')`;
 
 /** A dispatch move opened before this, and still open, never finished. */
 export const movesOpenSince = (now: Date): string => new Date(now.getTime() - MOVE_CLAIM_SECONDS * 1000).toISOString();
@@ -175,12 +180,12 @@ export async function occupancy(
   const claims = await db
     .prepare(
       `SELECT c.technician_id, c.date, c.claim FROM slot_claims c JOIN slot_holds h ON h.id = c.hold_id
-       WHERE c.date BETWEEN ?1 AND ?2 AND h.state = 'held' AND (h.confirmed_at IS NOT NULL OR h.expires_at > ?3)
+       WHERE c.date BETWEEN ?1 AND ?2 AND h.state = 'held' AND (h.confirmed_at IS NOT NULL OR ${graceEnds("h")} > ?3)
        UNION ALL
        SELECT c.technician_id, c.date, c.claim FROM slot_claims c JOIN dispatch_moves m ON m.id = c.move_id
        WHERE c.date BETWEEN ?1 AND ?2 AND m.fsm_write_state = 'pending' AND m.created_at > ?4`,
     )
-    .bind(from, to, graceStart(now), movesOpenSince(now))
+    .bind(from, to, now.toISOString(), movesOpenSince(now))
     .all<{ technician_id: string; date: string; claim: string }>();
   for (const { technician_id: technicianId, date, claim } of claims.results) {
     const [kind, value = ""] = claim.split(":");
@@ -357,11 +362,12 @@ export interface Hold {
 }
 
 /**
- * Holds nobody is paying for any more: unpaid, and past their ten minutes and the grace. With ?3 = 1, the
- * client's own other unpaid holds too: in the app a client has one hold at a time. A paid hold is never here.
+ * Holds nobody is paying for any more at ?1: unpaid, and past their countdown and their grace. With ?3 = 1, the
+ * client's own other unpaid holds too: in the app a client has one hold at a time. A paid hold is never here. A hold
+ * past its grace is past its countdown too, which the index on expires_at finds.
  */
 const LET_GO = `SELECT id FROM slot_holds WHERE state = 'held' AND confirmed_at IS NULL
-  AND (expires_at <= ?1 OR (?3 = 1 AND person_id = ?2))`;
+  AND ((expires_at <= ?1 AND ${graceEnds("slot_holds")} <= ?1) OR (?3 = 1 AND person_id = ?2))`;
 
 /**
  * Lets go of the holds nobody is paying for, and, given a client, that client's own other unpaid holds too. For
@@ -370,16 +376,17 @@ const LET_GO = `SELECT id FROM slot_holds WHERE state = 'held' AND confirmed_at 
 export function lettingGo(db: D1Database, now: Date, clientToo: string | null = null): D1PreparedStatement[] {
   const ownToo = clientToo === null ? 0 : 1;
   return [
-    db.prepare(`DELETE FROM slot_claims WHERE hold_id IN (${LET_GO})`).bind(graceStart(now), clientToo, ownToo),
+    db.prepare(`DELETE FROM slot_claims WHERE hold_id IN (${LET_GO})`).bind(now.toISOString(), clientToo, ownToo),
     db
-      .prepare(`UPDATE slot_holds SET state = 'released', updated_at = ?4 WHERE id IN (${LET_GO})`)
-      .bind(graceStart(now), clientToo, ownToo, now.toISOString()),
+      .prepare(`UPDATE slot_holds SET state = 'released', updated_at = ?1 WHERE id IN (${LET_GO})`)
+      .bind(now.toISOString(), clientToo, ownToo),
   ];
 }
 
 /**
  * Holds a window for the client: their regular technician if free, else whoever has the least that day.
- * Holds nobody is paying for are let go first. Null when nobody is free, or the day is blacked out.
+ * Holds nobody is paying for are let go first. Null when nobody is free, or the day is blacked out. The hold waits
+ * `holdSeconds` for payment, and keeps its time for `graceSeconds` after, both as ops set them when it is made.
  */
 export async function holdSlot(
   db: D1Database,
@@ -392,6 +399,11 @@ export async function holdSlot(
     price: Price;
     /** What moving it late would cost as it stands now, kept on the hold for the visit's terms. */
     lateFee?: Price | null;
+    /**
+     * The terms in force as it is made, kept on the hold so the visit keeps them; left out, it is sold under the
+     * committed ones, as the site's free consultation is.
+     */
+    terms?: SoldTerms;
     /** Where the visit is, where the booking says. */
     pincode?: string | null;
     /** Paid for with a service-visit credit instead of money (ADR 0033). */
@@ -408,6 +420,7 @@ export async function holdSlot(
   },
   now: Date,
   holdSeconds: number,
+  graceSeconds: number = PAYMENT_GRACE_SECONDS,
 ): Promise<Hold | null> {
   const { personId, service, date, window, price, moves, useCredit = false, from = "app" } = input;
   const units = unitsFor(service.minutes);
@@ -440,9 +453,10 @@ export async function holdSlot(
           .prepare(
             `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
                amount_ex_gst, gst_percent, state, expires_at, created_at, updated_at, moves_appointment_id, move_kind,
-               use_credit, pincode, late_fee_ex_gst, late_fee_gst_percent, confirmed_at, queued_at, tier, minutes)
+               use_credit, pincode, late_fee_ex_gst, late_fee_gst_percent, confirmed_at, queued_at, tier, minutes,
+               grace_seconds, change_notice_hours, late_change_charge, no_show_charge)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, 'held', ?11, ?12, ?12, ?13, ?14, ?15, ?16, ?17, ?18,
-               ?19, ?19, ?20, ?21)`,
+               ?19, ?19, ?20, ?21, ?22, ?23, ?24, ?25)`,
           )
           .bind(
             id,
@@ -466,6 +480,10 @@ export async function holdSlot(
             confirmedAt,
             service.tier,
             service.minutes,
+            graceSeconds,
+            input.terms?.noticeHours ?? null,
+            input.terms?.lateCharge ?? null,
+            input.terms?.noShowCharge ?? null,
           ),
         ...claimsOf(start, units, window).map((claim) =>
           db

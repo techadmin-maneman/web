@@ -4,11 +4,14 @@
 // "before-front.jpg" or "after hair.jpg". Other attachments are left alone.
 // The newest file for an angle is the visit's photograph. One it replaces
 // stays in the bucket, under the visit's prefix, since a photograph is only
-// ever deleted on purpose and audited; an erasure finds it there.
+// ever deleted on purpose and audited; an erasure finds it there. A photograph
+// copied from FSM keeps FSM's size and has no small copy, so the client app's
+// rows show the photograph itself (docs/decisions/0093-the-storage-meter.md).
 
 import { fileExtension, inspectImage } from "../lib/image-bytes.ts";
 import { PHOTO_ANGLES, type PhotoAngle } from "../policy/in-job-steps.ts";
 import type { FsmAttachment, FsmProvider } from "../providers/fsm.ts";
+import { putCounted } from "./storage-meter.ts";
 
 export const PHASES = ["before", "after"] as const;
 /** The prompt's five angles, in the order they are taken. */
@@ -107,7 +110,7 @@ async function storePhoto(
   if (set === null) throw new Error("the photo set was not written");
 
   const key = `visits/${appointmentId}/${slot.phase}-${slot.angle}-${file.id}.${fileExtension(info.type)}`;
-  await bucket.put(key, bytes, { httpMetadata: { contentType: info.type } });
+  await putCounted(db, bucket, key, bytes, info.type);
   await db
     .prepare(
       `INSERT INTO photos (id, photo_set_id, angle, r2_key, content_type, bytes, width, height, taken_at, fsm_attachment_id, created_at)
@@ -115,7 +118,7 @@ async function storePhoto(
        ON CONFLICT (photo_set_id, angle) DO UPDATE SET
          r2_key = excluded.r2_key, content_type = excluded.content_type, bytes = excluded.bytes,
          width = excluded.width, height = excluded.height, taken_at = excluded.taken_at,
-         fsm_attachment_id = excluded.fsm_attachment_id`,
+         fsm_attachment_id = excluded.fsm_attachment_id, thumbnail_key = NULL`,
     )
     .bind(
       crypto.randomUUID(),

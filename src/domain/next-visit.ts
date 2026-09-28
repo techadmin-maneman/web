@@ -26,10 +26,11 @@ import {
   type NextVisitDays,
   type NextVisitType,
 } from "../policy/next-visit.ts";
+import { DAY_BEFORE_REMINDER_HOUR } from "../policy/job-visibility.ts";
 import { windowAt } from "../policy/windows.ts";
 import { consentGiven } from "./messages.ts";
 import { serviceToOffer } from "./services.ts";
-import { NO_VISITS_CONSENT, REMINDERS_FROM, type Composed } from "./visit-messages.ts";
+import { NO_VISITS_CONSENT, remindersFrom, type Composed } from "./visit-messages.ts";
 
 /** A visit a next service follows: a first fit, a service or a replacement, done. Migration 0048 indexes these. */
 const DONE = "a.status = 'completed' AND a.type IN ('first_fit', 'service', 'replacement') AND a.deleted_at IS NULL";
@@ -203,12 +204,17 @@ const TO_REMIND = `SELECT a.id, a.person_id FROM appointments a JOIN people p ON
   ORDER BY a.window_start LIMIT ?3`;
 
 /**
- * Writes the next service's reminder for each client it is due to, once a last visit, from the evening's reminder
- * hour in India (REMINDERS_FROM). Returns the messages' IDs, for the queue; the consumer decides at sending whether
- * each goes.
+ * Writes the next service's reminder for each client it is due to, once a last visit, from the reminder hour in
+ * India that the day-before reminders go from. Returns the messages' IDs, for the queue; the consumer decides at
+ * sending whether each goes.
  */
-export async function queueNextServiceReminders(db: D1Database, now: Date, days: NextVisitDays): Promise<string[]> {
-  if (indiaTime(now) < REMINDERS_FROM) return [];
+export async function queueNextServiceReminders(
+  db: D1Database,
+  now: Date,
+  days: NextVisitDays,
+  hour: number = DAY_BEFORE_REMINDER_HOUR,
+): Promise<string[]> {
+  if (indiaTime(now) < remindersFrom(hour)) return [];
   const { from, to } = remindedIfDoneBetween(indiaDate(now), days);
   if (to < from) return [];
   const { results } = await db

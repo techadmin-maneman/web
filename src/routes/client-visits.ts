@@ -6,6 +6,7 @@
 //   GET /api/photos                 the timeline: each visit's photographs, newest first, and the try-ons
 //   GET /api/photos/compare         one angle from two visits, side by side
 //   GET /api/photos/file/:token     a photograph itself, for the signed-in client
+//   GET /api/photos/small/:token    its small copy, for the rows, or the photograph where it has none (ADR 0093)
 //   GET /api/photos/try-on/:image/:token   a try-on's photograph or look (ADR 0082, ADR 0084)
 //
 // Every photograph is served through a link that lasts 15 minutes, and only
@@ -59,6 +60,11 @@ const PhotoLinkSchema = z
   .object({
     angle: z.enum(ANGLES),
     url: z.string().openapi({ description: "Lasts 15 minutes; only the signed-in client can open it." }),
+    thumbnail_url: z.union([z.string(), z.null()]).openapi({
+      description:
+        "Its small copy, for a row of thumbnails, likewise; null for a photograph with none, such as one copied from " +
+        "FSM, which the row shows itself.",
+    }),
     width: z.union([z.number().int(), z.null()]),
     height: z.union([z.number().int(), z.null()]),
   })
@@ -294,6 +300,21 @@ const photoFileRoute = createRoute({
   },
 });
 
+const photoSmallRoute = createRoute({
+  method: "get",
+  path: "/api/photos/small/{token}",
+  summary: "A photograph's small copy, through a link that lasts 15 minutes; the photograph itself if the copy is gone",
+  request: { params: z.object({ token: z.string() }) },
+  responses: {
+    200: {
+      description: "The image",
+      content: { "image/jpeg": { schema: z.string() }, "image/png": { schema: z.string() } },
+    },
+    401: errorResponse("session_required"),
+    404: errorResponse("not_found: the link is wrong, expired, or not this client's"),
+  },
+});
+
 const tryOnFileRoute = createRoute({
   method: "get",
   path: "/api/photos/try-on/{image}/{token}",
@@ -390,13 +411,31 @@ export function registerClientVisits(app: App): void {
     const photo = photoId === null ? null : await ownPhotoKey(c.env.DB, session.subjectId, photoId);
     const object = photo === null ? null : await c.env.CLIENT_PHOTOS.get(photo.key);
     if (photo === null || object === null) return c.json(errorBody("not_found", c.var.requestId), 404);
-    return new Response(object.body, {
-      headers: { "Content-Type": photo.contentType, "Cache-Control": "private, max-age=900" },
-    });
+    return imageResponse(object.body, photo.contentType);
+  });
+
+  app.openapi(photoSmallRoute, async (c) => {
+    const session = clientOf(c);
+    const photoId = await verifyToken(
+      c.var.config.settings.tryon.linkSigningKey,
+      "photo_small",
+      c.req.valid("param").token,
+      c.var.deps.now(),
+    );
+    const photo = photoId === null ? null : await ownPhotoKey(c.env.DB, session.subjectId, photoId);
+    if (photo === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    const small = photo.thumbnailKey === null ? null : await c.env.CLIENT_PHOTOS.get(photo.thumbnailKey);
+    if (small !== null) return imageResponse(small.body, "image/jpeg");
+    const whole = await c.env.CLIENT_PHOTOS.get(photo.key);
+    if (whole === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    return imageResponse(whole.body, photo.contentType);
   });
 
   registerTryOnImages(app);
 }
+
+const imageResponse = (body: ReadableStream, contentType: string) =>
+  new Response(body, { headers: { "Content-Type": contentType, "Cache-Control": "private, max-age=900" } });
 
 /** A try-on's photograph or look, through a link signed and checked against the session as a visit's photograph is. */
 function registerTryOnImages(app: App): void {

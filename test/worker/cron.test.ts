@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { StaticConfig } from "../../src/guard.ts";
 import { createLogger } from "../../src/log.ts";
 import { CRON_CALLS, CRON_JOBS, runCronJobs, type CronJob } from "../../src/scheduled/cron.ts";
-import { LOCAL_CONFIG, captureLogs, fakeDependencies } from "./helpers.ts";
+import { LOCAL_CONFIG, NOW, captureLogs, fakeDependencies } from "./helpers.ts";
 
 let logs: ReturnType<typeof captureLogs>;
 beforeEach(() => {
@@ -183,6 +183,7 @@ describe("CRON_JOBS", () => {
       "fsm_reconcile",
       "fsm_catalogue",
       "deletion_alerts",
+      "storage_meter",
       "whatsapp_bridge",
       "dispatch_utilisation",
       "referrals",
@@ -192,5 +193,31 @@ describe("CRON_JOBS", () => {
       "asked_windows",
       "books_sync",
     ]);
+  });
+
+  it("tells ops once when the photographs fill half their share of R2, however many runs see it", async () => {
+    await env.DB.prepare("UPDATE storage_meter SET bytes = 2.1e9").run();
+    const deps = fakeDependencies();
+    const job = CRON_JOBS.filter((cronJob) => cronJob.name === "storage_meter");
+    for (let run = 0; run < 3; run += 1) {
+      await runCronJobs(job, { env, deps, config: LOCAL_CONFIG, log: createLogger() });
+    }
+    expect(deps.alerts).toEqual([expect.stringContaining("2.10 GB in R2, half of their 4 GB share")]);
+  });
+
+  // NOW is half past the hour in UTC. The share fills over months; the hour's other checks run on the hour.
+  it("looks at the storage meter once an hour, on the half hour, and reads nothing on the other runs", async () => {
+    await env.DB.prepare("UPDATE storage_meter SET bytes = 2.1e9").run();
+    const job = CRON_JOBS.filter((cronJob) => cronJob.name === "storage_meter");
+    const at = (minutes: number) => fakeDependencies({ now: () => new Date(NOW.getTime() + minutes * 60_000) });
+
+    for (const minutes of [-30, 5, 25]) {
+      const deps = at(minutes);
+      await runCronJobs(job, { env, deps, config: LOCAL_CONFIG, log: createLogger() });
+      expect(deps.alerts, `${String(minutes)} minutes from half past`).toEqual([]);
+    }
+    const onTheHalfHour = at(0);
+    await runCronJobs(job, { env, deps: onTheHalfHour, config: LOCAL_CONFIG, log: createLogger() });
+    expect(onTheHalfHour.alerts).toHaveLength(1);
   });
 });

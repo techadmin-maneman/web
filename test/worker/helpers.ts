@@ -117,6 +117,44 @@ export async function phaseOneLead(mobileE164 = "+919810000001", city = "Gurgaon
   return leadId;
 }
 
+/** Counts every row D1 says each statement read, however the statement was run. */
+export function countRowsRead(): () => number {
+  let read = 0;
+  const counted = <T extends D1Result>(result: T): T => {
+    read += result.meta.rows_read;
+    return result;
+  };
+  const statement = Object.getPrototypeOf(env.DB.prepare("SELECT 1")) as D1PreparedStatement;
+  const database = Object.getPrototypeOf(env.DB) as D1Database;
+  // The real methods, each called below on the statement or database it belongs to.
+  const real = {
+    all: Reflect.get(statement, "all") as (this: D1PreparedStatement) => Promise<D1Result>,
+    run: Reflect.get(statement, "run") as (this: D1PreparedStatement) => Promise<D1Result>,
+    batch: Reflect.get(database, "batch") as (
+      this: D1Database,
+      statements: D1PreparedStatement[],
+    ) => Promise<D1Result[]>,
+  };
+  vi.spyOn(statement, "all").mockImplementation(async function (this: D1PreparedStatement) {
+    return counted(await real.all.call(this));
+  });
+  vi.spyOn(statement, "run").mockImplementation(async function (this: D1PreparedStatement) {
+    return counted(await real.run.call(this));
+  });
+  // first() carries no meta, so it is answered from all().
+  vi.spyOn(statement, "first").mockImplementation(async function (this: D1PreparedStatement, column?: string) {
+    const [row] = counted(await real.all.call(this)).results as Record<string, unknown>[];
+    if (row === undefined) return null;
+    return column === undefined ? row : (row[column] ?? null);
+  });
+  vi.spyOn(database, "batch").mockImplementation(async function (this: D1Database, statements) {
+    const results = await real.batch.call(this, statements);
+    for (const result of results) counted(result);
+    return results;
+  });
+  return () => read;
+}
+
 /** The address a client saved in the app, which they must have before any slot is held (ADR 0079). */
 export async function savedAddress(personId: string, pincode = "122018"): Promise<void> {
   await env.DB.prepare(

@@ -117,7 +117,13 @@ const ANGLES = ["front", "top", "left", "right", "hair"];
 /** The five angles after a visit, each answered with a block of `ink` (see PHOTO_FILES). */
 const photoSet = (ink: string) => ({
   before: [],
-  after: ANGLES.map((angle) => ({ angle, url: `/api/photos/file/${ink}`, width: 600, height: 800 })),
+  after: ANGLES.map((angle) => ({
+    angle,
+    url: `/api/photos/file/${ink}`,
+    thumbnail_url: null,
+    width: 600,
+    height: 800,
+  })),
 });
 const PHOTO_FILES = { ink: "#16233a", frame: "#131c2e", raised: "#1a2740" } as const;
 
@@ -245,6 +251,9 @@ const hold = (type: string, price: object, lateFee: object | null) => ({
   price,
   late_fee: lateFee,
   free_until: "2030-09-18T06:30:00.000Z",
+  change_notice_hours: 24,
+  // The committed terms: a first fit's late fee, a service visit kept.
+  late_change_charge: lateFee === null ? "visit" : "late_fee",
   // Board C4 shows 9:42 left.
   expires_at: new Date(IN_2030.getTime() + 582_000).toISOString(),
   state: "held",
@@ -695,6 +704,7 @@ async function changePairs(browser: Browser, design: Page): Promise<void> {
   const terms = {
     visit_id: NEXT.id,
     type: "service",
+    notice_hours: 24,
     free_until: "2030-09-18T06:30:00.000Z",
     paid: 236000,
     credit: null,
@@ -753,8 +763,8 @@ async function referPairs(browser: Browser, design: Page): Promise<void> {
     date: NOVEMBER.date,
     type: "first_fit",
     photos: {
-      before: [{ angle: "front", url: "/api/photos/file/frame", width: 600, height: 800 }],
-      after: [{ angle: "front", url: "/api/photos/file/raised", width: 600, height: 800 }],
+      before: [{ angle: "front", url: "/api/photos/file/frame", thumbnail_url: null, width: 600, height: 800 }],
+      after: [{ angle: "front", url: "/api/photos/file/raised", thumbnail_url: null, width: 600, height: 800 }],
     },
   };
   const files: Record<string, (route: Route) => Promise<void>> = {};

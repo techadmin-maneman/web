@@ -46,9 +46,18 @@ export type Grievance = Body<paths["/api/grievances"]["get"]>["grievances"][numb
 export type DeletionRequest = Body<paths["/api/deletion-requests"]["get"]>["requests"][number];
 export type NumberChange = Body<paths["/api/number-changes"]["get"]>["changes"][number];
 
-/** The business inputs ops set for themselves (docs/decisions/0061-ops-editable-inputs.md). */
+/**
+ * The business inputs ops set for themselves (docs/decisions/0061-ops-editable-inputs.md): a rule of numbers, or of
+ * choices (docs/decisions/0088-every-policy-in-the-console.md).
+ */
 export type OpsSetting = Body<paths["/api/settings"]["get"]>["settings"][number];
+export type NumberRule = Extract<OpsSetting, { kind: "number" }>;
+export type ChoiceRule = Extract<OpsSetting, { kind: "choice" }>;
 export type SettingValue = OpsSetting["value"];
+/** The days no visit is offered (docs/decisions/0088-every-policy-in-the-console.md). */
+export type Blackout = Body<paths["/api/blackouts"]["get"]>["blackouts"][number];
+export type BlackoutAdd = Sent<paths["/api/blackouts"]["post"]>;
+export type BlackoutRemove = Sent<paths["/api/blackouts/remove"]["post"]>;
 export type Price = Body<paths["/api/prices"]["post"]>["prices"][number];
 export type PriceChange = Sent<paths["/api/prices"]["post"]>;
 export type PriceWithdrawal = Sent<paths["/api/prices/withdraw"]["post"]>;
@@ -276,6 +285,8 @@ export const api = {
     client.post("/api/technicians/{id}/leave/{leave}/cancel", { path: { id, leave: leaveId } }),
   /** Every rule ops may change, with its unit, its bounds and who last set it (ADR 0061). */
   settings: () => client.get("/api/settings"),
+  /** What the photographs and referral cards hold in R2, against their share (ADR 0093). */
+  storage: () => client.get("/api/storage"),
   /** One rule. A null value puts the figure in the code back and removes the row. */
   setSetting: (name: OpsSetting["name"], value: SettingValue | null) =>
     client.post("/api/settings/{name}", { path: { name }, body: { value } }),
@@ -303,6 +314,12 @@ export const api = {
     client.post("/api/services/{kind}/{tier}/retire", { path: { kind, tier }, body: { from } }),
   restoreService: (kind: Kind, tier: string) =>
     client.post("/api/services/{kind}/{tier}/restore", { path: { kind, tier } }),
+  /** Every day from today on that no visit is offered, with what is still booked on each. */
+  blackouts: () => client.get("/api/blackouts"),
+  /** Every day from the first to the last, both included. A day already blacked out takes this reason. */
+  addBlackouts: (period: BlackoutAdd) => client.post("/api/blackouts", { body: period }),
+  /** The days from the first to the last are offered again. */
+  removeBlackouts: (period: BlackoutRemove) => client.post("/api/blackouts/remove", { body: period }),
   /** Every pincode, with how many wait there and how many serving it would tell. */
   serviceArea: () => client.get("/api/service-area"),
   /**
