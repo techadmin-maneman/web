@@ -303,7 +303,7 @@ export interface paths {
                         "application/json": components["schemas"]["Consultation"];
                     };
                 };
-                /** @description invalid_request */
+                /** @description invalid_request: fields names what was refused, address.pincode for an address in another pincode */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -330,7 +330,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"] | components["schemas"]["AlreadyBooked"];
                     };
                 };
-                /** @description invalid_request: the pincode is not served, or the day is not open, or the address is in another pincode (fields names address.pincode); not_bookable: this number is past consultations, and books in the app; idempotency_key_reused: the key was used with a different body */
+                /** @description not_bookable: the pincode is not served, the day is not open, or this number is past consultations and books in the app; idempotency_key_reused: the key was used with a different body */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -456,7 +456,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description invalid_request: that pincode is served; book instead; idempotency_key_reused: the key was used with a different body */
+                /** @description not_bookable: that pincode is served; book instead; idempotency_key_reused: the key was used with a different body */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -675,7 +675,7 @@ export interface paths {
                         "application/json": components["schemas"]["ReferralConsultation"];
                     };
                 };
-                /** @description invalid_request */
+                /** @description invalid_request: fields names what was refused, address.pincode for an address in another pincode */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -702,7 +702,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"] | components["schemas"]["AlreadyBooked"];
                     };
                 };
-                /** @description not_bookable: the pincode is not served, the day is not open, or this number is past consultations; invalid_request: the address is in another pincode (fields names address.pincode); idempotency_key_reused: the key was used with a different body */
+                /** @description not_bookable: the pincode is not served, the day is not open, or this number is past consultations; idempotency_key_reused: the key was used with a different body */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -1323,7 +1323,7 @@ export interface paths {
                     };
                 };
                 /** @description session_required: neither the gate's session nor this browser's look is this job's */
-                403: {
+                401: {
                     headers: {
                         [name: string]: unknown;
                     };

@@ -278,7 +278,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request
+**400**: invalid_request: fields names what was refused, address.pincode for an address in another pincode
 
 ```json
 {
@@ -309,7 +309,7 @@ Request body:
 }
 ```
 
-**422**: invalid_request: the pincode is not served, or the day is not open, or the address is in another pincode (fields names address.pincode); not_bookable: this number is past consultations, and books in the app; idempotency_key_reused: the key was used with a different body
+**422**: not_bookable: the pincode is not served, the day is not open, or this number is past consultations and books in the app; idempotency_key_reused: the key was used with a different body
 
 ```json
 {
@@ -471,7 +471,7 @@ Request body:
 }
 ```
 
-**422**: invalid_request: that pincode is served; book instead; idempotency_key_reused: the key was used with a different body
+**422**: not_bookable: that pincode is served; book instead; idempotency_key_reused: the key was used with a different body
 
 ```json
 {
@@ -612,7 +612,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request
+**400**: invalid_request: fields names what was refused, address.pincode for an address in another pincode
 
 ```json
 {
@@ -643,7 +643,7 @@ Request body:
 }
 ```
 
-**422**: not_bookable: the pincode is not served, the day is not open, or this number is past consultations; invalid_request: the address is in another pincode (fields names address.pincode); idempotency_key_reused: the key was used with a different body
+**422**: not_bookable: the pincode is not served, the day is not open, or this number is past consultations; idempotency_key_reused: the key was used with a different body
 
 ```json
 {
@@ -1056,7 +1056,7 @@ The result, for the gate's session or the browser that made the look
 }
 ```
 
-**403**: session_required: neither the gate's session nor this browser's look is this job's
+**401**: session_required: neither the gate's session nor this browser's look is this job's
 
 ```json
 {

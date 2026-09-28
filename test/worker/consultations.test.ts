@@ -105,18 +105,21 @@ describe("POST /api/consultation", () => {
     });
   });
 
-  it("refuses a pincode we do not serve, and a day outside the fortnight", async () => {
+  // As the landing answers them, and as the form words them: "That day is no longer open" (open point 105).
+  it("refuses a pincode we do not serve, and a day outside the fortnight, as not bookable", async () => {
     await pincode("400050", "Bandra", "Mumbai", false);
     await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
     const body = { ...VISITOR, date: "2026-09-23", window: "morning", consent: true, address: ADDRESS };
 
-    expect((await request(site(), "/api/consultation", post({ ...body, pincode: "400050" }))).status).toBe(422);
-    expect(
-      (await request(site(), "/api/consultation", post({ ...body, pincode: "122018", date: "2026-09-21" }))).status,
-    ).toBe(422);
-    expect(
-      (await request(site(), "/api/consultation", post({ ...body, pincode: "122018", date: "2026-10-31" }))).status,
-    ).toBe(422);
+    for (const refused of [
+      { ...body, pincode: "400050" },
+      { ...body, pincode: "122018", date: "2026-09-21" },
+      { ...body, pincode: "122018", date: "2026-10-31" },
+    ]) {
+      const answer = await request(site(), "/api/consultation", post(refused));
+      expect(answer.status).toBe(422);
+      expect(await answer.json()).toMatchObject({ error: { code: "not_bookable" } });
+    }
   });
 
   // Ops fix the hour on WhatsApp while the flag is off, so the day the visitor
@@ -183,7 +186,7 @@ describe("the address the consultation is at", () => {
 
   it("is refused in a pincode other than the one checked, naming it, and nothing is booked", async () => {
     const answer = await book({ address: { ...ADDRESS, pincode: "122017" } });
-    expect(answer.status).toBe(422);
+    expect(answer.status).toBe(400);
     expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["address.pincode"] } });
     expect(await count("SELECT COUNT(*) AS n FROM people")).toBe(0);
     expect(await count("SELECT COUNT(*) AS n FROM slot_holds")).toBe(0);
@@ -420,6 +423,7 @@ describe("POST /api/waitlist", () => {
       post({ ...VISITOR, pincode: "122018", contact_consent: true, launch_alert: false }),
     );
     expect(answer.status).toBe(422);
+    expect(await answer.json()).toMatchObject({ error: { code: "not_bookable" } });
   });
 });
 
@@ -779,6 +783,6 @@ describe("the Idempotency-Key", () => {
     await request(site(), "/api/consultation", keyed(outside, "key-consult-0003"), bindings());
     const again = await request(site(), "/api/consultation", keyed(outside, "key-consult-0003"), bindings());
     expect(again.status).toBe(422);
-    expect(await again.json()).toMatchObject({ error: { code: "invalid_request" } });
+    expect(await again.json()).toMatchObject({ error: { code: "not_bookable" } });
   });
 });

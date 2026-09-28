@@ -328,11 +328,11 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   const first = addDays(indiaDate(now), 1);
   const pincode = await pincodeOf(db, request.pincode);
   if (pincode?.served !== 1 || request.date < first || request.date > addDays(first, BOOKING_DAYS - 1)) {
-    return { ok: false, status: 422, code: "invalid_request" };
+    return { ok: false, status: 422, code: "not_bookable" };
   }
   // The technician goes to the address, so it must be where the pincode said we come.
   if (request.address.pincode !== request.pincode) {
-    return { ok: false, status: 422, code: "invalid_request", fields: ["address.pincode"] };
+    return { ok: false, status: 400, code: "invalid_request", fields: ["address.pincode"] };
   }
   const checked = await form.checkPerson(request.mobile, request.turnstileToken);
   if (!checked.ok) return checked;
@@ -459,7 +459,7 @@ export async function joinTheWaitlist(
 ): Promise<Listed | Refusal<400 | 403 | 422 | 429 | 503>> {
   const { db, now } = form;
   const pincode = await pincodeOf(db, request.pincode);
-  if (pincode?.served === 1) return { ok: false, status: 422, code: "invalid_request" };
+  if (pincode?.served === 1) return { ok: false, status: 422, code: "not_bookable" };
   const checked = await form.checkPerson(request.mobile, request.turnstileToken);
   if (!checked.ok) return checked;
 

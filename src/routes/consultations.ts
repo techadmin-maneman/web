@@ -197,13 +197,14 @@ const consultationRoute = createRoute({
   },
   responses: {
     201: { description: "Booked, or asked for", content: { "application/json": { schema: ConsultationSchema } } },
-    400: errorResponse("invalid_request"),
+    400: errorResponse(
+      "invalid_request: fields names what was refused, address.pincode for an address in another pincode",
+    ),
     403: errorResponse("turnstile_failed"),
     409: takenOrBooked,
     422: errorResponse(
-      "invalid_request: the pincode is not served, or the day is not open, or the address is in another pincode " +
-        "(fields names address.pincode); not_bookable: this number is past consultations, and books in the app; " +
-        "idempotency_key_reused: the key was used with a different body",
+      "not_bookable: the pincode is not served, the day is not open, or this number is past consultations and " +
+        "books in the app; idempotency_key_reused: the key was used with a different body",
     ),
     429: errorResponse("rate_limited"),
     503: errorResponse("unavailable: Turnstile could not be reached"),
@@ -224,7 +225,7 @@ const waitlistRoute = createRoute({
     403: errorResponse("turnstile_failed"),
     409: errorResponse("idempotency_in_progress: the first request with this key is still running"),
     422: errorResponse(
-      "invalid_request: that pincode is served; book instead; idempotency_key_reused: the key was used with a " +
+      "not_bookable: that pincode is served; book instead; idempotency_key_reused: the key was used with a " +
         "different body",
     ),
     429: errorResponse("rate_limited"),
