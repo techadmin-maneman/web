@@ -491,6 +491,33 @@ describe("erasure blanks what ops wrote about the client", () => {
     expect(ruled).toEqual({ grant_state: "rejected", decision: "charged" });
   });
 
+  // Which member of staff took their address on the phone is about the client too (docs/decisions/0092-task-owners.md);
+  // the audit log, which an erasure cannot reach, still says who saved one.
+  it("blanks who in ops took the friend's address on the phone, and keeps the log's entry", async () => {
+    await reasonsWritten();
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode, given_to_staff)
+         VALUES ('address-9', ?1, ?2, 'Flat 9, Palm Grove', 'Sector 65', 'Gurgaon', '122018', 'priya@maneman.in')`,
+      ).bind(FRIEND, NOW.toISOString()),
+      // The check-in was measured against it, so it is blanked rather than deleted.
+      env.DB.prepare("UPDATE checkins SET address_id = 'address-9' WHERE id = 'checkin-9'"),
+      env.DB.prepare(
+        `INSERT INTO audit_log (at, surface, actor_kind, actor, action, subject_kind, subject_id, request_id)
+         VALUES (?2, 'ops', 'staff', 'priya@maneman.in', 'address.given_to_ops', 'person', ?1, 'r')`,
+      ).bind(FRIEND, NOW.toISOString()),
+    ]);
+
+    await erasePerson(env, FRIEND, NOW, createLogger());
+
+    expect(await env.DB.prepare("SELECT line1, given_to_staff FROM addresses").all()).toMatchObject({
+      results: [{ line1: "Erased", given_to_staff: null }],
+    });
+    expect(await env.DB.prepare("SELECT actor FROM audit_log WHERE action = 'address.given_to_ops'").first()).toEqual({
+      actor: "priya@maneman.in",
+    });
+  });
+
   it("blanks the grant's review reason when the referrer is the one erased", async () => {
     await reasonsWritten();
 

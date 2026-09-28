@@ -7,7 +7,8 @@
 --
 -- A task is still read from the queues at the moment ops look: nothing here is a
 -- copy of one. What is kept is about a task, keyed by its group and the id of
--- the row it is read from, which no later task reuses.
+-- the row it is read from, and, for an owner, the task's episode where that row
+-- can be a new task again once its task has gone (src/domain/tasks.ts).
 --
 -- New tables, new nullable columns or columns with a default, triggers, indexes,
 -- each filled from what is there: the Worker already deployed reads none of it,
@@ -15,10 +16,15 @@
 
 -- The member of staff a task is theirs, by their Access e-mail. A task with no
 -- row here has no owner. A row whose task has gone, because its thing was done,
--- is left behind and never read: nothing else has that group and id.
+-- is left behind and read only by that same task, should its thing be undone.
+-- Two groups' rows can be new tasks again: a job moved onto another day off,
+-- and a first fit asked again or after a later consultation. Their episode says
+-- which task the owner was given for, so a new one is nobody's; for every other
+-- group it is empty.
 CREATE TABLE task_owners (
   task_group TEXT NOT NULL,
   subject_id TEXT NOT NULL,
+  episode TEXT NOT NULL,
   owner TEXT NOT NULL,
   assigned_by TEXT NOT NULL,
   assigned_at TEXT NOT NULL,

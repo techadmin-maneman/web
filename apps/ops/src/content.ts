@@ -402,8 +402,9 @@ export const clients = {
   failed: "We could not load this client.",
   /*
    * PLACEHOLDER, all of it: the board draws a Visits tab and nothing in it. It
-   * is the record's own address and visits, which the page already holds, so
-   * the tab reads nothing more from the API.
+   * is the record's own address and visits, which the page already holds, and
+   * the form to record an address the client gives ops on the phone, which
+   * searches for their building and saves it (docs/decisions/0092-task-owners.md).
    */
   visits: {
     address: "Visits go to",

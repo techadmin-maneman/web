@@ -9,6 +9,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/http/context.ts";
+import { firstFitRequestStatement } from "../../src/domain/next-visit.ts";
 import { NEXT_VISIT_DAYS } from "../../src/policy/next-visit.ts";
 import { MAX_SYNC_ATTEMPTS } from "../../src/queues/crm-sync.ts";
 import { TASKS_SHOWN } from "../../src/routes/ops-tasks.ts";
@@ -43,6 +44,17 @@ interface Body {
 }
 
 const tasks = async (): Promise<Body> => (await request(ops, "/api/tasks")).json<Body>();
+
+/** The console as a service token sees it: Access let it in, and it names no member of staff. */
+const asServiceToken = () =>
+  appFor(
+    "local",
+    fakeDependencies({
+      access: { verify: () => Promise.resolve({ ok: true, identity: { kind: "service", clientId: "ci.access" } }) },
+    }),
+    {},
+    "ops",
+  );
 const groupNames = (body: Body) => body.groups.map((each) => each.group);
 const tasksIn = (body: Body, group: string) => body.groups.find((each) => each.group === group)?.tasks ?? [];
 
@@ -722,13 +734,13 @@ describe("PUT /api/tasks/{group}/{id}/owner", () => {
       body: JSON.stringify({ owner }),
     });
 
-  /** A member of staff who has signed in to the console before: Access let them in, and the log says so. */
-  async function signedIn(email: string) {
+  /** A member of staff who has signed in to the console before, yesterday unless `at` says: the log says so. */
+  async function signedIn(email: string, at = "2026-09-20T06:00:00.000Z") {
     await env.DB.prepare(
       `INSERT INTO audit_log (at, surface, actor_kind, actor, action, request_id, detail)
-       VALUES ('2026-09-20T06:00:00.000Z', 'ops', 'staff', ?1, 'ops.call', 'r', '{}')`,
+       VALUES (?2, 'ops', 'staff', ?1, 'ops.call', 'r', '{}')`,
     )
-      .bind(email)
+      .bind(email, at)
       .run();
   }
 
@@ -824,6 +836,131 @@ describe("PUT /api/tasks/{group}/{id}/owner", () => {
     expect(await ownersIn("address_to_confirm")).toEqual([null]);
   });
 
+  // Staff who have left keep their e-mail in the log for ever; only those seen lately may be given a task.
+  it("offers only the staff seen in the last 90 days, and keeps an older owner until the task is handed on", async () => {
+    await grievance(GRIEVANCE);
+    await signedIn(PRIYA);
+    await signedIn("anil@maneman.in", "2026-06-20T06:00:00.000Z"); // 93 days before NOW
+    expect((await tasks()).staff).toEqual([ME, PRIYA]);
+    expect((await ownerOf("grievance", GRIEVANCE, "anil@maneman.in")).status).toBe(400);
+
+    // Given to Anil while he was about, the task still says so, and may be handed on or back.
+    await env.DB.prepare(
+      `INSERT INTO task_owners (task_group, subject_id, episode, owner, assigned_by, assigned_at)
+       VALUES ('grievance', ?1, '', 'anil@maneman.in', 'ops@localhost', '2026-06-20T06:00:00.000Z')`,
+    )
+      .bind(GRIEVANCE)
+      .run();
+    expect(await ownersIn("grievance")).toEqual(["anil@maneman.in"]);
+    expect((await ownerOf("grievance", GRIEVANCE, PRIYA)).status).toBe(200);
+    expect(await ownersIn("grievance")).toEqual([PRIYA]);
+  });
+
+  // A service token is let in by Access, and names no member of staff to keep a task under.
+  it("gives or hands back nothing for a service token", async () => {
+    await grievance(GRIEVANCE);
+    const answer = await request(asServiceToken(), `/api/tasks/grievance/${GRIEVANCE}/owner`, {
+      method: "PUT",
+      headers: ORIGIN,
+      body: JSON.stringify({ owner: ME }),
+    });
+    expect(answer.status).toBe(403);
+    expect(await answer.json()).toMatchObject({ error: { code: "access_required" } });
+    expect(await ownersIn("grievance")).toEqual([null]);
+  });
+
+  // Where a task's row can be a task again once it has left, the one after is a new task, and nobody's
+  // (docs/decisions/0092-task-owners.md).
+  describe("a new task on a row that was a task before", () => {
+    const LATER = new Date(NOW.getTime() + 60 * 60 * 1000).toISOString();
+
+    async function leave(id: string, day: string, at: string) {
+      await env.DB.prepare(
+        `INSERT INTO technician_leave (id, technician_id, from_date, to_date, actor, created_at)
+         VALUES (?1, 't9', ?2, ?2, 'ops@localhost', ?3)`,
+      )
+        .bind(id, day, at)
+        .run();
+    }
+
+    async function visitOf(id: string, type: string, start: string, status = "completed") {
+      await env.DB.prepare(
+        `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, status, fsm_status,
+           fsm_modified_at, synced_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?5, ?6, ?6, ?7, ?7)`,
+      )
+        .bind(id, `fsm-${id}`, PERSON, type, start, status, NOW.toISOString())
+        .run();
+    }
+
+    it("a moved job's new conflict has no owner", async () => {
+      await person(OTHER, "Karan Bhatia", "+919810000003");
+      await env.DB.batch([
+        env.DB.prepare(
+          "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t9', 'fsm-t9', 'Chetan Arora', 'CA', 1, ?1)",
+        ).bind(NOW.toISOString()),
+        env.DB.prepare(
+          `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status,
+             fsm_status, fsm_modified_at, synced_at)
+           VALUES (?1, 'fsm-appt-11', ?2, 'service', '2026-09-23T05:00:00.000Z', '2026-09-23T06:30:00.000Z',
+             't9', 'scheduled', 'Scheduled', ?3, ?3)`,
+        ).bind(VISIT, OTHER, NOW.toISOString()),
+      ]);
+      await leave("leave-1", "2026-09-23", NOW.toISOString());
+      await ownerOf("leave_conflict", VISIT, ME);
+      expect(await ownersIn("leave_conflict")).toEqual([ME]);
+
+      // Ops move the job to the 26th, and the task leaves; leave Chetan takes on the 26th later is a new conflict.
+      await env.DB.prepare(
+        "UPDATE appointments SET window_start = '2026-09-26T05:00:00.000Z', window_end = '2026-09-26T06:30:00.000Z'",
+      ).run();
+      expect(groupNames(await tasks())).not.toContain("leave_conflict");
+      await leave("leave-2", "2026-09-26", LATER);
+      expect(await ownersIn("leave_conflict")).toEqual([null]);
+    });
+
+    it("a first fit asked again has no owner", async () => {
+      await env.DB.prepare(
+        "INSERT INTO first_fit_requests (id, person_id, preferred_window, created_at) VALUES (?1, ?2, 'afternoon', ?3)",
+      )
+        .bind(REQUEST, PERSON, "2026-09-01T06:00:00.000Z")
+        .run();
+      await visitOf(CONSULTATION, "consultation", "2026-09-10T04:30:00.000Z");
+      await ownerOf("first_fit_to_book", REQUEST, ME);
+      expect(await ownersIn("first_fit_to_book")).toEqual([ME]);
+
+      // The site's form asked again: the latest request stands, on the row of the one before (src/domain/next-visit.ts).
+      await firstFitRequestStatement(env.DB, { personId: PERSON, window: "morning", now: NOW }).run();
+      expect(tasksIn(await tasks(), "first_fit_to_book")).toMatchObject([{ id: REQUEST, owner: null }]);
+    });
+
+    it("a first fit to book after a later consultation has no owner", async () => {
+      await env.DB.prepare(
+        "INSERT INTO first_fit_requests (id, person_id, preferred_window, created_at) VALUES (?1, ?2, NULL, ?3)",
+      )
+        .bind(REQUEST, PERSON, "2026-07-25T06:00:00.000Z")
+        .run();
+      await visitOf(CONSULTATION, "consultation", "2026-08-01T04:30:00.000Z");
+      await ownerOf("first_fit_to_book", REQUEST, ME);
+
+      // Fitted, the task leaves; consulted again, the request still standing makes a new one.
+      await visitOf("the-fit", "first_fit", "2026-08-10T04:30:00.000Z");
+      expect(groupNames(await tasks())).not.toContain("first_fit_to_book");
+      await visitOf("consulted-again", "consultation", "2026-09-10T04:30:00.000Z");
+      expect(tasksIn(await tasks(), "first_fit_to_book")).toMatchObject([{ id: REQUEST, owner: null }]);
+    });
+
+    // Its thing undone, a task comes back as it was: a booking called off leaves the client at risk from the same visit.
+    it("keeps the owner of a task that comes back when its thing is undone", async () => {
+      await visitOf(VISIT, "service", "2026-08-01T04:30:00.000Z");
+      await ownerOf("at_risk_client", VISIT, ME);
+      await visitOf("booked", "service", "2026-09-25T04:30:00.000Z", "scheduled");
+      expect(groupNames(await tasks())).not.toContain("at_risk_client");
+      await env.DB.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = 'booked'").run();
+      expect(await ownersIn("at_risk_client")).toEqual([ME]);
+    });
+  });
+
   it("belongs to the ops surface alone", async () => {
     const client = appFor("local", fakeDependencies(), {}, "client");
     const answer = await request(client, `/api/tasks/grievance/${GRIEVANCE}/owner`, {
@@ -900,6 +1037,17 @@ describe("POST /api/tasks/{group}/{id}/close", () => {
       expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["reason"] } });
     }
     expect(groupNames(await tasks())).toEqual(["partial_visit"]);
+    expect(await closures()).toEqual([]);
+  });
+
+  it("closes nothing for a service token, which names no member of staff to keep the reason under", async () => {
+    await leftPartlyDone(VISIT, "2026-09-20T04:30:00.000Z");
+    const answer = await request(asServiceToken(), `/api/tasks/partial_visit/${VISIT}/close`, {
+      method: "POST",
+      headers: ORIGIN,
+      body: JSON.stringify({ reason: WHY }),
+    });
+    expect(answer.status).toBe(403);
     expect(await closures()).toEqual([]);
   });
 

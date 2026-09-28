@@ -21,15 +21,23 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
-import { staffOf } from "../http/audit.ts";
+import { memberOfStaffOf } from "../http/audit.ts";
 import { closeTask } from "../domain/task-closures.ts";
-import { assignTask, handBackTask, staffWhoHaveSignedIn, type TaskKey } from "../domain/task-owners.ts";
+import { assignTask, handBackTask, staffSeenSince, type TaskKey } from "../domain/task-owners.ts";
 import { outstandingTasks, overdueCount, READ_CAP, type Task } from "../domain/tasks.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
-import { CLOSABLE_TASK_GROUPS, isClosable, mayOwnTasks, TASK_GROUPS, TASK_SLA_HOURS } from "../policy/tasks.ts";
+import { DAY_MS } from "../lib/durations.ts";
+import {
+  CLOSABLE_TASK_GROUPS,
+  isClosable,
+  mayOwnTasks,
+  STAFF_SEEN_WITHIN_DAYS,
+  TASK_GROUPS,
+  TASK_SLA_HOURS,
+} from "../policy/tasks.ts";
 
 /** The tasks each group lists, the longest waits; its count is the whole queue's. */
 export const TASKS_SHOWN = 50;
@@ -129,7 +137,7 @@ const ownerRoute = createRoute({
       ...json(z.object({ owner: OwnerSchema }).strict().openapi("TaskOwner")),
     },
     400: errorResponse("invalid_request: nobody has signed in to the console with that e-mail"),
-    403: errorResponse("access_required"),
+    403: errorResponse("access_required: no Access token, or a service token, which names no member of staff"),
     404: errorResponse("not_found: no such task on the board now; its thing may be done already"),
   },
 });
@@ -158,7 +166,7 @@ const closeRoute = createRoute({
   responses: {
     204: { description: "Closed, under the member of staff who closed it" },
     400: errorResponse("invalid_request: no reason, or a group whose tasks close only when their thing is done"),
-    403: errorResponse("access_required"),
+    403: errorResponse("access_required: no Access token, or a service token, which names no member of staff"),
     404: errorResponse("not_found: no such task on the board now; a follow-up may be booked, or it is closed already"),
   },
 });
@@ -169,6 +177,13 @@ async function readTheBoard(c: Context<AppEnv>) {
   return outstandingTasks(c.env.DB, c.var.deps.now(), inputs.taskSlaHours, inputs.nextVisitDays);
 }
 
+/** The members of staff a task may be given to: those who have used the console lately (src/policy/tasks.ts). */
+const staffNow = (c: Context<AppEnv>): Promise<string[]> =>
+  staffSeenSince(c.env.DB, new Date(c.var.deps.now().getTime() - STAFF_SEEN_WITHIN_DAYS * DAY_MS));
+
+/** A write kept under whoever made it, asked for by a service token, which names nobody. */
+const noMemberOfStaff = (c: Context<AppEnv>) => c.json(errorBody("access_required", c.var.requestId), 403);
+
 /** The task as the board reads it now; null once its thing is done, or if there never was one. */
 async function taskOnTheBoard(c: Context<AppEnv>, key: TaskKey): Promise<Task | null> {
   const { tasks } = await readTheBoard(c);
@@ -178,7 +193,7 @@ async function taskOnTheBoard(c: Context<AppEnv>, key: TaskKey): Promise<Task | 
 export function registerOpsTasks(app: App): void {
   app.openapi(tasksRoute, async (c) => {
     const now = c.var.deps.now();
-    const [{ tasks, truncated }, staff] = await Promise.all([readTheBoard(c), staffWhoHaveSignedIn(c.env.DB)]);
+    const [{ tasks, truncated }, staff] = await Promise.all([readTheBoard(c), staffNow(c)]);
     // In the policy's order, and a group with nothing in it is left out, as the board draws none.
     const groups = TASK_GROUPS.map((group) => {
       const waiting = tasks.filter((task) => task.group === group);
@@ -201,22 +216,23 @@ export function registerOpsTasks(app: App): void {
     const owner = asked === null ? null : asked.toLowerCase();
     const { requestId } = c.var;
     const db = c.env.DB;
+    const staff = memberOfStaffOf(c);
+    if (staff === null) return noMemberOfStaff(c);
 
     const task = await taskOnTheBoard(c, key);
     if (task === null) return c.json(errorBody("not_found", requestId), 404);
     if (task.owner === owner) return c.json({ owner }, 200);
 
     const now = c.var.deps.now();
-    const staff = staffOf(c);
     const entry = { surface: "ops" as const, actor: staff, subject: { kind: "task", id: key.id }, requestId };
     if (owner === null) {
       await handBackTask(db, key, { now, audit: { ...entry, action: "task.hand_back", detail: { group: key.group } } });
       return c.json({ owner: null }, 200);
     }
-    if (!mayOwnTasks(owner, await staffWhoHaveSignedIn(db))) {
+    if (!mayOwnTasks(owner, await staffNow(c))) {
       return c.json(errorBody("invalid_request", requestId, ["owner"]), 400);
     }
-    await assignTask(db, key, {
+    await assignTask(db, task, {
       owner,
       by: staff.id,
       now,
@@ -229,10 +245,11 @@ export function registerOpsTasks(app: App): void {
     const key = c.req.valid("param");
     const { reason } = c.req.valid("json");
     const { requestId } = c.var;
+    const staff = memberOfStaffOf(c);
+    if (staff === null) return noMemberOfStaff(c);
     if ((await taskOnTheBoard(c, key)) === null) return c.json(errorBody("not_found", requestId), 404);
 
     const now = c.var.deps.now();
-    const staff = staffOf(c);
     await closeTask(c.env.DB, key, {
       reason,
       by: staff.id,

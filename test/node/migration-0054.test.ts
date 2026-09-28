@@ -194,8 +194,8 @@ describe("migration 0054: what is kept about a task", () => {
   it("keeps one owner and one closing a task, and an address's member of staff", () => {
     const db = migrated();
     const own = db.prepare(
-      `INSERT INTO task_owners (task_group, subject_id, owner, assigned_by, assigned_at)
-       VALUES ('partial_visit', 'v1', ?, 'ops@maneman.in', '${AT}')`,
+      `INSERT INTO task_owners (task_group, subject_id, episode, owner, assigned_by, assigned_at)
+       VALUES ('partial_visit', 'v1', '', ?, 'ops@maneman.in', '${AT}')`,
     );
     own.run("priya@maneman.in");
     expect(() => own.run("anil@maneman.in")).toThrow(/UNIQUE/);

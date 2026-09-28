@@ -38,6 +38,11 @@ export interface Task {
   readonly detail: string | null;
   readonly since: string;
   readonly due: string;
+  /**
+   * Which task it is, where its row can be a new task again once this one has gone: a job's start and its leave, a
+   * first fit's asking and its consultation. Empty for every other group. Its owner is kept for it alone.
+   */
+  readonly episode: string;
   /** The Access e-mail of the member of staff it is theirs; null while nobody has taken it. */
   readonly owner: string | null;
 }
@@ -58,12 +63,25 @@ export const READ_CAP = 2000;
 
 /**
  * One statement's arms, each task with the member of staff ops made it theirs, and the longest wait first. The
- * owner is found by the task's group and id (docs/decisions/0092-task-owners.md), so one left behind by a task since
- * done is never read, and never lands on another.
+ * owner is found by the task's group, its row's id and its episode (docs/decisions/0092-task-owners.md), so one left
+ * behind by a task since done lands on no new task about the same row.
  */
 const withOwners = (arms: string) => `SELECT t.*, o.owner FROM (${arms}) t
-  LEFT JOIN task_owners o ON o.task_group = t."group" AND o.subject_id = t.id
+  LEFT JOIN task_owners o ON o.task_group = t."group" AND o.subject_id = t.id AND o.episode = t.episode
  ORDER BY t.since LIMIT ?2`;
+
+/**
+ * A job on a day off is a new conflict on another day, or on leave recorded since: its start, and the first leave
+ * recorded over it.
+ */
+const LEAVE_CONFLICT_EPISODE = `a.window_start || ' ' ||
+  (SELECT l.id FROM technician_leave l WHERE ${LEAVE_ON_THE_DAY} ORDER BY l.created_at, l.id LIMIT 1)`;
+
+/**
+ * A first fit to book is a new task when it is asked for again, which keeps the row of the request before, or when
+ * a later consultation follows the same request: when it was asked, and the consultation it follows.
+ */
+const FIRST_FIT_EPISODE = "r.created_at || ' ' || s.consulted_start";
 
 /**
  * Every queue, in three statements sent together. D1 takes at most five arms in one
@@ -90,7 +108,7 @@ const withOwners = (arms: string) => `SELECT t.*, o.owner FROM (${arms}) t
 const OUTSTANDING = [
   withOwners(`
   SELECT 'untold_move' AS "group", m.id AS id, a.person_id AS person_id, pe.name AS person_name,
-         m.now_start AS detail, m.created_at AS since, NULL AS due_by
+         m.now_start AS detail, m.created_at AS since, NULL AS due_by, '' AS episode
     FROM appointments a JOIN dispatch_moves m ON m.appointment_id = a.id JOIN people pe ON pe.id = a.person_id
    WHERE a.deleted_at IS NULL AND a.status IN ('scheduled', 'dispatched') AND a.window_start >= ?1
      AND pe.erased_at IS NULL AND ${UNTOLD_MOVE}
@@ -98,12 +116,12 @@ const OUTSTANDING = [
   SELECT 'consultation_request', r.id, r.person_id, pe.name,
          r.requested_date || ' ' || r.requested_window
            || CASE WHEN f.id IS NULL THEN '' ELSE ' first_fit ' || COALESCE(f.preferred_window, 'any') END,
-         r.created_at, NULL
+         r.created_at, NULL, ''
     FROM consultation_requests r JOIN people pe ON pe.id = r.person_id
     LEFT JOIN first_fit_requests f ON f.person_id = r.person_id
    WHERE r.booked = 0 AND pe.erased_at IS NULL
   UNION ALL
-  SELECT 'replacement_order', p.id, p.person_id, pe.name, p.piece_code, p.replacement_due_at, NULL
+  SELECT 'replacement_order', p.id, p.person_id, pe.name, p.piece_code, p.replacement_due_at, NULL, ''
     FROM pieces p JOIN people pe ON pe.id = p.person_id
    WHERE p.deleted_at IS NULL AND p.failed_at IS NULL AND pe.erased_at IS NULL
      AND p.replacement_due_at IS NOT NULL AND p.replacement_due_at <= ?1
@@ -112,37 +130,38 @@ const OUTSTANDING = [
         WHERE a.person_id = p.person_id AND a.type = 'replacement' AND a.deleted_at IS NULL
           AND a.status NOT IN ('cancelled', 'terminated') AND a.window_start >= p.replacement_due_at)
   UNION ALL
-  SELECT 'referral_review', r.id, c.person_id, pe.name, r.fraud_signals, r.updated_at, NULL
+  SELECT 'referral_review', r.id, c.person_id, pe.name, r.fraud_signals, r.updated_at, NULL, ''
     FROM referral_attributions r JOIN referral_codes c ON c.code = r.code JOIN people pe ON pe.id = c.person_id
    WHERE r.grant_state = 'held' AND pe.erased_at IS NULL
   UNION ALL
-  SELECT 'grievance', g.id, g.person_id, pe.name, NULL, g.created_at, NULL
+  SELECT 'grievance', g.id, g.person_id, pe.name, NULL, g.created_at, NULL, ''
     FROM grievances g JOIN people pe ON pe.id = g.person_id
    WHERE g.state = 'open' AND pe.erased_at IS NULL
 `),
 
   withOwners(`
   SELECT 'no_show_decision' AS "group", n.id AS id, pe.id AS person_id, pe.name AS person_name, t.name AS detail,
-         n.created_at AS since, NULL AS due_by
+         n.created_at AS since, NULL AS due_by, '' AS episode
     FROM no_show_cases n JOIN checkins ci ON ci.id = n.checkin_id JOIN appointments a ON a.id = n.appointment_id
     LEFT JOIN people pe ON pe.id = a.person_id AND pe.erased_at IS NULL
     LEFT JOIN technicians t ON t.id = ci.technician_id
    WHERE n.decision = 'undecided'
   UNION ALL
-  SELECT 'number_change', nc.id, nc.person_id, pe.name, NULL, ${NUMBER_CHANGE_WAITING_SINCE}, NULL
+  SELECT 'number_change', nc.id, nc.person_id, pe.name, NULL, ${NUMBER_CHANGE_WAITING_SINCE}, NULL, ''
     FROM number_change_requests nc JOIN people pe ON pe.id = nc.person_id
    WHERE nc.state = 'awaiting_ops' AND pe.erased_at IS NULL
   UNION ALL
-  SELECT 'erasure_request', d.id, d.person_id, pe.name, NULL, d.created_at, NULL
+  SELECT 'erasure_request', d.id, d.person_id, pe.name, NULL, d.created_at, NULL, ''
     FROM deletion_requests d JOIN people pe ON pe.id = d.person_id
    WHERE d.state = 'requested' AND pe.erased_at IS NULL
   UNION ALL
-  SELECT 'draft_invoice', a.id, a.person_id, pe.name, a.fsm_invoice_id, COALESCE(a.window_end, a.synced_at), NULL
+  SELECT 'draft_invoice', a.id, a.person_id, pe.name, a.fsm_invoice_id, COALESCE(a.window_end, a.synced_at), NULL,
+         ''
     FROM appointments a JOIN people pe ON pe.id = a.person_id
    WHERE a.status = 'completed' AND a.invoice_issued_at IS NULL AND a.fsm_work_order_id IS NOT NULL
      AND a.deleted_at IS NULL AND a.fsm_invoice_id IS NOT NULL AND pe.erased_at IS NULL
   UNION ALL
-  SELECT 'erasure_unfinished', p.id, NULL, NULL, p.fsm_contact_id, p.erased_at, NULL
+  SELECT 'erasure_unfinished', p.id, NULL, NULL, p.fsm_contact_id, p.erased_at, NULL, ''
     FROM people p
    WHERE p.erased_at IS NOT NULL AND p.fsm_contact_id IS NOT NULL AND p.fsm_erased_at IS NULL
      AND p.fsm_erasure_attempts >= ?1
@@ -177,14 +196,14 @@ const OUTSTANDING = [
   SELECT 'leave_conflict' AS "group", a.id AS id, pe.id AS person_id, pe.name AS person_name,
          a.window_start || ' ' || t.name AS detail,
          (SELECT MIN(l.created_at) FROM technician_leave l WHERE ${LEAVE_ON_THE_DAY}) AS since,
-         a.window_start AS due_by
+         a.window_start AS due_by, ${LEAVE_CONFLICT_EPISODE} AS episode
     FROM appointments a JOIN technicians t ON t.id = a.technician_id
     LEFT JOIN people pe ON pe.id = a.person_id AND pe.erased_at IS NULL
    WHERE a.deleted_at IS NULL AND a.status IN ('scheduled', 'dispatched') AND a.window_start >= ?1
      AND EXISTS (SELECT 1 FROM technician_leave l WHERE ${LEAVE_ON_THE_DAY})
   UNION ALL
   SELECT 'address_to_confirm', a.id, a.person_id, pe.name, a.window_start,
-         COALESCE(a.first_seen_at, a.synced_at), a.window_start
+         COALESCE(a.first_seen_at, a.synced_at), a.window_start, ''
     FROM appointments a JOIN people pe ON pe.id = a.person_id
    WHERE a.deleted_at IS NULL AND a.status IN ('scheduled', 'dispatched') AND a.window_start >= ?1
      AND pe.erased_at IS NULL
@@ -192,7 +211,7 @@ const OUTSTANDING = [
   UNION ALL
   SELECT 'partial_visit', a.id, a.person_id, pe.name,
          COALESCE((SELECT r.label FROM partial_reasons r WHERE r.code = v.partial_reason), v.partial_reason),
-         COALESCE(v.ended_at, a.window_end, v.updated_at), NULL
+         COALESCE(v.ended_at, a.window_end, v.updated_at), NULL, ''
     FROM visits v JOIN appointments a ON a.id = v.appointment_id JOIN people pe ON pe.id = a.person_id
    WHERE v.outcome = 'partial' AND COALESCE(v.partial_reason, '') <> 'no_show' AND a.deleted_at IS NULL
      AND pe.erased_at IS NULL
@@ -204,7 +223,7 @@ const OUTSTANDING = [
   UNION ALL
   SELECT 'at_risk_client', s.visit_id, s.person_id, pe.name,
          s.visit_start || ' ' || date(s.visit_start, '+330 minutes', ?7),
-         date(s.visit_start, '+330 minutes', ?4), NULL
+         date(s.visit_start, '+330 minutes', ?4), NULL, ''
     FROM last_visits s JOIN people pe ON pe.id = s.person_id
    WHERE s.visit_start < ?3 AND pe.erased_at IS NULL
      AND NOT EXISTS (
@@ -220,7 +239,7 @@ const OUTSTANDING = [
   UNION ALL
   SELECT 'first_fit_to_book', r.id, r.person_id, pe.name,
          s.consulted_start || ' ' || COALESCE(r.preferred_window, 'any'),
-         date(s.consulted_start, '+330 minutes', ?6), NULL
+         date(s.consulted_start, '+330 minutes', ?6), NULL, ${FIRST_FIT_EPISODE}
     FROM first_fit_requests r JOIN last_visits s ON s.person_id = r.person_id JOIN people pe ON pe.id = r.person_id
    WHERE r.fitted_since = 0 AND s.consulted_start < ?5 AND pe.erased_at IS NULL
      AND NOT EXISTS (
@@ -245,6 +264,7 @@ interface Row {
   since: string;
   /** The start of the visit a task is about, which it may fall due no later than. */
   due_by: string | null;
+  episode: string;
   owner: string | null;
 }
 
@@ -332,6 +352,7 @@ function taskOf(row: Row, sla: Slas): Task {
     detail: detailOf(row),
     since,
     due: dueOf(row, since, sla).toISOString(),
+    episode: row.episode,
     owner: row.owner,
   };
 }

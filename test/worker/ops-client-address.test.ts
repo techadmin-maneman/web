@@ -134,6 +134,23 @@ describe("POST /api/clients/{id}/address", () => {
     expect(await current()).toMatchObject({ place_id: "stub-place-sunrise", pinned: 0 });
   });
 
+  // A service token is let in by Access, and names no member of staff for the address to be marked with.
+  it("saves nothing for a service token", async () => {
+    const service = appFor(
+      "local",
+      fakeDependencies({
+        access: { verify: () => Promise.resolve({ ok: true, identity: { kind: "service", clientId: "ci.access" } }) },
+      }),
+      {},
+      "ops",
+    );
+    const answer = await post(service, `/api/clients/${PERSON}/address`, GIVEN);
+    expect(answer.status).toBe(403);
+    expect(await answer.json()).toMatchObject({ error: { code: "access_required" } });
+    expect(await current()).toBeNull();
+    expect(queues.FSM_QUEUE.sent).toEqual([]);
+  });
+
   it("answers 404 for a client we do not have, or one erased", async () => {
     expect((await save(GIVEN, UNKNOWN)).status).toBe(404);
     await env.DB.prepare("UPDATE people SET erased_at = ?1").bind(NOW.toISOString()).run();

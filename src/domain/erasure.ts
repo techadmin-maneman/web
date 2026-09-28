@@ -190,7 +190,7 @@ async function personalDataStatements(db: D1Database, personId: string, at: stri
       .prepare(
         `UPDATE addresses SET line1 = 'Erased', line2 = NULL, locality = 'Erased', access_notes = NULL, lat = NULL,
            lng = NULL, geocoded_at = NULL, building = NULL, flat = NULL, floor = NULL, tower = NULL, landmark = NULL,
-           place_id = NULL, geocode_source = NULL
+           place_id = NULL, geocode_source = NULL, given_to_staff = NULL
          WHERE person_id = ?1 AND ${MEASURED_AGAINST}`,
       )
       .bind(personId),

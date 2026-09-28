@@ -12,7 +12,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
-import { staffOf } from "../http/audit.ts";
+import { memberOfStaffOf, staffOf } from "../http/audit.ts";
 import { saveClientAddress, suggestBuildings } from "../http/address-save.ts";
 import { currentAddress, liveContact } from "../domain/profile.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
@@ -64,7 +64,7 @@ const saveRoute = createRoute({
   responses: {
     200: { description: "Saved, and now the address visits go to", ...json(ClientAddressSchema) },
     400: errorResponse("invalid_request"),
-    403: errorResponse("access_required"),
+    403: errorResponse("access_required: no Access token, or a service token, which names no member of staff"),
     404: unknownClient,
   },
 });
@@ -86,9 +86,10 @@ export function registerOpsClientAddress(app: App): void {
     const body = c.req.valid("json");
     const { requestId } = c.var;
     const db = c.env.DB;
+    const staff = memberOfStaffOf(c);
+    if (staff === null) return c.json(errorBody("access_required", requestId), 403);
     if ((await liveContact(db, id)) === null) return c.json(errorBody("not_found", requestId), 404);
 
-    const staff = staffOf(c);
     await saveClientAddress(c, {
       personId: id,
       address: addressOf(body),
