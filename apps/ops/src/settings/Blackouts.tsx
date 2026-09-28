@@ -3,8 +3,8 @@
 // them before; no board draws them, so the panel is laid out as Rules is.
 //
 // The API keeps one row a day. The list shows the days run together where they
-// follow one another for the same reason, and offering them again sends that
-// run of days back. Blacking out a day moves nothing already booked on it, so
+// follow one another for the same reason, added by the same press, so each run
+// names who added all of it; offering them again sends that run of days back. Blacking out a day moves nothing already booked on it, so
 // each run says how many visits are still booked on it.
 
 import { Button } from "@maneman/ui/Button";
@@ -20,7 +20,7 @@ import styles from "./settings.module.css";
 
 const copy = settings.blackouts;
 
-/** Days that follow one another for the same reason, as ops added them. */
+/** Days that follow one another for the same reason, added by the same person at the same moment. */
 interface Period {
   readonly from: string;
   readonly to: string;
@@ -30,12 +30,19 @@ interface Period {
   readonly booked: number;
 }
 
-/** The days, run together where one follows another for the same reason. */
+/** Whether a day carries on a run: the next day, for the same reason, added by the same press. */
+const carriesOn = (period: Period, day: Blackout): boolean =>
+  addDays(period.to, 1) === day.date &&
+  period.reason === day.reason &&
+  period.setBy === day.set_by &&
+  period.setAt === day.set_at;
+
+/** The days, run together where one carries on another. */
 function periodsOf(days: readonly Blackout[]): Period[] {
   const periods: Period[] = [];
   for (const day of days) {
     const last = periods.at(-1);
-    if (last?.reason === day.reason && addDays(last.to, 1) === day.date) {
+    if (last !== undefined && carriesOn(last, day)) {
       periods[periods.length - 1] = { ...last, to: day.date, booked: last.booked + day.booked };
     } else {
       periods.push({

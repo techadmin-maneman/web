@@ -2668,7 +2668,7 @@ export interface paths {
                         "application/json": components["schemas"]["Blackouts"];
                     };
                 };
-                /** @description invalid_request: fields names from when it is before today, or to as for adding */
+                /** @description invalid_request: fields names from when it is before today, and to when it is before from */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -5031,7 +5031,7 @@ export interface components {
              * @description India's date, the first a day may be blacked out from.
              */
             today: string;
-            /** @description The most days one change may cover. */
+            /** @description The most days one addition may cover. */
             max_days: number;
         };
         Blackout: {
@@ -5052,7 +5052,7 @@ export interface components {
             from: string;
             /**
              * Format: date
-             * @description The last day, the first included; a month on at most.
+             * @description The last day, the first included; a month on at most when adding.
              */
             to: string;
             reason: string;
@@ -5065,7 +5065,7 @@ export interface components {
             from: string;
             /**
              * Format: date
-             * @description The last day, the first included; a month on at most.
+             * @description The last day, the first included; a month on at most when adding.
              */
             to: string;
         };

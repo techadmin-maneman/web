@@ -1996,7 +1996,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names from when it is before today, or to as for adding
+**400**: invalid_request: fields names from when it is before today, and to when it is before from
 
 ```json
 {
@@ -7201,7 +7201,7 @@ Who Access let through, and where signing out goes
     },
     "max_days": {
       "type": "integer",
-      "description": "The most days one change may cover."
+      "description": "The most days one addition may cover."
     }
   },
   "required": [
@@ -7278,7 +7278,7 @@ Who Access let through, and where signing out goes
     "to": {
       "type": "string",
       "format": "date",
-      "description": "The last day, the first included; a month on at most."
+      "description": "The last day, the first included; a month on at most when adding."
     },
     "reason": {
       "type": "string",
@@ -7308,7 +7308,7 @@ Who Access let through, and where signing out goes
     "to": {
       "type": "string",
       "format": "date",
-      "description": "The last day, the first included; a month on at most."
+      "description": "The last day, the first included; a month on at most when adding."
     }
   },
   "required": [

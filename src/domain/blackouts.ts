@@ -5,7 +5,8 @@
 // the site (loadBlackouts, src/domain/leads.ts; docs/decisions/0068-a-paid-hold-is-kept.md).
 // It moves no visit already booked on it: ops are told how many there are, and
 // move them on the dispatch board. Each change is written in one batch with its
-// audit entry (ADR 0031).
+// audit entry (ADR 0031), which keeps the reason given, and each day's reason and
+// who set it that the change replaced or took away.
 
 import { addDays } from "../lib/india-time.ts";
 import { auditStatement, type AuditActor } from "./audit.ts";
@@ -52,13 +53,40 @@ function datesBetween(from: string, to: string): string[] {
 /** Why a period was refused: the field that is wrong. */
 export type PeriodRefusal = "from" | "to";
 
-/** A period ops may black out or open again: from today on, the right way round, a month at most. */
+/**
+ * A period ops may offer again: from today on, and the right way round. Any length, since it only takes back days
+ * already held, and the list runs held days together into one period.
+ */
 export function periodRefusal(period: { from: string; to: string }, today: string): PeriodRefusal | null {
   if (period.from < today) return "from";
   if (period.to < period.from) return "to";
-  if (datesBetween(period.from, period.to).length > BLACKOUT_MAX_DAYS) return "to";
   return null;
 }
+
+/**
+ * A period ops may black out: as above, and a month at most. The length is judged by its last day before any day is
+ * listed, so a year typed wrong costs nothing to refuse.
+ */
+export function additionRefusal(period: { from: string; to: string }, today: string): PeriodRefusal | null {
+  const refused = periodRefusal(period, today);
+  if (refused !== null) return refused;
+  return period.to > addDays(period.from, BLACKOUT_MAX_DAYS - 1) ? "to" : null;
+}
+
+/** A day as the audit log keeps it, once a change has replaced or taken away its reason. */
+interface HeldDay {
+  readonly date: string;
+  readonly reason: string;
+  readonly set_by: string | null;
+}
+
+const heldBetween = async (db: D1Database, from: string, to: string): Promise<HeldDay[]> =>
+  (
+    await db
+      .prepare("SELECT date, reason, set_by FROM visit_blackouts WHERE date BETWEEN ?1 AND ?2 ORDER BY date")
+      .bind(from, to)
+      .all<HeldDay>()
+  ).results;
 
 interface Change {
   readonly from: string;
@@ -69,11 +97,12 @@ interface Change {
 }
 
 /**
- * Blacks out every day from `from` to `to`. A day already blacked out takes the reason given now. The period has
- * passed periodRefusal.
+ * Blacks out every day from `from` to `to`. A day already blacked out takes the reason given now, and the audit entry
+ * keeps what it had. The period has passed additionRefusal.
  */
 export async function addBlackouts(db: D1Database, change: Change & { readonly reason: string }): Promise<void> {
   const dates = datesBetween(change.from, change.to);
+  const replaced = await heldBetween(db, change.from, change.to);
   const at = change.now.toISOString();
   await db.batch([
     ...dates.map((date) =>
@@ -92,7 +121,13 @@ export async function addBlackouts(db: D1Database, change: Change & { readonly r
         action: "blackout.add",
         subject: { kind: "blackout", id: change.from },
         requestId: change.requestId,
-        detail: { from: change.from, to: change.to, days: dates.length },
+        detail: {
+          from: change.from,
+          to: change.to,
+          days: dates.length,
+          reason: change.reason,
+          replaced: JSON.stringify(replaced),
+        },
       },
       change.now,
     ),
@@ -101,15 +136,12 @@ export async function addBlackouts(db: D1Database, change: Change & { readonly r
 
 /**
  * Offers the blacked-out days from `from` to `to` again. "not_found" when none of them is blacked out, and then
- * nothing is recorded. The period has passed periodRefusal.
+ * nothing is recorded. The audit entry keeps each day taken away, with its reason and who set it. The period has
+ * passed periodRefusal.
  */
 export async function removeBlackouts(db: D1Database, change: Change): Promise<"removed" | "not_found"> {
-  const held = await db
-    .prepare("SELECT COUNT(*) AS days FROM visit_blackouts WHERE date BETWEEN ?1 AND ?2")
-    .bind(change.from, change.to)
-    .first<{ days: number }>();
-  const days = held?.days ?? 0;
-  if (days === 0) return "not_found";
+  const removed = await heldBetween(db, change.from, change.to);
+  if (removed.length === 0) return "not_found";
   await db.batch([
     db.prepare("DELETE FROM visit_blackouts WHERE date BETWEEN ?1 AND ?2").bind(change.from, change.to),
     auditStatement(
@@ -120,7 +152,7 @@ export async function removeBlackouts(db: D1Database, change: Change): Promise<"
         action: "blackout.remove",
         subject: { kind: "blackout", id: change.from },
         requestId: change.requestId,
-        detail: { from: change.from, to: change.to, days },
+        detail: { from: change.from, to: change.to, days: removed.length, removed: JSON.stringify(removed) },
       },
       change.now,
     ),

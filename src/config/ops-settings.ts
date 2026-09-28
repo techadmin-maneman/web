@@ -133,7 +133,7 @@ export const OPS_SETTINGS = [
     // Item 60 of docs/open-points.md: set apart from the late-cancel terms, so either can change alone.
     name: "no_show_charge",
     title: "What a no-show costs",
-    note: "What each kind of visit costs when you charge a no-show, set apart from a late cancel so either can change alone. A booking keeps what it was made under.",
+    note: "What each kind of visit will cost when you charge a no-show, set apart from a late cancel so either can change alone. It does not take effect yet: until charging a no-show takes its own amount, which is still to be built, a charge keeps what the visit took. Each booking keeps what was set when it was made, ready for then.",
     keys: VISIT_TYPES,
     choices: Object.fromEntries(VISIT_TYPES.map((type) => [type, chargesFor(type)])),
     fallback: NO_SHOW_CHARGES,

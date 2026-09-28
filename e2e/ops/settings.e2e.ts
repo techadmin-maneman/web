@@ -638,6 +638,28 @@ test.describe("the blackout days", () => {
     );
   });
 
+  // Review of #145, item 7: a run named only its first day's setter.
+  test("names who added each run, keeping apart days added by someone else", async ({ page }) => {
+    const later = {
+      date: "2027-10-31",
+      reason: "Diwali",
+      set_by: "owner@maneman.in",
+      set_at: "2027-09-21T06:00:00.000Z",
+      booked: 0,
+    };
+    const split = {
+      ...BLACKOUTS,
+      blackouts: [...BLACKOUTS.blackouts.slice(0, 2), later, ...BLACKOUTS.blackouts.slice(2)],
+    };
+    await open(page, "/settings/blackouts", { "GET /api/blackouts": json(split) });
+    await expect(page.getByRole("listitem").filter({ hasText: "Fri 29 Oct to Sat 30 Oct · Diwali" })).toContainText(
+      "Added by ops@maneman.in on 20 Sep 2027",
+    );
+    await expect(page.getByRole("listitem").filter({ hasText: "Sun 31 Oct · Diwali" })).toContainText(
+      "Added by owner@maneman.in on 21 Sep 2027",
+    );
+  });
+
   test("offers a run of days again, the whole run in one press", async ({ page }) => {
     const left = { ...BLACKOUTS, blackouts: BLACKOUTS.blackouts.slice(2) };
     await open(page, "/settings/blackouts", { "POST /api/blackouts/remove": json(left) });

@@ -10,7 +10,14 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { staffOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
-import { addBlackouts, BLACKOUT_MAX_DAYS, blackoutsFrom, periodRefusal, removeBlackouts } from "../domain/blackouts.ts";
+import {
+  addBlackouts,
+  additionRefusal,
+  BLACKOUT_MAX_DAYS,
+  blackoutsFrom,
+  periodRefusal,
+  removeBlackouts,
+} from "../domain/blackouts.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { indiaDate } from "../lib/india-time.ts";
@@ -40,14 +47,14 @@ const ListSchema = z
   .object({
     blackouts: z.array(BlackoutSchema),
     today: z.iso.date().openapi({ description: "India's date, the first a day may be blacked out from." }),
-    max_days: z.number().int().openapi({ description: "The most days one change may cover." }),
+    max_days: z.number().int().openapi({ description: "The most days one addition may cover." }),
   })
   .strict()
   .openapi("Blackouts");
 
 const Period = {
   from: z.iso.date().openapi({ description: "The first day, today or later." }),
-  to: z.iso.date().openapi({ description: "The last day, the first included; a month on at most." }),
+  to: z.iso.date().openapi({ description: "The last day, the first included; a month on at most when adding." }),
 };
 
 const listRoute = createRoute({
@@ -89,7 +96,7 @@ const removeRoute = createRoute({
   request: { body: { required: true, ...json(z.object(Period).strict().openapi("BlackoutRemove")) } },
   responses: {
     200: { description: "The days as they now stand", ...json(ListSchema) },
-    400: errorResponse("invalid_request: fields names from when it is before today, or to as for adding"),
+    400: errorResponse("invalid_request: fields names from when it is before today, and to when it is before from"),
     403: errorResponse("access_required"),
     404: errorResponse("not_found: none of those days is blacked out"),
   },
@@ -108,7 +115,7 @@ export function registerOpsBlackouts(app: App): void {
     const now = c.var.deps.now();
     const today = indiaDate(now);
     const { from, to, reason } = c.req.valid("json");
-    const refused = periodRefusal({ from, to }, today);
+    const refused = additionRefusal({ from, to }, today);
     if (refused !== null) return c.json(errorBody("invalid_request", c.var.requestId, [refused]), 400);
     await addBlackouts(c.env.DB, { from, to, reason, actor: staffOf(c), requestId: c.var.requestId, now });
     return c.json(await list(c.env.DB, today), 200);

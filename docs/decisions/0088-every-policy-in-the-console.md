@@ -43,7 +43,7 @@ Every committed figure stays beside its rule, in `src/policy/` or `src/config/`,
 - **The phone's third bound**, that a check-in reaching us late starts the no-show wait from when it reached us, is not a figure of its own: its figure is the no-show wait, which ops already set per kind of visit. That the wait runs on our clock too is a safety rule, not a policy (ADR 0065): without it a back-dated check-in could close a no-show at once.
 - **Board D3** no longer decides in the console whether an average runs over: `GET /api/technicians/work` answers `runs_over` for each technician by the rule in `src/policy/technician-work.ts`, and counts back as many days as ops set. `content.ts`' `overBy` is gone.
 - **The reminder's hour** is apart from the address's unlock hour (`address_unlock_hour`, ADR 0061): both begin at 6 pm, and moving one does not move the other.
-- **A no-show's charge is the setting alone.** Nothing charges a no-show by it yet: a charge still keeps what the visit took, as before. Plan piece C3 builds the charge, the amount on board D1 and the dispute on it, and reads the charge each booking kept.
+- **A no-show's charge is the setting alone.** Nothing charges a no-show by it yet: a charge still keeps what the visit took, as before, and the rule's note in the console says so. Plan piece C3 builds the charge, the amount on board D1 and the dispute on it, and reads the charge each booking kept.
 
 ### What a client was sold stays sold
 
@@ -59,7 +59,7 @@ The app names the notice the visit was sold under, from the hold (`change_notice
 
 ### Blackout days
 
-A list, not a figure, so a tab of its own, Settings · Blackout days (`GET /api/blackouts`, `POST /api/blackouts`, `POST /api/blackouts/remove`): a run of days added with its reason, listed run together with who added it and the visits still booked on it, offered again in one press. A blackout moves no visit already booked, as leave does not (ADR 0062); the list says how many are, and ops move them on the dispatch board. Each change is audited in its batch (`blackout.add`, `blackout.remove`). A day in the past is neither added nor removed, and one press covers a month at most. The runbook's SQL step is gone.
+A list, not a figure, so a tab of its own, Settings · Blackout days (`GET /api/blackouts`, `POST /api/blackouts`, `POST /api/blackouts/remove`): a run of days added with its reason, listed run together with who added it and the visits still booked on it, offered again in one press. A blackout moves no visit already booked, as leave does not (ADR 0062); the list says how many are, and ops move them on the dispatch board. Each change is audited in its batch (`blackout.add`, `blackout.remove`), with the reason given and, for each day it replaced or took away, that day's reason and who had set it, so nothing ops wrote is lost. A day in the past is neither added nor removed. One addition covers a month at most, judged by its last day before any day is counted; offering days again takes back any run the list shows, however long, since it only removes days already held. The list runs days together only where one press added them, so each run names who added all of it. The runbook's SQL step is gone.
 
 ### What stays in code, and why
 
