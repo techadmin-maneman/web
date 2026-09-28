@@ -2983,7 +2983,7 @@ export interface components {
                 initials: string;
             };
             price: components["schemas"]["Price"];
-            /** @description What moving it inside the notice costs: a first fit's or a replacement's late fee. */
+            /** @description The late fee moving it inside the notice costs, where it is sold to charge one; else null. */
             late_fee: components["schemas"]["Price"] | null;
             /**
              * Format: date-time
@@ -2992,6 +2992,11 @@ export interface components {
             free_until: string;
             /** @description The notice it is sold under: how many hours before its window moving or cancelling stops being free, as ops set it when the hold was made (24 to begin with). */
             change_notice_hours: number;
+            /**
+             * @description What moving or cancelling it inside the notice costs, as it is sold: nothing, its late fee (late_fee), or the visit itself, whose payment is kept or whose credit is spent (visit).
+             * @enum {string}
+             */
+            late_change_charge: "nothing" | "late_fee" | "visit";
             /** Format: date-time */
             expires_at: string;
             /** @enum {string} */

@@ -68,7 +68,7 @@ import { opsInputs } from "../http/ops-inputs.ts";
 import { requireSelfServe } from "../http/self-serve.ts";
 import { visitorOf } from "../http/visitor.ts";
 import { GIVEN_BY_BOOKING, isFullAddress } from "../policy/booking.ts";
-import { LATE_FEES } from "../policy/moving-a-visit.ts";
+import { CHARGES, LATE_FEES } from "../policy/moving-a-visit.ts";
 import { stripStart } from "../policy/next-visit.ts";
 import { takesCredit } from "../policy/referral-reward.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
@@ -140,9 +140,9 @@ const HoldSchema = z
     ends_at: z.iso.datetime(),
     technician: TechnicianSchema,
     price: PriceSchema,
-    late_fee: z
-      .union([PriceSchema, z.null()])
-      .openapi({ description: "What moving it inside the notice costs: a first fit's or a replacement's late fee." }),
+    late_fee: z.union([PriceSchema, z.null()]).openapi({
+      description: "The late fee moving it inside the notice costs, where it is sold to charge one; else null.",
+    }),
     free_until: z.iso.datetime().openapi({ description: "Until then, moving or cancelling is free." }),
     change_notice_hours: z
       .number()
@@ -152,6 +152,11 @@ const HoldSchema = z
           "The notice it is sold under: how many hours before its window moving or cancelling stops being free, as " +
           "ops set it when the hold was made (24 to begin with).",
       }),
+    late_change_charge: z.enum(CHARGES).openapi({
+      description:
+        "What moving or cancelling it inside the notice costs, as it is sold: nothing, its late fee (late_fee), or " +
+        "the visit itself, whose payment is kept or whose credit is spent (visit).",
+    }),
     expires_at: z.iso.datetime(),
     state: z.enum(["held", "expired", "booked", "released"]),
     paid: z.boolean().openapi({ description: "Razorpay has confirmed the payment; the visit is being booked." }),

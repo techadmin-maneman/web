@@ -4546,7 +4546,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "What moving it inside the notice costs: a first fit's or a replacement's late fee."
+      "description": "The late fee moving it inside the notice costs, where it is sold to charge one; else null."
     },
     "free_until": {
       "type": "string",
@@ -4556,6 +4556,15 @@ Request body:
     "change_notice_hours": {
       "type": "integer",
       "description": "The notice it is sold under: how many hours before its window moving or cancelling stops being free, as ops set it when the hold was made (24 to begin with)."
+    },
+    "late_change_charge": {
+      "type": "string",
+      "enum": [
+        "nothing",
+        "late_fee",
+        "visit"
+      ],
+      "description": "What moving or cancelling it inside the notice costs, as it is sold: nothing, its late fee (late_fee), or the visit itself, whose payment is kept or whose credit is spent (visit)."
     },
     "expires_at": {
       "type": "string",
@@ -4633,6 +4642,7 @@ Request body:
     "late_fee",
     "free_until",
     "change_notice_hours",
+    "late_change_charge",
     "expires_at",
     "state",
     "paid",

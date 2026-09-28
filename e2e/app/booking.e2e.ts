@@ -232,6 +232,7 @@ async function holdAs(page: Page, terms: Hold): Promise<() => Hold> {
       late_fee: null,
       free_until: new Date(now + 24 * 60 * 60 * 1000).toISOString(),
       change_notice_hours: 24,
+      late_change_charge: "visit",
       expires_at: new Date(now + 10 * 60 * 1000).toISOString(),
       state: "held",
       paid: false,
@@ -524,6 +525,7 @@ test("names a first fit's service and how long it takes, and sends no one to Wha
     service: { tier: "standard", name: "First fit", minutes: 180 },
     price: FIRST_FIT,
     late_fee: LATE_FEE,
+    late_change_charge: "late_fee",
   });
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: "Pay and confirm" });
@@ -534,10 +536,44 @@ test("names a first fit's service and how long it takes, and sends no one to Wha
 });
 
 test("writes a first fit's late fee ex-GST, with the inclusive figure beside it", async ({ page }) => {
-  await holdAs(page, { type: "first_fit", price: FIRST_FIT, late_fee: LATE_FEE });
+  await holdAs(page, { type: "first_fit", price: FIRST_FIT, late_fee: LATE_FEE, late_change_charge: "late_fee" });
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: "Pay and confirm" });
   await expect(pay.getByText(LATE_FEE_LINE)).toBeVisible();
+});
+
+// What a late change costs is what the booking is sold under, which ops set (docs/decisions/0088-every-policy-in-the-console.md).
+test("says a late change keeps the payment, never a late fee, where the booking is sold so", async ({ page }) => {
+  await holdAs(page, { type: "first_fit", price: FIRST_FIT, late_fee: null, late_change_charge: "visit" });
+  await toPayment(page);
+  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
+  await expect(pay.getByText(/^Free to move until .+\. After that it is charged\.$/)).toBeVisible();
+  await expect(pay.getByText(/Moving inside/)).toHaveCount(0);
+});
+
+test("says a visit moves or cancels free at any time where the booking is sold so", async ({ page }) => {
+  await holdAs(page, { late_change_charge: "nothing" });
+  await toPayment(page);
+  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
+  await expect(pay.getByText("Free to move or cancel at any time.")).toBeVisible();
+  await expect(pay.getByText(/After that it is charged/)).toHaveCount(0);
+});
+
+test("says a credit is gone after a late cancel only where the booking is sold so", async ({ page }) => {
+  await holdAs(page, { credit: { remaining: 2 }, late_change_charge: "nothing" });
+  await toPayment(page);
+  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
+  await expect(pay.getByText("1 visit credit used")).toBeVisible();
+  await expect(pay.getByText(/the credit is gone/)).toHaveCount(0);
+  await expect(pay.getByText("Free to move or cancel at any time.")).toBeVisible();
+});
+
+test("says a credit is gone after a cancel inside the notice the booking is sold under", async ({ page }) => {
+  await holdAs(page, { credit: { remaining: 2 }, change_notice_hours: 48 });
+  await toPayment(page);
+  await expect(
+    page.getByRole("dialog", { name: "Pay and confirm" }).getByText("Cancel inside 48 hours and the credit is gone."),
+  ).toBeVisible();
 });
 
 test("writes the late fee to move a visit as the pay step does, and C7's way to C8 is a full target", async ({

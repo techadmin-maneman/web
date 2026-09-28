@@ -246,6 +246,8 @@ const hold = (type: string, price: object, lateFee: object | null) => ({
   late_fee: lateFee,
   free_until: "2030-09-18T06:30:00.000Z",
   change_notice_hours: 24,
+  // The committed terms: a first fit's late fee, a service visit kept.
+  late_change_charge: lateFee === null ? "visit" : "late_fee",
   // Board C4 shows 9:42 left.
   expires_at: new Date(IN_2030.getTime() + 582_000).toISOString(),
   state: "held",

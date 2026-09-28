@@ -7,7 +7,13 @@ import { withGst } from "../config/gst.ts";
 import { WINDOW_TIMES, type BookingWindow } from "../config/scheduling.ts";
 import { FSM_SERVICE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { indiaInstant } from "../lib/india-time.ts";
-import { FREE_CHANGE_NOTICE_HOURS, freeUntil, LATE_FEES } from "../policy/moving-a-visit.ts";
+import {
+  FREE_CHANGE_NOTICE_HOURS,
+  freeUntil,
+  LATE_CHANGE_CHARGES,
+  LATE_FEES,
+  type Charge,
+} from "../policy/moving-a-visit.ts";
 import { creditBalance } from "./credits.ts";
 import { priceOf, type Price } from "./price-book.ts";
 import { heldMinutes, visitTimes } from "./scheduling.ts";
@@ -30,8 +36,9 @@ interface HoldRow {
   confirmed_at: string | null;
   late_fee_ex_gst: number | null;
   late_fee_gst_percent: number | null;
-  /** The notice it was sold under; null for a hold made before holds kept one. */
+  /** The notice it was sold under, and what its kind costs inside it; null for a hold made before holds kept them. */
   change_notice_hours: number | null;
+  late_change_charge: Charge | null;
   technician_name: string;
   technician_initials: string;
   appointment_id: string | null;
@@ -43,17 +50,20 @@ interface HoldRow {
 
 const HOLD_QUERY = `SELECT h.id, h.type, h.tier, h.minutes, s.name AS service_name, h.date, h.window_label, h.start_unit,
     h.amount, h.amount_ex_gst, h.gst_percent, h.state, h.expires_at, h.confirmed_at, h.late_fee_ex_gst,
-    h.late_fee_gst_percent, h.change_notice_hours, t.name AS technician_name, t.initials AS technician_initials, h.appointment_id,
+    h.late_fee_gst_percent, h.change_notice_hours, h.late_change_charge, t.name AS technician_name, t.initials AS technician_initials, h.appointment_id,
     h.moves_appointment_id, h.use_credit, h.person_id,
     EXISTS (SELECT 1 FROM payments p WHERE p.razorpay_order_id = h.razorpay_order_id AND p.status = 'captured') AS paid
   FROM slot_holds h JOIN technicians t ON t.id = h.technician_id
   LEFT JOIN services s ON s.kind = h.type AND s.tier = h.tier
   WHERE h.id = ?1 AND h.person_id = ?2`;
 
-/** The late fee the hold was made under; for a hold made before it kept one, the price book's for its day. */
-async function lateFeeOf(db: D1Database, row: HoldRow): Promise<Price | null> {
+/**
+ * The late fee the hold was made under, where it was sold to charge one late; for a hold made before it kept one, the
+ * price book's for its day.
+ */
+async function lateFeeOf(db: D1Database, row: HoldRow, charge: Charge): Promise<Price | null> {
   const item = LATE_FEES[row.type];
-  if (item === undefined) return null;
+  if (item === undefined || charge !== "late_fee") return null;
   if (row.late_fee_ex_gst === null || row.late_fee_gst_percent === null) return priceOf(db, item, row.date);
   return {
     amount_ex_gst: row.late_fee_ex_gst,
@@ -71,6 +81,7 @@ async function holdOf(db: D1Database, row: HoldRow, now: Date) {
   const { start, end } = visitTimes(row.date, row.start_unit, minutes);
   const windowStarts = indiaInstant(row.date, WINDOW_TIMES[row.window_label].start);
   const noticeHours = row.change_notice_hours ?? FREE_CHANGE_NOTICE_HOURS;
+  const lateCharge = row.late_change_charge ?? LATE_CHANGE_CHARGES[row.type];
   return {
     id: row.id,
     type: row.type,
@@ -81,9 +92,10 @@ async function holdOf(db: D1Database, row: HoldRow, now: Date) {
     ends_at: end.toISOString(),
     technician: { name: row.technician_name, initials: row.technician_initials },
     price: { amount_ex_gst: row.amount_ex_gst, amount: row.amount, gst_percent: row.gst_percent },
-    late_fee: await lateFeeOf(db, row),
+    late_fee: await lateFeeOf(db, row, lateCharge),
     free_until: freeUntil(windowStarts, noticeHours).toISOString(),
     change_notice_hours: noticeHours,
+    late_change_charge: lateCharge,
     expires_at: row.expires_at,
     state: hasLapsed(row, now) ? ("expired" as const) : row.state,
     paid: row.paid === 1,

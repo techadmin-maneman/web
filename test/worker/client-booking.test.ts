@@ -176,9 +176,10 @@ describe("POST /api/holds", () => {
       technician: { name: "Imran Qureshi", initials: "IQ" },
       price: { amount_ex_gst: 200000, amount: 200000, gst_percent: 0 },
       late_fee: null,
-      // Moving is free until 24 hours before the window opens.
+      // Moving is free until 24 hours before the window opens, and a service visit moved later is charged.
       free_until: "2026-09-21T06:30:00.000Z",
       change_notice_hours: 24,
+      late_change_charge: "visit",
       expires_at: "2026-09-21T06:40:00.000Z",
       state: "held",
     });
@@ -247,13 +248,40 @@ describe("POST /api/holds", () => {
     });
     const rohit = await client();
     const held = await (await hold(rohit, TUESDAY_AFTERNOON)).json<{ id: string }>();
-    expect(held).toMatchObject({ free_until: "2026-09-21T18:30:00.000Z", change_notice_hours: 12 });
+    expect(held).toMatchObject({
+      free_until: "2026-09-21T18:30:00.000Z",
+      change_notice_hours: 12,
+      late_change_charge: "nothing",
+    });
     const kept = await env.DB.prepare(
       "SELECT change_notice_hours, late_change_charge, no_show_charge FROM slot_holds WHERE id = ?1",
     )
       .bind(held.id)
       .first();
     expect(kept).toEqual({ change_notice_hours: 12, late_change_charge: "nothing", no_show_charge: "visit" });
+  });
+
+  // What the pay step says a late change costs is what the hold was sold under (docs/decisions/0088-every-policy-in-the-console.md).
+  it("answers a late fee only where the hold was sold to charge one", async () => {
+    const lead = await client(true);
+    const byFee = await (await hold(lead, { type: "first_fit", date: "2026-09-24", window: "morning" })).json();
+    expect(byFee).toMatchObject({ late_change_charge: "late_fee", late_fee: { amount_ex_gst: 400000 } });
+
+    await env.DB.prepare(
+      "INSERT INTO ops_settings (name, value, set_by, set_at) VALUES ('late_change_charge', ?1, 'ops', ?2)",
+    )
+      .bind(
+        JSON.stringify({ consultation: "nothing", first_fit: "visit", service: "visit", replacement: "late_fee" }),
+        NOW.toISOString(),
+      )
+      .run();
+    const other = await client(true);
+    // A new isolate, so the setting is read afresh rather than from the minute's cache.
+    const afresh = later(0);
+    const byVisit = await (
+      await hold(other, { type: "first_fit", date: "2026-09-25", window: "morning" }, afresh)
+    ).json();
+    expect(byVisit).toMatchObject({ late_change_charge: "visit", late_fee: null });
   });
 
   it("keeps a hold to the grace it was made with, whatever ops set after", async () => {

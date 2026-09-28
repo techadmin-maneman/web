@@ -360,6 +360,8 @@ export const booking = {
     held: (time: string) => `Slot held ${time}`,
     incl: (amount: string) => `${amount} incl. GST`,
     freeUntil: (when: string) => `Free to move until ${when}. After that it is charged.`,
+    // PLACEHOLDER: a booking ops set to cost nothing when changed late (docs/decisions/0088-every-policy-in-the-console.md).
+    freeAnyTime: "Free to move or cancel at any time.",
     with: "Pay with",
     upi: "UPI · any app",
     // PLACEHOLDER: the design draws a saved card ("Card ending 4417"); Checkout asks for the card.
