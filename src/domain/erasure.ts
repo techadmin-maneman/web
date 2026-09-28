@@ -285,19 +285,27 @@ async function deleteTryOnFiles(env: ErasureEnv, personId: string, now: Date): P
 }
 
 /**
- * Everything under each of the person's visits in the bucket: the photographs, the ones taken again at the same
- * angle, which no row names any more (docs/decisions/0028-photographs-from-the-app.md), and their small copies.
+ * The person's visit photographs and their thumbnails, by the keys their rows name, and then everything else under
+ * each of their visits in the bucket: a photograph taken again at the same angle, which no row names any more
+ * (docs/decisions/0028-photographs-from-the-app.md), and its thumbnail.
  */
 async function deleteVisitPhotos(env: ErasureEnv, personId: string): Promise<void> {
   const db = env.DB;
-  const { results: visits } = await db
+  const { results: photos } = await db
     .prepare(
-      `SELECT DISTINCT s.appointment_id FROM photo_sets s JOIN appointments a ON a.id = s.appointment_id
-       WHERE a.person_id = ?1`,
+      `SELECT s.appointment_id, ph.r2_key, ph.thumbnail_key FROM photos ph JOIN photo_sets s ON s.id = ph.photo_set_id
+       JOIN appointments a ON a.id = s.appointment_id WHERE a.person_id = ?1`,
     )
     .bind(personId)
-    .all<{ appointment_id: string }>();
-  for (const visit of visits) await deleteAllUnder(db, env.CLIENT_PHOTOS, `visits/${visit.appointment_id}/`);
+    .all<{ appointment_id: string; r2_key: string; thumbnail_key: string | null }>();
+  const named = photos.flatMap((photo) => [
+    photo.r2_key,
+    ...(photo.thumbnail_key === null ? [] : [photo.thumbnail_key]),
+  ]);
+  await deleteCounted(db, env.CLIENT_PHOTOS, named);
+  for (const visit of new Set(photos.map((photo) => photo.appointment_id))) {
+    await deleteAllUnder(db, env.CLIENT_PHOTOS, `visits/${visit}/`);
+  }
   const theirSets =
     "SELECT s.id FROM photo_sets s JOIN appointments a ON a.id = s.appointment_id WHERE a.person_id = ?1";
   // The sets go after their photographs, for the foreign key. An empty set holds no personal data,

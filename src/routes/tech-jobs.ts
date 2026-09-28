@@ -266,11 +266,9 @@ const UploadUrlRequestSchema = z
 const UploadUrlSchema = z
   .object({
     upload_url: z.string().openapi({ description: "A path on this host. PUT the photograph there." }),
-    small_upload_url: z
-      .string()
-      .openapi({
-        description: "A path on this host. PUT the photograph's small copy there, once the photograph is in.",
-      }),
+    small_upload_url: z.string().openapi({
+      description: "A path on this host. PUT the photograph's small copy there, once the photograph is in.",
+    }),
     expires_at: z.iso.datetime(),
   })
   .strict()

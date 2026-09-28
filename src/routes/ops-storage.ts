@@ -15,12 +15,9 @@ import { PHASE_2_SHARE_BYTES, RUNAWAY_CEILING_BYTES } from "../policy/storage-sh
 const StorageSchema = z
   .object({
     held_bytes: z.number().int().openapi({ description: "What the client-photos and referral-cards buckets hold." }),
-    share_bytes: z
-      .number()
-      .int()
-      .openapi({
-        description: "Phase 2's share of R2's free 10 GB (ADR 0039); past it R2 bills, as the owner accepted.",
-      }),
+    share_bytes: z.number().int().openapi({
+      description: "Phase 2's share of R2's free 10 GB (ADR 0039); past it R2 bills, as the owner accepted.",
+    }),
     ceiling_bytes: z
       .number()
       .int()
