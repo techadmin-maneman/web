@@ -40,13 +40,14 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [no_show_cases](#no_show_cases): The evidence a no-show is ruled on, and the ruling (ADR 0065, ADR 0072).
 - [number_change_requests](#number_change_requests): A client's change of mobile number: the codes proven on both numbers, and what ops decided (ADR 0042, ADR 0078).
 - [ops_settings](#ops_settings): The business inputs ops set in the console, a row each; a row that is not there means the committed default (ADR 0061).
+- [ops_settings_snapshot](#ops_settings_snapshot): One row holding every `ops_settings` value, kept by that table's triggers: the one row a request reads (ADR 0088).
 - [otp_challenges](#otp_challenges): Each one-time code sent, as a hash, with its sends and attempts (ADR 0030, ADR 0052).
 - [outbound_messages](#outbound_messages): Each WhatsApp message, from queued to sent, delivered and read (ADR 0041).
 - [partial_reasons](#partial_reasons): The reasons a job may be left partly done, as ops set them, one they took off kept as retired; none means the committed list (ADR 0087).
 - [payments](#payments): The mirror of Razorpay's payments, and where each stands in Books (ADR 0044).
 - [people](#people): One row per person, keyed by mobile number. D1 owns the identity; the CRM's ID is only a reference (ADR 0011).
 - [photo_sets](#photo_sets): A visit's set of photographs, before or after (ADR 0028).
-- [photos](#photos): One photograph of a set, by its angle, and where it is kept in R2 (ADR 0028).
+- [photos](#photos): One photograph of a set, by its angle, and where it and its thumbnail are kept in R2 (ADR 0028, ADR 0093).
 - [pieces](#pieces): The mirror of FSM's assets: each piece fitted, its base and lot, the day it was fitted and the day it falls due, and a failure with its reason (ADR 0032).
 - [price_book](#price_book): Every price from its date, and the only source of prices; an old row stays for what was sold under it (ADR 0045, ADR 0061).
 - [razorpay_events](#razorpay_events): Each Razorpay webhook event, once, by its event ID (ADR 0044).
@@ -60,6 +61,8 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [slot_holds](#slot_holds): A slot held while a client pays, and what became of it (ADR 0045, ADR 0068).
 - [stock_balances](#stock_balances): What each place holds of each consumable, and when it last counted it: the sum of its rows in `stock_movements`, kept by triggers as each is written (ADR 0087).
 - [stock_movements](#stock_movements): Every movement of a consumable into or out of the central store or a technician's kit, never changed; what a place holds is the sum of its rows (ADR 0087).
+- [storage_meter](#storage_meter): What Phase 2's two buckets, client-photos and referral-cards, hold together: one row, the sum of `stored_objects` kept beside it, and the last mark of the share ops were told of (ADR 0093).
+- [stored_objects](#stored_objects): Each object client-photos and referral-cards hold, and its size, written as it is stored and deleted as it is, so the storage meter never counts one twice (ADR 0093).
 - [sync_cursors](#sync_cursors): Where each pass of the reconciliation with FSM has reached (ADR 0032).
 - [task_closures](#task_closures): A task on the Tasks board ops closed without doing its thing, a visit left partly done alone, with why, who and when, by the task's group and its row's id (ADR 0092).
 - [task_owners](#task_owners): The member of staff a task on the Tasks board is theirs, by Access e-mail, by the task's group, its row's id and, where that row can be a new task again, its episode; a task with no row for it is nobody's (ADR 0092).
@@ -81,7 +84,7 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 
 Each address a client has given, in the app or to ops on the phone, who then saved it for them (`given_to_staff`). The current one has `replaced_at` empty; earlier ones stay for the visits booked to them (ADR 0042, ADR 0054, ADR 0092).
 
-Made by `0008_profile.sql`; changed by `0028_address_pin.sql`, `0054_task_owners.sql`.
+Made by `0008_profile.sql`; changed by `0028_address_pin.sql`, `0056_task_owners.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -136,7 +139,7 @@ Indexes:
 
 The mirror of FSM's appointments: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice (ADR 0032).
 
-Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_task_owners.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -289,7 +292,7 @@ Triggers: `consents_no_delete`, `consents_no_update`.
 
 A consultation asked for while self-serve booking is off, for ops to fix the hour (ADR 0060).
 
-Made by `0032_consultation_requests.sql`; changed by `0054_task_owners.sql`.
+Made by `0032_consultation_requests.sql`; changed by `0056_task_owners.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -521,7 +524,7 @@ Indexes:
 
 A first fit asked for on the site's form with the consultation, for the app to offer once the consultation is done; a person's latest stands (ADR 0086).
 
-Made by `0047_first_fit_requests.sql`; changed by `0054_task_owners.sql`.
+Made by `0047_first_fit_requests.sql`; changed by `0056_task_owners.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -622,7 +625,7 @@ Indexes:
 
 Each client's last first fit, service or replacement done, and last consultation done, kept by triggers from the view `last_visits_now` as their visits change; the Tasks board's At-risk client and First fit to book read it (ADR 0086).
 
-Made by `0053_balances_and_last_visits.sql`; changed by `0054_task_owners.sql`.
+Made by `0053_balances_and_last_visits.sql`; changed by `0056_task_owners.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -681,7 +684,7 @@ Indexes:
 
 The evidence a no-show is ruled on, and the ruling (ADR 0065, ADR 0072).
 
-Made by `0026_field_operations.sql`; changed by `0042_no_show_reasons.sql`, `0044_hand_offs_and_messages.sql`.
+Made by `0026_field_operations.sql`; changed by `0042_no_show_reasons.sql`, `0044_hand_offs_and_messages.sql`, `0054_policies_in_the_console.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -698,6 +701,8 @@ Made by `0026_field_operations.sql`; changed by `0042_no_show_reasons.sql`, `004
 | `decided_at` | TEXT | yes |  |  |
 | `created_at` | TEXT | no |  |  |
 | `decision_reason` | TEXT | yes |  |  |
+| `waiver_payment` | TEXT | yes |  |  |
+| `waiver_credit` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -734,7 +739,7 @@ Indexes:
 
 The business inputs ops set in the console, a row each; a row that is not there means the committed default (ADR 0061).
 
-Made by `0033_ops_settings.sql`.
+Made by `0033_ops_settings.sql`; changed by `0054_policies_in_the_console.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -742,6 +747,19 @@ Made by `0033_ops_settings.sql`.
 | `value` | TEXT | no |  |  |
 | `set_by` | TEXT | no |  |  |
 | `set_at` | TEXT | no |  |  |
+
+Triggers: `ops_settings_snapshot_on_delete`, `ops_settings_snapshot_on_insert`, `ops_settings_snapshot_on_update`.
+
+## ops_settings_snapshot
+
+One row holding every `ops_settings` value, kept by that table's triggers: the one row a request reads (ADR 0088).
+
+Made by `0054_policies_in_the_console.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | INTEGER | no |  | primary key |
+| `inputs` | TEXT | no |  |  |
 
 ## otp_challenges
 
@@ -916,9 +934,9 @@ Indexes:
 
 ## photos
 
-One photograph of a set, by its angle, and where it is kept in R2 (ADR 0028).
+One photograph of a set, by its angle, and where it and its thumbnail are kept in R2 (ADR 0028, ADR 0093).
 
-Made by `0013_client_photos.sql`.
+Made by `0013_client_photos.sql`; changed by `0055_storage_meter.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -933,6 +951,7 @@ Made by `0013_client_photos.sql`.
 | `taken_at` | TEXT | no |  |  |
 | `fsm_attachment_id` | TEXT | yes |  |  |
 | `created_at` | TEXT | no |  |  |
+| `thumbnail_key` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -1158,7 +1177,7 @@ Indexes:
 
 A slot held while a client pays, and what became of it (ADR 0045, ADR 0068).
 
-Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`.
+Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1193,6 +1212,10 @@ Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_chan
 | `late_fee_gst_percent` | INTEGER | yes |  |  |
 | `tier` | TEXT | no | `'standard'` |  |
 | `minutes` | INTEGER | yes |  |  |
+| `grace_seconds` | INTEGER | yes |  |  |
+| `change_notice_hours` | INTEGER | yes |  |  |
+| `late_change_charge` | TEXT | yes |  |  |
+| `no_show_charge` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -1247,6 +1270,29 @@ Indexes:
 
 Triggers: `stock_movements_balance`, `stock_movements_no_update`, `stock_movements_taken_out`.
 
+## storage_meter
+
+What Phase 2's two buckets, client-photos and referral-cards, hold together: one row, the sum of `stored_objects` kept beside it, and the last mark of the share ops were told of (ADR 0093).
+
+Made by `0055_storage_meter.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | INTEGER | no |  | primary key |
+| `bytes` | INTEGER | no |  |  |
+| `told_percent` | INTEGER | no | `0` |  |
+
+## stored_objects
+
+Each object client-photos and referral-cards hold, and its size, written as it is stored and deleted as it is, so the storage meter never counts one twice (ADR 0093).
+
+Made by `0055_storage_meter.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `key` | TEXT | no |  | primary key |
+| `bytes` | INTEGER | no |  |  |
+
 ## sync_cursors
 
 Where each pass of the reconciliation with FSM has reached (ADR 0032).
@@ -1266,7 +1312,7 @@ Made by `0012_fsm_reconciliation.sql`.
 
 A task on the Tasks board ops closed without doing its thing, a visit left partly done alone, with why, who and when, by the task's group and its row's id (ADR 0092).
 
-Made by `0054_task_owners.sql`.
+Made by `0056_task_owners.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1285,7 +1331,7 @@ Indexes:
 
 The member of staff a task on the Tasks board is theirs, by Access e-mail, by the task's group, its row's id and, where that row can be a new task again, its episode; a task with no row for it is nobody's (ADR 0092).
 
-Made by `0054_task_owners.sql`.
+Made by `0056_task_owners.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1442,12 +1488,14 @@ Indexes:
 
 Days on which no visit is offered.
 
-Made by `0002_lead_path.sql`.
+Made by `0002_lead_path.sql`; changed by `0054_policies_in_the_console.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
 | `date` | TEXT | no |  | primary key |
 | `reason` | TEXT | no |  |  |
+| `set_by` | TEXT | yes |  |  |
+| `set_at` | TEXT | yes |  |  |
 
 ## visit_changes
 

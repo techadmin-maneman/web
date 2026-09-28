@@ -152,15 +152,15 @@ describe("the no-show ruling (LIFE-07)", () => {
   const MISSED =
     "Hello Karan, we came for your service visit on Mon 21 Sep and waited 15 minutes, but nobody was home.";
 
-  it("says a charge keeps what was paid, as a cancel inside 24 hours would", async () => {
+  it("says a charge keeps what was paid, as a late cancel would", async () => {
     expect((await send(await ruled("charged", "payment"))).text).toBe(
-      `${MISSED} As with a cancel inside 24 hours, the Rs. 2,000 you paid for it is kept. Message us if this is wrong.`,
+      `${MISSED} As with a late cancel, the Rs. 2,000 you paid for it is kept. Message us if this is wrong.`,
     );
   });
 
   it("says a charge on a credit visit keeps the credit", async () => {
     expect((await send(await ruled("charged", "credit"))).text).toBe(
-      `${MISSED} As with a cancel inside 24 hours, the visit credit it used is gone. Message us if this is wrong.`,
+      `${MISSED} As with a late cancel, the visit credit it used is gone. Message us if this is wrong.`,
     );
   });
 
@@ -181,6 +181,21 @@ describe("the no-show ruling (LIFE-07)", () => {
     expect((await send(await ruled("waived", "credit"))).text).toBe(
       `${MISSED} We are not charging you for it, and your visit credit is back.`,
     );
+  });
+
+  // What a waiver gives back is ops' to set, and each ruling keeps what it gave (docs/decisions/0088-every-policy-in-the-console.md).
+  it("says a waiver kept the payment and the credit where the ruling kept them", async () => {
+    const payment = await ruled("waived", "payment");
+    await env.DB.prepare("UPDATE no_show_cases SET waiver_payment = 'kept', waiver_credit = 'spent'").run();
+    expect((await send(payment)).text).toBe(
+      `${MISSED} We are not charging you for it. Message us about the Rs. 2,000 you paid for it.`,
+    );
+  });
+
+  it("says a waiver of a credit visit kept the credit where the ruling kept it", async () => {
+    const credit = await ruled("waived", "credit");
+    await env.DB.prepare("UPDATE no_show_cases SET waiver_payment = 'refunded', waiver_credit = 'spent'").run();
+    expect((await send(credit)).text).not.toContain("your visit credit is back");
   });
 
   it("says a waiver of a visit nothing was paid for charges nothing", async () => {

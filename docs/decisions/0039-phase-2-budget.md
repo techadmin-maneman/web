@@ -1,6 +1,6 @@
 # 0039. The Phase 2 budget on the free plan
 
-- Status: accepted; amended 27 September 2026 by [0084](0084-a-clients-try-on-is-kept.md): a client's kept try-on is paid from Phase 2's share, which shortens the photograph runway, and the table below was worked at a result's old 6 MB
+- Status: accepted; amended 27 September 2026 by [0084](0084-a-clients-try-on-is-kept.md): a client's kept try-on is paid from Phase 2's share, which shortens the photograph runway, and the table below was worked at a result's old 6 MB; amended 28 September 2026 by [0093](0093-the-storage-meter.md): the storage meter is built, it tells ops at 50%, 80% and 100% of the share and refuses nothing at 100% on the owner's ruling, and each photograph's thumbnail shortens the runway to 444 visits (1,312 with no try-on kept)
 - Date: 2026-09-22
 
 ## Context
@@ -41,6 +41,8 @@ Production has served no try-on, so no stored result is affected.
 
 Before the photographs pass that runway, the owner must decide between the paid plan and keeping photographs in FSM. A storage meter was to warn at 50% and 80% of the share, and refuse uploads at 100%, leaving queued photos on the phone. **It was not built** (corrected 27 September 2026): nothing counts what the photographs and cards hold, and nothing warns or refuses before R2 bills. It is `docs/open-points.md`, item 142; until then the only warning is Cloudflare's own usage notification at half of R2's allowance, set by hand (`docs/runbook.md`, "R2 storage growing").
 
+> **Amended 28 September 2026 ([ADR 0093](0093-the-storage-meter.md)).** The owner decided on 27 September 2026: R2's paid storage is accepted as the share fills (`docs/open-points.md`, item 151). The meter is built: a running figure in D1, kept as each object is stored and deleted, tells ops once at 50%, 80% and 100% of the share, and Settings shows it. **Nothing is refused at 100%.** A runaway ceiling of 20 GB, twice R2's free allowance, refuses the technician app's uploads, which wait on the phones. A photograph from the app is at most 2 MB, and comes with a thumbnail of about 32 KB, so the runway is 1,312 visits with no try-on kept and 444 at worst.
+
 **Invoices are not copied to R2.** The prompt asks for Books' PDFs to be cached in `mm-{env}-client-docs` for eight years. Books keeps them for eight years itself, so each one is streamed from Books when it is opened.
 
 **The other allowances have no Phase 2 ceilings yet.** Each is set as the milestone that uses it lands, and added to the budget test:
@@ -63,6 +65,6 @@ Before the photographs pass that runway, the owner must decide between the paid 
 ## Consequences
 
 - **The budget test fails** if a try-on ceiling grows into Phase 2's share. It also fails if results go back to thirty days while the share is reserved.
-- **The owner owes a decision before about 1,480 visits** (about 460 at worst while clients' looks are kept at full size, ADR 0084): the paid plan, or photographs in FSM. The storage meter that was to give notice is not built (open point 142); Cloudflare's usage notifications at half of each allowance, which the owner sets by hand, are the only warning today (`docs/runbook.md`, "R2 storage growing").
+- **The owner owed a decision before about 1,480 visits** (about 460 at worst while clients' looks are kept at full size, ADR 0084): the paid plan, or photographs in FSM. **Decided 27 September 2026:** R2's paid storage past the share (item 151). The storage meter tells ops as the share fills (ADR 0093), beside Cloudflare's usage notifications at half of each allowance, which the owner sets by hand (`docs/runbook.md`, "R2 storage growing").
 - **The privacy page changed.** The owner approved the privacy and terms text on 22 September 2026. These two phrases are the only changes, and they bring it in line with the new retention.
 - **Staging still keeps results for three days,** as before.

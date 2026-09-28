@@ -102,7 +102,7 @@ const FIRST_FIT_EPISODE = "s.consulted_start";
  *
  * A consultation asked for is read only while the client has no consultation
  * booked or done, `booked`, which the database keeps as their consultations are
- * written (migration 0054): a look reads the requests still waiting, not every
+ * written (migration 0056): a look reads the requests still waiting, not every
  * request a lead ever made.
  */
 const OUTSTANDING = [
@@ -190,7 +190,7 @@ const OUTSTANDING = [
   // Both read each client's last visits from last_visits, which the database keeps as each visit closes (migration
   // 0053), and look for a visit booked since along indexes that hold only the visits to come or those after it: so a
   // look reads about a row a client, however many visits each has had. A First fit to book reads only the requests
-  // of clients not fitted since their consultation, `fitted_since`, kept from last_visits (migration 0054), and not
+  // of clients not fitted since their consultation, `fitted_since`, kept from last_visits (migration 0056), and not
   // every request a client who has long since been fitted once made.
   withOwners(`
   SELECT 'leave_conflict' AS "group", a.id AS id, pe.id AS person_id, pe.name AS person_name,

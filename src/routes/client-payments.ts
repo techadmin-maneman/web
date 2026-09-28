@@ -102,7 +102,8 @@ const CreditLineSchema = z
     event: z.enum(CREDIT_EVENTS).openapi({
       description:
         "added: a grant (a friend fitted, ops, the import); used: a visit it paid for; lost: one it paid for that " +
-        "was cancelled inside 24 hours, or that the client was not home for and ops charged; returned: back after a " +
+        "was cancelled inside the notice it was booked under, or that the client was not home for and ops charged; " +
+        "returned: back after a " +
         "cancel in time; expired; withdrawn: clawed back under the guarantee; corrected: taken off by ops by hand.",
     }),
     visits: z.number().int().openapi({ description: "Signed: what it added to the balance, or took from it." }),

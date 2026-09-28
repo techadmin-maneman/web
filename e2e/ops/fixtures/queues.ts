@@ -36,6 +36,7 @@ const VIKRAMS_CASE = {
 } satisfies OpsReply<"/api/no-shows">["cases"][number];
 
 export const NO_SHOWS = {
+  waiver: { payment: "refunded", credit: "returned" },
   cases: [
     VIKRAMS_CASE,
     {
@@ -68,6 +69,7 @@ export const NO_SHOWS = {
  * route carries no distance at all (docs/decisions/0036-geocoding.md).
  */
 export const NO_SHOW_UNMEASURED = {
+  waiver: { payment: "refunded", credit: "returned" },
   cases: [{ ...VIKRAMS_CASE, distance_m: null }],
 } satisfies OpsReply<"/api/no-shows">;
 

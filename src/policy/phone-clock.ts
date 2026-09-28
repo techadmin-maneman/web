@@ -26,26 +26,40 @@ export const BOUNDS = [
 ] as const;
 
 /**
- * PLACEHOLDER: how long before the booked start a technician may say he
- * arrived. Early enough for one who beats the traffic, too early to back-date
- * a morning's check-in into the night before (docs/open-points.md, item 58).
+ * How long before the booked start a technician may say he arrived. Early
+ * enough for one who beats the traffic, too early to back-date a morning's
+ * check-in into the night before. The owner kept it on 27 September 2026
+ * (docs/open-points.md, item 58).
  */
 export const EARLIEST_BEFORE_START_MIN = 60;
 
 /**
- * PLACEHOLDER: how long a phone may hold a write and still have its time
- * believed. The app keeps today's and tomorrow's jobs, so a day covers any
- * genuine replay (docs/open-points.md, item 58).
+ * How long a phone may hold a write and still have its time believed. The app
+ * keeps today's and tomorrow's jobs, so a day covers any genuine replay. The
+ * owner kept it on 27 September 2026 (docs/open-points.md, item 58).
  */
 export const MAX_OFFLINE_HOURS = 24;
 
+/**
+ * The two bounds, as ops set them in the console (docs/decisions/0088-every-policy-in-the-console.md): minutes
+ * before the booked start, and hours a write may be held. The committed figures above until they do.
+ */
+export const PHONE_CLOCK_KEYS = ["before_start", "held_offline"] as const;
+export type PhoneClock = Readonly<Record<(typeof PHONE_CLOCK_KEYS)[number], number>>;
+
+export const PHONE_CLOCK: PhoneClock = { before_start: EARLIEST_BEFORE_START_MIN, held_offline: MAX_OFFLINE_HOURS };
+
 /** The phone's time for something it did, held within the bounds above; the server's own when it gave none. */
-export function boundedPhoneTime(claimed: Date | null, bounds: { visitStart: Date; receivedAt: Date }): Date {
+export function boundedPhoneTime(
+  claimed: Date | null,
+  bounds: { visitStart: Date; receivedAt: Date },
+  clock: PhoneClock = PHONE_CLOCK,
+): Date {
   if (claimed === null || Number.isNaN(claimed.getTime())) return bounds.receivedAt;
   const received = bounds.receivedAt.getTime();
   const earliest = Math.max(
-    bounds.visitStart.getTime() - EARLIEST_BEFORE_START_MIN * MINUTE_MS,
-    received - MAX_OFFLINE_HOURS * HOUR_MS,
+    bounds.visitStart.getTime() - clock.before_start * MINUTE_MS,
+    received - clock.held_offline * HOUR_MS,
   );
   return new Date(Math.min(received, Math.max(earliest, claimed.getTime())));
 }

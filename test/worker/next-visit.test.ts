@@ -329,6 +329,13 @@ describe("the reminder of the next service", () => {
     expect((await reminders()).results).toEqual([]);
   });
 
+  it("is written from the hour ops set for reminders, not before it", async () => {
+    await visit("service", "2026-08-29T04:30:00.000Z");
+    expect(await queueNextServiceReminders(env.DB, EVENING, NEXT_VISIT_DAYS, 19)).toEqual([]);
+    const seven = new Date(EVENING.getTime() + 60 * 60_000);
+    expect(await queueNextServiceReminders(env.DB, seven, NEXT_VISIT_DAYS, 19)).toHaveLength(1);
+  });
+
   it("follows the days ops set before the due day", async () => {
     await visit("service", "2026-08-29T04:30:00.000Z"); // due in seven days
     expect(await queueNextServiceReminders(env.DB, EVENING, { ...NEXT_VISIT_DAYS, reminder_before_due: 5 })).toEqual(

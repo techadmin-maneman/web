@@ -11,6 +11,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/http/context.ts";
 import { decideNoShow, refundWaivedVisit } from "../../src/domain/no-shows.ts";
 import { NO_VISITS_CONSENT } from "../../src/domain/visit-messages.ts";
+import { WAIVER_GIVES_BACK } from "../../src/policy/no-show.ts";
 import { createStubPayments } from "../../src/providers/payments.ts";
 import { appFor, captureLogs, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
 
@@ -111,6 +112,19 @@ beforeEach(async () => {
 describe("GET /api/no-shows", () => {
   it("names the client whose visit it was, which the case once never did", async () => {
     expect((await cases())[0]?.person).toEqual({ id: PERSON, name: "Rohit Malhotra" });
+  });
+
+  it("says what waiving a case gives back now, as ops set it", async () => {
+    const waiver = async () => (await (await request(ops, "/api/no-shows")).json<{ waiver: unknown }>()).waiver;
+    expect(await waiver()).toEqual({ payment: "refunded", credit: "returned" });
+    await env.DB.prepare(
+      `INSERT INTO ops_settings (name, value, set_by, set_at)
+       VALUES ('no_show_waiver', '{"payment": "kept", "credit": "returned"}', 'ops', ?1)`,
+    )
+      .bind(NOW.toISOString())
+      .run();
+    ops = appFor("local", fakeDependencies(), {}, "ops");
+    expect(await waiver()).toEqual({ payment: "kept", credit: "returned" });
   });
 
   it("names nobody once the client has been erased", async () => {
@@ -227,7 +241,7 @@ describe("POST /api/no-shows/:id/decision", () => {
     });
   });
 
-  it("moves no money on a waiver where the switch is off", async () => {
+  it("moves no money on a waiver that gives nothing back", async () => {
     await paidAndCredited();
 
     const ruled = await decideNoShow(env.DB, {
@@ -244,7 +258,7 @@ describe("POST /api/no-shows/:id/decision", () => {
         detail: { decision: "waived" },
       },
       now: NOW,
-      waiverGivesBack: false,
+      waiver: { payment: "kept", credit: "spent" },
     });
 
     expect(ruled?.refund).toBeNull();
@@ -253,7 +267,7 @@ describe("POST /api/no-shows/:id/decision", () => {
     });
   });
 
-  it("gives back the payment and the credit on a waiver, once the owner rules that it should", async () => {
+  it("gives back the payment and the credit on a waiver, as the owner ruled", async () => {
     const payments = createStubPayments();
     await paidAndCredited();
 
@@ -271,7 +285,7 @@ describe("POST /api/no-shows/:id/decision", () => {
         detail: { decision: "waived" },
       },
       now: NOW,
-      waiverGivesBack: true,
+      waiver: WAIVER_GIVES_BACK,
     });
     expect(ruled?.refund).not.toBeNull();
     if (ruled?.refund) {
@@ -281,6 +295,48 @@ describe("POST /api/no-shows/:id/decision", () => {
     expect(payments.made.refunds).toEqual([expect.objectContaining({ paymentId: "pay_visit", amount: 200000 })]);
     expect(await env.DB.prepare("SELECT kind, visits FROM credit_ledger WHERE kind = 'restore'").all()).toMatchObject({
       results: [{ kind: "restore", visits: 1 }],
+    });
+  });
+
+  // What a waiver gives back is ops' to set (docs/decisions/0088-every-policy-in-the-console.md).
+  it("gives back what ops set a waiver to give, and keeps on the ruling what it gave", async () => {
+    await env.DB.prepare(
+      `INSERT INTO ops_settings (name, value, set_by, set_at)
+       VALUES ('no_show_waiver', '{"payment": "refunded", "credit": "spent"}', 'ops', ?1)`,
+    )
+      .bind(NOW.toISOString())
+      .run();
+    const payments = createStubPayments();
+    const app = appFor("local", fakeDependencies({ payments }), {}, "ops");
+    await paidAndCredited();
+
+    const answer = await request(
+      app,
+      `/api/no-shows/${CASE}/decision`,
+      {
+        method: "POST",
+        headers: { Origin: "https://maneman.test", "Content-Type": "application/json" },
+        body: JSON.stringify({ decision: "waived", reason: "The lift was out" }),
+      },
+      { MESSAGE_QUEUE: fakeQueue() },
+    );
+
+    expect(answer.status).toBe(200);
+    expect(payments.made.refunds).toEqual([expect.objectContaining({ paymentId: "pay_visit", amount: 200000 })]);
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM credit_ledger WHERE kind = 'restore'").first()).toEqual({
+      n: 0,
+    });
+    expect(await env.DB.prepare("SELECT waiver_payment, waiver_credit FROM no_show_cases").first()).toEqual({
+      waiver_payment: "refunded",
+      waiver_credit: "spent",
+    });
+  });
+
+  it("keeps no waiver on a charge", async () => {
+    await rule({ decision: "charged", reason: "Nobody came to the door" });
+    expect(await env.DB.prepare("SELECT waiver_payment, waiver_credit FROM no_show_cases").first()).toEqual({
+      waiver_payment: null,
+      waiver_credit: null,
     });
   });
 

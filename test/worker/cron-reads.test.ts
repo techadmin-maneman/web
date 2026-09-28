@@ -16,6 +16,7 @@ import {
   NOW,
   appFor,
   captureLogs,
+  countRowsRead,
   fakeDependencies,
   fakeQueue,
   markDatabase,
@@ -27,7 +28,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const AGO = new Date(NOW.getTime() - 60 * DAY_MS).toISOString();
 const AGO_PLUS_HOUR = new Date(NOW.getTime() - 60 * DAY_MS + 60 * 60 * 1000).toISOString();
 const IN_TWO_MONTHS = new Date(NOW.getTime() + 60 * DAY_MS).toISOString();
-/** 6:30 pm in India, when the evening's reminders go (src/domain/visit-messages.ts, REMINDERS_FROM). */
+/** 6:30 pm in India, when the evening's reminders go (DAY_BEFORE_REMINDER_HOUR, src/policy/job-visibility.ts). */
 const EVENING = new Date(NOW.getTime() + 6.5 * 60 * 60 * 1000);
 /** A visit 25 days ago, whose next service falls due within the reminder's week (ADR 0086), and an hour later. */
 const DUE_SOON = new Date(NOW.getTime() - 25 * DAY_MS).toISOString();
@@ -100,44 +101,6 @@ async function history(from: number, to: number): Promise<void> {
       ),
     ),
   );
-}
-
-/** Counts every row D1 says each statement read, however the statement was run. */
-function countRowsRead(): () => number {
-  let read = 0;
-  const counted = <T extends D1Result>(result: T): T => {
-    read += result.meta.rows_read;
-    return result;
-  };
-  const statement = Object.getPrototypeOf(env.DB.prepare("SELECT 1")) as D1PreparedStatement;
-  const database = Object.getPrototypeOf(env.DB) as D1Database;
-  // The real methods, each called below on the statement or database it belongs to.
-  const real = {
-    all: Reflect.get(statement, "all") as (this: D1PreparedStatement) => Promise<D1Result>,
-    run: Reflect.get(statement, "run") as (this: D1PreparedStatement) => Promise<D1Result>,
-    batch: Reflect.get(database, "batch") as (
-      this: D1Database,
-      statements: D1PreparedStatement[],
-    ) => Promise<D1Result[]>,
-  };
-  vi.spyOn(statement, "all").mockImplementation(async function (this: D1PreparedStatement) {
-    return counted(await real.all.call(this));
-  });
-  vi.spyOn(statement, "run").mockImplementation(async function (this: D1PreparedStatement) {
-    return counted(await real.run.call(this));
-  });
-  // first() carries no meta, so it is answered from all().
-  vi.spyOn(statement, "first").mockImplementation(async function (this: D1PreparedStatement, column?: string) {
-    const [row] = counted(await real.all.call(this)).results as Record<string, unknown>[];
-    if (row === undefined) return null;
-    return column === undefined ? row : (row[column] ?? null);
-  });
-  vi.spyOn(database, "batch").mockImplementation(async function (this: D1Database, statements) {
-    const results = await real.batch.call(this, statements);
-    for (const result of results) counted(result);
-    return results;
-  });
-  return () => read;
 }
 
 async function rowsReadByOneRun(now = NOW): Promise<number> {

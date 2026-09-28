@@ -1,6 +1,6 @@
 # 0009. Stay inside Cloudflare's free tier
 
-- Status: accepted
+- Status: accepted; departed from 28 September 2026 by [0093](0093-the-storage-meter.md) for R2 storage alone: on the owner's ruling of 27 September 2026 (`docs/open-points.md`, item 151), R2's paid storage is accepted once Phase 2's share fills, and the storage meter tells ops at 50%, 80% and 100% of it
 - Date: 2026-09-21
 
 ## Context

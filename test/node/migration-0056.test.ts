@@ -1,4 +1,4 @@
-// Migration 0054: whose each task is, a task ops closed, an address given to ops,
+// Migration 0056: whose each task is, a task ops closed, an address given to ops,
 // and what keeps the Tasks board's Consultation request and First fit to book
 // reading only what can still be a task (docs/decisions/0092-task-owners.md).
 // Applied to a database that already holds requests and visits, as staging's
@@ -105,7 +105,7 @@ const fittedNow = (db: DatabaseSync) =>
     )
     .all();
 
-describe("migration 0054: a consultation asked for", () => {
+describe("migration 0056: a consultation asked for", () => {
   it("is marked booked where the client has a consultation not called off", () => {
     const db = migrated();
     expect(booked(db)).toEqual([
@@ -142,7 +142,7 @@ describe("migration 0054: a consultation asked for", () => {
   });
 });
 
-describe("migration 0054: a first fit asked for", () => {
+describe("migration 0056: a first fit asked for", () => {
   it("is marked fitted where the client has had a fit, service or replacement since the consultation", () => {
     const db = migrated();
     expect(fitted(db)).toEqual([
@@ -190,7 +190,7 @@ describe("migration 0054: a first fit asked for", () => {
   });
 });
 
-describe("migration 0054: what is kept about a task", () => {
+describe("migration 0056: what is kept about a task", () => {
   it("keeps one owner and one closing a task, and an address's member of staff", () => {
     const db = migrated();
     const own = db.prepare(

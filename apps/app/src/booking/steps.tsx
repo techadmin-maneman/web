@@ -81,12 +81,12 @@ function LastMinute({ left }: { left: number }) {
  * The late fee's line, the same on the pay step (boards C4 and C5) and on moving a visit (C7): the
  * ex-GST figure in the sentence, and the inclusive one muted after it once GST applies.
  */
-export function LateFee({ fee }: { fee: Price }) {
+export function LateFee({ fee, noticeHours }: { fee: Price; noticeHours: number }) {
   const { exGst, inclusive } = priceFigures(fee);
   const copy = booking.lateFee;
   return (
     <>
-      {copy.costs(exGst)}
+      {copy.costs(exGst, noticeHours)}
       {inclusive !== null && <span className={styles.inclusive}>{copy.inclusive(inclusive)}</span>}
       {copy.rest}
     </>
@@ -350,9 +350,11 @@ function amountLine(hold: Hold, covered: boolean, free: boolean): string {
 }
 
 /**
- * What changing the visit later costs, beneath the pay step's lines: for a visit moved in place, that its
- * payment carries over; for one booked late, the late fee; for any other, the hour it may be changed free
- * until. A credit's own note, below, says what cancelling late costs, so a covered visit says nothing here.
+ * What changing the visit later costs, beneath the pay step's lines, as the booking is sold
+ * (docs/decisions/0088-every-policy-in-the-console.md): for a visit moved in place, that its payment carries over;
+ * for one sold to charge a late fee, the fee; for one sold to cost nothing late, that it is free at any time; for any
+ * other, the hour it may be changed free until. A credit's own note, below, says what cancelling late costs, so a
+ * covered visit that costs its credit late says nothing here.
  */
 function ChangeTerms({ hold, moving, covered }: { hold: Hold; moving: MoveTerms | undefined; covered: boolean }) {
   const line = `${styles.line ?? ""} ${styles.soft ?? ""}`;
@@ -361,13 +363,14 @@ function ChangeTerms({ hold, moving, covered }: { hold: Hold; moving: MoveTerms 
       <p className={line}>{moving.paid > 0 ? change.move.free(rupees(moving.paid)) : change.move.freeNothingPaid}</p>
     );
   }
-  if (hold.late_fee !== null) {
+  if (hold.late_change_charge === "late_fee" && hold.late_fee !== null) {
     return (
       <p className={line}>
-        <LateFee fee={hold.late_fee} />
+        <LateFee fee={hold.late_fee} noticeHours={hold.change_notice_hours} />
       </p>
     );
   }
+  if (hold.late_change_charge === "nothing") return <p className={line}>{booking.pay.freeAnyTime}</p>;
   if (covered) return null;
   return (
     <p className={line}>
@@ -487,7 +490,9 @@ export function PayStep(props: {
         {payLabel(hold, moving)}
       </Button>
       {!free && <p className={styles.moneyNote}>{copy.neverHandlesMoney(technician)}</p>}
-      {covered && <p className={styles.creditNote}>{copy.credit.note}</p>}
+      {covered && hold.late_change_charge !== "nothing" && (
+        <p className={styles.creditNote}>{copy.credit.note(hold.change_notice_hours)}</p>
+      )}
     </>
   );
 }

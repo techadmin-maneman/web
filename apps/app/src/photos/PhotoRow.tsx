@@ -2,9 +2,11 @@
 // captions (boards C9 and D1). Each fades in as it arrives, over the loading
 // block, with no spinner (board D3); an angle not taken stays a blank block.
 //
-// A thumbnail is the whole photograph, about 65 px wide on the screen: there is
-// no smaller copy to ask for. So each is fetched only as it nears the screen,
-// and says its size, so the page does not move as it arrives.
+// A row shows each photograph's small copy, which the technician's phone made
+// at capture, and the whole photograph once it is opened. A photograph with no
+// small copy, such as one copied from FSM, shows itself, about 65 px wide
+// (docs/decisions/0093-the-storage-meter.md). Each is fetched only as it nears
+// the screen, and says its size, so the page does not move as it arrives.
 
 import { fullDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
@@ -62,6 +64,7 @@ export function PhotoRow({ set, date, onOpen }: { set: PhotoSet; date: string; o
       {ANGLES.map((angle) => {
         const link = set[phase].find((each) => each.angle === angle);
         if (link === undefined) return <div key={angle} className={styles.cell} />;
+        const thumbnail: ImageLink = { ...link, url: link.thumbnail_url ?? link.url };
         const alt = photos.alt(photos.angles[angle], phase, fullDate(date));
         const opened: OpenPhoto = {
           link,
@@ -79,7 +82,7 @@ export function PhotoRow({ set, date, onOpen }: { set: PhotoSet; date: string; o
               onOpen(opened);
             }}
           >
-            <Thumb link={link} alt="" />
+            <Thumb link={thumbnail} alt="" />
           </button>
         );
       })}

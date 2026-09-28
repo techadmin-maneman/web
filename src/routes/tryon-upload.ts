@@ -18,6 +18,7 @@ import { errorBody, errorResponse } from "../http/errors.ts";
 import { currentSession, lookCookieJob } from "../http/tryon-session.ts";
 import { checkTurnstile, visitorOf } from "../http/visitor.ts";
 import { copyKey } from "../domain/kept-try-ons.ts";
+import { putCounted } from "../domain/storage-meter.ts";
 import { checkCopy, checkPhoto } from "../domain/photo.ts";
 import { indiaHour } from "../lib/india-time.ts";
 import { KEEPING_NOTICES } from "../policy/kept-try-ons.ts";
@@ -249,7 +250,7 @@ function registerCopyUpload(app: App): void {
     if (claimed === null) return c.json(errorBody("upload_already_received", requestId), 409);
 
     try {
-      await c.env.CLIENT_PHOTOS.put(key, bytes, { httpMetadata: { contentType: copy.type } });
+      await putCounted(db, c.env.CLIENT_PHOTOS, key, bytes, copy.type);
     } catch (error) {
       await db.prepare("UPDATE tryon_jobs SET copy_key = NULL WHERE id = ?1").bind(jobId).run();
       throw error;

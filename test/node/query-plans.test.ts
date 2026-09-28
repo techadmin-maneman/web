@@ -31,6 +31,7 @@ const CRON_PATH = [
   "src/domain/visit-messages.ts",
   "src/domain/next-visit.ts",
   "src/domain/dispatch.ts",
+  "src/domain/storage-meter.ts",
 ];
 
 /** A payment and what it pays for: the hold page polls these while the client pays. */
@@ -56,6 +57,8 @@ const SMALL_TABLES = new Set([
   "services",
   "sync_cursors",
   "cron_jobs",
+  // One row, what Phase 2's buckets hold (docs/decisions/0093-the-storage-meter.md).
+  "storage_meter",
 ]);
 
 /** Statements that do read a whole table, each with why that is all right. */

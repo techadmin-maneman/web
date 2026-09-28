@@ -71,6 +71,7 @@ export const TECHNICIAN_WORK = {
       timed_jobs: 48,
       average_minutes: 84,
       average_planned_minutes: 90,
+      runs_over: false,
       skill: null,
     },
     {
@@ -79,6 +80,7 @@ export const TECHNICIAN_WORK = {
       timed_jobs: 30,
       average_minutes: 91,
       average_planned_minutes: 90,
+      runs_over: false,
       skill: null,
     },
     {
@@ -87,6 +89,7 @@ export const TECHNICIAN_WORK = {
       timed_jobs: 29,
       average_minutes: 108,
       average_planned_minutes: 90,
+      runs_over: true,
       skill: null,
     },
   ],

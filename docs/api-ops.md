@@ -2098,6 +2098,106 @@ Request body:
 }
 ```
 
+### GET /api/blackouts
+
+Every day from today on that no visit is offered, with the visits still booked on each
+
+**200**: The days
+
+```json
+{
+  "$ref": "#/components/schemas/Blackouts"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/blackouts
+
+Black out every day from one date to another. A day already blacked out takes the reason given now
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/BlackoutAdd"
+}
+```
+
+**200**: The days as they now stand
+
+```json
+{
+  "$ref": "#/components/schemas/Blackouts"
+}
+```
+
+**400**: invalid_request: fields names from when it is before today, to when it is before from or more than a month on, and reason when there is none or it is not one a list can hold
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/blackouts/remove
+
+Offer the days from one date to another again
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/BlackoutRemove"
+}
+```
+
+**200**: The days as they now stand
+
+```json
+{
+  "$ref": "#/components/schemas/Blackouts"
+}
+```
+
+**400**: invalid_request: fields names from when it is before today, and to when it is before from
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: none of those days is blacked out
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/services
 
 Every service, offered or retired, with every price it has had and is to have, and the late fees
@@ -2875,6 +2975,26 @@ Request body:
 ```json
 {
   "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/storage
+
+What the photographs and referral cards hold in R2, against their share
+
+**200**: The storage meter
+
+```json
+{
+  "$ref": "#/components/schemas/Storage"
 }
 ```
 
@@ -5893,10 +6013,36 @@ Who Access let through, and where signing out goes
       "items": {
         "$ref": "#/components/schemas/NoShowCase"
       }
+    },
+    "waiver": {
+      "type": "object",
+      "properties": {
+        "payment": {
+          "type": "string",
+          "enum": [
+            "refunded",
+            "kept"
+          ]
+        },
+        "credit": {
+          "type": "string",
+          "enum": [
+            "returned",
+            "spent"
+          ]
+        }
+      },
+      "required": [
+        "payment",
+        "credit"
+      ],
+      "additionalProperties": false,
+      "description": "What waiving a case gives back now, as ops set it in Settings (no_show_waiver)."
     }
   },
   "required": [
-    "cases"
+    "cases",
+    "waiver"
   ],
   "additionalProperties": false
 }
@@ -6982,6 +7128,10 @@ Who Access let through, and where signing out goes
       ],
       "description": "What the same jobs were planned to take, so the two can be read against each other."
     },
+    "runs_over": {
+      "type": "boolean",
+      "description": "Whether the average runs as far over the planned length as ops set (technician_work.over_by, 15 minutes to begin with); false when the phone timed none of the jobs."
+    },
     "skill": {
       "type": "null",
       "description": "The board's \"First fit\" or \"Service\". Nothing records what a technician is trained for and the FSM user carries no such field, so this is always null (docs/open-points.md, item 59)."
@@ -6993,6 +7143,7 @@ Who Access let through, and where signing out goes
     "timed_jobs",
     "average_minutes",
     "average_planned_minutes",
+    "runs_over",
     "skill"
   ],
   "additionalProperties": false
@@ -7003,6 +7154,28 @@ Who Access let through, and where signing out goes
 
 ```json
 {
+  "oneOf": [
+    {
+      "$ref": "#/components/schemas/NumberRule"
+    },
+    {
+      "$ref": "#/components/schemas/ChoiceRule"
+    }
+  ],
+  "discriminator": {
+    "propertyName": "kind",
+    "mapping": {
+      "number": "#/components/schemas/NumberRule",
+      "choice": "#/components/schemas/ChoiceRule"
+    }
+  }
+}
+```
+
+### NumberRule
+
+```json
+{
   "type": "object",
   "properties": {
     "name": {
@@ -7010,9 +7183,17 @@ Who Access let through, and where signing out goes
       "enum": [
         "checkin_radius_m",
         "no_show_wait_min",
+        "change_notice_hours",
+        "late_change_charge",
+        "no_show_charge",
+        "no_show_waiver",
         "address_unlock_hour",
+        "reminder_hour",
+        "phone_clock",
         "task_sla_hours",
         "piece_cycle_days",
+        "payment_hold",
+        "technician_work",
         "booking_days"
       ]
     },
@@ -7021,6 +7202,37 @@ Who Access let through, and where signing out goes
     },
     "note": {
       "type": "string"
+    },
+    "source": {
+      "type": "string",
+      "description": "The module the default lives in."
+    },
+    "set_by": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "set_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "number"
+      ]
     },
     "unit": {
       "type": "string"
@@ -7063,11 +7275,15 @@ Who Access let through, and where signing out goes
               },
               "max": {
                 "type": "integer"
+              },
+              "unit": {
+                "type": "string"
               }
             },
             "required": [
               "min",
-              "max"
+              "max",
+              "unit"
             ],
             "additionalProperties": false
           }
@@ -7076,7 +7292,7 @@ Who Access let through, and where signing out goes
           "type": "null"
         }
       ],
-      "description": "Each key's own bounds, where a keyed rule's figures measure different things; null where every figure takes min to max."
+      "description": "Each key's own bounds and unit, where a keyed rule's figures measure different things; null where every figure takes min to max, in unit."
     },
     "value": {
       "anyOf": [
@@ -7104,6 +7320,58 @@ Who Access let through, and where signing out goes
         }
       ],
       "description": "The committed figure, in force until somebody sets one."
+    }
+  },
+  "required": [
+    "name",
+    "title",
+    "note",
+    "source",
+    "set_by",
+    "set_at",
+    "kind",
+    "unit",
+    "min",
+    "max",
+    "keys",
+    "bounds",
+    "value",
+    "default"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ChoiceRule
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "enum": [
+        "checkin_radius_m",
+        "no_show_wait_min",
+        "change_notice_hours",
+        "late_change_charge",
+        "no_show_charge",
+        "no_show_waiver",
+        "address_unlock_hour",
+        "reminder_hour",
+        "phone_clock",
+        "task_sla_hours",
+        "piece_cycle_days",
+        "payment_hold",
+        "technician_work",
+        "booking_days"
+      ]
+    },
+    "title": {
+      "type": "string"
+    },
+    "note": {
+      "type": "string"
     },
     "source": {
       "type": "string",
@@ -7129,22 +7397,55 @@ Who Access let through, and where signing out goes
           "type": "null"
         }
       ]
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "choice"
+      ]
+    },
+    "keys": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "choices": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "description": "What each key may be: a kind of visit with no late fee in the price book is offered none."
+    },
+    "value": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "default": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "The committed choices, in force until somebody sets them."
     }
   },
   "required": [
     "name",
     "title",
     "note",
-    "unit",
-    "min",
-    "max",
-    "keys",
-    "bounds",
-    "value",
-    "default",
     "source",
     "set_by",
-    "set_at"
+    "set_at",
+    "kind",
+    "keys",
+    "choices",
+    "value",
+    "default"
   ],
   "additionalProperties": false
 }
@@ -7165,6 +7466,12 @@ Who Access let through, and where signing out goes
           "type": "object",
           "additionalProperties": {
             "type": "integer"
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
           }
         },
         {
@@ -7466,6 +7773,143 @@ Who Access let through, and where signing out goes
   },
   "required": [
     "changes"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Blackouts
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "blackouts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/Blackout"
+      }
+    },
+    "today": {
+      "type": "string",
+      "format": "date",
+      "description": "India's date, the first a day may be blacked out from."
+    },
+    "max_days": {
+      "type": "integer",
+      "description": "The most days one addition may cover."
+    }
+  },
+  "required": [
+    "blackouts",
+    "today",
+    "max_days"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Blackout
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "set_by": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The Access identity that set it; null for a day the runbook's SQL wrote before this screen."
+    },
+    "set_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "booked": {
+      "type": "integer",
+      "description": "Visits still booked on the day. Blacking a day out moves none of them: ops do."
+    }
+  },
+  "required": [
+    "date",
+    "reason",
+    "set_by",
+    "set_at",
+    "booked"
+  ],
+  "additionalProperties": false
+}
+```
+
+### BlackoutAdd
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "from": {
+      "type": "string",
+      "format": "date",
+      "description": "The first day, today or later."
+    },
+    "to": {
+      "type": "string",
+      "format": "date",
+      "description": "The last day, the first included; a month on at most when adding."
+    },
+    "reason": {
+      "type": "string",
+      "pattern": "^[\\p{L}\\p{N}][\\p{L}\\p{N} .,'()&/-]{0,59}$/u"
+    }
+  },
+  "required": [
+    "from",
+    "to",
+    "reason"
+  ],
+  "additionalProperties": false
+}
+```
+
+### BlackoutRemove
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "from": {
+      "type": "string",
+      "format": "date",
+      "description": "The first day, today or later."
+    },
+    "to": {
+      "type": "string",
+      "format": "date",
+      "description": "The last day, the first included; a month on at most when adding."
+    }
+  },
+  "required": [
+    "from",
+    "to"
   ],
   "additionalProperties": false
 }
@@ -8841,6 +9285,34 @@ Who Access let through, and where signing out goes
     "technician_id",
     "quantity",
     "note"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Storage
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "held_bytes": {
+      "type": "integer",
+      "description": "What the client-photos and referral-cards buckets hold."
+    },
+    "share_bytes": {
+      "type": "integer",
+      "description": "Phase 2's share of R2's free 10 GB (ADR 0039); past it R2 bills, as the owner accepted."
+    },
+    "ceiling_bytes": {
+      "type": "integer",
+      "description": "Past this the technician app's photographs are refused and wait on the phones."
+    }
+  },
+  "required": [
+    "held_bytes",
+    "share_bytes",
+    "ceiling_bytes"
   ],
   "additionalProperties": false
 }
