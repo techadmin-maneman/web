@@ -6,7 +6,15 @@
 
 import { fromBase64Url, toBase64Url } from "./base64url.ts";
 
-export type TokenPurpose = "upload" | "result" | "look" | "photo" | "tech_photo" | "tryon_photo" | "tryon_look";
+export type TokenPurpose =
+  | "upload"
+  | "result"
+  | "look"
+  | "photo"
+  | "photo_small"
+  | "tech_photo"
+  | "tryon_photo"
+  | "tryon_look";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();

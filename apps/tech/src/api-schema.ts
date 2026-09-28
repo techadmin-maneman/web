@@ -661,7 +661,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** The photograph itself: a JPEG or PNG, at most 12 MB */
+        /** The photograph itself: a JPEG or PNG, at most 2 MB */
         put: {
             parameters: {
                 query?: never;
@@ -698,8 +698,98 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description photo_invalid_file: not a JPEG or PNG, or over 12 MB */
+                /** @description photo_invalid_file: not a JPEG or PNG, or over 2 MB */
                 422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description busy: R2 holds past the runaway ceiling; the phone keeps the photograph and sends it later */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tech/photos/{token}/small": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** The photograph's small copy, for the client app's rows: a JPEG of at most 64 KB and 800 px a side */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    token: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Received, or held already */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description session_required; device_revoked */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: the link is wrong or expired */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description upload_missing: the photograph has not arrived; send it first */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description photo_invalid_file: not a JPEG, or over 64 KB or 800 px a side */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description busy: R2 holds past the runaway ceiling */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1519,6 +1609,8 @@ export interface components {
         TechnicianPhotoUrl: {
             /** @description A path on this host. PUT the photograph there. */
             upload_url: string;
+            /** @description A path on this host. PUT the photograph's small copy there, once the photograph is in. */
+            small_upload_url: string;
             /** Format: date-time */
             expires_at: string;
         };

@@ -483,9 +483,13 @@ describe("GET /api/visits/:id and the photographs", () => {
   it("does not show another client's visit or photograph", async () => {
     const ids = await mirror([done("ap-done", "2026-09-10")]);
     await signIn();
-    const url =
-      (await (await get(`/api/visits/${ids["ap-done"] ?? ""}`)).json<{ photos: { after: { url: string }[] } }>()).photos
-        .after[0]?.url ?? "";
+    await env.DB.prepare("UPDATE photos SET thumbnail_key = r2_key").run();
+    const [photo] = (
+      await (await get(`/api/visits/${ids["ap-done"] ?? ""}`)).json<{
+        photos: { after: { url: string; thumbnail_url: string }[] };
+      }>()
+    ).photos.after;
+    const url = photo?.url ?? "";
 
     const other = crypto.randomUUID();
     await env.DB.prepare(
@@ -496,6 +500,7 @@ describe("GET /api/visits/:id and the photographs", () => {
     cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: other, deviceLabel: null, now: NOW })}`;
     expect((await get(`/api/visits/${ids["ap-done"] ?? ""}`)).status).toBe(404);
     expect((await get(url)).status).toBe(404);
+    expect((await get(photo?.thumbnail_url ?? "")).status).toBe(404);
   });
 
   /*
@@ -599,6 +604,43 @@ describe("GET /api/visits/:id and the photographs", () => {
     });
     await env.DB.prepare("UPDATE no_show_cases SET decision = 'charged'").run();
     expect((await detail()).no_show).toEqual({ decision: "charged", waited_minutes: 16 });
+  });
+
+  interface Links {
+    readonly url: string;
+    readonly thumbnail_url: string | null;
+  }
+  const afterPhotos = async (visitId: string) =>
+    (await (await get(`/api/visits/${visitId}`)).json<{ photos: { after: Links[] } }>()).photos.after;
+
+  it("links a photograph's small copy for the rows, and none for one copied from FSM", async () => {
+    const ids = await mirror([done("ap-done", "2026-09-10")]);
+    await signIn();
+    const [fromFsm] = await afterPhotos(ids["ap-done"] ?? "");
+    expect(fromFsm?.thumbnail_url).toBeNull();
+
+    const small = syntheticJpeg(300, 400, "small");
+    await env.CLIENT_PHOTOS.put("visits/small-copy.jpg", small);
+    await env.DB.prepare("UPDATE photos SET thumbnail_key = 'visits/small-copy.jpg'").run();
+    const [fromTheApp] = await afterPhotos(ids["ap-done"] ?? "");
+    const image = await get(fromTheApp?.thumbnail_url ?? "");
+    expect(image.status).toBe(200);
+    expect(image.headers.get("Content-Type")).toBe("image/jpeg");
+    expect(new Uint8Array(await image.arrayBuffer())).toEqual(small);
+    expect((await get(fromTheApp?.thumbnail_url ?? "", false)).status).toBe(401);
+    // The link to the photograph itself is still the whole photograph, which the sheet opens.
+    expect((await (await get(fromTheApp?.url ?? "")).arrayBuffer()).byteLength).not.toBe(small.byteLength);
+  });
+
+  it("serves the photograph itself through a small copy's link when the copy is missing from the bucket", async () => {
+    const ids = await mirror([done("ap-done", "2026-09-10")]);
+    await signIn();
+    await env.DB.prepare("UPDATE photos SET thumbnail_key = 'visits/never-stored-small.jpg'").run();
+    const [photo] = await afterPhotos(ids["ap-done"] ?? "");
+    const image = await get(photo?.thumbnail_url ?? "");
+    expect(image.status).toBe(200);
+    const whole = await get(photo?.url ?? "");
+    expect(await image.arrayBuffer()).toEqual(await whole.arrayBuffer());
   });
 
   it("refuses a photograph link once its 15 minutes are up", async () => {
