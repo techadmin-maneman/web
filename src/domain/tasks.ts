@@ -154,7 +154,7 @@ const OUTSTANDING = [
   // the consultation's start and the window asked for, and goes as the at-risk task does.
   //
   // Both read each client's last visits from last_visits, which the database keeps as each visit closes (migration
-  // 0053), and look for a visit booked since along indexes that hold only the visits to come or those after it: so a
+  // 0052), and look for a visit booked since along indexes that hold only the visits to come or those after it: so a
   // look reads about a row a client, however many visits each has had.
   `SELECT * FROM (
   SELECT 'leave_conflict' AS "group", a.id AS id, pe.id AS person_id, pe.name AS person_name,

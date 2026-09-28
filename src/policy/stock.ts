@@ -8,7 +8,7 @@
 // What a place holds is the sum of its rows in stock_movements, never a figure
 // anyone sets, so a count or a correction is a row of its own and the ledger
 // always explains the number. The database keeps that sum in stock_balances as
-// each row is written, so it is read without the rows (migration 0053).
+// each row is written, so it is read without the rows (migration 0052).
 
 export const RULES = [
   "These are ours because FSM has no place for them, not because they compete with FSM. Everything FSM does hold is written to FSM.",

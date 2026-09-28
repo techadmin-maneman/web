@@ -1,4 +1,4 @@
-// Migration 0053: what each place holds, and each client's last visits, kept by
+// Migration 0052: what each place holds, and each client's last visits, kept by
 // the database as the rows behind them are written (docs/decisions/0087-consumables-and-stock.md,
 // 0086-the-next-visit-is-offered.md). Applied to a database that already holds
 // a ledger and visits, as staging's does, and then written to as the Worker
@@ -12,7 +12,7 @@ import { describe, expect, it } from "vitest";
 const MIGRATIONS = readdirSync("migrations")
   .filter((file) => file.endsWith(".sql"))
   .sort();
-const THIS = MIGRATIONS.find((file) => file.startsWith("0053_")) ?? "";
+const THIS = MIGRATIONS.find((file) => file.startsWith("0052_")) ?? "";
 
 const AT = "2026-09-21T06:30:00.000Z";
 
@@ -107,7 +107,7 @@ const workedOut = (db: DatabaseSync) =>
     )
     .all();
 
-describe("migration 0053: the balances", () => {
+describe("migration 0052: the balances", () => {
   it("starts each place at the sum of its rows, with when it last counted", () => {
     const db = migrated();
     expect(balances(db)).toEqual([
@@ -171,7 +171,7 @@ describe("migration 0053: the balances", () => {
   });
 });
 
-describe("migration 0053: each client's last visits", () => {
+describe("migration 0052: each client's last visits", () => {
   it("starts from the visits done: the last fit, service or replacement, and the last consultation", () => {
     const db = migrated();
     expect(lastVisits(db)).toEqual([

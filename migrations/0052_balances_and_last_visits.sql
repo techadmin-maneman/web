@@ -1,4 +1,4 @@
--- Migration number: 0053
+-- Migration number: 0052
 -- What each place holds of each consumable, and each client's last visits,
 -- kept as the rows behind them are written, so the Stock page, the low-stock
 -- check and the Tasks board read what they show rather than every movement and
