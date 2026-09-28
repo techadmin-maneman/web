@@ -96,11 +96,9 @@ const ChoiceRuleSchema = z
     ...Described,
     kind: z.literal("choice"),
     keys: z.array(z.string()),
-    choices: z
-      .record(z.string(), z.array(z.string()))
-      .openapi({
-        description: "What each key may be: a kind of visit with no late fee in the price book is offered none.",
-      }),
+    choices: z.record(z.string(), z.array(z.string())).openapi({
+      description: "What each key may be: a kind of visit with no late fee in the price book is offered none.",
+    }),
     value: ChoiceValue,
     default: ChoiceValue.openapi({ description: "The committed choices, in force until somebody sets them." }),
   })

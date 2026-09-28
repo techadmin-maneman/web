@@ -1,4 +1,4 @@
--- Migration number: 0051
+-- Migration number: 0052
 -- Every policy in the console (docs/decisions/0088-every-policy-in-the-console.md).
 --
 -- ops_settings keeps one row per input ops set, as the record of who set what and when. What a request reads is

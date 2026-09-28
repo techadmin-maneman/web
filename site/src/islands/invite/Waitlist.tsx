@@ -5,6 +5,7 @@ import { referral } from "../../content/referral.ts";
 import { track } from "../../lib/analytics.ts";
 import { joinPublicWaitlist, joinWaitlist } from "../../lib/api.ts";
 import { mobileDigits } from "../../lib/phone.ts";
+import { forgetInvite, rememberedInvite } from "../../lib/remembered-invite.ts";
 import { fill } from "../../lib/text.ts";
 import { readAttribution } from "../../lib/visit.ts";
 import { Icon } from "../Drawings.tsx";
@@ -30,7 +31,14 @@ export function Waitlist(props: FormProps & { onListed: (listing: Listing) => vo
       launch_alert: alert,
     };
     const attribution = readAttribution();
-    const onBook = { ...request, loss_extent: extent, ...(attribution === undefined ? {} : { attribution }) };
+    const remembered = props.invited ? null : rememberedInvite();
+    const onBook = {
+      ...request,
+      loss_extent: extent,
+      ...(attribution === undefined ? {} : { attribution }),
+      ...(remembered === null ? {} : { invite_code: remembered }),
+    };
+    const invite = props.invited ? codeInPath() : remembered;
     void form.submit(
       event,
       (token, keyFor) =>
@@ -42,7 +50,8 @@ export function Waitlist(props: FormProps & { onListed: (listing: Listing) => vo
         const loss_extent = props.invited ? null : extent;
         track({ name: "lead_submitted", page, served: false, area: props.answer.area, window: null, loss_extent });
         track({ name: "waitlist_submitted", page, area: listed.area });
-        props.onListed({ credits: false, invite: "unknown", ...listed });
+        if (invite !== null) forgetInvite(invite);
+        props.onListed(listed);
       },
     );
   }

@@ -168,7 +168,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The client's record: who they are, their address, their visits, their payments and their history */
+        /** The client's record: who they are, their address, their visits, their payments, their history and their invite */
         get: {
             parameters: {
                 query?: never;
@@ -470,6 +470,93 @@ export interface paths {
                 };
                 /** @description not_found: no such client, or one who has been erased */
                 404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clients/{id}/referral": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Attach an invite to a client who booked away from its page, with the reason */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["InviteAttachment"];
+                };
+            };
+            responses: {
+                /** @description Attached */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ClientInvite"];
+                    };
+                };
+                /** @description invalid_request: no reason, or a code that is not shaped like one */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such client, or one who has been erased */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description own_invite: the client is the code's own referrer; already_invited: the client came with an invite already, which the answer names; already_fitted: the client has had their first fit */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] | components["schemas"]["AlreadyInvited"];
+                    };
+                };
+                /** @description unknown_invite: no invite has that code */
+                422: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -3933,7 +4020,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_fitted";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -4000,6 +4087,8 @@ export interface components {
             /** @description Payments and refunds as one list, newest first. */
             payments: (components["schemas"]["PaymentEntry"] | components["schemas"]["RefundEntry"])[];
             history: components["schemas"]["ClientRecordHistory"];
+            /** @description The invite they came with, or ops attached; null for none. */
+            invite: components["schemas"]["ClientInvite"] | null;
         };
         ClientAddress: {
             line1: string;
@@ -4193,6 +4282,32 @@ export interface components {
                 piece_code: string;
             } | null;
         };
+        ClientInvite: {
+            code: string;
+            /** @description Who sent it; null once they have been erased. */
+            referrer: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+            } | null;
+            /**
+             * @description pending until the client's first fit; held for ops' review; approved or granted, the 3 visits given; rejected; expired, lapsed on a waitlist; clawed_back, the first fit refunded.
+             * @enum {string}
+             */
+            grant: "pending" | "held" | "approved" | "rejected" | "granted" | "expired" | "clawed_back";
+            /**
+             * Format: date-time
+             * @description When the client first came with it, or ops attached it.
+             */
+            since: string;
+            /** @description Who attached it and why; null for an invite the client used themselves. */
+            attached: {
+                /** @description The Access identity of the member of staff who attached it. */
+                by: string;
+                /** @description Null once either side is erased. */
+                reason: string | null;
+            } | null;
+        };
         ClientPhotos: {
             visits: {
                 /** Format: uuid */
@@ -4273,6 +4388,25 @@ export interface components {
              * @enum {string}
              */
             reason: "correction" | "goodwill";
+        };
+        AlreadyInvited: {
+            error: {
+                /** @enum {string} */
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_fitted";
+                request_id: string;
+                /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
+                fields?: string[];
+            };
+            /** @description The invite the client came with first. */
+            invite: {
+                code: string;
+            };
+        };
+        InviteAttachment: {
+            /** @description The invite's code, in either case. */
+            code: string;
+            /** @description Why, in ops' words: kept with the invite, and blanked if either side is erased. */
+            reason: string;
         };
         NumberChangeDecision: {
             /** @enum {string} */

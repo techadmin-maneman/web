@@ -19,8 +19,10 @@ export const AUDIT_ACTIONS = [
   "number_change.decide",
   "deletion.request",
   "deletion.decide",
-  // A held referral grant (docs/decisions/0048-referrals.md).
+  // A held referral grant (docs/decisions/0048-referrals.md), and an invite ops attach to a client who booked away
+  // from its page (docs/decisions/0089-an-invite-is-not-lost.md).
   "referral.decide",
+  "referral.attach",
   // Ops opening one of a client's photographs (docs/decisions/0031-access-and-audit.md).
   "photo.view",
   // A client's rights over their data (docs/decisions/0049-dpdp.md).
@@ -121,7 +123,7 @@ export function auditStatementIfWritten(
   db: D1Database,
   entry: AuditEntry,
   now: Date,
-  written: { readonly table: "grievances" | "consents"; readonly id: string },
+  written: { readonly table: "grievances" | "consents" | "referral_attributions"; readonly id: string },
 ): D1PreparedStatement {
   return db
     .prepare(

@@ -33,6 +33,7 @@ const READ_PHOTOS: Call = `GET ${RECORD_PATH}/photos`;
 const VIEW_PHOTOS: Call = `POST ${RECORD_PATH}/photos/view`;
 const READ_CONSENTS: Call = `GET ${RECORD_PATH}/consents`;
 const ADD_CREDITS: Call = `POST ${RECORD_PATH}/credits`;
+const ATTACH_INVITE: Call = `POST ${RECORD_PATH}/referral`;
 const FIND: Call = "POST /api/clients/find";
 const readPhoto = (id: string): Call => `GET ${RECORD_PATH}/photos/${id}`;
 const NAME = { name: CLIENT.name, exact: true };
@@ -244,6 +245,98 @@ test("says so when the API would take away more than the client holds", async ({
   await credits.getByRole("radio", { name: "Correction: given or taken in error" }).check();
   await credits.getByRole("button", { name: "Put the credits right" }).click();
   await expect(credits.getByRole("alert")).toContainText("That would take away more visits than they hold");
+});
+
+// A friend who booked away from the invite's page earned their referrer nothing until ops could attach it (ADR 0089).
+test("names the invite a client came with, who sent it, and where its visits stand", async ({ page }) => {
+  await openClient(page, `/clients/${CLIENT.id}/payments`);
+  const invite = page.getByRole("region", { name: "Invite" });
+  await expect(invite).toContainText("CodeVSAB23");
+  await expect(invite.getByRole("link", { name: "Vikram Sethi" })).toHaveAttribute(
+    "href",
+    "/clients/22000000-0000-4000-8000-000000000009",
+  );
+  await expect(invite).toContainText("Their 3 visitsGiven");
+  await expect(invite).toContainText("Since20 Oct 2026");
+  await expect(invite.getByText("Attached by")).toHaveCount(0);
+  await expect(invite.getByRole("button", { name: "Attach the invite" })).toHaveCount(0);
+});
+
+test("attaches an invite to a client who came with none, with why, and shows it as the API answers", async ({
+  page,
+}) => {
+  const attached = {
+    code: "RM4K7P",
+    referrer: { id: "22000000-0000-4000-8000-000000000008", name: "Rohit Malhotra" },
+    grant: "pending",
+    since: "2027-09-22T05:12:00.000Z",
+    attached: { by: "ops@maneman.in", reason: "Told us Rohit sent him" },
+  } satisfies OpsReply<"/api/clients/{id}/referral", "post", 201>;
+  await openClient(page, `/clients/${CLIENT.id}/payments`, {
+    [READ_RECORD]: json(NEW_RECORD),
+    [ATTACH_INVITE]: json(attached, 201),
+  });
+  const invite = page.getByRole("region", { name: "Invite" });
+  await expect(invite).toContainText("They came with no invite.");
+  const attach = invite.getByRole("button", { name: "Attach the invite" });
+  await expect(attach).toBeDisabled();
+
+  await invite.getByLabel("Invite code").fill("rm4k7p");
+  await expect(attach).toBeDisabled();
+  await invite.getByLabel("Why").fill("Told us Rohit sent him");
+  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  const sent = page.waitForRequest((request) => request.url().endsWith("/referral") && request.method() === "POST");
+  await attach.click();
+  expect((await sent).postDataJSON()).toEqual({ code: "rm4k7p", reason: "Told us Rohit sent him" });
+
+  await expect(invite.getByRole("status")).toHaveText("Attached. The CRM is sent it too.");
+  await expect(invite).toContainText("CodeRM4K7P");
+  await expect(invite).toContainText("Their 3 visitsGiven to both when this client is fitted");
+  await expect(invite).toContainText("Attached byops@maneman.in");
+  await expect(invite).toContainText("WhyTold us Rohit sent him");
+});
+
+test.describe("says why an invite was not attached", () => {
+  for (const [code, words] of [
+    ["unknown_invite", "No invite has that code."],
+    ["own_invite", "That is this client's own invite."],
+    ["already_fitted", "They have had their first fit, so no invite can be attached now."],
+  ] as const) {
+    test(code, async ({ page }) => {
+      await openClient(page, `/clients/${CLIENT.id}/payments`, {
+        [READ_RECORD]: json(NEW_RECORD),
+        [ATTACH_INVITE]: fails(code === "unknown_invite" ? 422 : 409, code),
+      });
+      const invite = page.getByRole("region", { name: "Invite" });
+      await invite.getByLabel("Invite code").fill("RM4K7P");
+      await invite.getByLabel("Why").fill("Told us Rohit sent him");
+      await invite.getByRole("button", { name: "Attach the invite" }).click();
+      await expect(invite.getByRole("alert")).toContainText(words);
+      await expect(invite.getByLabel("Invite code")).toHaveValue("RM4K7P");
+    });
+  }
+
+  test("already_invited, showing the invite they came with instead", async ({ page }) => {
+    let read = 0;
+    await openClient(page, `/clients/${CLIENT.id}/payments`, {
+      // The page opens on the record without the invite; the one read after the refusal has it.
+      [READ_RECORD]: (route) => {
+        read += 1;
+        return json(read === 1 ? NEW_RECORD : { ...NEW_RECORD, invite: RECORD.invite })(route);
+      },
+      [ATTACH_INVITE]: json(
+        { error: { code: "already_invited", request_id: "test" }, invite: { code: "VSAB23" } },
+        409,
+      ),
+    });
+    const invite = page.getByRole("region", { name: "Invite" });
+    await invite.getByLabel("Invite code").fill("RM4K7P");
+    await invite.getByLabel("Why").fill("Told us Rohit sent him");
+    await invite.getByRole("button", { name: "Attach the invite" }).click();
+    await expect(invite.getByRole("status")).toHaveText("They came with this invite already, so nothing was attached.");
+    await expect(invite).toContainText("CodeVSAB23");
+  });
 });
 
 test("keeps the photographs locked, and says what opening them records", async ({ page }) => {
@@ -474,6 +567,7 @@ test("meets WCAG 2.2 AA finding a client, and on every tab, locked and open", as
 
   await page.getByRole("link", { name: "Payments" }).click();
   await expect(page.getByRole("region", { name: "Service-visit credits" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Invite" })).toBeVisible();
   await clean("payments");
 
   await page.getByRole("link", { name: "Photos" }).click();

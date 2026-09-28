@@ -254,7 +254,7 @@ describe("what the routes that read them do", () => {
 /**
  * A request reads one row, the snapshot of every input ops set, however long the register grows
  * (docs/decisions/0088-every-policy-in-the-console.md). ops_settings keeps a row per input as the record of who set
- * what; migration 0051's triggers rewrite the snapshot from it in the same transaction as any change to it.
+ * what; migration 0052's triggers rewrite the snapshot from it in the same transaction as any change to it.
  */
 describe("the store a request reads", () => {
   const snapshot = async () =>

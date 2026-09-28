@@ -3,7 +3,7 @@
 //
 // ops_settings keeps a row per input, as the record of who set what and when.
 // What the request path reads is one row beside it, ops_settings_snapshot,
-// which migration 0051's triggers rewrite from those rows in the same
+// which migration 0052's triggers rewrite from those rows in the same
 // transaction as every change to them. It is read once per isolate and held
 // for SETTINGS_TTL_MS, so a change reaches every request within that window
 // without a deploy, and a read costs one row however long the register grows
@@ -140,7 +140,7 @@ export type ReadOpsInputs = (db: D1Database, now: Date, onError?: (error: unknow
 
 const ROWS = "SELECT name, value, set_by, set_at FROM ops_settings";
 const SNAPSHOT = "SELECT inputs FROM ops_settings_snapshot WHERE id = 1";
-/** Migration 0051's triggers run the same statement after every change to ops_settings. */
+/** Migration 0052's triggers run the same statement after every change to ops_settings. */
 const REBUILD = `INSERT OR REPLACE INTO ops_settings_snapshot (id, inputs)
   SELECT 1, json_group_object(name, json(value)) FROM ops_settings RETURNING inputs`;
 

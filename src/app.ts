@@ -23,6 +23,7 @@ import { registerClientNotes } from "./routes/client-notes.ts";
 import { registerClientData } from "./routes/client-data.ts";
 import { registerClientRefer } from "./routes/client-refer.ts";
 import { registerOpsBlackouts } from "./routes/ops-blackouts.ts";
+import { registerOpsClientReferral } from "./routes/ops-client-referral.ts";
 import { registerOpsClients } from "./routes/ops-clients.ts";
 import { registerOpsConsumables } from "./routes/ops-consumables.ts";
 import { registerOpsCredits } from "./routes/ops-credits.ts";
@@ -103,6 +104,7 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerHealth,
     registerOpsClients,
     registerOpsCredits,
+    registerOpsClientReferral,
     registerOpsProfile,
     registerOpsReferrals,
     registerOpsGrievances,

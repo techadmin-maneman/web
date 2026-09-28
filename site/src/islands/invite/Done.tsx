@@ -31,7 +31,7 @@ export function placeOf(answer: PincodeAnswer): string {
   return answer.city === null ? `${area} ${answer.pincode}` : `${area}, ${answer.city} ${answer.pincode}`;
 }
 
-/** The landing's waitlist answer; /book's carries no invite and no credits. */
+/** The waitlist's answer, the landing's or /book's: /book's carries the invite this browser remembered, if any. */
 export type Listing = Pick<ReferralWaitlist, "area" | "credits" | "invite">;
 
 export function windowHours(window: ReferralConsultation["window"]): string {

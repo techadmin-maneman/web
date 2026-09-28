@@ -15,7 +15,7 @@ import { useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { useCallback, useState } from "react";
-import { api, type ClientRecord } from "../api.ts";
+import { api, type ClientInvite, type ClientRecord } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { clients } from "../content.ts";
 import { phoneWords } from "../lib/phone.ts";
@@ -24,12 +24,19 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./clients.module.css";
 import { Consents } from "./Consents.tsx";
 import { History, replacementDueOf } from "./History.tsx";
+import type { InviteNews } from "./Invite.tsx";
 import { Payments } from "./Payments.tsx";
 import { Photos, usePhotos } from "./Photos.tsx";
 import { Pieces } from "./Pieces.tsx";
 import { Visits } from "./Visits.tsx";
 
 type Credits = ClientRecord["credits"];
+
+/** The invite the attach form last answered, and what it found, which stand over the record read on opening. */
+interface Attached {
+  readonly invite: ClientInvite;
+  readonly news: InviteNews;
+}
 
 const creditsOf = (credits: Credits) =>
   credits === null
@@ -93,6 +100,8 @@ function Tab({
   record,
   credits,
   onCredits,
+  attached,
+  onAttached,
   photos,
 }: {
   clientId: string;
@@ -100,12 +109,26 @@ function Tab({
   record: ClientRecord;
   credits: Credits;
   onCredits: (credits: Credits) => void;
+  attached: Attached | null;
+  onAttached: (attached: Attached) => void;
   photos: ReturnType<typeof usePhotos>;
 }) {
   if (tab === "visits") return <Visits record={record} />;
   if (tab === "pieces") return <Pieces clientId={clientId} />;
   if (tab === "payments") {
-    return <Payments clientId={clientId} payments={record.payments} credits={credits} onCredits={onCredits} />;
+    return (
+      <Payments
+        clientId={clientId}
+        payments={record.payments}
+        credits={credits}
+        onCredits={onCredits}
+        invite={attached?.invite ?? record.invite}
+        inviteNews={attached?.news ?? null}
+        onInvite={(invite, news) => {
+          onAttached({ invite, news });
+        }}
+      />
+    );
   }
   if (tab === "consents") return <Consents clientId={clientId} />;
   if (tab === "history") return <History history={record.history} />;
@@ -118,6 +141,7 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
   const photos = usePhotos(clientId);
   // What the credit form last answered, which stands over the record read when the page opened.
   const [adjusted, setAdjusted] = useState<{ credits: Credits } | null>(null);
+  const [attached, setAttached] = useState<Attached | null>(null);
 
   return (
     <Shell section="/clients" title={clients.title} flush>
@@ -156,6 +180,8 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
                 onCredits={(credits) => {
                   setAdjusted({ credits });
                 }}
+                attached={attached}
+                onAttached={setAttached}
                 photos={photos}
               />
             </div>

@@ -80,6 +80,12 @@ export const ERROR_CODES = [
   "service_exists",
   "last_of_kind",
   "service_retired",
+  // An invite ops attach to a client (docs/decisions/0089-an-invite-is-not-lost.md): no invite has the code; it is the
+  // client's own; the client came with one already; or they have had their first fit.
+  "unknown_invite",
+  "own_invite",
+  "already_invited",
+  "already_fitted",
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 

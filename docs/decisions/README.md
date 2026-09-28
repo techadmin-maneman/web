@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/adr-index.test.ts` fails until it is run after a record is added or its status changes. The next free number is 0089.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/adr-index.test.ts` fails until it is run after a record is added or its status changes. The next free number is 0090.
 
 | ADR | Decision | Date | Status | Changed by |
 | --- | --- | --- | --- | --- |
@@ -53,10 +53,10 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0045](0045-self-serve-booking.md) | Self-serve booking and prepayment | 2026-09-22 | accepted | [0068](0068-a-paid-hold-is-kept.md), [0079](0079-an-address-before-a-slot.md), [0086](0086-the-next-visit-is-offered.md) |
 | [0046](0046-moving-and-cancelling.md) | Moving and cancelling a visit | 2026-09-22 | accepted | [0068](0068-a-paid-hold-is-kept.md) |
 | [0047](0047-visit-messages.md) | Messages about a client's visits | 2026-09-22 | accepted | [0074](0074-hand-offs-and-messages.md) |
-| [0048](0048-referrals.md) | Referrals and the waitlist | 2026-09-22 | accepted | [0060](0060-an-invited-friend-reaches-ops-and-the-crm.md), [0071](0071-what-ops-see-before-a-setting-changes.md), [0074](0074-hand-offs-and-messages.md), [0080](0080-consents-given-by-booking.md) |
+| [0048](0048-referrals.md) | Referrals and the waitlist | 2026-09-22 | accepted | [0060](0060-an-invited-friend-reaches-ops-and-the-crm.md), [0071](0071-what-ops-see-before-a-setting-changes.md), [0074](0074-hand-offs-and-messages.md), [0080](0080-consents-given-by-booking.md), [0089](0089-an-invite-is-not-lost.md) |
 | [0049](0049-dpdp.md) | DPDP readiness | 2026-09-22 | accepted | [0066](0066-erasure-all-or-nothing.md), [0074](0074-hand-offs-and-messages.md) |
 | [0050](0050-crm-in-the-real-org.md) | The CRM moves to the real Zoho org | 2026-09-22 | accepted | [0059](0059-a-clients-history.md), [0070](0070-vendor-correctness.md) |
-| [0051](0051-booking-from-the-site.md) | Booking from the site is the landing's booking | 2026-09-23 | accepted | [0060](0060-an-invited-friend-reaches-ops-and-the-crm.md), [0081](0081-the-site-takes-the-address.md), [0086](0086-the-next-visit-is-offered.md) |
+| [0051](0051-booking-from-the-site.md) | Booking from the site is the landing's booking | 2026-09-23 | accepted | [0060](0060-an-invited-friend-reaches-ops-and-the-crm.md), [0081](0081-the-site-takes-the-address.md), [0086](0086-the-next-visit-is-offered.md), [0089](0089-an-invite-is-not-lost.md) |
 | [0052](0052-technician-sessions.md) | Technician sessions, devices and the day-before unlock | 2026-09-23 | accepted |  |
 | [0053](0053-the-technician-app-offline.md) | The technician app offline: the outbox, the device and the camera | 2026-09-23 | accepted |  |
 | [0054](0054-address-capture.md) | Capturing an address: the fields, the pin, and the way to the door | 2026-09-23 | accepted | [0070](0070-vendor-correctness.md) |
@@ -94,6 +94,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0086](0086-the-next-visit-is-offered.md) | The next visit is offered, and the client books it | 2026-09-27 | accepted | [0085](0085-services-ops-can-edit.md) |
 | [0087](0087-consumables-and-stock.md) | Consumables and their stock, and the job sheet, set in the console | 2026-09-27 | accepted, on the owner's rulings of 27 September 2026 | [0085](0085-services-ops-can-edit.md) |
 | [0088](0088-every-policy-in-the-console.md) | Every policy in the console | 2026-09-28 | accepted, on the owner's standing rule of 27 September 2026 |  |
+| [0089](0089-an-invite-is-not-lost.md) | An invite is not lost when the friend books away from its page | 2026-09-28 | accepted |  |
 
 ## Records beside them
 

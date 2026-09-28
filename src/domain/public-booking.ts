@@ -1,7 +1,9 @@
 // Booking a free consultation, and joining the waitlist where we do not come yet
 // (docs/decisions/0051-booking-from-the-site.md). Two pages do this, and they do
 // it the same way: the public site's /book, and a friend's invite at /r/:code.
-// The only difference is the invite, which the landing passes and the site does not.
+// The only difference is the invite, which the landing passes always and the site
+// only when the visitor's browser remembers one they opened
+// (docs/decisions/0089-an-invite-is-not-lost.md).
 //
 // Each booking leaves three records:
 //
@@ -49,7 +51,7 @@ import { firstFitRequestStatement } from "./next-visit.ts";
 import { bookableService } from "./services.ts";
 import { typedAddress, type TypedAddress } from "../policy/site-booking.ts";
 import { currentAddress, firstAddressStatement, type Address } from "./profile.ts";
-import { attribute, type Invite, type InviteState } from "./referrals.ts";
+import { attribute, type Invite, type InviteState, type Via } from "./referrals.ts";
 import { bookableTypes, holdSlot, liveVisitOf, type LiveVisit } from "./scheduling.ts";
 import { saveBookingLead, type Attribution } from "./leads.ts";
 import { waitlistConfirmation } from "./waitlist.ts";
@@ -171,11 +173,14 @@ async function consultationRefusal(db: D1Database, personId: string): Promise<Re
 /** Attributes the person to the invite they came with, after what the form booked stands. */
 async function applyInvite(
   db: D1Database,
-  input: { invite: Invite | null; personId: string; via: "consultation" | "waitlist"; pincode: string; now: Date },
+  input: { invite: Invite | null; personId: string; via: Via; pincode: string; now: Date },
 ): Promise<{ readonly credits: boolean; readonly invite: InviteState }> {
   if (input.invite === null) return { credits: false, invite: "unknown" };
-  const attributed = await attribute(db, { ...input, invite: input.invite });
-  return { credits: attributed.credits, invite: attributed.lapsed ? "expired" : "valid" };
+  const attribution = await attribute(db, { ...input, invite: input.invite });
+  if (attribution.outcome === "own_invite" || attribution.outcome === "fitted") {
+    return { credits: false, invite: "valid" };
+  }
+  return { credits: attribution.credits, invite: attribution.lapsed ? "expired" : "valid" };
 }
 
 /** The city a lead may name: the pincode's, where we have it as a city of ours. */
