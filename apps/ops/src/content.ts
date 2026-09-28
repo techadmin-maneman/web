@@ -976,13 +976,6 @@ export const technicians = {
       if (minutes === 0) return `${String(hours)} h`;
       return `${String(hours)} h ${String(minutes)} m`;
     },
-    /**
-     * PLACEHOLDER: how far over the planned length reads as running over. The
-     * board letters 1 h 48 m in oxblood, 18 minutes past the 90 a service visit
-     * is planned for, and leaves 1 h 31 m quiet. It writes no rule, and this is
-     * where we have drawn it, as the dispatch board's peak is drawn.
-     */
-    overBy: 15,
     /** When the phone timed fewer jobs than were finished, the average says what it is of. */
     base: (timed: number, jobs: number) => `${String(timed)} of ${String(jobs)}`,
     /** Beneath the table, where the board writes its own note: what the two columns count. */
@@ -1244,6 +1237,11 @@ export const settings = {
       phone_clock: {
         before_start: "Earliest check-in, before the booked start",
         held_offline: "Longest a phone may hold what was done offline",
+      },
+      // PLACEHOLDER: board D3's two figures (docs/open-points.md, item 59).
+      technician_work: {
+        period: "Jobs and average service, counted over",
+        over_by: "Shown as running over, from",
       },
       // PLACEHOLDER: the days the next visit turns on (docs/decisions/0086-the-next-visit-is-offered.md).
       booking_days: {

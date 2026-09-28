@@ -1980,7 +1980,7 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    /** @description India's calendar date the count starts on; 90 days back when it is left out. */
+                    /** @description India's calendar date the count starts on; as many days back as ops set (technician_work.period, 90 to begin with) when it is left out. */
                     from?: string;
                     /** @description Exclusive; tomorrow when it is left out. */
                     to?: string;
@@ -2090,7 +2090,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    name: "checkin_radius_m" | "no_show_wait_min" | "address_unlock_hour" | "task_sla_hours" | "piece_cycle_days" | "booking_days";
+                    name: "checkin_radius_m" | "no_show_wait_min" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "technician_work" | "booking_days";
                 };
                 cookie?: never;
             };
@@ -4582,13 +4582,15 @@ export interface components {
             average_minutes: number | null;
             /** @description What the same jobs were planned to take, so the two can be read against each other. */
             average_planned_minutes: number | null;
+            /** @description Whether the average runs as far over the planned length as ops set (technician_work.over_by, 15 minutes to begin with); false when the phone timed none of the jobs. */
+            runs_over: boolean;
             /** @description The board's "First fit" or "Service". Nothing records what a technician is trained for and the FSM user carries no such field, so this is always null (docs/open-points.md, item 59). */
             skill: null;
         };
         OpsSetting: components["schemas"]["NumberRule"] | components["schemas"]["ChoiceRule"];
         NumberRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "no_show_wait_min" | "address_unlock_hour" | "task_sla_hours" | "piece_cycle_days" | "booking_days";
+            name: "checkin_radius_m" | "no_show_wait_min" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "technician_work" | "booking_days";
             title: string;
             note: string;
             /** @description The module the default lives in. */
@@ -4623,7 +4625,7 @@ export interface components {
         };
         ChoiceRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "no_show_wait_min" | "address_unlock_hour" | "task_sla_hours" | "piece_cycle_days" | "booking_days";
+            name: "checkin_radius_m" | "no_show_wait_min" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "technician_work" | "booking_days";
             title: string;
             note: string;
             /** @description The module the default lives in. */

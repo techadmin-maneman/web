@@ -17,6 +17,7 @@ import { DAY_BEFORE_REMINDER_HOUR, UNLOCK_HOUR } from "../policy/job-visibility.
 import { NEXT_VISIT_DAY_BOUNDS, NEXT_VISIT_DAY_KEYS, NEXT_VISIT_DAYS } from "../policy/next-visit.ts";
 import { NO_SHOW_WAIT_MIN } from "../policy/no-show.ts";
 import { PHONE_CLOCK, PHONE_CLOCK_KEYS } from "../policy/phone-clock.ts";
+import { TECHNICIAN_WORK, TECHNICIAN_WORK_KEYS } from "../policy/technician-work.ts";
 import { TASK_GROUPS, TASK_SLA_HOURS } from "../policy/tasks.ts";
 import { DEFAULT_PIECE_CYCLE_DAYS, PIECE_CYCLE_DAYS } from "./pieces.ts";
 import { VISIT_TYPES } from "./visit-types.ts";
@@ -168,6 +169,22 @@ export const OPS_SETTINGS = [
     keys: "open",
     fallback: { ...PIECE_CYCLE_DAYS, [DEFAULT_KEY]: DEFAULT_PIECE_CYCLE_DAYS },
     source: "src/config/pieces.ts",
+  },
+  {
+    // Board D3's two figures, the owner's of 27 September 2026 (docs/open-points.md, item 59).
+    name: "technician_work",
+    title: "The technicians' figures",
+    note: "How many days back the Technicians screen counts each technician's jobs and average service, and how many minutes over the length the visits were planned for an average must run to be shown as running over.",
+    unit: "days",
+    min: 1,
+    max: 365,
+    keys: TECHNICIAN_WORK_KEYS,
+    bounds: {
+      period: { min: 7, max: 365 },
+      over_by: { min: 1, max: 120, unit: "minutes" },
+    },
+    fallback: TECHNICIAN_WORK,
+    source: "src/policy/technician-work.ts",
   },
   {
     // One input for the seven figures the next visit turns on (docs/decisions/0086-the-next-visit-is-offered.md).

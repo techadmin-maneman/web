@@ -26,6 +26,7 @@ import type { NextVisitDays } from "../policy/next-visit.ts";
 import type { Waits } from "../policy/no-show.ts";
 import type { PhoneClock } from "../policy/phone-clock.ts";
 import type { Slas } from "../policy/tasks.ts";
+import type { TechnicianWorkFigures } from "../policy/technician-work.ts";
 import { auditStatement, type AuditActor } from "./audit.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
 
@@ -42,6 +43,7 @@ export interface OpsInputs {
   readonly taskSlaHours: Slas;
   readonly pieceCycleDays: Cycles;
   readonly nextVisitDays: NextVisitDays;
+  readonly technicianWork: TechnicianWorkFigures;
 }
 
 /** What one input is at this moment, and whether anybody set it. */
@@ -75,6 +77,7 @@ function shape(values: Readonly<Record<OpsSettingName, SettingValue>>): OpsInput
     taskSlaHours: values.task_sla_hours as Slas,
     pieceCycleDays: values.piece_cycle_days as Cycles,
     nextVisitDays: values.booking_days as NextVisitDays,
+    technicianWork: values.technician_work as TechnicianWorkFigures,
   };
 }
 

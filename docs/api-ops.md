@@ -6094,6 +6094,10 @@ Who Access let through, and where signing out goes
       ],
       "description": "What the same jobs were planned to take, so the two can be read against each other."
     },
+    "runs_over": {
+      "type": "boolean",
+      "description": "Whether the average runs as far over the planned length as ops set (technician_work.over_by, 15 minutes to begin with); false when the phone timed none of the jobs."
+    },
     "skill": {
       "type": "null",
       "description": "The board's \"First fit\" or \"Service\". Nothing records what a technician is trained for and the FSM user carries no such field, so this is always null (docs/open-points.md, item 59)."
@@ -6105,6 +6109,7 @@ Who Access let through, and where signing out goes
     "timed_jobs",
     "average_minutes",
     "average_planned_minutes",
+    "runs_over",
     "skill"
   ],
   "additionalProperties": false
@@ -6145,8 +6150,11 @@ Who Access let through, and where signing out goes
         "checkin_radius_m",
         "no_show_wait_min",
         "address_unlock_hour",
+        "reminder_hour",
+        "phone_clock",
         "task_sla_hours",
         "piece_cycle_days",
+        "technician_work",
         "booking_days"
       ]
     },
@@ -6307,8 +6315,11 @@ Who Access let through, and where signing out goes
         "checkin_radius_m",
         "no_show_wait_min",
         "address_unlock_hour",
+        "reminder_hour",
+        "phone_clock",
         "task_sla_hours",
         "piece_cycle_days",
+        "technician_work",
         "booking_days"
       ]
     },
