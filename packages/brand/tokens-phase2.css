@@ -56,9 +56,9 @@
   --ops-piece-base: 84px;
   --ops-piece-column: 116px; /* the fitted date, and the supplier lot beside it */
   --ops-piece-due: 120px;
-  --ops-consent-state: 92px; /* a consent's state, date and notice, beside the purpose (board B3) */
+  --ops-consent-state: 92px; /* a consent's state, date and source, beside the purpose (board B3) */
   --ops-consent-date: 96px;
-  --ops-consent-notice: 72px;
+  --ops-consent-source: 72px;
   --ops-zone: 96px; /* and the zone beside it */
   --ops-jobs: 64px; /* the jobs he has finished, right aligned as every column of figures is */
   --ops-service: 88px; /* and how they ran against the length they were planned for */

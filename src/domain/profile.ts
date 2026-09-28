@@ -172,23 +172,31 @@ export interface ConsentState {
 export interface ConsentRecord extends ConsentState {
   /** The notice the client saw when they last switched it; null if they never have. */
   readonly noticeVersion: string | null;
+  /** Where they last switched it; null if they never have, or it was not recorded (docs/decisions/0094). */
+  readonly source: ConsentSource | null;
 }
 
 /**
  * "Each purpose carries its own date": the latest switch of each, or off if
- * never switched, with the notice version that switch was given under. Ops read
- * the notice version as the consent record (docs/decisions/0049-dpdp.md); the
- * client app shows the state and the date alone.
+ * never switched, with the notice version that switch was given under and where.
+ * Ops read them as the consent record (docs/decisions/0049-dpdp.md); the client
+ * app shows the state and the date alone.
  */
 export async function consentRecordsOf(db: D1Database, personId: string): Promise<ConsentRecord[]> {
   const placeholders = CONSENT_PURPOSES.map((_, index) => `?${String(index + 2)}`).join(", ");
   const rows = await db
     .prepare(
-      `SELECT purpose, granted, notice_version, created_at FROM consents
+      `SELECT purpose, granted, notice_version, created_at, source FROM consents
        WHERE person_id = ?1 AND purpose IN (${placeholders}) ORDER BY created_at, rowid`,
     )
     .bind(personId, ...CONSENT_PURPOSES)
-    .all<{ purpose: ConsentPurpose; granted: number; notice_version: string; created_at: string }>();
+    .all<{
+      purpose: ConsentPurpose;
+      granted: number;
+      notice_version: string;
+      created_at: string;
+      source: ConsentSource | null;
+    }>();
   const latest = new Map(rows.results.map((row) => [row.purpose, row]));
   return CONSENT_PURPOSES.map((purpose) => {
     const row = latest.get(purpose);
@@ -197,6 +205,7 @@ export async function consentRecordsOf(db: D1Database, personId: string): Promis
       granted: row?.granted === 1,
       since: row?.created_at ?? null,
       noticeVersion: row?.notice_version ?? null,
+      source: row?.source ?? null,
     };
   });
 }

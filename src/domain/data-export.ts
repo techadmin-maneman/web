@@ -40,7 +40,7 @@ export async function everythingHeldAbout(db: D1Database, personId: string): Pro
          WHERE person_id = ?1 ORDER BY created_at`,
     ),
     all(
-      `SELECT purpose, granted, notice_version, created_at FROM consents WHERE person_id = ?1
+      `SELECT purpose, granted, notice_version, source, created_at FROM consents WHERE person_id = ?1
          ORDER BY created_at, rowid`,
     ),
     all(

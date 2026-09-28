@@ -1,7 +1,7 @@
 // Board B3: what the client has agreed to, read only. Ops can never grant a
 // consent, and no route here would let them (src/routes/ops-clients.ts). The
-// board's fourth column is the source; nothing records one, so it carries the
-// notice version the client saw instead (docs/fidelity-method.md).
+// board's fourth column is where each was given
+// (docs/decisions/0094-where-a-consent-was-given.md).
 
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -14,14 +14,11 @@ import styles from "./clients.module.css";
 
 const copy = clients.consents;
 
-/**
- * The notice the consent was given on, less the purpose the row already names: "photos-referral-cards-v2" → "v2",
- * and a consent given by booking a visit (ADR 0080) "photos-referral-cards-booking-v1" → "booking-v1".
- */
-function noticeOf(consent: Consent): string {
-  if (consent.notice_version === null) return clients.unknown;
-  const purpose = `${consent.purpose.replaceAll("_", "-")}-`;
-  return consent.notice_version.replace(purpose, "");
+/** Where the consent was given; the board's dash for one never given, and "Not recorded" where nothing says. */
+function sourceOf(consent: Consent): string {
+  if (consent.state === "not_given") return clients.unknown;
+  if (consent.source === null) return copy.notRecorded;
+  return copy.sources[consent.source];
 }
 
 /** The board marks a withdrawn consent in oxblood and one never given in the quiet ink. */
@@ -39,7 +36,7 @@ function ConsentRow({ consent }: { consent: Consent }) {
       </th>
       <td className={`${styles.state ?? ""} ${TONE[consent.state]}`}>{copy.states[consent.state]}</td>
       <td className={styles.date}>{consent.at === null ? clients.unknown : longDate(consent.at)}</td>
-      <td className={styles.notice}>{noticeOf(consent)}</td>
+      <td className={styles.source}>{sourceOf(consent)}</td>
     </tr>
   );
 }
@@ -66,7 +63,7 @@ export function Consents({ clientId }: { clientId: string }) {
             <th scope="col" className={styles.date}>
               {copy.columns[2]}
             </th>
-            <th scope="col" className={styles.notice}>
+            <th scope="col" className={styles.source}>
               {copy.columns[3]}
             </th>
           </tr>
