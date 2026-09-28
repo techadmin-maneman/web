@@ -15,7 +15,7 @@ import { uuidv7 } from "../../apps/tech/src/store/uuidv7.ts";
 import type { App } from "../../src/http/context.ts";
 import { occupancy, placement } from "../../src/domain/scheduling.ts";
 import { readMeter } from "../../src/domain/storage-meter.ts";
-import { MAX_PHOTO_BYTES } from "../../src/domain/tech-photos.ts";
+import { MAX_PHOTO_BYTES, MAX_THUMBNAIL_BYTES } from "../../src/domain/tech-photos.ts";
 import { PHASE_2_SHARE_BYTES, RUNAWAY_CEILING_BYTES } from "../../src/policy/storage-share.ts";
 import { openTechnicianSession } from "../../src/domain/technicians.ts";
 import { createLogger } from "../../src/log.ts";
@@ -28,7 +28,7 @@ import {
 } from "../../src/providers/fsm.ts";
 import { handleFsmSyncBatch } from "../../src/queues/fsm-sync.ts";
 import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request, type TestDependencies } from "./helpers.ts";
-import { syntheticJpeg } from "./tryon-fixtures.ts";
+import { syntheticJpeg, syntheticPng } from "./tryon-fixtures.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const TODAY_JOB = "22222222-2222-4222-8222-222222222221";
@@ -639,9 +639,9 @@ describe("the photographs", () => {
     expect(stored?.fsm_attachment_id).toMatch(/^stub-attachment-/);
   });
 
-  /** A JPEG padded with a comment to exactly `length` bytes. */
-  function jpegOf(length: number): Uint8Array {
-    const header = syntheticJpeg(1200, 1600);
+  /** A JPEG of this size in pixels, padded to exactly `length` bytes. */
+  function jpegOf(length: number, width = 1200, height = 1600): Uint8Array {
+    const header = syntheticJpeg(width, height);
     const padded = new Uint8Array(length);
     padded.set(header.subarray(0, header.length - 2));
     padded.set([0xff, 0xd9], length - 2);
@@ -692,6 +692,78 @@ describe("the photographs", () => {
     expect(deps.alerts).toEqual([expect.stringContaining("past the runaway ceiling of 20 GB")]);
     expect(await env.DB.prepare("SELECT COUNT(*) AS photos FROM photos").first("photos")).toBe(0);
   });
+
+  const heldPhoto = () =>
+    env.DB.prepare("SELECT r2_key, thumbnail_key FROM photos").first<{ r2_key: string; thumbnail_key: string | null }>();
+
+  it("takes the small copy after the photograph and keeps it beside it, counted", async () => {
+    await startJob();
+    const links = await uploadLinks();
+    const photo = syntheticJpeg(1200, 1600, "front");
+    const small = syntheticJpeg(300, 400, "front, small");
+    expect((await putPhoto(links.upload_url, photo)).status).toBe(204);
+    expect((await putPhoto(links.small_upload_url, small)).status).toBe(204);
+
+    const held = await heldPhoto();
+    expect(held?.thumbnail_key).toMatch(new RegExp(`^visits/${TODAY_JOB}/before-front-[0-9a-f-]{36}-small\\.jpg$`));
+    expect((await env.CLIENT_PHOTOS.head(held?.thumbnail_key ?? ""))?.size).toBe(small.byteLength);
+    expect((await readMeter(env.DB)).bytes).toBe(photo.byteLength + small.byteLength);
+  });
+
+  it("refuses a small copy before its photograph, so none is ever held without one", async () => {
+    await startJob();
+    const refused = await putPhoto((await uploadLinks()).small_upload_url, syntheticJpeg(300, 400));
+    expect(refused.status).toBe(409);
+    expect(await refused.json()).toMatchObject({ error: { code: "upload_missing" } });
+    expect((await env.CLIENT_PHOTOS.list({ prefix: "visits/" })).objects).toEqual([]);
+  });
+
+  it("refuses a small copy that is not a small JPEG", async () => {
+    await startJob();
+    const links = await uploadLinks();
+    await putPhoto(links.upload_url, syntheticJpeg(1200, 1600));
+    for (const wrong of [syntheticJpeg(1200, 1600), syntheticPng(300, 400), jpegOf(MAX_THUMBNAIL_BYTES + 1, 300, 400)]) {
+      expect((await putPhoto(links.small_upload_url, wrong)).status).toBe(422);
+    }
+    expect((await heldPhoto())?.thumbnail_key).toBeNull();
+  });
+
+  it("takes a small copy sent again once, as a phone that lost the answer sends it", async () => {
+    await startJob();
+    const links = await uploadLinks();
+    const photo = syntheticJpeg(1200, 1600);
+    const small = syntheticJpeg(300, 400);
+    await putPhoto(links.upload_url, photo);
+    await putPhoto(links.small_upload_url, small);
+    const first = (await heldPhoto())?.thumbnail_key;
+
+    expect((await putPhoto(links.small_upload_url, small)).status).toBe(204);
+    expect((await heldPhoto())?.thumbnail_key).toBe(first);
+    expect((await readMeter(env.DB)).bytes).toBe(photo.byteLength + small.byteLength);
+  });
+
+  it("forgets the small copy of a photograph taken again, which then shows itself until its own arrives", async () => {
+    await startJob();
+    const links = await uploadLinks();
+    await putPhoto(links.upload_url, syntheticJpeg(1200, 1600, "first take"));
+    await putPhoto(links.small_upload_url, syntheticJpeg(300, 400, "first take"));
+    await putPhoto(links.upload_url, syntheticJpeg(1200, 1600, "second take"));
+    expect((await heldPhoto())?.thumbnail_key).toBeNull();
+  });
+
+  async function uploadLinks(): Promise<{ upload_url: string; small_upload_url: string }> {
+    const answer = await request(
+      tech,
+      `/api/tech/jobs/${TODAY_JOB}/photos/upload-url`,
+      {
+        method: "POST",
+        headers: { Cookie: cookie, Origin: "https://maneman.test", "Content-Type": "application/json" },
+        body: JSON.stringify({ phase: "before", angle: "front" }),
+      },
+      bindings(),
+    );
+    return answer.json();
+  }
 
   async function opsFreeUploadLink(): Promise<string> {
     const answer = await request(

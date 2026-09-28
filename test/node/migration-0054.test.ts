@@ -55,7 +55,9 @@ describe("migration 0054", () => {
   it("starts at nought on an empty database, and holds one row", () => {
     const db = migrated("");
     expect(meter(db)).toEqual([{ bytes: 0, told_percent: 0 }]);
-    expect(() => db.exec("INSERT INTO storage_meter (id, bytes) VALUES (2, 0)")).toThrow(/CHECK/);
+    expect(() => {
+      db.exec("INSERT INTO storage_meter (id, bytes) VALUES (2, 0)");
+    }).toThrow(/CHECK/);
   });
 
   it("gives every photograph an empty small copy, which the ones taken from now on fill", () => {
