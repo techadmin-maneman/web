@@ -19,11 +19,14 @@ function step(name: string): string {
 }
 
 describe("the registry signatures step", () => {
-  // npm now and then fails it with EMISSINGSIGNATUREKEY, a registry blip that a re-run clears.
-  it("tries once more after a failure, and fails the step if the second try fails too", () => {
+  // npm now and then fails it with EMISSINGSIGNATUREKEY, a registry blip that a later try clears. On 28 September
+  // 2026 a second try 15 seconds on failed three runs in a row.
+  it("tries four times, half a minute apart, and fails the step if every try fails", () => {
     const text = step("Registry signatures");
-    expect(text.match(/npm audit signatures/g)).toHaveLength(2);
-    expect(text).toMatch(/npm audit signatures \|\| \{[^}]*npm audit signatures; \}/);
+    expect(text).toMatch(/for try in 1 2 3 4; do/);
+    expect(text).toMatch(/if npm audit signatures; then exit 0; fi/);
+    expect(text).toMatch(/sleep 30/);
+    expect(text).toMatch(/done\n\s*exit 1\n/);
     expect(text).not.toContain("|| true");
     expect(text).not.toContain("continue-on-error");
   });
