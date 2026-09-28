@@ -15,7 +15,8 @@
 import { CHECKIN_RADIUS_M } from "../policy/check-in.ts";
 import { DAY_BEFORE_REMINDER_HOUR, UNLOCK_HOUR } from "../policy/job-visibility.ts";
 import { NEXT_VISIT_DAY_BOUNDS, NEXT_VISIT_DAY_KEYS, NEXT_VISIT_DAYS } from "../policy/next-visit.ts";
-import { NO_SHOW_WAIT_MIN } from "../policy/no-show.ts";
+import { chargesFor, FREE_CHANGE_NOTICE_HOURS, LATE_CHANGE_CHARGES } from "../policy/moving-a-visit.ts";
+import { NO_SHOW_CHARGES, NO_SHOW_WAIT_MIN, WAIVER_GIVES_BACK, WAIVER_KEYS } from "../policy/no-show.ts";
 import { PHONE_CLOCK, PHONE_CLOCK_KEYS } from "../policy/phone-clock.ts";
 import { TECHNICIAN_WORK, TECHNICIAN_WORK_KEYS } from "../policy/technician-work.ts";
 import { TASK_GROUPS, TASK_SLA_HOURS } from "../policy/tasks.ts";
@@ -105,6 +106,46 @@ export const OPS_SETTINGS = [
     max: 120,
     keys: VISIT_TYPES,
     fallback: NO_SHOW_WAIT_MIN,
+    source: "src/policy/no-show.ts",
+  },
+  {
+    // The owner's terms of 27 September 2026 (docs/open-points.md, item 7), which a booking keeps as it was made under.
+    name: "change_notice_hours",
+    title: "Free to move or cancel until",
+    note: "How long before a visit's window moving or cancelling it stops being free. Inside it, each kind of visit costs what is set below. A booking keeps the terms it was made under, and a move ops make never costs the client anything.",
+    unit: "hours before the window",
+    min: 1,
+    max: 168,
+    keys: null,
+    fallback: FREE_CHANGE_NOTICE_HOURS,
+    source: "src/policy/moving-a-visit.ts",
+  },
+  {
+    name: "late_change_charge",
+    title: "What a late move or cancel costs",
+    note: "What each kind of visit costs when the client moves or cancels it inside that notice: nothing, its late fee, which is a price in Services and prices, or the visit itself, whose payment is kept or whose credit is spent. A late fee is offered only for a kind that has one.",
+    keys: VISIT_TYPES,
+    choices: Object.fromEntries(VISIT_TYPES.map((type) => [type, chargesFor(type)])),
+    fallback: LATE_CHANGE_CHARGES,
+    source: "src/policy/moving-a-visit.ts",
+  },
+  {
+    // Item 60 of docs/open-points.md: set apart from the late-cancel terms, so either can change alone.
+    name: "no_show_charge",
+    title: "What a no-show costs",
+    note: "What each kind of visit costs when you charge a no-show, set apart from a late cancel so either can change alone. A booking keeps what it was made under.",
+    keys: VISIT_TYPES,
+    choices: Object.fromEntries(VISIT_TYPES.map((type) => [type, chargesFor(type)])),
+    fallback: NO_SHOW_CHARGES,
+    source: "src/policy/no-show.ts",
+  },
+  {
+    name: "no_show_waiver",
+    title: "What waiving a no-show gives back",
+    note: "When you waive a no-show, whether the visit's payment is refunded and whether its visit credit is returned. The client's message says which, and each ruling keeps what it gave.",
+    keys: WAIVER_KEYS,
+    choices: { payment: ["refunded", "kept"], credit: ["returned", "spent"] },
+    fallback: WAIVER_GIVES_BACK,
     source: "src/policy/no-show.ts",
   },
   {

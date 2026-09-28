@@ -542,7 +542,7 @@ async function retireReplaced(
     .first<{ id: string; fsm_work_order_id: string | null; window_start: string }>();
   if (old === null) return;
   if (old.fsm_work_order_id !== null) {
-    const note = `${options.labelAsTest ? "Staging test: " : ""}Moved by the client inside 24 hours, to a new visit; charged.`;
+    const note = `${options.labelAsTest ? "Staging test: " : ""}Moved by the client too late to move it free, to a new visit; charged.`;
     if (!(await fsm.cancelVisit(old.fsm_work_order_id, note))) {
       await options.alertOnce?.({
         key: `replaced_not_cancelled:${old.id}`,

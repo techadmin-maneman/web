@@ -185,11 +185,12 @@ describe("what a visit message says", () => {
       );
     });
 
-    it("says the credit is gone, when it was cancelled inside 24 hours", async () => {
+    // The notice is ops' to set, so the message does not name it (docs/decisions/0088-every-policy-in-the-console.md).
+    it("says the credit is gone, when it was cancelled inside the notice", async () => {
       await cancelledOnCredit("late");
       expect(await text("cancel_confirmation")).toBe(
-        "Hello Rohit, your service visit on Thu 24 Sep is cancelled. It was inside 24 hours, so the visit credit " +
-          "it used is gone.",
+        "Hello Rohit, your service visit on Thu 24 Sep is cancelled. It was too close to the visit, so the visit " +
+          "credit it used is gone.",
       );
     });
   });

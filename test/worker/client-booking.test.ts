@@ -178,6 +178,7 @@ describe("POST /api/holds", () => {
       late_fee: null,
       // Moving is free until 24 hours before the window opens.
       free_until: "2026-09-21T06:30:00.000Z",
+      change_notice_hours: 24,
       expires_at: "2026-09-21T06:40:00.000Z",
       state: "held",
     });
@@ -224,6 +225,35 @@ describe("POST /api/holds", () => {
     const third = await client();
     expect((await hold(third, TUESDAY_AFTERNOON, later(19))).status).toBe(409);
     expect((await hold(third, TUESDAY_AFTERNOON, later(21))).status).toBe(201);
+  });
+
+  it("sells a hold under the terms ops set, and keeps them on it", async () => {
+    const opsSet = (name: string, value: unknown) =>
+      env.DB.prepare("INSERT INTO ops_settings (name, value, set_by, set_at) VALUES (?1, ?2, 'ops', ?3)")
+        .bind(name, JSON.stringify(value), NOW.toISOString())
+        .run();
+    await opsSet("change_notice_hours", 12);
+    await opsSet("late_change_charge", {
+      consultation: "nothing",
+      first_fit: "late_fee",
+      service: "nothing",
+      replacement: "visit",
+    });
+    await opsSet("no_show_charge", {
+      consultation: "nothing",
+      first_fit: "visit",
+      service: "visit",
+      replacement: "visit",
+    });
+    const rohit = await client();
+    const held = await (await hold(rohit, TUESDAY_AFTERNOON)).json<{ id: string }>();
+    expect(held).toMatchObject({ free_until: "2026-09-21T18:30:00.000Z", change_notice_hours: 12 });
+    const kept = await env.DB.prepare(
+      "SELECT change_notice_hours, late_change_charge, no_show_charge FROM slot_holds WHERE id = ?1",
+    )
+      .bind(held.id)
+      .first();
+    expect(kept).toEqual({ change_notice_hours: 12, late_change_charge: "nothing", no_show_charge: "visit" });
   });
 
   it("keeps a hold to the grace it was made with, whatever ops set after", async () => {

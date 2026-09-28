@@ -8,8 +8,10 @@
 //
 // A late fee is the one the visit was booked under, kept on its hold, so a
 // price changed since does not change what moving it costs
-// (docs/decisions/0068-a-paid-hold-is-kept.md). A credit comes back only to a
-// grant that can still take it: not one clawed back or expired.
+// (docs/decisions/0068-a-paid-hold-is-kept.md). So are the notice and what the
+// visit's kind costs inside it, which ops set in the console
+// (docs/decisions/0088-every-policy-in-the-console.md). A credit comes back only
+// to a grant that can still take it: not one clawed back or expired.
 
 import { WINDOW_TIMES } from "../config/scheduling.ts";
 import { STANDARD_TIER, type VisitType } from "../config/visit-types.ts";
@@ -19,18 +21,24 @@ import { withGst } from "../config/gst.ts";
 import {
   cancelRefund,
   creditOnChange,
+  FREE_CHANGE_NOTICE_HOURS,
   freeUntil,
+  LATE_CHANGE_CHARGES,
   LATE_FEES,
   moveCost,
   noticeAt,
   type CancelRefund,
+  type Charge,
   type CreditOnChange,
   type MoveCost,
   type Notice,
+  type SoldTerms,
 } from "../policy/moving-a-visit.ts";
+import { NO_SHOW_CHARGES } from "../policy/no-show.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
 import type { PaymentsProvider } from "../providers/payments.ts";
 import type { AlertOnce } from "./alerts.ts";
+import type { OpsInputs } from "./ops-settings.ts";
 import { priceOf, type Price } from "./price-book.ts";
 import { bookedMinutes } from "./scheduling.ts";
 import { windowAt } from "../policy/windows.ts";
@@ -139,6 +147,8 @@ function refundOf(refunding: CancelRefund, paid: number, lateFee: Price | null):
 export interface ChangeTerms {
   readonly visit: ChangeableVisit;
   readonly notice: Notice;
+  /** The notice the visit was booked under, in hours. */
+  readonly noticeHours: number;
   readonly freeUntil: Date;
   readonly payment: VisitPayment | null;
   /** What moving costs, and what is paid now to move: nothing, the late fee, or the new visit's price. */
@@ -149,26 +159,75 @@ export interface ChangeTerms {
   readonly credit: { readonly grantId: string; readonly outcome: CreditOnChange } | null;
 }
 
-/** The late fee the visit was booked under, kept on the hold that booked it; null for a visit ops booked in FSM. */
-async function lateFeeBookedAt(db: D1Database, visitId: string): Promise<Price | null> {
+/** The terms a booking of this kind is sold under now, as ops set them. */
+export const termsInForce = (
+  inputs: Pick<OpsInputs, "changeNoticeHours" | "lateChangeCharges" | "noShowCharges">,
+  type: VisitType,
+): SoldTerms => ({
+  noticeHours: inputs.changeNoticeHours,
+  lateCharge: inputs.lateChangeCharges[type],
+  noShowCharge: inputs.noShowCharges[type],
+});
+
+/** The committed terms, which a visit booked before holds kept theirs was sold under. */
+const committedTerms = (type: VisitType): SoldTerms => ({
+  noticeHours: FREE_CHANGE_NOTICE_HOURS,
+  lateCharge: LATE_CHANGE_CHARGES[type],
+  noShowCharge: NO_SHOW_CHARGES[type],
+});
+
+interface Sold {
+  /** The late fee kept on the hold; null where it kept none. */
+  readonly lateFee: Price | null;
+  readonly terms: SoldTerms;
+}
+
+/**
+ * What the visit was sold under, kept on the hold that booked it: its late fee and its terms. Null for a visit ops
+ * booked in FSM, which no hold sold. A term the hold kept no figure for is the committed one.
+ */
+async function soldWith(db: D1Database, visit: ChangeableVisit): Promise<Sold | null> {
   const held = await db
     .prepare(
-      `SELECT late_fee_ex_gst, late_fee_gst_percent FROM slot_holds
-       WHERE appointment_id = ?1 AND state = 'booked' AND late_fee_ex_gst IS NOT NULL AND late_fee_gst_percent IS NOT NULL
+      `SELECT late_fee_ex_gst, late_fee_gst_percent, change_notice_hours, late_change_charge, no_show_charge
+       FROM slot_holds WHERE appointment_id = ?1 AND state = 'booked'
        ORDER BY updated_at DESC LIMIT 1`,
     )
-    .bind(visitId)
-    .first<{ late_fee_ex_gst: number; late_fee_gst_percent: number }>();
+    .bind(visit.id)
+    .first<{
+      late_fee_ex_gst: number | null;
+      late_fee_gst_percent: number | null;
+      change_notice_hours: number | null;
+      late_change_charge: Charge | null;
+      no_show_charge: Charge | null;
+    }>();
   if (held === null) return null;
+  const committed = committedTerms(visit.type);
+  const lateFee =
+    held.late_fee_ex_gst === null || held.late_fee_gst_percent === null
+      ? null
+      : {
+          amount_ex_gst: held.late_fee_ex_gst,
+          amount: withGst(held.late_fee_ex_gst, held.late_fee_gst_percent),
+          gst_percent: held.late_fee_gst_percent,
+        };
   return {
-    amount_ex_gst: held.late_fee_ex_gst,
-    amount: withGst(held.late_fee_ex_gst, held.late_fee_gst_percent),
-    gst_percent: held.late_fee_gst_percent,
+    lateFee,
+    terms: {
+      noticeHours: held.change_notice_hours ?? committed.noticeHours,
+      lateCharge: held.late_change_charge ?? committed.lateCharge,
+      noShowCharge: held.no_show_charge ?? committed.noShowCharge,
+    },
   };
 }
 
 /** The credit a visit was paid with, if it was, and whether its grant could take it back now. */
-async function creditOf(db: D1Database, visitId: string, notice: Notice, now: Date): Promise<ChangeTerms["credit"]> {
+async function creditOf(
+  db: D1Database,
+  visitId: string,
+  change: { readonly notice: Notice; readonly charge: Charge },
+  now: Date,
+): Promise<ChangeTerms["credit"]> {
   const redeemed = await db
     .prepare(
       `SELECT r.grant_id, g.expires_at,
@@ -182,44 +241,47 @@ async function creditOf(db: D1Database, visitId: string, notice: Notice, now: Da
   if (redeemed === null) return null;
   const grantLive =
     redeemed.clawed_back === 0 && (redeemed.expires_at === null || redeemed.expires_at > now.toISOString());
-  return { grantId: redeemed.grant_id, outcome: grantLive ? creditOnChange(notice) : "lost" };
+  return { grantId: redeemed.grant_id, outcome: grantLive ? creditOnChange(change.notice, change.charge) : "lost" };
 }
 
 /**
- * The terms of changing the visit now. `on` is the day a new visit would be priced on, for a charged move: the
- * first day one can be booked, unless the client has picked one.
+ * The terms of changing the visit now, under the terms it was booked under, or, for a visit ops booked in FSM, those
+ * in force (`inForce`). `on` is the day a new visit would be priced on, for a charged move: the first day one can be
+ * booked, unless the client has picked one.
  */
 export async function changeTerms(
   db: D1Database,
   visit: ChangeableVisit,
   now: Date,
+  inForce: SoldTerms,
   on: string = addDays(indiaDate(now), 1),
 ): Promise<ChangeTerms> {
+  const sold = await soldWith(db, visit);
+  const terms = sold?.terms ?? inForce;
   const windowStarts = windowStartOf(visit.start);
-  const notice = noticeAt(windowStarts, now);
+  const notice = noticeAt(windowStarts, now, terms.noticeHours);
   const payment = await visitPayment(db, visit.id);
   const paid = payment?.paid ?? 0;
   const lateFeeItem = LATE_FEES[visit.type];
   const lateFee =
-    lateFeeItem === undefined
-      ? null
-      : ((await lateFeeBookedAt(db, visit.id)) ?? (await priceOf(db, lateFeeItem, indiaDate(visit.start))));
+    lateFeeItem === undefined ? null : (sold?.lateFee ?? (await priceOf(db, lateFeeItem, indiaDate(visit.start))));
   // A charged move books a new visit of the same service, at its price on the day.
   const visitPrice = await priceOf(db, visit.type, on, visit.tier);
   const gst = visitPrice?.gst_percent ?? 0;
 
-  const cost = moveCost(visit.type, notice, "client");
+  const cost = moveCost(visit.type, notice, "client", terms.lateCharge);
   const movePrice = movePriceOf(cost, { lateFee, visit: visitPrice, gst });
 
-  const refund = refundOf(cancelRefund(visit.type, notice), paid, lateFee);
+  const refund = refundOf(cancelRefund(visit.type, notice, terms.lateCharge), paid, lateFee);
   return {
     visit,
     notice,
-    freeUntil: freeUntil(windowStarts),
+    noticeHours: terms.noticeHours,
+    freeUntil: freeUntil(windowStarts, terms.noticeHours),
     payment,
     move: { cost, price: movePrice },
     cancel: { refund, kept: paid - refund },
-    credit: await creditOf(db, visit.id, notice, now),
+    credit: await creditOf(db, visit.id, { notice, charge: terms.lateCharge }, now),
   };
 }
 
@@ -268,8 +330,9 @@ export async function cancelVisit(
     .first();
   if (claimed === null) return { kind: "not_changeable" };
 
+  const hours = `${String(terms.noticeHours)} hours`;
   const note = `${labelAsTest ? "Staging test: " : ""}Cancelled by the client in the app, ${
-    notice === "free" ? "more than 24 hours ahead" : "inside 24 hours"
+    notice === "free" ? `more than ${hours} ahead` : `inside ${hours}`
   }.`;
   let done: boolean;
   try {

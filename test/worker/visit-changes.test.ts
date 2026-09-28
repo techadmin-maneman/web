@@ -113,6 +113,7 @@ describe("POST /api/appointments/:id/cancel", () => {
       visit_id: VISIT,
       type: "service",
       notice: "free",
+      notice_hours: 24,
       free_until: "2026-09-23T06:30:00.000Z",
       paid: 200000,
       credit: null,
@@ -275,6 +276,7 @@ describe("POST /api/appointments/:id/reschedule: the terms", () => {
       visit_id: VISIT,
       type: "service",
       notice: "free",
+      notice_hours: 24,
       free_until: "2026-09-23T06:30:00.000Z",
       paid: 200000,
       credit: null,
@@ -291,6 +293,93 @@ describe("POST /api/appointments/:id/reschedule: the terms", () => {
     await env.DB.prepare("UPDATE appointments SET type = 'service' WHERE id = ?1").bind(VISIT).run();
     const service = await (await post(client(), `/api/appointments/${VISIT}/reschedule`, {})).json();
     expect(service).toMatchObject({ notice: "late", cost: "charged", price: { amount: 200000 } });
+  });
+});
+
+/**
+ * The notice and what each kind costs inside it are ops' to set, and a visit keeps the terms it was booked under, on
+ * the hold that booked it (docs/decisions/0088-every-policy-in-the-console.md). A visit ops booked in FSM has no hold,
+ * and takes the terms in force; one booked before holds kept terms took the committed ones.
+ */
+describe("the terms a visit was booked under", () => {
+  const opsSet = (name: string, value: unknown) =>
+    env.DB.prepare("INSERT OR REPLACE INTO ops_settings (name, value, set_by, set_at) VALUES (?1, ?2, 'ops', ?3)")
+      .bind(name, JSON.stringify(value), NOW.toISOString())
+      .run();
+
+  async function bookedHold(terms: { notice: number | null; charge: string | null }) {
+    await env.DB.prepare(
+      `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
+         amount_ex_gst, gst_percent, state, expires_at, created_at, updated_at, appointment_id, change_notice_hours,
+         late_change_charge)
+       VALUES ('hold-1', ?1, 'service', '2026-09-24', 'afternoon', 't1', 2, 200000, 200000, 0, 'booked', ?2, ?2, ?2,
+         ?3, ?4, ?5)`,
+    )
+      .bind(PERSON, "2026-09-20T06:30:00.000Z", VISIT, terms.notice, terms.charge)
+      .run();
+  }
+
+  const cancelTerms = async () =>
+    (await post(client(), `/api/appointments/${VISIT}/cancel`, { confirm: false })).json<Record<string, unknown>>();
+
+  it("counts the notice ops set for a visit that was booked in FSM", async () => {
+    await booked("service", THURSDAY_NOON, 200000);
+    await opsSet("change_notice_hours", 96);
+    expect(await cancelTerms()).toMatchObject({
+      notice: "late",
+      notice_hours: 96,
+      free_until: "2026-09-20T06:30:00.000Z",
+      refund: 0,
+    });
+  });
+
+  it("counts the notice the visit was booked under, whatever ops set since", async () => {
+    await booked("service", THURSDAY_NOON, 200000);
+    await bookedHold({ notice: 24, charge: "visit" });
+    await opsSet("change_notice_hours", 96);
+    expect(await cancelTerms()).toMatchObject({ notice: "free", notice_hours: 24, refund: 200000 });
+  });
+
+  it("gives a visit booked before holds kept their terms the committed ones", async () => {
+    await booked("service", TUESDAY_MORNING, 200000);
+    await bookedHold({ notice: null, charge: null });
+    await opsSet("change_notice_hours", 12);
+    await opsSet("late_change_charge", {
+      consultation: "nothing",
+      first_fit: "late_fee",
+      service: "nothing",
+      replacement: "late_fee",
+    });
+    expect(await cancelTerms()).toMatchObject({ notice: "late", notice_hours: 24, refund: 0, kept: 200000 });
+  });
+
+  it("charges inside the notice what the kind cost when the visit was booked", async () => {
+    await booked("service", TUESDAY_MORNING, 200000);
+    await bookedHold({ notice: 24, charge: "nothing" });
+    expect(await cancelTerms()).toMatchObject({ notice: "late", refund: 200000, kept: 0 });
+    const move = await (await post(client(), `/api/appointments/${VISIT}/reschedule`, {})).json();
+    expect(move).toMatchObject({ notice: "late", cost: "free" });
+  });
+
+  it("gives a credit back inside the notice where the visit was booked to cost nothing then", async () => {
+    await booked("service", TUESDAY_MORNING, 0);
+    await bookedHold({ notice: 24, charge: "nothing" });
+    await grantCredits(env.DB, { personId: PERSON, visits: 3, source: "referral", sourceId: "attr-1", now: NOW }).run();
+    await (await redeemCredit(env.DB, PERSON, VISIT, NOW))?.run();
+    expect(await cancelTerms()).toMatchObject({ notice: "late", credit: "restored" });
+  });
+
+  it("names the notice it was booked under in the note FSM keeps", async () => {
+    await booked("service", THURSDAY_NOON, 200000);
+    await bookedHold({ notice: 12, charge: "visit" });
+    const fsm = createStubFsm(world());
+    await post(client({ fsm }), `/api/appointments/${VISIT}/cancel`, { confirm: true, notice: "free" });
+    expect(fsm.made.cancelled).toEqual([
+      {
+        workOrderId: "fsm-order-1",
+        note: "Staging test: Cancelled by the client in the app, more than 12 hours ahead.",
+      },
+    ]);
   });
 });
 
@@ -419,7 +508,7 @@ describe("moving a visit", () => {
     expect(fsm.made.cancelled).toEqual([
       {
         workOrderId: "fsm-order-1",
-        note: "Staging test: Moved by the client inside 24 hours, to a new visit; charged.",
+        note: "Staging test: Moved by the client too late to move it free, to a new visit; charged.",
       },
     ]);
     expect((await visitRow())?.status).toBe("cancelled");

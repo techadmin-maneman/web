@@ -647,7 +647,7 @@ Indexes:
 
 The evidence a no-show is ruled on, and the ruling (ADR 0065, ADR 0072).
 
-Made by `0026_field_operations.sql`; changed by `0042_no_show_reasons.sql`, `0044_hand_offs_and_messages.sql`.
+Made by `0026_field_operations.sql`; changed by `0042_no_show_reasons.sql`, `0044_hand_offs_and_messages.sql`, `0051_policies_in_the_console.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -664,6 +664,8 @@ Made by `0026_field_operations.sql`; changed by `0042_no_show_reasons.sql`, `004
 | `decided_at` | TEXT | yes |  |  |
 | `created_at` | TEXT | no |  |  |
 | `decision_reason` | TEXT | yes |  |  |
+| `waiver_payment` | TEXT | yes |  |  |
+| `waiver_credit` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -1171,6 +1173,9 @@ Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_chan
 | `tier` | TEXT | no | `'standard'` |  |
 | `minutes` | INTEGER | yes |  |  |
 | `grace_seconds` | INTEGER | yes |  |  |
+| `change_notice_hours` | INTEGER | yes |  |  |
+| `late_change_charge` | TEXT | yes |  |  |
+| `no_show_charge` | TEXT | yes |  |  |
 
 Indexes:
 

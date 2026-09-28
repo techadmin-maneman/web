@@ -54,7 +54,13 @@ import {
   type Moving,
 } from "../domain/scheduling.ts";
 import { bookableService, serviceOf, type PricedService } from "../domain/services.ts";
-import { changeableVisit, changeTerms, type ChangeableVisit, type ChangeTerms } from "../domain/visit-changes.ts";
+import {
+  changeableVisit,
+  changeTerms,
+  termsInForce,
+  type ChangeableVisit,
+  type ChangeTerms,
+} from "../domain/visit-changes.ts";
 import { bookableDays } from "../domain/next-visit.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
@@ -136,8 +142,16 @@ const HoldSchema = z
     price: PriceSchema,
     late_fee: z
       .union([PriceSchema, z.null()])
-      .openapi({ description: "What moving it inside 24 hours costs: a first fit's or a replacement's late fee." }),
+      .openapi({ description: "What moving it inside the notice costs: a first fit's or a replacement's late fee." }),
     free_until: z.iso.datetime().openapi({ description: "Until then, moving or cancelling is free." }),
+    change_notice_hours: z
+      .number()
+      .int()
+      .openapi({
+        description:
+          "The notice it is sold under: how many hours before its window moving or cancelling stops being free, as " +
+          "ops set it when the hold was made (24 to begin with).",
+      }),
     expires_at: z.iso.datetime(),
     state: z.enum(["held", "expired", "booked", "released"]),
     paid: z.boolean().openapi({ description: "Razorpay has confirmed the payment; the visit is being booked." }),
@@ -338,8 +352,9 @@ export async function moveTermsFor(
   const now = c.var.deps.now();
   const visit = await changeableVisit(c.env.DB, personId, visitId, now);
   if (visit === null || (type !== null && visit.type !== type) || visit.technicianId === null) return null;
+  const inForce = termsInForce(await opsInputs(c), visit.type);
   return {
-    terms: await changeTerms(c.env.DB, visit, now, on),
+    terms: await changeTerms(c.env.DB, visit, now, inForce, on),
     moving: { visitId: visit.id, technicianId: visit.technicianId },
   };
 }
@@ -445,7 +460,7 @@ export function registerClientBooking(app: App): void {
     const useCredit =
       takesCredit(type, moves?.kind ?? null) && (await creditBalance(c.env.DB, session.subjectId, now)).visits > 0;
     const lateFeeItem = LATE_FEES[type];
-    const paymentHold = (await opsInputs(c)).paymentHold;
+    const inputs = await opsInputs(c);
     const hold = await holdSlot(
       c.env.DB,
       {
@@ -455,14 +470,15 @@ export function registerClientBooking(app: App): void {
         window,
         price,
         lateFee: lateFeeItem === undefined ? null : await priceOf(c.env.DB, lateFeeItem, date),
+        terms: termsInForce(inputs, type),
         pincode: address.pincode,
         useCredit,
         from: "app",
         ...(moves === undefined ? {} : { moves }),
       },
       now,
-      paymentHold.countdown * 60,
-      paymentHold.grace * 60,
+      inputs.paymentHold.countdown * 60,
+      inputs.paymentHold.grace * 60,
     );
     if (hold === null) return c.json(errorBody("taken", c.var.requestId), 409);
     c.var.log.info("slot_held", { hold_id: hold.id, type, tier: service.tier, date, window });

@@ -39,6 +39,7 @@ import {
 import type { VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
 import { clashes } from "../policy/dispatch.ts";
+import type { SoldTerms } from "../policy/moving-a-visit.ts";
 import { bookedLength, unitsFor } from "../policy/visit-length.ts";
 import { windowAt } from "../policy/windows.ts";
 import { isFitted } from "./client-visits.ts";
@@ -390,6 +391,11 @@ export async function holdSlot(
     price: Price;
     /** What moving it late would cost as it stands now, kept on the hold for the visit's terms. */
     lateFee?: Price | null;
+    /**
+     * The terms in force as it is made, kept on the hold so the visit keeps them; left out, it is sold under the
+     * committed ones, as the site's free consultation is.
+     */
+    terms?: SoldTerms;
     /** Where the visit is, where the booking says. */
     pincode?: string | null;
     /** Paid for with a service-visit credit instead of money (ADR 0033). */
@@ -440,9 +446,9 @@ export async function holdSlot(
             `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
                amount_ex_gst, gst_percent, state, expires_at, created_at, updated_at, moves_appointment_id, move_kind,
                use_credit, pincode, late_fee_ex_gst, late_fee_gst_percent, confirmed_at, queued_at, tier, minutes,
-               grace_seconds)
+               grace_seconds, change_notice_hours, late_change_charge, no_show_charge)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, 'held', ?11, ?12, ?12, ?13, ?14, ?15, ?16, ?17, ?18,
-               ?19, ?19, ?20, ?21, ?22)`,
+               ?19, ?19, ?20, ?21, ?22, ?23, ?24, ?25)`,
           )
           .bind(
             id,
@@ -467,6 +473,9 @@ export async function holdSlot(
             service.tier,
             service.minutes,
             graceSeconds,
+            input.terms?.noticeHours ?? null,
+            input.terms?.lateCharge ?? null,
+            input.terms?.noShowCharge ?? null,
           ),
         ...claimsOf(start, units, window).map((claim) =>
           db

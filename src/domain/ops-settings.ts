@@ -24,7 +24,8 @@ import {
 import type { Cycles } from "../config/pieces.ts";
 import type { PaymentHold } from "../config/scheduling.ts";
 import type { NextVisitDays } from "../policy/next-visit.ts";
-import type { Waits } from "../policy/no-show.ts";
+import type { Charges } from "../policy/moving-a-visit.ts";
+import type { Waiver, Waits } from "../policy/no-show.ts";
 import type { PhoneClock } from "../policy/phone-clock.ts";
 import type { Slas } from "../policy/tasks.ts";
 import type { TechnicianWorkFigures } from "../policy/technician-work.ts";
@@ -39,6 +40,10 @@ export interface OpsInputs {
   readonly checkinRadiusM: number;
   readonly noShowWaitMin: Waits;
   readonly phoneClock: PhoneClock;
+  readonly changeNoticeHours: number;
+  readonly lateChangeCharges: Charges;
+  readonly noShowCharges: Charges;
+  readonly noShowWaiver: Waiver;
   readonly addressUnlockHour: number;
   readonly reminderHour: number;
   readonly taskSlaHours: Slas;
@@ -74,6 +79,10 @@ function shape(values: Readonly<Record<OpsSettingName, SettingValue>>): OpsInput
     checkinRadiusM: values.checkin_radius_m as number,
     noShowWaitMin: values.no_show_wait_min as Waits,
     phoneClock: values.phone_clock as PhoneClock,
+    changeNoticeHours: values.change_notice_hours as number,
+    lateChangeCharges: values.late_change_charge as Charges,
+    noShowCharges: values.no_show_charge as Charges,
+    noShowWaiver: values.no_show_waiver as Waiver,
     addressUnlockHour: values.address_unlock_hour as number,
     reminderHour: values.reminder_hour as number,
     taskSlaHours: values.task_sla_hours as Slas,

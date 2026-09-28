@@ -297,7 +297,7 @@ export const visits = {
       line: (minutes: number) => `We came, and waited ${String(minutes)} minutes, but nobody was home.`,
       decision: {
         undecided: "We are looking at it. Nothing is charged until we have.",
-        charged: "Charged, as a cancel inside 24 hours would be.",
+        charged: "Charged.",
         waived: "Not charged.",
       },
     },
@@ -375,7 +375,8 @@ export const booking = {
       zero: "Rs. 0",
       used: "1 visit credit used",
       remaining: (left: number) => `${String(left)} remaining`,
-      note: "Cancel inside 24 hours and the credit is gone.",
+      /** The notice the hold is sold under, which ops set: 24 hours to begin with. */
+      note: (hours: number) => `Cancel inside ${String(hours)} hours and the credit is gone.`,
     },
     /**
      * PLACEHOLDER: the design never asks. Ticked, it records the client's yes to WhatsApp about their
@@ -402,7 +403,8 @@ export const booking = {
    * muted, once GST applies.
    */
   lateFee: {
-    costs: (amount: string) => `Moving inside 24 hours costs ${amount}`,
+    /** The notice is the one the visit is sold under, which ops set: 24 hours to begin with. */
+    costs: (amount: string, hours: number) => `Moving inside ${String(hours)} hours costs ${amount}`,
     inclusive: (amount: string) => ` (${amount} incl. GST)`,
     rest: ". The balance carries over.",
   },
@@ -497,7 +499,7 @@ export const change = {
     close: "Done",
   },
   // PLACEHOLDER: what came of a change that did not go through.
-  termsChanged: "The 24 hours have just run out. This is what it costs now.",
+  termsChanged: "The free change has just run out. This is what it costs now.",
   notChangeable: "This visit can no longer be changed here.",
   message: "Message us",
   failed: "That did not go through, and nothing has changed. Please try again.",
@@ -656,7 +658,7 @@ export const payments = {
     title: "Visit credits",
     meta: {
       used: "visit credit",
-      lost: "cancelled inside 24 hours",
+      lost: "cancelled late",
       returned: "cancelled in time",
       expired: "past their date",
       withdrawn: "the fit was refunded",

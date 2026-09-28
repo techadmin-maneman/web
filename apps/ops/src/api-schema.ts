@@ -2090,7 +2090,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    name: "checkin_radius_m" | "no_show_wait_min" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "technician_work" | "booking_days";
+                    name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "technician_work" | "booking_days";
                 };
                 cookie?: never;
             };
@@ -4342,6 +4342,13 @@ export interface components {
         };
         NoShowCases: {
             cases: components["schemas"]["NoShowCase"][];
+            /** @description What waiving a case gives back now, as ops set it in Settings (no_show_waiver). */
+            waiver: {
+                /** @enum {string} */
+                payment: "refunded" | "kept";
+                /** @enum {string} */
+                credit: "returned" | "spent";
+            };
         };
         /** @description The three facts ops rule on, and nothing else. */
         NoShowCase: {
@@ -4590,7 +4597,7 @@ export interface components {
         OpsSetting: components["schemas"]["NumberRule"] | components["schemas"]["ChoiceRule"];
         NumberRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "no_show_wait_min" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "technician_work" | "booking_days";
+            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "technician_work" | "booking_days";
             title: string;
             note: string;
             /** @description The module the default lives in. */
@@ -4625,7 +4632,7 @@ export interface components {
         };
         ChoiceRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "no_show_wait_min" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "technician_work" | "booking_days";
+            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "technician_work" | "booking_days";
             title: string;
             note: string;
             /** @description The module the default lives in. */

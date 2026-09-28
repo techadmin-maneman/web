@@ -81,12 +81,12 @@ function LastMinute({ left }: { left: number }) {
  * The late fee's line, the same on the pay step (boards C4 and C5) and on moving a visit (C7): the
  * ex-GST figure in the sentence, and the inclusive one muted after it once GST applies.
  */
-export function LateFee({ fee }: { fee: Price }) {
+export function LateFee({ fee, noticeHours }: { fee: Price; noticeHours: number }) {
   const { exGst, inclusive } = priceFigures(fee);
   const copy = booking.lateFee;
   return (
     <>
-      {copy.costs(exGst)}
+      {copy.costs(exGst, noticeHours)}
       {inclusive !== null && <span className={styles.inclusive}>{copy.inclusive(inclusive)}</span>}
       {copy.rest}
     </>
@@ -364,7 +364,7 @@ function ChangeTerms({ hold, moving, covered }: { hold: Hold; moving: MoveTerms 
   if (hold.late_fee !== null) {
     return (
       <p className={line}>
-        <LateFee fee={hold.late_fee} />
+        <LateFee fee={hold.late_fee} noticeHours={hold.change_notice_hours} />
       </p>
     );
   }
@@ -487,7 +487,7 @@ export function PayStep(props: {
         {payLabel(hold, moving)}
       </Button>
       {!free && <p className={styles.moneyNote}>{copy.neverHandlesMoney(technician)}</p>}
-      {covered && <p className={styles.creditNote}>{copy.credit.note}</p>}
+      {covered && <p className={styles.creditNote}>{copy.credit.note(hold.change_notice_hours)}</p>}
     </>
   );
 }

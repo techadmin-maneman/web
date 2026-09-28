@@ -245,6 +245,7 @@ const hold = (type: string, price: object, lateFee: object | null) => ({
   price,
   late_fee: lateFee,
   free_until: "2030-09-18T06:30:00.000Z",
+  change_notice_hours: 24,
   // Board C4 shows 9:42 left.
   expires_at: new Date(IN_2030.getTime() + 582_000).toISOString(),
   state: "held",
@@ -695,6 +696,7 @@ async function changePairs(browser: Browser, design: Page): Promise<void> {
   const terms = {
     visit_id: NEXT.id,
     type: "service",
+    notice_hours: 24,
     free_until: "2030-09-18T06:30:00.000Z",
     paid: 236000,
     credit: null,

@@ -27,6 +27,7 @@ const post = (path: string, body: unknown, bindings: Partial<Env> = {}) =>
 
 interface Setting {
   name: string;
+  kind: "number" | "choice";
   unit: string;
   min: number;
   max: number;
@@ -78,11 +79,47 @@ describe("the rules, before anybody sets one", () => {
     });
   });
 
-  it("says the unit and the bounds of every one, so a form can show them", async () => {
-    for (const setting of await settings()) {
+  it("says the unit and the bounds of every number, so a form can show them", async () => {
+    const numbers = (await settings()).filter((setting) => setting.kind === "number");
+    expect(numbers.length).toBeGreaterThan(0);
+    for (const setting of numbers) {
       expect(setting.unit, setting.name).not.toBe("");
       expect(setting.min, setting.name).toBeLessThan(setting.max);
     }
+  });
+
+  // What a late change or a no-show costs, and what a waiver gives back, are choices (docs/decisions/0088-every-policy-in-the-console.md).
+  it("says what each key of a rule of choices may be, and offers a late fee only where the kind has one", async () => {
+    const charges = (await settings()).find((setting) => setting.name === "late_change_charge") as unknown as {
+      kind: string;
+      choices: Record<string, string[]>;
+      value: Record<string, string>;
+    };
+    expect(charges.kind).toBe("choice");
+    expect(charges.choices).toEqual({
+      consultation: ["nothing", "visit"],
+      first_fit: ["nothing", "late_fee", "visit"],
+      service: ["nothing", "visit"],
+      replacement: ["nothing", "late_fee", "visit"],
+    });
+    expect(charges.value).toEqual({
+      consultation: "nothing",
+      first_fit: "late_fee",
+      service: "visit",
+      replacement: "late_fee",
+    });
+  });
+
+  it("refuses a late fee for a kind of visit that has none, and a choice no key offers", async () => {
+    const charges = { consultation: "nothing", first_fit: "late_fee", service: "visit", replacement: "late_fee" };
+    const feeless = await post("/api/settings/late_change_charge", { value: { ...charges, service: "late_fee" } });
+    expect(feeless.status).toBe(400);
+    expect(await feeless.json()).toMatchObject({ error: { fields: ["late_change_charge.service"] } });
+    const madeUp = await post("/api/settings/no_show_waiver", { value: { payment: "halved", credit: "returned" } });
+    expect(await madeUp.json()).toMatchObject({ error: { fields: ["no_show_waiver.payment"] } });
+    expect((await post("/api/settings/late_change_charge", { value: { ...charges, service: "nothing" } })).status).toBe(
+      200,
+    );
   });
 });
 

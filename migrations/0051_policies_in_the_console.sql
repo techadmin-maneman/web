@@ -43,3 +43,20 @@ SELECT 1, json_group_object(name, json(value)) FROM ops_settings;
 -- console now; a hold keeps the one it was made with. Null for a hold made before, which had the committed two
 -- minutes (PAYMENT_GRACE_SECONDS, src/config/scheduling.ts).
 ALTER TABLE slot_holds ADD COLUMN grace_seconds INTEGER;
+
+-- What a waiver gave back, kept on the ruling: whether the visit's payment was refunded or kept, and its credit
+-- returned or spent. Ops set what a waiver gives in the console now, so the client's message and the money follow
+-- what was ruled, whatever is set after. Null for a charge, and for a waiver ruled before, which gave both back
+-- (WAIVER_GIVES_BACK, src/policy/no-show.ts).
+ALTER TABLE no_show_cases ADD COLUMN waiver_payment TEXT;
+ALTER TABLE no_show_cases ADD COLUMN waiver_credit TEXT;
+
+-- The terms a hold was sold under, so a change in the console never moves a promise already made: how many hours
+-- before its window moving or cancelling it stops being free, and what its kind costs inside that notice, and what it
+-- costs if the client is not home. Each charge is one of src/policy/moving-a-visit.ts's Charge ('nothing',
+-- 'late_fee', 'visit'); there is no CHECK, since slot_holds is referenced by other tables and could not be rebuilt
+-- to change one. Null for a hold made before, which was sold under the committed terms (FREE_CHANGE_NOTICE_HOURS,
+-- LATE_CHANGE_CHARGES, NO_SHOW_CHARGES).
+ALTER TABLE slot_holds ADD COLUMN change_notice_hours INTEGER;
+ALTER TABLE slot_holds ADD COLUMN late_change_charge TEXT;
+ALTER TABLE slot_holds ADD COLUMN no_show_charge TEXT;

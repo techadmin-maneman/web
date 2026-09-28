@@ -5106,10 +5106,36 @@ Who Access let through, and where signing out goes
       "items": {
         "$ref": "#/components/schemas/NoShowCase"
       }
+    },
+    "waiver": {
+      "type": "object",
+      "properties": {
+        "payment": {
+          "type": "string",
+          "enum": [
+            "refunded",
+            "kept"
+          ]
+        },
+        "credit": {
+          "type": "string",
+          "enum": [
+            "returned",
+            "spent"
+          ]
+        }
+      },
+      "required": [
+        "payment",
+        "credit"
+      ],
+      "additionalProperties": false,
+      "description": "What waiving a case gives back now, as ops set it in Settings (no_show_waiver)."
     }
   },
   "required": [
-    "cases"
+    "cases",
+    "waiver"
   ],
   "additionalProperties": false
 }
@@ -6149,6 +6175,10 @@ Who Access let through, and where signing out goes
       "enum": [
         "checkin_radius_m",
         "no_show_wait_min",
+        "change_notice_hours",
+        "late_change_charge",
+        "no_show_charge",
+        "no_show_waiver",
         "address_unlock_hour",
         "reminder_hour",
         "phone_clock",
@@ -6315,6 +6345,10 @@ Who Access let through, and where signing out goes
       "enum": [
         "checkin_radius_m",
         "no_show_wait_min",
+        "change_notice_hours",
+        "late_change_charge",
+        "no_show_charge",
+        "no_show_waiver",
         "address_unlock_hour",
         "reminder_hour",
         "phone_clock",

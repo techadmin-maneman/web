@@ -11,7 +11,7 @@ import { WINDOW_TIMES } from "../config/scheduling.ts";
 import { FSM_SERVICE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
 import { DAY_BEFORE_REMINDER_HOUR } from "../policy/job-visibility.ts";
-import { WAIVER_GIVES_BACK, type NoShowDecision } from "../policy/no-show.ts";
+import { WAIVER_GIVES_BACK, type NoShowDecision, type Waiver } from "../policy/no-show.ts";
 import type { AppointmentStatus } from "./fsm-mirror.ts";
 import { consentGiven, type MessageKind } from "./messages.ts";
 import { windowAt } from "../policy/windows.ts";
@@ -60,16 +60,23 @@ const STILL_TRUE_WHILE: Readonly<Record<VisitMessageKind, readonly AppointmentSt
 };
 
 /**
- * What the ruling on a no-show says, by the ruling and by what the client paid ahead. A charge keeps it, as a
- * cancel inside 24 hours does; a waiver gives it back, as the owner ruled on 27 September 2026
- * (WAIVER_GIVES_BACK): the payment is refunded and the credit returned, and the message says which.
+ * What the ruling on a no-show says, by the ruling and by what the client paid ahead. A charge keeps it, as a cancel
+ * inside 24 hours does. A waiver says what it gave back, as the ruling kept it (no_show_cases.waiver_payment and
+ * waiver_credit): the owner ruled on 27 September 2026 that it refunds the payment and returns the credit, and ops may
+ * set it otherwise (src/policy/no-show.ts). A waiver ruled before the ruling kept it gave both back.
  */
-const NO_SHOW_TEMPLATES = {
-  charged: { payment: "no_show_charged_paid_v1", credit: "no_show_charged_credit_v1", nothing: "no_show_missed_v1" },
-  waived: WAIVER_GIVES_BACK
-    ? { payment: "no_show_waived_refund_v1", credit: "no_show_waived_credit_back_v1", nothing: "no_show_waived_v1" }
-    : { payment: "no_show_waived_paid_v1", credit: "no_show_waived_credit_v1", nothing: "no_show_waived_v1" },
+const CHARGED_TEMPLATES = {
+  payment: "no_show_charged_paid_v1",
+  credit: "no_show_charged_credit_v1",
+  nothing: "no_show_missed_v1",
 } as const;
+
+function waivedTemplate(paid: PaidAhead["kind"], waiver: Waiver): string {
+  if (paid === "payment") return waiver.payment === "refunded" ? "no_show_waived_refund_v1" : "no_show_waived_paid_v1";
+  if (paid === "credit")
+    return waiver.credit === "returned" ? "no_show_waived_credit_back_v1" : "no_show_waived_credit_v1";
+  return "no_show_waived_v1";
+}
 
 const stillTrue = (kind: VisitMessageKind, status: AppointmentStatus): boolean => {
   const statuses = STILL_TRUE_WHILE[kind];
@@ -275,11 +282,17 @@ async function paidAhead(db: D1Database, appointmentId: string): Promise<PaidAhe
 async function noShowRuling(db: D1Database, appointmentId: string, params: string[]): Promise<Composed> {
   const ruling = await db
     .prepare(
-      `SELECT decision, wait_started_at, COALESCE(closed_at, wait_ends_at) AS ended_at FROM no_show_cases
-       WHERE appointment_id = ?1 ORDER BY created_at DESC LIMIT 1`,
+      `SELECT decision, wait_started_at, COALESCE(closed_at, wait_ends_at) AS ended_at, waiver_payment, waiver_credit
+       FROM no_show_cases WHERE appointment_id = ?1 ORDER BY created_at DESC LIMIT 1`,
     )
     .bind(appointmentId)
-    .first<{ decision: NoShowDecision; wait_started_at: string; ended_at: string }>();
+    .first<{
+      decision: NoShowDecision;
+      wait_started_at: string;
+      ended_at: string;
+      waiver_payment: Waiver["payment"] | null;
+      waiver_credit: Waiver["credit"] | null;
+    }>();
   if (ruling === null || ruling.decision === "undecided") return { skip: "ops have not ruled on it" };
   // The ninth param, which only these templates take.
   params.push(String(minutesBetween(ruling.wait_started_at, ruling.ended_at)));
@@ -288,7 +301,12 @@ async function noShowRuling(db: D1Database, appointmentId: string, params: strin
     params[5] = rupees(paid.amount);
     params[7] = DESTINATIONS[paid.method ?? ""] ?? "payment method";
   }
-  return { template: NO_SHOW_TEMPLATES[ruling.decision][paid.kind], params };
+  if (ruling.decision === "charged") return { template: CHARGED_TEMPLATES[paid.kind], params };
+  const waiver = {
+    payment: ruling.waiver_payment ?? WAIVER_GIVES_BACK.payment,
+    credit: ruling.waiver_credit ?? WAIVER_GIVES_BACK.credit,
+  };
+  return { template: waivedTemplate(paid.kind, waiver), params };
 }
 
 /** What became of the credit a cancelled visit was paid with: back in the balance, kept, or none was used. */

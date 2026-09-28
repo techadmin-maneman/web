@@ -7,7 +7,7 @@ import { withGst } from "../config/gst.ts";
 import { WINDOW_TIMES, type BookingWindow } from "../config/scheduling.ts";
 import { FSM_SERVICE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { indiaInstant } from "../lib/india-time.ts";
-import { freeUntil, LATE_FEES } from "../policy/moving-a-visit.ts";
+import { FREE_CHANGE_NOTICE_HOURS, freeUntil, LATE_FEES } from "../policy/moving-a-visit.ts";
 import { creditBalance } from "./credits.ts";
 import { priceOf, type Price } from "./price-book.ts";
 import { heldMinutes, visitTimes } from "./scheduling.ts";
@@ -30,6 +30,8 @@ interface HoldRow {
   confirmed_at: string | null;
   late_fee_ex_gst: number | null;
   late_fee_gst_percent: number | null;
+  /** The notice it was sold under; null for a hold made before holds kept one. */
+  change_notice_hours: number | null;
   technician_name: string;
   technician_initials: string;
   appointment_id: string | null;
@@ -41,7 +43,7 @@ interface HoldRow {
 
 const HOLD_QUERY = `SELECT h.id, h.type, h.tier, h.minutes, s.name AS service_name, h.date, h.window_label, h.start_unit,
     h.amount, h.amount_ex_gst, h.gst_percent, h.state, h.expires_at, h.confirmed_at, h.late_fee_ex_gst,
-    h.late_fee_gst_percent, t.name AS technician_name, t.initials AS technician_initials, h.appointment_id,
+    h.late_fee_gst_percent, h.change_notice_hours, t.name AS technician_name, t.initials AS technician_initials, h.appointment_id,
     h.moves_appointment_id, h.use_credit, h.person_id,
     EXISTS (SELECT 1 FROM payments p WHERE p.razorpay_order_id = h.razorpay_order_id AND p.status = 'captured') AS paid
   FROM slot_holds h JOIN technicians t ON t.id = h.technician_id
@@ -68,6 +70,7 @@ async function holdOf(db: D1Database, row: HoldRow, now: Date) {
   const minutes = heldMinutes(row);
   const { start, end } = visitTimes(row.date, row.start_unit, minutes);
   const windowStarts = indiaInstant(row.date, WINDOW_TIMES[row.window_label].start);
+  const noticeHours = row.change_notice_hours ?? FREE_CHANGE_NOTICE_HOURS;
   return {
     id: row.id,
     type: row.type,
@@ -79,7 +82,8 @@ async function holdOf(db: D1Database, row: HoldRow, now: Date) {
     technician: { name: row.technician_name, initials: row.technician_initials },
     price: { amount_ex_gst: row.amount_ex_gst, amount: row.amount, gst_percent: row.gst_percent },
     late_fee: await lateFeeOf(db, row),
-    free_until: freeUntil(windowStarts).toISOString(),
+    free_until: freeUntil(windowStarts, noticeHours).toISOString(),
+    change_notice_hours: noticeHours,
     expires_at: row.expires_at,
     state: hasLapsed(row, now) ? ("expired" as const) : row.state,
     paid: row.paid === 1,

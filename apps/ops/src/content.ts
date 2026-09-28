@@ -805,9 +805,14 @@ export const noShows = {
     deciding: "Deciding",
     /**
      * PLACEHOLDER: the board draws no note beneath the queue, and no amount anywhere. A charge keeps what the visit
-     * took, as a cancel inside 24 hours does; a waiver gives it back, as the owner ruled on 27 September 2026 (BIZ-28).
+     * took, as a late cancel does; a waiver gives back what ops set it to, which the owner ruled on 27 September 2026
+     * is the payment and the credit (BIZ-28; docs/decisions/0088-every-policy-in-the-console.md).
      */
-    note: "Charging records the decision and keeps what the visit took. Waiving records it too, refunds what the visit was paid with and returns its credit. Either way the client is told on WhatsApp, never your note.",
+    note: (waiver: { readonly payment: "refunded" | "kept"; readonly credit: "returned" | "spent" }) =>
+      "Charging records the decision and keeps what the visit took. Waiving records it too, " +
+      `${waiver.payment === "refunded" ? "refunds what the visit was paid with" : "keeps what the visit was paid with"} ` +
+      `and ${waiver.credit === "returned" ? "returns its credit" : "leaves its credit spent"}. ` +
+      "Either way the client is told on WhatsApp, never your note.",
     /** PLACEHOLDER: the board draws no empty queue. */
     empty: "No no-show is waiting for a decision.",
     errors: {
@@ -1232,6 +1237,10 @@ export const settings = {
      */
     keyNames: {
       no_show_wait_min: dispatch.typeNames,
+      late_change_charge: dispatch.typeNames,
+      no_show_charge: dispatch.typeNames,
+      // PLACEHOLDER: what a waiver gives back (docs/decisions/0088-every-policy-in-the-console.md).
+      no_show_waiver: { payment: "The visit's payment", credit: "The visit credit it used" },
       task_sla_hours: tasks.groups,
       // PLACEHOLDER: the phone's two bounds (docs/decisions/0088-every-policy-in-the-console.md).
       phone_clock: {
@@ -1259,8 +1268,15 @@ export const settings = {
         invoice_prompt: "A new invoice on Home",
       },
     } as Readonly<Record<string, Readonly<Record<string, string>>>>,
-    /** Each choice a rule of choices offers, in the console's words, by the rule's name. */
-    choiceNames: {} as Readonly<Record<string, Readonly<Record<string, string>>>>,
+    /**
+     * PLACEHOLDER: each choice a rule of choices offers, in the console's words, by the rule's name
+     * (docs/decisions/0088-every-policy-in-the-console.md).
+     */
+    choiceNames: {
+      late_change_charge: { nothing: "Nothing", late_fee: "Its late fee", visit: "The visit itself" },
+      no_show_charge: { nothing: "Nothing", late_fee: "Its late fee", visit: "The visit itself" },
+      no_show_waiver: { refunded: "Refunded", kept: "Kept", returned: "Returned", spent: "Spent" },
+    } as Readonly<Record<string, Readonly<Record<string, string>>>>,
     /**
      * PLACEHOLDER: the check before a rule is sent, as a price's (docs/decisions/0071-what-ops-see-before-a-setting-
      * changes.md): each figure that moves, the old beside the new.
@@ -1320,7 +1336,9 @@ export const settings = {
       late_fee_first_fit: "Late fee on a first fit",
       late_fee_replacement: "Late fee on a replacement",
     } as Readonly<Record<string, string>>,
-    lateFeeNote: "Charged for moving or cancelling inside 24 hours, whichever of the kind's services it is.",
+    lateFeeNote:
+      "Charged for moving or cancelling inside the notice set in Rules, where Rules charge the kind its late fee, " +
+      "whichever of its services it is.",
     actions: {
       price: "Change price",
       correct: "Correct",
