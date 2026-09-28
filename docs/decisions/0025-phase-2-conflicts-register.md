@@ -31,6 +31,7 @@ The Phase 2 prompts (`docs/prompts/phase2-*.md`) and designs (`design/phase2/`) 
     - The Phase 2 budget (its own ADR) makes room: try-on results are kept 14 days instead of 30, and photographs are re-encoded on the phone to about 250 KB each.
     - Past the cap, uploads are refused and stay queued on the phone.
     - The runway is roughly 2,000 visits. **Open, before the storage meter's 80% alert:** move to the paid plan, or move photographs into FSM.
+    - **Decided 27 September 2026 and built 28 September 2026** (item 74; [0093](0093-the-storage-meter.md)): R2's paid storage is accepted past the share, so nothing is refused at the cap; the storage meter tells ops at 50%, 80% and 100% of it, and only a runaway ceiling of 20 GB refuses.
 11. **Free-plan CPU and subrequests.**
     - FSM webhooks are treated as hints and FSM is read again from the queue.
     - Reconciliation runs one page per 5-minute tick.
@@ -204,7 +205,7 @@ The owner tried the client app on staging and ruled on four points of feedback.
     - **The before photo:** a copy of about 250 KB the site's browser makes and sends with the photograph, kept in the client-photos bucket until the client is erased. Until they book it is held as long as the look, and it is deleted with the photograph if nobody claims the try-on. The full-size photograph keeps its hour.
     - **The look:** moved to the client-photos bucket on its day and kept until a photograph of the client's first fit is stored, then deleted by the sweeper. After the first fit the app shows the before photo alone. A client who books after the look's day has neither.
     - **The notices:** `photo-v2` and `gate-v2`, and the privacy page's try-on sentences, await counsel (`docs/open-points.md`, item 146). Staging shows them; production's build refuses an unapproved notice, so production keeps `photo-v1`, `gate-v1` and today's rules until counsel approves.
-    - **The cost:** kept at full size, a client's look takes Phase 2's photograph runway from 1,480 visits to about 460 at worst; a copy of the look as small as the before photo would leave 1,228. The owner decides (item 151).
+    - **The cost:** kept at full size, a client's look takes Phase 2's photograph runway from 1,480 visits to about 460 at worst; a copy of the look as small as the before photo would leave 1,228. The owner decides (item 151). **Ruled 27 September 2026:** kept at full size, with R2's paid storage accepted as the share fills (item 74). Since each photograph has its thumbnail ([0093](0093-the-storage-meter.md)) the figures are 1,312 and 444 visits.
     - **Departures:** no board draws the app's lines, which are placeholders in `apps/app/src/content.ts`, nor the staging site's consent screen and gate in the new words (`docs/fidelity-method.md`).
 
 ## The owner's answers to the open points, 27 September 2026
@@ -224,6 +225,11 @@ A friend's referral was recorded only if they booked on the invite's own page (A
 
 72. **`/book` says what the invite's page says once it books with an invite.** ADR 0051 has `/book` show "no card and no invite". It still shows neither before the booking. **Taken 28 September 2026** ([0089](0089-an-invite-is-not-lost.md)): a booking made on `/book` with an invite the browser remembered from an earlier `/r/:code` is confirmed with the landing's own lines when they are true, board C4's "The 3 service visits land when you are fitted." for a consultation and "The invite holds for 12 months after that." for a place on a list, and C4's "Code expired" frame for an invite that lapsed while they waited. The lines are the landing's, so no new words wait for the owner.
 73. **A client's invite on their page in the console.** Board B1 draws a Referrals tab and nothing in it. **Taken 28 September 2026** ([0089](0089-an-invite-is-not-lost.md)): under Payments, beside the credits an invite grants, the console shows the invite the client came with (its code, who sent it, where its 3 visits stand, and, where ops attached it, who did and why), or, for a client with none, a small form to attach one: the code and why. It is built in B1's own style, like the credit form, and its words are placeholders in `apps/ops/src/content.ts` (`docs/fidelity-method.md`). Whether ops may attach one after the client's first fit is the owner's to rule (`docs/open-points.md`, item 157).
+
+## The storage meter, 28 September 2026
+
+74. **R2 bills past Phase 2's share.** ADR 0009 allows no charge at all, and ADR 0039 planned to refuse uploads once the photographs and cards filled their 4 GB. **Ruled 27 September 2026 by the owner** (`docs/open-points.md`, item 151): "keep the look at full size and pay for R2 beyond the free tier when it fills". **Built 28 September 2026** ([0093](0093-the-storage-meter.md)): a running figure of what the two buckets hold tells ops once at 50%, 80% and 100% of the share, and nothing is refused at 100%. A runaway ceiling of 20 GB, twice R2's free allowance, refuses the technician app's uploads, which wait on the phones. It departs from ADR 0009 for R2 storage alone.
+75. **The storage meter's line in Settings.** No board draws the meter. **Taken 28 September 2026** ([0093](0093-the-storage-meter.md)): one line in the muted note style above Settings' tabs says what the photographs and cards hold, the share and its percentage. Its words are a placeholder in `apps/ops/src/content.ts`.
 
 ## Inputs still owed
 

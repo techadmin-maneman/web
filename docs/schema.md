@@ -46,7 +46,7 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [payments](#payments): The mirror of Razorpay's payments, and where each stands in Books (ADR 0044).
 - [people](#people): One row per person, keyed by mobile number. D1 owns the identity; the CRM's ID is only a reference (ADR 0011).
 - [photo_sets](#photo_sets): A visit's set of photographs, before or after (ADR 0028).
-- [photos](#photos): One photograph of a set, by its angle, and where it is kept in R2 (ADR 0028).
+- [photos](#photos): One photograph of a set, by its angle, and where it and its thumbnail are kept in R2 (ADR 0028, ADR 0093).
 - [pieces](#pieces): The mirror of FSM's assets: each piece fitted, its base and lot, the day it was fitted and the day it falls due, and a failure with its reason (ADR 0032).
 - [price_book](#price_book): Every price from its date, and the only source of prices; an old row stays for what was sold under it (ADR 0045, ADR 0061).
 - [razorpay_events](#razorpay_events): Each Razorpay webhook event, once, by its event ID (ADR 0044).
@@ -60,6 +60,7 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [slot_holds](#slot_holds): A slot held while a client pays, and what became of it (ADR 0045, ADR 0068).
 - [stock_balances](#stock_balances): What each place holds of each consumable, and when it last counted it: the sum of its rows in `stock_movements`, kept by triggers as each is written (ADR 0087).
 - [stock_movements](#stock_movements): Every movement of a consumable into or out of the central store or a technician's kit, never changed; what a place holds is the sum of its rows (ADR 0087).
+- [storage_meter](#storage_meter): What Phase 2's two buckets, client-photos and referral-cards, hold: one row, kept as each object is stored and deleted, and the last mark of the share ops were told of (ADR 0093).
 - [sync_cursors](#sync_cursors): Where each pass of the reconciliation with FSM has reached (ADR 0032).
 - [technician_devices](#technician_devices): The phones technicians work from, each bound to a session and revocable by ops (ADR 0052).
 - [technician_leave](#technician_leave): A technician's leave in whole days, which the clash check reads beside `slot_claims` (ADR 0062).
@@ -903,9 +904,9 @@ Indexes:
 
 ## photos
 
-One photograph of a set, by its angle, and where it is kept in R2 (ADR 0028).
+One photograph of a set, by its angle, and where it and its thumbnail are kept in R2 (ADR 0028, ADR 0093).
 
-Made by `0013_client_photos.sql`.
+Made by `0013_client_photos.sql`; changed by `0055_storage_meter.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -920,6 +921,7 @@ Made by `0013_client_photos.sql`.
 | `taken_at` | TEXT | no |  |  |
 | `fsm_attachment_id` | TEXT | yes |  |  |
 | `created_at` | TEXT | no |  |  |
+| `thumbnail_key` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -1233,6 +1235,18 @@ Indexes:
 - `stock_movements_used`: unique on (`job_event_id`, `consumable_code`), where `reason = 'used'`
 
 Triggers: `stock_movements_balance`, `stock_movements_no_update`, `stock_movements_taken_out`.
+
+## storage_meter
+
+What Phase 2's two buckets, client-photos and referral-cards, hold: one row, kept as each object is stored and deleted, and the last mark of the share ops were told of (ADR 0093).
+
+Made by `0055_storage_meter.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | INTEGER | no |  | primary key |
+| `bytes` | INTEGER | no |  |  |
+| `told_percent` | INTEGER | no | `0` |  |
 
 ## sync_cursors
 

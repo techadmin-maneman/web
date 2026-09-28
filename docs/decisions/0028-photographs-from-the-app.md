@@ -1,6 +1,6 @@
 # 0028. Photographs from the technician app
 
-- Status: accepted
+- Status: accepted; amended 28 September 2026 by [0093](0093-the-storage-meter.md): a photograph is at most 2 MB, it comes with a thumbnail the phone makes, and an erasure deletes every object under the visit's prefix
 - Date: 2026-09-23
 
 ## Context
@@ -21,11 +21,11 @@ Until now the only photographs we held came the other way: the mirror exported t
 
 **The file's name carries the phase and angle**, exactly as the mirror's export reads them back. The attachment ID on our row is what stops the export importing our own upload as a new photograph.
 
-**Bytes decide the type.** A JPEG or PNG only, read from the header as everywhere else (`src/lib/image-bytes.ts`), at most 12 MB.
+**Bytes decide the type.** A JPEG or PNG only, read from the header as everywhere else (`src/lib/image-bytes.ts`), at most 12 MB. (Amended 28 September 2026, ADR 0093: at most 2 MB, and a thumbnail of at most 64 KB follows each photograph to the same link's `/small`.)
 
 ## Consequences
 
 - A technician's photograph and one taken in FSM's app are the same row, so the two apps can run in parallel against the same FSM records.
 - A photograph is never lost to an FSM outage: it is in R2 and in D1 before FSM is called at all.
 - The upload link is a bearer token for fifteen minutes, so it is bound to one phase and angle of one job and the request still needs the session cookie.
-- Deleting a photograph stays explicit and audited: the bucket has no lifecycle rule, and a replaced angle's object stays under the visit's prefix for an erasure to find.
+- Deleting a photograph stays explicit and audited: the bucket has no lifecycle rule, and a replaced angle's object stays under the visit's prefix for an erasure to find. (Corrected 28 September 2026, ADR 0093: the erasure deleted only the keys the rows named, so it never found a replaced one. It now deletes everything under each of the person's visits.)
