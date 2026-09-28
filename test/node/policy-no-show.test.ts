@@ -3,6 +3,7 @@
 import { describe, expect, it } from "vitest";
 import {
   canCloseAsNoShow,
+  NO_SHOW_CHARGES,
   NO_SHOW_DECISIONS,
   NO_SHOW_WAIT_MIN,
   noShowWaitEnds,
@@ -13,6 +14,7 @@ import {
   type Evidence,
 } from "../../src/policy/no-show.ts";
 import { VISIT_TYPES } from "../../src/config/visit-types.ts";
+import { LATE_CHANGE_CHARGES } from "../../src/policy/moving-a-visit.ts";
 
 /** A technician checks in at 10:00 on Monday 21 September, in India. */
 const CHECKED_IN = new Date("2026-09-21T04:30:00Z");
@@ -57,6 +59,13 @@ describe("no-show", () => {
   // BIZ-28: the rule says what a charge keeps and nothing of what a waiver gives back, which the owner ruled
   // on 27 September 2026: "Refund and credit back" (docs/owner-answers-2026-09-27.md).
   it("gives back the payment and the credit on a waiver, as the owner ruled", () => {
-    expect(WAIVER_GIVES_BACK).toBe(true);
+    expect(WAIVER_GIVES_BACK).toEqual({ payment: "refunded", credit: "returned" });
+  });
+
+  // Item 60 of docs/open-points.md: a no-show costs, to begin with, what a late cancellation of the same visit costs,
+  // set apart from it so either can change alone.
+  it("charges a no-show, to begin with, what a late cancellation of the same visit costs", () => {
+    expect(NO_SHOW_CHARGES).toEqual(LATE_CHANGE_CHARGES);
+    expect(NO_SHOW_CHARGES).not.toBe(LATE_CHANGE_CHARGES);
   });
 });

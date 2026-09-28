@@ -34,7 +34,7 @@ The rule is `src/policy/stock.ts`, which quotes the prompt: these are ours becau
 
 Each change shows the old figure beside the new before it is sent (ADR 0071) and is audited (`consumable.add`, `consumable.change`, `consumable.retire`, `consumable.restore`).
 
-**In tables of their own, not the settings register.** ADR 0061's register holds at most ten inputs, each one figure. A list that grows, a row per consumable, is a table, and so are the ledger and the job sheet's lists. Nothing here is a Worker var.
+**In tables of their own, not the settings register.** ADR 0061's register held at most ten inputs, each one figure (ADR 0088 has since lifted the cap, but a register input is still one figure or one per key). A list that grows, a row per consumable, is a table, and so are the ledger and the job sheet's lists. Nothing here is a Worker var.
 
 ### What each service uses
 

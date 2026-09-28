@@ -1,6 +1,6 @@
 # 0084. A client's try-on is kept
 
-- Status: accepted, on the owner's ruling of 27 September 2026 (ADR 0025, item 65). The notices it needs await counsel (`docs/open-points.md`, item 146), so production keeps today's rules until then; what it costs Phase 2's photograph runway is the owner's (item 151)
+- Status: accepted, on the owner's ruling of 27 September 2026 (ADR 0025, item 65). The notices it needs await counsel (`docs/open-points.md`, item 146), so production keeps today's rules until then; what it costs Phase 2's photograph runway is the owner's (item 151), who ruled on 27 September 2026 to keep the look at full size and accept R2's paid storage as the share fills. The runway figures below were worked before each photograph had a thumbnail; [0093](0093-the-storage-meter.md) gives today's: 444 visits, 1,312 with no try-on kept
 - Date: 2026-09-27
 - Amends [0082](0082-try-ons-in-the-app.md) and [0039](0039-phase-2-budget.md); follows [0014](0014-try-on-api.md), [0019](0019-erasure.md) and [0028](0028-photographs-from-the-app.md)
 

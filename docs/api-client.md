@@ -709,6 +709,28 @@ A photograph, through a link that lasts 15 minutes
 }
 ```
 
+### GET /api/photos/small/{token}
+
+A photograph's small copy, through a link that lasts 15 minutes; the photograph itself if the copy is gone
+
+**200**: The image
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: the link is wrong, expired, or not this client's
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/photos/try-on/{image}/{token}
 
 A try-on's photograph or look, through a link that lasts 15 minutes
@@ -3227,6 +3249,17 @@ Request body:
       "type": "string",
       "description": "Lasts 15 minutes; only the signed-in client can open it."
     },
+    "thumbnail_url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Its small copy, for a row of thumbnails, likewise; null for a photograph with none, such as one copied from FSM, which the row shows itself."
+    },
     "width": {
       "anyOf": [
         {
@@ -3251,6 +3284,7 @@ Request body:
   "required": [
     "angle",
     "url",
+    "thumbnail_url",
     "width",
     "height"
   ],
@@ -3873,7 +3907,7 @@ Request body:
         "withdrawn",
         "corrected"
       ],
-      "description": "added: a grant (a friend fitted, ops, the import); used: a visit it paid for; lost: one it paid for that was cancelled inside 24 hours, or that the client was not home for and ops charged; returned: back after a cancel in time; expired; withdrawn: clawed back under the guarantee; corrected: taken off by ops by hand."
+      "description": "added: a grant (a friend fitted, ops, the import); used: a visit it paid for; lost: one it paid for that was cancelled inside the notice it was booked under, or that the client was not home for and ops charged; returned: back after a cancel in time; expired; withdrawn: clawed back under the guarantee; corrected: taken off by ops by hand."
     },
     "visits": {
       "type": "integer",
@@ -4555,12 +4589,25 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "What moving it inside 24 hours costs: a first fit's or a replacement's late fee."
+      "description": "The late fee moving it inside the notice costs, where it is sold to charge one; else null."
     },
     "free_until": {
       "type": "string",
       "format": "date-time",
       "description": "Until then, moving or cancelling is free."
+    },
+    "change_notice_hours": {
+      "type": "integer",
+      "description": "The notice it is sold under: how many hours before its window moving or cancelling stops being free, as ops set it when the hold was made (24 to begin with)."
+    },
+    "late_change_charge": {
+      "type": "string",
+      "enum": [
+        "nothing",
+        "late_fee",
+        "visit"
+      ],
+      "description": "What moving or cancelling it inside the notice costs, as it is sold: nothing, its late fee (late_fee), or the visit itself, whose payment is kept or whose credit is spent (visit)."
     },
     "expires_at": {
       "type": "string",
@@ -4637,6 +4684,8 @@ Request body:
     "price",
     "late_fee",
     "free_until",
+    "change_notice_hours",
+    "late_change_charge",
     "expires_at",
     "state",
     "paid",
@@ -4782,7 +4831,11 @@ Request body:
         "free",
         "late"
       ],
-      "description": "free: more than 24 hours before the window starts; late: inside 24 hours."
+      "description": "free: before the notice the visit was booked under starts, counted back from its window; late: inside it."
+    },
+    "notice_hours": {
+      "type": "integer",
+      "description": "The notice the visit was booked under, in hours: 24 unless ops had set another when it was booked."
     },
     "free_until": {
       "type": "string",
@@ -4831,6 +4884,7 @@ Request body:
     "visit_id",
     "type",
     "notice",
+    "notice_hours",
     "free_until",
     "paid",
     "credit",
@@ -4866,7 +4920,11 @@ Request body:
         "free",
         "late"
       ],
-      "description": "free: more than 24 hours before the window starts; late: inside 24 hours."
+      "description": "free: before the notice the visit was booked under starts, counted back from its window; late: inside it."
+    },
+    "notice_hours": {
+      "type": "integer",
+      "description": "The notice the visit was booked under, in hours: 24 unless ops had set another when it was booked."
     },
     "free_until": {
       "type": "string",
@@ -4919,6 +4977,7 @@ Request body:
     "visit_id",
     "type",
     "notice",
+    "notice_hours",
     "free_until",
     "paid",
     "credit",

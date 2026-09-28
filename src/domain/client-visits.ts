@@ -188,6 +188,8 @@ export interface PhotoLink {
   readonly angle: Angle;
   /** A link to the photograph that lasts 15 minutes, for the signed-in client only. */
   readonly url: string;
+  /** A link to its small copy for the rows, likewise; null for a photograph with none, which the row shows itself. */
+  readonly thumbnail_url: string | null;
   readonly width: number | null;
   readonly height: number | null;
 }
@@ -344,6 +346,7 @@ interface PhotoRow {
   angle: Angle;
   width: number | null;
   height: number | null;
+  thumbnail_key: string | null;
 }
 
 /** The photographs of these visits, each angle in the design's order, with fresh links. */
@@ -358,7 +361,7 @@ export async function photoSets(
   const placeholders = appointmentIds.map((_, index) => `?${String(index + 1)}`).join(", ");
   const { results } = await db
     .prepare(
-      `SELECT p.id, s.appointment_id, s.phase, p.angle, p.width, p.height
+      `SELECT p.id, s.appointment_id, s.phase, p.angle, p.width, p.height, p.thumbnail_key
        FROM photos p JOIN photo_sets s ON s.id = p.photo_set_id WHERE s.appointment_id IN (${placeholders})`,
     )
     .bind(...appointmentIds)
@@ -369,6 +372,10 @@ export async function photoSets(
     set[row.phase].push({
       angle: row.angle,
       url: `/api/photos/file/${await signToken(signingKey, "photo", row.id, expiresAt)}`,
+      thumbnail_url:
+        row.thumbnail_key === null
+          ? null
+          : `/api/photos/small/${await signToken(signingKey, "photo_small", row.id, expiresAt)}`,
       width: row.width,
       height: row.height,
     });
@@ -377,19 +384,20 @@ export async function photoSets(
   return sets;
 }
 
-/** The R2 key of one of the client's own photographs; null for anyone else's. */
+/** The R2 keys of one of the client's own photographs and its small copy; null for anyone else's. */
 export async function ownPhotoKey(
   db: D1Database,
   personId: string,
   photoId: string,
-): Promise<{ key: string; contentType: string } | null> {
+): Promise<{ key: string; contentType: string; thumbnailKey: string | null } | null> {
   const row = await db
     .prepare(
-      `SELECT p.r2_key, p.content_type FROM photos p
+      `SELECT p.r2_key, p.content_type, p.thumbnail_key FROM photos p
        JOIN photo_sets s ON s.id = p.photo_set_id JOIN appointments a ON a.id = s.appointment_id
        WHERE p.id = ?1 AND a.person_id = ?2 AND a.deleted_at IS NULL`,
     )
     .bind(photoId, personId)
-    .first<{ r2_key: string; content_type: string }>();
-  return row === null ? null : { key: row.r2_key, contentType: row.content_type };
+    .first<{ r2_key: string; content_type: string; thumbnail_key: string | null }>();
+  if (row === null) return null;
+  return { key: row.r2_key, contentType: row.content_type, thumbnailKey: row.thumbnail_key };
 }

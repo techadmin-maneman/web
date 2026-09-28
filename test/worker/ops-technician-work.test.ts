@@ -23,6 +23,7 @@ interface Row {
   timed_jobs: number;
   average_minutes: number | null;
   average_planned_minutes: number | null;
+  runs_over: boolean;
   skill: null;
 }
 
@@ -224,6 +225,36 @@ describe("GET /api/technicians/work", () => {
     const body = await work();
     expect(body).toMatchObject({ from: "2026-06-24", to: "2026-09-22" });
     expect(of(body, IMRAN)).toMatchObject({ jobs: 1 });
+  });
+
+  // Board D3's two figures are ops' (docs/open-points.md, item 59; docs/decisions/0088-every-policy-in-the-console.md).
+  const opsSet = (figures: { period: number; over_by: number }) =>
+    env.DB.prepare("INSERT INTO ops_settings (name, value, set_by, set_at) VALUES ('technician_work', ?1, 'ops', ?2)")
+      .bind(JSON.stringify(figures), NOW.toISOString())
+      .run();
+
+  it("counts back as many days as ops set", async () => {
+    await opsSet({ period: 30, over_by: 15 });
+    await timedJob("aaaaaaaa-0000-4000-8000-000000000001", IMRAN, "service", "2026-08-01", 90);
+    const body = await work();
+    expect(body).toMatchObject({ from: "2026-08-23", to: "2026-09-22" });
+    expect(of(body, IMRAN)).toMatchObject({ jobs: 0 });
+  });
+
+  it("says an average runs over from 15 minutes past what the visits were planned for, and no sooner", async () => {
+    await timedJob("aaaaaaaa-0000-4000-8000-000000000001", IMRAN, "service", "2026-09-18", 105);
+    await timedJob("aaaaaaaa-0000-4000-8000-000000000002", SANDEEP, "service", "2026-09-18", 104);
+    const body = await work();
+    expect(of(body, IMRAN)).toMatchObject({ average_minutes: 105, runs_over: true });
+    expect(of(body, SANDEEP)).toMatchObject({ average_minutes: 104, runs_over: false });
+  });
+
+  it("says it from as far over as ops set, and never of an average the phone never timed", async () => {
+    await opsSet({ period: 90, over_by: 30 });
+    await timedJob("aaaaaaaa-0000-4000-8000-000000000001", IMRAN, "service", "2026-09-18", 105);
+    const body = await work();
+    expect(of(body, IMRAN)).toMatchObject({ runs_over: false });
+    expect(of(body, SANDEEP)).toMatchObject({ average_minutes: null, runs_over: false });
   });
 
   it("refuses a period that ends before it starts", async () => {

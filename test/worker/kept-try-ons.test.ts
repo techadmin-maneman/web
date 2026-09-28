@@ -8,6 +8,8 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { MAX_COPY_BYTES } from "../../src/config/tryon.ts";
 import { erasePerson } from "../../src/domain/erasure.ts";
+import { keepOrLetGo, type ExpiringTryOn } from "../../src/domain/kept-try-ons.ts";
+import { putCounted, readMeter } from "../../src/domain/storage-meter.ts";
 import { signToken } from "../../src/lib/signed-token.ts";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
@@ -31,6 +33,10 @@ const DAY = 24 * HOUR;
 const at = (offsetMs: number) => new Date(NOW.getTime() + offsetMs).toISOString();
 
 const copyOf = (jobId: string) => `tryons/${jobId}/before.jpg`;
+const COPY = syntheticJpeg(900, 1200);
+const LOOK = syntheticPng(1200, 1600);
+/** What the storage meter says the client-photos bucket holds. */
+const metered = async () => (await readMeter(env.DB)).bytes;
 
 function jobRow(id: string) {
   return env.DB.prepare("SELECT state, copy_key, kept_at, kept_look_key FROM tryon_jobs WHERE id = ?1")
@@ -67,8 +73,8 @@ async function tryOnWithCopy(id: string, columns: Record<string, string | number
     ...columns,
   });
   await env.UPLOADS.put(`uploads/${id}`, syntheticJpeg(1200, 1600));
-  await env.CLIENT_PHOTOS.put(copyOf(id), syntheticJpeg(900, 1200), { httpMetadata: { contentType: "image/jpeg" } });
-  await env.RESULTS.put(`results/${id}.png`, syntheticPng(1200, 1600), { httpMetadata: { contentType: "image/png" } });
+  if (columns.copy_key !== null) await putCounted(env.DB, env.CLIENT_PHOTOS, copyOf(id), COPY, "image/jpeg");
+  await env.RESULTS.put(`results/${id}.png`, LOOK, { httpMetadata: { contentType: "image/png" } });
 }
 
 /** Past the look's day: the sweeper decides on its next run. */
@@ -140,6 +146,7 @@ describe("PUT /api/tryon/upload/{job_id}/copy", () => {
     const stored = await env.CLIENT_PHOTOS.get(copyOf(JOB));
     expect(new Uint8Array(await (stored?.arrayBuffer() ?? new ArrayBuffer(0)))).toEqual(copy);
     expect(stored?.httpMetadata?.contentType).toBe("image/jpeg");
+    expect(await metered()).toBe(copy.byteLength);
     // The one write each copy gets.
     expect((await put(JOB, copy)).status).toBe(409);
   });
@@ -188,6 +195,7 @@ describe("the sweeper, on a try-on's small copy", () => {
     expect(await env.UPLOADS.head("uploads/unclaimed")).toBeNull();
     expect(await env.CLIENT_PHOTOS.head(copyOf("unclaimed"))).toBeNull();
     expect(await jobRow("unclaimed")).toMatchObject({ copy_key: null });
+    expect(await metered()).toBe(0);
   });
 
   it("deletes the copy of a render that failed with its photograph, claimed or not", async () => {
@@ -210,6 +218,7 @@ describe("the sweeper, on a try-on's small copy", () => {
     expect(await env.CLIENT_PHOTOS.head(copyOf("claimed"))).toBeNull();
     expect(await env.RESULTS.head("results/claimed.png")).toBeNull();
     expect(await jobRow("claimed")).toMatchObject({ state: "expired", copy_key: null, kept_at: null });
+    expect(await metered()).toBe(0);
   });
 });
 
@@ -233,6 +242,38 @@ describe("the sweeper, on a client's try-on", () => {
     expect(new Uint8Array(await (moved?.arrayBuffer() ?? new ArrayBuffer(0)))).toEqual(syntheticPng(1200, 1600));
     expect(moved?.httpMetadata?.contentType).toBe("image/png");
     expect(await env.RESULTS.head("results/client.png")).toBeNull();
+    expect(await metered()).toBe(COPY.byteLength + LOOK.byteLength);
+  });
+
+  it("moves the look once when a sweep stopped before the try-on was expired, and counts it once", async () => {
+    await tryOnWithCopy("client");
+    await booksAVisit();
+    await lookDue("client");
+    const due = await env.DB.prepare(
+      `SELECT id, created_at, person_id, photo_consent_version, state, result_key, expires_at, kept_at, copy_key,
+         kept_look_key
+       FROM tryon_jobs WHERE id = 'client'`,
+    ).first<ExpiringTryOn>();
+    let reads = 0;
+    const results = {
+      get: (key: string) => {
+        reads += 1;
+        return env.RESULTS.get(key);
+      },
+    } as unknown as R2Bucket;
+    const keeping = { DB: env.DB, RESULTS: results, CLIENT_PHOTOS: env.CLIENT_PHOTOS };
+
+    await keepOrLetGo(keeping, due === null ? [] : [due], NOW);
+    // The next run finds the same try-on, still ready, now kept and with its look moved.
+    const again = await env.DB.prepare(
+      `SELECT id, created_at, person_id, photo_consent_version, state, result_key, expires_at, kept_at, copy_key,
+         kept_look_key
+       FROM tryon_jobs WHERE id = 'client'`,
+    ).first<ExpiringTryOn>();
+    expect(await keepOrLetGo(keeping, again === null ? [] : [again], NOW)).toBe(1);
+
+    expect(reads).toBe(1);
+    expect(await metered()).toBe(COPY.byteLength + LOOK.byteLength);
   });
 
   it("counts a booking made on the site's form as well as a visit in the diary", async () => {
@@ -300,6 +341,7 @@ describe("the sweeper, on a client's try-on", () => {
     expect(await env.CLIENT_PHOTOS.head("tryons/client/look.png")).toBeNull();
     expect(await jobRow("client")).toMatchObject({ kept_look_key: null, copy_key: copyOf("client") });
     expect(await env.CLIENT_PHOTOS.head(copyOf("client"))).not.toBeNull();
+    expect(await metered()).toBe(COPY.byteLength);
   });
 
   it("keeps today's rules for a try-on agreed to under the published notice, whoever made it", async () => {

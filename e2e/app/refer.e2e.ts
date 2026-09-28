@@ -290,7 +290,7 @@ test("makes their own card, records one consent and stores one card, when Allow 
       .jpeg()
       .toBuffer();
   const [before, after] = await Promise.all([block("#131c2e"), block("#1a2740")]);
-  const front = (url: string) => ({ angle: "front", url, width: 600, height: 800 });
+  const front = (url: string) => ({ angle: "front", url, thumbnail_url: null, width: 600, height: 800 });
   await page.route("**/api/photos", (route) =>
     route.fulfill({
       json: {

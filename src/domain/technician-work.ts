@@ -4,9 +4,10 @@
 //
 // A job done is a completed appointment. Its service time is the technician's
 // own two events, because "duration runs from Start job to the outcome. The
-// technician never types a time" (src/policy/in-job-steps.ts). The board's third
-// figure, Skill, is nowhere at all: nothing records what a technician is trained
-// for (docs/open-points.md, item 59).
+// technician never types a time" (src/policy/in-job-steps.ts). How far back they
+// reach, and how far over an average runs before it is flagged, are ops'
+// (src/policy/technician-work.ts). The board's third figure, Skill, is nowhere at
+// all: the owner ruled it out (docs/open-points.md, item 59).
 //
 // One statement answers the whole board: a row per technician per visit type
 // and length, which is a few rows a technician however many jobs they hold. A
@@ -17,13 +18,6 @@
 import { VISIT_BLOCKS } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
 import { indiaInstant } from "../lib/india-time.ts";
-
-/**
- * PLACEHOLDER: how far back the counts reach. The board heads the column "Jobs"
- * and names no period, and the prompt states none, so they cover a quarter
- * until the owner rules it (docs/open-points.md, item 59).
- */
-export const WORK_PERIOD_DAYS = 90;
 
 /**
  * How long a visit was planned to take, which its service time is read against:

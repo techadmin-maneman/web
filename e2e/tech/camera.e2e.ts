@@ -12,6 +12,8 @@ import { expect, test } from "../support.ts";
 import { anglesOnPhone, fakeTech, heldOnPhone, JOB_ID } from "./fixtures.ts";
 
 const TARGET_BYTES = 250 * 1024;
+/** A thumbnail, at most, as the API takes it (MAX_THUMBNAIL_BYTES, src/domain/tech-photos.ts). */
+const THUMBNAIL_LIMIT = 64 * 1024;
 const BEFORE = `/jobs/${JOB_ID}/before-photos`;
 
 const wcag = (page: Page) =>
@@ -42,6 +44,9 @@ test("captures the five before angles into the app's own store, never a file inp
   expect(held.frames).toBe(5);
   for (const size of held.frameSizes) expect(size).toBeLessThanOrEqual(TARGET_BYTES);
   expect(Math.min(...held.frameSizes)).toBeGreaterThan(0);
+  // Each frame keeps its thumbnail beside it, far smaller.
+  for (const size of held.smallSizes) expect(size).toBeLessThanOrEqual(THUMBNAIL_LIMIT);
+  expect(Math.min(...held.smallSizes)).toBeGreaterThan(0);
 
   // Once five are taken there is nothing more to capture, and the same key finishes the step.
   await expect(capture).toHaveCount(0);
@@ -113,15 +118,18 @@ test("uploads each frame to the link the API hands out, then lands the set", asy
 
   const capture = page.getByRole("button", { name: "Capture" });
   await expect(capture).toBeEnabled();
-  for (let angle = 1; angle <= 5; angle += 1) await capture.click();
-  await expect(page.getByText("5 of 5")).toBeVisible();
+  // A tap while a frame is being kept is ignored, so each waits for the one before to be counted.
+  for (let angle = 1; angle <= 5; angle += 1) {
+    await capture.click();
+    await expect(page.getByText(`${String(angle)} of 5`)).toBeVisible();
+  }
 
   await page.getByRole("button", { name: "Done" }).click();
 
-  // One PUT per angle, in the order the design guides them, and then the set itself.
-  await expect
-    .poll(() => fake.photos, { timeout: 15_000 })
-    .toEqual(["before-front", "before-top", "before-left", "before-right", "before-hair"]);
+  // One PUT per angle and one for its thumbnail, in the order the design guides them, and then the set itself.
+  const angles = ["before-front", "before-top", "before-left", "before-right", "before-hair"];
+  await expect.poll(() => fake.photos, { timeout: 15_000 }).toEqual(angles);
+  await expect.poll(() => fake.thumbnails).toEqual(angles);
   await expect.poll(() => fake.writes.map((write) => write.path)).toContain(`/api/tech/jobs/${JOB_ID}/photos`);
 
   // Confirmed: the frames leave the phone, and nothing of the client's stays on it.

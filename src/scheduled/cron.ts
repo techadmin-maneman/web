@@ -5,7 +5,9 @@
 // (docs/decisions/0067-alerts-and-silent-failures.md).
 //
 // The jobs share one budget of outside calls a run, so that together they stay
-// under the free plan's 50 subrequests (src/lib/call-budget.ts).
+// under the free plan's 50 fetch subrequests (src/lib/call-budget.ts). Their
+// calls to D1, R2 and the queues are a separate allowance of 1,000 a run, kept
+// by each job's batch sizes (docs/decisions/0093-the-storage-meter.md).
 
 import type { Dependencies } from "../dependencies.ts";
 import { resolveAskedWindows } from "../domain/asked-windows.ts";
@@ -17,7 +19,8 @@ import { recordUtilisation } from "../domain/dispatch.ts";
 import { deleteLeftFiles } from "../domain/erasure.ts";
 import { raiseInvoices } from "../domain/fsm-invoices.ts";
 import { queueNextServiceReminders } from "../domain/next-visit.ts";
-import { readOpsInputs } from "../domain/ops-settings.ts";
+import { readOpsInputs, type OpsInputs } from "../domain/ops-settings.ts";
+import { tellOfStorage } from "../domain/storage-meter.ts";
 import { queueReminders } from "../domain/visit-messages.ts";
 import type { StaticConfig } from "../guard.ts";
 import { createCallBudget, type CallBudget } from "../lib/call-budget.ts";
@@ -39,7 +42,7 @@ export interface CronContext {
 }
 
 /**
- * Outside calls one run may make. The free plan allows 50 subrequests an
+ * Outside calls one run may make. The free plan allows 50 fetch subrequests an
  * invocation; the other ten are for what no job can plan: a Zoho token
  * refresh, and the alerts the run sends.
  */
@@ -128,6 +131,13 @@ async function deletionAlertsJob({ env, deps }: CronContext): Promise<void> {
   await alertAgedDeletions(env.DB, deps.now(), deps.alert);
 }
 
+/** Once an hour, on the half hour: the share fills over months, and the hour's other checks run on the hour. */
+async function storageMeterJob({ env, deps }: CronContext): Promise<void> {
+  const minute = deps.now().getUTCMinutes();
+  if (minute < 30 || minute >= 35) return;
+  await tellOfStorage(env.DB, deps.alertOnce);
+}
+
 async function whatsAppBridgeJob({ deps, log, budget }: CronContext): Promise<void> {
   await checkWhatsAppBridge(deps, log, budget);
 }
@@ -142,19 +152,27 @@ async function referralsJob({ env, deps, log }: CronContext): Promise<void> {
   await queueMessages(env.MESSAGE_QUEUE, messages, "referrals");
 }
 
-async function remindersJob({ env, deps, log }: CronContext): Promise<void> {
-  const reminders = await queueReminders(env.DB, deps.now());
+/** The figures ops set; the committed ones if the store cannot be read, which is said once in the log. */
+function opsInputsFor({ env, log }: CronContext, now: Date): Promise<OpsInputs> {
+  return readOpsInputs(env.DB, now, (error) => {
+    log.error("ops_settings_unreadable", { error });
+  });
+}
+
+async function remindersJob(context: CronContext): Promise<void> {
+  const { env, deps, log } = context;
+  const now = deps.now();
+  const inputs = await opsInputsFor(context, now);
+  const reminders = await queueReminders(env.DB, now, inputs.reminderHour);
   await queueMessages(env.MESSAGE_QUEUE, reminders, "reminders");
   if (reminders.length > 0) log.info("visit_reminders_queued", { count: reminders.length });
 }
 
-async function nextServiceRemindersJob({ env, deps, log }: CronContext): Promise<void> {
+async function nextServiceRemindersJob(context: CronContext): Promise<void> {
+  const { env, deps, log } = context;
   const now = deps.now();
-  // The figures ops set; the committed ones if the store cannot be read, which is said once in the log.
-  const inputs = await readOpsInputs(env.DB, now, (error) => {
-    log.error("ops_settings_unreadable", { error });
-  });
-  const reminders = await queueNextServiceReminders(env.DB, now, inputs.nextVisitDays);
+  const inputs = await opsInputsFor(context, now);
+  const reminders = await queueNextServiceReminders(env.DB, now, inputs.nextVisitDays, inputs.reminderHour);
   await queueMessages(env.MESSAGE_QUEUE, reminders, "next-service-reminders");
   if (reminders.length > 0) log.info("next_service_reminders_queued", { count: reminders.length });
 }
@@ -191,6 +209,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   // as parts (docs/decisions/0087-consumables-and-stock.md).
   { name: "fsm_catalogue", needs: "fsm", run: catalogueJob },
   { name: "deletion_alerts", needs: "nothing", run: deletionAlertsJob },
+  // What the photographs and cards hold of R2, told at half, 80% and all of their share (docs/decisions/0093).
+  { name: "storage_meter", needs: "nothing", run: storageMeterJob },
   // Every login code goes through the WhatsApp bridge (src/scheduled/whatsapp-bridge.ts).
   { name: "whatsapp_bridge", needs: "nothing", run: whatsAppBridgeJob },
   // Once a day: the operating figure behind the weekend-share assumption (src/policy/dispatch.ts).

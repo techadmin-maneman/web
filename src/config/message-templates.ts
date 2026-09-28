@@ -28,17 +28,18 @@ const TEMPLATES: Readonly<Record<string, string>> = {
   // At the technician's check-in (docs/decisions/0074-hand-offs-and-messages.md), the no-show's evidence.
   technician_arrived_v1: "Hello {{1}}, {{5}} has arrived for your {{2}}.",
   // Ops' ruling on a visit the client was not home for (docs/decisions/0074-hand-offs-and-messages.md), with {{9}}
-  // the minutes the technician waited. A charge keeps what was paid, as a cancel inside 24 hours does; a waiver
-  // refunds the payment and returns the credit, as the owner ruled on 27 September 2026 (src/policy/no-show.ts,
-  // WAIVER_GIVES_BACK), and the two texts that ask the client to message us stand only for the switch turned off.
+  // the minutes the technician waited. A charge keeps what was paid, as a late cancel does; a waiver refunds the
+  // payment and returns the credit, as the owner ruled on 27 September 2026 (src/policy/no-show.ts,
+  // WAIVER_GIVES_BACK), and the two texts that ask the client to message us stand only where ops set a waiver to keep
+  // them. None names the notice, which ops set (docs/decisions/0088-every-policy-in-the-console.md).
   // Booking again is in the app, never a message to us: the owner ruled on 27 September 2026 that "Message us" is for
   // problems only (ADR 0025, item 70). Never ops' reason, which stays with the ruling.
   no_show_missed_v1:
     "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. You can book again in the Mane Man app.",
   no_show_charged_paid_v1:
-    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. As with a cancel inside 24 hours, the {{6}} you paid for it is kept. Message us if this is wrong.",
+    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. As with a late cancel, the {{6}} you paid for it is kept. Message us if this is wrong.",
   no_show_charged_credit_v1:
-    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. As with a cancel inside 24 hours, the visit credit it used is gone. Message us if this is wrong.",
+    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. As with a late cancel, the visit credit it used is gone. Message us if this is wrong.",
   no_show_waived_v1:
     "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it. You can book again in the Mane Man app.",
   no_show_waived_paid_v1:
@@ -56,10 +57,10 @@ const TEMPLATES: Readonly<Record<string, string>> = {
   next_visit_due_v1: "Hello {{1}}, your next {{2}} is due on {{3}}. You can book it in the Mane Man app.",
   visit_cancelled_v1: "Hello {{1}}, your {{2}} on {{3}} is cancelled.",
   visit_cancelled_credit_v1: "Hello {{1}}, your {{2}} on {{3}} is cancelled. Your visit credit is back.",
-  // A credit-paid visit cancelled inside 24 hours keeps its credit, as the cancel sheet warned; one cancelled in time
+  // A credit-paid visit cancelled inside the notice keeps its credit, as the cancel sheet warned; one cancelled in time
   // whose grant has since expired or been withdrawn cannot take it back (docs/decisions/0068-a-paid-hold-is-kept.md).
   visit_cancelled_credit_lost_v1:
-    "Hello {{1}}, your {{2}} on {{3}} is cancelled. It was inside 24 hours, so the visit credit it used is gone.",
+    "Hello {{1}}, your {{2}} on {{3}} is cancelled. It was too close to the visit, so the visit credit it used is gone.",
   visit_cancelled_credit_gone_v1:
     "Hello {{1}}, your {{2}} on {{3}} is cancelled. The visit credit it used has expired, so it cannot come back.",
   // To a person who joined a pincode's waitlist, sent with their consent to be contacted about the request

@@ -10,7 +10,8 @@
 // raised yet; and a free consultation done 90 days ago, which is never
 // invoiced at all. Those are the three states a visit's invoice can be in
 // (ADR 0056). The service visit has front and hairline photographs after it,
-// and the checklist its technician ticked; the first fit has a front after
+// the front with the small copy the technician's phone makes (ADR 0093) and
+// the hairline without, as one copied from FSM, and the checklist its technician ticked; the first fit has a front after
 // it and none before, so no referral card can be made from it. One piece was
 // fitted at the first fit and is still in wear, so the client has a
 // replacement falling due. No address is saved, so Home asks for one.
@@ -146,9 +147,9 @@ export async function seedFitted(): Promise<void> {
   ];
 
   const taken = [
-    { visit: visits.service, when: service, angle: "front", ink: "#16233a" },
-    { visit: visits.service, when: service, angle: "hair", ink: "#1a2740" },
-    { visit: visits.firstFit, when: firstFit, angle: "front", ink: "#131c2e" },
+    { visit: visits.service, when: service, angle: "front", ink: "#16233a", small: true },
+    { visit: visits.service, when: service, angle: "hair", ink: "#1a2740", small: false },
+    { visit: visits.firstFit, when: firstFit, angle: "front", ink: "#131c2e", small: false },
   ];
   const sets = new Map([visits.service, visits.firstFit].map((visit) => [visit, id()]));
   sql.push(
@@ -158,22 +159,32 @@ export async function seedFitted(): Promise<void> {
 
   const folder = await mkdtemp(join(tmpdir(), "mm-e2e-"));
   try {
+    const block = (width: number, height: number, ink: string) =>
+      sharp({ create: { width, height, channels: 3, background: ink } })
+        .jpeg()
+        .toBuffer();
     const uploads = await Promise.all(
       taken.map(async (photo, index) => {
         const file = join(folder, `${String(index)}.jpg`);
-        const bytes = await sharp({ create: { width: 600, height: 800, channels: 3, background: photo.ink } })
-          .jpeg()
-          .toBuffer();
+        const smallFile = join(folder, `${String(index)}-small.jpg`);
+        const bytes = await block(600, 800, photo.ink);
         await writeFile(file, bytes);
+        await writeFile(smallFile, await block(300, 400, photo.ink));
         const key = `e2e/${person}/${photo.visit}/after-${photo.angle}.jpg`;
+        const smallKey = photo.small ? `e2e/${person}/${photo.visit}/after-${photo.angle}-small.jpg` : null;
         sql.push(
-          `INSERT INTO photos (id, photo_set_id, angle, r2_key, content_type, bytes, width, height, taken_at, created_at)
-             VALUES ${row(id(), sets.get(photo.visit) ?? "", photo.angle, key, "image/jpeg", bytes.length, 600, 800, photo.when.end, now)};`,
+          `INSERT INTO photos (id, photo_set_id, angle, r2_key, content_type, bytes, width, height, taken_at, thumbnail_key, created_at)
+             VALUES ${row(id(), sets.get(photo.visit) ?? "", photo.angle, key, "image/jpeg", bytes.length, 600, 800, photo.when.end, smallKey, now)};`,
         );
-        return { key, file };
+        return smallKey === null
+          ? [{ key, file }]
+          : [
+              { key, file },
+              { key: smallKey, file: smallFile },
+            ];
       }),
     );
-    await writeFile(join(folder, "photos.json"), JSON.stringify(uploads));
+    await writeFile(join(folder, "photos.json"), JSON.stringify(uploads.flat()));
     await wrangler(
       "r2",
       "bulk",

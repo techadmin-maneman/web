@@ -169,6 +169,31 @@ describe("a payment made inside the hold whose webhook lands after it (W1)", () 
   });
 });
 
+// The grace is ops' to set, and a hold is judged by the one it was made with
+// (docs/decisions/0088-every-policy-in-the-console.md).
+describe("a payment made in the grace its hold was made with", () => {
+  const grace = (minutes: number) =>
+    env.DB.prepare(
+      "INSERT OR REPLACE INTO ops_settings (name, value, set_by, set_at) VALUES ('payment_hold', ?1, 'ops', ?2)",
+    )
+      .bind(JSON.stringify({ countdown: 10, grace: minutes }), NOW.toISOString())
+      .run();
+
+  it("is booked, though ops shortened the grace after the hold was made", async () => {
+    await grace(5);
+    const ordered = await heldAndOrdered(PERSON);
+    await grace(1);
+    // Paid at 14 minutes: past a minute's grace, inside the five the hold was made with.
+    await webhook("payment.captured", "evt_g1", payment("pay_g1", ordered, at(840)), at(841));
+    const payments = createStubPayments();
+    const outcome = await confirmBooking(env.DB, createStubFsm(world()), payments, ordered.holdId, at(842), {
+      labelAsTest: true,
+    });
+    expect(outcome).toBe("booked");
+    expect(payments.made.refunds).toEqual([]);
+  });
+});
+
 describe("a paid hold whose booking FSM refused once (W2)", () => {
   it("keeps its time when another client holds after its ten minutes, and is booked on the retry", async () => {
     await fittedPerson(OTHER, "+919810000005", "Karan Bhatia");

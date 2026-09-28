@@ -1222,6 +1222,10 @@
             "type": "string",
             "description": "A path on this host. PUT the photograph there."
           },
+          "small_upload_url": {
+            "type": "string",
+            "description": "A path on this host. PUT the photograph's small copy there, once the photograph is in."
+          },
           "expires_at": {
             "type": "string",
             "format": "date-time"
@@ -1229,6 +1233,7 @@
         },
         "required": [
           "upload_url",
+          "small_upload_url",
           "expires_at"
         ],
         "additionalProperties": false
@@ -1257,6 +1262,20 @@
         "required": [
           "phase",
           "angle"
+        ],
+        "additionalProperties": false
+      },
+      "TechnicianPhotoTaken": {
+        "type": "object",
+        "properties": {
+          "take": {
+            "type": "string",
+            "format": "uuid",
+            "description": "This upload of the angle's photograph, which its small copy's upload names."
+          }
+        },
+        "required": [
+          "take"
         ],
         "additionalProperties": false
       },
@@ -2095,7 +2114,7 @@
     },
     "/api/tech/photos/{token}": {
       "put": {
-        "summary": "The photograph itself: a JPEG or PNG, at most 12 MB",
+        "summary": "The photograph itself: a JPEG or PNG, at most 2 MB",
         "parameters": [
           {
             "schema": {
@@ -2109,8 +2128,15 @@
           }
         ],
         "responses": {
-          "204": {
-            "description": "Received"
+          "200": {
+            "description": "Received",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TechnicianPhotoTaken"
+                }
+              }
+            }
           },
           "401": {
             "description": "session_required; device_revoked",
@@ -2133,7 +2159,100 @@
             }
           },
           "422": {
-            "description": "photo_invalid_file: not a JPEG or PNG, or over 12 MB",
+            "description": "photo_invalid_file: not a JPEG or PNG, or over 2 MB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "busy: R2 holds past the runaway ceiling; the phone keeps the photograph and sends it later",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tech/photos/{token}/small": {
+      "put": {
+        "summary": "The photograph's small copy, for the client app's rows: a JPEG of at most 64 KB and 800 px a side",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "required": true,
+            "name": "token",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The take the photograph's upload answered."
+            },
+            "required": true,
+            "description": "The take the photograph's upload answered.",
+            "name": "take",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Received, or held already"
+          },
+          "401": {
+            "description": "session_required; device_revoked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: the link is wrong or expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "upload_missing: that take is not the angle's photograph: not arrived yet, or taken again since",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "photo_invalid_file: not a JPEG, or over 64 KB or 800 px a side",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "busy: R2 holds past the runaway ceiling",
             "content": {
               "application/json": {
                 "schema": {

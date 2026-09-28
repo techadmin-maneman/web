@@ -59,8 +59,9 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   await expect(page.getByRole("term").filter({ hasText: "What was done" }).locator("+ dd")).toHaveText(
     "PLACEHOLDER Piece removed, PLACEHOLDER Scalp cleaned, PLACEHOLDER Piece cleaned.",
   );
+  // The row shows the thumbnail the technician's phone made, not the whole photograph (ADR 0093).
   const front = page.getByRole("button", { name: `Front, after the visit, ${fullDate(client.service.date)}` });
-  await expect.poll(() => front.locator("img").evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(600);
+  await expect.poll(() => front.locator("img").evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(300);
   await page.getByRole("link", { name: "Back to visits" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Visits" })).toBeVisible();
 
@@ -222,8 +223,18 @@ test("Photos: the timeline, a photograph saved to the phone, and the compare", a
   await expect(page.getByRole("heading", { level: 2, name: fullDate(client.service.date) })).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: fullDate(client.firstFit.date) })).toBeVisible();
 
+  // A row shows the small copy the technician's phone made, and a photograph with none, as from FSM, shows itself.
+  const cell = (angle: string) =>
+    page.getByRole("button", { name: `${angle}, after the visit, ${fullDate(client.service.date)}` }).locator("img");
+  await expect(cell("Front")).toHaveAttribute("src", /\/api\/photos\/small\//);
+  await expect(cell("Hair")).toHaveAttribute("src", /\/api\/photos\/file\//);
+  await expect.poll(() => cell("Front").evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(300);
+
   await page.getByRole("button", { name: `Front, after the visit, ${fullDate(client.service.date)}` }).click();
   const sheet = page.getByRole("dialog", { name: `Front · ${fullDate(client.service.date)}` });
+  // Opened, it is the whole photograph.
+  await expect(sheet.locator("img")).toHaveAttribute("src", /\/api\/photos\/file\//);
+  await expect.poll(() => sheet.locator("img").evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(600);
   await expect(sheet.getByText("Downloaded photographs sit in your gallery, outside the app.")).toBeVisible();
   const download = page.waitForEvent("download");
   await sheet.getByRole("link", { name: "Download" }).click();

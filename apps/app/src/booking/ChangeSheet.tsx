@@ -44,7 +44,7 @@ const COUNTS = ["One", "Two", "Three", "Four", "Five", "Six"];
 function moveLine(terms: MoveTerms): ReactNode {
   if (terms.cost === "charged" && terms.credit !== null) return change.move.creditCharged;
   if (terms.cost === "charged") return change.move.charged(rupees(terms.paid));
-  if (terms.cost === "late_fee") return <LateFee fee={terms.price} />;
+  if (terms.cost === "late_fee") return <LateFee fee={terms.price} noticeHours={terms.notice_hours} />;
   return terms.paid > 0 ? change.move.free(rupees(terms.paid)) : change.move.freeNothingPaid;
 }
 
