@@ -919,7 +919,8 @@ describe("PUT /api/tasks/{group}/{id}/owner", () => {
       expect(await ownersIn("leave_conflict")).toEqual([null]);
     });
 
-    it("a first fit asked again has no owner", async () => {
+    // A lead who fills the site's form in again, while ops are working them, is the same lead to follow up.
+    it("keeps the owner of a first fit asked again while its task waits", async () => {
       await env.DB.prepare(
         "INSERT INTO first_fit_requests (id, person_id, preferred_window, created_at) VALUES (?1, ?2, 'afternoon', ?3)",
       )
@@ -931,7 +932,37 @@ describe("PUT /api/tasks/{group}/{id}/owner", () => {
 
       // The site's form asked again: the latest request stands, on the row of the one before (src/domain/next-visit.ts).
       await firstFitRequestStatement(env.DB, { personId: PERSON, window: "morning", now: NOW }).run();
-      expect(tasksIn(await tasks(), "first_fit_to_book")).toMatchObject([{ id: REQUEST, owner: null }]);
+      expect(tasksIn(await tasks(), "first_fit_to_book")).toMatchObject([{ id: REQUEST, owner: ME }]);
+    });
+
+    // Moved to another time or another day under the same leave, the job still clashes with it: the same conflict.
+    it("keeps the owner of a job moved within the leave it clashes with", async () => {
+      await person(OTHER, "Karan Bhatia", "+919810000003");
+      await env.DB.batch([
+        env.DB.prepare(
+          "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t9', 'fsm-t9', 'Chetan Arora', 'CA', 1, ?1)",
+        ).bind(NOW.toISOString()),
+        env.DB.prepare(
+          `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status,
+             fsm_status, fsm_modified_at, synced_at)
+           VALUES (?1, 'fsm-appt-11', ?2, 'service', '2026-09-23T05:00:00.000Z', '2026-09-23T06:30:00.000Z',
+             't9', 'scheduled', 'Scheduled', ?3, ?3)`,
+        ).bind(VISIT, OTHER, NOW.toISOString()),
+        env.DB.prepare(
+          `INSERT INTO technician_leave (id, technician_id, from_date, to_date, actor, created_at)
+           VALUES ('leave-1', 't9', '2026-09-23', '2026-09-27', 'ops@localhost', ?1)`,
+        ).bind(NOW.toISOString()),
+      ]);
+      await ownerOf("leave_conflict", VISIT, ME);
+
+      // From 10:30 to 2:30 pm the same day, then to the 26th, all within Chetan's leave of the 23rd to the 27th.
+      for (const [start, end] of [
+        ["2026-09-23T09:00:00.000Z", "2026-09-23T10:30:00.000Z"],
+        ["2026-09-26T05:00:00.000Z", "2026-09-26T06:30:00.000Z"],
+      ]) {
+        await env.DB.prepare("UPDATE appointments SET window_start = ?1, window_end = ?2").bind(start, end).run();
+        expect(await ownersIn("leave_conflict")).toEqual([ME]);
+      }
     });
 
     it("a first fit to book after a later consultation has no owner", async () => {

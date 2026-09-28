@@ -39,8 +39,8 @@ export interface Task {
   readonly since: string;
   readonly due: string;
   /**
-   * Which task it is, where its row can be a new task again once this one has gone: a job's start and its leave, a
-   * first fit's asking and its consultation. Empty for every other group. Its owner is kept for it alone.
+   * Which task it is, where its row can be a new task again once this one has gone: a job's leave, a first fit's
+   * consultation. Empty for every other group. Its owner is kept for it alone.
    */
   readonly episode: string;
   /** The Access e-mail of the member of staff it is theirs; null while nobody has taken it. */
@@ -71,17 +71,17 @@ const withOwners = (arms: string) => `SELECT t.*, o.owner FROM (${arms}) t
  ORDER BY t.since LIMIT ?2`;
 
 /**
- * A job on a day off is a new conflict on another day, or on leave recorded since: its start, and the first leave
- * recorded over it.
+ * A job on a day off is the same conflict wherever it moves within the leave it clashes with, and a new one on leave
+ * recorded since: the first leave recorded over it.
  */
-const LEAVE_CONFLICT_EPISODE = `a.window_start || ' ' ||
-  (SELECT l.id FROM technician_leave l WHERE ${LEAVE_ON_THE_DAY} ORDER BY l.created_at, l.id LIMIT 1)`;
+const LEAVE_CONFLICT_EPISODE = `(SELECT l.id FROM technician_leave l WHERE ${LEAVE_ON_THE_DAY}
+  ORDER BY l.created_at, l.id LIMIT 1)`;
 
 /**
- * A first fit to book is a new task when it is asked for again, which keeps the row of the request before, or when
- * a later consultation follows the same request: when it was asked, and the consultation it follows.
+ * A first fit to book is a new task when a later consultation follows the same request, and the same one when the
+ * request is asked for again while it waits: the consultation it follows.
  */
-const FIRST_FIT_EPISODE = "r.created_at || ' ' || s.consulted_start";
+const FIRST_FIT_EPISODE = "s.consulted_start";
 
 /**
  * Every queue, in three statements sent together. D1 takes at most five arms in one
