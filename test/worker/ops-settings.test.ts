@@ -285,7 +285,11 @@ describe("the next visit's days", () => {
       source: "src/policy/next-visit.ts",
       set_by: null,
     });
-    expect((days as Setting & { bounds: unknown }).bounds).toEqual(NEXT_VISIT_DAY_BOUNDS);
+    // Each key's bounds, and the unit its figure counts in, which for these is every figure's.
+    const inDays = Object.fromEntries(
+      Object.entries(NEXT_VISIT_DAY_BOUNDS).map(([key, bounds]) => [key, { ...bounds, unit: "days" }]),
+    );
+    expect((days as Setting & { bounds: unknown }).bounds).toEqual(inDays);
     expect(COMMITTED.nextVisitDays).toEqual(NEXT_VISIT_DAYS);
   });
 

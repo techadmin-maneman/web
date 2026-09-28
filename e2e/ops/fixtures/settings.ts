@@ -11,6 +11,7 @@ export const SETTINGS = {
   settings: [
     {
       name: "checkin_radius_m",
+      kind: "number",
       title: "Check-in radius",
       note: "How close to the address a technician must be for I have arrived to pass.",
       unit: "metres",
@@ -26,6 +27,7 @@ export const SETTINGS = {
     },
     {
       name: "no_show_wait_min",
+      kind: "number",
       title: "No-show wait",
       note: "How long a technician waits, from check-in, before he may close a job as a no-show.",
       unit: "minutes",
@@ -41,6 +43,7 @@ export const SETTINGS = {
     },
     {
       name: "piece_cycle_days",
+      kind: "number",
       title: "Replacement cycle",
       note: "How long a piece on each base lasts before it is due for replacement.",
       unit: "days",
@@ -57,6 +60,7 @@ export const SETTINGS = {
     // One input for the next visit's days, each figure with its own bounds (docs/decisions/0086-the-next-visit-is-offered.md).
     {
       name: "booking_days",
+      kind: "number",
       title: "Booking and the next visit",
       note: "When the app offers each next visit and how far ahead a client may book it.",
       unit: "days",
@@ -72,13 +76,13 @@ export const SETTINGS = {
         "invoice_prompt",
       ],
       bounds: {
-        first_fit_lead: { min: 0, max: 30 },
-        service_cadence: { min: 14, max: 90 },
-        reminder_before_due: { min: 1, max: 14 },
-        at_risk_after_due: { min: 1, max: 60 },
-        first_fit_to_book: { min: 1, max: 60 },
-        horizon: { min: 14, max: 90 },
-        invoice_prompt: { min: 1, max: 60 },
+        first_fit_lead: { min: 0, max: 30, unit: "days" },
+        service_cadence: { min: 14, max: 90, unit: "days" },
+        reminder_before_due: { min: 1, max: 14, unit: "days" },
+        at_risk_after_due: { min: 1, max: 60, unit: "days" },
+        first_fit_to_book: { min: 1, max: 60, unit: "days" },
+        horizon: { min: 14, max: 90, unit: "days" },
+        invoice_prompt: { min: 1, max: 60, unit: "days" },
       },
       value: {
         first_fit_lead: 0,

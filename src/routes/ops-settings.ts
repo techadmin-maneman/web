@@ -21,13 +21,14 @@ import { createRoute, z } from "@hono/zod-openapi";
 import { staffOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
 import {
-  allowed,
+  boundsOf,
   checkValue,
+  isChoice,
   OPS_SETTINGS,
   settingNamed,
   PRICE_BOUNDS,
   PRICE_TIER,
-  type OpsSetting,
+  type NumberSetting,
 } from "../config/ops-settings.ts";
 import { changesTheCatalogue, queueCatalogueSync } from "../domain/fsm-catalogue.ts";
 import { setOpsSetting, settingStates } from "../domain/ops-settings.ts";
@@ -46,17 +47,28 @@ import { json } from "../http/openapi.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 
-/** One number, or one per key: the two shapes a rule's value takes. */
-const ValueSchema = z.union([z.number().int(), z.record(z.string(), z.number().int())]);
+/** One number, or one per key: the two shapes a rule of numbers takes. */
+const NumberValue = z.union([z.number().int(), z.record(z.string(), z.number().int())]);
+/** One choice per key: the shape a rule of choices takes. */
+const ChoiceValue = z.record(z.string(), z.string());
 
 /** The rules ops may set, by name: the listing names them as the path that sets one does. */
 const SettingName = z.enum(OPS_SETTINGS.map((setting) => setting.name) as [string, ...string[]]);
 
-const SettingSchema = z
+/** What every rule says of itself, whatever its figures are. */
+const Described = {
+  name: SettingName,
+  title: z.string(),
+  note: z.string(),
+  source: z.string().openapi({ description: "The module the default lives in." }),
+  set_by: z.union([z.string(), z.null()]),
+  set_at: z.union([z.iso.datetime(), z.null()]),
+};
+
+const NumberRuleSchema = z
   .object({
-    name: SettingName,
-    title: z.string(),
-    note: z.string(),
+    ...Described,
+    kind: z.literal("number"),
     unit: z.string(),
     min: z.number().int(),
     max: z.number().int(),
@@ -64,20 +76,36 @@ const SettingSchema = z
       .union([z.array(z.string()), z.literal("open"), z.null()])
       .openapi({ description: 'null for one number, a list where the keys are fixed, "open" where ops name them.' }),
     bounds: z
-      .union([z.record(z.string(), z.object({ min: z.number().int(), max: z.number().int() }).strict()), z.null()])
+      .union([
+        z.record(z.string(), z.object({ min: z.number().int(), max: z.number().int(), unit: z.string() }).strict()),
+        z.null(),
+      ])
       .openapi({
         description:
-          "Each key's own bounds, where a keyed rule's figures measure different things; null where every figure " +
-          "takes min to max.",
+          "Each key's own bounds and unit, where a keyed rule's figures measure different things; null where every " +
+          "figure takes min to max, in unit.",
       }),
-    value: ValueSchema,
-    default: ValueSchema.openapi({ description: "The committed figure, in force until somebody sets one." }),
-    source: z.string().openapi({ description: "The module the default lives in." }),
-    set_by: z.union([z.string(), z.null()]),
-    set_at: z.union([z.iso.datetime(), z.null()]),
+    value: NumberValue,
+    default: NumberValue.openapi({ description: "The committed figure, in force until somebody sets one." }),
   })
   .strict()
-  .openapi("OpsSetting");
+  .openapi("NumberRule");
+
+const ChoiceRuleSchema = z
+  .object({
+    ...Described,
+    kind: z.literal("choice"),
+    keys: z.array(z.string()),
+    choices: z
+      .record(z.string(), z.array(z.string()))
+      .openapi({ description: "What each key may be: the kinds of visit with a late fee may cost it, the rest not." }),
+    value: ChoiceValue,
+    default: ChoiceValue.openapi({ description: "The committed choices, in force until somebody sets them." }),
+  })
+  .strict()
+  .openapi("ChoiceRule");
+
+const SettingSchema = z.discriminatedUnion("kind", [NumberRuleSchema, ChoiceRuleSchema]).openapi("OpsSetting");
 
 const settingsRoute = createRoute({
   method: "get",
@@ -99,7 +127,7 @@ const setSettingRoute = createRoute({
       required: true,
       ...json(
         z
-          .object({ value: z.union([ValueSchema, z.null()]) })
+          .object({ value: z.union([NumberValue, ChoiceValue, z.null()]) })
           .strict()
           .openapi("SettingChange"),
       ),
@@ -324,26 +352,50 @@ const priceRefused = (requestId: string, refusal: PriceRefusal) =>
     : errorBody("invalid_request", requestId, [refusal.field]);
 
 /** The keys a setting takes: those ops name themselves ("open"), these, or none for a single number. */
-function keysOf(setting: OpsSetting): "open" | string[] | null {
+function keysOf(setting: NumberSetting): "open" | string[] | null {
   if (setting.keys === "open" || setting.keys === null) return setting.keys;
   return [...setting.keys];
 }
 
-const stateBody = (state: Awaited<ReturnType<typeof settingStates>>[number]) => ({
-  name: state.setting.name,
-  title: state.setting.title,
-  note: state.setting.note,
-  unit: state.setting.unit,
-  min: state.setting.min,
-  max: state.setting.max,
-  keys: keysOf(state.setting),
-  bounds: state.setting.bounds ?? null,
-  value: state.value,
-  default: state.setting.fallback,
-  source: state.setting.source,
-  set_by: state.setBy,
-  set_at: state.setAt,
-});
+/** Each key's own bounds, with the unit its figure counts in; null where every figure takes the rule's. */
+function boundsBody(setting: NumberSetting) {
+  if (setting.bounds === undefined) return null;
+  return Object.fromEntries(Object.keys(setting.bounds).map((key) => [key, boundsOf(setting, key)]));
+}
+
+type State = Awaited<ReturnType<typeof settingStates>>[number];
+
+const stateBody = ({ setting, value, setBy, setAt }: State) => {
+  const described = {
+    name: setting.name,
+    title: setting.title,
+    note: setting.note,
+    source: setting.source,
+    set_by: setBy,
+    set_at: setAt,
+  };
+  if (isChoice(setting)) {
+    return {
+      ...described,
+      kind: "choice" as const,
+      keys: [...setting.keys],
+      choices: Object.fromEntries(Object.entries(setting.choices).map(([key, each]) => [key, [...each]])),
+      value: value as Readonly<Record<string, string>>,
+      default: setting.fallback,
+    };
+  }
+  return {
+    ...described,
+    kind: "number" as const,
+    unit: setting.unit,
+    min: setting.min,
+    max: setting.max,
+    keys: keysOf(setting),
+    bounds: boundsBody(setting),
+    value: value as number | Readonly<Record<string, number>>,
+    default: setting.fallback,
+  };
+};
 
 export function registerOpsSettings(app: App): void {
   app.openapi(settingsRoute, async (c) => {
@@ -360,7 +412,7 @@ export function registerOpsSettings(app: App): void {
     if (value !== null) {
       const checked = checkValue(setting, value);
       if (!checked.ok) {
-        c.var.log.warn("setting_refused", { setting: setting.name, allowed: allowed(setting) });
+        c.var.log.warn("setting_refused", { setting: setting.name, fields: checked.refusals.length });
         return c.json(
           errorBody(
             "invalid_request",

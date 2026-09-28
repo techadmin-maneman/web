@@ -99,9 +99,9 @@ const parsedOrNull = (json: string): unknown => {
  * as a new task group, takes its committed figure; the keys ops set keep theirs.
  */
 function withKeysAddedSince(setting: OpsSetting, stored: unknown): unknown {
-  if (setting.keys === null || setting.keys === "open") return stored;
+  if (setting.keys === null || setting.keys === "open" || typeof setting.fallback !== "object") return stored;
   if (typeof stored !== "object" || stored === null || Array.isArray(stored)) return stored;
-  return { ...(setting.fallback as Readonly<Record<string, number>>), ...stored };
+  return { ...setting.fallback, ...stored };
 }
 
 /** The inputs a snapshot holds: its JSON object of each name with its value, the committed figure for the rest. */

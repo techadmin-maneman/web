@@ -1251,16 +1251,21 @@ export const settings = {
         invoice_prompt: "A new invoice on Home",
       },
     } as Readonly<Record<string, Readonly<Record<string, string>>>>,
+    /** Each choice a rule of choices offers, in the console's words, by the rule's name. */
+    choiceNames: {} as Readonly<Record<string, Readonly<Record<string, string>>>>,
     /**
      * PLACEHOLDER: the check before a rule is sent, as a price's (docs/decisions/0071-what-ops-see-before-a-setting-
      * changes.md): each figure that moves, the old beside the new.
      */
     confirm: {
       title: "Check the change",
-      change: (label: string, was: number | null, now: number | null, unit: string) =>
-        `${label}: ${was === null ? "none" : `${String(was)} ${unit}`} → ${
-          now === null ? "the figure for every other base" : `${String(now)} ${unit}`
-        }.`,
+      change: (label: string, was: string, now: string) => `${label}: ${was} → ${now}.`,
+      /** A figure as the check writes it: "200 metres". */
+      figure: (value: number, unit: string) => `${String(value)} ${unit}`,
+      /** A base ops are naming for the first time had no figure of its own. */
+      noFigure: "none",
+      /** A base whose own figure is taken away takes the one for every other base. */
+      otherBases: "the figure for every other base",
       standard: "This puts the standard figures back.",
       send: "Save",
       back: "Change it",

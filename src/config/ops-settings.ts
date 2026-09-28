@@ -20,15 +20,28 @@ import { TASK_GROUPS, TASK_SLA_HOURS } from "../policy/tasks.ts";
 import { DEFAULT_PIECE_CYCLE_DAYS, PIECE_CYCLE_DAYS } from "./pieces.ts";
 import { VISIT_TYPES } from "./visit-types.ts";
 
-/** One number, or one per key. */
-export type SettingValue = number | Readonly<Record<string, number>>;
+/** One number, or one per key; or, for a rule of choices, one choice per key. */
+export type SettingValue = number | Readonly<Record<string, number>> | Readonly<Record<string, string>>;
 
-export interface OpsSetting {
+/** What one figure may be, and what it counts where that is not what the rule's other figures count. */
+export interface KeyBounds {
+  readonly min: number;
+  readonly max: number;
+  readonly unit?: string;
+}
+
+interface Described {
   readonly name: string;
   /** What ops read above the field. */
   readonly title: string;
   /** Why it matters, in the words a non-developer needs to set it. */
   readonly note: string;
+  /** The module the fallback lives in, so the figure can be found in the code. */
+  readonly source: string;
+}
+
+/** A rule whose figures are numbers: a radius, a wait, an hour, a number of days. */
+export interface NumberSetting extends Described {
   /** What the number counts: metres, minutes, hours, days, or the hour of the day. */
   readonly unit: string;
   /** What every figure may be; where a keyed input's figures differ, the widest, with each key's own in `bounds`. */
@@ -36,9 +49,9 @@ export interface OpsSetting {
   readonly max: number;
   /**
    * Each key's own bounds, for a closed set whose figures measure different things, as the days of `booking_days`
-   * do; left out where every key takes `min` to `max`.
+   * do, or count in another unit, as the phone's clock bounds do; left out where every key takes `min` to `max`.
    */
-  readonly bounds?: Readonly<Record<string, { readonly min: number; readonly max: number }>>;
+  readonly bounds?: Readonly<Record<string, KeyBounds>>;
   /**
    * null for one number. A list of keys where the set is closed, as the visit
    * types and the task groups are. "open" where ops name the keys themselves:
@@ -47,10 +60,23 @@ export interface OpsSetting {
    */
   readonly keys: readonly string[] | "open" | null;
   /** In force while the store holds no row, or cannot be read. */
-  readonly fallback: SettingValue;
-  /** The module the fallback lives in, so the number can be found in the code. */
-  readonly source: string;
+  readonly fallback: number | Readonly<Record<string, number>>;
 }
+
+/**
+ * A rule whose figures are choices, one per key of a closed set: what each kind of visit costs, or what a waiver
+ * gives back. Each key takes one of its own choices, so a kind with no late fee is never offered one.
+ */
+export interface ChoiceSetting extends Described {
+  readonly keys: readonly string[];
+  readonly choices: Readonly<Record<string, readonly string[]>>;
+  /** In force while the store holds no row, or cannot be read. */
+  readonly fallback: Readonly<Record<string, string>>;
+}
+
+export type OpsSetting = NumberSetting | ChoiceSetting;
+
+export const isChoice = (setting: OpsSetting): setting is ChoiceSetting => "choices" in setting;
 
 /** The key an open-keyed input must always carry: the figure every other key falls back to. */
 export const DEFAULT_KEY = "default";
@@ -148,15 +174,20 @@ export const MAX_SNAPSHOT_BYTES = 16 * 1024;
 /** A base names itself; this is only long enough to hold FSM's own part names. */
 const KEY = /^[A-Za-z0-9][A-Za-z0-9 _.-]{0,63}$/;
 
-/** What one figure may be: its key's own bounds where it has them, else the input's. */
-export function boundsOf(setting: OpsSetting, key?: string): { readonly min: number; readonly max: number } {
-  return (key === undefined ? undefined : setting.bounds?.[key]) ?? { min: setting.min, max: setting.max };
+/** What one figure may be: its key's own bounds where it has them, else the input's, and what it counts. */
+export function boundsOf(setting: NumberSetting, key?: string): Required<KeyBounds> {
+  const own = key === undefined ? undefined : setting.bounds?.[key];
+  return {
+    min: own?.min ?? setting.min,
+    max: own?.max ?? setting.max,
+    unit: own?.unit ?? setting.unit,
+  };
 }
 
 /** What is allowed, in the words a refusal shows: "50 to 1000 metres, a whole number". */
-export function allowed(setting: OpsSetting, key?: string): string {
-  const { min, max } = boundsOf(setting, key);
-  return `${String(min)} to ${String(max)} ${setting.unit}, a whole number`;
+export function allowed(setting: NumberSetting, key?: string): string {
+  const { min, max, unit } = boundsOf(setting, key);
+  return `${String(min)} to ${String(max)} ${unit}, a whole number`;
 }
 
 /** Why a value was refused: the field it was in, and what that field will take. */
@@ -165,7 +196,7 @@ export interface Refusal {
   readonly says: string;
 }
 
-const boundsRefusal = (setting: OpsSetting, field: string, value: unknown, key?: string): Refusal | null => {
+const boundsRefusal = (setting: NumberSetting, field: string, value: unknown, key?: string): Refusal | null => {
   const { min, max } = boundsOf(setting, key);
   if (typeof value !== "number" || !Number.isInteger(value)) {
     return { field, says: `${setting.title} must be ${allowed(setting, key)}.` };
@@ -176,8 +207,35 @@ const boundsRefusal = (setting: OpsSetting, field: string, value: unknown, key?:
   return null;
 };
 
+const choiceRefusal = (setting: ChoiceSetting, key: string, value: unknown): Refusal | null => {
+  const choices = setting.choices[key] ?? [];
+  if (typeof value === "string" && choices.includes(value)) return null;
+  return { field: `${setting.name}.${key}`, says: `${setting.title} takes one of ${choices.join(", ")} for ${key}.` };
+};
+
 export type Checked =
   { readonly ok: true; readonly value: SettingValue } | { readonly ok: false; readonly refusals: readonly Refusal[] };
+
+const isKeyed = (value: unknown): value is Readonly<Record<string, unknown>> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+/** A refusal unless the value names each of the closed set's keys, and nothing else. */
+function keysRefusal(setting: OpsSetting, keys: readonly string[], given: readonly string[]): Refusal | null {
+  const expected = [...keys].sort().join(", ");
+  if (expected === [...given].sort().join(", ")) return null;
+  return { field: setting.name, says: `${setting.title} needs one figure for each of ${expected}.` };
+}
+
+function checkChoices(setting: ChoiceSetting, value: unknown): Checked {
+  if (!isKeyed(value)) {
+    return { ok: false, refusals: [{ field: setting.name, says: `${setting.title} needs one choice per key.` }] };
+  }
+  const refusals = [
+    keysRefusal(setting, setting.keys, Object.keys(value)),
+    ...Object.entries(value).map(([key, each]) => choiceRefusal(setting, key, each)),
+  ].filter((refusal): refusal is Refusal => refusal !== null);
+  return refusals.length > 0 ? { ok: false, refusals } : { ok: true, value: value as Record<string, string> };
+}
 
 /**
  * A value ops sent, if the register allows it; otherwise every reason it does
@@ -185,15 +243,16 @@ export type Checked =
  * reaches the store, so a reader never has to defend against one.
  */
 export function checkValue(setting: OpsSetting, value: unknown): Checked {
+  if (isChoice(setting)) return checkChoices(setting, value);
   if (setting.keys === null) {
     const refusal = boundsRefusal(setting, setting.name, value);
     return refusal === null ? { ok: true, value: value as number } : { ok: false, refusals: [refusal] };
   }
 
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+  if (!isKeyed(value)) {
     return { ok: false, refusals: [{ field: setting.name, says: `${setting.title} needs one figure per key.` }] };
   }
-  const entries = Object.entries(value as Record<string, unknown>);
+  const entries = Object.entries(value);
   const refusals: Refusal[] = [];
 
   if (setting.keys === "open") {
@@ -215,14 +274,8 @@ export function checkValue(setting: OpsSetting, value: unknown): Checked {
       }
     }
   } else {
-    const expected = [...setting.keys].sort().join(", ");
-    const given = entries
-      .map(([key]) => key)
-      .sort()
-      .join(", ");
-    if (expected !== given) {
-      refusals.push({ field: setting.name, says: `${setting.title} needs one figure for each of ${expected}.` });
-    }
+    const refusal = keysRefusal(setting, setting.keys, Object.keys(value));
+    if (refusal !== null) refusals.push(refusal);
   }
 
   for (const [key, each] of entries) {

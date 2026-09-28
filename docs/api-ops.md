@@ -6115,6 +6115,28 @@ Who Access let through, and where signing out goes
 
 ```json
 {
+  "oneOf": [
+    {
+      "$ref": "#/components/schemas/NumberRule"
+    },
+    {
+      "$ref": "#/components/schemas/ChoiceRule"
+    }
+  ],
+  "discriminator": {
+    "propertyName": "kind",
+    "mapping": {
+      "number": "#/components/schemas/NumberRule",
+      "choice": "#/components/schemas/ChoiceRule"
+    }
+  }
+}
+```
+
+### NumberRule
+
+```json
+{
   "type": "object",
   "properties": {
     "name": {
@@ -6133,6 +6155,37 @@ Who Access let through, and where signing out goes
     },
     "note": {
       "type": "string"
+    },
+    "source": {
+      "type": "string",
+      "description": "The module the default lives in."
+    },
+    "set_by": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "set_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "number"
+      ]
     },
     "unit": {
       "type": "string"
@@ -6175,11 +6228,15 @@ Who Access let through, and where signing out goes
               },
               "max": {
                 "type": "integer"
+              },
+              "unit": {
+                "type": "string"
               }
             },
             "required": [
               "min",
-              "max"
+              "max",
+              "unit"
             ],
             "additionalProperties": false
           }
@@ -6188,7 +6245,7 @@ Who Access let through, and where signing out goes
           "type": "null"
         }
       ],
-      "description": "Each key's own bounds, where a keyed rule's figures measure different things; null where every figure takes min to max."
+      "description": "Each key's own bounds and unit, where a keyed rule's figures measure different things; null where every figure takes min to max, in unit."
     },
     "value": {
       "anyOf": [
@@ -6216,6 +6273,50 @@ Who Access let through, and where signing out goes
         }
       ],
       "description": "The committed figure, in force until somebody sets one."
+    }
+  },
+  "required": [
+    "name",
+    "title",
+    "note",
+    "source",
+    "set_by",
+    "set_at",
+    "kind",
+    "unit",
+    "min",
+    "max",
+    "keys",
+    "bounds",
+    "value",
+    "default"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ChoiceRule
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "enum": [
+        "checkin_radius_m",
+        "no_show_wait_min",
+        "address_unlock_hour",
+        "task_sla_hours",
+        "piece_cycle_days",
+        "booking_days"
+      ]
+    },
+    "title": {
+      "type": "string"
+    },
+    "note": {
+      "type": "string"
     },
     "source": {
       "type": "string",
@@ -6241,22 +6342,55 @@ Who Access let through, and where signing out goes
           "type": "null"
         }
       ]
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "choice"
+      ]
+    },
+    "keys": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "choices": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "description": "What each key may be: the kinds of visit with a late fee may cost it, the rest not."
+    },
+    "value": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "default": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "The committed choices, in force until somebody sets them."
     }
   },
   "required": [
     "name",
     "title",
     "note",
-    "unit",
-    "min",
-    "max",
-    "keys",
-    "bounds",
-    "value",
-    "default",
     "source",
     "set_by",
-    "set_at"
+    "set_at",
+    "kind",
+    "keys",
+    "choices",
+    "value",
+    "default"
   ],
   "additionalProperties": false
 }
@@ -6277,6 +6411,12 @@ Who Access let through, and where signing out goes
           "type": "object",
           "additionalProperties": {
             "type": "integer"
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
           }
         },
         {

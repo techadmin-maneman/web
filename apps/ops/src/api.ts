@@ -44,8 +44,13 @@ export type Grievance = Body<paths["/api/grievances"]["get"]>["grievances"][numb
 export type DeletionRequest = Body<paths["/api/deletion-requests"]["get"]>["requests"][number];
 export type NumberChange = Body<paths["/api/number-changes"]["get"]>["changes"][number];
 
-/** The business inputs ops set for themselves (docs/decisions/0061-ops-editable-inputs.md). */
+/**
+ * The business inputs ops set for themselves (docs/decisions/0061-ops-editable-inputs.md): a rule of numbers, or of
+ * choices (docs/decisions/0088-every-policy-in-the-console.md).
+ */
 export type OpsSetting = Body<paths["/api/settings"]["get"]>["settings"][number];
+export type NumberRule = Extract<OpsSetting, { kind: "number" }>;
+export type ChoiceRule = Extract<OpsSetting, { kind: "choice" }>;
 export type SettingValue = OpsSetting["value"];
 export type Price = Body<paths["/api/prices"]["post"]>["prices"][number];
 export type PriceChange = Sent<paths["/api/prices"]["post"]>;

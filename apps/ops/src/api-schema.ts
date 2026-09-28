@@ -4585,21 +4585,32 @@ export interface components {
             /** @description The board's "First fit" or "Service". Nothing records what a technician is trained for and the FSM user carries no such field, so this is always null (docs/open-points.md, item 59). */
             skill: null;
         };
-        OpsSetting: {
+        OpsSetting: components["schemas"]["NumberRule"] | components["schemas"]["ChoiceRule"];
+        NumberRule: {
             /** @enum {string} */
             name: "checkin_radius_m" | "no_show_wait_min" | "address_unlock_hour" | "task_sla_hours" | "piece_cycle_days" | "booking_days";
             title: string;
             note: string;
+            /** @description The module the default lives in. */
+            source: string;
+            set_by: string | null;
+            set_at: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "number";
             unit: string;
             min: number;
             max: number;
             /** @description null for one number, a list where the keys are fixed, "open" where ops name them. */
             keys: string[] | "open" | null;
-            /** @description Each key's own bounds, where a keyed rule's figures measure different things; null where every figure takes min to max. */
+            /** @description Each key's own bounds and unit, where a keyed rule's figures measure different things; null where every figure takes min to max, in unit. */
             bounds: {
                 [key: string]: {
                     min: number;
                     max: number;
+                    unit: string;
                 };
             } | null;
             value: number | {
@@ -4609,14 +4620,39 @@ export interface components {
             default: number | {
                 [key: string]: number;
             };
+        };
+        ChoiceRule: {
+            /** @enum {string} */
+            name: "checkin_radius_m" | "no_show_wait_min" | "address_unlock_hour" | "task_sla_hours" | "piece_cycle_days" | "booking_days";
+            title: string;
+            note: string;
             /** @description The module the default lives in. */
             source: string;
             set_by: string | null;
             set_at: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "choice";
+            keys: string[];
+            /** @description What each key may be: the kinds of visit with a late fee may cost it, the rest not. */
+            choices: {
+                [key: string]: string[];
+            };
+            value: {
+                [key: string]: string;
+            };
+            /** @description The committed choices, in force until somebody sets them. */
+            default: {
+                [key: string]: string;
+            };
         };
         SettingChange: {
             value: number | {
                 [key: string]: number;
+            } | {
+                [key: string]: string;
             } | null;
         };
         Price: {
