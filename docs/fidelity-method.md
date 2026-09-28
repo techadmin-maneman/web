@@ -308,7 +308,6 @@ So there is no pair to shoot for them, and `npm run fidelity:ops` writes none. W
 | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | "Tier · Standard · mono"                    | Nothing records a tier. The price book names prices, not tiers (`docs/open-points.md`, item 1)                  |
 | "Technician · Imran Qureshi", the usual one | Each visit has its technician; nothing says which is the client's                                               |
-| A consent's source, "App" or "Site"         | The consent record carries the notice version and the date, not where it was given                              |
 | The Referrals, Tasks and Notes tabs         | No route answers a client's referrals, tasks or notes; Visits and Payments are built from the record (ADR 0072) |
 
 **Board D2 is built from the queues themselves.** There is no `tasks` table and there is not going to be one: each task is a row the database already keeps, read when ops look, so it cannot go stale or be left open by mistake (`src/policy/tasks.ts`). What the board draws that no queue holds — an owner in ops, each group's own allowance, and its At-risk client and Photo QA groups — is written down in `docs/open-points.md`, item 61. Each queue's own section counts down to the same due day as the board (ADR 0072).

@@ -20,7 +20,7 @@ Several places write the same notice. The landing's consultation line (`referral
 
 | Source             | Where                                                                                                                  | Written by                                                       |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `site_booking`     | The site's booking form, `/book`; Phase 1's form before it                                                             | `POST /api/consultation`; `POST /api/lead`                       |
+| `site_booking`     | The site's booking form, `/book`; Phase 1's form before it                                                             | `POST /api/consultation`; Phase 1's `POST /api/lead`             |
 | `site_waitlist`    | The waitlist on `/book`, for a pincode we do not serve yet, with its launch alert                                      | `POST /api/waitlist`                                             |
 | `referral_landing` | A friend's invite, `/r/:code`: its consultation or its waitlist, with the launch alert                                 | `POST /api/r/{code}/consultation`, `POST /api/r/{code}/waitlist` |
 | `try_on`           | The site's try-on: the photo notice and the gate                                                                       | `POST /api/tryon/claim`                                          |
@@ -32,7 +32,7 @@ Several places write the same notice. The landing's consultation line (`referral
 
 Ops never grant a consent, and no ops path writes one but the erasure.
 
-**Every writer names its place.** A function that writes a consent takes a `ConsentSource` (`switchConsent`, `grantIfUndecided`, the site's forms), so a caller that leaves it out does not compile, and `test/node/consent-writers.test.ts` fails on any `INSERT INTO consents` that does not name `source`. The column has no `CHECK`: like `AUDIT_ACTIONS` (ADR 0031), the set lives in code, since a `CHECK` could change only by swapping the column of an append-only table.
+**Every writer names its place.** A function that writes a consent for its caller takes the place as a typed argument (`switchConsent`, `grantIfUndecided`, and the site's forms through `bookConsultation` and `joinTheWaitlist`), so a caller that leaves it out does not compile; a writer with one place (Phase 1's form, the try-on's claim, the erasure) names it in its statement. `test/node/consent-writers.test.ts` fails on any `INSERT INTO consents` that does not name `source`. The column has no `CHECK`: like `AUDIT_ACTIONS` (ADR 0031), the set lives in code, since a `CHECK` could change only by swapping the column of an append-only table.
 
 **The app says which of its screens.** `PATCH /api/consents/{purpose}` takes `source`, one of `app_profile`, `app_booking` and `app_share_sheet`, and the app sends it from each screen. It is optional: an app still open from before this release sends none, and its switch is recorded with none, rather than refused or given a guessed place. The same answer from another screen is still not a new answer (ADR 0058).
 
@@ -50,7 +50,7 @@ Left empty: `referral-consultation-v1` and `waitlist-v1` (the landing, and `/boo
 
 ### An erasure blanks a check-in's coordinates
 
-In the erasure's one batch (ADR 0066), each check-in of the person's visits loses `lat`, `lng` and `accuracy_m`. Migration 0057 makes `lat` and `lng` nullable, swapping each in place, since `no_show_cases` points at `checkins` (migrations 0031 and 0035); nothing reads either but the insert.
+In the erasure's one batch (ADR 0066), each check-in of the person's visits loses `lat`, `lng` and `accuracy_m`. Migration 0057 makes `lat` and `lng` nullable, swapping each in place, since `no_show_cases` points at `checkins` (migrations 0031 and 0035); nothing but the check-in's own insert names either.
 
 **What stays, and why.** The check-in's times, its technician and visit, the address it was measured against (already blanked to its city and pincode), the radius in force, whether it passed, and the distance measured. The distance stays because it locates nobody: it is one number between two points, neither of which is kept any longer. With the radius and the pass, it is the record of whether the technician was at the door, and one of the three facts a no-show is ruled on (`src/policy/no-show.ts`), which a ruling or a dispute still reads after the client is erased.
 
@@ -62,4 +62,4 @@ Nothing else holds the fix: the check-in's job event keeps its time and distance
 - The owner approves the console's words for each place (ADR 0025, item 79).
 - `technician` has no writer until the technician's app asks for a consent.
 - An erased client's check-ins no longer say where the technician stood; whether the technician was within the radius still does.
-- Tests: `test/node/migration-0057.test.ts` (the backfill's certain cases and the rest left empty, still append-only, the coordinates swapped and blankable, the deployed code's writes); `test/node/consent-writers.test.ts`; `test/node/policy-consents.test.ts`; `test/worker/consent-sources.test.ts` (each writer's place); `test/worker/ops-clients.test.ts` and `test/worker/dpdp.test.ts` (the console's answer and the export); `test/worker/erasure.test.ts` (the coordinates blanked, the rest kept); `e2e/ops/clients.e2e.ts` (the Source column, with axe).
+- Tests: `test/node/migration-0057.test.ts` (the backfill's certain cases and the rest left empty, still append-only, the coordinates swapped and blankable, the deployed code's writes); `test/node/consent-writers.test.ts`; `test/node/policy-consents.test.ts`; each writer's place in `test/worker/consultations.test.ts`, `referrals.test.ts`, `tryon-api.test.ts`, `booking-consents.test.ts`, `client-profile.test.ts` (each of the app's screens, and none sent), `lead.test.ts` and `erasure.test.ts`; the app sending its screen in `e2e/app/profile.e2e.ts`, `booking.e2e.ts` and `refer.e2e.ts`; `test/worker/ops-clients.test.ts` and `test/worker/dpdp.test.ts` (the console's answer and the export); `test/worker/erasure.test.ts` (the coordinates blanked, the rest kept); `e2e/ops/clients.e2e.ts` (the Source column, with axe).
