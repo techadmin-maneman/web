@@ -389,6 +389,24 @@ describe("erasure, all or nothing", () => {
     expect((await readMeter(env.DB)).bytes).toBe(70);
   });
 
+  // An earlier attempt deleted them from R2 and failed before the meter heard: no listing finds them now.
+  it("takes a visit's objects off the meter that an earlier attempt deleted from R2 alone", async () => {
+    const personId = await clientWithEverything();
+    const retaken = `visits/${VISIT}/after-front-0.jpg`;
+    const small = `visits/${VISIT}/after-front-0-small.jpg`;
+    await putCounted(env.DB, env.CLIENT_PHOTOS, retaken, syntheticJpeg(600, 800, "first take"), "image/jpeg");
+    await putCounted(env.DB, env.CLIENT_PHOTOS, small, syntheticJpeg(300, 400), "image/jpeg");
+    // Another visit whose ID begins with this one's, which must keep its count.
+    await putCounted(env.DB, env.CLIENT_PHOTOS, `visits/${VISIT}0/after-front-9.jpg`, new Uint8Array(70), "image/jpeg");
+    await env.CLIENT_PHOTOS.delete([retaken, small]);
+
+    await erasePerson(env, personId, NOW, createLogger());
+
+    expect((await readMeter(env.DB)).bytes).toBe(70);
+    const left = await env.DB.prepare("SELECT key FROM stored_objects").all<{ key: string }>();
+    expect(left.results.map((row) => row.key)).toEqual([`visits/${VISIT}0/after-front-9.jpg`]);
+  });
+
   it("changes nothing, and deletes no file, when the database refuses the erasure", async () => {
     await clientWithEverything();
     await databaseRefusesErasure();

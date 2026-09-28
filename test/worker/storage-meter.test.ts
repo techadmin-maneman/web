@@ -3,7 +3,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { deleteCounted, keysUnder, putCounted, readMeter, tellOfStorage } from "../../src/domain/storage-meter.ts";
+import { deleteCounted, deleteUnder, putCounted, readMeter, tellOfStorage } from "../../src/domain/storage-meter.ts";
 import { PHASE_2_SHARE_BYTES } from "../../src/policy/storage-share.ts";
 import { fakeDependencies, markDatabase, type TestDependencies } from "./helpers.ts";
 
@@ -46,7 +46,7 @@ describe("counting what is stored", () => {
     await putCounted(env.DB, env.CLIENT_PHOTOS, "visits/a1/after-front-2.jpg", bytes(1100), "image/jpeg");
     await putCounted(env.DB, env.CLIENT_PHOTOS, "visits/a2/after-front-3.jpg", bytes(700), "image/jpeg");
 
-    await deleteCounted(env.DB, env.CLIENT_PHOTOS, await keysUnder(env.CLIENT_PHOTOS, "visits/a1/"));
+    await deleteUnder(env.DB, env.CLIENT_PHOTOS, ["visits/a1/"]);
 
     expect(await held()).toBe(700);
     expect((await env.CLIENT_PHOTOS.list({ prefix: "visits/" })).objects.map((object) => object.key)).toEqual([

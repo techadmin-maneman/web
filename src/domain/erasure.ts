@@ -22,7 +22,7 @@ import type { VisitType } from "../config/visit-types.ts";
 import type { Logger } from "../log.ts";
 import { LIVE_VISIT_STATUSES } from "../policy/account-deletion.ts";
 import { copyKey, keptLookKey } from "./kept-try-ons.ts";
-import { deleteCounted, keysUnder } from "./storage-meter.ts";
+import { deleteCounted, deleteUnder } from "./storage-meter.ts";
 import { recordEvent } from "./tryon.ts";
 
 /** R2 deletes at most 1,000 keys a call. */
@@ -292,7 +292,7 @@ async function deleteTryOnFiles(env: ErasureEnv, personId: string, now: Date): P
  * Every photograph and thumbnail the person's rows name, and everything else under each of their visits in the
  * bucket: a photograph taken again at the same angle, which no row names any more
  * (docs/decisions/0028-photographs-from-the-app.md), and its thumbnail. One list a visit, then one delete for each
- * thousand keys and one update of the storage meter, however many visits there were.
+ * thousand keys and two updates of the storage meter, however many visits there were.
  */
 async function deleteVisitPhotos(env: ErasureEnv, personId: string): Promise<void> {
   const db = env.DB;
@@ -303,14 +303,18 @@ async function deleteVisitPhotos(env: ErasureEnv, personId: string): Promise<voi
     )
     .bind(personId)
     .all<{ appointment_id: string; r2_key: string; thumbnail_key: string | null }>();
-  const keys = photos.flatMap((photo) => [
+  // A row may name a key outside its visit's prefix, as older records and the browser tests' seed do.
+  const named = photos.flatMap((photo) => [
     photo.r2_key,
     ...(photo.thumbnail_key === null ? [] : [photo.thumbnail_key]),
   ]);
-  for (const visit of new Set(photos.map((photo) => photo.appointment_id))) {
-    keys.push(...(await keysUnder(env.CLIENT_PHOTOS, `visits/${visit}/`)));
-  }
-  await deleteCounted(db, env.CLIENT_PHOTOS, keys);
+  await deleteCounted(db, env.CLIENT_PHOTOS, named);
+  const visits = new Set(photos.map((photo) => photo.appointment_id));
+  await deleteUnder(
+    db,
+    env.CLIENT_PHOTOS,
+    [...visits].map((visit) => `visits/${visit}/`),
+  );
   const theirSets =
     "SELECT s.id FROM photo_sets s JOIN appointments a ON a.id = s.appointment_id WHERE a.person_id = ?1";
   // The sets go after their photographs, for the foreign key. An empty set holds no personal data,

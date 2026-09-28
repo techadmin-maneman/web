@@ -88,8 +88,41 @@ export async function deleteCounted(db: D1Database, bucket: R2Bucket, keys: read
   ]);
 }
 
-/** Every key under a prefix, such as one visit's: its photographs, those taken again, and their small copies. */
-export async function keysUnder(bucket: R2Bucket, prefix: string): Promise<string[]> {
+/**
+ * Deletes everything under these prefixes, such as a client's visits: their photographs, those taken again, and
+ * their small copies. R2 is listed for the keys, but the rows are taken off by range, not by what the listing found:
+ * an earlier attempt that deleted them from R2 and failed before its D1 batch left rows no listing can find.
+ */
+export async function deleteUnder(db: D1Database, bucket: R2Bucket, prefixes: readonly string[]): Promise<void> {
+  if (prefixes.length === 0) return;
+  const keys: string[] = [];
+  for (const prefix of prefixes) keys.push(...(await keysUnder(bucket, prefix)));
+  for (let start = 0; start < keys.length; start += R2_DELETE_BATCH) {
+    await bucket.delete(keys.slice(start, start + R2_DELETE_BATCH));
+  }
+  const ranges = JSON.stringify(prefixes.map((prefix) => ({ from: prefix, to: pastPrefix(prefix) })));
+  // Each range walks the key's own index, from the prefix to the first key past it.
+  const underThem = `SELECT o.key, o.bytes FROM json_each(?1) JOIN stored_objects o
+    ON o.key >= json_extract(json_each.value, '$.from') AND o.key < json_extract(json_each.value, '$.to')`;
+  await db.batch([
+    db
+      .prepare(
+        `UPDATE storage_meter SET bytes = MAX(0, bytes - (SELECT COALESCE(SUM(bytes), 0) FROM (${underThem})))
+         WHERE id = 1`,
+      )
+      .bind(ranges),
+    db.prepare(`DELETE FROM stored_objects WHERE key IN (SELECT key FROM (${underThem}))`).bind(ranges),
+  ]);
+}
+
+/** The first key past every key that begins with the prefix: its last character, one on ("visits/a/" ends "visits/a0"). */
+function pastPrefix(prefix: string): string {
+  const last = prefix.charCodeAt(prefix.length - 1);
+  return `${prefix.slice(0, -1)}${String.fromCharCode(last + 1)}`;
+}
+
+/** Every key under a prefix, a page of the listing at a time. */
+async function keysUnder(bucket: R2Bucket, prefix: string): Promise<string[]> {
   const keys: string[] = [];
   let listed = await bucket.list({ prefix });
   keys.push(...listed.objects.map((object) => object.key));
