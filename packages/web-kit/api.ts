@@ -11,7 +11,8 @@
 //
 //   - a success carries the body of its 2xx answer, null when it has none,
 //     and whether the service worker answered from its copy (`cached`);
-//   - a refusal carries the API's code and the fields it refused;
+//   - a refusal carries the API's code and the fields it refused, and, on a
+//     technician's write for a job given to another technician, whom and when;
 //   - a call that never reached the API, gave up waiting, or was answered by
 //     something that is not the API (a Wi-Fi sign-in page) is "offline";
 //   - a session that has ended is heard in one place, `onSessionEnded`,
@@ -93,10 +94,18 @@ type OptionsArgument<Op> = object extends CallOptions<Op> ? [options?: CallOptio
 /** Why a call failed without the API saying: it never reached it, or the API gave no code. */
 export type LocalCode = "offline" | "unknown";
 
+/** The technician a job went to, by first name, and when ops moved it there (docs/open-points.md, item 92). */
+export interface Moved {
+  readonly technician: string;
+  /** Null when it was moved in FSM itself. */
+  readonly at: string | null;
+}
+
 /**
  * A call's answer. `cached` is true when the service worker answered from its
  * copy (the header both apps' service workers set); `fields` names what an
- * invalid request got wrong, or what changed under a superseded one.
+ * invalid request got wrong, or what changed under a superseded one; `moved`,
+ * on a superseded write of a job given to another technician, says to whom.
  */
 export type Answer<T, Code extends string = string> =
   | { readonly ok: true; readonly status: number; readonly body: T; readonly cached: boolean }
@@ -105,6 +114,7 @@ export type Answer<T, Code extends string = string> =
       readonly status: number;
       readonly code: Code | LocalCode;
       readonly fields: readonly string[];
+      readonly moved: Moved | null;
     };
 
 export interface ClientOptions {
@@ -127,7 +137,7 @@ export interface ClientOptions {
 /** The header the apps' service workers set on an answer from their copy. */
 const SERVED_FROM = "Mm-Served-From";
 
-const OFFLINE = { ok: false, status: 0, code: "offline", fields: [] } as const;
+const OFFLINE = { ok: false, status: 0, code: "offline", fields: [], moved: null } as const;
 
 const isSessionEnded = (response: Response) => response.status === 401;
 
@@ -175,8 +185,14 @@ async function bodyOf(response: Response): Promise<unknown> {
   }
 }
 
-async function refusalOf(response: Response): Promise<{ code?: string; fields?: string[] }> {
-  const read = (await response.json().catch(() => null)) as { error?: { code?: string; fields?: string[] } } | null;
+interface Refusal {
+  readonly code?: string;
+  readonly fields?: string[];
+  readonly moved?: Moved;
+}
+
+async function refusalOf(response: Response): Promise<Refusal> {
+  const read = (await response.json().catch(() => null)) as { error?: Refusal } | null;
   return read?.error ?? {};
 }
 
@@ -229,11 +245,11 @@ export function createClient<Paths, Code extends string = string>(options: Clien
       };
     }
     options.onAnswer?.(response);
-    const { code, fields } = await refusalOf(response);
+    const { code, fields, moved } = await refusalOf(response);
     if (sessionEnded(response, code)) options.onSessionEnded?.(code ?? "unknown");
     // The API's codes are the document's; one it did not send is the app's own reading of the status.
     const said = (code ?? missingCode(response.status)) as Code | LocalCode;
-    return { ok: false, status: response.status, code: said, fields: fields ?? [] };
+    return { ok: false, status: response.status, code: said, fields: fields ?? [], moved: moved ?? null };
   }
 
   async function request<T>(method: string, url: string, init: Asking = {}): Promise<Answer<T, Code>> {

@@ -4,6 +4,7 @@
 //
 // The ordering rules are in ./replay.ts; this file is the store and the sending.
 
+import type { Moved } from "@maneman/web-kit/api";
 import {
   api,
   OUT_OF_ORDER,
@@ -160,10 +161,11 @@ async function markStopped(
   state: "superseded" | "refused",
   note: string,
   fields: readonly string[],
+  moved: Moved | null = null,
 ): Promise<void> {
   const current = await get<Queued>("outbox", event.seq);
   if (current === null) return;
-  await put("outbox", { ...current, state, note, fields });
+  await put("outbox", { ...current, state, note, fields, moved });
 }
 
 let running: Promise<Replayed> | null = null;
@@ -269,7 +271,7 @@ async function run(): Promise<Replayed> {
     // FSM changed underneath the phone, or a step arrived before the one ahead of
     // it, or the job is no longer this technician's at all.
     if (answer.code === SUPERSEDED || answer.code === OUT_OF_ORDER || answer.status === 404) {
-      await markStopped(event, "superseded", answer.code, answer.fields);
+      await markStopped(event, "superseded", answer.code, answer.fields, answer.moved);
       superseded += 1;
       changed();
       continue;

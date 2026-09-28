@@ -91,6 +91,19 @@ describe("sending what the phone holds", () => {
     expect(await events()).toMatchObject([{ job_id: "a", state: "superseded", fields: ["technician"] }]);
   });
 
+  // Open point 92: the API names the technician the job went to, by first name, and when ops moved it there.
+  it("keeps whom a superseded job went to, and when, as the API said", async () => {
+    await queue("start", "a", null);
+    const moved = { technician: "Sameer", at: "2027-01-14T05:10:00.000Z" };
+    api(() => ({
+      status: 409,
+      json: { error: { code: "superseded", request_id: "t", fields: ["technician"], moved } },
+    }));
+
+    await replay();
+    expect(await events()).toMatchObject([{ job_id: "a", state: "superseded", fields: ["technician"], moved }]);
+  });
+
   it("drops a no-show sent before the wait ran, and the countdown goes on", async () => {
     await queue("no_show", "a", null);
     api(() => ({ status: 425, json: { error: { code: "too_early_to_close", request_id: "t" } } }));

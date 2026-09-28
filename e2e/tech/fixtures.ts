@@ -296,6 +296,8 @@ export interface Fake {
   malformed: boolean;
   /** Set to make the next write answer `409 superseded` with these fields. */
   supersede: readonly string[] | null;
+  /** Set with `supersede` to name whom the job went to, and when, as the API does (open point 92). */
+  wentTo: WentTo;
   /**
    * True once ops have given the job to someone else: its card and its upload
    * links answer 404, as the API answers for a job that is not this
@@ -356,8 +358,16 @@ function reply(route: Route, status: number, body?: unknown): Promise<void> {
   return body === undefined ? route.fulfill({ status }) : route.fulfill({ status, json: body });
 }
 
-const refuse = (route: Route, status: number, code: string, fields: readonly string[] = []) =>
-  reply(route, status, { error: { code, request_id: "test", fields: [...fields] } });
+/** Whom a job went to, by first name, and when, as a `409 superseded` names the other technician. */
+type WentTo = { technician: string; at: string | null } | null;
+
+const refuse = (route: Route, status: number, code: string, fields: readonly string[] = [], moved: WentTo = null) =>
+  reply(route, status, {
+    error:
+      moved === null
+        ? { code, request_id: "test", fields: [...fields] }
+        : { code, request_id: "test", fields: [...fields], moved },
+  });
 
 /** A 1×1 grey PNG: the last visit's photograph, which is nobody's. */
 const LAST_VISIT_PHOTO = Buffer.from(
@@ -383,6 +393,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     codesSent: [],
     malformed: false,
     supersede: null,
+    wentTo: null,
     moved: false,
     movedTo: null,
     tooEarly: false,
@@ -460,7 +471,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
         return refuse(route, 409, "superseded", ["time"]);
       }
       const changed = fake.supersede;
-      if (changed !== null) return refuse(route, 409, "superseded", changed);
+      if (changed !== null) return refuse(route, 409, "superseded", changed, fake.wentTo);
       if (path.endsWith("/no-show") && fake.tooEarly) return refuse(route, 425, "too_early_to_close");
 
       const body = route.request().postDataJSON() as { piece_code?: string } | null;
