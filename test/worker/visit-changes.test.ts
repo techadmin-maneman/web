@@ -369,6 +369,46 @@ describe("the terms a visit was booked under", () => {
     expect(await cancelTerms()).toMatchObject({ notice: "late", credit: "restored" });
   });
 
+  // The coordinator's ruling on the review of #145: a move of the same visit keeps what it was sold under; a charged
+  // move, which sells a new visit, is sold under the terms in force.
+  it("keeps the terms it was sold under through a free move, so a later cancel is judged by them", async () => {
+    await booked("service", THURSDAY_NOON, 200000);
+    await bookedHold({ notice: 24, charge: "visit" });
+    await opsSet("change_notice_hours", 72);
+    const app = client();
+
+    const moved = await post(app, "/api/holds", {
+      type: "service",
+      date: "2026-09-25",
+      window: "evening",
+      moving: VISIT,
+    });
+    expect(moved.status).toBe(201);
+    const held = await moved.json<{ id: string; price: { amount: number }; change_notice_hours: number }>();
+    expect(held).toMatchObject({ price: { amount: 0 }, change_notice_hours: 24 });
+    await post(app, `/api/appointments/${VISIT}/reschedule`, { hold_id: held.id }, { FSM_QUEUE: fakeQueue() });
+    const fsm = createStubFsm(world());
+    expect(await confirmBooking(env.DB, fsm, createStubPayments(), held.id, NOW, { labelAsTest: true })).toBe("booked");
+
+    // Thursday 2 pm in India: 26 hours before Friday's evening window.
+    const thursday = new Date("2026-09-24T08:30:00.000Z");
+    const cancel = await post(client({ now: () => thursday }), `/api/appointments/${VISIT}/cancel`, { confirm: false });
+    expect(await cancel.json()).toMatchObject({ notice: "free", notice_hours: 24, refund: 200000, kept: 0 });
+  });
+
+  it("sells a charged move's new visit under the terms in force", async () => {
+    await booked("service", TUESDAY_MORNING, 200000);
+    await bookedHold({ notice: 24, charge: "visit" });
+    await opsSet("change_notice_hours", 12);
+    const replaced = await post(client(), "/api/holds", {
+      type: "service",
+      date: "2026-09-28",
+      window: "morning",
+      moving: VISIT,
+    });
+    expect(await replaced.json()).toMatchObject({ price: { amount: 200000 }, change_notice_hours: 12 });
+  });
+
   it("names the notice it was booked under in the note FSM keeps", async () => {
     await booked("service", THURSDAY_NOON, 200000);
     await bookedHold({ notice: 12, charge: "visit" });

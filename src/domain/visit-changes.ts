@@ -149,6 +149,13 @@ export interface ChangeTerms {
   readonly notice: Notice;
   /** The notice the visit was booked under, in hours. */
   readonly noticeHours: number;
+  /**
+   * The terms the visit is changed under: those it was sold under, or, for a visit ops booked in FSM, those in force.
+   * A move in place carries them, and the late fee below, to the visit's new time.
+   */
+  readonly sold: SoldTerms;
+  /** The late fee the visit was sold under, or its kind's on its day; null for a kind with none. */
+  readonly lateFee: Price | null;
   readonly freeUntil: Date;
   readonly payment: VisitPayment | null;
   /** What moving costs, and what is paid now to move: nothing, the late fee, or the new visit's price. */
@@ -277,6 +284,8 @@ export async function changeTerms(
     visit,
     notice,
     noticeHours: terms.noticeHours,
+    sold: terms,
+    lateFee,
     freeUntil: freeUntil(windowStarts, terms.noticeHours),
     payment,
     move: { cost, price: movePrice },

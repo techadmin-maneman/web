@@ -62,13 +62,14 @@ import {
   type ChangeTerms,
 } from "../domain/visit-changes.ts";
 import { bookableDays } from "../domain/next-visit.ts";
+import type { OpsInputs } from "../domain/ops-settings.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { requireSelfServe } from "../http/self-serve.ts";
 import { visitorOf } from "../http/visitor.ts";
 import { GIVEN_BY_BOOKING, isFullAddress } from "../policy/booking.ts";
-import { CHARGES, LATE_FEES } from "../policy/moving-a-visit.ts";
+import { CHARGES, LATE_FEES, type SoldTerms } from "../policy/moving-a-visit.ts";
 import { stripStart } from "../policy/next-visit.ts";
 import { takesCredit } from "../policy/referral-reward.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
@@ -364,6 +365,24 @@ export async function moveTermsFor(
   };
 }
 
+/**
+ * What a hold is sold under: a move in place carries the moved visit's own terms and late fee to its new time, since
+ * it is the same visit, sold once; any other hold, a new booking or a charged move's new visit, is sold under the
+ * terms in force and its kind's late fee on its day (docs/decisions/0088-every-policy-in-the-console.md).
+ */
+async function soldAs(
+  c: Context<AppEnv>,
+  hold: { type: VisitType; date: string; move: ChangeTerms | null; kind: "move" | "replace" | null },
+  inputs: OpsInputs,
+): Promise<{ terms: SoldTerms; lateFee: Price | null }> {
+  if (hold.move !== null && hold.kind === "move") return { terms: hold.move.sold, lateFee: hold.move.lateFee };
+  const lateFeeItem = LATE_FEES[hold.type];
+  return {
+    terms: termsInForce(inputs, hold.type),
+    lateFee: lateFeeItem === undefined ? null : await priceOf(c.env.DB, lateFeeItem, hold.date),
+  };
+}
+
 /** Starts paying for a live hold: what Checkout opens with, or null for one that is free and on its way to FSM. */
 export async function startCheckout(c: Context<AppEnv>, holdId: string, personId: string) {
   const { deps, requestId } = c.var;
@@ -464,8 +483,8 @@ export function registerClientBooking(app: App): void {
         : { visit: move.moving, kind: move.terms.move.cost === "charged" ? ("replace" as const) : ("move" as const) };
     const useCredit =
       takesCredit(type, moves?.kind ?? null) && (await creditBalance(c.env.DB, session.subjectId, now)).visits > 0;
-    const lateFeeItem = LATE_FEES[type];
     const inputs = await opsInputs(c);
+    const sold = await soldAs(c, { type, date, move: move?.terms ?? null, kind: moves?.kind ?? null }, inputs);
     const hold = await holdSlot(
       c.env.DB,
       {
@@ -474,8 +493,8 @@ export function registerClientBooking(app: App): void {
         date,
         window,
         price,
-        lateFee: lateFeeItem === undefined ? null : await priceOf(c.env.DB, lateFeeItem, date),
-        terms: termsInForce(inputs, type),
+        lateFee: sold.lateFee,
+        terms: sold.terms,
         pincode: address.pincode,
         useCredit,
         from: "app",
