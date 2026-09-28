@@ -4799,7 +4799,7 @@ export interface components {
              */
             kind: "choice";
             keys: string[];
-            /** @description What each key may be: the kinds of visit with a late fee may cost it, the rest not. */
+            /** @description What each key may be: a kind of visit with no late fee in the price book is offered none. */
             choices: {
                 [key: string]: string[];
             };

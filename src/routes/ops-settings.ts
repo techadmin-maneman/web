@@ -98,7 +98,9 @@ const ChoiceRuleSchema = z
     keys: z.array(z.string()),
     choices: z
       .record(z.string(), z.array(z.string()))
-      .openapi({ description: "What each key may be: the kinds of visit with a late fee may cost it, the rest not." }),
+      .openapi({
+        description: "What each key may be: a kind of visit with no late fee in the price book is offered none.",
+      }),
     value: ChoiceValue,
     default: ChoiceValue.openapi({ description: "The committed choices, in force until somebody sets them." }),
   })
@@ -412,7 +414,7 @@ export function registerOpsSettings(app: App): void {
     if (value !== null) {
       const checked = checkValue(setting, value);
       if (!checked.ok) {
-        c.var.log.warn("setting_refused", { setting: setting.name, fields: checked.refusals.length });
+        c.var.log.warn("setting_refused", { setting: setting.name, refusals: checked.refusals.length });
         return c.json(
           errorBody(
             "invalid_request",

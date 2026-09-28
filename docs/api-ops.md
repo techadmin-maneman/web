@@ -6510,7 +6510,7 @@ Who Access let through, and where signing out goes
           "type": "string"
         }
       },
-      "description": "What each key may be: the kinds of visit with a late fee may cost it, the rest not."
+      "description": "What each key may be: a kind of visit with no late fee in the price book is offered none."
     },
     "value": {
       "type": "object",
