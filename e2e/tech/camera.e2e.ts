@@ -118,8 +118,11 @@ test("uploads each frame to the link the API hands out, then lands the set", asy
 
   const capture = page.getByRole("button", { name: "Capture" });
   await expect(capture).toBeEnabled();
-  for (let angle = 1; angle <= 5; angle += 1) await capture.click();
-  await expect(page.getByText("5 of 5")).toBeVisible();
+  // A tap while a frame is being kept is ignored, so each waits for the one before to be counted.
+  for (let angle = 1; angle <= 5; angle += 1) {
+    await capture.click();
+    await expect(page.getByText(`${String(angle)} of 5`)).toBeVisible();
+  }
 
   await page.getByRole("button", { name: "Done" }).click();
 
