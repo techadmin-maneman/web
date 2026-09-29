@@ -384,7 +384,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request
+**400**: invalid_request: the screen named does not ask for this purpose
 
 ```json
 {
@@ -2835,7 +2835,7 @@ Request body:
         "app_booking",
         "app_share_sheet"
       ],
-      "description": "The app's screen the switch was made on: the profile, the booking sheet or the share sheet. Kept on the consent; one sent without it is kept with no place."
+      "description": "The app's screen the switch was made on: the profile (any purpose), the booking sheet (whatsapp_visits) or the share sheet (photos_referral_cards). Kept on the consent; one sent without it is kept with no place, and one that does not ask for the purpose is refused."
     }
   },
   "required": [

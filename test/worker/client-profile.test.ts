@@ -406,6 +406,22 @@ describe("PATCH /api/consents/:purpose", () => {
     expect(claimed.status).toBe(400);
   });
 
+  it("refuses a screen named against a purpose it never asks for, and records nothing", async () => {
+    const answer = await send(client, "PATCH", "/api/consents/photos_marketing", {
+      granted: true,
+      source: "app_share_sheet",
+    });
+    expect(answer.status).toBe(400);
+    expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["source"] } });
+    const booking = await send(client, "PATCH", "/api/consents/photos_referral_cards", {
+      granted: true,
+      source: "app_booking",
+    });
+    expect(booking.status).toBe(400);
+    expect(await env.DB.prepare("SELECT COUNT(*) AS rows FROM consents").first()).toEqual({ rows: 0 });
+    expect(await auditActions()).toEqual([]);
+  });
+
   it("switches only the five purposes, never a Phase 1 agreement", async () => {
     expect((await send(client, "PATCH", "/api/consents/contact", { granted: false })).status).toBe(400);
   });

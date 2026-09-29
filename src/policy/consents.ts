@@ -51,3 +51,15 @@ export const APP_SWITCH_SOURCES = [
   "app_share_sheet",
 ] as const satisfies readonly ConsentSource[];
 export type AppSwitchSource = (typeof APP_SWITCH_SOURCES)[number];
+
+/** What each screen asks for: the profile any purpose, the booking sheet its reminder, the share sheet its card. */
+const ASKED_ON: Readonly<Record<AppSwitchSource, readonly ConsentPurpose[]>> = {
+  app_profile: CONSENT_PURPOSES,
+  app_booking: ["whatsapp_visits"],
+  app_share_sheet: ["photos_referral_cards"],
+};
+
+/** Whether the screen asks for the purpose, so a switch of it may be recorded as made there. */
+export function screenAsks(screen: AppSwitchSource, purpose: ConsentPurpose): boolean {
+  return ASKED_ON[screen].includes(purpose);
+}

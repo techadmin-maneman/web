@@ -2,7 +2,13 @@
 // (docs/decisions/0094-where-a-consent-was-given.md).
 
 import { describe, expect, it } from "vitest";
-import { APP_SWITCH_SOURCES, CONSENT_SOURCES, SOURCE_RULE } from "../../src/policy/consents.ts";
+import {
+  APP_SWITCH_SOURCES,
+  CONSENT_PURPOSES,
+  CONSENT_SOURCES,
+  screenAsks,
+  SOURCE_RULE,
+} from "../../src/policy/consents.ts";
 
 describe("where a consent was given", () => {
   it(SOURCE_RULE, () => {
@@ -18,5 +24,13 @@ describe("where a consent was given", () => {
 
   it("lets the client app name only its own screens", () => {
     expect(APP_SWITCH_SOURCES).toEqual(["app_profile", "app_booking", "app_share_sheet"]);
+  });
+
+  it("records a screen only against a purpose that screen asks for", () => {
+    const askedOn = (screen: (typeof APP_SWITCH_SOURCES)[number]) =>
+      CONSENT_PURPOSES.filter((purpose) => screenAsks(screen, purpose));
+    expect(askedOn("app_profile")).toEqual(CONSENT_PURPOSES);
+    expect(askedOn("app_booking")).toEqual(["whatsapp_visits"]);
+    expect(askedOn("app_share_sheet")).toEqual(["photos_referral_cards"]);
   });
 });
