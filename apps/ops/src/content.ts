@@ -402,13 +402,55 @@ export const clients = {
   failed: "We could not load this client.",
   /*
    * PLACEHOLDER, all of it: the board draws a Visits tab and nothing in it. It
-   * is the record's own address and visits, which the page already holds, so
-   * the tab reads nothing more from the API.
+   * is the record's own address and visits, which the page already holds, and
+   * the form to record an address the client gives ops on the phone, which
+   * searches for their building and saves it (docs/decisions/0092-task-owners.md).
    */
   visits: {
     address: "Visits go to",
-    noAddress: "No address saved yet. The client adds it in their app, or the technician is told on the day.",
+    noAddress: "No address saved yet. The client adds it in their app, or gives it to you on the phone.",
     access: "Access",
+    // PLACEHOLDER: the address a client gave ops on the phone, which no board draws (docs/decisions/0092-task-owners.md).
+    landmark: "Landmark",
+    givenToOps: "Given on the phone",
+    /** "To priya@maneman.in, 28 Sep 2026". */
+    givenTo: (who: string, when: string) => `To ${who}, ${when}`,
+    /** "Closed without a follow-up by priya@maneman.in, 28 Sep 2026", and ops' reason after it. */
+    closedWithout: (who: string, when: string) => `Closed without a follow-up by ${who}, ${when}`,
+    /** The form a member of staff saves an address a client gives them with, which the app's own save follows. */
+    given: {
+      open: "Record an address they give you",
+      change: "Change it to one they give you",
+      title: "An address the client gave you",
+      note:
+        "Saved as the client's address, as their own save in the app is, and marked as given to you. They see it in " +
+        "their app, and may change it there.",
+      building: {
+        label: "Search for their building",
+        hint: "Type the building or society, and choose it, to give the technician a pin.",
+        unavailable: "Search is unavailable just now. Type the address below instead.",
+        found: (count: number) => (count === 1 ? "1 building found" : `${String(count)} buildings found`),
+        // Google asks for their name against suggestions shown without a map.
+        attribution: "Google Maps",
+      },
+      flat: "Flat or house number",
+      floor: "Floor (optional)",
+      tower: "Tower or block (optional)",
+      line1: "Building, society or street",
+      line2: "Street (optional)",
+      landmark: "Landmark (optional)",
+      locality: "Sector or area",
+      city: "City",
+      pincode: "Pincode",
+      accessNotes: "Access notes (optional)",
+      accessHint: "A gate code, or where to park. The technician sees it the day before the visit.",
+      invalid: "Fill in the building or street, the area, the city and a six-digit pincode.",
+      save: "Save their address",
+      saving: "Saving…",
+      cancel: "Cancel",
+      saved: "Saved as their address, marked as given to you.",
+      failed: "That did not save. Try again.",
+    },
     upcoming: "To come",
     past: "Done",
     columns: ["Date", "Time", "Visit", "Technician", "State"],
@@ -938,8 +980,8 @@ export const tasks = {
     /** PLACEHOLDER: "Wed 23 Sep, 10:30 am, and Sameer is away": move it on the dispatch board, or take the leave back. */
     leave_conflict: (when: string, technician: string) => `${when}, and ${technician} is away`,
     /**
-     * PLACEHOLDER: "Visit Tue 22 Sep, 10 am; no address yet". Only the client can save one, in the app, whose Home
-     * asks for it; the task goes when they do.
+     * PLACEHOLDER: "Visit Tue 22 Sep, 10 am; no address yet". The client saves one in the app, whose Home asks for it,
+     * or gives it to ops on the phone, who record it on their page; the task goes when either does (ADR 0092).
      */
     address_to_confirm: (when: string) => `Visit ${when}; no address yet`,
     /** "Asked for 23 Sep 2026, morning": the day nobody could book for them, self-serve booking being off. */
@@ -990,8 +1032,51 @@ export const tasks = {
     left: (days: number) => `${String(days)} ${days === 1 ? "day" : "days"}`,
     over: (days: number) => `Overdue ${String(days)}`,
   },
-  /** PLACEHOLDER: the board draws no note, and a queue with no buttons has to say where the work is done. */
-  note: "Nothing is closed here. A task leaves this list when the thing itself is decided, where it is decided.",
+  /**
+   * Whose each task is (docs/decisions/0092-task-owners.md). The board writes each owner in ops by their first name,
+   * "Priya", in its own column; PLACEHOLDER: it draws no way to take a task, give it to someone or hand it back.
+   */
+  owner: {
+    /** For a screen reader, before the column's name: "Owner: Priya". */
+    label: "Owner: ",
+    nobody: "nobody yet",
+    take: "Take it",
+    handBack: "Hand it back",
+    give: "Give it to…",
+    giveTo: "Give it to",
+    /** The choice in the list that hands someone else's task back. */
+    giveNobody: "Nobody",
+    you: (email: string) => `${email} (you)`,
+    save: "Give it",
+    saving: "Saving…",
+    cancel: "Cancel",
+    errors: {
+      not_found: "This task has left the list meanwhile: its thing was done. Reload the page to see the list now.",
+      invalid_request: "Nobody has used the console lately with that e-mail, so the task cannot be theirs.",
+      unknown: "That did not save. Try again.",
+    } as Readonly<Record<string, string>>,
+  },
+  /**
+   * PLACEHOLDER: a visit left partly done closed without a follow-up, with why, as the owner ruled
+   * (docs/decisions/0092-task-owners.md). No board draws it.
+   */
+  close: {
+    open: "Close without a follow-up",
+    label: "Why no visit is booked to finish it",
+    hint: "Required. Kept with the visit, under your name, and shown on the client's page.",
+    confirm: "Close it",
+    closing: "Closing…",
+    cancel: "Cancel",
+    errors: {
+      not_found: "This task has left the list meanwhile: a visit was booked, or it was closed. Reload the page.",
+      invalid_request: "Say why no visit is booked, in a sentence or two.",
+      unknown: "That did not close. Try again.",
+    } as Readonly<Record<string, string>>,
+  },
+  /** PLACEHOLDER: the board draws no note, and the list has to say where the work is done. */
+  note:
+    "A task leaves this list when the thing itself is decided, where it is decided. A visit left partly done may " +
+    "also be closed here, with why.",
   /** PLACEHOLDER: the board draws twelve tasks and no empty list. */
   empty: "Nothing is waiting.",
 } as const;

@@ -65,6 +65,8 @@
   --ops-waitlist-count: 54px; /* the waitlist's three narrower columns of figures, count, Ref and Alerts (board C3) */
   --ops-waitlist-ref: 60px;
   --ops-waitlist-alerts: 62px;
+  --ops-task-owner: 72px; /* a task's owner, and how long it has left, beside what it is (board D2) */
+  --ops-task-due: 84px;
 
   /* The technician app's targets (design/phase2/Technician App.dc.html, "Targets" and "Gloved use"). */
   --tech-primary: 64px; /* the one primary action, bottom of every screen, and the fields beside it */

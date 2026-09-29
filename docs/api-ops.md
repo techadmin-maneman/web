@@ -340,6 +340,102 @@ Request body:
 }
 ```
 
+### POST /api/clients/{id}/address/suggestions
+
+Buildings matching what ops have typed of the address a client is giving them
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/OpsAddressSuggestionsAsk"
+}
+```
+
+**200**: The suggestions, which may be empty
+
+```json
+{
+  "$ref": "#/components/schemas/AddressSuggestions"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such client, or the client has been erased
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**503**: busy: today's address-lookup ceiling is reached; unavailable: Google could not be reached
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/clients/{id}/address
+
+Save an address the client gave ops on the phone as theirs, marked as given to ops
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/AddressSave"
+}
+```
+
+**200**: Saved, and now the address visits go to
+
+```json
+{
+  "$ref": "#/components/schemas/ClientAddress"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required: no Access token, or a service token, which names no member of staff
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such client, or the client has been erased
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/number-changes
 
 Number changes waiting for ops: both numbers proven by code
@@ -1498,6 +1594,88 @@ What ops still have to do, by group, the longest wait first
 ```
 
 **403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### PUT /api/tasks/{group}/{id}/owner
+
+Make a task a member of staff's, or hand it back to nobody
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/TaskOwnerChange"
+}
+```
+
+**200**: Whose it is now
+
+```json
+{
+  "$ref": "#/components/schemas/TaskOwner"
+}
+```
+
+**400**: invalid_request: nobody has used the console lately with that e-mail
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required: no Access token, or a service token, which names no member of staff
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such task on the board now; its thing may be done already
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/tasks/{group}/{id}/close
+
+Close a visit left partly done without a follow-up, with why; it leaves the board and stays closed
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/TaskClosing"
+}
+```
+
+**204**: Closed, under the member of staff who closed it
+
+**400**: invalid_request: no reason, or a group whose tasks close only when their thing is done
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required: no Access token, or a service token, which names no member of staff
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such task on the board now; a follow-up may be booked, or it is closed already
 
 ```json
 {
@@ -3278,6 +3456,83 @@ Who Access let through, and where signing out goes
         }
       ],
       "description": "For the technician: gate code, parking and the like."
+    },
+    "building": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The building as chosen from the suggestions; null if typed."
+    },
+    "flat": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "floor": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "tower": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "landmark": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "given_to_ops": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "by": {
+              "type": "string",
+              "description": "The Access e-mail of the member of staff who saved it."
+            },
+            "at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          "required": [
+            "by",
+            "at"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Where the client gave it to ops on the phone: who saved it, and when."
     }
   },
   "required": [
@@ -3286,7 +3541,13 @@ Who Access let through, and where signing out goes
     "locality",
     "city",
     "pincode",
-    "access_notes"
+    "access_notes",
+    "building",
+    "flat",
+    "floor",
+    "tower",
+    "landmark",
+    "given_to_ops"
   ],
   "additionalProperties": false
 }
@@ -3403,6 +3664,44 @@ Who Access let through, and where signing out goes
         }
       ],
       "description": "What FSM closed the visit as, a no-show being its own; null until it is closed."
+    },
+    "closed_without_follow_up": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "by": {
+              "type": "string",
+              "description": "The Access e-mail of the member of staff who closed it."
+            },
+            "at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Null once the client is erased."
+            }
+          },
+          "required": [
+            "by",
+            "at",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "For a visit left partly done, ops closing its task without a follow-up visit; null otherwise."
     }
   },
   "required": [
@@ -3418,7 +3717,8 @@ Who Access let through, and where signing out goes
     "prepaid",
     "technician",
     "place",
-    "outcome"
+    "outcome",
+    "closed_without_follow_up"
   ],
   "additionalProperties": false
 }
@@ -4613,6 +4913,181 @@ Who Access let through, and where signing out goes
   "required": [
     "code",
     "reason"
+  ],
+  "additionalProperties": false
+}
+```
+
+### AddressSuggestions
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "suggestions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "place_id": {
+            "type": "string"
+          },
+          "primary": {
+            "type": "string"
+          },
+          "secondary": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "place_id",
+          "primary",
+          "secondary"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "attribution": {
+      "type": "string",
+      "enum": [
+        "Google Maps"
+      ]
+    }
+  },
+  "required": [
+    "suggestions",
+    "attribution"
+  ],
+  "additionalProperties": false
+}
+```
+
+### OpsAddressSuggestionsAsk
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "q": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "What ops have typed so far."
+    },
+    "session": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "description": "One token for the whole search, sent again when the address is saved."
+    }
+  },
+  "required": [
+    "q",
+    "session"
+  ],
+  "additionalProperties": false
+}
+```
+
+### AddressSave
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "line1": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "line2": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 120
+    },
+    "locality": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "city": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40
+    },
+    "pincode": {
+      "type": "string",
+      "pattern": "^\\d{6}$"
+    },
+    "access_notes": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 300,
+      "description": "For the technician, from the day before the visit: gate code, parking."
+    },
+    "building": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 120,
+      "description": "The building as chosen from the suggestions; null if typed."
+    },
+    "flat": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 40
+    },
+    "floor": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 20
+    },
+    "tower": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 40
+    },
+    "landmark": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 120
+    },
+    "place_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 300,
+      "description": "Google's Place ID for the building, if one was chosen."
+    },
+    "session_token": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 100
+    }
+  },
+  "required": [
+    "line1",
+    "line2",
+    "locality",
+    "city",
+    "pincode",
+    "access_notes"
   ],
   "additionalProperties": false
 }
@@ -6237,6 +6712,13 @@ Who Access let through, and where signing out goes
       "type": "boolean",
       "description": "More were waiting than one look reads (2000 a statement), so a count may be short."
     },
+    "staff": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "The members of staff a task may be given to: those who have used the console in the last 90 days, by e-mail."
+    },
     "groups": {
       "type": "array",
       "items": {
@@ -6266,6 +6748,10 @@ Who Access let through, and where signing out goes
             "type": "integer",
             "description": "How many are waiting in the group, all of them."
           },
+          "closable": {
+            "type": "boolean",
+            "description": "Ops may close a task of the group without doing its thing, with a reason."
+          },
           "tasks": {
             "type": "array",
             "items": {
@@ -6277,6 +6763,7 @@ Who Access let through, and where signing out goes
         "required": [
           "group",
           "count",
+          "closable",
           "tasks"
         ],
         "additionalProperties": false
@@ -6286,6 +6773,7 @@ Who Access let through, and where signing out goes
   "required": [
     "overdue",
     "truncated",
+    "staff",
     "groups"
   ],
   "additionalProperties": false,
@@ -6349,6 +6837,19 @@ Who Access let through, and where signing out goes
       "type": "string",
       "format": "date-time",
       "description": "since plus the group's allowance, which ops set; 48 hours until they do."
+    },
+    "owner": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 254
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The Access e-mail of the member of staff it is theirs; null while it is nobody's."
     }
   },
   "required": [
@@ -6356,7 +6857,82 @@ Who Access let through, and where signing out goes
     "person",
     "detail",
     "since",
-    "due"
+    "due",
+    "owner"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TaskOwner
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "owner": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 254
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The Access e-mail of the member of staff it is theirs; null while it is nobody's."
+    }
+  },
+  "required": [
+    "owner"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TaskOwnerChange
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "owner": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 254
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A member of staff who has used the console in the last 90 days, by their Access e-mail: one's own to take the task, another's to give it to them; null to hand it back."
+    }
+  },
+  "required": [
+    "owner"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TaskClosing
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300,
+      "description": "Why no follow-up is booked, in ops' words: kept with the closing, blanked if the client is erased."
+    }
+  },
+  "required": [
+    "reason"
   ],
   "additionalProperties": false
 }

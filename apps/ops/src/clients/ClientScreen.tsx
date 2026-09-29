@@ -31,6 +31,7 @@ import { Pieces } from "./Pieces.tsx";
 import { Visits } from "./Visits.tsx";
 
 type Credits = ClientRecord["credits"];
+type Address = ClientRecord["address"];
 
 /** The invite the attach form last answered, and what it found, which stand over the record read on opening. */
 interface Attached {
@@ -102,6 +103,8 @@ function Tab({
   onCredits,
   attached,
   onAttached,
+  address,
+  onAddress,
   photos,
 }: {
   clientId: string;
@@ -111,9 +114,11 @@ function Tab({
   onCredits: (credits: Credits) => void;
   attached: Attached | null;
   onAttached: (attached: Attached) => void;
+  address: Address;
+  onAddress: (address: NonNullable<Address>) => void;
   photos: ReturnType<typeof usePhotos>;
 }) {
-  if (tab === "visits") return <Visits record={record} />;
+  if (tab === "visits") return <Visits clientId={clientId} record={record} address={address} onAddress={onAddress} />;
   if (tab === "pieces") return <Pieces clientId={clientId} />;
   if (tab === "payments") {
     return (
@@ -142,6 +147,8 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
   // What the credit form last answered, which stands over the record read when the page opened.
   const [adjusted, setAdjusted] = useState<{ credits: Credits } | null>(null);
   const [attached, setAttached] = useState<Attached | null>(null);
+  // An address a client gave on the phone, saved on this page, which stands over the one read on opening.
+  const [given, setGiven] = useState<{ address: NonNullable<Address> } | null>(null);
 
   return (
     <Shell section="/clients" title={clients.title} flush>
@@ -182,6 +189,10 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
                 }}
                 attached={attached}
                 onAttached={setAttached}
+                address={given?.address ?? record.address}
+                onAddress={(address) => {
+                  setGiven({ address });
+                }}
                 photos={photos}
               />
             </div>

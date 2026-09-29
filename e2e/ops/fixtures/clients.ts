@@ -23,6 +23,12 @@ export const RECORD = {
     city: "Gurgaon",
     pincode: "122018",
     access_notes: "Gate 4417, bay B",
+    building: null,
+    flat: null,
+    floor: null,
+    tower: null,
+    landmark: null,
+    given_to_ops: null,
   },
   credits: { visits: 2, earliest_expiry: "2028-01-03T06:00:00.000Z" },
   visits: {
@@ -42,6 +48,7 @@ export const RECORD = {
         technician: TECHNICIAN,
         place: "Sector 65, Gurgaon 122018",
         outcome: null,
+        closed_without_follow_up: null,
       },
     ],
     past: [
@@ -59,6 +66,7 @@ export const RECORD = {
         technician: TECHNICIAN,
         place: "Sector 65, Gurgaon 122018",
         outcome: "done",
+        closed_without_follow_up: null,
       },
     ],
   },
