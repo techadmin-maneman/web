@@ -220,7 +220,7 @@ test("says a job moved to another time was moved, from the start the phone held"
   await expect(page.getByRole("alert").filter({ hasText: "Ops moved this job to another time." })).toBeVisible();
 });
 
-test("a job ops gave away while its photographs waited says it moved, and asks before deleting them", async ({
+test("a job ops gave away while its photographs waited says whom to, and asks before deleting them", async ({
   page,
   context,
 }) => {
@@ -250,13 +250,19 @@ test("a job ops gave away while its photographs waited says it moved, and asks b
   await expect(page.getByText("Before photos · 0 of 5 sent")).toBeVisible();
   await expect(page.getByRole("button", { name: "Retry" })).toHaveCount(0);
 
-  // Ops gave the job to someone else while the phone was underground.
+  // Ops gave the job to Sameer at 10:40 while the phone was underground. The
+  // photographs' link says whom it went to, as a refused write does (open point 92).
   fake.moved = true;
+  fake.wentTo = { technician: "Sameer", at: `${todayInIndia()}T05:10:00.000Z` };
   fake.online = true;
   await context.setOffline(false);
 
-  await expect(page.getByText("This job is no longer on your list, so what it holds cannot reach us.")).toBeVisible();
-  await expect(page.getByText(/would not upload/)).toHaveCount(0);
+  await expect(page.getByText("Ops moved this job to Sameer at 10:40 am.").first()).toBeVisible();
+  await expect(page.getByText(/would not upload|no longer on your list/)).toHaveCount(0);
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
 
   // "Got it" never throws away photographs on one tap.
   await page.getByRole("button", { name: "Got it" }).click();

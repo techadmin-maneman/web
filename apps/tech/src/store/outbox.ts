@@ -7,6 +7,7 @@
 import type { Moved } from "@maneman/web-kit/api";
 import {
   api,
+  type Answer,
   OUT_OF_ORDER,
   pathFor,
   SUPERSEDED,
@@ -41,6 +42,18 @@ export interface Frame {
 
 /** Why a replay stopped short, so the screen can say it plainly. */
 export type Stopped = "offline" | "signed-out" | null;
+
+/** A job no longer this technician's, as the API said it: the code, what changed, and whom it went to. */
+interface Gone {
+  readonly note: string;
+  readonly fields: readonly string[];
+  readonly moved: Moved | null;
+}
+
+/** Why a photograph could not go up: no signal, signed out, the job gone from the phone, or the file refused. */
+type Trouble = "offline" | "signed-out" | "refused" | Gone;
+
+type Refused = Extract<Answer<unknown>, { readonly ok: false }>;
 
 export interface Replayed {
   readonly sent: number;
@@ -203,7 +216,7 @@ export function replay(): Promise<Replayed> {
  * go. The frames are dropped one by one as they land, so a replay interrupted
  * halfway does not send any of them twice.
  */
-async function uploadFrames(event: Queued, phase: Phase): Promise<Stopped | "gone" | "refused"> {
+async function uploadFrames(event: Queued, phase: Phase): Promise<Trouble | null> {
   const inTheOrderTaken = (await frames()).sort((a, b) => a.kept_at - b.kept_at);
   for (const frame of inTheOrderTaken) {
     if (frame.job_id !== event.job_id || frame.phase !== phase) continue;
@@ -223,13 +236,13 @@ async function uploadFrames(event: Queued, phase: Phase): Promise<Stopped | "gon
  * angle was taken again meanwhile or it is not small enough, is let go, since
  * the client app then shows the photograph itself.
  */
-async function uploadFrame(frame: Frame): Promise<Stopped | "gone" | "refused"> {
+async function uploadFrame(frame: Frame): Promise<Trouble | null> {
   const link = await api.uploadLink(frame.job_id, frame.phase, frame.angle);
-  if (!link.ok) return failureOf(link.status, link.code);
+  if (!link.ok) return failureOf(link);
   let take = frame.take;
   if (take === undefined) {
     const sent = await api.upload(link.body.upload_url, frame.frame);
-    if (!sent.ok) return failureOf(sent.status, sent.code);
+    if (!sent.ok) return failureOf(sent);
     // An API from before thumbnails names no take: the photograph goes alone.
     take = sent.body?.take;
     if (take === undefined) return null;
@@ -238,20 +251,23 @@ async function uploadFrame(frame: Frame): Promise<Stopped | "gone" | "refused"> 
   if (frame.small === undefined) return null;
   const sent = await api.uploadThumbnail(link.body.small_upload_url, take, frame.small);
   if (sent.ok) return null;
-  const trouble = failureOf(sent.status, sent.code);
+  const trouble = failureOf(sent);
   return trouble === "refused" ? null : trouble;
 }
 
 /**
  * What a failed call on the way to a write means for the round: wait, sign out,
- * or stop the job. A 404 is the API saying the job is no longer this
- * technician's — ops gave it to someone else — which the screens say as the
- * change it is, not as photographs that would not upload.
+ * or stop the job. A `409 superseded` is the API saying ops gave the job to
+ * someone else, or cancelled it, and whom it went to; a 404, that it is no
+ * longer on this technician's list. The screens say either as the change it
+ * is, not as photographs that would not upload.
  */
-function failureOf(status: number, code: string): Stopped | "gone" | "refused" {
-  if (unreachable({ status, code })) return "offline";
-  if (status === 401) return "signed-out";
-  return status === 404 ? "gone" : "refused";
+function failureOf(answer: Refused): Trouble {
+  if (unreachable(answer)) return "offline";
+  if (answer.status === 401) return "signed-out";
+  if (answer.code === SUPERSEDED) return { note: SUPERSEDED, fields: answer.fields, moved: answer.moved };
+  if (answer.status === 404) return { note: "not_found", fields: [], moved: null };
+  return "refused";
 }
 
 /**
@@ -277,15 +293,15 @@ async function run(): Promise<Replayed> {
       if (trouble === "offline" || trouble === "signed-out") {
         return { sent, superseded, refused, stopped: trouble };
       }
-      if (trouble === "gone") {
-        await markStopped(event, "superseded", "not_found", []);
-        superseded += 1;
-        changed();
-        continue;
-      }
       if (trouble === "refused") {
         await markStopped(event, "refused", "photo_rejected", []);
         refused += 1;
+        changed();
+        continue;
+      }
+      if (trouble !== null) {
+        await markStopped(event, "superseded", trouble.note, trouble.fields, trouble.moved);
+        superseded += 1;
         changed();
         continue;
       }

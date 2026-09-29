@@ -258,6 +258,21 @@ describe("a write the job has moved under", () => {
     expect(await frames()).toHaveLength(1);
   });
 
+  // Open point 92: the link's refusal names whom the job went to, and when, as a refused write's does.
+  it("stops a job whose photographs' links say it went to another technician, keeping whom and when", async () => {
+    await keepFrame("a", "front", "before", new Blob(["front"]));
+    await queue("before_photos", "a", { phase: "before" });
+    const moved = { technician: "Sameer", at: "2027-01-14T05:10:00.000Z" };
+    api(() => ({
+      status: 409,
+      json: { error: { code: "superseded", request_id: "t", fields: ["technician"], moved } },
+    }));
+
+    expect(await replay()).toMatchObject({ superseded: 1, refused: 0 });
+    expect(await events()).toMatchObject([{ state: "superseded", note: "superseded", fields: ["technician"], moved }]);
+    expect(await frames()).toHaveLength(1);
+  });
+
   it("stops a write the API answers 404 the same way", async () => {
     await queue("checklist", "a", { done: [] });
     api(() => ({ status: 404, json: { error: { code: "not_found", request_id: "t" } } }));

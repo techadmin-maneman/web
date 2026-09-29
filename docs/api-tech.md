@@ -353,7 +353,15 @@ Request body:
 }
 ```
 
-**404**: not_found
+**404**: not_found: no such job, or never this technician's
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: superseded: the job was given to another technician or cancelled while its photographs waited; moved names whom
 
 ```json
 {

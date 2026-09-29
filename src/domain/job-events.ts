@@ -45,11 +45,17 @@ export interface MovedTo {
   readonly at: string | null;
 }
 
+/** What changed under the phone, by field name, and whom the job went to where that is to be said. */
+export interface Superseding {
+  readonly changed: readonly string[];
+  readonly moved: MovedTo | null;
+}
+
 /** What the server did with an event the phone sent. */
 export type Landing =
   | { readonly kind: "landed"; readonly event: JobEvent; readonly replayed: boolean }
-  /** FSM moved the job under the phone: the fields that changed, and whom it went to where that is to be said. */
-  | { readonly kind: "superseded"; readonly changed: readonly string[]; readonly moved: MovedTo | null }
+  /** FSM moved the job under the phone. */
+  | ({ readonly kind: "superseded" } & Superseding)
   /** A step sent before the one ahead of it; the app sends its outbox in order. */
   | { readonly kind: "out_of_order"; readonly needs: JobEventKind }
   /** A check-in or a start on a day that is not the job's own. */
@@ -79,11 +85,10 @@ export async function landJobEvent(db: D1Database, input: EventInput): Promise<L
   const held = await eventByClientId(db, input.job.id, input.eventId);
   if (held !== null) return { kind: "landed", event: held, replayed: true };
 
-  const changed = supersededBy(input.job, input.technicianId, input.expectedStart);
-  if (changed.length > 0) {
+  const superseding = await whatChanged(db, input.job, input.technicianId, input.expectedStart);
+  if (superseding.changed.length > 0) {
     await record(db, input, { superseded: true });
-    const moved = namesTheOtherTechnician(changed) ? await movedTo(db, input.job) : null;
-    return { kind: "superseded", changed, moved };
+    return { kind: "superseded", ...superseding };
   }
 
   const startsTheDay = input.kind === "check_in" || input.kind === "start";
@@ -101,6 +106,40 @@ export async function landJobEvent(db: D1Database, input: EventInput): Promise<L
   const raced = await eventByClientId(db, input.job.id, input.eventId);
   if (raced === null) throw new Error("the job event was not written");
   return { kind: "landed", event: raced, replayed: true };
+}
+
+/**
+ * What FSM changed under a phone that holds the job as it was: none of it when
+ * nothing did. `expectedStart` is the start the phone holds, when it says.
+ */
+export async function whatChanged(
+  db: D1Database,
+  job: WorkableJob,
+  technicianId: string,
+  expectedStart: Date | null,
+): Promise<Superseding> {
+  const changed = supersededBy(job, technicianId, expectedStart);
+  const moved = namesTheOtherTechnician(changed) ? await movedTo(db, job) : null;
+  return { changed, moved };
+}
+
+/**
+ * Whether a job is, or was, this technician's: it is theirs now, a step of
+ * theirs landed on it, or ops moved it from them. Only then is what changed on
+ * it theirs to hear.
+ */
+export async function wasTheirs(db: D1Database, job: WorkableJob, technicianId: string): Promise<boolean> {
+  if (job.technicianId === technicianId) return true;
+  const row = await db
+    .prepare(
+      `SELECT 1 FROM job_events WHERE appointment_id = ?1 AND technician_id = ?2 AND superseded = 0
+       UNION ALL
+       SELECT 1 FROM dispatch_moves WHERE appointment_id = ?1 AND was_technician_id = ?2
+       LIMIT 1`,
+    )
+    .bind(job.id, technicianId)
+    .first();
+  return row !== null;
 }
 
 /** What FSM changed under the phone, by field name, a cancellation first. Empty when nothing did. */

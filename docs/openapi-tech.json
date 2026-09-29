@@ -2127,7 +2127,17 @@
             }
           },
           "404": {
-            "description": "not_found",
+            "description": "not_found: no such job, or never this technician's",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "superseded: the job was given to another technician or cancelled while its photographs waited; moved names whom",
             "content": {
               "application/json": {
                 "schema": {

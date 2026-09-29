@@ -854,6 +854,62 @@ describe("the photographs", () => {
     expect((await putThumbnail(links.small_upload_url, first, syntheticJpeg(300, 400))).status).toBe(409);
   });
 
+  // Open point 92: a job given away while its photographs wait names whom it went to, as a refused write does.
+  it("answers an upload link for a job ops gave away as superseded, naming whom, by first name, and when", async () => {
+    await startJob();
+    await opsPost("/api/dispatch/move", {
+      appointment_id: TODAY_JOB,
+      ...AS_THE_BOARD_SHOWS_IT,
+      technician_id: SAMEER,
+      reason: "technician_unavailable",
+    });
+
+    const answer = await askForUploadLink(TODAY_JOB);
+
+    expect(answer.status).toBe(409);
+    const { error } = await answer.json<{ error: Record<string, unknown> }>();
+    expect(error).toEqual({
+      code: "superseded",
+      request_id: expect.any(String) as string,
+      fields: ["technician"],
+      moved: { technician: "Sameer", at: NOW.toISOString() },
+    });
+  });
+
+  it("answers an upload link for a job cancelled while its photographs wait as superseded, naming nobody", async () => {
+    await startJob();
+    await env.DB.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = ?1").bind(TODAY_JOB).run();
+
+    const answer = await askForUploadLink(TODAY_JOB);
+
+    expect(answer.status).toBe(409);
+    const { error } = await answer.json<{ error: Record<string, unknown> }>();
+    expect(error).toMatchObject({ code: "superseded", fields: ["status"] });
+    expect(error).not.toHaveProperty("moved");
+  });
+
+  it("answers not found for a job that was never this technician's, and names nobody", async () => {
+    await insertJob(OTHER_JOB, { fsmId: "ap-other", start: "2026-09-21T07:30:00.000Z", technician: SAMEER });
+
+    const answer = await askForUploadLink(OTHER_JOB);
+
+    expect(answer.status).toBe(404);
+    expect(await answer.json()).toMatchObject({ error: { code: "not_found" } });
+  });
+
+  function askForUploadLink(jobId: string): Promise<Response> {
+    return request(
+      tech,
+      `/api/tech/jobs/${jobId}/photos/upload-url`,
+      {
+        method: "POST",
+        headers: { Cookie: cookie, Origin: "https://maneman.test", "Content-Type": "application/json" },
+        body: JSON.stringify({ phase: "before", angle: "front" }),
+      },
+      bindings(),
+    );
+  }
+
   async function uploadLinks(): Promise<{ upload_url: string; small_upload_url: string }> {
     const answer = await request(
       tech,

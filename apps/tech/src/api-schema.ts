@@ -636,8 +636,17 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found */
+                /** @description not_found: no such job, or never this technician's */
                 404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description superseded: the job was given to another technician or cancelled while its photographs waited; moved names whom */
+                409: {
                     headers: {
                         [name: string]: unknown;
                     };

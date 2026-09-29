@@ -300,9 +300,10 @@ export interface Fake {
   /** Set with `supersede` to name whom the job went to, and when, as the API does (open point 92). */
   wentTo: WentTo;
   /**
-   * True once ops have given the job to someone else: its card and its upload
-   * links answer 404, as the API answers for a job that is not this
-   * technician's, and a write answers `409 superseded` naming the technician.
+   * True once ops have given the job to someone else: its card and a
+   * photograph's PUT answer 404, as the API answers for a job that is not this
+   * technician's, and a write or an upload link answers `409 superseded`
+   * naming the field, and whom the job went to where `wentTo` says.
    */
   moved: boolean;
   /**
@@ -467,7 +468,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     if (method === "POST") {
       if (path === "/api/tech/auth/logout") return reply(route, 204);
       if (path.endsWith("/photos/upload-url")) {
-        if (fake.moved) return refuse(route, 404, "not_found");
+        if (fake.moved) return refuse(route, 409, "superseded", ["technician"], fake.wentTo);
         const body = route.request().postDataJSON() as { phase: string; angle: string };
         return reply(route, 201, {
           upload_url: `/api/tech/photos/${body.phase}-${body.angle}`,
@@ -476,7 +477,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
         });
       }
 
-      if (fake.moved) return refuse(route, 409, "superseded", ["technician"]);
+      if (fake.moved) return refuse(route, 409, "superseded", ["technician"], fake.wentTo);
       if (fake.movedTo !== null && startsAt !== null && startsAt !== fake.movedTo) {
         return refuse(route, 409, "superseded", ["time"]);
       }
