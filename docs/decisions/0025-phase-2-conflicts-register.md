@@ -249,7 +249,7 @@ The owner's answers to open points 61 and 62 are built ([0092](0092-task-owners.
 
 79. **The places the console names.** Board B3 draws a Source column that writes "App" or "Site". **Taken 28 September 2026, for the owner to confirm** ([0094](0094-where-a-consent-was-given.md)), building the owner's ruling that a consent records where it was given (`docs/open-points.md`, item 50):
     - **Finer than the board's two, and the owner's four.** The site's booking form, its waitlist, a friend's invite, the try-on, a booking in the app (the pay step, and "Remind me" on the booking sheet), the profile's switch, the share sheet's card step, the technician (where nothing asks for one yet) and an erasure's withdrawals. The console writes them "Site", "Waitlist", "Invite", "Try-on", "Booking", "Profile", "Refer", "Technician" and "Erasure", placeholders approved with the rest of the console's copy (`docs/open-points.md`, item 42).
-    - **"Not recorded", never a guess.** A consent given before 28 September 2026 on a notice more than one place showed has no place, and the console says so. Production's rows, all Phase 1's, each have theirs.
+    - **"Not recorded", never a guess.** A consent with no place kept says so: one given before this release reached the environment on a notice more than one place showed, one the Worker it replaces writes between its migration and its deploy, and one switched from a copy of the app loaded before it, which names no screen. Production's rows from before, all Phase 1's, each have theirs.
     - **The notice's version leaves the console's table,** where it stood in for the source (ADR 0080). It stays in the route's answer and the client's export.
 
 ## Inputs still owed

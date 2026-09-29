@@ -201,7 +201,7 @@ const ClientConsentsSchema = z
           at: z.union([z.iso.datetime(), z.null()]).openapi({ description: "When they last switched it." }),
           source: z.union([z.enum(CONSENT_SOURCES), z.null()]).openapi({
             description:
-              "Where they last switched it. null when never switched, or switched before 28 September 2026 on a notice shown in more than one place, which was not recorded.",
+              "Where they last switched it. null when never switched, or when no place was kept: given before this release reached the environment on a notice shown in more than one place, written by the Worker it replaced between its migration and its deploy, or switched from a copy of the app loaded before it, which names no screen.",
           }),
         })
         .strict(),

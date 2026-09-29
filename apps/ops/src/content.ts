@@ -646,7 +646,10 @@ export const clients = {
       technician: "Technician",
       erasure: "Erasure",
     },
-    /** PLACEHOLDER: a consent given before 28 September 2026 on a notice several places showed. */
+    /**
+     * PLACEHOLDER: a consent with no place kept: given before this release on a notice several places showed, written
+     * by the Worker it replaced before it was deployed, or switched from a copy of the app loaded before it.
+     */
     notRecorded: "Not recorded",
     /** The board's note. It writes "from his own app"; this says "their" (docs/fidelity-method.md). */
     note: "Ops cannot grant a consent. Only the client can, from their own app.",

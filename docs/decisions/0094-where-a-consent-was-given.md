@@ -58,7 +58,7 @@ Nothing else holds the fix: the check-in's job event keeps its time and distance
 
 ## Consequences
 
-- Ops see where each consent was given. A consent recorded without a place reads "Not recorded" for good: the ledger is never rewritten.
+- Ops see where each consent was given. A consent with no place reads "Not recorded" for good, since the ledger is never rewritten. There are three such: one given before this release reached the environment on a notice shown in more than one place; one the Worker it replaces writes between the migration and the deploy; and one switched from a copy of the app loaded before the deploy, which names no screen.
 - The owner approves the console's words for each place (ADR 0025, item 79).
 - `technician` has no writer until the technician's app asks for a consent.
 - An erased client's check-ins no longer say where the technician stood; whether the technician was within the radius still does.
