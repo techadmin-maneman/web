@@ -16,7 +16,7 @@ An alert in the alert space names what went wrong with IDs only; "What each aler
 | ----------------------------------------------------------- | ------------------------------------------------------------------- |
 | Nobody can sign in, or messages stop                        | "WhatsApp (Evolution) is down", and "The WhatsApp number is banned" |
 | Visits stop reaching FSM, or FSM's changes stop reaching us | "FSM is down", "FSM's webhook has stopped"                          |
-| A paid booking was refunded, or a refund failed             | "A paid booking FSM would not take", "A refund that failed"         |
+| A paid booking is waiting for FSM, or a refund failed       | "A booking FSM would not take", "A refund that failed"              |
 | Clients pay and their bookings never confirm                | "Razorpay's webhook is not arriving"                                |
 | An invoice is still a draft, or Books refuses something     | "Invoices and Books"                                                |
 | Leads stop reaching the CRM                                 | "Leads and Zoho"                                                    |
@@ -738,8 +738,8 @@ The chat shows the message; the `alerts` table keeps it under its key. Most aler
 | Lead _id_ did not reach FSM                                                         | none                                                                                                      | not kept                             | "FSM is down"                                                           |
 | A technician's _step_ … has waited over an hour to reach FSM                        | `job_event_pending:<job event>`                                                                           | when it is written or given up       | "FSM is down"                                                           |
 | A technician's _step_ did not reach FSM after _n_ attempts                          | none                                                                                                      | not kept                             | "FSM is down"                                                           |
-| Booking _id_ was paid for … and is neither booked in FSM nor refunded               | `unbooked_hold:<hold>`                                                                                    | when booked or given back            | "A paid booking FSM would not take"                                     |
-| Booking _id_ could not be written to FSM after _n_ attempts                         | `booking_given_up:<hold>`                                                                                 | when booked or given back            | "A paid booking FSM would not take"                                     |
+| Booking _id_ was paid for … and is neither booked in FSM nor refunded               | `unbooked_hold:<hold>`                                                                                    | when booked or given back            | "A booking FSM would not take"                                          |
+| Booking _id_ could not be written to FSM after _n_ attempts. Nothing is refunded …  | `booking_held:<hold>`                                                                                     | when booked or refunded              | "A booking FSM would not take"                                          |
 | Booking _id_: an earlier try may have made its work order in FSM                    | `work_order_lookup_failed:<hold>`                                                                         | by hand                              | cancel all but one work order, as it says                               |
 | The client moved visit _id_ … and FSM would not cancel its work order               | `replaced_not_cancelled:<visit>`                                                                          | by hand                              | cancel it in FSM, as it says                                            |
 | The refund … for visit _id_, cancelled by the client (or waived), failed            | `cancel_refund_failed:<visit>`, `no_show_refund_failed:<visit>`                                           | by hand                              | "A refund that failed"                                                  |
@@ -816,7 +816,7 @@ The sweeper picks them up within five minutes. A replay never duplicates a Zoho 
 
 ## FSM and Books
 
-FSM is the record of field work; D1 keeps a mirror of its appointments (ADR 0032). Everything mm-api writes to FSM goes through the fsm-sync queue, which tries each write five times, 30 seconds, 1, 2 and 4 minutes apart: about eight minutes, then it gives up. Books is written by the cron, once an hour for each record. Production has both switched off today (`FSM_PROVIDER` and `BOOKS_PROVIDER` are `none`).
+FSM is the record of field work; D1 keeps a mirror of its appointments (ADR 0032). Everything mm-api writes to FSM goes through the fsm-sync queue, which tries each write five times, 30 seconds, 1, 2 and 4 minutes apart: about eight minutes, then it gives up, but for a booking, which is held for ops (ADR 0095). Books is written by the cron, once an hour for each record. Production has both switched off today (`FSM_PROVIDER` and `BOOKS_PROVIDER` are `none`).
 
 ### FSM is down
 
@@ -824,7 +824,7 @@ Symptoms: `fsm_sync_failed`, `booking_failed` and `job_event_write_failed` in Wo
 
 What happens while it lasts, each once its eight minutes are spent:
 
-- **A paid booking** is given up: the work order FSM may hold for it is cancelled, the client is refunded in full, and ops are told what happened to each (`booking_given_up`, "A paid booking FSM would not take"). So every booking paid during an outage longer than about eight minutes is refunded. For a long one, stop taking them: set `SELF_SERVE_BOOKING` to `"false"` in `wrangler.jsonc` and deploy, and the app says booking goes through ops.
+- **A booking** is held: it keeps its slot and its payment, nothing is refunded, ops are told once (`booking_held`, "A booking FSM would not take"), and the cron tries it again every hour for 24 hours. So every booking made during the outage waits, holding its slot, and is booked by the first try after FSM answers. For an outage longer than a day, stop taking them: set `SELF_SERVE_BOOKING` to `"false"` in `wrangler.jsonc` and deploy, and the app says booking goes through ops.
 - **A technician's step** is marked `rejected`, with every later step of the same job held back behind it, and ops are told to enter them in FSM by hand. (A step whose queue message was lost is a different thing: the sweeper sends it again after 15 minutes, and tells ops once if it has waited an hour, `job_event_pending`.)
 - **A lead from the site** is told to ops, to enter in FSM by hand.
 - **The mirror** stays as FSM last answered. FSM's webhook hints fail too, and a hint given up on is told (`fsm_sync`); the reconciliation catches up afterwards.
@@ -832,7 +832,7 @@ What happens while it lasts, each once its eight minutes are spent:
 
 Once FSM answers again:
 
-1. **Bookings given up** need nothing more than the client being asked to book again; the alert says whether each was refunded.
+1. **Bookings held** are booked by the next hourly try. Those past their 24 hours, or whose visit's time came while FSM was down, wait on the Tasks board's "Booking not in FSM": try FSM again from the client's Visits tab, or, for a visit whose time has passed, agree another time with the client, book it in FSM and link it there, or refund it.
 2. **Technicians' steps** rejected because FSM could not be reached can be sent again instead of typed in. List them:
 
    ```sql
@@ -867,24 +867,27 @@ In Workers Logs:
 - Nothing at all: FSM is not calling. Its workflow rule may be off, or, on staging, Access is stopping `/api/hooks/` (step 12, point 3). If `FSM_WEBHOOK_TOKEN` is not set, the route answers 404.
 - Hints taken but `last_error` filled: they reached us and reading the appointment failed; "FSM is down".
 
-### A paid booking FSM would not take
+### A booking FSM would not take
 
-A booking is written to FSM from the queue once Razorpay says the client paid (ADR 0068). Two alerts follow a booking FSM will not take:
+A booking is written to FSM from the queue once Razorpay says the client paid, or at once for a free one (ADR 0068). FSM's fifth refusal running holds it for ops rather than refunding it (ADR 0095): its slot and its payment are kept, and the cron tries it again every hour for 24 hours, as often and as long as Settings · Rules says ("Trying again a booking FSM refused"). Two alerts follow a booking FSM will not take:
 
-- **"… is neither booked in FSM nor refunded half an hour on"** (`unbooked_hold`): the cron has put it back on the queue. Nothing to do; if FSM still refuses it, the next alert follows.
-- **"Booking _id_ could not be written to FSM after _n_ attempts"** (`booking_given_up`). It says what happened to the money and to FSM, and each line has its action:
+- **"… is neither booked in FSM nor refunded half an hour on"** (`unbooked_hold`): the queue lost it, and the cron has put it back. Nothing to do; if FSM still refuses it, the next alert follows.
+- **"Booking _id_ could not be written to FSM after _n_ attempts. Nothing is refunded …"** (`booking_held`), once. It gives FSM's reason and links to the client's Visits tab, where the booking heads the page until it is booked or refunded; the Tasks board lists it as "Booking not in FSM".
 
-  | The alert says                                                        | Do                                                                                                                                                         |
-  | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-  | Razorpay payment _id_ is refunded in full                             | Tell the client, and ask them to book again once FSM is working                                                                                            |
-  | Razorpay payment _id_ had already been refunded                       | Nothing                                                                                                                                                    |
-  | Nothing was paid for it, so nothing is refunded                       | Nothing                                                                                                                                                    |
-  | It is booked, so nothing is refunded: a step after the booking failed | Check the visit in FSM and in the console                                                                                                                  |
-  | Razorpay refused to refund payment _id_                               | Refund it by hand in Razorpay's dashboard, in full, once. The hold keeps its time; once the refund reaches us the next try lets it go and closes the alert |
-  | Its work order _id_ is cancelled in FSM                               | Nothing                                                                                                                                                    |
-  | FSM would not cancel its work order _id_                              | Cancel it in FSM by hand, so no technician goes                                                                                                            |
-  | FSM may hold a work order for it whose answer never came              | Look in FSM's work orders for "(booking _id_)" and cancel it                                                                                               |
-  | Giving it up failed too, so nothing has been refunded yet             | Nothing yet: it is tried again in half an hour                                                                                                             |
+Read FSM's reason first. A 5xx, a timeout, `Access Denied` or `TOKEN_COOLING_DOWN` is FSM or its token being down ("FSM is down"): the hourly tries book it once FSM answers, so wait. A 4xx about the booking itself (`INVALID_DATA`, `MANDATORY_NOT_FOUND`) will not pass on a try: put what FSM names right (the service's item, the client's contact), then use **Try FSM again**, or book it by hand. From the client's Visits tab:
+
+- **Try FSM again** tries now, as the hourly try would, and says whether FSM took it. It is not offered once the visit's time has passed.
+- **Link the visit I booked in FSM**: book the visit in FSM's own screens, at the booked time or another agreed with the client, wait a minute for it to reach the console (reload the page), and choose it. The booking becomes that visit, with its payment, and the client gets the booking's message. A work order an earlier try left for the booking is cancelled in FSM; if FSM would not cancel it, the answer says to cancel it by hand.
+- **Refund it** cancels what FSM holds for the booking, refunds the payment in full, lets the slot go and tells the client on WhatsApp. The answer says what happened to each:
+
+  | The answer says                                           | Do                                                                                   |
+  | --------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+  | Refunded … in full, or refunded before                    | Nothing                                                                              |
+  | Nothing was paid for it                                   | Nothing: a free or credit booking; the credit was never spent                        |
+  | A try booked it in FSM meanwhile                          | Nothing is refunded: check the visit in the console                                  |
+  | Razorpay refused to refund …                              | The booking still waits. Try again later, or refund it in Razorpay's dashboard, once |
+  | FSM would not cancel its work order _id_                  | Cancel it in FSM by hand, so no technician goes                                      |
+  | FSM may hold a work order for it: look for "(booking … )" | Look in FSM's work orders for "(booking _id_)" and cancel it                         |
 
 ### Invoices and Books
 
