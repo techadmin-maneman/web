@@ -38,9 +38,17 @@ const credit = (overrides: Partial<CreditLine>): CreditLine => ({
   ...overrides,
 });
 
+/** A visit the client was not home for, ruled on before its charge was recorded. */
+const noShow = (decision: "undecided" | "charged" | "waived") => ({
+  decision,
+  waited_minutes: 16,
+  charge: null,
+  dispute: null,
+  disputable: false,
+});
+
 describe("a visit's payment the client was not home for", () => {
-  const notHome = (decision: "undecided" | "charged" | "waived") =>
-    payment({ no_show: { decision, waited_minutes: 16 } });
+  const notHome = (decision: "undecided" | "charged" | "waived") => payment({ no_show: noShow(decision) });
 
   it("says nobody was home and how long we waited, in place of the method", () => {
     expect(entryMeta(notHome("charged"), 2030)).toBe("10 Sep · not home, we waited 16 min");
@@ -67,7 +75,7 @@ describe("the credits among the payments", () => {
 
   it("say a credit is lost on a late cancel or a charged no-show, and back after a cancel in time", () => {
     expect(creditStatus(credit({ event: "lost" }))).toBe("Credit lost");
-    expect(creditMeta(credit({ event: "lost", no_show: { decision: "charged", waited_minutes: 16 } }), 2030)).toBe(
+    expect(creditMeta(credit({ event: "lost", no_show: noShow("charged") }), 2030)).toBe(
       "19 Sep · not home, we waited 16 min",
     );
     expect(creditStatus(credit({ event: "returned", visits: 1 }))).toBe("Credit returned");

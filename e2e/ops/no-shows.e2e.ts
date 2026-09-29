@@ -1,12 +1,13 @@
-// Board D1: the day's money over the charges it was kept on, then the queue of
-// cases with the evidence ops rule on, and the ruling. The API is answered
-// from e2e/ops/fixtures.ts, since no route can open a case from outside: a
+// Board D1: the day's money over the charges it was kept on, then each charge a
+// client disputed, with Refund and Uphold, then the queue of cases with the
+// evidence ops rule on, and the ruling. The API is answered from
+// e2e/ops/fixtures.ts, since no route can open a case from outside: a
 // technician's phone closes a job as a no-show.
 
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { answer, DAY_MONEY, fails, json, NO_SHOW_UNMEASURED, NO_SHOWS, type Call } from "./fixtures.ts";
+import { answer, DAY_MONEY, DISPUTES, fails, json, NO_SHOW_UNMEASURED, NO_SHOWS, type Call } from "./fixtures.ts";
 
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 const FIRST = "Visit of Sun 19 Sep";
@@ -15,12 +16,22 @@ const QUEUE = "Waiting for a decision";
 const MONEY = "Today";
 const CASE = NO_SHOWS.cases[0]?.id ?? "";
 const DECIDE: Call = `POST /api/no-shows/${CASE}/decision`;
+const DISPUTE = DISPUTES.disputes[0]?.id ?? "";
+const RULE: Call = `POST /api/no-shows/disputes/${DISPUTE}/ruling`;
+const DISPUTED = "Vikram Sethi disputes the charge";
 
-async function open(page: Page, decision = json({ decided: true }), path = "/no-shows"): Promise<void> {
+async function open(
+  page: Page,
+  decision = json({ decided: true }),
+  path = "/no-shows",
+  ruling = json({ ruled: true }),
+): Promise<void> {
   await answer(page, {
     "GET /api/payments": json(DAY_MONEY),
     "GET /api/no-shows": json(NO_SHOWS),
+    "GET /api/no-shows/disputes": json(DISPUTES),
     [DECIDE]: decision,
+    [RULE]: ruling,
   });
   await page.goto(path);
   await expect(page.getByRole("heading", { name: QUEUE })).toBeVisible();
@@ -47,14 +58,14 @@ test("heads the day with the board's three figures, as money", async ({ page }) 
   await expect(money.getByText("Rs. 2,360 went back today")).toBeVisible();
 });
 
-// The board prices a no-show like a late cancellation. Nothing here records
-// what one was charged, so the figure holds what was kept and says what it
-// leaves out, rather than a total that reads as the whole of the day's charges.
-test("counts the no-shows beside the charges figure instead of pricing them", async ({ page }) => {
+// The board prices a no-show like a late cancellation, and the charge records what it kept
+// (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md): the figure adds both, and leaves nothing out.
+test("adds what a charged no-show kept to the charges figure", async ({ page }) => {
   await open(page);
   const money = page.getByRole("region", { name: MONEY });
   await expect(money.getByText("Charges and no-shows")).toBeVisible();
-  await expect(money.getByText("1 no-show not charged yet")).toBeVisible();
+  await expect(money.getByText("Rs. 4,720")).toBeVisible();
+  await expect(money.getByText("not charged yet")).toBeHidden();
 });
 
 test("lists each charge with its client, its amount and the evidence for it", async ({ page }) => {
@@ -64,24 +75,79 @@ test("lists each charge with its client, its amount and the evidence for it", as
   await expect(charge.getByText("Cancelled 9:14 am · visit was 10 am")).toBeVisible();
 });
 
-// Ops rule on the evidence and the charge itself is applied at P2-M5, so no
-// amount is recorded anywhere: words, never a nought.
-test("says a no-show is not charged yet, and puts no amount against it", async ({ page }) => {
+test("lists a charged no-show with what its charge kept, and the evidence", async ({ page }) => {
   await open(page);
   const charge = page.getByRole("listitem").filter({ hasText: "Karan Bose · no-show" });
-  await expect(charge.getByText("Not charged yet")).toBeVisible();
+  await expect(charge.getByText("Rs. 2,360")).toBeVisible();
   await expect(charge.getByText("Imran Qureshi attended · visit was 11:30 am")).toBeVisible();
+});
+
+// A no-show charged before a charge recorded what it kept: words, never a nought.
+test("says a no-show's amount was not recorded where its charge kept none on record", async ({ page }) => {
+  const unrecorded = {
+    ...DAY_MONEY,
+    charged: 236_000,
+    charges: DAY_MONEY.charges.map((charge) => (charge.kind === "no_show" ? { ...charge, amount: null } : charge)),
+  };
+  await answer(page, { "GET /api/payments": json(unrecorded), "GET /api/no-shows": json(NO_SHOWS) });
+  await page.goto("/no-shows");
+  const charge = page.getByRole("listitem").filter({ hasText: "Karan Bose · no-show" });
+  await expect(charge.getByText("Amount not recorded")).toBeVisible();
   await expect(charge.getByText("Rs.")).toBeHidden();
 });
 
-// Nothing records a disputed charge and no client can raise one, so the board's
-// second card is a line saying so rather than a Refund and an Uphold that
-// would rule on nothing (docs/open-points.md, item 60).
-test("says why the disputed charge is not built, and offers no Refund or Uphold", async ({ page }) => {
+/** Board D1's second card, found by its heading. */
+const disputeCard = (page: Page) => page.getByRole("region", { name: DISPUTED });
+
+test("draws a disputed charge: the client's words, what the charge took, and the board's four rows", async ({
+  page,
+}) => {
   await open(page);
-  await expect(page.getByText("No client can raise a dispute yet")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Refund" })).toBeHidden();
-  await expect(page.getByRole("button", { name: "Uphold" })).toBeHidden();
+  const card = disputeCard(page);
+  await expect(card.getByText("Disputed charge")).toBeVisible();
+  await expect(card.getByText("I was home all morning. Nobody rang the bell.")).toBeVisible();
+  await expect(card.getByText("The charge kept Rs. 2,360, for the visit of Sun 19 Sep.")).toBeVisible();
+  const row = (name: string) =>
+    card
+      .getByRole("term")
+      .filter({ hasText: new RegExp(`^${name}$`) })
+      .locator("+ dd");
+  await expect(row("Check-in")).toHaveText("11:31 am");
+  await expect(row("Distance")).toHaveText("240 m · over 200 m fence");
+  await expect(row("WhatsApp")).toHaveText("Delivered 11:32 am");
+  await expect(row("Waited")).toHaveText("16 min · closed 11:47 am");
+});
+
+test("offers Refund and Uphold only once the note is written, and sends the ruling with it", async ({ page }) => {
+  await open(page);
+  const card = disputeCard(page);
+  await expect(card.getByRole("button", { name: "Refund" })).toBeDisabled();
+  await expect(card.getByRole("button", { name: "Uphold" })).toBeDisabled();
+  await card.getByLabel("Your note · required").fill("The bell was broken that week");
+
+  const sent = page.waitForRequest((request) => request.url().includes("/ruling") && request.method() === "POST");
+  await answer(page, { "GET /api/no-shows/disputes": json({ disputes: [] }) });
+  await card.getByRole("button", { name: "Refund" }).click();
+  expect((await sent).postDataJSON()).toEqual({ ruling: "refunded", reason: "The bell was broken that week" });
+  await expect(page.getByText(DISPUTED)).toBeHidden();
+  await expect(page.getByText("No charge is disputed.")).toBeVisible();
+});
+
+test("upholds a charge with its note", async ({ page }) => {
+  await open(page);
+  const card = disputeCard(page);
+  await card.getByLabel("Your note · required").fill("He rang twice and waited");
+  const sent = page.waitForRequest((request) => request.url().includes("/ruling") && request.method() === "POST");
+  await card.getByRole("button", { name: "Uphold" }).click();
+  expect((await sent).postDataJSON()).toEqual({ ruling: "upheld", reason: "He rang twice and waited" });
+});
+
+test("says so when someone else has ruled on the dispute already", async ({ page }) => {
+  await open(page, undefined, undefined, fails(404, "not_found"));
+  const card = disputeCard(page);
+  await card.getByLabel("Your note · required").fill("The bell was broken");
+  await card.getByRole("button", { name: "Uphold" }).click();
+  await expect(card.getByRole("alert")).toContainText("Someone has ruled on this dispute already.");
 });
 
 test("says so when nothing was charged on the day", async ({ page }) => {
@@ -92,7 +158,6 @@ test("says so when nothing was charged on the day", async ({ page }) => {
       refunds_processing: 0,
       refunded: 0,
       charged: 0,
-      no_shows_charged: 0,
       charges: [],
     }),
     "GET /api/no-shows": json(NO_SHOWS),
@@ -129,8 +194,9 @@ test("shows each case's client, the booked window, both clocks and the evidence"
   await expect(fact(page, FIRST, "Booked")).toHaveText("Sun 19 Sep, 11:30 am to 1 pm");
   await expect(fact(page, FIRST, "Check-in")).toHaveText("11:31 am · 1 m after the booked start");
   await expect(fact(page, FIRST, "Reached us")).toHaveText("Sun 19 Sep, 11:31 am");
-  // The route gives the distance, not the radius that was in force, so no fence is lettered.
-  await expect(fact(page, FIRST, "Distance")).toHaveText("240 m");
+  // Against the radius in force when he checked in, as the board letters it.
+  await expect(fact(page, FIRST, "Distance")).toHaveText("240 m · over 200 m fence");
+  await expect(fact(page, SECOND, "Distance")).toHaveText("12 m · inside 200 m fence");
   await expect(fact(page, FIRST, "WhatsApp")).toHaveText("Delivered Sun 19 Sep, 11:32 am");
   // From the check-in to the close, not the fifteen minutes the rules asked for.
   await expect(fact(page, FIRST, "Waited")).toHaveText("16 min · closed 11:47 am");
@@ -249,12 +315,12 @@ test("waives a case with its reason, and the case leaves the queue", async ({ pa
   await expect(page.getByText(FIRST)).toBeHidden();
 });
 
-test("shows no amount in the queue, and says what a charge keeps and a waiver gives back", async ({ page }) => {
+test("shows no amount in the queue, and says what a charge costs and a waiver gives back", async ({ page }) => {
   await open(page);
   await expect(page.getByRole("region", { name: QUEUE }).getByText("Rs.")).toBeHidden();
   // BIZ-28: the owner ruled on 27 September 2026 that a waiver refunds the payment and returns the credit.
   await expect(
-    page.getByText(/keeps what the visit took\. Waiving records it too, refunds what the visit/),
+    page.getByText(/a no-show costs, and gives back the rest\. Waiving records the decision, refunds what the visit/),
   ).toBeVisible();
 });
 
@@ -299,8 +365,11 @@ test("says so when the queue cannot be loaded, and loads it on Try again", async
   await expect(page.getByText(FIRST)).toBeVisible();
 });
 
-test("meets WCAG 2.2 AA with the day's money and a queue, and with a charge asked about", async ({ page }) => {
+test("meets WCAG 2.2 AA with the day's money, a disputed charge and a queue, and with a charge asked about", async ({
+  page,
+}) => {
   await open(page);
+  await expect(disputeCard(page)).toBeVisible();
   const full = await new AxeBuilder({ page }).withTags(WCAG).analyze();
   expect(full.violations.map((violation) => violation.id)).toEqual([]);
 

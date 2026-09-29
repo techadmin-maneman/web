@@ -1,8 +1,7 @@
 // No-shows (Ops Console, board D1): the day's money over the charges it was
-// kept on, then each case with the evidence ops rule on, charged or waived
-// here. The board's second card is a disputed charge; nothing records a dispute
-// and no client can raise one, so it is a line between the two and not a card
-// (docs/open-points.md, item 60).
+// kept on, then each charge a client disputed, refunded or upheld here
+// (Disputes.tsx), then each case with the evidence ops rule on, charged or
+// waived here (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
 //
 // A case is evidence a client may be charged on, so it names the client and
 // says when the visit was booked for, when the technician's phone says he
@@ -10,8 +9,8 @@
 // carries its reason, which the server refuses to go without, and a charge is
 // asked about once more before it is sent.
 //
-// Nothing here takes money. The server never charges by itself, and this
-// records ops' ruling under whoever Access says is signed in
+// The server never charges by itself: a charge costs what the booking was sold
+// to cost a no-show once ops rule, under whoever Access says is signed in
 // (src/policy/no-show.ts, docs/decisions/0031-access-and-audit.md).
 
 import { Button } from "@maneman/ui/Button";
@@ -25,6 +24,8 @@ import { DecisionQueue } from "../components/DecisionQueue.tsx";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { noShows } from "../content.ts";
 import { Left } from "../lib/Left.tsx";
+import { Disputes } from "./Disputes.tsx";
+import { Distance } from "./Distance.tsx";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./no-shows.module.css";
 
@@ -56,7 +57,7 @@ function Charges({ charges }: { charges: readonly Charge[] }) {
         <li className={styles.chargeRow} key={charge.id}>
           <div className={styles.chargeLine}>
             <span className={styles.who}>{whoOf(charge)}</span>
-            {/* A no-show carries no amount: ops rule on the evidence, and P2-M5 applies the charge. */}
+            {/* A no-show charged before a charge recorded what it kept carries no amount. */}
             {charge.amount === null ? (
               <span className={styles.unrecorded}>{copy.noAmount}</span>
             ) : (
@@ -96,15 +97,7 @@ function Money() {
           <dd className={styles.amount}>{rupees(day.refunds_processing)}</dd>
         </div>
         <div className={styles.figure}>
-          <dt className={styles.figureName}>
-            {copy.figures.charged}
-            {/*
-             * Nothing records what a no-show was charged, so the figure holds
-             * what was kept and says what it leaves out, rather than pricing a
-             * no-show the system never priced (ADR 0036, PR #89).
-             */}
-            {day.no_shows_charged > 0 && <span className={styles.aside}>{copy.uncharged(day.no_shows_charged)}</span>}
-          </dt>
+          <dt className={styles.figureName}>{copy.figures.charged}</dt>
           <dd className={styles.amount}>{rupees(day.charged)}</dd>
         </div>
       </dl>
@@ -173,16 +166,7 @@ function Facts({ each }: { each: NoShowCase }) {
     // The phone's own word, where the bounds would not take it (src/policy/phone-clock.ts).
     ...(claimed === null || claimed === each.checked_in_at ? [] : [[copy.facts.claimed, datedOf(claimed)] as const]),
     [copy.facts.received, datedOf(each.received_at)],
-    [
-      copy.facts.distance,
-      // Never a number when none was measured: a missing distance is not 0 m,
-      // and this fact helps decide whether to charge a client (ADR 0036).
-      each.distance_m === null ? (
-        <span className={styles.unmeasured}>{copy.unmeasured}</span>
-      ) : (
-        copy.distance(each.distance_m)
-      ),
-    ],
+    [copy.facts.distance, <Distance key="distance" metres={each.distance_m} radius={each.radius_m} />],
     [copy.facts.whatsapp, messageOf(each)],
     [copy.facts.waited, waitedOf(each)],
   ];
@@ -352,8 +336,7 @@ export function NoShowsScreen() {
     <Shell section="/no-shows" title={noShows.title}>
       <div className={styles.column}>
         <Money />
-        {/* The board's second card is a disputed charge; the queue stands where it does. */}
-        <p className={styles.caption}>{noShows.money.noDispute}</p>
+        <Disputes />
         <Queue />
       </div>
     </Shell>

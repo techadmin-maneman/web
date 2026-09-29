@@ -1,16 +1,20 @@
 // One visit. Past (board C9): its photographs, technician, duration and type,
 // what was done, and the visit's own tax invoice beneath them (ADR 0056; the
-// board has none). Still to come, or under way: its card as Home draws its next
+// board has none). A visit the client was not home for says what ops ruled and
+// what a charge took, and offers the charge's dispute (ADR 0096). Still to come, or under way: its card as Home draws its next
 // visit (board B1), with Reschedule and Add a note. A visit that is not the
 // client's says so, rather than offering to try again.
 
 import { ICONS } from "@maneman/brand/icons";
+import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { fullDate, shortDate } from "@maneman/web-kit/dates";
+import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useState } from "react";
 import { api, documentUrl, type VisitDetail } from "../api.ts";
+import { DisputeSheet } from "../booking/DisputeSheet.tsx";
 import { messages, visits } from "../content.ts";
 import { Shell } from "../home/Shell.tsx";
 import { VisitCard } from "../home/VisitCard.tsx";
@@ -79,8 +83,22 @@ function Invoice({ visit }: { visit: VisitDetail }) {
   }
 }
 
-/** A visit the client was not home for (LIFE-07): that we came and waited, and what was ruled. */
-function NoShow({ note }: { note: NonNullable<VisitDetail["no_show"]> }) {
+type NoShowNote = NonNullable<VisitDetail["no_show"]>;
+
+/** The ruling, and what a charge took where the ruling recorded it. */
+function rulingOf(note: NoShowNote): string {
+  const copy = visits.detail.noShow;
+  if (note.charge === null) return copy.decision[note.decision];
+  if (note.charge.kept > 0) return copy.kept(rupees(note.charge.kept));
+  return note.charge.credit_spent ? copy.creditSpent : copy.decision.charged;
+}
+
+/**
+ * A visit the client was not home for (LIFE-07): that we came and waited, what was ruled, and where a dispute of
+ * the charge stands, or the way to raise one.
+ */
+function NoShow({ visitId, note, onDisputed }: { visitId: string; note: NoShowNote; onDisputed: () => void }) {
+  const [disputing, setDisputing] = useState(false);
   const copy = visits.detail.noShow;
   return (
     <section className={styles.noShow} aria-labelledby="no-show">
@@ -88,18 +106,40 @@ function NoShow({ note }: { note: NonNullable<VisitDetail["no_show"]> }) {
         {copy.label}
       </h2>
       <p className={styles.noShowLine}>{copy.line(note.waited_minutes)}</p>
-      <p className={styles.noShowLine}>{copy.decision[note.decision]}</p>
+      <p className={styles.noShowLine}>{rulingOf(note)}</p>
+      {note.dispute !== null && <p className={styles.noShowLine}>{copy.disputed[note.dispute]}</p>}
+      {note.disputable && (
+        <Button
+          variant="outline"
+          size="control"
+          className={styles.dispute}
+          onClick={() => {
+            setDisputing(true);
+          }}
+        >
+          {copy.dispute}
+        </Button>
+      )}
+      {disputing && (
+        <DisputeSheet
+          visitId={visitId}
+          onClose={(disputed) => {
+            setDisputing(false);
+            if (disputed) onDisputed();
+          }}
+        />
+      )}
     </section>
   );
 }
 
-function PastVisit({ visit }: { visit: VisitDetail }) {
+function PastVisit({ visit, onChanged }: { visit: VisitDetail; onChanged: () => void }) {
   const [open, setOpen] = useState<OpenPhoto | null>(null);
   const copy = visits.detail;
   const photographed = visit.photos.before.length > 0 || visit.photos.after.length > 0;
   return (
     <div className={styles.detail}>
-      {visit.no_show !== null && <NoShow note={visit.no_show} />}
+      {visit.no_show !== null && <NoShow visitId={visit.id} note={visit.no_show} onDisputed={onChanged} />}
       {photographed && (
         <section aria-labelledby="photographs">
           <h2 className={styles.label} id="photographs">
@@ -134,8 +174,8 @@ function PastVisit({ visit }: { visit: VisitDetail }) {
   );
 }
 
-function Visit({ visit }: { visit: VisitDetail }) {
-  if (visit.stage === null) return <PastVisit visit={visit} />;
+function Visit({ visit, onChanged }: { visit: VisitDetail; onChanged: () => void }) {
+  if (visit.stage === null) return <PastVisit visit={visit} onChanged={onChanged} />;
   return (
     <div className={styles.coming}>
       <VisitCard visit={visit} />
@@ -153,7 +193,7 @@ export function VisitScreen({ id }: { id: string }) {
         <NotFound message={visits.notFound} back={visits.detail.back} to="/visits" />
       )}
       {loaded.state === "failed" && !loaded.notFound && <PageFailed onRetry={retry} />}
-      {loaded.state === "loaded" && <Visit visit={loaded.value} />}
+      {loaded.state === "loaded" && <Visit visit={loaded.value} onChanged={retry} />}
     </Shell>
   );
 }

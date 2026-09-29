@@ -7,7 +7,7 @@ import { CLIENT } from "./clients.ts";
 
 /**
  * The board's own case: Vikram's visit was booked for 11:30, the technician
- * checked in at 11:31, 240 m out, the WhatsApp was delivered at 11:32, and he
+ * checked in at 11:31, 240 m out against a 200 m fence, the WhatsApp was delivered at 11:32, and he
  * closed the job at 11:47. The second is a client who never agreed to WhatsApp
  * about visits, so no reminder went; its check-in reached us twenty minutes
  * after the phone's own time. Each is due two days after it opened.
@@ -25,6 +25,7 @@ const VIKRAMS_CASE = {
   window_end: "2027-09-19T07:30:00.000Z",
   minutes_late: 1,
   distance_m: 240,
+  radius_m: 200,
   message_state: "delivered",
   message_delivered_at: "2027-09-19T06:02:00.000Z",
   wait_ends_at: "2027-09-19T06:16:00.000Z",
@@ -52,6 +53,7 @@ export const NO_SHOWS = {
       window_end: "2027-09-20T06:30:00.000Z",
       minutes_late: 60,
       distance_m: 12,
+      radius_m: 200,
       message_state: "no_consent",
       message_delivered_at: null,
       wait_ends_at: "2027-09-20T05:05:00.000Z",
@@ -77,17 +79,14 @@ export const NO_SHOW_UNMEASURED = {
  * Board D1's first card: the day's three figures, and the two charges beneath
  * them. The amounts are the board's own, in paise as the route answers them.
  * The late cancellation carries its evidence, "cancelled 9:14 am · visit was
- * 10 am"; the no-show carries no amount, because nothing records what one was
- * charged, so it is counted beside the figure instead of added to it.
+ * 10 am"; the no-show carries what its charge kept, added to the figure.
  */
 export const DAY_MONEY = {
   date: "2027-09-22",
   collected: 8_400_000,
   refunds_processing: 708_000,
   refunded: 236_000,
-  charged: 236_000,
-  no_shows_charged: 1,
-  dispute: null,
+  charged: 472_000,
   charges: [
     {
       id: "b1000000-0000-4000-8000-000000000001",
@@ -103,7 +102,7 @@ export const DAY_MONEY = {
       id: "b1000000-0000-4000-8000-000000000002",
       kind: "no_show",
       person: { id: "11000000-0000-4000-8000-000000000005", name: "Karan Bose" },
-      amount: null,
+      amount: 236_000,
       at: "2027-09-22T05:00:00.000Z",
       visit_started_at: "2027-09-22T06:00:00.000Z",
       change: null,
@@ -111,6 +110,33 @@ export const DAY_MONEY = {
     },
   ],
 } satisfies OpsReply<"/api/payments">;
+
+/**
+ * Board D1's second card: Vikram disputes the charge on a visit he was not home
+ * for, 240 m out against a 200 m fence, the one fact that argues for him.
+ */
+export const DISPUTES = {
+  disputes: [
+    {
+      id: "dd000000-0000-4000-8000-000000000001",
+      case_id: "66000000-0000-4000-8000-000000000009",
+      appointment_id: "77000000-0000-4000-8000-000000000009",
+      person: { id: "11000000-0000-4000-8000-000000000002", name: "Vikram Sethi" },
+      reason: "I was home all morning. Nobody rang the bell.",
+      raised_at: "2027-09-21T06:00:00.000Z",
+      due: "2027-09-23T06:00:00.000Z",
+      kept: 236_000,
+      credit_spent: false,
+      window_start: "2027-09-19T06:00:00.000Z",
+      checked_in_at: "2027-09-19T06:01:00.000Z",
+      received_at: "2027-09-19T06:01:00.000Z",
+      distance_m: 240,
+      radius_m: 200,
+      message_delivered_at: "2027-09-19T06:02:00.000Z",
+      closed_at: "2027-09-19T06:17:00.000Z",
+    },
+  ],
+} satisfies OpsReply<"/api/no-shows/disputes">;
 
 /**
  * Read against 22 September 2027 in India, the day the tests and the fidelity

@@ -770,8 +770,8 @@ export const noShows = {
   /**
    * Board D1's first card: the day's money, over the charges it was kept on.
    * The card carries no heading on the board and names no day, so both are
-   * placeholders. Two of its three figures are read from the payments
-   * themselves; the third has no source at all (docs/open-points.md, item 60).
+   * placeholders. Every figure is read from the payments and the charges
+   * themselves (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
    */
   money: {
     /** PLACEHOLDER: the board's card has no heading, and a panel needs a name to be read by. */
@@ -780,16 +780,6 @@ export const noShows = {
     figures: { collected: "Collected today", processing: "Refunds processing", charged: "Charges and no-shows" },
     /** Under "Refunds processing", which counts what has not gone back yet. */
     refunded: (amount: string) => `${amount} went back today`,
-    /**
-     * Under "Charges and no-shows". Ops rule a no-show on the evidence and the
-     * charge itself is applied at P2-M5, so nothing records what one was
-     * charged: the figure above holds what was kept and says what it leaves out
-     * rather than pricing a no-show the system never priced.
-     */
-    uncharged: (count: number) => `${String(count)} ${count === 1 ? "no-show" : "no-shows"} not charged yet`,
-    /** PLACEHOLDER: the board draws the dispute as a card of its own, with Refund and Uphold. */
-    noDispute:
-      "No client can raise a dispute yet, so none is shown. Refund and Uphold rule on a record that is still to be built.",
     charges: {
       /** The board's own heading over the list. */
       title: "No-shows and late cancellations",
@@ -812,10 +802,11 @@ export const noShows = {
       /** PLACEHOLDER: a charge on a visit FSM never matched to one of our people. */
       unknown: "Client unknown",
       /**
-       * Words where the amount stands, so a no-show's line cannot be read as
-       * money that was taken (ADR 0036, PR #89).
+       * PLACEHOLDER: words where the amount stands on a no-show charged before a
+       * charge recorded what it kept, so the line cannot be read as a nought
+       * (ADR 0036, PR #89).
        */
-      noAmount: "Not charged yet",
+      noAmount: "Amount not recorded",
       /** PLACEHOLDER: the board draws two charges and no empty day. */
       empty: "Nothing was charged today.",
     },
@@ -862,8 +853,14 @@ export const noShows = {
       if (hours === 0) return `${String(minutes)} m`;
       return minutes === 0 ? `${String(hours)} h` : `${String(hours)} h ${String(minutes)} m`;
     },
-    /** The board writes "240 m · over 200 m fence"; the route gives the distance, not the radius in force. */
-    distance: (metres: number) => `${String(metres)} m`,
+    /**
+     * The board writes "240 m · over 200 m fence", against the radius in force
+     * when he checked in; a distance inside it is ours (PLACEHOLDER).
+     */
+    distance: (metres: number, radius: number) =>
+      metres > radius
+        ? `${String(metres)} m · over ${String(radius)} m fence`
+        : `${String(metres)} m · inside ${String(radius)} m fence`,
     /**
      * An address with no coordinates cannot be measured against, so the route
      * carries no distance (ADR 0036). Words rather than a number, because ops
@@ -905,8 +902,7 @@ export const noShows = {
     },
     /**
      * PLACEHOLDER: the board's buttons are Refund and Uphold, which rule on a
-     * dispute. The route charges the visit or waives it, and nothing records a
-     * dispute at all.
+     * dispute, on its own card above the queue. A case is charged or waived.
      */
     charge: "Charge",
     waive: "Waive",
@@ -918,12 +914,13 @@ export const noShows = {
     back: "Back",
     deciding: "Deciding",
     /**
-     * PLACEHOLDER: the board draws no note beneath the queue, and no amount anywhere. A charge keeps what the visit
-     * took, as a late cancel does; a waiver gives back what ops set it to, which the owner ruled on 27 September 2026
-     * is the payment and the credit (BIZ-28; docs/decisions/0088-every-policy-in-the-console.md).
+     * PLACEHOLDER: the board draws no note beneath the queue, and no amount anywhere. A charge costs what the booking
+     * was sold to cost a no-show, set in Settings apart from a late cancel (ADR 0096); a waiver gives back what ops set
+     * it to, which the owner ruled on 27 September 2026 is the payment and the credit (BIZ-28; ADR 0088).
      */
     note: (waiver: { readonly payment: "refunded" | "kept"; readonly credit: "returned" | "spent" }) =>
-      "Charging records the decision and keeps what the visit took. Waiving records it too, " +
+      "Charging costs the client what their booking says a no-show costs, and gives back the rest. Waiving records " +
+      "the decision, " +
       `${waiver.payment === "refunded" ? "refunds what the visit was paid with" : "keeps what the visit was paid with"} ` +
       `and ${waiver.credit === "returned" ? "returns its credit" : "leaves its credit spent"}. ` +
       "Either way the client is told on WhatsApp, never your note.",
@@ -931,6 +928,46 @@ export const noShows = {
     empty: "No no-show is waiting for a decision.",
     errors: {
       not_found: "Someone has ruled on this one already. Reload to see the queue as it stands.",
+      offline: "You are offline. Connect, then try again.",
+      unknown: "That did not go through. Please try again.",
+    } as Readonly<Record<string, string>>,
+  },
+  /**
+   * Board D1's second card, a disputed charge, one card a dispute. The board
+   * draws its label, its four rows of evidence, its note and its two buttons; the
+   * rest is placeholder (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
+   */
+  dispute: {
+    /** The board's own label. */
+    label: "Disputed charge",
+    /**
+     * PLACEHOLDER: the board heads the card "Vikram Sethi says he was home", its
+     * summary of the client's words. Their words stand beneath, as they wrote them.
+     */
+    title: (name: string) => `${name} disputes the charge`,
+    erased: "A client since erased disputes the charge",
+    /** PLACEHOLDER: the client's words, erased with them. */
+    wordsErased: "Their words were erased with them.",
+    /** PLACEHOLDER: what the charge took, and when the visit was. */
+    took: (what: string, day: string) => `The charge kept ${what}, for the visit of ${day}.`,
+    credit: "a visit credit",
+    /** The board's four rows. */
+    facts: { checkIn: "Check-in", distance: "Distance", whatsapp: "WhatsApp", waited: "Waited" },
+    /** PLACEHOLDER: no receipt came back for the reminder or the arrival notice. */
+    notDelivered: "Not delivered",
+    /** The board's note, "Your note · required", and its placeholder. */
+    reason: {
+      label: "Your note · required",
+      placeholder: "Why you are refunding or upholding",
+      hint: "Kept with the ruling, under your name. The client is told the ruling, never your note.",
+    },
+    refund: "Refund",
+    uphold: "Uphold",
+    ruling: "Ruling",
+    /** PLACEHOLDER: the board always draws one. */
+    none: "No charge is disputed.",
+    errors: {
+      not_found: "Someone has ruled on this dispute already. Reload to see where it stands.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Please try again.",
     } as Readonly<Record<string, string>>,
