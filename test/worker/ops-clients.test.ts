@@ -88,6 +88,11 @@ async function consent(purpose: string, granted: 0 | 1, notice: string, at: stri
     .run();
 }
 
+interface ClientBody {
+  address: Record<string, unknown> | null;
+  visits: { past: { id: string; closed_without_follow_up: unknown }[] };
+}
+
 const auditRows = () =>
   env.DB.prepare("SELECT action, actor, subject_kind, subject_id, detail FROM audit_log WHERE action != 'ops.call'")
     .all<{ action: string; actor: string; subject_kind: string; subject_id: string; detail: string | null }>()
@@ -134,6 +139,26 @@ describe("GET /api/clients/{id}", () => {
           place: "Sector 65, Gurgaon 122018",
         }),
       ],
+    });
+  });
+
+  // Ops close a visit left partly done without a follow-up, with why (docs/decisions/0092-task-owners.md).
+  it("says who closed a visit left partly done without a follow-up, when and why", async () => {
+    await record();
+    const unclosed = await (await request(ops, `/api/clients/${PERSON}`)).json<ClientBody>();
+    expect(unclosed.visits.past[0]?.closed_without_follow_up).toBeNull();
+
+    await env.DB.prepare(
+      `INSERT INTO task_closures (id, task_group, subject_id, reason, closed_by, closed_at)
+       VALUES ('closing-1', 'partial_visit', ?1, 'Wants no more visits this year', 'priya@maneman.in', ?2)`,
+    )
+      .bind(VISIT, NOW.toISOString())
+      .run();
+    const closed = await (await request(ops, `/api/clients/${PERSON}`)).json<ClientBody>();
+    expect(closed.visits.past[0]?.closed_without_follow_up).toEqual({
+      by: "priya@maneman.in",
+      at: NOW.toISOString(),
+      reason: "Wants no more visits this year",
     });
   });
 

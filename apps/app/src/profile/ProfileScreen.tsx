@@ -48,7 +48,7 @@ export function ProfileScreen({ onChanged }: { onChanged: () => void }) {
     }
     return (
       <div className={styles.page}>
-        <AddressSection address={loaded.address} onSaved={changed} />
+        <AddressSection address={loaded.address} givenToOps={loaded.address_given_to_ops} onSaved={changed} />
         <ConsentList consents={loaded.consents} />
         <NumberChangeCard
           change={loaded.number_change}

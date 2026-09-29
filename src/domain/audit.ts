@@ -73,6 +73,12 @@ export const AUDIT_ACTIONS = [
   "stock.transfer",
   "stock.count",
   "stock.write_off",
+  // Whose a task on the Tasks board is, a visit left partly done that ops closed without a follow-up, and an address
+  // a client gave ops on the phone (docs/decisions/0092-task-owners.md).
+  "task.assign",
+  "task.hand_back",
+  "task.close",
+  "address.given_to_ops",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
@@ -124,7 +130,7 @@ export function auditStatementIfWritten(
   entry: AuditEntry,
   now: Date,
   written: {
-    readonly table: "grievances" | "consents" | "referral_attributions" | "stock_movements";
+    readonly table: "grievances" | "consents" | "referral_attributions" | "stock_movements" | "task_closures";
     readonly id: string;
   },
 ): D1PreparedStatement {

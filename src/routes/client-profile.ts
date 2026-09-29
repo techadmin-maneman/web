@@ -13,10 +13,8 @@
 // with ops' decision, which is audited in turn (src/routes/ops-profile.ts).
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { Context } from "hono";
-import type { App, AppEnv } from "../http/context.ts";
+import type { App } from "../http/context.ts";
 import { auditStatement, type AuditEntry } from "../domain/audit.ts";
-import { alertCeilingReached, takeFromCeiling } from "../domain/ceilings.ts";
 import { openDeletion, requestDeletion } from "../domain/deletion.ts";
 import {
   DECISION_SHOWN_DAYS,
@@ -32,66 +30,26 @@ import {
   currentAddress,
   liveContact,
   maskedMobile,
-  saveAddress,
   switchConsent,
   type Address,
-  type AddressPin,
 } from "../domain/profile.ts";
 import { takeOne } from "../domain/rate-limit.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
-import { queueContactSync } from "../http/contact-sync.ts";
+import { saveClientAddress, suggestBuildings } from "../http/address-save.ts";
 import { sendCodeAfterResponse, withinCodeCeiling } from "../http/send-code.ts";
 import { visitorOf } from "../http/visitor.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
-import type { LookupFailure } from "../providers/geocode.ts";
 import { APP_SWITCH_SOURCES, CONSENT_PURPOSES } from "../policy/consents.ts";
 import { revokeCard } from "../domain/referral-cards.ts";
 
 /** Number changes a client may start in a day. */
 const NUMBER_CHANGES_PER_DAY = 3;
 
-/** Suggestions one client may ask for in a day, so one cannot spend the global ceiling. */
-const SUGGESTIONS_PER_DAY = 120;
-
 const blankToNull = (value: string | null | undefined): string | null =>
   value === undefined || value === null || value.trim() === "" ? null : value;
-
-/**
- * Counts one Google request against the day's ceiling; false, with one alert a
- * day, once it is reached. Every call is counted, free SKU or not: the free
- * ones are free only while the session token does its work, and a ceiling that
- * assumed that would be no ceiling at all
- * (docs/decisions/0054-address-capture.md).
- */
-async function withinGeocodeCeiling(c: Context<AppEnv>, now: Date): Promise<boolean> {
-  const ceiling = c.var.config.settings.geocode.dailyCeiling;
-  if (await takeFromCeiling(c.env.DB, "geocode", ceiling, now)) return true;
-  await alertCeilingReached(c.env.DB, c.var.deps.alert, "geocode", ceiling, now);
-  return false;
-}
-
-/**
- * A lookup that failed is logged. One Google refused is ops' to put right — the
- * key, its APIs or its quota — and until then no address gets a pin, so they
- * are told, once a day while it lasts, in Google's own words.
- */
-async function lookupFailed(
-  c: Context<AppEnv>,
-  event: string,
-  failure: { reason: LookupFailure; detail: string },
-): Promise<void> {
-  c.var.log.warn(event, { reason: failure.reason, detail: failure.detail });
-  if (failure.reason !== "refused") return;
-  await c.var.deps.alertOnce({
-    key: `google_refused:${indiaDate(c.var.deps.now())}`,
-    message:
-      `Google refused the address search (${failure.detail}). Clients can still type an address, but none gets ` +
-      "a pin. Check the key, its APIs and its quotas (runbook, section 13).",
-  });
-}
 
 /**
  * Nullish rather than nullable: an address saved before migration 0028 holds
@@ -130,13 +88,13 @@ export const AddressSchema = z
  * coordinate is never sent: only this API may put one on an address, and only
  * by geocoding the Place ID itself.
  */
-const AddressSaveSchema = AddressSchema.extend({
+export const AddressSaveSchema = AddressSchema.extend({
   session_token: part(100),
 })
   .strict()
   .openapi("AddressSave");
 
-const SuggestionsSchema = z
+export const SuggestionsSchema = z
   .object({
     suggestions: z.array(z.object({ place_id: z.string(), primary: z.string(), secondary: z.string() }).strict()),
     /** Google requires their name against content shown without a Google map. */
@@ -162,6 +120,10 @@ export const ProfileSchema = z
     mobile: z.string().openapi({ description: "Masked: +91 98xxx x4417." }),
     // A union, not .nullable(): that would make the Address component itself nullable, request bodies and all.
     address: z.union([AddressSchema, z.null()]),
+    address_given_to_ops: z.union([z.iso.datetime(), z.null()]).openapi({
+      description:
+        "When the client gave this address to ops on the phone, who saved it for them; null for one they saved themselves.",
+    }),
     consents: z
       .array(
         z
@@ -434,6 +396,7 @@ export function registerClientProfile(app: App): void {
                 landmark: address.landmark,
                 place_id: address.placeId,
               },
+        address_given_to_ops: address?.givenToOps?.at ?? null,
         consents,
         number_change: change === null ? null : numberChangeBody(change),
         number_change_decided:
@@ -452,60 +415,27 @@ export function registerClientProfile(app: App): void {
   });
 
   app.openapi(addressSuggestionsRoute, async (c) => {
-    const personId = clientOf(c).subjectId;
     const { q, session } = c.req.valid("json");
-    const now = c.var.deps.now();
-
-    // Per client first, so one client cannot spend the day's ceiling on their own.
-    const within = await takeOne(c.env.DB, {
-      scope: "address_suggest",
-      key: personId,
-      window: indiaDate(now),
-      limit: SUGGESTIONS_PER_DAY,
+    const answer = await suggestBuildings(c, {
+      limitScope: "address_suggest",
+      asker: clientOf(c).subjectId,
+      q,
+      session,
     });
-    if (!within) return c.json(errorBody("busy", c.var.requestId), 503);
-    if (!(await withinGeocodeCeiling(c, now))) return c.json(errorBody("busy", c.var.requestId), 503);
-
-    const answer = await c.var.deps.geocode.suggest(q, session);
-    if (!answer.ok) {
-      // The form carries on without suggestions: an address can always be typed.
-      await lookupFailed(c, "address_suggest_failed", answer);
-      return c.json(errorBody("unavailable", c.var.requestId), 503);
-    }
-    return c.json(
-      {
-        suggestions: answer.suggestions.map((one) => ({
-          place_id: one.placeId,
-          primary: one.primary,
-          secondary: one.secondary,
-        })),
-        attribution: "Google Maps" as const,
-      },
-      200,
-    );
+    if (!answer.ok) return c.json(errorBody(answer.code, c.var.requestId), 503);
+    return c.json({ suggestions: answer.suggestions, attribution: "Google Maps" as const }, 200);
   });
 
   app.openapi(addressRoute, async (c) => {
     const personId = clientOf(c).subjectId;
     const body = c.req.valid("json");
-    const now = c.var.deps.now();
-
-    // A chosen building is geocoded here, once, and its coordinate kept. A typed
-    // address has no Place ID and saves no pin: the geofence then measures
-    // nothing rather than measuring zero (ADR 0036's honest degradation).
     const address = addressOf(body);
-    let pin: AddressPin | null = null;
-    if (address.placeId !== null && (await withinGeocodeCeiling(c, now))) {
-      const resolved = await c.var.deps.geocode.resolve(
-        address.placeId,
-        blankToNull(body.session_token) ?? crypto.randomUUID(),
-      );
-      if (resolved.ok) pin = { lat: resolved.place.lat, lng: resolved.place.lng, source: "google_geocoding" };
-      else await lookupFailed(c, "address_resolve_failed", resolved);
-    }
-
-    await saveAddress(c.env.DB, personId, address, pin, now);
-    await queueContactSync(c, personId);
+    await saveClientAddress(c, {
+      personId,
+      address,
+      sessionToken: body.session_token,
+      givenToOps: null,
+    });
     return c.json(
       {
         line1: address.line1,

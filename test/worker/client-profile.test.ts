@@ -72,6 +72,7 @@ describe("GET /api/profile", () => {
       name: "Rohit Malhotra",
       mobile: "+91 98xxx x0001",
       address: null,
+      address_given_to_ops: null,
       consents: [
         { purpose: "photos_own_record", granted: false, since: null },
         { purpose: "photos_referral_cards", granted: false, since: null },

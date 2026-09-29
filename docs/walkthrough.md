@@ -62,7 +62,7 @@ A fact has one home, and every other place reads it from there.
 | A technician, their zone                             | Zoho FSM                                                           | D1's mirror, refreshed nightly and at sign-in                                                                                          |
 | A piece of hair system in wear                       | Zoho FSM (an asset)                                                | D1, with our own replacement due date                                                                                                  |
 | Photographs, try-on looks, referral cards            | R2                                                                 | Visit photographs are also attached in FSM                                                                                             |
-| Tasks for ops                                        | Nowhere: each is read from the queues it comes from when ops look  |                                                                                                                                        |
+| Tasks for ops                                        | Nowhere: each is read from the queues it comes from when ops look  | Whose each is, and a visit left partly done that ops closed, in D1 by the task's group and row (ADR 0092)                              |
 
 The CRM holds no products. FSM's own sync carries its catalogue to Books, and to the CRM where that integration is on; we write none there (the owner's ruling, item 1).
 
@@ -126,7 +126,7 @@ The CRM holds no products. FSM's own sync carries its catalogue to Books, and to
 | Records consumables     | FSM's job summary (never the invoice); our record of what was used, at that day's cost; each one out of his kit's stock, once however often the step is resent |
 | Types the piece's label | FSM's asset (the old one made inactive on a replacement); the replacement due date that drives Home's prompt, the next visit offered and ops' replacement task |
 | Closes as done          | FSM's appointment Completed; then the invoice, Books, a referral's credits, and the client's next visit offered in the app                                     |
-| Closes as partial       | FSM's appointment Terminated with a reason from ops' list; ops' "Visit left partly done" task until another visit is booked                                    |
+| Closes as partial       | FSM's appointment Terminated with a reason from ops' list; ops' "Visit left partly done" task until another visit is booked, or ops close it with a reason     |
 | Closes as a no-show     | FSM's appointment Terminated; a case in ops' No-shows queue with the evidence                                                                                  |
 
 Every step is saved on the phone first and sent in order when there is signal, so a basement does not stop a job.
@@ -140,6 +140,9 @@ Every step is saved on the phone first and sent in order when there is signal, s
 | Revokes a phone                       | The technician signed out and the phone wiped at its next contact                                                                                                                                                |
 | Rules on a no-show                    | Charge keeps what the visit took; waive refunds the payment and returns the credit; the client told either way, never ops' reason                                                                                |
 | Rules on a held referral              | Approve grants both sides their credits and tells them; reject tells them                                                                                                                                        |
+| Takes, gives or hands back a task     | Whose it is on the Tasks board, audited; only a member of staff who has used the console in the last 90 days can be given one                                                                                    |
+| Closes a visit left partly done       | Its task leaves the Tasks board for good, with the reason kept under who closed it and shown on the client's page                                                                                                |
+| Records an address given on the phone | The client's address, as their own save makes it (the pin, FSM's contact and the CRM lead), marked as given to ops; their profile says so; clears "Address to confirm"                                           |
 | Serves a pincode                      | The site books there instead of waitlisting; everyone on its waitlist who asked is told                                                                                                                          |
 | Confirms or rejects a number change   | The person's number, and FSM and the CRM with it; the client sees the decision and its reason                                                                                                                    |
 | Erases a client                       | Everything in "Leaving" above                                                                                                                                                                                    |

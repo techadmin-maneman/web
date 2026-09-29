@@ -2,6 +2,7 @@
 // they switch in the app (docs/decisions/0042-client-profile.md).
 
 import { CURRENT_NOTICE } from "../config/notices.ts";
+import { auditStatement, type AuditEntry } from "./audit.ts";
 import { CONSENT_PURPOSES, type AppSwitchSource, type ConsentPurpose, type ConsentSource } from "../policy/consents.ts";
 
 /** Where a coordinate came from; the licence and the trust differ by source (ADR 0054). */
@@ -31,8 +32,23 @@ export interface Address {
   readonly placeId: string | null;
 }
 
+/** An address as it is kept: who it was given to, where a client gave it to ops on the phone. */
+export interface SavedAddress extends Address {
+  /** The member of staff's Access e-mail, and when; null for an address the client saved themselves. */
+  readonly givenToOps: { readonly staff: string; readonly at: string } | null;
+}
+
+/**
+ * An address a client gave ops on the phone, which a member of staff saves for them (docs/decisions/0092-task-owners.md),
+ * with its audit entry.
+ */
+export interface GivenToOps {
+  readonly staff: string;
+  readonly audit: AuditEntry;
+}
+
 const ADDRESS_COLUMNS = `line1, line2, locality, city, pincode, access_notes,
-       building, flat, floor, tower, landmark, place_id`;
+       building, flat, floor, tower, landmark, place_id, given_to_staff, created_at`;
 
 interface AddressRow {
   line1: string;
@@ -47,6 +63,8 @@ interface AddressRow {
   tower: string | null;
   landmark: string | null;
   place_id: string | null;
+  given_to_staff: string | null;
+  created_at: string;
 }
 
 /** An address's street as FSM's service address holds it: the first line, then the rest of it. */
@@ -59,11 +77,15 @@ export function streetOf(address: { line1: string; line2: string | null; localit
 }
 
 /** An address saved before migration 0028 has nulls in the new columns and reads unchanged. */
-const fromRow = ({ access_notes: accessNotes, place_id: placeId, ...rest }: AddressRow): Address => ({
-  ...rest,
-  accessNotes,
-  placeId,
-});
+function fromRow(row: AddressRow): SavedAddress {
+  const { access_notes: accessNotes, place_id: placeId, given_to_staff: givenTo, created_at: savedAt, ...rest } = row;
+  return {
+    ...rest,
+    accessNotes,
+    placeId,
+    givenToOps: givenTo === null ? null : { staff: givenTo, at: savedAt },
+  };
+}
 
 /** A person's name and the number they hold now; null once they are erased. */
 export async function liveContact(
@@ -77,7 +99,7 @@ export async function liveContact(
   return person === null ? null : { name: person.name, mobileE164: person.mobile_e164 };
 }
 
-export async function currentAddress(db: D1Database, personId: string): Promise<Address | null> {
+export async function currentAddress(db: D1Database, personId: string): Promise<SavedAddress | null> {
   const row = await db
     .prepare(
       `SELECT ${ADDRESS_COLUMNS} FROM addresses
@@ -90,12 +112,18 @@ export async function currentAddress(db: D1Database, personId: string): Promise<
 
 const INSERT_ADDRESS = `INSERT INTO addresses (id, person_id, created_at, line1, line2, locality, city, pincode,
                                 access_notes, building, flat, floor, tower, landmark, place_id, lat, lng, geocoded_at,
-                                geocode_source)`;
+                                geocode_source, given_to_staff)`;
 
-/** The values INSERT_ADDRESS takes, as ?1 to ?19. */
-const ADDRESS_VALUES = "?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19";
+/** The values INSERT_ADDRESS takes, as ?1 to ?20. */
+const ADDRESS_VALUES = "?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20";
 
-function addressValues(personId: string, address: Address, pin: AddressPin | null, at: string): unknown[] {
+function addressValues(
+  personId: string,
+  address: Address,
+  pin: AddressPin | null,
+  at: string,
+  givenTo: string | null,
+): unknown[] {
   return [
     crypto.randomUUID(),
     personId,
@@ -116,6 +144,7 @@ function addressValues(personId: string, address: Address, pin: AddressPin | nul
     pin?.lng ?? null,
     pin === null ? null : at,
     pin?.source ?? null,
+    givenTo,
   ];
 }
 
@@ -127,18 +156,26 @@ function addressValues(personId: string, address: Address, pin: AddressPin | nul
  * address row and no one else's: Google's Geocoding terms allow an indefinite
  * cache only where it is "logically isolated to the specific End User", so a
  * building's coordinate is never reused across clients (ADR 0054).
+ *
+ * One a client gave ops on the phone is marked with the member of staff who saved it, and audited in the same batch.
  */
 export async function saveAddress(
   db: D1Database,
-  personId: string,
-  address: Address,
-  pin: AddressPin | null,
-  now: Date,
+  saving: {
+    readonly personId: string;
+    readonly address: Address;
+    readonly pin: AddressPin | null;
+    readonly now: Date;
+    readonly givenToOps: GivenToOps | null;
+  },
 ): Promise<void> {
+  const { personId, address, pin, now, givenToOps } = saving;
   const at = now.toISOString();
+  const values = addressValues(personId, address, pin, at, givenToOps?.staff ?? null);
   await db.batch([
     db.prepare("UPDATE addresses SET replaced_at = ?2 WHERE person_id = ?1 AND replaced_at IS NULL").bind(personId, at),
-    db.prepare(`${INSERT_ADDRESS} VALUES (${ADDRESS_VALUES})`).bind(...addressValues(personId, address, pin, at)),
+    db.prepare(`${INSERT_ADDRESS} VALUES (${ADDRESS_VALUES})`).bind(...values),
+    ...(givenToOps === null ? [] : [auditStatement(db, givenToOps.audit, now)]),
   ]);
 }
 
@@ -159,7 +196,7 @@ export function firstAddressStatement(
        SELECT ${ADDRESS_VALUES}
        WHERE NOT EXISTS (SELECT 1 FROM addresses WHERE person_id = ?2 AND replaced_at IS NULL)`,
     )
-    .bind(...addressValues(personId, address, null, now.toISOString()));
+    .bind(...addressValues(personId, address, null, now.toISOString(), null));
 }
 
 export interface ConsentState {
