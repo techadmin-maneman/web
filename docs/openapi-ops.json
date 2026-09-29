@@ -6685,6 +6685,16 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "superseded: a try is writing the booking to FSM at this moment; look again in a minute",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }

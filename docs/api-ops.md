@@ -353,6 +353,14 @@ Request body:
 }
 ```
 
+**409**: superseded: a try is writing the booking to FSM at this moment; look again in a minute
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/held-bookings/{id}/refund
 
 Give back a booking FSM would not take: its work order cancelled, its payment refunded, the client told

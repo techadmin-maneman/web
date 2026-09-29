@@ -108,6 +108,7 @@ const linkRoute = createRoute({
     400: errorResponse("invalid_request: not a visit this booking can be, or the booking moves a visit"),
     403: errorResponse("access_required"),
     404: notWaiting,
+    409: errorResponse("superseded: a try is writing the booking to FSM at this moment; look again in a minute"),
   },
 });
 
@@ -248,6 +249,7 @@ export function registerOpsBookings(app: App): void {
     );
     if (linked.kind === "not_waiting") return c.json(errorBody("not_found", requestId), 404);
     if (linked.kind === "not_the_visit") return c.json(errorBody("invalid_request", requestId, ["visit_id"]), 400);
+    if (linked.kind === "being_booked") return c.json(errorBody("superseded", requestId), 409);
     await closeAlerts(c, id);
     log.info("held_booking_linked", { hold_id: id, appointment_id: visitId, fsm: linked.fsm.kind });
     return c.json({ fsm: leftOf(linked.fsm) }, 200);

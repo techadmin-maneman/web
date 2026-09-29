@@ -694,8 +694,20 @@ export async function giveUpOnBooking(
     return { personId, money, fsm: left };
   } catch (error) {
     if (!(error instanceof RefundRefused)) throw error;
+    // The booking still waits, so a later try must not book it on the work order just cancelled.
+    if (left.kind === "cancelled") await forgetWorkOrder(db, holdId);
     return { personId, money: { kind: "refund_refused", paymentId: error.paymentId, amount: error.amount }, fsm: left };
   }
+}
+
+/** A hold whose work order is cancelled in FSM, made to start afresh: its next try makes a new one, and looks for none. */
+async function forgetWorkOrder(db: D1Database, holdId: string): Promise<void> {
+  await db
+    .prepare(
+      "UPDATE slot_holds SET fsm_work_order_id = NULL, fsm_appointment_id = NULL, fsm_tried_at = NULL WHERE id = ?1",
+    )
+    .bind(holdId)
+    .run();
 }
 
 /** The work order a booking left in FSM: the one kept on the hold, else one FSM holds under its reference. */
@@ -737,6 +749,8 @@ export type Linked =
   | { readonly kind: "linked"; readonly personId: string; readonly fsm: LeftInFsm }
   /** Not a booking still waiting: booked meanwhile, or given back. */
   | { readonly kind: "not_waiting" }
+  /** A try is writing it to FSM at this moment. */
+  | { readonly kind: "being_booked" }
   /** Not a visit this booking can be: another client's, another kind, gone or done, or another booking's. */
   | { readonly kind: "not_the_visit" };
 
@@ -744,8 +758,8 @@ export type Linked =
  * Ops booked a waiting booking's visit in FSM by hand, and the mirror has it: the hold is booked as that visit, as a
  * try that reached FSM would have booked it, with its payment, its tier and its credit, and the client told. Nothing
  * is made in FSM twice: a work order an earlier try made for it, other than the visit's own, is cancelled, and what
- * became of it said. A booking that moves a visit is not linked: its visit is already booked, and trying FSM again
- * moves it.
+ * became of it said, and it takes the hold's lease first, so no try is writing it to FSM meanwhile. A booking that
+ * moves a visit is not linked: its visit is already booked, and trying FSM again moves it.
  */
 export async function bookAsVisit(
   db: D1Database,
@@ -767,6 +781,7 @@ export async function bookAsVisit(
     .bind(input.visitId, hold.person_id, hold.type)
     .first<{ id: string; fsm_work_order_id: string | null }>();
   if (visit === null) return { kind: "not_the_visit" };
+  if (!(await takeLease(db, hold.id, now))) return { kind: "being_booked" };
 
   const at = now.toISOString();
   const [, linked] = await db.batch([

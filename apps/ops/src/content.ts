@@ -538,6 +538,7 @@ export const clients = {
       errors: {
         not_found: "It is no longer waiting: it may have been booked or refunded. Reload the page.",
         not_changeable: "Its time has passed, so FSM is not tried again. Link a visit booked in FSM, or refund it.",
+        superseded: "A try is writing it to FSM right now. Reload in a minute to see how it went.",
         invalid_request: "That visit cannot be this booking. Choose one of theirs, of the same kind, still to come.",
         unknown: "That did not go through. Try again.",
       } as Readonly<Record<string, string>>,

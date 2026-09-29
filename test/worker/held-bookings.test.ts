@@ -500,6 +500,19 @@ describe("ops linking the visit they booked in FSM by hand", () => {
     expect(claims).toEqual({ left: 0 });
   });
 
+  it("waits while a try is writing the booking to FSM, so nothing is booked twice", async () => {
+    const { holdId } = await paidHold();
+    await refusedFiveTimes(holdId);
+    await mirroredByHand();
+    await env.DB.prepare("UPDATE slot_holds SET booking_until = ?2 WHERE id = ?1")
+      .bind(holdId, afterHeld(HOUR + 5 * MINUTE).toISOString())
+      .run();
+    const { answer } = link(fakeDependencies({ now: () => afterHeld(HOUR) }), holdId);
+    expect((await answer).status).toBe(409);
+    expect(await holdRow(holdId)).toMatchObject({ state: "held", appointment_id: null });
+    expect(await auditRows("booking.link")).toEqual([]);
+  });
+
   it("refuses another client's visit, or one already done, and leaves the booking waiting", async () => {
     const { holdId } = await paidHold();
     await refusedFiveTimes(holdId);
@@ -547,6 +560,30 @@ describe("ops refunding it from the console", () => {
     expect(told).toMatchObject({ kind: "booking_refunded", subject_kind: "slot_hold" });
     expect(messages.sent).toEqual([{ message_id: told?.id, request_id: expect.any(String) as string }]);
     expect(await otherHolds()).toBe(201);
+  });
+
+  it("books a waiting booking afresh once its work order was cancelled by a refund Razorpay then refused", async () => {
+    const { holdId } = await paidHold();
+    const { fsm, stub } = halfWay();
+    await refusedFiveTimes(holdId, fsm);
+    const refusing: PaymentsProvider = {
+      createOrder: () => Promise.reject(new Error("unused")),
+      refund: () => Promise.reject(new Error("Razorpay 400 BAD_REQUEST_ERROR")),
+    };
+    await refund(fakeDependencies({ now: () => afterHeld(HOUR), fsm: stub, payments: refusing }), holdId).answer;
+    const cancelled = stub.made.cancelled.map((each) => each.workOrderId);
+    expect(cancelled).toHaveLength(1);
+
+    const deps = fakeDependencies({ now: () => afterHeld(2 * HOUR), fsm: stub });
+    const { answer } = asOps(deps, `/api/held-bookings/${holdId}/retry`, { method: "POST" });
+    expect(await (await answer).json()).toEqual({ outcome: "booked", refusal: null });
+    expect(stub.made.workOrders).toHaveLength(2);
+    const booked = await env.DB.prepare(
+      "SELECT fsm_work_order_id FROM appointments WHERE id = (SELECT appointment_id FROM slot_holds WHERE id = ?1)",
+    )
+      .bind(holdId)
+      .first<{ fsm_work_order_id: string }>();
+    expect(cancelled).not.toContain(booked?.fsm_work_order_id);
   });
 
   it("keeps the booking waiting, and tells the client nothing, when Razorpay refuses the refund", async () => {
