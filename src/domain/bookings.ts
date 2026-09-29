@@ -485,7 +485,11 @@ async function moveInPlace(
   });
   await db.batch([
     db
-      .prepare("UPDATE appointments SET window_start = ?1, window_end = ?2, synced_at = ?3 WHERE id = ?4")
+      // The client chose this time, so their notice counts from it, however ops had moved the visit before.
+      .prepare(
+        `UPDATE appointments SET window_start = ?1, window_end = ?2, synced_at = ?3, start_before_move = NULL
+         WHERE id = ?4`,
+      )
       .bind(start.toISOString(), end.toISOString(), at, visit.id),
     db
       .prepare("UPDATE slot_holds SET state = 'booked', appointment_id = ?1, updated_at = ?2 WHERE id = ?3")

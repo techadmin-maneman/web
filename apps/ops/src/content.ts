@@ -215,8 +215,12 @@ export const dispatch = {
     sameTime: (job: string) => `Only the technician changes. ${job} keeps the same window, so nobody is messaged.`,
     /** PLACEHOLDER: a visit with no client on our records. */
     noClient: "This visit has no client on our records to tell. Their payment carries over.",
-    /** The board's extra line within 24 hours of the visit. */
-    soon: "This visit is inside 24 hours. The client is not charged, because we moved it.",
+    /**
+     * The board's extra line inside the notice the visit was sold under, which the board writes as 24 hours. The
+     * client keeps the free change they had: their own change counts from the time before we moved it (ADR 0096).
+     */
+    soon: (hours: number) =>
+      `This visit is inside ${String(hours)} hours. The client is not charged, because we moved it.`,
     send: "Move and notify",
     /** PLACEHOLDER: the same button where nothing goes to the client, so it does not promise a message. */
     sendQuietly: "Move",

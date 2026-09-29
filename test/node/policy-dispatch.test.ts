@@ -3,7 +3,15 @@
 
 import { describe, expect, it } from "vitest";
 import { SLOTS_PER_DAY, UNITS_PER_DAY, VISIT_BLOCKS, type BookingWindow } from "../../src/config/scheduling.ts";
-import { clashes, clientNotice, MOVE_REASONS, moveRefusal, RULES, slotsFor } from "../../src/policy/dispatch.ts";
+import {
+  clashes,
+  clientNotice,
+  keepsTheClientsNotice,
+  MOVE_REASONS,
+  moveRefusal,
+  RULES,
+  slotsFor,
+} from "../../src/policy/dispatch.ts";
 import { unitsFor } from "../../src/policy/visit-length.ts";
 
 /** A technician whose day already holds a job starting in each of these windows. */
@@ -67,6 +75,12 @@ describe("dispatch", () => {
       "skill_needed",
       "running_over",
     ]);
+  });
+
+  // The owner ruled that a client keeps the free change after a move by ops (docs/owner-answers-2026-09-27.md, item
+  // 71). A move the client asked for is at a time they chose, as a move in the app is.
+  it("leaves the client counting from the time before a move ops make, unless the client asked for it", () => {
+    expect(MOVE_REASONS.filter((reason) => !keepsTheClientsNotice(reason))).toEqual(["client_asked"]);
   });
 
   it("refuses a move that clashes, and lets one through that does not", () => {

@@ -52,6 +52,13 @@ export const MOVE_REASONS = [
 export type MoveReason = (typeof MOVE_REASONS)[number];
 
 /**
+ * Whether a move ops make leaves the client counting their notice from the visit's time before it
+ * (src/policy/moving-a-visit.ts): every move but one the client asked for, whose new time the client chose, as a
+ * move in the app is theirs (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
+ */
+export const keepsTheClientsNotice = (reason: MoveReason): boolean => reason !== "client_asked";
+
+/**
  * Why a job cannot go to this window of this technician's day; null when it
  * can. The check runs on the server before any write to FSM, so a refusal
  * means nothing was written anywhere. (A move's reason is one of the list

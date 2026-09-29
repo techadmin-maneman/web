@@ -74,6 +74,7 @@ const job = (
   starts_at: `${dateOf(day)}T${STARTS[window]}:00.000Z`,
   window,
   status: "scheduled",
+  notice_hours: 24,
   untold: null,
 });
 

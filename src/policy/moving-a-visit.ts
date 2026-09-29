@@ -1,5 +1,6 @@
 // A client moving or cancelling a visit, and ops moving one (docs/prompts/phase2-backend.md, "Business rules, decided").
-// The rules as the prompt states them, and what each costs (docs/decisions/0046-moving-and-cancelling.md). The
+// The rules as the prompt states them, the owner's ruling on a move by ops, and what each costs
+// (docs/decisions/0046-moving-and-cancelling.md, docs/decisions/0096-a-no-shows-charge-and-its-dispute.md). The
 // terms are worked out in src/domain/visit-changes.ts, and a move is booked in src/domain/bookings.ts.
 
 import type { VisitType } from "../config/visit-types.ts";
@@ -13,6 +14,8 @@ export const RULES = [
   "a first fit costs a late fee of config LATE_FEE_FIRST_FIT (Rs. 4,000 in the design), with the balance carried over",
   "a replacement's late fee is config LATE_FEE_REPLACEMENT (Rs. 3,000 in the design)",
   "When ops move a visit, the client is never charged.",
+  // The owner, 27 September 2026 (docs/owner-answers-2026-09-27.md, item 71).
+  "after a move by ops, the client's notice counts from the visit's time before ops moved it.",
 ] as const;
 
 /** Moving or cancelling is free until this long before the window starts. */
@@ -26,6 +29,14 @@ export const freeUntil = (windowStarts: Date, noticeHours: number = FREE_CHANGE_
 
 export const noticeAt = (windowStarts: Date, now: Date, noticeHours: number = FREE_CHANGE_NOTICE_HOURS): Notice =>
   now.getTime() < freeUntil(windowStarts, noticeHours).getTime() ? "free" : "late";
+
+/**
+ * The time a client's own move or cancel counts its notice from (RULES[7]): the visit's time before ops moved it,
+ * so the client keeps the free change they had, unless the visit now starts later, which gives them more
+ * (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
+ */
+export const noticeCountsFrom = (start: Date, startBeforeMove: Date | null): Date =>
+  startBeforeMove !== null && startBeforeMove.getTime() > start.getTime() ? startBeforeMove : start;
 
 /** The late fee a first fit or a replacement costs inside 24 hours. */
 export const LATE_FEES: Partial<Record<VisitType, "late_fee_first_fit" | "late_fee_replacement">> = {

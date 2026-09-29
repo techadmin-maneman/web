@@ -763,6 +763,29 @@ describe("what the board carries of each visit", () => {
     expect(week.unassigned[0]).toMatchObject({ appointment_id: B, client: "Rohit M.", badge: "prepaid", person });
   });
 
+  // The move panel says the visit is inside its notice, which each booking keeps as it was sold
+  // (docs/decisions/0088-every-policy-in-the-console.md); a visit ops booked in FSM takes the notice in force.
+  it("carries the notice each visit was sold under, or the one in force for a visit no hold sold", async () => {
+    await insertJob(A, { type: "service", start: TUESDAY["09:00"], technician: IMRAN });
+    await insertJob(B, { type: "service", start: TUESDAY["12:00"], technician: IMRAN });
+    await env.DB.prepare(
+      `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
+         amount_ex_gst, gst_percent, state, expires_at, created_at, updated_at, appointment_id, change_notice_hours)
+       VALUES ('hold-1', ?1, 'service', '2026-09-22', 'morning', ?2, 0, 200000, 200000, 0, 'booked', ?3, ?3, ?3, ?4, 12)`,
+    )
+      .bind(ROHIT, IMRAN, NOW.toISOString(), A)
+      .run();
+    await env.DB.prepare(
+      "INSERT INTO ops_settings (name, value, set_by, set_at) VALUES ('change_notice_hours', '48', 'ops', ?1)",
+    )
+      .bind(NOW.toISOString())
+      .run();
+    ops = appFor("local", fakeDependencies({ fsm }), {}, "ops");
+
+    const blocks = (await board("from=2026-09-22")).technicians[0]?.days[0]?.blocks;
+    expect(blocks?.map((block) => block.notice_hours)).toEqual([12, 48]);
+  });
+
   it("marks a visit spent from a credit, and one the price book charges nothing for", async () => {
     await insertJob(A, { type: "service", start: TUESDAY["09:00"], technician: IMRAN });
     await insertJob(B, { type: "consultation", start: TUESDAY["12:00"], technician: IMRAN });

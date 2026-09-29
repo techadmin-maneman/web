@@ -77,7 +77,9 @@ export async function syncAppointment(db: D1Database, fsm: FsmProvider, fsmId: s
         // null, and the invoice pass fills the column with Books' ID (ADR 0055). Where FSM
         // holds no place for it yet, the visit keeps the one our booking gave it (ADR 0068).
         // first_seen_at is the first sync's alone, so an update leaves it. The tier is the hold's that booked the
-        // visit, where one did, else its item's.
+        // visit, where one did, else its item's. A time FSM holds that the mirror did not is a move made in FSM,
+        // by ops, since our own moves write the mirror as they write FSM: the client's notice goes on counting
+        // from the time before it (ADR 0096).
         `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, tier, window_start, window_end,
            technician_id, status, fsm_status, service_city, service_pincode, fsm_modified_at, synced_at, first_seen_at)
          VALUES (?1, ?2, ?3, ?4, ?5,
@@ -86,7 +88,10 @@ export async function syncAppointment(db: D1Database, fsm: FsmProvider, fsmId: s
            ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?14)
          ON CONFLICT (fsm_id) DO UPDATE SET
            fsm_work_order_id = excluded.fsm_work_order_id, person_id = excluded.person_id, type = excluded.type,
-           tier = excluded.tier, window_start = excluded.window_start, window_end = excluded.window_end,
+           tier = excluded.tier,
+           start_before_move = iif(julianday(excluded.window_start) <> julianday(appointments.window_start),
+             COALESCE(appointments.start_before_move, appointments.window_start), appointments.start_before_move),
+           window_start = excluded.window_start, window_end = excluded.window_end,
            technician_id = excluded.technician_id, status = excluded.status, fsm_status = excluded.fsm_status,
            service_city = COALESCE(excluded.service_city, appointments.service_city),
            service_pincode = COALESCE(excluded.service_pincode, appointments.service_pincode),

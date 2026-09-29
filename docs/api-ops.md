@@ -5776,6 +5776,10 @@ Who Access let through, and where signing out goes
         "other"
       ]
     },
+    "notice_hours": {
+      "type": "integer",
+      "description": "The notice the visit was sold under, in hours, or the one in force for a visit ops booked in FSM: a change of the client's own inside it costs them, one ops make never does."
+    },
     "untold": {
       "anyOf": [
         {
@@ -5815,6 +5819,7 @@ Who Access let through, and where signing out goes
     "starts_at",
     "window",
     "status",
+    "notice_hours",
     "untold"
   ],
   "additionalProperties": false
