@@ -106,7 +106,7 @@ test("draws a disputed charge: the client's words, what the charge took, and the
   const card = disputeCard(page);
   await expect(card.getByText("Disputed charge")).toBeVisible();
   await expect(card.getByText("I was home all morning. Nobody rang the bell.")).toBeVisible();
-  await expect(card.getByText("The charge kept Rs. 2,360, for the visit of Sun 19 Sep.")).toBeVisible();
+  await expect(card.getByText("The charge kept Rs. 2,360, for the visit of Sat 18 Sep.")).toBeVisible();
   const row = (name: string) =>
     card
       .getByRole("term")
@@ -126,7 +126,8 @@ test("offers Refund and Uphold only once the note is written, and sends the ruli
   await card.getByLabel("Your note · required").fill("The bell was broken that week");
 
   const sent = page.waitForRequest((request) => request.url().includes("/ruling") && request.method() === "POST");
-  await answer(page, { "GET /api/no-shows/disputes": json({ disputes: [] }) });
+  // Read again once ruled, as the board does: the dispute has gone.
+  await answer(page, { "GET /api/no-shows/disputes": json({ disputes: [] }), [RULE]: json({ ruled: true }) });
   await card.getByRole("button", { name: "Refund" }).click();
   expect((await sent).postDataJSON()).toEqual({ ruling: "refunded", reason: "The bell was broken that week" });
   await expect(page.getByText(DISPUTED)).toBeHidden();

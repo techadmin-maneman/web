@@ -59,14 +59,17 @@ test("sends the dispute with the client's words, and says it is with us", async 
   const sent = page.waitForRequest((request) => request.url().endsWith(disputed) && request.method() === "POST");
   await sheet.getByRole("button", { name: "Send" }).click();
   expect((await sent).postDataJSON()).toEqual({ reason: "I was home all morning. Nobody rang the bell." });
-  await expect(page.getByRole("status")).toContainText("We have your dispute.");
+  // The sheet is named by its heading, which now says the dispute is with us.
+  await expect(page.getByRole("dialog").getByRole("status")).toContainText("We have your dispute.");
 });
 
-test("says where a dispute stands, and offers no second one", async ({ page }) => {
+test("says a dispute is being looked at, and offers no second one", async ({ page }) => {
   await charged(page, "open");
   await expect(page.getByText("You disputed this charge. We are looking at it.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Dispute this charge" })).toHaveCount(0);
+});
 
+test("says how ops ruled on the dispute", async ({ page }) => {
   await charged(page, "refunded");
   await expect(page.getByText("We looked at your dispute and refunded the charge.")).toBeVisible();
 });
