@@ -69,7 +69,7 @@ export const resultRoute = createRoute({
   responses: {
     200: { description: "Ready", content: { "application/json": { schema: ResultReadySchema } } },
     202: { description: "Still rendering", content: { "application/json": { schema: ResultPendingSchema } } },
-    403: errorResponse("session_required: neither the gate's session nor this browser's look is this job's"),
+    401: errorResponse("session_required: neither the gate's session nor this browser's look is this job's"),
     404: errorResponse("not_found: no such job, or its result has been deleted"),
     422: { description: "Failed", content: { "application/json": { schema: ResultFailedSchema } } },
   },
@@ -103,8 +103,8 @@ export function registerTryonResult(app: App): void {
     const session = await currentSession(c);
     const ownedBySession = session !== null && job !== null && job.session_id === session.id;
     const madeByThisBrowser = (await lookCookieJob(c)) === jobId;
-    // Neither: 403 whether or not the job exists, so a job ID alone reveals nothing.
-    if (!ownedBySession && !madeByThisBrowser) return c.json(errorBody("session_required", requestId), 403);
+    // Neither: 401 whether or not the job exists, so a job ID alone reveals nothing.
+    if (!ownedBySession && !madeByThisBrowser) return c.json(errorBody("session_required", requestId), 401);
     if (job === null) return c.json(errorBody("not_found", requestId), 404);
 
     if (job.state === "ready" && job.result_key !== null) {

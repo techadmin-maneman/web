@@ -139,16 +139,17 @@ const errorShape: Check = async ({ api }) => {
   return "stable error code and request ID";
 };
 
-/** The booking form's city list comes back, so the database is migrated and seeded. */
-const cities: Check = async ({ api }) => {
-  const response = await api("/api/cities");
+/** A pincode the booking form checks, and one of the public site's routes. */
+const PINCODE_PATH = "/api/pincodes/122018";
+
+/** The booking form's pincode check answers from the database, whether or not we come there yet. */
+const pincodeCheck: Check = async ({ api }) => {
+  const response = await api(PINCODE_PATH);
   assert(response.status === 200, `status ${String(response.status)}`);
 
-  const body: unknown = await response.json();
-  assert(Array.isArray(body) && body.length > 0, "the city list is empty");
-  const served = body.filter((city: { served?: unknown }) => city.served === true).length;
-  assert(served > 0, "no city is served");
-  return `${String(body.length)} cities, ${String(served)} served`;
+  const body = await readJsonObject(response);
+  assert(typeof body.served === "boolean", "the answer does not say whether we come");
+  return `122018 is ${body.served ? "served" : "not served yet"}`;
 };
 
 /** Everything outside /api/* reaches mm-site, and it is this environment's site. */
@@ -216,8 +217,8 @@ const siteSecurityHeaders: Check = async ({ options, site }) => {
 
 /** A Phase 2 surface's host serves none of the public site's routes. */
 const publicRoutesAbsent: Check = async ({ api }) => {
-  const response = await api("/api/cities");
-  assert(response.status === 404, `/api/cities answered ${String(response.status)}; it belongs to the public site`);
+  const response = await api(PINCODE_PATH);
+  assert(response.status === 404, `${PINCODE_PATH} answered ${String(response.status)}; it belongs to the public site`);
   const body = await readJsonObject(response);
   assert((body.error as Record<string, unknown> | undefined)?.code === "not_found", "the 404 is not ours");
   return "the public site's routes are not here";
@@ -304,7 +305,7 @@ const linkPreview: Check = async ({ options, crawl }) => {
 export const CHECKS: readonly (readonly [name: string, check: Check])[] = [
   ["mm-api /api/health", health],
   ["mm-api error shape", errorShape],
-  ["mm-api cities", cities],
+  ["mm-api pincode check", pincodeCheck],
   ["mm-site routing", siteRouting],
   ["indexing", indexing],
   ["site security headers", siteSecurityHeaders],

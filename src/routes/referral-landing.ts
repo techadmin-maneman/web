@@ -164,12 +164,13 @@ const consultationRoute = createRoute({
         },
       },
     },
-    400: errorResponse("invalid_request"),
+    400: errorResponse(
+      "invalid_request: fields names what was refused, address.pincode for an address in another pincode",
+    ),
     403: errorResponse("turnstile_failed"),
     409: takenOrBooked,
     422: errorResponse(
       "not_bookable: the pincode is not served, the day is not open, or this number is past consultations; " +
-        "invalid_request: the address is in another pincode (fields names address.pincode); " +
         "idempotency_key_reused: the key was used with a different body",
     ),
     429: errorResponse("rate_limited"),
@@ -296,10 +297,7 @@ export function registerReferralLanding(app: App): void {
     if (booked.booked !== undefined) {
       return c.json({ ...errorBody("already_booked", requestId), booked: booked.booked }, 409);
     }
-    // The landing has said all along whether we come, so a refused pincode reads as not bookable. A field refused
-    // is named instead.
-    const code422 = booked.status === 422 && booked.fields === undefined ? "not_bookable" : booked.code;
-    return c.json(errorBody(code422, requestId, booked.fields), booked.status);
+    return c.json(errorBody(booked.code, requestId, booked.fields), booked.status);
   });
 
   app.openapi(waitlistRoute, async (c) => {
@@ -329,7 +327,6 @@ export function registerReferralLanding(app: App): void {
 
     const listed = run.outcome;
     if (listed.ok) return c.json(listed.body, 201);
-    const code422 = listed.status === 422 ? "not_bookable" : listed.code;
-    return c.json(errorBody(code422, requestId), listed.status);
+    return c.json(errorBody(listed.code, requestId, listed.fields), listed.status);
   });
 }

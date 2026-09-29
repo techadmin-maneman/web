@@ -1,6 +1,6 @@
 # 0024. The browser's own look: an optional gate, and a look shown again
 
-- Status: accepted, on the owner's review of 22 September 2026
+- Status: accepted, on the owner's review of 22 September 2026. Amended 28 September 2026: the refusal answers 401, as `session_required` does everywhere (`docs/open-points.md`, item 105).
 - Date: 2026-09-22
 
 ## Context
@@ -16,7 +16,7 @@ Until now the API has held to one rule: a job ID alone never opens someone's res
 
 **The `mm_look` cookie is signed.** Its value used to be the bare job ID, which anyone who knew the ID could send. It is now a token signed with `RESULT_SIGNING_KEY` for the purpose `look`, expiring with the cookie after thirty days (`src/http/session.ts`). A made-up, altered or stale cookie counts as no cookie. Cookies set before this change were never signed, so they no longer count; they existed only on staging, since production has served no try-on.
 
-**The browser that made the look may see it.** `GET /api/tryon/result/:job_id` now answers either the gate's session, as before, or the browser whose signed `mm_look` names the job. Anyone else gets `403 session_required`, whether or not the job exists, so a job ID alone still reveals nothing.
+**The browser that made the look may see it.** `GET /api/tryon/result/:job_id` now answers either the gate's session, as before, or the browser whose signed `mm_look` names the job. Anyone else gets `401 session_required`, whether or not the job exists, so a job ID alone still reveals nothing. (It answered 403 until 28 September 2026, when the owner ruled that each error code answers with one status everywhere.)
 
 **`GET /api/tryon/look`** returns the look the browser's signed cookie names: its job ID, state, stage and preset. It answers `404` without a genuine cookie, and once the job has expired, which is when its photograph and result are deleted.
 

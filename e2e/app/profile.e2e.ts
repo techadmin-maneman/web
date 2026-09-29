@@ -2,30 +2,27 @@
 // in with the local fixed code (OTP_FIXED_CODE in playwright.config.ts).
 
 import AxeBuilder from "@axe-core/playwright";
-import type { APIRequestContext, Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { expect, randomMobile, test } from "../support.ts";
 import { holdOpen } from "./one-tap.ts";
 import { CODE, signIn } from "./signed-in.ts";
 
-async function loggedIn(page: Page, request: APIRequestContext): Promise<string> {
-  const mobile = await signIn(page, request);
+async function loggedIn(page: Page): Promise<string> {
+  const mobile = await signIn(page);
   await page.getByRole("link", { name: "Your profile" }).click();
   await expect(page.getByRole("heading", { name: "Where we come" })).toBeVisible();
   return mobile;
 }
 
-test("opens from Home's button, with the client's name and a way back", async ({ page, request }) => {
-  await loggedIn(page, request);
+test("opens from Home's button, with the client's name and a way back", async ({ page }) => {
+  await loggedIn(page);
   await expect(page.getByRole("banner")).toContainText("Rohit Malhotra");
   await page.getByRole("link", { name: "Back" }).click();
   await expect(page.getByRole("heading", { name: "Your consultation" })).toBeVisible();
 });
 
-test("keeps the tabs at the foot of the screen, and scrolls only the page, however long it is", async ({
-  page,
-  request,
-}) => {
-  await loggedIn(page, request);
+test("keeps the tabs at the foot of the screen, and scrolls only the page, however long it is", async ({ page }) => {
+  await loggedIn(page);
   const tabs = await page.getByRole("navigation").boundingBox();
   expect((tabs?.y ?? 0) + (tabs?.height ?? 0)).toBe(844);
   const heights = await page.evaluate(() => ({
@@ -36,8 +33,8 @@ test("keeps the tabs at the foot of the screen, and scrolls only the page, howev
   expect(heights.page).toBeGreaterThan(844);
 });
 
-test("shows board B3's loading shape while the profile comes", async ({ page, request }) => {
-  await signIn(page, request);
+test("shows board B3's loading shape while the profile comes", async ({ page }) => {
+  await signIn(page);
   let release: () => void = () => undefined;
   const held = new Promise<void>((resolve) => {
     release = resolve;
@@ -52,8 +49,8 @@ test("shows board B3's loading shape while the profile comes", async ({ page, re
   await expect(page.getByRole("heading", { name: "Where we come" })).toBeVisible();
 });
 
-test("takes an address and its access notes, and shows them", async ({ page, request }) => {
-  await loggedIn(page, request);
+test("takes an address and its access notes, and shows them", async ({ page }) => {
+  await loggedIn(page);
   await expect(page.getByText("No address yet.")).toBeVisible();
   await page.getByRole("button", { name: "Add your address and access notes" }).click();
   await page.getByLabel("Building, society or street").fill("House 4417, Tower C");
@@ -74,8 +71,8 @@ test("takes an address and its access notes, and shows them", async ({ page, req
 
 // The building search (ADR 0054). The local API runs the stub provider, whose
 // suggestions are synthetic Gurugram societies.
-test("finds a building, keeps the flat separately, and shows the address as written", async ({ page, request }) => {
-  await loggedIn(page, request);
+test("finds a building, keeps the flat separately, and shows the address as written", async ({ page }) => {
+  await loggedIn(page);
   await page.getByRole("button", { name: "Add your address and access notes" }).click();
 
   const search = page.getByRole("combobox", { name: "Search for your building" });
@@ -103,8 +100,8 @@ test("finds a building, keeps the flat separately, and shows the address as writ
   await expect(page.getByText("Near Opposite the sector market")).toBeVisible();
 });
 
-test("the suggestion list works by keyboard alone", async ({ page, request }) => {
-  await loggedIn(page, request);
+test("the suggestion list works by keyboard alone", async ({ page }) => {
+  await loggedIn(page);
   await page.getByRole("button", { name: "Add your address and access notes" }).click();
 
   const search = page.getByRole("combobox", { name: "Search for your building" });
@@ -128,8 +125,8 @@ test("the suggestion list works by keyboard alone", async ({ page, request }) =>
   await expect(search).toHaveAttribute("aria-expanded", "false");
 });
 
-test("an address can still be typed when the search gives nothing", async ({ page, request }) => {
-  await loggedIn(page, request);
+test("an address can still be typed when the search gives nothing", async ({ page }) => {
+  await loggedIn(page);
   await page.getByRole("button", { name: "Add your address and access notes" }).click();
 
   // The stub answers this query with a 503, as a spent quota or an outage would.
@@ -149,8 +146,8 @@ test("an address can still be typed when the search gives nothing", async ({ pag
   await expect(page.getByText("House 4417, Sunrise Greens, Sector 65, Gurgaon 122018")).toBeVisible();
 });
 
-test("refuses an address without a six-digit pincode", async ({ page, request }) => {
-  await loggedIn(page, request);
+test("refuses an address without a six-digit pincode", async ({ page }) => {
+  await loggedIn(page);
   await page.getByRole("button", { name: "Add your address and access notes" }).click();
   await page.getByLabel("Building, society or street").fill("House 1");
   await page.getByLabel("Sector or area").fill("Sector 65");
@@ -173,8 +170,8 @@ test("refuses an address without a six-digit pincode", async ({ page, request })
 
 // Saved, the form closes on its own heading, so the client lands where they were rather than mid-page (CLI-30).
 // An address the client gave ops on the phone, which ops saved for them (docs/decisions/0092-task-owners.md).
-test("says an address was given to us on the phone, so the client can check it", async ({ page, request }) => {
-  await signIn(page, request);
+test("says an address was given to us on the phone, so the client can check it", async ({ page }) => {
+  await signIn(page);
   // Only the browser resolves app.localhost, so the profile is answered whole rather than fetched and changed.
   await page.route("**/api/profile", async (route) => {
     await route.fulfill({
@@ -213,8 +210,8 @@ test("says an address was given to us on the phone, so the client can check it",
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
 });
 
-test("lands on where we come once the address is saved", async ({ page, request }) => {
-  await loggedIn(page, request);
+test("lands on where we come once the address is saved", async ({ page }) => {
+  await loggedIn(page);
   await page.getByRole("button", { name: "Add your address and access notes" }).click();
   await page.getByLabel("Building, society or street").fill("House 4417");
   await page.getByLabel("Sector or area").fill("Sector 65");
@@ -226,8 +223,8 @@ test("lands on where we come once the address is saved", async ({ page, request 
   await expect(heading).toBeInViewport();
 });
 
-test("lists the five consents off, and switches one on with its date and off again", async ({ page, request }) => {
-  await loggedIn(page, request);
+test("lists the five consents off, and switches one on with its date and off again", async ({ page }) => {
+  await loggedIn(page);
   const switches = page.getByRole("switch");
   await expect(switches).toHaveCount(5);
   for (const name of [
@@ -258,9 +255,8 @@ test("lists the five consents off, and switches one on with its date and off aga
 
 test("shows the referral card's lines, and the naming line, before that consent can be switched on", async ({
   page,
-  request,
 }) => {
-  await loggedIn(page, request);
+  await loggedIn(page);
   const cards = page.getByRole("switch", { name: "Photographs on referral cards" });
   await cards.click();
   await expect(page.getByText("Anyone you send this card to can see your photographs.")).toBeVisible();
@@ -276,8 +272,8 @@ test("shows the referral card's lines, and the naming line, before that consent 
   await expect(cards).toHaveAttribute("aria-checked", "true");
 });
 
-test("changes the number: a code to each, then it waits for us", async ({ page, request }) => {
-  await loggedIn(page, request);
+test("changes the number: a code to each, then it waits for us", async ({ page }) => {
+  await loggedIn(page);
   await page.getByRole("textbox", { name: "New number" }).fill(randomMobile());
   await page.getByRole("button", { name: "Start the change" }).click();
   await expect(page.getByText("Enter the code sent to each number.")).toBeVisible();
@@ -296,8 +292,8 @@ test("changes the number: a code to each, then it waits for us", async ({ page, 
 
 // A switch the API did not answer stays as it was, and says so: a switch that looks off while the consent stands
 // would tell the client something untrue about their data (FEA-25).
-test("a consent that did not go through says so, and the switch stays as it was", async ({ page, request }) => {
-  await loggedIn(page, request);
+test("a consent that did not go through says so, and the switch stays as it was", async ({ page }) => {
+  await loggedIn(page);
   await page.route("**/api/consents/*", (route) => route.fulfill({ status: 503, json: { error: { code: "busy" } } }));
   const visits = page.getByRole("switch", { name: "WhatsApp about your visits" });
   await visits.click();
@@ -307,8 +303,8 @@ test("a consent that did not go through says so, and the switch stays as it was"
   await expect(visits).toHaveAttribute("aria-checked", "false");
 });
 
-test("a deletion request that did not go through says so, and asks again", async ({ page, request }) => {
-  await loggedIn(page, request);
+test("a deletion request that did not go through says so, and asks again", async ({ page }) => {
+  await loggedIn(page);
   await page.route("**/api/deletion-request", (route) =>
     route.fulfill({ status: 503, json: { error: { code: "busy" } } }),
   );
@@ -321,8 +317,8 @@ test("a deletion request that did not go through says so, and asks again", async
   await expect(page.getByRole("status").filter({ hasText: "Deletion requested" })).toHaveCount(0);
 });
 
-test("starts one number change, and checks the codes once, however often each is tapped", async ({ page, request }) => {
-  await loggedIn(page, request);
+test("starts one number change, and checks the codes once, however often each is tapped", async ({ page }) => {
+  await loggedIn(page);
   await page.getByRole("textbox", { name: "New number" }).fill(randomMobile());
 
   // Starting again withdraws the request just made and sends a fresh pair: four codes for one intent.
@@ -353,8 +349,8 @@ test("starts one number change, and checks the codes once, however often each is
   });
 });
 
-test("saves the address once when Save is tapped twice", async ({ page, request }) => {
-  await loggedIn(page, request);
+test("saves the address once when Save is tapped twice", async ({ page }) => {
+  await loggedIn(page);
   await page.getByRole("button", { name: "Add your address and access notes" }).click();
   const search = page.getByRole("combobox", { name: "Search for your building" });
   await search.fill("Sunrise");
@@ -376,8 +372,8 @@ test("saves the address once when Save is tapped twice", async ({ page, request 
   expect({ asked: held.asked(), liveWhileBusy }).toEqual({ asked: 1, liveWhileBusy: false });
 });
 
-test("raises one grievance when Send is tapped twice", async ({ page, request }) => {
-  await loggedIn(page, request);
+test("raises one grievance when Send is tapped twice", async ({ page }) => {
+  await loggedIn(page);
   await page.getByRole("button", { name: "Raise a concern" }).click();
   await page.getByRole("textbox", { name: "Your concern" }).fill("Please explain who sees my photographs.");
 
@@ -395,15 +391,15 @@ test("raises one grievance when Send is tapped twice", async ({ page, request })
   expect({ asked: held.asked(), liveWhileBusy }).toEqual({ asked: 1, liveWhileBusy: false });
 });
 
-test("refuses the client's own number as the new one", async ({ page, request }) => {
-  const mobile = await loggedIn(page, request);
+test("refuses the client's own number as the new one", async ({ page }) => {
+  const mobile = await loggedIn(page);
   await page.getByRole("textbox", { name: "New number" }).fill(mobile);
   await page.getByRole("button", { name: "Start the change" }).click();
   await expect(page.getByRole("alert")).toHaveText("Enter a ten-digit mobile number, not the one you use now.");
 });
 
-test("offers support on WhatsApp, with the design's line", async ({ page, request }) => {
-  await loggedIn(page, request);
+test("offers support on WhatsApp, with the design's line", async ({ page }) => {
+  await loggedIn(page);
   await expect(page.getByRole("link", { name: "Message us on WhatsApp" })).toHaveAttribute(
     "href",
     "https://wa.me/919007973247",
@@ -411,8 +407,8 @@ test("offers support on WhatsApp, with the design's line", async ({ page, reques
   await expect(page.getByText("Replies within a working day. Everything in writing.")).toBeVisible();
 });
 
-test("Your data: a download of everything held, and a concern sent to ops", async ({ page, request }) => {
-  await loggedIn(page, request);
+test("Your data: a download of everything held, and a concern sent to ops", async ({ page }) => {
+  await loggedIn(page);
   await expect(page.getByRole("link", { name: "Download my data" })).toHaveAttribute("href", "/api/me/export");
   await page.getByRole("button", { name: "Raise a concern" }).click();
   await page.getByRole("textbox", { name: "Your concern" }).fill("Please explain who sees my photographs.");
@@ -422,8 +418,8 @@ test("Your data: a download of everything held, and a concern sent to ops", asyn
   ).toBeVisible();
 });
 
-test("asks before requesting deletion, then says it is requested", async ({ page, request }) => {
-  await loggedIn(page, request);
+test("asks before requesting deletion, then says it is requested", async ({ page }) => {
+  await loggedIn(page);
   await expect(
     page.getByText("Photographs deleted within seven days. Invoices kept eight years, by law."),
   ).toBeVisible();
@@ -438,14 +434,14 @@ test("asks before requesting deletion, then says it is requested", async ({ page
   );
 });
 
-test("logs out from the foot of the profile", async ({ page, request }) => {
-  await loggedIn(page, request);
+test("logs out from the foot of the profile", async ({ page }) => {
+  await loggedIn(page);
   await page.getByRole("button", { name: "Log out" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
 });
 
-test("meets WCAG 2.2 AA, with the address form and the card's lines open", async ({ page, request }) => {
-  await loggedIn(page, request);
+test("meets WCAG 2.2 AA, with the address form and the card's lines open", async ({ page }) => {
+  await loggedIn(page);
   const scan = async () => {
     const results = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])

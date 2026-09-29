@@ -1,6 +1,6 @@
 # 0011. The lead API
 
-- Status: accepted. Amended by ADR 0067: Turnstile refusing our own secret, or failing itself, answers `503 unavailable`, and an outage is logged and alerted.
+- Status: accepted. Amended by ADR 0067: Turnstile refusing our own secret, or failing itself, answers `503 unavailable`, and an outage is logged and alerted. Amended 28 September 2026: `POST /api/lead` and `GET /api/cities` are removed on the owner's ruling (`docs/open-points.md`, item 107). What this decided for errors, Turnstile, idempotency and the daily limits stands in the site's booking routes that replaced them (ADR 0051, `src/http/public-form.ts`).
 - Date: 2026-09-21
 
 ## Context

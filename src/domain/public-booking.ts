@@ -204,7 +204,6 @@ async function recordLead(
     lossExtent: LossExtent | null;
     date: string | null;
     attribution: Attribution;
-    ipHash: string;
     served: boolean;
     now: Date;
   },
@@ -218,15 +217,11 @@ async function recordLead(
     mobileE164: input.mobile,
     city: input.pincode === null ? null : await leadCity(db, input.pincode.city),
     source: input.served ? "form" : "waitlist",
-    window: null,
     lossExtent: input.lossExtent,
     proposedVisitDate: input.date,
     attribution: input.attribution,
-    ipHash: input.ipHash,
     requestId,
     now: input.now,
-    // The consent was recorded with the notice the page showed, before this.
-    recordConsent: false,
   });
   try {
     await form.queues.crm.send({ lead_id: leadId, request_id: requestId });
@@ -328,11 +323,11 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   const first = addDays(indiaDate(now), 1);
   const pincode = await pincodeOf(db, request.pincode);
   if (pincode?.served !== 1 || request.date < first || request.date > addDays(first, BOOKING_DAYS - 1)) {
-    return { ok: false, status: 422, code: "invalid_request" };
+    return { ok: false, status: 422, code: "not_bookable" };
   }
   // The technician goes to the address, so it must be where the pincode said we come.
   if (request.address.pincode !== request.pincode) {
-    return { ok: false, status: 422, code: "invalid_request", fields: ["address.pincode"] };
+    return { ok: false, status: 400, code: "invalid_request", fields: ["address.pincode"] };
   }
   const checked = await form.checkPerson(request.mobile, request.turnstileToken);
   if (!checked.ok) return checked;
@@ -408,7 +403,6 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     lossExtent: request.lossExtent,
     date: request.date,
     attribution: request.attribution,
-    ipHash: checked.ipHash,
     served: true,
     now,
   });
@@ -459,7 +453,7 @@ export async function joinTheWaitlist(
 ): Promise<Listed | Refusal<400 | 403 | 422 | 429 | 503>> {
   const { db, now } = form;
   const pincode = await pincodeOf(db, request.pincode);
-  if (pincode?.served === 1) return { ok: false, status: 422, code: "invalid_request" };
+  if (pincode?.served === 1) return { ok: false, status: 422, code: "not_bookable" };
   const checked = await form.checkPerson(request.mobile, request.turnstileToken);
   if (!checked.ok) return checked;
 
@@ -522,7 +516,6 @@ export async function joinTheWaitlist(
     lossExtent: request.lossExtent,
     date: null,
     attribution: request.attribution,
-    ipHash: checked.ipHash,
     served: false,
     now,
   });

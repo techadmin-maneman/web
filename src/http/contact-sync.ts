@@ -1,7 +1,8 @@
 // A client's new address, or a number change ops confirmed, sent on to FSM's
 // contact and the CRM lead (docs/decisions/0070-vendor-correctness.md). The
 // change is in D1 already; each consumer reads the person afresh, so the
-// message says only whose details changed.
+// message says only whose details changed, and a later message also carries
+// an earlier change that could not be sent.
 
 import type { Context } from "hono";
 import type { AppEnv } from "./context.ts";
@@ -27,5 +28,7 @@ export async function queueContactSync(c: Context<AppEnv>, personId: string): Pr
         "Update their FSM contact and CRM lead by hand.",
       link: `/clients/${personId}`,
     });
+    return;
   }
+  await deps.resolveAlert(`contact_sync:${personId}`);
 }

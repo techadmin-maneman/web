@@ -66,12 +66,12 @@ test("answers any page path with the app, as a single-page app", async ({ page }
 test("reaches mm-api as the client surface, on its own host", async ({ page }) => {
   await page.goto("/");
   const statuses = await page.evaluate(async () => {
-    const [health, cities, me] = await Promise.all(
-      ["/api/health", "/api/cities", "/api/me"].map((path) => fetch(path)),
+    const [health, pincode, me] = await Promise.all(
+      ["/api/health", "/api/pincodes/122018", "/api/me"].map((path) => fetch(path)),
     );
-    return { health: health?.status, cities: cities?.status, me: me?.status };
+    return { health: health?.status, pincode: pincode?.status, me: me?.status };
   });
-  expect(statuses).toEqual({ health: 200, cities: 404, me: 401 });
+  expect(statuses).toEqual({ health: 200, pincode: 404, me: 401 });
 });
 
 test("says board B3's error when the API cannot be reached, with a way to try again", async ({ page }) => {

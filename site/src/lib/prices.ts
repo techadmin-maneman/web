@@ -7,7 +7,7 @@
 // While the book prices no premium first fit there are no premium words, so a clause that needs one, "[ Premium:
 // {premiumFirstFit}.]", is left out, and an element that shows one stays hidden (data-premium, site/src/worker.ts).
 
-import { rupeeSign } from "@maneman/web-kit/money";
+import { rupees } from "@maneman/web-kit/money";
 import { BUILT_STANDARD, type TierPrices } from "../content/prices.ts";
 import type { PublishedPrices } from "./api.ts";
 import { fill } from "./text.ts";
@@ -33,22 +33,22 @@ function firstYear(tier: TierPrices): number {
 /** The words for every hole, from the standard tier's figures and, where the book prices one, the premium tier's. */
 export function priceWords(standard: TierPrices, premium: TierPrices | null = null): PriceWords {
   const words = {
-    firstFit: rupeeSign(standard.first_fit),
-    service: rupeeSign(standard.service),
-    replacement: rupeeSign(standard.replacement),
-    firstYear: rupeeSign(firstYear(standard)),
-    firstFitRange: rupeeSign(standard.first_fit),
+    firstFit: rupees(standard.first_fit),
+    service: rupees(standard.service),
+    replacement: rupees(standard.replacement),
+    firstYear: rupees(firstYear(standard)),
+    firstFitRange: rupees(standard.first_fit),
   };
   if (premium === null) return words;
   const cheaperFirstFit = Math.min(standard.first_fit, premium.first_fit);
   const dearerFirstFit = Math.max(standard.first_fit, premium.first_fit);
   return {
     ...words,
-    firstFitRange: `${rupeeSign(cheaperFirstFit)}–${rupeeSign(dearerFirstFit)}`,
-    premiumFirstFit: rupeeSign(premium.first_fit),
-    premiumService: rupeeSign(premium.service),
-    premiumReplacement: rupeeSign(premium.replacement),
-    premiumFirstYear: rupeeSign(firstYear(premium)),
+    firstFitRange: `${rupees(cheaperFirstFit)}–${rupees(dearerFirstFit)}`,
+    premiumFirstFit: rupees(premium.first_fit),
+    premiumService: rupees(premium.service),
+    premiumReplacement: rupees(premium.replacement),
+    premiumFirstYear: rupees(firstYear(premium)),
   };
 }
 

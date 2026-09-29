@@ -1,6 +1,6 @@
 # 0032. The FSM mirror, and Books documents
 
-- Status: accepted
+- Status: accepted. Amended 28 September 2026: the lead route that sent Phase 1's bookings to FSM as Requests is removed; the site's bookings reach FSM as work orders from their held slots (ADR 0051), and what is left of the Request path goes with `docs/open-points.md`, item 159.
 - Date: 2026-09-22
 
 ## Context
@@ -98,7 +98,7 @@ The reconciliation repairs whatever the webhooks missed (`src/scheduled/reconcil
 
 ## Leads into FSM (P2-M2.7)
 
-A consultation booked on the public site reaches FSM as well as the CRM, so ops schedule it where the field work lives.
+A consultation booked on the public site reaches FSM as well as the CRM, so ops schedule it where the field work lives. (Amended 28 September 2026: this was Phase 1's form, through `POST /api/lead`, which is removed. The site's form holds a slot, and FSM gets the booking as a work order with its appointment; `docs/open-points.md`, items 107 and 159.)
 
 - **What goes.** A booking in a served city: not a waitlist entry, and not a try-on. The lead route puts `{ lead_id }` on the fsm-sync queue wherever `FSM_PROVIDER` is not `none`; the consumer sends it (`src/domain/fsm-leads.ts`) with the same retries and final alert as an appointment.
 - **The contact.** The person becomes an FSM contact once, with their mobile number in E.164 (which the mirror matches on), their city and its state as the place of supply, and a street "To be confirmed with the client" (since 25 September 2026, the street of the client's saved address where they have one, which a later change of address or number also writes over the contact: ADR 0054). Its ID is kept on the person at once, so a retry does not add the contact twice. The territory is the org's first until territories follow pincodes (P2-M4).

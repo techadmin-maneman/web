@@ -4,7 +4,6 @@ import { createScheduledController } from "cloudflare:test";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import worker from "../../src/index.ts";
-import { CitySchema } from "../../src/routes/cities.ts";
 import { captureLogs, fakeQueue, markDatabase } from "./helpers.ts";
 import { insertJob, insertPerson, syntheticJpeg } from "./tryon-fixtures.ts";
 
@@ -23,27 +22,6 @@ function queueBatch(queue: string, bodies: unknown[]) {
   }));
   return { queue, messages, ackAll: vi.fn(), retryAll: vi.fn() };
 }
-
-describe("GET /api/cities", () => {
-  it("lists active cities in display order, cacheable for five minutes", async () => {
-    await markDatabase();
-    await env.DB.prepare("UPDATE cities SET active = 0 WHERE name = 'Bengaluru'").run();
-
-    const res = await worker.fetch(new Request("https://maneman.test/api/cities"), env);
-
-    expect(res.status).toBe(200);
-    expect(res.headers.get("Cache-Control")).toBe("public, max-age=300");
-    const cities = CitySchema.array().parse(await res.json());
-    expect(cities).toEqual([
-      { name: "Gurgaon", served: true },
-      { name: "Delhi", served: true },
-      { name: "Noida", served: true },
-      { name: "Faridabad", served: true },
-      { name: "Ghaziabad", served: true },
-      { name: "Mumbai", served: false },
-    ]);
-  });
-});
 
 describe("queue handler", () => {
   it("routes crm-sync messages to the sync, which marks the lead synced", async () => {

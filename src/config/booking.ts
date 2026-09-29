@@ -1,5 +1,6 @@
-// The booking form's choices, and the words the design uses for them. Zoho
-// shows ops the same words the customer picked.
+// The loss extent the site's booking form asks for, and the four rough windows
+// Phase 1's form offered, which the leads it left still carry; with the words
+// the design uses for each. Zoho shows ops the same words the customer picked.
 
 export const VISIT_WINDOWS = ["weekday_am", "weekday_pm", "weekend_am", "weekend_pm"] as const;
 export type VisitWindow = (typeof VISIT_WINDOWS)[number];
@@ -27,8 +28,4 @@ export type WindowLabel = (typeof WINDOW_LABELS)[number];
 /** The end of the booked page's headline: "Thursday, 24 September, before noon." */
 export function windowLabel(window: VisitWindow): WindowLabel {
   return window.endsWith("_am") ? "before noon" : "after four";
-}
-
-export function isWeekendWindow(window: VisitWindow): boolean {
-  return window.startsWith("weekend");
 }

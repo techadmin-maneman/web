@@ -497,7 +497,7 @@ describe("results, and one look per visitor", () => {
 
     const stranger = visitor();
     await insertPerson("q", "+919810000009");
-    expect((await stranger.call(`/api/tryon/result/${jobId}`)).status).toBe(403);
+    expect((await stranger.call(`/api/tryon/result/${jobId}`)).status).toBe(401);
   });
 
   it("shows the result to the browser that made the look, with no number given", async () => {
@@ -518,16 +518,16 @@ describe("results, and one look per visitor", () => {
 
     const forger = visitor();
     forger.useCookie("mm_look", jobId); // the bare job ID, as the cookie held before it was signed
-    expect((await forger.call(`/api/tryon/result/${jobId}`)).status).toBe(403);
+    expect((await forger.call(`/api/tryon/result/${jobId}`)).status).toBe(401);
     forger.useCookie("mm_look", `${browser.cookie("mm_look")}x`);
-    expect((await forger.call(`/api/tryon/result/${jobId}`)).status).toBe(403);
+    expect((await forger.call(`/api/tryon/result/${jobId}`)).status).toBe(401);
 
     const other = await visitor().uploaded();
-    expect((await browser.call(`/api/tryon/result/${other}`)).status).toBe(403);
+    expect((await browser.call(`/api/tryon/result/${other}`)).status).toBe(401);
 
     const later = visitor({ deps: fakeDependencies({ now: () => new Date(NOW.getTime() + 31 * 24 * 3_600_000) }) });
     later.useCookie("mm_look", browser.cookie("mm_look"));
-    expect((await later.call(`/api/tryon/result/${jobId}`)).status).toBe(403);
+    expect((await later.call(`/api/tryon/result/${jobId}`)).status).toBe(401);
   });
 
   it("tells a browser which look it has, until the look's result is gone", async () => {

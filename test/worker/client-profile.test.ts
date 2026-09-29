@@ -149,6 +149,19 @@ describe("PATCH /api/profile/address", () => {
       fsm: [{ update_contact_person_id: "p1", ...request }],
     });
   });
+
+  it("tells ops when the address cannot be sent on, until a later change is", async () => {
+    const openAlert = () =>
+      env.DB.prepare("SELECT key FROM alerts WHERE key = 'contact_sync:p1' AND resolved_at IS NULL").first("key");
+    queues.CRM_QUEUE.send = () => Promise.reject(new Error("queue unavailable"));
+    expect((await send(client, "PATCH", "/api/profile/address", address)).status).toBe(200);
+    expect(await openAlert()).toBe("contact_sync:p1");
+
+    // The consumers read the person afresh, so the later change carries the one that was not sent.
+    queues.CRM_QUEUE = fakeQueue();
+    expect((await send(client, "PATCH", "/api/profile/address", { ...address, line1: "House 12" })).status).toBe(200);
+    expect(await openAlert()).toBeNull();
+  });
 });
 
 describe("POST /api/address/suggestions", () => {
