@@ -1,6 +1,6 @@
 # 0088. Every policy in the console
 
-- Status: accepted, on the owner's standing rule of 27 September 2026
+- Status: accepted, on the owner's standing rule of 27 September 2026; amended 29 September 2026 by [0096](0096-a-no-shows-charge-and-its-dispute.md), under which a charged no-show costs the charge its booking kept, and the move panel names the notice the visit was sold under
 - Date: 2026-09-28
 - Amends [0061](0061-ops-editable-inputs.md), whose store read a row per input and so held ten inputs at most, and whose register held numbers alone; extends [0068](0068-a-paid-hold-is-kept.md), whose hold kept the late fee it was sold under and now keeps its terms and its grace too; records the owner's rulings of 27 September 2026 on open points 7, 12, 15, 40, 53, 58, 59 and 60, and ADR 0025's items 42 and 66
 
@@ -43,7 +43,7 @@ Every committed figure stays beside its rule, in `src/policy/` or `src/config/`,
 - **The phone's third bound**, that a check-in reaching us late starts the no-show wait from when it reached us, is not a figure of its own: its figure is the no-show wait, which ops already set per kind of visit. That the wait runs on our clock too is a safety rule, not a policy (ADR 0065): without it a back-dated check-in could close a no-show at once.
 - **Board D3** no longer decides in the console whether an average runs over: `GET /api/technicians/work` answers `runs_over` for each technician by the rule in `src/policy/technician-work.ts`, and counts back as many days as ops set. `content.ts`' `overBy` is gone.
 - **The reminder's hour** is apart from the address's unlock hour (`address_unlock_hour`, ADR 0061): both begin at 6 pm, and moving one does not move the other.
-- **A no-show's charge is the setting alone.** Nothing charges a no-show by it yet: a charge still keeps what the visit took, as before, and the rule's note in the console says so. Plan piece C3 builds the charge, the amount on board D1 and the dispute on it, and reads the charge each booking kept.
+- **A no-show's charge is the setting alone.** Nothing charges a no-show by it yet: a charge still keeps what the visit took, as before, and the rule's note in the console says so. Plan piece C3 builds the charge, the amount on board D1 and the dispute on it, and reads the charge each booking kept. **Built 29 September 2026** ([0096](0096-a-no-shows-charge-and-its-dispute.md)): a charge costs the charge its booking kept, recorded on the ruling, and the note says what it costs.
 
 ### What a client was sold stays sold
 
@@ -68,7 +68,7 @@ A list, not a figure, so a tab of its own, Settings · Blackout days (`GET /api/
 - **"A move by ops never charges."** A rule, not a figure (plan piece C10 builds on it).
 - **Visit lengths** are done (ADR 0085): each service's own, in Settings · Services and prices. The site's words for how long each visit takes are built from the kinds' committed lengths (`site/src/content/service.ts`), so a standard service ops lengthen still reads at its old length on the site until it is built again; the same open point records it.
 - **Engineering figures**: how long a dispatch move holds its time while FSM is written (`MOVE_CLAIM_SECONDS`), the sweep's timings, every ceiling ADR 0009 holds the account to. None is a business decision.
-- **The dispatch board's peak** (`dispatch.peak`, `apps/ops/src/content.ts`) is where we drew the board's brass figures; no rule of the owner's stands behind it. The move panel's line "This visit is inside 24 hours. The client is not charged, because we moved it." names the committed notice, and plan piece C10, which gives a visit ops moved the client's free change, rewrites it.
+- **The dispatch board's peak** (`dispatch.peak`, `apps/ops/src/content.ts`) is where we drew the board's brass figures; no rule of the owner's stands behind it. The move panel's line "This visit is inside 24 hours. The client is not charged, because we moved it." names the committed notice, and plan piece C10, which gives a visit ops moved the client's free change, rewrites it. **Done 29 September 2026** ([0096](0096-a-no-shows-charge-and-its-dispute.md)): it names the notice the visit was sold under.
 
 ## Consequences
 

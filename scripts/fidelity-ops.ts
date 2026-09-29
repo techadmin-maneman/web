@@ -476,10 +476,8 @@ async function photos(browser: Browser, design: Page): Promise<void> {
 }
 
 /**
- * Board D1, both of its cards. The first is the day's money over the charges it
- * was kept on; the second is a disputed charge, and nothing records one, so the
- * queue of cases is paired with it as the card that holds the evidence and the
- * ruling.
+ * Board D1, both of its cards: the day's money over the charges it was kept on,
+ * and a disputed charge (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
  */
 async function noShows(browser: Browser, design: Page): Promise<void> {
   const page = await openConsole(browser, "/no-shows");
@@ -487,9 +485,9 @@ async function noShows(browser: Browser, design: Page): Promise<void> {
   await money.getByText("Cancelled 9:14 am · visit was 10 am").waitFor();
   await pair(OUT, PANEL, "d1-day-money", await panelOf(design, "Payments", 0), await money.screenshot());
 
-  const panel = page.getByRole("region", { name: "Waiting for a decision" });
-  await panel.getByText("Delivered Sun 19 Sep, 11:32 am").waitFor();
-  await pair(OUT, PANEL, "d1-no-shows", await panelOf(design, "Payments", 1), await panel.screenshot());
+  const dispute = page.getByRole("region", { name: "Vikram Sethi disputes the charge" });
+  await dispute.getByText("240 m · over 200 m fence").waitFor();
+  await pair(OUT, PANEL, "d1-disputed-charge", await panelOf(design, "Payments", 1), await dispute.screenshot());
   await page.close();
 }
 

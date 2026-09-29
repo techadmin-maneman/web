@@ -97,9 +97,12 @@ describe("the register", () => {
     expect(named("piece_cycle_days").fallback).toEqual({ [DEFAULT_KEY]: DEFAULT_PIECE_CYCLE_DAYS });
   });
 
-  // Review of #145, item 5: charging a no-show does not take this figure until plan piece C3 builds it.
-  it("says the no-show charge is not in force yet, so ops do not think setting it charges anyone", () => {
-    expect(named("no_show_charge").note).toContain("It does not take effect yet");
+  // Review of #145, item 5: the note said the charge was not in force until plan piece C3 built it, which it now is
+  // (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md), so it says what a charge costs, and no longer that it waits.
+  it("says what charging a no-show costs, now that a charge takes it", () => {
+    const note = named("no_show_charge").note;
+    expect(note).toContain("costs when you charge a no-show");
+    expect(note).not.toContain("does not take effect");
   });
 
   it.each(REGISTER)("$name's note is written for ops, not for whoever reads the code", (setting) => {
