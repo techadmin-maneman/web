@@ -194,10 +194,10 @@ test.describe("home sections", () => {
     // FEO-22: the price book's figures, as the page is built, and the first year computed from them. Behind
     // Cloudflare mm-site's Worker writes the book's figures of the day over these (site/src/worker.ts), and shows
     // Premium once the book prices a first fit coded premium; a page is built without it (ADR 0085).
-    await expect(table.getByRole("row", { name: /^First fit/ }).getByRole("cell")).toHaveText(["₹30,000"]);
+    await expect(table.getByRole("row", { name: /^First fit/ }).getByRole("cell")).toHaveText(["Rs. 30,000"]);
     await expect(table.getByRole("columnheader", { name: "Premium" })).toHaveCount(0);
-    await expect(prices.getByText("A standard base in the first year: ₹30,000", { exact: false })).toHaveText(
-      "A standard base in the first year: ₹30,000 plus twelve service visits at ₹2,000 — ₹54,000.",
+    await expect(prices.getByText("A standard base in the first year: Rs. 30,000", { exact: false })).toHaveText(
+      "A standard base in the first year: Rs. 30,000 plus twelve service visits at Rs. 2,000 — Rs. 54,000.",
     );
     await expect(prices.getByRole("link", { name: "Book a free consultation" })).toHaveAttribute("href", "/book");
     await expect(prices.getByRole("link", { name: "Or see yourself with hair first" })).toHaveAttribute("href", "/try");

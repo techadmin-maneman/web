@@ -194,8 +194,9 @@ async function requeueCrmErasures(run: SweepRun): Promise<string[]> {
 /** Bookings and erasures FSM has not heard of, sent to fsm-sync: only where FSM is connected. */
 async function requeueFsmWork(run: SweepRun): Promise<void> {
   const { db, env, now, before, log } = run;
-  // Bookings whose message to the fsm-sync queue never went (src/routes/lead.ts), sent now, once.
-  // One over a day old is left: past that, sending it would surprise ops, who have it from the CRM.
+  // Phase 1 bookings whose message to the fsm-sync queue never went, sent now, once. Only POST /api/lead wrote
+  // them, and it is gone (docs/open-points.md, items 107 and 159). One over a day old is left: past that, sending it
+  // would surprise ops, who have it from the CRM.
   const bookings = await ids(
     db
       .prepare(

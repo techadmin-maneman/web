@@ -330,7 +330,7 @@ describe("POST /api/r/:code/consultation", () => {
 
     const elsewhere = { ...body, address: { ...ADDRESS, pincode: "122017" } };
     const mismatched = await request(site(), `/api/r/${code}/consultation`, post(elsewhere), bindings);
-    expect(mismatched.status).toBe(422);
+    expect(mismatched.status).toBe(400);
     expect(await mismatched.json()).toMatchObject({
       error: { code: "invalid_request", fields: ["address.pincode"] },
     });

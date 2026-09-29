@@ -1,6 +1,6 @@
 # 0051. Booking from the site is the landing's booking
 
-- Status: accepted. Amended by ADR 0060: while self-serve booking is off, the page records a request for ops rather than refusing. Amended by [ADR 0081](0081-the-site-takes-the-address.md): the consultation form takes the full address. Amended by [ADR 0089](0089-an-invite-is-not-lost.md): the page books with an invite the visitor's browser remembers, and its confirmation then says what the landing's does.
+- Status: accepted. Amended by ADR 0060: while self-serve booking is off, the page records a request for ops rather than refusing. Amended by [ADR 0081](0081-the-site-takes-the-address.md): the consultation form takes the full address. Amended by [ADR 0089](0089-an-invite-is-not-lost.md): the page books with an invite the visitor's browser remembers, and its confirmation then says what the landing's does. Amended 28 September 2026: both pages refuse alike, and each error code answers with one status (item 105); `POST /api/lead` and `GET /api/cities` are removed (item 107).
 - Date: 2026-09-23
 
 ## Context
@@ -19,7 +19,8 @@ We can now. `serviceable_pincodes` holds 198 NCR pincodes, and `GET /api/pincode
 **The site's booking page is the referral landing without the invite.** One island serves both (`site/src/islands/Invite.tsx`, with a `mode`), and one path in the API serves both (`src/domain/public-booking.ts`), so the two pages cannot drift apart:
 
 - `POST /api/consultation` and `POST /api/waitlist` are the landing's two routes without the code. They take the same Turnstile token, the same daily limits per number and address, the same consent notices, and hold the same slot.
-- **Amended 27 September 2026 (audit finding FEO-21).** All four take the `Idempotency-Key` the page sends with each submission, as `POST /api/lead` does (ADR 0011): the same submission sent again gets its first answer rather than a second lead, and a refusal frees the key. They ignored it before, so a press repeated after a lost answer was refused `already_booked`, or listed the number twice.
+- **Amended 27 September 2026 (audit finding FEO-21).** All four take the `Idempotency-Key` the page sends with each submission, as `POST /api/lead` did (ADR 0011): the same submission sent again gets its first answer rather than a second lead, and a refusal frees the key. They ignored it before, so a press repeated after a lost answer was refused `already_booked`, or listed the number twice.
+- **Amended 28 September 2026 (`docs/open-points.md`, item 105).** Both pages refuse a submission alike: a pincode we do not serve, a day outside the fortnight, a number past consultations, or a waitlist entry for a pincode we serve is `422 not_bookable`, which the form words "That day is no longer open"; an address in another pincode is `400 invalid_request` naming `address.pincode`. The site's routes answered the first two, and the address, `422 invalid_request` before, where the landing rewrote them; the owner ruled that `invalid_request` answers 400 everywhere.
 - The public page shows no card and no invite, and asks **where the hair loss is**, as Phase 1's form did, because that answer is worth having and an invited friend is never asked it.
 - **Every booking still leaves a lead**, so the CRM funnel sees what it saw in Phase 1. The lead carries the date the person actually booked, not a guess.
 
@@ -32,7 +33,7 @@ We can now. `serviceable_pincodes` holds 198 NCR pincodes, and `GET /api/pincode
 - **The consent is recorded once**, under the notice the page actually showed — `referral-consultation-v1` for a booking, `waitlist-v1` for the list — instead of Phase 1's booking notice.
 - **A pincode we do not know** is treated as one we do not serve: the page takes the number for it. The 198 pincodes are NCR's; someone outside it joins a list with no area named.
 - **`/book`'s fidelity pairs move** to the referral harness, because the Phase 1 design's booking board no longer describes the page. The Phase 2 design has no board for a public booking; boards C2 to C4 are that page, minus the invite.
-- **`/api/lead` stays.** The try-on's gate still creates leads through it, and nothing else changes for them. (Corrected 25 September 2026: the try-on's gate writes its lead through `POST /api/tryon/claim`, not `/api/lead`, and no page of the site calls `/api/lead` or `/api/cities` any more. Both stay in the API for now; the site's own copies of them were removed as dead code.)
+- **`/api/lead` stays.** The try-on's gate still creates leads through it, and nothing else changes for them. (Corrected 25 September 2026: the try-on's gate writes its lead through `POST /api/tryon/claim`, not `/api/lead`, and no page of the site calls `/api/lead` or `/api/cities` any more. Both stay in the API for now; the site's own copies of them were removed as dead code. Removed 28 September 2026 on the owner's ruling (`docs/open-points.md`, item 107): the staging check and the load test book through `POST /api/consultation`, and the checks every form makes of the person, which `/api/lead`'s tests held, are `test/worker/public-form.test.ts`. The path that sent Phase 1's leads to FSM as Requests stays for a lead the route left waiting, and goes with item 159.)
 
 ## What this does not do
 

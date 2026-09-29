@@ -2,32 +2,14 @@
 // every code is the fixed one (OTP_FIXED_CODE in playwright.config.ts), so the
 // tests can log in through the stub messaging provider. Numbers are random.
 
-import type { APIRequestContext, Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { DUMMY_TOKEN, expect, randomMobile, test } from "../support.ts";
-import { API_ORIGIN } from "../../scripts/lib/local-stack.ts";
+import { expect, randomMobile, test } from "../support.ts";
+import { bookedNumber } from "./booked-numbers.ts";
 import { holdOpen } from "./one-tap.ts";
 
 const CODE = "246810";
 const WRONG = "135791";
-
-/** Books a consultation through the public site's API, so the number may log in. */
-async function booked(request: APIRequestContext, name = "Rohit Malhotra"): Promise<string> {
-  const mobile = randomMobile();
-  const response = await request.post(`${API_ORIGIN}/api/lead`, {
-    data: {
-      name,
-      mobile,
-      city: "Gurgaon",
-      first_choice_window: "weekday_am",
-      loss_extent: "crown",
-      consent: true,
-      turnstile_token: DUMMY_TOKEN,
-    },
-  });
-  expect(response.status()).toBe(201);
-  return mobile;
-}
 
 async function sendCode(page: Page, mobile: string): Promise<void> {
   await page.goto("/");
@@ -41,8 +23,8 @@ async function enter(page: Page, code: string): Promise<void> {
   await page.getByRole("button", { name: "Continue" }).click();
 }
 
-test("a booked number logs in with its code and lands on its consultation", async ({ page, request }) => {
-  const mobile = await booked(request);
+test("a booked number logs in with its code and lands on its consultation", async ({ page }) => {
+  const mobile = bookedNumber();
   await sendCode(page, mobile);
   await expect(page.getByText(`If +91 ${mobile.slice(0, 2)}xxx x${mobile.slice(-4)} has a booking`)).toBeVisible();
   await enter(page, CODE);
@@ -58,8 +40,8 @@ test("a booked number logs in with its code and lands on its consultation", asyn
   );
 });
 
-test("the session survives a reload, and logging out ends it", async ({ page, request }) => {
-  await sendCode(page, await booked(request));
+test("the session survives a reload, and logging out ends it", async ({ page }) => {
+  await sendCode(page, bookedNumber());
   await enter(page, CODE);
   await expect(page.getByRole("heading", { name: "Your consultation" })).toBeVisible();
 
@@ -72,11 +54,8 @@ test("the session survives a reload, and logging out ends it", async ({ page, re
   await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
 });
 
-test("a session that ends mid-use goes back to the login, says why, and returns to the page", async ({
-  page,
-  request,
-}) => {
-  const mobile = await booked(request);
+test("a session that ends mid-use goes back to the login, says why, and returns to the page", async ({ page }) => {
+  const mobile = bookedNumber();
   await sendCode(page, mobile);
   await enter(page, CODE);
   await expect(page.getByRole("heading", { name: "Your consultation" })).toBeVisible();
@@ -101,9 +80,8 @@ test("a session that ends mid-use goes back to the login, says why, and returns 
 
 test("logging out takes the API's word for it: offline it waits, and a refusal keeps the client in", async ({
   page,
-  request,
 }) => {
-  await sendCode(page, await booked(request));
+  await sendCode(page, bookedNumber());
   await enter(page, CODE);
   await page.getByRole("link", { name: "Your profile" }).click();
   await expect(page.getByRole("heading", { name: "Where we come" })).toBeVisible();
@@ -124,8 +102,8 @@ test("logging out takes the API's word for it: offline it waits, and a refusal k
   await expect(page.getByRole("heading", { name: "Where we come" })).toBeVisible();
 });
 
-test("the tabs reach Visits and the empty Photos, Payments and Refer", async ({ page, request }) => {
-  await sendCode(page, await booked(request));
+test("the tabs reach Visits and the empty Photos, Payments and Refer", async ({ page }) => {
+  await sendCode(page, bookedNumber());
   await enter(page, CODE);
   const tabs = page.getByRole("navigation");
 
@@ -143,8 +121,8 @@ test("the tabs reach Visits and the empty Photos, Payments and Refer", async ({ 
   await expect(page.getByText("Nothing to pay yet.")).toBeVisible();
 });
 
-test("a wrong code says so, in the design's words, and the fifth voids it", async ({ page, request }) => {
-  await sendCode(page, await booked(request));
+test("a wrong code says so, in the design's words, and the fifth voids it", async ({ page }) => {
+  await sendCode(page, bookedNumber());
   const field = page.getByRole("textbox", { name: "The six-digit code" });
   for (const left of ["Four attempts left.", "Three attempts left.", "Two attempts left.", "One attempt left."]) {
     await enter(page, WRONG);
@@ -161,8 +139,8 @@ test("a wrong code says so, in the design's words, and the fifth voids it", asyn
   await expect(page.getByRole("heading", { name: "Your consultation" })).toBeVisible();
 });
 
-test("asks for one fresh code when the client taps for one twice", async ({ page, request }) => {
-  await sendCode(page, await booked(request));
+test("asks for one fresh code when the client taps for one twice", async ({ page }) => {
+  await sendCode(page, bookedNumber());
   for (let attempt = 0; attempt < 5; attempt += 1) await enter(page, WRONG);
   await expect(page.getByRole("alert")).toHaveText("That code did not match. It no longer works.");
 
@@ -204,7 +182,6 @@ test("A3 is reached by choice, and points to booking and WhatsApp", async ({ pag
 
 test("a phone's Back steps back through the login, as its back arrows do, and never out of the app", async ({
   page,
-  request,
 }) => {
   await sendCode(page, randomMobile());
   await page.getByRole("button", { name: "No booking on this number?" }).click();
@@ -218,7 +195,7 @@ test("a phone's Back steps back through the login, as its back arrows do, and ne
   await expect(page.getByRole("heading", { level: 1, name: "Enter the code" })).toBeVisible();
 
   // Signed in, the login's steps are behind the client: Back from Home leaves the app, as it did before them.
-  const mobile = await booked(request);
+  const mobile = bookedNumber();
   await page.getByRole("button", { name: "Back" }).click();
   await page.getByRole("textbox", { name: "Mobile number" }).fill(mobile);
   await page.getByRole("button", { name: "Send code on WhatsApp" }).click();
@@ -242,12 +219,9 @@ test("the WhatsApp resend counts down from 30 seconds, and SMS is offered after 
   await expect(page.getByRole("status")).toHaveText("You can ask for a new code now.");
 });
 
-test("says the code is read automatically only when it comes by SMS, the one a phone can read", async ({
-  page,
-  request,
-}) => {
+test("says the code is read automatically only when it comes by SMS, the one a phone can read", async ({ page }) => {
   await page.clock.install();
-  await sendCode(page, await booked(request));
+  await sendCode(page, bookedNumber());
   await expect(page.getByText("Read automatically where your phone allows")).toHaveCount(0);
   await page.clock.runFor(31_000);
   // The API counts its 30 seconds on its own clock, which the page's has run ahead of, so it answers here.
@@ -268,13 +242,10 @@ test("says the code is read automatically only when it comes by SMS, the one a p
   await expect(page.getByText("Read automatically where your phone allows")).toBeVisible();
 });
 
-test("names each login screen in the browser's title, and puts focus where the client carries on", async ({
-  page,
-  request,
-}) => {
+test("names each login screen in the browser's title, and puts focus where the client carries on", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle("Your mobile number · Mane Man");
-  await sendCode(page, await booked(request));
+  await sendCode(page, bookedNumber());
   await expect(page).toHaveTitle("Enter the code · Mane Man");
   const field = page.getByRole("textbox", { name: "The six-digit code" });
   await expect(field).toBeFocused();
@@ -319,14 +290,14 @@ test("an invalid number is caught before it is sent", async ({ page }) => {
   await expect(page.getByRole("alert")).toHaveText("Enter the ten-digit mobile number you booked with.");
 });
 
-test("each login screen, and Home, meets WCAG 2.2 AA", async ({ page, request }) => {
+test("each login screen, and Home, meets WCAG 2.2 AA", async ({ page }) => {
   const scan = async () => {
     const results = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
       .analyze();
     expect(results.violations.map((violation) => violation.id)).toEqual([]);
   };
-  await sendCode(page, await booked(request));
+  await sendCode(page, bookedNumber());
   await scan();
   await enter(page, WRONG);
   await scan();

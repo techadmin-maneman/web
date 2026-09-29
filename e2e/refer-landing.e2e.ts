@@ -266,8 +266,8 @@ test("the prices are the price book's, asked for where no Worker wrote them", as
   );
   await visit(page, `/r/${CODE}`);
 
-  await expect(page.getByText("₹35,000", { exact: true })).toBeVisible();
-  await expect(page.getByText("₹2,500", { exact: true })).toBeVisible();
+  await expect(page.getByText("Rs. 35,000", { exact: true })).toBeVisible();
+  await expect(page.getByText("Rs. 2,500", { exact: true })).toBeVisible();
 });
 
 test("the prices stay as the page was built when the book cannot be read", async ({ page }) => {
@@ -277,8 +277,8 @@ test("the prices stay as the page was built when the book cannot be read", async
   );
   await visit(page, `/r/${CODE}`);
 
-  await expect(page.getByText("₹30,000", { exact: true })).toBeVisible();
-  await expect(page.getByText("₹2,000", { exact: true })).toBeVisible();
+  await expect(page.getByText("Rs. 30,000", { exact: true })).toBeVisible();
+  await expect(page.getByText("Rs. 2,000", { exact: true })).toBeVisible();
 });
 
 // With self-serve booking off, the API records the day asked for and answers

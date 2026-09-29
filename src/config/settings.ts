@@ -134,7 +134,6 @@ export interface LoginSettings {
 }
 
 export interface Settings {
-  readonly visitLeadDays: number;
   readonly leadMobileDailyLimit: number;
   readonly leadIpDailyLimit: number;
   readonly turnstileSecret: string;
@@ -356,7 +355,6 @@ export function readSettings(
   const messaging = readMessaging(read, providers, environment);
 
   const settings: Settings = {
-    visitLeadDays: read.count("VISIT_LEAD_DAYS"),
     leadMobileDailyLimit: read.fixedLimit("LEAD_MOBILE_DAILY_LIMIT", isLocal),
     leadIpDailyLimit: read.fixedLimit("LEAD_IP_DAILY_LIMIT", isLocal),
     turnstileSecret,

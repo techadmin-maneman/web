@@ -57,8 +57,8 @@ test("is installable, from a manifest drawn from the brand kit", async ({ page }
   expect(installabilityErrors).toEqual([]);
 });
 
-test("opens offline on the last Home, with board B3's banner, and Reschedule waits", async ({ page, request }) => {
-  await signIn(page, request);
+test("opens offline on the last Home, with board B3's banner, and Reschedule waits", async ({ page }) => {
+  await signIn(page);
   await keepHome(page);
 
   await page.context().setOffline(true);
@@ -77,8 +77,8 @@ test("opens offline on the last Home, with board B3's banner, and Reschedule wai
   await expect(page.getByRole("link", { name: "Reschedule" })).toBeVisible();
 });
 
-test("opens in seconds on a signal that never answers, on the last Home", async ({ page, request }) => {
-  await signIn(page, request);
+test("opens in seconds on a signal that never answers, on the last Home", async ({ page }) => {
+  await signIn(page);
   await keepHome(page);
   // A signal that shows a bar and never answers: every request that reaches the network waits for ever.
   await page.context().route("**/*", () => new Promise<void>(() => undefined));
@@ -87,8 +87,8 @@ test("opens in seconds on a signal that never answers, on the last Home", async 
   await expect(page.getByRole("status").filter({ hasText: OFFLINE })).toBeVisible();
 });
 
-test("says the visit is still booked when the API fails and the phone kept Home", async ({ page, request }) => {
-  await signIn(page, request);
+test("says the visit is still booked when the API fails and the phone kept Home", async ({ page }) => {
+  await signIn(page);
   await keepHome(page);
   // The context's route reaches the service worker's own requests too.
   await page
@@ -101,16 +101,16 @@ test("says the visit is still booked when the API fails and the phone kept Home"
   await expect(page.getByText("Your visit is still booked.")).toBeVisible();
 });
 
-test("shows the banner when the connection drops while the app is open", async ({ page, request }) => {
-  await signIn(page, request);
+test("shows the banner when the connection drops while the app is open", async ({ page }) => {
+  await signIn(page);
   await page.context().setOffline(true);
   await expect(page.getByRole("status").filter({ hasText: OFFLINE })).toBeVisible();
   await page.context().setOffline(false);
   await expect(page.getByText(OFFLINE)).toBeHidden();
 });
 
-test("keeps no API answer but Home, and forgets Home at logout", async ({ page, request }) => {
-  await signIn(page, request);
+test("keeps no API answer but Home, and forgets Home at logout", async ({ page }) => {
+  await signIn(page);
   await keepHome(page);
   await page.getByRole("link", { name: "Your profile" }).click();
   await expect(page.getByRole("heading", { name: "Where we come" })).toBeVisible();

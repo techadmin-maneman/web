@@ -22,7 +22,20 @@ import { saltedHash } from "../lib/hash.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
-import { AttributionSchema } from "./lead.ts";
+
+const AttributionSchema = z
+  .object({
+    utm_source: z.string().max(200).optional(),
+    utm_medium: z.string().max(200).optional(),
+    utm_campaign: z.string().max(200).optional(),
+    utm_content: z.string().max(200).optional(),
+    gclid: z.string().max(200).optional(),
+    fbclid: z.string().max(200).optional(),
+    referrer: z.string().max(500).optional(),
+    landing_path: z.string().max(500).startsWith("/").optional(),
+  })
+  .strict()
+  .openapi("Attribution", { description: "Where the visitor came from, as the page saw it. All optional." });
 
 export const ClaimRequestSchema = z
   .object({

@@ -37,8 +37,11 @@ function stringsIn(value: unknown): string[] {
   return [];
 }
 
-/** A rupee sign before a digit: a price written into a sentence, where the price book should fill a hole. */
-const TYPED_PRICE = /₹\s?\d/;
+/**
+ * "Rs." or a rupee sign before a digit: a price written into a sentence, where the price book should fill a hole.
+ * The site writes "Rs." (ADR 0025, item 51); the sign is what it wrote before.
+ */
+const TYPED_PRICE = /(?:Rs\.|₹)\s?\d/;
 
 /**
  * The comparison's first two columns, what a transplant and medication cost elsewhere: the only rupee figures the

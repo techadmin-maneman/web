@@ -25,12 +25,12 @@ const PAGE = `<!doctype html><html><head>
  * Premium's hidden and empty, since a page is built without it.
  */
 const PRICED_PAGE = `<!doctype html><html><head>
-<script type="application/ld+json" data-structured="business">{"priceRange":"₹30,000"}</script>
+<script type="application/ld+json" data-structured="business">{"priceRange":"Rs. 30,000"}</script>
 <script type="application/ld+json" data-structured="faq">{}</script>
 </head><body>
-<div class="amount" data-price="{firstFit}">₹30,000</div>
+<div class="amount" data-price="{firstFit}">Rs. 30,000</div>
 <div class="amount" data-premium hidden data-price="{premiumFirstFit}"></div>
-<span data-price="A standard base in the first year: {firstFit} plus twelve service visits at {service} — {firstYear}.">A standard base in the first year: ₹30,000 plus twelve service visits at ₹2,000 — ₹54,000.</span>
+<span data-price="A standard base in the first year: {firstFit} plus twelve service visits at {service} — {firstYear}.">A standard base in the first year: Rs. 30,000 plus twelve service visits at Rs. 2,000 — Rs. 54,000.</span>
 <p>Nothing to fill</p>
 </body></html>`;
 
@@ -206,9 +206,9 @@ describe("the site Worker on a page that shows a price", () => {
 
     expect(page.response.status).toBe(200);
     expect(page.figures).toEqual([
-      "₹35,000",
+      "Rs. 35,000",
       "",
-      "A standard base in the first year: ₹35,000 plus twelve service visits at ₹2,500 — ₹65,000.",
+      "A standard base in the first year: Rs. 35,000 plus twelve service visits at Rs. 2,500 — Rs. 65,000.",
     ]);
     expect(page.premiumHidden).toBe(true);
     expect(page.html).toContain("<p>Nothing to fill</p>");
@@ -220,25 +220,25 @@ describe("the site Worker on a page that shows a price", () => {
     const page = await visit("/", withPrices(undefined, WITH_PREMIUM));
 
     expect(page.figures).toEqual([
-      "₹35,000",
-      "₹45,000",
-      "A standard base in the first year: ₹35,000 plus twelve service visits at ₹2,500 — ₹65,000.",
+      "Rs. 35,000",
+      "Rs. 45,000",
+      "A standard base in the first year: Rs. 35,000 plus twelve service visits at Rs. 2,500 — Rs. 65,000.",
     ]);
     expect(page.premiumHidden).toBe(false);
-    expect(page.html).toContain('<div class="amount" data-premium data-price="{premiumFirstFit}">₹45,000</div>');
-    expect(page.structured("business")).toMatchObject({ priceRange: "₹35,000–₹45,000" });
+    expect(page.html).toContain('<div class="amount" data-premium data-price="{premiumFirstFit}">Rs. 45,000</div>');
+    expect(page.structured("business")).toMatchObject({ priceRange: "Rs. 35,000–Rs. 45,000" });
     const faq = page.structured("faq") as { mainEntity: { name: string; acceptedAnswer: { text: string } }[] };
     const firstYear = faq.mainEntity.find((question) => question.name === "What does the first year cost in total?");
-    expect(firstYear?.acceptedAnswer.text).toContain("Premium: ₹45,000 plus twelve at ₹2,500, so ₹75,000.");
+    expect(firstYear?.acceptedAnswer.text).toContain("Premium: Rs. 45,000 plus twelve at Rs. 2,500, so Rs. 75,000.");
   });
 
   it("builds the structured data again from the book's figures", async () => {
     const page = await visit("/", withPrices());
 
-    expect(page.structured("business")).toMatchObject({ "@type": "LocalBusiness", priceRange: "₹35,000" });
+    expect(page.structured("business")).toMatchObject({ "@type": "LocalBusiness", priceRange: "Rs. 35,000" });
     const faq = page.structured("faq") as { mainEntity: { name: string; acceptedAnswer: { text: string } }[] };
     const firstYear = faq.mainEntity.find((question) => question.name === "What does the first year cost in total?");
-    expect(firstYear?.acceptedAnswer.text).toContain("₹35,000 for the first fit plus twelve monthly service visits");
+    expect(firstYear?.acceptedAnswer.text).toContain("Rs. 35,000 for the first fit plus twelve monthly service visits");
     expect(firstYear?.acceptedAnswer.text).not.toContain("Premium");
   });
 
@@ -273,12 +273,12 @@ describe("the site Worker on a page that shows a price", () => {
 
     expect(page.response.status).toBe(200);
     expect(page.figures).toEqual([
-      "₹30,000",
+      "Rs. 30,000",
       "",
-      "A standard base in the first year: ₹30,000 plus twelve service visits at ₹2,000 — ₹54,000.",
+      "A standard base in the first year: Rs. 30,000 plus twelve service visits at Rs. 2,000 — Rs. 54,000.",
     ]);
     expect(page.premiumHidden).toBe(true);
-    expect(page.structured("business")).toEqual({ priceRange: "₹30,000" });
+    expect(page.structured("business")).toEqual({ priceRange: "Rs. 30,000" });
     expect(page.written).toBeNull();
   });
 
@@ -290,7 +290,7 @@ describe("the site Worker on a page that shows a price", () => {
     now = 120_000;
     const page = await visit("/", () => Response.json({ error: { code: "unavailable" } }, { status: 503 }), worker);
 
-    expect(page.figures[0]).toBe("₹35,000");
+    expect(page.figures[0]).toBe("Rs. 35,000");
     expect(page.written).toEqual(PRICES);
   });
 
@@ -305,6 +305,6 @@ describe("the site Worker on a page that shows a price", () => {
     const page = await visit("/try", withPrices());
 
     expect(page.asked).toEqual([]);
-    expect(page.figures[0]).toBe("₹30,000");
+    expect(page.figures[0]).toBe("Rs. 30,000");
   });
 });

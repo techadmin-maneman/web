@@ -1,6 +1,6 @@
 # 0076. One component layer and one API client for the front ends
 
-- Status: accepted
+- Status: accepted. Amended 28 September 2026: rupees are written "Rs." on the public site too, on the owner's ruling (ADR 0025, item 51).
 - Date: 2026-09-27
 - Amends [0037](0037-shared-packages.md)
 
@@ -28,7 +28,7 @@ The audit of 24 September 2026 found the three Phase 2 apps built side by side r
 
 **`packages/web-kit/api.ts` is the one API client** (FEA-30, FEO-30). Each app makes its client from its own surface's document, which `npm run openapi` writes into its `api-schema.ts`, so every path, query, body, answer and error code is checked against the API as it is. Every answer reads the same: a success with its body and whether the service worker answered from its copy; a refusal with the API's code and the fields it names; "offline" for a call that never reached the API, gave up waiting or met something that is not the API; and a session that has ended heard in one place. Each app says only what differs: the technician app's patience and its superseded writes, the console's Access redirect (`signed_out`), the client app's clock. A file answer, such as a photograph the console opens, is kept as it came. The checking found two console requests out of step with the contract, and the settings listing now names its rules with the same enum as the path that sets one.
 
-**`packages/web-kit` holds the rest of what the front ends share:** India's dates, with India's offset written once (`inIndia`, `indiaDate`, `indiaInstant`); rupees, one formatter written "Rs." in the apps as the Phase 2 boards do and with its own sign on the public site as its design does (VIS-24); and WhatsApp, the business's number and every link. A test fails any other front-end file that formats rupees, adds India's offset, writes the number or builds a link.
+**`packages/web-kit` holds the rest of what the front ends share:** India's dates, with India's offset written once (`inIndia`, `indiaDate`, `indiaInstant`); rupees, one formatter written "Rs." as the Phase 2 boards do (VIS-24), on the public site too since the owner's ruling of 27 September 2026, where the site's own design writes its sign (ADR 0025, item 51); and WhatsApp, the business's number and every link. A test fails any other front-end file that formats rupees, adds India's offset, writes the number or builds a link.
 
 **A screen that chooses between three things says so in a function that returns early.** ESLint's `no-nested-ternary` holds `apps/`, `packages/` and `site/src/` to it.
 

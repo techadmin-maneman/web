@@ -17,7 +17,7 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [audit_log](#audit_log): Every ops action that reads or changes a client's data, and who took it. An entry is never changed (ADR 0031).
 - [checkins](#checkins): Each "I have arrived", passed or not, with the distance measured and the radius in force (ADR 0065); an erasure blanks where the phone was (ADR 0094).
 - [checklist_items](#checklist_items): Each kind of visit's checklist as ops set it, an item they took off kept as retired; a kind with no rows takes the committed list (ADR 0087).
-- [cities](#cities): The cities Phase 1's booking form offered; `GET /api/cities` still reads them (open point 107).
+- [cities](#cities): The cities Phase 1's booking form offered. The leads it left name one, a booking's lead names its pincode's, and the dispatch board filters by them.
 - [consents](#consents): What each person agreed to, under which notice's version, and where (ADR 0094). Rows are only ever added (ADR 0042, ADR 0049).
 - [consultation_requests](#consultation_requests): A consultation asked for while self-serve booking is off, for ops to fix the hour (ADR 0060).
 - [consumable_usage](#consumable_usage): What each service, a kind of visit at a tier of the price book, is expected to use of each consumable: where the technician's steppers start (ADR 0087).
@@ -255,7 +255,7 @@ Made by `0049_consumables_and_stock.sql`.
 
 ## cities
 
-The cities Phase 1's booking form offered; `GET /api/cities` still reads them (open point 107).
+The cities Phase 1's booking form offered. The leads it left name one, a booking's lead names its pincode's, and the dispatch board filters by them.
 
 Made by `0002_lead_path.sql`.
 

@@ -4,6 +4,10 @@
 // picked. Ops convert it to a work order and assign it in FSM; the mirror
 // then brings the appointment back, matched to the person by mobile number.
 //
+// Only Phase 1's POST /api/lead wrote such a lead, and it was removed on
+// 28 September 2026. This stays for a lead it left waiting, and goes with the
+// rest of Phase 1's path into FSM (docs/open-points.md, item 159).
+//
 // The Request carries the lead's ID, so a retry after a Request whose answer
 // never reached us finds that one rather than making a second
 // (docs/decisions/0068-a-paid-hold-is-kept.md).

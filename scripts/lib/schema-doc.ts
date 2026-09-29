@@ -52,7 +52,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     'Each "I have arrived", passed or not, with the distance measured and the radius in force (ADR 0065); an erasure blanks where the phone was (ADR 0094).',
   checklist_items:
     "Each kind of visit's checklist as ops set it, an item they took off kept as retired; a kind with no rows takes the committed list (ADR 0087).",
-  cities: "The cities Phase 1's booking form offered; `GET /api/cities` still reads them (open point 107).",
+  cities:
+    "The cities Phase 1's booking form offered. The leads it left name one, a booking's lead names its pincode's, and the dispatch board filters by them.",
   consents:
     "What each person agreed to, under which notice's version, and where (ADR 0094). Rows are only ever added (ADR 0042, ADR 0049).",
   consultation_requests:

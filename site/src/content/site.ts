@@ -464,7 +464,7 @@ export const comparison = {
   rows: [
     {
       label: "Cost",
-      cells: ["₹1.2–3 lakh, once", "₹800–2,000 a month, for life", "{firstFit}, then {service} a month"],
+      cells: ["Rs. 1.2–3 lakh, once", "Rs. 800–2,000 a month, for life", "{firstFit}, then {service} a month"],
     },
     { label: "Visible result", cells: ["9–12 months", "4–6 months", "The same day"] },
     { label: "Covers advanced loss", cells: [false, false, true] },
