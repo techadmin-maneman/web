@@ -1414,6 +1414,11 @@ export const settings = {
         countdown: "The countdown the client sees",
         grace: "A payment still in time, after it",
       },
+      // PLACEHOLDER: how often, and how long, a booking FSM refused is tried again (ADR 0095).
+      fsm_retry: {
+        every: "Tried again every",
+        for: "For, from the fifth refusal",
+      },
       // PLACEHOLDER: board D3's two figures (docs/open-points.md, item 59).
       technician_work: {
         period: "Jobs and average service, counted over",
