@@ -17,7 +17,7 @@ const TEMPLATES: Readonly<Record<string, string>> = {
   // takes the same params, and uses those it needs: {{1}} the client's first name, {{2}} the visit ("service
   // visit"), {{3}} its day ("Thu 24 Sep"), {{4}} its window ("12 to 4 pm"), {{5}} the technician's first name,
   // {{6}} the amount ("Rs. 2,000"), {{7}} the payment's reference, {{8}} where a refund goes ("UPI"), {{9}} how many
-  // minutes the technician waited, for a no-show.
+  // minutes the technician waited, for a no-show, and {{10}} what goes back of a no-show's charge.
   consultation_booked_v1: "Hello {{1}}, your free consultation is booked for {{3}}, {{4}}. We will see you then.",
   visit_booked_v1:
     "Hello {{1}}, your {{2}} is booked for {{3}}, {{4}}, with {{5}}. Paid {{6}}, reference {{7}}. The receipt is in the app.",
@@ -28,18 +28,23 @@ const TEMPLATES: Readonly<Record<string, string>> = {
   // At the technician's check-in (docs/decisions/0074-hand-offs-and-messages.md), the no-show's evidence.
   technician_arrived_v1: "Hello {{1}}, {{5}} has arrived for your {{2}}.",
   // Ops' ruling on a visit the client was not home for (docs/decisions/0074-hand-offs-and-messages.md), with {{9}}
-  // the minutes the technician waited. A charge keeps what was paid, as a late cancel does; a waiver refunds the
-  // payment and returns the credit, as the owner ruled on 27 September 2026 (src/policy/no-show.ts,
-  // WAIVER_GIVES_BACK), and the two texts that ask the client to message us stand only where ops set a waiver to keep
-  // them. None names the notice, which ops set (docs/decisions/0088-every-policy-in-the-console.md).
-  // Booking again is in the app, never a message to us: the owner ruled on 27 September 2026 that "Message us" is for
-  // problems only (ADR 0025, item 70). Never ops' reason, which stays with the ruling.
+  // the minutes the technician waited. A charge costs what the booking was sold to cost a no-show, set apart from a
+  // late cancel's (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md), so each text says what it kept, {{6}},
+  // and what goes back, {{10}}, and that a client who was home can dispute it in the app; a charge of nothing reads
+  // as a waiver that gives both back. A waiver refunds the payment and returns the credit, as the owner ruled on 27
+  // September 2026 (src/policy/no-show.ts, WAIVER_GIVES_BACK), and the two texts that ask the client to message us
+  // stand only where ops set a waiver to keep them. None names the notice, which ops set
+  // (docs/decisions/0088-every-policy-in-the-console.md). Booking again is in the app, never a message to us: the
+  // owner ruled on 27 September 2026 that "Message us" is for problems only (ADR 0025, item 70). Never ops' reason,
+  // which stays with the ruling.
   no_show_missed_v1:
     "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. You can book again in the Mane Man app.",
   no_show_charged_paid_v1:
-    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. As with a late cancel, the {{6}} you paid for it is kept. Message us if this is wrong.",
+    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. The {{6}} you paid for it is kept as the no-show charge. If you were home, you can dispute it in the Mane Man app.",
+  no_show_charged_fee_v1:
+    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. {{6}} of what you paid is kept as the no-show charge, and {{10}} is on its way back to your {{8}}, in 5 to 7 working days. If you were home, you can dispute the charge in the Mane Man app.",
   no_show_charged_credit_v1:
-    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. As with a late cancel, the visit credit it used is gone. Message us if this is wrong.",
+    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. The visit credit it used is spent as the no-show charge. If you were home, you can dispute it in the Mane Man app.",
   no_show_waived_v1:
     "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it. You can book again in the Mane Man app.",
   no_show_waived_paid_v1:
@@ -50,6 +55,15 @@ const TEMPLATES: Readonly<Record<string, string>> = {
     "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it: {{6}} is on its way back to your {{8}}, in 5 to 7 working days.",
   no_show_waived_credit_back_v1:
     "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it, and your visit credit is back.",
+  // Ops' ruling on a client's dispute of a no-show's charge (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md):
+  // refunded, {{6}} going back to {{8}} or the credit back, or upheld. Never ops' reason, which stays with the
+  // ruling; one who wants to know why may ask, a problem being what "Message us" is for (ADR 0025, item 70).
+  no_show_dispute_refunded_v1:
+    "Hello {{1}}, we have looked at your dispute of the no-show charge for your {{2}} on {{3}}, and we are refunding it: {{6}} is on its way back to your {{8}}, in 5 to 7 working days.",
+  no_show_dispute_credit_back_v1:
+    "Hello {{1}}, we have looked at your dispute of the no-show charge for your {{2}} on {{3}}, and we are refunding it: your visit credit is back.",
+  no_show_dispute_upheld_v1:
+    "Hello {{1}}, we have looked at your dispute of the no-show charge for your {{2}} on {{3}}. The charge stands. Message us if you would like to know why.",
   // The next visit falls due in a few days and nothing is booked (docs/decisions/0086-the-next-visit-is-offered.md),
   // sent once a last visit, only with the client's consent to WhatsApp about their visits. PLACEHOLDER COPY, pending
   // the owner's wording: {{1}} the client's first name, {{2}} the visit ("service visit", or "replacement" where the

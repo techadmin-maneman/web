@@ -152,16 +152,60 @@ describe("the no-show ruling (LIFE-07)", () => {
   const MISSED =
     "Hello Karan, we came for your service visit on Mon 21 Sep and waited 15 minutes, but nobody was home.";
 
-  it("says a charge keeps what was paid, as a late cancel would", async () => {
+  // The no-show's charge is set apart from a late cancel's (docs/decisions/0088-every-policy-in-the-console.md), so the
+  // texts no longer say "As with a late cancel": each says what the charge was, and that the client may dispute it in
+  // the app (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
+  const DISPUTE = "If you were home, you can dispute it in the Mane Man app.";
+
+  /** The charge as the ruling recorded it, in paise. */
+  const recorded = (charge: string, kept: number, refund: number) =>
+    env.DB.prepare("UPDATE no_show_cases SET charge = ?1, kept_amount = ?2, refund_amount = ?3")
+      .bind(charge, kept, refund)
+      .run();
+
+  it("says a charge ruled before charges were recorded kept what was paid", async () => {
     expect((await send(await ruled("charged", "payment"))).text).toBe(
-      `${MISSED} As with a late cancel, the Rs. 2,000 you paid for it is kept. Message us if this is wrong.`,
+      `${MISSED} The Rs. 2,000 you paid for it is kept as the no-show charge. ${DISPUTE}`,
     );
   });
 
-  it("says a charge on a credit visit keeps the credit", async () => {
-    expect((await send(await ruled("charged", "credit"))).text).toBe(
-      `${MISSED} As with a late cancel, the visit credit it used is gone. Message us if this is wrong.`,
+  it("says a charge on a credit visit spent the credit", async () => {
+    const message = await ruled("charged", "credit");
+    await recorded("visit", 0, 0);
+    expect((await send(message)).text).toBe(
+      `${MISSED} The visit credit it used is spent as the no-show charge. ${DISPUTE}`,
     );
+  });
+
+  it("says what a charge kept of the payment, and what is on its way back", async () => {
+    const message = await ruled("charged", "payment");
+    await recorded("late_fee", 50000, 150000);
+    expect((await send(message)).text).toBe(
+      `${MISSED} Rs. 500 of what you paid is kept as the no-show charge, and Rs. 1,500 is on its way back to your ` +
+        "UPI, in 5 to 7 working days. If you were home, you can dispute the charge in the Mane Man app.",
+    );
+  });
+
+  it("says a charge that kept the whole payment kept it", async () => {
+    const message = await ruled("charged", "payment");
+    await recorded("visit", 200000, 0);
+    expect((await send(message)).text).toBe(
+      `${MISSED} The Rs. 2,000 you paid for it is kept as the no-show charge. ${DISPUTE}`,
+    );
+  });
+
+  it("says a charge of nothing gives the payment back, as a waiver does", async () => {
+    const message = await ruled("charged", "payment");
+    await recorded("nothing", 0, 200000);
+    expect((await send(message)).text).toBe(
+      `${MISSED} We are not charging you for it: Rs. 2,000 is on its way back to your UPI, in 5 to 7 working days.`,
+    );
+  });
+
+  it("says a charge of nothing gives the credit back", async () => {
+    const message = await ruled("charged", "credit");
+    await recorded("nothing", 0, 0);
+    expect((await send(message)).text).toBe(`${MISSED} We are not charging you for it, and your visit credit is back.`);
   });
 
   it("says only that nobody was home, of a visit nothing was paid for", async () => {

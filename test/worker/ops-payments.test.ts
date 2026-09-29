@@ -44,8 +44,6 @@ interface Body {
   refunds_processing: number;
   refunded: number;
   charged: number;
-  no_shows_charged: number;
-  dispute: null;
   charges: Charge[];
 }
 
@@ -140,8 +138,8 @@ async function appointment() {
     .run();
 }
 
-/** A job closed as a no-show and ruled on by ops. */
-async function noShow(decision: string, decidedAt: string | null) {
+/** A job closed as a no-show and ruled on by ops; a charge keeps what it records, or, before charges were priced, nothing recorded. */
+async function noShow(decision: string, decidedAt: string | null, kept: number | null = null) {
   await env.DB.prepare(
     `INSERT INTO checkins (id, appointment_id, technician_id, at, lat, lng, distance_m, radius_m, passed, created_at)
      VALUES (?1, ?2, ?3, '2026-09-21T04:31:00.000Z', 28.4, 77.0, 240, 200, 1, '2026-09-21T04:31:00.000Z')`,
@@ -150,11 +148,11 @@ async function noShow(decision: string, decidedAt: string | null) {
     .run();
   await env.DB.prepare(
     `INSERT INTO no_show_cases (id, checkin_id, appointment_id, wait_started_at, wait_ends_at, closed_at,
-       decision, decided_at, created_at)
+       decision, decided_at, created_at, charge, kept_amount)
      VALUES (?1, ?2, ?3, '2026-09-21T04:31:00.000Z', '2026-09-21T04:46:00.000Z', '2026-09-21T04:47:00.000Z',
-       ?4, ?5, '2026-09-21T04:47:00.000Z')`,
+       ?4, ?5, '2026-09-21T04:47:00.000Z', ?6, ?7)`,
   )
-    .bind(CASE, CHECK_IN, VISIT, decision, decidedAt)
+    .bind(CASE, CHECK_IN, VISIT, decision, decidedAt, kept === null ? null : "visit", kept)
     .run();
 }
 
@@ -198,16 +196,15 @@ describe("GET /api/payments", () => {
 
   it("totals what was kept from clients on the day", async () => {
     await visitChange({ kind: "cancelled", notice: "late", kept: 236000, at: MORNING });
-    expect(await day()).toMatchObject({ charged: 236000, no_shows_charged: 0 });
+    expect(await day()).toMatchObject({ charged: 236000 });
   });
 
-  // The board prices a no-show like a late cancellation. Nothing records what one
-  // was charged, so it is counted beside the figure and never added to it: a total
-  // that quietly left it out would read as the whole of the day's charges.
-  it("counts a charged no-show beside the figure, and adds no amount for it", async () => {
+  // The board prices a no-show like a late cancellation, and the charge now records what it kept
+  // (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md), where before it was counted beside the figure.
+  it("adds what a charged no-show kept to the figure", async () => {
     await visitChange({ kind: "cancelled", notice: "late", kept: 236000, at: MORNING });
-    await noShow("charged", MORNING);
-    expect(await day()).toMatchObject({ charged: 236000, no_shows_charged: 1 });
+    await noShow("charged", MORNING, 200000);
+    expect(await day()).toMatchObject({ charged: 436000 });
   });
 
   it("gives a nought on a day nothing happened, which is true and not a guess", async () => {
@@ -216,7 +213,6 @@ describe("GET /api/payments", () => {
       refunded: 0,
       refunds_processing: 0,
       charged: 0,
-      no_shows_charged: 0,
       charges: [],
     });
   });
@@ -247,13 +243,14 @@ describe("GET /api/payments", () => {
     expect((await day()).charges).toEqual([]);
   });
 
-  it("lists a no-show ops charged, with the client and the technician who attended", async () => {
-    await noShow("charged", MORNING);
+  it("lists a no-show ops charged, with the client, what it kept and the technician who attended", async () => {
+    await noShow("charged", MORNING, 200000);
     expect((await day()).charges).toMatchObject([
       {
         id: CASE,
         kind: "no_show",
         person: { id: PERSON, name: "Rohit Malhotra" },
+        amount: 200000,
         at: MORNING,
         visit_started_at: "2026-09-21T04:30:00.000Z",
         change: null,
@@ -262,12 +259,17 @@ describe("GET /api/payments", () => {
     ]);
   });
 
-  // Ops rule on the evidence and record the ruling; the charge itself is applied
-  // at P2-M5. Answering the visit's payment here would say money was taken that
-  // nothing took (docs/open-points.md, item 60).
-  it("carries no amount on a no-show, because nothing records one", async () => {
+  // A no-show charged before a charge recorded what it kept: answering the visit's payment here would guess.
+  it("carries no amount on a no-show charged before its charge was recorded, and adds none", async () => {
     await noShow("charged", MORNING);
-    expect((await day()).charges[0]?.amount).toBeNull();
+    expect(await day()).toMatchObject({ charged: 0, charges: [{ kind: "no_show", amount: null }] });
+  });
+
+  // As a change that cost the client nothing is left out, so is a charge that kept no money: a credit it spent is
+  // in the client's credits, not the day's money.
+  it("leaves out a no-show whose charge kept no money", async () => {
+    await noShow("charged", MORNING, 0);
+    expect((await day()).charges).toEqual([]);
   });
 
   it("leaves out a no-show that was waived, and one nobody has ruled on", async () => {
@@ -279,7 +281,7 @@ describe("GET /api/payments", () => {
   });
 
   it("puts both kinds of charge in one list, the earliest first", async () => {
-    await noShow("charged", "2026-09-21T05:00:00.000Z");
+    await noShow("charged", "2026-09-21T05:00:00.000Z", 200000);
     await visitChange({ kind: "cancelled", notice: "late", kept: 200000, at: MORNING });
     expect((await day()).charges.map((each) => each.kind)).toEqual(["late_cancellation", "no_show"]);
   });
@@ -291,14 +293,6 @@ describe("GET /api/payments", () => {
     await env.DB.prepare("UPDATE people SET erased_at = ?1 WHERE id = ?2").bind(NOW.toISOString(), PERSON).run();
 
     expect(await day()).toMatchObject({ collected: 200000, charged: 200000, charges: [] });
-  });
-
-  // The board draws a disputed charge with a note and its Refund and Uphold.
-  // Nothing records a dispute and no client can raise one, so the route says so
-  // rather than showing a figure it cannot know.
-  it("answers nothing at all for a dispute", async () => {
-    await visitChange({ kind: "cancelled", notice: "late", kept: 200000, at: MORNING });
-    expect(await day()).toMatchObject({ dispute: null });
   });
 
   it("refuses a date that is not one", async () => {

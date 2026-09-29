@@ -15,12 +15,22 @@
 
 import type { VisitType } from "../config/visit-types.ts";
 import { indiaDate } from "../lib/india-time.ts";
-import { canCloseAsNoShow, noShowWaitEnds, type NoShowDecision, type Waiver, type Waits } from "../policy/no-show.ts";
+import type { Charge } from "../policy/moving-a-visit.ts";
+import {
+  canCloseAsNoShow,
+  chargedCredit,
+  chargedRefund,
+  noShowWaitEnds,
+  type NoShowDecision,
+  type Waiver,
+  type Waits,
+} from "../policy/no-show.ts";
 import type { PaymentsProvider } from "../providers/payments.ts";
 import type { AlertOnce } from "./alerts.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import type { LatestArrival } from "./check-ins.ts";
-import { visitPayment } from "./visit-changes.ts";
+import type { OpsInputs } from "./ops-settings.ts";
+import { refundOf, termsInForce, termsOfVisit, visitPayment } from "./visit-changes.ts";
 import { NO_VISITS_CONSENT, visitMessage } from "./visit-messages.ts";
 import { minutesBetween } from "../lib/durations.ts";
 
@@ -53,6 +63,8 @@ export interface NoShowCase {
   readonly minutes_late: number | null;
   /** Null when there was nothing to measure against. */
   readonly distance_m: number | null;
+  /** The check-in radius in force when he checked in, which the check-in keeps. */
+  readonly radius_m: number;
   readonly message_state: MessageState;
   readonly message_delivered_at: string | null;
   readonly wait_ends_at: string;
@@ -72,6 +84,7 @@ interface CaseRow {
   claimed_at: string | null;
   received_at: string;
   distance_m: number | null;
+  radius_m: number;
   message_id: string | null;
   message_status: string | null;
   message_error: string | null;
@@ -211,7 +224,7 @@ export async function listNoShowCases(
   const { results } = await db
     .prepare(
       `SELECT n.id, n.appointment_id, pe.id AS person_id, pe.name AS person_name,
-         n.wait_started_at AS checked_in_at, c.claimed_at, c.created_at AS received_at, c.distance_m,
+         n.wait_started_at AS checked_in_at, c.claimed_at, c.created_at AS received_at, c.distance_m, c.radius_m,
          n.message_id, o.state AS message_status, o.last_error AS message_error,
          COALESCE(n.message_delivered_at, o.delivered_at) AS message_delivered_at,
          n.wait_ends_at, n.closed_at, n.created_at, n.decision, n.decided_at,
@@ -241,6 +254,7 @@ export async function listNoShowCases(
     window_end: row.window_end,
     minutes_late: row.window_start === null ? null : minutesBetween(row.window_start, row.checked_in_at),
     distance_m: row.distance_m,
+    radius_m: row.radius_m,
     message_state: messageStateOf(row),
     message_delivered_at: row.message_delivered_at,
     wait_ends_at: row.wait_ends_at,
@@ -251,24 +265,79 @@ export async function listNoShowCases(
   }));
 }
 
-/** A waived visit whose payment is to go back, once the ruling is written. */
-export interface WaivedVisit {
+/** Money going back to the client once a ruling is written. */
+export interface NoShowRefund {
   readonly appointmentId: string;
-  readonly personId: string;
+  /** Whose visit it was, for ops' alert should Razorpay refuse; null once they have been erased. */
+  readonly personId: string | null;
+  /** In paise. */
+  readonly amount: number;
+  /** What sends it back, in Razorpay's notes and in ops' alert. */
+  readonly why: "waived" | "charged" | "refunded on dispute";
 }
 
 export interface Ruled {
   /** The client's WhatsApp about the ruling, to queue; null for a visit with no client on our records. */
   readonly messageId: string | null;
-  /** A waiver that refunds the visit's payment, as ops set it: the visit whose payment to refund now. */
-  readonly refund: WaivedVisit | null;
+  /** What goes back now: what a charge does not keep, or a waiver's payment where ops set a waiver to refund it. */
+  readonly refund: NoShowRefund | null;
+}
+
+/** The terms in force, which a visit ops booked in FSM, and no hold sold, is charged under. */
+export type TermsInputs = Pick<OpsInputs, "changeNoticeHours" | "lateChangeCharges" | "noShowCharges">;
+
+interface OpenCase {
+  appointment_id: string;
+  person_id: string | null;
+  type: VisitType | null;
+  window_start: string | null;
+}
+
+/** What charging a no-show costs the client (src/policy/no-show.ts). */
+interface NoShowCharge {
+  readonly charge: Charge;
+  /** In paise, of the visit's payment: what the charge keeps, and what it gives back. */
+  readonly kept: number;
+  readonly refund: number;
+  /** Whether the credit the visit was paid with comes back, as it does where the charge is nothing. */
+  readonly creditBack: boolean;
+}
+
+/**
+ * What charging this visit costs: the no-show charge its booking was sold under, kept on its hold, or for a visit ops
+ * booked in FSM the one in force (docs/decisions/0088-every-policy-in-the-console.md). A visit of no kind we sell
+ * keeps what it took, as every charge did before a charge was priced.
+ */
+async function chargeOf(db: D1Database, visit: OpenCase, inForce: TermsInputs): Promise<NoShowCharge> {
+  const paid = (await visitPayment(db, visit.appointment_id))?.paid ?? 0;
+  if (visit.type === null || visit.window_start === null) {
+    return { charge: "visit", kept: paid, refund: 0, creditBack: false };
+  }
+  const { terms, lateFee } = await termsOfVisit(
+    db,
+    { id: visit.appointment_id, type: visit.type, start: new Date(visit.window_start) },
+    termsInForce(inForce, visit.type),
+  );
+  const refund = refundOf(chargedRefund(visit.type, terms.noShowCharge), paid, lateFee);
+  return {
+    charge: terms.noShowCharge,
+    kept: paid - refund,
+    refund,
+    creditBack: chargedCredit(terms.noShowCharge) === "restored",
+  };
+}
+
+/** What a waiver gives back, as ops set it: the payment, all of it, and the credit. */
+async function waiverOf(db: D1Database, appointmentId: string, waiver: Waiver) {
+  const refund = waiver.payment === "refunded" ? ((await visitPayment(db, appointmentId))?.paid ?? 0) : 0;
+  return { refund, creditBack: waiver.credit === "returned" };
 }
 
 /**
  * Ops charge or waive the visit, with their reason. Ruled once: a second ruling on the same case changes nothing.
- * In the one batch: the ruling, with what a waiver gave back; its audit entry (src/domain/audit.ts); the client's
- * message about it; and, for a waiver that returns it, the credit the visit used. The reason stays with the ruling
- * and reaches no message. A charge moves nothing: the visit keeps what it took, as a cancel inside 24 hours does.
+ * In the one batch: the ruling, with what a charge cost or a waiver gave back; its audit entry (src/domain/audit.ts);
+ * the client's message about it; and the credit the visit used, where the ruling returns it. The reason stays with
+ * the ruling and reaches no message. What goes back of the payment is refunded after the batch.
  */
 export async function decideNoShow(
   db: D1Database,
@@ -281,16 +350,18 @@ export async function decideNoShow(
     now: Date;
     /** What a waiver gives back of the payment and the credit, as ops set it (src/policy/no-show.ts). */
     waiver: Waiver;
+    terms: TermsInputs;
   },
 ): Promise<Ruled | null> {
   const open = await db
     .prepare(
-      `SELECT n.appointment_id, p.id AS person_id FROM no_show_cases n JOIN appointments a ON a.id = n.appointment_id
+      `SELECT n.appointment_id, p.id AS person_id, a.type, a.window_start
+       FROM no_show_cases n JOIN appointments a ON a.id = n.appointment_id
        LEFT JOIN people p ON p.id = a.person_id AND p.erased_at IS NULL
        WHERE n.id = ?1 AND n.decision = 'undecided'`,
     )
     .bind(input.caseId)
-    .first<{ appointment_id: string; person_id: string | null }>();
+    .first<OpenCase>();
   if (open === null) return null;
   const at = input.now.toISOString();
   const message =
@@ -302,13 +373,14 @@ export async function decideNoShow(
           kind: "no_show_decided",
           now: input.now,
         });
+  const charged = input.decision === "charged" ? await chargeOf(db, open, input.terms) : null;
   const waiver = input.decision === "waived" ? input.waiver : null;
-  const refunds = waiver?.payment === "refunded";
-  await db.batch([
+  const givenBack = charged ?? (await waiverOf(db, open.appointment_id, input.waiver));
+  const [ruling] = await db.batch([
     db
       .prepare(
         `UPDATE no_show_cases SET decision = ?2, decided_by = ?3, decided_at = ?4, decision_reason = ?5,
-           waiver_payment = ?6, waiver_credit = ?7
+           waiver_payment = ?6, waiver_credit = ?7, charge = ?8, kept_amount = ?9, refund_amount = ?10
          WHERE id = ?1 AND decision = 'undecided'`,
       )
       .bind(
@@ -319,23 +391,35 @@ export async function decideNoShow(
         input.reason,
         waiver?.payment ?? null,
         waiver?.credit ?? null,
+        charged?.charge ?? null,
+        charged?.kept ?? null,
+        charged?.refund ?? null,
       ),
     auditStatement(db, input.audit, input.now),
     ...(message === null ? [] : [message.statement]),
-    ...(waiver?.credit === "returned" ? [creditBack(db, open.appointment_id, input.now)] : []),
+    ...(givenBack.creditBack ? [creditBack(db, open.appointment_id, input.now)] : []),
   ]);
+  // Another member of staff ruled first: their ruling stands, and nothing more goes back.
+  if (ruling?.meta.changes !== 1) return null;
   return {
     messageId: message?.id ?? null,
     refund:
-      refunds && open.person_id !== null ? { appointmentId: open.appointment_id, personId: open.person_id } : null,
+      givenBack.refund > 0
+        ? {
+            appointmentId: open.appointment_id,
+            personId: open.person_id,
+            amount: givenBack.refund,
+            why: input.decision,
+          }
+        : null,
   };
 }
 
 /**
- * The credit a waived visit used, back in its grant: once (the ledger's one-use index), and only to a grant that
- * can still take it, neither clawed back nor expired, as a free cancel's is (src/policy/moving-a-visit.ts).
+ * The credit a visit used, back in its grant: once (the ledger's one-use index), and only to a grant that can still
+ * take it, neither clawed back nor expired, as a free cancel's is (src/policy/moving-a-visit.ts).
  */
-function creditBack(db: D1Database, appointmentId: string, now: Date): D1PreparedStatement {
+export function creditBack(db: D1Database, appointmentId: string, now: Date): D1PreparedStatement {
   return db
     .prepare(
       `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
@@ -350,28 +434,29 @@ function creditBack(db: D1Database, appointmentId: string, now: Date): D1Prepare
 }
 
 /**
- * Refunds what is left of a waived visit's payment, when a waiver gives back. A refund Razorpay refuses is left
+ * Refunds what a ruling gives back, at most what is left of the visit's payment. A refund Razorpay refuses is left
  * to ops, told once with the visit and the payment, as a cancel's is (src/domain/visit-changes.ts).
  */
-export async function refundWaivedVisit(
+export async function refundNoShow(
   db: D1Database,
   deps: { payments: PaymentsProvider; alertOnce: AlertOnce },
-  visit: WaivedVisit,
+  refund: NoShowRefund,
 ): Promise<void> {
-  const payment = await visitPayment(db, visit.appointmentId);
-  if (payment === null || payment.paid <= 0) return;
+  const payment = await visitPayment(db, refund.appointmentId);
+  const amount = Math.min(refund.amount, payment?.paid ?? 0);
+  if (payment === null || amount <= 0) return;
   try {
     await deps.payments.refund(payment.razorpayPaymentId, {
-      amount: payment.paid,
-      notes: { appointment_id: visit.appointmentId, reason: "no-show waived" },
+      amount,
+      notes: { appointment_id: refund.appointmentId, reason: `no-show ${refund.why}` },
     });
   } catch {
     await deps.alertOnce({
-      key: `no_show_refund_failed:${visit.appointmentId}`,
+      key: `no_show_refund_failed:${refund.why}:${refund.appointmentId}`,
       message:
-        `The refund of Rs. ${String(payment.paid / 100)} for visit ${visit.appointmentId}, whose no-show was ` +
-        `waived, failed (Razorpay payment ${payment.razorpayPaymentId}). Refund it by hand in Razorpay, once.`,
-      link: `/clients/${visit.personId}`,
+        `The refund of Rs. ${String(amount / 100)} for visit ${refund.appointmentId}, a no-show ${refund.why}, ` +
+        `failed (Razorpay payment ${payment.razorpayPaymentId}). Refund it by hand in Razorpay, once.`,
+      link: refund.personId === null ? "/no-shows" : `/clients/${refund.personId}`,
     });
   }
 }

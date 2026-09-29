@@ -1,10 +1,19 @@
 // When the client is not home (docs/prompts/phase2-backend.md, "Technician and dispatch rules, from the designs").
-// The rules as the prompt states them, the wait they turn on, and the three
-// facts ops rule on. Nothing here charges anybody: the server opens the case
-// and a person decides it.
+// The rules as the prompt states them, and as the owner ruled on the charge and
+// its dispute; the wait they turn on, the three facts ops rule on, and what a
+// charge costs. Nothing here charges anybody: the server opens the case and a
+// person decides it.
 
 import type { VisitType } from "../config/visit-types.ts";
-import { LATE_CHANGE_CHARGES, type Charges } from "./moving-a-visit.ts";
+import {
+  cancelRefund,
+  creditOnChange,
+  LATE_CHANGE_CHARGES,
+  type CancelRefund,
+  type Charge,
+  type Charges,
+  type CreditOnChange,
+} from "./moving-a-visit.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
 
 export const RULES = [
@@ -13,6 +22,9 @@ export const RULES = [
   "Ops then receive three facts: check-in time, distance, and the delivery receipt of the day-before or arrival WhatsApp to the client (from the BSP's delivery webhook).",
   "A no-show is charged under the 24-hour policy. The charge is applied by ops from the evidence, never automatically.",
   "Whether the wait differs for a first fit is open, so make it config per visit type.",
+  // The owner, 27 September 2026 (docs/owner-answers-2026-09-27.md, item 60).
+  "a charged no-show costs, to begin with, what a late cancellation of the same visit costs",
+  "the client disputes a charge in the app, and ops rule Refund or Uphold in the console with a reason, and the client is told.",
 ] as const;
 
 /**
@@ -88,6 +100,36 @@ export type NoShowDecision = (typeof NO_SHOW_DECISIONS)[number];
  * can change alone (docs/decisions/0088-every-policy-in-the-console.md). A booking keeps the charge it was made under.
  */
 export const NO_SHOW_CHARGES: Charges = { ...LATE_CHANGE_CHARGES };
+
+/**
+ * What a charged no-show gives back of the visit's payment, by the charge its booking was sold under: what a cancel
+ * inside the notice would (RULES[5]). A first fit or a replacement keeps its late fee and refunds the rest, a paid
+ * service visit is kept, and a charge of nothing refunds it all.
+ */
+export const chargedRefund = (type: VisitType, charge: Charge): CancelRefund => cancelRefund(type, "late", charge);
+
+/** What becomes of the credit a charged no-show was paid with: lost, as a late cancel's is, unless the charge is nothing. */
+export const chargedCredit = (charge: Charge): CreditOnChange => creditOnChange("late", charge);
+
+/**
+ * Ops' ruling on a disputed charge (RULES[6]): refunded gives back what the charge took, the money it kept and the
+ * credit it spent; upheld keeps them.
+ */
+export const DISPUTE_RULINGS = ["refunded", "upheld"] as const;
+export type DisputeRuling = (typeof DISPUTE_RULINGS)[number];
+
+/** The longest reason a client gives for a dispute: a sentence or two. */
+export const DISPUTE_REASON_MAX_CHARS = 300;
+
+/** What a charge took from the client, as recorded on the ruling. */
+export interface ChargeTaken {
+  /** In paise, kept of the visit's payment. */
+  readonly kept: number;
+  readonly creditSpent: boolean;
+}
+
+/** Whether a charge can be disputed: one that took something, money or a credit. One a charge, at most. */
+export const isDisputable = (taken: ChargeTaken): boolean => taken.kept > 0 || taken.creditSpent;
 
 /**
  * What waiving a no-show gives the client back of what the visit took: its

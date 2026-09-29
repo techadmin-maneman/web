@@ -1,7 +1,8 @@
 // Messages to a client about their visits (docs/decisions/0047-visit-messages.md): a booking, the day-before
 // reminder, a move and a cancel, and since docs/decisions/0074-hand-offs-and-messages.md the technician's arrival and
-// ops' ruling on a visit the client was not home for. Each is a row in outbound_messages about the appointment, written with the change
-// it tells of, then queued. The messaging consumer writes the text from the visit as it stands when it sends, and
+// ops' ruling on a visit the client was not home for, and since docs/decisions/0096-a-no-shows-charge-and-its-dispute.md
+// their ruling on the client's dispute of its charge. Each is a row in outbound_messages about the appointment, written
+// with the change it tells of, then queued. The messaging consumer writes the text from the visit as it stands when it sends, and
 // sends it only with the client's consent to WhatsApp about visits. The sweeper queues any whose queue message was
 // lost.
 
@@ -11,7 +12,8 @@ import { WINDOW_TIMES } from "../config/scheduling.ts";
 import { FSM_SERVICE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
 import { DAY_BEFORE_REMINDER_HOUR } from "../policy/job-visibility.ts";
-import { WAIVER_GIVES_BACK, type NoShowDecision, type Waiver } from "../policy/no-show.ts";
+import type { Charge } from "../policy/moving-a-visit.ts";
+import { WAIVER_GIVES_BACK, type DisputeRuling, type NoShowDecision, type Waiver } from "../policy/no-show.ts";
 import type { AppointmentStatus } from "./fsm-mirror.ts";
 import { consentGiven, type MessageKind } from "./messages.ts";
 import { windowAt } from "../policy/windows.ts";
@@ -28,6 +30,7 @@ export type VisitMessageKind = Extract<
   | "visit_moved"
   | "arrival_notice"
   | "no_show_decided"
+  | "no_show_dispute_ruled"
 >;
 
 export const VISIT_MESSAGE_KINDS: readonly VisitMessageKind[] = [
@@ -42,6 +45,8 @@ export const VISIT_MESSAGE_KINDS: readonly VisitMessageKind[] = [
   "arrival_notice",
   // Ops ruled on a visit the client was not home for (docs/decisions/0074-hand-offs-and-messages.md).
   "no_show_decided",
+  // Ops ruled on the client's dispute of its charge (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
+  "no_show_dispute_ruled",
 ];
 
 /**
@@ -57,13 +62,16 @@ const STILL_TRUE_WHILE: Readonly<Record<VisitMessageKind, readonly AppointmentSt
   cancel_confirmation: "any",
   arrival_notice: ["scheduled", "dispatched", "in_progress"],
   no_show_decided: "any",
+  no_show_dispute_ruled: "any",
 };
 
 /**
- * What the ruling on a no-show says, by the ruling and by what the client paid ahead. A charge keeps it, as a cancel
- * inside 24 hours does. A waiver says what it gave back, as the ruling kept it (no_show_cases.waiver_payment and
- * waiver_credit): the owner ruled on 27 September 2026 that it refunds the payment and returns the credit, and ops may
- * set it otherwise (src/policy/no-show.ts). A waiver ruled before the ruling kept it gave both back.
+ * What the ruling on a no-show says, by the ruling and by what the client paid ahead. A charge says what it kept and
+ * what goes back, as the ruling recorded them (no_show_cases.kept_amount and refund_amount); one charged before a
+ * charge recorded them kept what was paid, as a cancel inside 24 hours does. A waiver says what it gave back, as the
+ * ruling kept it (no_show_cases.waiver_payment and waiver_credit): the owner ruled on 27 September 2026 that it
+ * refunds the payment and returns the credit, and ops may set it otherwise (src/policy/no-show.ts). A waiver ruled
+ * before the ruling kept it gave both back.
  */
 const CHARGED_TEMPLATES = {
   payment: "no_show_charged_paid_v1",
@@ -208,6 +216,7 @@ export async function composeVisitMessage(
   if (kind === "visit_reminder") return { template: "visit_reminder_v1", params };
   if (kind === "arrival_notice") return { template: "technician_arrived_v1", params };
   if (kind === "no_show_decided") return noShowRuling(db, appointmentId, params);
+  if (kind === "no_show_dispute_ruled") return disputeRuling(db, appointmentId, params);
   // A move, whether the client made it or ops did: the same words, the visit's new window.
   if (kind === "reschedule_confirmation" || kind === "visit_moved") return { template: "visit_moved_v1", params };
   if (kind === "payment_receipt") {
@@ -219,13 +228,9 @@ export async function composeVisitMessage(
       .bind(appointmentId)
       .first<{ amount: number; reference: string | null }>();
     if (payment === null) {
-      const credit = await db
-        .prepare("SELECT 1 FROM credit_ledger WHERE kind = 'redeem' AND source_id = ?1")
-        .bind(appointmentId)
-        .first();
-      return credit === null
-        ? { skip: "no captured payment for the visit" }
-        : { template: "visit_booked_credit_v1", params };
+      return (await paidWithCredit(db, appointmentId))
+        ? { template: "visit_booked_credit_v1", params }
+        : { skip: "no captured payment for the visit" };
     }
     if (payment.reference === null) return { skip: "the payment has no reference yet" };
     params[5] = rupees(payment.amount);
@@ -271,18 +276,67 @@ async function paidAhead(db: D1Database, appointmentId: string): Promise<PaidAhe
     .bind(appointmentId)
     .first<{ amount: number; method: string | null }>();
   if (payment !== null) return { kind: "payment", amount: payment.amount, method: payment.method };
+  return (await paidWithCredit(db, appointmentId)) ? { kind: "credit" } : { kind: "nothing" };
+}
+
+/** Where a refund of the visit's payment goes, as a message names it: "UPI". */
+async function refundDestination(db: D1Database, appointmentId: string): Promise<string> {
+  const payment = await db
+    .prepare("SELECT method FROM payments WHERE appointment_id = ?1 AND kind = 'visit' ORDER BY captured_at LIMIT 1")
+    .bind(appointmentId)
+    .first<{ method: string | null }>();
+  return DESTINATIONS[payment?.method ?? ""] ?? "payment method";
+}
+
+/** Whether a service-visit credit paid for the visit. */
+async function paidWithCredit(db: D1Database, appointmentId: string): Promise<boolean> {
   const credit = await db
     .prepare("SELECT 1 FROM credit_ledger WHERE kind = 'redeem' AND source_id = ?1")
     .bind(appointmentId)
     .first();
-  return credit === null ? { kind: "nothing" } : { kind: "credit" };
+  return credit !== null;
+}
+
+/** A charge as its ruling recorded it, in paise: what it kept of the payment, and what goes back. */
+interface RecordedCharge {
+  readonly charge: Charge;
+  readonly kept: number;
+  readonly refund: number;
+}
+
+/**
+ * What a charge says: what it kept and what goes back, or that it spent the credit. A charge of nothing gave both
+ * back, and says so as a waiver that gives them does.
+ */
+async function chargedMessage(
+  db: D1Database,
+  appointmentId: string,
+  charge: RecordedCharge,
+  params: string[],
+): Promise<Composed> {
+  if (charge.kept + charge.refund === 0) {
+    if (!(await paidWithCredit(db, appointmentId))) return { template: "no_show_missed_v1", params };
+    const template = charge.charge === "nothing" ? "no_show_waived_credit_back_v1" : "no_show_charged_credit_v1";
+    return { template, params };
+  }
+  params[7] = await refundDestination(db, appointmentId);
+  if (charge.kept === 0) {
+    params[5] = rupees(charge.refund);
+    return { template: "no_show_waived_refund_v1", params };
+  }
+  params[5] = rupees(charge.kept);
+  if (charge.refund === 0) return { template: "no_show_charged_paid_v1", params };
+  // The tenth param, which only this template takes.
+  params.push(rupees(charge.refund));
+  return { template: "no_show_charged_fee_v1", params };
 }
 
 /** The ruling on a visit the client was not home for: how long we waited, and what became of what they paid. */
 async function noShowRuling(db: D1Database, appointmentId: string, params: string[]): Promise<Composed> {
   const ruling = await db
     .prepare(
-      `SELECT decision, wait_started_at, COALESCE(closed_at, wait_ends_at) AS ended_at, waiver_payment, waiver_credit
+      `SELECT decision, wait_started_at, COALESCE(closed_at, wait_ends_at) AS ended_at, waiver_payment, waiver_credit,
+         charge, kept_amount, refund_amount
        FROM no_show_cases WHERE appointment_id = ?1 ORDER BY created_at DESC LIMIT 1`,
     )
     .bind(appointmentId)
@@ -292,10 +346,17 @@ async function noShowRuling(db: D1Database, appointmentId: string, params: strin
       ended_at: string;
       waiver_payment: Waiver["payment"] | null;
       waiver_credit: Waiver["credit"] | null;
+      charge: Charge | null;
+      kept_amount: number | null;
+      refund_amount: number | null;
     }>();
   if (ruling === null || ruling.decision === "undecided") return { skip: "ops have not ruled on it" };
   // The ninth param, which only these templates take.
   params.push(String(minutesBetween(ruling.wait_started_at, ruling.ended_at)));
+  if (ruling.charge !== null && ruling.kept_amount !== null && ruling.refund_amount !== null) {
+    const charge = { charge: ruling.charge, kept: ruling.kept_amount, refund: ruling.refund_amount };
+    return chargedMessage(db, appointmentId, charge, params);
+  }
   const paid = await paidAhead(db, appointmentId);
   if (paid.kind === "payment") {
     params[5] = rupees(paid.amount);
@@ -307,6 +368,25 @@ async function noShowRuling(db: D1Database, appointmentId: string, params: strin
     credit: ruling.waiver_credit ?? WAIVER_GIVES_BACK.credit,
   };
   return { template: waivedTemplate(paid.kind, waiver), params };
+}
+
+/** Ops' ruling on the client's dispute of a no-show's charge: refunded, with what goes back, or upheld. */
+async function disputeRuling(db: D1Database, appointmentId: string, params: string[]): Promise<Composed> {
+  const dispute = await db
+    .prepare(
+      `SELECT d.ruling, n.kept_amount FROM no_show_disputes d JOIN no_show_cases n ON n.id = d.case_id
+       WHERE n.appointment_id = ?1 ORDER BY d.created_at DESC LIMIT 1`,
+    )
+    .bind(appointmentId)
+    .first<{ ruling: DisputeRuling | null; kept_amount: number | null }>();
+  const ruling = dispute?.ruling ?? null;
+  if (ruling === null) return { skip: "ops have not ruled on the dispute" };
+  if (ruling === "upheld") return { template: "no_show_dispute_upheld_v1", params };
+  const kept = dispute?.kept_amount ?? 0;
+  if (kept === 0) return { template: "no_show_dispute_credit_back_v1", params };
+  params[5] = rupees(kept);
+  params[7] = await refundDestination(db, appointmentId);
+  return { template: "no_show_dispute_refunded_v1", params };
 }
 
 /** What became of the credit a cancelled visit was paid with: back in the balance, kept, or none was used. */
