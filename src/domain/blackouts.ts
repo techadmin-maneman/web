@@ -2,7 +2,7 @@
 // (visit_blackouts; docs/decisions/0088-every-policy-in-the-console.md).
 //
 // A day blacked out is offered to nobody and held for nobody, in the app or from
-// the site (loadBlackouts, src/domain/leads.ts; docs/decisions/0068-a-paid-hold-is-kept.md).
+// the site (loadBlackouts, src/domain/scheduling.ts; docs/decisions/0068-a-paid-hold-is-kept.md).
 // It moves no visit already booked on it: ops are told how many there are, and
 // move them on the dispatch board. Each change is written in one batch with its
 // audit entry (ADR 0031), which keeps the days, and each day the change replaced

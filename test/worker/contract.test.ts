@@ -10,6 +10,7 @@ import clientDocument from "../../docs/openapi-client.json";
 import opsDocument from "../../docs/openapi-ops.json";
 import techDocument from "../../docs/openapi-tech.json";
 import publicDocument from "../../docs/openapi.json";
+import { ERROR_CODES } from "../../src/http/errors.ts";
 import { buildOpenApiDocument, readResponse, renderApiMarkdown, type DocumentedSurface } from "../../src/openapi.ts";
 
 /** A schema as far as this test reads one: a reference, or an object's fields and whether it allows others. */
@@ -69,5 +70,83 @@ describe.each(COMMITTED)("the %s surface's API documentation", (surface, documen
       return value;
     });
     expect(unmeetable).toEqual([]);
+  });
+});
+
+const METHODS = ["get", "post", "put", "patch", "delete"] as const;
+const KNOWN_CODES: ReadonlySet<string> = new Set(ERROR_CODES);
+
+/**
+ * The error codes an answer's description names. Each clause opens with one, "taken: that window has gone; or
+ * ops_assisted", and the words after it are prose, even one spelled like a code: "none made, taken down".
+ */
+function codesNamedIn(description: string): string[] {
+  return description
+    .split(/;|\. |, or /)
+    .map(
+      (clause) =>
+        clause
+          .trim()
+          .replace(/^or /, "")
+          .split(/[\s:,]/)[0] ?? "",
+    )
+    .filter((word) => KNOWN_CODES.has(word));
+}
+
+/** Each error answer on every surface: where it is, its status, and its description. */
+function errorAnswers(): { where: string; status: string; description: string }[] {
+  return COMMITTED.flatMap(([surface]) =>
+    Object.entries(buildOpenApiDocument(surface).paths ?? {}).flatMap(([path, item]) =>
+      METHODS.flatMap((method) =>
+        Object.entries(item[method]?.responses ?? {})
+          .filter(([, response]) => JSON.stringify(response).includes("#/components/schemas/ErrorResponse"))
+          .map(([status, response]) => ({
+            where: `${surface} ${method.toUpperCase()} ${path}`,
+            status,
+            description: readResponse(response).description,
+          })),
+      ),
+    ),
+  );
+}
+
+// Open point 105, ruled by the owner on 27 September 2026: a front end reads an error by its code, and each code
+// answers with one status everywhere, so that neither can say something the other does not.
+describe("the error codes", () => {
+  it("are read from the first word of each clause of an answer's description", () => {
+    expect(codesNamedIn("taken: that window has gone; already_booked: it has one; or ops_assisted")).toEqual([
+      "taken",
+      "already_booked",
+      "ops_assisted",
+    ]);
+    expect(codesNamedIn("fsm_refused: nothing moved. fsm_partly: FSM took the technician")).toEqual([
+      "fsm_refused",
+      "fsm_partly",
+    ]);
+    expect(codesNamedIn("too_early, or rate_limited")).toEqual(["too_early", "rate_limited"]);
+    expect(codesNamedIn("not_found: none made, taken down, or erased")).toEqual(["not_found"]);
+  });
+
+  // An answer that names no code cannot be held to one status by the test below.
+  it("are each named by the description of every error answer", () => {
+    const unnamed = errorAnswers().filter(({ description }) => codesNamedIn(description).length === 0);
+    expect(unnamed).toEqual([]);
+  });
+
+  it("each answer with one status, on every surface", () => {
+    const whereByStatusByCode = new Map<string, Map<string, string[]>>();
+    for (const { where, status, description } of errorAnswers()) {
+      for (const code of codesNamedIn(description)) {
+        const whereByStatus = whereByStatusByCode.get(code) ?? new Map<string, string[]>();
+        whereByStatus.set(status, [...(whereByStatus.get(status) ?? []), where]);
+        whereByStatusByCode.set(code, whereByStatus);
+      }
+    }
+    expect(whereByStatusByCode.get("session_required")).toBeDefined();
+
+    const answeredTwoWays = [...whereByStatusByCode].filter(([, whereByStatus]) => whereByStatus.size > 1);
+    expect(
+      Object.fromEntries(answeredTwoWays.map(([code, whereByStatus]) => [code, Object.fromEntries(whereByStatus)])),
+    ).toEqual({});
   });
 });

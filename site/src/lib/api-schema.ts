@@ -49,51 +49,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/cities": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** The booking form's city list, in display order. Cacheable for five minutes. */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Active cities */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["City"][];
-                    };
-                };
-                /** @description The database is unavailable */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/published-prices": {
         parameters: {
             query?: never;
@@ -133,102 +88,6 @@ export interface paths {
         };
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/lead": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Book a free consultation, or join a city's waitlist */
-        post: {
-            parameters: {
-                query?: never;
-                header?: {
-                    "idempotency-key"?: string;
-                };
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["LeadRequest"];
-                };
-            };
-            responses: {
-                /** @description Saved */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["LeadResponse"];
-                    };
-                };
-                /** @description invalid_request: see error.fields */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description turnstile_failed */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description idempotency_in_progress: the first request with this key is still running */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description idempotency_key_reused: the key was used with a different body */
-                422: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description rate_limited: too many requests from this number or address today */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description unavailable: Turnstile or the database could not be reached */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
         delete?: never;
         options?: never;
         head?: never;
@@ -303,7 +162,7 @@ export interface paths {
                         "application/json": components["schemas"]["Consultation"];
                     };
                 };
-                /** @description invalid_request */
+                /** @description invalid_request: fields names what was refused, address.pincode for an address in another pincode */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -330,7 +189,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"] | components["schemas"]["AlreadyBooked"];
                     };
                 };
-                /** @description invalid_request: the pincode is not served, or the day is not open, or the address is in another pincode (fields names address.pincode); not_bookable: this number is past consultations, and books in the app; idempotency_key_reused: the key was used with a different body */
+                /** @description not_bookable: the pincode is not served, the day is not open, or this number is past consultations and books in the app; idempotency_key_reused: the key was used with a different body */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -456,7 +315,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description invalid_request: that pincode is served; book instead; idempotency_key_reused: the key was used with a different body */
+                /** @description not_bookable: that pincode is served; book instead; idempotency_key_reused: the key was used with a different body */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -675,7 +534,7 @@ export interface paths {
                         "application/json": components["schemas"]["ReferralConsultation"];
                     };
                 };
-                /** @description invalid_request */
+                /** @description invalid_request: fields names what was refused, address.pincode for an address in another pincode */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -702,7 +561,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"] | components["schemas"]["AlreadyBooked"];
                     };
                 };
-                /** @description not_bookable: the pincode is not served, the day is not open, or this number is past consultations; invalid_request: the address is in another pincode (fields names address.pincode); idempotency_key_reused: the key was used with a different body */
+                /** @description not_bookable: the pincode is not served, the day is not open, or this number is past consultations; idempotency_key_reused: the key was used with a different body */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -1323,7 +1182,7 @@ export interface paths {
                     };
                 };
                 /** @description session_required: neither the gate's session nor this browser's look is this job's */
-                403: {
+                401: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1743,11 +1602,6 @@ export interface components {
              */
             d1: "ok" | "unmarked" | "mismatch" | "unreachable";
         };
-        City: {
-            name: string;
-            /** @description false: the booking form offers the waitlist instead. */
-            served: boolean;
-        };
         PublishedPrices: {
             /**
              * Format: date
@@ -1780,50 +1634,6 @@ export interface components {
             name: string;
             minutes: number;
             price: components["schemas"]["Price"];
-        };
-        LeadResponse: {
-            /** Format: uuid */
-            lead_id: string;
-            served: boolean;
-            /**
-             * Format: date
-             * @description Served cities only. May be absent if every candidate day is blacked out.
-             */
-            proposed_visit_date?: string;
-            /**
-             * @description Served cities only.
-             * @enum {string}
-             */
-            window_label?: "before noon" | "after four";
-        };
-        LeadRequest: {
-            name: string;
-            /** @example 98100 00000 */
-            mobile: string;
-            /** @description One of the names from GET /api/cities. */
-            city: string;
-            /** @enum {string} */
-            first_choice_window: "weekday_am" | "weekday_pm" | "weekend_am" | "weekend_pm";
-            /** @enum {string} */
-            loss_extent: "crown" | "receding" | "advanced";
-            /**
-             * @description The booking notice was agreed to; see src/config/notices.ts.
-             * @enum {boolean}
-             */
-            consent: true;
-            turnstile_token: string;
-            attribution?: components["schemas"]["Attribution"];
-        };
-        /** @description Where the visitor came from, as the page saw it. All optional. */
-        Attribution: {
-            utm_source?: string;
-            utm_medium?: string;
-            utm_campaign?: string;
-            utm_content?: string;
-            gclid?: string;
-            fbclid?: string;
-            referrer?: string;
-            landing_path?: string;
         };
         Consultation: {
             /**
@@ -2023,6 +1833,17 @@ export interface components {
              */
             notice_version?: string;
             attribution?: components["schemas"]["Attribution"];
+        };
+        /** @description Where the visitor came from, as the page saw it. All optional. */
+        Attribution: {
+            utm_source?: string;
+            utm_medium?: string;
+            utm_campaign?: string;
+            utm_content?: string;
+            gclid?: string;
+            fbclid?: string;
+            referrer?: string;
+            landing_path?: string;
         };
         ResultReady: {
             /** @description A path on this host that serves the image for fifteen minutes. */

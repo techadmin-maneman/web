@@ -4,11 +4,13 @@
 // (e2e/app/booker.ts), two clients whose visits the change tests move and cancel
 // (e2e/app/changing.ts), three clients the app offers their next visit to
 // (e2e/app/next-visit.ts), a client with a try-on from the site
-// (e2e/app/try-on.ts), and the service area the booking pages read
-// (e2e/booking-area.ts).
+// (e2e/app/try-on.ts), the numbers with a consultation still to be confirmed
+// that the login tests take (e2e/app/booked-numbers.ts), and the service area
+// the booking pages read (e2e/booking-area.ts).
 
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { seedBookedNumbers } from "./app/booked-numbers.ts";
 import { seedBooker } from "./app/booker.ts";
 import { seedChanging } from "./app/changing.ts";
 import { seedFitted } from "./app/fitted.ts";
@@ -67,5 +69,6 @@ export default async function globalSetup(): Promise<void> {
   await seedChanging();
   await seedNextVisit();
   await seedTryOn();
+  await seedBookedNumbers();
   await seedBookingArea();
 }

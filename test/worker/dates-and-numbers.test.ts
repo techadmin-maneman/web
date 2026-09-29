@@ -1,10 +1,9 @@
+// India's calendar, a Phase 1 window's words, and a mobile number as typed.
+
 import { describe, expect, it } from "vitest";
 import { windowLabel } from "../../src/config/booking.ts";
-import { candidateRange, proposeVisitDate } from "../../src/domain/visit-date.ts";
 import { addDays, indiaDate, indiaHour, isWeekend } from "../../src/lib/india-time.ts";
 import { toE164 } from "../../src/lib/mobile.ts";
-
-const none = new Set<string>();
 
 describe("India dates", () => {
   it("rolls over at midnight in India, not in UTC", () => {
@@ -21,32 +20,7 @@ describe("India dates", () => {
   });
 });
 
-describe("proposeVisitDate", () => {
-  const monday = new Date("2026-09-21T06:30:00Z");
-
-  it("is at least the lead time away, on the chosen kind of day", () => {
-    expect(proposeVisitDate(monday, "weekday_am", 2, none)).toBe("2026-09-23"); // Wednesday
-    expect(proposeVisitDate(monday, "weekend_am", 2, none)).toBe("2026-09-26"); // Saturday
-  });
-
-  it("moves past the weekend for a weekday request made on a Thursday", () => {
-    const thursday = new Date("2026-09-24T06:30:00Z");
-    expect(proposeVisitDate(thursday, "weekday_pm", 2, none)).toBe("2026-09-28"); // Saturday skipped to Monday
-  });
-
-  it("uses the India date: 11 pm UTC on Monday is already Tuesday", () => {
-    expect(proposeVisitDate(new Date("2026-09-21T23:00:00Z"), "weekday_am", 2, none)).toBe("2026-09-24");
-  });
-
-  it("skips blackout days, and gives up when every candidate is blacked out", () => {
-    expect(proposeVisitDate(monday, "weekday_am", 2, new Set(["2026-09-23", "2026-09-24"]))).toBe("2026-09-25");
-
-    const range = candidateRange(monday, 2);
-    const everything = new Set<string>();
-    for (let date = range.from; date <= range.to; date = addDays(date, 1)) everything.add(date);
-    expect(proposeVisitDate(monday, "weekday_am", 2, everything)).toBeNull();
-  });
-
+describe("windowLabel", () => {
   it("labels mornings and evenings as the design does", () => {
     expect(windowLabel("weekday_am")).toBe("before noon");
     expect(windowLabel("weekend_pm")).toBe("after four");

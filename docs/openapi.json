@@ -180,23 +180,6 @@
         ],
         "additionalProperties": false
       },
-      "City": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "served": {
-            "type": "boolean",
-            "description": "false: the booking form offers the waitlist instead."
-          }
-        },
-        "required": [
-          "name",
-          "served"
-        ],
-        "additionalProperties": false
-      },
       "PublishedPrices": {
         "type": "object",
         "properties": {
@@ -295,138 +278,6 @@
           "price"
         ],
         "additionalProperties": false
-      },
-      "LeadResponse": {
-        "type": "object",
-        "properties": {
-          "lead_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "served": {
-            "type": "boolean"
-          },
-          "proposed_visit_date": {
-            "type": "string",
-            "format": "date",
-            "description": "Served cities only. May be absent if every candidate day is blacked out."
-          },
-          "window_label": {
-            "type": "string",
-            "enum": [
-              "before noon",
-              "after four"
-            ],
-            "description": "Served cities only."
-          }
-        },
-        "required": [
-          "lead_id",
-          "served"
-        ],
-        "additionalProperties": false
-      },
-      "LeadRequest": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 60
-          },
-          "mobile": {
-            "type": "string",
-            "pattern": "^(?:\\+91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
-            "example": "98100 00000"
-          },
-          "city": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 40,
-            "description": "One of the names from GET /api/cities."
-          },
-          "first_choice_window": {
-            "type": "string",
-            "enum": [
-              "weekday_am",
-              "weekday_pm",
-              "weekend_am",
-              "weekend_pm"
-            ]
-          },
-          "loss_extent": {
-            "type": "string",
-            "enum": [
-              "crown",
-              "receding",
-              "advanced"
-            ]
-          },
-          "consent": {
-            "type": "boolean",
-            "enum": [
-              true
-            ],
-            "description": "The booking notice was agreed to; see src/config/notices.ts."
-          },
-          "turnstile_token": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 2048
-          },
-          "attribution": {
-            "$ref": "#/components/schemas/Attribution"
-          }
-        },
-        "required": [
-          "name",
-          "mobile",
-          "city",
-          "first_choice_window",
-          "loss_extent",
-          "consent",
-          "turnstile_token"
-        ],
-        "additionalProperties": false
-      },
-      "Attribution": {
-        "type": "object",
-        "properties": {
-          "utm_source": {
-            "type": "string",
-            "maxLength": 200
-          },
-          "utm_medium": {
-            "type": "string",
-            "maxLength": 200
-          },
-          "utm_campaign": {
-            "type": "string",
-            "maxLength": 200
-          },
-          "utm_content": {
-            "type": "string",
-            "maxLength": 200
-          },
-          "gclid": {
-            "type": "string",
-            "maxLength": 200
-          },
-          "fbclid": {
-            "type": "string",
-            "maxLength": 200
-          },
-          "referrer": {
-            "type": "string",
-            "maxLength": 500
-          },
-          "landing_path": {
-            "type": "string",
-            "maxLength": 500
-          }
-        },
-        "additionalProperties": false,
-        "description": "Where the visitor came from, as the page saw it. All optional."
       },
       "Consultation": {
         "type": "object",
@@ -1143,6 +994,45 @@
         ],
         "additionalProperties": false
       },
+      "Attribution": {
+        "type": "object",
+        "properties": {
+          "utm_source": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "utm_medium": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "utm_campaign": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "utm_content": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "gclid": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "fbclid": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "referrer": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "landing_path": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "additionalProperties": false,
+        "description": "Where the visitor came from, as the page saw it. All optional."
+      },
       "ResultReady": {
         "type": "object",
         "properties": {
@@ -1455,36 +1345,6 @@
         }
       }
     },
-    "/api/cities": {
-      "get": {
-        "summary": "The booking form's city list, in display order. Cacheable for five minutes.",
-        "responses": {
-          "200": {
-            "description": "Active cities",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/City"
-                  }
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "The database is unavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/published-prices": {
       "get": {
         "summary": "The prices the site publishes, from the price book, in force today. Cacheable for a minute.",
@@ -1501,105 +1361,6 @@
           },
           "503": {
             "description": "unavailable: the book lacks a standard one of them, so the site shows its own",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/lead": {
-      "post": {
-        "summary": "Book a free consultation, or join a city's waitlist",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "minLength": 8,
-              "maxLength": 200
-            },
-            "required": false,
-            "name": "idempotency-key",
-            "in": "header"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LeadRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Saved",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LeadResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "invalid_request: see error.fields",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "turnstile_failed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "idempotency_in_progress: the first request with this key is still running",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "idempotency_key_reused: the key was used with a different body",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "rate_limited: too many requests from this number or address today",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "unavailable: Turnstile or the database could not be reached",
             "content": {
               "application/json": {
                 "schema": {
@@ -1757,7 +1518,7 @@
             }
           },
           "400": {
-            "description": "invalid_request",
+            "description": "invalid_request: fields names what was refused, address.pincode for an address in another pincode",
             "content": {
               "application/json": {
                 "schema": {
@@ -1794,7 +1555,7 @@
             }
           },
           "422": {
-            "description": "invalid_request: the pincode is not served, or the day is not open, or the address is in another pincode (fields names address.pincode); not_bookable: this number is past consultations, and books in the app; idempotency_key_reused: the key was used with a different body",
+            "description": "not_bookable: the pincode is not served, the day is not open, or this number is past consultations and books in the app; idempotency_key_reused: the key was used with a different body",
             "content": {
               "application/json": {
                 "schema": {
@@ -1986,7 +1747,7 @@
             }
           },
           "422": {
-            "description": "invalid_request: that pincode is served; book instead; idempotency_key_reused: the key was used with a different body",
+            "description": "not_bookable: that pincode is served; book instead; idempotency_key_reused: the key was used with a different body",
             "content": {
               "application/json": {
                 "schema": {
@@ -2219,7 +1980,7 @@
             }
           },
           "400": {
-            "description": "invalid_request",
+            "description": "invalid_request: fields names what was refused, address.pincode for an address in another pincode",
             "content": {
               "application/json": {
                 "schema": {
@@ -2256,7 +2017,7 @@
             }
           },
           "422": {
-            "description": "not_bookable: the pincode is not served, the day is not open, or this number is past consultations; invalid_request: the address is in another pincode (fields names address.pincode); idempotency_key_reused: the key was used with a different body",
+            "description": "not_bookable: the pincode is not served, the day is not open, or this number is past consultations; idempotency_key_reused: the key was used with a different body",
             "content": {
               "application/json": {
                 "schema": {
@@ -2875,7 +2636,7 @@
               }
             }
           },
-          "403": {
+          "401": {
             "description": "session_required: neither the gate's session nor this browser's look is this job's",
             "content": {
               "application/json": {

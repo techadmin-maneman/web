@@ -11,39 +11,15 @@ import { createLogger } from "../../src/log.ts";
 import type { CrmContact, CrmLead, CrmProvider } from "../../src/providers/crm.ts";
 import {
   NOW,
-  appFor,
   captureLogs,
   eraseByMobile,
   fakeDependencies,
-  fakeQueue,
   markDatabase,
-  request,
+  phaseOneLead,
   stubCrmThatFails,
 } from "./helpers.ts";
 
 const log = createLogger();
-
-async function bookLead(city = "Gurgaon", mobile = "9810000001"): Promise<string> {
-  const res = await request(
-    appFor(),
-    "/api/lead",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: "Arjun Mehta",
-        mobile,
-        city,
-        first_choice_window: "weekday_am",
-        loss_extent: "crown",
-        consent: true,
-        turnstile_token: "token",
-      }),
-    },
-    { CRM_QUEUE: fakeQueue() },
-  );
-  return (await res.json<{ lead_id: string }>()).lead_id;
-}
 
 /** A CRM that remembers what it was asked. */
 function recordingCrm(): CrmProvider & {
@@ -87,7 +63,7 @@ beforeEach(async () => {
 
 describe("crm-sync: syncing a lead", () => {
   it("sends the CRM what D1 holds, stores the CRM's ID and marks the lead synced", async () => {
-    const leadId = await bookLead();
+    const leadId = await phaseOneLead();
     const crm = recordingCrm();
 
     expect(await syncLead(env.DB, fakeDependencies({ crm }), log, leadId)).toEqual({ retrySoon: false });
@@ -122,7 +98,7 @@ describe("crm-sync: syncing a lead", () => {
   // none and the CRM record simply leaves the field empty
   // (docs/decisions/0060-an-invited-friend-reaches-ops-and-the-crm.md).
   it("syncs a lead that names no loss extent", async () => {
-    const leadId = await bookLead();
+    const leadId = await phaseOneLead();
     await env.DB.prepare("UPDATE leads SET loss_extent = NULL WHERE id = ?1").bind(leadId).run();
     const crm = recordingCrm();
 
@@ -135,7 +111,7 @@ describe("crm-sync: syncing a lead", () => {
   // LIFE-11: the CRM could not tell an invited friend from an organic booking, nor the window a Phase 2 form booked
   // (ADR 0060 says marketing sees "the person, the source, the day and the invite").
   it("sends the invite a friend came with, and the window their booking asked for", async () => {
-    const leadId = await bookLead();
+    const leadId = await phaseOneLead();
     const person = await env.DB.prepare("SELECT id FROM people").first<string>("id");
     await env.DB.batch([
       env.DB.prepare("UPDATE leads SET first_choice_window = NULL, proposed_visit_date = '2026-09-24'"),
@@ -162,7 +138,7 @@ describe("crm-sync: syncing a lead", () => {
   });
 
   it("posts a new-lead notice once the lead is in the CRM, with no personal data, and never twice", async () => {
-    const leadId = await bookLead();
+    const leadId = await phaseOneLead();
     const deps = fakeDependencies({ crm: recordingCrm() });
 
     await syncLead(env.DB, deps, log, leadId);
@@ -175,23 +151,23 @@ describe("crm-sync: syncing a lead", () => {
   });
 
   it("posts no notice while the CRM is failing", async () => {
-    const leadId = await bookLead();
+    const leadId = await phaseOneLead();
     const deps = fakeDependencies({ crm: stubCrmThatFails("Zoho 503 down") });
     await syncLead(env.DB, deps, log, leadId);
     expect(deps.leadNotices).toEqual([]);
   });
 
   it("passes the stored CRM ID for a returning person, so the CRM updates instead of inserting", async () => {
-    const first = await bookLead();
+    const first = await phaseOneLead();
     const crm = recordingCrm();
     await syncLead(env.DB, fakeDependencies({ crm }), log, first);
-    const second = await bookLead("Mumbai");
+    const second = await phaseOneLead(undefined, "Mumbai");
     await syncLead(env.DB, fakeDependencies({ crm }), log, second);
     expect(crm.calls[1]?.knownId).toBe("zoho-1");
   });
 
   it("ignores a duplicate message for a lead already synced", async () => {
-    const leadId = await bookLead();
+    const leadId = await phaseOneLead();
     const crm = recordingCrm();
     await syncLead(env.DB, fakeDependencies({ crm }), log, leadId);
     await syncLead(env.DB, fakeDependencies({ crm }), log, leadId);
@@ -199,7 +175,7 @@ describe("crm-sync: syncing a lead", () => {
   });
 
   it("marks a first failure, keeps a scrubbed error, and asks for a quick retry", async () => {
-    const leadId = await bookLead();
+    const leadId = await phaseOneLead();
     const deps = fakeDependencies({ crm: stubCrmThatFails("Zoho 500 INTERNAL_ERROR: rejected +91 98100 00001") });
 
     expect(await syncLead(env.DB, deps, log, leadId)).toEqual({ retrySoon: true });
@@ -211,7 +187,7 @@ describe("crm-sync: syncing a lead", () => {
   });
 
   it("leaves later failures to the sweeper", async () => {
-    const leadId = await bookLead();
+    const leadId = await phaseOneLead();
     const deps = fakeDependencies({ crm: stubCrmThatFails("Zoho 0 TIMEOUT: token got no answer within 20 s") });
     await syncLead(env.DB, deps, log, leadId);
 
@@ -220,7 +196,7 @@ describe("crm-sync: syncing a lead", () => {
   });
 
   it(`alerts once the lead has failed ${String(MAX_SYNC_ATTEMPTS)} times`, async () => {
-    const leadId = await bookLead();
+    const leadId = await phaseOneLead();
     await env.DB.prepare("UPDATE leads SET sync_attempts = ? WHERE id = ?")
       .bind(MAX_SYNC_ATTEMPTS - 1, leadId)
       .run();
@@ -250,8 +226,8 @@ describe("crm-sync: the queue batch", () => {
   }
 
   it("acknowledges a synced lead and sends a first failure back for a delayed retry", async () => {
-    const ok = await bookLead();
-    const failing = await bookLead("Delhi", "9810000002");
+    const ok = await phaseOneLead();
+    const failing = await phaseOneLead("+919810000002", "Delhi");
     let call = 0;
     const crm: CrmProvider = {
       syncLead: () =>
@@ -275,7 +251,7 @@ describe("crm-sync: the queue batch", () => {
   });
 
   it("acknowledges a failure after the first, leaving it to the sweeper", async () => {
-    const leadId = await bookLead();
+    const leadId = await phaseOneLead();
     await env.DB.prepare("UPDATE leads SET sync_attempts = 1 WHERE id = ?").bind(leadId).run();
     const batch = batchOf([{ lead_id: leadId, request_id: "sweeper" }]);
 
@@ -291,7 +267,7 @@ describe("crm-sync: the queue batch", () => {
   });
 
   it("acknowledges an erasure once the CRM record is blanked", async () => {
-    await bookLead();
+    await phaseOneLead();
     const summary = await eraseByMobile("+919810000001", NOW);
     const personId = summary?.personId ?? "";
     const crm = recordingCrm();
@@ -313,7 +289,7 @@ describe("crm-sync: the queue batch", () => {
 describe("crm-sync: erasing a person", () => {
   /** A person whose lead reached the CRM as zoho-1, then erased. */
   async function erasedPerson(): Promise<string> {
-    const leadId = await bookLead();
+    const leadId = await phaseOneLead();
     await syncLead(env.DB, fakeDependencies({ crm: recordingCrm() }), log, leadId);
     return (await eraseByMobile("+919810000001", NOW))?.personId ?? "";
   }
@@ -363,7 +339,7 @@ describe("crm-sync: erasing a person", () => {
   });
 
   it("does nothing for a person who was never erased", async () => {
-    await bookLead();
+    await phaseOneLead();
     const person = await env.DB.prepare("SELECT id FROM people").first<{ id: string }>();
     const crm = recordingCrm();
 
@@ -374,7 +350,7 @@ describe("crm-sync: erasing a person", () => {
   });
 
   it("never sends an erased person's lead to the CRM, and gives it up at once", async () => {
-    const leadId = await bookLead();
+    const leadId = await phaseOneLead();
     await eraseByMobile("+919810000001", NOW);
     const crm = recordingCrm();
 
@@ -402,7 +378,7 @@ describe("crm-sync: erasing a person", () => {
   }
 
   it("blanks the record again when the person is erased while their lead is on its way", async () => {
-    const leadId = await bookLead();
+    const leadId = await phaseOneLead();
     const erasures: (string | null)[] = [];
     const crm = crmErasingDuringSync((_personId, knownId) => {
       erasures.push(knownId);
@@ -418,7 +394,7 @@ describe("crm-sync: erasing a person", () => {
   });
 
   it("leaves the sweeper to blank it when that second erasure fails", async () => {
-    const leadId = await bookLead();
+    const leadId = await phaseOneLead();
     const crm = crmErasingDuringSync(() => Promise.reject(new Error("Zoho 503 down")));
 
     await syncLead(env.DB, fakeDependencies({ crm }), log, leadId);

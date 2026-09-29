@@ -22,7 +22,6 @@ import { createStubMessaging } from "../../src/providers/messaging.ts";
 export const TURNSTILE_TEST_SECRET = "1x0000000000000000000000000000000AA";
 
 export const LOCAL_SETTINGS: Settings = {
-  visitLeadDays: 2,
   leadMobileDailyLimit: 5,
   leadIpDailyLimit: 20,
   turnstileSecret: TURNSTILE_TEST_SECRET,
@@ -88,6 +87,34 @@ export async function eraseByMobile(mobileE164: string, now: Date = NOW): Promis
 
 export async function markDatabase(databaseName: string = EXPECTED_DATABASE_NAME.local): Promise<void> {
   await env.DB.prepare("INSERT INTO deployment_identity (id, database_name) VALUES (1, ?)").bind(databaseName).run();
+}
+
+/**
+ * A booking as Phase 1's form left one, which D1 still holds from before POST /api/lead was removed
+ * (docs/open-points.md, item 107): the person, their consent to be contacted, and a lead for a weekday morning, with
+ * the Wednesday after NOW proposed. A city we do not serve left a waitlist lead with no day. Its ID.
+ */
+export async function phaseOneLead(mobileE164 = "+919810000001", city = "Gurgaon"): Promise<string> {
+  const leadId = crypto.randomUUID();
+  const at = NOW.toISOString();
+  const served = await env.DB.prepare("SELECT served FROM cities WHERE name = ?1").bind(city).first<number>("served");
+  const person = "(SELECT id FROM people WHERE mobile_e164 = ?1)";
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES (?1, ?2, ?3, 'Arjun Mehta', 1)
+       ON CONFLICT (mobile_e164) DO UPDATE SET contactable = 1`,
+    ).bind(crypto.randomUUID(), at, mobileE164),
+    env.DB.prepare(
+      `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at)
+       VALUES (?2, ${person}, 'contact', 'booking-v1', 1, ?3)`,
+    ).bind(mobileE164, crypto.randomUUID(), at),
+    env.DB.prepare(
+      `INSERT INTO leads (id, person_id, created_at, source, city, first_choice_window, loss_extent,
+         proposed_visit_date, request_id)
+       VALUES (?2, ${person}, ?3, ?4, ?5, 'weekday_am', 'crown', ?6, 'test')`,
+    ).bind(mobileE164, leadId, at, served === 1 ? "form" : "waitlist", city, served === 1 ? "2026-09-23" : null),
+  ]);
+  return leadId;
 }
 
 /** Counts every row D1 says each statement read, however the statement was run. */

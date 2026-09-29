@@ -4,7 +4,7 @@
 // without it.
 
 import { describe, expect, it } from "vitest";
-import { rupeeSign } from "../../packages/web-kit/money.ts";
+import { rupees } from "../../packages/web-kit/money.ts";
 import { BUILT_STANDARD } from "../../site/src/content/prices.ts";
 import { referral } from "../../site/src/content/referral.ts";
 import * as site from "../../site/src/content/site.ts";
@@ -67,22 +67,24 @@ describe("the site's prices", () => {
     expect(
       site.prices.rows.map((row) => [row.label, fillPrices(row.standard, words), fillPrices(row.premium, words)]),
     ).toEqual([
-      ["First fit", "₹35,000", "₹40,000"],
-      ["Monthly service visit", "₹2,500", "₹2,000"],
-      ["Replacement piece", "₹16,000", "₹30,000"],
+      ["First fit", "Rs. 35,000", "Rs. 40,000"],
+      ["Monthly service visit", "Rs. 2,500", "Rs. 2,000"],
+      ["Replacement piece", "Rs. 16,000", "Rs. 30,000"],
     ]);
     expect(fillPrices(site.prices.example, words)).toBe(
-      "A standard base in the first year: ₹35,000 plus twelve service visits at ₹2,500 — ₹65,000.",
+      "A standard base in the first year: Rs. 35,000 plus twelve service visits at Rs. 2,500 — Rs. 65,000.",
     );
     expect(fillPrices(firstYearAnswer, words)).toBe(
-      "A standard base: ₹35,000 for the first fit plus twelve monthly service visits at ₹2,500, so ₹65,000. " +
-        "Premium: ₹40,000 plus twelve at ₹2,000, so ₹64,000. A replacement piece at six months is separate.",
+      "A standard base: Rs. 35,000 for the first fit plus twelve monthly service visits at Rs. 2,500, so Rs. 65,000. " +
+        "Premium: Rs. 40,000 plus twelve at Rs. 2,000, so Rs. 64,000. A replacement piece at six months is separate.",
     );
-    expect(fillPrices(site.business.priceRange, words)).toBe("₹35,000–₹40,000");
-    expect(site.bases.kinds.map((kind) => fillPrices(kind.price, words))).toEqual(["₹35,000", "₹40,000"]);
-    expect(fillPrices(serviceStep, words)).toBe("₹2,500 a visit · ninety minutes");
-    expect(typeof ourCost === "string" ? fillPrices(ourCost, words) : ourCost).toBe("₹35,000, then ₹2,500 a month");
-    expect(referral.prices.rows.map((row) => fillPrices(row.amount, words))).toEqual(["₹35,000", "₹2,500"]);
+    expect(fillPrices(site.business.priceRange, words)).toBe("Rs. 35,000–Rs. 40,000");
+    expect(site.bases.kinds.map((kind) => fillPrices(kind.price, words))).toEqual(["Rs. 35,000", "Rs. 40,000"]);
+    expect(fillPrices(serviceStep, words)).toBe("Rs. 2,500 a visit · ninety minutes");
+    expect(typeof ourCost === "string" ? fillPrices(ourCost, words) : ourCost).toBe(
+      "Rs. 35,000, then Rs. 2,500 a month",
+    );
+    expect(referral.prices.rows.map((row) => fillPrices(row.amount, words))).toEqual(["Rs. 35,000", "Rs. 2,500"]);
   });
 
   // The owner's ruling of 27 September 2026 (ADR 0085): premium is a service in the console, priced in the book.
@@ -91,18 +93,18 @@ describe("the site's prices", () => {
 
     expect(site.prices.rows.map((row) => fillPrices(row.premium, words))).toEqual(["", "", ""]);
     expect(fillPrices(firstYearAnswer, words)).toBe(
-      "A standard base: ₹35,000 for the first fit plus twelve monthly service visits at ₹2,500, so ₹65,000. " +
+      "A standard base: Rs. 35,000 for the first fit plus twelve monthly service visits at Rs. 2,500, so Rs. 65,000. " +
         "A replacement piece at six months is separate.",
     );
-    expect(fillPrices(site.business.priceRange, words)).toBe("₹35,000");
-    expect(site.bases.kinds.map((kind) => fillPrices(kind.price, words))).toEqual(["₹35,000", ""]);
+    expect(fillPrices(site.business.priceRange, words)).toBe("Rs. 35,000");
+    expect(site.bases.kinds.map((kind) => fillPrices(kind.price, words))).toEqual(["Rs. 35,000", ""]);
   });
 
   it("is built with the price book's own figures, and no Premium, which has none of its own", () => {
-    // Migration 0018, in force since 22 September 2026: ₹30,000, ₹2,000 and ₹15,000 before GST.
+    // Migration 0018, in force since 22 September 2026: Rs. 30,000, Rs. 2,000 and Rs. 15,000 before GST.
     expect(BUILT_STANDARD).toEqual({ first_fit: 3_000_000, service: 200_000, replacement: 1_500_000 });
     expect(fillPrices(site.prices.example, BUILT_WORDS)).toBe(
-      "A standard base in the first year: ₹30,000 plus twelve service visits at ₹2,000 — ₹54,000.",
+      "A standard base in the first year: Rs. 30,000 plus twelve service visits at Rs. 2,000 — Rs. 54,000.",
     );
     expect(BUILT_WORDS).not.toHaveProperty("premiumFirstFit");
     expect(fillPrices(firstYearAnswer, BUILT_WORDS)).not.toContain("Premium");
@@ -110,7 +112,7 @@ describe("the site's prices", () => {
 
   it("starts the range at the cheaper first fit, whichever tier that is", () => {
     expect(fillPrices(site.business.priceRange, priceWords({ ...MOVED, first_fit: 4_500_000 }, PREMIUM))).toBe(
-      "₹40,000–₹45,000",
+      "Rs. 40,000–Rs. 45,000",
     );
   });
 
@@ -146,19 +148,21 @@ describe("the site's prices", () => {
   it("leaves out a clause whose price is not known, and keeps the rest of the sentence", () => {
     const words = priceWords(MOVED);
     expect(fillPrices("{firstFit}.[ Premium: {premiumFirstFit}.] Then {service}.", words)).toBe(
-      "₹35,000. Then ₹2,500.",
+      "Rs. 35,000. Then Rs. 2,500.",
     );
     expect(fillPrices("{firstFit}.[ Premium: {premiumFirstFit}.] Then {service}.", priceWords(MOVED, PREMIUM))).toBe(
-      "₹35,000. Premium: ₹40,000. Then ₹2,500.",
+      "Rs. 35,000. Premium: Rs. 40,000. Then Rs. 2,500.",
     );
     expect(fillPrices("{premiumFirstFit}", words)).toBe("");
   });
 
-  // With the sign the site's design writes, from the one formatter the front ends share (packages/web-kit/money.ts).
-  it("writes rupees as India groups them", () => {
-    expect(rupeeSign(3_000_000)).toBe("₹30,000");
-    expect(rupeeSign(10_000_000)).toBe("₹1,00,000");
-    expect(rupeeSign(250_050)).toBe("₹2,500.50");
+  // "Rs." as the apps write it, from the one formatter the front ends share (packages/web-kit/money.ts): the owner's
+  // ruling of 27 September 2026 (ADR 0025, item 51).
+  it("writes rupees as the apps do, as India groups them", () => {
+    expect(rupees(3_000_000)).toBe("Rs. 30,000");
+    expect(rupees(10_000_000)).toBe("Rs. 1,00,000");
+    expect(rupees(250_050)).toBe("Rs. 2,500.50");
+    expect(priceWords(MOVED).firstFit).toBe(rupees(MOVED.first_fit));
   });
 
   // src/policy/prices.ts: "Shown ex-GST as the main figure".
@@ -199,17 +203,18 @@ describe("the publish gate, on prices", () => {
   it("stops a price typed into the landing", () => {
     const [first, second] = referral.prices.rows;
     if (first === undefined || second === undefined) throw new Error("the landing has lost a price row");
-    const landing = { ...referral, prices: { rows: [{ ...first, amount: "₹25,000" }, second] } };
+    const landing = { ...referral, prices: { rows: [{ ...first, amount: "Rs. 25,000" }, second] } };
 
     expect(publishProblems(undefined, undefined, [site, landing])).toEqual([
-      'a price is typed by hand, "₹25,000": every price comes from the price book (docs/decisions/0073-prices-from-the-price-book.md)',
+      'a price is typed by hand, "Rs. 25,000": every price comes from the price book (docs/decisions/0073-prices-from-the-price-book.md)',
     ]);
   });
 
-  it("stops a price typed into the site", () => {
-    const home = { ...site, prices: { ...site.prices, example: "A standard base in the first year: ₹43,000." } };
-
-    expect(publishProblems(undefined, undefined, [home, referral])).toHaveLength(1);
+  it("stops a price typed into the site, with the sign the site wrote before as well", () => {
+    for (const typed of ["Rs. 43,000", "₹43,000"]) {
+      const home = { ...site, prices: { ...site.prices, example: `A standard base in the first year: ${typed}.` } };
+      expect(publishProblems(undefined, undefined, [home, referral]), typed).toHaveLength(1);
+    }
   });
 
   it("lets through what a transplant and medication cost, which are not our prices", () => {

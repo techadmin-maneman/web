@@ -14,6 +14,7 @@ import {
   fakeDependencies,
   fakeQueue,
   markDatabase,
+  phaseOneLead,
   request,
 } from "./helpers.ts";
 import { insertJob, syntheticJpeg, syntheticPng } from "./tryon-fixtures.ts";
@@ -22,26 +23,9 @@ const MOBILE = "9810000001";
 const MOBILE_E164 = "+919810000001";
 const AUTHORIZED = { Authorization: `Bearer ${LOCAL_SETTINGS.erasureSecret}` };
 
-async function book(mobile = MOBILE): Promise<string> {
-  const response = await request(
-    appFor(),
-    "/api/lead",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: "Arjun Mehta",
-        mobile,
-        city: "Gurgaon",
-        first_choice_window: "weekday_am",
-        loss_extent: "crown",
-        consent: true,
-        turnstile_token: "token",
-      }),
-    },
-    { CRM_QUEUE: fakeQueue() },
-  );
-  expect(response.status).toBe(201);
+/** A person with a booking, as Phase 1's form left one, and an e-mail address. */
+async function book(): Promise<string> {
+  await phaseOneLead(MOBILE_E164);
   // The booking form takes no e-mail; set one to show that it is blanked too.
   const person = await env.DB.prepare(
     "UPDATE people SET email = 'arjun@example.com' WHERE mobile_e164 = ? RETURNING id",

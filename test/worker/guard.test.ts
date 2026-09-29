@@ -28,7 +28,6 @@ const STUBS = {
 
 /** Vars and secrets every environment needs, with valid values. */
 const SETTINGS = {
-  VISIT_LEAD_DAYS: "2",
   TURNSTILE_SECRET: "0x4AAAAAAAreal-looking-secret",
   TURNSTILE_ACCEPT_TEST_TOKEN: "false",
   SELF_SERVE_BOOKING: "false",
@@ -101,7 +100,7 @@ describe("validateStaticConfig: environment and providers", () => {
     const config = validateStaticConfig(production);
     expect(config.environment).toBe("production");
     expect(config.settings.zoho?.apiHost).toBe("www.zohoapis.in");
-    expect(config.settings.visitLeadDays).toBe(2);
+    expect(config.settings.leadMobileDailyLimit).toBe(5);
   });
 
   it("allows staging to hold a stub, for a provider not yet chosen", () => {
@@ -224,9 +223,9 @@ describe("validateStaticConfig: settings and secrets", () => {
   });
 
   it("refuses limits that are not whole numbers", () => {
-    expect(problemsOf({ ...production, RENDER_DAILY_CEILING: "five", VISIT_LEAD_DAYS: "-1" })).toEqual([
+    expect(problemsOf({ ...production, RENDER_DAILY_CEILING: "five", UPLOAD_DAILY_CEILING: "-1" })).toEqual([
       "RENDER_DAILY_CEILING must be a whole number",
-      "VISIT_LEAD_DAYS must be a whole number",
+      "UPLOAD_DAILY_CEILING must be a whole number",
     ]);
   });
 });

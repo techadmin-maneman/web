@@ -8,7 +8,7 @@ interface Faults {
   site?: { status?: number; html?: string; robots?: string | null };
   /** A security header one page the site's Worker answers first has lost. */
   lostHeader?: { path: string; header: string };
-  cities?: unknown;
+  pincode?: unknown;
   /** On a Phase 2 surface's host, the public site's routes must not answer. */
   publicRoutes?: "present" | "absent";
 }
@@ -59,8 +59,10 @@ function fakeDeployment(environment: string, faults: Faults = {}): { fetch: type
     const url = input instanceof Request ? input.url : input.toString();
     seen.push(new Headers(init?.headers));
     if (url.endsWith("/api/health")) return Promise.resolve(health());
-    if (url.endsWith("/api/cities") && faults.publicRoutes !== "absent")
-      return Promise.resolve(json(200, faults.cities ?? [{ name: "Gurgaon", served: true }]));
+    if (url.endsWith("/api/pincodes/122018") && faults.publicRoutes !== "absent")
+      return Promise.resolve(
+        json(200, faults.pincode ?? { pincode: "122018", served: true, area: "Sector 45", city: "Gurgaon" }),
+      );
     if (url.includes("/api/")) return Promise.resolve(notFound());
     return Promise.resolve(sitePage(new URL(url).pathname));
   };
@@ -198,10 +200,9 @@ describe("smoke suite", () => {
     ).toEqual([expect.stringContaining("site security headers: /book")]);
   });
 
-  it("fails when the city list is empty or has no served city", async () => {
-    expect(await failures(smokeOptions("staging", { cities: [] }))).toEqual(["mm-api cities: the city list is empty"]);
-    expect(await failures(smokeOptions("staging", { cities: [{ name: "Mumbai", served: false }] }))).toEqual([
-      "mm-api cities: no city is served",
+  it("fails when the pincode check does not say whether we come", async () => {
+    expect(await failures(smokeOptions("staging", { pincode: { pincode: "122018" } }))).toEqual([
+      "mm-api pincode check: the answer does not say whether we come",
     ]);
   });
 
@@ -385,7 +386,7 @@ describe("smoke suite, on a Phase 2 surface's host", () => {
 
   it("fails when the public site's routes answer on the surface's host", async () => {
     expect(await failures(onSurface("staging", { publicRoutes: "present" }))).toEqual([
-      "public routes absent: /api/cities answered 200; it belongs to the public site",
+      "public routes absent: /api/pincodes/122018 answered 200; it belongs to the public site",
     ]);
   });
 

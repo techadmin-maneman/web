@@ -6,8 +6,9 @@
 // message ready, and a first consultation is booked on the public site (REQ-14).
 
 import type { Page } from "@playwright/test";
-import { API_ORIGIN, PORTS } from "../../scripts/lib/local-stack.ts";
-import { DUMMY_TOKEN, expect, randomMobile, test } from "../support.ts";
+import { PORTS } from "../../scripts/lib/local-stack.ts";
+import { expect, test } from "../support.ts";
+import { bookedNumber } from "./booked-numbers.ts";
 import { fittedClient } from "./fitted.ts";
 import { logIn } from "./signed-in.ts";
 
@@ -48,23 +49,10 @@ test("a fitted client reschedules and books through WhatsApp, and no booking she
   await expect(page.getByRole("dialog")).toHaveCount(0);
 });
 
-test("a client with nothing booked is sent to the public site to book a consultation", async ({ page, request }) => {
+test("a client with nothing booked is sent to the public site to book a consultation", async ({ page }) => {
   // A lead whose consultation has gone, as after cancelling it: nothing next, nothing asked for.
   await selfServeOff(page, { next_visit: null, consultation: null });
-  const mobile = randomMobile();
-  const booking = await request.post(`${API_ORIGIN}/api/lead`, {
-    data: {
-      name: "Neha Kapoor",
-      mobile,
-      city: "Gurgaon",
-      first_choice_window: "weekday_pm",
-      loss_extent: "receding",
-      consent: true,
-      turnstile_token: DUMMY_TOKEN,
-    },
-  });
-  expect(booking.status()).toBe(201);
-  await logIn(page, mobile);
+  await logIn(page, bookedNumber());
 
   const book = page.getByRole("link", { name: "Book a free consultation" });
   await expect(book).toHaveAttribute("href", /\/book$/);

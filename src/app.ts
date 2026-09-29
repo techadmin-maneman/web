@@ -13,7 +13,6 @@ import { REQUEST_ID_HEADER, type App, type AppEnv } from "./http/context.ts";
 import { ErrorResponseSchema, errorBody } from "./http/errors.ts";
 import { requireSameOrigin } from "./http/origin.ts";
 import { createLogger } from "./log.ts";
-import { registerCities } from "./routes/cities.ts";
 import { registerClientAuth } from "./routes/client-auth.ts";
 import { registerClientMe } from "./routes/client-me.ts";
 import { registerClientProfile } from "./routes/client-profile.ts";
@@ -50,7 +49,6 @@ import { registerEvolutionHook } from "./routes/evolution-hook.ts";
 import { registerFsmHook } from "./routes/fsm-hook.ts";
 import { registerRazorpayHook } from "./routes/razorpay-hook.ts";
 import { registerHealth } from "./routes/health.ts";
-import { registerLead } from "./routes/lead.ts";
 import { registerOpsProfile } from "./routes/ops-profile.ts";
 import { registerOpsStorage } from "./routes/ops-storage.ts";
 import { registerOpsWhoami } from "./routes/ops-whoami.ts";
@@ -73,9 +71,7 @@ const IDENTITY_EXEMPT_ROUTES = new Set(["/api/health"]);
 const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>> = {
   public: [
     registerHealth,
-    registerCities,
     registerPublishedPrices,
-    registerLead,
     registerConsultations,
     registerReferralLanding,
     registerTryonUpload,

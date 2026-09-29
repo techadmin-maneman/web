@@ -15,7 +15,7 @@ import { checkTurnstile, visitorOf } from "./visitor.ts";
 /** The number, the Turnstile check and the daily limits, the same for both pages. */
 async function checkPerson(c: Context<AppEnv>, mobile: string, token: string): Promise<Checked> {
   const mobileE164 = toE164(mobile);
-  if (mobileE164 === null) return { ok: false, status: 400, code: "invalid_request" };
+  if (mobileE164 === null) return { ok: false, status: 400, code: "invalid_request", fields: ["mobile"] };
   const visitor = await visitorOf(c);
   const turnstile = await checkTurnstile(c, token, visitor);
   if (turnstile === "rejected") return { ok: false, status: 403, code: "turnstile_failed" };
@@ -23,14 +23,20 @@ async function checkPerson(c: Context<AppEnv>, mobile: string, token: string): P
   const { settings } = c.var.config;
   const today = indiaDate(c.var.deps.now());
   const db = c.env.DB;
+  // The address first: a refusal of the address costs the number nothing.
   const within =
+    (await takeOne(db, {
+      scope: "booking:ip",
+      key: visitor.ipHash,
+      window: today,
+      limit: settings.leadIpDailyLimit,
+    })) &&
     (await takeOne(db, {
       scope: "booking:mobile",
       key: await saltedHash(settings.ipHashSalt, `mobile:${mobileE164}`),
       window: today,
       limit: settings.leadMobileDailyLimit,
-    })) &&
-    (await takeOne(db, { scope: "booking:ip", key: visitor.ipHash, window: today, limit: settings.leadIpDailyLimit }));
+    }));
   if (!within) return { ok: false, status: 429, code: "rate_limited" };
   return { ok: true, mobile: mobileE164, ipHash: visitor.ipHash };
 }

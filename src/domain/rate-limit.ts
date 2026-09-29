@@ -1,7 +1,7 @@
 // Fixed-window counters in D1, for rate limits and daily ceilings.
 
 export interface Limit {
-  /** What is being limited, e.g. "lead:mobile". */
+  /** What is being limited, e.g. "booking:mobile". */
   readonly scope: string;
   /** Who is being limited: a salted hash, never a raw number or address. */
   readonly key: string;
