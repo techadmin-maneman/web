@@ -8,8 +8,9 @@
 -- src/policy/consents.ts. A row written before this takes the place its notice
 -- was shown in, where that notice was only ever shown in one. The rest stay
 -- empty, and read "Not recorded": the consultation's and the waitlist's lines
--- are on /book and on an invite's page, and the profile's switch also serves
--- the booking sheet, the share sheet and the waitlist's launch alert. The code
+-- are on /book and on an invite's page; the profile's switch also serves the
+-- booking sheet and the share sheet, on the same notices; and the launch
+-- alert's notice is shown by the waitlists as well as the profile. The code
 -- already deployed leaves it empty too, until this release replaces it.
 --
 -- consents is append-only by trigger, so the trigger is lifted for the
