@@ -10,6 +10,10 @@
 
 import { allViews } from "./photo-views.ts";
 
+/** Each no-show charge the client disputed, in their words, and how ops ruled; never ops' reason. */
+const DISPUTES = `SELECT n.appointment_id, d.reason, d.created_at, d.ruling, d.ruled_at FROM no_show_disputes d
+  JOIN no_show_cases n ON n.id = d.case_id WHERE d.person_id = ?1 ORDER BY d.created_at`;
+
 export async function everythingHeldAbout(db: D1Database, personId: string): Promise<Record<string, unknown>> {
   const all = (sql: string) =>
     db
@@ -68,10 +72,7 @@ export async function everythingHeldAbout(db: D1Database, personId: string): Pro
          WHERE person_id = ?1 ORDER BY created_at`,
     ),
     all("SELECT preferred_window, created_at FROM first_fit_requests WHERE person_id = ?1"),
-    all(
-      `SELECT n.appointment_id, d.reason, d.created_at, d.ruling, d.ruled_at FROM no_show_disputes d
-         JOIN no_show_cases n ON n.id = d.case_id WHERE d.person_id = ?1 ORDER BY d.created_at`,
-    ),
+    all(DISPUTES),
   ]);
   return {
     person,
