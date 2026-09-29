@@ -10,6 +10,10 @@
 // charges anybody: "the charge is applied by ops from the evidence, never
 // automatically", so a case opens undecided and waits for a person.
 //
+// A charge costs what the booking was sold to cost a no-show, and the ruling
+// records what it kept and gave back; the client may dispute it
+// (src/domain/no-show-disputes.ts, docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
+//
 // The ruling reaches the client: a WhatsApp about it, and their visit's page
 // and Payments say it (docs/decisions/0074-hand-offs-and-messages.md).
 
