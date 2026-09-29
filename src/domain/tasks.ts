@@ -6,7 +6,9 @@
 // the row's own id, the client it concerns, the one fact behind it, the moment
 // it started waiting, and, for a task about a visit still to come, the visit's
 // start. The due date follows from that moment and the group's allowance, and
-// is never later than the visit; nothing is written anywhere.
+// is never later than the visit; nothing is written anywhere. Whose each task
+// is, where ops made it someone's, is kept apart and read beside it
+// (src/domain/task-owners.ts).
 
 import { PARTIAL_REASONS } from "../config/job-sheet.ts";
 import { addDays, indiaDate, indiaInstant } from "../lib/india-time.ts";
@@ -36,6 +38,13 @@ export interface Task {
   readonly detail: string | null;
   readonly since: string;
   readonly due: string;
+  /**
+   * Which task it is, where its row can be a new task again once this one has gone: a job's leave, a first fit's
+   * consultation. Empty for every other group. Its owner is kept for it alone.
+   */
+  readonly episode: string;
+  /** The Access e-mail of the member of staff it is theirs; null while nobody has taken it. */
+  readonly owner: string | null;
 }
 
 /**
@@ -53,6 +62,28 @@ export const NUMBER_CHANGE_WAITING_SINCE = "COALESCE(nc.new_verified_at, nc.crea
 export const READ_CAP = 2000;
 
 /**
+ * One statement's arms, each task with the member of staff ops made it theirs, and the longest wait first. The
+ * owner is found by the task's group, its row's id and its episode (docs/decisions/0092-task-owners.md), so one left
+ * behind by a task since done lands on no new task about the same row.
+ */
+const withOwners = (arms: string) => `SELECT t.*, o.owner FROM (${arms}) t
+  LEFT JOIN task_owners o ON o.task_group = t."group" AND o.subject_id = t.id AND o.episode = t.episode
+ ORDER BY t.since LIMIT ?2`;
+
+/**
+ * A job on a day off is the same conflict wherever it moves within the leave it clashes with, and a new one on leave
+ * recorded since: the first leave recorded over it.
+ */
+const LEAVE_CONFLICT_EPISODE = `(SELECT l.id FROM technician_leave l WHERE ${LEAVE_ON_THE_DAY}
+  ORDER BY l.created_at, l.id LIMIT 1)`;
+
+/**
+ * A first fit to book is a new task when a later consultation follows the same request, and the same one when the
+ * request is asked for again while it waits: the consultation it follows.
+ */
+const FIRST_FIT_EPISODE = "s.consulted_start";
+
+/**
  * Every queue, in three statements sent together. D1 takes at most five arms in one
  * compound SELECT, so the queues are split between statements; a batch is still
  * one round trip. A person who has been erased is left out everywhere: their
@@ -68,11 +99,16 @@ export const READ_CAP = 2000;
  * to `?7`, below). Each takes READ_CAP as `?2`, which bounds what one look at the
  * board can cost. All three hold five arms now: a group added next needs a
  * fourth statement.
+ *
+ * A consultation asked for is read only while the client has no consultation
+ * booked or done, `booked`, which the database keeps as their consultations are
+ * written (migration 0056): a look reads the requests still waiting, not every
+ * request a lead ever made.
  */
 const OUTSTANDING = [
-  `SELECT * FROM (
+  withOwners(`
   SELECT 'untold_move' AS "group", m.id AS id, a.person_id AS person_id, pe.name AS person_name,
-         m.now_start AS detail, m.created_at AS since, NULL AS due_by
+         m.now_start AS detail, m.created_at AS since, NULL AS due_by, '' AS episode
     FROM appointments a JOIN dispatch_moves m ON m.appointment_id = a.id JOIN people pe ON pe.id = a.person_id
    WHERE a.deleted_at IS NULL AND a.status IN ('scheduled', 'dispatched') AND a.window_start >= ?1
      AND pe.erased_at IS NULL AND ${UNTOLD_MOVE}
@@ -80,16 +116,12 @@ const OUTSTANDING = [
   SELECT 'consultation_request', r.id, r.person_id, pe.name,
          r.requested_date || ' ' || r.requested_window
            || CASE WHEN f.id IS NULL THEN '' ELSE ' first_fit ' || COALESCE(f.preferred_window, 'any') END,
-         r.created_at, NULL
+         r.created_at, NULL, ''
     FROM consultation_requests r JOIN people pe ON pe.id = r.person_id
     LEFT JOIN first_fit_requests f ON f.person_id = r.person_id
-   WHERE pe.erased_at IS NULL
-     AND NOT EXISTS (
-       SELECT 1 FROM appointments a
-        WHERE a.person_id = r.person_id AND a.type = 'consultation' AND a.deleted_at IS NULL
-          AND a.status NOT IN ('cancelled', 'terminated'))
+   WHERE r.booked = 0 AND pe.erased_at IS NULL
   UNION ALL
-  SELECT 'replacement_order', p.id, p.person_id, pe.name, p.piece_code, p.replacement_due_at, NULL
+  SELECT 'replacement_order', p.id, p.person_id, pe.name, p.piece_code, p.replacement_due_at, NULL, ''
     FROM pieces p JOIN people pe ON pe.id = p.person_id
    WHERE p.deleted_at IS NULL AND p.failed_at IS NULL AND pe.erased_at IS NULL
      AND p.replacement_due_at IS NOT NULL AND p.replacement_due_at <= ?1
@@ -98,41 +130,42 @@ const OUTSTANDING = [
         WHERE a.person_id = p.person_id AND a.type = 'replacement' AND a.deleted_at IS NULL
           AND a.status NOT IN ('cancelled', 'terminated') AND a.window_start >= p.replacement_due_at)
   UNION ALL
-  SELECT 'referral_review', r.id, c.person_id, pe.name, r.fraud_signals, r.updated_at, NULL
+  SELECT 'referral_review', r.id, c.person_id, pe.name, r.fraud_signals, r.updated_at, NULL, ''
     FROM referral_attributions r JOIN referral_codes c ON c.code = r.code JOIN people pe ON pe.id = c.person_id
    WHERE r.grant_state = 'held' AND pe.erased_at IS NULL
   UNION ALL
-  SELECT 'grievance', g.id, g.person_id, pe.name, NULL, g.created_at, NULL
+  SELECT 'grievance', g.id, g.person_id, pe.name, NULL, g.created_at, NULL, ''
     FROM grievances g JOIN people pe ON pe.id = g.person_id
    WHERE g.state = 'open' AND pe.erased_at IS NULL
-) ORDER BY since LIMIT ?2`,
+`),
 
-  `SELECT * FROM (
+  withOwners(`
   SELECT 'no_show_decision' AS "group", n.id AS id, pe.id AS person_id, pe.name AS person_name, t.name AS detail,
-         n.created_at AS since, NULL AS due_by
+         n.created_at AS since, NULL AS due_by, '' AS episode
     FROM no_show_cases n JOIN checkins ci ON ci.id = n.checkin_id JOIN appointments a ON a.id = n.appointment_id
     LEFT JOIN people pe ON pe.id = a.person_id AND pe.erased_at IS NULL
     LEFT JOIN technicians t ON t.id = ci.technician_id
    WHERE n.decision = 'undecided'
   UNION ALL
-  SELECT 'number_change', nc.id, nc.person_id, pe.name, NULL, ${NUMBER_CHANGE_WAITING_SINCE}, NULL
+  SELECT 'number_change', nc.id, nc.person_id, pe.name, NULL, ${NUMBER_CHANGE_WAITING_SINCE}, NULL, ''
     FROM number_change_requests nc JOIN people pe ON pe.id = nc.person_id
    WHERE nc.state = 'awaiting_ops' AND pe.erased_at IS NULL
   UNION ALL
-  SELECT 'erasure_request', d.id, d.person_id, pe.name, NULL, d.created_at, NULL
+  SELECT 'erasure_request', d.id, d.person_id, pe.name, NULL, d.created_at, NULL, ''
     FROM deletion_requests d JOIN people pe ON pe.id = d.person_id
    WHERE d.state = 'requested' AND pe.erased_at IS NULL
   UNION ALL
-  SELECT 'draft_invoice', a.id, a.person_id, pe.name, a.fsm_invoice_id, COALESCE(a.window_end, a.synced_at), NULL
+  SELECT 'draft_invoice', a.id, a.person_id, pe.name, a.fsm_invoice_id, COALESCE(a.window_end, a.synced_at), NULL,
+         ''
     FROM appointments a JOIN people pe ON pe.id = a.person_id
    WHERE a.status = 'completed' AND a.invoice_issued_at IS NULL AND a.fsm_work_order_id IS NOT NULL
      AND a.deleted_at IS NULL AND a.fsm_invoice_id IS NOT NULL AND pe.erased_at IS NULL
   UNION ALL
-  SELECT 'erasure_unfinished', p.id, NULL, NULL, p.fsm_contact_id, p.erased_at, NULL
+  SELECT 'erasure_unfinished', p.id, NULL, NULL, p.fsm_contact_id, p.erased_at, NULL, ''
     FROM people p
    WHERE p.erased_at IS NOT NULL AND p.fsm_contact_id IS NOT NULL AND p.fsm_erased_at IS NULL
      AND p.fsm_erasure_attempts >= ?1
-) ORDER BY since LIMIT ?2`,
+`),
 
   // A job still booked on a day its technician is away: leave moves nothing, so ops move it (OPS-07). It waits from
   // when the leave was recorded, and falls due by the job. The client is named where there is one on our records.
@@ -141,8 +174,9 @@ const OUTSTANDING = [
   // app tells the client "We confirm it with you before your visit" (LIFE-04). It waits from when the visit first
   // reached us, and falls due by the visit itself.
   //
-  // A visit left partly done waits for the one that finishes it: any visit of the client's booked after it. A
-  // no-show is its own outcome and group; one the Worker before migration 0044 stored as partial is left out too.
+  // A visit left partly done waits for the one that finishes it: any visit of the client's booked after it, or ops
+  // closing it without one, with why (docs/decisions/0092-task-owners.md). A no-show is its own outcome and group;
+  // one the Worker before migration 0044 stored as partial is left out too.
   //
   // An At-risk client is a fitted one with nothing booked since their last first fit, service or replacement, done
   // on or before ?3's day in India: `at_risk_after_due` days past the day their next service fell due. It waits
@@ -154,20 +188,22 @@ const OUTSTANDING = [
   // the consultation's start and the window asked for, and goes as the at-risk task does.
   //
   // Both read each client's last visits from last_visits, which the database keeps as each visit closes (migration
-  // 0052), and look for a visit booked since along indexes that hold only the visits to come or those after it: so a
-  // look reads about a row a client, however many visits each has had.
-  `SELECT * FROM (
+  // 0053), and look for a visit booked since along indexes that hold only the visits to come or those after it: so a
+  // look reads about a row a client, however many visits each has had. A First fit to book reads only the requests
+  // of clients not fitted since their consultation, `fitted_since`, kept from last_visits (migration 0056), and not
+  // every request a client who has long since been fitted once made.
+  withOwners(`
   SELECT 'leave_conflict' AS "group", a.id AS id, pe.id AS person_id, pe.name AS person_name,
          a.window_start || ' ' || t.name AS detail,
          (SELECT MIN(l.created_at) FROM technician_leave l WHERE ${LEAVE_ON_THE_DAY}) AS since,
-         a.window_start AS due_by
+         a.window_start AS due_by, ${LEAVE_CONFLICT_EPISODE} AS episode
     FROM appointments a JOIN technicians t ON t.id = a.technician_id
     LEFT JOIN people pe ON pe.id = a.person_id AND pe.erased_at IS NULL
    WHERE a.deleted_at IS NULL AND a.status IN ('scheduled', 'dispatched') AND a.window_start >= ?1
      AND EXISTS (SELECT 1 FROM technician_leave l WHERE ${LEAVE_ON_THE_DAY})
   UNION ALL
   SELECT 'address_to_confirm', a.id, a.person_id, pe.name, a.window_start,
-         COALESCE(a.first_seen_at, a.synced_at), a.window_start
+         COALESCE(a.first_seen_at, a.synced_at), a.window_start, ''
     FROM appointments a JOIN people pe ON pe.id = a.person_id
    WHERE a.deleted_at IS NULL AND a.status IN ('scheduled', 'dispatched') AND a.window_start >= ?1
      AND pe.erased_at IS NULL
@@ -175,7 +211,7 @@ const OUTSTANDING = [
   UNION ALL
   SELECT 'partial_visit', a.id, a.person_id, pe.name,
          COALESCE((SELECT r.label FROM partial_reasons r WHERE r.code = v.partial_reason), v.partial_reason),
-         COALESCE(v.ended_at, a.window_end, v.updated_at), NULL
+         COALESCE(v.ended_at, a.window_end, v.updated_at), NULL, ''
     FROM visits v JOIN appointments a ON a.id = v.appointment_id JOIN people pe ON pe.id = a.person_id
    WHERE v.outcome = 'partial' AND COALESCE(v.partial_reason, '') <> 'no_show' AND a.deleted_at IS NULL
      AND pe.erased_at IS NULL
@@ -183,10 +219,11 @@ const OUTSTANDING = [
        SELECT 1 FROM appointments later
         WHERE later.person_id = a.person_id AND later.deleted_at IS NULL
           AND later.status NOT IN ('cancelled', 'terminated') AND later.window_start > a.window_start)
+     AND NOT EXISTS (SELECT 1 FROM task_closures c WHERE c.task_group = 'partial_visit' AND c.subject_id = a.id)
   UNION ALL
   SELECT 'at_risk_client', s.visit_id, s.person_id, pe.name,
          s.visit_start || ' ' || date(s.visit_start, '+330 minutes', ?7),
-         date(s.visit_start, '+330 minutes', ?4), NULL
+         date(s.visit_start, '+330 minutes', ?4), NULL, ''
     FROM last_visits s JOIN people pe ON pe.id = s.person_id
    WHERE s.visit_start < ?3 AND pe.erased_at IS NULL
      AND NOT EXISTS (
@@ -202,9 +239,9 @@ const OUTSTANDING = [
   UNION ALL
   SELECT 'first_fit_to_book', r.id, r.person_id, pe.name,
          s.consulted_start || ' ' || COALESCE(r.preferred_window, 'any'),
-         date(s.consulted_start, '+330 minutes', ?6), NULL
+         date(s.consulted_start, '+330 minutes', ?6), NULL, ${FIRST_FIT_EPISODE}
     FROM first_fit_requests r JOIN last_visits s ON s.person_id = r.person_id JOIN people pe ON pe.id = r.person_id
-   WHERE s.consulted_start < ?5 AND pe.erased_at IS NULL
+   WHERE r.fitted_since = 0 AND s.consulted_start < ?5 AND pe.erased_at IS NULL
      AND NOT EXISTS (
        SELECT 1 FROM appointments live
         WHERE live.person_id = r.person_id AND live.status IN ('scheduled', 'dispatched', 'in_progress')
@@ -215,7 +252,7 @@ const OUTSTANDING = [
           AND later.status NOT IN ('cancelled', 'terminated'))
      AND NOT EXISTS (
        SELECT 1 FROM slot_holds h WHERE h.person_id = r.person_id AND h.state = 'held' AND h.confirmed_at IS NOT NULL)
-) ORDER BY since LIMIT ?2`,
+`),
 ] as const;
 
 interface Row {
@@ -227,6 +264,8 @@ interface Row {
   since: string;
   /** The start of the visit a task is about, which it may fall due no later than. */
   due_by: string | null;
+  episode: string;
+  owner: string | null;
 }
 
 /** The rules a held grant met, of which the board shows the first (src/domain/referral-grants.ts). */
@@ -313,6 +352,8 @@ function taskOf(row: Row, sla: Slas): Task {
     detail: detailOf(row),
     since,
     due: dueOf(row, since, sla).toISOString(),
+    episode: row.episode,
+    owner: row.owner,
   };
 }
 

@@ -488,6 +488,11 @@ describe("erasure blanks what ops wrote about the client", () => {
          VALUES ('case-9', 'checkin-9', 'visit-9', ?1, ?1, ?1, 'charged', 'ops@localhost', ?1,
            'His wife said he forgets', ?1)`,
       ).bind(at),
+      // Why ops closed a visit of his left partly done without a follow-up (docs/decisions/0092-task-owners.md).
+      env.DB.prepare(
+        `INSERT INTO task_closures (id, task_group, subject_id, reason, closed_by, closed_at)
+         VALUES ('closing-9', 'partial_visit', 'visit-9', 'Moving to Pune, wants no more visits', 'ops@localhost', ?1)`,
+      ).bind(at),
     ]);
   }
 
@@ -495,15 +500,16 @@ describe("erasure blanks what ops wrote about the client", () => {
     env.DB.prepare(
       `SELECT (SELECT review_reason FROM referral_attributions) AS review,
          (SELECT attach_reason FROM referral_attributions) AS attach,
-         (SELECT decision_reason FROM no_show_cases) AS no_show`,
+         (SELECT decision_reason FROM no_show_cases) AS no_show,
+         (SELECT reason FROM task_closures) AS closed`,
     ).first();
 
-  it("blanks the reasons ops gave about the friend: the invite attached, the grant's review and the no-show ruling", async () => {
+  it("blanks the reasons ops gave about the friend: the invite attached, the grant's review, the no-show ruling and a visit's task closed", async () => {
     await reasonsWritten();
 
     expect(await erasePerson(env, FRIEND, NOW, createLogger())).not.toBeNull();
 
-    expect(await reasons()).toEqual({ review: null, attach: null, no_show: null });
+    expect(await reasons()).toEqual({ review: null, attach: null, no_show: null, closed: null });
     // The decisions themselves stay, as records.
     const ruled = await env.DB.prepare(
       "SELECT (SELECT grant_state FROM referral_attributions) AS grant_state, (SELECT decision FROM no_show_cases) AS decision",
@@ -511,12 +517,44 @@ describe("erasure blanks what ops wrote about the client", () => {
     expect(ruled).toEqual({ grant_state: "rejected", decision: "charged" });
   });
 
+  // Which member of staff took their address on the phone is about the client too (docs/decisions/0092-task-owners.md);
+  // the audit log, which an erasure cannot reach, still says who saved one.
+  it("blanks who in ops took the friend's address on the phone, and keeps the log's entry", async () => {
+    await reasonsWritten();
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode, given_to_staff)
+         VALUES ('address-9', ?1, ?2, 'Flat 9, Palm Grove', 'Sector 65', 'Gurgaon', '122018', 'priya@maneman.in')`,
+      ).bind(FRIEND, NOW.toISOString()),
+      // The check-in was measured against it, so it is blanked rather than deleted.
+      env.DB.prepare("UPDATE checkins SET address_id = 'address-9' WHERE id = 'checkin-9'"),
+      env.DB.prepare(
+        `INSERT INTO audit_log (at, surface, actor_kind, actor, action, subject_kind, subject_id, request_id)
+         VALUES (?2, 'ops', 'staff', 'priya@maneman.in', 'address.given_to_ops', 'person', ?1, 'r')`,
+      ).bind(FRIEND, NOW.toISOString()),
+    ]);
+
+    await erasePerson(env, FRIEND, NOW, createLogger());
+
+    expect(await env.DB.prepare("SELECT line1, given_to_staff FROM addresses").all()).toMatchObject({
+      results: [{ line1: "Erased", given_to_staff: null }],
+    });
+    expect(await env.DB.prepare("SELECT actor FROM audit_log WHERE action = 'address.given_to_ops'").first()).toEqual({
+      actor: "priya@maneman.in",
+    });
+  });
+
   it("blanks the grant's review reason when the referrer is the one erased", async () => {
     await reasonsWritten();
 
     await erasePerson(env, REFERRER, NOW, createLogger());
 
-    expect(await reasons()).toEqual({ review: null, attach: null, no_show: "His wife said he forgets" });
+    expect(await reasons()).toEqual({
+      review: null,
+      attach: null,
+      no_show: "His wife said he forgets",
+      closed: "Moving to Pune, wants no more visits",
+    });
   });
 
   it("blanks nothing when the database refuses the erasure", async () => {
@@ -529,6 +567,7 @@ describe("erasure blanks what ops wrote about the client", () => {
       review: "Same flat as Vikram",
       attach: "Named Vikram on WhatsApp",
       no_show: "His wife said he forgets",
+      closed: "Moving to Pune, wants no more visits",
     });
   });
 });

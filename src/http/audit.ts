@@ -21,6 +21,15 @@ export function staffOf(c: Context<AppEnv>): AuditActor {
 }
 
 /**
+ * The member of staff behind the call, or null for a service token: Access lets one in, and it names no person for
+ * a write that is kept under whoever made it, a task's owner or an address given to ops (docs/decisions/0092-task-owners.md).
+ */
+export function memberOfStaffOf(c: Context<AppEnv>): AuditActor | null {
+  const actor = staffOf(c);
+  return actor.kind === "staff" ? actor : null;
+}
+
+/**
  * Records every call to an Access-protected surface under the identity that
  * made it, before the handler runs. Follows requireAccess.
  */

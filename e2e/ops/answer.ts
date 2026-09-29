@@ -41,6 +41,15 @@ export const json =
     return route.fulfill({ status, json: body });
   };
 
+/** A reply with no body, as a 204 is. */
+export const empty =
+  (status = 204): Answer =>
+  (route) => {
+    const { method, pathname } = sent(route);
+    assertInContract("ops", method, pathname, status);
+    return route.fulfill({ status });
+  };
+
 export const jpeg =
   (body: Buffer): Answer =>
   (route) => {

@@ -1,0 +1,106 @@
+/*
+ * The form a member of staff saves an address a client gave them on the phone
+ * with (GivenAddress.tsx), on the client's Visits tab. No board draws it; it
+ * stands on the panel the credits and the invite stand on, and its fields are
+ * the console's own (packages/ui/Field.tsx).
+ */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-12);
+  max-width: var(--ops-panel);
+  border: var(--hairline) solid var(--paper-line);
+  padding: var(--sp-22);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-14);
+  font-size: var(--fs-14);
+  font-weight: var(--weight-regular);
+  color: var(--text-muted);
+}
+
+.label {
+  display: block;
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+.input {
+  width: 100%;
+}
+
+.hint {
+  margin: 0;
+  font-size: var(--fs-13);
+  line-height: var(--lh-150);
+  color: var(--text-muted);
+}
+
+/* ---- The building search ------------------------------------------------- */
+
+.search {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+
+.search .input {
+  height: var(--field-h);
+  padding: 0 var(--sp-14);
+  border: var(--hairline) solid var(--paper-control);
+  background: var(--white);
+  font: inherit;
+  font-size: var(--fs-15);
+  color: var(--text);
+}
+
+.search .input:focus-visible {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: calc(-1 * var(--focus-width));
+}
+
+.suggestions {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: var(--hairline) solid var(--paper-line);
+  background: var(--white);
+}
+
+.suggestion,
+.suggestionActive {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-8) var(--sp-14);
+  font-size: var(--fs-15);
+  cursor: pointer;
+}
+
+/* The option the arrow keys are on, as the board marks a selection. */
+.suggestionActive {
+  background: var(--paper-light);
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: calc(-1 * var(--focus-width));
+}
+
+.where {
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+.error {
+  margin: 0;
+  font-size: var(--fs-14);
+  color: var(--error-on-paper);
+}
+
+.actions {
+  display: flex;
+  gap: var(--sp-10);
+}
