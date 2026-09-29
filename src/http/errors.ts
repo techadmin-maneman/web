@@ -86,6 +86,10 @@ export const ERROR_CODES = [
   "own_invite",
   "already_invited",
   "already_fitted",
+  // A client's dispute of a no-show's charge (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md): the charge
+  // was disputed already, or took nothing to give back.
+  "already_disputed",
+  "not_disputable",
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 

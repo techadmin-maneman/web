@@ -213,8 +213,10 @@ async function personalDataStatements(db: D1Database, personId: string, at: stri
     db
       .prepare("UPDATE referral_attributions SET friend_first_name = NULL WHERE referred_person_id = ?1")
       .bind(personId),
-    // And the client's own words to the technician on a visit (src/domain/client-notes.ts).
+    // And the client's own words to the technician on a visit (src/domain/client-notes.ts), and why they disputed a
+    // no-show's charge (src/domain/no-show-disputes.ts).
     db.prepare("UPDATE appointments SET client_note = NULL, client_note_at = NULL WHERE person_id = ?1").bind(personId),
+    db.prepare("UPDATE no_show_disputes SET reason = NULL WHERE person_id = ?1").bind(personId),
     // Where the technician's phone was at their door (ADR 0025, ruling 34). The check-in's time, the distance
     // measured, the radius and whether it passed stay: they place nobody, and a no-show is ruled on them
     // (docs/decisions/0094-where-a-consent-was-given.md).
@@ -239,8 +241,8 @@ async function personalDataStatements(db: D1Database, personId: string, at: stri
 /**
  * Ops' own words about the person, kept with a decision (docs/decisions/0072-ops-clients-and-queues.md): the review
  * of a grant they were either side of, why ops attached an invite they were either side of (ADR 0089), the ruling on
- * a visit of theirs they were not home for, and why ops closed a visit of theirs left partly done without a follow-up
- * (ADR 0092). The decisions themselves stay, as records.
+ * a visit of theirs they were not home for and on their dispute of its charge (ADR 0096), and why ops closed a visit
+ * of theirs left partly done without a follow-up (ADR 0092). The decisions themselves stay, as records.
  */
 function opsWordsAbout(db: D1Database, personId: string): D1PreparedStatement[] {
   return [
@@ -258,6 +260,7 @@ function opsWordsAbout(db: D1Database, personId: string): D1PreparedStatement[] 
            SELECT c.id FROM checkins c JOIN appointments a ON a.id = c.appointment_id WHERE a.person_id = ?1)`,
       )
       .bind(personId),
+    db.prepare("UPDATE no_show_disputes SET ruling_reason = NULL WHERE person_id = ?1").bind(personId),
     db
       .prepare(
         `UPDATE task_closures SET reason = NULL

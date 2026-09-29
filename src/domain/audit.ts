@@ -34,6 +34,9 @@ export const AUDIT_ACTIONS = [
   // no-show from its evidence, and ops revoking the phone a technician works from.
   "no_show.decide",
   "technician_device.revoke",
+  // A client disputing a no-show's charge, and ops ruling on it (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
+  "no_show.dispute",
+  "no_show.dispute_rule",
   // Leave ops record on a technician, which then refuses those days to booking
   // and to the dispatch board alike (ADR 0062).
   "technician.leave",
@@ -130,7 +133,8 @@ export function auditStatementIfWritten(
   entry: AuditEntry,
   now: Date,
   written: {
-    readonly table: "grievances" | "consents" | "referral_attributions" | "stock_movements" | "task_closures";
+    readonly table:
+      "grievances" | "consents" | "referral_attributions" | "stock_movements" | "task_closures" | "no_show_disputes";
     readonly id: string;
   },
 ): D1PreparedStatement {

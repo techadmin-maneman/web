@@ -1,0 +1,342 @@
+// A client disputing a no-show's charge in the app, and ops ruling Refund or Uphold in the console
+// (src/routes/client-disputes.ts, src/routes/ops-disputes.ts; docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
+// NOW is Monday 21 September 2026, 12 noon in India. Nothing here is a real person, number or address.
+//
+// "The client disputes a charge in the app, and ops rule Refund or Uphold in the console with a reason, and the
+// client is told." (docs/owner-answers-2026-09-27.md, item 60)
+
+import { env } from "cloudflare:workers";
+import { beforeEach, describe, expect, it } from "vitest";
+import type { App } from "../../src/http/context.ts";
+import { openSession } from "../../src/domain/sessions.ts";
+import { createStubPayments } from "../../src/providers/payments.ts";
+import {
+  appFor,
+  captureLogs,
+  eraseByMobile,
+  fakeDependencies,
+  fakeQueue,
+  markDatabase,
+  NOW,
+  request,
+} from "./helpers.ts";
+
+const PERSON = "11111111-1111-4111-8111-111111111111";
+const OTHER = "11111111-1111-4111-8111-111111111112";
+const VISIT = "22222222-2222-4222-8222-222222222222";
+const CASE = "33333333-3333-4333-8333-333333333333";
+const TECHNICIAN = "44444444-4444-4444-8444-444444444444";
+const MOBILE = "+919810000001";
+
+let client: App;
+let cookie: string;
+
+beforeEach(async () => {
+  captureLogs();
+  client = appFor("local", fakeDependencies(), {}, "client");
+  await markDatabase();
+  await env.DB.batch([
+    env.DB.prepare(
+      "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, '2026-08-01T06:00:00.000Z', ?2, 'Rohit Malhotra')",
+    ).bind(PERSON, MOBILE),
+    env.DB.prepare(
+      "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, '2026-08-01T06:00:00.000Z', '+919810000002', 'Vikram Sethi')",
+    ).bind(OTHER),
+    env.DB.prepare(
+      "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES (?1, 'fsm-t1', 'Imran Qureshi', 'IQ', 1, ?2)",
+    ).bind(TECHNICIAN, NOW.toISOString()),
+    // A first fit booked for 9 am on Saturday the 19th; he checked in 240 m away, against a 200 m radius.
+    env.DB.prepare(
+      `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end,
+         technician_id, fsm_modified_at, synced_at)
+       VALUES (?1, 'fsm-1', ?2, 'first_fit', 'terminated', 'Terminated', '2026-09-19T03:30:00.000Z',
+         '2026-09-19T06:30:00.000Z', ?3, ?4, ?4)`,
+    ).bind(VISIT, PERSON, TECHNICIAN, NOW.toISOString()),
+    env.DB.prepare(
+      `INSERT INTO checkins (id, appointment_id, technician_id, at, lat, lng, distance_m, radius_m, passed, created_at)
+       VALUES ('checkin-1', ?1, ?2, '2026-09-19T03:31:00.000Z', 28.4, 77.0, 240, 200, 0, '2026-09-19T03:31:00.000Z')`,
+    ).bind(VISIT, TECHNICIAN),
+    // Charged: Rs. 30,000 paid, the Rs. 4,000 late fee kept, Rs. 26,000 given back.
+    env.DB.prepare(
+      `INSERT INTO no_show_cases (id, checkin_id, appointment_id, wait_started_at, wait_ends_at, closed_at, decision,
+         decided_by, decided_at, decision_reason, charge, kept_amount, refund_amount, created_at)
+       VALUES (?1, 'checkin-1', ?2, '2026-09-19T03:31:00.000Z', '2026-09-19T03:46:00.000Z',
+         '2026-09-19T03:47:00.000Z', 'charged', 'ops@localhost', '2026-09-19T05:00:00.000Z', 'Nobody came down',
+         'late_fee', 400000, 2600000, '2026-09-19T03:47:00.000Z')`,
+    ).bind(CASE, VISIT),
+    env.DB.prepare(
+      `INSERT INTO payments (id, reference, person_id, appointment_id, razorpay_payment_id, amount, refunded_amount,
+         currency, method, status, captured_at, created_at, updated_at)
+       VALUES ('payment-1', 'MM-2026-0841', ?1, ?2, 'pay_visit', 3000000, 2600000, 'INR', 'upi', 'partially_refunded',
+         ?3, ?3, ?3)`,
+    ).bind(PERSON, VISIT, "2026-09-15T06:30:00.000Z"),
+  ]);
+  cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: PERSON, deviceLabel: null, now: NOW })}`;
+});
+
+const dispute = (reason: string, app: App = client, withCookie = cookie) =>
+  request(app, `/api/visits/${VISIT}/dispute`, {
+    method: "POST",
+    headers: { Cookie: withCookie, Origin: "https://maneman.test", "Content-Type": "application/json" },
+    body: JSON.stringify({ reason }),
+  });
+
+const noShowNote = async () =>
+  (await (await request(client, `/api/visits/${VISIT}`, { headers: { Cookie: cookie } })).json<{ no_show: unknown }>())
+    .no_show;
+
+interface OpsDispute {
+  id: string;
+  person: { id: string; name: string } | null;
+  reason: string | null;
+  kept: number;
+  credit_spent: boolean;
+  distance_m: number | null;
+  radius_m: number;
+  due: string;
+}
+
+function opsApp(payments = createStubPayments()) {
+  return { app: appFor("local", fakeDependencies({ payments }), {}, "ops"), payments };
+}
+
+const disputes = async (ops: App): Promise<OpsDispute[]> =>
+  (await (await request(ops, "/api/no-shows/disputes")).json<{ disputes: OpsDispute[] }>()).disputes;
+
+function rule(ops: App, id: string, body: unknown, queue = fakeQueue()) {
+  return request(
+    ops,
+    `/api/no-shows/disputes/${id}/ruling`,
+    {
+      method: "POST",
+      headers: { Origin: "https://maneman.test", "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+    { MESSAGE_QUEUE: queue },
+  );
+}
+
+async function raised(): Promise<string> {
+  expect((await dispute("I was home all morning; the bell is broken")).status).toBe(201);
+  const row = await env.DB.prepare("SELECT id FROM no_show_disputes").first<{ id: string }>();
+  return row?.id ?? "";
+}
+
+describe("POST /api/visits/:id/dispute", () => {
+  it("offers the dispute on a charge that kept money, and says what the charge took", async () => {
+    expect(await noShowNote()).toMatchObject({
+      decision: "charged",
+      charge: { kept: 400000, credit_spent: false },
+      dispute: null,
+      disputable: true,
+    });
+  });
+
+  it("raises one dispute, with the client's words, audited under the client and without them", async () => {
+    const answer = await dispute("  I was home all morning; the bell is broken  ");
+    expect(answer.status).toBe(201);
+    expect(await answer.json()).toEqual({ state: "open" });
+
+    expect(await env.DB.prepare("SELECT case_id, person_id, reason, ruling FROM no_show_disputes").first()).toEqual({
+      case_id: CASE,
+      person_id: PERSON,
+      reason: "I was home all morning; the bell is broken",
+      ruling: null,
+    });
+    const audit = await env.DB.prepare(
+      "SELECT actor_kind, actor, detail FROM audit_log WHERE action = 'no_show.dispute'",
+    ).first();
+    expect(audit).toEqual({ actor_kind: "client", actor: PERSON, detail: null });
+    expect(await noShowNote()).toMatchObject({ dispute: "open", disputable: false });
+  });
+
+  it("takes one dispute a charge", async () => {
+    await raised();
+    const again = await dispute("Still home");
+    expect(again.status).toBe(409);
+    expect(await again.json()).toMatchObject({ error: { code: "already_disputed" } });
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM no_show_disputes").first()).toEqual({ n: 1 });
+  });
+
+  it("refuses a charge that took nothing to give back", async () => {
+    await env.DB.prepare("UPDATE no_show_cases SET charge = 'nothing', kept_amount = 0, refund_amount = 3000000").run();
+    const answer = await dispute("I was home");
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "not_disputable" } });
+    expect(await noShowNote()).toMatchObject({ disputable: false });
+  });
+
+  it("offers it on a charge that spent the credit the visit used", async () => {
+    await env.DB.batch([
+      env.DB.prepare("DELETE FROM payments"),
+      env.DB.prepare("UPDATE no_show_cases SET charge = 'visit', kept_amount = 0, refund_amount = 0"),
+      env.DB.prepare(
+        `INSERT INTO credit_ledger (id, person_id, kind, visits, source_kind, source_id, expires_at, created_at)
+         VALUES ('grant-1', ?1, 'grant', 3, 'referral', 'referral-1', '2027-09-21T06:30:00.000Z', ?2)`,
+      ).bind(PERSON, NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
+         VALUES ('redeem-1', ?1, 'redeem', -1, 'grant-1', 'appointment', ?2, ?3)`,
+      ).bind(PERSON, VISIT, NOW.toISOString()),
+    ]);
+    expect(await noShowNote()).toMatchObject({ charge: { kept: 0, credit_spent: true }, disputable: true });
+    expect((await dispute("I was home")).status).toBe(201);
+  });
+
+  it("refuses a no-show that was waived, or not ruled on, and another client's visit", async () => {
+    const otherCookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: OTHER, deviceLabel: null, now: NOW })}`;
+    expect((await dispute("Not mine", client, otherCookie)).status).toBe(404);
+    await env.DB.prepare("UPDATE no_show_cases SET decision = 'waived'").run();
+    expect((await dispute("I was home")).status).toBe(404);
+  });
+
+  it("refuses an empty reason, and one without a session", async () => {
+    expect((await dispute("   ")).status).toBe(400);
+    expect((await dispute("I was home", client, "")).status).toBe(401);
+  });
+
+  it("tells ops a dispute is waiting, naming the visit and neither the client nor their words", async () => {
+    const deps = fakeDependencies();
+    await dispute("I was home all morning", appFor("local", deps, {}, "client"));
+    expect(deps.alerts).toEqual([`A client disputed the no-show charge on visit ${VISIT}; rule on it in the console.`]);
+  });
+});
+
+describe("GET /api/no-shows/disputes", () => {
+  it("lists each open dispute with the client's words, what the charge took, and the evidence", async () => {
+    await raised();
+    const [open] = await disputes(opsApp().app);
+    expect(open).toMatchObject({
+      person: { id: PERSON, name: "Rohit Malhotra" },
+      reason: "I was home all morning; the bell is broken",
+      kept: 400000,
+      credit_spent: false,
+      distance_m: 240,
+      radius_m: 200,
+    });
+  });
+
+  it("drops a dispute once it is ruled on", async () => {
+    const id = await raised();
+    const { app } = opsApp();
+    await rule(app, id, { ruling: "upheld", reason: "He checked in at the door" });
+    expect(await disputes(app)).toEqual([]);
+  });
+});
+
+describe("POST /api/no-shows/disputes/:id/ruling", () => {
+  it("refuses a ruling without a reason, either way", async () => {
+    const id = await raised();
+    const { app } = opsApp();
+    for (const body of [
+      { ruling: "refunded", reason: null },
+      { ruling: "upheld", reason: "  " },
+    ]) {
+      const answer = await rule(app, id, body);
+      expect(answer.status, JSON.stringify(body)).toBe(400);
+      expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["reason"] } });
+    }
+  });
+
+  it("refunds what the charge kept, keeps ops' reason on the dispute and out of the log, and tells the client", async () => {
+    const id = await raised();
+    const { app, payments } = opsApp();
+    const queue = fakeQueue();
+
+    const answer = await rule(app, id, { ruling: "refunded", reason: "The bell was broken that week" }, queue);
+
+    expect(answer.status).toBe(200);
+    expect(payments.made.refunds).toEqual([expect.objectContaining({ paymentId: "pay_visit", amount: 400000 })]);
+    expect(await env.DB.prepare("SELECT ruling, ruled_by, ruling_reason FROM no_show_disputes").first()).toEqual({
+      ruling: "refunded",
+      ruled_by: "ops@localhost",
+      ruling_reason: "The bell was broken that week",
+    });
+    const audit = await env.DB.prepare("SELECT detail FROM audit_log WHERE action = 'no_show.dispute_rule'").first();
+    expect(audit).toEqual({ detail: JSON.stringify({ ruling: "refunded" }) });
+    const message = await env.DB.prepare("SELECT id, kind, subject_id FROM outbound_messages").first();
+    expect(message).toMatchObject({ kind: "no_show_dispute_ruled", subject_id: VISIT });
+    expect(queue.sent).toEqual([{ message_id: message?.id, request_id: expect.any(String) as string }]);
+    expect(await noShowNote()).toMatchObject({ dispute: "refunded", disputable: false });
+  });
+
+  it("gives back the credit a charge spent, as a waiver does", async () => {
+    await env.DB.batch([
+      env.DB.prepare("DELETE FROM payments"),
+      env.DB.prepare("UPDATE no_show_cases SET charge = 'visit', kept_amount = 0, refund_amount = 0"),
+      env.DB.prepare(
+        `INSERT INTO credit_ledger (id, person_id, kind, visits, source_kind, source_id, expires_at, created_at)
+         VALUES ('grant-1', ?1, 'grant', 3, 'referral', 'referral-1', '2027-09-21T06:30:00.000Z', ?2)`,
+      ).bind(PERSON, NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
+         VALUES ('redeem-1', ?1, 'redeem', -1, 'grant-1', 'appointment', ?2, ?3)`,
+      ).bind(PERSON, VISIT, NOW.toISOString()),
+    ]);
+    const id = await raised();
+    const { app, payments } = opsApp();
+
+    await rule(app, id, { ruling: "refunded", reason: "The bell was broken" });
+
+    expect(payments.made.refunds).toEqual([]);
+    expect(await env.DB.prepare("SELECT kind FROM credit_ledger WHERE kind = 'restore'").all()).toMatchObject({
+      results: [{ kind: "restore" }],
+    });
+  });
+
+  it("keeps the charge on an uphold, and tells the client", async () => {
+    const id = await raised();
+    const { app, payments } = opsApp();
+    const answer = await rule(app, id, { ruling: "upheld", reason: "He waited at the door and rang twice" });
+    expect(answer.status).toBe(200);
+    expect(payments.made.refunds).toEqual([]);
+    expect(await env.DB.prepare("SELECT kind FROM outbound_messages").first()).toEqual({
+      kind: "no_show_dispute_ruled",
+    });
+    expect(await noShowNote()).toMatchObject({ dispute: "upheld" });
+  });
+
+  it("rules once: a second ruling finds nothing to rule on", async () => {
+    const id = await raised();
+    const { app, payments } = opsApp();
+    await rule(app, id, { ruling: "refunded", reason: "The bell was broken" });
+    const again = await rule(app, id, { ruling: "refunded", reason: "The bell was broken" });
+    expect(again.status).toBe(404);
+    expect(payments.made.refunds).toHaveLength(1);
+  });
+});
+
+describe("an erasure", () => {
+  it("blanks the client's reason and ops' ruling on it, and keeps the ruling", async () => {
+    const id = await raised();
+    await rule(opsApp().app, id, { ruling: "upheld", reason: "He waited at the door" });
+
+    expect(await eraseByMobile(MOBILE)).not.toBeNull();
+
+    expect(await env.DB.prepare("SELECT reason, ruling, ruling_reason FROM no_show_disputes").first()).toEqual({
+      reason: null,
+      ruling: "upheld",
+      ruling_reason: null,
+    });
+  });
+});
+
+describe("the client's data export", () => {
+  it("carries the charge they disputed, in their words, and how ops ruled", async () => {
+    await raised();
+    const exported = await (
+      await request(client, "/api/me/export", { headers: { Cookie: cookie } })
+    ).json<{
+      no_show_disputes: unknown[];
+    }>();
+    expect(exported.no_show_disputes).toEqual([
+      {
+        appointment_id: VISIT,
+        reason: "I was home all morning; the bell is broken",
+        created_at: NOW.toISOString(),
+        ruling: null,
+        ruled_at: null,
+      },
+    ]);
+  });
+});

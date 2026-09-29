@@ -5,7 +5,8 @@
 // Since 27 September 2026 it carries who in ops opened the client's
 // photographs, and when, as the owner ruled (docs/open-points.md, item 68),
 // and what they asked for on the site's form while no visit was booked: a
-// consultation's day and window, and a first fit (ADR 0086).
+// consultation's day and window, and a first fit (ADR 0086). And each no-show
+// charge they disputed, in their words, and how ops ruled (ADR 0096).
 
 import { allViews } from "./photo-views.ts";
 
@@ -30,6 +31,7 @@ export async function everythingHeldAbout(db: D1Database, personId: string): Pro
     tryOns,
     consultationRequests,
     firstFitRequests,
+    disputes,
   ] = await Promise.all([
     db
       .prepare("SELECT name, mobile_e164 AS mobile, email, created_at FROM people WHERE id = ?1")
@@ -66,6 +68,10 @@ export async function everythingHeldAbout(db: D1Database, personId: string): Pro
          WHERE person_id = ?1 ORDER BY created_at`,
     ),
     all("SELECT preferred_window, created_at FROM first_fit_requests WHERE person_id = ?1"),
+    all(
+      `SELECT n.appointment_id, d.reason, d.created_at, d.ruling, d.ruled_at FROM no_show_disputes d
+         JOIN no_show_cases n ON n.id = d.case_id WHERE d.person_id = ?1 ORDER BY d.created_at`,
+    ),
   ]);
   return {
     person,
@@ -81,6 +87,7 @@ export async function everythingHeldAbout(db: D1Database, personId: string): Pro
     try_ons: tryOns,
     consultation_requests: consultationRequests,
     first_fit_requests: firstFitRequests,
+    no_show_disputes: disputes,
     photo_views: await allViews(db, personId),
   };
 }

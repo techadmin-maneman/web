@@ -865,7 +865,9 @@ The piece a label names
             "unknown_invite",
             "own_invite",
             "already_invited",
-            "already_fitted"
+            "already_fitted",
+            "already_disputed",
+            "not_disputable"
           ]
         },
         "request_id": {

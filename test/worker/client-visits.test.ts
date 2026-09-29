@@ -604,8 +604,16 @@ describe("GET /api/visits/:id and the photographs", () => {
       outcome: "no_show",
       no_show: { decision: "undecided", waited_minutes: 16 },
     });
-    await env.DB.prepare("UPDATE no_show_cases SET decision = 'charged'").run();
-    expect((await detail()).no_show).toEqual({ decision: "charged", waited_minutes: 16 });
+    await env.DB.prepare(
+      "UPDATE no_show_cases SET decision = 'charged', charge = 'visit', kept_amount = 200000, refund_amount = 0",
+    ).run();
+    expect((await detail()).no_show).toEqual({
+      decision: "charged",
+      waited_minutes: 16,
+      charge: { kept: 200000, credit_spent: false },
+      dispute: null,
+      disputable: true,
+    });
   });
 
   interface Links {

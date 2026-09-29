@@ -20,6 +20,7 @@ import { registerClientBooking } from "./routes/client-booking.ts";
 import { registerClientChanges } from "./routes/client-changes.ts";
 import { registerClientNotes } from "./routes/client-notes.ts";
 import { registerClientData } from "./routes/client-data.ts";
+import { registerClientDisputes } from "./routes/client-disputes.ts";
 import { registerClientRefer } from "./routes/client-refer.ts";
 import { registerOpsBlackouts } from "./routes/ops-blackouts.ts";
 import { registerOpsClientAddress } from "./routes/ops-client-address.ts";
@@ -28,6 +29,7 @@ import { registerOpsClients } from "./routes/ops-clients.ts";
 import { registerOpsConsumables } from "./routes/ops-consumables.ts";
 import { registerOpsCredits } from "./routes/ops-credits.ts";
 import { registerOpsDispatch } from "./routes/ops-dispatch.ts";
+import { registerOpsDisputes } from "./routes/ops-disputes.ts";
 import { registerOpsField } from "./routes/ops-field.ts";
 import { registerOpsGrievances } from "./routes/ops-grievances.ts";
 import { registerOpsJobSheet } from "./routes/ops-job-sheet.ts";
@@ -90,6 +92,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerClientMe,
     registerClientProfile,
     registerClientVisits,
+    // After the visits: they put the session on every /api/visits/* route.
+    registerClientDisputes,
     registerClientPayments,
     registerClientBooking,
     registerClientChanges,
@@ -111,6 +115,7 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsWaitlist,
     registerOpsDispatch,
     registerOpsField,
+    registerOpsDisputes,
     registerOpsTasks,
     registerOpsPayments,
     registerOpsTechnicians,

@@ -191,7 +191,11 @@ describe("GET /api/payments, what else a visit took", () => {
     await notHome("charged");
     await payment(PAY_OLD, P1, VISIT, "2026-09-01T06:00:00.000Z");
     expect((await payments()).entries).toEqual([
-      expect.objectContaining({ id: PAY_OLD, no_show: { decision: "charged", waited_minutes: 16 } }),
+      // Charged before a charge recorded what it took, so there is nothing to dispute.
+      expect.objectContaining({
+        id: PAY_OLD,
+        no_show: { decision: "charged", waited_minutes: 16, charge: null, dispute: null, disputable: false },
+      }),
     ]);
   });
 
@@ -240,6 +244,18 @@ describe("GET /api/payments, what else a visit took", () => {
       event: "lost",
       no_show: { decision: "charged", waited_minutes: 16 },
     });
+  });
+
+  // A charge of nothing, or a disputed charge ops refunded, gives the credit back
+  // (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md): it was used, and returned, never lost.
+  it("says a credit a charged no-show gave back was used, then returned", async () => {
+    await notHome("charged");
+    await credits(
+      ["grant-1", "grant", 3, "referral", "referral-1"],
+      ["redeem-1", "redeem", -1, "appointment", VISIT],
+      ["restore-1", "restore", 1, "appointment", VISIT],
+    );
+    expect((await payments()).credits.map((line) => line.event)).toEqual(["returned", "used", "added"]);
   });
 });
 

@@ -761,6 +761,58 @@ A try-on's photograph or look, through a link that lasts 15 minutes
 }
 ```
 
+### POST /api/visits/{id}/dispute
+
+Dispute the no-show's charge on a visit, once
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/NoShowDisputeRequest"
+}
+```
+
+**201**: Raised, for ops to rule on
+
+```json
+{
+  "$ref": "#/components/schemas/NoShowDisputeRaised"
+}
+```
+
+**400**: invalid_request: an empty reason, or one over 300 characters
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no charged no-show on a visit of this client's
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: already_disputed: the charge was disputed before; or not_disputable: the charge took nothing to give back
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/payments
 
 The client's payments and refunds, newest first
@@ -1530,7 +1582,9 @@ Request body:
             "unknown_invite",
             "own_invite",
             "already_invited",
-            "already_fitted"
+            "already_fitted",
+            "already_disputed",
+            "not_disputable"
           ]
         },
         "request_id": {
@@ -3350,11 +3404,60 @@ Request body:
     "waited_minutes": {
       "type": "integer",
       "description": "How long the technician waited at the door."
+    },
+    "charge": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kept": {
+              "type": "integer",
+              "description": "In paise: what the charge kept of the visit's payment."
+            },
+            "credit_spent": {
+              "type": "boolean",
+              "description": "Whether the charge spent the credit the visit used."
+            }
+          },
+          "required": [
+            "kept",
+            "credit_spent"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What the charge took, as the booking was sold to cost a no-show (ADR 0096). Null unless charged, and on a charge ruled before charges were recorded."
+    },
+    "dispute": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "open",
+            "refunded",
+            "upheld"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The client's dispute of the charge: open while ops look, then refunded or upheld; null when none was raised."
+    },
+    "disputable": {
+      "type": "boolean",
+      "description": "Whether the client may dispute the charge now: one that took something, not disputed yet."
     }
   },
   "required": [
     "decision",
-    "waited_minutes"
+    "waited_minutes",
+    "charge",
+    "dispute",
+    "disputable"
   ],
   "additionalProperties": false
 }
@@ -3596,6 +3699,46 @@ Request body:
     "phase",
     "from",
     "to"
+  ],
+  "additionalProperties": false
+}
+```
+
+### NoShowDisputeRaised
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "open"
+      ]
+    }
+  },
+  "required": [
+    "state"
+  ],
+  "additionalProperties": false
+}
+```
+
+### NoShowDisputeRequest
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300,
+      "description": "Why the charge is wrong, in the client's words. Ops read it; it reaches no message."
+    }
+  },
+  "required": [
+    "reason"
   ],
   "additionalProperties": false
 }

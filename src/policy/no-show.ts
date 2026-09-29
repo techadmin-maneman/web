@@ -118,6 +118,9 @@ export const chargedCredit = (charge: Charge): CreditOnChange => creditOnChange(
 export const DISPUTE_RULINGS = ["refunded", "upheld"] as const;
 export type DisputeRuling = (typeof DISPUTE_RULINGS)[number];
 
+/** Where a dispute stands: open while ops look, then as they ruled. */
+export type DisputeState = "open" | DisputeRuling;
+
 /** The longest reason a client gives for a dispute: a sentence or two. */
 export const DISPUTE_REASON_MAX_CHARS = 300;
 

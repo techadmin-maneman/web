@@ -259,6 +259,51 @@ describe("the no-show ruling (LIFE-07)", () => {
       skipped: "no consent to WhatsApp about visits",
     });
   });
+
+  // The client disputes the charge in the app, ops rule Refund or Uphold, "and the client is told"
+  // (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md). Never ops' reason.
+  describe("the ruling on a disputed charge", () => {
+    const LOOKED_AT =
+      "Hello Karan, we have looked at your dispute of the no-show charge for your service visit on Mon 21 Sep";
+
+    async function disputed(paid: "payment" | "credit", ruling: "refunded" | "upheld" | null) {
+      await ruled("charged", paid);
+      await recorded("visit", paid === "payment" ? 200000 : 0, 0);
+      await env.DB.prepare(
+        `INSERT INTO no_show_disputes (id, case_id, person_id, reason, created_at, ruling, ruled_by, ruled_at,
+           ruling_reason)
+         VALUES ('dispute-1', 'case-1', ?1, 'I was home', ?2, ?3, 'ops@localhost', ?2, 'The bell was broken')`,
+      )
+        .bind(PERSON, NOW.toISOString(), ruling)
+        .run();
+      return queued("no_show_dispute_ruled", "appointment", VISIT);
+    }
+
+    it("says a refund is on its way back", async () => {
+      expect((await send(await disputed("payment", "refunded"))).text).toBe(
+        `${LOOKED_AT}, and we are refunding it: Rs. 2,000 is on its way back to your UPI, in 5 to 7 working days.`,
+      );
+    });
+
+    it("says the credit is back, where the charge spent it", async () => {
+      expect((await send(await disputed("credit", "refunded"))).text).toBe(
+        `${LOOKED_AT}, and we are refunding it: your visit credit is back.`,
+      );
+    });
+
+    it("says the charge stands, and never why", async () => {
+      const text = (await send(await disputed("payment", "upheld"))).text;
+      expect(text).toBe(`${LOOKED_AT}. The charge stands. Message us if you would like to know why.`);
+      expect(text).not.toContain("bell");
+    });
+
+    it("is not sent before ops have ruled", async () => {
+      expect(await send(await disputed("payment", null))).toEqual({
+        text: null,
+        skipped: "ops have not ruled on the dispute",
+      });
+    });
+  });
 });
 
 describe("the waitlist confirmation (REQ-03)", () => {

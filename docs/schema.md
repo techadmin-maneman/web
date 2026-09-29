@@ -736,6 +736,7 @@ Made by `0059_no_show_charges_and_disputes.sql`.
 
 Indexes:
 
+- `no_show_disputes_by_person`: on (`person_id`)
 - `no_show_disputes_open`: on (`created_at`), where `ruling IS NULL`
 - A `UNIQUE` constraint: unique on (`case_id`)
 

@@ -28,8 +28,10 @@ CREATE TABLE no_show_disputes (
   ruling_reason TEXT
 );
 
--- The disputes ops have still to rule on, oldest first, however many have been ruled.
+-- The disputes ops have still to rule on, oldest first, however many have been ruled; and a client's, which their
+-- erasure blanks and their export reads.
 CREATE INDEX no_show_disputes_open ON no_show_disputes (created_at) WHERE ruling IS NULL;
+CREATE INDEX no_show_disputes_by_person ON no_show_disputes (person_id);
 
 -- When the visit started before ops moved it: the time the client last chose, kept through every move ops make
 -- after it and cleared by the client's own. A client's change counts its notice from it where it is later than the
