@@ -2,7 +2,9 @@
 // done. The board draws the tab and nothing in it, so it is built as board
 // B1's own table is. The record already holds all of it, so the tab asks the
 // API for nothing (docs/fidelity-method.md), but to save an address the client
-// gives ops on the phone (GivenAddress.tsx; docs/decisions/0092-task-owners.md).
+// gives ops on the phone (GivenAddress.tsx; docs/decisions/0092-task-owners.md)
+// and to act on a booking FSM refused, which heads the tab while it waits
+// (HeldBookings.tsx; docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
 
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
@@ -12,6 +14,7 @@ import type { ClientRecord, ClientVisit } from "../api.ts";
 import { clients } from "../content.ts";
 import styles from "./clients.module.css";
 import { GivenAddressForm } from "./GivenAddress.tsx";
+import { HeldBookings } from "./HeldBookings.tsx";
 
 type SavedAddress = NonNullable<ClientRecord["address"]>;
 
@@ -170,6 +173,7 @@ export function Visits({
 }) {
   return (
     <div className={styles.visits}>
+      <HeldBookings bookings={record.held_bookings} upcoming={record.visits.upcoming} />
       <Address clientId={clientId} address={address} onAddress={onAddress} />
       <VisitTable title={copy.upcoming} visits={record.visits.upcoming} empty={copy.noUpcoming} />
       <VisitTable title={copy.past} visits={record.visits.past} empty={copy.noPast} />
