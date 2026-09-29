@@ -541,9 +541,9 @@ test("lists every consent with its state, date and where it was given, and says 
   await openClient(page, `/clients/${CLIENT.id}/consents`);
   const row = (purpose: string) => page.getByRole("row").filter({ hasText: purpose });
   await expect(page.getByRole("columnheader", { name: "Source" })).toBeVisible();
-  await expect(row("Photographs for the client record")).toHaveText(/Givens*14 Nov 2026s*Profile$/);
+  await expect(row("Photographs for the client record")).toHaveText(/Given\s*14 Nov 2026\s*Profile$/);
   await expect(row("Photographs on referral cards")).toContainText("Refer");
-  await expect(row("Photographs in marketing")).toHaveText(/Not givens*—s*—$/);
+  await expect(row("Photographs in marketing")).toHaveText(/Not given\s*—\s*—$/);
   await expect(row("WhatsApp about visits")).toContainText("Site");
   await expect(row("WhatsApp about launches")).toContainText("Withdrawn");
   await expect(page.getByText("Ops cannot grant a consent.")).toBeVisible();

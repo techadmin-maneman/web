@@ -13,12 +13,15 @@ function sourceFiles(folder: string): string[] {
   });
 }
 
+/** An insert into consents in any spelling SQL takes: any case, any spacing, and INSERT OR IGNORE and the like. */
+const CONSENT_INSERT = /INSERT\s+(?:OR\s+\w+\s+)?INTO\s+consents\s*\(([^)]*)\)/gi;
+
 /** Each statement in src/ that writes a consent, by its file, with the columns it names. */
 function consentWrites(): { file: string; columns: string[] }[] {
   return sourceFiles("src").flatMap((file) =>
-    [...readFileSync(file, "utf8").matchAll(/INSERT INTO consents\s*\(([^)]*)\)/g)].map((match) => ({
+    [...readFileSync(file, "utf8").matchAll(CONSENT_INSERT)].map((match) => ({
       file,
-      columns: (match[1] ?? "").split(",").map((column) => column.trim()),
+      columns: (match[1] ?? "").split(",").map((column) => column.trim().toLowerCase()),
     })),
   );
 }
@@ -33,6 +36,15 @@ describe("the statements that write a consent", () => {
       "src/domain/public-booking.ts",
       "src/domain/tryon-claims.ts",
     ]);
+  });
+
+  it("are found however the statement is spelt", () => {
+    const spellings = [
+      "INSERT INTO consents (id, source)",
+      "insert or ignore into consents(id, source)",
+      "INSERT OR REPLACE\n  INTO consents (id, source)",
+    ];
+    expect(spellings.flatMap((sql) => [...sql.matchAll(CONSENT_INSERT)])).toHaveLength(3);
   });
 
   it("each name where the consent was given", () => {
