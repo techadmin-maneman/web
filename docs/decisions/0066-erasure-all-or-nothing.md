@@ -1,6 +1,6 @@
 # 0066. Erasure is all or nothing
 
-- Status: accepted. Amends the order in ADR 0019 and the record of a deletion decision in ADR 0049.
+- Status: accepted. Amends the order in ADR 0019 and the record of a deletion decision in ADR 0049. Amended by ADR 0094: an erasure also blanks a check-in's coordinates.
 - Date: 2026-09-25
 
 ## Context
@@ -41,4 +41,4 @@ The rule lives in `src/policy/account-deletion.ts`. It is ours, not the prompt's
 - Before, a check-in against a client's address blocked their erasure for good, and a number change for about a day.
 - **Not covered:** a cancelled visit whose refund failed. The payment then stays captured against a cancelled visit, and the money path's own alerting is where that surfaces.
 - ADR 0049's "Saved addresses: deleted" holds, but for an address a check-in was measured against, which keeps its city and pincode as the appointment does.
-- **For the owner and counsel:** a check-in's own coordinates are where the technician's phone was at the client's door. They stay on the check-in as the technician's record, as the visits do. Whether an erasure should blank them too is open.
+- **For the owner and counsel:** a check-in's own coordinates are where the technician's phone was at the client's door. They stay on the check-in as the technician's record, as the visits do. Whether an erasure should blank them too is open. (Ruled by the owner on 27 September 2026: it does, and the distance, the radius and the pass stay; ADR 0094.)

@@ -25,7 +25,7 @@ export function ConsentList({ consents }: { consents: readonly Consent[] }) {
 
   const switchTo = (purpose: ConsentPurpose, granted: boolean) =>
     once(async () => {
-      const answer = await api.switchConsent(purpose, granted);
+      const answer = await api.switchConsent(purpose, granted, "app_profile");
       if (!answer.ok) {
         setFailed(purpose);
         return;

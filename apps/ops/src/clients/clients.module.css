@@ -509,7 +509,7 @@
 
 .state,
 .date,
-.notice {
+.source {
   padding-inline: var(--sp-10);
 }
 
@@ -521,12 +521,12 @@
   width: var(--ops-consent-date);
 }
 
-.notice {
-  width: var(--ops-consent-notice);
+.source {
+  width: var(--ops-consent-source);
 }
 
 .date,
-.notice,
+.source,
 .quiet {
   color: var(--text-muted);
 }

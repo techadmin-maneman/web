@@ -1,6 +1,6 @@
 # 0019. Erasure
 
-- Status: accepted. The order below, R2 before D1, is superseded by ADR 0066: D1 goes first, and R2 after.
+- Status: accepted. The order below, R2 before D1, is superseded by ADR 0066: D1 goes first, and R2 after. Amended by ADR 0094: each withdrawal row records the erasure as where it was made, and an erasure also blanks where a technician's phone was at the client's door.
 - Date: 2026-09-21
 
 ## Context

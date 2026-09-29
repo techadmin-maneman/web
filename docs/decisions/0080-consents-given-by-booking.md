@@ -1,6 +1,6 @@
 # 0080. The photograph consents, given by booking
 
-- Status: accepted, for counsel to confirm before production (`docs/open-points.md`, item 148)
+- Status: accepted, for counsel to confirm before production (`docs/open-points.md`, item 148). Amended by ADR 0094: the console tells a consent given by booking by where it was given, not by its notice.
 - Date: 2026-09-27
 - Amends [0042](0042-client-profile.md), whose consents were given only by the profile's switch, and [0048](0048-referrals.md), whose invite named a referrer only on the profile's notice; follows [0049](0049-dpdp.md) and records the owner's ruling of 27 September 2026 (ADR 0025, item 61)
 
@@ -31,7 +31,7 @@ Both lines read "By booking this visit, you also agree to …", the card's five 
 
 **A move gives nothing.** A move is started by `POST /api/appointments/:id/reschedule`, which takes no consents, and `POST /api/bookings` records none for a hold that moves a visit.
 
-**Ops can tell them apart.** The console's consent tab writes the notice less its purpose, so a consent given by booking reads "booking-v1" where the profile's reads "v2".
+**Ops can tell them apart.** The console's consent tab writes the notice less its purpose, so a consent given by booking reads "booking-v1" where the profile's reads "v2". (Amended 28 September 2026 by ADR 0094: each consent records where it was given, and the tab writes that instead, "Booking" for these and "Profile" for the profile's.)
 
 ## Consequences
 

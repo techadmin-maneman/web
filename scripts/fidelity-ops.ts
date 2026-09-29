@@ -290,19 +290,21 @@ const TECHNICIAN_WORK = {
   technicians: [figures(1, 48, 48, 84), figures(2, 41, 41, 91), figures(3, 44, 44, 79), figures(4, 29, 29, 108)],
 };
 
-const consent = (purpose: string, state: string, version: string | null, at: string | null) => ({
+const consent = (purpose: string, state: string, version: string | null, at: string | null, source: string | null) => ({
   purpose,
   state,
   notice_version: version,
   at,
+  source,
 });
+/** The board's sources, "App" and "Site", as the places the console names (docs/fidelity-method.md). */
 const CONSENTS = {
   consents: [
-    consent("photos_own_record", "given", "photos-own-record-v1", "2026-11-14T08:00:00.000Z"),
-    consent("photos_referral_cards", "given", "photos-referral-cards-v2", "2027-08-03T08:00:00.000Z"),
-    consent("photos_marketing", "not_given", null, null),
-    consent("whatsapp_visits", "given", "whatsapp-visits-v1", "2026-11-02T08:00:00.000Z"),
-    consent("whatsapp_launches", "withdrawn", "whatsapp-launches-v1", "2027-01-11T08:00:00.000Z"),
+    consent("photos_own_record", "given", "photos-own-record-v1", "2026-11-14T08:00:00.000Z", "app_profile"),
+    consent("photos_referral_cards", "given", "photos-referral-cards-v2", "2027-08-03T08:00:00.000Z", "app_profile"),
+    consent("photos_marketing", "not_given", null, null, null),
+    consent("whatsapp_visits", "given", "referral-consultation-v1", "2026-11-02T08:00:00.000Z", "site_booking"),
+    consent("whatsapp_launches", "withdrawn", "whatsapp-launches-v1", "2027-01-11T08:00:00.000Z", "app_profile"),
   ],
   deletion: null,
 };

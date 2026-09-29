@@ -238,8 +238,11 @@ test("lists the five consents off, and switches one on with its date and off aga
   }
 
   const visits = page.getByRole("switch", { name: "WhatsApp about your visits" });
+  const switched = page.waitForRequest("**/api/consents/whatsapp_visits");
   await visits.click();
   await expect(visits).toHaveAttribute("aria-checked", "true");
+  // Kept as given in the profile (docs/decisions/0094-where-a-consent-was-given.md).
+  expect((await switched).postDataJSON()).toEqual({ granted: true, source: "app_profile" });
   await expect(page.getByText(/^Given \d{1,2} [A-Z][a-z]{2} \d{4}$/)).toBeVisible();
   await page.reload();
   await expect(page.getByRole("switch", { name: "WhatsApp about your visits" })).toHaveAttribute(

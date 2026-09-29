@@ -63,15 +63,15 @@ export async function recordClaim(db: D1Database, claim: NewClaim): Promise<Clai
         .bind(crypto.randomUUID(), at, mobileE164, claim.name),
       db
         .prepare(
-          `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash)
-           VALUES (?, ${personId}, 'result_delivery', ?, 1, ?, ?)`,
+          `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash, source)
+           VALUES (?, ${personId}, 'result_delivery', ?, 1, ?, ?, 'try_on')`,
         )
         .bind(crypto.randomUUID(), mobileE164, claim.gateNotice, at, claim.ipHash),
       // The photo consent was given before the upload; it is recorded now that we know who gave it.
       db
         .prepare(
-          `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash)
-           VALUES (?, ${personId}, 'tryon_photo', ?, 1, ?, ?)`,
+          `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash, source)
+           VALUES (?, ${personId}, 'tryon_photo', ?, 1, ?, ?, 'try_on')`,
         )
         .bind(crypto.randomUUID(), mobileE164, job.photo_consent_version, job.photo_consent_at, job.ip_hash),
       db

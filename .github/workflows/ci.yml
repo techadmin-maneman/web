@@ -34,6 +34,7 @@ jobs:
     outputs:
       code: ${{ steps.filter.outputs.code }}
       migrations: ${{ steps.filter.outputs.migrations }}
+      dependencies: ${{ steps.filter.outputs.dependencies }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -49,8 +50,8 @@ jobs:
         run: |
           if [ -z "$BASE" ]; then
             echo "Not a pull request: every job runs."
-            echo "code=true" >> "$GITHUB_OUTPUT"
-            echo "migrations=false" >> "$GITHUB_OUTPUT"
+            # The pull request that changed a lockfile verified its signatures.
+            { echo "code=true"; echo "migrations=false"; echo "dependencies=false"; } >> "$GITHUB_OUTPUT"
             exit 0
           fi
           git diff --name-only "$BASE...HEAD" | tee changed.txt
@@ -68,9 +69,15 @@ jobs:
           else
             echo "migrations=false" >> "$GITHUB_OUTPUT"
           fi
+          if grep -qE '(^|/)package(-lock)?\.json$' changed.txt; then
+            echo "dependencies=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "dependencies=false" >> "$GITHUB_OUTPUT"
+          fi
 
   static:
     name: static checks
+    needs: changes
     runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
     timeout-minutes: 20
     steps:
@@ -126,8 +133,12 @@ jobs:
         run: npm audit --audit-level=high
       # npm now and then fails this with EMISSINGSIGNATUREKEY, a registry blip a later try clears; on 28 September
       # 2026 one more try 15 seconds on was not enough three runs in a row. So it tries four times, half a minute
-      # apart, and fails the step only if every try fails (test/node/ci-workflow.test.ts).
+      # apart, and fails the step only if every try fails. On 29 September four tries were not enough either, so it
+      # runs only when a pull request changes what is installed: a signature is verified as the lockfile brings a
+      # package in, and the lockfile's integrity hash holds every later install to those bytes
+      # (test/node/ci-workflow.test.ts).
       - name: Registry signatures
+        if: needs.changes.outputs.dependencies == 'true'
         run: |
           for try in 1 2 3 4; do
             if npm audit signatures; then exit 0; fi

@@ -179,6 +179,12 @@ describe("GET /api/me/export", () => {
         `INSERT INTO first_fit_requests (id, person_id, preferred_window, created_at)
          VALUES ('request-b', ?1, 'afternoon', ?2)`,
       ).bind(PERSON, NOW.toISOString()),
+      // A consent given by booking in the app, and one from before a consent recorded where (ADR 0094).
+      env.DB.prepare(
+        `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, source)
+         VALUES ('consent-a', ?1, 'photos_own_record', 'photos-own-record-booking-v1', 1, ?2, 'app_booking'),
+                ('consent-b', ?1, 'whatsapp_visits', 'whatsapp-visits-v1', 1, ?2, NULL)`,
+      ).bind(PERSON, NOW.toISOString()),
     ]);
     const answer = await request(appFor("local", fakeDependencies(), {}, "client"), "/api/me/export", {
       headers: { Cookie: cookie },
@@ -194,6 +200,22 @@ describe("GET /api/me/export", () => {
       photo_views: [{ by: "ops@maneman.in", at: new Date(NOW.getTime() - 60_000).toISOString() }],
       consultation_requests: [{ pincode: "122018", requested_date: "2026-10-02", requested_window: "morning" }],
       first_fit_requests: [{ preferred_window: "afternoon" }],
+      consents: [
+        {
+          purpose: "photos_own_record",
+          granted: 1,
+          notice_version: "photos-own-record-booking-v1",
+          source: "app_booking",
+          created_at: NOW.toISOString(),
+        },
+        {
+          purpose: "whatsapp_visits",
+          granted: 1,
+          notice_version: "whatsapp-visits-v1",
+          source: null,
+          created_at: NOW.toISOString(),
+        },
+      ],
     });
     const audit = await env.DB.prepare("SELECT action FROM audit_log WHERE action = 'data.export'").first();
     expect(audit).toEqual({ action: "data.export" });

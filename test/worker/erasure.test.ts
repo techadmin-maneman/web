@@ -133,11 +133,14 @@ describe("POST /api/erasure", () => {
     expect(sessions?.n).toBe(0);
 
     const withdrawals = await env.DB.prepare(
-      "SELECT purpose FROM consents WHERE person_id = ? AND notice_version = 'withdrawal' AND granted = 0 ORDER BY purpose",
+      "SELECT purpose, source FROM consents WHERE person_id = ? AND notice_version = 'withdrawal' AND granted = 0 ORDER BY purpose",
     )
       .bind(personId)
-      .all<{ purpose: string }>();
-    expect(withdrawals.results.map((row) => row.purpose)).toEqual(["contact", "result_delivery"]);
+      .all();
+    expect(withdrawals.results).toEqual([
+      { purpose: "contact", source: "erasure" },
+      { purpose: "result_delivery", source: "erasure" },
+    ]);
     const event = await env.DB.prepare(
       "SELECT payload_json FROM events WHERE name = 'person_erased' AND subject_id = ?",
     )
@@ -404,6 +407,7 @@ describe("erasure, all or nothing", () => {
       .first();
     expect(person).toEqual({ name: "Arjun Mehta", erased_at: null });
     expect(await env.DB.prepare("SELECT card_state FROM referral_codes").first("card_state")).toBe("personal");
+    expect(await env.DB.prepare("SELECT lat, lng FROM checkins").first()).toEqual({ lat: 28.39, lng: 77.06 });
     // So it can simply be asked for again.
     await env.DB.prepare("DROP TRIGGER refuse_erasure").run();
     expect((await erase({ mobile: MOBILE })).status).toBe(200);
@@ -569,6 +573,47 @@ describe("erasure blanks what ops wrote about the client", () => {
       no_show: "His wife said he forgets",
       closed: "Moving to Pune, wants no more visits",
     });
+  });
+});
+
+// Confirmed by the owner on 27 September 2026 with ruling 34 (docs/decisions/0094-where-a-consent-was-given.md).
+describe("erasure blanks a check-in's coordinates", () => {
+  const checkins = () =>
+    env.DB.prepare(
+      `SELECT id, lat, lng, accuracy_m, at, address_id, distance_m, radius_m, passed FROM checkins ORDER BY id`,
+    ).all();
+
+  it("takes where the technician's phone was off each of the client's check-ins, and keeps whether it passed", async () => {
+    await clientWithEverything();
+    const at = NOW.toISOString();
+    // A second check-in of theirs, with nothing to measure against, and another client's, at their own door.
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO checkins (id, appointment_id, technician_id, at, lat, lng, accuracy_m, radius_m, passed, created_at)
+         VALUES ('checkin-2', ?1, 't1', ?2, 28.41, 77.05, 9.5, 200, 1, ?2)`,
+      ).bind(VISIT, at),
+      env.DB.prepare(
+        "INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('other', ?1, '+919810000077', 'Kabir Anand')",
+      ).bind(at),
+      env.DB.prepare(
+        `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, technician_id,
+           fsm_modified_at, synced_at)
+         VALUES ('visit-other', 'fsm-other', 'other', 'service', 'completed', 'Completed', ?1, 't1', ?1, ?1)`,
+      ).bind(at),
+      env.DB.prepare(
+        `INSERT INTO checkins (id, appointment_id, technician_id, at, lat, lng, accuracy_m, radius_m, passed, created_at)
+         VALUES ('checkin-other', 'visit-other', 't1', ?1, 28.5, 77.1, 6, 200, 1, ?1)`,
+      ).bind(at),
+    ]);
+
+    expect((await erase({ mobile: MOBILE })).status).toBe(200);
+
+    const kept = { at, radius_m: 200, passed: 1 };
+    expect((await checkins()).results).toEqual([
+      { id: "checkin-1", lat: null, lng: null, accuracy_m: null, address_id: "address-1", distance_m: 12, ...kept },
+      { id: "checkin-2", lat: null, lng: null, accuracy_m: null, address_id: null, distance_m: null, ...kept },
+      { id: "checkin-other", lat: 28.5, lng: 77.1, accuracy_m: 6, address_id: null, distance_m: null, ...kept },
+    ]);
   });
 });
 

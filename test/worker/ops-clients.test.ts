@@ -79,11 +79,12 @@ async function record() {
   await grantCredits(env.DB, { personId: PERSON, visits: 2, source: "ops", sourceId: "o1", now: NOW }).run();
 }
 
-async function consent(purpose: string, granted: 0 | 1, notice: string, at: string) {
+async function consent(purpose: string, granted: 0 | 1, notice: string, at: string, source: string | null = null) {
   await env.DB.prepare(
-    "INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+    `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, source)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)`,
   )
-    .bind(crypto.randomUUID(), PERSON, purpose, notice, granted, at)
+    .bind(crypto.randomUUID(), PERSON, purpose, notice, granted, at, source)
     .run();
 }
 
@@ -357,10 +358,11 @@ describe("GET /api/clients/{id}/photos/{photo_id}", () => {
 });
 
 describe("GET /api/clients/{id}/consents", () => {
-  it("gives every purpose its state, notice version and date, with any deletion request", async () => {
-    await consent("photos_own_record", 1, "photos-own-record-v1", "2026-08-02T06:00:00.000Z");
-    await consent("whatsapp_visits", 1, "whatsapp-visits-v1", "2026-08-02T06:00:00.000Z");
-    await consent("whatsapp_visits", 0, "whatsapp-visits-v1", "2026-09-01T06:00:00.000Z");
+  it("gives every purpose its state, notice version, date and where it was given, with any deletion request", async () => {
+    await consent("photos_own_record", 1, "photos-own-record-booking-v1", "2026-08-02T06:00:00.000Z", "app_booking");
+    await consent("photos_marketing", 1, "photos-marketing-v1", "2026-08-02T06:00:00.000Z");
+    await consent("whatsapp_visits", 1, "whatsapp-visits-v1", "2026-08-02T06:00:00.000Z", "app_booking");
+    await consent("whatsapp_visits", 0, "whatsapp-visits-v1", "2026-09-01T06:00:00.000Z", "app_profile");
     await env.DB.prepare(
       "INSERT INTO deletion_requests (id, person_id, created_at, state) VALUES (?1, ?2, ?3, 'requested')",
     )
@@ -373,18 +375,27 @@ describe("GET /api/clients/{id}/consents", () => {
         {
           purpose: "photos_own_record",
           state: "given",
-          notice_version: "photos-own-record-v1",
+          notice_version: "photos-own-record-booking-v1",
           at: "2026-08-02T06:00:00.000Z",
+          source: "app_booking",
         },
-        { purpose: "photos_referral_cards", state: "not_given", notice_version: null, at: null },
-        { purpose: "photos_marketing", state: "not_given", notice_version: null, at: null },
+        { purpose: "photos_referral_cards", state: "not_given", notice_version: null, at: null, source: null },
+        // Given before a consent recorded where, so it has no place (docs/decisions/0094-where-a-consent-was-given.md).
+        {
+          purpose: "photos_marketing",
+          state: "given",
+          notice_version: "photos-marketing-v1",
+          at: "2026-08-02T06:00:00.000Z",
+          source: null,
+        },
         {
           purpose: "whatsapp_visits",
           state: "withdrawn",
           notice_version: "whatsapp-visits-v1",
           at: "2026-09-01T06:00:00.000Z",
+          source: "app_profile",
         },
-        { purpose: "whatsapp_launches", state: "not_given", notice_version: null, at: null },
+        { purpose: "whatsapp_launches", state: "not_given", notice_version: null, at: null, source: null },
       ],
       deletion: {
         id: "66666666-6666-4666-8666-666666666666",

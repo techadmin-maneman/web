@@ -40,6 +40,7 @@ const FIND: Call = "POST /api/clients/find";
 const readPhoto = (id: string): Call => `GET ${RECORD_PATH}/photos/${id}`;
 const NAME = { name: CLIENT.name, exact: true };
 const MOBILE = "+91 98100 04417";
+type ConsentSource = OpsReply<"/api/clients/{id}/consents">["consents"][number]["source"];
 
 /** The opening the API logs, at India's 10:42 by its own clock, and one before it. */
 const VIEW = {
@@ -534,12 +535,16 @@ test("fetches the newest visits' photographs first, and earlier ones when asked"
   await expect(page.getByRole("button", { name: /earlier/ })).toBeHidden();
 });
 
-test("lists every consent with its state, date and notice, and says ops cannot grant one", async ({ page }) => {
+test("lists every consent with its state, date and where it was given, and says ops cannot grant one", async ({
+  page,
+}) => {
   await openClient(page, `/clients/${CLIENT.id}/consents`);
   const row = (purpose: string) => page.getByRole("row").filter({ hasText: purpose });
-  await expect(row("Photographs for the client record")).toContainText("14 Nov 2026");
-  await expect(row("Photographs on referral cards")).toContainText("v2");
-  await expect(row("Photographs in marketing")).toContainText("Not given");
+  await expect(page.getByRole("columnheader", { name: "Source" })).toBeVisible();
+  await expect(row("Photographs for the client record")).toHaveText(/Given\s*14 Nov 2026\s*Profile$/);
+  await expect(row("Photographs on referral cards")).toContainText("Refer");
+  await expect(row("Photographs in marketing")).toHaveText(/Not given\s*—\s*—$/);
+  await expect(row("WhatsApp about visits")).toContainText("Site");
   await expect(row("WhatsApp about launches")).toContainText("Withdrawn");
   await expect(page.getByText("Ops cannot grant a consent.")).toBeVisible();
   // Read only: the tab offers no way to change one.
@@ -547,20 +552,24 @@ test("lists every consent with its state, date and notice, and says ops cannot g
   await expect(page.getByRole("checkbox")).toHaveCount(0);
 });
 
-// Booking a visit in the app gives the two photograph consents on the pay step's own notice (ADR 0080), which ops
-// must be able to tell from the profile's.
-test("names the notice a consent given by booking was given on", async ({ page }) => {
-  const byBooking = CONSENTS.consents.map((consent) =>
-    consent.purpose === "photos_referral_cards"
-      ? { ...consent, notice_version: "photos-referral-cards-booking-v1" }
-      : consent,
+// A consent given by booking a visit in the app (ADR 0080) must read apart from the profile's, and one given before
+// a consent recorded where must not be given a place (docs/decisions/0094-where-a-consent-was-given.md).
+test("names a consent given by booking, and says where a place was not recorded", async ({ page }) => {
+  const placeOf: Readonly<Record<string, ConsentSource>> = {
+    photos_own_record: "app_booking",
+    photos_referral_cards: null,
+    whatsapp_visits: "referral_landing",
+  };
+  const consents = CONSENTS.consents.map((consent) =>
+    consent.purpose in placeOf ? { ...consent, source: placeOf[consent.purpose] ?? null } : consent,
   );
-  await openClient(page, `/clients/${CLIENT.id}/consents`, {
-    [READ_CONSENTS]: json({ ...CONSENTS, consents: byBooking }),
-  });
-  const row = page.getByRole("row").filter({ hasText: "Photographs on referral cards" });
-  await expect(row).toContainText("booking-v1");
-  await expect(page.getByRole("row").filter({ hasText: "Photographs for the client record" })).toContainText("v1");
+  await openClient(page, `/clients/${CLIENT.id}/consents`, { [READ_CONSENTS]: json({ ...CONSENTS, consents }) });
+  const row = (purpose: string) => page.getByRole("row").filter({ hasText: purpose });
+  await expect(row("Photographs for the client record")).toContainText("Booking");
+  await expect(row("Photographs on referral cards")).toContainText("Not recorded");
+  await expect(row("WhatsApp about visits")).toContainText("Invite");
+  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
 });
 
 test("says when the client has asked to be erased", async ({ page }) => {

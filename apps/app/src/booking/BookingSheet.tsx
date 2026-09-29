@@ -324,7 +324,7 @@ export function BookingSheet({
 
   /** The client ticked "Remind me": their yes to WhatsApp about their visits, on that purpose's own notice. */
   const switchOnReminders = async () => {
-    const answer = await api.switchConsent("whatsapp_visits", true);
+    const answer = await api.switchConsent("whatsapp_visits", true, "app_booking");
     if (answer.ok) setReminders(true);
   };
 
