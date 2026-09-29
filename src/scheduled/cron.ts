@@ -18,7 +18,7 @@ import { checkCatalogue } from "../domain/fsm-catalogue.ts";
 import { recordUtilisation } from "../domain/dispatch.ts";
 import { deleteLeftFiles } from "../domain/erasure.ts";
 import { raiseInvoices } from "../domain/fsm-invoices.ts";
-import { retryHeldBookings } from "../domain/held-bookings.ts";
+import { anyHeldBooking, retryHeldBookings } from "../domain/held-bookings.ts";
 import { queueNextServiceReminders } from "../domain/next-visit.ts";
 import { readOpsInputs, type OpsInputs } from "../domain/ops-settings.ts";
 import { tellOfStorage } from "../domain/storage-meter.ts";
@@ -40,7 +40,12 @@ export interface CronContext {
   readonly log: Logger;
   /** The run's outside calls, shared by every job in it. */
   readonly budget: CallBudget;
+  /** The figures ops set, read once for the run by the first job that asks. */
+  readonly inputs: () => Promise<OpsInputs>;
 }
+
+/** What a run is given; the budget and the figures ops set are the run's own, shared by its jobs. */
+export type CronRun = Omit<CronContext, "budget" | "inputs">;
 
 /**
  * Outside calls one run may make. The free plan allows 50 fetch subrequests an
@@ -101,21 +106,20 @@ async function sweepJob({ env, deps, config, log, budget }: CronContext): Promis
   });
 }
 
-async function unbookedHoldsJob({ env, deps, log, budget }: CronContext): Promise<void> {
+/**
+ * Holds paid for, or booked free, and neither booked nor refunded: one the queue lost goes back on it half an hour on,
+ * and one FSM has refused five times running as often and for as long as ops set.
+ */
+async function unbookedHoldsJob({ env, deps, log, budget, inputs }: CronContext): Promise<void> {
+  const now = deps.now();
   const requeued = await requeueUnbookedHolds(
     env.DB,
     { queue: env.FSM_QUEUE, alertOnce: deps.alertOnce, budget, log },
-    deps.now(),
+    now,
   );
   if (requeued > 0) log.warn("unbooked_holds_requeued", { count: requeued });
-}
-
-/** The bookings FSM refused five times running, each tried again as often and for as long as ops set. */
-async function heldBookingsJob(context: CronContext): Promise<void> {
-  const { env, deps, log } = context;
-  const now = deps.now();
-  const inputs = await opsInputsFor(context, now);
-  const retried = await retryHeldBookings(env.DB, { queue: env.FSM_QUEUE, log }, now, inputs.fsmRetry);
+  if (!(await anyHeldBooking(env.DB))) return;
+  const retried = await retryHeldBookings(env.DB, { queue: env.FSM_QUEUE, log }, now, (await inputs()).fsmRetry);
   if (retried > 0) log.info("held_bookings_retried", { count: retried });
 }
 
@@ -162,27 +166,17 @@ async function referralsJob({ env, deps, log }: CronContext): Promise<void> {
   await queueMessages(env.MESSAGE_QUEUE, messages, "referrals");
 }
 
-/** The figures ops set; the committed ones if the store cannot be read, which is said once in the log. */
-function opsInputsFor({ env, log }: CronContext, now: Date): Promise<OpsInputs> {
-  return readOpsInputs(env.DB, now, (error) => {
-    log.error("ops_settings_unreadable", { error });
-  });
-}
-
-async function remindersJob(context: CronContext): Promise<void> {
-  const { env, deps, log } = context;
+async function remindersJob({ env, deps, log, inputs }: CronContext): Promise<void> {
   const now = deps.now();
-  const inputs = await opsInputsFor(context, now);
-  const reminders = await queueReminders(env.DB, now, inputs.reminderHour);
+  const reminders = await queueReminders(env.DB, now, (await inputs()).reminderHour);
   await queueMessages(env.MESSAGE_QUEUE, reminders, "reminders");
   if (reminders.length > 0) log.info("visit_reminders_queued", { count: reminders.length });
 }
 
-async function nextServiceRemindersJob(context: CronContext): Promise<void> {
-  const { env, deps, log } = context;
+async function nextServiceRemindersJob({ env, deps, log, inputs }: CronContext): Promise<void> {
   const now = deps.now();
-  const inputs = await opsInputsFor(context, now);
-  const reminders = await queueNextServiceReminders(env.DB, now, inputs.nextVisitDays, inputs.reminderHour);
+  const { nextVisitDays, reminderHour } = await inputs();
+  const reminders = await queueNextServiceReminders(env.DB, now, nextVisitDays, reminderHour);
   await queueMessages(env.MESSAGE_QUEUE, reminders, "next-service-reminders");
   if (reminders.length > 0) log.info("next_service_reminders_queued", { count: reminders.length });
 }
@@ -208,10 +202,9 @@ async function booksJob({ env, deps, config, log, budget }: CronContext): Promis
 
 export const CRON_JOBS: readonly CronJob[] = [
   { name: "sweeper", needs: "nothing", run: sweepJob },
-  // A hold paid for and neither booked nor refunded half an hour on (docs/decisions/0068-a-paid-hold-is-kept.md).
+  // A hold paid for and neither booked nor refunded half an hour on (docs/decisions/0068-a-paid-hold-is-kept.md), and
+  // one FSM refused five times running, tried every hour for a day (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
   { name: "unbooked_holds", needs: "fsm", run: unbookedHoldsJob },
-  // A booking FSM refused five times running, tried again every hour for a day (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
-  { name: "held_bookings", needs: "fsm", run: heldBookingsJob },
   // What an erasure could not delete from R2 at the time (docs/decisions/0066-erasure-all-or-nothing.md).
   { name: "erased_files", needs: "nothing", run: erasedFilesJob },
   // The FSM mirror's repair (docs/decisions/0032-fsm-mirror.md).
@@ -239,13 +232,31 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "books_sync", needs: "fsm_and_books", run: booksJob },
 ];
 
-/** Runs each job switched on here, in order, each under a logger named for it, on one budget of outside calls. */
-export async function runCronJobs(jobs: readonly CronJob[], run: Omit<CronContext, "budget">): Promise<CronOutcome[]> {
+/**
+ * The figures ops set, read by the first job that asks and shared by the rest of the run, so a run reads the store
+ * once however many jobs use it; the committed ones if it cannot be read, which is said once in the log.
+ */
+function sharedInputs({ env, deps, log }: CronRun): () => Promise<OpsInputs> {
+  let read: Promise<OpsInputs> | undefined;
+  return () => {
+    read ??= readOpsInputs(env.DB, deps.now(), (error) => {
+      log.error("ops_settings_unreadable", { error });
+    });
+    return read;
+  };
+}
+
+/**
+ * Runs each job switched on here, in order, each under a logger named for it, on one budget of outside calls and one
+ * read of the figures ops set.
+ */
+export async function runCronJobs(jobs: readonly CronJob[], run: CronRun): Promise<CronOutcome[]> {
   const budget = createCallBudget(CRON_CALLS);
+  const inputs = sharedInputs(run);
   const outcomes: CronOutcome[] = [];
   for (const job of jobs) {
     if (!isSwitchedOn(job.needs, run.config)) continue;
-    const context = { ...run, log: run.log.child({ job: job.name }), budget };
+    const context = { ...run, log: run.log.child({ job: job.name }), budget, inputs };
     try {
       await job.run(context);
       outcomes.push({ job: job.name, ok: true });

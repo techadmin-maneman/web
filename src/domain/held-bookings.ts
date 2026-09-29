@@ -79,6 +79,19 @@ export function heldAlert(holdId: string, attempts: number, reason: string, retr
   );
 }
 
+/**
+ * Whether any booking waits for FSM at all. Almost every cron run finds none, and then reads nothing more for them:
+ * not even the figures ops set, which the run's other jobs already read.
+ */
+export async function anyHeldBooking(db: D1Database): Promise<boolean> {
+  const row = await db
+    .prepare(
+      "SELECT 1 FROM slot_holds WHERE state = 'held' AND confirmed_at IS NOT NULL AND fsm_held_at IS NOT NULL LIMIT 1",
+    )
+    .first();
+  return row !== null;
+}
+
 /** The most held bookings one cron run puts back on the queue: a statement and two calls each, well inside 1,000. */
 const RETRIES_PER_PASS = 20;
 

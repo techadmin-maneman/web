@@ -362,7 +362,7 @@ describe("the hourly tries", () => {
     )
       .bind(JSON.stringify({ every: 3, for: 6 }), NOW.toISOString())
       .run();
-    const job = CRON_JOBS.filter((each) => each.name === "held_bookings");
+    const job = CRON_JOBS.filter((each) => each.name === "unbooked_holds");
     const run = async (ms: number) => {
       const queue = fakeQueue();
       await runCronJobs(job, {
