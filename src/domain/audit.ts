@@ -79,6 +79,11 @@ export const AUDIT_ACTIONS = [
   "task.hand_back",
   "task.close",
   "address.given_to_ops",
+  // A booking FSM would not take, held for ops (docs/decisions/0095-a-booking-fsm-refuses-is-held.md): FSM tried again
+  // at ops' asking and taking it, the visit ops booked in FSM by hand linked to it, and its refund.
+  "booking.retry",
+  "booking.link",
+  "booking.refund",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

@@ -8,8 +8,9 @@
 // A hold the client has paid for, or booked free, is confirmed: it keeps its
 // time until it is booked or refunded, however long FSM takes. A payment is in
 // time if Razorpay made it before the hold ran out, give or take the grace; one
-// made later, or a visit FSM will not take, is refunded in full, and ops are
-// told what happened to the money.
+// made later is refunded in full. A visit FSM will not take is held for ops,
+// with its time and its payment, tried again every hour for a day, and booked
+// or refunded by ops (src/domain/held-bookings.ts; docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
 //
 // FSM is written once however often a booking is tried: one consumer at a
 // time holds the hold's lease, each ID FSM gives is kept the moment it comes,
@@ -48,6 +49,8 @@ export interface ConfirmOptions {
   /** Tells ops, once, of something in FSM they must put right by hand (src/domain/alerts.ts). */
   readonly alertOnce?: AlertOnce;
   readonly log?: Logger;
+  /** Written in the same batch as the booking, as the audit entry for a try ops asked for is. */
+  readonly alongside?: readonly D1PreparedStatement[];
 }
 
 interface HoldRow {
@@ -224,7 +227,7 @@ export async function confirmBooking(
   if (!(await takeLease(db, hold.id, now))) return "being_booked";
   try {
     const leased = (await holdOf(db, holdId)) ?? hold;
-    if (leased.move_kind === "move") return await moveInPlace(db, fsm, payments, leased, now, options.notify);
+    if (leased.move_kind === "move") return await moveInPlace(db, fsm, payments, leased, now, options);
     return await bookNewVisit(db, fsm, leased, now, options);
   } catch (error) {
     await db.prepare("UPDATE slot_holds SET booking_until = NULL WHERE id = ?1").bind(hold.id).run();
@@ -308,6 +311,7 @@ async function bookNewVisit(
          WHERE referred_person_id = ?3 AND consultation_appointment_id IS NULL AND ?4 = 'consultation'`,
       )
       .bind(appointmentId, at, hold.person_id, hold.type),
+    ...(options.alongside ?? []),
   ]);
   const booked = await holdOf(db, hold.id);
   if (booked !== null) await afterBooked(db, fsm, booked, now, options);
@@ -459,7 +463,7 @@ async function moveInPlace(
   payments: PaymentsProvider,
   hold: HoldRow,
   now: Date,
-  notify: ConfirmOptions["notify"],
+  options: ConfirmOptions,
 ): Promise<Confirmed> {
   const visit = await db
     .prepare(
@@ -516,8 +520,9 @@ async function moveInPlace(
         at,
       ),
     message.statement,
+    ...(options.alongside ?? []),
   ]);
-  await notify?.(message.id);
+  await options.notify?.(message.id);
   return "booked";
 }
 
@@ -601,7 +606,8 @@ export class RefundRefused extends Error {
 
 /**
  * Lets a hold go, and refunds in full, once, any payment taken for it. Says what it did with the money; throws
- * RefundRefused, and keeps the hold, when Razorpay will not refund it.
+ * RefundRefused, and keeps the hold, when Razorpay will not refund it. `alongside` is written in the same batch as
+ * the hold is let go: ops' audit entry, and the client's message.
  */
 export async function giveBack(
   db: D1Database,
@@ -609,6 +615,7 @@ export async function giveBack(
   holdId: string,
   now: Date,
   reason: string,
+  alongside: readonly D1PreparedStatement[] = [],
 ): Promise<GivenBack> {
   const hold = await holdOf(db, holdId);
   if (hold === null) throw new Error("no such hold to give back");
@@ -621,6 +628,7 @@ export async function giveBack(
     db
       .prepare("UPDATE slot_holds SET state = 'released', updated_at = ?1 WHERE id = ?2 AND state = 'held'")
       .bind(now.toISOString(), hold.id),
+    ...alongside,
   ]);
   return given;
 }
@@ -664,8 +672,9 @@ export interface GaveUp {
 }
 
 /**
- * The last try failed. The work order FSM holds for it is cancelled first, so no technician goes to a visit
- * whose money went back, then the payment is refunded. Says what happened to each, for ops.
+ * Ops refund a booking FSM would not take (docs/decisions/0095-a-booking-fsm-refuses-is-held.md). The work order
+ * FSM holds for it is cancelled first, so no technician goes to a visit whose money went back, then the payment is
+ * refunded and the hold let go, with `alongside` in the same batch. Says what happened to each, for ops.
  */
 export async function giveUpOnBooking(
   db: D1Database,
@@ -673,14 +682,16 @@ export async function giveUpOnBooking(
   payments: PaymentsProvider,
   holdId: string,
   now: Date,
-  labelAsTest: boolean,
+  options: { readonly labelAsTest: boolean; readonly alongside?: readonly D1PreparedStatement[] },
 ): Promise<GaveUp> {
   const hold = await holdOf(db, holdId);
   if (hold === null) throw new Error("no such hold to give up on");
-  const left = hold.state === "booked" ? { kind: "nothing" as const } : await cancelOrphan(fsm, hold, labelAsTest);
+  const note = `${options.labelAsTest ? "Staging test: " : ""}The booking could not be finished; the client is refunded.`;
+  const left = hold.state === "booked" ? { kind: "nothing" as const } : await cancelOrphan(fsm, hold, note);
   const personId = hold.person_id;
   try {
-    return { personId, money: await giveBack(db, payments, holdId, now, "FSM would not take the booking"), fsm: left };
+    const money = await giveBack(db, payments, holdId, now, "FSM would not take the booking", options.alongside);
+    return { personId, money, fsm: left };
   } catch (error) {
     if (!(error instanceof RefundRefused)) throw error;
     return { personId, money: { kind: "refund_refused", paymentId: error.paymentId, amount: error.amount }, fsm: left };
@@ -702,11 +713,17 @@ async function workOrderLeftBy(
   }
 }
 
-async function cancelOrphan(fsm: FsmProvider, hold: HoldRow, labelAsTest: boolean): Promise<LeftInFsm> {
+/** Cancels the work order a booking left in FSM, if any, but the one it is now booked as; says what became of it. */
+async function cancelOrphan(
+  fsm: FsmProvider,
+  hold: HoldRow,
+  note: string,
+  keep: string | null = null,
+): Promise<LeftInFsm> {
   const left = await workOrderLeftBy(fsm, hold);
   if (left.kind !== "found") return left;
   const { workOrderId } = left;
-  const note = `${labelAsTest ? "Staging test: " : ""}The booking could not be finished; the client is refunded.`;
+  if (workOrderId === keep) return { kind: "nothing" };
   try {
     return (await fsm.cancelVisit(workOrderId, note))
       ? { kind: "cancelled", workOrderId }
@@ -714,6 +731,75 @@ async function cancelOrphan(fsm: FsmProvider, hold: HoldRow, labelAsTest: boolea
   } catch {
     return { kind: "not_cancelled", workOrderId };
   }
+}
+
+export type Linked =
+  | { readonly kind: "linked"; readonly personId: string; readonly fsm: LeftInFsm }
+  /** Not a booking still waiting: booked meanwhile, or given back. */
+  | { readonly kind: "not_waiting" }
+  /** Not a visit this booking can be: another client's, another kind, gone or done, or another booking's. */
+  | { readonly kind: "not_the_visit" };
+
+/**
+ * Ops booked a waiting booking's visit in FSM by hand, and the mirror has it: the hold is booked as that visit, as a
+ * try that reached FSM would have booked it, with its payment, its tier and its credit, and the client told. Nothing
+ * is made in FSM twice: a work order an earlier try made for it, other than the visit's own, is cancelled, and what
+ * became of it said. A booking that moves a visit is not linked: its visit is already booked, and trying FSM again
+ * moves it.
+ */
+export async function bookAsVisit(
+  db: D1Database,
+  fsm: FsmProvider,
+  input: { readonly holdId: string; readonly visitId: string },
+  now: Date,
+  options: ConfirmOptions,
+): Promise<Linked> {
+  const hold = await holdOf(db, input.holdId);
+  if (hold?.state !== "held" || hold.confirmed_at === null) return { kind: "not_waiting" };
+  if (hold.move_kind === "move") return { kind: "not_the_visit" };
+  const visit = await db
+    .prepare(
+      `SELECT a.id, a.fsm_work_order_id FROM appointments a
+       WHERE a.id = ?1 AND a.person_id = ?2 AND a.type = ?3 AND a.deleted_at IS NULL
+         AND a.status IN ('scheduled', 'dispatched')
+         AND NOT EXISTS (SELECT 1 FROM slot_holds h WHERE h.appointment_id = a.id AND h.state = 'booked')`,
+    )
+    .bind(input.visitId, hold.person_id, hold.type)
+    .first<{ id: string; fsm_work_order_id: string | null }>();
+  if (visit === null) return { kind: "not_the_visit" };
+
+  const at = now.toISOString();
+  const [, linked] = await db.batch([
+    db.prepare("UPDATE appointments SET tier = ?2 WHERE id = ?1").bind(visit.id, hold.tier),
+    db
+      .prepare(
+        "UPDATE slot_holds SET state = 'booked', appointment_id = ?2, updated_at = ?3 WHERE id = ?1 AND state = 'held' RETURNING id",
+      )
+      .bind(hold.id, visit.id, at),
+    db.prepare("DELETE FROM slot_claims WHERE hold_id = ?1").bind(hold.id),
+    db
+      .prepare(
+        "UPDATE payments SET appointment_id = ?2, updated_at = ?3 WHERE razorpay_order_id = ?1 AND appointment_id IS NULL",
+      )
+      .bind(hold.razorpay_order_id, visit.id, at),
+    db
+      .prepare(
+        `UPDATE referral_attributions SET consultation_appointment_id = ?1, updated_at = ?2
+         WHERE referred_person_id = ?3 AND consultation_appointment_id IS NULL AND ?4 = 'consultation'`,
+      )
+      .bind(visit.id, at, hold.person_id, hold.type),
+    ...(options.alongside ?? []),
+  ]);
+  if (linked?.results.length === 0) return { kind: "not_waiting" };
+
+  const booked = await holdOf(db, hold.id);
+  if (booked !== null) await afterBooked(db, fsm, booked, now, options);
+  const note = `${options.labelAsTest ? "Staging test: " : ""}Booked by hand as another work order; not needed.`;
+  return {
+    kind: "linked",
+    personId: hold.person_id,
+    fsm: await cancelOrphan(fsm, hold, note, visit.fsm_work_order_id),
+  };
 }
 
 /** How long a confirmed hold may wait for FSM before the cron puts it back on the queue. */
@@ -725,8 +811,9 @@ export const unbookedAlertKey = (holdId: string) => `unbooked_hold:${holdId}`;
 
 /**
  * Holds paid for, or booked free, that are neither booked nor refunded half an hour after they were queued: the
- * queue lost the message, or a refund failed. Each goes back on the queue, one call from the run's budget, and
- * ops are told once. A hold the queue refuses is left for the next run. Returns how many went back.
+ * queue lost the message. Each goes back on the queue, one call from the run's budget, and ops are told once. A
+ * hold the queue refuses is left for the next run. One FSM has refused five times running is not among them: it is
+ * held for ops, and tried hourly (src/domain/held-bookings.ts). Returns how many went back.
  */
 export async function requeueUnbookedHolds(
   db: D1Database,
@@ -735,7 +822,8 @@ export async function requeueUnbookedHolds(
 ): Promise<number> {
   const { results } = await db
     .prepare(
-      `SELECT id, person_id FROM slot_holds WHERE state = 'held' AND confirmed_at IS NOT NULL AND queued_at <= ?1
+      `SELECT id, person_id FROM slot_holds
+       WHERE state = 'held' AND confirmed_at IS NOT NULL AND queued_at <= ?1 AND fsm_held_at IS NULL
        ORDER BY queued_at LIMIT ?2`,
     )
     .bind(new Date(now.getTime() - UNBOOKED_AFTER_MS).toISOString(), REQUEUE_PER_PASS)
@@ -754,7 +842,7 @@ export async function requeueUnbookedHolds(
       key: unbookedAlertKey(hold.id),
       message:
         `Booking ${hold.id} was paid for, or booked free, and is neither booked in FSM nor refunded half an hour ` +
-        "on. It is back on the queue; if FSM still refuses it, it is refunded and you are told.",
+        "on. It is back on the queue; if FSM still refuses it, it is kept, tried every hour, and you are told.",
       link: `/clients/${hold.person_id}`,
     });
     requeued += 1;

@@ -18,6 +18,7 @@ import { checkCatalogue } from "../domain/fsm-catalogue.ts";
 import { recordUtilisation } from "../domain/dispatch.ts";
 import { deleteLeftFiles } from "../domain/erasure.ts";
 import { raiseInvoices } from "../domain/fsm-invoices.ts";
+import { retryHeldBookings } from "../domain/held-bookings.ts";
 import { queueNextServiceReminders } from "../domain/next-visit.ts";
 import { readOpsInputs, type OpsInputs } from "../domain/ops-settings.ts";
 import { tellOfStorage } from "../domain/storage-meter.ts";
@@ -107,6 +108,15 @@ async function unbookedHoldsJob({ env, deps, log, budget }: CronContext): Promis
     deps.now(),
   );
   if (requeued > 0) log.warn("unbooked_holds_requeued", { count: requeued });
+}
+
+/** The bookings FSM refused five times running, each tried again as often and for as long as ops set. */
+async function heldBookingsJob(context: CronContext): Promise<void> {
+  const { env, deps, log } = context;
+  const now = deps.now();
+  const inputs = await opsInputsFor(context, now);
+  const retried = await retryHeldBookings(env.DB, { queue: env.FSM_QUEUE, log }, now, inputs.fsmRetry);
+  if (retried > 0) log.info("held_bookings_retried", { count: retried });
 }
 
 async function erasedFilesJob({ env, deps, log }: CronContext): Promise<void> {
@@ -200,6 +210,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "sweeper", needs: "nothing", run: sweepJob },
   // A hold paid for and neither booked nor refunded half an hour on (docs/decisions/0068-a-paid-hold-is-kept.md).
   { name: "unbooked_holds", needs: "fsm", run: unbookedHoldsJob },
+  // A booking FSM refused five times running, tried again every hour for a day (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
+  { name: "held_bookings", needs: "fsm", run: heldBookingsJob },
   // What an erasure could not delete from R2 at the time (docs/decisions/0066-erasure-all-or-nothing.md).
   { name: "erased_files", needs: "nothing", run: erasedFilesJob },
   // The FSM mirror's repair (docs/decisions/0032-fsm-mirror.md).

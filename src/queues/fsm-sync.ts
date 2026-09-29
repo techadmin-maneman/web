@@ -14,25 +14,19 @@
 // client-photos bucket (src/domain/visit-photos.ts).
 //
 // A failure is retried after 30 s, 1, 2 and 4 minutes. The fifth alerts and
-// gives up; the reconciliation picks an appointment up again, ops can enter a
-// lead in FSM by hand, and a booking FSM would not take is refunded, with ops
-// told what happened to the money (docs/decisions/0068-a-paid-hold-is-kept.md).
+// gives up; the reconciliation picks an appointment up again, and ops can enter
+// a lead in FSM by hand. A booking FSM would not take is not given up: it is
+// held, with its slot and its payment, tried again every hour for a day, and
+// waits for ops to book it or refund it (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
 
-import { rupees } from "@maneman/web-kit/money";
 import { z } from "zod";
 import type { VisitType } from "../config/visit-types.ts";
 import type { Dependencies } from "../dependencies.ts";
-import {
-  confirmBooking,
-  giveUpOnBooking,
-  unbookedAlertKey,
-  type ConfirmOptions,
-  type GaveUp,
-  type LeftInFsm,
-} from "../domain/bookings.ts";
+import { confirmBooking, unbookedAlertKey, type ConfirmOptions } from "../domain/bookings.ts";
 import { pushCatalogue } from "../domain/fsm-catalogue.ts";
 import { sendLeadToFsm } from "../domain/fsm-leads.ts";
 import { logDeactivated, syncAppointment } from "../domain/fsm-mirror.ts";
+import { heldAlert, heldAlertKey, holdForFsm, isHeldForFsm } from "../domain/held-bookings.ts";
 import { streetOf } from "../domain/profile.ts";
 import { eventById, markFsmWrite, nextPending, rejectPendingAfter, unwrittenBefore } from "../domain/job-events.ts";
 import { writeEventToFsm, type JobForFsm } from "../domain/job-sheet.ts";
@@ -40,6 +34,7 @@ import { readOpsInputs } from "../domain/ops-settings.ts";
 import { exportVisitPhotos } from "../domain/visit-photos.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { failureReason, type Logger } from "../log.ts";
+import { REFUSALS_BEFORE_HELD } from "../policy/held-bookings.ts";
 import type { FsmContactUpdate } from "../providers/fsm.ts";
 import { MAX_SYNC_ATTEMPTS } from "./crm-sync.ts";
 import type { MessagingMessage } from "./messaging.ts";
@@ -185,9 +180,10 @@ export async function handleFsmSyncBatch(
 }
 
 /**
- * Books a paid (or free) hold. A failure is retried on the usual schedule; the fifth gives up, cancels what FSM
- * holds for it and refunds the client, and tells ops exactly what happened to each. Nothing here throws out of
- * the batch: a refund Razorpay refuses keeps the hold, which the cron puts back on the queue half an hour on.
+ * Books a paid (or free) hold. A failure is retried on the usual schedule, and the fifth holds the booking for ops:
+ * nothing is cancelled or refunded, and ops are told once (src/domain/held-bookings.ts). A held booking is tried
+ * again by the cron, once an hour, so a failure of one of those tries waits for the next rather than being retried
+ * here. Nothing here throws out of the batch.
  */
 async function bookHold(
   message: Message,
@@ -203,81 +199,33 @@ async function bookHold(
   try {
     const outcome = await confirmBooking(db, deps.fsm, deps.payments, holdId, deps.now(), options);
     log.info("booking", { hold_id: holdId, outcome });
-    // Another consumer is writing it: this one looks again later, which never counts toward giving up.
+    // Another consumer is writing it: this one looks again later, which never counts toward holding it.
     if (outcome === "being_booked" && message.attempts < MAX_FSM_SYNC_ATTEMPTS) {
       retryLater();
       return;
     }
     // Booked, or given back: whatever ops were told of this hold before is over.
     await deps.resolveAlert(unbookedAlertKey(holdId));
-    await deps.resolveAlert(givenUpAlertKey(holdId));
+    await deps.resolveAlert(heldAlertKey(holdId));
     message.ack();
   } catch (error) {
     const reason = failureReason(error);
     log.warn("booking_failed", { hold_id: holdId, attempt: message.attempts, reason });
-    if (message.attempts < MAX_FSM_SYNC_ATTEMPTS) {
+    if (message.attempts < REFUSALS_BEFORE_HELD && !(await isHeldForFsm(db, holdId))) {
       retryLater();
       return;
     }
-    try {
-      const gaveUp = await giveUpOnBooking(db, deps.fsm, deps.payments, holdId, deps.now(), options.labelAsTest);
-      log.warn("booking_given_up", { hold_id: holdId, money: gaveUp.money.kind, fsm: gaveUp.fsm.kind });
+    const refused = await holdForFsm(db, holdId, deps.now(), reason);
+    if (refused?.newlyHeld === true) {
+      log.warn("booking_held", { hold_id: holdId });
+      const retry = (await readOpsInputs(db, deps.now())).fsmRetry;
       await deps.alertOnce({
-        key: givenUpAlertKey(holdId),
-        message: givenUpAlert(holdId, message.attempts, reason, gaveUp),
-        link: `/clients/${gaveUp.personId}`,
-      });
-    } catch (giveUpError) {
-      log.error("booking_give_up_failed", { hold_id: holdId, error: giveUpError });
-      await deps.alertOnce({
-        key: givenUpAlertKey(holdId),
-        message:
-          `Booking ${holdId} could not be written to FSM after ${String(message.attempts)} attempts: ${reason}. ` +
-          "Giving it up failed too, so nothing has been refunded yet; it is tried again in half an hour.",
+        key: heldAlertKey(holdId),
+        message: heldAlert(holdId, message.attempts, reason, retry),
+        link: `/clients/${refused.personId}/visits`,
       });
     }
     message.ack();
-  }
-}
-
-/** The alert a booking given up on raises; closed once a later try books it or gives it back. */
-const givenUpAlertKey = (holdId: string) => `booking_given_up:${holdId}`;
-
-/** What ops are told when a booking is given up on: why, what happened to the money, and what is left in FSM. */
-function givenUpAlert(holdId: string, attempts: number, reason: string, gaveUp: GaveUp): string {
-  const failed = `Booking ${holdId} could not be written to FSM after ${String(attempts)} attempts: ${reason}.`;
-  return [failed, moneyLine(gaveUp.money), fsmLine(holdId, gaveUp.fsm)].filter((line) => line !== "").join(" ");
-}
-
-function moneyLine(money: GaveUp["money"]): string {
-  switch (money.kind) {
-    case "refunded":
-      return `Razorpay payment ${money.paymentId} (${rupees(money.amount)}) is refunded in full.`;
-    case "refunded_before":
-      return `Razorpay payment ${money.paymentId} had already been refunded.`;
-    case "nothing_paid":
-      return "Nothing was paid for it, so nothing is refunded; its time is free again.";
-    case "booked":
-      return "It is booked, so nothing is refunded: a step after the booking failed.";
-    case "refund_refused":
-      return (
-        `Razorpay refused to refund payment ${money.paymentId} (${rupees(money.amount)}), so nothing has gone back ` +
-        "to the client. Refund it by hand in Razorpay's dashboard; until it is refunded, the booking is tried " +
-        "again every half hour."
-      );
-  }
-}
-
-function fsmLine(holdId: string, left: LeftInFsm): string {
-  switch (left.kind) {
-    case "nothing":
-      return "";
-    case "cancelled":
-      return `Its work order ${left.workOrderId} is cancelled in FSM.`;
-    case "not_cancelled":
-      return `FSM would not cancel its work order ${left.workOrderId}: cancel it by hand, so no technician goes.`;
-    case "unknown":
-      return `FSM may hold a work order for it whose answer never came: look for "(booking ${holdId})" in FSM's work orders and cancel it.`;
   }
 }
 

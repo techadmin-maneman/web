@@ -179,6 +179,7 @@ describe("CRON_JOBS", () => {
     expect(CRON_JOBS.map((job) => job.name)).toEqual([
       "sweeper",
       "unbooked_holds",
+      "held_bookings",
       "erased_files",
       "fsm_reconcile",
       "fsm_catalogue",

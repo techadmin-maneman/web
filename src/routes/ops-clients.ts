@@ -2,8 +2,8 @@
 // docs/decisions/0031-access-and-audit.md):
 //   POST /api/clients/search               find a client by their whole mobile number
 //   POST /api/clients/find                 find clients by part of a name or of a number
-//   GET  /api/clients/:id                  who they are, their address, their visits, their payments, their history
-//                                          and the invite they came with
+//   GET  /api/clients/:id                  who they are, their address, their visits, their payments, their history,
+//                                          the invite they came with, and any booking FSM refused, held for ops
 //   GET  /api/clients/:id/photos           which photographs exist, by visit. No links: this is the locked view
 //   POST /api/clients/:id/photos/view      open them: one audit entry, and who opened them before
 //   GET  /api/clients/:id/photos/:photoId  one photograph, served within a logged opening
@@ -21,6 +21,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { staffOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
+import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { earlierViews, logPhotoView, PHOTO_VIEW_MINUTES, viewInForce } from "../domain/photo-views.ts";
 import {
@@ -32,12 +33,14 @@ import {
   visitOutcomes,
 } from "../domain/client-visits.ts";
 import { creditBalance } from "../domain/credits.ts";
+import { heldBookingsOf, type HeldBooking } from "../domain/held-bookings.ts";
 import { clientInviteOf } from "../domain/referrals.ts";
 import { VISIT_OUTCOMES } from "../domain/fsm-mirror.ts";
 import { consentRecordsOf, currentAddress, type ConsentState, type SavedAddress } from "../domain/profile.ts";
 import { partialVisitsClosed } from "../domain/task-closures.ts";
 import { ANGLES, PHASES } from "../domain/visit-photos.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { opsInputs } from "../http/ops-inputs.ts";
 import { json } from "../http/openapi.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
@@ -133,6 +136,47 @@ const OpsHistorySchema = z
   .strict()
   .openapi("ClientRecordHistory");
 
+/**
+ * A booking FSM refused five times running, held with its slot and its payment until a try books it or ops book it
+ * or refund it (docs/decisions/0095-a-booking-fsm-refuses-is-held.md; POST /api/held-bookings/:id/*).
+ */
+const HeldBookingSchema = z
+  .object({
+    id: z.uuid().openapi({ description: "The booking's hold, which the three actions name." }),
+    type: z.enum(VISIT_TYPES),
+    service: z.string().openapi({ description: "Its service's name as it is now." }),
+    starts_at: z.iso.datetime().openapi({ description: "When the visit it holds starts." }),
+    window: z.enum(BOOKING_WINDOWS),
+    paid: z.number().int().openapi({
+      description: "In paise, GST included: what Razorpay took; 0 when a credit covers it, or it is free.",
+    }),
+    uses_credit: z.boolean(),
+    moves_visit: z.boolean().openapi({
+      description: "It moves a visit already booked: trying FSM again moves it, and there is no new visit to link.",
+    }),
+    held_at: z.iso.datetime().openapi({ description: "When FSM's fifth refusal running held it." }),
+    refusal: z.union([z.string(), z.null()]).openapi({ description: "FSM's latest refusal, as the log gives it." }),
+    retries_end: z.iso.datetime().openapi({ description: "When the hourly tries end, or ended, as ops set them." }),
+    retrying: z.boolean().openapi({ description: "Still tried every hour: inside its tries, and its visit to come." }),
+  })
+  .strict()
+  .openapi("HeldBooking");
+
+const heldBookingOf = (booking: HeldBooking) => ({
+  id: booking.id,
+  type: booking.type,
+  service: booking.serviceName,
+  starts_at: booking.startsAt,
+  window: booking.window,
+  paid: booking.paid,
+  uses_credit: booking.usesCredit,
+  moves_visit: booking.movesVisit,
+  held_at: booking.heldAt,
+  refusal: booking.refusal,
+  retries_end: booking.retriesEnd,
+  retrying: booking.retrying,
+});
+
 const ClientRecordSchema = z
   .object({
     id: z.uuid(),
@@ -153,6 +197,9 @@ const ClientRecordSchema = z
     invite: z
       .union([ClientInviteSchema, z.null()])
       .openapi({ description: "The invite they came with, or ops attached; null for none." }),
+    held_bookings: z
+      .array(HeldBookingSchema)
+      .openapi({ description: "Bookings FSM refused, waiting for a try or for ops; the soonest visit first." }),
   })
   .strict()
   .openapi("ClientRecord");
@@ -447,7 +494,8 @@ export function registerOpsClients(app: App): void {
     if (person === null) return c.json(errorBody("not_found", c.var.requestId), 404);
 
     const now = c.var.deps.now();
-    const [address, credits, visits, fitted, payments, history, proposal, invite] = await Promise.all([
+    const retry = (await opsInputs(c)).fsmRetry;
+    const [address, credits, visits, fitted, payments, history, proposal, invite, held] = await Promise.all([
       currentAddress(db, id),
       creditBalance(db, id, now),
       listVisits(db, id, now),
@@ -457,6 +505,7 @@ export function registerOpsClients(app: App): void {
       // A Phase 1 booking still waiting for FSM makes the person a lead, as it does on /api/me.
       latestProposal(db, id),
       clientInviteOf(db, id),
+      heldBookingsOf(db, id, now, retry),
     ]);
     const visitIds = [...visits.upcoming, ...visits.past].map((visit) => visit.id);
     const [outcomes, closings] = await Promise.all([visitOutcomes(db, visitIds), partialVisitsClosed(db, visitIds)]);
@@ -480,6 +529,7 @@ export function registerOpsClients(app: App): void {
         payments,
         history,
         invite,
+        held_bookings: held.map(heldBookingOf),
       },
       200,
     );

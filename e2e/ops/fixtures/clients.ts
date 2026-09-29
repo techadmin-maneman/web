@@ -110,6 +110,7 @@ export const RECORD = {
     since: "2026-10-20T06:00:00.000Z",
     attached: null,
   },
+  held_bookings: [],
 } satisfies ClientRecord;
 
 /** The same client before any of it: no visit done, no piece in wear, nothing paid. */

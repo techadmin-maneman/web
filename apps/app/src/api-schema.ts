@@ -2400,6 +2400,17 @@ export interface components {
             } | null;
             /** @description The next visit that has not happened, from FSM: a consultation for a lead. */
             next_visit: components["schemas"]["VisitSummary"] | null;
+            /** @description The soonest visit paid for, or booked free, that FSM does not have yet: neither booked nor refunded. It is on its way, or held after FSM refused it, and becomes a visit once FSM takes it (ADR 0095). */
+            being_booked: {
+                /** @enum {string} */
+                type: "consultation" | "first_fit" | "service" | "replacement";
+                /** Format: date */
+                date: string;
+                /** @enum {string} */
+                window: "morning" | "afternoon" | "evening";
+                /** @description Paid for in money, rather than free or covered by a credit. */
+                paid: boolean;
+            } | null;
             /** @description The credit tile: balance and earliest expiry; null with none left. */
             credits: components["schemas"]["Credits"] | null;
             /** @description Board B1's one contextual prompt, the first that applies, in the owner's order: no address given while something is booked; the next service due and not booked; the month the piece in wear falls due, never the day (ADR 0059); an invoice issued in the last fortnight, which ops may lengthen or shorten. Null when none applies. */
