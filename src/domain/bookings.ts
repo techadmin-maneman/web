@@ -674,7 +674,8 @@ export interface GaveUp {
 /**
  * Ops refund a booking FSM would not take (docs/decisions/0095-a-booking-fsm-refuses-is-held.md). The work order
  * FSM holds for it is cancelled first, so no technician goes to a visit whose money went back, then the payment is
- * refunded and the hold let go, with `alongside` in the same batch. Says what happened to each, for ops.
+ * refunded and the hold let go, with `alongside` in the same batch. Says what happened to each, for ops. It takes the
+ * hold's lease first, as a try does, and answers "being_booked" while a try or a link has it.
  */
 export async function giveUpOnBooking(
   db: D1Database,
@@ -683,9 +684,10 @@ export async function giveUpOnBooking(
   holdId: string,
   now: Date,
   options: { readonly labelAsTest: boolean; readonly alongside?: readonly D1PreparedStatement[] },
-): Promise<GaveUp> {
+): Promise<GaveUp | "being_booked"> {
   const hold = await holdOf(db, holdId);
   if (hold === null) throw new Error("no such hold to give up on");
+  if (hold.state === "held" && !(await takeLease(db, hold.id, now))) return "being_booked";
   const note = `${options.labelAsTest ? "Staging test: " : ""}The booking could not be finished; the client is refunded.`;
   const left = hold.state === "booked" ? { kind: "nothing" as const } : await cancelOrphan(fsm, hold, note);
   const personId = hold.person_id;
@@ -696,6 +698,7 @@ export async function giveUpOnBooking(
     if (!(error instanceof RefundRefused)) throw error;
     // The booking still waits, so a later try must not book it on the work order just cancelled.
     if (left.kind === "cancelled") await forgetWorkOrder(db, holdId);
+    await db.prepare("UPDATE slot_holds SET booking_until = NULL WHERE id = ?1").bind(holdId).run();
     return { personId, money: { kind: "refund_refused", paymentId: error.paymentId, amount: error.amount }, fsm: left };
   }
 }
@@ -782,30 +785,12 @@ export async function bookAsVisit(
     .first<{ id: string; fsm_work_order_id: string | null }>();
   if (visit === null) return { kind: "not_the_visit" };
   if (!(await takeLease(db, hold.id, now))) return { kind: "being_booked" };
-
-  const at = now.toISOString();
-  const [, linked] = await db.batch([
-    db.prepare("UPDATE appointments SET tier = ?2 WHERE id = ?1").bind(visit.id, hold.tier),
-    db
-      .prepare(
-        "UPDATE slot_holds SET state = 'booked', appointment_id = ?2, updated_at = ?3 WHERE id = ?1 AND state = 'held' RETURNING id",
-      )
-      .bind(hold.id, visit.id, at),
-    db.prepare("DELETE FROM slot_claims WHERE hold_id = ?1").bind(hold.id),
-    db
-      .prepare(
-        "UPDATE payments SET appointment_id = ?2, updated_at = ?3 WHERE razorpay_order_id = ?1 AND appointment_id IS NULL",
-      )
-      .bind(hold.razorpay_order_id, visit.id, at),
-    db
-      .prepare(
-        `UPDATE referral_attributions SET consultation_appointment_id = ?1, updated_at = ?2
-         WHERE referred_person_id = ?3 AND consultation_appointment_id IS NULL AND ?4 = 'consultation'`,
-      )
-      .bind(visit.id, at, hold.person_id, hold.type),
-    ...(options.alongside ?? []),
-  ]);
-  if (linked?.results.length === 0) return { kind: "not_waiting" };
+  try {
+    await db.batch(linkStatements(db, hold, visit.id, now, options.alongside ?? []));
+  } catch (error) {
+    await db.prepare("UPDATE slot_holds SET booking_until = NULL WHERE id = ?1").bind(hold.id).run();
+    throw error;
+  }
 
   const booked = await holdOf(db, hold.id);
   if (booked !== null) await afterBooked(db, fsm, booked, now, options);
@@ -815,6 +800,38 @@ export async function bookAsVisit(
     personId: hold.person_id,
     fsm: await cancelOrphan(fsm, hold, note, visit.fsm_work_order_id),
   };
+}
+
+/** The hold booked as a visit already in the mirror: its tier, its claims, its payment and its referral move to it. */
+function linkStatements(
+  db: D1Database,
+  hold: HoldRow,
+  visitId: string,
+  now: Date,
+  alongside: readonly D1PreparedStatement[],
+): D1PreparedStatement[] {
+  const at = now.toISOString();
+  return [
+    db.prepare("UPDATE appointments SET tier = ?2 WHERE id = ?1").bind(visitId, hold.tier),
+    db
+      .prepare(
+        "UPDATE slot_holds SET state = 'booked', appointment_id = ?2, updated_at = ?3 WHERE id = ?1 AND state = 'held'",
+      )
+      .bind(hold.id, visitId, at),
+    db.prepare("DELETE FROM slot_claims WHERE hold_id = ?1").bind(hold.id),
+    db
+      .prepare(
+        "UPDATE payments SET appointment_id = ?2, updated_at = ?3 WHERE razorpay_order_id = ?1 AND appointment_id IS NULL",
+      )
+      .bind(hold.razorpay_order_id, visitId, at),
+    db
+      .prepare(
+        `UPDATE referral_attributions SET consultation_appointment_id = ?1, updated_at = ?2
+         WHERE referred_person_id = ?3 AND consultation_appointment_id IS NULL AND ?4 = 'consultation'`,
+      )
+      .bind(visitId, at, hold.person_id, hold.type),
+    ...alongside,
+  ];
 }
 
 /** How long a confirmed hold may wait for FSM before the cron puts it back on the queue. */

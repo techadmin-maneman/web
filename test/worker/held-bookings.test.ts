@@ -604,6 +604,19 @@ describe("ops refunding it from the console", () => {
     expect(messages.sent).toEqual([]);
   });
 
+  it("waits while a try is writing the booking to FSM, and refunds nothing meanwhile", async () => {
+    const { holdId } = await paidHold();
+    await refusedFiveTimes(holdId);
+    await env.DB.prepare("UPDATE slot_holds SET booking_until = ?2 WHERE id = ?1")
+      .bind(holdId, afterHeld(HOUR + 5 * MINUTE).toISOString())
+      .run();
+    const payments = createStubPayments();
+    const { answer } = refund(fakeDependencies({ now: () => afterHeld(HOUR), payments }), holdId);
+    expect((await answer).status).toBe(409);
+    expect(payments.made.refunds).toEqual([]);
+    expect(await holdRow(holdId)).toMatchObject({ state: "held" });
+  });
+
   it("gives back a booking a credit covered, with nothing to refund and the credit never spent", async () => {
     await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "ops", sourceId: "o1", now: NOW }).run();
     const held = await (

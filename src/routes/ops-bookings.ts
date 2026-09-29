@@ -138,6 +138,7 @@ const refundRoute = createRoute({
     },
     403: errorResponse("access_required"),
     404: notWaiting,
+    409: errorResponse("superseded: a try is writing the booking to FSM at this moment; look again in a minute"),
   },
 });
 
@@ -268,6 +269,7 @@ export function registerOpsBookings(app: App): void {
       labelAsTest: config.environment !== "production",
       alongside: [message.statement, auditOf(c, "booking.refund", id)],
     });
+    if (gaveUp === "being_booked") return c.json(errorBody("superseded", requestId), 409);
     log.info("held_booking_refunded", { hold_id: id, money: gaveUp.money.kind, fsm: gaveUp.fsm.kind });
     const givenBack = gaveUp.money.kind !== "refund_refused" && gaveUp.money.kind !== "booked";
     if (givenBack) {

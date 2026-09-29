@@ -389,6 +389,14 @@ Give back a booking FSM would not take: its work order cancelled, its payment re
 }
 ```
 
+**409**: superseded: a try is writing the booking to FSM at this moment; look again in a minute
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/clients/{id}/referral
 
 Attach an invite to a client who booked away from its page, with the reason
