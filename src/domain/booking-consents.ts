@@ -40,6 +40,7 @@ export async function recordBookingConsents(db: D1Database, tap: BookingTap): Pr
       personId: tap.personId,
       purpose,
       noticeVersion: notices[purpose],
+      source: "app_booking",
       ipHash: tap.ipHash,
       now: tap.now,
     });

@@ -257,6 +257,7 @@ export function registerConsultations(app: App): void {
         turnstileToken: body.turnstile_token,
         attribution: body.attribution ?? {},
         invite: await rememberedInvite(c, body.invite_code),
+        source: "site_booking",
         firstFit: firstFitOf(body.first_fit),
       });
       if (!booked.ok) return booked;
@@ -290,6 +291,7 @@ export function registerConsultations(app: App): void {
         turnstileToken: body.turnstile_token,
         attribution: body.attribution ?? {},
         invite: await rememberedInvite(c, body.invite_code),
+        source: "site_waitlist",
       });
       if (!listed.ok) return listed;
       return { ok: true, body: { area: listed.area, credits: listed.credits, invite: listed.invite } };

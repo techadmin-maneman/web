@@ -621,8 +621,8 @@ export const clients = {
   },
   consents: {
     title: "Consents",
-    /** The board's four columns, with "Notice" where it writes "Source" (docs/fidelity-method.md). */
-    columns: ["Purpose", "State", "Date", "Notice"],
+    /** The board's four columns. */
+    columns: ["Purpose", "State", "Date", "Source"],
     purposes: {
       photos_own_record: "Photographs for the client record",
       photos_referral_cards: "Photographs on referral cards",
@@ -631,6 +631,26 @@ export const clients = {
       whatsapp_launches: "WhatsApp about launches",
     },
     states: { given: "Given", not_given: "Not given", withdrawn: "Withdrawn" },
+    /**
+     * PLACEHOLDER: where each consent was given (docs/decisions/0094-where-a-consent-was-given.md). The board writes
+     * "App" and "Site"; these name the place, short enough for its column.
+     */
+    sources: {
+      site_booking: "Site",
+      site_waitlist: "Waitlist",
+      referral_landing: "Invite",
+      try_on: "Try-on",
+      app_booking: "Booking",
+      app_profile: "Profile",
+      app_share_sheet: "Refer",
+      technician: "Technician",
+      erasure: "Erasure",
+    },
+    /**
+     * PLACEHOLDER: a consent with no place kept: given before this release on a notice several places showed, written
+     * by the Worker it replaced before it was deployed, or switched from a copy of the app loaded before it.
+     */
+    notRecorded: "Not recorded",
     /** The board's note. It writes "from his own app"; this says "their" (docs/fidelity-method.md). */
     note: "Ops cannot grant a consent. Only the client can, from their own app.",
     /**

@@ -7,7 +7,8 @@
 //   GET  /api/clients/:id/photos           which photographs exist, by visit. No links: this is the locked view
 //   POST /api/clients/:id/photos/view      open them: one audit entry, and who opened them before
 //   GET  /api/clients/:id/photos/:photoId  one photograph, served within a logged opening
-//   GET  /api/clients/:id/consents         every consent with its notice version and date, and any deletion request
+//   GET  /api/clients/:id/consents         every consent with its notice version, date and where it was given, and any
+//                                          deletion request
 //
 // A client is always found by their ID. What ops search with goes in a request
 // body, never in a path, so that a number stays out of URLs, referrers and logs.
@@ -40,7 +41,7 @@ import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
-import { CONSENT_PURPOSES } from "../policy/consents.ts";
+import { CONSENT_PURPOSES, CONSENT_SOURCES } from "../policy/consents.ts";
 import { clientHistory } from "../domain/client-history.ts";
 import { paymentEntries } from "../domain/client-payments.ts";
 import { latestProposal } from "../domain/proposed-visits.ts";
@@ -198,6 +199,10 @@ const ClientConsentsSchema = z
             .union([z.string(), z.null()])
             .openapi({ description: "The notice the client saw when they last switched it." }),
           at: z.union([z.iso.datetime(), z.null()]).openapi({ description: "When they last switched it." }),
+          source: z.union([z.enum(CONSENT_SOURCES), z.null()]).openapi({
+            description:
+              "Where they last switched it. null when never switched, or when no place was kept: given before this release reached the environment on a notice shown in more than one place, written by the Worker it replaced between its migration and its deploy, or switched from a copy of the app loaded before it, which names no screen.",
+          }),
         })
         .strict(),
     ),
@@ -591,6 +596,7 @@ export function registerOpsClients(app: App): void {
           state: consentStateOf(consent),
           notice_version: consent.noticeVersion,
           at: consent.since,
+          source: consent.source,
         })),
         deletion:
           deletion === null

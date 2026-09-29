@@ -346,7 +346,8 @@ test("asks whether to remind the client on WhatsApp, and records it when they sa
   await pay.getByRole("button", { name: "Pay Rs. 2,000" }).click();
 
   await expect(page.getByRole("dialog").getByRole("status").getByText(REMINDED)).toBeVisible();
-  expect(switched).toEqual([{ granted: true }]);
+  // Kept as given on the booking sheet (docs/decisions/0094-where-a-consent-was-given.md).
+  expect(switched).toEqual([{ granted: true, source: "app_booking" }]);
 });
 
 test("promises no reminder the client has not agreed to", async ({ page }) => {

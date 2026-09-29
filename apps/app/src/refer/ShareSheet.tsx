@@ -182,7 +182,7 @@ export function ShareSheet({ refer: opened, onClose }: { refer: Refer; onClose: 
         return;
       }
       if (consentToo) {
-        const consent = await api.switchConsent("photos_referral_cards", true);
+        const consent = await api.switchConsent("photos_referral_cards", true, "app_share_sheet");
         if (!consent.ok) {
           setProblem(refer.notChanged);
           setStep("consent");

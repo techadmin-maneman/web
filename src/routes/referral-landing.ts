@@ -271,6 +271,7 @@ export function registerReferralLanding(app: App): void {
         turnstileToken: body.turnstile_token,
         attribution: {},
         invite: await invite(c, code),
+        source: "referral_landing",
         firstFit: firstFitOf(body.first_fit),
       });
       if (!booked.ok) return booked;
@@ -317,6 +318,7 @@ export function registerReferralLanding(app: App): void {
         turnstileToken: body.turnstile_token,
         attribution: {},
         invite: await invite(c, code),
+        source: "referral_landing",
       });
       if (!listed.ok) return listed;
       return { ok: true, body: { area: listed.area, credits: listed.credits, invite: listed.invite } };

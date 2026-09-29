@@ -3,7 +3,7 @@
 
 import { CURRENT_NOTICE } from "../config/notices.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
-import { CONSENT_PURPOSES, type ConsentPurpose } from "../policy/consents.ts";
+import { CONSENT_PURPOSES, type AppSwitchSource, type ConsentPurpose, type ConsentSource } from "../policy/consents.ts";
 
 /** Where a coordinate came from; the licence and the trust differ by source (ADR 0054). */
 export type GeocodeSource = "google_geocoding" | "device" | "checkin";
@@ -209,23 +209,34 @@ export interface ConsentState {
 export interface ConsentRecord extends ConsentState {
   /** The notice the client saw when they last switched it; null if they never have. */
   readonly noticeVersion: string | null;
+  /**
+   * Where they last switched it; null if they never have, or it was not recorded
+   * (docs/decisions/0094-where-a-consent-was-given.md).
+   */
+  readonly source: ConsentSource | null;
 }
 
 /**
  * "Each purpose carries its own date": the latest switch of each, or off if
- * never switched, with the notice version that switch was given under. Ops read
- * the notice version as the consent record (docs/decisions/0049-dpdp.md); the
- * client app shows the state and the date alone.
+ * never switched, with the notice version that switch was given under and where.
+ * Ops read them as the consent record (docs/decisions/0049-dpdp.md); the client
+ * app shows the state and the date alone.
  */
 export async function consentRecordsOf(db: D1Database, personId: string): Promise<ConsentRecord[]> {
   const placeholders = CONSENT_PURPOSES.map((_, index) => `?${String(index + 2)}`).join(", ");
   const rows = await db
     .prepare(
-      `SELECT purpose, granted, notice_version, created_at FROM consents
+      `SELECT purpose, granted, notice_version, created_at, source FROM consents
        WHERE person_id = ?1 AND purpose IN (${placeholders}) ORDER BY created_at, rowid`,
     )
     .bind(personId, ...CONSENT_PURPOSES)
-    .all<{ purpose: ConsentPurpose; granted: number; notice_version: string; created_at: string }>();
+    .all<{
+      purpose: ConsentPurpose;
+      granted: number;
+      notice_version: string;
+      created_at: string;
+      source: ConsentSource | null;
+    }>();
   const latest = new Map(rows.results.map((row) => [row.purpose, row]));
   return CONSENT_PURPOSES.map((purpose) => {
     const row = latest.get(purpose);
@@ -234,6 +245,7 @@ export async function consentRecordsOf(db: D1Database, personId: string): Promis
       granted: row?.granted === 1,
       since: row?.created_at ?? null,
       noticeVersion: row?.notice_version ?? null,
+      source: row?.source ?? null,
     };
   });
 }
@@ -252,16 +264,24 @@ export async function consentsOf(db: D1Database, personId: string): Promise<Cons
  * the purpose unswitched and both record it. The ledger is append-only by trigger, so a second
  * row could never be taken back afterwards (ADR 0058).
  *
- * The statement returns the row's date when it wrote one, and nothing when it did not.
+ * The statement returns the row's date when it wrote one, and nothing when it did not. The row keeps which of the
+ * app's screens made the switch, or none where the app did not say (docs/decisions/0094-where-a-consent-was-given.md).
  */
 export function switchConsent(
   db: D1Database,
-  options: { personId: string; purpose: ConsentPurpose; granted: boolean; ipHash: string; now: Date },
+  options: {
+    personId: string;
+    purpose: ConsentPurpose;
+    granted: boolean;
+    source: AppSwitchSource | null;
+    ipHash: string;
+    now: Date;
+  },
 ): D1PreparedStatement {
   return db
     .prepare(
-      `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash)
-       SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7
+      `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash, source)
+       SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8
        WHERE NOT EXISTS (
          SELECT 1 FROM (SELECT granted, notice_version FROM consents WHERE person_id = ?2 AND purpose = ?3
                         ORDER BY created_at DESC, rowid DESC LIMIT 1)
@@ -277,6 +297,7 @@ export function switchConsent(
       options.granted ? 1 : 0,
       options.now.toISOString(),
       options.ipHash,
+      options.source,
     );
 }
 
@@ -287,16 +308,31 @@ export function switchConsent(
  */
 export function grantIfUndecided(
   db: D1Database,
-  options: { personId: string; purpose: ConsentPurpose; noticeVersion: string; ipHash: string; now: Date },
+  options: {
+    personId: string;
+    purpose: ConsentPurpose;
+    noticeVersion: string;
+    source: ConsentSource;
+    ipHash: string;
+    now: Date;
+  },
 ): { readonly id: string; readonly statement: D1PreparedStatement } {
   const id = crypto.randomUUID();
   const statement = db
     .prepare(
-      `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash)
-       SELECT ?1, ?2, ?3, ?4, 1, ?5, ?6
+      `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash, source)
+       SELECT ?1, ?2, ?3, ?4, 1, ?5, ?6, ?7
        WHERE NOT EXISTS (SELECT 1 FROM consents WHERE person_id = ?2 AND purpose = ?3)`,
     )
-    .bind(id, options.personId, options.purpose, options.noticeVersion, options.now.toISOString(), options.ipHash);
+    .bind(
+      id,
+      options.personId,
+      options.purpose,
+      options.noticeVersion,
+      options.now.toISOString(),
+      options.ipHash,
+      options.source,
+    );
   return { id, statement };
 }
 
