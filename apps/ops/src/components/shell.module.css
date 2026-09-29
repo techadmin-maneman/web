@@ -66,7 +66,7 @@
 }
 
 .section:focus-visible {
-  outline: var(--focus-width) solid var(--gilt);
+  outline: var(--focus-width) solid var(--paper);
   outline-offset: calc(-1 * var(--focus-width));
 }
 

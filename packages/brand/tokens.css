@@ -29,7 +29,7 @@
   --ink-rule: #1e2e49; /* rules on ink */
   --ink-disabled: #2a3a56; /* a button not yet usable; the countdown */
   --ink-line: #3a4a64; /* borders on ink */
-  --ink-line-strong: #6b7b95; /* the hero's outline button */
+  --ink-line-strong: #6b7b95; /* the hero's outline button; a first fit's rule on the dispatch board */
   --ink-muted: #8c96a8; /* small text on ink */
   --ink-soft: #a8b2c2; /* body text on ink */
   --ink-tag: #c5cdd9; /* label text; the hero's sub-line */
@@ -191,6 +191,11 @@
   --reach-screen: 100vmax; /* how far a band drawn to the column's edge reaches to meet the screen's */
   --photo-max-h: 56dvh; /* a photograph opened large, with room for its caption beneath */
   --ops-scroll-max-h: 70dvh; /* the dispatch grid on a narrow screen, with the tray beneath it */
+
+  /* ---- The dispatch board's slot: no board draws it ----------------------- */
+  /* A block is this tall for each slot it takes. Board A1 draws 22, 34 and 46 px, under two lines of type that make
+     one slot and a slot and a half read alike; the owner ruled the heights on 27 September 2026 (ADR 0025, item 49). */
+  --ops-slot: 42px;
 
   /* ---- Page frame -------------------------------------------------------- */
   --page-max: 1440px;

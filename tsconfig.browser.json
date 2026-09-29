@@ -1,8 +1,8 @@
 {
   // The browser tests (e2e/) and the fidelity harness: Node code whose callbacks
   // run in a page, so they need the DOM's types, which clash with the Workers
-  // types in tsconfig.node.json. The technician app's store tests are here for
-  // the same reason: they run in Node, on a fake IndexedDB, against DOM code;
+  // types in tsconfig.node.json. The technician app's store and content tests
+  // are here for the same reason: they run in Node against DOM code;
   // the client app's tests of its calls, routes and money, and the ops
   // console's of its routes, whose code is written against the DOM too; and
   // the tests of the apps' shared components, which are React (packages/ui).
@@ -27,7 +27,9 @@
     "test/node/ops-dispatch-job.test.ts",
     "test/node/ops-route.test.ts",
     "test/node/tech-api.test.ts",
+    "test/node/tech-content.test.ts",
     "test/node/tech-kept.test.ts",
+    "test/node/tech-outbox.test.ts",
     "test/node/tech-outbox-replay.test.ts",
     "test/node/tech-piece-label.test.ts",
     "test/node/tech-progress.test.ts",

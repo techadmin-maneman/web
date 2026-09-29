@@ -137,7 +137,15 @@ describe("a refusal", () => {
   it("carries the API's code and the fields it refused", async () => {
     answering(() => refusal(400, "invalid_request", ["mobile"]));
     const answer = await createClient<Paths, Code>().post("/api/auth/otp", { body: { mobile: "1" } });
-    expect(answer).toEqual({ ok: false, status: 400, code: "invalid_request", fields: ["mobile"] });
+    expect(answer).toEqual({ ok: false, status: 400, code: "invalid_request", fields: ["mobile"], moved: null });
+  });
+
+  // Open point 92: a technician's write for a job ops gave to someone else names them, by first name, and when.
+  it("carries whom a superseded job went to, and when", async () => {
+    const moved = { technician: "Sameer", at: "2027-01-14T05:10:00.000Z" };
+    answering(() => json(409, { error: { code: "superseded", request_id: "t", fields: ["technician"], moved } }));
+    const answer = await createClient<Paths, Code>().get("/api/visits/{id}", { path: { id: "a" } });
+    expect(answer).toEqual({ ok: false, status: 409, code: "superseded", fields: ["technician"], moved });
   });
 
   it("is `unknown` when the API gave no code, unless the app says what such a status means", async () => {
@@ -188,7 +196,7 @@ describe("no connection", () => {
     vi.stubGlobal("fetch", () => Promise.reject(new TypeError("Failed to fetch")));
     const client = createClient<Paths, Code>({ onUnreached: () => (unreached += 1) });
     const answer = await client.get("/api/visits/{id}", { path: { id: "a" } });
-    expect(answer).toEqual({ ok: false, status: 0, code: "offline", fields: [] });
+    expect(answer).toEqual({ ok: false, status: 0, code: "offline", fields: [], moved: null });
     expect(unreached).toBe(1);
   });
 

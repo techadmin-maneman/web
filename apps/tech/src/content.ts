@@ -3,6 +3,9 @@
 // component holds no copy of its own. Lines neither file writes are marked
 // PLACEHOLDER, pending the owner's wording.
 
+import type { Moved } from "@maneman/web-kit/api";
+import { clock, dayMonth, todayInIndia } from "./lib/when.ts";
+
 export const signIn = {
   title: "Technician sign in",
   prefix: "+91",
@@ -149,8 +152,8 @@ export const queue = {
  * (docs/api-tech.md). A field is named in preference to the code.
  */
 export const stopped: Readonly<Record<string, string>> = {
-  // PLACEHOLDER: the design writes "Ops moved this job to Sandeep at 10:40". The 409 names the fields that moved and
-  // never their values; a card fetched afterwards gives the new time (apps/tech/src/job/JobScreen.tsx).
+  // PLACEHOLDER: the 409 names the fields that moved and never their values; a card fetched afterwards gives the new
+  // time (apps/tech/src/job/JobScreen.tsx), and a job given to another technician is named by movedTo below.
   superseded: "This job changed while the phone was offline.",
   technician: "This job is someone else's now.",
   time: "Ops moved this job to another time.",
@@ -168,10 +171,34 @@ export const stopped: Readonly<Record<string, string>> = {
   unknown: "We could not record this.",
 } as const;
 
-/** What stopped a job's queue, in the app's words: the fields named if the API named any, else the code. */
-export function whatStopped(why: { readonly note: string | null; readonly fields: readonly string[] }): string {
-  const named = why.fields.map((field) => stopped[field]).find((line) => line !== undefined);
-  return named ?? stopped[why.note ?? ""] ?? stopped.unknown ?? "";
+/**
+ * The prompt's words for a job given to another technician, "Ops moved this job
+ * to Sandeep at 10:40": their first name, and when, as the API said (open
+ * point 92). A move made on another day names the day, and one made in FSM
+ * itself has no time.
+ */
+function movedTo(moved: Moved, now: Date): string {
+  // PLACEHOLDER: the prompt's example has a time on the day; the line without one, and the one with a day, are ours.
+  if (moved.at === null) return `Ops moved this job to ${moved.technician}.`;
+  const day = todayInIndia(new Date(moved.at));
+  const time = clock(moved.at);
+  if (day === todayInIndia(now)) return `Ops moved this job to ${moved.technician} at ${time}.`;
+  return `Ops moved this job to ${moved.technician} on ${dayMonth(day)} at ${time}.`;
+}
+
+/**
+ * What stopped a job's queue, in the app's words: the fields named if the API
+ * named any, else the code. A job the API says went to another technician names
+ * them; a cancellation is named first among the fields.
+ */
+export function whatStopped(
+  why: { readonly note: string | null; readonly fields: readonly string[]; readonly moved?: Moved | null },
+  now: Date = new Date(),
+): string {
+  const field = why.fields.find((each) => stopped[each] !== undefined);
+  const moved = why.moved ?? null;
+  if (field === "technician" && moved !== null) return movedTo(moved, now);
+  return stopped[field ?? why.note ?? ""] ?? stopped.unknown ?? "";
 }
 
 /** The banner above every screen while a job's queue is stopped. */

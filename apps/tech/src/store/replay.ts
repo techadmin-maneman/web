@@ -9,8 +9,10 @@
 //   - A job whose queue has stopped holds nothing back from the other jobs. A
 //     close-out for the 9:30 job that ops superseded must not strand the 11:30.
 //   - A `409 superseded` stops that job and keeps what changed, so the screen
-//     says which field moved under the phone and never a generic error.
+//     says which field moved under the phone and never a generic error, and
+//     for a job given to another technician, whom and when.
 
+import type { Moved } from "@maneman/web-kit/api";
 import type { EventKind } from "../routes.ts";
 
 export type { EventKind };
@@ -35,6 +37,8 @@ export interface Queued {
   readonly note: string | null;
   /** On a supersede, the fields that changed under the phone; on a refusal, the fields it refused. */
   readonly fields: readonly string[];
+  /** On a job given to another technician, whom and when, as the API said. Absent on what an older build kept. */
+  readonly moved?: Moved | null;
 }
 
 const inOrder = (queue: readonly Queued[]): Queued[] => [...queue].sort((a, b) => a.seq - b.seq);
@@ -65,6 +69,7 @@ export interface JobAccount {
     readonly state: Exclude<EventState, "waiting">;
     readonly note: string | null;
     readonly fields: readonly string[];
+    readonly moved: Moved | null;
   } | null;
 }
 
@@ -77,7 +82,15 @@ export function account(queue: readonly Queued[]): JobAccount[] {
   for (const event of inOrder(queue)) {
     const held = accounts.get(event.job_id) ?? { waiting: 0, stopped: null };
     if (event.state === "waiting") held.waiting += 1;
-    else held.stopped ??= { kind: event.kind, state: event.state, note: event.note, fields: event.fields };
+    else {
+      held.stopped ??= {
+        kind: event.kind,
+        state: event.state,
+        note: event.note,
+        fields: event.fields,
+        moved: event.moved ?? null,
+      };
+    }
     accounts.set(event.job_id, held);
   }
   return [...accounts].map(([job_id, held]) => ({ job_id, ...held }));

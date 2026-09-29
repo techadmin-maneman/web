@@ -82,10 +82,7 @@
     color: var(--ink-soft);
   }
 
-  /* On the technician app's ink the ring is gold, which would vanish against this button. */
   .gold {
-    --focus-colour: var(--paper);
-
     background: var(--gilt);
     color: var(--ink-deep);
   }

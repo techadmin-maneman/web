@@ -4,7 +4,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { badges, today } from "../../apps/tech/src/content.ts";
+import { badges, today, whatStopped } from "../../apps/tech/src/content.ts";
 
 const SOURCE = "apps/tech/src";
 const DESIGN = readFileSync("design/phase2/Technician App.dc.html", "utf8");
@@ -33,6 +33,38 @@ describe("the technician app's content", () => {
     for (const badge of Object.values(badges)) expect(DESIGN).toContain(badge);
     // "No money anywhere in the technician app": a Prepaid or Credit badge only.
     expect(sources.filter((path) => readFileSync(path, "utf8").includes("@maneman/web-kit/money"))).toEqual([]);
+  });
+});
+
+// Open point 92, ruled by the owner on 27 September 2026: the other technician's first name may reach the phone,
+// with when the job went to them. The prompt's example: "Ops moved this job to Sandeep at 10:40".
+describe("a job ops gave to another technician", () => {
+  /** 11:30 am in India on 14 January 2027. */
+  const NOW = new Date("2027-01-14T06:00:00.000Z");
+  const givenAway = (moved: { technician: string; at: string | null } | null) =>
+    whatStopped({ note: "superseded", fields: ["technician"], moved }, NOW);
+
+  it("names them, by first name, and when", () => {
+    expect(givenAway({ technician: "Sameer", at: "2027-01-14T05:10:00.000Z" })).toBe(
+      "Ops moved this job to Sameer at 10:40 am.",
+    );
+  });
+
+  it("names the day of a move made on another", () => {
+    expect(givenAway({ technician: "Sameer", at: "2027-01-13T12:40:00.000Z" })).toBe(
+      "Ops moved this job to Sameer on 13 Jan at 6:10 pm.",
+    );
+  });
+
+  it("names them without a time for a job moved in FSM itself", () => {
+    expect(givenAway({ technician: "Sameer", at: null })).toBe("Ops moved this job to Sameer.");
+  });
+
+  it("names nobody where the API named nobody, and says a cancelled job was cancelled", () => {
+    expect(givenAway(null)).toBe("This job is someone else's now.");
+    expect(whatStopped({ note: "superseded", fields: ["status", "technician"], moved: null }, NOW)).toBe(
+      "This job was cancelled while the phone was offline.",
+    );
   });
 });
 

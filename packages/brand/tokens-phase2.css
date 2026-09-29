@@ -84,9 +84,6 @@
   --ops-tray: 236px; /* the unassigned tray down the right */
   --ops-cell: 88px; /* one technician's day */
   --ops-day: 96px; /* the narrowest a day's column goes before the grid scrolls sideways (VIS-22) */
-  --ops-block-1: 22px; /* a block of one slot: a consultation or a service visit */
-  --ops-block-15: 34px; /* a replacement, a slot and a half */
-  --ops-block-2: 46px; /* a first fit, two slots */
 
   --skeleton-label: 120px; /* the loading state's label (board B3) */
   --skeleton-card: 150px; /* and its card */

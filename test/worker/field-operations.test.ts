@@ -588,11 +588,52 @@ describe("the outbox", () => {
     const answer = await post(`/api/tech/jobs/${TODAY_JOB}/checklist`, { done: [] }, "event-late-01");
 
     expect(answer.status).toBe(409);
-    expect(await answer.json()).toMatchObject({ error: { code: "superseded", fields: ["technician"] } });
+    // Moved in FSM itself, so nothing of ours says when.
+    expect(await answer.json()).toMatchObject({
+      error: { code: "superseded", fields: ["technician"], moved: { technician: "Sameer", at: null } },
+    });
     const row = await env.DB.prepare(
       "SELECT superseded, fsm_write_state FROM job_events WHERE event_id = 'event-late-01'",
     ).first<{ superseded: number; fsm_write_state: string }>();
     expect(row).toEqual({ superseded: 1, fsm_write_state: "rejected" });
+  });
+
+  // Open point 92, ruled by the owner on 27 September 2026: "the other technician's first name may reach the phone.
+  // Name the technician the job went to, and when."
+  it("names the technician ops gave the job to, by first name alone, and when they moved it", async () => {
+    await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
+    const moved = await opsPost("/api/dispatch/move", {
+      appointment_id: TODAY_JOB,
+      ...AS_THE_BOARD_SHOWS_IT,
+      technician_id: SAMEER,
+      reason: "technician_unavailable",
+    });
+    expect(moved.status).toBe(200);
+
+    const answer = await post(`/api/tech/jobs/${TODAY_JOB}/start`, undefined, "event-start-01");
+
+    expect(answer.status).toBe(409);
+    const { error } = await answer.json<{ error: Record<string, unknown> }>();
+    // Nothing else of Sameer's: not his whole name, his number or his zone.
+    expect(error).toEqual({
+      code: "superseded",
+      request_id: expect.any(String) as string,
+      fields: ["technician"],
+      moved: { technician: "Sameer", at: NOW.toISOString() },
+    });
+  });
+
+  it("names nobody for a job that was cancelled, whoever it was left with", async () => {
+    await env.DB.prepare("UPDATE appointments SET status = 'cancelled', technician_id = ?2 WHERE id = ?1")
+      .bind(TODAY_JOB, SAMEER)
+      .run();
+
+    const answer = await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
+
+    expect(answer.status).toBe(409);
+    const { error } = await answer.json<{ error: Record<string, unknown> }>();
+    expect(error).toMatchObject({ code: "superseded", fields: ["status", "technician"] });
+    expect(error).not.toHaveProperty("moved");
   });
 
   it("rejects a write as superseded once ops have moved the job to another time", async () => {
@@ -812,6 +853,62 @@ describe("the photographs", () => {
     // The first take's small copy cannot be claimed for the second.
     expect((await putThumbnail(links.small_upload_url, first, syntheticJpeg(300, 400))).status).toBe(409);
   });
+
+  // Open point 92: a job given away while its photographs wait names whom it went to, as a refused write does.
+  it("answers an upload link for a job ops gave away as superseded, naming whom, by first name, and when", async () => {
+    await startJob();
+    await opsPost("/api/dispatch/move", {
+      appointment_id: TODAY_JOB,
+      ...AS_THE_BOARD_SHOWS_IT,
+      technician_id: SAMEER,
+      reason: "technician_unavailable",
+    });
+
+    const answer = await askForUploadLink(TODAY_JOB);
+
+    expect(answer.status).toBe(409);
+    const { error } = await answer.json<{ error: Record<string, unknown> }>();
+    expect(error).toEqual({
+      code: "superseded",
+      request_id: expect.any(String) as string,
+      fields: ["technician"],
+      moved: { technician: "Sameer", at: NOW.toISOString() },
+    });
+  });
+
+  it("answers an upload link for a job cancelled while its photographs wait as superseded, naming nobody", async () => {
+    await startJob();
+    await env.DB.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = ?1").bind(TODAY_JOB).run();
+
+    const answer = await askForUploadLink(TODAY_JOB);
+
+    expect(answer.status).toBe(409);
+    const { error } = await answer.json<{ error: Record<string, unknown> }>();
+    expect(error).toMatchObject({ code: "superseded", fields: ["status"] });
+    expect(error).not.toHaveProperty("moved");
+  });
+
+  it("answers not found for a job that was never this technician's, and names nobody", async () => {
+    await insertJob(OTHER_JOB, { fsmId: "ap-other", start: "2026-09-21T07:30:00.000Z", technician: SAMEER });
+
+    const answer = await askForUploadLink(OTHER_JOB);
+
+    expect(answer.status).toBe(404);
+    expect(await answer.json()).toMatchObject({ error: { code: "not_found" } });
+  });
+
+  function askForUploadLink(jobId: string): Promise<Response> {
+    return request(
+      tech,
+      `/api/tech/jobs/${jobId}/photos/upload-url`,
+      {
+        method: "POST",
+        headers: { Cookie: cookie, Origin: "https://maneman.test", "Content-Type": "application/json" },
+        body: JSON.stringify({ phase: "before", angle: "front" }),
+      },
+      bindings(),
+    );
+  }
 
   async function uploadLinks(): Promise<{ upload_url: string; small_upload_url: string }> {
     const answer = await request(

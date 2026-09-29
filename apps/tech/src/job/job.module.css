@@ -63,7 +63,7 @@
   font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-12);
   font-size: var(--fs-15);
-  color: var(--gilt);
+  color: var(--paper);
 }
 
 .body {
@@ -338,7 +338,7 @@
 .evidenceIcon {
   flex-shrink: 0;
   margin-top: var(--sp-2);
-  color: var(--gilt);
+  color: var(--paper);
 }
 
 /*

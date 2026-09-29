@@ -5,7 +5,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { atTheDoor, fakeTech, heldOnPhone, JOB_ID, type Fake } from "./fixtures.ts";
+import { atTheDoor, fakeTech, heldOnPhone, JOB_ID, todayInIndia, type Fake } from "./fixtures.ts";
 
 /**
  * Opens the day, checks in at the door, then takes the signal away. The app
@@ -169,13 +169,16 @@ test("accounts plainly for what has not reached us, and says what changed on a s
   await expect(page.getByRole("heading", { name: "Waiting to reach us" })).toBeVisible();
   await expect(page.getByText("Rohit M.")).toBeVisible();
 
-  // Ops moved the job while the phone was in the basement. The replay meets a
-  // 409, and the screen says which field moved, never a generic error.
+  // Ops gave the job to Sameer at 10:40 while the phone was in the basement.
+  // The replay meets a 409, and the screen says whom it went to and when, by
+  // first name, never a generic error (open point 92).
   fake.supersede = ["technician"];
+  fake.wentTo = { technician: "Sameer", at: `${todayInIndia()}T05:10:00.000Z` };
   fake.online = true;
   await context.setOffline(false);
 
-  await expect(page.getByText("This job is someone else's now.").first()).toBeVisible();
+  const movedToSameer = "Ops moved this job to Sameer at 10:40 am.";
+  await expect(page.getByText(movedToSameer).first()).toBeVisible();
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();
@@ -183,13 +186,15 @@ test("accounts plainly for what has not reached us, and says what changed on a s
 
   // Not only here: every screen says so, and the card offers nothing to press on with.
   await page.getByRole("button", { name: "Back" }).click();
-  await expect(page.getByRole("alert").filter({ hasText: "Rohit M. · This job is someone else's now." })).toBeVisible();
+  await expect(page.getByRole("alert").filter({ hasText: `Rohit M. · ${movedToSameer}` })).toBeVisible();
   await page.getByRole("listitem").filter({ hasText: "Rohit M." }).click();
   await expect(page.getByRole("heading", { level: 2, name: "This job changed" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Continue" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Start job" })).toHaveCount(0);
+  const changed = page.getByRole("alert").filter({ has: page.getByRole("heading", { name: "This job changed" }) });
+  await expect(changed).toContainText(movedToSameer);
   await page.goto(`/jobs/${JOB_ID}/before-photos`);
-  await expect(page.getByRole("alert").filter({ hasText: "This job is someone else's now." })).toBeVisible();
+  await expect(page.getByRole("alert").filter({ hasText: movedToSameer })).toBeVisible();
 
   // Read and dealt with: the job's queue goes, and nothing is left waiting.
   await page.goto("/waiting");
@@ -197,7 +202,7 @@ test("accounts plainly for what has not reached us, and says what changed on a s
   await page.getByRole("button", { name: "Delete them" }).click();
   await expect(page.getByText("Everything has reached us.")).toBeVisible();
   expect(await heldOnPhone(page)).toMatchObject({ outbox: 0 });
-  await expect(page.getByRole("alert").filter({ hasText: "This job is someone else's now." })).toHaveCount(0);
+  await expect(page.getByRole("alert").filter({ hasText: movedToSameer })).toHaveCount(0);
 });
 
 test("says a job moved to another time was moved, from the start the phone held", async ({ page }) => {
@@ -215,7 +220,7 @@ test("says a job moved to another time was moved, from the start the phone held"
   await expect(page.getByRole("alert").filter({ hasText: "Ops moved this job to another time." })).toBeVisible();
 });
 
-test("a job ops gave away while its photographs waited says it moved, and asks before deleting them", async ({
+test("a job ops gave away while its photographs waited says whom to, and asks before deleting them", async ({
   page,
   context,
 }) => {
@@ -245,13 +250,19 @@ test("a job ops gave away while its photographs waited says it moved, and asks b
   await expect(page.getByText("Before photos · 0 of 5 sent")).toBeVisible();
   await expect(page.getByRole("button", { name: "Retry" })).toHaveCount(0);
 
-  // Ops gave the job to someone else while the phone was underground.
+  // Ops gave the job to Sameer at 10:40 while the phone was underground. The
+  // photographs' link says whom it went to, as a refused write does (open point 92).
   fake.moved = true;
+  fake.wentTo = { technician: "Sameer", at: `${todayInIndia()}T05:10:00.000Z` };
   fake.online = true;
   await context.setOffline(false);
 
-  await expect(page.getByText("This job is no longer on your list, so what it holds cannot reach us.")).toBeVisible();
-  await expect(page.getByText(/would not upload/)).toHaveCount(0);
+  await expect(page.getByText("Ops moved this job to Sameer at 10:40 am.").first()).toBeVisible();
+  await expect(page.getByText(/would not upload|no longer on your list/)).toHaveCount(0);
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
 
   // "Got it" never throws away photographs on one tap.
   await page.getByRole("button", { name: "Got it" }).click();

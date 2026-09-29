@@ -61,7 +61,7 @@
 }
 
 .number:focus-visible {
-  outline: var(--focus-width) solid var(--gilt);
+  outline: var(--focus-width) solid var(--focus-colour);
   outline-offset: var(--focus-offset);
 }
 
@@ -109,7 +109,7 @@
 }
 
 .boxes:focus-within .box {
-  border-color: var(--gilt);
+  border-color: var(--paper);
 }
 
 /* The ways back once a code is out: outlined, never gold, since the one action stays at the bottom. */
