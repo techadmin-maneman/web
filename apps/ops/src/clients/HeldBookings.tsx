@@ -56,6 +56,8 @@ function moneyLine(booking: HeldBooking, money: HeldBookingRefunded["money"]): s
       return copy.money.booked;
     case "refund_refused":
       return copy.money.refund_refused(amount, payment);
+    case "refund_unanswered":
+      return copy.money.refund_unanswered(amount, payment);
   }
 }
 
@@ -230,7 +232,7 @@ function Booking({ booking, visits, now }: { booking: HeldBooking; visits: reado
       const { money, fsm } = answer.body;
       return {
         lines: [moneyLine(booking, money), ...fsmLines(booking, fsm)],
-        settled: money.kind !== "refund_refused",
+        settled: money.kind !== "refund_refused" && money.kind !== "refund_unanswered",
       };
     });
 

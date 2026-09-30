@@ -5233,10 +5233,10 @@ export interface components {
         };
         HeldBookingMoney: {
             /**
-             * @description refunded in full now; refunded_before, by an earlier press or in Razorpay's dashboard; nothing_paid, as a free or credit booking; booked, by a try that landed meanwhile, so nothing is refunded; refund_refused by Razorpay, so nothing has gone back and the booking still waits.
+             * @description refunded in full now; refunded_before, by an earlier press or in Razorpay's dashboard; nothing_paid, as a free or credit booking; booked, by a try that landed meanwhile, so nothing is refunded; refund_refused by Razorpay, so nothing has gone back and the booking still waits; refund_unanswered, Razorpay would not say whether it refunded, so it may have, and the booking still waits: pressing again cannot refund twice.
              * @enum {string}
              */
-            kind: "refunded" | "refunded_before" | "nothing_paid" | "booked" | "refund_refused";
+            kind: "refunded" | "refunded_before" | "nothing_paid" | "booked" | "refund_refused" | "refund_unanswered";
             /** @description Razorpay's, where there is a payment. */
             payment_id: string | null;
             /** @description In paise, where one was refunded. */

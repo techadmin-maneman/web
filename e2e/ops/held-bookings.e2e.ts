@@ -189,6 +189,29 @@ test("keeps the booking waiting when Razorpay refuses the refund, and says so", 
   await expect(held(page).getByRole("button", { name: /Try FSM again/ })).toBeVisible();
 });
 
+// docs/open-points.md, item 161: the refund may have been made, so ops are never sent to Razorpay's dashboard.
+test("keeps the booking waiting when Razorpay will not say it refunded, and asks for another press", async ({
+  page,
+}) => {
+  await openVisits(page, {
+    [REFUND]: json({
+      money: { kind: "refund_unanswered", payment_id: "pay_Q8x2", amount: 200_000 },
+      fsm: { kind: "nothing", work_order_id: null },
+    }),
+  });
+  await held(page)
+    .getByRole("button", { name: /Refund it/ })
+    .click();
+  await held(page).getByRole("button", { name: "Refund and let it go" }).click();
+  const status = held(page).getByRole("status");
+  await expect(status).toHaveText(
+    "Razorpay did not say whether it refunded Rs. 2,000 (payment pay_Q8x2), so it may have, and the booking still " +
+      "waits. Press Refund it again: Razorpay will not refund it twice.",
+  );
+  await expect(status).not.toContainText("dashboard");
+  await expect(held(page).getByRole("button", { name: /Refund it/ })).toBeVisible();
+});
+
 test("says so when the booking was booked or refunded meanwhile", async ({ page }) => {
   await openVisits(page, { [RETRY]: fails(404, "not_found") });
   await held(page)

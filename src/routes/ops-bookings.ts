@@ -149,12 +149,15 @@ const linkRoute = createRoute({
 
 const MoneySchema = z
   .object({
-    kind: z.enum(["refunded", "refunded_before", "nothing_paid", "booked", "refund_refused"]).openapi({
-      description:
-        "refunded in full now; refunded_before, by an earlier press or in Razorpay's dashboard; nothing_paid, as a " +
-        "free or credit booking; booked, by a try that landed meanwhile, so nothing is refunded; refund_refused by " +
-        "Razorpay, so nothing has gone back and the booking still waits.",
-    }),
+    kind: z
+      .enum(["refunded", "refunded_before", "nothing_paid", "booked", "refund_refused", "refund_unanswered"])
+      .openapi({
+        description:
+          "refunded in full now; refunded_before, by an earlier press or in Razorpay's dashboard; nothing_paid, as a " +
+          "free or credit booking; booked, by a try that landed meanwhile, so nothing is refunded; refund_refused by " +
+          "Razorpay, so nothing has gone back and the booking still waits; refund_unanswered, Razorpay would not say " +
+          "whether it refunded, so it may have, and the booking still waits: pressing again cannot refund twice.",
+      }),
     payment_id: z.union([z.string(), z.null()]).openapi({ description: "Razorpay's, where there is a payment." }),
     amount: z.union([z.number().int(), z.null()]).openapi({ description: "In paise, where one was refunded." }),
   })
@@ -187,6 +190,7 @@ function moneyOf(money: GaveUp["money"]) {
   switch (money.kind) {
     case "refunded":
     case "refund_refused":
+    case "refund_unanswered":
       return { kind: money.kind, payment_id: money.paymentId, amount: money.amount };
     case "refunded_before":
       return { kind: money.kind, payment_id: money.paymentId, amount: null };
@@ -331,7 +335,7 @@ export function registerOpsBookings(app: App): void {
     });
     if (gaveUp === "being_booked") return c.json(errorBody("superseded", requestId), 409);
     log.info("held_booking_refunded", { hold_id: id, money: gaveUp.money.kind, fsm: gaveUp.fsm.kind });
-    const givenBack = gaveUp.money.kind !== "refund_refused" && gaveUp.money.kind !== "booked";
+    const givenBack = !["refund_refused", "refund_unanswered", "booked"].includes(gaveUp.money.kind);
     if (givenBack) {
       await closeAlerts(c, id);
       await c.env.MESSAGE_QUEUE.send({ message_id: message.id, request_id: requestId } satisfies MessagingMessage);
