@@ -42,15 +42,6 @@ export function toLinkAlert(holdId: string, visitId: string): string {
   );
 }
 
-/** Whether ops have stopped a held booking's hourly tries, so a try the cron had already put on the queue is not made. */
-export async function triesStoppedFor(db: D1Database, holdId: string): Promise<boolean> {
-  const row = await db
-    .prepare("SELECT queued_at FROM slot_holds WHERE id = ?1 AND state = 'held' AND fsm_held_at IS NOT NULL")
-    .bind(holdId)
-    .first<{ queued_at: string }>();
-  return row !== null && triesStopped(new Date(row.queued_at));
-}
-
 /** Whether FSM's refusals have already held the booking for ops, so a failed try is the cron's to repeat. */
 export async function isHeldForFsm(db: D1Database, holdId: string): Promise<boolean> {
   const row = await db

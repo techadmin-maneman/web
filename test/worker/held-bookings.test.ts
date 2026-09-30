@@ -6,10 +6,10 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { AuditEntry } from "../../src/domain/audit.ts";
+import { auditStatement, type AuditEntry } from "../../src/domain/audit.ts";
 import { grantCredits } from "../../src/domain/credits.ts";
 import { composeBookingRefunded, retryHeldBookings } from "../../src/domain/held-bookings.ts";
-import { bookAsVisit, giveUpOnBooking, requeueUnbookedHolds } from "../../src/domain/bookings.ts";
+import { bookAsVisit, giveUpOnBooking, requeueUnbookedHolds, stopTries } from "../../src/domain/bookings.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { saltedHash } from "../../src/lib/hash.ts";
@@ -319,6 +319,22 @@ function meanwhileBeforeLease(meanwhile: () => Promise<void>): D1Database {
       };
     },
   });
+}
+
+/**
+ * Ops' refund of the booking at 13:08, which Razorpay makes and whose own write then fails: the money has gone back,
+ * the hold is still held, and the payment still reads as captured until Razorpay's webhook says otherwise.
+ */
+async function refundedThenWriteFailed(holdId: string, payments = createStubPayments()) {
+  await env.DB.prepare(
+    `CREATE TRIGGER refuse_audit BEFORE INSERT ON audit_log WHEN NEW.action = 'booking.refund'
+     BEGIN SELECT RAISE(ABORT, 'refused for the test'); END`,
+  ).run();
+  const answer = await refund(fakeDependencies({ now: () => afterHeld(HOUR), payments }), holdId).answer;
+  expect(answer.status).toBe(500);
+  expect(payments.made.refunds).toHaveLength(1);
+  await env.DB.prepare("DROP TRIGGER refuse_audit").run();
+  return payments;
 }
 
 /** Ops' entry for a link, as the route writes it. */
@@ -792,7 +808,32 @@ describe("ops linking the visit they booked in FSM by hand", () => {
     ).first();
     expect(payment).toEqual({ appointment_id: null });
     expect(messages.sent).toEqual([]);
-    expect(await auditRows("booking.link")).toHaveLength(1);
+    expect(await auditRows("booking.link")).toEqual([]);
+    expect(await auditRows("booking.give_back")).toEqual([
+      {
+        actor_kind: "staff",
+        actor: "ops@localhost",
+        subject_kind: "slot_hold",
+        subject_id: holdId,
+        detail: JSON.stringify({ visit_id: HAND_MADE, reason: "payment_refunded" }),
+      },
+    ]);
+    const held = await env.DB.prepare("SELECT resolved_at FROM alerts WHERE key = ?1")
+      .bind(`booking_held:${holdId}`)
+      .first();
+    expect(held).toEqual({ resolved_at: afterHeld(2 * HOUR).toISOString() });
+  });
+
+  it("books nothing once ops' refund went through though its own write failed, and lets the booking go", async () => {
+    const { holdId } = await paidHold();
+    await refusedFiveTimes(holdId);
+    await mirrored();
+    const payments = await refundedThenWriteFailed(holdId);
+    const { answer } = link(fakeDependencies({ now: () => afterHeld(2 * HOUR), payments }), holdId);
+    expect((await answer).status).toBe(404);
+    expect(await holdRow(holdId)).toMatchObject({ state: "released", appointment_id: null });
+    expect(payments.made.refunds).toHaveLength(1);
+    expect(await auditRows("booking.give_back")).toHaveLength(1);
   });
 
   it("cancels the work order a try kept just before ops' link took the booking", async () => {
@@ -879,6 +920,27 @@ describe("ops stopping the hourly tries, to book it in FSM by hand", () => {
     const { answer } = retry(fakeDependencies({ now: () => afterHeld(HOUR), fsm }), holdId);
     expect(await (await answer).json()).toEqual({ outcome: "booked", refusal: null });
     expect(fsm.made.workOrders).toHaveLength(1);
+  });
+
+  it("leaves a try writing nothing when ops stop the tries just before it takes the booking", async () => {
+    const { holdId } = await paidHold();
+    await refusedFiveTimes(holdId);
+    const fsm = createStubFsm(world());
+    const now = afterHeld(HOUR);
+    const stoppedMeanwhile = meanwhileBeforeLease(async () => {
+      const entry: AuditEntry = { ...linkEntry(holdId), action: "booking.stop", detail: {} };
+      expect(await stopTries(env.DB, holdId, now, auditStatement(env.DB, entry, now))).toBe("stopped");
+    });
+    const hourly = delivery(holdId, 1);
+    await handleFsmSyncBatch(
+      hourly.batch,
+      { ...env, DB: stoppedMeanwhile },
+      fakeDependencies({ now: () => now, fsm }),
+      createLogger(),
+    );
+    expect(hourly.message.ack).toHaveBeenCalled();
+    expect(fsm.made.workOrders).toEqual([]);
+    expect(await holdRow(holdId)).toMatchObject({ state: "held", appointment_id: null });
   });
 
   it("waits while a try is writing the booking to FSM, and stops nothing meanwhile", async () => {
@@ -1084,6 +1146,24 @@ describe("ops refunding it from the console", () => {
     expect(payments.made.refunds).toEqual([]);
     expect(await holdRow(holdId)).toMatchObject({ state: "released" });
     expect(messages.sent).toHaveLength(1);
+  });
+
+  it("leaves the next try booking nothing once a refund went through though its own write failed", async () => {
+    const { holdId } = await paidHold();
+    await refusedFiveTimes(holdId);
+    const payments = await refundedThenWriteFailed(holdId);
+    const fsm = createStubFsm(world());
+    const hourly = delivery(holdId, 1);
+    await handleFsmSyncBatch(
+      hourly.batch,
+      env,
+      fakeDependencies({ now: () => afterHeld(2 * HOUR), fsm, payments }),
+      createLogger(),
+    );
+    expect(hourly.message.ack).toHaveBeenCalled();
+    expect(fsm.made.workOrders).toEqual([]);
+    expect(await holdRow(holdId)).toMatchObject({ state: "released", appointment_id: null });
+    expect(payments.made.refunds).toHaveLength(1);
   });
 
   it("forgets the work order it cancelled, and lets the booking's lease go, when what follows fails", async () => {

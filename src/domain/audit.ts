@@ -80,12 +80,13 @@ export const AUDIT_ACTIONS = [
   "task.close",
   "address.given_to_ops",
   // A booking FSM would not take, held for ops (docs/decisions/0095-a-booking-fsm-refuses-is-held.md): FSM tried again
-  // at ops' asking and taking it, the visit ops booked in FSM by hand linked to it, its refund, and its hourly tries
-  // stopped so ops book it in FSM by hand.
+  // at ops' asking and taking it, the visit ops booked in FSM by hand linked to it, its refund, its hourly tries
+  // stopped so ops book it in FSM by hand, and a link that let it go instead, its payment having gone back.
   "booking.retry",
   "booking.link",
   "booking.refund",
   "booking.stop",
+  "booking.give_back",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

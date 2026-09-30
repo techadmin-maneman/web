@@ -196,11 +196,21 @@ function moneyOf(money: GaveUp["money"]) {
   }
 }
 
-/** The console's name for how a try ended, other than while another try has it. */
+/** The console's name for how ops' try ended, other than while another try has it. */
 function outcomeOf(confirmed: Exclude<Confirmed, "being_booked">): "booked" | "given_back" | "to_link" {
-  if (confirmed === "booked" || confirmed === "already_booked") return "booked";
-  if (confirmed === "to_link") return "to_link";
-  return "given_back";
+  switch (confirmed) {
+    case "booked":
+    case "already_booked":
+      return "booked";
+    case "to_link":
+      return "to_link";
+    case "not_paid":
+    case "refunded":
+    case "lapsed":
+      return "given_back";
+    case "stopped":
+      throw new Error("only a try the queue makes by itself is stopped, and ops' is not one");
+  }
 }
 
 /** The entry an action on a held booking writes with its change. */
@@ -293,6 +303,11 @@ export function registerOpsBookings(app: App): void {
       ...bookingOptions(c),
       audit: auditEntryOf(c, "booking.link", id, { visit_id: visitId }),
     });
+    if (linked.kind === "given_back") {
+      await closeAlerts(c, id);
+      log.info("held_booking_given_back", { hold_id: id, reason: "payment_refunded" });
+      return c.json(errorBody("not_found", requestId), 404);
+    }
     if (linked.kind === "not_waiting") return c.json(errorBody("not_found", requestId), 404);
     if (linked.kind === "not_the_visit") return c.json(errorBody("invalid_request", requestId, ["visit_id"]), 400);
     if (linked.kind === "being_booked") return c.json(errorBody("superseded", requestId), 409);
