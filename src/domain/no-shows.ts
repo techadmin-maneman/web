@@ -32,14 +32,13 @@ import {
   type Waiver,
   type Waits,
 } from "../policy/no-show.ts";
-import type { PaymentsProvider } from "../providers/payments.ts";
-import type { AlertOnce } from "./alerts.ts";
 import { auditStatementIfRuled, type AuditEntry } from "./audit.ts";
+import type { Ruled } from "./after-a-ruling.ts";
 import type { LatestArrival } from "./check-ins.ts";
 import type { OpsInputs } from "./ops-settings.ts";
 import { creditBack, rulingMessage, type RulingClaim } from "./ruling-claims.ts";
 import { refundOf, termsInForce, termsOfVisit, visitPayment } from "./visit-changes.ts";
-import { creditOfVisit, NO_VISITS_CONSENT } from "./visit-messages.ts";
+import { NO_VISITS_CONSENT } from "./visit-messages.ts";
 import { minutesBetween } from "../lib/durations.ts";
 
 /**
@@ -319,29 +318,6 @@ export async function listNoShowCases(
   }));
 }
 
-/** Money going back to the client once a ruling is written. */
-export interface NoShowRefund {
-  readonly appointmentId: string;
-  /** Whose visit it was, for ops' alert should Razorpay refuse; null once they have been erased. */
-  readonly personId: string | null;
-  /** In paise. */
-  readonly amount: number;
-  /** What sends it back, in Razorpay's notes and in ops' alert. */
-  readonly why: "waived" | "charged" | "refunded on dispute";
-}
-
-/** A credit a ruling gave back that its grant could no longer take, expired or clawed back since the visit. */
-export type CreditNotBack = Omit<NoShowRefund, "amount">;
-
-export interface Ruled {
-  /** The client's WhatsApp about the ruling, to queue; null for a visit with no client on our records. */
-  readonly messageId: string | null;
-  /** What goes back now: what a charge does not keep, or a waiver's payment where ops set a waiver to refund it. */
-  readonly refund: NoShowRefund | null;
-  /** The credit the ruling gave back, where it could not come back: ops settle it by hand. */
-  readonly creditNotBack: CreditNotBack | null;
-}
-
 /** The terms in force, which a visit ops booked in FSM, and no hold sold, is charged under. */
 export type TermsInputs = Pick<OpsInputs, "changeNoticeHours" | "lateChangeCharges" | "noShowCharges">;
 
@@ -350,6 +326,7 @@ interface OpenCase {
   person_id: string | null;
   type: VisitType | null;
   window_start: string | null;
+  paid_with_credit: number;
 }
 
 /** What charging a no-show costs the client (src/policy/no-show.ts). */
@@ -397,7 +374,8 @@ async function waiverOf(db: D1Database, appointmentId: string, waiver: Waiver) {
  * and writes nothing beside it (src/domain/ruling-claims.ts). In the one batch: the ruling, with what a charge
  * cost or a waiver gave back; its audit entry; the client's message about it; and the credit the visit used, where
  * the ruling returns it. The reason stays with the ruling and reaches no message. What goes back of the payment is
- * refunded after the batch.
+ * refunded after the batch, and nothing is read between the two: a read that failed there would leave a committed
+ * refund unsent, and nobody told.
  */
 export async function decideNoShow(
   db: D1Database,
@@ -415,7 +393,9 @@ export async function decideNoShow(
 ): Promise<Ruled | null> {
   const open = await db
     .prepare(
-      `SELECT n.appointment_id, p.id AS person_id, a.type, a.window_start
+      `SELECT n.appointment_id, p.id AS person_id, a.type, a.window_start,
+         EXISTS (SELECT 1 FROM credit_ledger r WHERE r.kind = 'redeem' AND r.source_id = n.appointment_id)
+           AS paid_with_credit
        FROM no_show_cases n JOIN appointments a ON a.id = n.appointment_id
        LEFT JOIN people p ON p.id = a.person_id AND p.erased_at IS NULL
        WHERE n.id = ?1 AND n.decision = 'undecided'`,
@@ -466,48 +446,6 @@ export async function decideNoShow(
   return {
     messageId: message?.id ?? null,
     refund: givenBack.refund > 0 ? { ...visit, amount: givenBack.refund } : null,
-    creditNotBack: givenBack.creditBack && (await creditOfVisit(db, open.appointment_id)) === "kept" ? visit : null,
+    creditGivenBack: givenBack.creditBack && open.paid_with_credit === 1 ? visit : null,
   };
-}
-
-/**
- * Tells ops once of a credit a ruling gave back that could not come back, its grant expired or clawed back since the
- * visit. The client's message says it could not; ops decide by hand whether the client is owed one.
- */
-export async function alertCreditNotBack(alertOnce: AlertOnce, credit: CreditNotBack): Promise<void> {
-  await alertOnce({
-    key: `no_show_credit_not_back:${credit.why}:${credit.appointmentId}`,
-    message:
-      `The visit credit for visit ${credit.appointmentId}, a no-show ${credit.why}, could not come back: its grant ` +
-      "has expired or been withdrawn. The client is told so; settle it with them by hand if they are owed one.",
-    link: credit.personId === null ? "/no-shows" : `/clients/${credit.personId}`,
-  });
-}
-
-/**
- * Refunds what a ruling gives back, at most what is left of the visit's payment. A refund Razorpay refuses is left
- * to ops, told once with the visit and the payment, as a cancel's is (src/domain/visit-changes.ts).
- */
-export async function refundNoShow(
-  db: D1Database,
-  deps: { payments: PaymentsProvider; alertOnce: AlertOnce },
-  refund: NoShowRefund,
-): Promise<void> {
-  const payment = await visitPayment(db, refund.appointmentId);
-  const amount = Math.min(refund.amount, payment?.paid ?? 0);
-  if (payment === null || amount <= 0) return;
-  try {
-    await deps.payments.refund(payment.razorpayPaymentId, {
-      amount,
-      notes: { appointment_id: refund.appointmentId, reason: `no-show ${refund.why}` },
-    });
-  } catch {
-    await deps.alertOnce({
-      key: `no_show_refund_failed:${refund.why}:${refund.appointmentId}`,
-      message:
-        `The refund of Rs. ${String(amount / 100)} for visit ${refund.appointmentId}, a no-show ${refund.why}, ` +
-        `failed (Razorpay payment ${payment.razorpayPaymentId}). Refund it by hand in Razorpay, once.`,
-      link: refund.personId === null ? "/no-shows" : `/clients/${refund.personId}`,
-    });
-  }
 }

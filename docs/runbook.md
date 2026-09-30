@@ -938,7 +938,7 @@ For a payment whose delivery Razorpay will not send again (past its 24 hours, or
 
 ### A refund that failed
 
-"The refund of Rs. _n_ for visit _id_ … failed" (`cancel_refund_failed` for a client's cancel; `no_show_refund_failed` for a no-show waived, the balance of one charged, or the charge of one refunded on dispute, the alert saying which). Nothing tries it again. In Razorpay's dashboard, find the payment the alert names, check it shows no refund of that amount, refund it once, and close the alert. The refund's webhook records it, and the client's Payments tab shows it.
+"The refund of Rs. _n_ for visit _id_ … failed" (`cancel_refund_failed` for a client's cancel; `no_show_refund_failed` for a no-show waived, the balance of one charged, or the charge of one refunded on dispute, the alert saying which). Nothing tries it again. Where the alert says the payment could not be read, the database failed just after the ruling was written: the client the alert links to shows the visit's payment. In Razorpay's dashboard, find the payment, check it shows no refund of that amount, refund it once, and close the alert. The refund's webhook records it, and the client's Payments tab shows it.
 
 ### A credit that could not come back
 

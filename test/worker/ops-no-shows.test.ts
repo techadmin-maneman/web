@@ -9,12 +9,22 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/http/context.ts";
-import { decideNoShow, refundNoShow } from "../../src/domain/no-shows.ts";
+import { refundNoShow } from "../../src/domain/after-a-ruling.ts";
+import { decideNoShow } from "../../src/domain/no-shows.ts";
 import { NO_VISITS_CONSENT } from "../../src/domain/visit-messages.ts";
 import { FREE_CHANGE_NOTICE_HOURS, LATE_CHANGE_CHARGES } from "../../src/policy/moving-a-visit.ts";
 import { NO_SHOW_CHARGES, WAIVER_GIVES_BACK, type Waiver } from "../../src/policy/no-show.ts";
 import { createStubPayments } from "../../src/providers/payments.ts";
-import { appFor, captureLogs, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
+import {
+  appFor,
+  captureLogs,
+  failingAfterTheFirstBatch,
+  fakeDependencies,
+  fakeQueue,
+  markDatabase,
+  NOW,
+  request,
+} from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const VISIT = "22222222-2222-4222-8222-222222222222";
@@ -259,6 +269,30 @@ describe("POST /api/no-shows/:id/decision", () => {
     expect(await env.DB.prepare("SELECT kind, visits FROM credit_ledger WHERE kind = 'restore'").all()).toMatchObject({
       results: [{ kind: "restore", visits: 1 }],
     });
+  });
+
+  // Once the ruling has committed, a retry answers not found; so nothing between the commit and Razorpay may fail
+  // without ops hearing of the refund owed. A waiver as the owner ruled gives back the credit too, which once meant
+  // a read of the ledger before the refund.
+  it("tells ops of the refund owed when the database fails once the waiver has committed", async () => {
+    await paidAndCredited();
+    const deps = fakeDependencies();
+
+    await request(
+      appFor("local", deps, {}, "ops"),
+      `/api/no-shows/${CASE}/decision`,
+      {
+        method: "POST",
+        headers: { Origin: "https://maneman.test", "Content-Type": "application/json" },
+        body: JSON.stringify({ decision: "waived", reason: "The lift was out" }),
+      },
+      { DB: failingAfterTheFirstBatch(env.DB), MESSAGE_QUEUE: fakeQueue() },
+    );
+
+    expect(deps.alerts).toEqual([
+      `The refund of Rs. 2000 for visit ${VISIT}, a no-show waived, failed (its payment could not be read). ` +
+        `Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}`,
+    ]);
   });
 
   it("moves no money on a waiver that gives nothing back", async () => {

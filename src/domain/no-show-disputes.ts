@@ -6,12 +6,12 @@
 // Refunded gives both back, as a waiver that gives them does; upheld keeps them. The client's reason and ops' are
 // kept on the dispute alone: the audit log holds IDs and codes only (ADR 0031), and an erasure blanks both.
 
-import { chargedCredit, isDisputable, type DisputeRuling } from "../policy/no-show.ts";
+import { isDisputable, type DisputeRuling } from "../policy/no-show.ts";
 import type { Charge } from "../policy/moving-a-visit.ts";
 import { auditStatementIfRuled, auditStatementIfWritten, type AuditEntry } from "./audit.ts";
-import { CHARGE_TAKEN, type CreditNotBack, type NoShowRefund } from "./no-shows.ts";
+import type { Ruled } from "./after-a-ruling.ts";
+import { CHARGE_TAKEN } from "./no-shows.ts";
 import { creditBack, rulingMessage, type RulingClaim } from "./ruling-claims.ts";
-import { creditOfVisit } from "./visit-messages.ts";
 
 interface ChargedCase {
   id: string;
@@ -152,27 +152,19 @@ export async function openDisputes(db: D1Database, limit: number): Promise<OpenD
   }));
 }
 
-export interface DisputeRuled {
-  /** The client's WhatsApp about the ruling, to queue; null for a client since erased. */
-  readonly messageId: string | null;
-  /** What a refund gives back of the payment, after the batch; null on an upheld charge, or one that kept no money. */
-  readonly refund: NoShowRefund | null;
-  /** The credit a refund gave back, where it could not come back: ops settle it by hand. */
-  readonly creditNotBack: CreditNotBack | null;
-}
-
 interface RulableDispute {
   appointment_id: string;
   person_id: string | null;
-  charge: Charge;
   kept_amount: number;
+  credit_spent: number;
 }
 
 /**
  * Ops refund or uphold a disputed charge, with their reason, which stays on the dispute. Ruled once: a second
  * ruling writes nothing beside it (src/domain/ruling-claims.ts). In the one batch: the ruling, its audit entry,
  * the client's message, and for a refund the credit the charge spent, back in its grant as a waiver's is. What the
- * charge kept of the payment is refunded after the batch.
+ * charge kept of the payment is refunded after the batch, and nothing is read between the two: a read that failed
+ * there would leave a committed refund unsent, and nobody told.
  */
 export async function ruleOnDispute(
   db: D1Database,
@@ -184,10 +176,10 @@ export async function ruleOnDispute(
     readonly audit: AuditEntry;
     readonly now: Date;
   },
-): Promise<DisputeRuled | null> {
+): Promise<Ruled | null> {
   const open = await db
     .prepare(
-      `SELECT n.appointment_id, pe.id AS person_id, n.charge, n.kept_amount
+      `SELECT n.appointment_id, pe.id AS person_id, ${CHARGE_TAKEN}
        FROM no_show_disputes d JOIN no_show_cases n ON n.id = d.case_id
        LEFT JOIN people pe ON pe.id = d.person_id AND pe.erased_at IS NULL
        WHERE d.id = ?1 AND d.ruling IS NULL AND n.charge IS NOT NULL AND n.kept_amount IS NOT NULL`,
@@ -210,7 +202,7 @@ export async function ruleOnDispute(
           },
           ruled,
         );
-  const givesCreditBack = refunded && chargedCredit(open.charge) === "lost";
+  const givesCreditBack = refunded && open.credit_spent === 1;
   const [ruling] = await db.batch([
     db
       .prepare(
@@ -228,6 +220,6 @@ export async function ruleOnDispute(
   return {
     messageId: message?.id ?? null,
     refund: refunded && open.kept_amount > 0 ? { ...visit, amount: open.kept_amount } : null,
-    creditNotBack: givesCreditBack && (await creditOfVisit(db, open.appointment_id)) === "kept" ? visit : null,
+    creditGivenBack: givesCreditBack ? visit : null,
   };
 }

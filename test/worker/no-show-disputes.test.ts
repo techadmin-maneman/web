@@ -17,6 +17,7 @@ import {
   appFor,
   captureLogs,
   eraseByMobile,
+  failingAfterTheFirstBatch,
   fakeDependencies,
   fakeQueue,
   markDatabase,
@@ -348,6 +349,30 @@ describe("POST /api/no-shows/disputes/:id/ruling", () => {
       key: `no_show_refund_failed:refunded on dispute:${VISIT}`,
     });
     expect(await env.DB.prepare("SELECT ruling FROM no_show_disputes").first()).toEqual({ ruling: "refunded" });
+  });
+
+  // Once the ruling has committed, a retry answers "ruled already" and the client's message says the money is on its
+  // way; so nothing between the commit and Razorpay may fail without ops hearing of the refund owed.
+  it("tells ops of the refund owed when the database fails once the ruling has committed", async () => {
+    const id = await raised();
+    const deps = fakeDependencies();
+
+    const answer = await request(
+      appFor("local", deps, {}, "ops"),
+      `/api/no-shows/disputes/${id}/ruling`,
+      {
+        method: "POST",
+        headers: { Origin: "https://maneman.test", "Content-Type": "application/json" },
+        body: JSON.stringify({ ruling: "refunded", reason: "The bell was broken" }),
+      },
+      { DB: failingAfterTheFirstBatch(env.DB), MESSAGE_QUEUE: fakeQueue() },
+    );
+
+    expect(answer.status).toBe(200);
+    expect(deps.alerts).toEqual([
+      `The refund of Rs. 4000 for visit ${VISIT}, a no-show refunded on dispute, failed (its payment could not be ` +
+        `read). Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}`,
+    ]);
   });
 
   it("refunds at most what is left of the payment, where some went back by hand since the charge", async () => {
