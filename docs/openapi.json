@@ -523,10 +523,8 @@
             "description": "For the technician, from the day before the visit: gate code, parking."
           },
           "flat": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": "string",
+            "minLength": 1,
             "maxLength": 40
           },
           "floor": {
@@ -557,7 +555,8 @@
           "locality",
           "city",
           "pincode",
-          "access_notes"
+          "access_notes",
+          "flat"
         ],
         "additionalProperties": false
       },

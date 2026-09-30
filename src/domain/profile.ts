@@ -4,6 +4,7 @@
 import { CURRENT_NOTICE } from "../config/notices.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import { CONSENT_PURPOSES, type AppSwitchSource, type ConsentPurpose, type ConsentSource } from "../policy/consents.ts";
+import { FSM_STREET_MAX, fsmText } from "../lib/fsm-text.ts";
 
 /** Where a coordinate came from; the licence and the trust differ by source (ADR 0054). */
 export type GeocodeSource = "google_geocoding" | "device" | "checkin";
@@ -67,13 +68,44 @@ interface AddressRow {
   created_at: string;
 }
 
-/** An address's street as FSM's service address holds it: the first line, then the rest of it. */
-export function streetOf(address: { line1: string; line2: string | null; locality: string | null }): {
-  street1: string;
-  street2: string | null;
-} {
-  const rest = [address.line2, address.locality].filter((part) => part !== null && part !== "").join(", ");
-  return { street1: address.line1, street2: rest === "" ? null : rest };
+/** The parts of an address FSM's service address holds; one saved before migration 0028 has no flat, floor or tower. */
+interface StreetParts {
+  readonly flat: string | null;
+  readonly floor: string | null;
+  readonly tower: string | null;
+  readonly line1: string;
+  readonly line2: string | null;
+  readonly landmark: string | null;
+  readonly locality: string | null;
+}
+
+/** A part with its name before it, unless the client wrote the name: "Floor 3", "3rd floor", never "Floor 3rd floor". */
+function named(name: string, written: RegExp, part: string | null): string | null {
+  const words = part?.trim() ?? "";
+  if (words === "") return null;
+  return written.test(words) ? words : `${name} ${words}`;
+}
+
+const joined = (parts: readonly (string | null)[]): string =>
+  parts
+    .map((part) => part?.trim() ?? "")
+    .filter((part) => part !== "")
+    .join(", ");
+
+/**
+ * An address's street as FSM's service address holds it, so a work order names the door (docs/open-points.md,
+ * item 150): the flat, floor, tower and building, then the street, the area and the landmark, each line cut to
+ * what FSM takes.
+ */
+export function streetOf(address: StreetParts): { street1: string; street2: string | null } {
+  const door = joined([
+    address.flat,
+    named("Floor", /\bfloor\b/i, address.floor),
+    named("Tower", /\b(tower|block|wing)\b/i, address.tower),
+    address.line1,
+  ]);
+  const rest = joined([address.line2, address.locality, named("Landmark:", /\blandmark\b/i, address.landmark)]);
+  return { street1: fsmText(door, FSM_STREET_MAX), street2: rest === "" ? null : fsmText(rest, FSM_STREET_MAX) };
 }
 
 /** An address saved before migration 0028 has nulls in the new columns and reads unchanged. */

@@ -148,6 +148,7 @@ export const referral = {
       accessNotes: "Access notes (optional)",
     },
     errors: {
+      flat: "Please give the flat or house number.",
       line1: "Please give the building, society or street.",
       locality: "Please give the sector or area.",
       city: "Please give the city.",

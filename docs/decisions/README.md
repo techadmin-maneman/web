@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/adr-index.test.ts` fails until it is run after a record is added or its status changes. The next free number is 0097.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/adr-index.test.ts` fails until it is run after a record is added or its status changes. The next free number is 0099.
 
 | ADR | Decision | Date | Status | Changed by |
 | --- | --- | --- | --- | --- |
@@ -59,7 +59,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0051](0051-booking-from-the-site.md) | Booking from the site is the landing's booking | 2026-09-23 | accepted | [0060](0060-an-invited-friend-reaches-ops-and-the-crm.md), [0081](0081-the-site-takes-the-address.md), [0086](0086-the-next-visit-is-offered.md), [0089](0089-an-invite-is-not-lost.md) |
 | [0052](0052-technician-sessions.md) | Technician sessions, devices and the day-before unlock | 2026-09-23 | accepted |  |
 | [0053](0053-the-technician-app-offline.md) | The technician app offline: the outbox, the device and the camera | 2026-09-23 | accepted |  |
-| [0054](0054-address-capture.md) | Capturing an address: the fields, the pin, and the way to the door | 2026-09-23 | accepted | [0070](0070-vendor-correctness.md) |
+| [0054](0054-address-capture.md) | Capturing an address: the fields, the pin, and the way to the door | 2026-09-23 | accepted | [0070](0070-vendor-correctness.md), [0098](0098-the-door-in-fsms-address.md) |
 | [0055](0055-invoices.md) | The invoice for a finished job | 2026-09-23 | accepted | [0056](0056-issuing-the-invoice.md) |
 | [0056](0056-issuing-the-invoice.md) | The invoice is issued, and shown beside the visit | 2026-09-23 | accepted | [0070](0070-vendor-correctness.md) |
 | [0057](0057-one-payment-per-tap.md) | One payment per tap | 2026-09-23 | accepted |  |
@@ -86,7 +86,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0078](0078-the-queues-no-board-draws.md) | The console's queues that no board draws | 2026-09-27 | accepted |  |
 | [0079](0079-an-address-before-a-slot.md) | An address before any slot | 2026-09-27 | accepted |  |
 | [0080](0080-consents-given-by-booking.md) | The photograph consents, given by booking | 2026-09-27 | accepted, for counsel to confirm before production | [0094](0094-where-a-consent-was-given.md) |
-| [0081](0081-the-site-takes-the-address.md) | The site takes the address before it books | 2026-09-27 | accepted |  |
+| [0081](0081-the-site-takes-the-address.md) | The site takes the address before it books | 2026-09-27 | accepted | [0098](0098-the-door-in-fsms-address.md) |
 | [0082](0082-try-ons-in-the-app.md) | A client's try-on in the app | 2026-09-27 | accepted, on the owner's ruling of 27 September 2026 | [0084](0084-a-clients-try-on-is-kept.md) |
 | [0083](0083-anyone-signed-in-can-refer.md) | Anyone signed in can refer | 2026-09-27 | withdrawn by the owner on 27 September 2026, the day it was made |  |
 | [0084](0084-a-clients-try-on-is-kept.md) | A client's try-on is kept | 2026-09-27 | accepted, on the owner's ruling of 27 September 2026 | [0093](0093-the-storage-meter.md) |
@@ -100,6 +100,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0094](0094-where-a-consent-was-given.md) | Where a consent was given, and an erasure blanks a check-in's coordinates | 2026-09-28 | accepted, on the owner's rulings of 27 September 2026 |  |
 | [0095](0095-a-booking-fsm-refuses-is-held.md) | A booking FSM refuses is held, not refunded | 2026-09-29 | accepted, on the owner's ruling of 27 September 2026 |  |
 | [0096](0096-a-no-shows-charge-and-its-dispute.md) | A no-show's charge and its dispute, and the free change a visit ops moved keeps | 2026-09-29 | accepted, on the owner's rulings of 27 September 2026 |  |
+| [0098](0098-the-door-in-fsms-address.md) | The door in FSM's service address | 2026-10-01 | accepted, on the owner's rulings of 27 September 2026 and 1 October 2026 |  |
 
 ## Records beside them
 

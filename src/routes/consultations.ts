@@ -38,7 +38,7 @@ import { CODE_PATTERN, inviteOf, type Invite } from "../domain/referrals.ts";
 import { errorBody, errorResponse, ErrorResponseSchema } from "../http/errors.ts";
 import { IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
 import { formRequest } from "../http/public-form.ts";
-import { addressOf, AddressSchema } from "./client-profile.ts";
+import { addressOf, AddressSchema, RequiredFlatSchema } from "./client-profile.ts";
 
 /** Six digits, and never starting with 0 or 9: India's pincodes. */
 const PincodeSchema = z
@@ -100,6 +100,7 @@ export const AddressOutcomeSchema = z.enum(["saved", "on_account"]).openapi({
  * suggestions, which the site does not offer. Its pincode is the one booked at.
  */
 export const TypedAddressSchema = AddressSchema.omit({ building: true, place_id: true })
+  .extend({ flat: RequiredFlatSchema })
   .strict()
   .openapi("TypedAddress");
 

@@ -304,7 +304,11 @@ describe("POST /api/r/:code/consultation", () => {
       "booked",
     );
     expect(fsm.made.contacts).toMatchObject([
-      { city: "Gurgaon", lastName: "Bhatia", street: { street1: "Palm Grove Society", street2: "Sector 65" } },
+      {
+        city: "Gurgaon",
+        lastName: "Bhatia",
+        street: { street1: "Flat 402, Palm Grove Society", street2: "Sector 65" },
+      },
     ]);
     expect(fsm.made.visits).toHaveLength(1);
     // The attribution names the consultation it produced, for ops' record.

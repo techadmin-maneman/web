@@ -207,6 +207,14 @@ describe("the address the consultation is at", () => {
     expect(await count("SELECT COUNT(*) AS n FROM people")).toBe(0);
   });
 
+  it("is refused without the flat or house number, naming it, and nothing is booked", async () => {
+    const answer = await book({ address: { ...ADDRESS, flat: null } });
+    expect(answer.status).toBe(400);
+    expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["address.flat"] } });
+    expect(await count("SELECT COUNT(*) AS n FROM people")).toBe(0);
+    expect(await count("SELECT COUNT(*) AS n FROM slot_holds")).toBe(0);
+  });
+
   it("is refused in a pincode other than the one checked, naming it, and nothing is booked", async () => {
     const answer = await book({ address: { ...ADDRESS, pincode: "122017" } });
     expect(answer.status).toBe(400);
@@ -336,7 +344,12 @@ describe("the address the consultation is at", () => {
         {
           contactId: "fsm-contact-9",
           mobile: "+919810000002",
-          address: { street1: "Palm Grove Society", street2: "Sector 65", city: "Gurgaon", pincode: "122018" },
+          address: {
+            street1: "Flat 402, Floor 4, Tower C, Palm Grove Society",
+            street2: "Sector 65, Landmark: Opposite the park",
+            city: "Gurgaon",
+            pincode: "122018",
+          },
         },
       ]);
       const linked = await env.DB.prepare(
@@ -367,7 +380,14 @@ describe("the address the consultation is at", () => {
     });
     expect(booked).toBe("booked");
     expect(fsm.made.contacts).toMatchObject([
-      { city: "Gurgaon", pincode: "122018", street: { street1: "Palm Grove Society", street2: "Sector 65" } },
+      {
+        city: "Gurgaon",
+        pincode: "122018",
+        street: {
+          street1: "Flat 402, Floor 4, Tower C, Palm Grove Society",
+          street2: "Sector 65, Landmark: Opposite the park",
+        },
+      },
     ]);
   });
 });

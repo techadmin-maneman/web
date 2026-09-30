@@ -460,7 +460,8 @@ async function updateContact(
 ): Promise<void> {
   const person = await db
     .prepare(
-      `SELECT p.fsm_contact_id, p.mobile_e164, a.line1, a.line2, a.locality, a.city, a.pincode
+      `SELECT p.fsm_contact_id, p.mobile_e164, a.flat, a.floor, a.tower, a.line1, a.line2, a.landmark, a.locality,
+              a.city, a.pincode
        FROM people p
        LEFT JOIN addresses a ON a.id = (SELECT id FROM addresses WHERE person_id = p.id AND replaced_at IS NULL
                                         ORDER BY created_at DESC LIMIT 1)
@@ -498,8 +499,12 @@ async function updateContact(
 interface ContactRow {
   fsm_contact_id: string;
   mobile_e164: string;
+  flat: string | null;
+  floor: string | null;
+  tower: string | null;
   line1: string | null;
   line2: string | null;
+  landmark: string | null;
   locality: string | null;
   city: string | null;
   pincode: string | null;
@@ -507,11 +512,12 @@ interface ContactRow {
 
 /** The client's address as FSM's service address takes it; null while they have given none. */
 function addressOf(row: ContactRow): FsmContactUpdate["address"] {
-  if (row.line1 === null || row.city === null || row.pincode === null) return null;
+  const { line1, city, pincode } = row;
+  if (line1 === null || city === null || pincode === null) return null;
   return {
-    ...streetOf({ line1: row.line1, line2: row.line2, locality: row.locality }),
-    city: row.city,
-    pincode: row.pincode,
+    ...streetOf({ ...row, line1 }),
+    city,
+    pincode,
   };
 }
 

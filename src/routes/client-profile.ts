@@ -82,6 +82,13 @@ export const AddressSchema = z
   .openapi("Address");
 
 /**
+ * The flat or house number, which every address given from now on must carry, so FSM's work order names the door
+ * (the owner's ruling of 27 September 2026, docs/open-points.md, items 45 and 150). An address saved before holds
+ * none and still reads.
+ */
+export const RequiredFlatSchema = z.string().trim().min(1).max(40);
+
+/**
  * What the app sends. `session_token` is the same string the app passed to every
  * suggestion request; it groups them into one billed session, and without it
  * Google bills per keystroke (docs/decisions/0054-address-capture.md). The
@@ -89,6 +96,7 @@ export const AddressSchema = z
  * by geocoding the Place ID itself.
  */
 export const AddressSaveSchema = AddressSchema.extend({
+  flat: RequiredFlatSchema,
   session_token: part(100),
 })
   .strict()

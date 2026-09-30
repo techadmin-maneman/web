@@ -405,10 +405,10 @@ test("the fields the form needs are marked as required", async ({ page }) => {
   await expect(page.getByLabel("Name")).toHaveAttribute("aria-required", "true");
   await expect(page.getByLabel("Mobile")).toHaveAttribute("aria-required", "true");
   await expect(page.getByRole("checkbox")).toHaveAttribute("aria-required", "true");
-  for (const part of ["Building, society or street", "Sector or area", "City"]) {
+  for (const part of ["Flat or house number", "Building, society or street", "Sector or area", "City"]) {
     await expect(page.getByLabel(part)).toHaveAttribute("aria-required", "true");
   }
-  for (const part of ["Flat or house number", "Floor (optional)", "Access notes (optional)"]) {
+  for (const part of ["Floor (optional)", "Access notes (optional)"]) {
     await expect(page.getByLabel(part)).not.toHaveAttribute("aria-required");
   }
 });

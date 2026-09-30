@@ -265,8 +265,9 @@ test("asks for what an address cannot do without before it sends one", async ({ 
   await page.getByRole("button", { name: "Record an address they give you" }).click();
   const form = page.getByRole("form", { name: "An address the client gave you" });
   await form.getByRole("button", { name: "Save their address" }).click();
-  await expect(form.getByRole("alert")).toContainText("Fill in the building or street");
-  await expect(form.getByLabel("Building, society or street")).toBeFocused();
+  await expect(form.getByRole("alert")).toContainText("Fill in the flat or house number, the building or street");
+  await expect(form.getByLabel("Flat or house number")).toBeFocused();
+  await expect(form.getByLabel("Flat or house number")).toHaveAttribute("required", "");
   expect(sent).toBe(0);
   await form.getByRole("button", { name: "Cancel" }).click();
   await expect(page.getByRole("button", { name: "Record an address they give you" })).toBeFocused();

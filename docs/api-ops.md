@@ -5657,10 +5657,8 @@ Who Access let through, and where signing out goes
       "description": "The building as chosen from the suggestions; null if typed."
     },
     "flat": {
-      "type": [
-        "string",
-        "null"
-      ],
+      "type": "string",
+      "minLength": 1,
       "maxLength": 40
     },
     "floor": {
@@ -5706,7 +5704,8 @@ Who Access let through, and where signing out goes
     "locality",
     "city",
     "pincode",
-    "access_notes"
+    "access_notes",
+    "flat"
   ],
   "additionalProperties": false
 }

@@ -44,6 +44,7 @@ export const given = (part: string | null | undefined): part is string =>
  */
 function missing(address: Address): Field[] {
   const left: Field[] = [];
+  if (!given(address.flat)) left.push("flat");
   if (address.line1.trim() === "") left.push("line1");
   if (address.locality.trim() === "") left.push("locality");
   if (address.city.trim() === "") left.push("city");
@@ -92,6 +93,7 @@ export function AddressForm({
       }
       const answer = await api.saveAddress({
         ...draft,
+        flat: draft.flat?.trim() ?? "",
         line2: draft.line2?.trim() === "" ? null : draft.line2,
         access_notes: draft.access_notes?.trim() === "" ? null : draft.access_notes,
         session_token: sessionToken,
@@ -155,7 +157,7 @@ export function AddressForm({
           setEditing((draft) => ({ ...draft, place_id: null }));
         }}
       />
-      {field("flat", copy.form.flat)}
+      {field("flat", copy.form.flat, { required: true })}
       {field("floor", copy.form.floor)}
       {field("tower", copy.form.tower)}
       {/* Only for an address nobody searched for: otherwise the building is line one. */}
