@@ -4,6 +4,11 @@
 // shares the owner's real org (docs/decisions/0025-phase-2-conflicts-register.md, item 26). The day is the last the
 // form offers, the furthest from any real visit. Run from the staging-lead workflow, which holds the Access secrets.
 //
+// The booking's name, "Staging test", is one of our own scripts' (isStagingTestRecord,
+// src/policy/staging-test-records.ts), so a booking confirmation on the consultation reaches only a number also on
+// staging's allowlist, whatever it is (ADR 0097). STAGING_TEST_MOBILE, when set, is used instead of a random
+// number, which is otherwise still the default: either way, the rule above keeps a stranger's number silent.
+//
 //   node scripts/staging-lead.ts --pincode 122018 --window morning
 
 import { parseArgs } from "node:util";
@@ -37,7 +42,7 @@ if (!checked.ok || place?.served !== true || typeof place.city !== "string") {
   process.exit(1);
 }
 
-const mobile = testMobile();
+const mobile = process.env.STAGING_TEST_MOBILE ?? testMobile();
 const response = await fetch(`${values.base}/api/consultation`, {
   method: "POST",
   headers: { "Content-Type": "application/json", "Idempotency-Key": crypto.randomUUID(), ...ACCESS },
@@ -55,6 +60,6 @@ const response = await fetch(`${values.base}/api/consultation`, {
 });
 
 console.log(`${String(response.status)} ${await response.text()}`);
-console.log(`mobile ${mobile}`); // a random test number, not a person's
+console.log(`mobile …${mobile.slice(-4)}`); // never printed in full: it may be a real person's, from STAGING_TEST_MOBILE
 if (response.status === 409) console.log("That window is taken or gone: run it again with another --window.");
 if (response.status !== 201) process.exit(1);

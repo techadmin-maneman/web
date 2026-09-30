@@ -9,6 +9,12 @@
 // Only a code that is sent counts against the day's ceiling, which clients,
 // technicians and number changes share. A number nobody here knows costs its
 // address instead, so asking for random numbers cannot lock everyone out.
+//
+// A code is always asked for by the phone that receives it, so staging's messaging allowlist never holds one back
+// (docs/decisions/0025-phase-2-conflicts-register.md, item 84; ADR 0097) — unless the account is a test record one
+// of our own scripts made ("Staging test", "Load test"), which is messaged only on the allowlist like any other
+// (isStagingTestRecord, src/policy/staging-test-records.ts). Production's allowlist is empty, so neither changes
+// anything there.
 
 import type { Context } from "hono";
 import type { AppEnv } from "./context.ts";
@@ -18,6 +24,7 @@ import { countOne, isSpent, takeOne } from "../domain/rate-limit.ts";
 import { saltedHash } from "../lib/hash.ts";
 import { indiaDate, indiaHour } from "../lib/india-time.ts";
 import { scrubString } from "../log.ts";
+import { isStagingTestRecord } from "../policy/staging-test-records.ts";
 import type { CodeChannel } from "../providers/codes.ts";
 import { afterResponse } from "./after-response.ts";
 
@@ -90,13 +97,22 @@ export async function mayAskForCode(
 }
 
 /**
+ * Whether this account's code would be held back by staging's allowlist: only ever true for one of our own
+ * scripts' test records (ADR 0097, isStagingTestRecord). A real account's code is never held back by it.
+ */
+function heldBackByAllowlist(c: Context<AppEnv>, sendsTo: string, name: string): boolean {
+  return isStagingTestRecord(name) && !onAllowlist(c.var.config.settings.messaging, sendsTo);
+}
+
+/**
  * Counts what this request's code costs: one from the day's ceiling if it will
  * be sent, false once the ceiling is reached; one from its address's day if the
- * number is nobody's. A code the staging allowlist holds back costs nothing.
+ * number is nobody's. A test record's code the allowlist holds back costs nothing.
  */
 export async function countCode(
   c: Context<AppEnv>,
   sendsTo: string | null,
+  name: string | null,
   ipHash: string,
   now: Date,
 ): Promise<boolean> {
@@ -104,28 +120,29 @@ export async function countCode(
     await countOne(c.env.DB, unknownNumbers(ipHash, now));
     return true;
   }
-  if (!onAllowlist(c.var.config.settings.messaging, sendsTo)) return true;
+  if (name !== null && heldBackByAllowlist(c, sendsTo, name)) return true;
   return withinCodeCeiling(c, now);
 }
 
 /**
- * Nothing is sent when no account here holds the number, and the caller passes none; nor, on staging, to a number
- * off the allowlist. Each is logged as `login_code_not_sent` with its reason. Neither the code nor the number is
- * ever logged.
+ * Nothing is sent when no account here holds the number, and the caller passes none; nor to a test record one of
+ * our own scripts made, off the allowlist. Each is logged as `login_code_not_sent` with its reason. Neither the
+ * code nor the number is ever logged.
  */
 export async function sendCodeAfterResponse(
   c: Context<AppEnv>,
   mobileE164: string | null,
+  name: string | null,
   channel: CodeChannel,
   code: string,
 ): Promise<void> {
-  const { log, deps, config } = c.var;
+  const { log, deps } = c.var;
   const work = (async () => {
     if (mobileE164 === null) {
       log.info("login_code_not_sent", { channel, reason: "no account holds the number" });
       return;
     }
-    if (!onAllowlist(config.settings.messaging, mobileE164)) {
+    if (name !== null && heldBackByAllowlist(c, mobileE164, name)) {
       log.info("login_code_not_sent", { channel, reason: "number not on the allowlist" });
       return;
     }

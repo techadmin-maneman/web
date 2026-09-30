@@ -174,7 +174,8 @@ export function registerTechAuth(app: App): void {
       technician = await findFieldTechnician(db, mobileE164);
     }
     const sendsTo = technician?.mobileE164 ?? null;
-    if (!(await countCode(c, sendsTo, visitor.ipHash, now))) return c.json(errorBody("busy", requestId), 503);
+    const name = technician?.name ?? null;
+    if (!(await countCode(c, sendsTo, name, visitor.ipHash, now))) return c.json(errorBody("busy", requestId), 503);
 
     const code = limits.fixedCode ?? newLoginCode();
     const challenge = await createTechnicianChallenge(db, {
@@ -183,7 +184,7 @@ export function registerTechAuth(app: App): void {
       pepper: limits.codePepper,
       now,
     });
-    await sendCodeAfterResponse(c, sendsTo, "whatsapp", code);
+    await sendCodeAfterResponse(c, sendsTo, name, "whatsapp", code);
     return c.json(
       { challenge_id: challenge.id, expires_in_s: Math.ceil((challenge.expiresAt.getTime() - now.getTime()) / 1000) },
       202,

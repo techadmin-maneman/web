@@ -1,6 +1,6 @@
 # 0030. One-time codes for the client app's login
 
-- Status: accepted
+- Status: accepted. Amended 30 September 2026 by [0097](0097-staging-logins-open-reminders-fenced.md): a code no longer checks staging's allowlist at all.
 - Date: 2026-09-22
 
 ## Context
@@ -47,11 +47,11 @@ The app's second screen then says a code is on its way if the number has a booki
 - 10 codes per address per hour (`OTP_IP_HOURLY_LIMIT`);
 - 300 codes in all per day (`OTP_DAILY_CEILING`). Reaching it answers `503 busy` and alerts once.
 
-On staging, codes go only to the allowlisted handsets (`MESSAGING_ALLOWLIST`), and every other number is answered the same.
+> **Amended 30 September 2026 ([ADR 0097](0097-staging-logins-open-reminders-fenced.md), the owner's ruling "logins open, reminders fenced").** A code is always asked for by the phone that receives it, so staging's allowlist (`MESSAGING_ALLOWLIST`) no longer holds one back: `countCode` and `sendCodeAfterResponse` (`src/http/send-code.ts`) do not call `onAllowlist`. Every number with a booking now has its code sent and counted against the day's ceiling below; only a number nobody here knows still costs its address instead of the ceiling.
 
 > **Amended 25 September 2026 (audit finding REQ-S6-02).** The ceiling was taken before the number was looked up, so about 30 address-hours of random numbers used up the day's 300 and locked out every client login, every technician on a new phone and every number change until midnight. Now:
 >
-> - **Only a code that is sent counts against the ceiling**, the one clients, technicians and number changes share. A number nobody here knows, and one the staging allowlist holds back, cost it nothing.
+> - **Only a code that is sent counts against the ceiling**, the one clients, technicians and number changes share. A number nobody here knows costs its address instead of the ceiling (below, corrected 30 September 2026: the allowlist no longer excuses a known number from it either).
 > - **A number nobody knows costs its address instead:** 20 a day (`UNKNOWN_NUMBERS_PER_ADDRESS_DAILY`, `src/http/send-code.ts`). An address past them is refused every number, known or not, until midnight in India. A refusal only for unknown numbers would tell a caller which numbers are real.
 > - Both are read before the number is looked up, so the answer is still the same for every number: `429 rate_limited` from an address past its unknown numbers, and `503 busy` for everyone once the ceiling is reached.
 > - A technician's login reads FSM's user list for a number the mirror does not know at most once in ten minutes, however many such numbers are tried. A technician ops have just added in FSM waits at most that long, or until the nightly sync.
@@ -69,7 +69,7 @@ On staging, codes go only to the allowlisted handsets (`MESSAGING_ALLOWLIST`), a
 - **Clean-up:** the sweeper deletes challenges a day after they expire. Erasure voids a person's open challenges.
 - **Tests** (`test/worker/client-auth.test.ts`) cover:
   - the same answer, and nothing sent, for unbooked, try-on-only and erased numbers;
-  - the allowlist;
+  - a code sent to a number off staging's allowlist, since ADR 0097 a code answers whoever asked for it;
   - each rule, named by its words in `src/policy/one-time-code.ts`;
   - the per-number, per-address and daily limits;
   - the Origin check;

@@ -182,6 +182,10 @@ describe("POST /api/consultation", () => {
       requested_window: "morning",
       referral_code: null,
     });
+    // No slot, no confirmation: the load test (scripts/load-test-leads.ts) runs with self-serve booking off
+    // precisely so its random test numbers are never messaged (docs/decisions/0025-phase-2-conflicts-register.md,
+    // item 84's refinement).
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM outbound_messages").first()).toEqual({ n: 0 });
   });
 });
 
