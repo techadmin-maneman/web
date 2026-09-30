@@ -6,11 +6,13 @@
 //   node --env-file=.env.fsm-staging scripts/setup-fsm.ts           creates what is missing
 //
 // The file holds ZOHO_FSM_CLIENT_ID, ZOHO_FSM_CLIENT_SECRET,
-// ZOHO_FSM_REFRESH_TOKEN, ZOHO_FSM_ACCOUNTS_HOST, ZOHO_FSM_API_HOST and
-// ZOHO_BOOKS_ORG_ID. No secret is printed.
+// ZOHO_FSM_SCRIPTS_REFRESH_TOKEN (the scripts' own, never the Worker's:
+// scripts/lib/zoho-script-token.ts), ZOHO_FSM_ACCOUNTS_HOST, ZOHO_FSM_API_HOST
+// and ZOHO_BOOKS_ORG_ID. No secret is printed.
 
 import { parseArgs } from "node:util";
 import { FSM_BASE_PART_NAME, FSM_SERVICE_NAMES, type VisitType } from "../src/config/visit-types.ts";
+import { refreshTokenForScript } from "./lib/zoho-script-token.ts";
 
 /**
  * A new item's price in rupees before GST: the price book's own since 22
@@ -51,7 +53,7 @@ function report(ok: boolean, check: string, detail: string): void {
 
 async function accessToken(): Promise<string> {
   const query = new URLSearchParams({
-    refresh_token: required("ZOHO_FSM_REFRESH_TOKEN"),
+    refresh_token: refreshTokenForScript("fsm"),
     client_id: required("ZOHO_FSM_CLIENT_ID"),
     client_secret: required("ZOHO_FSM_CLIENT_SECRET"),
     grant_type: "refresh_token",

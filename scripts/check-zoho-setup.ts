@@ -4,7 +4,8 @@
 //
 //   node --env-file=.env.worker-staging scripts/check-zoho-setup.ts
 //
-// The file holds the ZOHO_* secrets. The refresh token's scope must include
+// The file holds the ZOHO_* secrets, with ZOHO_SCRIPTS_REFRESH_TOKEN, the scripts'
+// own refresh token, never the Worker's (scripts/lib/zoho-script-token.ts). Its scope must include
 // ZohoCRM.settings.fields.READ and ZohoCRM.settings.assignment_rules.READ.
 // No secret is printed.
 
@@ -12,6 +13,7 @@ import { LOSS_EXTENT_NAMES, WINDOW_NAMES } from "../src/config/booking.ts";
 import { BOOKED_WINDOW_NAMES, REFERRAL_LEAD_SOURCE } from "../src/config/crm.ts";
 import { LEAD_STATUSES } from "../src/providers/crm.ts";
 import { LEAD_SOURCE_NAMES } from "../src/providers/zoho-crm.ts";
+import { refreshTokenForScript } from "./lib/zoho-script-token.ts";
 
 interface ExpectedField {
   readonly apiName: string;
@@ -73,7 +75,7 @@ const apiHost = required("ZOHO_API_HOST");
 
 async function accessToken(): Promise<string> {
   const query = new URLSearchParams({
-    refresh_token: required("ZOHO_REFRESH_TOKEN"),
+    refresh_token: refreshTokenForScript("crm"),
     client_id: required("ZOHO_CLIENT_ID"),
     client_secret: required("ZOHO_CLIENT_SECRET"),
     grant_type: "refresh_token",
