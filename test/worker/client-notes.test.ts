@@ -9,7 +9,7 @@ import { openSession } from "../../src/domain/sessions.ts";
 import { jobDetail } from "../../src/domain/tech-jobs.ts";
 import { createLogger } from "../../src/log.ts";
 import { NO_SHOW_WAIT_MIN } from "../../src/policy/no-show.ts";
-import { appFor, fakeDependencies, markDatabase, NOW, request } from "./helpers.ts";
+import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const OTHER = "11111111-1111-4111-8111-111111111112";
@@ -17,15 +17,23 @@ const VISIT = "22222222-2222-4222-8222-222222222222";
 const TECHNICIAN = "33333333-3333-4333-8333-333333333333";
 
 let cookie: string;
+/** Where the note goes on to FSM (docs/decisions/0099-the-clients-note-in-fsm.md). */
+let fsmQueue: ReturnType<typeof fakeQueue>;
 
 const note = (body: unknown, settings = {}, visit = VISIT) =>
-  request(appFor("local", fakeDependencies(), settings, "client"), `/api/appointments/${visit}/note`, {
-    method: "POST",
-    headers: { Cookie: cookie, Origin: "https://maneman.test", "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  request(
+    appFor("local", fakeDependencies(), settings, "client"),
+    `/api/appointments/${visit}/note`,
+    {
+      method: "POST",
+      headers: { Cookie: cookie, Origin: "https://maneman.test", "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+    { FSM_QUEUE: fsmQueue },
+  );
 
 beforeEach(async () => {
+  fsmQueue = fakeQueue();
   await markDatabase();
   await env.DB.batch([
     env.DB.prepare(
@@ -88,6 +96,23 @@ describe("POST /api/appointments/:id/note", () => {
     await env.DB.prepare("UPDATE appointments SET status = 'scheduled'").run();
     expect((await note({ note: "   " })).status).toBe(400);
     expect((await note({ note: "x".repeat(501) })).status).toBe(400);
+    expect(fsmQueue.sent).toEqual([]);
+  });
+
+  it("sends each note on to the visit's appointment in FSM", async () => {
+    await note({ note: "Ring twice" });
+    await note({ note: "The lift is out" });
+    const sent = { note_appointment_id: VISIT, request_id: expect.any(String) as string };
+    expect(fsmQueue.sent).toEqual([sent, sent]);
+  });
+
+  it("keeps the note, and tells ops once, when it cannot be sent on to FSM", async () => {
+    fsmQueue.send = () => Promise.reject(new Error("queue unavailable"));
+    expect((await note({ note: "Ring twice" })).status).toBe(200);
+    expect((await note({ note: "Ring twice" })).status).toBe(200);
+    const alerts = await env.DB.prepare("SELECT key FROM alerts WHERE resolved_at IS NULL").all();
+    expect(alerts.results).toEqual([{ key: `client_note_fsm:${VISIT}` }]);
+    expect(await env.DB.prepare("SELECT client_note FROM appointments").first()).toEqual({ client_note: "Ring twice" });
   });
 
   it("is blanked when the client is erased, as the rest of what they wrote is", async () => {
