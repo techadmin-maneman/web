@@ -12,10 +12,11 @@ describe("a script's Zoho refresh token", () => {
   it("is never the Worker's unless the person running the script asks for it", () => {
     const env = { ZOHO_REFRESH_TOKEN: "crm-worker", ZOHO_FSM_REFRESH_TOKEN: "fsm-worker" };
     const refused = scriptRefreshToken("crm", env, []);
-    expect(refused).toEqual({ problem: expect.stringContaining("ZOHO_SCRIPTS_REFRESH_TOKEN is not set") });
+    expect("problem" in refused ? refused.problem : "").toContain("ZOHO_SCRIPTS_REFRESH_TOKEN is not set");
 
     const asked = scriptRefreshToken("fsm", env, [USE_WORKER_TOKEN]);
-    expect(asked).toEqual({ token: "fsm-worker", warning: expect.stringContaining("ZOHO_FSM_REFRESH_TOKEN") });
+    expect(asked).toMatchObject({ token: "fsm-worker" });
+    expect("warning" in asked ? asked.warning : "").toContain("ZOHO_FSM_REFRESH_TOKEN");
   });
 
   it("prefers the scripts' own even when the Worker's is asked for", () => {

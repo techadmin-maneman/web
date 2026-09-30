@@ -11,6 +11,7 @@
     "node": ">=24.11.0"
   },
   "scripts": {
+    "texts:export": "node scripts/export-texts.ts",
     "dev": "node scripts/ensure-dev-vars.ts && npm run db:local && wrangler dev --env=\"\" --port 8787 --inspector-port 9230 --test-scheduled",
     "dev:all": "node scripts/dev-all.ts",
     "dev:site": "node scripts/build-site.ts --dev",
@@ -78,6 +79,7 @@
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1",
     "astro": "7.3.3",
+    "docx": "9.8.1",
     "eslint": "10.11.0",
     "fake-indexeddb": "6.2.5",
     "jiti": "2.7.0",
