@@ -184,7 +184,7 @@ export const TASKS = {
           person: { id: "22000000-0000-4000-8000-000000000003", name: "Rohan Bhalla" },
           detail: "shared_address",
           since: "2027-09-17T06:00:00.000Z",
-          due: "2027-09-18T06:00:00.000Z",
+          due: "2027-09-19T06:00:00.000Z",
           owner: "anil@maneman.in",
         },
         {
@@ -206,7 +206,7 @@ export const TASKS = {
           id: "66000000-0000-4000-8000-000000000001",
           person: { id: "22000000-0000-4000-8000-000000000010", name: "Deepak Rao" },
           detail: "Imran Qureshi",
-          since: "2027-09-18T06:17:00.000Z",
+          since: "2027-09-19T06:17:00.000Z",
           due: "2027-09-21T06:17:00.000Z",
           owner: null,
         },
