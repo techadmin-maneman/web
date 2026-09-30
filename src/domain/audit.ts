@@ -79,6 +79,14 @@ export const AUDIT_ACTIONS = [
   "task.hand_back",
   "task.close",
   "address.given_to_ops",
+  // A booking FSM would not take, held for ops (docs/decisions/0095-a-booking-fsm-refuses-is-held.md): FSM tried again
+  // at ops' asking and taking it, the visit ops booked in FSM by hand linked to it, its refund, its hourly tries
+  // stopped so ops book it in FSM by hand, and a link that let it go instead, its payment having gone back.
+  "booking.retry",
+  "booking.link",
+  "booking.refund",
+  "booking.stop",
+  "booking.give_back",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
@@ -140,6 +148,25 @@ export function auditStatementIfWritten(
        SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9 WHERE EXISTS (SELECT 1 FROM ${written.table} WHERE id = ?10)`,
     )
     .bind(...valuesOf(entry, now), written.id);
+}
+
+/**
+ * The entry for a hold booked as a visit earlier in the same batch, by a statement that books nothing when another
+ * booking took the visit a moment before: it is written only if the hold is now booked as that visit.
+ */
+export function auditStatementIfBooked(
+  db: D1Database,
+  entry: AuditEntry,
+  now: Date,
+  booked: { readonly holdId: string; readonly visitId: string },
+): D1PreparedStatement {
+  return db
+    .prepare(
+      `INSERT INTO audit_log (${COLUMNS})
+       SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9
+       WHERE EXISTS (SELECT 1 FROM slot_holds WHERE id = ?10 AND state = 'booked' AND appointment_id = ?11)`,
+    )
+    .bind(...valuesOf(entry, now), booked.holdId, booked.visitId);
 }
 
 export async function recordAudit(db: D1Database, entry: AuditEntry, now: Date): Promise<void> {

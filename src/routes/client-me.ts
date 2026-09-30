@@ -7,6 +7,10 @@
 // What the client may book now is every service offered of each kind open to
 // them, for the booking sheet to offer (docs/decisions/0085-services-ops-can-edit.md).
 //
+// A visit paid for, or booked free, that FSM does not have yet is said to be on
+// its way, neither booked nor refunded, while FSM is written or while it waits
+// after FSM refused it (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
+//
 // With nothing booked, it says what the app offers next, which the booking
 // sheet opens pre-filled with: the first fit once the consultation is done, or
 // the next service once a visit is (docs/decisions/0086-the-next-visit-is-offered.md),
@@ -18,6 +22,7 @@ import { WINDOW_LABELS, type WindowLabel } from "../config/booking.ts";
 import { BOOKING_WINDOWS, type BookingWindow } from "../config/scheduling.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { CLIENT_STATES, clientStateOf, isFitted, nextVisit } from "../domain/client-visits.ts";
+import { bookingUnderWay } from "../domain/holds.ts";
 import { creditBalance } from "../domain/credits.ts";
 import { homePrompt } from "../domain/home-prompt.ts";
 import { nextVisitFacts } from "../domain/next-visit.ts";
@@ -67,6 +72,23 @@ export const MeSchema = z
     next_visit: z
       .union([VisitSummarySchema, z.null()])
       .openapi({ description: "The next visit that has not happened, from FSM: a consultation for a lead." }),
+    being_booked: z
+      .union([
+        z
+          .object({
+            type: z.enum(VISIT_TYPES),
+            date: z.iso.date(),
+            window: z.enum(BOOKING_WINDOWS),
+            paid: z.boolean().openapi({ description: "Paid for in money, rather than free or covered by a credit." }),
+          })
+          .strict(),
+        z.null(),
+      ])
+      .openapi({
+        description:
+          "The soonest visit paid for, or booked free, that FSM does not have yet: neither booked nor refunded. It " +
+          "is on its way, or held after FSM refused it, and becomes a visit once FSM takes it (ADR 0095).",
+      }),
     credits: z
       .union([CreditsSchema, z.null()])
       .openapi({ description: "The credit tile: balance and earliest expiry; null with none left." }),
@@ -196,6 +218,7 @@ export function registerClientMe(app: App): void {
 
     const now = c.var.deps.now();
     const upcoming = await nextVisit(db, session.subjectId, now);
+    const underWay = await bookingUnderWay(db, session.subjectId);
     const credits = await creditBalance(db, session.subjectId, now);
     const fitted = await isFitted(db, session.subjectId);
     const booking = await latestProposal(db, session.subjectId);
@@ -233,6 +256,7 @@ export function registerClientMe(app: App): void {
             ? null
             : { date: proposal.proposed_visit_date, window, window_label: PHASE1_WORDS[window] ?? null, place },
         next_visit: upcoming,
+        being_booked: underWay,
         credits: credits.visits > 0 ? { visits: credits.visits, earliest_expiry: credits.earliestExpiry } : null,
         prompt: await homePrompt(db, session.subjectId, { booked, offer }, now, days),
         booking: { self_serve: c.var.config.settings.selfServeBooking, types, services, next: offer },

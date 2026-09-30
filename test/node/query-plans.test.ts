@@ -32,6 +32,7 @@ const CRON_PATH = [
   "src/domain/next-visit.ts",
   "src/domain/dispatch.ts",
   "src/domain/storage-meter.ts",
+  "src/domain/held-bookings.ts",
 ];
 
 /** A payment and what it pays for: the hold page polls these while the client pays. */

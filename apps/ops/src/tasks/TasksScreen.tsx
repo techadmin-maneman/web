@@ -3,7 +3,7 @@
 // database already keeps — a consultation asked for, a held grant, an
 // undecided no-show, a number change, an erasure, a grievance, a piece past its
 // replacement date, an invoice still a draft, an erasure FSM would not finish,
-// a moved visit whose client has not heard of it, a visit left partly done, a
+// a moved visit whose client has not heard of it, a booking FSM refused, a visit left partly done, a
 // visit to come with no address, a job on its technician's day off, a client
 // past their next service with nothing booked, a first fit asked for and not
 // booked — so it leaves the list when that row is decided, on the section that
@@ -59,6 +59,8 @@ const DECIDED_IN: Partial<Record<Group, { readonly page: string; readonly row: s
 /** The tab of the client's page each group is about; the page opens on Pieces otherwise. */
 const CLIENT_TAB: Partial<Record<Group, ClientTab>> = {
   untold_move: "visits",
+  // Booked in FSM, linked, or refunded from the Visits tab (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
+  held_booking: "visits",
   leave_conflict: "visits",
   address_to_confirm: "visits",
   consultation_request: "visits",
@@ -96,6 +98,12 @@ function subOf(group: Group, task: Task, now: Date): string {
     return task.detail === null
       ? tasks.unknown
       : copy.untold_move(`${shortDate(indiaDate(task.detail))}, ${indiaClock(task.detail)}`);
+  }
+  if (group === "held_booking") {
+    // The visit's kind, its day and its window, as the booking held them.
+    const [type = "", day = "", when = ""] = task.detail?.split(" ") ?? [];
+    if (day === "") return tasks.unknown;
+    return copy.held_booking(dispatch.typeNames[type] ?? type, shortDate(day), dispatch.windows[when] ?? when);
   }
   if (group === "leave_conflict") {
     // The job's start, then the technician who is away that day.
