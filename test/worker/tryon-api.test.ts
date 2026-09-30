@@ -404,16 +404,13 @@ describe("POST /api/tryon/claim", () => {
     expect(await (await browser.claim(jobId)).json()).toMatchObject({ whatsapp_copy: false });
   });
 
-  it("promises a WhatsApp copy only to a number on the allowlist, where there is one", async () => {
+  // Owner ruling, 30 September 2026 ("logins open, reminders fenced", ADR 0025 item 84; ADR 0097): the result
+  // answers the person who just claimed it, so the promise holds for any number, allowlisted or not.
+  it("promises a WhatsApp copy to any number, since the result answers the person who just claimed it", async () => {
     const browser = visitor({ messaging: { allowlist: ["+919810000002"] } });
-    const skipped = await browser.uploaded();
-    await browser.generate(skipped);
-    expect(await (await browser.claim(skipped, "98100 00001")).json()).toMatchObject({ whatsapp_copy: false });
-
-    const other = visitor({ messaging: { allowlist: ["+919810000002"] } });
-    const sent = await other.uploaded();
-    await other.generate(sent);
-    expect(await (await other.claim(sent, "98100 00002")).json()).toMatchObject({ whatsapp_copy: true });
+    const jobId = await browser.uploaded();
+    await browser.generate(jobId);
+    expect(await (await browser.claim(jobId, "98100 00001")).json()).toMatchObject({ whatsapp_copy: true });
   });
 
   it("keeps a person who booked before contactable", async () => {

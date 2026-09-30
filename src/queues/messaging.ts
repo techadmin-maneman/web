@@ -7,14 +7,17 @@
 // (src/domain/next-visit.ts); and the referral, waitlist and launch messages,
 // each composed where its subject lives.
 //
-// Skipped, never sent: messaging off, a person erased, a number outside the
-// staging allowlist, or the daily cap reached. A transient failure is retried
-// three times; then the message fails and an alert names it.
+// Skipped, never sent: messaging off, a person erased, an automatic kind to a
+// number outside the staging allowlist (a kind that answers the person who
+// just acted reaches any number there, ADR 0097), or the daily cap reached. A
+// transient failure is retried three times; then the message fails and an
+// alert names it.
 
 import { z } from "zod";
 import { PUBLIC_ORIGIN } from "../config/environments.ts";
+import { messageClass } from "../config/message-templates.ts";
 import { MAX_SEND_ATTEMPTS } from "../config/pipeline.ts";
-import { onAllowlist } from "../config/settings.ts";
+import { onAllowlist, type MessagingSettings } from "../config/settings.ts";
 import { RESULT_LINK_MESSAGE_TTL_MS } from "../config/tryon.ts";
 import type { Dependencies } from "../dependencies.ts";
 import type { StaticConfig } from "../guard.ts";
@@ -85,6 +88,10 @@ type Content =
 
 const isVisitKind = (kind: string): kind is VisitMessageKind =>
   (VISIT_MESSAGE_KINDS as readonly string[]).includes(kind);
+
+/** Whether staging's allowlist should hold this message back: only ever true for an automatic kind (ADR 0097). */
+const heldBackByAllowlist = (messaging: MessagingSettings, mobileE164: string, kind: string): boolean =>
+  messageClass(kind) === "automatic" && !onAllowlist(messaging, mobileE164);
 
 /** The try-on result: the person's result image, within the daily cap on result messages to one number. */
 async function resultContent(db: D1Database, config: StaticConfig, row: MessageRow, now: Date): Promise<Content> {
@@ -171,7 +178,7 @@ export async function sendMessage(
 
   if (row.erased_at !== null) return skip("person erased");
   if (!messaging.enabled) return skip("messaging is off");
-  if (!onAllowlist(messaging, row.mobile_e164)) return skip("number not on the allowlist");
+  if (heldBackByAllowlist(messaging, row.mobile_e164, row.kind)) return skip("number not on the allowlist");
   const content = await contentOf(db, config, row, now);
   if ("skip" in content) return skip(content.skip);
 

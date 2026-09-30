@@ -9,8 +9,9 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
+import { messageClass } from "../config/message-templates.ts";
 import { CURRENT_NOTICE, findNotice } from "../config/notices.ts";
-import { onAllowlist, type MessagingSettings } from "../config/settings.ts";
+import type { MessagingSettings } from "../config/settings.ts";
 import { takeOne } from "../domain/rate-limit.ts";
 import { loadJob, loadSession, type JobRow } from "../domain/tryon.ts";
 import { reclaimJob, recordClaim, reserveJob } from "../domain/tryon-claims.ts";
@@ -184,14 +185,18 @@ async function claim(c: Context<AppEnv>, request: z.infer<typeof ClaimRequestSch
 
   return {
     ok: true,
-    body: { lead_id: leadId, whatsapp_copy: promisesCopy(settings.messaging, mobileE164) },
+    body: { lead_id: leadId, whatsapp_copy: promisesCopy(settings.messaging) },
     sessionId: claimed.sessionId,
   };
 }
 
-/** The page may say a copy is on its way only when the messaging queue will send it, not skip it. */
-const promisesCopy = (messaging: MessagingSettings, mobileE164: string): boolean =>
-  messaging.enabled && onAllowlist(messaging, mobileE164);
+/**
+ * The page may say a copy is on its way only when the messaging queue will send it, not skip it. The result
+ * answers the person who just claimed it (MESSAGE_CLASSES.tryon_result is "answering"), so on staging it goes to
+ * any number, not only the allowlist's (ADR 0097).
+ */
+const promisesCopy = (messaging: MessagingSettings): boolean =>
+  messaging.enabled && messageClass("tryon_result") === "answering";
 
 /** A job already claimed, claimed again: a fresh session for its own number, refused for any other. */
 async function reclaim(c: Context<AppEnv>, job: JobRow, mobileE164: string): Promise<Outcome> {
@@ -199,7 +204,7 @@ async function reclaim(c: Context<AppEnv>, job: JobRow, mobileE164: string): Pro
   if (reclaimed === null) return { ok: false, status: 409, code: "job_not_claimable" };
   return {
     ok: true,
-    body: { lead_id: reclaimed.leadId, whatsapp_copy: promisesCopy(c.var.config.settings.messaging, mobileE164) },
+    body: { lead_id: reclaimed.leadId, whatsapp_copy: promisesCopy(c.var.config.settings.messaging) },
     sessionId: reclaimed.sessionId,
   };
 }

@@ -40,13 +40,17 @@ export interface MessagingSettings {
   readonly enabled: boolean;
   /** The approved WhatsApp template that carries a result. */
   readonly resultTemplate: string;
-  /** When not empty, only these E.164 numbers receive messages (staging: the founders' handsets). */
+  /**
+   * When not empty, an automatic message (a reminder, or one to someone other than who acted) goes only to these
+   * E.164 numbers (staging: the founders' handsets); a login code and a message that answers the person who just
+   * acted go anywhere regardless (`MESSAGE_CLASSES`, src/config/message-templates.ts; ADR 0097).
+   */
   readonly allowlist: readonly string[];
   /** Present when MESSAGING_PROVIDER is "evolution". */
   readonly evolution: EvolutionSettings | null;
 }
 
-/** A number messages may go to: every number, unless there is an allowlist and it does not name this one. */
+/** A number an automatic message may go to: every number, unless there is an allowlist and it does not name this one. */
 export const onAllowlist = (messaging: MessagingSettings, mobileE164: string): boolean =>
   messaging.allowlist.length === 0 || messaging.allowlist.includes(mobileE164);
 
