@@ -70,8 +70,16 @@ test("says a dispute is being looked at, and offers no second one", async ({ pag
 });
 
 test("says how ops ruled on the dispute", async ({ page }) => {
+  await charged(page, "upheld");
+  await expect(page.getByText("Charged: we kept Rs. 4,000 of what you paid.")).toBeVisible();
+  await expect(page.getByText("We looked at your dispute. The charge stands.")).toBeVisible();
+});
+
+// A refund undoes the charge, so the page says only the outcome, never "we kept" above "refunded".
+test("says only that the charge was refunded, once ops refund it", async ({ page }) => {
   await charged(page, "refunded");
   await expect(page.getByText("We looked at your dispute and refunded the charge.")).toBeVisible();
+  await expect(page.getByText("Charged: we kept Rs. 4,000 of what you paid.")).toHaveCount(0);
 });
 
 test("meets WCAG 2.2 AA with the charge, and with its dispute open", async ({ page }) => {

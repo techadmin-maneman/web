@@ -106,7 +106,8 @@ function NoShow({ visitId, note, onDisputed }: { visitId: string; note: NoShowNo
         {copy.label}
       </h2>
       <p className={styles.noShowLine}>{copy.line(note.waited_minutes)}</p>
-      <p className={styles.noShowLine}>{rulingOf(note)}</p>
+      {/* A refund undoes the charge, so after one only its outcome is said. */}
+      {note.dispute !== "refunded" && <p className={styles.noShowLine}>{rulingOf(note)}</p>}
       {note.dispute !== null && <p className={styles.noShowLine}>{copy.disputed[note.dispute]}</p>}
       {note.disputable && (
         <Button
