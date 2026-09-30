@@ -15,9 +15,8 @@
 // move a visit, the notice counts from its time before they moved it
 // (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
 
-import { WINDOW_TIMES } from "../config/scheduling.ts";
 import { STANDARD_TIER, type VisitType } from "../config/visit-types.ts";
-import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
+import { addDays, indiaDate, indiaInstant } from "../lib/india-time.ts";
 import type { Logger } from "../log.ts";
 import { withGst } from "../config/gst.ts";
 import {
@@ -40,11 +39,12 @@ import {
 import { NO_SHOW_CHARGES } from "../policy/no-show.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
 import type { PaymentsProvider } from "../providers/payments.ts";
+import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
 import type { AlertOnce } from "./alerts.ts";
 import type { OpsInputs } from "./ops-settings.ts";
 import { priceOf, type Price } from "./price-book.ts";
 import { bookedMinutes } from "./scheduling.ts";
-import { windowAt } from "../policy/windows.ts";
+import { windowTimesOf } from "../policy/slot-times.ts";
 import { visitMessage } from "./visit-messages.ts";
 
 export interface ChangeableVisit {
@@ -107,9 +107,10 @@ export async function changeableVisit(
   };
 }
 
-/** When the visit's window starts, which the 24 hours count back from. */
-export function windowStartOf(start: Date): Date {
-  return indiaInstant(indiaDate(start), WINDOW_TIMES[windowAt(indiaTime(start))].start);
+/** When the visit's window starts, by the times in force on its day, which the 24 hours count back from. */
+export function windowStartOf(start: Date, schedule: SlotSchedule): Date {
+  const { date, window } = schedule.at(start);
+  return indiaInstant(date, windowTimesOf(schedule.on(date))[window].start);
 }
 
 export interface VisitPayment {
@@ -295,7 +296,7 @@ export async function changeTerms(
 ): Promise<ChangeTerms> {
   const { terms, lateFee } = await termsOfVisit(db, visit, inForce);
   const noticeFrom = noticeCountsFrom(visit.start, visit.startBeforeMove);
-  const windowStarts = windowStartOf(noticeFrom);
+  const windowStarts = windowStartOf(noticeFrom, await loadSlotSchedule(db));
   const notice = noticeAt(windowStarts, now, terms.noticeHours);
   const payment = await visitPayment(db, visit.id);
   const paid = payment?.paid ?? 0;

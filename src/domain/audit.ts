@@ -48,6 +48,8 @@ export const AUDIT_ACTIONS = [
   "setting.change",
   "price.set",
   "price.withdraw",
+  // The day's half-slot times from a date (docs/decisions/0102-window-times.md).
+  "slot_times.set",
   "pincode.set",
   "pincode.rename",
   // The days no visit is offered, which the runbook's SQL set before (docs/decisions/0088-every-policy-in-the-console.md).
@@ -143,7 +145,13 @@ export function auditStatementIfWritten(
   now: Date,
   written: {
     readonly table:
-      "grievances" | "consents" | "referral_attributions" | "stock_movements" | "task_closures" | "no_show_disputes";
+      | "grievances"
+      | "consents"
+      | "referral_attributions"
+      | "stock_movements"
+      | "task_closures"
+      | "no_show_disputes"
+      | "slot_times";
     readonly id: string;
   },
 ): D1PreparedStatement {

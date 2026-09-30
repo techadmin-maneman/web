@@ -321,7 +321,7 @@ describe("Zoho record and note contents", () => {
       expect(recordFor(invited, "New", true, { referral: true })).toMatchObject({
         Lead_Source: "Referral",
         Referral_Code: "RM7K2Q",
-        Booked_Window: "Afternoon, 12 to 4 pm",
+        Booked_Window: "Afternoon",
       });
     });
 

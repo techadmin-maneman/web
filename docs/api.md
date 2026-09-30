@@ -1225,7 +1225,8 @@ Razorpay's webhook: payments and refunds
             "already_invited",
             "already_fitted",
             "already_disputed",
-            "not_disputable"
+            "not_disputable",
+            "slot_times_too_soon"
           ]
         },
         "request_id": {
@@ -1583,7 +1584,8 @@ Razorpay's webhook: payments and refunds
             "already_invited",
             "already_fitted",
             "already_disputed",
-            "not_disputable"
+            "not_disputable",
+            "slot_times_too_soon"
           ]
         },
         "request_id": {

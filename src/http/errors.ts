@@ -90,6 +90,9 @@ export const ERROR_CODES = [
   // was disputed already, or took nothing to give back.
   "already_disputed",
   "not_disputable",
+  // A change of the day's times from a day a client can still book, or a visit is booked on or after
+  // (docs/decisions/0102-window-times.md).
+  "slot_times_too_soon",
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 

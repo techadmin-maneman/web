@@ -8,9 +8,9 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/http/context.ts";
 import { VISIT_BLOCKS } from "../../src/config/scheduling.ts";
 import type { VisitType } from "../../src/config/visit-types.ts";
-import { placement, unitAt } from "../../src/domain/scheduling.ts";
+import { placement } from "../../src/domain/scheduling.ts";
 import { unitsFor } from "../../src/policy/visit-length.ts";
-import { windowAt } from "../../src/policy/windows.ts";
+import { DEFAULT_SLOT_TIMES, unitAt, windowAt } from "../../src/policy/slot-times.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { appFor, fakeDependencies, LOCAL_SETTINGS, markDatabase, NOW, request, savedAddress } from "./helpers.ts";
 
@@ -102,8 +102,10 @@ describe("the working day", () => {
   });
 
   it("reads a time of day as its half-slot and window", () => {
-    expect([unitAt("09:00"), unitAt("11:15"), unitAt("12:00"), unitAt("18:30")]).toEqual([0, 1, 2, 7]);
-    expect([windowAt("09:30"), windowAt("12:00"), windowAt("16:00")]).toEqual(["morning", "afternoon", "evening"]);
+    const unit = (time: string) => unitAt(time, DEFAULT_SLOT_TIMES);
+    const window = (time: string) => windowAt(time, DEFAULT_SLOT_TIMES);
+    expect([unit("09:00"), unit("11:15"), unit("12:00"), unit("18:30")]).toEqual([0, 1, 2, 7]);
+    expect([window("09:30"), window("12:00"), window("16:00")]).toEqual(["morning", "afternoon", "evening"]);
   });
 });
 
@@ -123,10 +125,11 @@ describe("GET /api/availability", () => {
     expect(body.days[0]).toEqual({
       date: "2026-09-22",
       price: { amount_ex_gst: 200000, amount: 200000, gst_percent: 0 },
+      // Each window with its hours that day (docs/decisions/0102-window-times.md).
       windows: [
-        { window: "morning", with: "regular" },
-        { window: "afternoon", with: "regular" },
-        { window: "evening", with: "regular" },
+        { window: "morning", start: "09:00", end: "12:00", with: "regular" },
+        { window: "afternoon", start: "12:00", end: "16:00", with: "regular" },
+        { window: "evening", start: "16:00", end: "20:00", with: "regular" },
       ],
     });
   });
@@ -137,13 +140,13 @@ describe("GET /api/availability", () => {
     const once = await (
       await request(app, "/api/availability?type=service&from=2026-09-23", { headers: { Cookie: rohit.cookie } })
     ).json<{ days: { windows: { window: string; with: string | null }[] }[] }>();
-    expect(once.days[0]?.windows[1]).toEqual({ window: "afternoon", with: "another" });
+    expect(once.days[0]?.windows[1]).toMatchObject({ window: "afternoon", with: "another" });
 
     await visit(null, "first_fit", "dispatched", "2026-09-23T07:30:00.000Z", SANDEEP); // Wednesday, 1 pm
     const twice = await (
       await request(app, "/api/availability?type=service&from=2026-09-23", { headers: { Cookie: rohit.cookie } })
     ).json<{ days: { windows: { window: string; with: string | null }[] }[] }>();
-    expect(twice.days[0]?.windows[1]).toEqual({ window: "afternoon", with: null });
+    expect(twice.days[0]?.windows[1]).toMatchObject({ window: "afternoon", with: null });
   });
 
   it("will not offer a kind of visit the client may not book, and is off where self-serve booking is", async () => {

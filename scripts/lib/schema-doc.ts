@@ -122,6 +122,7 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   slot_claims:
     "What a hold or a visit takes of a technician's day, a row per half-slot and window, so no time is taken twice (ADR 0034, ADR 0069).",
   slot_holds: "A slot held while a client pays, and what became of it (ADR 0045, ADR 0068).",
+  slot_times: "Each change of the day's half-slot times ops set, from the day it applies; never changed (ADR 0102).",
   stock_balances:
     "What each place holds of each consumable, and when it last counted it: the sum of its rows in `stock_movements`, kept by triggers as each is written (ADR 0087).",
   stock_movements:

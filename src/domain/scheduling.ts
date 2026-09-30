@@ -29,21 +29,20 @@ import {
   BOOKING_WINDOWS,
   MOVE_CLAIM_SECONDS,
   PAYMENT_GRACE_SECONDS,
-  UNIT_STARTS,
   UNITS_PER_DAY,
   VISIT_BLOCKS,
   WINDOW_SLOT_MAP,
-  WINDOW_TIMES,
   type BookingWindow,
 } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
-import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
+import { addDays, indiaInstant } from "../lib/india-time.ts";
 import { clashes } from "../policy/dispatch.ts";
 import type { SoldTerms } from "../policy/moving-a-visit.ts";
 import { bookedLength, unitsFor } from "../policy/visit-length.ts";
-import { windowAt } from "../policy/windows.ts";
+import { unitAt } from "../policy/slot-times.ts";
 import { isFitted } from "./client-visits.ts";
 import type { Price } from "./price-book.ts";
+import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
 import { MINUTE_MS, minutesBetween } from "../lib/durations.ts";
 
 /** What one technician's day already holds. */
@@ -63,15 +62,6 @@ export async function loadBlackouts(db: D1Database, from: string, to: string): P
     .bind(from, to)
     .all<{ date: string }>();
   return new Set(results.map((row) => row.date));
-}
-
-/** The half-slot a time of day in India falls in: the last one starting at or before it. */
-export function unitAt(time: string): number {
-  let unit = 0;
-  UNIT_STARTS.forEach((start, index) => {
-    if (start <= time) unit = index;
-  });
-  return unit;
 }
 
 /** Whether every one of a visit's half-slots, starting at `start`, is free, and inside the day. */
@@ -222,14 +212,14 @@ export async function occupancy(
     )
     .bind(indiaInstant(from, "00:00").toISOString(), indiaInstant(addDays(to, 1), "00:00").toISOString(), exceptVisitId)
     .all<BookedVisit & { technician_id: string }>();
+  const schedule = await loadSlotSchedule(db);
   for (const visit of visits.results) {
-    const starts = new Date(visit.window_start);
-    const time = indiaTime(starts);
-    const day = dayOf(visit.technician_id, indiaDate(starts));
-    const start = unitAt(time);
+    const { date, time, window } = schedule.at(visit.window_start);
+    const day = dayOf(visit.technician_id, date);
+    const start = unitAt(time, schedule.on(date));
     const units = unitsFor(bookedMinutes(visit));
     for (let unit = start; unit < Math.min(start + units, UNITS_PER_DAY); unit += 1) day.units.add(unit);
-    day.windows.add(windowAt(time));
+    day.windows.add(window);
   }
 
   return (technicianId, date) => days.get(`${technicianId}/${date}`) ?? emptyDay();
@@ -287,8 +277,8 @@ export async function liveVisitOf(
     .bind(personId, type)
     .first<{ window_start: string }>();
   if (booked !== null) {
-    const starts = new Date(booked.window_start);
-    return { date: indiaDate(starts), window: windowAt(indiaTime(starts)) };
+    const { date, window } = (await loadSlotSchedule(db)).at(booked.window_start);
+    return { date, window };
   }
   const paid = await db
     .prepare(
@@ -500,12 +490,34 @@ export async function holdSlot(
   return null;
 }
 
-/** When a visit starting in a half-slot starts and ends, as FSM books it: from the half-slot's start, for its length. */
-export function visitTimes(date: string, startUnit: number, minutes: number): { start: Date; end: Date } {
-  const start = indiaInstant(date, UNIT_STARTS[startUnit] ?? WINDOW_TIMES.morning.start);
+/**
+ * When a visit starting in a half-slot starts and ends, as FSM books it: from the half-slot's start by the times in
+ * force on its day, for its length.
+ */
+export function visitTimes(
+  date: string,
+  startUnit: number,
+  minutes: number,
+  schedule: SlotSchedule,
+): { start: Date; end: Date } {
+  const { unitStarts } = schedule.on(date);
+  const start = indiaInstant(date, unitStarts[startUnit] ?? unitStarts[0] ?? "09:00");
   return { start, end: new Date(start.getTime() + minutes * MINUTE_MS) };
 }
 
 /** How long a hold's visit is booked for: the length it was held for, or its kind's for a hold made before lengths. */
 export const heldMinutes = (hold: { readonly type: VisitType; readonly minutes: number | null }): number =>
   hold.minutes ?? VISIT_BLOCKS[hold.type].minutes;
+
+/** When a hold's visit starts and ends, from its half-slot by the times in force on its day. */
+export async function heldVisitTimes(
+  db: D1Database,
+  hold: {
+    readonly date: string;
+    readonly start_unit: number;
+    readonly type: VisitType;
+    readonly minutes: number | null;
+  },
+): Promise<{ start: Date; end: Date }> {
+  return visitTimes(hold.date, hold.start_unit, heldMinutes(hold), await loadSlotSchedule(db));
+}

@@ -27,7 +27,7 @@ import {
   type NextVisitType,
 } from "../policy/next-visit.ts";
 import { DAY_BEFORE_REMINDER_HOUR } from "../policy/job-visibility.ts";
-import { windowAt } from "../policy/windows.ts";
+import { loadSlotSchedule } from "./slot-times.ts";
 import { consentGiven } from "./messages.ts";
 import { serviceToOffer } from "./services.ts";
 import { NO_VISITS_CONSENT, remindersFrom, type Composed } from "./visit-messages.ts";
@@ -113,7 +113,7 @@ export async function nextVisitFacts(
         type,
         tier: await serviceToOffer(db, personId, type, date),
         date,
-        window: windowFor(type, windowAt(indiaTime(last))),
+        window: windowFor(type, (await loadSlotSchedule(db)).at(last).window),
       },
     };
   }

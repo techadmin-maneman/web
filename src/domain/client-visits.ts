@@ -4,14 +4,14 @@
 // "not found".
 
 import { STANDARD_TIER, type VisitType } from "../config/visit-types.ts";
-import { indiaDate, indiaTime } from "../lib/india-time.ts";
-import { windowAt } from "../policy/windows.ts";
+import { indiaDate } from "../lib/india-time.ts";
 import { signToken } from "../lib/signed-token.ts";
 import type { AppointmentStatus, VisitOutcome } from "./fsm-mirror.ts";
 import { jobSheet } from "./job-sheet-settings.ts";
 import { noShowNotes, type NoShowNote } from "./no-shows.ts";
 import { priceOf } from "./price-book.ts";
 import { currentAddress } from "./profile.ts";
+import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
 import { ANGLES, type Angle, type Phase } from "./visit-photos.ts";
 import { MINUTE_MS, minutesBetween } from "../lib/durations.ts";
 
@@ -20,8 +20,6 @@ export type VisitWindowLabel = "morning" | "afternoon" | "evening";
 
 /** A photograph's link lasts this long; the app asks again for a fresh one. */
 export const PHOTO_LINK_MS = 15 * MINUTE_MS;
-
-export const windowOf = (startsAt: string): VisitWindowLabel => windowAt(indiaTime(new Date(startsAt)));
 
 /**
  * Where a visit FSM has not closed stands for the client: still to come, under
@@ -80,13 +78,20 @@ const NOT_CLOSED: readonly AppointmentStatus[] = ["scheduled", "dispatched", "in
 const UPCOMING_STATUSES = `('scheduled', 'dispatched', 'in_progress')`;
 const PAST_STATUSES = `('completed', 'terminated')`;
 
-/** Where a visit is: the client's saved address, else FSM's city and pincode. */
-async function placeOf(db: D1Database, personId: string): Promise<(row: AppointmentRow) => string> {
+/** What a visit's summary reads beyond its row: where it is, and the day's times its window is read by. */
+interface SummaryContext {
+  /** The client's saved address, else FSM's city and pincode. */
+  readonly place: (row: AppointmentRow) => string;
+  readonly schedule: SlotSchedule;
+}
+
+async function contextOf(db: D1Database, personId: string): Promise<SummaryContext> {
   const address = await currentAddress(db, personId);
-  return (row) =>
+  const place = (row: AppointmentRow) =>
     address !== null
       ? `${address.locality}, ${address.city} ${address.pincode}`
       : [row.service_city, row.service_pincode].filter((part) => part !== null).join(" ");
+  return { place, schedule: await loadSlotSchedule(db) };
 }
 
 /** A visit whose window has ended is being closed, whatever FSM last said of it, until FSM closes it. */
@@ -96,11 +101,11 @@ function stageOf(row: AppointmentRow, now: Date): VisitStage | null {
   return row.status === "in_progress" ? "in_progress" : "booked";
 }
 
-function summaryOf(row: AppointmentRow, place: (row: AppointmentRow) => string, now: Date): VisitSummary {
+function summaryOf(row: AppointmentRow, context: SummaryContext, now: Date): VisitSummary {
   return {
     id: row.id,
     date: indiaDate(new Date(row.window_start)),
-    window_label: windowOf(row.window_start),
+    window_label: context.schedule.at(row.window_start).window,
     starts_at: row.window_start,
     ends_at: row.window_end,
     length_minutes: minutesBetween(row.window_start, row.window_end),
@@ -112,7 +117,7 @@ function summaryOf(row: AppointmentRow, place: (row: AppointmentRow) => string, 
       row.technician_name === null || row.technician_initials === null
         ? null
         : { name: row.technician_name, initials: row.technician_initials },
-    place: place(row),
+    place: context.place(row),
   };
 }
 
@@ -129,7 +134,7 @@ export async function nextVisit(db: D1Database, personId: string, now: Date): Pr
     )
     .bind(personId, now.toISOString())
     .first<AppointmentRow>();
-  return row === null ? null : summaryOf(row, await placeOf(db, personId), now);
+  return row === null ? null : summaryOf(row, await contextOf(db, personId), now);
 }
 
 /** The three states the apps show a client in. */
@@ -163,7 +168,7 @@ export async function listVisits(
   personId: string,
   now: Date,
 ): Promise<{ upcoming: VisitSummary[]; past: VisitSummary[] }> {
-  const place = await placeOf(db, personId);
+  const context = await contextOf(db, personId);
   const upcoming = await db
     .prepare(
       `SELECT ${APPOINTMENT_COLUMNS} FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id
@@ -179,8 +184,8 @@ export async function listVisits(
     .bind(personId)
     .all<AppointmentRow>();
   return {
-    upcoming: upcoming.results.map((row) => summaryOf(row, place, now)),
-    past: past.results.map((row) => summaryOf(row, place, now)),
+    upcoming: upcoming.results.map((row) => summaryOf(row, context, now)),
+    past: past.results.map((row) => summaryOf(row, context, now)),
   };
 }
 
@@ -313,7 +318,7 @@ export async function visitDetail(
   const photos = await photoSets(db, [row.id], signingKey, now);
   const noShows = await noShowNotes(db, [row.id]);
   return {
-    ...summaryOf(row, await placeOf(db, personId), now),
+    ...summaryOf(row, await contextOf(db, personId), now),
     duration_minutes: row.duration_minutes,
     outcome: row.outcome,
     what_was_done: await whatWasDone(db, row.id, row.type),

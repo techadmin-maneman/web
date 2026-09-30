@@ -80,7 +80,8 @@
                   "already_invited",
                   "already_fitted",
                   "already_disputed",
-                  "not_disputable"
+                  "not_disputable",
+                  "slot_times_too_soon"
                 ]
               },
               "request_id": {
@@ -2046,7 +2047,8 @@
                   "already_invited",
                   "already_fitted",
                   "already_disputed",
-                  "not_disputable"
+                  "not_disputable",
+                  "slot_times_too_soon"
                 ]
               },
               "request_id": {
@@ -4999,6 +5001,210 @@
         },
         "required": [
           "changes"
+        ],
+        "additionalProperties": false
+      },
+      "SlotTimes": {
+        "type": "object",
+        "properties": {
+          "in_force": {
+            "type": "object",
+            "properties": {
+              "applies_from": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Null for the times in code."
+              },
+              "unit_starts": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^\\d\\d:\\d\\d$",
+                  "description": "In India's time, as 09:00."
+                },
+                "description": "When each of the day's eight half-slots starts, in order."
+              },
+              "day_end": {
+                "type": "string",
+                "pattern": "^\\d\\d:\\d\\d$",
+                "description": "When the day, and the evening with it, ends."
+              },
+              "windows": {
+                "$ref": "#/components/schemas/WindowTimes"
+              }
+            },
+            "required": [
+              "applies_from",
+              "unit_starts",
+              "day_end",
+              "windows"
+            ],
+            "additionalProperties": false
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SlotTimesChange"
+            },
+            "description": "Every change set, the earliest first; none are removed."
+          },
+          "earliest": {
+            "type": "string",
+            "format": "date",
+            "description": "The first day a change may apply from: after the last a client can book, the last visit booked and the last change."
+          }
+        },
+        "required": [
+          "in_force",
+          "changes",
+          "earliest"
+        ],
+        "additionalProperties": false
+      },
+      "WindowTimes": {
+        "type": "object",
+        "properties": {
+          "morning": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "string",
+                "pattern": "^\\d\\d:\\d\\d$",
+                "description": "In India's time, as 09:00."
+              },
+              "end": {
+                "type": "string",
+                "pattern": "^\\d\\d:\\d\\d$",
+                "description": "In India's time, as 09:00."
+              }
+            },
+            "required": [
+              "start",
+              "end"
+            ],
+            "additionalProperties": false
+          },
+          "afternoon": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "string",
+                "pattern": "^\\d\\d:\\d\\d$",
+                "description": "In India's time, as 09:00."
+              },
+              "end": {
+                "type": "string",
+                "pattern": "^\\d\\d:\\d\\d$",
+                "description": "In India's time, as 09:00."
+              }
+            },
+            "required": [
+              "start",
+              "end"
+            ],
+            "additionalProperties": false
+          },
+          "evening": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "string",
+                "pattern": "^\\d\\d:\\d\\d$",
+                "description": "In India's time, as 09:00."
+              },
+              "end": {
+                "type": "string",
+                "pattern": "^\\d\\d:\\d\\d$",
+                "description": "In India's time, as 09:00."
+              }
+            },
+            "required": [
+              "start",
+              "end"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "morning",
+          "afternoon",
+          "evening"
+        ],
+        "additionalProperties": false,
+        "description": "Each window's span, read from the half-slots it has."
+      },
+      "SlotTimesChange": {
+        "type": "object",
+        "properties": {
+          "applies_from": {
+            "type": "string",
+            "format": "date"
+          },
+          "unit_starts": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^\\d\\d:\\d\\d$",
+              "description": "In India's time, as 09:00."
+            },
+            "description": "When each of the day's eight half-slots starts, in order."
+          },
+          "day_end": {
+            "type": "string",
+            "pattern": "^\\d\\d:\\d\\d$",
+            "description": "When the day, and the evening with it, ends."
+          },
+          "set_by": {
+            "type": "string",
+            "description": "The member of staff's Access e-mail."
+          },
+          "set_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "applies_from",
+          "unit_starts",
+          "day_end",
+          "set_by",
+          "set_at"
+        ],
+        "additionalProperties": false
+      },
+      "SlotTimesSet": {
+        "type": "object",
+        "properties": {
+          "applies_from": {
+            "type": "string",
+            "format": "date"
+          },
+          "unit_starts": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^\\d\\d:\\d\\d$",
+              "description": "In India's time, as 09:00."
+            },
+            "description": "When each of the day's eight half-slots starts, in order."
+          },
+          "day_end": {
+            "type": "string",
+            "pattern": "^\\d\\d:\\d\\d$",
+            "description": "When the day, and the evening with it, ends."
+          }
+        },
+        "required": [
+          "applies_from",
+          "unit_starts",
+          "day_end"
         ],
         "additionalProperties": false
       },
@@ -9795,6 +10001,98 @@
           },
           "403": {
             "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/slot-times": {
+      "get": {
+        "summary": "The day's half-slot times in force, every change set, and the earliest a change may apply from",
+        "responses": {
+          "200": {
+            "description": "The times",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlotTimes"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "A change of the day's half-slot times, from a day nothing is booked or bookable on",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SlotTimesSet"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Set, from its day",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "applies_from": {
+                      "type": "string",
+                      "format": "date"
+                    }
+                  },
+                  "required": [
+                    "applies_from"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names what is wrong with the times: not_eight_starts, not_a_time, not_in_order or outside_the_day (06:00 to 22:00)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "slot_times_too_soon: the day is before the earliest a change may apply from, which GET says",
             "content": {
               "application/json": {
                 "schema": {

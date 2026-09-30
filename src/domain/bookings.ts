@@ -41,7 +41,7 @@ import { redeemCredit } from "./credits.ts";
 import { itemForService } from "./fsm-catalogue.ts";
 import { fsmContactOf, type Place } from "./fsm-contacts.ts";
 import { toLinkAlert, toLinkAlertKey } from "./held-bookings.ts";
-import { heldMinutes, liveVisitOf, visitTimes } from "./scheduling.ts";
+import { heldVisitTimes, liveVisitOf } from "./scheduling.ts";
 import { visitPayment } from "./visit-changes.ts";
 import { visitMessage, type VisitMessageKind } from "./visit-messages.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
@@ -336,7 +336,7 @@ async function bookNewVisit(
 
   // FSM's webhook may have mirrored the appointment already; either way the visit is the one with its FSM ID. Its
   // tier is the hold's whatever the mirror read from its item, which may be its kind's where FSM had none of its own.
-  const { start, end } = visitTimes(hold.date, hold.start_unit, heldMinutes(hold));
+  const { start, end } = await heldVisitTimes(db, hold);
   const at = now.toISOString();
   const visitId = "(SELECT id FROM appointments WHERE fsm_id = ?1)";
   await db.batch([
@@ -466,7 +466,7 @@ async function appointmentFor(
   workOrder: WorkOrder,
   options: ConfirmOptions,
 ): Promise<string> {
-  const { start, end } = visitTimes(hold.date, hold.start_unit, heldMinutes(hold));
+  const { start, end } = await heldVisitTimes(db, hold);
   const madeBefore = workOrder.madeNow ? null : await fsm.workOrderAppointment(workOrder.id);
   const id =
     madeBefore ??
@@ -549,7 +549,7 @@ async function moveInPlace(
     await giveBack(db, payments, hold.id, now, "the visit could no longer be moved", options.alongside);
     return hold.amount > 0 ? "refunded" : "lapsed";
   }
-  const { start, end } = visitTimes(hold.date, hold.start_unit, heldMinutes(hold));
+  const { start, end } = await heldVisitTimes(db, hold);
   await fsm.rescheduleVisit(visit.fsm_id, { start: indiaIso(start), end: indiaIso(end) });
 
   const at = now.toISOString();
@@ -638,6 +638,7 @@ async function retireReplaced(
   }
   const payment = await visitPayment(db, old.id);
   const at = now.toISOString();
+  const nowStart = (await heldVisitTimes(db, hold)).start.toISOString();
   await db.batch([
     db
       .prepare("UPDATE appointments SET status = 'cancelled', fsm_status = 'Cancelled', synced_at = ?1 WHERE id = ?2")
@@ -653,7 +654,7 @@ async function retireReplaced(
         old.id,
         hold.person_id,
         old.window_start,
-        visitTimes(hold.date, hold.start_unit, heldMinutes(hold)).start.toISOString(),
+        nowStart,
         payment?.paid ?? 0,
         payment?.id ?? null,
         hold.id,

@@ -23,7 +23,8 @@ import type { Logger } from "../log.ts";
 import { dueAnotherTry, FSM_RETRY, retriesEnd, triesStopped, type FsmRetry } from "../policy/held-bookings.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import { consentGiven } from "./messages.ts";
-import { heldMinutes, visitTimes } from "./scheduling.ts";
+import { heldMinutes, heldVisitTimes, visitTimes } from "./scheduling.ts";
+import { loadSlotSchedule } from "./slot-times.ts";
 import { DESTINATIONS, NO_VISITS_CONSENT, type Composed } from "./visit-messages.ts";
 import { HOUR_MS } from "../lib/durations.ts";
 
@@ -143,12 +144,13 @@ export async function retryHeldBookings(
       RETRIES_PER_PASS,
     )
     .all<WaitingRow>();
+  const schedule = await loadSlotSchedule(db);
   let retried = 0;
   for (const hold of results) {
     const booking = {
       heldAt: new Date(hold.fsm_held_at),
       lastTried: new Date(hold.queued_at),
-      visitStart: visitTimes(hold.date, hold.start_unit, heldMinutes(hold)).start,
+      visitStart: visitTimes(hold.date, hold.start_unit, heldMinutes(hold), schedule).start,
     };
     const due = dueAnotherTry(booking, now, retry);
     if (due) {
@@ -221,9 +223,10 @@ export async function heldBookingsOf(
     )
     .bind(personId)
     .all<HeldRow>();
+  const schedule = await loadSlotSchedule(db);
   return results.map((row) => {
     const heldAt = new Date(row.fsm_held_at);
-    const start = visitTimes(row.date, row.start_unit, heldMinutes(row)).start;
+    const start = visitTimes(row.date, row.start_unit, heldMinutes(row), schedule).start;
     const ends = retriesEnd(heldAt, retry);
     return {
       id: row.id,
@@ -255,7 +258,7 @@ export async function heldBookingById(
     .bind(holdId)
     .first<{ person_id: string; type: VisitType; minutes: number | null; date: string; start_unit: number }>();
   if (row === null) return null;
-  return { personId: row.person_id, startsAt: visitTimes(row.date, row.start_unit, heldMinutes(row)).start };
+  return { personId: row.person_id, startsAt: (await heldVisitTimes(db, row)).start };
 }
 
 /** The client's message that a booking was not made and its money is on its way back, to go in the refund's batch. */
@@ -308,7 +311,7 @@ export async function composeBookingRefunded(db: D1Database, holdId: string, per
       method: string | null;
     }>();
   if (hold === null) return { skip: "the booking is not given back" };
-  const start = visitTimes(hold.date, hold.start_unit, heldMinutes(hold)).start;
+  const start = (await heldVisitTimes(db, hold)).start;
   const params = [
     firstNameOf(hold.name),
     FSM_SERVICE_NAMES[hold.type].toLowerCase(),

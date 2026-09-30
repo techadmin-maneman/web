@@ -44,7 +44,11 @@ async function everyWindowOpen(page: Page): Promise<URL[]> {
       const days = Array.from({ length: 14 }, (_, index) => ({
         date: daysAfter(start, index),
         price,
-        windows: ["morning", "afternoon", "evening"].map((window) => ({ window, with: "another" })),
+        windows: [
+          { window: "morning", start: "09:00", end: "12:00", with: "another" },
+          { window: "afternoon", start: "12:00", end: "16:00", with: "another" },
+          { window: "evening", start: "16:00", end: "20:00", with: "another" },
+        ],
       }));
       return route.fulfill({ json: { type: url.searchParams.get("type"), price, regular: null, days } });
     },

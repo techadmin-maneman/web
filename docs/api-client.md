@@ -1584,7 +1584,8 @@ Request body:
             "already_invited",
             "already_fitted",
             "already_disputed",
-            "not_disputable"
+            "not_disputable",
+            "slot_times_too_soon"
           ]
         },
         "request_id": {
@@ -4669,6 +4670,14 @@ Request body:
                     "evening"
                   ]
                 },
+                "start": {
+                  "type": "string",
+                  "description": "When the window starts that day, in India's time, as 12:00."
+                },
+                "end": {
+                  "type": "string",
+                  "description": "When it ends that day: ops set the day's times from a date."
+                },
                 "with": {
                   "anyOf": [
                     {
@@ -4687,6 +4696,8 @@ Request body:
               },
               "required": [
                 "window",
+                "start",
+                "end",
                 "with"
               ],
               "additionalProperties": false
