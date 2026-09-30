@@ -94,6 +94,10 @@ const TEMPLATES: Readonly<Record<string, string>> = {
     "Hello {{1}}, we could not book your {{2}} on {{3}}. {{6}} is on its way back to your {{8}}, in 5 to 7 working days. You can book another time in the Mane Man app.",
   booking_not_made_v1:
     "Hello {{1}}, we could not book your {{2}} on {{3}}. You can book another time in the Mane Man app.",
+  // The same, for a booking that moved a visit, which stays as it was: {{3}} is the day it was to move to.
+  move_refunded_v1:
+    "Hello {{1}}, we could not move your {{2}} to {{3}}, so it stays as it was booked. {{6}} is on its way back to your {{8}}, in 5 to 7 working days.",
+  move_not_made_v1: "Hello {{1}}, we could not move your {{2}} to {{3}}, so it stays as it was booked.",
 };
 
 /** The text with its params filled in, or null for an unknown template or a missing param. */

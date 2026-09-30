@@ -1,7 +1,7 @@
 // A client's bookings that FSM refused five times running, held with their slot and their payment
 // (docs/decisions/0095-a-booking-fsm-refuses-is-held.md). They head the Visits tab, which the Tasks board's
-// "Booking not in FSM" leads to, each with what ops may do: try FSM again now, link the visit they booked in FSM by
-// hand, or refund it. No board draws them.
+// "Booking not in FSM" leads to, each with what ops may do: try FSM again now, stop the hourly tries before booking
+// it in FSM by hand, link the visit they booked there, or refund it. No board draws them.
 //
 // What each action did is said beneath the booking, and a booking booked or given back keeps its lines with nothing
 // left to press; the visits' tables below it are as the page read them.
@@ -35,9 +35,9 @@ function paidOf(booking: HeldBooking): string {
 }
 
 /** Whether it is still tried by itself, has stopped being tried, or its time has passed. */
-function triesOf(booking: HeldBooking, now: Date): string {
+function triesOf(booking: HeldBooking, retrying: boolean, now: Date): string {
   if (Date.parse(booking.starts_at) <= now.getTime()) return copy.passed;
-  if (booking.retrying) return copy.retrying(`${longDate(booking.retries_end)}, ${indiaClock(booking.retries_end)}`);
+  if (retrying) return copy.retrying(`${longDate(booking.retries_end)}, ${indiaClock(booking.retries_end)}`);
   return copy.stopped;
 }
 
@@ -162,12 +162,16 @@ function RefundCheck({
 function Booking({ booking, visits, now }: { booking: HeldBooking; visits: readonly ClientVisit[]; now: Date }) {
   const [open, setOpen] = useState<Open>("none");
   const [said, setSaid] = useState<Said | null>(null);
+  const [stopped, setStopped] = useState(false);
+  /** Which of the row's two actions was pressed, for its own button to say it is working. */
+  const [pressed, setPressed] = useState<"retry" | "stop">("retry");
   const [failed, setFailed] = useState<string | null>(null);
   const [busy, once] = useOneAtATime();
   const linkButton = useRef<HTMLButtonElement>(null);
   const refundButton = useRef<HTMLButtonElement>(null);
   const passed = Date.parse(booking.starts_at) <= now.getTime();
   const settled = said?.settled === true;
+  const retrying = booking.retrying && !stopped;
   const what = copy.what(
     clients.visits.types[booking.type],
     `${fullDate(indiaDate(booking.starts_at))}, ${indiaClock(booking.starts_at)}`,
@@ -191,14 +195,26 @@ function Booking({ booking, visits, now }: { booking: HeldBooking; visits: reado
       setSaid(answer);
     });
 
-  const retry = () =>
-    act(async () => {
+  const retry = () => {
+    setPressed("retry");
+    return act(async () => {
       const answer = await api.retryHeldBooking(booking.id);
       if (!answer.ok) return { code: answer.code };
       const { outcome, refusal } = answer.body;
       if (outcome === "refused") return { lines: [copy.tried.refused(refusal ?? copy.noRefusal)], settled: false };
-      return { lines: [copy.tried[outcome]], settled: outcome !== "being_booked" };
+      return { lines: [copy.tried[outcome]], settled: outcome !== "to_link" };
     });
+  };
+
+  const stop = () => {
+    setPressed("stop");
+    return act(async () => {
+      const answer = await api.stopHeldBooking(booking.id);
+      if (!answer.ok) return { code: answer.code };
+      setStopped(true);
+      return { lines: [copy.stoppedNow], settled: false };
+    });
+  };
 
   const link = (visitId: string) =>
     act(async () => {
@@ -223,12 +239,30 @@ function Booking({ booking, visits, now }: { booking: HeldBooking; visits: reado
       <p className={styles.heldWhat}>{what}</p>
       <p className={styles.heldLine}>{paidOf(booking)}</p>
       <p className={styles.heldLine}>{booking.refusal === null ? copy.noRefusal : copy.refusal(booking.refusal)}</p>
-      {!settled && <p className={styles.heldLine}>{triesOf(booking, now)}</p>}
+      {!settled && <p className={styles.heldLine}>{triesOf(booking, retrying, now)}</p>}
       {!settled && open === "none" && (
         <div className={styles.heldActions}>
           {!passed && (
-            <Button variant="outline" size="small" busy={busy} onClick={() => void retry()}>
-              {busy ? copy.trying : copy.retry}
+            <Button
+              variant="outline"
+              size="small"
+              busy={busy && pressed === "retry"}
+              disabled={busy && pressed !== "retry"}
+              onClick={() => void retry()}
+            >
+              {busy && pressed === "retry" ? copy.trying : copy.retry}
+              <VisuallyHidden>{` · ${what}`}</VisuallyHidden>
+            </Button>
+          )}
+          {retrying && (
+            <Button
+              variant="outline"
+              size="small"
+              busy={busy && pressed === "stop"}
+              disabled={busy && pressed !== "stop"}
+              onClick={() => void stop()}
+            >
+              {busy && pressed === "stop" ? copy.stopping : copy.stop}
               <VisuallyHidden>{` · ${what}`}</VisuallyHidden>
             </Button>
           )}

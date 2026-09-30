@@ -534,7 +534,73 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_changeable: the visit's time has passed; refund it, or link a visit booked in FSM */
+                /** @description not_changeable: the visit's time has passed; refund it, or link a visit booked in FSM. superseded: a try is writing the booking to FSM at this moment; look again in a minute */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/held-bookings/{id}/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stop the hourly tries of a booking FSM refused, before ops book it in FSM by hand and link it */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The booking's hold. */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No longer tried by itself; it waits for a link or a refund */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["HeldBookingStopped"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no booking held for FSM with that id; it may be booked or refunded */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description superseded: a try is writing the booking to FSM at this moment; look again in a minute */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -604,7 +670,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no booking held for FSM with that id; it may be booked or refunded */
+                /** @description not_found: no booking held for FSM with that id; it may be booked or refunded, or its payment was refunded in Razorpay's dashboard, and it has now been let go */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -5002,12 +5068,16 @@ export interface components {
         };
         HeldBookingTried: {
             /**
-             * @description booked: in FSM and the mirror, and the client told. being_booked: another try is writing it now. given_back: its payment had been refunded, or its hold lapsed, so it was let go. refused: FSM refused again, and it waits as before.
+             * @description booked: in FSM and the mirror, and the client told. given_back: its payment had been refunded, or its hold lapsed, so it was let go. refused: FSM refused again, and it waits as before. to_link: a visit of the client's, of the booking's kind, reached FSM after the booking was held and is no booking's, so nothing was written; link it if it is the one ops booked.
              * @enum {string}
              */
-            outcome: "booked" | "being_booked" | "given_back" | "refused";
+            outcome: "booked" | "given_back" | "refused" | "to_link";
             /** @description FSM's refusal, as the log gives it, when it refused. */
             refusal: string | null;
+        };
+        HeldBookingStopped: {
+            /** @enum {boolean} */
+            stopped: true;
         };
         HeldBookingLinked: {
             fsm: components["schemas"]["LeftInFsm"];
@@ -5024,7 +5094,7 @@ export interface components {
         HeldBookingLink: {
             /**
              * Format: uuid
-             * @description The visit, as the client's page lists it once FSM's webhook or the reconciliation has mirrored it: the client's, of the booking's kind, still to happen, and no other booking's.
+             * @description The visit, as the client's page lists it once FSM's webhook or the reconciliation has mirrored it: the client's, of the booking's kind, still to happen, first seen since the client paid, not the visit the booking replaces, and no other booking's.
              */
             visit_id: string;
         };
@@ -5034,7 +5104,7 @@ export interface components {
         };
         HeldBookingMoney: {
             /**
-             * @description refunded in full now; refunded_before, by an earlier press; nothing_paid, as a free or credit booking; booked, by a try that landed meanwhile, so nothing is refunded; refund_refused by Razorpay, so nothing has gone back and the booking still waits.
+             * @description refunded in full now; refunded_before, by an earlier press or in Razorpay's dashboard; nothing_paid, as a free or credit booking; booked, by a try that landed meanwhile, so nothing is refunded; refund_refused by Razorpay, so nothing has gone back and the booking still waits.
              * @enum {string}
              */
             kind: "refunded" | "refunded_before" | "nothing_paid" | "booked" | "refund_refused";

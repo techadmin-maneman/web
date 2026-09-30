@@ -32,14 +32,23 @@ export const retriesEnd = (heldAt: Date, retry: FsmRetry = FSM_RETRY): Date =>
   new Date(heldAt.getTime() + retry.for * HOUR_MS);
 
 /**
- * Whether a held booking is due another try now: its retries have not ended, its visit has not begun, and its last
- * try was at least an interval ago.
+ * A booking's last try, once ops stop its tries to book it in FSM by hand: the end of time, so no try is due again,
+ * however long ops later set the tries to run (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
+ */
+export const TRIES_STOPPED = new Date("9999-12-31T23:59:59.999Z");
+
+export const triesStopped = (lastTried: Date): boolean => lastTried.getTime() === TRIES_STOPPED.getTime();
+
+/**
+ * Whether a held booking is due another try now: ops have not stopped its tries, its retries have not ended, its visit
+ * has not begun, and its last try was at least an interval ago.
  */
 export function dueAnotherTry(
   booking: { readonly heldAt: Date; readonly lastTried: Date; readonly visitStart: Date },
   now: Date,
   retry: FsmRetry = FSM_RETRY,
 ): boolean {
+  if (triesStopped(booking.lastTried)) return false;
   if (now >= retriesEnd(booking.heldAt, retry)) return false;
   if (now >= booking.visitStart) return false;
   return now.getTime() - booking.lastTried.getTime() >= retry.every * HOUR_MS;

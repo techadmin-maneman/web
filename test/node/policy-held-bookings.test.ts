@@ -2,7 +2,14 @@
 // 2026. The booking was refused for the fifth time at noon on Monday 21 September, and its visit is on Thursday.
 
 import { describe, expect, it } from "vitest";
-import { dueAnotherTry, FSM_RETRY, REFUSALS_BEFORE_HELD, retriesEnd, RULES } from "../../src/policy/held-bookings.ts";
+import {
+  dueAnotherTry,
+  FSM_RETRY,
+  REFUSALS_BEFORE_HELD,
+  retriesEnd,
+  RULES,
+  TRIES_STOPPED,
+} from "../../src/policy/held-bookings.ts";
 import { MAX_FSM_SYNC_ATTEMPTS } from "../../src/queues/fsm-sync.ts";
 
 const HELD_AT = new Date("2026-09-21T06:30:00Z");
@@ -37,5 +44,10 @@ describe("a booking FSM refuses", () => {
     expect(dueAnotherTry(held(HELD_AT), hoursOn(2), retry)).toBe(false);
     expect(dueAnotherTry(held(HELD_AT), hoursOn(3), retry)).toBe(true);
     expect(dueAnotherTry(held(hoursOn(40)), hoursOn(47), retry)).toBe(true);
+  });
+
+  it("is never tried again once ops stop its tries to book it in FSM by hand, however long they set the tries to run", () => {
+    expect(dueAnotherTry(held(TRIES_STOPPED), hoursOn(1))).toBe(false);
+    expect(dueAnotherTry(held(TRIES_STOPPED), hoursOn(47), { every: 1, for: 168 })).toBe(false);
   });
 });

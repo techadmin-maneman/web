@@ -26,7 +26,7 @@ import { confirmBooking, unbookedAlertKey, type ConfirmOptions } from "../domain
 import { pushCatalogue } from "../domain/fsm-catalogue.ts";
 import { sendLeadToFsm } from "../domain/fsm-leads.ts";
 import { logDeactivated, syncAppointment } from "../domain/fsm-mirror.ts";
-import { heldAlert, heldAlertKey, holdForFsm, isHeldForFsm } from "../domain/held-bookings.ts";
+import { heldAlert, heldAlertKey, holdForFsm, isHeldForFsm, toLinkAlertKey } from "../domain/held-bookings.ts";
 import { streetOf } from "../domain/profile.ts";
 import { eventById, markFsmWrite, nextPending, rejectPendingAfter, unwrittenBefore } from "../domain/job-events.ts";
 import { writeEventToFsm, type JobForFsm } from "../domain/job-sheet.ts";
@@ -183,7 +183,8 @@ export async function handleFsmSyncBatch(
  * Books a paid (or free) hold. A failure is retried on the usual schedule, and the fifth holds the booking for ops:
  * nothing is cancelled or refunded, and ops are told once (src/domain/held-bookings.ts). A held booking is tried
  * again by the cron, once an hour, so a failure of one of those tries waits for the next rather than being retried
- * here. Nothing here throws out of the batch.
+ * here, and one that finds a visit ops may have booked for it in FSM by hand writes nothing and waits for ops to link
+ * it. Nothing here throws out of the batch.
  */
 async function bookHold(
   message: Message,
@@ -204,9 +205,15 @@ async function bookHold(
       retryLater();
       return;
     }
+    // It waits for ops to link the visit they booked in FSM by hand, so what they were told of it stands.
+    if (outcome === "to_link") {
+      message.ack();
+      return;
+    }
     // Booked, or given back: whatever ops were told of this hold before is over.
     await deps.resolveAlert(unbookedAlertKey(holdId));
     await deps.resolveAlert(heldAlertKey(holdId));
+    await deps.resolveAlert(toLinkAlertKey(holdId));
     message.ack();
   } catch (error) {
     const reason = failureReason(error);

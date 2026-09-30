@@ -8,8 +8,10 @@
 // one try at a time; a try that books it books it as the first would have, and
 // the client is told as they would have been. After that it waits for ops, who
 // try FSM again, link a visit they booked in FSM by hand, or refund it, from
-// the client's page (src/routes/ops-bookings.ts). The Tasks board lists it
-// until one of them is done.
+// the client's page (src/routes/ops-bookings.ts). Ops about to book it in FSM
+// by hand stop the tries first; a try that finds a visit of the client's in the
+// mirror that came after the booking was held writes nothing, and asks ops to
+// link it. The Tasks board lists the booking until it is booked or refunded.
 
 import { shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
@@ -18,7 +20,7 @@ import { FSM_SERVICE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { firstNameOf } from "../lib/names.ts";
 import type { Logger } from "../log.ts";
-import { dueAnotherTry, FSM_RETRY, retriesEnd, type FsmRetry } from "../policy/held-bookings.ts";
+import { dueAnotherTry, FSM_RETRY, retriesEnd, triesStopped, type FsmRetry } from "../policy/held-bookings.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import { consentGiven } from "./messages.ts";
 import { heldMinutes, visitTimes } from "./scheduling.ts";
@@ -27,6 +29,18 @@ import { HOUR_MS } from "../lib/durations.ts";
 
 /** The alert a booking held for ops raises, once; closed when it is booked or given back. */
 export const heldAlertKey = (holdId: string) => `booking_held:${holdId}`;
+
+/** The alert a try raises, once, when a visit ops booked in FSM by hand may be the booking's; closed with the others. */
+export const toLinkAlertKey = (holdId: string) => `booking_to_link:${holdId}`;
+
+/** What ops are told when a try finds a visit that may be the one they booked in FSM by hand, and writes nothing. */
+export function toLinkAlert(holdId: string, visitId: string): string {
+  return (
+    `Booking ${holdId} was not written to FSM: visit ${visitId}, the client's and of the same kind, reached FSM after ` +
+    "the booking was held, and no booking is linked to it. If you booked it in FSM for this booking, link it from " +
+    "the client's Visits tab; if not, refund the booking. Nothing more is written to FSM for it while that visit stands."
+  );
+}
 
 /** Whether FSM's refusals have already held the booking for ops, so a failed try is the cron's to repeat. */
 export async function isHeldForFsm(db: D1Database, holdId: string): Promise<boolean> {
@@ -167,7 +181,7 @@ export interface HeldBooking {
   readonly refusal: string | null;
   /** When the hourly tries end, or ended. */
   readonly retriesEnd: string;
-  /** Whether the cron still tries it: inside its retries, and its visit still to come. */
+  /** Whether the cron still tries it: inside its retries, its visit still to come, and ops have not stopped them. */
   readonly retrying: boolean;
 }
 
@@ -184,6 +198,7 @@ interface HeldRow {
   move_kind: "move" | "replace" | null;
   fsm_held_at: string;
   fsm_refusal: string | null;
+  queued_at: string;
   paid: number | null;
 }
 
@@ -197,7 +212,7 @@ export async function heldBookingsOf(
   const { results } = await db
     .prepare(
       `SELECT h.id, h.type, h.tier, h.minutes, s.name AS service_name, h.date, h.window_label, h.start_unit,
-              h.use_credit, h.move_kind, h.fsm_held_at, h.fsm_refusal,
+              h.use_credit, h.move_kind, h.fsm_held_at, h.fsm_refusal, h.queued_at,
               (SELECT p.amount FROM payments p WHERE p.razorpay_order_id = h.razorpay_order_id AND p.status = 'captured'
                 ORDER BY p.created_at LIMIT 1) AS paid
        FROM slot_holds h LEFT JOIN services s ON s.kind = h.type AND s.tier = h.tier
@@ -222,7 +237,7 @@ export async function heldBookingsOf(
       heldAt: row.fsm_held_at,
       refusal: row.fsm_refusal,
       retriesEnd: ends.toISOString(),
-      retrying: now < ends && now < start,
+      retrying: now < ends && now < start && !triesStopped(new Date(row.queued_at)),
     };
   });
 }
@@ -258,15 +273,22 @@ export function refundedMessage(
   return { id, statement };
 }
 
+/** The client's message, by whether the booking moved a visit, which still stands, and whether anything was paid. */
+const REFUNDED_TEMPLATES = {
+  booking: { paid: "booking_refunded_v1", unpaid: "booking_not_made_v1" },
+  move: { paid: "move_refunded_v1", unpaid: "move_not_made_v1" },
+} as const;
+
 /**
- * What the client is told when ops refund a booking FSM would not take: the visit, and what comes back to them.
- * Sent only with their consent to WhatsApp about their visits, as every message about a visit is.
+ * What the client is told when ops refund a booking FSM would not take: the visit, and what comes back to them. A
+ * booking that moved a visit says the move was not made, since the visit it moved still stands. Sent only with their
+ * consent to WhatsApp about their visits, as every message about a visit is.
  */
 export async function composeBookingRefunded(db: D1Database, holdId: string, personId: string): Promise<Composed> {
   if (!(await consentGiven(db, personId, "whatsapp_visits"))) return { skip: NO_VISITS_CONSENT };
   const hold = await db
     .prepare(
-      `SELECT h.type, h.minutes, h.date, h.start_unit, p.name,
+      `SELECT h.type, h.minutes, h.date, h.start_unit, h.move_kind, p.name,
               (SELECT pay.amount FROM payments pay WHERE pay.razorpay_order_id = h.razorpay_order_id
                  AND pay.status IN ('captured', 'refunded', 'partially_refunded') ORDER BY pay.created_at LIMIT 1) AS paid,
               (SELECT pay.method FROM payments pay WHERE pay.razorpay_order_id = h.razorpay_order_id
@@ -280,6 +302,7 @@ export async function composeBookingRefunded(db: D1Database, holdId: string, per
       minutes: number | null;
       date: string;
       start_unit: number;
+      move_kind: "move" | "replace" | null;
       name: string;
       paid: number | null;
       method: string | null;
@@ -296,5 +319,6 @@ export async function composeBookingRefunded(db: D1Database, holdId: string, per
     "",
     DESTINATIONS[hold.method ?? ""] ?? "payment method",
   ];
-  return { template: hold.paid === null ? "booking_not_made_v1" : "booking_refunded_v1", params };
+  const templates = REFUNDED_TEMPLATES[hold.move_kind === null ? "booking" : "move"];
+  return { template: hold.paid === null ? templates.unpaid : templates.paid, params };
 }

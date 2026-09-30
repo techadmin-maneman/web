@@ -493,6 +493,9 @@ export const clients = {
       passed: "Its time has passed. Book another time in FSM and link it, or refund it.",
       retry: "Try FSM again",
       trying: "Trying…",
+      stop: "Stop trying — I'll book it in FSM",
+      stopping: "Stopping…",
+      stoppedNow: "The hourly tries are stopped. Book it in FSM, then link it here.",
       link: "Link the visit I booked in FSM",
       linkLabel: "The visit you booked in FSM",
       linkHint:
@@ -513,9 +516,11 @@ export const clients = {
       cancel: "Cancel",
       tried: {
         booked: "Booked in FSM. The client is told.",
-        being_booked: "Another try is writing it to FSM right now. Reload in a minute.",
         given_back: "Its payment had been refunded, or its hold had lapsed, so it was let go.",
         refused: (reason: string) => `FSM refused it again: ${reason}`,
+        to_link:
+          "A visit of theirs of this kind reached FSM after it was held, so nothing was written. If it is the one " +
+          "you booked, link it.",
       },
       linked: "Linked to that visit. The client is told.",
       money: {
@@ -526,7 +531,7 @@ export const clients = {
         booked: "A try booked it in FSM meanwhile, so nothing is refunded.",
         refund_refused: (amount: string, payment: string) =>
           `Razorpay refused to refund ${amount} (payment ${payment}), so nothing has gone back and the booking ` +
-          "still waits. Try again, or refund it in Razorpay's dashboard.",
+          "still waits. Try again, or refund it in Razorpay's dashboard and then press Refund it here.",
       },
       fsm: {
         cancelled: (workOrder: string) => `Its work order ${workOrder} is cancelled in FSM.`,
@@ -539,7 +544,8 @@ export const clients = {
         not_found: "It is no longer waiting: it may have been booked or refunded. Reload the page.",
         not_changeable: "Its time has passed, so FSM is not tried again. Link a visit booked in FSM, or refund it.",
         superseded: "A try is writing it to FSM right now. Reload in a minute to see how it went.",
-        invalid_request: "That visit cannot be this booking. Choose one of theirs, of the same kind, still to come.",
+        invalid_request:
+          "That visit cannot be this booking. Choose one of theirs, of the same kind, booked in FSM since they paid.",
         unknown: "That did not go through. Try again.",
       } as Readonly<Record<string, string>>,
     },

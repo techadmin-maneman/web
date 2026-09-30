@@ -267,8 +267,8 @@ describe("ops, when the audit entry cannot be written", () => {
   });
 
   // A booking FSM refused five times running, held for ops (docs/decisions/0095-a-booking-fsm-refuses-is-held.md): a
-  // free service visit on Thursday afternoon. Its refund changes Razorpay and FSM before its batch, so only a try
-  // and a link are all-or-nothing here.
+  // free service visit on Thursday afternoon. Its refund changes Razorpay and FSM before its batch, so only a try,
+  // a link and the tries stopped are all-or-nothing here.
   const HELD = "66666666-0000-4000-8000-000000000001";
   const heldBooking = () =>
     env.DB.prepare(
@@ -297,8 +297,8 @@ describe("ops, when the audit entry cannot be written", () => {
     await heldBooking();
     await env.DB.prepare(
       `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, fsm_modified_at,
-         synced_at)
-       VALUES (?1, 'fsm-by-hand', ?2, 'service', 'scheduled', 'Scheduled', '2026-09-24T08:30:00.000Z', ?3, ?3)`,
+         synced_at, first_seen_at)
+       VALUES (?1, 'fsm-by-hand', ?2, 'service', 'scheduled', 'Scheduled', '2026-09-24T08:30:00.000Z', ?3, ?3, ?3)`,
     )
       .bind(VISIT, PERSON, AT)
       .run();
@@ -306,6 +306,17 @@ describe("ops, when the audit entry cannot be written", () => {
     const answer = await send(ops, "POST", `/api/held-bookings/${HELD}/link`, { visit_id: VISIT });
     expect(answer.status).toBe(500);
     expect(await one("SELECT state, appointment_id FROM slot_holds")).toEqual({ state: "held", appointment_id: null });
+  });
+
+  it("stops no held booking's hourly tries", async () => {
+    await heldBooking();
+
+    const answer = await send(ops, "POST", `/api/held-bookings/${HELD}/stop`);
+    expect(answer.status).toBe(500);
+    expect(await one("SELECT queued_at, booking_until FROM slot_holds")).toEqual({
+      queued_at: AT,
+      booking_until: null,
+    });
   });
 });
 

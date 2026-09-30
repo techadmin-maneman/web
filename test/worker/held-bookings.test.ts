@@ -6,9 +6,10 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { AuditEntry } from "../../src/domain/audit.ts";
 import { grantCredits } from "../../src/domain/credits.ts";
 import { composeBookingRefunded, retryHeldBookings } from "../../src/domain/held-bookings.ts";
-import { requeueUnbookedHolds } from "../../src/domain/bookings.ts";
+import { bookAsVisit, giveUpOnBooking, requeueUnbookedHolds } from "../../src/domain/bookings.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { saltedHash } from "../../src/lib/hash.ts";
@@ -219,6 +220,158 @@ const otherHolds = async () =>
     })
   ).status;
 
+/** The cron's pass over held bookings, `ms` after the fifth refusal. */
+const hourlyPass = (queue: Queue, ms: number, retry?: { every: number; for: number }) =>
+  retryHeldBookings(env.DB, { queue, log: createLogger() }, afterHeld(ms), retry);
+
+/** The visit ops booked in FSM by hand. */
+const HAND_MADE = "99999999-9999-4999-8999-999999999999";
+
+/**
+ * A visit as FSM's webhook mirrors it: by default the one ops booked in FSM by hand for Thursday at 2 pm, on a work
+ * order of their own, which reached us at 13:02, 54 minutes after the booking was held.
+ */
+async function mirrored(
+  visit: {
+    id?: string;
+    personId?: string;
+    type?: string;
+    status?: string;
+    seen?: Date;
+    fsmId?: string;
+    workOrder?: string;
+  } = {},
+) {
+  const id = visit.id ?? HAND_MADE;
+  await env.DB.prepare(
+    `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, status, fsm_status, window_start,
+       window_end, technician_id, fsm_modified_at, synced_at, first_seen_at)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'Scheduled', '2026-09-24T08:30:00.000Z', '2026-09-24T10:00:00.000Z', 't1',
+       ?7, ?7, ?7)`,
+  )
+    .bind(
+      id,
+      visit.fsmId ?? `fsm-${id}`,
+      visit.workOrder ?? `wo-${id}`,
+      visit.personId ?? PERSON,
+      visit.type ?? "service",
+      visit.status ?? "scheduled",
+      (visit.seen ?? afterHeld(54 * MINUTE)).toISOString(),
+    )
+    .run();
+}
+
+/** Ops' three actions and the fourth, from the client's Visits tab. */
+const retry = (deps: TestDependencies, holdId: string) =>
+  asOps(deps, `/api/held-bookings/${holdId}/retry`, { method: "POST" });
+const link = (deps: TestDependencies, holdId: string, visitId = HAND_MADE) =>
+  asOps(deps, `/api/held-bookings/${holdId}/link`, { method: "POST", body: { visit_id: visitId } });
+const refund = (deps: TestDependencies, holdId: string) =>
+  asOps(deps, `/api/held-bookings/${holdId}/refund`, { method: "POST" });
+const stop = (deps: TestDependencies, holdId: string) =>
+  asOps(deps, `/api/held-bookings/${holdId}/stop`, { method: "POST" });
+
+/** Ops refunded the payment in Razorpay's dashboard, and Razorpay's webhook said so. */
+const refundedInDashboard = (paymentId = "pay_h1") =>
+  env.DB.prepare("UPDATE payments SET status = 'refunded', refunded_amount = amount WHERE razorpay_payment_id = ?1")
+    .bind(paymentId)
+    .run();
+
+/** A try that has just made the booking's work order in FSM and kept it on the hold. */
+async function workOrderKept(fsm: FsmProvider, holdId: string): Promise<string> {
+  const workOrder = await fsm.createWorkOrder({
+    contactId: `contact-${PERSON}`,
+    summary: "Service visit for Rohit Malhotra",
+    serviceId: "item-service",
+    reference: holdId,
+  });
+  await env.DB.prepare("UPDATE slot_holds SET fsm_work_order_id = ?2, fsm_tried_at = ?3 WHERE id = ?1")
+    .bind(holdId, workOrder, HELD_AT.toISOString())
+    .run();
+  return workOrder;
+}
+
+/**
+ * The database, with `meanwhile` done just before a hold's lease is taken: what a try wrote between ops reading the
+ * booking and ops' action taking it.
+ */
+function meanwhileBeforeLease(meanwhile: () => Promise<void>): D1Database {
+  return new Proxy(env.DB, {
+    get(target, property) {
+      if (property !== "prepare") {
+        const value: unknown = Reflect.get(target, property);
+        return typeof value === "function" ? (value as (...args: unknown[]) => unknown).bind(target) : value;
+      }
+      return (sql: string) => {
+        const statement = target.prepare(sql);
+        if (!sql.includes("SET booking_until = ?2")) return statement;
+        return {
+          bind: (...values: unknown[]) => {
+            const bound = statement.bind(...values);
+            return {
+              first: async () => {
+                await meanwhile();
+                return bound.first();
+              },
+            };
+          },
+        };
+      };
+    },
+  });
+}
+
+/** Ops' entry for a link, as the route writes it. */
+const linkEntry = (holdId: string): AuditEntry => ({
+  surface: "ops",
+  actor: { kind: "staff", id: "ops@localhost" },
+  action: "booking.link",
+  subject: { kind: "slot_hold", id: holdId },
+  requestId: "r",
+  detail: { visit_id: HAND_MADE },
+});
+
+/** Wednesday's service visit, which the client moved to Thursday afternoon; booked a week ago. */
+const MOVED = "77777777-7777-4777-8777-777777777777";
+
+/**
+ * A booking that moves Wednesday's visit to Thursday afternoon, confirmed and held for FSM: `replace` books a new visit
+ * and cancels Wednesday's, `move` moves it in place. A fee is paid on `orderId`, where there is one.
+ */
+async function heldMove(kind: "move" | "replace", fee: { amount: number; orderId: string } | null = null) {
+  await mirrored({ id: MOVED, seen: at(-7 * 24 * HOUR) });
+  const id = crypto.randomUUID();
+  const statements = [
+    env.DB.prepare(
+      `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
+         amount_ex_gst, gst_percent, state, razorpay_order_id, expires_at, created_at, updated_at, confirmed_at,
+         queued_at, fsm_held_at, moves_appointment_id, move_kind)
+       VALUES (?1, ?2, 'service', '2026-09-24', 'afternoon', 't1', 0, ?3, ?3, 0, 'held', ?4, ?5, ?5, ?5, ?5, ?6, ?6, ?7,
+         ?8)`,
+    ).bind(
+      id,
+      PERSON,
+      fee?.amount ?? 0,
+      fee?.orderId ?? null,
+      at(MINUTE).toISOString(),
+      HELD_AT.toISOString(),
+      MOVED,
+      kind,
+    ),
+  ];
+  if (fee !== null) {
+    statements.push(
+      env.DB.prepare(
+        `INSERT INTO payments (id, person_id, razorpay_order_id, razorpay_payment_id, amount, currency, method, status,
+           created_at, updated_at)
+         VALUES (?1, ?2, ?3, 'pay_move', ?4, 'INR', 'upi', 'captured', ?5, ?5)`,
+      ).bind(crypto.randomUUID(), PERSON, fee.orderId, fee.amount, at(MINUTE).toISOString()),
+    );
+  }
+  await env.DB.batch(statements);
+  return id;
+}
+
 beforeEach(async () => {
   await markDatabase();
   captureLogs();
@@ -301,8 +454,7 @@ describe("a booking FSM refuses five times running", () => {
 });
 
 describe("the hourly tries", () => {
-  const pass = (queue: Queue, ms: number, retry?: { every: number; for: number }) =>
-    retryHeldBookings(env.DB, { queue, log: createLogger() }, afterHeld(ms), retry);
+  const pass = hourlyPass;
 
   it("put a held booking back on the queue an hour after the fifth refusal, and each hour after", async () => {
     const { holdId } = await paidHold();
@@ -394,9 +546,6 @@ describe("the hourly tries", () => {
 });
 
 describe("ops trying FSM again from the console", () => {
-  const retry = (deps: TestDependencies, holdId: string) =>
-    asOps(deps, `/api/held-bookings/${holdId}/retry`, { method: "POST" });
-
   it("books it now, tells the client, and records who asked, with the booking", async () => {
     const { holdId } = await paidHold();
     await refusedFiveTimes(holdId);
@@ -434,31 +583,39 @@ describe("ops trying FSM again from the console", () => {
     expect((await retry(thursdayEvening, holdId).answer).status).toBe(409);
     expect((await retry(fakeDependencies(), crypto.randomUUID()).answer).status).toBe(404);
   });
+
+  it("waits while another try is writing the booking to FSM, as ops' other actions do", async () => {
+    const { holdId } = await paidHold();
+    await refusedFiveTimes(holdId);
+    await env.DB.prepare("UPDATE slot_holds SET booking_until = ?2 WHERE id = ?1")
+      .bind(holdId, afterHeld(HOUR + 5 * MINUTE).toISOString())
+      .run();
+    const fsm = createStubFsm(world());
+    const answer = await retry(fakeDependencies({ now: () => afterHeld(HOUR), fsm }), holdId).answer;
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "superseded" } });
+    expect(fsm.made.workOrders).toEqual([]);
+  });
+
+  it("records ops' try that let the booking go, its payment refunded in Razorpay's dashboard meanwhile", async () => {
+    const { holdId } = await paidHold();
+    await refusedFiveTimes(holdId);
+    await refundedInDashboard();
+    const { answer } = retry(fakeDependencies({ now: () => afterHeld(HOUR) }), holdId);
+    expect(await (await answer).json()).toEqual({ outcome: "given_back", refusal: null });
+    expect(await holdRow(holdId)).toMatchObject({ state: "released" });
+    expect(await auditRows("booking.retry")).toEqual([
+      { actor_kind: "staff", actor: "ops@localhost", subject_kind: "slot_hold", subject_id: holdId, detail: null },
+    ]);
+  });
 });
 
 describe("ops linking the visit they booked in FSM by hand", () => {
-  const HAND_MADE = "99999999-9999-4999-8999-999999999999";
-
-  /** The visit ops made in FSM, as its webhook mirrors it: Thursday at 2 pm, on a work order of their own. */
-  async function mirroredByHand(personId = PERSON, status = "scheduled") {
-    await env.DB.prepare(
-      `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, status, fsm_status, window_start,
-         window_end, technician_id, fsm_modified_at, synced_at)
-       VALUES (?1, 'fsm-by-hand', 'wo-by-hand', ?2, 'service', ?3, 'Scheduled', '2026-09-24T08:30:00.000Z',
-         '2026-09-24T10:00:00.000Z', 't1', ?4, ?4)`,
-    )
-      .bind(HAND_MADE, personId, status, NOW.toISOString())
-      .run();
-  }
-
-  const link = (deps: TestDependencies, holdId: string, visitId = HAND_MADE) =>
-    asOps(deps, `/api/held-bookings/${holdId}/link`, { method: "POST", body: { visit_id: visitId } });
-
   it("books it as that visit, with its payment, tells the client, and cancels the work order a try left", async () => {
     const { holdId } = await paidHold();
     const { fsm, stub } = halfWay();
     await refusedFiveTimes(holdId, fsm);
-    await mirroredByHand();
+    await mirrored();
 
     const deps = fakeDependencies({ now: () => afterHeld(2 * HOUR), fsm: stub });
     const { answer, messages } = link(deps, holdId);
@@ -503,7 +660,7 @@ describe("ops linking the visit they booked in FSM by hand", () => {
   it("waits while a try is writing the booking to FSM, so nothing is booked twice", async () => {
     const { holdId } = await paidHold();
     await refusedFiveTimes(holdId);
-    await mirroredByHand();
+    await mirrored();
     await env.DB.prepare("UPDATE slot_holds SET booking_until = ?2 WHERE id = ?1")
       .bind(holdId, afterHeld(HOUR + 5 * MINUTE).toISOString())
       .run();
@@ -516,7 +673,7 @@ describe("ops linking the visit they booked in FSM by hand", () => {
   it("refuses another client's visit, or one already done, and leaves the booking waiting", async () => {
     const { holdId } = await paidHold();
     await refusedFiveTimes(holdId);
-    await mirroredByHand(OTHER);
+    await mirrored({ personId: OTHER });
     expect((await link(fakeDependencies(), holdId).answer).status).toBe(400);
     await env.DB.prepare("UPDATE appointments SET person_id = ?2, status = 'completed' WHERE id = ?1")
       .bind(HAND_MADE, PERSON)
@@ -525,12 +682,272 @@ describe("ops linking the visit they booked in FSM by hand", () => {
     expect(await holdRow(holdId)).toMatchObject({ state: "held" });
     expect(await auditRows("booking.link")).toEqual([]);
   });
+
+  it("refuses a visit of another kind", async () => {
+    const { holdId } = await paidHold();
+    await refusedFiveTimes(holdId);
+    await mirrored({ type: "consultation" });
+    expect((await link(fakeDependencies({ now: () => afterHeld(2 * HOUR) }), holdId).answer).status).toBe(400);
+    expect(await holdRow(holdId)).toMatchObject({ state: "held", appointment_id: null });
+  });
+
+  it("refuses a visit another booking already is", async () => {
+    const { holdId } = await paidHold();
+    await refusedFiveTimes(holdId);
+    await mirrored();
+    await env.DB.prepare(
+      `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
+         amount_ex_gst, gst_percent, state, appointment_id, expires_at, created_at, updated_at)
+       VALUES (?1, ?2, 'service', '2026-09-24', 'afternoon', 't1', 4, 0, 0, 0, 'booked', ?3, ?4, ?4, ?4)`,
+    )
+      .bind(crypto.randomUUID(), PERSON, HAND_MADE, NOW.toISOString())
+      .run();
+    expect((await link(fakeDependencies({ now: () => afterHeld(2 * HOUR) }), holdId).answer).status).toBe(400);
+    expect(await holdRow(holdId)).toMatchObject({ state: "held", appointment_id: null });
+  });
+
+  it("refuses a visit the mirror had before the client paid, which cannot be this booking", async () => {
+    const { holdId } = await paidHold();
+    await refusedFiveTimes(holdId);
+    await mirrored({ seen: at(-HOUR) });
+    expect((await link(fakeDependencies({ now: () => afterHeld(2 * HOUR) }), holdId).answer).status).toBe(400);
+    expect(await holdRow(holdId)).toMatchObject({ state: "held", appointment_id: null });
+    expect(await auditRows("booking.link")).toEqual([]);
+  });
+
+  it("refuses, for a booking that replaces a visit, the visit it replaces, and leaves that visit booked", async () => {
+    const holdId = await heldMove("replace");
+    const fsm = createStubFsm(world());
+    const { answer } = link(fakeDependencies({ now: () => afterHeld(HOUR), fsm }), holdId, MOVED);
+    expect((await answer).status).toBe(400);
+    expect(fsm.made.cancelled).toEqual([]);
+    const replaced = await env.DB.prepare("SELECT status FROM appointments WHERE id = ?1").bind(MOVED).first();
+    expect(replaced).toEqual({ status: "scheduled" });
+    expect(await holdRow(holdId)).toMatchObject({ state: "held", appointment_id: null });
+  });
+
+  it("links a visit to one booking only, when two of the client's waiting bookings are linked to it at once", async () => {
+    const first = await paidHold("pay_h1", "2026-09-24");
+    const second = await paidHold("pay_h2", "2026-09-25");
+    await refusedFiveTimes(first.holdId);
+    await refusedFiveTimes(second.holdId);
+    await mirrored();
+    const fsm = createStubFsm(world());
+    const now = afterHeld(2 * HOUR);
+    const linkFirst = () =>
+      bookAsVisit(env.DB, fsm, createStubPayments(), { holdId: first.holdId, visitId: HAND_MADE }, now, {
+        labelAsTest: false,
+        audit: linkEntry(first.holdId),
+      });
+    // Each found the visit free, and each holds its own booking's lease; the first's batch lands just before the
+    // second's.
+    let raced = false;
+    const racing = new Proxy(env.DB, {
+      get(target, property) {
+        if (property === "batch" && !raced) {
+          return async (statements: D1PreparedStatement[]) => {
+            raced = true;
+            await linkFirst();
+            return target.batch(statements);
+          };
+        }
+        const value: unknown = Reflect.get(target, property);
+        return typeof value === "function" ? (value as (...args: unknown[]) => unknown).bind(target) : value;
+      },
+    });
+
+    const linked = await bookAsVisit(
+      racing,
+      fsm,
+      createStubPayments(),
+      { holdId: second.holdId, visitId: HAND_MADE },
+      now,
+      { labelAsTest: false, audit: linkEntry(second.holdId) },
+    );
+    expect(linked).toEqual({ kind: "not_the_visit" });
+    expect(await holdRow(first.holdId)).toMatchObject({ state: "booked", appointment_id: HAND_MADE });
+    expect(await holdRow(second.holdId)).toMatchObject({ state: "held", appointment_id: null });
+    const secondsHold = await env.DB.prepare(
+      `SELECT h.booking_until, (SELECT COUNT(*) FROM slot_claims c WHERE c.hold_id = h.id) AS claims,
+              (SELECT p.appointment_id FROM payments p WHERE p.razorpay_payment_id = 'pay_h2') AS paid_for
+       FROM slot_holds h WHERE h.id = ?1`,
+    )
+      .bind(second.holdId)
+      .first<{ booking_until: string | null; claims: number; paid_for: string | null }>();
+    expect(secondsHold).toMatchObject({ booking_until: null, paid_for: null });
+    expect(secondsHold?.claims).toBeGreaterThan(0);
+    expect((await auditRows("booking.link")).map((row) => row.subject_id)).toEqual([first.holdId]);
+  });
+
+  it("books nothing free once the payment was refunded in Razorpay's dashboard, and lets the booking go", async () => {
+    const { holdId } = await paidHold();
+    await refusedFiveTimes(holdId);
+    await mirrored();
+    await refundedInDashboard();
+    const { answer, messages } = link(fakeDependencies({ now: () => afterHeld(2 * HOUR) }), holdId);
+    expect((await answer).status).toBe(404);
+    expect(await holdRow(holdId)).toMatchObject({ state: "released", appointment_id: null });
+    const payment = await env.DB.prepare(
+      "SELECT appointment_id FROM payments WHERE razorpay_payment_id = 'pay_h1'",
+    ).first();
+    expect(payment).toEqual({ appointment_id: null });
+    expect(messages.sent).toEqual([]);
+    expect(await auditRows("booking.link")).toHaveLength(1);
+  });
+
+  it("cancels the work order a try kept just before ops' link took the booking", async () => {
+    const { holdId } = await paidHold();
+    // FSM had no item for the service, so none of the five tries reached a work order.
+    await refusedFiveTimes(holdId, createStubFsm(EMPTY_FSM));
+    await mirrored();
+    const fsm = createStubFsm(world());
+    const linked = await bookAsVisit(
+      meanwhileBeforeLease(async () => {
+        await workOrderKept(fsm, holdId);
+      }),
+      fsm,
+      createStubPayments(),
+      { holdId, visitId: HAND_MADE },
+      afterHeld(2 * HOUR),
+      { labelAsTest: false, audit: linkEntry(holdId) },
+    );
+    expect(linked).toMatchObject({ kind: "linked", fsm: { kind: "cancelled" } });
+    expect(fsm.made.cancelled).toHaveLength(1);
+  });
+});
+
+describe("ops stopping the hourly tries, to book it in FSM by hand", () => {
+  it("ends the tries, keeps the booking waiting for a link or a refund, and records who stopped them", async () => {
+    const { holdId } = await paidHold();
+    await refusedFiveTimes(holdId);
+    const { answer } = stop(fakeDependencies({ now: () => afterHeld(52 * MINUTE) }), holdId);
+    expect(await (await answer).json()).toEqual({ stopped: true });
+
+    const queue = fakeQueue();
+    for (const hours of [1, 2, 12, 23]) expect(await hourlyPass(queue, hours * HOUR)).toBe(0);
+    expect(queue.sent).toEqual([]);
+    expect(await holdRow(holdId)).toMatchObject({ state: "held", refunded_at: null });
+    expect(await auditRows("booking.stop")).toEqual([
+      { actor_kind: "staff", actor: "ops@localhost", subject_kind: "slot_hold", subject_id: holdId, detail: null },
+    ]);
+    const record = await (
+      await asOps(fakeDependencies({ now: () => afterHeld(HOUR) }), `/api/clients/${PERSON}`).answer
+    ).json<{ held_bookings: { retrying: boolean }[] }>();
+    expect(record.held_bookings).toMatchObject([{ retrying: false }]);
+  });
+
+  it("stays stopped when ops lengthen the tries afterwards", async () => {
+    const { holdId } = await paidHold();
+    await refusedFiveTimes(holdId);
+    await stop(fakeDependencies({ now: () => afterHeld(52 * MINUTE) }), holdId).answer;
+    const queue = fakeQueue();
+    const longer = { every: 1, for: 72 };
+    expect(await hourlyPass(queue, 25 * HOUR, longer)).toBe(0);
+    expect(await hourlyPass(queue, 48 * HOUR, longer)).toBe(0);
+    expect(queue.sent).toEqual([]);
+  });
+
+  it("lets ops book it by hand and link it, with nothing made twice: held at 12:08, stopped at 13:00", async () => {
+    const { holdId } = await paidHold();
+    await refusedFiveTimes(holdId);
+    await stop(fakeDependencies({ now: () => afterHeld(52 * MINUTE) }), holdId).answer;
+    await mirrored();
+    const queue = fakeQueue();
+    expect(await hourlyPass(queue, HOUR)).toBe(0);
+
+    const fsm = createStubFsm(world());
+    const { answer } = link(fakeDependencies({ now: () => afterHeld(HOUR + 2 * MINUTE), fsm }), holdId);
+    expect((await answer).status).toBe(200);
+    expect(await holdRow(holdId)).toMatchObject({ state: "booked", appointment_id: HAND_MADE });
+    expect(fsm.made.workOrders).toEqual([]);
+    expect(fsm.made.visits).toEqual([]);
+  });
+
+  it("waits while a try is writing the booking to FSM, and stops nothing meanwhile", async () => {
+    const { holdId } = await paidHold();
+    await refusedFiveTimes(holdId);
+    await env.DB.prepare("UPDATE slot_holds SET booking_until = ?2 WHERE id = ?1")
+      .bind(holdId, afterHeld(55 * MINUTE).toISOString())
+      .run();
+    const answer = await stop(fakeDependencies({ now: () => afterHeld(50 * MINUTE) }), holdId).answer;
+    expect(answer.status).toBe(409);
+    expect(await auditRows("booking.stop")).toEqual([]);
+    expect(await hourlyPass(fakeQueue(), HOUR)).toBe(1);
+  });
+
+  it("knows no booking that is not waiting", async () => {
+    expect((await stop(fakeDependencies(), crypto.randomUUID()).answer).status).toBe(404);
+  });
+});
+
+describe("a try, once ops have booked the visit in FSM by hand", () => {
+  it("writes nothing to FSM, and tells ops once to link it: held at 12:08, booked by hand at 13:02, tried at 13:08", async () => {
+    const { holdId } = await paidHold();
+    await refusedFiveTimes(holdId);
+    await mirrored();
+    const fsm = createStubFsm(world());
+    const hourly = delivery(holdId, 1);
+    const at1308 = fakeDependencies({ now: () => afterHeld(HOUR), fsm });
+    await handleFsmSyncBatch(hourly.batch, env, at1308, createLogger());
+
+    expect(hourly.message.ack).toHaveBeenCalled();
+    expect(fsm.made.workOrders).toEqual([]);
+    expect(fsm.made.visits).toEqual([]);
+    expect(await holdRow(holdId)).toMatchObject({ state: "held", appointment_id: null });
+    expect(at1308.alerts).toHaveLength(1);
+    expect(at1308.alerts[0]).toContain(holdId);
+    expect(at1308.alerts[0]).toContain(HAND_MADE);
+    expect(at1308.alerts[0]).toContain("link it");
+    const held = await env.DB.prepare("SELECT resolved_at FROM alerts WHERE key = ?1")
+      .bind(`booking_held:${holdId}`)
+      .first();
+    expect(held).toEqual({ resolved_at: null });
+
+    const at1408 = fakeDependencies({ now: () => afterHeld(2 * HOUR), fsm });
+    await handleFsmSyncBatch(delivery(holdId, 1).batch, env, at1408, createLogger());
+    expect(at1408.alerts).toEqual([]);
+    expect(fsm.made.workOrders).toEqual([]);
+
+    expect((await link(fakeDependencies({ now: () => afterHeld(2 * HOUR), fsm }), holdId).answer).status).toBe(200);
+    expect(await holdRow(holdId)).toMatchObject({ state: "booked", appointment_id: HAND_MADE });
+  });
+
+  it("says so when ops try FSM again, and writes nothing", async () => {
+    const { holdId } = await paidHold();
+    await refusedFiveTimes(holdId);
+    await mirrored();
+    const fsm = createStubFsm(world());
+    const { answer } = retry(fakeDependencies({ now: () => afterHeld(HOUR), fsm }), holdId);
+    expect(await (await answer).json()).toEqual({ outcome: "to_link", refusal: null });
+    expect(fsm.made.workOrders).toEqual([]);
+    expect(await holdRow(holdId)).toMatchObject({ state: "held", appointment_id: null });
+    expect(await auditRows("booking.retry")).toEqual([]);
+  });
+
+  it("books the visit an earlier try made, whose answer never came, and does not take it for one ops made", async () => {
+    const { holdId } = await paidHold();
+    await refusedFiveTimes(holdId);
+    const fsm = createStubFsm(world());
+    const workOrder = await workOrderKept(fsm, holdId);
+    const appointment = await fsm.createAppointment(workOrder, {
+      summary: "Service visit for Rohit Malhotra",
+      technicianId: "resource-1",
+      start: "2026-09-24T12:00:00+05:30",
+      end: "2026-09-24T13:30:00+05:30",
+    });
+    const OWN = "88888888-8888-4888-8888-888888888888";
+    await mirrored({ id: OWN, fsmId: appointment, workOrder, seen: afterHeld(30 * MINUTE) });
+
+    const deps = fakeDependencies({ now: () => afterHeld(HOUR), fsm });
+    await handleFsmSyncBatch(delivery(holdId, 1).batch, env, deps, createLogger());
+    expect(await holdRow(holdId)).toMatchObject({ state: "booked", appointment_id: OWN });
+    expect(fsm.made.workOrders).toHaveLength(1);
+    expect(fsm.made.visits).toHaveLength(1);
+    expect(deps.alerts).toEqual([]);
+  });
 });
 
 describe("ops refunding it from the console", () => {
-  const refund = (deps: TestDependencies, holdId: string) =>
-    asOps(deps, `/api/held-bookings/${holdId}/refund`, { method: "POST" });
-
   it("cancels the work order FSM holds, refunds in full, frees the slot, tells the client, and records it", async () => {
     const { holdId } = await paidHold();
     const { fsm, stub } = halfWay();
@@ -635,6 +1052,67 @@ describe("ops refunding it from the console", () => {
     const redeemed = await env.DB.prepare("SELECT 1 FROM credit_ledger WHERE kind = 'redeem'").first();
     expect(redeemed).toBeNull();
   });
+
+  it("says the payment was refunded before, and refunds nothing twice, after a refund in Razorpay's dashboard", async () => {
+    const { holdId } = await paidHold();
+    await refusedFiveTimes(holdId);
+    await refundedInDashboard();
+    const payments = createStubPayments();
+    const { answer, messages } = refund(fakeDependencies({ now: () => afterHeld(26 * HOUR), payments }), holdId);
+    expect(await (await answer).json()).toEqual({
+      money: { kind: "refunded_before", payment_id: "pay_h1", amount: null },
+      fsm: { kind: "nothing", work_order_id: null },
+    });
+    expect(payments.made.refunds).toEqual([]);
+    expect(await holdRow(holdId)).toMatchObject({ state: "released" });
+    expect(messages.sent).toHaveLength(1);
+  });
+
+  it("forgets the work order it cancelled, and lets the booking's lease go, when what follows fails", async () => {
+    await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "ops", sourceId: "o1", now: NOW }).run();
+    const held = await (
+      await asClient(PERSON, "/api/holds", {
+        method: "POST",
+        body: { type: "service", date: "2026-09-24", window: "afternoon" },
+      })
+    ).json<{ id: string }>();
+    await asClient(PERSON, "/api/bookings", { method: "POST", body: { hold_id: held.id } });
+    const { fsm, stub } = halfWay();
+    await refusedFiveTimes(held.id, fsm);
+    await env.DB.prepare(
+      `CREATE TRIGGER refuse_audit BEFORE INSERT ON audit_log WHEN NEW.action = 'booking.refund'
+       BEGIN SELECT RAISE(ABORT, 'refused for the test'); END`,
+    ).run();
+
+    const answer = await refund(fakeDependencies({ now: () => afterHeld(HOUR), fsm: stub }), held.id).answer;
+    expect(answer.status).toBe(500);
+    expect(stub.made.cancelled).toHaveLength(1);
+    const hold = await env.DB.prepare(
+      "SELECT state, fsm_work_order_id, fsm_appointment_id, booking_until FROM slot_holds WHERE id = ?1",
+    )
+      .bind(held.id)
+      .first();
+    expect(hold).toEqual({ state: "held", fsm_work_order_id: null, fsm_appointment_id: null, booking_until: null });
+  });
+
+  it("cancels the work order a try kept just before ops' refund took the booking", async () => {
+    const { holdId } = await paidHold();
+    // FSM had no item for the service, so none of the five tries reached a work order.
+    await refusedFiveTimes(holdId, createStubFsm(EMPTY_FSM));
+    const fsm = createStubFsm(world());
+    const gaveUp = await giveUpOnBooking(
+      meanwhileBeforeLease(async () => {
+        await workOrderKept(fsm, holdId);
+      }),
+      fsm,
+      createStubPayments(),
+      holdId,
+      afterHeld(2 * HOUR),
+      { labelAsTest: false },
+    );
+    expect(gaveUp).toMatchObject({ money: { kind: "refunded" }, fsm: { kind: "cancelled" } });
+    expect(fsm.made.cancelled).toHaveLength(1);
+  });
 });
 
 describe("what the client is told when ops refund it", () => {
@@ -667,9 +1145,25 @@ describe("what the client is told when ops refund it", () => {
     });
   });
 
-  function refund(deps: TestDependencies, holdId: string) {
-    return asOps(deps, `/api/held-bookings/${holdId}/refund`, { method: "POST" });
-  }
+  it("tells a client whose move could not be made that the visit stays as it was, and the fee is on its way back", async () => {
+    await consentsToVisitMessages();
+    const holdId = await heldMove("replace", { amount: 50000, orderId: "order_move" });
+    await refund(fakeDependencies({ now: () => afterHeld(HOUR) }), holdId).answer;
+    expect(await composeBookingRefunded(env.DB, holdId, PERSON)).toEqual({
+      template: "move_refunded_v1",
+      params: ["Rohit", "service visit", "Thu 24 Sep", "", "", "Rs. 500", "", "UPI"],
+    });
+  });
+
+  it("tells a client whose free move could not be made that the visit stays as it was", async () => {
+    await consentsToVisitMessages();
+    const holdId = await heldMove("move");
+    await refund(fakeDependencies({ now: () => afterHeld(HOUR) }), holdId).answer;
+    expect(await composeBookingRefunded(env.DB, holdId, PERSON)).toEqual({
+      template: "move_not_made_v1",
+      params: ["Rohit", "service visit", "Thu 24 Sep", "", "", "", "", "payment method"],
+    });
+  });
 });
 
 describe("what a paid booking was sold under", () => {

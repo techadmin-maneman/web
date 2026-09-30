@@ -231,14 +231,16 @@ export const api = {
    */
   findClients: (text: string) => client.post("/api/clients/find", { body: { text } }),
   client: (id: string) => client.get("/api/clients/{id}", { path: { id } }),
-  /** Visits added or taken away by hand, with the reason; the answer is the balance after it. */
   /** FSM tried again now for a booking it refused, as the hourly try would. */
   retryHeldBooking: (id: string) => client.post("/api/held-bookings/{id}/retry", { path: { id } }),
+  /** Its hourly tries stopped, before ops book it in FSM by hand. */
+  stopHeldBooking: (id: string) => client.post("/api/held-bookings/{id}/stop", { path: { id } }),
   /** The visit ops booked in FSM by hand is this booking. */
   linkHeldBooking: (id: string, visitId: string) =>
     client.post("/api/held-bookings/{id}/link", { path: { id }, body: { visit_id: visitId } }),
   /** What FSM holds for it cancelled, its payment refunded, and the client told. */
   refundHeldBooking: (id: string) => client.post("/api/held-bookings/{id}/refund", { path: { id } }),
+  /** Visits added or taken away by hand, with the reason; the answer is the balance after it. */
   adjustCredits: (id: string, adjustment: CreditAdjustment) =>
     client.post("/api/clients/{id}/credits", { path: { id }, body: adjustment }),
   /** Buildings matching what ops have typed of the address a client is giving them, in one billed session. */

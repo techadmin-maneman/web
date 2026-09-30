@@ -1,6 +1,6 @@
 // A booking FSM refused five times running, held for ops with its slot and its payment
 // (docs/decisions/0095-a-booking-fsm-refuses-is-held.md): the Tasks board's "Booking not in FSM" leads to the client's
-// Visits tab, which heads with it and the three things ops may do. The API is answered from e2e/ops/fixtures.ts,
+// Visits tab, which heads with it and the four things ops may do. The API is answered from e2e/ops/fixtures.ts,
 // since only FSM refusing a real booking five times puts one there. The clock is the fixtures' day.
 
 import AxeBuilder from "@axe-core/playwright";
@@ -24,6 +24,7 @@ import {
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 const HELD = `/api/held-bookings/${HELD_BOOKING.id}` as const;
 const RETRY: Call = `POST ${HELD}/retry`;
+const STOP: Call = `POST ${HELD}/stop`;
 const LINK: Call = `POST ${HELD}/link`;
 const REFUND: Call = `POST ${HELD}/refund`;
 /** The visit ops booked in FSM by hand, as the mirror brought it in: the record's one to come. */
@@ -73,6 +74,52 @@ test("says what FSM said when it refuses again, and leaves the actions", async (
     .click();
   await expect(held(page).getByRole("status")).toHaveText("FSM refused it again: Zoho 429 TOO_MANY");
   await expect(held(page).getByRole("button", { name: /Refund it/ })).toBeVisible();
+});
+
+test("stops the hourly tries before ops book it in FSM by hand, and says to link it once booked", async ({ page }) => {
+  let stopped = 0;
+  await openVisits(page, {
+    [STOP]: async (route) => {
+      stopped += 1;
+      await json({ stopped: true })(route);
+    },
+  });
+  await held(page)
+    .getByRole("button", { name: /Stop trying — I'll book it in FSM/ })
+    .click();
+
+  await expect(held(page).getByRole("status")).toHaveText(
+    "The hourly tries are stopped. Book it in FSM, then link it here.",
+  );
+  const booking = held(page).getByRole("listitem");
+  await expect(booking).toContainText("No longer tried automatically. Book it in FSM and link it, or refund it.");
+  await expect(held(page).getByRole("button", { name: /Stop trying/ })).toHaveCount(0);
+  await expect(held(page).getByRole("button", { name: /Link the visit I booked in FSM/ })).toBeVisible();
+  expect(stopped).toBe(1);
+  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+});
+
+test("says a visit of theirs reached FSM when a try finds one, and leaves it to link", async ({ page }) => {
+  await openVisits(page, { [RETRY]: json({ outcome: "to_link", refusal: null }) });
+  await held(page)
+    .getByRole("button", { name: /Try FSM again/ })
+    .click();
+  await expect(held(page).getByRole("status")).toHaveText(
+    "A visit of theirs of this kind reached FSM after it was held, so nothing was written. If it is the one you " +
+      "booked, link it.",
+  );
+  await expect(held(page).getByRole("button", { name: /Link the visit I booked in FSM/ })).toBeVisible();
+});
+
+test("says a try is writing it when ops try FSM again at the same moment", async ({ page }) => {
+  await openVisits(page, { [RETRY]: fails(409, "superseded") });
+  await held(page)
+    .getByRole("button", { name: /Try FSM again/ })
+    .click();
+  await expect(held(page).getByRole("alert")).toHaveText(
+    "A try is writing it to FSM right now. Reload in a minute to see how it went.",
+  );
 });
 
 test("links the visit booked in FSM by hand, and says the work order an earlier try left is cancelled", async ({
