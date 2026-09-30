@@ -1,6 +1,6 @@
 # 0063. The asked window and the offered one
 
-- Status: accepted. Amended by ADR 0069: the tray writes the asked window alone, "Asked · morning", since no day is recorded with it. Amended by ADR 0074: a consultation with no lead of ours behind it takes the window of the client's latest consultation request, which the site's form keeps while self-serve booking is off.
+- Status: accepted. Amended by ADR 0069: the tray writes the asked window alone, "Asked · morning", since no day is recorded with it. Amended by ADR 0074: a consultation with no lead of ours behind it takes the window of the client's latest consultation request, which the site's form keeps while self-serve booking is off. Amended by ADR 0101 (1 October 2026): nothing of ours makes a Request any more, so the pass reads no Request and asks FSM nothing.
 - Date: 2026-09-24
 
 ## Context

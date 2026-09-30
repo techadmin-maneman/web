@@ -1,9 +1,8 @@
 // Zoho FSM, the system of record for field work, behind an interface
 // (docs/decisions/0032-fsm-mirror.md). Callers use FsmProvider; only this file
 // knows which implementation runs, and only src/providers/fsm-zoho.ts knows
-// FSM's API. Reads feed the D1 mirror. Writes put a booked lead into FSM, as a
-// contact and a Request for ops to schedule, and a visit a client booked and
-// paid for in the app, as a work order and its appointment.
+// FSM's API. Reads feed the D1 mirror. Writes put a visit a client booked in
+// the app into FSM, as a contact, a work order and its appointment.
 
 import type { ZohoFsmSettings } from "../config/settings.ts";
 import { FSM_BASE_PART_NAME, FSM_SERVICE_NAMES, VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
@@ -35,20 +34,6 @@ export interface FsmAppointment {
   readonly serviceCity: string | null;
   readonly servicePincode: string | null;
   readonly modifiedAt: string;
-}
-
-/**
- * The Request a work order was converted from, and what the client asked for on
- * it. FSM keeps the preference on the Request alone: the appointment has the
- * same subform and it is read-only there, silently dropping anything written
- * to it (ADR 0063).
- */
-export interface FsmRequestPreference {
-  readonly requestId: string;
-  /** YYYY-MM-DD, the day the client asked for; null where they named none. */
-  readonly preferredDate: string | null;
-  /** The window they asked for, in the words we wrote (`NewFsmRequest.preferenceNote`). */
-  readonly preferenceNote: string | null;
 }
 
 /** A work order's invoice. FSM's Invoices module is a link: the document itself lives in Books. */
@@ -177,20 +162,6 @@ export interface FsmContactUpdate {
   } | null;
 }
 
-/** A visit a client asked for, for ops to schedule in FSM: a Request. */
-export interface NewFsmRequest {
-  readonly contactId: string;
-  readonly summary: string;
-  /** The service item asked for, e.g. the Consultation. */
-  readonly serviceId: string;
-  /** YYYY-MM-DD, the day the client asked for, if any. */
-  readonly preferredDate: string | null;
-  /** The window they asked for, in words. */
-  readonly preferenceNote: string;
-  /** Ours, the lead's ID, written on the Request so a retry can find one whose answer never reached us. */
-  readonly reference: string;
-}
-
 /**
  * The org's own names for an appointment's blueprint transitions. FSM finds a
  * transition by its name, so a name it does not know is one it never offers.
@@ -277,10 +248,6 @@ export interface FsmProvider {
   createContact(contact: NewFsmContact): Promise<string>;
   /** Writes a client's number, and their address as the service address, over their contact. */
   updateContact(contactId: string, update: FsmContactUpdate): Promise<void>;
-  /** The Request carrying our reference, among the latest FSM holds; null if none does. */
-  findRequest(reference: string): Promise<string | null>;
-  /** Adds a Request against a contact's service address; returns its FSM ID. */
-  createRequest(request: NewFsmRequest): Promise<string>;
   /** The work order carrying our reference, among the latest FSM holds; null if none does. */
   findWorkOrder(reference: string): Promise<string | null>;
   /** Adds a work order for one service against the contact's service address; returns its FSM ID. */
@@ -319,12 +286,6 @@ export interface FsmProvider {
    * comes back the same. Null when there is nothing to bill.
    */
   invoiceWorkOrder(workOrderId: string): Promise<FsmInvoice | null>;
-  /**
-   * What the client asked for on the Request this work order came from. Null
-   * when the work order names no Request, which is every visit our own booking
-   * makes: those are booked into the window the client picked.
-   */
-  requestPreference(workOrderId: string): Promise<FsmRequestPreference | null>;
   /** Anonymises an erased client's contact: name, numbers, e-mail and street; the city stays for the records. */
   eraseContact(contactId: string): Promise<void>;
 }
@@ -349,8 +310,6 @@ export interface StubFsmWorld {
   readonly files: Record<string, { bytes: Uint8Array; contentType: string }>;
   /** Pieces by contact ID. */
   readonly assets?: Record<string, FsmAsset[]>;
-  /** What the Request behind each work order asked for, by work order ID; a work order not here names no Request. */
-  readonly preferences?: Record<string, FsmRequestPreference>;
   /**
    * What each work order bills, in paise, from FSM's catalogue. One not named
    * here has nothing on it to bill, as a free consultation has.
@@ -408,7 +367,6 @@ export const EMPTY_FSM: StubFsmWorld = {
 export interface StubFsm extends FsmProvider {
   readonly made: {
     readonly contacts: NewFsmContact[];
-    readonly requests: NewFsmRequest[];
     readonly workOrders: NewFsmWorkOrder[];
     /** Each work order that has its appointment, as one visit. */
     readonly visits: NewFsmVisit[];
@@ -445,7 +403,6 @@ export interface StubFsm extends FsmProvider {
 /** The creates whose answer a test can lose. */
 export type StubFsmCreate =
   | "createContact"
-  | "createRequest"
   | "createWorkOrder"
   | "createAppointment"
   | "createAsset"
@@ -468,7 +425,6 @@ export type StubFsmStep =
   | "attachToAppointment"
   | "rescheduleVisit"
   | "invoiceWorkOrder"
-  | "requestPreference"
   | "updateContact";
 
 /**
@@ -478,7 +434,6 @@ export type StubFsmStep =
 export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
   const made = {
     contacts: [] as NewFsmContact[],
-    requests: [] as NewFsmRequest[],
     workOrders: [] as NewFsmWorkOrder[],
     visits: [] as NewFsmVisit[],
     rescheduled: [] as { appointmentId: string; start: string; end: string }[],
@@ -515,7 +470,6 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
 
   // What the stub made, by the keys a retry looks it up by.
   const contactIds = new Map<string, string>();
-  const requestIds = new Map<string, string>();
   const workOrderIds = new Map<string, string>();
   const workOrdersById = new Map<string, NewFsmWorkOrder>();
   const appointmentOfWorkOrder = new Map<string, string>();
@@ -639,14 +593,6 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
       contactIds.set(contact.mobile, id);
       return answer("createContact", id);
     },
-    findRequest: (reference) => Promise.resolve(requestIds.get(reference) ?? null),
-    createRequest: (request) => {
-      checkFailure("createRequest");
-      made.requests.push(request);
-      const id = `stub-request-${crypto.randomUUID()}`;
-      requestIds.set(request.reference, id);
-      return answer("createRequest", id);
-    },
     findWorkOrder: (reference) => Promise.resolve(workOrderIds.get(reference) ?? null),
     createWorkOrder: (order) => {
       checkFailure("createWorkOrder");
@@ -750,10 +696,6 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
       made.invoiced.push(workOrderId);
       return Promise.resolve(invoice);
     },
-    requestPreference: (workOrderId) => {
-      checkFailure("requestPreference");
-      return Promise.resolve(world.preferences?.[workOrderId] ?? null);
-    },
     updateContact: (contactId, update) => {
       checkFailure("updateContact");
       made.contactUpdates.push({ contactId, ...update });
@@ -785,8 +727,6 @@ function createUnconnectedFsm(): FsmProvider {
     findContact: off,
     createContact: off,
     updateContact: off,
-    findRequest: off,
-    createRequest: off,
     findWorkOrder: off,
     createWorkOrder: off,
     workOrderAppointment: off,
@@ -794,7 +734,6 @@ function createUnconnectedFsm(): FsmProvider {
     rescheduleVisit: off,
     cancelVisit: off,
     invoiceWorkOrder: off,
-    requestPreference: off,
     eraseContact: off,
     assets: off,
     createAsset: off,

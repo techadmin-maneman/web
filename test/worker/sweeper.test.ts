@@ -366,45 +366,6 @@ describe("sweeper: try-on", () => {
   });
 });
 
-describe("sweeper: bookings on their way to FSM", () => {
-  const WITH_FSM = { ...OPTIONS, fsmConnected: true };
-
-  it("queues a booking whose fsm-sync message never went, once, two minutes after it was made", async () => {
-    await insertLead("unqueued", "synced", 1, minutesAgo(3));
-    await insertLead("just-made", "synced", 1, minutesAgo(1));
-    const { bindings, queues } = sweepEnv();
-
-    await sweep(bindings, fakeDependencies(), createLogger(), WITH_FSM);
-    expect(queues.fsm.sent).toEqual([{ lead_id: "unqueued", request_id: "sweeper" }]);
-
-    const again = sweepEnv();
-    await sweep(again.bindings, fakeDependencies(), createLogger(), WITH_FSM);
-    expect(again.queues.fsm.sent).toEqual([]);
-  });
-
-  it("leaves a booking already queued or sent, a waitlist entry, and one over a day old", async () => {
-    await insertLead("queued", "synced", 1, minutesAgo(3));
-    await insertLead("sent", "synced", 1, minutesAgo(3));
-    await insertLead("waitlist", "synced", 1, minutesAgo(3));
-    await insertLead("old", "synced", 1, minutesAgo(25 * 60));
-    await env.DB.batch([
-      env.DB.prepare("UPDATE leads SET fsm_queued_at = ?1 WHERE id = 'queued'").bind(minutesAgo(3)),
-      env.DB.prepare("UPDATE leads SET fsm_request_id = 'fsm-req-1' WHERE id = 'sent'"),
-      env.DB.prepare("UPDATE leads SET source = 'waitlist' WHERE id = 'waitlist'"),
-    ]);
-    const { bindings, queues } = sweepEnv();
-    await sweep(bindings, fakeDependencies(), createLogger(), WITH_FSM);
-    expect(queues.fsm.sent).toEqual([]);
-  });
-
-  it("sends nothing where FSM is not connected", async () => {
-    await insertLead("unqueued", "synced", 1, minutesAgo(3));
-    const { bindings, queues } = sweepEnv();
-    await sweep(bindings, fakeDependencies(), createLogger(), OPTIONS);
-    expect(queues.fsm.sent).toEqual([]);
-  });
-});
-
 describe("sweeper: AILabTools credits", () => {
   const onTheHour = new Date("2026-09-21T07:00:00Z");
 
