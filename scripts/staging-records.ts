@@ -99,10 +99,14 @@ async function booksRows(path: string, key: string): Promise<Row[]> {
 const text = (value: unknown): string => (typeof value === "string" ? value : "");
 const idOf = (row: Row, key = "id"): string => text(row[key]);
 
-/** What the org holds of staging's now, and the look-alikes it holds beside them. */
-async function stagingRecords(): Promise<{ records: StagingRecord[]; lookAlikes: string[] }> {
+/**
+ * What the org holds of staging's now; the look-alikes it holds beside them; and FSM's invoices of staging's work
+ * orders, or of none, which only FSM's own screen deletes.
+ */
+async function stagingRecords(): Promise<{ records: StagingRecord[]; lookAlikes: string[]; byHand: string[] }> {
   const records: StagingRecord[] = [];
   const lookAlikes: string[] = [];
+  const byHand: string[] = [];
   const add = (kind: RecordKind, id: string, name: string, parentId?: string) => {
     records.push({ kind, id, name, ...(parentId === undefined ? {} : { parentId }) });
   };
@@ -118,8 +122,9 @@ async function stagingRecords(): Promise<{ records: StagingRecord[]; lookAlikes:
   }
   const workOrders = new Set(records.filter((record) => record.kind === "fsm/Work_Orders").map((record) => record.id));
   for (const row of await fsmRows("Invoices")) {
-    const workOrder = (row.Work_Order as { id?: string } | null | undefined)?.id ?? "";
-    if (workOrders.has(workOrder)) add("fsm/Invoices", idOf(row), `${text(row.Name)}, of a staging work order`);
+    const workOrder = (row.Work_Order as { id?: string } | null | undefined)?.id;
+    if (workOrder === undefined) byHand.push(`${idOf(row)} ${text(row.Name)}, of no work order`);
+    else if (workOrders.has(workOrder)) byHand.push(`${idOf(row)} ${text(row.Name)}, of a staging work order`);
   }
   for (const row of await fsmRows("Contacts")) {
     judge("fsm/Contacts", idOf(row), text(row.Full_Name), isStagingMarked(text(row.Full_Name)));
@@ -144,7 +149,7 @@ async function stagingRecords(): Promise<{ records: StagingRecord[]; lookAlikes:
     const name = text(row.contact_name);
     judge("books/contacts", idOf(row, "contact_id"), name, isStagingMarked(name));
   }
-  return { records, lookAlikes };
+  return { records, lookAlikes, byHand };
 }
 
 /** The path a record is deleted at. */
@@ -177,6 +182,10 @@ if (values.delete === undefined) {
   writeFileSync(listed, `${JSON.stringify({ records: found.records }, null, 2)}\n`);
   for (const record of found.records) console.log(line(record));
   console.log(`\n${String(found.records.length)} records staging wrote, written to ${listed}.`);
+  if (found.byHand.length > 0) {
+    console.log("\nFSM's API deletes no invoice. Delete these in FSM's Invoices screen, after the run below:");
+    for (const invoice of found.byHand) console.log(`  ${invoice}`);
+  }
   if (found.lookAlikes.length > 0) {
     console.log("\nThese look like tests but carry neither of staging's marks, so they are left alone:");
     for (const lookAlike of found.lookAlikes) console.log(`  ${lookAlike}`);

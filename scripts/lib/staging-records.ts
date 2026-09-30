@@ -8,12 +8,15 @@
 
 import { isStagingTestRecord } from "../../src/policy/staging-test-records.ts";
 
-/** Where a record is, and its module there, in the order a list is deleted in: what points at a record goes first. */
+/**
+ * Where a record is, and its module there, in the order a list is deleted in: what points at a record goes first.
+ * FSM's invoices are not among them: FSM's API deletes no invoice (tried 1 October 2026, `INVALID_MODULE`), so they
+ * are listed for ops to delete in FSM's own screen.
+ */
 export const DELETE_ORDER = [
   "books/refunds",
   "books/customerpayments",
   "fsm/Service_Appointments",
-  "fsm/Invoices",
   "books/invoices",
   "fsm/Work_Orders",
   "fsm/Requests",
