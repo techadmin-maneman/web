@@ -172,14 +172,16 @@ describe("POST /api/auth/otp", () => {
     expect(deps.sentCodes).toEqual([]);
   });
 
-  it("on staging, sends codes only to the allowlisted handsets, and answers the same for the rest", async () => {
+  // Owner ruling, 30 September 2026 ("logins open, reminders fenced", ADR 0025 item 84; ADR 0097): a login code
+  // answers the phone that just asked for it, so it is never held to staging's allowlist, unlike a reminder or
+  // another automatic message.
+  it("sends a code to a number off staging's allowlist, since a login code answers whoever asked for it", async () => {
     build({ messaging: { ...LOCAL_SETTINGS.messaging, allowlist: ["+919810000099"] } });
     const { res } = await start("98100 00001");
     expect(res.status).toBe(202);
-    expect(deps.sentCodes).toEqual([]);
-    expect(logs.lines()).toContainEqual(
-      expect.objectContaining({ event: "login_code_not_sent", reason: "number not on the allowlist" }),
-    );
+    expect(deps.sentCodes).toEqual([
+      { channel: "whatsapp", to: BOOKED, code: expect.stringMatching(/^\d{6}$/) as string },
+    ]);
   });
 
   it("limits codes per number a day, booked or not, and per address an hour", async () => {

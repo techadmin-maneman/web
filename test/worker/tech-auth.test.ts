@@ -107,6 +107,16 @@ describe("POST /api/tech/auth/otp", () => {
     expect(JSON.stringify(logs.lines())).not.toContain("9810000004");
   });
 
+  // Owner ruling, 30 September 2026 ("logins open, reminders fenced", ADR 0025 item 84; ADR 0097): a technician's
+  // code answers the phone that just asked for it, so it is never held to staging's allowlist.
+  it("sends a code to a technician's number off staging's allowlist", async () => {
+    tech = appFor("local", deps, { messaging: { ...LOCAL_SETTINGS.messaging, allowlist: ["+919810000099"] } }, "tech");
+    const { code } = await challengeFor("98100 00009");
+
+    expect(deps.sentCodes).toHaveLength(1);
+    expect(code).toMatch(/^\d{6}$/);
+  });
+
   it("reads FSM again for a number the mirror does not know, so a new technician need not wait", async () => {
     await challengeFor("98100 00007");
 
