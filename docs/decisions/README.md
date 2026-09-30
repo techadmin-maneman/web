@@ -35,7 +35,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0027](0027-referral-landing.md) | The referral landing: a Worker beside the site's assets | 2026-09-22 | accepted | [0073](0073-prices-from-the-price-book.md) |
 | [0028](0028-photographs-from-the-app.md) | Photographs from the technician app | 2026-09-23 | accepted | [0093](0093-the-storage-meter.md) |
 | [0029](0029-sessions.md) | Sessions for the client app | 2026-09-22 | accepted |  |
-| [0030](0030-one-time-codes.md) | One-time codes for the client app's login | 2026-09-22 | accepted | [0070](0070-vendor-correctness.md) |
+| [0030](0030-one-time-codes.md) | One-time codes for the client app's login | 2026-09-22 | accepted | [0070](0070-vendor-correctness.md), [0097](0097-staging-logins-open-reminders-fenced.md) |
 | [0031](0031-access-and-audit.md) | Access on the ops surface, and the audit log | 2026-09-22 | accepted | [0072](0072-ops-clients-and-queues.md) |
 | [0032](0032-fsm-mirror.md) | The FSM mirror, and Books documents | 2026-09-22 | accepted | [0070](0070-vendor-correctness.md), [0075](0075-tests-held-to-the-contract-and-the-local-stack.md) |
 | [0033](0033-credit-ledger.md) | The credit ledger | 2026-09-22 | accepted | [0068](0068-a-paid-hold-is-kept.md) |
@@ -100,6 +100,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0094](0094-where-a-consent-was-given.md) | Where a consent was given, and an erasure blanks a check-in's coordinates | 2026-09-28 | accepted, on the owner's rulings of 27 September 2026 |  |
 | [0095](0095-a-booking-fsm-refuses-is-held.md) | A booking FSM refuses is held, not refunded | 2026-09-29 | accepted, on the owner's ruling of 27 September 2026 |  |
 | [0096](0096-a-no-shows-charge-and-its-dispute.md) | A no-show's charge and its dispute, and the free change a visit ops moved keeps | 2026-09-29 | accepted, on the owner's rulings of 27 September 2026 |  |
+| [0097](0097-staging-logins-open-reminders-fenced.md) | Staging logins open, reminders fenced | 2026-09-30 | accepted |  |
 | [0098](0098-the-door-in-fsms-address.md) | The door in FSM's service address | 2026-10-01 | accepted, on the owner's rulings of 27 September 2026 and 1 October 2026 |  |
 
 ## Records beside them

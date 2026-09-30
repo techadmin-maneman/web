@@ -9,10 +9,9 @@
 // --claim running  submits the gate while the render is still running (the default)
 // --look           asks for a second look once the first is ready
 //
-// The gate uses the number in STAGING_TEST_MOBILE, which should be on the
-// staging allowlist to receive the WhatsApp copy; without it, a random test
-// number that receives nothing. The number is never printed in full.
-// The photo is read from disk and never copied into the repository.
+// The gate uses the number in STAGING_TEST_MOBILE. The result answers the person who claimed it (ADR 0097), so it
+// reaches any real WhatsApp number given here, on the allowlist or not; a made-up number just fails delivery.
+// The number is never printed in full. The photo is read from disk and never copied into the repository.
 
 import { readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
