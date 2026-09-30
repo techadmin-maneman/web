@@ -51,7 +51,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0043](0043-client-app.md) | The client app: build, Worker and policy | 2026-09-22 | accepted |  |
 | [0044](0044-payments-mirror.md) | The payments mirror | 2026-09-22 | accepted | [0067](0067-alerts-and-silent-failures.md), [0068](0068-a-paid-hold-is-kept.md) |
 | [0045](0045-self-serve-booking.md) | Self-serve booking and prepayment | 2026-09-22 | accepted | [0068](0068-a-paid-hold-is-kept.md), [0079](0079-an-address-before-a-slot.md), [0086](0086-the-next-visit-is-offered.md) |
-| [0046](0046-moving-and-cancelling.md) | Moving and cancelling a visit | 2026-09-22 | accepted | [0068](0068-a-paid-hold-is-kept.md) |
+| [0046](0046-moving-and-cancelling.md) | Moving and cancelling a visit | 2026-09-22 | accepted | [0068](0068-a-paid-hold-is-kept.md), [0096](0096-a-no-shows-charge-and-its-dispute.md) |
 | [0047](0047-visit-messages.md) | Messages about a client's visits | 2026-09-22 | accepted | [0074](0074-hand-offs-and-messages.md) |
 | [0048](0048-referrals.md) | Referrals and the waitlist | 2026-09-22 | accepted | [0060](0060-an-invited-friend-reaches-ops-and-the-crm.md), [0071](0071-what-ops-see-before-a-setting-changes.md), [0074](0074-hand-offs-and-messages.md), [0080](0080-consents-given-by-booking.md), [0089](0089-an-invite-is-not-lost.md) |
 | [0049](0049-dpdp.md) | DPDP readiness | 2026-09-22 | accepted | [0066](0066-erasure-all-or-nothing.md), [0074](0074-hand-offs-and-messages.md), [0094](0094-where-a-consent-was-given.md) |
@@ -93,7 +93,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0085](0085-services-ops-can-edit.md) | Services ops can edit | 2026-09-27 | accepted, on the owner's rulings of 27 September 2026 |  |
 | [0086](0086-the-next-visit-is-offered.md) | The next visit is offered, and the client books it | 2026-09-27 | accepted | [0085](0085-services-ops-can-edit.md) |
 | [0087](0087-consumables-and-stock.md) | Consumables and their stock, and the job sheet, set in the console | 2026-09-27 | accepted, on the owner's rulings of 27 September 2026 | [0085](0085-services-ops-can-edit.md) |
-| [0088](0088-every-policy-in-the-console.md) | Every policy in the console | 2026-09-28 | accepted, on the owner's standing rule of 27 September 2026 |  |
+| [0088](0088-every-policy-in-the-console.md) | Every policy in the console | 2026-09-28 | accepted, on the owner's standing rule of 27 September 2026 | [0096](0096-a-no-shows-charge-and-its-dispute.md) |
 | [0089](0089-an-invite-is-not-lost.md) | An invite is not lost when the friend books away from its page | 2026-09-28 | accepted |  |
 | [0092](0092-task-owners.md) | Whose each task is, a visit ops close without a follow-up, and an address given to ops | 2026-09-28 | accepted |  |
 | [0093](0093-the-storage-meter.md) | The storage meter, the photograph upload limit, and thumbnails made on the phone | 2026-09-28 | accepted, on the owner's rulings of 27 September 2026 |  |
