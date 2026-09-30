@@ -275,6 +275,33 @@ describe("sending a visit message", () => {
       expect(sent).toHaveLength(1);
     });
 
+    // A record one of our own scripts made stays fenced, whatever kind reaches everyone else (isStagingTestRecord,
+    // src/policy/staging-test-records.ts).
+    it("holds back a booking confirmation for a 'Staging test' record off the allowlist", async () => {
+      await consent(true);
+      await visit();
+      await paid();
+      await env.DB.prepare("UPDATE people SET name = 'Staging test' WHERE id = ?1").bind(PERSON).run();
+      const message = visitMessage(env.DB, {
+        personId: PERSON,
+        appointmentId: VISIT,
+        kind: "payment_receipt",
+        now: NOW,
+      });
+      await message.statement.run();
+      const { provider, sent } = recordingProvider();
+      await sendMessage(
+        env.DB,
+        config({ allowlist: ["+919810000099"] }),
+        fakeDependencies({ messaging: provider }),
+        log,
+        message.id,
+      );
+      expect(sent).toEqual([]);
+      const row = await env.DB.prepare("SELECT state, last_error FROM outbound_messages").first();
+      expect(row).toEqual({ state: "skipped", last_error: "number not on the allowlist" });
+    });
+
     it("holds back a reminder off the allowlist, since nobody there just asked for it", async () => {
       await consent(true);
       await visit();
@@ -321,6 +348,23 @@ describe("sending a visit message", () => {
       await sendMessage(env.DB, config(), deps, log, receipt.id);
       await sendMessage(env.DB, config(), deps, log, reminder.id);
       expect(sent).toHaveLength(2);
+    });
+
+    it("sends a 'Staging test' record's message too, once there is no allowlist, as in production", async () => {
+      await consent(true);
+      await visit();
+      await paid();
+      await env.DB.prepare("UPDATE people SET name = 'Staging test' WHERE id = ?1").bind(PERSON).run();
+      const message = visitMessage(env.DB, {
+        personId: PERSON,
+        appointmentId: VISIT,
+        kind: "payment_receipt",
+        now: NOW,
+      });
+      await message.statement.run();
+      const { provider, sent } = recordingProvider();
+      await sendMessage(env.DB, config(), fakeDependencies({ messaging: provider }), log, message.id);
+      expect(sent).toHaveLength(1);
     });
   });
 });

@@ -146,9 +146,12 @@ function challengeBody(c: Ctx, challenge: Challenge, now: Date) {
   };
 }
 
-async function mobileOf(db: D1Database, personId: string | null): Promise<string | null> {
+async function contactOf(
+  db: D1Database,
+  personId: string | null,
+): Promise<{ mobileE164: string; name: string } | null> {
   if (personId === null) return null;
-  return (await liveContact(db, personId))?.mobileE164 ?? null;
+  return liveContact(db, personId);
 }
 
 const login: RouteHandler<typeof loginRoute, AppEnv> = async (c) => {
@@ -167,11 +170,12 @@ const login: RouteHandler<typeof loginRoute, AppEnv> = async (c) => {
 
   const person = await findEligiblePerson(db, mobileE164);
   const sendsTo = person?.mobileE164 ?? null;
-  if (!(await countCode(c, sendsTo, visitor.ipHash, now))) return c.json(errorBody("busy", requestId), 503);
+  const name = person?.name ?? null;
+  if (!(await countCode(c, sendsTo, name, visitor.ipHash, now))) return c.json(errorBody("busy", requestId), 503);
 
   const code = limits.fixedCode ?? newLoginCode();
   const challenge = await createChallenge(db, { personId: person?.id ?? null, code, pepper: limits.codePepper, now });
-  await sendCodeAfterResponse(c, sendsTo, "whatsapp", code);
+  await sendCodeAfterResponse(c, sendsTo, name, "whatsapp", code);
   return c.json(challengeBody(c, challenge, now), 202);
 };
 
@@ -191,12 +195,14 @@ async function sendAgain(c: Ctx, challengeId: string, channel: CodeChannel) {
   if (gate === "rate_limited") return c.json(errorBody("rate_limited", requestId), 429);
   if (gate === "busy") return c.json(errorBody("busy", requestId), 503);
 
-  const sendsTo = await mobileOf(db, challenge.personId);
-  if (!(await countCode(c, sendsTo, ipHash, now))) return c.json(errorBody("busy", requestId), 503);
+  const contact = await contactOf(db, challenge.personId);
+  const sendsTo = contact?.mobileE164 ?? null;
+  const name = contact?.name ?? null;
+  if (!(await countCode(c, sendsTo, name, ipHash, now))) return c.json(errorBody("busy", requestId), 503);
 
   const code = config.settings.login.fixedCode ?? newLoginCode();
   await replaceCode(db, challenge, { channel, code, pepper: config.settings.login.codePepper, now });
-  await sendCodeAfterResponse(c, sendsTo, channel, code);
+  await sendCodeAfterResponse(c, sendsTo, name, channel, code);
   const sent = { ...challenge, channel, lastSentAt: now, sends: challenge.sends + 1 };
   return c.json(challengeBody(c, sent, now), 202);
 }

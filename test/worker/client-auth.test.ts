@@ -184,6 +184,30 @@ describe("POST /api/auth/otp", () => {
     ]);
   });
 
+  // A record one of our own scripts made stays fenced, whatever the ruling above frees (isStagingTestRecord,
+  // src/policy/staging-test-records.ts).
+  it("holds back a code to a 'Staging test' record off the allowlist, unlike an ordinary person's", async () => {
+    const TEST_RECORD = "+919810000050";
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES ('p-script', ?1, ?2, 'Staging test', 1)",
+      ).bind(NOW.toISOString(), TEST_RECORD),
+      env.DB.prepare(
+        `INSERT INTO leads (id, person_id, created_at, source, city, first_choice_window, loss_extent, proposed_visit_date, request_id)
+         VALUES ('l-script', 'p-script', ?1, 'form', 'Gurgaon', 'weekday_pm', 'crown', '2026-09-24', 'r')`,
+      ).bind(NOW.toISOString()),
+    ]);
+    build({ messaging: { ...LOCAL_SETTINGS.messaging, allowlist: ["+919810000099"] } });
+
+    const { res } = await start("98100 00050");
+
+    expect(res.status).toBe(202);
+    expect(deps.sentCodes).toEqual([]);
+    expect(logs.lines()).toContainEqual(
+      expect.objectContaining({ event: "login_code_not_sent", reason: "number not on the allowlist" }),
+    );
+  });
+
   it("limits codes per number a day, booked or not, and per address an hour", async () => {
     for (let i = 0; i < 5; i += 1) expect((await start("98100 00009")).res.status).toBe(202);
     expect((await start("98100 00009")).res.status).toBe(429);

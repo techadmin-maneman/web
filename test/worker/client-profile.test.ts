@@ -482,6 +482,38 @@ describe("a number change", () => {
     expect(deps.sentCodes.map((sent) => sent.to)).toEqual([OLD, NEW]);
   });
 
+  // A record one of our own scripts made stays fenced, whatever the ruling above frees (isStagingTestRecord,
+  // src/policy/staging-test-records.ts).
+  it("holds back both number-change codes for a 'Staging test' record off the allowlist", async () => {
+    const SCRIPT_OLD = "+919810000060";
+    await env.DB.prepare(
+      "INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES ('p-script', ?1, ?2, 'Staging test', 1)",
+    )
+      .bind(NOW.toISOString(), SCRIPT_OLD)
+      .run();
+    const scriptCookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: "p-script", deviceLabel: null, now: NOW })}`;
+    client = appFor(
+      "local",
+      deps,
+      { messaging: { ...LOCAL_SETTINGS.messaging, allowlist: ["+919810000099"] } },
+      "client",
+    );
+
+    const res = await request(
+      client,
+      "/api/number-change",
+      {
+        method: "POST",
+        headers: { Origin: ORIGIN, "Content-Type": "application/json", Cookie: scriptCookie },
+        body: JSON.stringify({ new_mobile: "98100 00003" }),
+      },
+      queues,
+    );
+
+    expect(res.status).toBe(202);
+    expect(deps.sentCodes).toEqual([]);
+  });
+
   it(NUMBER_CHANGE_RULES[1], async () => {
     const { body } = await start();
     expect(await (await verify(body.request_id, "old", codeTo(OLD))).json()).toMatchObject({

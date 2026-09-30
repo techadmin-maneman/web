@@ -413,6 +413,20 @@ describe("POST /api/tryon/claim", () => {
     expect(await (await browser.claim(jobId, "98100 00001")).json()).toMatchObject({ whatsapp_copy: true });
   });
 
+  // A record one of our own scripts made stays fenced, whatever the ruling above frees (isStagingTestRecord,
+  // src/policy/staging-test-records.ts).
+  it("promises no WhatsApp copy off the allowlist for a 'Staging test' claim", async () => {
+    const browser = visitor({ messaging: { allowlist: ["+919810000002"] } });
+    const jobId = await browser.uploaded();
+    await browser.generate(jobId);
+    const claimed = await browser.post("/api/tryon/claim", {
+      job_id: jobId,
+      name: "Staging test",
+      mobile: "98100 00001",
+    });
+    expect(await claimed.json()).toMatchObject({ whatsapp_copy: false });
+  });
+
   it("keeps a person who booked before contactable", async () => {
     await insertPerson("p", "+919810000001");
     await env.DB.prepare("UPDATE people SET contactable = 1").run();

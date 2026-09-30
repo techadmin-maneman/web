@@ -14,12 +14,12 @@
 // so there is no path from here to production.
 //
 // No real person. Both numbers are random `9xxxxxxxxx` test numbers, the house's
-// convention since M2; India publishes no reserved test range for mobiles.
-// Nothing is sent to the invented client: automatic messages, such as the
-// technician's arrival notice, still reach only staging's allowlist, and
-// neither number is on it. A login code is not automatic (ADR 0097): the
-// technician's own sign-in below does send a real WhatsApp message to his
-// random test number, which is expected to fail delivery rather than skip.
+// convention since M2; India publishes no reserved test range for mobiles. Both
+// records are named "Staging test…", so nothing is ever sent to either, code or
+// message, unless the number is also on staging's allowlist (isStagingTestRecord,
+// src/policy/staging-test-records.ts; ADR 0097): the technician's own sign-in
+// below still answers 202 and logs `login_code_not_sent`, "number not on the
+// allowlist", exactly as it did before that ruling.
 //
 // **Why the session is written rather than logged in to.** A code is stored as an
 // HMAC under `OTP_PEPPER`, a Worker secret, and staging has no fixed code
@@ -163,8 +163,13 @@ export async function seedStaging(): Promise<StagingFixture> {
   const expiresAt = new Date(Date.now() + 90 * DAY_MS).toISOString();
 
   const technicianMobile = testMobile();
-  const clientMobile = testMobile();
-  const technicianName = "Staging Technician";
+  // STAGING_TEST_MOBILE, when set, in place of a random number: either way the client's name below keeps it
+  // silent unless that number is also on staging's allowlist (isStagingTestRecord, ADR 0097).
+  const clientMobile = process.env.STAGING_TEST_MOBILE ?? testMobile();
+  // "Staging test…", so both records here are held to the allowlist regardless of message class
+  // (isStagingTestRecord, src/policy/staging-test-records.ts): the technician's number is always random and very
+  // likely a real person's.
+  const technicianName = "Staging test technician";
   const clientName = "Staging test";
 
   const appointment = (jobId: string, date: string) => {

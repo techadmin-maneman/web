@@ -9,9 +9,10 @@
 //
 // Skipped, never sent: messaging off, a person erased, an automatic kind to a
 // number outside the staging allowlist (a kind that answers the person who
-// just acted reaches any number there, ADR 0097), or the daily cap reached. A
-// transient failure is retried three times; then the message fails and an
-// alert names it.
+// just acted reaches any number there, ADR 0097) or a test record one of our
+// own scripts made off the allowlist regardless of kind, or the daily cap
+// reached. A transient failure is retried three times; then the message
+// fails and an alert names it.
 
 import { z } from "zod";
 import { PUBLIC_ORIGIN } from "../config/environments.ts";
@@ -30,6 +31,7 @@ import { readOpsInputs } from "../domain/ops-settings.ts";
 import { composeFriendCredited, composeFriendFitted, composeReferralRejected } from "../domain/referral-grants.ts";
 import { composeLaunchAlert, composeWaitlistConfirmation } from "../domain/waitlist.ts";
 import { composeVisitMessage, VISIT_MESSAGE_KINDS, type VisitMessageKind } from "../domain/visit-messages.ts";
+import { isStagingTestRecord } from "../policy/staging-test-records.ts";
 import { scrubString, type Logger } from "../log.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
 
@@ -89,9 +91,15 @@ type Content =
 const isVisitKind = (kind: string): kind is VisitMessageKind =>
   (VISIT_MESSAGE_KINDS as readonly string[]).includes(kind);
 
-/** Whether staging's allowlist should hold this message back: only ever true for an automatic kind (ADR 0097). */
-const heldBackByAllowlist = (messaging: MessagingSettings, mobileE164: string, kind: string): boolean =>
-  messageClass(kind) === "automatic" && !onAllowlist(messaging, mobileE164);
+/**
+ * Whether staging's allowlist should hold this message back: an automatic kind (ADR 0097), or one about a record
+ * our own scripts made, whatever its kind (isStagingTestRecord, src/policy/staging-test-records.ts).
+ */
+const heldBackByAllowlist = (
+  messaging: MessagingSettings,
+  row: Pick<MessageRow, "mobile_e164" | "name" | "kind">,
+): boolean =>
+  (messageClass(row.kind) === "automatic" || isStagingTestRecord(row.name)) && !onAllowlist(messaging, row.mobile_e164);
 
 /** The try-on result: the person's result image, within the daily cap on result messages to one number. */
 async function resultContent(db: D1Database, config: StaticConfig, row: MessageRow, now: Date): Promise<Content> {
@@ -178,7 +186,7 @@ export async function sendMessage(
 
   if (row.erased_at !== null) return skip("person erased");
   if (!messaging.enabled) return skip("messaging is off");
-  if (heldBackByAllowlist(messaging, row.mobile_e164, row.kind)) return skip("number not on the allowlist");
+  if (heldBackByAllowlist(messaging, row)) return skip("number not on the allowlist");
   const content = await contentOf(db, config, row, now);
   if ("skip" in content) return skip(content.skip);
 
