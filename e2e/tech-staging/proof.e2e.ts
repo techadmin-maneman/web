@@ -149,8 +149,9 @@ test("the code request carries the phone's own ID, and a wrong code is not an er
   record("the seeded technician after the unlisted number", seeded[0] ?? "not found");
   expect(seeded[0]?.active).toBe(1);
 
-  // Now the technician FSM does list. Nothing goes out here either: staging
-  // sends only to its messaging allowlist, and this test number is not on it.
+  // Now the technician FSM does list. Since 30 September 2026 a login code answers whoever asks for it and is no
+  // longer held to staging's messaging allowlist (ADR 0097), so this random test number is sent a real WhatsApp
+  // message here — expect a delivery failure rather than the "not on the allowlist" skip this used to be.
   await page.reload();
   const sending = page.waitForResponse((response) => response.url().endsWith("/api/tech/auth/otp"));
   await page.getByLabel("Mobile number").fill(fixture.technicianMobile);

@@ -1,6 +1,6 @@
 # 0070. What we write to Zoho is right, written once, and asked for sparingly
 
-- Status: accepted
+- Status: accepted. Amended 30 September 2026 by [0097](0097-staging-logins-open-reminders-fenced.md): the try-on gate's promise no longer depends on the allowlist.
 - Date: 2026-09-25
 - Amends [0012](0012-zoho-sync.md), [0015](0015-render-pipeline.md), [0030](0030-one-time-codes.md), [0032](0032-fsm-mirror.md), [0050](0050-crm-in-the-real-org.md), [0054](0054-address-capture.md), [0056](0056-issuing-the-invoice.md) and [0063](0063-the-asked-window.md); follows [0067](0067-alerts-and-silent-failures.md) and [0068](0068-a-paid-hold-is-kept.md)
 
@@ -41,7 +41,7 @@ The audit of 24 September 2026 found the vendors trusted where they should have 
 
 **A person waiting gets an answer sooner.** Zoho's calls inside a request give up after 8 s; the queues and the cron keep 20 s. A dispatch move FSM half took (the technician, not the time) is read again from FSM into the mirror, and ops are told `fsm_partly` rather than that nothing moved.
 
-**Smaller fixes in the same package.** The asked-window pass stamps a visit FSM refuses and retries one it failed on an hour later (`asked_failed_at`). Only a login code that is sent counts against the day's ceiling, and a number nobody knows costs its address, 20 a day (ADR 0030). The try-on gate promises a WhatsApp copy only where the allowlist lets one go; a lead's limits are counted after its city is checked; a gated visitor's new photo keeps their session (ADR 0014); a try-on result over 5 MB, or not an image, fails at once (ADR 0015).
+**Smaller fixes in the same package.** The asked-window pass stamps a visit FSM refuses and retries one it failed on an hour later (`asked_failed_at`). Only a login code that is sent counts against the day's ceiling, and a number nobody knows costs its address, 20 a day (ADR 0030). The try-on gate promises a WhatsApp copy whenever messaging is on, since the result answers the person who just claimed it and so reaches any number (corrected 30 September 2026: it no longer depends on the allowlist, [ADR 0097](0097-staging-logins-open-reminders-fenced.md)); a lead's limits are counted after its city is checked; a gated visitor's new photo keeps their session (ADR 0014); a try-on result over 5 MB, or not an image, fails at once (ADR 0015).
 
 ## Consequences
 

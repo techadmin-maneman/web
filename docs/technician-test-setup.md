@@ -45,7 +45,7 @@ One thing to watch: once your own FSM user carries your number, the mirror write
 
 ## Before you start
 
-1. **Your number is already on staging's WhatsApp allowlist.** That is what makes the code arrive. Nothing to do.
+1. **Your own number works, without being added anywhere first.** A login code answers whoever asked for it, so staging sends it to any number since 30 September 2026 (ADR 0097, "logins open, reminders fenced"); only reminders and other automatic messages still need a number on staging's allowlist, and none of those are part of this page.
 2. **Use Chrome on an Android phone.** The app is built for Android and the field test is run on one.
 3. **You will have to sign in to Cloudflare Access first.** `tech-staging.maneman.in` sits behind it, so the first thing the phone shows is Cloudflare's sign-in, not ours. Use your founders' login. This is staging's protection only; the real technician app will not have it.
 
@@ -118,11 +118,10 @@ Work down this list. Most of it you can check yourself.
    Ask for another code while that is running. The line to look for names the event:
 
    - `login_code_sent` — the code went out, and the problem is between the provider and the handset.
-   - `login_code_not_sent`, reason "number not on the allowlist" — your number is not on staging's `MESSAGING_ALLOWLIST` after all, and the runbook's step 7 puts it there.
    - `login_code_failed` — the WhatsApp provider refused it, and the line says why.
    - `login_code_not_sent`, reason "no account holds the number" — no active technician in staging has your number: the test technician is not there, or was switched off before 27 September 2026 (above). The sign-in deliberately answers the same whether it knows a number or not, so the screen will never tell you this; the log is the only place it shows. A read of FSM's list that switches technicians off logs `technicians_deactivated`, with the FSM ID of each.
 
-   Before 27 September 2026 the second of these was `login_code_skipped`, and the last wrote nothing at all.
+   Before 27 September 2026 "no account holds the number" was `login_code_skipped`, and the last wrote nothing at all. Before 30 September 2026 a third reason was possible here, "number not on the allowlist": a code no longer checks it at all (ADR 0097).
 
 **Do not ask anyone to read the code out of the database.** It is not stored — only a hash of it is, and that is the point.
 

@@ -1,6 +1,6 @@
 # 0047. Messages about a client's visits
 
-- Status: accepted
+- Status: accepted. Amended 30 September 2026 by [0097](0097-staging-logins-open-reminders-fenced.md): four of these five kinds answer the client's own booking, move or cancel, and reach any number on staging; only the reminder still checks the allowlist.
 - Date: 2026-09-22
 
 ## Context
@@ -34,7 +34,7 @@ The messaging pipeline already exists (ADR 0041):
 
 - the client has not switched on WhatsApp about visits, or has since switched it off;
 - the visit is no longer booked (for anything but a cancel);
-- the person was erased, messaging is off, or the number is not on staging's allowlist, as for every message.
+- the person was erased, or messaging is off, as for every message; or, only for `visit_reminder`, the number is not on staging's allowlist (the other four answer the client's own booking, move or cancel, and reach any number there, [ADR 0097](0097-staging-logins-open-reminders-fenced.md)).
 
 A skipped message records why.
 
@@ -45,5 +45,5 @@ A skipped message records why.
 ## Consequences
 
 - A client gets no visit messages until they switch on WhatsApp about visits in their profile. Nothing in the booking flow asks yet. Whether it should, and the final copy, are the owner's (`docs/open-points.md`, item 40).
-- On staging, only numbers on the allowlist receive them.
+- On staging, a booking's confirmation, a move and a cancel reach any number, since each answers the client who just made it; the day-before reminder, which nobody just asked for, still reaches only the allowlist ([ADR 0097](0097-staging-logins-open-reminders-fenced.md)).
 - Ops' own messages (a visit ops moved, the technician's arrival) arrive with dispatch (P2-M4). The move's arrived with ADR 0069; the arrival notice, which nothing wrote until then, with ADR 0074: queued at the first check-in that passes, once a visit, and recorded as not sent when the check-in reaches us too late to tell the client.

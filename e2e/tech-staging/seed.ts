@@ -14,9 +14,12 @@
 // so there is no path from here to production.
 //
 // No real person. Both numbers are random `9xxxxxxxxx` test numbers, the house's
-// convention since M2; India publishes no reserved test range for mobiles. Nothing
-// is sent to either: staging sends codes and messages to its allowlist only
-// (src/http/send-code.ts), and neither number is on it.
+// convention since M2; India publishes no reserved test range for mobiles.
+// Nothing is sent to the invented client: automatic messages, such as the
+// technician's arrival notice, still reach only staging's allowlist, and
+// neither number is on it. A login code is not automatic (ADR 0097): the
+// technician's own sign-in below does send a real WhatsApp message to his
+// random test number, which is expected to fail delivery rather than skip.
 //
 // **Why the session is written rather than logged in to.** A code is stored as an
 // HMAC under `OTP_PEPPER`, a Worker secret, and staging has no fixed code
