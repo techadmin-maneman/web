@@ -328,6 +328,39 @@ describe("POST /api/no-shows/disputes/:id/ruling", () => {
     });
   });
 
+  it("tells ops once, with the visit and the payment, when Razorpay refuses the refund; the ruling stands", async () => {
+    const id = await raised();
+    const deps = fakeDependencies({
+      payments: { ...createStubPayments(), refund: () => Promise.reject(new Error("Razorpay 502")) },
+    });
+
+    const answer = await rule(appFor("local", deps, {}, "ops"), id, {
+      ruling: "refunded",
+      reason: "The bell was broken",
+    });
+
+    expect(answer.status).toBe(200);
+    expect(deps.alerts).toEqual([
+      `The refund of Rs. 4000 for visit ${VISIT}, a no-show refunded on dispute, failed (Razorpay payment ` +
+        `pay_visit). Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}`,
+    ]);
+    expect(await env.DB.prepare("SELECT key FROM alerts").first()).toEqual({
+      key: `no_show_refund_failed:refunded on dispute:${VISIT}`,
+    });
+    expect(await env.DB.prepare("SELECT ruling FROM no_show_disputes").first()).toEqual({ ruling: "refunded" });
+  });
+
+  it("refunds at most what is left of the payment, where some went back by hand since the charge", async () => {
+    // Ops gave back Rs. 2,000 of the Rs. 4,000 fee in Razorpay's dashboard, which the webhook recorded.
+    await env.DB.prepare("UPDATE payments SET refunded_amount = 2800000").run();
+    const id = await raised();
+    const { app, payments } = opsApp();
+
+    await rule(app, id, { ruling: "refunded", reason: "The bell was broken" });
+
+    expect(payments.made.refunds).toEqual([expect.objectContaining({ paymentId: "pay_visit", amount: 200000 })]);
+  });
+
   it("keeps the charge on an uphold, and tells the client", async () => {
     const id = await raised();
     const { app, payments } = opsApp();
