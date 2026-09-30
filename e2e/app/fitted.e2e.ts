@@ -367,3 +367,31 @@ test("each read surface meets WCAG 2.2 AA", async ({ page }) => {
   await expect(page.getByText("Notify me")).toBeVisible();
   await scan();
 });
+
+// A visit paid for that FSM has not taken yet, as while FSM refuses it and it waits for ops
+// (docs/decisions/0095-a-booking-fsm-refuses-is-held.md): Home neither says it is booked nor that the money is gone,
+// and offers nothing to book in its place. The API's answer is altered on its way, as FSM refuses nothing locally.
+test("Home says a paid visit FSM has not taken yet is being booked, with the payment in", async ({ page }) => {
+  const client = fittedClient();
+  await logIn(page, client.mobile);
+  await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
+  const me = await page.evaluate(async () => (await fetch("/api/me")).json() as Promise<Record<string, unknown>>);
+  const waiting = { type: "service", date: "2027-09-25", window: "morning", paid: true };
+  await page.route("**/api/me", (route) =>
+    route.fulfill({ json: { ...me, next_visit: null, prompt: null, being_booked: waiting } }),
+  );
+  await page.reload();
+
+  const card = page.getByRole("region", { name: "Your next visit" });
+  await expect(card).toContainText(shortDate("2027-09-25"));
+  await expect(card).toContainText("Morning, 9 am to 12 pm");
+  await expect(card).toContainText("Service visit");
+  await expect(card).toContainText("Your payment is in. We are booking your visit.");
+  await expect(card).toContainText("We will message you on WhatsApp when the visit is booked.");
+  await expect(page.getByRole("button", { name: "Reschedule" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Book your next visit" })).toHaveCount(0);
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+});

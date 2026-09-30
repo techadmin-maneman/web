@@ -89,6 +89,17 @@ const TEMPLATES: Readonly<Record<string, string>> = {
     "Hello {{1}}, we could not give the service visits from your invite. Message us if you would like to know why.",
   visit_cancelled_refund_v1:
     "Hello {{1}}, your {{2}} on {{3}} is cancelled. {{6}} is on its way back to your {{8}}, in 5 to 7 working days.",
+  // A booking FSM would not take, which ops refunded or let go from the console (docs/decisions/0095-a-booking-fsm-refuses-is-held.md),
+  // with the params of a message about a visit: {{1}} the first name, {{2}} the visit, {{3}} its day, {{6}} what was
+  // paid and {{8}} where it goes back. PLACEHOLDER COPY, pending the owner's wording.
+  booking_refunded_v1:
+    "Hello {{1}}, we could not book your {{2}} on {{3}}. {{6}} is on its way back to your {{8}}, in 5 to 7 working days. You can book another time in the Mane Man app.",
+  booking_not_made_v1:
+    "Hello {{1}}, we could not book your {{2}} on {{3}}. You can book another time in the Mane Man app.",
+  // The same, for a booking that moved a visit, which stays as it was: {{3}} is the day it was to move to.
+  move_refunded_v1:
+    "Hello {{1}}, we could not move your {{2}} to {{3}}, so it stays as it was booked. {{6}} is on its way back to your {{8}}, in 5 to 7 working days.",
+  move_not_made_v1: "Hello {{1}}, we could not move your {{2}} to {{3}}, so it stays as it was booked.",
 };
 
 /** The text with its params filled in, or null for an unknown template or a missing param. */
@@ -136,6 +147,7 @@ export const MESSAGE_CLASSES: Readonly<Record<MessageKind, MessageClass>> = {
   visit_moved: "automatic", // ops moved it, on the dispatch board
   arrival_notice: "automatic", // the technician's own action, not the client's
   no_show_decided: "automatic", // ops ruled on it
+  booking_refunded: "automatic", // ops refunded a booking FSM would not take (ADR 0095)
   next_service_reminder: "automatic", // scheduled
   friend_fitted: "automatic", // to the referrer, for the friend's action
   friend_credited: "automatic", // to the friend, for the job ops closed

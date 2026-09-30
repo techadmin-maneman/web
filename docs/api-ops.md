@@ -273,6 +273,166 @@ Request body:
 }
 ```
 
+### POST /api/held-bookings/{id}/retry
+
+Try FSM again now for a booking it refused, as the hourly try would
+
+**200**: What FSM made of it
+
+```json
+{
+  "$ref": "#/components/schemas/HeldBookingTried"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no booking held for FSM with that id; it may be booked or refunded
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: not_changeable: the visit's time has passed; refund it, or link a visit booked in FSM. superseded: a try is writing the booking to FSM at this moment; look again in a minute
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/held-bookings/{id}/stop
+
+Stop the hourly tries of a booking FSM refused, before ops book it in FSM by hand and link it
+
+**200**: No longer tried by itself; it waits for a link or a refund
+
+```json
+{
+  "$ref": "#/components/schemas/HeldBookingStopped"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no booking held for FSM with that id; it may be booked or refunded
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: superseded: a try is writing the booking to FSM at this moment; look again in a minute
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/held-bookings/{id}/link
+
+The visit ops booked in FSM by hand is this booking: book it as that visit, and make nothing twice
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/HeldBookingLink"
+}
+```
+
+**200**: Booked as the visit, and the client told
+
+```json
+{
+  "$ref": "#/components/schemas/HeldBookingLinked"
+}
+```
+
+**400**: invalid_request: not a visit this booking can be, or the booking moves a visit
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no booking held for FSM with that id; it may be booked or refunded, or its payment was refunded in Razorpay's dashboard, and it has now been let go
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: superseded: a try is writing the booking to FSM at this moment; look again in a minute
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/held-bookings/{id}/refund
+
+Give back a booking FSM would not take: its work order cancelled, its payment refunded, the client told
+
+**200**: What happened to the money and to FSM
+
+```json
+{
+  "$ref": "#/components/schemas/HeldBookingRefunded"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no booking held for FSM with that id; it may be booked or refunded
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: superseded: a try is writing the booking to FSM at this moment; look again in a minute
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/clients/{id}/referral
 
 Attach an invite to a client who booked away from its page, with the reason
@@ -3399,6 +3559,13 @@ Who Access let through, and where signing out goes
         }
       ],
       "description": "The invite they came with, or ops attached; null for none."
+    },
+    "held_bookings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/HeldBooking"
+      },
+      "description": "Bookings FSM refused, waiting for a try or for ops; the soonest visit first."
     }
   },
   "required": [
@@ -3412,7 +3579,8 @@ Who Access let through, and where signing out goes
     "visits",
     "payments",
     "history",
-    "invite"
+    "invite",
+    "held_bookings"
   ],
   "additionalProperties": false
 }
@@ -4393,6 +4561,98 @@ Who Access let through, and where signing out goes
 }
 ```
 
+### HeldBooking
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The booking's hold, which the three actions name."
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement"
+      ]
+    },
+    "service": {
+      "type": "string",
+      "description": "Its service's name as it is now."
+    },
+    "starts_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the visit it holds starts."
+    },
+    "window": {
+      "type": "string",
+      "enum": [
+        "morning",
+        "afternoon",
+        "evening"
+      ]
+    },
+    "paid": {
+      "type": "integer",
+      "description": "In paise, GST included: what Razorpay took; 0 when a credit covers it, or it is free."
+    },
+    "uses_credit": {
+      "type": "boolean"
+    },
+    "moves_visit": {
+      "type": "boolean",
+      "description": "It moves a visit already booked: trying FSM again moves it, and there is no new visit to link."
+    },
+    "held_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When FSM's fifth refusal running held it."
+    },
+    "refusal": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "FSM's latest refusal, as the log gives it."
+    },
+    "retries_end": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the hourly tries end, or ended, as ops set them."
+    },
+    "retrying": {
+      "type": "boolean",
+      "description": "Still tried every hour: inside its tries, and its visit to come."
+    }
+  },
+  "required": [
+    "id",
+    "type",
+    "service",
+    "starts_at",
+    "window",
+    "paid",
+    "uses_credit",
+    "moves_visit",
+    "held_at",
+    "refusal",
+    "retries_end",
+    "retrying"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### ClientPhotos
 
 ```json
@@ -4777,6 +5037,204 @@ Who Access let through, and where signing out goes
   "required": [
     "visits",
     "reason"
+  ],
+  "additionalProperties": false
+}
+```
+
+### HeldBookingTried
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "booked",
+        "given_back",
+        "refused",
+        "to_link"
+      ],
+      "description": "booked: in FSM and the mirror, and the client told. given_back: its payment had been refunded, or its hold lapsed, so it was let go. refused: FSM refused again, and it waits as before. to_link: a visit of the client's, of the booking's kind, reached FSM after the booking was held and is no booking's, so nothing was written; link it if it is the one ops booked."
+    },
+    "refusal": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "FSM's refusal, as the log gives it, when it refused."
+    }
+  },
+  "required": [
+    "outcome",
+    "refusal"
+  ],
+  "additionalProperties": false
+}
+```
+
+### HeldBookingStopped
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "stopped": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
+    }
+  },
+  "required": [
+    "stopped"
+  ],
+  "additionalProperties": false
+}
+```
+
+### HeldBookingLinked
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "fsm": {
+      "$ref": "#/components/schemas/LeftInFsm"
+    }
+  },
+  "required": [
+    "fsm"
+  ],
+  "additionalProperties": false
+}
+```
+
+### LeftInFsm
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "nothing",
+        "cancelled",
+        "not_cancelled",
+        "unknown"
+      ],
+      "description": "What an earlier try left in FSM: nothing; a work order now cancelled; one FSM would not cancel, to cancel by hand; or unknown, when FSM could not be asked, so look for \"(booking <id>)\" among its work orders."
+    },
+    "work_order_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "FSM's, where there is one to name."
+    }
+  },
+  "required": [
+    "kind",
+    "work_order_id"
+  ],
+  "additionalProperties": false
+}
+```
+
+### HeldBookingLink
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "visit_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The visit, as the client's page lists it once FSM's webhook or the reconciliation has mirrored it: the client's, of the booking's kind, still to happen, first seen since the client paid, not the visit the booking replaces, and no other booking's."
+    }
+  },
+  "required": [
+    "visit_id"
+  ],
+  "additionalProperties": false
+}
+```
+
+### HeldBookingRefunded
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "money": {
+      "$ref": "#/components/schemas/HeldBookingMoney"
+    },
+    "fsm": {
+      "$ref": "#/components/schemas/LeftInFsm"
+    }
+  },
+  "required": [
+    "money",
+    "fsm"
+  ],
+  "additionalProperties": false
+}
+```
+
+### HeldBookingMoney
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "refunded",
+        "refunded_before",
+        "nothing_paid",
+        "booked",
+        "refund_refused"
+      ],
+      "description": "refunded in full now; refunded_before, by an earlier press or in Razorpay's dashboard; nothing_paid, as a free or credit booking; booked, by a try that landed meanwhile, so nothing is refunded; refund_refused by Razorpay, so nothing has gone back and the booking still waits."
+    },
+    "payment_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Razorpay's, where there is a payment."
+    },
+    "amount": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "In paise, where one was refunded."
+    }
+  },
+  "required": [
+    "kind",
+    "payment_id",
+    "amount"
   ],
   "additionalProperties": false
 }
@@ -6751,6 +7209,7 @@ Who Access let through, and where signing out goes
             "type": "string",
             "enum": [
               "untold_move",
+              "held_booking",
               "leave_conflict",
               "address_to_confirm",
               "consultation_request",
@@ -7270,6 +7729,7 @@ Who Access let through, and where signing out goes
         "task_sla_hours",
         "piece_cycle_days",
         "payment_hold",
+        "fsm_retry",
         "technician_work",
         "booking_days"
       ]
@@ -7440,6 +7900,7 @@ Who Access let through, and where signing out goes
         "task_sla_hours",
         "piece_cycle_days",
         "payment_hold",
+        "fsm_retry",
         "technician_work",
         "booking_days"
       ]

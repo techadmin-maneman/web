@@ -54,7 +54,10 @@ export const PHASE_2_ALLOWANCE = {
  * twice that history).
  */
 export const CRON_RUNS_PER_DAY = 24 * 12;
-/** A run with nothing to do, measured: about 35 rows, however long the tables grow. */
+/**
+ * A run with nothing to do, measured: about 70 rows, and 100 in the evening, when the reminders look for tomorrow's
+ * visits and the next services falling due; however long the tables grow.
+ */
 export const CRON_ROWS_READ_PER_QUIET_RUN = 100;
 /**
  * A run at its busiest, every lookup coming back full: the sweep's eight

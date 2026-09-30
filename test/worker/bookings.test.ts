@@ -209,7 +209,8 @@ describe("confirmBooking", () => {
     expect(fsm.made.visits).toEqual([]);
   });
 
-  it("refunds and alerts when FSM will not take the visit after five tries", async () => {
+  // Before the owner's ruling of 27 September 2026 the fifth refusal refunded the client (ADR 0095).
+  it("holds the booking for ops, refunding nothing, when FSM will not take the visit after five tries", async () => {
     const app = appFor("local", fakeDependencies(), {}, "client");
     const holdId = await heldService(app);
     await post(app, "/api/bookings", { hold_id: holdId });
@@ -234,8 +235,8 @@ describe("confirmBooking", () => {
     const fifth = batchOf(5);
     await handleFsmSyncBatch(fifth as unknown as MessageBatch, env, deps, createLogger());
     expect(fifth.messages[0]?.ack).toHaveBeenCalled();
-    expect(payments.made.refunds).toEqual([{ paymentId: "pay_1", amount: 200000 }]);
-    expect(deps.alerts).toEqual([expect.stringMatching(/could not be written to FSM.*refunded/)]);
+    expect(payments.made.refunds).toEqual([]);
+    expect(deps.alerts).toEqual([expect.stringMatching(/could not be written to FSM.*Nothing is refunded/)]);
   });
 });
 

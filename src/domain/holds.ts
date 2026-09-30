@@ -133,6 +133,33 @@ export async function releaseHold(db: D1Database, hold: { holdId: string; person
   ]);
 }
 
+/** A visit on its way to FSM, as Home shows it until FSM has it. */
+export interface BookingUnderWay {
+  readonly type: VisitType;
+  readonly date: string;
+  readonly window: BookingWindow;
+  /** Paid for in money, rather than free or covered by a credit. */
+  readonly paid: boolean;
+}
+
+/**
+ * The client's soonest visit paid for, or booked free, that FSM does not have yet: on its way, or held after FSM
+ * refused it (docs/decisions/0095-a-booking-fsm-refuses-is-held.md). It is neither booked nor refunded, and Home says
+ * so. A move is not one: the visit it moves is booked, and Home shows that. Null with none.
+ */
+export async function bookingUnderWay(db: D1Database, personId: string): Promise<BookingUnderWay | null> {
+  const row = await db
+    .prepare(
+      `SELECT type, date, window_label, amount, use_credit FROM slot_holds
+       WHERE person_id = ?1 AND state = 'held' AND confirmed_at IS NOT NULL AND moves_appointment_id IS NULL
+       ORDER BY date, start_unit LIMIT 1`,
+    )
+    .bind(personId)
+    .first<{ type: VisitType; date: string; window_label: BookingWindow; amount: number; use_credit: number }>();
+  if (row === null) return null;
+  return { type: row.type, date: row.date, window: row.window_label, paid: row.amount > 0 && row.use_credit !== 1 };
+}
+
 /** What Checkout names a hold's payment with, and prefills. */
 export interface CheckoutHold {
   readonly type: VisitType;

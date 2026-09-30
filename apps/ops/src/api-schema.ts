@@ -485,6 +485,283 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/held-bookings/{id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Try FSM again now for a booking it refused, as the hourly try would */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The booking's hold. */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description What FSM made of it */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["HeldBookingTried"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no booking held for FSM with that id; it may be booked or refunded */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_changeable: the visit's time has passed; refund it, or link a visit booked in FSM. superseded: a try is writing the booking to FSM at this moment; look again in a minute */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/held-bookings/{id}/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stop the hourly tries of a booking FSM refused, before ops book it in FSM by hand and link it */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The booking's hold. */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No longer tried by itself; it waits for a link or a refund */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["HeldBookingStopped"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no booking held for FSM with that id; it may be booked or refunded */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description superseded: a try is writing the booking to FSM at this moment; look again in a minute */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/held-bookings/{id}/link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** The visit ops booked in FSM by hand is this booking: book it as that visit, and make nothing twice */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The booking's hold. */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["HeldBookingLink"];
+                };
+            };
+            responses: {
+                /** @description Booked as the visit, and the client told */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["HeldBookingLinked"];
+                    };
+                };
+                /** @description invalid_request: not a visit this booking can be, or the booking moves a visit */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no booking held for FSM with that id; it may be booked or refunded, or its payment was refunded in Razorpay's dashboard, and it has now been let go */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description superseded: a try is writing the booking to FSM at this moment; look again in a minute */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/held-bookings/{id}/refund": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Give back a booking FSM would not take: its work order cancelled, its payment refunded, the client told */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The booking's hold. */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description What happened to the money and to FSM */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["HeldBookingRefunded"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no booking held for FSM with that id; it may be booked or refunded */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description superseded: a try is writing the booking to FSM at this moment; look again in a minute */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/clients/{id}/referral": {
         parameters: {
             query?: never;
@@ -2160,7 +2437,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    group: "untold_move" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "erasure_unfinished";
+                    group: "untold_move" | "held_booking" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "erasure_unfinished";
                     id: string;
                 };
                 cookie?: never;
@@ -2462,7 +2739,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "technician_work" | "booking_days";
+                    name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "fsm_retry" | "technician_work" | "booking_days";
                 };
                 cookie?: never;
             };
@@ -4426,6 +4703,8 @@ export interface components {
             history: components["schemas"]["ClientRecordHistory"];
             /** @description The invite they came with, or ops attached; null for none. */
             invite: components["schemas"]["ClientInvite"] | null;
+            /** @description Bookings FSM refused, waiting for a try or for ops; the soonest visit first. */
+            held_bookings: components["schemas"]["HeldBooking"][];
         };
         ClientAddress: {
             line1: string;
@@ -4667,6 +4946,43 @@ export interface components {
                 reason: string | null;
             } | null;
         };
+        HeldBooking: {
+            /**
+             * Format: uuid
+             * @description The booking's hold, which the three actions name.
+             */
+            id: string;
+            /** @enum {string} */
+            type: "consultation" | "first_fit" | "service" | "replacement";
+            /** @description Its service's name as it is now. */
+            service: string;
+            /**
+             * Format: date-time
+             * @description When the visit it holds starts.
+             */
+            starts_at: string;
+            /** @enum {string} */
+            window: "morning" | "afternoon" | "evening";
+            /** @description In paise, GST included: what Razorpay took; 0 when a credit covers it, or it is free. */
+            paid: number;
+            uses_credit: boolean;
+            /** @description It moves a visit already booked: trying FSM again moves it, and there is no new visit to link. */
+            moves_visit: boolean;
+            /**
+             * Format: date-time
+             * @description When FSM's fifth refusal running held it.
+             */
+            held_at: string;
+            /** @description FSM's latest refusal, as the log gives it. */
+            refusal: string | null;
+            /**
+             * Format: date-time
+             * @description When the hourly tries end, or ended, as ops set them.
+             */
+            retries_end: string;
+            /** @description Still tried every hour: inside its tries, and its visit to come. */
+            retrying: boolean;
+        };
         ClientPhotos: {
             visits: {
                 /** Format: uuid */
@@ -4749,6 +5065,53 @@ export interface components {
              * @enum {string}
              */
             reason: "correction" | "goodwill";
+        };
+        HeldBookingTried: {
+            /**
+             * @description booked: in FSM and the mirror, and the client told. given_back: its payment had been refunded, or its hold lapsed, so it was let go. refused: FSM refused again, and it waits as before. to_link: a visit of the client's, of the booking's kind, reached FSM after the booking was held and is no booking's, so nothing was written; link it if it is the one ops booked.
+             * @enum {string}
+             */
+            outcome: "booked" | "given_back" | "refused" | "to_link";
+            /** @description FSM's refusal, as the log gives it, when it refused. */
+            refusal: string | null;
+        };
+        HeldBookingStopped: {
+            /** @enum {boolean} */
+            stopped: true;
+        };
+        HeldBookingLinked: {
+            fsm: components["schemas"]["LeftInFsm"];
+        };
+        LeftInFsm: {
+            /**
+             * @description What an earlier try left in FSM: nothing; a work order now cancelled; one FSM would not cancel, to cancel by hand; or unknown, when FSM could not be asked, so look for "(booking <id>)" among its work orders.
+             * @enum {string}
+             */
+            kind: "nothing" | "cancelled" | "not_cancelled" | "unknown";
+            /** @description FSM's, where there is one to name. */
+            work_order_id: string | null;
+        };
+        HeldBookingLink: {
+            /**
+             * Format: uuid
+             * @description The visit, as the client's page lists it once FSM's webhook or the reconciliation has mirrored it: the client's, of the booking's kind, still to happen, first seen since the client paid, not the visit the booking replaces, and no other booking's.
+             */
+            visit_id: string;
+        };
+        HeldBookingRefunded: {
+            money: components["schemas"]["HeldBookingMoney"];
+            fsm: components["schemas"]["LeftInFsm"];
+        };
+        HeldBookingMoney: {
+            /**
+             * @description refunded in full now; refunded_before, by an earlier press or in Razorpay's dashboard; nothing_paid, as a free or credit booking; booked, by a try that landed meanwhile, so nothing is refunded; refund_refused by Razorpay, so nothing has gone back and the booking still waits.
+             * @enum {string}
+             */
+            kind: "refunded" | "refunded_before" | "nothing_paid" | "booked" | "refund_refused";
+            /** @description Razorpay's, where there is a payment. */
+            payment_id: string | null;
+            /** @description In paise, where one was refunded. */
+            amount: number | null;
         };
         AlreadyInvited: {
             error: {
@@ -5175,7 +5538,7 @@ export interface components {
             staff: string[];
             groups: {
                 /** @enum {string} */
-                group: "untold_move" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "erasure_unfinished";
+                group: "untold_move" | "held_booking" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "erasure_unfinished";
                 /** @description How many are waiting in the group, all of them. */
                 count: number;
                 /** @description Ops may close a task of the group without doing its thing, with a reason. */
@@ -5304,7 +5667,7 @@ export interface components {
         OpsSetting: components["schemas"]["NumberRule"] | components["schemas"]["ChoiceRule"];
         NumberRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "technician_work" | "booking_days";
+            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "fsm_retry" | "technician_work" | "booking_days";
             title: string;
             note: string;
             /** @description The module the default lives in. */
@@ -5339,7 +5702,7 @@ export interface components {
         };
         ChoiceRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "technician_work" | "booking_days";
+            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "fsm_retry" | "technician_work" | "booking_days";
             title: string;
             note: string;
             /** @description The module the default lives in. */
