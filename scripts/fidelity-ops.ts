@@ -23,7 +23,7 @@ import type { Server } from "node:http";
 import { resolve } from "node:path";
 import { chromium, type Browser, type Page, type Route } from "@playwright/test";
 import sharp from "sharp";
-import { BOARD, PIECES, ROOM, TASKS } from "../e2e/ops/fixtures.ts";
+import { BOARD, DISPUTES, PIECES, ROOM, TASKS } from "../e2e/ops/fixtures.ts";
 import { pair, routeDesignLibraries, STILL } from "./lib/fidelity.ts";
 import { serveDirectory } from "./lib/static-server.ts";
 
@@ -197,6 +197,7 @@ const NO_SHOWS = {
       window_end: "2027-09-19T07:30:00.000Z",
       minutes_late: 1,
       distance_m: 240,
+      radius_m: 200,
       message_state: "delivered",
       message_delivered_at: "2027-09-19T06:02:00.000Z",
       wait_ends_at: "2027-09-19T06:16:00.000Z",
@@ -211,25 +212,21 @@ const NO_SHOWS = {
 
 /**
  * The day's money over its charges, board D1's first card: its own three
- * figures and its two charges. The board prices the no-show at Rs. 2,360 like
- * the late cancellation; nothing here records what a no-show was charged, so
- * the third figure holds the cancellation alone and counts the no-show beside
- * it (docs/open-points.md, item 60).
+ * figures and its two charges, the no-show priced at Rs. 2,360 like the late
+ * cancellation, as the board draws it and its charge now records.
  */
 const DAY_MONEY = {
   date: "2027-09-22",
   collected: 8_400_000,
   refunds_processing: 708_000,
   refunded: 236_000,
-  charged: 236_000,
-  no_shows_charged: 1,
-  dispute: null,
+  charged: 472_000,
   charges: [
     {
       id: "b1000000-0000-4000-8000-000000000001",
       kind: "no_show",
       person: { id: "11000000-0000-4000-8000-000000000002", name: "Vikram Sethi" },
-      amount: null,
+      amount: 236_000,
       // Ruled this morning on yesterday's visit, so the list's own order is the route's.
       at: "2027-09-22T02:30:00.000Z",
       visit_started_at: "2027-09-21T06:00:00.000Z",
@@ -348,6 +345,8 @@ const API: Api = {
   [`/api/clients/${CLIENT_ID}/consents`]: json(CONSENTS),
   "/api/payments": json(DAY_MONEY),
   "/api/no-shows": json(NO_SHOWS),
+  // Board D1's second card, Vikram's disputed charge (e2e/ops/fixtures.ts).
+  "/api/no-shows/disputes": json(DISPUTES),
   // The tasks are read against IN_2027, the day their dates are written for (e2e/ops/fixtures.ts).
   "/api/tasks": json(TASKS),
   "/api/technicians": json(TECHNICIANS),
@@ -477,10 +476,8 @@ async function photos(browser: Browser, design: Page): Promise<void> {
 }
 
 /**
- * Board D1, both of its cards. The first is the day's money over the charges it
- * was kept on; the second is a disputed charge, and nothing records one, so the
- * queue of cases is paired with it as the card that holds the evidence and the
- * ruling.
+ * Board D1, both of its cards: the day's money over the charges it was kept on,
+ * and a disputed charge (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
  */
 async function noShows(browser: Browser, design: Page): Promise<void> {
   const page = await openConsole(browser, "/no-shows");
@@ -488,9 +485,9 @@ async function noShows(browser: Browser, design: Page): Promise<void> {
   await money.getByText("Cancelled 9:14 am · visit was 10 am").waitFor();
   await pair(OUT, PANEL, "d1-day-money", await panelOf(design, "Payments", 0), await money.screenshot());
 
-  const panel = page.getByRole("region", { name: "Waiting for a decision" });
-  await panel.getByText("Delivered Sun 19 Sep, 11:32 am").waitFor();
-  await pair(OUT, PANEL, "d1-no-shows", await panelOf(design, "Payments", 1), await panel.screenshot());
+  const dispute = page.getByRole("region", { name: "Vikram Sethi disputes the charge" });
+  await dispute.getByText("240 m · over 200 m fence").waitFor();
+  await pair(OUT, PANEL, "d1-disputed-charge", await panelOf(design, "Payments", 1), await dispute.screenshot());
   await page.close();
 }
 

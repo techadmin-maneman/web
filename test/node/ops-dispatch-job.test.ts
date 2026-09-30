@@ -38,6 +38,7 @@ const block = (overrides: Partial<Block> = {}): Block => ({
   starts_at: "2025-09-19T03:30:00.000Z",
   window: "morning",
   status: "scheduled",
+  notice_hours: 24,
   untold: null,
   ...overrides,
 });

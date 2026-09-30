@@ -259,3 +259,39 @@
   font-size: var(--fs-14);
   color: var(--error-on-paper);
 }
+
+/* ---- A disputed charge, board D1's second card ---------------------------- */
+
+.dispute {
+  padding: var(--sp-22);
+  border: var(--hairline) solid var(--paper-line);
+}
+
+.disputeLabel {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-14);
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+.disputeTitle {
+  margin: var(--sp-14) 0 0;
+  font-family: var(--font-serif);
+  font-weight: var(--weight-regular);
+  font-size: var(--fs-22);
+  line-height: var(--lh-120);
+}
+
+/* The client's own words, as they wrote them. */
+.disputeWords {
+  margin: var(--sp-10) 0 0;
+  font-size: var(--fs-15);
+  line-height: var(--lh-155);
+}
+
+/* A distance over the radius in force: the one fact that argues for the client, in oxblood, as the board draws it. */
+.over {
+  color: var(--error-on-paper);
+}

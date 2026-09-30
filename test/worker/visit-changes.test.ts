@@ -6,9 +6,12 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { confirmBooking } from "../../src/domain/bookings.ts";
 import { clawBack, creditBalance, grantCredits, redeemCredit } from "../../src/domain/credits.ts";
+import { moveJob } from "../../src/domain/dispatch.ts";
+import { syncAppointment } from "../../src/domain/fsm-mirror.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { createStubFsm, EMPTY_FSM, type FsmProvider } from "../../src/providers/fsm.ts";
 import { createStubPayments } from "../../src/providers/payments.ts";
+import type { MoveReason } from "../../src/policy/dispatch.ts";
 import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request, savedAddress } from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
@@ -623,5 +626,141 @@ describe("moving a visit", () => {
     await env.DB.prepare("UPDATE appointments SET status = 'completed' WHERE id = ?1").bind(VISIT).run();
     expect((await post(app, `/api/appointments/${VISIT}/reschedule`, {})).status).toBe(409);
     expect((await get(app, `/api/availability?type=service&moving=${VISIT}`)).status).toBe(409);
+  });
+});
+
+/**
+ * The owner ruled on 27 September 2026 that the client keeps the free change after a move by ops: their notice counts
+ * from the visit's time before ops moved it (docs/owner-answers-2026-09-27.md, item 71;
+ * docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
+ */
+describe("a visit ops moved", () => {
+  /** Tuesday 22 September, noon in India: the afternoon window's first half-slot. */
+  const TUESDAY_AFTERNOON = "2026-09-22T06:30:00.000Z";
+
+  async function opsMove(
+    window: "morning" | "afternoon" | "evening",
+    date: string,
+    reason: MoveReason = "zone_rebalance",
+  ) {
+    const now = await visitRow();
+    const moved = await moveJob(
+      env.DB,
+      { fsm: createStubFsm(world()), labelAsTest: true },
+      {
+        appointmentId: VISIT,
+        date,
+        window,
+        reason,
+        actor: "ops@localhost",
+        expected: { technicianId: "t1", startsAt: now?.window_start ?? "" },
+      },
+      NOW,
+    );
+    expect(moved.kind).toBe("moved");
+  }
+
+  const cancelTerms = async () =>
+    (await post(client(), `/api/appointments/${VISIT}/cancel`, { confirm: false })).json<Record<string, unknown>>();
+
+  it("keeps the client's free change: moved to 21 hours away, a cancel at once is free", async () => {
+    await booked("service", THURSDAY_NOON, 200000);
+    await opsMove("morning", "2026-09-22");
+    expect((await visitRow())?.window_start).toBe(TUESDAY_MORNING);
+
+    expect(await cancelTerms()).toMatchObject({
+      notice: "free",
+      free_until: "2026-09-23T06:30:00.000Z",
+      refund: 200000,
+      kept: 0,
+    });
+    const fsm = createStubFsm(world());
+    const payments = createStubPayments();
+    const done = await post(client({ fsm, payments }), `/api/appointments/${VISIT}/cancel`, {
+      confirm: true,
+      notice: "free",
+    });
+    expect(await done.json()).toMatchObject({ cancelled: true, refund: 200000, kept: 0 });
+    expect(payments.made.refunds).toEqual([{ paymentId: "pay_visit", amount: 200000 }]);
+    expect(fsm.made.cancelled).toEqual([
+      {
+        workOrderId: "fsm-order-1",
+        note: "Staging test: Cancelled by the client in the app, more than 24 hours before the time ops moved it from.",
+      },
+    ]);
+  });
+
+  it("moves it free too, where the client moves it themselves", async () => {
+    await booked("first_fit", THURSDAY_NOON, 3000000);
+    await opsMove("morning", "2026-09-22");
+    const move = await (await post(client(), `/api/appointments/${VISIT}/reschedule`, {})).json();
+    expect(move).toMatchObject({ notice: "free", cost: "free" });
+  });
+
+  it("counts from the visit's own time where ops moved it later", async () => {
+    await booked("service", TUESDAY_MORNING, 200000);
+    await opsMove("afternoon", "2026-09-24");
+    expect(await cancelTerms()).toMatchObject({ notice: "free", free_until: "2026-09-23T06:30:00.000Z" });
+  });
+
+  it("keeps the time the client chose through every move ops make after it", async () => {
+    await booked("service", THURSDAY_NOON, 200000);
+    await opsMove("morning", "2026-09-22");
+    await opsMove("afternoon", "2026-09-22");
+    expect((await visitRow())?.window_start).toBe(TUESDAY_AFTERNOON);
+    expect(await cancelTerms()).toMatchObject({ notice: "free", refund: 200000 });
+  });
+
+  it("counts from the new time once the client moves it themselves", async () => {
+    await booked("service", THURSDAY_NOON, 200000);
+    await opsMove("morning", "2026-09-22");
+    const app = client();
+    const held = await (
+      await post(app, "/api/holds", { type: "service", date: "2026-09-22", window: "afternoon", moving: VISIT })
+    ).json<{ id: string; price: { amount: number } }>();
+    expect(held.price.amount).toBe(0);
+    await post(app, `/api/appointments/${VISIT}/reschedule`, { hold_id: held.id }, { FSM_QUEUE: fakeQueue() });
+    const fsm = createStubFsm(world());
+    expect(await confirmBooking(env.DB, fsm, createStubPayments(), held.id, NOW, { labelAsTest: true })).toBe("booked");
+
+    expect(await cancelTerms()).toMatchObject({ notice: "late", refund: 0, kept: 200000 });
+  });
+
+  it("counts a move ops make because the client asked as the client's own", async () => {
+    await booked("service", THURSDAY_NOON, 200000);
+    await opsMove("morning", "2026-09-22", "client_asked");
+    expect(await cancelTerms()).toMatchObject({ notice: "late", refund: 0, kept: 200000 });
+  });
+
+  it("keeps the client's free change after a move made in FSM itself", async () => {
+    await booked("service", THURSDAY_NOON, 200000);
+    const fsm = createStubFsm({
+      ...world(),
+      appointments: [
+        {
+          id: "fsm-visit-1",
+          name: "AP-1",
+          status: "Scheduled",
+          workOrderId: "fsm-order-1",
+          contactId: "contact-1",
+          scheduledStart: "2026-09-22T09:00:00+05:30",
+          scheduledEnd: "2026-09-22T10:30:00+05:30",
+          actualStart: null,
+          actualEnd: null,
+          technicianIds: ["resource-1"],
+          serviceIds: ["item-service"],
+          serviceCity: "Gurgaon",
+          servicePincode: "122018",
+          modifiedAt: "2026-09-21T11:00:00+05:30",
+        },
+      ],
+    });
+    await syncAppointment(env.DB, fsm, "fsm-visit-1", NOW);
+    expect((await visitRow())?.window_start).toBe(TUESDAY_MORNING);
+
+    expect(await cancelTerms()).toMatchObject({ notice: "free", refund: 200000 });
+    // Read again, unchanged, it stays the client's.
+    await syncAppointment(env.DB, fsm, "fsm-visit-1", NOW);
+    expect(await cancelTerms()).toMatchObject({ notice: "free" });
   });
 });

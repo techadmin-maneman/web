@@ -85,7 +85,10 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "Each client's last first fit, service or replacement done, and last consultation done, kept by triggers from the view `last_visits_now` as their visits change; the Tasks board's At-risk client and First fit to book read it (ADR 0086).",
   leads:
     "Each booking, waitlist sign-up and try-on claim as the CRM receives it, and whether it has reached the CRM and FSM (ADR 0011, ADR 0012).",
-  no_show_cases: "The evidence a no-show is ruled on, and the ruling (ADR 0065, ADR 0072).",
+  no_show_cases:
+    "The evidence a no-show is ruled on, the ruling, and what a charge cost the client (ADR 0065, ADR 0072, ADR 0096).",
+  no_show_disputes:
+    "A client's dispute of a no-show's charge, one a charge, and ops' ruling on it, refunded or upheld, with their reason (ADR 0096).",
   number_change_requests:
     "A client's change of mobile number: the codes proven on both numbers, and what ops decided (ADR 0042, ADR 0078).",
   ops_settings:

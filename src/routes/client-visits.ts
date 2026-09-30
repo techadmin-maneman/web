@@ -20,7 +20,7 @@ import { clientHistory } from "../domain/client-history.ts";
 import { clientTryOns, ownTryOnImage, TRY_ON_IMAGES, TRY_ON_TOKEN_PURPOSES } from "../domain/client-try-ons.ts";
 import { listVisits, ownPhotoKey, photoSets, visitDetail } from "../domain/client-visits.ts";
 import { VISIT_OUTCOMES } from "../domain/fsm-mirror.ts";
-import { NO_SHOW_DECISIONS } from "../policy/no-show.ts";
+import { DISPUTE_RULINGS, NO_SHOW_DECISIONS } from "../policy/no-show.ts";
 import { ANGLES, PHASES } from "../domain/visit-photos.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
@@ -85,6 +85,27 @@ export const NoShowNoteSchema = z
       description: "What ops ruled: undecided while they look at the evidence, charged, or waived.",
     }),
     waited_minutes: z.number().int().openapi({ description: "How long the technician waited at the door." }),
+    charge: z
+      .union([
+        z
+          .object({
+            kept: z.number().int().openapi({ description: "In paise: what the charge kept of the visit's payment." }),
+            credit_spent: z.boolean().openapi({ description: "Whether the charge spent the credit the visit used." }),
+          })
+          .strict(),
+        z.null(),
+      ])
+      .openapi({
+        description:
+          "What the charge took, as the booking was sold to cost a no-show (ADR 0096). Null unless charged, and on a charge ruled before charges were recorded.",
+      }),
+    dispute: z.union([z.enum(["open", ...DISPUTE_RULINGS]), z.null()]).openapi({
+      description:
+        "The client's dispute of the charge: open while ops look, then refunded or upheld; null when none was raised.",
+    }),
+    disputable: z.boolean().openapi({
+      description: "Whether the client may dispute the charge now: one that took something, not disputed yet.",
+    }),
   })
   .strict()
   .openapi("NoShowNote");

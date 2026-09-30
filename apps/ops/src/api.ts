@@ -97,6 +97,8 @@ export type StockCount = Sent<paths["/api/stock/counts"]["post"]>;
 export type StockWriteOff = Sent<paths["/api/stock/write-offs"]["post"]>;
 
 export type NoShowCase = Body<paths["/api/no-shows"]["get"]>["cases"][number];
+export type NoShowDispute = Body<paths["/api/no-shows/disputes"]["get"]>["disputes"][number];
+export type DisputeRuling = Sent<paths["/api/no-shows/disputes/{id}/ruling"]["post"]>["ruling"];
 export type DayMoney = Body<paths["/api/payments"]["get"]>;
 export type Charge = DayMoney["charges"][number];
 export type Technician = Body<paths["/api/technicians"]["get"]>["technicians"][number];
@@ -277,11 +279,15 @@ export const api = {
   /** Today's money, as board D1 heads it. The route takes a date; the board draws no way of asking for another. */
   dayMoney: () => client.get("/api/payments"),
   /**
-   * Charge the visit or waive it, with the reason either way. Neither takes
-   * money: the charge follows the 24-hour policy at P2-M5.
+   * Charge the visit or waive it, with the reason either way. A charge costs
+   * what the booking was sold to cost a no-show, and gives back the rest.
    */
   decideNoShow: (id: string, decision: "charged" | "waived", reason: string) =>
     client.post("/api/no-shows/{id}/decision", { path: { id }, body: { decision, reason } }),
+  /** The disputed charges still to rule on (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md). */
+  disputes: () => client.get("/api/no-shows/disputes"),
+  ruleOnDispute: (id: string, ruling: DisputeRuling, reason: string) =>
+    client.post("/api/no-shows/disputes/{id}/ruling", { path: { id }, body: { ruling, reason } }),
   /** The grievances nobody has answered yet, oldest first. */
   grievances: () => client.get("/api/grievances"),
   /** Ops' answer, which closes the grievance. Nothing sends it to the client; ops do that themselves. */

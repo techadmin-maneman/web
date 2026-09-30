@@ -9,20 +9,24 @@
 //   POST /api/technicians/:id/leave/:leave/cancel        take it back
 //
 // "A no-show is charged under the 24-hour policy. The charge is applied by ops
-// from the evidence, never automatically": nothing here charges anybody. The
-// decision is recorded, and a charge keeps what the visit took, as a client's
-// own late cancel does (src/policy/moving-a-visit.ts). A waiver gives back what
-// ops set it to (no_show_waiver): the payment refunded and the credit returned,
-// as the owner ruled on 27 September 2026 (src/policy/no-show.ts), and the ruling
-// keeps what it gave. Either way the client is told on WhatsApp, with their
-// consent to messages about visits.
+// from the evidence, never automatically": nothing here charges anybody until
+// ops rule. A charge costs what the booking was sold to cost a no-show
+// (no_show_charge, ADR 0088): a first fit or a replacement keeps its late fee and
+// refunds the rest, a paid service visit is kept, a credit is lost, as a late
+// cancel of the same visit would, and the ruling records what it kept
+// (src/policy/no-show.ts, docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
+// A waiver gives back what ops set it to (no_show_waiver): the payment refunded
+// and the credit returned, as the owner ruled on 27 September 2026, and the
+// ruling keeps what it gave. Either way the client is told on WhatsApp, with
+// their consent to messages about visits.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import { staffOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { cancelLeave, LEAVE_MAX_DAYS, leaveFrom, recordLeave } from "../domain/leave.ts";
-import { decideNoShow, listNoShowCases, MESSAGE_STATES, refundWaivedVisit } from "../domain/no-shows.ts";
+import { afterRuling } from "../domain/after-a-ruling.ts";
+import { decideNoShow, listNoShowCases, MESSAGE_STATES } from "../domain/no-shows.ts";
 import { piecesOf, syncPieces } from "../domain/pieces.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { devicesByTechnician, revokeDevice } from "../domain/technicians.ts";
@@ -61,6 +65,10 @@ const NoShowCaseSchema = z
     distance_m: z.union([z.number().int(), z.null()]).openapi({
       description:
         "Fact two: how far from the address he was; null where the address had no coordinates and nothing was measured.",
+    }),
+    radius_m: z.number().int().openapi({
+      description:
+        "The check-in radius in force when he checked in, which the check-in keeps: the distance is read against it, not against the radius ops have set since.",
     }),
     message_state: z.enum(MESSAGE_STATES).openapi({
       description:
@@ -277,6 +285,7 @@ export function registerOpsField(app: App): void {
       return c.json(errorBody("invalid_request", c.var.requestId, ["reason"]), 400);
     }
     const now = c.var.deps.now();
+    const inputs = await opsInputs(c);
 
     const ruled = await decideNoShow(c.env.DB, {
       caseId: id,
@@ -292,16 +301,13 @@ export function registerOpsField(app: App): void {
         detail: { decision },
       },
       now,
-      waiver: (await opsInputs(c)).noShowWaiver,
+      waiver: inputs.noShowWaiver,
+      terms: inputs,
     });
     if (ruled === null) return c.json(errorBody("not_found", c.var.requestId), 404);
-    if (ruled.refund !== null) await refundWaivedVisit(c.env.DB, c.var.deps, ruled.refund);
-    if (ruled.messageId !== null) {
-      await c.env.MESSAGE_QUEUE.send({
-        message_id: ruled.messageId,
-        request_id: c.var.requestId,
-      } satisfies MessagingMessage);
-    }
+    const notify = (messageId: string) =>
+      c.env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: c.var.requestId } satisfies MessagingMessage);
+    await afterRuling(c.env.DB, { ...c.var.deps, notify }, ruled);
     return c.json({ decided: true }, 200);
   });
 

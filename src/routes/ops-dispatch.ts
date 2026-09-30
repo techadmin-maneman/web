@@ -19,6 +19,7 @@ import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { BOARD_DAYS, dispatchBoard, moveJob, recordToldByPhone, roomFor, type MoveInput } from "../domain/dispatch.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
+import { opsInputs } from "../http/ops-inputs.ts";
 import { json } from "../http/openapi.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { CLIENT_NOTICES, MOVE_REASONS } from "../policy/dispatch.ts";
@@ -62,6 +63,10 @@ const BlockSchema = z
     ...VISIT,
     window: z.enum(BOOKING_WINDOWS),
     status: z.enum(["scheduled", "dispatched", "in_progress", "completed", "cancelled", "terminated", "other"]),
+    notice_hours: z.number().int().openapi({
+      description:
+        "The notice the visit was sold under, in hours, or the one in force for a visit ops booked in FSM: a change of the client's own inside it costs them, one ops make never does.",
+    }),
     untold: z.union([z.object({ move_id: z.uuid(), starts_at: z.iso.datetime() }).strict(), z.null()]).openapi({
       description:
         "The latest move of this visit its client has not heard of: he has not agreed to WhatsApp, or the message was never sent. Ops call him, then POST /api/dispatch/moves/{id}/told.",
@@ -261,7 +266,11 @@ export function registerOpsDispatch(app: App): void {
   app.openapi(boardRoute, async (c) => {
     const now = c.var.deps.now();
     const { from, city } = c.req.valid("query");
-    return c.json(await dispatchBoard(c.env.DB, { from: from ?? indiaDate(now), city: city ?? null }), 200);
+    const noticeHours = (await opsInputs(c)).changeNoticeHours;
+    return c.json(
+      await dispatchBoard(c.env.DB, { from: from ?? indiaDate(now), city: city ?? null, noticeHours }),
+      200,
+    );
   });
 
   app.openapi(roomRoute, async (c) => {

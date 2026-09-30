@@ -31,6 +31,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { parseArgs, promisify } from "node:util";
+import { clearTester, quote } from "./lib/technician-tester.ts";
 
 const run = promisify(execFile);
 const WRANGLER = resolve("node_modules/wrangler/bin/wrangler.js");
@@ -63,8 +64,6 @@ const mobileE164 = `+91${mobile}`;
 
 const wrangler = (...args: string[]) => run(process.execPath, [WRANGLER, ...args], { cwd: resolve(".") });
 
-const quote = (value: string | number | null) =>
-  value === null ? "NULL" : typeof value === "number" ? String(value) : `'${value.replaceAll("'", "''")}'`;
 const row = (...values: (string | number | null)[]) => `(${values.map(quote).join(", ")})`;
 
 /**
@@ -128,37 +127,12 @@ if (options.clear) {
   const people = await query<{ person_id: string }>(
     `SELECT DISTINCT person_id FROM appointments WHERE technician_id IN (${ids}) AND person_id IS NOT NULL;`,
   );
-  const persons = people.map((person) => quote(person.person_id)).join(", ") || "NULL";
-  await execute([
-    // A job's use and what was used point at its events, and the kit's stock at the technician. A
-    // transfer goes with both its rows, so the central store holds what it held before it.
-    `DELETE FROM stock_movements WHERE technician_id IN (${ids})
-       OR appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}))
-       OR transfer_id IN (SELECT transfer_id FROM stock_movements WHERE technician_id IN (${ids}));`,
-    `DELETE FROM consumables_used WHERE appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
-    `DELETE FROM job_events WHERE appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
-    `DELETE FROM no_show_cases WHERE appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
-    `DELETE FROM checkins WHERE technician_id IN (${ids});`,
-    `DELETE FROM photos WHERE photo_set_id IN (SELECT id FROM photo_sets WHERE appointment_id IN
-       (SELECT id FROM appointments WHERE technician_id IN (${ids})));`,
-    `DELETE FROM photo_sets WHERE appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
-    `DELETE FROM outbound_messages WHERE subject_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
-    // Written if ops move one of the jobs on the dispatch board while the fixture stands.
-    `DELETE FROM dispatch_moves WHERE appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
-    `DELETE FROM visit_changes WHERE appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
-    `DELETE FROM visits WHERE appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
-    `DELETE FROM appointments WHERE technician_id IN (${ids});`,
-    `DELETE FROM addresses WHERE person_id IN (${persons});`,
-    `DELETE FROM people WHERE id IN (${persons});`,
-    `DELETE FROM otp_challenges WHERE technician_id IN (${ids});`,
-    `DELETE FROM technician_devices WHERE technician_id IN (${ids});`,
-    `DELETE FROM sessions WHERE subject_kind = 'technician' AND subject_id IN (${ids});`,
-    // An active technician is one the booking availability offers, so something
-    // else on staging can take a slot on him while the fixture stands.
-    `DELETE FROM slot_claims WHERE technician_id IN (${ids});`,
-    `DELETE FROM slot_holds WHERE technician_id IN (${ids});`,
-    `DELETE FROM technicians WHERE id IN (${ids});`,
-  ]);
+  await execute(
+    clearTester(
+      ours.map((technician) => technician.id),
+      people.map((person) => person.person_id),
+    ),
+  );
   // The photographs themselves stay in R2 until ops delete them; the field test's
   // command lists them, and they are of whoever the tester photographed.
   console.log(`cleared ${String(ours.length)} test technician and everything hanging off it`);

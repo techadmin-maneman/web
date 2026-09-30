@@ -549,11 +549,11 @@ Everything below is at <https://console.cloud.google.com>, signed in as the acco
 
 4. **Cap each API's quota, so the card cannot be charged.** This is the step that makes the rest safe. **APIs & Services** → each API in turn → **Quotas & System Limits**. Filter the list for the per-day quotas and set each with the pencil icon → **Edit quota**:
 
-   | API              | Quota to edit                  | Set it to |
-   | ---------------- | ------------------------------ | --------- |
-   | Geocoding API    | Requests per day               | **300**   |
-   | Places API (New) | Autocomplete requests per day  | **2000**  |
-   | Places API (New) | Place Details requests per day | **500**   |
+   | API              | Quota to edit                 | Set it to |
+   | ---------------- | ----------------------------- | --------- |
+   | Geocoding API    | Requests per day              | **300**   |
+   | Places API (New) | Autocomplete requests per day | **2000**  |
+   | Places API (New) | Autocomplete requests per day | **2000**  |
 
    These sit just above our own daily ceiling (`GEOCODE_DAILY_CEILING`, 200) so our code refuses first and Google's quota is the backstop. Both are far under the free allowance — Geocoding gets 70,000 free requests a month on the India price list, and 300 a day cannot reach it. A quota change can take a few minutes to apply, and some quotas need a one-line reason.
 
@@ -743,7 +743,8 @@ The chat shows the message; the `alerts` table keeps it under its key. Most aler
 | Booking _id_ was not written to FSM: visit _id_ … reached FSM after the booking was held | `booking_to_link:<hold>`                                                                                  | when booked or refunded              | "A booking FSM would not take"                                          |
 | Booking _id_: an earlier try may have made its work order in FSM                         | `work_order_lookup_failed:<hold>`                                                                         | by hand                              | cancel all but one work order, as it says                               |
 | The client moved visit _id_ … and FSM would not cancel its work order                    | `replaced_not_cancelled:<visit>`                                                                          | by hand                              | cancel it in FSM, as it says                                            |
-| The refund … for visit _id_, cancelled by the client (or waived), failed                 | `cancel_refund_failed:<visit>`, `no_show_refund_failed:<visit>`                                           | by hand                              | "A refund that failed"                                                  |
+| The refund … for visit _id_, cancelled by the client (or a no-show's), failed            | `cancel_refund_failed:<visit>`, `no_show_refund_failed:<why>:<visit>`                                     | by hand                              | "A refund that failed"                                                  |
+| The visit credit for visit _id_, a no-show _why_, could not come back                    | `no_show_credit_not_back:<why>:<visit>`                                                                   | by hand                              | "A credit that could not come back"                                     |
 | Invoice _id_ of visit _id_ is held as a draft, or is still a draft                       | `invoice_draft:<visit>`                                                                                   | when the invoice is issued           | "Invoices and Books"                                                    |
 | FSM refused to invoice, or the invoice pass has failed                                   | `invoice_refused:<visit>`, `invoice_failed:<visit>`                                                       | when the invoice is issued           | "Invoices and Books"                                                    |
 | Books refused, or has failed on, a payment, its application or a refund                  | `books_payment_…`, `books_apply_…`, `books_refund_…` (`_refused:` or `_failed:` and an ID)                | when it goes through                 | "Invoices and Books"                                                    |

@@ -2378,6 +2378,124 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/no-shows/disputes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Disputed no-show charges still to rule on, oldest first, each with its evidence */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The disputes */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            disputes: components["schemas"]["NoShowDispute"][];
+                        };
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/no-shows/disputes/{id}/ruling": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Refund or uphold a disputed no-show charge, with a reason */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["NoShowDisputeRuling"];
+                };
+            };
+            responses: {
+                /** @description Recorded */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            ruled: boolean;
+                        };
+                    };
+                };
+                /** @description invalid_request: a ruling needs a reason */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such dispute, or it was ruled on already */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tasks": {
         parameters: {
             query?: never;
@@ -4627,7 +4745,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_fitted";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_fitted" | "already_disputed" | "not_disputable";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -4864,6 +4982,17 @@ export interface components {
             decision: "undecided" | "charged" | "waived";
             /** @description How long the technician waited at the door. */
             waited_minutes: number;
+            /** @description What the charge took, as the booking was sold to cost a no-show (ADR 0096). Null unless charged, and on a charge ruled before charges were recorded. */
+            charge: {
+                /** @description In paise: what the charge kept of the visit's payment. */
+                kept: number;
+                /** @description Whether the charge spent the credit the visit used. */
+                credit_spent: boolean;
+            } | null;
+            /** @description The client's dispute of the charge: open while ops look, then refunded or upheld; null when none was raised. */
+            dispute: ("open" | "refunded" | "upheld") | null;
+            /** @description Whether the client may dispute the charge now: one that took something, not disputed yet. */
+            disputable: boolean;
         };
         RefundEntry: {
             /**
@@ -5116,7 +5245,7 @@ export interface components {
         AlreadyInvited: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_fitted";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_fitted" | "already_disputed" | "not_disputable";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -5310,6 +5439,8 @@ export interface components {
             window: "morning" | "afternoon" | "evening";
             /** @enum {string} */
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
+            /** @description The notice the visit was sold under, in hours, or the one in force for a visit ops booked in FSM: a change of the client's own inside it costs them, one ops make never does. */
+            notice_hours: number;
             /** @description The latest move of this visit its client has not heard of: he has not agreed to WhatsApp, or the message was never sent. Ops call him, then POST /api/dispatch/moves/{id}/told. */
             untold: {
                 /** Format: uuid */
@@ -5435,6 +5566,8 @@ export interface components {
             minutes_late: number | null;
             /** @description Fact two: how far from the address he was; null where the address had no coordinates and nothing was measured. */
             distance_m: number | null;
+            /** @description The check-in radius in force when he checked in, which the check-in keeps: the distance is read against it, not against the radius ops have set since. */
+            radius_m: number;
             /**
              * @description Fact three: what became of the day-before or arrival WhatsApp. none: nothing was queued; no_consent: not sent, the client never agreed to WhatsApp about visits; not_sent: skipped or failed; sent: no receipt came back; delivered.
              * @enum {string}
@@ -5528,6 +5661,51 @@ export interface components {
             /** @description Why, in ops' words. Never a medical detail. */
             note?: string;
         };
+        /** @description A disputed charge, with the evidence its no-show was ruled on. */
+        NoShowDispute: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            case_id: string;
+            /** Format: uuid */
+            appointment_id: string;
+            /** @description Whose visit it was; null once they have been erased. */
+            person: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+            } | null;
+            /** @description Why the client says the charge is wrong, in their words; null once erased. */
+            reason: string | null;
+            /** Format: date-time */
+            raised_at: string;
+            /**
+             * Format: date-time
+             * @description When ops should have ruled: the Tasks board's allowance for a no-show, from raised_at.
+             */
+            due: string;
+            /** @description In paise: what the charge kept of the visit's payment. */
+            kept: number;
+            /** @description Whether the charge spent the credit the visit used. */
+            credit_spent: boolean;
+            /** @description When the visit was booked for. */
+            window_start: string | null;
+            /** Format: date-time */
+            checked_in_at: string;
+            /** Format: date-time */
+            received_at: string;
+            distance_m: number | null;
+            /** @description The check-in radius in force when he checked in. */
+            radius_m: number;
+            message_delivered_at: string | null;
+            closed_at: string | null;
+        };
+        NoShowDisputeRuling: {
+            /** @enum {string} */
+            ruling: "refunded" | "upheld";
+            /** @description Required either way, and kept on the dispute (src/policy/decision-reasons.ts). */
+            reason: string | null;
+        };
         /** @description Derived at read time from the queues themselves; there is no tasks table. */
         Tasks: {
             /** @description How many are past their day in India, across every group. */
@@ -5599,12 +5777,8 @@ export interface components {
             refunds_processing: number;
             /** @description In paise. Processed by Razorpay on the day, which the board draws no figure of its own for. */
             refunded: number;
-            /** @description In paise. Kept from the client on the day: "Charges and no-shows", less the no-shows, which carry no amount. */
+            /** @description In paise. Kept from the client on the day: "Charges and no-shows", each late cancellation and charged no-show by what it kept. */
             charged: number;
-            /** @description How many no-shows ops ruled charged on the day. Counted and not added, because nothing records what one was charged (docs/open-points.md, item 60). */
-            no_shows_charged: number;
-            /** @description The charge under dispute, with the note ops write on it. Nothing records a dispute and no client can raise one, so this is always null (docs/open-points.md, item 60). */
-            dispute: null;
             /** @description No-shows and late cancellations, the earliest first. */
             charges: components["schemas"]["OpsCharge"][];
         };
@@ -5622,7 +5796,7 @@ export interface components {
                 id: string;
                 name: string;
             } | null;
-            /** @description Null on a no-show: ops record the ruling and nothing records an amount, because the charge itself is applied at P2-M5. */
+            /** @description Null on a no-show charged before a charge recorded what it kept (migration 0059). */
             amount: number | null;
             /**
              * Format: date-time

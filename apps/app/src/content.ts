@@ -304,7 +304,8 @@ export const visits = {
         "A visit credit paid for this visit. We send its invoice once our accountant has settled how it is written.",
       checking: "We are checking this invoice before we send it. Message us if you need it sooner.",
     },
-    // PLACEHOLDER: the design draws no visit the client missed (LIFE-07). The reason ops gave stays with them.
+    // PLACEHOLDER: the design draws no visit the client missed (LIFE-07), nor the dispute of its charge (ADR 0096).
+    // The reason ops gave stays with them.
     noShow: {
       label: "Not home",
       line: (minutes: number) => `We came, and waited ${String(minutes)} minutes, but nobody was home.`,
@@ -312,6 +313,15 @@ export const visits = {
         undecided: "We are looking at it. Nothing is charged until we have.",
         charged: "Charged.",
         waived: "Not charged.",
+      },
+      /** What the charge took, as the booking was sold to cost a no-show. */
+      kept: (amount: string) => `Charged: we kept ${amount} of what you paid.`,
+      creditSpent: "Charged: the visit credit it used is spent.",
+      dispute: "Dispute this charge",
+      disputed: {
+        open: "You disputed this charge. We are looking at it.",
+        refunded: "We looked at your dispute and refunded the charge.",
+        upheld: "We looked at your dispute. The charge stands.",
       },
     },
   },
@@ -471,6 +481,21 @@ export const note = {
   withOps: "Notes go to us on WhatsApp just now.",
   failed: "That did not go through.",
   whatsapp: "Send it on WhatsApp",
+};
+
+/**
+ * PLACEHOLDER: disputing a no-show's charge, which no board draws (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md),
+ * in the note sheet's frame.
+ */
+export const dispute = {
+  title: "Dispute this charge",
+  label: "Why is the charge wrong?",
+  send: "Send",
+  sending: "Sending",
+  sent: "We have your dispute. We will look at it and tell you what we decide.",
+  already: "You have disputed this charge already. We will tell you what we decide.",
+  failed: "That did not go through. Please try again.",
+  tryAgain: "Try again",
 };
 
 /**

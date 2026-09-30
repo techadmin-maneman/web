@@ -8,6 +8,7 @@
 // member of staff behind it named, in src/http/audit.ts.
 
 import type { Surface } from "../config/environments.ts";
+import type { RulingClaim } from "./ruling-claims.ts";
 
 /** Every action the log records. Phase 2 milestones add theirs here. */
 export const AUDIT_ACTIONS = [
@@ -34,6 +35,9 @@ export const AUDIT_ACTIONS = [
   // no-show from its evidence, and ops revoking the phone a technician works from.
   "no_show.decide",
   "technician_device.revoke",
+  // A client disputing a no-show's charge, and ops ruling on it (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
+  "no_show.dispute",
+  "no_show.dispute_rule",
   // Leave ops record on a technician, which then refuses those days to booking
   // and to the dispatch board alike (ADR 0062).
   "technician.leave",
@@ -138,7 +142,8 @@ export function auditStatementIfWritten(
   entry: AuditEntry,
   now: Date,
   written: {
-    readonly table: "grievances" | "consents" | "referral_attributions" | "stock_movements" | "task_closures";
+    readonly table:
+      "grievances" | "consents" | "referral_attributions" | "stock_movements" | "task_closures" | "no_show_disputes";
     readonly id: string;
   },
 ): D1PreparedStatement {
@@ -148,6 +153,25 @@ export function auditStatementIfWritten(
        SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9 WHERE EXISTS (SELECT 1 FROM ${written.table} WHERE id = ?10)`,
     )
     .bind(...valuesOf(entry, now), written.id);
+}
+
+/**
+ * The entry for a ruling made once earlier in the same batch: written only if it is this request's ruling
+ * (src/domain/ruling-claims.ts).
+ */
+export function auditStatementIfRuled(
+  db: D1Database,
+  entry: AuditEntry,
+  now: Date,
+  ruled: RulingClaim,
+): D1PreparedStatement {
+  return db
+    .prepare(
+      `INSERT INTO audit_log (${COLUMNS})
+       SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9
+       WHERE EXISTS (SELECT 1 FROM ${ruled.table} WHERE id = ?10 AND ruling_id = ?11)`,
+    )
+    .bind(...valuesOf(entry, now), ruled.id, ruled.rulingId);
 }
 
 /**

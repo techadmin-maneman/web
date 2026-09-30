@@ -11,7 +11,9 @@
 // (docs/decisions/0068-a-paid-hold-is-kept.md). So are the notice and what the
 // visit's kind costs inside it, which ops set in the console
 // (docs/decisions/0088-every-policy-in-the-console.md). A credit comes back only
-// to a grant that can still take it: not one clawed back or expired.
+// to a grant that can still take it: not one clawed back or expired. After ops
+// move a visit, the notice counts from its time before they moved it
+// (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
 
 import { WINDOW_TIMES } from "../config/scheduling.ts";
 import { STANDARD_TIER, type VisitType } from "../config/visit-types.ts";
@@ -27,6 +29,7 @@ import {
   LATE_FEES,
   moveCost,
   noticeAt,
+  noticeCountsFrom,
   type CancelRefund,
   type Charge,
   type CreditOnChange,
@@ -53,6 +56,8 @@ export interface ChangeableVisit {
   /** How long it is, which a move keeps (src/policy/visit-length.ts). */
   readonly minutes: number;
   readonly start: Date;
+  /** When it started before ops moved it, while it stands where they put it; null otherwise. */
+  readonly startBeforeMove: Date | null;
   readonly technicianId: string | null;
   readonly fsmId: string;
   readonly fsmWorkOrderId: string;
@@ -67,8 +72,8 @@ export async function changeableVisit(
 ): Promise<ChangeableVisit | null> {
   const row = await db
     .prepare(
-      `SELECT a.id, a.person_id, a.type, a.tier, a.window_start, a.window_end, a.technician_id, a.fsm_id,
-         a.fsm_work_order_id, s.minutes AS service_minutes
+      `SELECT a.id, a.person_id, a.type, a.tier, a.window_start, a.window_end, a.start_before_move, a.technician_id,
+         a.fsm_id, a.fsm_work_order_id, s.minutes AS service_minutes
        FROM appointments a LEFT JOIN services s ON s.kind = a.type AND s.tier = COALESCE(a.tier, 'standard')
        WHERE a.id = ?1 AND a.person_id = ?2 AND a.deleted_at IS NULL AND a.status IN ('scheduled', 'dispatched')
          AND a.type IS NOT NULL AND a.window_start > ?3 AND a.fsm_work_order_id IS NOT NULL`,
@@ -81,6 +86,7 @@ export async function changeableVisit(
       tier: string | null;
       window_start: string;
       window_end: string | null;
+      start_before_move: string | null;
       technician_id: string | null;
       fsm_id: string;
       fsm_work_order_id: string;
@@ -94,6 +100,7 @@ export async function changeableVisit(
     tier: row.tier ?? STANDARD_TIER,
     minutes: bookedMinutes(row),
     start: new Date(row.window_start),
+    startBeforeMove: row.start_before_move === null ? null : new Date(row.start_before_move),
     technicianId: row.technician_id,
     fsmId: row.fsm_id,
     fsmWorkOrderId: row.fsm_work_order_id,
@@ -137,8 +144,8 @@ function movePriceOf(cost: MoveCost, prices: { lateFee: Price | null; visit: Pri
   return ZERO(prices.gst);
 }
 
-/** What cancelling gives back of what was paid, in paise. */
-function refundOf(refunding: CancelRefund, paid: number, lateFee: Price | null): number {
+/** What cancelling gives back of what was paid, in paise; a charged no-show gives back the same (src/domain/no-shows.ts). */
+export function refundOf(refunding: CancelRefund, paid: number, lateFee: Price | null): number {
   if (refunding === "all") return paid;
   if (refunding === "all_but_fee") return Math.max(0, paid - (lateFee?.amount ?? 0));
   return 0;
@@ -149,6 +156,8 @@ export interface ChangeTerms {
   readonly notice: Notice;
   /** The notice the visit was booked under, in hours. */
   readonly noticeHours: number;
+  /** Whether the notice counts from the visit's time before ops moved it, which is later than its own. */
+  readonly noticeFromBeforeMove: boolean;
   /**
    * The terms the visit is changed under: those it was sold under, or, for a visit ops booked in FSM, those in force.
    * A move in place carries them, and the late fee below, to the visit's new time.
@@ -189,11 +198,14 @@ interface Sold {
   readonly terms: SoldTerms;
 }
 
+/** A visit as its terms are read: which it is, its kind, and when it starts, whose day prices a late fee. */
+type SoldVisit = Pick<ChangeableVisit, "id" | "type" | "start">;
+
 /**
  * What the visit was sold under, kept on the hold that booked it: its late fee and its terms. Null for a visit ops
  * booked in FSM, which no hold sold. A term the hold kept no figure for is the committed one.
  */
-async function soldWith(db: D1Database, visit: ChangeableVisit): Promise<Sold | null> {
+async function soldWith(db: D1Database, visit: SoldVisit): Promise<Sold | null> {
   const held = await db
     .prepare(
       `SELECT late_fee_ex_gst, late_fee_gst_percent, change_notice_hours, late_change_charge, no_show_charge
@@ -228,6 +240,23 @@ async function soldWith(db: D1Database, visit: ChangeableVisit): Promise<Sold | 
   };
 }
 
+/**
+ * The terms the visit was sold under and its late fee, from the hold that booked it; for a visit ops booked in FSM,
+ * which no hold sold, the terms in force (`inForce`) and its kind's late fee on its day. A client's change is judged
+ * by them, and so is a no-show's charge (src/domain/no-shows.ts).
+ */
+export async function termsOfVisit(
+  db: D1Database,
+  visit: SoldVisit,
+  inForce: SoldTerms,
+): Promise<{ readonly terms: SoldTerms; readonly lateFee: Price | null }> {
+  const sold = await soldWith(db, visit);
+  const lateFeeItem = LATE_FEES[visit.type];
+  const lateFee =
+    lateFeeItem === undefined ? null : (sold?.lateFee ?? (await priceOf(db, lateFeeItem, indiaDate(visit.start))));
+  return { terms: sold?.terms ?? inForce, lateFee };
+}
+
 /** The credit a visit was paid with, if it was, and whether its grant could take it back now. */
 async function creditOf(
   db: D1Database,
@@ -253,8 +282,9 @@ async function creditOf(
 
 /**
  * The terms of changing the visit now, under the terms it was booked under, or, for a visit ops booked in FSM, those
- * in force (`inForce`). `on` is the day a new visit would be priced on, for a charged move: the first day one can be
- * booked, unless the client has picked one.
+ * in force (`inForce`). The notice counts from the visit's time before ops moved it, where that is later. `on` is the
+ * day a new visit would be priced on, for a charged move: the first day one can be booked, unless the client has
+ * picked one.
  */
 export async function changeTerms(
   db: D1Database,
@@ -263,15 +293,12 @@ export async function changeTerms(
   inForce: SoldTerms,
   on: string = addDays(indiaDate(now), 1),
 ): Promise<ChangeTerms> {
-  const sold = await soldWith(db, visit);
-  const terms = sold?.terms ?? inForce;
-  const windowStarts = windowStartOf(visit.start);
+  const { terms, lateFee } = await termsOfVisit(db, visit, inForce);
+  const noticeFrom = noticeCountsFrom(visit.start, visit.startBeforeMove);
+  const windowStarts = windowStartOf(noticeFrom);
   const notice = noticeAt(windowStarts, now, terms.noticeHours);
   const payment = await visitPayment(db, visit.id);
   const paid = payment?.paid ?? 0;
-  const lateFeeItem = LATE_FEES[visit.type];
-  const lateFee =
-    lateFeeItem === undefined ? null : (sold?.lateFee ?? (await priceOf(db, lateFeeItem, indiaDate(visit.start))));
   // A charged move books a new visit of the same service, at its price on the day.
   const visitPrice = await priceOf(db, visit.type, on, visit.tier);
   const gst = visitPrice?.gst_percent ?? 0;
@@ -284,6 +311,7 @@ export async function changeTerms(
     visit,
     notice,
     noticeHours: terms.noticeHours,
+    noticeFromBeforeMove: noticeFrom !== visit.start,
     sold: terms,
     lateFee,
     freeUntil: freeUntil(windowStarts, terms.noticeHours),
@@ -296,6 +324,15 @@ export async function changeTerms(
 
 export type Cancelled =
   { readonly kind: "cancelled"; readonly refund: number; readonly kept: number } | { readonly kind: "not_changeable" };
+
+/** The cancel's notice as the note FSM keeps says it: "more than 24 hours ahead", or "inside 24 hours". */
+function noticeWords(terms: ChangeTerms): string {
+  const hours = `${String(terms.noticeHours)} hours`;
+  if (terms.notice === "late") return `inside ${hours}`;
+  return terms.noticeFromBeforeMove
+    ? `more than ${hours} before the time ops moved it from`
+    : `more than ${hours} ahead`;
+}
 
 /**
  * Cancels the visit on the terms given: in FSM (its work order, and so its appointment), then in the mirror,
@@ -339,10 +376,7 @@ export async function cancelVisit(
     .first();
   if (claimed === null) return { kind: "not_changeable" };
 
-  const hours = `${String(terms.noticeHours)} hours`;
-  const note = `${labelAsTest ? "Staging test: " : ""}Cancelled by the client in the app, ${
-    notice === "free" ? `more than ${hours} ahead` : `inside ${hours}`
-  }.`;
+  const note = `${labelAsTest ? "Staging test: " : ""}Cancelled by the client in the app, ${noticeWords(terms)}.`;
   let done: boolean;
   try {
     done = await deps.fsm.cancelVisit(visit.fsmWorkOrderId, note);

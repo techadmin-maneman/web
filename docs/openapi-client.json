@@ -78,7 +78,9 @@
                   "unknown_invite",
                   "own_invite",
                   "already_invited",
-                  "already_fitted"
+                  "already_fitted",
+                  "already_disputed",
+                  "not_disputable"
                 ]
               },
               "request_id": {
@@ -1809,11 +1811,60 @@
           "waited_minutes": {
             "type": "integer",
             "description": "How long the technician waited at the door."
+          },
+          "charge": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kept": {
+                    "type": "integer",
+                    "description": "In paise: what the charge kept of the visit's payment."
+                  },
+                  "credit_spent": {
+                    "type": "boolean",
+                    "description": "Whether the charge spent the credit the visit used."
+                  }
+                },
+                "required": [
+                  "kept",
+                  "credit_spent"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What the charge took, as the booking was sold to cost a no-show (ADR 0096). Null unless charged, and on a charge ruled before charges were recorded."
+          },
+          "dispute": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "open",
+                  "refunded",
+                  "upheld"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The client's dispute of the charge: open while ops look, then refunded or upheld; null when none was raised."
+          },
+          "disputable": {
+            "type": "boolean",
+            "description": "Whether the client may dispute the charge now: one that took something, not disputed yet."
           }
         },
         "required": [
           "decision",
-          "waited_minutes"
+          "waited_minutes",
+          "charge",
+          "dispute",
+          "disputable"
         ],
         "additionalProperties": false
       },
@@ -2035,6 +2086,36 @@
           "phase",
           "from",
           "to"
+        ],
+        "additionalProperties": false
+      },
+      "NoShowDisputeRaised": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "open"
+            ]
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "additionalProperties": false
+      },
+      "NoShowDisputeRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "description": "Why the charge is wrong, in the client's words. Ops read it; it reaches no message."
+          }
+        },
+        "required": [
+          "reason"
         ],
         "additionalProperties": false
       },
@@ -4654,6 +4735,86 @@
           },
           "503": {
             "description": "busy: today's result-read ceiling is reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/visits/{id}/dispute": {
+      "post": {
+        "summary": "Dispute the no-show's charge on a visit, once",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The visit's ID."
+            },
+            "required": true,
+            "description": "The visit's ID.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoShowDisputeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Raised, for ops to rule on",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoShowDisputeRaised"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: an empty reason, or one over 300 characters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no charged no-show on a visit of this client's",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "already_disputed: the charge was disputed before; or not_disputable: the charge took nothing to give back",
             "content": {
               "application/json": {
                 "schema": {

@@ -5,7 +5,8 @@
 //
 // "The client's payment carries over and he is never charged for a move ops
 // make, including inside 24 hours" (src/policy/dispatch.ts), so no amount is
-// shown here, and within 24 hours the panel says so in the board's own words.
+// shown here, and inside the notice the visit was sold under the panel says so
+// in the board's own words, with that notice where the board writes 24 hours.
 //
 // The board's line promises a WhatsApp message. One goes only to a client who
 // agreed to WhatsApp about his visits, so for any other the panel says to call
@@ -23,13 +24,13 @@ import styles from "./dispatch.module.css";
 import { phoneWords } from "../lib/phone.ts";
 import { changesTime, nameOf, personOf, whenOf, type Job, type Target } from "./job.ts";
 
-const A_DAY = 24 * 60 * 60 * 1000;
+const AN_HOUR = 60 * 60 * 1000;
 
-/** The visit is inside 24 hours, which the board answers with one more line. */
-function isSoon(job: Job, now: Date): boolean {
-  if (job.kind !== "block") return false;
+/** The notice the visit was sold under, in hours, when the visit is inside it: the board answers with one more line. */
+function noticeInside(job: Job, now: Date): number | null {
+  if (job.kind !== "block") return null;
   const starts = new Date(job.block.starts_at).getTime() - now.getTime();
-  return starts < A_DAY;
+  return starts < job.block.notice_hours * AN_HOUR ? job.block.notice_hours : null;
 }
 
 /** What the client hears of this move, in the panel's words, and whether the button may promise a message. */
@@ -67,6 +68,7 @@ export function MovePicker({ job, to, sending, onSend, onCancel }: Props) {
       ? null
       : `${shortDate(was.date)}, ${dispatch.windows[was.window] ?? was.window}`;
   const notice = noticeOf(job, to);
+  const inside = noticeInside(job, new Date());
 
   return (
     <Dialog
@@ -98,7 +100,7 @@ export function MovePicker({ job, to, sending, onSend, onCancel }: Props) {
         ))}
       </fieldset>
       <p className={styles.consequence}>{notice.line}</p>
-      {isSoon(job, new Date()) && <p className={styles.consequence}>{copy.soon}</p>}
+      {inside !== null && <p className={styles.consequence}>{copy.soon(inside)}</p>}
       <div className={styles.actions}>
         <Button
           variant="primary"

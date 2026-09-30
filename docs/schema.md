@@ -37,7 +37,8 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [job_events](#job_events): The technician app's writes, each once by the ID the phone gave it, and whether it has reached FSM (ADR 0038, ADR 0065).
 - [last_visits](#last_visits): Each client's last first fit, service or replacement done, and last consultation done, kept by triggers from the view `last_visits_now` as their visits change; the Tasks board's At-risk client and First fit to book read it (ADR 0086).
 - [leads](#leads): Each booking, waitlist sign-up and try-on claim as the CRM receives it, and whether it has reached the CRM and FSM (ADR 0011, ADR 0012).
-- [no_show_cases](#no_show_cases): The evidence a no-show is ruled on, and the ruling (ADR 0065, ADR 0072).
+- [no_show_cases](#no_show_cases): The evidence a no-show is ruled on, the ruling, and what a charge cost the client (ADR 0065, ADR 0072, ADR 0096).
+- [no_show_disputes](#no_show_disputes): A client's dispute of a no-show's charge, one a charge, and ops' ruling on it, refunded or upheld, with their reason (ADR 0096).
 - [number_change_requests](#number_change_requests): A client's change of mobile number: the codes proven on both numbers, and what ops decided (ADR 0042, ADR 0078).
 - [ops_settings](#ops_settings): The business inputs ops set in the console, a row each; a row that is not there means the committed default (ADR 0061).
 - [ops_settings_snapshot](#ops_settings_snapshot): One row holding every `ops_settings` value, kept by that table's triggers: the one row a request reads (ADR 0088).
@@ -139,7 +140,7 @@ Indexes:
 
 The mirror of FSM's appointments: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice (ADR 0032).
 
-Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`, `0059_no_show_charges_and_disputes.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -169,6 +170,7 @@ Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_i
 | `client_note_at` | TEXT | yes |  |  |
 | `first_seen_at` | TEXT | yes |  |  |
 | `tier` | TEXT | yes |  |  |
+| `start_before_move` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -683,9 +685,9 @@ Indexes:
 
 ## no_show_cases
 
-The evidence a no-show is ruled on, and the ruling (ADR 0065, ADR 0072).
+The evidence a no-show is ruled on, the ruling, and what a charge cost the client (ADR 0065, ADR 0072, ADR 0096).
 
-Made by `0026_field_operations.sql`; changed by `0042_no_show_reasons.sql`, `0044_hand_offs_and_messages.sql`, `0054_policies_in_the_console.sql`.
+Made by `0026_field_operations.sql`; changed by `0042_no_show_reasons.sql`, `0044_hand_offs_and_messages.sql`, `0054_policies_in_the_console.sql`, `0059_no_show_charges_and_disputes.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -704,12 +706,41 @@ Made by `0026_field_operations.sql`; changed by `0042_no_show_reasons.sql`, `004
 | `decision_reason` | TEXT | yes |  |  |
 | `waiver_payment` | TEXT | yes |  |  |
 | `waiver_credit` | TEXT | yes |  |  |
+| `charge` | TEXT | yes |  |  |
+| `kept_amount` | INTEGER | yes |  |  |
+| `refund_amount` | INTEGER | yes |  |  |
+| `ruling_id` | TEXT | yes |  |  |
 
 Indexes:
 
 - `no_show_cases_by_appointment`: on (`appointment_id`, `created_at`)
 - `no_show_cases_by_decision`: on (`decision`, `created_at`)
 - A `UNIQUE` constraint: unique on (`checkin_id`)
+
+## no_show_disputes
+
+A client's dispute of a no-show's charge, one a charge, and ops' ruling on it, refunded or upheld, with their reason (ADR 0096).
+
+Made by `0059_no_show_charges_and_disputes.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `case_id` | TEXT | no |  | → `no_show_cases.id` |
+| `person_id` | TEXT | no |  | → `people.id` |
+| `reason` | TEXT | yes |  |  |
+| `created_at` | TEXT | no |  |  |
+| `ruling` | TEXT | yes |  |  |
+| `ruled_by` | TEXT | yes |  |  |
+| `ruled_at` | TEXT | yes |  |  |
+| `ruling_id` | TEXT | yes |  |  |
+| `ruling_reason` | TEXT | yes |  |  |
+
+Indexes:
+
+- `no_show_disputes_by_person`: on (`person_id`)
+- `no_show_disputes_open`: on (`created_at`), where `ruling IS NULL`
+- A `UNIQUE` constraint: unique on (`case_id`)
 
 ## number_change_requests
 
