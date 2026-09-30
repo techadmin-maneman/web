@@ -74,7 +74,10 @@ interface ZohoField {
   unique?: Record<string, unknown>;
 }
 
-const { values: options } = parseArgs({ options: { check: { type: "boolean", default: false } } });
+// --use-worker-token is read by refreshTokenForScript; it is named here so the parser takes it.
+const { values: options } = parseArgs({
+  options: { check: { type: "boolean", default: false }, "use-worker-token": { type: "boolean", default: false } },
+});
 
 function required(name: string): string {
   const value = process.env[name]?.trim() ?? "";

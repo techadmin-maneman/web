@@ -31,7 +31,10 @@ const NEW_ITEM_PRICES: Readonly<Record<VisitType, number>> = {
 /** The base part, which the price book does not price: a placeholder (docs/open-points.md, item 1). */
 const PLACEHOLDER_BASE_PRICE = 30_000;
 
-const { values } = parseArgs({ options: { check: { type: "boolean", default: false } } });
+// --use-worker-token is read by refreshTokenForScript; it is named here so the parser takes it.
+const { values } = parseArgs({
+  options: { check: { type: "boolean", default: false }, "use-worker-token": { type: "boolean", default: false } },
+});
 
 function required(name: string): string {
   const value = process.env[name]?.trim() ?? "";

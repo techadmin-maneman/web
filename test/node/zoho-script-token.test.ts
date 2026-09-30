@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { scriptRefreshToken, USE_WORKER_TOKEN } from "../../scripts/lib/zoho-script-token.ts";
@@ -34,6 +35,16 @@ describe("a script's Zoho refresh token", () => {
       const source = readFileSync(script, "utf8");
       expect(source, script).toContain("refreshTokenForScript(");
       expect(source, script).not.toMatch(/required\("ZOHO_(FSM_)?REFRESH_TOKEN"\)/);
+    }
+  });
+
+  // Each parses its flags strictly, so one it does not name stops it before the token is read.
+  it("is asked for with a flag the setup scripts take", () => {
+    const env = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith("ZOHO_")));
+    for (const script of ["scripts/setup-fsm.ts", "scripts/setup-crm.ts"]) {
+      const run = spawnSync(process.execPath, [script, "--check", USE_WORKER_TOKEN], { env, encoding: "utf8" });
+      expect(run.stderr, script).not.toContain("ERR_PARSE_ARGS");
+      expect(run.stderr, script).toContain("is not set; pass the secrets file with --env-file");
     }
   });
 });
