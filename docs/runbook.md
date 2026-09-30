@@ -742,7 +742,8 @@ The chat shows the message; the `alerts` table keeps it under its key. Most aler
 | Booking _id_ could not be written to FSM after _n_ attempts                         | `booking_given_up:<hold>`                                                                                 | when booked or given back            | "A paid booking FSM would not take"                                     |
 | Booking _id_: an earlier try may have made its work order in FSM                    | `work_order_lookup_failed:<hold>`                                                                         | by hand                              | cancel all but one work order, as it says                               |
 | The client moved visit _id_ … and FSM would not cancel its work order               | `replaced_not_cancelled:<visit>`                                                                          | by hand                              | cancel it in FSM, as it says                                            |
-| The refund … for visit _id_, cancelled by the client (or waived), failed            | `cancel_refund_failed:<visit>`, `no_show_refund_failed:<visit>`                                           | by hand                              | "A refund that failed"                                                  |
+| The refund … for visit _id_, cancelled by the client (or a no-show's), failed       | `cancel_refund_failed:<visit>`, `no_show_refund_failed:<why>:<visit>`                                     | by hand                              | "A refund that failed"                                                  |
+| The visit credit for visit _id_, a no-show _why_, could not come back               | `no_show_credit_not_back:<why>:<visit>`                                                                   | by hand                              | "A credit that could not come back"                                     |
 | Invoice _id_ of visit _id_ is held as a draft, or is still a draft                  | `invoice_draft:<visit>`                                                                                   | when the invoice is issued           | "Invoices and Books"                                                    |
 | FSM refused to invoice, or the invoice pass has failed                              | `invoice_refused:<visit>`, `invoice_failed:<visit>`                                                       | when the invoice is issued           | "Invoices and Books"                                                    |
 | Books refused, or has failed on, a payment, its application or a refund             | `books_payment_…`, `books_apply_…`, `books_refund_…` (`_refused:` or `_failed:` and an ID)                | when it goes through                 | "Invoices and Books"                                                    |
@@ -937,7 +938,11 @@ For a payment whose delivery Razorpay will not send again (past its 24 hours, or
 
 ### A refund that failed
 
-"The refund of Rs. _n_ for visit _id_ … failed" (`cancel_refund_failed` for a client's cancel, `no_show_refund_failed` for a waived no-show). Nothing tries it again. In Razorpay's dashboard, find the payment the alert names, check it shows no refund of that amount, refund it once, and close the alert. The refund's webhook records it, and the client's Payments tab shows it.
+"The refund of Rs. _n_ for visit _id_ … failed" (`cancel_refund_failed` for a client's cancel; `no_show_refund_failed` for a no-show waived, the balance of one charged, or the charge of one refunded on dispute, the alert saying which). Nothing tries it again. In Razorpay's dashboard, find the payment the alert names, check it shows no refund of that amount, refund it once, and close the alert. The refund's webhook records it, and the client's Payments tab shows it.
+
+### A credit that could not come back
+
+"The visit credit for visit _id_, a no-show … could not come back" (`no_show_credit_not_back`): ops waived a no-show, charged it nothing, or refunded its charge on dispute, and the credit the visit was paid with could not go back to its grant, which has expired or been clawed back since (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md). The client has been told it could not come back. Nothing is owed by the rules, since an expired or withdrawn grant takes nothing back; decide with the client whether they are owed a visit, and close the alert.
 
 ---
 

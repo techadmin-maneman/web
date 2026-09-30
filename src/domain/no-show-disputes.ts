@@ -9,8 +9,8 @@
 import { chargedCredit, isDisputable, type DisputeRuling } from "../policy/no-show.ts";
 import type { Charge } from "../policy/moving-a-visit.ts";
 import { auditStatementIfRuled, auditStatementIfWritten, type AuditEntry, type RulingClaim } from "./audit.ts";
-import { CHARGE_TAKEN, creditBack, type NoShowRefund } from "./no-shows.ts";
-import { rulingMessage } from "./visit-messages.ts";
+import { CHARGE_TAKEN, creditBack, type CreditNotBack, type NoShowRefund } from "./no-shows.ts";
+import { creditOfVisit, rulingMessage } from "./visit-messages.ts";
 
 interface ChargedCase {
   id: string;
@@ -156,6 +156,8 @@ export interface DisputeRuled {
   readonly messageId: string | null;
   /** What a refund gives back of the payment, after the batch; null on an upheld charge, or one that kept no money. */
   readonly refund: NoShowRefund | null;
+  /** The credit a refund gave back, where it could not come back: ops settle it by hand. */
+  readonly creditNotBack: CreditNotBack | null;
 }
 
 interface RulableDispute {
@@ -207,7 +209,7 @@ export async function ruleOnDispute(
           },
           ruled,
         );
-  const creditWasSpent = chargedCredit(open.charge) === "lost";
+  const givesCreditBack = refunded && chargedCredit(open.charge) === "lost";
   const [ruling] = await db.batch([
     db
       .prepare(
@@ -217,20 +219,14 @@ export async function ruleOnDispute(
       .bind(input.disputeId, input.ruling, input.actor, input.now.toISOString(), input.reason, ruled.rulingId),
     auditStatementIfRuled(db, input.audit, input.now, ruled),
     ...(message === null ? [] : [message.statement]),
-    ...(refunded && creditWasSpent ? [creditBack(db, open.appointment_id, input.now, ruled)] : []),
+    ...(givesCreditBack ? [creditBack(db, open.appointment_id, input.now, ruled)] : []),
   ]);
   // Another member of staff ruled first: their ruling stands, and nothing of this one was written.
   if (ruling?.meta.changes !== 1) return null;
+  const visit = { appointmentId: open.appointment_id, personId: open.person_id, why: "refunded on dispute" } as const;
   return {
     messageId: message?.id ?? null,
-    refund:
-      refunded && open.kept_amount > 0
-        ? {
-            appointmentId: open.appointment_id,
-            personId: open.person_id,
-            amount: open.kept_amount,
-            why: "refunded on dispute",
-          }
-        : null,
+    refund: refunded && open.kept_amount > 0 ? { ...visit, amount: open.kept_amount } : null,
+    creditNotBack: givesCreditBack && (await creditOfVisit(db, open.appointment_id)) === "kept" ? visit : null,
   };
 }

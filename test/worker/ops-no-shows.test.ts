@@ -396,12 +396,12 @@ describe("what charging a no-show costs the client", () => {
       .bind(PERSON, VISIT, amount, NOW.toISOString())
       .run();
 
-  async function onCredit() {
+  async function onCredit(grantExpires = "2027-09-21T06:30:00.000Z") {
     await env.DB.batch([
       env.DB.prepare(
         `INSERT INTO credit_ledger (id, person_id, kind, visits, source_kind, source_id, expires_at, created_at)
-         VALUES ('grant-1', ?1, 'grant', 3, 'referral', 'referral-1', '2027-09-21T06:30:00.000Z', ?2)`,
-      ).bind(PERSON, NOW.toISOString()),
+         VALUES ('grant-1', ?1, 'grant', 3, 'referral', 'referral-1', ?2, ?3)`,
+      ).bind(PERSON, grantExpires, NOW.toISOString()),
       env.DB.prepare(
         `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
          VALUES ('redeem-1', ?1, 'redeem', -1, 'grant-1', 'appointment', ?2, ?3)`,
@@ -507,6 +507,50 @@ describe("what charging a no-show costs the client", () => {
     expect(payments.made.refunds).toEqual([expect.objectContaining({ amount: 200000 })]);
     expect(await restores()).toBe(1);
     expect(await recorded()).toEqual({ charge: "nothing", kept_amount: 0, refund_amount: 200000 });
+  });
+
+  // The credit comes back only to a grant that can still take it (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
+  it("tells ops once when a charge of nothing finds the credit's grant clawed back", async () => {
+    await onCredit();
+    await soldWith("nothing");
+    await env.DB.prepare(
+      `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
+       VALUES ('clawback-1', ?1, 'clawback', -2, 'grant-1', 'referral', 'referral-1', ?2)`,
+    )
+      .bind(PERSON, "2026-09-20T06:30:00.000Z")
+      .run();
+    const deps = fakeDependencies();
+
+    await charge(createStubPayments(), deps);
+
+    expect(await restores()).toBe(0);
+    expect(deps.alerts).toEqual([
+      `The visit credit for visit ${VISIT}, a no-show charged, could not come back: its grant has expired or been ` +
+        "withdrawn. The client is told so; settle it with them by hand if they are owed one. " +
+        `http://ops.localhost:4323/clients/${PERSON}`,
+    ]);
+  });
+
+  it("tells ops once when a waiver finds the credit's grant expired", async () => {
+    await onCredit("2026-09-20T18:30:00.000Z");
+    const deps = fakeDependencies();
+
+    const answer = await request(
+      appFor("local", deps, {}, "ops"),
+      `/api/no-shows/${CASE}/decision`,
+      {
+        method: "POST",
+        headers: { Origin: "https://maneman.test", "Content-Type": "application/json" },
+        body: JSON.stringify({ decision: "waived", reason: "The lift was out" }),
+      },
+      { MESSAGE_QUEUE: fakeQueue() },
+    );
+
+    expect(answer.status).toBe(200);
+    expect(await restores()).toBe(0);
+    expect(await env.DB.prepare("SELECT key FROM alerts").all()).toMatchObject({
+      results: [{ key: `no_show_credit_not_back:waived:${VISIT}` }],
+    });
   });
 
   it("charges a visit no hold sold what ops set a no-show to cost now", async () => {

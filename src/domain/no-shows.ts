@@ -38,7 +38,7 @@ import { auditStatementIfRuled, type AuditEntry, type RulingClaim } from "./audi
 import type { LatestArrival } from "./check-ins.ts";
 import type { OpsInputs } from "./ops-settings.ts";
 import { refundOf, termsInForce, termsOfVisit, visitPayment } from "./visit-changes.ts";
-import { NO_VISITS_CONSENT, rulingMessage } from "./visit-messages.ts";
+import { creditOfVisit, NO_VISITS_CONSENT, rulingMessage } from "./visit-messages.ts";
 import { minutesBetween } from "../lib/durations.ts";
 
 /**
@@ -329,11 +329,16 @@ export interface NoShowRefund {
   readonly why: "waived" | "charged" | "refunded on dispute";
 }
 
+/** A credit a ruling gave back that its grant could no longer take, expired or clawed back since the visit. */
+export type CreditNotBack = Omit<NoShowRefund, "amount">;
+
 export interface Ruled {
   /** The client's WhatsApp about the ruling, to queue; null for a visit with no client on our records. */
   readonly messageId: string | null;
   /** What goes back now: what a charge does not keep, or a waiver's payment where ops set a waiver to refund it. */
   readonly refund: NoShowRefund | null;
+  /** The credit the ruling gave back, where it could not come back: ops settle it by hand. */
+  readonly creditNotBack: CreditNotBack | null;
 }
 
 /** The terms in force, which a visit ops booked in FSM, and no hold sold, is charged under. */
@@ -456,17 +461,11 @@ export async function decideNoShow(
   ]);
   // Another member of staff ruled first: their ruling stands, and nothing of this one was written.
   if (ruling?.meta.changes !== 1) return null;
+  const visit = { appointmentId: open.appointment_id, personId: open.person_id, why: input.decision };
   return {
     messageId: message?.id ?? null,
-    refund:
-      givenBack.refund > 0
-        ? {
-            appointmentId: open.appointment_id,
-            personId: open.person_id,
-            amount: givenBack.refund,
-            why: input.decision,
-          }
-        : null,
+    refund: givenBack.refund > 0 ? { ...visit, amount: givenBack.refund } : null,
+    creditNotBack: givenBack.creditBack && (await creditOfVisit(db, open.appointment_id)) === "kept" ? visit : null,
   };
 }
 
@@ -488,6 +487,20 @@ export function creditBack(db: D1Database, appointmentId: string, now: Date, rul
        ON CONFLICT DO NOTHING`,
     )
     .bind(crypto.randomUUID(), appointmentId, now.toISOString(), ruled.id, ruled.rulingId);
+}
+
+/**
+ * Tells ops once of a credit a ruling gave back that could not come back, its grant expired or clawed back since the
+ * visit. The client's message says it could not; ops decide by hand whether the client is owed one.
+ */
+export async function alertCreditNotBack(alertOnce: AlertOnce, credit: CreditNotBack): Promise<void> {
+  await alertOnce({
+    key: `no_show_credit_not_back:${credit.why}:${credit.appointmentId}`,
+    message:
+      `The visit credit for visit ${credit.appointmentId}, a no-show ${credit.why}, could not come back: its grant ` +
+      "has expired or been withdrawn. The client is told so; settle it with them by hand if they are owed one.",
+    link: credit.personId === null ? "/no-shows" : `/clients/${credit.personId}`,
+  });
 }
 
 /**

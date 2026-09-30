@@ -72,7 +72,8 @@ const STILL_TRUE_WHILE: Readonly<Record<VisitMessageKind, readonly AppointmentSt
  * charge recorded them kept what was paid, as a cancel inside 24 hours does. A waiver says what it gave back, as the
  * ruling kept it (no_show_cases.waiver_payment and waiver_credit): the owner ruled on 27 September 2026 that it
  * refunds the payment and returns the credit, and ops may set it otherwise (src/policy/no-show.ts). A waiver ruled
- * before the ruling kept it gave both back.
+ * before the ruling kept it gave both back. A credit given back says so only where the ledger holds it back: a grant
+ * expired or clawed back since the visit could not take it.
  */
 const CHARGED_TEMPLATES = {
   payment: "no_show_charged_paid_v1",
@@ -80,11 +81,11 @@ const CHARGED_TEMPLATES = {
   nothing: "no_show_missed_v1",
 } as const;
 
-function waivedTemplate(paid: PaidAhead["kind"], waiver: Waiver): string {
+function waivedTemplate(paid: PaidAhead["kind"], waiver: Waiver, credit: VisitCredit): string {
   if (paid === "payment") return waiver.payment === "refunded" ? "no_show_waived_refund_v1" : "no_show_waived_paid_v1";
-  if (paid === "credit")
-    return waiver.credit === "returned" ? "no_show_waived_credit_back_v1" : "no_show_waived_credit_v1";
-  return "no_show_waived_v1";
+  if (paid === "nothing") return "no_show_waived_v1";
+  if (waiver.credit === "spent") return "no_show_waived_credit_v1";
+  return credit === "restored" ? "no_show_waived_credit_back_v1" : "no_show_waived_credit_gone_v1";
 }
 
 const stillTrue = (kind: VisitMessageKind, status: AppointmentStatus): boolean => {
@@ -266,7 +267,7 @@ export async function composeVisitMessage(
     .bind(appointmentId)
     .first<{ refund_amount: number; notice: "free" | "late"; method: string | null }>();
   if (cancelled === null) return { skip: "the visit was not cancelled by the client" };
-  const credit = await creditOnCancel(db, appointmentId);
+  const credit = await creditOfVisit(db, appointmentId);
   if (credit === "restored") return { template: "visit_cancelled_credit_v1", params };
   // Kept under the 24-hour rule, or drawn on a grant that has since expired or been clawed back.
   if (credit === "kept") {
@@ -327,7 +328,7 @@ interface RecordedCharge {
 
 /**
  * What a charge says: what it kept and what goes back, or that it spent the credit. A charge of nothing gave both
- * back, and says so as a waiver that gives them does.
+ * back, and says so as a waiver that gives them does, the credit only where the ledger holds it back.
  */
 async function chargedMessage(
   db: D1Database,
@@ -336,9 +337,13 @@ async function chargedMessage(
   params: string[],
 ): Promise<Composed> {
   if (charge.kept + charge.refund === 0) {
-    if (!(await paidWithCredit(db, appointmentId))) return { template: "no_show_missed_v1", params };
-    const template = charge.charge === "nothing" ? "no_show_waived_credit_back_v1" : "no_show_charged_credit_v1";
-    return { template, params };
+    const credit = await creditOfVisit(db, appointmentId);
+    if (credit === "none") return { template: "no_show_missed_v1", params };
+    if (charge.charge !== "nothing") return { template: "no_show_charged_credit_v1", params };
+    return {
+      template: credit === "restored" ? "no_show_waived_credit_back_v1" : "no_show_waived_credit_gone_v1",
+      params,
+    };
   }
   params[7] = await refundDestination(db, appointmentId);
   if (charge.kept === 0) {
@@ -388,10 +393,13 @@ async function noShowRuling(db: D1Database, appointmentId: string, params: strin
     payment: ruling.waiver_payment ?? WAIVER_GIVES_BACK.payment,
     credit: ruling.waiver_credit ?? WAIVER_GIVES_BACK.credit,
   };
-  return { template: waivedTemplate(paid.kind, waiver), params };
+  return { template: waivedTemplate(paid.kind, waiver, await creditOfVisit(db, appointmentId)), params };
 }
 
-/** Ops' ruling on the client's dispute of a no-show's charge: refunded, with what goes back, or upheld. */
+/**
+ * Ops' ruling on the client's dispute of a no-show's charge: refunded, with what goes back, or upheld. The credit is
+ * back only where the ledger holds it back: a grant expired or clawed back since the visit could not take it.
+ */
 async function disputeRuling(db: D1Database, appointmentId: string, params: string[]): Promise<Composed> {
   const dispute = await db
     .prepare(
@@ -404,14 +412,26 @@ async function disputeRuling(db: D1Database, appointmentId: string, params: stri
   if (ruling === null) return { skip: "ops have not ruled on the dispute" };
   if (ruling === "upheld") return { template: "no_show_dispute_upheld_v1", params };
   const kept = dispute?.kept_amount ?? 0;
-  if (kept === 0) return { template: "no_show_dispute_credit_back_v1", params };
+  if (kept === 0) {
+    const credit = await creditOfVisit(db, appointmentId);
+    return {
+      template: credit === "restored" ? "no_show_dispute_credit_back_v1" : "no_show_dispute_credit_gone_v1",
+      params,
+    };
+  }
   params[5] = rupees(kept);
   params[7] = await refundDestination(db, appointmentId);
   return { template: "no_show_dispute_refunded_v1", params };
 }
 
-/** What became of the credit a cancelled visit was paid with: back in the balance, kept, or none was used. */
-async function creditOnCancel(db: D1Database, appointmentId: string): Promise<"restored" | "kept" | "none"> {
+/** What became of the credit a visit was paid with: back in the balance, kept, or none was used. */
+export type VisitCredit = "restored" | "kept" | "none";
+
+/**
+ * What became of the credit a visit was paid with, as the ledger holds it: a cancel or a ruling that gives it back
+ * writes its restore only where the grant can still take it.
+ */
+export async function creditOfVisit(db: D1Database, appointmentId: string): Promise<VisitCredit> {
   const used = await db
     .prepare(
       `SELECT EXISTS (SELECT 1 FROM credit_ledger WHERE kind = 'restore' AND source_id = ?1) AS restored

@@ -9,6 +9,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/http/context.ts";
 import { ruleOnDispute } from "../../src/domain/no-show-disputes.ts";
+import { composeVisitMessage } from "../../src/domain/visit-messages.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import type { DisputeRuling } from "../../src/policy/no-show.ts";
 import { createStubPayments } from "../../src/providers/payments.ts";
@@ -119,14 +120,14 @@ function rule(ops: App, id: string, body: unknown, queue = fakeQueue()) {
 }
 
 /** The visit paid for with a credit instead, which the charge spent: it kept no money. */
-const onCredit = () =>
+const onCredit = (grantExpires = "2027-09-21T06:30:00.000Z") =>
   env.DB.batch([
     env.DB.prepare("DELETE FROM payments"),
     env.DB.prepare("UPDATE no_show_cases SET charge = 'visit', kept_amount = 0, refund_amount = 0"),
     env.DB.prepare(
       `INSERT INTO credit_ledger (id, person_id, kind, visits, source_kind, source_id, expires_at, created_at)
-       VALUES ('grant-1', ?1, 'grant', 3, 'referral', 'referral-1', '2027-09-21T06:30:00.000Z', ?2)`,
-    ).bind(PERSON, NOW.toISOString()),
+       VALUES ('grant-1', ?1, 'grant', 3, 'referral', 'referral-1', ?2, ?3)`,
+    ).bind(PERSON, grantExpires, NOW.toISOString()),
     env.DB.prepare(
       `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
        VALUES ('redeem-1', ?1, 'redeem', -1, 'grant-1', 'appointment', ?2, ?3)`,
@@ -276,6 +277,54 @@ describe("POST /api/no-shows/disputes/:id/ruling", () => {
     expect(payments.made.refunds).toEqual([]);
     expect(await env.DB.prepare("SELECT kind FROM credit_ledger WHERE kind = 'restore'").all()).toMatchObject({
       results: [{ kind: "restore" }],
+    });
+  });
+
+  // The credit comes back only to a grant that can still take it. Where it cannot, the client is told so, from what
+  // the ledger holds, and ops are told to settle it by hand.
+  const clawedBack = () =>
+    env.DB.prepare(
+      `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
+       VALUES ('clawback-1', ?1, 'clawback', -2, 'grant-1', 'referral', 'referral-1', '2026-09-20T06:30:00.000Z')`,
+    )
+      .bind(PERSON)
+      .run();
+
+  it.each([
+    ["expired", () => onCredit("2026-09-20T18:30:00.000Z")],
+    [
+      "been clawed back",
+      async () => {
+        await onCredit();
+        await clawedBack();
+      },
+    ],
+  ])("tells the client and ops the credit cannot come back, where its grant has %s", async (_, grantGone) => {
+    await grantGone();
+    await env.DB.prepare(
+      `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at)
+       VALUES ('consent-1', ?1, 'whatsapp_visits', 'test-notice', 1, ?2)`,
+    )
+      .bind(PERSON, NOW.toISOString())
+      .run();
+    const id = await raised();
+    const deps = fakeDependencies();
+
+    await rule(appFor("local", deps, {}, "ops"), id, { ruling: "refunded", reason: "The bell was broken" });
+
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM credit_ledger WHERE kind = 'restore'").first()).toEqual({
+      n: 0,
+    });
+    expect(await composeVisitMessage(env.DB, "no_show_dispute_ruled", VISIT, PERSON)).toMatchObject({
+      template: "no_show_dispute_credit_gone_v1",
+    });
+    expect(deps.alerts).toEqual([
+      `The visit credit for visit ${VISIT}, a no-show refunded on dispute, could not come back: its grant has ` +
+        "expired or been withdrawn. The client is told so; settle it with them by hand if they are owed one. " +
+        `http://ops.localhost:4323/clients/${PERSON}`,
+    ]);
+    expect(await env.DB.prepare("SELECT key FROM alerts WHERE key LIKE 'no_show_credit%'").first()).toEqual({
+      key: `no_show_credit_not_back:refunded on dispute:${VISIT}`,
     });
   });
 

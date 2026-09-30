@@ -11,7 +11,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import { staffOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
 import { openDisputes, ruleOnDispute } from "../domain/no-show-disputes.ts";
-import { refundNoShow } from "../domain/no-shows.ts";
+import { alertCreditNotBack, refundNoShow } from "../domain/no-shows.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
@@ -116,6 +116,7 @@ export function registerOpsDisputes(app: App): void {
     });
     if (ruled === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     if (ruled.refund !== null) await refundNoShow(c.env.DB, c.var.deps, ruled.refund);
+    if (ruled.creditNotBack !== null) await alertCreditNotBack(c.var.deps.alertOnce, ruled.creditNotBack);
     if (ruled.messageId !== null) {
       await c.env.MESSAGE_QUEUE.send({
         message_id: ruled.messageId,

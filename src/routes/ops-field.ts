@@ -25,7 +25,7 @@ import { staffOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { cancelLeave, LEAVE_MAX_DAYS, leaveFrom, recordLeave } from "../domain/leave.ts";
-import { decideNoShow, listNoShowCases, MESSAGE_STATES, refundNoShow } from "../domain/no-shows.ts";
+import { alertCreditNotBack, decideNoShow, listNoShowCases, MESSAGE_STATES, refundNoShow } from "../domain/no-shows.ts";
 import { piecesOf, syncPieces } from "../domain/pieces.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { devicesByTechnician, revokeDevice } from "../domain/technicians.ts";
@@ -305,6 +305,7 @@ export function registerOpsField(app: App): void {
     });
     if (ruled === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     if (ruled.refund !== null) await refundNoShow(c.env.DB, c.var.deps, ruled.refund);
+    if (ruled.creditNotBack !== null) await alertCreditNotBack(c.var.deps.alertOnce, ruled.creditNotBack);
     if (ruled.messageId !== null) {
       await c.env.MESSAGE_QUEUE.send({
         message_id: ruled.messageId,

@@ -55,13 +55,19 @@ const TEMPLATES: Readonly<Record<string, string>> = {
     "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it: {{6}} is on its way back to your {{8}}, in 5 to 7 working days.",
   no_show_waived_credit_back_v1:
     "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it, and your visit credit is back.",
+  // A credit given back to a grant that has since expired or been clawed back does not come back; ops are told.
+  no_show_waived_credit_gone_v1:
+    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it, but the visit credit it used is no longer valid, so it cannot come back.",
   // Ops' ruling on a client's dispute of a no-show's charge (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md):
-  // refunded, {{6}} going back to {{8}} or the credit back, or upheld. Never ops' reason, which stays with the
-  // ruling; one who wants to know why may ask, a problem being what "Message us" is for (ADR 0025, item 70).
+  // refunded, {{6}} going back to {{8}} or the credit back (or not, where its grant has gone), or upheld. Never ops'
+  // reason, which stays with the ruling; one who wants to know why may ask, a problem being what "Message us" is for
+  // (ADR 0025, item 70).
   no_show_dispute_refunded_v1:
     "Hello {{1}}, we have looked at your dispute of the no-show charge for your {{2}} on {{3}}, and we are refunding it: {{6}} is on its way back to your {{8}}, in 5 to 7 working days.",
   no_show_dispute_credit_back_v1:
     "Hello {{1}}, we have looked at your dispute of the no-show charge for your {{2}} on {{3}}, and we are refunding it: your visit credit is back.",
+  no_show_dispute_credit_gone_v1:
+    "Hello {{1}}, we have looked at your dispute of the no-show charge for your {{2}} on {{3}}, and we agree the charge should not stand, but the visit credit it used is no longer valid, so it cannot come back.",
   no_show_dispute_upheld_v1:
     "Hello {{1}}, we have looked at your dispute of the no-show charge for your {{2}} on {{3}}. The charge stands. Message us if you would like to know why.",
   // The next visit falls due in a few days and nothing is booked (docs/decisions/0086-the-next-visit-is-offered.md),
