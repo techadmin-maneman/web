@@ -137,9 +137,10 @@ export type AttributionOutcome =
 
 /**
  * Attributes a person to an invite, if they are new to referrals: not the referrer, not already attributed,
- * and not already fitted. Says whether they now carry the invite's credits, and whether the invite they were
- * held under has lapsed, which it is marked as, so it promises nothing more. An invite ops attach carries who
- * attached it and why, and its audit entry, written only if the attribution is.
+ * and, on their own link, not already fitted. Says whether they now carry the invite's credits, and whether the
+ * invite they were held under has lapsed, which it is marked as, so it promises nothing more. An invite ops attach
+ * carries who attached it and why, and its audit entry, written only if the attribution is; one ops attach after the
+ * friend's first fit is held for their review (src/policy/fraud-holds.ts, LATE_ATTACH_RULE).
  */
 export async function attribute(
   db: D1Database,
@@ -155,21 +156,23 @@ export async function attribute(
   if (input.personId === input.invite.referrerId) return { outcome: "own_invite" };
   const fitted = await db
     .prepare(
-      `SELECT 1 FROM appointments WHERE person_id = ?1 AND type = 'first_fit' AND status = 'completed'
-         AND deleted_at IS NULL LIMIT 1`,
+      `SELECT id FROM appointments WHERE person_id = ?1 AND type = 'first_fit' AND status = 'completed'
+         AND deleted_at IS NULL ORDER BY window_start LIMIT 1`,
     )
     .bind(input.personId)
-    .first();
-  if (fitted !== null) return { outcome: "fitted" };
+    .first<{ id: string }>();
+  const { attachedBy } = input;
+  // A friend's own link never reaches someone already fitted; ops may, and the grant waits for their review.
+  if (fitted !== null && attachedBy === undefined) return { outcome: "fitted" };
+  const heldForReview = fitted === null ? null : { reason: "attached_after_fit" as const, firstFitId: fitted.id };
   const at = input.now.toISOString();
   const id = crypto.randomUUID();
-  const { attachedBy } = input;
   await db.batch([
     db
       .prepare(
         `INSERT INTO referral_attributions (id, code, referred_person_id, first_touch_at, via, pincode, attached_by,
-           attach_reason, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?4, ?4)
+           attach_reason, grant_state, fraud_signals, first_fit_appointment_id, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?4, ?4)
          ON CONFLICT (referred_person_id) DO NOTHING`,
       )
       .bind(
@@ -181,6 +184,9 @@ export async function attribute(
         input.pincode,
         attachedBy?.by ?? null,
         attachedBy?.reason ?? null,
+        heldForReview === null ? "pending" : "held",
+        heldForReview === null ? null : JSON.stringify([heldForReview.reason]),
+        heldForReview?.firstFitId ?? null,
       ),
     ...(attachedBy === undefined
       ? []

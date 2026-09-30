@@ -396,6 +396,27 @@ describe("POST /api/no-shows/:id/decision", () => {
     });
   });
 
+  // The owner ruled on 30 September 2026: a client may dispute a charge for 30 days, a console setting; each charge
+  // keeps the deadline it was given (src/policy/no-show.ts, DISPUTE_WINDOW_DAYS).
+  it("gives a charge the days ops set for disputing it, and a waiver none", async () => {
+    await rule({ decision: "charged", reason: "Nobody came to the door" });
+    expect(await env.DB.prepare("SELECT dispute_until FROM no_show_cases").first()).toEqual({
+      dispute_until: new Date(NOW.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    });
+  });
+
+  it("gives a charge the window ops set, when they have set one", async () => {
+    await env.DB.prepare(
+      "INSERT INTO ops_settings (name, value, set_by, set_at) VALUES ('dispute_window_days', '7', 'ops', ?1)",
+    )
+      .bind(NOW.toISOString())
+      .run();
+    await rule({ decision: "charged", reason: "Nobody came to the door" });
+    expect(await env.DB.prepare("SELECT dispute_until FROM no_show_cases").first()).toEqual({
+      dispute_until: new Date(NOW.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    });
+  });
+
   it("keeps the reason with the ruling, under who made it, and out of the audit log", async () => {
     const answer = await rule({ decision: "charged", reason: "  Delivered the evening before; nobody came down  " });
     expect(answer.status).toBe(200);

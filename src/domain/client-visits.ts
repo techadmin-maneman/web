@@ -311,7 +311,7 @@ export async function visitDetail(
     >();
   if (row === null) return null;
   const photos = await photoSets(db, [row.id], signingKey, now);
-  const noShows = await noShowNotes(db, [row.id]);
+  const noShows = await noShowNotes(db, [row.id], now);
   return {
     ...summaryOf(row, await placeOf(db, personId), now),
     duration_minutes: row.duration_minutes,

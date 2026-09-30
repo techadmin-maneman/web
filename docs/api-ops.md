@@ -477,7 +477,7 @@ Request body:
 }
 ```
 
-**409**: own_invite: the client is the code's own referrer; already_invited: the client came with an invite already, which the answer names; already_fitted: the client has had their first fit
+**409**: own_invite: the client is the code's own referrer; already_invited: the client came with an invite already, which the answer names
 
 ```json
 {
@@ -895,7 +895,8 @@ Referral grants held for review, oldest first
                 "shared_address",
                 "shared_upi",
                 "monthly_cap",
-                "same_mobile"
+                "same_mobile",
+                "attached_after_fit"
               ]
             }
           },
@@ -3329,9 +3330,9 @@ Who Access let through, and where signing out goes
             "unknown_invite",
             "own_invite",
             "already_invited",
-            "already_fitted",
             "already_disputed",
-            "not_disputable"
+            "not_disputable",
+            "dispute_window_closed"
           ]
         },
         "request_id": {
@@ -5440,9 +5441,9 @@ Who Access let through, and where signing out goes
             "unknown_invite",
             "own_invite",
             "already_invited",
-            "already_fitted",
             "already_disputed",
-            "not_disputable"
+            "not_disputable",
+            "dispute_window_closed"
           ]
         },
         "request_id": {
@@ -8049,6 +8050,7 @@ Who Access let through, and where signing out goes
         "piece_cycle_days",
         "payment_hold",
         "fsm_retry",
+        "dispute_window_days",
         "technician_work",
         "booking_days"
       ]
@@ -8220,6 +8222,7 @@ Who Access let through, and where signing out goes
         "piece_cycle_days",
         "payment_hold",
         "fsm_retry",
+        "dispute_window_days",
         "technician_work",
         "booking_days"
       ]

@@ -687,7 +687,7 @@ Indexes:
 
 The evidence a no-show is ruled on, the ruling, and what a charge cost the client (ADR 0065, ADR 0072, ADR 0096).
 
-Made by `0026_field_operations.sql`; changed by `0042_no_show_reasons.sql`, `0044_hand_offs_and_messages.sql`, `0054_policies_in_the_console.sql`, `0059_no_show_charges_and_disputes.sql`.
+Made by `0026_field_operations.sql`; changed by `0042_no_show_reasons.sql`, `0044_hand_offs_and_messages.sql`, `0054_policies_in_the_console.sql`, `0059_no_show_charges_and_disputes.sql`, `0061_dispute_window.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -710,6 +710,7 @@ Made by `0026_field_operations.sql`; changed by `0042_no_show_reasons.sql`, `004
 | `kept_amount` | INTEGER | yes |  |  |
 | `refund_amount` | INTEGER | yes |  |  |
 | `ruling_id` | TEXT | yes |  |  |
+| `dispute_until` | TEXT | yes |  |  |
 
 Indexes:
 

@@ -805,7 +805,7 @@ Request body:
 }
 ```
 
-**409**: already_disputed: the charge was disputed before; or not_disputable: the charge took nothing to give back
+**409**: already_disputed: the charge was disputed before; not_disputable: the charge took nothing to give back; or dispute_window_closed: the days the charge could be disputed are past
 
 ```json
 {
@@ -1582,9 +1582,9 @@ Request body:
             "unknown_invite",
             "own_invite",
             "already_invited",
-            "already_fitted",
             "already_disputed",
-            "not_disputable"
+            "not_disputable",
+            "dispute_window_closed"
           ]
         },
         "request_id": {

@@ -6,7 +6,7 @@
 // Refunded gives both back, as a waiver that gives them does; upheld keeps them. The client's reason and ops' are
 // kept on the dispute alone: the audit log holds IDs and codes only (ADR 0031), and an erasure blanks both.
 
-import { isDisputable, type DisputeRuling } from "../policy/no-show.ts";
+import { isDisputable, withinDisputeWindow, type DisputeRuling } from "../policy/no-show.ts";
 import type { Charge } from "../policy/moving-a-visit.ts";
 import { auditStatementIfRuled, auditStatementIfWritten, type AuditEntry } from "./audit.ts";
 import type { Ruled } from "./after-a-ruling.ts";
@@ -19,12 +19,14 @@ interface ChargedCase {
   kept_amount: number | null;
   credit_spent: number | null;
   dispute_id: string | null;
+  dispute_until: string | null;
 }
 
 export type Raised =
   | { readonly kind: "raised"; readonly id: string }
   | { readonly kind: "not_found" }
   | { readonly kind: "not_disputable" }
+  | { readonly kind: "window_closed" }
   | { readonly kind: "already_disputed" };
 
 /**
@@ -43,7 +45,7 @@ export async function raiseDispute(
 ): Promise<Raised> {
   const charged = await db
     .prepare(
-      `SELECT n.id, n.charge, ${CHARGE_TAKEN}, d.id AS dispute_id
+      `SELECT n.id, n.charge, ${CHARGE_TAKEN}, d.id AS dispute_id, n.dispute_until
        FROM no_show_cases n JOIN appointments a ON a.id = n.appointment_id
        LEFT JOIN no_show_disputes d ON d.case_id = n.id
        WHERE n.appointment_id = ?1 AND a.person_id = ?2 AND n.decision = 'charged'
@@ -58,6 +60,7 @@ export async function raiseDispute(
   if (!isDisputable({ kept: charged.kept_amount, creditSpent: charged.credit_spent === 1 })) {
     return { kind: "not_disputable" };
   }
+  if (!withinDisputeWindow(charged.dispute_until, input.now)) return { kind: "window_closed" };
 
   const id = crypto.randomUUID();
   const [inserted] = await db.batch([

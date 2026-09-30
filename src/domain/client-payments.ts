@@ -117,19 +117,20 @@ const refundOf = (row: RefundRow) => ({
 });
 
 /** The no-show notes of the visits these payments paid for. */
-const noShowsOf = (db: D1Database, rows: readonly PaymentRow[]) =>
+const noShowsOf = (db: D1Database, rows: readonly PaymentRow[], now: Date) =>
   noShowNotes(
     db,
     rows.flatMap((row) => (row.appointment_id === null ? [] : [row.appointment_id])),
+    now,
   );
 
 /** A person's payments and refunds as one list, newest first. Ops read the same list on the client's page. */
-export async function paymentEntries(db: D1Database, personId: string) {
+export async function paymentEntries(db: D1Database, personId: string, now: Date) {
   const [payments, refunds] = await Promise.all([
     db.prepare(PAYMENT_QUERY).bind(personId).all<PaymentRow>(),
     db.prepare(REFUND_QUERY).bind(personId).all<RefundRow>(),
   ]);
-  const noShows = await noShowsOf(db, payments.results);
+  const noShows = await noShowsOf(db, payments.results, now);
   return [
     ...payments.results.map((row) => ({ at: row.created_at, entry: paymentOf(row, noShows) })),
     ...refunds.results.map((row) => ({ at: row.created_at, entry: refundOf(row) })),
@@ -178,11 +179,12 @@ function creditEventOf(row: CreditRow, noShow: NoShowNote | null): CreditEvent {
 }
 
 /** Every change to the person's credits, newest first (LIFE-14): the app lists them among the payments. */
-export async function creditLines(db: D1Database, personId: string) {
+export async function creditLines(db: D1Database, personId: string, now: Date) {
   const { results } = await db.prepare(CREDIT_QUERY).bind(personId).all<CreditRow>();
   const noShows = await noShowNotes(
     db,
     results.flatMap((row) => (row.appointment_id === null ? [] : [row.appointment_id])),
+    now,
   );
   return results.map((row) => {
     const noShow = row.appointment_id === null ? null : (noShows.get(row.appointment_id) ?? null);
@@ -199,12 +201,12 @@ export async function creditLines(db: D1Database, personId: string) {
 }
 
 /** One of the person's entries, with its documents: a payment, or a refund; null when it is not theirs. */
-export async function paymentEntry(db: D1Database, personId: string, id: string) {
+export async function paymentEntry(db: D1Database, personId: string, id: string, now: Date) {
   const payment = await db.prepare(`${PAYMENT_QUERY} AND p.id = ?2`).bind(personId, id).first<PaymentRow>();
   if (payment !== null) {
     const invoice = payment.invoice_issued_at === null ? null : payment.appointment_id;
     const receipt = payment.books_payment_id === null ? null : payment.id;
-    const noShows = await noShowsOf(db, [payment]);
+    const noShows = await noShowsOf(db, [payment], now);
     return { ...paymentOf(payment, noShows), documents: { invoice, receipt } };
   }
   const refund = await db.prepare(`${REFUND_QUERY} AND r.id = ?2`).bind(personId, id).first<RefundRow>();
