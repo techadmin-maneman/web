@@ -7,6 +7,8 @@
 //
 // {{1}}, {{2}}, … are the params, in order, as in WhatsApp templates.
 
+import { MESSAGE_KINDS, type MessageKind } from "../domain/messages.ts";
+
 const TEMPLATES: Readonly<Record<string, string>> = {
   tryon_result_v1:
     "Hello {{1}}, here is your Mane Man try-on. What you see is a simulation, not a photograph of a result.",
@@ -138,3 +140,43 @@ export function isKnownTemplate(name: string): boolean {
 
 /** The template the try-on result is sent with, in every environment. */
 export const RESULT_TEMPLATE = "tryon_result_v1";
+
+/**
+ * Whether a kind of queued message answers the person whose own action on staging's screens produced it, or is
+ * automatic: a scheduled job, or a message to someone other than the one who acted. On staging an answering kind
+ * reaches any number; an automatic kind still checks `onAllowlist` (src/config/settings.ts). Production's
+ * allowlist is empty, so this changes nothing there. Owner ruling, 30 September 2026 ("logins open, reminders
+ * fenced"; ADR 0025 item 84; ADR 0097).
+ */
+export type MessageClass = "answering" | "automatic";
+
+/**
+ * Every kind, classed once. `reschedule_confirmation` and `visit_moved` render the same template
+ * (`visit_moved_v1`) but differ here: the first is the client's own move, the second ops' on the dispatch board.
+ * A kind added to MESSAGE_KINDS with no line here fails to typecheck (`Record<MessageKind, MessageClass>`), and
+ * test/node/message-templates.test.ts checks the table still holds every kind, for a reader who only runs tests.
+ */
+export const MESSAGE_CLASSES: Readonly<Record<MessageKind, MessageClass>> = {
+  tryon_result: "answering", // the result of the try-on the person just claimed
+  consultation_confirmation: "answering", // the booking they just made
+  payment_receipt: "answering",
+  reschedule_confirmation: "answering", // the client's own move
+  cancel_confirmation: "answering", // the client's own cancel
+  waitlist_confirmation: "answering", // their own place on the list, just joined
+  visit_reminder: "automatic", // the day-before cron
+  visit_moved: "automatic", // ops moved it, on the dispatch board
+  arrival_notice: "automatic", // the technician's own action, not the client's
+  no_show_decided: "automatic", // ops ruled on it
+  no_show_dispute_ruled: "automatic", // ops ruled on the client's dispute (ADR 0096)
+  booking_refunded: "automatic", // ops refunded a booking FSM would not take (ADR 0095)
+  next_service_reminder: "automatic", // scheduled
+  friend_fitted: "automatic", // to the referrer, for the friend's action
+  friend_credited: "automatic", // to the friend, for the job ops closed
+  referral_rejected: "automatic", // ops' ruling
+  launch_alert: "automatic", // scheduled, to someone who asked earlier
+};
+
+/** A kind's class, defaulting to automatic for one this table does not name, so an unsure case is never open. */
+export function messageClass(kind: string): MessageClass {
+  return (MESSAGE_KINDS as readonly string[]).includes(kind) ? MESSAGE_CLASSES[kind as MessageKind] : "automatic";
+}

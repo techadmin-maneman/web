@@ -10,7 +10,16 @@ import { openSession } from "../../src/domain/sessions.ts";
 import { checkIn } from "../../src/policy/check-in.ts";
 import { RULES as CONSENT_RULES } from "../../src/policy/consents.ts";
 import { RULES as NUMBER_CHANGE_RULES } from "../../src/policy/number-change.ts";
-import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request, type TestDependencies } from "./helpers.ts";
+import {
+  appFor,
+  fakeDependencies,
+  fakeQueue,
+  LOCAL_SETTINGS,
+  markDatabase,
+  NOW,
+  request,
+  type TestDependencies,
+} from "./helpers.ts";
 
 const ORIGIN = "https://maneman.test";
 const OLD = "+919810000001";
@@ -471,6 +480,52 @@ describe("a number change", () => {
     const { res } = await start();
     expect(res.status).toBe(202);
     expect(deps.sentCodes.map((sent) => sent.to)).toEqual([OLD, NEW]);
+  });
+
+  // Owner ruling, 30 September 2026 ("logins open, reminders fenced", ADR 0025 item 84; ADR 0097): each side of a
+  // number change is asked for by the phone holding it, so neither is held to staging's allowlist.
+  it("sends both number-change codes off staging's allowlist", async () => {
+    client = appFor(
+      "local",
+      deps,
+      { messaging: { ...LOCAL_SETTINGS.messaging, allowlist: ["+919810000099"] } },
+      "client",
+    );
+    const { res } = await start();
+    expect(res.status).toBe(202);
+    expect(deps.sentCodes.map((sent) => sent.to)).toEqual([OLD, NEW]);
+  });
+
+  // A record one of our own scripts made stays fenced, whatever the ruling above frees (isStagingTestRecord,
+  // src/policy/staging-test-records.ts).
+  it("holds back both number-change codes for a 'Staging test' record off the allowlist", async () => {
+    const SCRIPT_OLD = "+919810000060";
+    await env.DB.prepare(
+      "INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES ('p-script', ?1, ?2, 'Staging test', 1)",
+    )
+      .bind(NOW.toISOString(), SCRIPT_OLD)
+      .run();
+    const scriptCookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: "p-script", deviceLabel: null, now: NOW })}`;
+    client = appFor(
+      "local",
+      deps,
+      { messaging: { ...LOCAL_SETTINGS.messaging, allowlist: ["+919810000099"] } },
+      "client",
+    );
+
+    const res = await request(
+      client,
+      "/api/number-change",
+      {
+        method: "POST",
+        headers: { Origin: ORIGIN, "Content-Type": "application/json", Cookie: scriptCookie },
+        body: JSON.stringify({ new_mobile: "98100 00003" }),
+      },
+      queues,
+    );
+
+    expect(res.status).toBe(202);
+    expect(deps.sentCodes).toEqual([]);
   });
 
   it(NUMBER_CHANGE_RULES[1], async () => {

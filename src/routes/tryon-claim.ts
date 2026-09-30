@@ -9,6 +9,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
+import { messageClass } from "../config/message-templates.ts";
 import { CURRENT_NOTICE, findNotice } from "../config/notices.ts";
 import { onAllowlist, type MessagingSettings } from "../config/settings.ts";
 import { takeOne } from "../domain/rate-limit.ts";
@@ -21,6 +22,7 @@ import { visitorOf } from "../http/visitor.ts";
 import { saltedHash } from "../lib/hash.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
+import { isStagingTestRecord } from "../policy/staging-test-records.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 
 const AttributionSchema = z
@@ -140,7 +142,7 @@ async function claim(c: Context<AppEnv>, request: z.infer<typeof ClaimRequestSch
 
   const job = await loadJob(db, request.job_id);
   if (job === null) return { ok: false, status: 404, code: "not_found" };
-  if (job.lead_id !== null) return reclaim(c, job, mobileE164);
+  if (job.lead_id !== null) return reclaim(c, job, mobileE164, request.name);
   if (job.state === "awaiting_upload" || job.state === "failed" || job.state === "expired" || job.stage === null) {
     return { ok: false, status: 409, code: "job_not_claimable" };
   }
@@ -184,22 +186,34 @@ async function claim(c: Context<AppEnv>, request: z.infer<typeof ClaimRequestSch
 
   return {
     ok: true,
-    body: { lead_id: leadId, whatsapp_copy: promisesCopy(settings.messaging, mobileE164) },
+    body: { lead_id: leadId, whatsapp_copy: promisesCopy(settings.messaging, mobileE164, request.name) },
     sessionId: claimed.sessionId,
   };
 }
 
-/** The page may say a copy is on its way only when the messaging queue will send it, not skip it. */
-const promisesCopy = (messaging: MessagingSettings, mobileE164: string): boolean =>
-  messaging.enabled && onAllowlist(messaging, mobileE164);
+/**
+ * The page may say a copy is on its way only when the messaging queue will send it, not skip it. The result
+ * answers the person who just claimed it (MESSAGE_CLASSES.tryon_result is "answering"), so on staging it goes to
+ * any number — unless the claim names one of our own scripts' test records ("Staging test", "Load test"), which
+ * is messaged only on the allowlist like any other (isStagingTestRecord, src/policy/staging-test-records.ts;
+ * ADR 0097).
+ */
+const promisesCopy = (messaging: MessagingSettings, mobileE164: string, name: string): boolean => {
+  if (!messaging.enabled) return false;
+  if (isStagingTestRecord(name)) return onAllowlist(messaging, mobileE164);
+  return messageClass("tryon_result") === "answering";
+};
 
 /** A job already claimed, claimed again: a fresh session for its own number, refused for any other. */
-async function reclaim(c: Context<AppEnv>, job: JobRow, mobileE164: string): Promise<Outcome> {
+async function reclaim(c: Context<AppEnv>, job: JobRow, mobileE164: string, name: string): Promise<Outcome> {
   const reclaimed = await reclaimJob(c.env.DB, { job, mobileE164, now: c.var.deps.now() });
   if (reclaimed === null) return { ok: false, status: 409, code: "job_not_claimable" };
   return {
     ok: true,
-    body: { lead_id: reclaimed.leadId, whatsapp_copy: promisesCopy(c.var.config.settings.messaging, mobileE164) },
+    body: {
+      lead_id: reclaimed.leadId,
+      whatsapp_copy: promisesCopy(c.var.config.settings.messaging, mobileE164, name),
+    },
     sessionId: reclaimed.sessionId,
   };
 }
