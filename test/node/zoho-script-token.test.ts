@@ -40,7 +40,8 @@ describe("a script's Zoho refresh token", () => {
 
   // Each parses its flags strictly, so one it does not name stops it before the token is read.
   it("is asked for with a flag the setup scripts take", () => {
-    const env = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith("ZOHO_")));
+    const env = { ...process.env };
+    for (const name of Object.keys(env)) if (name.startsWith("ZOHO_")) env[name] = undefined;
     for (const script of ["scripts/setup-fsm.ts", "scripts/setup-crm.ts"]) {
       const run = spawnSync(process.execPath, [script, "--check", USE_WORKER_TOKEN], { env, encoding: "utf8" });
       expect(run.stderr, script).not.toContain("ERR_PARSE_ARGS");
