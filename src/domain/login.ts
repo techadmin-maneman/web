@@ -8,6 +8,8 @@ import { checkCode, codeHashOf, type ChallengePurpose } from "./one-time-codes.t
 export interface EligiblePerson {
   readonly id: string;
   readonly mobileE164: string;
+  /** Whether this record is one of our own scripts' is read from it (isStagingTestRecord, ADR 0097). */
+  readonly name: string;
 }
 
 /**
@@ -18,14 +20,14 @@ export interface EligiblePerson {
 export async function findEligiblePerson(db: D1Database, mobileE164: string): Promise<EligiblePerson | null> {
   const row = await db
     .prepare(
-      `SELECT p.id FROM people p
+      `SELECT p.id, p.name FROM people p
        WHERE p.mobile_e164 = ?1 AND p.erased_at IS NULL
          AND (EXISTS (SELECT 1 FROM leads l WHERE l.person_id = p.id AND l.proposed_visit_date IS NOT NULL)
            OR EXISTS (SELECT 1 FROM appointments a WHERE a.person_id = p.id AND a.deleted_at IS NULL))`,
     )
     .bind(mobileE164)
-    .first<{ id: string }>();
-  return row === null ? null : { id: row.id, mobileE164 };
+    .first<{ id: string; name: string }>();
+  return row === null ? null : { id: row.id, mobileE164, name: row.name };
 }
 
 export interface Challenge {
