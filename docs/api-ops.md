@@ -1741,6 +1741,91 @@ Revoke a phone. Its session ends, and it drops its cached jobs on its next conta
 }
 ```
 
+### GET /api/no-shows/disputes
+
+Disputed no-show charges still to rule on, oldest first, each with its evidence
+
+**200**: The disputes
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "disputes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/NoShowDispute"
+      }
+    }
+  },
+  "required": [
+    "disputes"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/no-shows/disputes/{id}/ruling
+
+Refund or uphold a disputed no-show charge, with a reason
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/NoShowDisputeRuling"
+}
+```
+
+**200**: Recorded
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "ruled": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "ruled"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request: a ruling needs a reason
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such dispute, or it was ruled on already
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/tasks
 
 What ops still have to do, by group, the longest wait first
@@ -3244,7 +3329,9 @@ Who Access let through, and where signing out goes
             "unknown_invite",
             "own_invite",
             "already_invited",
-            "already_fitted"
+            "already_fitted",
+            "already_disputed",
+            "not_disputable"
           ]
         },
         "request_id": {
@@ -4239,11 +4326,60 @@ Who Access let through, and where signing out goes
     "waited_minutes": {
       "type": "integer",
       "description": "How long the technician waited at the door."
+    },
+    "charge": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kept": {
+              "type": "integer",
+              "description": "In paise: what the charge kept of the visit's payment."
+            },
+            "credit_spent": {
+              "type": "boolean",
+              "description": "Whether the charge spent the credit the visit used."
+            }
+          },
+          "required": [
+            "kept",
+            "credit_spent"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What the charge took, as the booking was sold to cost a no-show (ADR 0096). Null unless charged, and on a charge ruled before charges were recorded."
+    },
+    "dispute": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "open",
+            "refunded",
+            "upheld"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The client's dispute of the charge: open while ops look, then refunded or upheld; null when none was raised."
+    },
+    "disputable": {
+      "type": "boolean",
+      "description": "Whether the client may dispute the charge now: one that took something, not disputed yet."
     }
   },
   "required": [
     "decision",
-    "waited_minutes"
+    "waited_minutes",
+    "charge",
+    "dispute",
+    "disputable"
   ],
   "additionalProperties": false
 }
@@ -5304,7 +5440,9 @@ Who Access let through, and where signing out goes
             "unknown_invite",
             "own_invite",
             "already_invited",
-            "already_fitted"
+            "already_fitted",
+            "already_disputed",
+            "not_disputable"
           ]
         },
         "request_id": {
@@ -6234,6 +6372,10 @@ Who Access let through, and where signing out goes
         "other"
       ]
     },
+    "notice_hours": {
+      "type": "integer",
+      "description": "The notice the visit was sold under, in hours, or the one in force for a visit ops booked in FSM: a change of the client's own inside it costs them, one ops make never does."
+    },
     "untold": {
       "anyOf": [
         {
@@ -6273,6 +6415,7 @@ Who Access let through, and where signing out goes
     "starts_at",
     "window",
     "status",
+    "notice_hours",
     "untold"
   ],
   "additionalProperties": false
@@ -6709,6 +6852,10 @@ Who Access let through, and where signing out goes
       ],
       "description": "Fact two: how far from the address he was; null where the address had no coordinates and nothing was measured."
     },
+    "radius_m": {
+      "type": "integer",
+      "description": "The check-in radius in force when he checked in, which the check-in keeps: the distance is read against it, not against the radius ops have set since."
+    },
     "message_state": {
       "type": "string",
       "enum": [
@@ -6790,6 +6937,7 @@ Who Access let through, and where signing out goes
     "window_end",
     "minutes_late",
     "distance_m",
+    "radius_m",
     "message_state",
     "message_delivered_at",
     "wait_ends_at",
@@ -7179,6 +7327,187 @@ Who Access let through, and where signing out goes
 }
 ```
 
+### NoShowDispute
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "case_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "appointment_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "person": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Whose visit it was; null once they have been erased."
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Why the client says the charge is wrong, in their words; null once erased."
+    },
+    "raised_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "due": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When ops should have ruled: the Tasks board's allowance for a no-show, from raised_at."
+    },
+    "kept": {
+      "type": "integer",
+      "description": "In paise: what the charge kept of the visit's payment."
+    },
+    "credit_spent": {
+      "type": "boolean",
+      "description": "Whether the charge spent the credit the visit used."
+    },
+    "window_start": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "When the visit was booked for."
+    },
+    "checked_in_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "received_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "distance_m": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "radius_m": {
+      "type": "integer",
+      "description": "The check-in radius in force when he checked in."
+    },
+    "message_delivered_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "closed_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "case_id",
+    "appointment_id",
+    "person",
+    "reason",
+    "raised_at",
+    "due",
+    "kept",
+    "credit_spent",
+    "window_start",
+    "checked_in_at",
+    "received_at",
+    "distance_m",
+    "radius_m",
+    "message_delivered_at",
+    "closed_at"
+  ],
+  "additionalProperties": false,
+  "description": "A disputed charge, with the evidence its no-show was ruled on."
+}
+```
+
+### NoShowDisputeRuling
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "ruling": {
+      "type": "string",
+      "enum": [
+        "refunded",
+        "upheld"
+      ]
+    },
+    "reason": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 300,
+      "description": "Required either way, and kept on the dispute (src/policy/decision-reasons.ts)."
+    }
+  },
+  "required": [
+    "ruling",
+    "reason"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### Tasks
 
 ```json
@@ -7445,15 +7774,7 @@ Who Access let through, and where signing out goes
     },
     "charged": {
       "type": "integer",
-      "description": "In paise. Kept from the client on the day: \"Charges and no-shows\", less the no-shows, which carry no amount."
-    },
-    "no_shows_charged": {
-      "type": "integer",
-      "description": "How many no-shows ops ruled charged on the day. Counted and not added, because nothing records what one was charged (docs/open-points.md, item 60)."
-    },
-    "dispute": {
-      "type": "null",
-      "description": "The charge under dispute, with the note ops write on it. Nothing records a dispute and no client can raise one, so this is always null (docs/open-points.md, item 60)."
+      "description": "In paise. Kept from the client on the day: \"Charges and no-shows\", each late cancellation and charged no-show by what it kept."
     },
     "charges": {
       "type": "array",
@@ -7469,8 +7790,6 @@ Who Access let through, and where signing out goes
     "refunds_processing",
     "refunded",
     "charged",
-    "no_shows_charged",
-    "dispute",
     "charges"
   ],
   "additionalProperties": false,
@@ -7531,7 +7850,7 @@ Who Access let through, and where signing out goes
           "type": "null"
         }
       ],
-      "description": "Null on a no-show: ops record the ruling and nothing records an amount, because the charge itself is applied at P2-M5."
+      "description": "Null on a no-show charged before a charge recorded what it kept (migration 0059)."
     },
     "at": {
       "type": "string",

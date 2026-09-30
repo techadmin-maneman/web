@@ -303,3 +303,9 @@
   font-size: var(--fs-16);
   line-height: var(--lh-155);
 }
+
+/* The way to dispute a no-show's charge, beneath the ruling it disputes; no board draws it (ADR 0096). */
+.dispute {
+  align-self: flex-start;
+  margin-top: var(--sp-8);
+}

@@ -145,22 +145,28 @@ interface CreditRow extends VisitColumns {
   source_kind: "referral" | "appointment" | "ops" | "import";
   created_at: string;
   cancelled_late: number;
+  restored: number;
 }
 
 /**
  * The ledger's entries for the person, newest first, with the visit each was for. An entry that changed nothing,
- * a spent grant closed at its expiry, is left out. A cancel inside 24 hours is read from the visit's own change.
+ * a spent grant closed at its expiry, is left out. A cancel inside 24 hours is read from the visit's own change,
+ * and a credit given back from the ledger's own restore.
  */
 const CREDIT_QUERY = `SELECT l.id, l.kind, l.visits, l.source_kind, l.created_at,
     a.id AS appointment_id, a.window_start, a.type,
     EXISTS (SELECT 1 FROM visit_changes c
-      WHERE c.appointment_id = l.source_id AND c.kind = 'cancelled' AND c.notice = 'late') AS cancelled_late
+      WHERE c.appointment_id = l.source_id AND c.kind = 'cancelled' AND c.notice = 'late') AS cancelled_late,
+    EXISTS (SELECT 1 FROM credit_ledger x WHERE x.kind = 'restore' AND x.source_id = l.source_id) AS restored
   FROM credit_ledger l
   LEFT JOIN appointments a ON l.source_kind = 'appointment' AND a.id = l.source_id AND a.deleted_at IS NULL
   WHERE l.person_id = ?1 AND l.visits <> 0
   ORDER BY l.created_at DESC, l.rowid DESC`;
 
-/** What a ledger entry was, as the client reads it: a credit spent on a visit it did not buy is lost. */
+/**
+ * What a ledger entry was, as the client reads it: a credit spent on a visit it did not buy is lost, unless it came
+ * back, as a charge of nothing or a disputed charge refunded gives it.
+ */
 function creditEventOf(row: CreditRow, noShow: NoShowNote | null): CreditEvent {
   if (row.kind === "grant") return "added";
   if (row.kind === "restore") return "returned";
@@ -168,7 +174,7 @@ function creditEventOf(row: CreditRow, noShow: NoShowNote | null): CreditEvent {
   if (row.kind === "clawback") return "withdrawn";
   if (row.kind === "adjust") return "corrected";
   const lost = row.cancelled_late === 1 || noShow?.decision === "charged";
-  return lost ? "lost" : "used";
+  return lost && row.restored === 0 ? "lost" : "used";
 }
 
 /** Every change to the person's credits, newest first (LIFE-14): the app lists them among the payments. */

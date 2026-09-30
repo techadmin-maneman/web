@@ -58,7 +58,7 @@ Each is written up in `docs/verification.md` when it passes. The payment run is 
   5. Book again and pay: Checkout opens over the sheet and takes taps; fail once, then pay. `razorpay_events` holds `payment.failed`, `payment.authorized`, `payment.captured` and `order.paid`, each once; the hold is `booked`; FSM has the work order and its appointment; the receipt message arrives.
   6. Within about three hours the receipt opens in the app, and Books shows the payment (item 25).
   7. Move the fit more than 24 hours out: no payment, the same FSM appointment moved, the message arrives.
-  8. Have ops move it in FSM to under 24 hours away, then move it in the app: the ₹4,000 late fee is asked for and paid.
+  8. Move it in the app to tomorrow's first window, then move it again: the ₹4,000 late fee is asked for and paid. Had ops moved it there in FSM instead, the second move would be free, since a move by ops keeps the client's free change (ADR 0096).
   9. Complete the fit: within five minutes the invoice is raised and **sent**, the payment applied in Books, and the app shows the tax invoice. A draft instead is a finding (ruling 46 of ADR 0025).
   10. Book and pay a service visit more than 24 hours out, then cancel it: refunded in full, and the refund reaches Books within the hour.
   11. Book and pay one for tomorrow's first window, then cancel: the payment is kept, and the app says so.

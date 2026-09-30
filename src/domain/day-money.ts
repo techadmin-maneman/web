@@ -20,17 +20,11 @@ export interface DayFigures {
   /** In paise, processed by Razorpay on the day, which the board draws no figure of its own for. */
   readonly refunded: number;
   /**
-   * In paise, kept from the client on the day: "Charges and no-shows". A no-show
-   * is not in it, because nothing records what one was charged; how many were
-   * ruled charged is counted below instead.
+   * In paise, kept from the client on the day: "Charges and no-shows", the late
+   * cancellations and the no-shows ops charged, each by what it kept
+   * (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
    */
   readonly charged: number;
-  /**
-   * How many no-shows ops ruled charged on the day. Counted rather than added,
-   * so the figure above is never read as the whole of what was kept
-   * (docs/open-points.md, item 60).
-   */
-  readonly no_shows_charged: number;
 }
 
 export type ChargeKind = "late_cancellation" | "no_show";
@@ -41,11 +35,7 @@ export interface Charge {
   readonly kind: ChargeKind;
   /** Null for a visit FSM never matched to one of our people. */
   readonly person: { readonly id: string; readonly name: string } | null;
-  /**
-   * In paise, and null on a no-show: ops record the ruling and nothing records
-   * an amount, because the charge itself is applied at P2-M5
-   * (src/routes/ops-field.ts, docs/open-points.md, item 60).
-   */
+  /** In paise, what was kept; null on a no-show charged before a charge recorded what it kept. */
   readonly amount: number | null;
   /** When the client cancelled, or when ops ruled on the no-show. */
   readonly at: string;
@@ -74,14 +64,15 @@ const FIGURES = `SELECT
   (SELECT COALESCE(SUM(amount), 0) FROM refunds
      WHERE status = 'processed' AND processed_at >= ?1 AND processed_at < ?2) AS refunded,
   (SELECT COALESCE(SUM(kept_amount), 0) FROM visit_changes
-     WHERE notice = 'late' AND kept_amount > 0 AND created_at >= ?1 AND created_at < ?2) AS charged,
-  (SELECT COUNT(*) FROM no_show_cases
-     WHERE decision = 'charged' AND decided_at >= ?1 AND decided_at < ?2) AS no_shows_charged`;
+     WHERE notice = 'late' AND kept_amount > 0 AND created_at >= ?1 AND created_at < ?2)
+  + (SELECT COALESCE(SUM(kept_amount), 0) FROM no_show_cases
+     WHERE decision = 'charged' AND decided_at >= ?1 AND decided_at < ?2) AS charged`;
 
 /**
- * Both kinds of charge in one statement. A payment kept under the 24-hour rule
- * is a visit_changes row with what it kept (migration 0020); a no-show is a
- * case ops ruled on, which carries a decision and no amount.
+ * Both kinds of charge in one statement, each that kept money: a payment kept
+ * under the 24-hour rule is a visit_changes row with what it kept (migration
+ * 0020); a no-show is a case ops charged, with what the charge kept (migration
+ * 0059). One charged before that recorded nothing is listed with no amount.
  *
  * A person who has been erased is left out of the lines, as they are left out of
  * board D2's tasks: their record is gone.
@@ -94,13 +85,14 @@ const CHARGES = `SELECT * FROM (
    WHERE c.notice = 'late' AND c.kept_amount > 0 AND (pe.id IS NULL OR pe.erased_at IS NULL)
      AND c.created_at >= ?1 AND c.created_at < ?2
   UNION ALL
-  SELECT 'no_show', n.id, pe.id, pe.name, NULL, n.decided_at, a.window_start, NULL, t.name
+  SELECT 'no_show', n.id, pe.id, pe.name, n.kept_amount, n.decided_at, a.window_start, NULL, t.name
     FROM no_show_cases n
     JOIN appointments a ON a.id = n.appointment_id
     JOIN checkins ci ON ci.id = n.checkin_id
     LEFT JOIN people pe ON pe.id = a.person_id
     LEFT JOIN technicians t ON t.id = ci.technician_id
-   WHERE n.decision = 'charged' AND (pe.id IS NULL OR pe.erased_at IS NULL)
+   WHERE n.decision = 'charged' AND (n.kept_amount IS NULL OR n.kept_amount > 0)
+     AND (pe.id IS NULL OR pe.erased_at IS NULL)
      AND n.decided_at >= ?1 AND n.decided_at < ?2
 ) ORDER BY at LIMIT ?3`;
 
@@ -137,7 +129,6 @@ export async function dayMoney(db: D1Database, date: string, limit: number): Pro
     refunds_processing: figures?.refunds_processing ?? 0,
     refunded: figures?.refunded ?? 0,
     charged: figures?.charged ?? 0,
-    no_shows_charged: figures?.no_shows_charged ?? 0,
     charges: charges.results.map((row) => ({
       id: row.id,
       kind: row.kind,

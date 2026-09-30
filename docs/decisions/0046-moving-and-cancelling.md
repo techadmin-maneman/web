@@ -1,6 +1,6 @@
 # 0046. Moving and cancelling a visit
 
-- Status: accepted; the late fee kept, and a credit given back only to a grant that can take it, in ADR 0068
+- Status: accepted; the late fee kept, and a credit given back only to a grant that can take it, in ADR 0068; after ops move a visit, the notice counts from its time before the move, in [0096](0096-a-no-shows-charge-and-its-dispute.md)
 - Date: 2026-09-22
 
 ## Context
@@ -21,7 +21,7 @@ FSM, tried on the real org on 22 September 2026 (`docs/decisions/fsm-trial.md`):
 
 ## Decision
 
-**The notice** is counted from the start of the visit's window, not from its half-slot. More than 24 hours before, a change is free; after that it is late. The terms are worked out when the client asks for them, and again when a hold for a move is made.
+**The notice** is counted from the start of the visit's window, not from its half-slot. More than 24 hours before, a change is free; after that it is late. **Amended 29 September 2026** ([0096](0096-a-no-shows-charge-and-its-dispute.md)): after ops move a visit, it is counted from the window the visit had before they moved it, where that is later, as the owner ruled (`docs/open-points.md`, item 71). The terms are worked out when the client asks for them, and again when a hold for a move is made.
 
 **What each change costs** (`moveCost`, `cancelRefund`):
 

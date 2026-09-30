@@ -3,6 +3,10 @@
 import { describe, expect, it } from "vitest";
 import {
   canCloseAsNoShow,
+  chargedCredit,
+  chargedRefund,
+  DISPUTE_RULINGS,
+  isDisputable,
   NO_SHOW_CHARGES,
   NO_SHOW_DECISIONS,
   NO_SHOW_WAIT_MIN,
@@ -64,8 +68,28 @@ describe("no-show", () => {
 
   // Item 60 of docs/open-points.md: a no-show costs, to begin with, what a late cancellation of the same visit costs,
   // set apart from it so either can change alone.
-  it("charges a no-show, to begin with, what a late cancellation of the same visit costs", () => {
+  it(RULES[5], () => {
     expect(NO_SHOW_CHARGES).toEqual(LATE_CHANGE_CHARGES);
     expect(NO_SHOW_CHARGES).not.toBe(LATE_CHANGE_CHARGES);
+    // "first fit ₹4,000, replacement ₹3,000, a paid service visit kept, a credit lost"
+    expect(chargedRefund("first_fit", NO_SHOW_CHARGES.first_fit)).toBe("all_but_fee");
+    expect(chargedRefund("replacement", NO_SHOW_CHARGES.replacement)).toBe("all_but_fee");
+    expect(chargedRefund("service", NO_SHOW_CHARGES.service)).toBe("none");
+    expect(chargedCredit(NO_SHOW_CHARGES.service)).toBe("lost");
+    expect(chargedRefund("consultation", NO_SHOW_CHARGES.consultation)).toBe("all");
+  });
+
+  it("charges what ops set a no-show to cost, apart from a late change", () => {
+    expect(chargedRefund("service", "nothing")).toBe("all");
+    expect(chargedCredit("nothing")).toBe("restored");
+    expect(chargedRefund("first_fit", "visit")).toBe("none");
+  });
+
+  it(RULES[6], () => {
+    expect([...DISPUTE_RULINGS]).toEqual(["refunded", "upheld"]);
+    expect(isDisputable({ kept: 400000, creditSpent: false })).toBe(true);
+    expect(isDisputable({ kept: 0, creditSpent: true })).toBe(true);
+    // A charge that took nothing has nothing to give back.
+    expect(isDisputable({ kept: 0, creditSpent: false })).toBe(false);
   });
 });

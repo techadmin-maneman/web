@@ -9,6 +9,7 @@ import {
   LATE_CHANGE_CHARGES,
   moveCost,
   noticeAt,
+  noticeCountsFrom,
   RULES,
 } from "../../src/policy/moving-a-visit.ts";
 
@@ -52,6 +53,20 @@ describe("moving a visit", () => {
     for (const type of ["consultation", "first_fit", "service", "replacement"] as const) {
       expect(moveCost(type, "late", "ops")).toBe("free");
     }
+  });
+
+  it(RULES[7], () => {
+    const before = new Date("2026-09-24T06:30:00Z");
+    const movedSooner = new Date("2026-09-22T03:30:00Z");
+    expect(noticeCountsFrom(movedSooner, before)).toEqual(before);
+    expect(noticeAt(noticeCountsFrom(movedSooner, before), new Date("2026-09-22T00:00:00Z"))).toBe("free");
+    expect(noticeCountsFrom(movedSooner, null)).toEqual(movedSooner);
+  });
+
+  it("counts from the visit's own time where ops moved it later, so a move by ops never takes a free change away", () => {
+    const before = new Date("2026-09-22T03:30:00Z");
+    const movedLater = new Date("2026-09-24T06:30:00Z");
+    expect(noticeCountsFrom(movedLater, before)).toEqual(movedLater);
   });
 
   it("leaves a free consultation free, whenever it moves or is cancelled", () => {

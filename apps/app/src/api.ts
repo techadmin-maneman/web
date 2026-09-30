@@ -168,6 +168,9 @@ export const api = {
   /** The client's note on a visit to come, for the technician's card; the latest replaces any before it. */
   note: (visitId: string, note: string) =>
     client.post("/api/appointments/{id}/note", { path: { id: visitId }, body: { note } }),
+  /** The client's dispute of the no-show's charge on a visit, once a charge (ADR 0096). */
+  dispute: (visitId: string, reason: string) =>
+    client.post("/api/visits/{id}/dispute", { path: { id: visitId }, body: { reason } }),
 };
 
 /** A visit's tax invoice, as a PDF the browser opens itself. */

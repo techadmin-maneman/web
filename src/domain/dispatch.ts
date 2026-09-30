@@ -23,6 +23,7 @@ import type { VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaIso, indiaTime } from "../lib/india-time.ts";
 import {
   clientNotice,
+  keepsTheClientsNotice,
   moveRefusal,
   slotsFor,
   type ClientNotice,
@@ -30,6 +31,7 @@ import {
   type MoveRefusal,
 } from "../policy/dispatch.ts";
 import { paymentBadge, type PaymentBadge } from "../policy/job-visibility.ts";
+import { FREE_CHANGE_NOTICE_HOURS } from "../policy/moving-a-visit.ts";
 import { unitsFor } from "../policy/visit-length.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
@@ -91,6 +93,8 @@ export interface Block extends Visit {
   readonly starts_at: string;
   readonly window: BookingWindow;
   readonly status: AppointmentStatus;
+  /** The notice the visit was sold under, in hours: inside it, a change of the client's own costs them. */
+  readonly notice_hours: number;
   /** The latest move of this visit that its client has not heard of: ops call him (src/policy/dispatch.ts). */
   readonly untold: { readonly move_id: string; readonly starts_at: string } | null;
 }
@@ -177,6 +181,8 @@ const BOARD_JOBS = `
        JOIN people referrer ON referrer.id = code.person_id
      WHERE r.referred_person_id = a.person_id AND referrer.erased_at IS NULL) AS referred_by,
     EXISTS (SELECT 1 FROM credit_ledger l WHERE l.kind = 'redeem' AND l.source_id = a.id) AS on_credit,
+    (SELECT COALESCE(h.change_notice_hours, ?4) FROM slot_holds h
+     WHERE h.appointment_id = a.id AND h.state = 'booked' ORDER BY h.updated_at DESC LIMIT 1) AS sold_notice_hours,
     COALESCE((SELECT b.amount_ex_gst = 0 FROM price_book b
               WHERE b.item = a.type AND b.tier = COALESCE(a.tier, 'standard')
                 AND b.valid_from <= date(a.window_start, '+330 minutes')
@@ -193,8 +199,14 @@ const BOARD_JOBS = `
 /** The board's seven days from `from`. */
 const weekFrom = (from: string): string[] => Array.from({ length: BOARD_DAYS }, (_, index) => addDays(from, index));
 
-/** The board for seven days from `from`, optionally narrowed to one city. */
-export async function dispatchBoard(db: D1Database, options: { from: string; city: string | null }): Promise<Board> {
+/**
+ * The board for seven days from `from`, optionally narrowed to one city. `noticeHours` is the notice in force, which a
+ * visit no hold sold is changed under (src/domain/visit-changes.ts).
+ */
+export async function dispatchBoard(
+  db: D1Database,
+  options: { from: string; city: string | null; noticeHours?: number },
+): Promise<Board> {
   const dates = weekFrom(options.from);
   const last = dates[dates.length - 1] ?? options.from;
   const fromAt = indiaInstant(options.from, "00:00").toISOString();
@@ -204,7 +216,7 @@ export async function dispatchBoard(db: D1Database, options: { from: string; cit
     db
       .prepare("SELECT id, name, initials, zone FROM technicians WHERE active = 1 ORDER BY name")
       .all<{ id: string; name: string; initials: string; zone: string | null }>(),
-    db.prepare(BOARD_JOBS).bind(fromAt, toAt, options.city).all<BoardJobRow>(),
+    db.prepare(BOARD_JOBS).bind(fromAt, toAt, options.city, FREE_CHANGE_NOTICE_HOURS).all<BoardJobRow>(),
     db
       .prepare(
         `SELECT m.id, m.appointment_id, m.now_start FROM appointments a
@@ -226,7 +238,7 @@ export async function dispatchBoard(db: D1Database, options: { from: string; cit
       date,
       blocks: scheduled.results
         .filter((job) => job.technician_id === technician.id && indiaDate(new Date(job.window_start)) === date)
-        .map((job) => blockOf(job, untoldOf(job.id))),
+        .map((job) => blockOf(job, untoldOf(job.id), options.noticeHours ?? FREE_CHANGE_NOTICE_HOURS)),
     }));
     return {
       technician_id: technician.id,
@@ -280,6 +292,8 @@ interface BoardJobRow {
   referred_by: string | null;
   on_credit: number;
   free: number;
+  /** Null where no hold sold the visit; the committed notice where one did and kept none. */
+  sold_notice_hours: number | null;
 }
 
 function visitOf(job: BoardJobRow): Visit {
@@ -308,13 +322,14 @@ function clientOf(job: BoardJobRow): BoardClient | null {
   };
 }
 
-function blockOf(job: BoardJobRow, untold: Block["untold"]): Block {
+function blockOf(job: BoardJobRow, untold: Block["untold"], noticeInForce: number): Block {
   const start = new Date(job.window_start);
   return {
     ...visitOf(job),
     starts_at: start.toISOString(),
     window: windowAt(indiaTime(start)),
     status: job.status,
+    notice_hours: job.sold_notice_hours ?? noticeInForce,
     untold,
   };
 }
@@ -452,6 +467,7 @@ interface LiveJob {
   status: AppointmentStatus;
   window_start: string;
   window_end: string | null;
+  start_before_move: string | null;
   technician_id: string | null;
   service_minutes: number | null;
 }
@@ -460,8 +476,8 @@ interface LiveJob {
 function liveJob(db: D1Database, appointmentId: string): Promise<LiveJob | null> {
   return db
     .prepare(
-      `SELECT a.id, a.fsm_id, a.person_id, a.type, a.status, a.window_start, a.window_end, a.technician_id,
-         s.minutes AS service_minutes
+      `SELECT a.id, a.fsm_id, a.person_id, a.type, a.status, a.window_start, a.window_end, a.start_before_move,
+         a.technician_id, s.minutes AS service_minutes
        FROM appointments a LEFT JOIN services s ON s.kind = a.type AND s.tier = COALESCE(a.tier, 'standard')
        WHERE a.id = ?1 AND a.deleted_at IS NULL AND a.status IN ${LIVE} AND a.type IS NOT NULL
          AND a.window_start IS NOT NULL`,
@@ -567,7 +583,8 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
   await db.batch([
     db
       .prepare(
-        `UPDATE appointments SET technician_id = ?2, window_start = ?3, window_end = ?4, synced_at = ?5
+        `UPDATE appointments SET technician_id = ?2, window_start = ?3, window_end = ?4, synced_at = ?5,
+           start_before_move = ?6
          WHERE id = ?1`,
       )
       .bind(
@@ -576,6 +593,7 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
         nowStart.toISOString(),
         (times?.end ?? new Date(nowStart.getTime() + minutes * MINUTE_MS)).toISOString(),
         at,
+        times === null ? job.start_before_move : startBeforeMoving(job, input.reason),
       ),
     // The mirror now holds the new time, so the claim on it goes in the same batch.
     releasingClaims(db, moveId),
@@ -587,6 +605,15 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
   ]);
   if (message !== null) await deps.notify?.(message.id);
   return { kind: "moved", moveId, clientNotice: notice };
+}
+
+/**
+ * The time the client's notice counts from once this move changes the job's time: the time they last chose, which
+ * a move ops make keeps, and none once the client asked for this one (src/policy/dispatch.ts).
+ */
+function startBeforeMoving(job: LiveJob, reason: MoveReason): string | null {
+  if (!keepsTheClientsNotice(reason)) return null;
+  return job.start_before_move ?? job.window_start;
 }
 
 /** What differs between the job now and the board the move was made from. */

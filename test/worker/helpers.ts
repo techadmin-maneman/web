@@ -285,6 +285,26 @@ export function request(app: App, path: string, init?: RequestInit, bindings: Pa
   return Promise.resolve(app.request(`https://maneman.test${path}`, init, { ...env, ...bindings }));
 }
 
+/**
+ * The database, failing every statement prepared after its first batch has committed, as a connection D1 loses
+ * between two calls does: what a route does once its change is written can be seen to fail loudly, or not at all.
+ */
+export function failingAfterTheFirstBatch(db: D1Database): D1Database {
+  let committed = false;
+  const failing: Pick<D1Database, "prepare" | "batch"> = {
+    prepare: (sql) => {
+      if (committed) throw new Error("D1_ERROR: Network connection lost.");
+      return db.prepare(sql);
+    },
+    batch: async <T = unknown>(statements: D1PreparedStatement[]) => {
+      const results = await db.batch<T>(statements);
+      committed = true;
+      return results;
+    },
+  };
+  return failing as D1Database;
+}
+
 /** A queue binding that keeps what is sent, instead of delivering it. */
 export function fakeQueue(): Queue & { sent: unknown[] } {
   const sent: unknown[] = [];

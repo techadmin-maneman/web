@@ -5,12 +5,10 @@
 // Razorpay's webhook already wrote, so this route cannot make the books say
 // something the payments do not.
 //
-// Two of the board's three figures it can answer whole. The third, "Charges and
-// no-shows", it cannot: a no-show is ruled on and never priced, so what was
-// kept is added and the no-shows are counted beside it rather than being given
-// an amount nothing recorded. Nothing records a dispute either, and no client
-// can raise one, so `dispute` is always null: the board's Refund and Uphold
-// rule on a record that is still to be built (docs/open-points.md, item 60).
+// The third figure, "Charges and no-shows", adds what each late cancellation and
+// each charged no-show kept, which the charge records as ops rule
+// (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md). The board's
+// disputed charge is GET /api/no-shows/disputes, since a dispute belongs to no day.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
@@ -36,8 +34,7 @@ const ChargeSchema = z
       .union([z.object({ id: z.uuid(), name: z.string() }).strict(), z.null()])
       .openapi({ description: "Null for a visit FSM never matched to one of our people." }),
     amount: z.union([paise("What was kept."), z.null()]).openapi({
-      description:
-        "Null on a no-show: ops record the ruling and nothing records an amount, because the charge itself is applied at P2-M5.",
+      description: "Null on a no-show charged before a charge recorded what it kept (migration 0059).",
     }),
     at: z.iso.datetime().openapi({ description: "When the client cancelled, or when ops ruled on the no-show." }),
     visit_started_at: z.union([z.iso.datetime(), z.null()]).openapi({ description: "When the visit was to start." }),
@@ -58,16 +55,8 @@ const DayMoneySchema = z
     refunds_processing: paise('Asked for on the day and not back with the client yet: "Refunds processing".'),
     refunded: paise("Processed by Razorpay on the day, which the board draws no figure of its own for."),
     charged: paise(
-      'Kept from the client on the day: "Charges and no-shows", less the no-shows, which carry no amount.',
+      'Kept from the client on the day: "Charges and no-shows", each late cancellation and charged no-show by what it kept.',
     ),
-    no_shows_charged: z.number().int().openapi({
-      description:
-        "How many no-shows ops ruled charged on the day. Counted and not added, because nothing records what one was charged (docs/open-points.md, item 60).",
-    }),
-    dispute: z.null().openapi({
-      description:
-        "The charge under dispute, with the note ops write on it. Nothing records a dispute and no client can raise one, so this is always null (docs/open-points.md, item 60).",
-    }),
     charges: z.array(ChargeSchema).openapi({ description: "No-shows and late cancellations, the earliest first." }),
   })
   .strict()
@@ -93,6 +82,6 @@ export function registerOpsPayments(app: App): void {
   app.openapi(dayRoute, async (c) => {
     const { date } = c.req.valid("query");
     const money = await dayMoney(c.env.DB, date ?? indiaDate(c.var.deps.now()), LIMIT);
-    return c.json({ ...money, dispute: null }, 200);
+    return c.json(money, 200);
   });
 }
