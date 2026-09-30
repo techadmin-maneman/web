@@ -12,7 +12,7 @@ import type { App } from "../../src/http/context.ts";
 import { decideNoShow, refundNoShow } from "../../src/domain/no-shows.ts";
 import { NO_VISITS_CONSENT } from "../../src/domain/visit-messages.ts";
 import { FREE_CHANGE_NOTICE_HOURS, LATE_CHANGE_CHARGES } from "../../src/policy/moving-a-visit.ts";
-import { NO_SHOW_CHARGES, WAIVER_GIVES_BACK } from "../../src/policy/no-show.ts";
+import { NO_SHOW_CHARGES, WAIVER_GIVES_BACK, type Waiver } from "../../src/policy/no-show.ts";
 import { createStubPayments } from "../../src/providers/payments.ts";
 import { appFor, captureLogs, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
 
@@ -558,5 +558,70 @@ describe("what charging a no-show costs the client", () => {
     const both = await Promise.all([decideNoShow(env.DB, ruling), decideNoShow(env.DB, ruling)]);
 
     expect(both.filter((ruled) => ruled?.refund !== null && ruled !== null)).toHaveLength(1);
+  });
+
+  // The ruling that loses writes nothing at all: not the credit it would give back, not the client's message, not
+  // its audit entry. Before the ruling's ID guarded them, all three went in beside the ruling that stood.
+  describe("when a charge and a waiver meet", () => {
+    const ruling = (decision: "charged" | "waived", waiver: Waiver) => ({
+      caseId: CASE,
+      decision,
+      reason: "Nobody came to the door",
+      actor: "ops@localhost",
+      audit: {
+        surface: "ops" as const,
+        actor: { kind: "staff" as const, id: "ops@localhost" },
+        action: "no_show.decide" as const,
+        subject: { kind: "no_show_case", id: CASE },
+        requestId: "request-1",
+        detail: { decision },
+      },
+      now: NOW,
+      terms: COMMITTED_TERMS,
+      waiver,
+    });
+
+    /** What the race left: the ruling that stands, and what went in beside it. */
+    async function afterTheRace() {
+      const count = async (sql: string) => (await env.DB.prepare(sql).first<{ n: number }>())?.n;
+      return {
+        stands: (await env.DB.prepare("SELECT decision FROM no_show_cases").first<{ decision: string }>())?.decision,
+        restores: await restores(),
+        messages: await count("SELECT COUNT(*) AS n FROM outbound_messages WHERE kind = 'no_show_decided'"),
+        audited: (await env.DB.prepare("SELECT detail FROM audit_log WHERE action = 'no_show.decide'").all()).results,
+      };
+    }
+
+    it("gives the credit back only if the charge of nothing stands, against a waiver that keeps it", async () => {
+      await onCredit();
+      await soldWith("nothing");
+
+      const both = await Promise.all([
+        decideNoShow(env.DB, ruling("waived", { payment: "kept", credit: "spent" })),
+        decideNoShow(env.DB, ruling("charged", WAIVER_GIVES_BACK)),
+      ]);
+
+      expect(both.filter((ruled) => ruled !== null)).toHaveLength(1);
+      const { stands, restores: restored, messages, audited } = await afterTheRace();
+      expect(restored).toBe(stands === "charged" ? 1 : 0);
+      expect(messages).toBe(1);
+      expect(audited).toEqual([{ detail: JSON.stringify({ decision: stands }) }]);
+    });
+
+    it("gives the credit back only if the waiver stands, against a charge that spends it", async () => {
+      await onCredit();
+      await soldWith("visit");
+
+      const both = await Promise.all([
+        decideNoShow(env.DB, ruling("charged", WAIVER_GIVES_BACK)),
+        decideNoShow(env.DB, ruling("waived", WAIVER_GIVES_BACK)),
+      ]);
+
+      expect(both.filter((ruled) => ruled !== null)).toHaveLength(1);
+      const { stands, restores: restored, messages, audited } = await afterTheRace();
+      expect(restored).toBe(stands === "waived" ? 1 : 0);
+      expect(messages).toBe(1);
+      expect(audited).toEqual([{ detail: JSON.stringify({ decision: stands }) }]);
+    });
   });
 });

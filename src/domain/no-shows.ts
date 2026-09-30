@@ -34,11 +34,11 @@ import {
 } from "../policy/no-show.ts";
 import type { PaymentsProvider } from "../providers/payments.ts";
 import type { AlertOnce } from "./alerts.ts";
-import { auditStatement, type AuditEntry } from "./audit.ts";
+import { auditStatementIfRuled, type AuditEntry, type RulingClaim } from "./audit.ts";
 import type { LatestArrival } from "./check-ins.ts";
 import type { OpsInputs } from "./ops-settings.ts";
 import { refundOf, termsInForce, termsOfVisit, visitPayment } from "./visit-changes.ts";
-import { NO_VISITS_CONSENT, visitMessage } from "./visit-messages.ts";
+import { NO_VISITS_CONSENT, rulingMessage } from "./visit-messages.ts";
 import { minutesBetween } from "../lib/durations.ts";
 
 /**
@@ -387,10 +387,11 @@ async function waiverOf(db: D1Database, appointmentId: string, waiver: Waiver) {
 }
 
 /**
- * Ops charge or waive the visit, with their reason. Ruled once: a second ruling on the same case changes nothing.
- * In the one batch: the ruling, with what a charge cost or a waiver gave back; its audit entry (src/domain/audit.ts);
- * the client's message about it; and the credit the visit used, where the ruling returns it. The reason stays with
- * the ruling and reaches no message. What goes back of the payment is refunded after the batch.
+ * Ops charge or waive the visit, with their reason. Ruled once: a second ruling on the same case changes nothing,
+ * and writes nothing beside it (RulingClaim, src/domain/audit.ts). In the one batch: the ruling, with what a charge
+ * cost or a waiver gave back; its audit entry; the client's message about it; and the credit the visit used, where
+ * the ruling returns it. The reason stays with the ruling and reaches no message. What goes back of the payment is
+ * refunded after the batch.
  */
 export async function decideNoShow(
   db: D1Database,
@@ -417,15 +418,15 @@ export async function decideNoShow(
     .first<OpenCase>();
   if (open === null) return null;
   const at = input.now.toISOString();
+  const ruled: RulingClaim = { table: "no_show_cases", id: input.caseId, rulingId: crypto.randomUUID() };
   const message =
     open.person_id === null
       ? null
-      : visitMessage(db, {
-          personId: open.person_id,
-          appointmentId: open.appointment_id,
-          kind: "no_show_decided",
-          now: input.now,
-        });
+      : rulingMessage(
+          db,
+          { personId: open.person_id, appointmentId: open.appointment_id, kind: "no_show_decided", now: input.now },
+          ruled,
+        );
   const charged = input.decision === "charged" ? await chargeOf(db, open, input.terms) : null;
   const waiver = input.decision === "waived" ? input.waiver : null;
   const givenBack = charged ?? (await waiverOf(db, open.appointment_id, input.waiver));
@@ -433,7 +434,7 @@ export async function decideNoShow(
     db
       .prepare(
         `UPDATE no_show_cases SET decision = ?2, decided_by = ?3, decided_at = ?4, decision_reason = ?5,
-           waiver_payment = ?6, waiver_credit = ?7, charge = ?8, kept_amount = ?9, refund_amount = ?10
+           waiver_payment = ?6, waiver_credit = ?7, charge = ?8, kept_amount = ?9, refund_amount = ?10, ruling_id = ?11
          WHERE id = ?1 AND decision = 'undecided'`,
       )
       .bind(
@@ -447,12 +448,13 @@ export async function decideNoShow(
         charged?.charge ?? null,
         charged?.kept ?? null,
         charged?.refund ?? null,
+        ruled.rulingId,
       ),
-    auditStatement(db, input.audit, input.now),
+    auditStatementIfRuled(db, input.audit, input.now, ruled),
     ...(message === null ? [] : [message.statement]),
-    ...(givenBack.creditBack ? [creditBack(db, open.appointment_id, input.now)] : []),
+    ...(givenBack.creditBack ? [creditBack(db, open.appointment_id, input.now, ruled)] : []),
   ]);
-  // Another member of staff ruled first: their ruling stands, and nothing more goes back.
+  // Another member of staff ruled first: their ruling stands, and nothing of this one was written.
   if (ruling?.meta.changes !== 1) return null;
   return {
     messageId: message?.id ?? null,
@@ -469,10 +471,11 @@ export async function decideNoShow(
 }
 
 /**
- * The credit a visit used, back in its grant: once (the ledger's one-use index), and only to a grant that can still
- * take it, neither clawed back nor expired, as a free cancel's is (src/policy/moving-a-visit.ts).
+ * The credit a visit used, back in its grant, for the ruling this request made: once (the ledger's one-use index),
+ * and only to a grant that can still take it, neither clawed back nor expired, as a free cancel's is
+ * (src/policy/moving-a-visit.ts).
  */
-export function creditBack(db: D1Database, appointmentId: string, now: Date): D1PreparedStatement {
+export function creditBack(db: D1Database, appointmentId: string, now: Date, ruled: RulingClaim): D1PreparedStatement {
   return db
     .prepare(
       `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
@@ -481,9 +484,10 @@ export function creditBack(db: D1Database, appointmentId: string, now: Date): D1
        WHERE r.kind = 'redeem' AND r.source_id = ?2
          AND NOT EXISTS (SELECT 1 FROM credit_ledger c WHERE c.grant_id = r.grant_id AND c.kind = 'clawback')
          AND (g.expires_at IS NULL OR g.expires_at > ?3)
+         AND EXISTS (SELECT 1 FROM ${ruled.table} WHERE id = ?4 AND ruling_id = ?5)
        ON CONFLICT DO NOTHING`,
     )
-    .bind(crypto.randomUUID(), appointmentId, now.toISOString());
+    .bind(crypto.randomUUID(), appointmentId, now.toISOString(), ruled.id, ruled.rulingId);
 }
 
 /**

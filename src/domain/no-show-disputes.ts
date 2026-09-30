@@ -8,9 +8,9 @@
 
 import { chargedCredit, isDisputable, type DisputeRuling } from "../policy/no-show.ts";
 import type { Charge } from "../policy/moving-a-visit.ts";
-import { auditStatement, auditStatementIfWritten, type AuditEntry } from "./audit.ts";
+import { auditStatementIfRuled, auditStatementIfWritten, type AuditEntry, type RulingClaim } from "./audit.ts";
 import { CHARGE_TAKEN, creditBack, type NoShowRefund } from "./no-shows.ts";
-import { visitMessage } from "./visit-messages.ts";
+import { rulingMessage } from "./visit-messages.ts";
 
 interface ChargedCase {
   id: string;
@@ -166,9 +166,10 @@ interface RulableDispute {
 }
 
 /**
- * Ops refund or uphold a disputed charge, with their reason, which stays on the dispute. Ruled once. In the one
- * batch: the ruling, its audit entry, the client's message, and for a refund the credit the charge spent, back in
- * its grant as a waiver's is. What the charge kept of the payment is refunded after the batch.
+ * Ops refund or uphold a disputed charge, with their reason, which stays on the dispute. Ruled once: a second
+ * ruling writes nothing beside it (RulingClaim, src/domain/audit.ts). In the one batch: the ruling, its audit entry,
+ * the client's message, and for a refund the credit the charge spent, back in its grant as a waiver's is. What the
+ * charge kept of the payment is refunded after the batch.
  */
 export async function ruleOnDispute(
   db: D1Database,
@@ -192,28 +193,33 @@ export async function ruleOnDispute(
     .first<RulableDispute>();
   if (open === null) return null;
   const refunded = input.ruling === "refunded";
+  const ruled: RulingClaim = { table: "no_show_disputes", id: input.disputeId, rulingId: crypto.randomUUID() };
   const message =
     open.person_id === null
       ? null
-      : visitMessage(db, {
-          personId: open.person_id,
-          appointmentId: open.appointment_id,
-          kind: "no_show_dispute_ruled",
-          now: input.now,
-        });
+      : rulingMessage(
+          db,
+          {
+            personId: open.person_id,
+            appointmentId: open.appointment_id,
+            kind: "no_show_dispute_ruled",
+            now: input.now,
+          },
+          ruled,
+        );
   const creditWasSpent = chargedCredit(open.charge) === "lost";
   const [ruling] = await db.batch([
     db
       .prepare(
-        `UPDATE no_show_disputes SET ruling = ?2, ruled_by = ?3, ruled_at = ?4, ruling_reason = ?5
+        `UPDATE no_show_disputes SET ruling = ?2, ruled_by = ?3, ruled_at = ?4, ruling_reason = ?5, ruling_id = ?6
          WHERE id = ?1 AND ruling IS NULL`,
       )
-      .bind(input.disputeId, input.ruling, input.actor, input.now.toISOString(), input.reason),
-    auditStatement(db, input.audit, input.now),
+      .bind(input.disputeId, input.ruling, input.actor, input.now.toISOString(), input.reason, ruled.rulingId),
+    auditStatementIfRuled(db, input.audit, input.now, ruled),
     ...(message === null ? [] : [message.statement]),
-    ...(refunded && creditWasSpent ? [creditBack(db, open.appointment_id, input.now)] : []),
+    ...(refunded && creditWasSpent ? [creditBack(db, open.appointment_id, input.now, ruled)] : []),
   ]);
-  // Another member of staff ruled first: their ruling stands, and nothing more goes back.
+  // Another member of staff ruled first: their ruling stands, and nothing of this one was written.
   if (ruling?.meta.changes !== 1) return null;
   return {
     messageId: message?.id ?? null,

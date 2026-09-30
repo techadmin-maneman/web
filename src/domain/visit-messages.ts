@@ -14,6 +14,7 @@ import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.t
 import { DAY_BEFORE_REMINDER_HOUR } from "../policy/job-visibility.ts";
 import type { Charge } from "../policy/moving-a-visit.ts";
 import { WAIVER_GIVES_BACK, type DisputeRuling, type NoShowDecision, type Waiver } from "../policy/no-show.ts";
+import type { RulingClaim } from "./audit.ts";
 import type { AppointmentStatus } from "./fsm-mirror.ts";
 import { consentGiven, type MessageKind } from "./messages.ts";
 import { windowAt } from "../policy/windows.ts";
@@ -118,6 +119,26 @@ export function visitMessage(
        VALUES (?1, ?2, ?3, ?4, 'appointment', ?5, 'queued', ?2)`,
     )
     .bind(id, at, input.personId, input.kind, input.appointmentId);
+  return { id, statement };
+}
+
+/**
+ * A message about a ruling made once, to go in the ruling's batch: written only if it is this request's ruling, so
+ * a ruling that lost a race to another member of staff's tells the client nothing (src/domain/audit.ts).
+ */
+export function rulingMessage(
+  db: D1Database,
+  input: { personId: string; appointmentId: string; kind: "no_show_decided" | "no_show_dispute_ruled"; now: Date },
+  ruled: RulingClaim,
+): { id: string; statement: D1PreparedStatement } {
+  const id = crypto.randomUUID();
+  const statement = db
+    .prepare(
+      `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at)
+       SELECT ?1, ?2, ?3, ?4, 'appointment', ?5, 'queued', ?2
+       WHERE EXISTS (SELECT 1 FROM ${ruled.table} WHERE id = ?6 AND ruling_id = ?7)`,
+    )
+    .bind(id, input.now.toISOString(), input.personId, input.kind, input.appointmentId, ruled.id, ruled.rulingId);
   return { id, statement };
 }
 

@@ -12,6 +12,11 @@ ALTER TABLE no_show_cases ADD COLUMN charge TEXT CHECK (charge IN ('nothing', 'l
 ALTER TABLE no_show_cases ADD COLUMN kept_amount INTEGER;
 ALTER TABLE no_show_cases ADD COLUMN refund_amount INTEGER;
 
+-- The ID of the request that ruled, written with the ruling. What goes in the ruling's batch beside it (its audit
+-- entry, the client's message, a credit given back) is written only where the case carries that ID, so a ruling
+-- that loses a race to another member of staff's writes nothing. NULL while undecided, and on a case ruled before.
+ALTER TABLE no_show_cases ADD COLUMN ruling_id TEXT;
+
 -- A client's dispute of a no-show's charge, from the app, and ops' ruling on it: refunded or upheld, with ops'
 -- reason. One a charge: a case is ruled once, and its charge disputed once.
 CREATE TABLE no_show_disputes (
@@ -24,6 +29,8 @@ CREATE TABLE no_show_disputes (
   ruling TEXT CHECK (ruling IN ('refunded', 'upheld')),
   ruled_by TEXT,
   ruled_at TEXT,
+  -- The ID of the request that ruled, which guards what its batch writes beside the ruling, as on no_show_cases.
+  ruling_id TEXT,
   -- Ops' own words about the client, which reach no message; NULL once the client is erased.
   ruling_reason TEXT
 );

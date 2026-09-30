@@ -146,6 +146,33 @@ export function auditStatementIfWritten(
     .bind(...valuesOf(entry, now), written.id);
 }
 
+/**
+ * A ruling made once, as this request made it: the row it ruled on, and the ruling ID it wrote there with the
+ * ruling. What the ruling's batch writes beside it is written only where the row still carries that ID, so a ruling
+ * that lost a race to another member of staff's writes nothing (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
+ */
+export interface RulingClaim {
+  readonly table: "no_show_cases" | "no_show_disputes";
+  readonly id: string;
+  readonly rulingId: string;
+}
+
+/** The entry for a ruling made once earlier in the same batch: written only if it is this request's ruling. */
+export function auditStatementIfRuled(
+  db: D1Database,
+  entry: AuditEntry,
+  now: Date,
+  ruled: RulingClaim,
+): D1PreparedStatement {
+  return db
+    .prepare(
+      `INSERT INTO audit_log (${COLUMNS})
+       SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9
+       WHERE EXISTS (SELECT 1 FROM ${ruled.table} WHERE id = ?10 AND ruling_id = ?11)`,
+    )
+    .bind(...valuesOf(entry, now), ruled.id, ruled.rulingId);
+}
+
 export async function recordAudit(db: D1Database, entry: AuditEntry, now: Date): Promise<void> {
   await auditStatement(db, entry, now).run();
 }

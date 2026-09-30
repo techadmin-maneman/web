@@ -8,7 +8,9 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/http/context.ts";
+import { ruleOnDispute } from "../../src/domain/no-show-disputes.ts";
 import { openSession } from "../../src/domain/sessions.ts";
+import type { DisputeRuling } from "../../src/policy/no-show.ts";
 import { createStubPayments } from "../../src/providers/payments.ts";
 import {
   appFor,
@@ -116,6 +118,21 @@ function rule(ops: App, id: string, body: unknown, queue = fakeQueue()) {
   );
 }
 
+/** The visit paid for with a credit instead, which the charge spent: it kept no money. */
+const onCredit = () =>
+  env.DB.batch([
+    env.DB.prepare("DELETE FROM payments"),
+    env.DB.prepare("UPDATE no_show_cases SET charge = 'visit', kept_amount = 0, refund_amount = 0"),
+    env.DB.prepare(
+      `INSERT INTO credit_ledger (id, person_id, kind, visits, source_kind, source_id, expires_at, created_at)
+       VALUES ('grant-1', ?1, 'grant', 3, 'referral', 'referral-1', '2027-09-21T06:30:00.000Z', ?2)`,
+    ).bind(PERSON, NOW.toISOString()),
+    env.DB.prepare(
+      `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
+       VALUES ('redeem-1', ?1, 'redeem', -1, 'grant-1', 'appointment', ?2, ?3)`,
+    ).bind(PERSON, VISIT, NOW.toISOString()),
+  ]);
+
 async function raised(): Promise<string> {
   expect((await dispute("I was home all morning; the bell is broken")).status).toBe(201);
   const row = await env.DB.prepare("SELECT id FROM no_show_disputes").first<{ id: string }>();
@@ -167,18 +184,7 @@ describe("POST /api/visits/:id/dispute", () => {
   });
 
   it("offers it on a charge that spent the credit the visit used", async () => {
-    await env.DB.batch([
-      env.DB.prepare("DELETE FROM payments"),
-      env.DB.prepare("UPDATE no_show_cases SET charge = 'visit', kept_amount = 0, refund_amount = 0"),
-      env.DB.prepare(
-        `INSERT INTO credit_ledger (id, person_id, kind, visits, source_kind, source_id, expires_at, created_at)
-         VALUES ('grant-1', ?1, 'grant', 3, 'referral', 'referral-1', '2027-09-21T06:30:00.000Z', ?2)`,
-      ).bind(PERSON, NOW.toISOString()),
-      env.DB.prepare(
-        `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
-         VALUES ('redeem-1', ?1, 'redeem', -1, 'grant-1', 'appointment', ?2, ?3)`,
-      ).bind(PERSON, VISIT, NOW.toISOString()),
-    ]);
+    await onCredit();
     expect(await noShowNote()).toMatchObject({ charge: { kept: 0, credit_spent: true }, disputable: true });
     expect((await dispute("I was home")).status).toBe(201);
   });
@@ -261,18 +267,7 @@ describe("POST /api/no-shows/disputes/:id/ruling", () => {
   });
 
   it("gives back the credit a charge spent, as a waiver does", async () => {
-    await env.DB.batch([
-      env.DB.prepare("DELETE FROM payments"),
-      env.DB.prepare("UPDATE no_show_cases SET charge = 'visit', kept_amount = 0, refund_amount = 0"),
-      env.DB.prepare(
-        `INSERT INTO credit_ledger (id, person_id, kind, visits, source_kind, source_id, expires_at, created_at)
-         VALUES ('grant-1', ?1, 'grant', 3, 'referral', 'referral-1', '2027-09-21T06:30:00.000Z', ?2)`,
-      ).bind(PERSON, NOW.toISOString()),
-      env.DB.prepare(
-        `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
-         VALUES ('redeem-1', ?1, 'redeem', -1, 'grant-1', 'appointment', ?2, ?3)`,
-      ).bind(PERSON, VISIT, NOW.toISOString()),
-    ]);
+    await onCredit();
     const id = await raised();
     const { app, payments } = opsApp();
 
@@ -294,6 +289,44 @@ describe("POST /api/no-shows/disputes/:id/ruling", () => {
       kind: "no_show_dispute_ruled",
     });
     expect(await noShowNote()).toMatchObject({ dispute: "upheld" });
+  });
+
+  // The ruling that loses writes nothing at all: not the credit a refund gives back, not the client's message, not
+  // its audit entry. Before the ruling's ID guarded them, all three went in beside the ruling that stood.
+  it.each([
+    ["upheld", "refunded"],
+    ["refunded", "upheld"],
+  ] as const)("gives back, tells and audits only the ruling that stands, when %s meets %s", async (first, second) => {
+    await onCredit();
+    const id = await raised();
+    const ruling = (named: DisputeRuling) =>
+      ruleOnDispute(env.DB, {
+        disputeId: id,
+        ruling: named,
+        reason: "The bell was broken",
+        actor: "ops@localhost",
+        audit: {
+          surface: "ops",
+          actor: { kind: "staff", id: "ops@localhost" },
+          action: "no_show.dispute_rule",
+          subject: { kind: "no_show_dispute", id },
+          requestId: "request-1",
+          detail: { ruling: named },
+        },
+        now: NOW,
+      });
+
+    const both = await Promise.all([ruling(first), ruling(second)]);
+
+    expect(both.filter((ruled) => ruled !== null)).toHaveLength(1);
+    const stands = (await env.DB.prepare("SELECT ruling FROM no_show_disputes").first<{ ruling: string }>())?.ruling;
+    const count = async (sql: string) => (await env.DB.prepare(sql).first<{ n: number }>())?.n;
+    expect(await count("SELECT COUNT(*) AS n FROM credit_ledger WHERE kind = 'restore'")).toBe(
+      stands === "refunded" ? 1 : 0,
+    );
+    expect(await count("SELECT COUNT(*) AS n FROM outbound_messages WHERE kind = 'no_show_dispute_ruled'")).toBe(1);
+    const audited = await env.DB.prepare("SELECT detail FROM audit_log WHERE action = 'no_show.dispute_rule'").all();
+    expect(audited.results).toEqual([{ detail: JSON.stringify({ ruling: stands }) }]);
   });
 
   it("rules once: a second ruling finds nothing to rule on", async () => {

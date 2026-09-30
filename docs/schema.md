@@ -709,6 +709,7 @@ Made by `0026_field_operations.sql`; changed by `0042_no_show_reasons.sql`, `004
 | `charge` | TEXT | yes |  |  |
 | `kept_amount` | INTEGER | yes |  |  |
 | `refund_amount` | INTEGER | yes |  |  |
+| `ruling_id` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -732,6 +733,7 @@ Made by `0059_no_show_charges_and_disputes.sql`.
 | `ruling` | TEXT | yes |  |  |
 | `ruled_by` | TEXT | yes |  |  |
 | `ruled_at` | TEXT | yes |  |  |
+| `ruling_id` | TEXT | yes |  |  |
 | `ruling_reason` | TEXT | yes |  |  |
 
 Indexes:
