@@ -103,7 +103,10 @@ const FIRST_FIT_EPISODE = "s.consulted_start";
  * A consultation asked for is read only while the client has no consultation
  * booked or done, `booked`, which the database keeps as their consultations are
  * written (migration 0056): a look reads the requests still waiting, not every
- * request a lead ever made.
+ * request a lead ever made. So with the rest (migration 0060): a move ops made is
+ * read only while its visit is to come and nobody has recorded a call about it, a
+ * piece only while no replacement is booked for it, `replacement_booked`, and a
+ * grant only while it is held.
  */
 const OUTSTANDING = [
   withOwners(`
@@ -111,7 +114,7 @@ const OUTSTANDING = [
          m.now_start AS detail, m.created_at AS since, NULL AS due_by, '' AS episode
     FROM appointments a JOIN dispatch_moves m ON m.appointment_id = a.id JOIN people pe ON pe.id = a.person_id
    WHERE a.deleted_at IS NULL AND a.status IN ('scheduled', 'dispatched') AND a.window_start >= ?1
-     AND pe.erased_at IS NULL AND ${UNTOLD_MOVE}
+     AND m.now_start >= ?1 AND pe.erased_at IS NULL AND ${UNTOLD_MOVE}
   UNION ALL
   SELECT 'consultation_request', r.id, r.person_id, pe.name,
          r.requested_date || ' ' || r.requested_window
@@ -123,12 +126,8 @@ const OUTSTANDING = [
   UNION ALL
   SELECT 'replacement_order', p.id, p.person_id, pe.name, p.piece_code, p.replacement_due_at, NULL, ''
     FROM pieces p JOIN people pe ON pe.id = p.person_id
-   WHERE p.deleted_at IS NULL AND p.failed_at IS NULL AND pe.erased_at IS NULL
+   WHERE p.replacement_booked = 0 AND p.deleted_at IS NULL AND p.failed_at IS NULL AND pe.erased_at IS NULL
      AND p.replacement_due_at IS NOT NULL AND p.replacement_due_at <= ?1
-     AND NOT EXISTS (
-       SELECT 1 FROM appointments a
-        WHERE a.person_id = p.person_id AND a.type = 'replacement' AND a.deleted_at IS NULL
-          AND a.status NOT IN ('cancelled', 'terminated') AND a.window_start >= p.replacement_due_at)
   UNION ALL
   SELECT 'referral_review', r.id, c.person_id, pe.name, r.fraud_signals, r.updated_at, NULL, ''
     FROM referral_attributions r JOIN referral_codes c ON c.code = r.code JOIN people pe ON pe.id = c.person_id
@@ -174,8 +173,9 @@ const OUTSTANDING = [
   // app tells the client "We confirm it with you before your visit" (LIFE-04). It waits from when the visit first
   // reached us, and falls due by the visit itself.
   //
-  // A visit left partly done waits for the one that finishes it: any visit of the client's booked after it, or ops
-  // closing it without one, with why (docs/decisions/0092-task-owners.md). A no-show is its own outcome and group;
+  // A visit left partly done waits for the one that finishes it: any visit of the client's booked after it,
+  // `followed_up`, which the database keeps as their visits are written (migration 0060), or ops closing it without
+  // one, with why (docs/decisions/0092-task-owners.md). A no-show is its own outcome and group;
   // one the Worker before migration 0044 stored as partial is left out too.
   //
   // An At-risk client is a fitted one with nothing booked since their last first fit, service or replacement, done
@@ -213,12 +213,8 @@ const OUTSTANDING = [
          COALESCE((SELECT r.label FROM partial_reasons r WHERE r.code = v.partial_reason), v.partial_reason),
          COALESCE(v.ended_at, a.window_end, v.updated_at), NULL, ''
     FROM visits v JOIN appointments a ON a.id = v.appointment_id JOIN people pe ON pe.id = a.person_id
-   WHERE v.outcome = 'partial' AND COALESCE(v.partial_reason, '') <> 'no_show' AND a.deleted_at IS NULL
-     AND pe.erased_at IS NULL
-     AND NOT EXISTS (
-       SELECT 1 FROM appointments later
-        WHERE later.person_id = a.person_id AND later.deleted_at IS NULL
-          AND later.status NOT IN ('cancelled', 'terminated') AND later.window_start > a.window_start)
+   WHERE v.outcome = 'partial' AND v.followed_up = 0 AND COALESCE(v.partial_reason, '') <> 'no_show'
+     AND a.deleted_at IS NULL AND pe.erased_at IS NULL
      AND NOT EXISTS (SELECT 1 FROM task_closures c WHERE c.task_group = 'partial_visit' AND c.subject_id = a.id)
   UNION ALL
   SELECT 'at_risk_client', s.visit_id, s.person_id, pe.name,

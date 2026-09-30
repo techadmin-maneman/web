@@ -390,6 +390,78 @@ describe("a look at the Tasks board or the Stock page", () => {
     expect({ before, after }).toEqual({ before, after: before });
   });
 
+  /**
+   * The clients numbered ?1 to ?2, each with a service still to come, so none of them is at risk, and a code friends
+   * can be invited with.
+   */
+  const KEPT_CLIENTS_SQL = [
+    `INSERT INTO people (id, created_at, mobile_e164, name)
+     SELECT 'kept-' || i, '${AGO}', '+9175' || printf('%08d', i), 'Kept ' || i FROM n`,
+    `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, status, fsm_status,
+       fsm_modified_at, synced_at)
+     SELECT 'kept-next-' || i, 'fsm-kept-next-' || i, 'kept-' || i, 'service', '${IN_TWO_MONTHS}',
+       '${IN_TWO_MONTHS}', 'scheduled', 'Scheduled', '${AGO}', '${AGO}' FROM n`,
+    `INSERT INTO referral_codes (code, person_id, created_at, updated_at)
+     SELECT 'KEPT' || i, 'kept-' || i, '${AGO}', '${AGO}' FROM n`,
+  ];
+
+  /** ?3 days before NOW, as the mirror keeps a visit's start. */
+  const ITEM_DAY = `strftime('%Y-%m-%dT%H:%M:%fZ', '${NOW.toISOString()}', '-' || (400 - ?4 * 10) || ' days')`;
+
+  /**
+   * Each client's history item numbered ?4, all of it dealt with: a replacement visit, left partly done and
+   * followed by the visits after it, which replaced a piece that fell due that day, and which ops moved and told
+   * the client of; and a friend of theirs whose invite ops granted after review.
+   */
+  const DONE_WITH_SQL = [
+    `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, status, fsm_status,
+       fsm_modified_at, synced_at)
+     SELECT 'done-' || i || '-' || ?4, 'fsm-done-' || i || '-' || ?4, 'kept-' || i, 'replacement', ${ITEM_DAY},
+       ${ITEM_DAY}, 'completed', 'Completed', '${AGO}', '${AGO}' FROM n`,
+    `INSERT INTO pieces (id, fsm_id, person_id, piece_code, fitted_at, replacement_due_at, synced_at)
+     SELECT 'piece-' || i || '-' || ?4, 'fsm-piece-' || i || '-' || ?4, 'kept-' || i, 'MM-' || i || '-' || ?4,
+       '${AGO}', ${ITEM_DAY}, '${AGO}' FROM n`,
+    `INSERT INTO visits (id, appointment_id, outcome, partial_reason, updated_at)
+     SELECT 'part-' || i || '-' || ?4, 'done-' || i || '-' || ?4, 'partial', 'time', '${AGO}' FROM n`,
+    `INSERT INTO dispatch_moves (id, appointment_id, was_start, now_start, reason, actor, fsm_write_state, told_at,
+       created_at, updated_at)
+     SELECT 'move-' || i || '-' || ?4, 'done-' || i || '-' || ?4, '${AGO}', ${ITEM_DAY}, 'client_asked',
+       'ops@localhost', 'written', '${AGO}', '${AGO}', '${AGO}' FROM n`,
+    `INSERT INTO people (id, created_at, mobile_e164, name)
+     SELECT 'friend-' || i || '-' || ?4, '${AGO}', '+9176' || printf('%04d', i) || printf('%04d', ?4),
+       'Friend ' || i FROM n`,
+    `INSERT INTO referral_attributions (id, code, referred_person_id, first_touch_at, via, grant_state, created_at,
+       updated_at)
+     SELECT 'ref-' || i || '-' || ?4, 'KEPT' || i, 'friend-' || i || '-' || ?4, '${AGO}', 'consultation', 'granted',
+       '${AGO}', '${AGO}' FROM n`,
+  ];
+
+  /** Every kept client's history items numbered `from` to `to`. */
+  async function doneWith(from: number, to: number): Promise<void> {
+    const statements: D1PreparedStatement[] = [];
+    for (let item = from; item <= to; item += 1) {
+      for (const sql of DONE_WITH_SQL) statements.push(over(sql, 1, 20, 0, item));
+    }
+    await env.DB.batch(statements);
+  }
+
+  // Call about a move, Replacement order, Referral review and Visit left partly done each read only what can still
+  // be a task, not every move, piece, invite or partial visit a client has ever had (migration 0060).
+  it("reads no more for moves, pieces, invites and partial visits when each client has ten times their history", async () => {
+    await env.DB.batch(KEPT_CLIENTS_SQL.map((sql) => over(sql, 1, 20)));
+    await doneWith(1, 2);
+    await rowsReadBy(tasks); // the console's settings, read once and kept
+    const before = await rowsReadBy(tasks);
+    const board = await (await tasks()).json<{ groups: { group: string; tasks: unknown[] }[] }>();
+    const grown = ["untold_move", "replacement_order", "referral_review", "partial_visit", "at_risk_client"];
+    expect(board.groups.filter((group) => grown.includes(group.group) && group.tasks.length > 0)).toEqual([]);
+
+    await doneWith(3, 20);
+    const after = await rowsReadBy(tasks);
+
+    expect({ before, after }).toEqual({ before, after: before });
+  });
+
   it("reads no more for the Stock page, or a count, when the ledger holds ten times the movements", async () => {
     await env.DB.batch(CLIENTS_SQL.slice(0, 1).map((sql) => over(sql, 1, CLIENTS)));
     await env.DB.prepare(
