@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
   DAY_BEFORE_REMINDER_HOUR,
   jobDay,
+  namesTheOtherTechnician,
   PAYMENT_BADGES,
   paymentBadge,
   RULES,
@@ -85,5 +86,17 @@ describe("job visibility", () => {
     expect(paymentBadge({ onCredit: true, free: true })).toBe("credit");
     expect(paymentBadge({ onCredit: false, free: true })).toBe("free");
     expect(paymentBadge({ onCredit: false, free: false })).toBe("prepaid");
+  });
+});
+
+describe("the other technician", () => {
+  it(RULES[3], () => {
+    expect(namesTheOtherTechnician(["technician"])).toBe(true);
+    expect(namesTheOtherTechnician(["technician", "time"])).toBe(true);
+  });
+
+  it("names nobody for a job that was cancelled, or only moved to another time", () => {
+    expect(namesTheOtherTechnician(["status", "technician"])).toBe(false);
+    expect(namesTheOtherTechnician(["time"])).toBe(false);
   });
 });

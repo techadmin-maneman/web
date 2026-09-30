@@ -51,7 +51,7 @@
 .tomorrow:focus-visible,
 .waiting:focus-visible,
 .row:focus-visible {
-  outline: var(--focus-width) solid var(--gilt);
+  outline: var(--focus-width) solid var(--focus-colour);
   outline-offset: calc(-1 * var(--focus-offset));
 }
 
@@ -86,7 +86,7 @@
 
 .waitingIcon {
   flex-shrink: 0;
-  color: var(--gilt);
+  color: var(--paper);
 }
 
 .waitingLine {
@@ -212,9 +212,9 @@
   color: var(--ink-soft);
 }
 
-/* The job in hand is the one gold thing on the list. */
+/* The job in hand stands out in paper, where the board has it gold (ADR 0025, item 59). */
 .list > li:first-child .type {
-  color: var(--gilt);
+  color: var(--paper);
 }
 
 .badge {

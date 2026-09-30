@@ -3,7 +3,7 @@
 // same one.
 //
 // The board's layout: the viewfinder with its framing guide — the head's
-// dashed outline, the hairline in gold, the corners — so every visit's photos
+// dashed outline, the hairline, the corners — so every visit's photos
 // are framed alike and the client's comparison lines up; the five angle tiles;
 // and at the foot, where every screen keeps its action, Retake beside Capture.
 // Once the five are in, the same key finishes the step. Nothing slides here:

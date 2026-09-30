@@ -11,12 +11,16 @@
 // phone was offline), the write is rejected with 409 superseded. The technician
 // sees what changed. Nothing is merged silently." The rejection is recorded as
 // an event too, marked superseded, so the record says the phone tried. A job
-// moved to another time is superseded like one given to another technician.
+// moved to another time is superseded like one given to another technician, and
+// one given to another technician names them to the phone, by first name, with
+// when ops moved it (src/policy/job-visibility.ts).
 //
 // An event's time is the phone's, held within bounds (src/policy/phone-clock.ts),
 // so a job worked offline keeps its real durations; received_at is ours.
 
+import { firstNameOf } from "../lib/names.ts";
 import { isNoShow, stepBefore, type JobEventKind } from "../policy/in-job-steps.ts";
+import { namesTheOtherTechnician } from "../policy/job-visibility.ts";
 import { onTheVisitsDay } from "../policy/phone-clock.ts";
 import type { WorkableJob } from "./tech-jobs.ts";
 
@@ -35,11 +39,23 @@ export interface JobEvent {
   readonly superseded: boolean;
 }
 
+/** The technician a job went to, by first name, and when ops moved it there: null when it was moved in FSM itself. */
+export interface MovedTo {
+  readonly technician: string;
+  readonly at: string | null;
+}
+
+/** What changed under the phone, by field name, and whom the job went to where that is to be said. */
+export interface Superseding {
+  readonly changed: readonly string[];
+  readonly moved: MovedTo | null;
+}
+
 /** What the server did with an event the phone sent. */
 export type Landing =
   | { readonly kind: "landed"; readonly event: JobEvent; readonly replayed: boolean }
-  /** FSM moved the job under the phone; the fields that changed, never their values. */
-  | { readonly kind: "superseded"; readonly changed: readonly string[] }
+  /** FSM moved the job under the phone. */
+  | ({ readonly kind: "superseded" } & Superseding)
   /** A step sent before the one ahead of it; the app sends its outbox in order. */
   | { readonly kind: "out_of_order"; readonly needs: JobEventKind }
   /** A check-in or a start on a day that is not the job's own. */
@@ -69,10 +85,10 @@ export async function landJobEvent(db: D1Database, input: EventInput): Promise<L
   const held = await eventByClientId(db, input.job.id, input.eventId);
   if (held !== null) return { kind: "landed", event: held, replayed: true };
 
-  const changed = supersededBy(input.job, input.technicianId, input.expectedStart);
-  if (changed.length > 0) {
+  const superseding = await whatChanged(db, input.job, input.technicianId, input.expectedStart);
+  if (superseding.changed.length > 0) {
     await record(db, input, { superseded: true });
-    return { kind: "superseded", changed };
+    return { kind: "superseded", ...superseding };
   }
 
   const startsTheDay = input.kind === "check_in" || input.kind === "start";
@@ -92,13 +108,68 @@ export async function landJobEvent(db: D1Database, input: EventInput): Promise<L
   return { kind: "landed", event: raced, replayed: true };
 }
 
-/** What FSM changed under the phone, by field name. Empty when nothing did. */
+/**
+ * What FSM changed under a phone that holds the job as it was: none of it when
+ * nothing did. `expectedStart` is the start the phone holds, when it says.
+ */
+export async function whatChanged(
+  db: D1Database,
+  job: WorkableJob,
+  technicianId: string,
+  expectedStart: Date | null,
+): Promise<Superseding> {
+  const changed = supersededBy(job, technicianId, expectedStart);
+  const moved = namesTheOtherTechnician(changed) ? await movedTo(db, job) : null;
+  return { changed, moved };
+}
+
+/**
+ * Whether a job is, or was, this technician's: it is theirs now, a step of
+ * theirs landed on it, or ops moved it from them. Only then is what changed on
+ * it theirs to hear.
+ */
+export async function wasTheirs(db: D1Database, job: WorkableJob, technicianId: string): Promise<boolean> {
+  if (job.technicianId === technicianId) return true;
+  const row = await db
+    .prepare(
+      `SELECT 1 FROM job_events WHERE appointment_id = ?1 AND technician_id = ?2 AND superseded = 0
+       UNION ALL
+       SELECT 1 FROM dispatch_moves WHERE appointment_id = ?1 AND was_technician_id = ?2
+       LIMIT 1`,
+    )
+    .bind(job.id, technicianId)
+    .first();
+  return row !== null;
+}
+
+/** What FSM changed under the phone, by field name, a cancellation first. Empty when nothing did. */
 function supersededBy(job: WorkableJob, technicianId: string, expectedStart: Date | null): string[] {
   const changed: string[] = [];
-  if (job.technicianId !== technicianId) changed.push("technician");
   if (job.status === "cancelled" || job.status === "terminated") changed.push("status");
+  if (job.technicianId !== technicianId) changed.push("technician");
   if (expectedStart !== null && expectedStart.getTime() !== job.windowStart.getTime()) changed.push("time");
   return changed;
+}
+
+/**
+ * The technician the job is with now, by first name, and when the dispatch
+ * board last moved it to them. A move made in FSM itself leaves no row of ours,
+ * so it has no time.
+ */
+async function movedTo(db: D1Database, job: WorkableJob): Promise<MovedTo | null> {
+  const row = await db
+    .prepare(
+      `SELECT t.name,
+         (SELECT m.created_at FROM dispatch_moves m
+          WHERE m.appointment_id = ?1 AND m.now_technician_id = t.id
+          ORDER BY m.created_at DESC LIMIT 1) AS moved_at
+       FROM technicians t WHERE t.id = ?2`,
+    )
+    .bind(job.id, job.technicianId)
+    .first<{ name: string; moved_at: string | null }>();
+  if (row === null) return null;
+  const technician = firstNameOf(row.name);
+  return technician === "" ? null : { technician, at: row.moved_at };
 }
 
 async function kindsLanded(db: D1Database, appointmentId: string): Promise<Set<string>> {

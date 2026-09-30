@@ -238,16 +238,17 @@
   cursor: pointer;
 }
 
+/* As tall as its slots, about 42, 63 and 84 px (open point 67): a slot's size reads from the block's height. */
 .slots1 {
-  min-height: var(--ops-block-1);
+  min-height: var(--ops-slot);
 }
 
 .slots15 {
-  min-height: var(--ops-block-15);
+  min-height: calc(1.5 * var(--ops-slot));
 }
 
 .slots2 {
-  min-height: var(--ops-block-2);
+  min-height: calc(2 * var(--ops-slot));
 }
 
 .svc {
@@ -262,8 +263,9 @@
   color: var(--text);
 }
 
+/* The board's rule is gilt; gold marks only the one primary action (ADR 0025, item 59), so it is the ink's own line. */
 .fit {
-  border-left-color: var(--gilt);
+  border-left-color: var(--ink-line-strong);
   background: var(--ink);
   color: var(--paper);
 }
@@ -290,7 +292,7 @@
 }
 
 .fit:focus-visible {
-  outline-color: var(--gilt);
+  outline-color: var(--paper);
 }
 
 /* ---- Where a job in hand can land ---------------------------------------- */

@@ -12,6 +12,8 @@ export const RULES = [
   "Today's jobs in order; tomorrow collapsed.",
   "Jobs further out show only time, type and sector. The address, access notes and client card unlock the day before, and the API enforces this, not just the screen.",
   "A job shows a Prepaid or Credit badge only, and no API response to a technician carries an amount.",
+  // Ruled by the owner on 27 September 2026 (docs/open-points.md, item 92).
+  "the other technician's first name may reach the phone",
 ] as const;
 
 /** Where a job sits on the technician's list. */
@@ -72,4 +74,15 @@ export function paymentBadge(visit: { readonly onCredit: boolean; readonly free:
   if (visit.onCredit) return "credit";
   if (visit.free) return "free";
   return "prepaid";
+}
+
+/**
+ * Whether a write the phone sent for a job ops changed under it names who has
+ * the job now, and when ops moved it: only when it went to another technician,
+ * and never when it was cancelled, since then it went to nobody. `changed` is
+ * what the superseded write names: status, technician or time. Only their
+ * first name is given, and nothing else of theirs.
+ */
+export function namesTheOtherTechnician(changed: readonly string[]): boolean {
+  return changed.includes("technician") && !changed.includes("status");
 }

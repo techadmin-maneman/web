@@ -69,7 +69,7 @@
   margin-left: auto;
   font-size: var(--fs-18);
   font-variant-numeric: tabular-nums;
-  color: var(--gilt);
+  color: var(--paper);
 }
 
 .body {
@@ -125,8 +125,8 @@
 }
 
 .boxDone {
-  border-color: var(--gilt);
-  background: var(--gilt);
+  border-color: var(--paper);
+  background: var(--paper);
   color: var(--ink-deep);
 }
 
@@ -244,20 +244,20 @@
   margin-top: var(--sp-16);
 }
 
-/* The label's field, drawn where the board draws "Scan the piece": gold-edged, 64 px, the whole of it the input. */
+/* The label's field, drawn where the board draws "Scan the piece": 64 px, the whole of it the input, edged in paper. */
 .scan {
   display: flex;
   gap: var(--sp-12);
   align-items: stretch;
   min-height: var(--tech-primary);
   padding: 0 var(--sp-16);
-  border: var(--hairline) solid var(--gilt);
+  border: var(--hairline) solid var(--paper);
 }
 
 .scanIcon {
   flex-shrink: 0;
   align-self: center;
-  color: var(--gilt);
+  color: var(--paper);
 }
 
 .input,
@@ -372,9 +372,9 @@
   cursor: pointer;
 }
 
-/* Chosen: the gold edge the board gives a chosen reason, on the raised ink. The gold fill stays Next's. */
+/* Chosen: the board's heavier edge, in paper rather than its gold, which is Next's alone (ADR 0025, item 59). */
 .choiceOn {
-  border: var(--rule-strong) solid var(--gilt);
+  border: var(--rule-strong) solid var(--paper);
   background: var(--ink-raised);
   font-weight: var(--weight-medium);
 }
@@ -406,7 +406,7 @@
 }
 
 .reasonOn {
-  border-color: var(--gilt);
+  border-color: var(--paper);
   color: var(--paper);
 }
 
@@ -428,7 +428,7 @@
 }
 
 .closeTick {
-  color: var(--gilt);
+  color: var(--paper);
 }
 
 .closeWho {

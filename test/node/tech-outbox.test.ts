@@ -88,8 +88,14 @@ describe("the account of what has not reached us", () => {
       {
         job_id: "a",
         waiting: 1,
-        stopped: { kind: "checklist", state: "superseded", note: "superseded", fields: ["technician"] },
+        stopped: { kind: "checklist", state: "superseded", note: "superseded", fields: ["technician"], moved: null },
       },
     ]);
+  });
+
+  it("keeps whom the job went to, and when, where the API said", () => {
+    const moved = { technician: "Sameer", at: "2027-01-14T05:10:00.000Z" };
+    const queue = [event(1, "a", { state: "superseded", note: "superseded", fields: ["technician"], moved })];
+    expect(account(queue)[0]?.stopped?.moved).toEqual(moved);
   });
 });

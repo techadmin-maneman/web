@@ -1578,6 +1578,13 @@ export interface components {
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
+                /** @description superseded, to a technician's phone, for a job given to another technician: whom, and when (docs/open-points.md, item 92). */
+                moved?: {
+                    /** @description Their first name, and nothing else of theirs */
+                    technician: string;
+                    /** @description When ops moved the job to them; null when it was moved in FSM itself */
+                    at: string | null;
+                };
             };
         };
         Health: {
@@ -1661,6 +1668,13 @@ export interface components {
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
+                /** @description superseded, to a technician's phone, for a job given to another technician: whom, and when (docs/open-points.md, item 92). */
+                moved?: {
+                    /** @description Their first name, and nothing else of theirs */
+                    technician: string;
+                    /** @description When ops moved the job to them; null when it was moved in FSM itself */
+                    at: string | null;
+                };
             };
             /** @description The day and window of the consultation still to happen. */
             booked: {

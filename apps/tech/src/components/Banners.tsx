@@ -14,7 +14,7 @@ import { useOutbox } from "../lib/useOutbox.ts";
 import { account } from "../store/outbox.ts";
 import styles from "./banner.module.css";
 
-/** Board A2's banner: a gold strip with the line, and the explanation beneath it on ink. */
+/** Board A2's banner: a paper strip with the line, and the explanation beneath it on ink. */
 export function Offline() {
   return (
     <div className={styles.offline} role="status">

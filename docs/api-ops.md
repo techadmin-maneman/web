@@ -3220,6 +3220,33 @@ Who Access let through, and where signing out goes
             "type": "string"
           },
           "description": "invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller."
+        },
+        "moved": {
+          "type": "object",
+          "properties": {
+            "technician": {
+              "type": "string",
+              "description": "Their first name, and nothing else of theirs"
+            },
+            "at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "When ops moved the job to them; null when it was moved in FSM itself"
+            }
+          },
+          "required": [
+            "technician",
+            "at"
+          ],
+          "additionalProperties": false,
+          "description": "superseded, to a technician's phone, for a job given to another technician: whom, and when (docs/open-points.md, item 92)."
         }
       },
       "required": [
@@ -5233,6 +5260,33 @@ Who Access let through, and where signing out goes
             "type": "string"
           },
           "description": "invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller."
+        },
+        "moved": {
+          "type": "object",
+          "properties": {
+            "technician": {
+              "type": "string",
+              "description": "Their first name, and nothing else of theirs"
+            },
+            "at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "When ops moved the job to them; null when it was moved in FSM itself"
+            }
+          },
+          "required": [
+            "technician",
+            "at"
+          ],
+          "additionalProperties": false,
+          "description": "superseded, to a technician's phone, for a job given to another technician: whom, and when (docs/open-points.md, item 92)."
         }
       },
       "required": [
