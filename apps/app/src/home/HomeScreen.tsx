@@ -1,7 +1,8 @@
 // Home (boards B1 and B2): "One card, one prompt, nothing else." The next visit from FSM: a consultation as B2
 // draws it, with what to expect, and any other visit as B1 draws it, with its technician (VisitCard.tsx). A
 // booking's consultation, not yet in FSM, shows as B2. A visit FSM has not closed stays here until it is, so Home
-// never says nothing is booked, nor offers the booking again, while one is under way.
+// never says nothing is booked, nor offers the booking again, while one is under way. Nor while a visit paid for, or
+// booked free, waits for FSM to take it: Home says it is being booked, and that the payment is in (ADR 0095).
 //
 // Beneath the card, B1's credit tile while there is a balance, and its one contextual prompt, in the owner's order:
 // an address to give, the next service due and not booked, the replacement falling due, an invoice just issued
@@ -64,6 +65,7 @@ function HomeBody({ me, offline }: { me: Me; offline: boolean }) {
       <Consultation date={date} when={windowText(me.consultation.window)} place={place} changing={null} noting={null} />
     );
   }
+  if (me.being_booked !== null) return <BeingBooked booking={me.being_booked} />;
   if (me.state === "fitted" || me.booking.types.includes("first_fit")) return <NothingNext />;
   return <NothingBooked me={me} offline={offline} />;
 }
@@ -117,6 +119,25 @@ function Consultation(props: {
         </ol>
       </section>
     </>
+  );
+}
+
+/** A visit paid for, or booked free, that FSM does not have yet: never said to be booked, nor its money gone. */
+function BeingBooked({ booking }: { booking: NonNullable<Me["being_booked"]> }) {
+  const copy = home.beingBooked;
+  return (
+    <section aria-labelledby="next">
+      <h1 className={styles.label} id="next">
+        {home.next.label}
+      </h1>
+      <div className={styles.card}>
+        <p className={styles.date}>{shortDate(booking.date)}</p>
+        <p className={styles.window}>{windowText(booking.window)}</p>
+        <p className={styles.place}>{VISIT_TYPES[booking.type]}</p>
+        <p className={styles.free}>{booking.paid ? copy.paid : copy.free}</p>
+        <p className={styles.free}>{copy.told}</p>
+      </div>
+    </section>
   );
 }
 

@@ -96,9 +96,9 @@ const FIRST_FIT_EPISODE = "s.consulted_start";
  * needs the attempts after which the sweeper stops asking FSM, as `?1`. The third
  * holds the visits whose booking or closing left ops something to do, and needs
  * the moment ops look, as `?1`, and what the next visit's days make of it (`?3`
- * to `?7`, below). Each takes READ_CAP as `?2`, which bounds what one look at the
- * board can cost. All three hold five arms now: a group added next needs a
- * fourth statement.
+ * to `?7`, below). The fourth holds the bookings FSM refused, and needs nothing
+ * but READ_CAP. Each takes READ_CAP as `?2`, which bounds what one look at the
+ * board can cost. The first three hold five arms each; the fourth has room.
  *
  * A consultation asked for is read only while the client has no consultation
  * booked or done, `booked`, which the database keeps as their consultations are
@@ -253,6 +253,17 @@ const OUTSTANDING = [
      AND NOT EXISTS (
        SELECT 1 FROM slot_holds h WHERE h.person_id = r.person_id AND h.state = 'held' AND h.confirmed_at IS NOT NULL)
 `),
+
+  // A booking FSM refused five times running, held for ops (docs/decisions/0095-a-booking-fsm-refuses-is-held.md). It
+  // names the visit's kind, day and window, waits from the fifth refusal, and falls due by the start of its visit's day
+  // in India. It goes once a try books it, ops link the visit they booked in FSM, or ops refund it.
+  withOwners(`
+  SELECT 'held_booking' AS "group", h.id AS id, h.person_id AS person_id, pe.name AS person_name,
+         h.type || ' ' || h.date || ' ' || h.window_label AS detail, h.fsm_held_at AS since,
+         strftime('%Y-%m-%dT%H:%M:%fZ', h.date, '-330 minutes') AS due_by, '' AS episode
+    FROM slot_holds h JOIN people pe ON pe.id = h.person_id
+   WHERE h.state = 'held' AND h.confirmed_at IS NOT NULL AND h.fsm_held_at IS NOT NULL AND pe.erased_at IS NULL
+`),
 ] as const;
 
 interface Row {
@@ -328,6 +339,8 @@ export async function outstandingTasks(
         daysOn(days.first_fit_to_book),
         daysOn(days.service_cadence),
       ),
+    // Its one number is READ_CAP, which every statement takes as ?2.
+    db.prepare(OUTSTANDING[3]).bind(null, READ_CAP),
   ]);
   const truncated = answers.some((answer) => answer.results.length >= READ_CAP);
   // Each statement sorted its own rows; the board wants one list, so they are merged on the same column.

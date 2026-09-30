@@ -150,6 +150,10 @@ export const messages = {
   lateRefund: (what: string, date: string) => `My refund for ${what.toLowerCase()} from ${date} has not arrived.`,
 } as const;
 
+/** The booking sheet's words for a paid visit still being written to FSM, which Home repeats while it waits. */
+const PAID_IN = "Your payment is in. We are booking your visit.";
+const TOLD_WHEN_BOOKED = "We will message you on WhatsApp when the visit is booked.";
+
 export const home = {
   profile: "Your profile",
   reschedule: "Reschedule",
@@ -209,6 +213,15 @@ export const home = {
       "Your colour matched against forty samples.",
       "Nothing fitted, nothing ordered on the day.",
     ],
+  },
+  /**
+   * A visit paid for, or booked free, that FSM does not have yet (docs/decisions/0095-a-booking-fsm-refuses-is-held.md):
+   * the booking sheet's own words for a booking being written. PLACEHOLDER: the free line, and the design draws none.
+   */
+  beingBooked: {
+    paid: PAID_IN,
+    free: "We are booking your visit.",
+    told: TOLD_WHEN_BOOKED,
   },
   // PLACEHOLDER: the design draws no Home for a client with nothing booked.
   nothing: {
@@ -444,8 +457,8 @@ export const booking = {
   },
   confirming: "Confirming your visit.",
   // PLACEHOLDER: the hold's time ran out on the phone after Razorpay had taken the payment, which keeps it.
-  paidIn: "Your payment is in. We are booking your visit.",
-  slow: "This is taking longer than usual. We will message you on WhatsApp when the visit is booked.",
+  paidIn: PAID_IN,
+  slow: `This is taking longer than usual. ${TOLD_WHEN_BOOKED}`,
   refunded: "We could not book that visit, so your payment is being refunded in full.",
   failedToStart: "That did not go through. Please try again.",
   close: "Close",

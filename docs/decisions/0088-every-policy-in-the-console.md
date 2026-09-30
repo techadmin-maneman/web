@@ -1,6 +1,6 @@
 # 0088. Every policy in the console
 
-- Status: accepted, on the owner's standing rule of 27 September 2026; amended by [0096](0096-a-no-shows-charge-and-its-dispute.md) on 29 September 2026, under which a charged no-show costs the charge its booking kept, and the move panel names the notice the visit was sold under
+- Status: accepted, on the owner's standing rule of 27 September 2026; extended 29 September 2026 by [0095](0095-a-booking-fsm-refuses-is-held.md): how often and how long a booking FSM refused is tried again, `fsm_retry`; amended by [0096](0096-a-no-shows-charge-and-its-dispute.md) on 29 September 2026, under which a charged no-show costs the charge its booking kept, and the move panel names the notice the visit was sold under
 - Date: 2026-09-28
 - Amends [0061](0061-ops-editable-inputs.md), whose store read a row per input and so held ten inputs at most, and whose register held numbers alone; extends [0068](0068-a-paid-hold-is-kept.md), whose hold kept the late fee it was sold under and now keeps its terms and its grace too; records the owner's rulings of 27 September 2026 on open points 7, 12, 15, 40, 53, 58, 59 and 60, and ADR 0025's items 42 and 66
 
@@ -18,7 +18,7 @@ ADR 0061 built the register and moved six rules into it. What was still a figure
 
 ADR 0061's three safe defaults stand: a store that cannot be read gives the last good read or the committed defaults, never a nought; a figure the register would no longer accept, in a row or in the snapshot, gives way to its committed default; the console holds every draft as text.
 
-**What it costs.** The free plan stops the day at 100,000 requests, and a request reads the store at most once, so the ceiling is 100,000 rows a day however the cache behaves: a fiftieth of D1's 5,000,000 (`test/worker/ops-settings.test.ts` measures one row a read). The register's length now costs the snapshot's size, which every miss parses: `MAX_SNAPSHOT_BYTES` bounds it at 16 KiB with every input at its widest, and `test/node/ops-settings.test.ts` fails past it. The register holds fourteen inputs; the widest snapshot they can make is under 4 KiB.
+**What it costs.** The free plan stops the day at 100,000 requests, and a request reads the store at most once, so the ceiling is 100,000 rows a day however the cache behaves: a fiftieth of D1's 5,000,000 (`test/worker/ops-settings.test.ts` measures one row a read). The register's length now costs the snapshot's size, which every miss parses: `MAX_SNAPSHOT_BYTES` bounds it at 16 KiB with every input at its widest, and `test/node/ops-settings.test.ts` fails past it. The register holds fourteen inputs (fifteen since ADR 0095); the widest snapshot they can make is under 4 KiB.
 
 ### Numbers and choices
 
@@ -72,7 +72,7 @@ A list, not a figure, so a tab of its own, Settings · Blackout days (`GET /api/
 
 ## Consequences
 
-- The register holds fourteen inputs: ADR 0061's six and eight here. Adding one is still one entry in `OPS_SETTINGS`, one field in `OpsInputs`, and passing it where the default already sits; no migration, no console change.
+- The register holds fourteen inputs: ADR 0061's six and eight here. ADR 0095 adds a fifteenth, `fsm_retry`. Adding one is still one entry in `OPS_SETTINGS`, one field in `OpsInputs`, and passing it where the default already sits; no migration, no console change.
 - Migration 0054: the snapshot and its triggers; `slot_holds.grace_seconds`, `change_notice_hours`, `late_change_charge`, `no_show_charge`; `no_show_cases.waiver_payment`, `waiver_credit`; `visit_blackouts.set_by`, `set_at`. Every column is nullable, and null reads as the committed figure the row was made under, so the Worker already deployed keeps working on the new schema.
 - The contract: `GET /api/settings` answers each rule's `kind` and a key's `unit`; `POST /api/settings/{name}` takes a choice per key; the hold answers `change_notice_hours` and `late_change_charge`, and its `late_fee` only where that charge is the fee, and the change terms `notice_hours`; `GET /api/no-shows` answers the `waiver` in force, which the console's note beneath the queue follows; `GET /api/technicians/work` answers `runs_over`; three blackout routes.
 - ADR 0061's "What is left" is done, but for the window times above and the message texts, which ADR 0061 decided not to make editable.

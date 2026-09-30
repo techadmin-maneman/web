@@ -8,6 +8,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/http/context.ts";
 import { openSession } from "../../src/domain/sessions.ts";
+import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
 import { appFor, captureLogs, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
@@ -263,6 +264,59 @@ describe("ops, when the audit entry cannot be written", () => {
         "SELECT group_concat(valid_from) AS days FROM price_book WHERE item = 'service' AND valid_from > '2026-09-30'",
       ),
     ).toEqual({ days: "2026-10-01" });
+  });
+
+  // A booking FSM refused five times running, held for ops (docs/decisions/0095-a-booking-fsm-refuses-is-held.md): a
+  // free service visit on Thursday afternoon. Its refund changes Razorpay and FSM before its batch, so only a try,
+  // a link and the tries stopped are all-or-nothing here.
+  const HELD = "66666666-0000-4000-8000-000000000001";
+  const heldBooking = () =>
+    env.DB.prepare(
+      `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
+         amount_ex_gst, gst_percent, state, expires_at, created_at, updated_at, confirmed_at, queued_at, fsm_held_at)
+       VALUES (?1, ?2, 'service', '2026-09-24', 'afternoon', ?3, 2, 0, 0, 0, 'held', ?4, ?4, ?4, ?4, ?4, ?4)`,
+    )
+      .bind(HELD, PERSON, TECHNICIAN, AT)
+      .run();
+
+  it("books no held booking in the mirror when ops try FSM again", async () => {
+    await heldBooking();
+    const withItems = createStubFsm({
+      ...EMPTY_FSM,
+      items: [{ id: "item-service", name: "Service visit", type: "Service", price: null }],
+    });
+    const trying = appFor("local", fakeDependencies({ fsm: withItems }), {}, "ops");
+
+    const answer = await send(trying, "POST", `/api/held-bookings/${HELD}/retry`);
+    expect(await answer.json()).toMatchObject({ outcome: "refused" });
+    expect(await one("SELECT state, appointment_id FROM slot_holds")).toEqual({ state: "held", appointment_id: null });
+    expect(await one("SELECT COUNT(*) AS visits FROM appointments")).toEqual({ visits: 0 });
+  });
+
+  it("links no held booking to the visit ops booked in FSM", async () => {
+    await heldBooking();
+    await env.DB.prepare(
+      `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, fsm_modified_at,
+         synced_at, first_seen_at)
+       VALUES (?1, 'fsm-by-hand', ?2, 'service', 'scheduled', 'Scheduled', '2026-09-24T08:30:00.000Z', ?3, ?3, ?3)`,
+    )
+      .bind(VISIT, PERSON, AT)
+      .run();
+
+    const answer = await send(ops, "POST", `/api/held-bookings/${HELD}/link`, { visit_id: VISIT });
+    expect(answer.status).toBe(500);
+    expect(await one("SELECT state, appointment_id FROM slot_holds")).toEqual({ state: "held", appointment_id: null });
+  });
+
+  it("stops no held booking's hourly tries", async () => {
+    await heldBooking();
+
+    const answer = await send(ops, "POST", `/api/held-bookings/${HELD}/stop`);
+    expect(answer.status).toBe(500);
+    expect(await one("SELECT queued_at, booking_until FROM slot_holds")).toEqual({
+      queued_at: AT,
+      booking_until: null,
+    });
   });
 });
 

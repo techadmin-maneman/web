@@ -41,7 +41,9 @@ const IF_ERASED = `CASE WHEN i % 10 = 0 THEN '${AGO}' END`;
  * sent, try-ons expired with their photos deleted and kept for the client
  * (ADR 0084) with its look let go, visits done and photographed, invoiced and
  * reconciled, payments recorded and applied in Books, refunds recorded, credits
- * expired, and a referral granted from the person numbered before.
+ * expired, and a referral granted from the person numbered before. Each visit
+ * was booked in the app, but every tenth, which FSM refused five times running
+ * and ops refunded (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
  */
 const HISTORY = [
   `INSERT INTO people (id, created_at, mobile_e164, name, contactable, fsm_contact_id, erased_at, crm_erased_at,
@@ -86,6 +88,14 @@ const HISTORY = [
    SELECT 'e-' || i, 'p-' || i, 'expire', -3, 'g-' || i, 'referral', 'ra-' || i, '${AGO}' FROM n`,
   `INSERT INTO sessions (id, subject_kind, subject_id, created_at, last_seen_at, expires_at)
    SELECT 's-' || i, 'client', 'p-' || i, '${AGO}', '${AGO}', '${IN_TWO_MONTHS}' FROM n`,
+  `INSERT OR IGNORE INTO technicians (id, fsm_id, name, initials, active, updated_at)
+   SELECT 't-history', 'resource-history', 'A Technician', 'AT', 1, '${AGO}' FROM n LIMIT 1`,
+  `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount, amount_ex_gst,
+     gst_percent, state, appointment_id, expires_at, created_at, updated_at, confirmed_at, queued_at, fsm_held_at,
+     fsm_refusal)
+   SELECT 'h-' || i, 'p-' || i, 'service', date('${AGO}'), 'morning', 't-history', 0, 200000, 200000, 0,
+     iif(i % 10 = 0, 'released', 'booked'), iif(i % 10 = 0, NULL, 'a-' || i), '${AGO}', '${AGO}', '${AGO}',
+     '${AGO}', '${AGO}', iif(i % 10 = 0, '${AGO}', NULL), iif(i % 10 = 0, 'Zoho 400 INVALID_DATA', NULL) FROM n`,
   // The dispatch board's utilisation, one day at a time.
   `INSERT INTO events (id, created_at, name, subject_id, payload_json)
    SELECT 'ev-' || i, '${AGO}', 'dispatch_utilisation', date('${AGO}', '-' || i || ' days'), '{}' FROM n`,

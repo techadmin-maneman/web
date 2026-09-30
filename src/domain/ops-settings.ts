@@ -23,6 +23,7 @@ import {
 } from "../config/ops-settings.ts";
 import type { Cycles } from "../config/pieces.ts";
 import type { PaymentHold } from "../config/scheduling.ts";
+import type { FsmRetry } from "../policy/held-bookings.ts";
 import type { NextVisitDays } from "../policy/next-visit.ts";
 import type { Charges } from "../policy/moving-a-visit.ts";
 import type { Waiver, Waits } from "../policy/no-show.ts";
@@ -50,6 +51,7 @@ export interface OpsInputs {
   readonly pieceCycleDays: Cycles;
   readonly nextVisitDays: NextVisitDays;
   readonly paymentHold: PaymentHold;
+  readonly fsmRetry: FsmRetry;
   readonly technicianWork: TechnicianWorkFigures;
 }
 
@@ -89,6 +91,7 @@ function shape(values: Readonly<Record<OpsSettingName, SettingValue>>): OpsInput
     pieceCycleDays: values.piece_cycle_days as Cycles,
     nextVisitDays: values.booking_days as NextVisitDays,
     paymentHold: values.payment_hold as PaymentHold,
+    fsmRetry: values.fsm_retry as FsmRetry,
     technicianWork: values.technician_work as TechnicianWorkFigures,
   };
 }

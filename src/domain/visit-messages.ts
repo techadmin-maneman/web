@@ -167,7 +167,8 @@ function windowHours(start: Date): string {
     : `${first.number} ${first.half} to ${last.number} ${last.half}`;
 }
 
-const DESTINATIONS: Readonly<Record<string, string>> = { upi: "UPI", card: "card", netbanking: "bank account" };
+/** Where a refund goes back to, by the payment's method, as a message names it. */
+export const DESTINATIONS: Readonly<Record<string, string>> = { upi: "UPI", card: "card", netbanking: "bank account" };
 
 export type Composed = { readonly template: string; readonly params: string[] } | { readonly skip: string };
 

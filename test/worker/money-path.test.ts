@@ -1,5 +1,6 @@
-// A client who pays inside the hold gets the visit, or an automatic refund ops
-// are told about; nothing is booked twice (docs/decisions/0068-a-paid-hold-is-kept.md).
+// A client who pays inside the hold gets the visit, or, paying too late, an
+// automatic refund; nothing is booked twice (docs/decisions/0068-a-paid-hold-is-kept.md).
+// A visit FSM refuses is held for ops, with its payment: test/worker/held-bookings.test.ts.
 // The scenarios are the audit's (24 September 2026, W1 to W10), each at the
 // moment it went wrong. NOW is Monday 21 September 2026, 12 noon in India, and a
 // hold lasts ten minutes. Every name and number here is made up.
@@ -389,17 +390,17 @@ describe("order.paid and payment.captured for one payment (W9)", () => {
   });
 });
 
-describe("FSM refuses five times and Razorpay refuses the refund (W10)", () => {
-  it("tells ops the payment to refund by hand, acknowledges the message, and goes on to the next", async () => {
+// W10 was a fifth refusal whose refund Razorpay refused, escaping the handler. The fifth refusal refunds nothing now
+// (docs/decisions/0095-a-booking-fsm-refuses-is-held.md); what W10 found still holds of it.
+describe("FSM refuses five times (W10)", () => {
+  it("holds the booking for ops, acknowledges the message, and goes on to the next", async () => {
     const ordered = await heldAndOrdered(PERSON);
     await webhook("payment.captured", "evt_w10", payment("pay_w10", ordered, at(30)), at(31));
+    const payments = createStubPayments();
     const deps = fakeDependencies({
       now: () => at(500),
       fsm: { ...createStubFsm(world()), createWorkOrder: () => Promise.reject(new Error("Zoho 400 INVALID_DATA")) },
-      payments: {
-        createOrder: () => Promise.reject(new Error("unused")),
-        refund: () => Promise.reject(new Error("Razorpay 400 BAD_REQUEST_ERROR")),
-      },
+      payments,
     });
     const first = {
       id: "m1",
@@ -421,8 +422,9 @@ describe("FSM refuses five times and Razorpay refuses the refund (W10)", () => {
 
     expect(first.ack).toHaveBeenCalled();
     expect(second.ack).toHaveBeenCalled();
-    expect(deps.alerts).toEqual([expect.stringMatching(/pay_w10.*by hand/)]);
-    expect(deps.alerts.join()).not.toMatch(/has been refunded/);
+    expect(payments.made.refunds).toEqual([]);
+    expect(deps.alerts).toEqual([expect.stringMatching(/Nothing is refunded/)]);
+    expect(await holdRow(ordered.holdId)).toEqual({ state: "held", refunded_at: null });
   });
 });
 
@@ -510,50 +512,9 @@ describe("booking in FSM when an answer never comes back (INT-01, BIZ-05)", () =
   });
 });
 
-describe("giving up on a booking FSM would not finish (BIZ-06, INT-02)", () => {
-  it("cancels the work order FSM made, refunds the payment, and tells ops both", async () => {
-    const { holdId } = await paidHold("pay_g1");
-    const stub = createStubFsm(world());
-    const fsm: FsmProvider = { ...stub, createAppointment: () => Promise.reject(new Error("Zoho 400 INVALID_DATA")) };
-    const payments = createStubPayments();
-    const deps = fakeDependencies({ now: () => at(500), fsm, payments });
-    const { batch, message } = lastTry(holdId);
-    await handleFsmSyncBatch(batch, env, deps, createLogger(), { labelAsTest: true, cataloguePush: false });
-
-    expect(message.ack).toHaveBeenCalled();
-    expect(payments.made.refunds).toEqual([{ paymentId: "pay_g1", amount: 200000 }]);
-    expect(stub.made.cancelled).toEqual([
-      {
-        workOrderId: expect.stringMatching(/^stub-work-order-/) as string,
-        note: expect.stringMatching(/refunded/) as string,
-      },
-    ]);
-    expect(deps.alerts).toEqual([
-      expect.stringMatching(
-        /pay_g1 \(Rs\. 2,000\) is refunded in full\. Its work order stub-work-order-\S+ is cancelled/,
-      ),
-    ]);
-    expect(await holdRow(holdId)).toMatchObject({ state: "released" });
-  });
-
-  it("says nothing was refunded for a visit a credit paid for", async () => {
-    await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "ops", sourceId: "o1", now: NOW }).run();
-    const held = await (
-      await call(PERSON, "/api/holds", {
-        method: "POST",
-        body: { type: "service", date: "2026-09-24", window: "afternoon" },
-      })
-    ).json<{ id: string }>();
-    await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: held.id } });
-    const deps = fakeDependencies({
-      now: () => at(500),
-      fsm: { ...createStubFsm(world()), createWorkOrder: () => Promise.reject(new Error("Zoho 400 INVALID_DATA")) },
-    });
-    await handleFsmSyncBatch(lastTry(held.id).batch, env, deps, createLogger());
-    expect(deps.alerts).toEqual([expect.stringMatching(/Nothing was paid for it, so nothing is refunded/)]);
-    expect(deps.alerts.join()).not.toMatch(/work order/);
-  });
-});
+// Giving up on a booking FSM would not finish (BIZ-06, INT-02) is ops' refund now, from the console, and
+// test/worker/held-bookings.test.ts holds it to the same: the work order cancelled, the payment refunded, and what
+// happened to each said, or nothing refunded for a visit a credit paid for.
 
 describe("the half-hour pass over paid holds (BIZ-06)", () => {
   const pass = (queue: Queue, seconds: number, deps = fakeDependencies(), budget = createCallBudget(40)) =>

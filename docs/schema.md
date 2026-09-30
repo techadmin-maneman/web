@@ -1209,7 +1209,7 @@ Indexes:
 
 A slot held while a client pays, and what became of it (ADR 0045, ADR 0068).
 
-Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`.
+Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`, `0058_held_bookings.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1248,6 +1248,8 @@ Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_chan
 | `change_notice_hours` | INTEGER | yes |  |  |
 | `late_change_charge` | TEXT | yes |  |  |
 | `no_show_charge` | TEXT | yes |  |  |
+| `fsm_held_at` | TEXT | yes |  |  |
+| `fsm_refusal` | TEXT | yes |  |  |
 
 Indexes:
 

@@ -475,6 +475,84 @@ export const clients = {
     statuses: { cancelled: "Cancelled", terminated: "Not done", other: "—" } as Readonly<Record<string, string>>,
     /** Paid ahead, or covered by a credit: board C1 of the client app's own badge. */
     prepaid: "Prepaid",
+    /**
+     * PLACEHOLDER, all of it: a booking FSM refused five times running, held with its slot and its payment until a
+     * try books it, or ops book it in FSM or refund it (docs/decisions/0095-a-booking-fsm-refuses-is-held.md). No
+     * board draws it.
+     */
+    held: {
+      title: "Not in FSM yet",
+      note:
+        "FSM refused these five times running. Nothing is refunded: the slot and the payment are kept until the " +
+        "booking is booked, or you refund it.",
+      /** "Service visit, Thu 24 Sep, 12:00". */
+      what: (visit: string, when: string) => `${visit}, ${when}`,
+      paid: (amount: string) => `Paid ${amount}`,
+      credit: "A visit credit covers it",
+      free: "Nothing to pay",
+      refusal: (reason: string) => `FSM said: ${reason}`,
+      noRefusal: "FSM gave no reason.",
+      retrying: (until: string) => `Tried again automatically until ${until}.`,
+      stopped: "No longer tried automatically. Book it in FSM and link it, or refund it.",
+      passed: "Its time has passed. Book another time in FSM and link it, or refund it.",
+      retry: "Try FSM again",
+      trying: "Trying…",
+      stop: "Stop trying — I'll book it in FSM",
+      stopping: "Stopping…",
+      stoppedNow: "The hourly tries are stopped. Book it in FSM, then link it here.",
+      link: "Link the visit I booked in FSM",
+      linkLabel: "The visit you booked in FSM",
+      linkHint:
+        "It shows here once FSM has sent it to us, within a minute of booking it. A work order an earlier try " +
+        "left is cancelled, so nothing is booked twice.",
+      linkNone: "No visit of this kind is booked for them yet. Book it in FSM, then reload this page.",
+      linkSave: "Link it",
+      linking: "Linking…",
+      /** "Thu 24 Sep, 14:00". */
+      visit: (date: string, time: string) => `${date}, ${time}`,
+      refund: "Refund it",
+      refundCheck: (amount: string | null) =>
+        amount === null
+          ? "Cancel what FSM holds for it, and let the booking go? Nothing was paid for it."
+          : `Cancel what FSM holds for it, and refund ${amount} to the client in full?`,
+      refundSave: "Refund and let it go",
+      refunding: "Refunding…",
+      cancel: "Cancel",
+      tried: {
+        booked: "Booked in FSM. The client is told.",
+        given_back: "Its payment had been refunded, or its hold had lapsed, so it was let go.",
+        refused: (reason: string) => `FSM refused it again: ${reason}`,
+        to_link:
+          "A visit of theirs of this kind reached FSM after it was held, so nothing was written. If it is the one " +
+          "you booked, link it.",
+      },
+      linked: "Linked to that visit. The client is told.",
+      money: {
+        refunded: (amount: string, payment: string) =>
+          `Refunded ${amount} in full (Razorpay payment ${payment}). The client is told.`,
+        refunded_before: (payment: string) => `Razorpay payment ${payment} was refunded before. The client is told.`,
+        nothing_paid: "Nothing was paid for it, so nothing is refunded. The client is told.",
+        booked: "A try booked it in FSM meanwhile, so nothing is refunded.",
+        refund_refused: (amount: string, payment: string) =>
+          `Razorpay refused to refund ${amount} (payment ${payment}), so nothing has gone back and the booking ` +
+          "still waits. Try again, or refund it in Razorpay's dashboard and then press Refund it here.",
+      },
+      fsm: {
+        cancelled: (workOrder: string) => `Its work order ${workOrder} is cancelled in FSM.`,
+        not_cancelled: (workOrder: string) =>
+          `FSM would not cancel its work order ${workOrder}: cancel it by hand, so no technician goes.`,
+        unknown: (booking: string) =>
+          `FSM may hold a work order for it: look for "(booking ${booking})" among its work orders and cancel it.`,
+      },
+      errors: {
+        not_found: "It is no longer waiting: it may have been booked or refunded. Reload the page.",
+        not_changeable: "Its time has passed, so FSM is not tried again. Link a visit booked in FSM, or refund it.",
+        superseded: "A try is writing it to FSM right now. Reload in a minute to see how it went.",
+        invalid_request:
+          "That visit cannot be this booking. Choose one of theirs, of the same kind, booked in FSM since they paid.",
+        unknown: "That did not go through. Try again.",
+      } as Readonly<Record<string, string>>,
+    },
   },
   /*
    * PLACEHOLDER, all of it: the board draws a Payments tab and nothing in it.
@@ -988,6 +1066,8 @@ export const tasks = {
   groups: {
     // PLACEHOLDER: a group the board does not draw (docs/decisions/0069-dispatch-under-concurrency.md).
     untold_move: "Call about a move",
+    // PLACEHOLDER: a group the board does not draw (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
+    held_booking: "Booking not in FSM",
     // PLACEHOLDER: two groups the board does not draw (docs/decisions/0074-hand-offs-and-messages.md).
     leave_conflict: "Job on a day off",
     address_to_confirm: "Address to confirm",
@@ -1038,6 +1118,11 @@ export const tasks = {
   subs: {
     /** PLACEHOLDER: "Moved to Wed 23 Sep, 9 am; not on WhatsApp": ops call, then say so on the dispatch board. */
     untold_move: (when: string) => `Moved to ${when}; not on WhatsApp`,
+    /**
+     * PLACEHOLDER: "Service visit, Thu 24 Sep, afternoon; FSM refused it": booked or refunded from the client's
+     * Visits tab (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
+     */
+    held_booking: (visit: string, day: string, window: string) => `${visit}, ${day}, ${window}; FSM refused it`,
     /** PLACEHOLDER: "Wed 23 Sep, 10:30 am, and Sameer is away": move it on the dispatch board, or take the leave back. */
     leave_conflict: (when: string, technician: string) => `${when}, and ${technician} is away`,
     /**
@@ -1454,6 +1539,11 @@ export const settings = {
       payment_hold: {
         countdown: "The countdown the client sees",
         grace: "A payment still in time, after it",
+      },
+      // PLACEHOLDER: how often, and how long, a booking FSM refused is tried again (ADR 0095).
+      fsm_retry: {
+        every: "Tried again every",
+        for: "For, from the fifth refusal",
       },
       // PLACEHOLDER: board D3's two figures (docs/open-points.md, item 59).
       technician_work: {
