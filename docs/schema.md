@@ -140,7 +140,7 @@ Indexes:
 
 The mirror of FSM's appointments: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice (ADR 0032).
 
-Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`, `0059_no_show_charges_and_disputes.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`, `0059_no_show_charges_and_disputes.sql`, `0060_flat_task_reads.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -184,7 +184,7 @@ Indexes:
 - `appointments_to_invoice`: on (`window_start`), where `status = 'completed' AND invoice_issued_at IS NULL AND fsm_work_order_id IS NOT NULL AND deleted_at IS NULL`
 - A `UNIQUE` constraint: unique on (`fsm_id`)
 
-Triggers: `appointments_consultation_booked_added`, `appointments_consultation_booked_changed`, `appointments_consultation_booked_taken_out`, `appointments_last_visits_added`, `appointments_last_visits_changed`, `appointments_last_visits_taken_out`.
+Triggers: `appointments_consultation_booked_added`, `appointments_consultation_booked_changed`, `appointments_consultation_booked_taken_out`, `appointments_followed_up_added`, `appointments_followed_up_changed`, `appointments_followed_up_taken_out`, `appointments_last_visits_added`, `appointments_last_visits_changed`, `appointments_last_visits_taken_out`, `appointments_replacement_booked_added`, `appointments_replacement_booked_changed`, `appointments_replacement_booked_taken_out`.
 
 ## audit_log
 
@@ -479,7 +479,7 @@ Triggers: `deployment_identity_no_delete`, `deployment_identity_no_update`.
 
 Every move ops make on the dispatch board: from where to where, by whom, why, what FSM said, and whether the client was told (ADR 0069).
 
-Made by `0026_field_operations.sql`; changed by `0040_dispatch_claims.sql`.
+Made by `0026_field_operations.sql`; changed by `0040_dispatch_claims.sql`, `0060_flat_task_reads.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -503,6 +503,7 @@ Indexes:
 
 - `dispatch_moves_by_appointment`: on (`appointment_id`, `created_at`)
 - `dispatch_moves_one_at_a_time`: unique on (`appointment_id`), where `fsm_write_state = 'pending'`
+- `dispatch_moves_untold`: on (`now_start`), where `fsm_write_state = 'written' AND told_at IS NULL`
 
 ## events
 
@@ -996,7 +997,7 @@ Indexes:
 
 The mirror of FSM's assets: each piece fitted, its base and lot, the day it was fitted and the day it falls due, and a failure with its reason (ADR 0032).
 
-Made by `0027_pieces_and_zones.sql`.
+Made by `0027_pieces_and_zones.sql`; changed by `0060_flat_task_reads.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1013,12 +1014,16 @@ Made by `0027_pieces_and_zones.sql`.
 | `failure_reason` | TEXT | yes |  |  |
 | `synced_at` | TEXT | no |  |  |
 | `deleted_at` | TEXT | yes |  |  |
+| `replacement_booked` | INTEGER | no | `0` |  |
 
 Indexes:
 
 - `pieces_by_code`: on (`piece_code`)
 - `pieces_by_person`: on (`person_id`, `fitted_at`)
+- `pieces_to_replace`: on (`replacement_due_at`), where `replacement_booked = 0 AND deleted_at IS NULL AND failed_at IS NULL AND replacement_due_at IS NOT NULL`
 - A `UNIQUE` constraint: unique on (`fsm_id`)
+
+Triggers: `pieces_replacement_booked_added`, `pieces_replacement_booked_changed`.
 
 ## price_book
 
@@ -1050,7 +1055,7 @@ Made by `0014_payments.sql`.
 
 A person who came through an invite, to the first invite they used, what became of its grant, and who attached it and why where ops did (ADR 0048, ADR 0089).
 
-Made by `0021_referrals.sql`; changed by `0037_cron_indexes.sql`, `0044_hand_offs_and_messages.sql`, `0051_invites_ops_attach.sql`.
+Made by `0021_referrals.sql`; changed by `0037_cron_indexes.sql`, `0044_hand_offs_and_messages.sql`, `0051_invites_ops_attach.sql`, `0060_flat_task_reads.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1077,6 +1082,7 @@ Indexes:
 
 - `referral_attributions_by_code`: on (`code`, `created_at`)
 - `referral_attributions_by_first_fit`: on (`first_fit_appointment_id`), where `first_fit_appointment_id IS NOT NULL`
+- `referral_attributions_held`: on (`code`), where `grant_state = 'held'`
 - `referral_attributions_pending`: on (`referred_person_id`), where `grant_state = 'pending'`
 - A `UNIQUE` constraint: unique on (`referred_person_id`)
 
@@ -1564,7 +1570,7 @@ Indexes:
 
 What an appointment became once FSM closed it: the outcome, its reason and its times (ADR 0032, ADR 0074).
 
-Made by `0011_fsm_mirror.sql`; changed by `0044_hand_offs_and_messages.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0044_hand_offs_and_messages.sql`, `0060_flat_task_reads.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1576,11 +1582,15 @@ Made by `0011_fsm_mirror.sql`; changed by `0044_hand_offs_and_messages.sql`.
 | `outcome` | TEXT | no |  |  |
 | `partial_reason` | TEXT | yes |  |  |
 | `updated_at` | TEXT | no |  |  |
+| `followed_up` | INTEGER | no | `0` |  |
 
 Indexes:
 
 - A `UNIQUE` constraint: unique on (`appointment_id`)
 - `visits_partial`: on (`appointment_id`), where `outcome = 'partial'`
+- `visits_partial_open`: on (`appointment_id`), where `outcome = 'partial' AND followed_up = 0`
+
+Triggers: `visits_followed_up_added`, `visits_followed_up_changed`.
 
 ## waitlist_entries
 
