@@ -34,11 +34,12 @@ import {
 } from "../policy/no-show.ts";
 import type { PaymentsProvider } from "../providers/payments.ts";
 import type { AlertOnce } from "./alerts.ts";
-import { auditStatementIfRuled, type AuditEntry, type RulingClaim } from "./audit.ts";
+import { auditStatementIfRuled, type AuditEntry } from "./audit.ts";
 import type { LatestArrival } from "./check-ins.ts";
 import type { OpsInputs } from "./ops-settings.ts";
+import { creditBack, rulingMessage, type RulingClaim } from "./ruling-claims.ts";
 import { refundOf, termsInForce, termsOfVisit, visitPayment } from "./visit-changes.ts";
-import { creditOfVisit, NO_VISITS_CONSENT, rulingMessage } from "./visit-messages.ts";
+import { creditOfVisit, NO_VISITS_CONSENT } from "./visit-messages.ts";
 import { minutesBetween } from "../lib/durations.ts";
 
 /**
@@ -393,7 +394,7 @@ async function waiverOf(db: D1Database, appointmentId: string, waiver: Waiver) {
 
 /**
  * Ops charge or waive the visit, with their reason. Ruled once: a second ruling on the same case changes nothing,
- * and writes nothing beside it (RulingClaim, src/domain/audit.ts). In the one batch: the ruling, with what a charge
+ * and writes nothing beside it (src/domain/ruling-claims.ts). In the one batch: the ruling, with what a charge
  * cost or a waiver gave back; its audit entry; the client's message about it; and the credit the visit used, where
  * the ruling returns it. The reason stays with the ruling and reaches no message. What goes back of the payment is
  * refunded after the batch.
@@ -467,26 +468,6 @@ export async function decideNoShow(
     refund: givenBack.refund > 0 ? { ...visit, amount: givenBack.refund } : null,
     creditNotBack: givenBack.creditBack && (await creditOfVisit(db, open.appointment_id)) === "kept" ? visit : null,
   };
-}
-
-/**
- * The credit a visit used, back in its grant, for the ruling this request made: once (the ledger's one-use index),
- * and only to a grant that can still take it, neither clawed back nor expired, as a free cancel's is
- * (src/policy/moving-a-visit.ts).
- */
-export function creditBack(db: D1Database, appointmentId: string, now: Date, ruled: RulingClaim): D1PreparedStatement {
-  return db
-    .prepare(
-      `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
-       SELECT ?1, r.person_id, 'restore', 1, r.grant_id, 'appointment', r.source_id, ?3
-       FROM credit_ledger r JOIN credit_ledger g ON g.id = r.grant_id
-       WHERE r.kind = 'redeem' AND r.source_id = ?2
-         AND NOT EXISTS (SELECT 1 FROM credit_ledger c WHERE c.grant_id = r.grant_id AND c.kind = 'clawback')
-         AND (g.expires_at IS NULL OR g.expires_at > ?3)
-         AND EXISTS (SELECT 1 FROM ${ruled.table} WHERE id = ?4 AND ruling_id = ?5)
-       ON CONFLICT DO NOTHING`,
-    )
-    .bind(crypto.randomUUID(), appointmentId, now.toISOString(), ruled.id, ruled.rulingId);
 }
 
 /**

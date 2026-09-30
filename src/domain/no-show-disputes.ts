@@ -8,9 +8,10 @@
 
 import { chargedCredit, isDisputable, type DisputeRuling } from "../policy/no-show.ts";
 import type { Charge } from "../policy/moving-a-visit.ts";
-import { auditStatementIfRuled, auditStatementIfWritten, type AuditEntry, type RulingClaim } from "./audit.ts";
-import { CHARGE_TAKEN, creditBack, type CreditNotBack, type NoShowRefund } from "./no-shows.ts";
-import { creditOfVisit, rulingMessage } from "./visit-messages.ts";
+import { auditStatementIfRuled, auditStatementIfWritten, type AuditEntry } from "./audit.ts";
+import { CHARGE_TAKEN, type CreditNotBack, type NoShowRefund } from "./no-shows.ts";
+import { creditBack, rulingMessage, type RulingClaim } from "./ruling-claims.ts";
+import { creditOfVisit } from "./visit-messages.ts";
 
 interface ChargedCase {
   id: string;
@@ -169,7 +170,7 @@ interface RulableDispute {
 
 /**
  * Ops refund or uphold a disputed charge, with their reason, which stays on the dispute. Ruled once: a second
- * ruling writes nothing beside it (RulingClaim, src/domain/audit.ts). In the one batch: the ruling, its audit entry,
+ * ruling writes nothing beside it (src/domain/ruling-claims.ts). In the one batch: the ruling, its audit entry,
  * the client's message, and for a refund the credit the charge spent, back in its grant as a waiver's is. What the
  * charge kept of the payment is refunded after the batch.
  */

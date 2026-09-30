@@ -8,6 +8,7 @@
 // member of staff behind it named, in src/http/audit.ts.
 
 import type { Surface } from "../config/environments.ts";
+import type { RulingClaim } from "./ruling-claims.ts";
 
 /** Every action the log records. Phase 2 milestones add theirs here. */
 export const AUDIT_ACTIONS = [
@@ -147,17 +148,9 @@ export function auditStatementIfWritten(
 }
 
 /**
- * A ruling made once, as this request made it: the row it ruled on, and the ruling ID it wrote there with the
- * ruling. What the ruling's batch writes beside it is written only where the row still carries that ID, so a ruling
- * that lost a race to another member of staff's writes nothing (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
+ * The entry for a ruling made once earlier in the same batch: written only if it is this request's ruling
+ * (src/domain/ruling-claims.ts).
  */
-export interface RulingClaim {
-  readonly table: "no_show_cases" | "no_show_disputes";
-  readonly id: string;
-  readonly rulingId: string;
-}
-
-/** The entry for a ruling made once earlier in the same batch: written only if it is this request's ruling. */
 export function auditStatementIfRuled(
   db: D1Database,
   entry: AuditEntry,
