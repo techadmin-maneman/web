@@ -863,6 +863,24 @@ describe("ops stopping the hourly tries, to book it in FSM by hand", () => {
     expect(fsm.made.visits).toEqual([]);
   });
 
+  it("leaves a try the cron had already put on the queue writing nothing, while ops' own try still books it", async () => {
+    const { holdId } = await paidHold();
+    await refusedFiveTimes(holdId);
+    await stop(fakeDependencies({ now: () => afterHeld(52 * MINUTE) }), holdId).answer;
+    const fsm = createStubFsm(world());
+    const hourly = delivery(holdId, 1);
+    const deps = fakeDependencies({ now: () => afterHeld(53 * MINUTE), fsm });
+    await handleFsmSyncBatch(hourly.batch, env, deps, createLogger());
+    expect(hourly.message.ack).toHaveBeenCalled();
+    expect(fsm.made.workOrders).toEqual([]);
+    expect(await holdRow(holdId)).toMatchObject({ state: "held", appointment_id: null });
+    expect(deps.alerts).toEqual([]);
+
+    const { answer } = retry(fakeDependencies({ now: () => afterHeld(HOUR), fsm }), holdId);
+    expect(await (await answer).json()).toEqual({ outcome: "booked", refusal: null });
+    expect(fsm.made.workOrders).toHaveLength(1);
+  });
+
   it("waits while a try is writing the booking to FSM, and stops nothing meanwhile", async () => {
     const { holdId } = await paidHold();
     await refusedFiveTimes(holdId);

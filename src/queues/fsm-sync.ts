@@ -26,7 +26,14 @@ import { confirmBooking, unbookedAlertKey, type ConfirmOptions } from "../domain
 import { pushCatalogue } from "../domain/fsm-catalogue.ts";
 import { sendLeadToFsm } from "../domain/fsm-leads.ts";
 import { logDeactivated, syncAppointment } from "../domain/fsm-mirror.ts";
-import { heldAlert, heldAlertKey, holdForFsm, isHeldForFsm, toLinkAlertKey } from "../domain/held-bookings.ts";
+import {
+  heldAlert,
+  heldAlertKey,
+  holdForFsm,
+  isHeldForFsm,
+  toLinkAlertKey,
+  triesStoppedFor,
+} from "../domain/held-bookings.ts";
 import { streetOf } from "../domain/profile.ts";
 import { eventById, markFsmWrite, nextPending, rejectPendingAfter, unwrittenBefore } from "../domain/job-events.ts";
 import { writeEventToFsm, type JobForFsm } from "../domain/job-sheet.ts";
@@ -184,7 +191,8 @@ export async function handleFsmSyncBatch(
  * nothing is cancelled or refunded, and ops are told once (src/domain/held-bookings.ts). A held booking is tried
  * again by the cron, once an hour, so a failure of one of those tries waits for the next rather than being retried
  * here, and one that finds a visit ops may have booked for it in FSM by hand writes nothing and waits for ops to link
- * it. Nothing here throws out of the batch.
+ * it. A try the cron put on the queue before ops stopped the tries, to book it by hand, is not made. Nothing here
+ * throws out of the batch.
  */
 async function bookHold(
   message: Message,
@@ -198,6 +206,11 @@ async function bookHold(
     retryWithBackoff(message, FIRST_RETRY_DELAY_SECONDS);
   };
   try {
+    if (await triesStoppedFor(db, holdId)) {
+      log.info("booking", { hold_id: holdId, outcome: "tries_stopped" });
+      message.ack();
+      return;
+    }
     const outcome = await confirmBooking(db, deps.fsm, deps.payments, holdId, deps.now(), options);
     log.info("booking", { hold_id: holdId, outcome });
     // Another consumer is writing it: this one looks again later, which never counts toward holding it.
