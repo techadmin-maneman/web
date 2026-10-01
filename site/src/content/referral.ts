@@ -26,7 +26,7 @@ function lineOf(notice: Notice): string {
 }
 
 /** "1 service visit", "3 service visits". */
-export function serviceVisits(count: number): string {
+function serviceVisits(count: number): string {
   return count === 1 ? "1 service visit" : `${String(count)} service visits`;
 }
 
