@@ -80,7 +80,7 @@ export interface NewCodes {
 export const BATCH_MOST = 100;
 
 /** A code of GENERATED_LENGTH characters of the alphabet, each as likely as any other. */
-export function generatedCode(): string {
+function generatedCode(): string {
   // The largest multiple of the alphabet's length under 256: a byte at or above it is thrown away, so no character
   // is likelier than another.
   const below = 256 - (256 % CODE_ALPHABET.length);
@@ -93,7 +93,7 @@ export function generatedCode(): string {
   return code;
 }
 
-export type Made = { readonly kind: "made"; readonly codes: readonly string[] } | { readonly kind: "code_exists" };
+type Made = { readonly kind: "made"; readonly codes: readonly string[] } | { readonly kind: "code_exists" };
 
 /** Who makes a change, under which request, and when. */
 interface Change {
@@ -167,7 +167,7 @@ function codeStatements(
 }
 
 /** A code as the console lists it: its terms, who made it, whether it is off, and what it has taken off so far. */
-export interface ListedCode {
+interface ListedCode {
   readonly id: string;
   readonly code: string;
   readonly kind: DiscountKind;

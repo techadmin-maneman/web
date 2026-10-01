@@ -259,7 +259,7 @@ export function registerOpsDiscountCodes(app: App): void {
   app.openapi(enterRoute, async (c) => {
     const { requestId, log, deps } = c.var;
     const { id } = c.req.valid("param");
-    const by = { kind: "ops", id: staffOf(c).id } as const;
+    const by = { kind: "ops", actor: staffOf(c) } as const;
     const entered = await enterOnVisit(
       c.env.DB,
       { visitId: id, text: c.req.valid("json").code, by, requestId },
@@ -279,7 +279,7 @@ export function registerOpsDiscountCodes(app: App): void {
 
   app.openapi(removeRoute, async (c) => {
     const { requestId, deps } = c.var;
-    const by = { kind: "ops", id: staffOf(c).id } as const;
+    const by = { kind: "ops", actor: staffOf(c) } as const;
     const removed = await removeFromVisit(c.env.DB, { visitId: c.req.valid("param").id, by, requestId }, deps.now());
     if (removed === "price_settled") return c.json(errorBody("price_settled", requestId), 409);
     if (removed !== "removed") return c.json(errorBody("not_found", requestId), 404);

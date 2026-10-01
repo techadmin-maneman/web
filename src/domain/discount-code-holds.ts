@@ -50,7 +50,7 @@ function holdClosed(hold: HoldRow, now: Date): Extract<Entered, { kind: "price_s
 }
 
 /** A hold's code: the use, the code's text and what it takes off. */
-export interface HoldCode {
+interface HoldCode {
   readonly useId: string;
   readonly code: string;
   /** Paise before GST; null on a one visit's hold, whose price is known only once the product is chosen. */
@@ -144,7 +144,7 @@ export async function removeFromHold(
 }
 
 /** What the app shows of a hold's code: the code, what it takes off, and the price before it. */
-export interface HoldDiscount {
+interface HoldDiscount {
   readonly code: string;
   /** Paise before GST; null while the price it comes off is not known. */
   readonly amount_ex_gst: number | null;

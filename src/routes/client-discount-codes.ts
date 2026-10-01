@@ -21,7 +21,7 @@ import { HoldSchema } from "./client-booking.ts";
 
 const holdId = z.object({ id: z.uuid() });
 
-export const DiscountCodeEntrySchema = z
+const DiscountCodeEntrySchema = z
   .object({ code: z.string().trim().min(1).max(40).openapi({ description: "As the client typed it, any case." }) })
   .strict()
   .openapi("DiscountCodeEntry");

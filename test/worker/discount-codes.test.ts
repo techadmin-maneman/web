@@ -19,6 +19,8 @@ import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } fro
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const VISIT = "22222222-2222-4222-8222-222222222222";
+/** Ops, as the stand-in Access names them. */
+const OPS = { kind: "ops", actor: { kind: "staff", id: "ops@localhost" } } as const;
 
 let ops: App;
 
@@ -146,7 +148,7 @@ describe("Settings · Discount codes", () => {
   it("switches a code off, after which it does not apply, and keeps its uses", async () => {
     await clientWithVisit();
     await make();
-    await enterOnVisit(env.DB, { visitId: VISIT, text: "TENPC", by: { kind: "ops", id: "ops@localhost" } }, NOW);
+    await enterOnVisit(env.DB, { visitId: VISIT, text: "TENPC", by: OPS }, NOW);
     const [code] = await listed();
     expect((await post(`/api/discount-codes/${code?.id ?? ""}/off`)).status).toBe(204);
     expect((await post(`/api/discount-codes/${code?.id ?? ""}/off`)).status).toBe(204);
@@ -259,7 +261,7 @@ describe("the invoice of a visit a code was entered on", () => {
   beforeEach(async () => {
     await clientWithVisit();
     await make();
-    await enterOnVisit(env.DB, { visitId: VISIT, text: "TENPC", by: { kind: "ops", id: "ops@localhost" } }, NOW);
+    await enterOnVisit(env.DB, { visitId: VISIT, text: "TENPC", by: OPS }, NOW);
     await env.DB.prepare("UPDATE appointments SET status = 'completed' WHERE id = ?1").bind(VISIT).run();
   });
 

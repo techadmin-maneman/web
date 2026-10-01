@@ -22,18 +22,24 @@ import {
   type DiscountTerms,
 } from "../policy/discount-codes.ts";
 import type { OneVisitState } from "../policy/one-visit.ts";
-import { auditStatementIfStamped, auditStatementIfWritten, type AuditEntry } from "./audit.ts";
+import { auditStatementIfStamped, auditStatementIfWritten, type AuditActor, type AuditEntry } from "./audit.ts";
 import { CODE_COLUMNS, coversOf, standing, termsOf, type CodeRow } from "./discount-codes.ts";
 import { priceOf, type Price } from "./price-book.ts";
 
 /** Who entered a code on a booking. */
-export type GivenBy = "client" | "technician" | "ops";
+type GivenBy = "client" | "technician" | "ops";
 
-export interface EnteredBy {
-  readonly kind: GivenBy;
-  /** The client's or the technician's ID, or the Access identity of ops. */
-  readonly id: string;
+/** Ops, by the Access identity behind the call, which their audit entry names. */
+interface ByOps {
+  readonly kind: "ops";
+  readonly actor: AuditActor;
 }
+
+/** The client or the technician, by their ID; or ops. */
+type EnteredBy = { readonly kind: "client" | "technician"; readonly id: string } | ByOps;
+
+/** Who entered it, as the use keeps it: the client's or the technician's ID, or ops' Access identity. */
+const idOf = (by: EnteredBy): string => (by.kind === "ops" ? by.actor.id : by.id);
 
 /** The client's hold, `hold` naming its ID in the query, while its price may change: no order, nothing paid. */
 export const unpaidHold = (hold: string): string =>
@@ -59,7 +65,7 @@ const openVisit = (visit: string): string =>
 export type Refused = CodeRefusal | "unknown";
 
 /** A code entered on a booking: the code it is, or why it does not apply. */
-export type Checked = { readonly ok: true; readonly code: CodeRow } | { readonly ok: false; readonly reason: Refused };
+type Checked = { readonly ok: true; readonly code: CodeRow } | { readonly ok: false; readonly reason: Refused };
 
 /** The code a text names, and whether it applies to the booking for this client, its limits read as they stand now. */
 export async function checkCode(
@@ -95,7 +101,7 @@ export async function checkCode(
 }
 
 /** A use about to be written. */
-export interface NewUse {
+interface NewUse {
   readonly id: string;
   readonly codeId: string;
   readonly personId: string;
@@ -148,7 +154,7 @@ export function useStatement(
       use.visitId,
       use.amountOff,
       use.by.kind,
-      use.by.id,
+      idOf(use.by),
       now.toISOString(),
     );
 }
@@ -208,7 +214,7 @@ async function visitOf(db: D1Database, visitId: string): Promise<VisitRow | null
 const TAKES_A_CODE = new Set(["scheduled", "dispatched", "in_progress", "completed"]);
 
 /** A visit's code, entered on it or on the hold that booked it. */
-export interface VisitCode {
+interface VisitCode {
   readonly useId: string;
   readonly code: string;
   readonly terms: DiscountTerms;
@@ -282,7 +288,8 @@ export async function enterOnVisit(
     amountOff: price === null ? null : amountOff(termsOf(checked.code), price.amount_ex_gst),
     by: entry.by,
   };
-  const audit = entry.by.kind === "ops" ? [visitAudit("discount_code.apply", entry, checked.code.code)] : [];
+  const { by } = entry;
+  const audit = by.kind === "ops" ? [visitAudit("discount_code.apply", by, entry, checked.code.code)] : [];
   await db.batch([
     useStatement(db, use, "open_visit", now),
     ...audit.map((each) => auditStatementIfWritten(db, each, now, { table: "discount_code_uses", id: use.id })),
@@ -293,12 +300,13 @@ export async function enterOnVisit(
 /** Ops' entry for a code entered on a visit or taken off it: the visit's ID and the code, and nothing else. */
 function visitAudit(
   action: "discount_code.apply" | "discount_code.remove",
-  entry: { readonly visitId: string; readonly by: EnteredBy; readonly requestId?: string },
+  by: ByOps,
+  entry: { readonly visitId: string; readonly requestId?: string },
   code: string,
 ): AuditEntry {
   return {
     surface: "ops",
-    actor: { kind: "staff", id: entry.by.id },
+    actor: by.actor,
     action,
     subject: { kind: "appointment", id: entry.visitId },
     requestId: entry.requestId ?? null,
@@ -309,7 +317,7 @@ function visitAudit(
 /** Ops take the code off a visit not yet paid for, linked or invoiced: its use is marked removed, and audited. */
 export async function removeFromVisit(
   db: D1Database,
-  entry: { readonly visitId: string; readonly by: EnteredBy; readonly requestId: string },
+  entry: { readonly visitId: string; readonly by: ByOps; readonly requestId: string },
   now: Date,
 ): Promise<Exclude<Removed, "expired">> {
   const visit = await visitOf(db, entry.visitId);
@@ -317,14 +325,14 @@ export async function removeFromVisit(
   if (visit.open !== 1) return "price_settled";
   const code = await codeOnVisit(db, visit.id);
   if (code === null) return "none";
-  const removal = visitAudit("discount_code.remove", entry, code.code);
+  const removal = visitAudit("discount_code.remove", entry.by, entry, code.code);
   await db.batch([
     db
       .prepare(
-        `UPDATE discount_code_uses SET removed_at = ?2, removed_by = ?3, removed_by_id = ?4
-         WHERE id = ?1 AND removed_at IS NULL AND ${openVisit("?5")}`,
+        `UPDATE discount_code_uses SET removed_at = ?2, removed_by = 'ops', removed_by_id = ?3
+         WHERE id = ?1 AND removed_at IS NULL AND ${openVisit("?4")}`,
       )
-      .bind(code.useId, now.toISOString(), entry.by.kind, entry.by.id, visit.id),
+      .bind(code.useId, now.toISOString(), entry.by.actor.id, visit.id),
     auditStatementIfStamped(db, removal, now, { table: "discount_code_uses", column: "removed_at", id: code.useId }),
   ]);
   return "removed";
@@ -345,7 +353,7 @@ export function releaseDeclined(db: D1Database, visitId: string, now: Date): D1P
 }
 
 /** A visit's code as the client's page shows it, and whether ops may still enter or take off one. */
-export interface ClientVisitCode {
+interface ClientVisitCode {
   readonly code: { readonly code: string; readonly amount_off: number | null; readonly given_by: GivenBy } | null;
   /** Not yet paid for, linked or invoiced. */
   readonly open: boolean;

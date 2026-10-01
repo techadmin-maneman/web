@@ -327,7 +327,7 @@ export interface StubBooks extends BooksProvider {
  * What the stub's drafts total before a discount, in paise: the work order's figure, which the stub cannot know, as
  * FSM raised the draft. A discount then leaves that figure less the discount, as Books leaves it with GST at 0%.
  */
-export interface StubBooksWorld {
+interface StubBooksWorld {
   readonly draftTotal: number;
 }
 
