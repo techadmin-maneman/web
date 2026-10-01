@@ -24,7 +24,10 @@ const SITE = "http://127.0.0.1:4311";
 const DESIGN = "http://127.0.0.1:4312/Mane%20Man%20Site%20v2.dc.html";
 const OUT = resolve("docs/fidelity");
 
-/** The home page's sections, in order: v2's top-level blocks pair with these. */
+/**
+ * The home page's sections, in order: v2's top-level blocks pair with these. v2's two bases pair with Materials and
+ * construction, which took their place, and its prices with nothing while the site gives none (ADR 0103).
+ */
 const HOME_SECTIONS = [
   "hero",
   "what",
@@ -34,8 +37,8 @@ const HOME_SECTIONS = [
   "discretion",
   "how",
   "technicians",
-  "bases",
-  "prices",
+  "materials",
+  null,
   "testimonials",
   "guarantee",
   "faq",
@@ -188,6 +191,7 @@ async function run(browser: Browser, width: number): Promise<void> {
   await fixedBars(design, false);
   await fixedBars(site, false);
   for (const [index, name] of HOME_SECTIONS.entries()) {
+    if (name === null) continue;
     await pair(
       width,
       `home-${String(index + 1).padStart(2, "0")}-${name}`,

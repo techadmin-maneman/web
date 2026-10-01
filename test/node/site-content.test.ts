@@ -111,12 +111,12 @@ describe("content", () => {
     expect(VISIT_BLOCKS.first_fit.minutes).toBe(180);
     const published = JSON.stringify({ ...site, ...BLOCKS, testimonials: null }) + JSON.stringify(referral);
     expect(published).not.toMatch(/forty minutes|about an hour|one hour|ninety minutes · at your table/i);
-    expect(site.hero.body).toContain("in about three hours");
+    expect(site.discretionBand.text).toMatch(/^Three hours at your own table/);
     expect(site.howItWorks.steps.map((step) => step.meta)).toEqual([
       "Fifteen minutes · free",
       "An hour · free",
-      "Three hours · at your table",
-      "{service} a visit · ninety minutes",
+      "Three hours · at your home",
+      "Every month · ninety minutes",
     ]);
     expect(site.faq.items[2]?.a).toMatch(/About ninety minutes, at your home\.$/);
     expect(site.closing.title).toBe("The consultation takes an hour and costs nothing.");
@@ -128,13 +128,51 @@ describe("content", () => {
     ]);
   });
 
+  // The owner's copy of 1 October 2026 (ADR 0103): "hair system, not hair patch", and "100% real human hair".
+  it("says hair system, never hair patch, and calls the hair 100% real human hair", () => {
+    const pages = JSON.stringify(site) + JSON.stringify(referral);
+    expect(pages).not.toMatch(/hair patch/i);
+    expect(site.whatItIs.body).toContain("100% real human hair");
+    expect(site.range.intro).toContain("100% real human hair");
+    expect(site.whatItIs.body).toMatch(/bonded to the skin\. It is not a wig\.$/);
+  });
+
+  it("names the four hair systems as the owner named them, each with its line", () => {
+    expect(site.range.products.map((product) => product.name)).toEqual([
+      "Mane Man Essential",
+      "Mane Man Active",
+      "Mane Man Natural",
+      "Mane Man NatMax",
+    ]);
+    for (const product of site.range.products) expect(product.tagline, product.name).not.toBe("");
+  });
+
+  // The product guide marks the multi-layer base "Test before promising" and measures no life of its own: the site
+  // promises no life in months for any base we fit.
+  it("promises no life in months for a base we fit", () => {
+    const fitted = site.materials.groups.filter((group) => group.title !== "What we do not fit, and why");
+    const said = JSON.stringify({ fitted, faq: site.faq, range: site.range });
+    expect(said).not.toMatch(/\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|twelve)\b[^.]*\bmonths?\b/i);
+  });
+
+  it("gives every rated material one rating for each quality its group rates", () => {
+    for (const group of site.materials.groups) {
+      for (const item of group.items) {
+        expect(item.ratings?.length, item.name).toBe(group.rated?.length);
+      }
+    }
+  });
+
   // CLI-16: the site serves Delhi NCR, and the landing said Gurgaon. The owner's ruling on the wording is open
   // (ADR 0025, item 14); until then every page says what the home page does.
   it("names one service area on every page", () => {
     const pages = JSON.stringify(site) + JSON.stringify(referral);
     expect(pages).not.toContain("Gurgaon only");
-    expect(referral.arrival.title).toBe("Hair, fitted at your home across Delhi NCR.");
-    expect(site.hero.title).toBe(referral.arrival.title);
+    expect(site.header.area).toBe("Delhi NCR");
+    expect(site.footer.area).toBe("Delhi NCR · home service only");
+    expect(site.pageTitles.home).toContain("across Delhi NCR");
+    expect(site.pageDescriptions.home).toContain("across Delhi NCR");
+    expect(referral.arrival.title).toBe(site.hero.title);
     expect(referral.waitlist.body).toBe("Delhi NCR only, for now.");
     expect(referral.preview.description).toMatch(/^Home-fitted hair systems across Delhi NCR\./);
   });

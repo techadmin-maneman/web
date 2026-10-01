@@ -1,5 +1,4 @@
 ---
-import Bases from "../components/home/Bases.astro";
 import Closing from "../components/home/Closing.astro";
 import Comparison from "../components/home/Comparison.astro";
 import DiscretionBand from "../components/home/DiscretionBand.astro";
@@ -7,13 +6,15 @@ import Faq from "../components/home/Faq.astro";
 import GuaranteeFounder from "../components/home/GuaranteeFounder.astro";
 import Hero from "../components/home/Hero.astro";
 import HowItWorks from "../components/home/HowItWorks.astro";
+import Materials from "../components/home/Materials.astro";
 import Norwood from "../components/home/Norwood.astro";
 import Prices from "../components/home/Prices.astro";
+import Range from "../components/home/Range.astro";
 import Technicians from "../components/home/Technicians.astro";
 import Testimonials from "../components/home/Testimonials.astro";
 import TryOnTeaser from "../components/home/TryOnTeaser.astro";
 import WhatItIs from "../components/home/WhatItIs.astro";
-import { pageDescriptions, pageTitles } from "../content/site.ts";
+import { PRICES_SHOWN, pageDescriptions, pageTitles } from "../content/site.ts";
 import Site from "../layouts/Site.astro";
 import { heroPosterUrl } from "../lib/hero.ts";
 import { BUILT_WORDS } from "../lib/prices.ts";
@@ -44,8 +45,9 @@ const structuredData = [
   <DiscretionBand />
   <HowItWorks />
   <Technicians />
-  <Bases />
-  <Prices />
+  <Range />
+  <Materials />
+  {PRICES_SHOWN && <Prices />}
   <Testimonials />
   <GuaranteeFounder />
   <Faq />

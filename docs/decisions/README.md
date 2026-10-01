@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/adr-index.test.ts` fails until it is run after a record is added or its status changes. The next free number is 0098.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/adr-index.test.ts` fails until it is run after a record is added or its status changes. The next free number is 0104.
 
 | ADR | Decision | Date | Status | Changed by |
 | --- | --- | --- | --- | --- |
@@ -27,7 +27,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0019](0019-erasure.md) | Erasure | 2026-09-21 | accepted | [0066](0066-erasure-all-or-nothing.md), [0094](0094-where-a-consent-was-given.md) |
 | [0020](0020-production-on-the-zoho-test-org.md) | Production uses the Zoho test org, for now | 2026-09-21 | superseded by 0050 on 22 September 2026 | [0050](0050-crm-in-the-real-org.md) |
 | [0021](0021-public-site.md) | The public site: Astro in site/, on staging first | 2026-09-22 | accepted |  |
-| [0022](0022-site-departures-from-v2.md) | Where the site departs from v2 or the front-end prompt | 2026-09-22 | accepted | [0073](0073-prices-from-the-price-book.md) |
+| [0022](0022-site-departures-from-v2.md) | Where the site departs from v2 or the front-end prompt | 2026-09-22 | accepted | [0073](0073-prices-from-the-price-book.md), [0103](0103-the-home-pages-first-copy-round.md) |
 | [0023](0023-launch-hardening.md) | Launch hardening: headers, analytics, budgets | 2026-09-22 | accepted |  |
 | [0024](0024-the-browsers-own-look.md) | The browser's own look: an optional gate, and a look shown again | 2026-09-22 | accepted, on the owner's review of 22 September 2026 |  |
 | [0025](0025-phase-2-conflicts-register.md) | Phase 2: the conflicts register | 2026-09-22 | accepted, and kept up to date |  |
@@ -78,7 +78,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0070](0070-vendor-correctness.md) | What we write to Zoho is right, written once, and asked for sparingly | 2026-09-25 | accepted |  |
 | [0071](0071-what-ops-see-before-a-setting-changes.md) | What ops see before a setting changes, and who the console says they are | 2026-09-26 | accepted | [0086](0086-the-next-visit-is-offered.md) |
 | [0072](0072-ops-clients-and-queues.md) | The ops console's clients and queues | 2026-09-26 | accepted | [0092](0092-task-owners.md) |
-| [0073](0073-prices-from-the-price-book.md) | Prices from the price book, on the site and in FSM's catalogue | 2026-09-26 | accepted | [0085](0085-services-ops-can-edit.md), [0087](0087-consumables-and-stock.md) |
+| [0073](0073-prices-from-the-price-book.md) | Prices from the price book, on the site and in FSM's catalogue | 2026-09-26 | accepted | [0085](0085-services-ops-can-edit.md), [0087](0087-consumables-and-stock.md), [0103](0103-the-home-pages-first-copy-round.md) |
 | [0074](0074-hand-offs-and-messages.md) | What each person learns when something changes for them | 2026-09-26 | accepted | [0092](0092-task-owners.md), [0096](0096-a-no-shows-charge-and-its-dispute.md) |
 | [0075](0075-tests-held-to-the-contract-and-the-local-stack.md) | Tests held to the API's contract, and the whole system on a laptop | 2026-09-27 | accepted |  |
 | [0076](0076-one-ui-layer-and-one-api-client.md) | One component layer and one API client for the front ends | 2026-09-27 | accepted |  |
@@ -101,6 +101,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0095](0095-a-booking-fsm-refuses-is-held.md) | A booking FSM refuses is held, not refunded | 2026-09-29 | accepted, on the owner's ruling of 27 September 2026 |  |
 | [0096](0096-a-no-shows-charge-and-its-dispute.md) | A no-show's charge and its dispute, and the free change a visit ops moved keeps | 2026-09-29 | accepted, on the owner's rulings of 27 September 2026 |  |
 | [0097](0097-staging-logins-open-reminders-fenced.md) | Staging logins open, reminders fenced | 2026-09-30 | accepted |  |
+| [0103](0103-the-home-pages-first-copy-round.md) | The home page's first copy round | 2026-10-01 | accepted |  |
 
 ## Records beside them
 

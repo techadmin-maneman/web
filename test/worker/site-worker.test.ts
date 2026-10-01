@@ -226,20 +226,20 @@ describe("the site Worker on a page that shows a price", () => {
     ]);
     expect(page.premiumHidden).toBe(false);
     expect(page.html).toContain('<div class="amount" data-premium data-price="{premiumFirstFit}">Rs. 45,000</div>');
-    expect(page.structured("business")).toMatchObject({ priceRange: "Rs. 35,000–Rs. 45,000" });
-    const faq = page.structured("faq") as { mainEntity: { name: string; acceptedAnswer: { text: string } }[] };
-    const firstYear = faq.mainEntity.find((question) => question.name === "What does the first year cost in total?");
-    expect(firstYear?.acceptedAnswer.text).toContain("Premium: Rs. 45,000 plus twelve at Rs. 2,500, so Rs. 75,000.");
   });
 
-  it("builds the structured data again from the book's figures", async () => {
-    const page = await visit("/", withPrices());
+  // The owner took the prices off the site on 1 October 2026 (ADR 0103), the price range search engines read with them.
+  it("builds the structured data again, with no price while the site gives none", async () => {
+    const page = await visit("/", withPrices(undefined, WITH_PREMIUM));
 
-    expect(page.structured("business")).toMatchObject({ "@type": "LocalBusiness", priceRange: "Rs. 35,000" });
+    expect(page.structured("business")).toMatchObject({ "@type": "LocalBusiness", name: "Mane Man" });
+    expect(page.structured("business")).not.toHaveProperty("priceRange");
     const faq = page.structured("faq") as { mainEntity: { name: string; acceptedAnswer: { text: string } }[] };
-    const firstYear = faq.mainEntity.find((question) => question.name === "What does the first year cost in total?");
-    expect(firstYear?.acceptedAnswer.text).toContain("Rs. 35,000 for the first fit plus twelve monthly service visits");
-    expect(firstYear?.acceptedAnswer.text).not.toContain("Premium");
+    const cost = faq.mainEntity.find((question) => question.name === "What does it cost?");
+    expect(cost?.acceptedAnswer.text).toBe(
+      "It depends on the hair system you choose. Your technician quotes it at the free consultation, before anything is fitted. No deposit, no package.",
+    );
+    expect(JSON.stringify(faq)).not.toMatch(/Rs\. \d/);
   });
 
   it("gives the booking form's island the book's answer", async () => {

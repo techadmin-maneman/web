@@ -1,0 +1,186 @@
+---
+// Materials and construction: what a hair system is made of, group by group. Every group is closed until it is
+// opened, and each opens on its own.
+import { materials, placeholderTag } from "../../content/site.ts";
+import { SHOW_PLACEHOLDER_TAGS, isShown } from "../../lib/build.ts";
+import { ICONS } from "@maneman/brand/icons";
+import DesignPicture from "../DesignPicture.astro";
+---
+
+<section id="materials" class="container materials" data-section="materials">
+  <h2 class="section-title">{materials.title}</h2>
+  <p class="lead intro">{materials.intro}</p>
+  <div class="list">
+    {materials.groups.map((group) => (
+      <details>
+        <summary>
+          <span>{group.title}</span>
+          <svg
+            viewBox="0 0 24 24"
+            width="17"
+            height="17"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <path d={ICONS.minus} />
+            <path class="vertical" d="M12 6 V18" />
+          </svg>
+        </summary>
+        <div class="group">
+          {group.lead !== undefined && <p class="group-lead">{group.lead}</p>}
+          {group.photos !== undefined && isShown(group.photos) && (
+            <div class="photos">
+              {group.photos.images.map((photo) => (
+                <div class="frame photo">
+                  <DesignPicture file={photo.file} alt={photo.alt} sizes="50vw" widths={[390, 780]} />
+                  {SHOW_PLACEHOLDER_TAGS && <div class="label tag">{placeholderTag}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+          <ul class="items">
+            {group.items.map((item) => (
+              <li class="item">
+                <div>
+                  <h3>{item.name}</h3>
+                  <p>{item.text}</p>
+                </div>
+                {group.rated !== undefined && item.ratings !== undefined && (
+                  <dl class="ratings">
+                    {group.rated.map((label, index) => (
+                      <div>
+                        <dt>{label}</dt>
+                        <dd>{item.ratings?.[index]}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </details>
+    ))}
+  </div>
+</section>
+
+<style>
+  .materials {
+    padding-top: var(--section-gap);
+  }
+  .section-title {
+    margin-bottom: var(--sp-12);
+  }
+  .intro {
+    margin: 0 0 var(--intro-gap);
+  }
+  .list {
+    border-top: var(--hairline) solid var(--text);
+  }
+  details {
+    border-bottom: var(--hairline) solid var(--paper-line);
+  }
+  summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--sp-20);
+    padding: var(--sp-22) 0;
+    cursor: pointer;
+    font-family: var(--font-serif);
+    font-size: var(--fs-materials-group);
+    line-height: var(--lh-120);
+    list-style: none;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  summary svg {
+    flex-shrink: 0;
+    color: var(--text-muted);
+  }
+  details[open] summary svg {
+    color: var(--text);
+  }
+  details[open] .vertical {
+    display: none;
+  }
+  .group {
+    padding-bottom: var(--sp-24);
+  }
+  .group-lead {
+    margin: 0 0 var(--sp-20);
+    font-size: var(--fs-17);
+    line-height: var(--lh-170);
+    color: var(--text-soft);
+    max-width: var(--measure-lead);
+    text-wrap: pretty;
+  }
+  .photos {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--sp-16);
+    margin-bottom: var(--sp-20);
+  }
+  .photo {
+    height: var(--materials-photo-h);
+  }
+  .tag {
+    position: absolute;
+    top: var(--sp-14);
+    left: var(--sp-14);
+  }
+  .items {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .item {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--split-min)), 1fr));
+    gap: var(--sp-14) var(--split-gap);
+    padding: var(--sp-20) 0;
+    border-top: var(--hairline) solid var(--paper-line);
+  }
+  h3 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-weight: var(--weight-regular);
+    font-size: var(--fs-card-title);
+    line-height: var(--lh-120);
+  }
+  .item p {
+    margin: var(--sp-6) 0 0;
+    font-size: var(--fs-16);
+    line-height: var(--lh-160);
+    color: var(--text-soft);
+    max-width: var(--measure-short);
+    text-wrap: pretty;
+  }
+  .ratings {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--sp-12);
+    align-self: start;
+    margin: 0;
+  }
+  /* The rating reads first, as the technicians' numbers do; the quality it rates follows it. */
+  .ratings div {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: var(--sp-4);
+  }
+  dt {
+    font-size: var(--fs-13);
+    color: var(--text-muted);
+  }
+  dd {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: var(--fs-17);
+    line-height: var(--lh-120);
+  }
+</style>

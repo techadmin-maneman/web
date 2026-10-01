@@ -117,12 +117,12 @@
   --fs-24: 24px;
 
   --fs-hero: clamp(42px, 7.4vw, 96px);
+  --fs-hero-title: clamp(24px, 2.8vw, 38px);
   --fs-hero-body: clamp(17px, 1.5vw, 21px);
   --fs-h2: clamp(30px, 4vw, 54px);
   --fs-lead: clamp(17px, 1.4vw, 19px);
   --fs-body: clamp(16px, 1.3vw, 18px);
   --fs-reading: clamp(17px, 1.4vw, 20px);
-  --fs-reading-serif: clamp(22px, 2.4vw, 30px);
   --fs-card-title: clamp(17px, 1.6vw, 21px);
   --fs-column-head: clamp(17px, 2vw, 28px);
   --fs-teaser-title: clamp(32px, 4.6vw, 62px);
@@ -130,8 +130,8 @@
   --fs-step-number: clamp(40px, 5vw, 72px);
   --fs-step-title: clamp(24px, 2.6vw, 36px);
   --fs-person: clamp(20px, 1.9vw, 26px);
-  --fs-base-name: clamp(26px, 2.4vw, 34px);
-  --fs-base-price: clamp(22px, 2vw, 26px);
+  --fs-range-tagline: clamp(26px, 2.4vw, 34px);
+  --fs-materials-group: clamp(20px, 2vw, 26px);
   --fs-price-head: clamp(18px, 2vw, 28px);
   --fs-price: clamp(24px, 3vw, 40px);
   --fs-quote: clamp(19px, 1.8vw, 23px);
@@ -185,6 +185,7 @@
   /* ---- Motion: how long, and the one curve, apart ------------------------ */
   --duration-quick: 300ms; /* a state changing: a colour, a fade, a step sliding in */
   --duration-travel: 420ms; /* something crossing a distance: a sheet rising, the try-on's progress bar */
+  --duration-phrase: 1200ms; /* one phrase of the hero's opening line, faded in, held and faded out */
   --ease-house: cubic-bezier(0.22, 0.61, 0.36, 1);
 
   /* ---- The viewport: no board draws these; each lets a layout reach past its column -------------- */
@@ -272,10 +273,10 @@
 
   --technician-pad: clamp(18px, 2vw, 26px);
 
-  --base-pad-y: clamp(26px, 3vw, 40px);
-  --base-pad-x: clamp(0px, 2vw, 40px);
-  --base-photo-h: clamp(200px, 24vw, 300px);
-  --base-drawing-max: 200px;
+  --range-card-min: 260px;
+  --range-pad-y: clamp(26px, 3vw, 40px);
+
+  --materials-photo-h: clamp(200px, 24vw, 300px);
 
   --prices-pad-top: clamp(36px, 5vw, 64px);
   --price-column: clamp(96px, 16vw, 240px);

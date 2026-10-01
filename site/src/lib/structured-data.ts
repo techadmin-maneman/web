@@ -3,7 +3,7 @@
 // book's: the build writes them with the figures it has, and the mm-site Worker
 // builds both again with the book's (docs/decisions/0073-prices-from-the-price-book.md).
 
-import { business, faq, whatsapp } from "../content/site.ts";
+import { business, faq, PRICES_SHOWN, whatsapp } from "../content/site.ts";
 import { fillPrices, type PriceWords } from "./prices.ts";
 import { SITE_ORIGIN } from "./site-origin.ts";
 
@@ -25,7 +25,7 @@ export function localBusiness(prices: PriceWords): object {
     description: business.description,
     url: `${SITE_ORIGIN}/`,
     image: `${SITE_ORIGIN}/og.png`,
-    priceRange: fillPrices(business.priceRange, prices),
+    ...(PRICES_SHOWN ? { priceRange: fillPrices(business.priceRange, prices) } : {}),
     areaServed: business.areaServed.map((name) => ({ "@type": "City", name })),
     ...(number === undefined ? {} : { telephone: number }),
   };

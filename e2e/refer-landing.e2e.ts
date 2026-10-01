@@ -78,7 +78,9 @@ test("the invite names the referrer, and a served pincode opens the consultation
   await visit(page, `/r/${CODE}`);
 
   await expect(page.getByText("Rohit sent you this")).toBeVisible();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Hair, fitted at your home across Delhi NCR.");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Transformation and confidence, delivered in one visit.",
+  );
   await expect(page.getByText("Get fitted and you both get 3 service visits free.")).toBeVisible();
 
   await page.getByLabel("Pincode").fill(SERVED.pincode);
@@ -238,7 +240,9 @@ test("an invite that cannot be fetched is neither refused nor promised", async (
   );
   await visit(page, `/r/${CODE}`);
 
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Hair, fitted at your home across Delhi NCR.");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Transformation and confidence, delivered in one visit.",
+  );
   await expect(page.getByText("You have an invite")).toBeVisible();
   await expect(page.getByText("We do not recognise this invite")).toBeHidden();
   await expect(page.getByText(/3 service visits/)).toHaveCount(0);
@@ -247,38 +251,19 @@ test("an invite that cannot be fetched is neither refused nor promised", async (
   await expect(page.getByText(/is told when you are fitted/)).toHaveCount(0);
 });
 
-// FEO-22: the landing typed ₹25,000 and ₹1,500 while the price book held others. Nothing writes the book into the
-// page here, so the island asks for it, as it does wherever the Worker could not
-// (docs/decisions/0073-prices-from-the-price-book.md).
-test("the prices are the price book's, asked for where no Worker wrote them", async ({ page }) => {
+// The owner took the prices off the site on 1 October 2026 (ADR 0103): the invite gives none, and asks for none.
+test("the invite gives no price, and never asks the price book", async ({ page }) => {
   await mockApi(page);
-  const moved = { amount: 0, gst_percent: 0 };
-  await page.route("**/api/published-prices", (route) =>
-    route.fulfill({
-      json: {
-        on: "2026-09-26",
-        tier: "standard",
-        first_fit: { ...moved, amount_ex_gst: 3_500_000 },
-        service: { ...moved, amount_ex_gst: 250_000 },
-        replacement: { ...moved, amount_ex_gst: 1_600_000 },
-      },
-    }),
-  );
+  let asked = 0;
+  await page.route("**/api/published-prices", (route) => {
+    asked += 1;
+    return route.fulfill({ status: 503, json: { error: { code: "unavailable", request_id: "r" } } });
+  });
   await visit(page, `/r/${CODE}`);
 
-  await expect(page.getByText("Rs. 35,000", { exact: true })).toBeVisible();
-  await expect(page.getByText("Rs. 2,500", { exact: true })).toBeVisible();
-});
-
-test("the prices stay as the page was built when the book cannot be read", async ({ page }) => {
-  await mockApi(page);
-  await page.route("**/api/published-prices", (route) =>
-    route.fulfill({ status: 503, json: { error: { code: "unavailable", request_id: "r" } } }),
-  );
-  await visit(page, `/r/${CODE}`);
-
-  await expect(page.getByText("Rs. 30,000", { exact: true })).toBeVisible();
-  await expect(page.getByText("Rs. 2,000", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.getByText(/Rs\. \d/)).toHaveCount(0);
+  expect(asked).toBe(0);
 });
 
 // With self-serve booking off, the API records the day asked for and answers

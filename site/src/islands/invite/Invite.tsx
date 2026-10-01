@@ -9,7 +9,8 @@
 // Where it is missing — local dev, a page served straight from the assets, or
 // mm-api not answering the Worker — the island fetches it, and any code books.
 // The prices arrive the same way, from the price book, onto <body>, and are
-// fetched where they did not (docs/decisions/0073-prices-from-the-price-book.md).
+// fetched where they did not (docs/decisions/0073-prices-from-the-price-book.md),
+// while the site gives prices at all (PRICES_SHOWN).
 //
 // The pincode check is usePincode.ts, the two forms Consultation.tsx and
 // Waitlist.tsx, which send through useTurnstileForm.ts, and the confirmations
@@ -20,7 +21,7 @@
 
 import { useEffect, useRef, useState } from "preact/hooks";
 import { referral } from "../../content/referral.ts";
-import { booking } from "../../content/site.ts";
+import { booking, PRICES_SHOWN } from "../../content/site.ts";
 import { fetchInvite, fetchPublishedPrices, type Invite as InviteAnswer } from "../../lib/api.ts";
 import { cardPath, HOUSE_CARD, isInvite } from "../../lib/invite.ts";
 import { BUILT_WORDS, isPublishedPrices, priceWords, standardOf, type PriceWords } from "../../lib/prices.ts";
@@ -93,7 +94,7 @@ export default function Invite(props: Props) {
 
   // The prices: from the page where the Worker wrote them, otherwise from the API.
   useEffect(() => {
-    if (pricesInPage() !== null) return;
+    if (!PRICES_SHOWN || pricesInPage() !== null) return;
     void fetchPublishedPrices().then((found) => {
       if (found.ok && isPublishedPrices(found.body)) setPrices(priceWords(standardOf(found.body)));
     });
@@ -155,7 +156,7 @@ export default function Invite(props: Props) {
               </p>
             )}
           </div>
-          <Prices words={prices} />
+          {PRICES_SHOWN && <Prices words={prices} />}
           <PincodePanel check={pincode} />
 
           {answer?.served === true && (

@@ -1,5 +1,7 @@
 // Every string and image on the site, taken word for word from the design
-// (design/Mane Man Site v2.dc.html). Components hold no copy of their own.
+// (design/Mane Man Site v2.dc.html), except where the owner rewrote the home
+// page on 1 October 2026 (docs/decisions/0103-the-home-pages-first-copy-round.md).
+// Components hold no copy of their own.
 //
 // Two kinds of entry need care before production (docs/frontend.md):
 //
@@ -177,22 +179,24 @@ export const stepPhotos = {
   ] satisfies Picture[],
 };
 
+/** Two of the base materials up close, in "Materials and construction". */
 export const basePhotos = {
   publish: false,
-  standard: {
-    file: "base-monofilament.jpg",
-    alt: "Macro of a monofilament mesh base with hairs hand-tied into it as visible knots",
-  },
-  premium: {
-    file: "base-thinskin.jpg",
-    alt: "Macro of an ultra-thin polyurethane base held between finger and thumb, hair passing through it",
-  },
+  images: [
+    {
+      file: "base-monofilament.jpg",
+      alt: "Macro of a monofilament mesh base with hairs hand-tied into it as visible knots",
+    },
+    {
+      file: "base-thinskin.jpg",
+      alt: "Macro of a thin polyurethane base held between finger and thumb, hair passing through it",
+    },
+  ] satisfies Picture[],
 };
 
 export const technicians = {
   publish: false,
   title: "Who comes to your home",
-  intro: "The same man fits your first piece and comes back every month after.",
   yearsLabel: "years fitting",
   fitsLabel: "fits completed",
   people: [
@@ -201,21 +205,18 @@ export const technicians = {
       photo: { file: "tech-1.jpg", alt: "Imran Qureshi, hair-system technician" },
       years: "11",
       fits: "1,400",
-      note: "Does most of our thin-skin work. Covers Gurgaon and South Delhi.",
     },
     {
       name: "Sandeep Rawat",
       photo: { file: "tech-2.jpg", alt: "Sandeep Rawat, hair-system technician" },
       years: "8",
       fits: "900",
-      note: "Cuts and colour-matches. Covers Noida, Ghaziabad and East Delhi.",
     },
     {
       name: "Vikas Chauhan",
       photo: { file: "tech-3.jpg", alt: "Vikas Chauhan, hair-system technician" },
       years: "6",
       fits: "600",
-      note: "Handles repairs and the monthly visits. Covers Gurgaon and Faridabad.",
     },
   ],
 };
@@ -281,13 +282,14 @@ export function privacyPage(tryOnSentences: string) {
 export const legalPages = {
   privacy: privacyPage(tryOnPromises.approved.privacy),
   // Drafted from the site's published prices, guarantee and try-on rules; the owner approved it on 22 September 2026.
+  // Its prices are quoted, not published, since the owner took them off the site on 1 October 2026 (ADR 0103).
   terms: {
     publish: true,
     title: "Terms",
     paragraphs: [
       "These terms cover the service Mane Man Grooming Services Private Limited provides: non-surgical hair systems, measured, fitted and serviced at your home across Delhi NCR. By booking a visit or using the try-on you agree to them. We may change them; the version on this page when you book is the one that applies to that booking.",
-      "The first visit is a consultation: an hour, free, and with no obligation to order. Nothing is fitted at it. We confirm the day and time on WhatsApp, and you can move or cancel any visit by messaging us, at no charge. Prices are the ones published on this site when you order. The first fit, which covers the piece, the fitting and the cut, is paid on the day of the fit by card, UPI or bank transfer, and each service visit is paid when it is made. We take no deposit and sell no package.",
-      "If the fit is not right, we refit it at no charge, or refund you in full, including the fitting and the cut, within fourteen days of the fit. A hair system is bonded to the skin, so tell the technician about any skin condition, allergy or treatment before the fit; if a system is not suitable for you, we say so and do not fit it. A base wears with use and its life depends on its care, so the replacement intervals we publish are typical, not promised.",
+      "The first visit is a consultation: an hour, free, and with no obligation to order. Nothing is fitted at it. We confirm the day and time on WhatsApp, and you can move or cancel any visit by messaging us, at no charge. Prices are the ones we quote you before the fit. The first fit, which covers the piece, the fitting and the cut, is paid on the day of the fit by card, UPI or bank transfer, and each service visit is paid when it is made. We take no deposit and sell no package.",
+      "If the fit is not right, we refit it at no charge, or refund you in full, including the fitting and the cut, within fourteen days of the fit. A hair system is bonded to the skin, so tell the technician about any skin condition, allergy or treatment before the fit; if a system is not suitable for you, we say so and do not fit it. A base wears with use and its life depends on its care, so the replacement intervals we give are typical, not promised.",
       "The try-on is an illustrative simulation made by software from one photograph. It is not a photograph of a result, and not a promise of how a fitted piece will look: a fitted piece is matched to your own hair colour, density and growth pattern. Upload only a photograph of yourself, and only if you are eighteen or over. Each visitor gets one simulation.",
       "We are responsible for the care and skill of our technicians. Beyond a refit or refund under the guarantee, and except where the law provides otherwise, our liability for a visit is limited to what you paid for it. These terms are governed by the laws of India, and the courts at New Delhi have jurisdiction. For questions or complaints, message or call us on +91 90079 73247.",
     ],
@@ -304,7 +306,7 @@ export const header = {
   navLabel: "Sections",
   nav: [
     { label: "What it is", href: "/#what" },
-    { label: "Prices", href: "/#prices" },
+    { label: "The range", href: "/#range" },
     { label: "Questions", href: "/#faq" },
   ],
   area: serviceArea,
@@ -322,7 +324,7 @@ export const footer = {
       title: "Service",
       links: [
         { label: "What it is", href: "/#what" },
-        { label: "Prices", href: "/#prices" },
+        { label: "The range", href: "/#range" },
         { label: "Try-on", href: "/try" },
       ],
     },
@@ -346,9 +348,11 @@ export const placeholderTag = "Placeholder";
 // ---------------------------------------------------------------------------
 
 export const hero = {
-  title: `Hair, fitted at your home across ${serviceArea}.`,
-  body: `A technician comes to your home, matches the piece to the hair you already have, and fits it in about ${visitLength.firstFit}.`,
-  tryOn: "See yourself with hair",
+  /** Shown one at a time over the footage, once, settling on the last. */
+  sequence: ["Undetectable.", "100% Real Hair.", "At Home.", "Be the Main Man, Again."],
+  title: "Transformation and confidence, delivered in one visit.",
+  body: "A specialist at your home, at a time that suits you. A hair system customised to you. Your look, transformed on the spot.",
+  tryOn: "Try a new look",
   book: "Book a free consultation",
   // Not in v2: the footage loops, so it can be stopped (WCAG 2.2.2). The owner approves the words (open point 45).
   pause: "Pause the film",
@@ -357,11 +361,8 @@ export const hero = {
 
 export const whatItIs = {
   title: "What it is",
-  paragraphs: [
-    "A membrane between three and twelve hundredths of a millimetre thick, with human hair knotted or looped through it one strand at a time. It is made to a template of your own scalp, cut to your face, and bonded to the skin.",
-    "You sleep in it, shower in it, train in it. Once a month he lifts it off, cleans the base, puts it back and trims the hair.",
-  ],
-  closing: "It is not a wig. Nothing clips on and it stays on at night.",
+  body: "A fine base of lace, mono or skin, with 100% real human hair tied in strand by strand. Shaped to your scalp, matched to your own hair, and bonded to the skin. It is not a wig.",
+  statement: "You sleep in it, shower in it, train in it.",
 };
 
 export interface NorwoodStage {
@@ -456,7 +457,7 @@ export const norwood = {
 export type ComparisonCell = string | boolean;
 
 export const comparison = {
-  title: "Transplant, medication, or a system",
+  title: "Why choose a hair system",
   intro: "Two of these are not ours.",
   columns: ["Transplant", "Medication", "Hair system"],
   yes: "Yes",
@@ -464,16 +465,25 @@ export const comparison = {
   rows: [
     {
       label: "Cost",
-      cells: ["Rs. 1.2–3 lakh, once", "Rs. 800–2,000 a month, for life", "{firstFit}, then {service} a month"],
+      cells: [
+        "Rs. 1.2–3 lakh, for just 4,000–5,000 hairs",
+        "Rs. 800–2,000 a month, for life",
+        "Quoted at your free consultation",
+      ],
     },
     { label: "Visible result", cells: ["9–12 months", "4–6 months", "The same day"] },
     { label: "Covers advanced loss", cells: [false, false, true] },
-    { label: "Slows the loss itself", cells: [false, true, false] },
     { label: "Surgery", cells: [true, false, false] },
+    {
+      label: "Side effects",
+      cells: ["Infection, scarring, shock loss", "Lower libido, scalp irritation", "Nothing implanted or swallowed"],
+    },
     { label: "Reversible", cells: [false, true, true] },
-    { label: "Upkeep", cells: ["None, once healed", "Daily, for life", "One visit a month"] },
+    {
+      label: "Upkeep",
+      cells: ["Loss carries on; often a second transplant in a few years", "Daily, for life", "One visit a month"],
+    },
   ] satisfies { label: string; cells: [ComparisonCell, ComparisonCell, ComparisonCell] }[],
-  note: "A transplant moves hair you still have. Medication protects what is left. A system covers what has gone. Plenty of men do two of the three.",
 };
 
 export const tryOnTeaser = {
@@ -498,87 +508,212 @@ export const howItWorks = {
   steps: [
     {
       number: "01",
-      title: "A call",
-      body: "We ask what stage you are at and tell you what a system can and cannot do.",
+      title: "Free telephonic consultation",
+      body: "Tell us where you are and what you want. We tell you, straight, what a hair system can do for you.",
       meta: "Fifteen minutes · free",
     },
     {
       number: "02",
       title: "Consultation at home",
-      body: "A template of your scalp taken in cling film and tape, and your hair colour matched against forty samples in daylight.",
+      body: "Your scalp measured, your colour matched in daylight, and your hair system chosen with you.",
       meta: `${capitalised(visitLength.consultation)} · free`,
     },
     {
       number: "03",
       title: "The fit",
-      body: "Your piece arrives cut to that template. The technician seats it, trims it into your own hair and styles it.",
-      meta: `${capitalised(visitLength.firstFit)} · at your table`,
+      body: "The same visit or a later one: your choice. Bonded, cut into your own hair and styled. Your new look, on the spot.",
+      meta: `${capitalised(visitLength.firstFit)} · at your home`,
     },
     {
       number: "04",
       title: "Monthly service",
-      body: "He returns each month to lift the base, clean it, re-seat it and trim the hair back to your own growth.",
-      meta: `{service} a visit · ${visitLength.service}`,
+      body: "Every month it is lifted, cleaned, re-bonded and trimmed to your own growth. Undetectable, month after month.",
+      meta: `Every month · ${visitLength.service}`,
     },
   ],
 };
 
-/** A base's cross-section drawing, in the design's 320 × 176 box. */
-export interface BaseDrawing {
-  readonly membrane: string;
-  readonly detail: string;
-  readonly dash: string;
-  readonly knots: string;
-  readonly hair: string;
-  readonly tag: string;
-  readonly tag2: string;
+/** The four hair systems, from the owner's product guide of 30 September 2026. */
+export const range = {
+  title: "The range",
+  intro: "Four hair systems. Every one 100% real human hair.",
+  products: [
+    {
+      name: "Mane Man Essential",
+      tagline: "Built to last. Easy to wear.",
+      body: "Fine mono, the strongest base we fit, with a soft lace hairline. The one to start with.",
+    },
+    {
+      name: "Mane Man Active",
+      tagline: "Made for men who sweat.",
+      body: "A French lace top, the most breathable base there is, and a bleached lace hairline. For the gym, the field and a Delhi summer.",
+    },
+    {
+      name: "Mane Man Natural",
+      tagline: "A hairline that passes a close look.",
+      body: "A fine skin base with a bleached lace front. No mesh to see, so the hair seems to grow from your scalp.",
+    },
+    {
+      name: "Mane Man NatMax",
+      tagline: "Natural, even at the parting.",
+      body: "A silk top over lace hides every knot, so a parting shows scalp, not mesh.",
+    },
+  ],
+};
+
+export interface MaterialItem {
+  readonly name: string;
+  readonly text: string;
+  /** One word for each of its group's `rated` labels, in their order. */
+  readonly ratings?: readonly string[];
 }
 
-export const bases = {
-  title: "Two bases, two prices",
-  scalp: "Scalp",
-  rowLabels: { look: "Look", breath: "Breathability", life: "Lifespan", price: "First fit" },
-  kinds: [
-    {
-      id: "standard" as const,
-      name: "Standard",
-      spec: "Monofilament / lace mesh 0.06–0.12 mm",
-      look: "Soft, forgiving at the parting",
-      breath: "High — the mesh is open",
-      life: "Six to eight months",
-      price: "{firstFit}",
-      drawing: {
-        tag: "Hand-tied knots",
-        tag2: "Mesh base",
-        membrane: "M14 86 H306",
-        dash: "3 5",
-        detail:
-          "M14 93 H306 M44 86 V93 M74 86 V93 M104 86 V93 M134 86 V93 M164 86 V93 M194 86 V93 M224 86 V93 M254 86 V93 M284 86 V93",
-        knots:
-          "M60 89 C58 80 66 76 70 82 C72 86 64 90 62 86 M140 89 C138 80 146 76 150 82 C152 86 144 90 142 86 M220 89 C218 80 226 76 230 82 C232 86 224 90 222 86",
-        hair: "M62 82 C58 62 70 42 96 30 M142 82 C138 60 152 40 178 28 M222 82 C218 60 232 40 258 30 M96 84 C92 64 104 46 128 36 M178 84 C174 64 186 46 210 36",
-      } satisfies BaseDrawing,
-    },
-    {
-      id: "premium" as const,
-      name: "Premium",
-      spec: "Polyurethane thin skin 0.03–0.10 mm",
-      look: "Hair appears to leave the scalp",
-      breath: "Lower — the membrane is sealed",
-      life: "Four to six months",
-      price: "{premiumFirstFit}",
-      drawing: {
-        tag: "V-looped, no knots",
-        tag2: "Thin skin",
-        membrane: "M14 88 H306 M14 91.5 H306",
-        dash: "0",
-        detail: "M40 94 C60 102 90 102 110 94 M120 94 C140 102 170 102 190 94 M200 94 C220 102 250 102 270 94",
-        knots: "M64 88 C60 92 60 94 64 91.5 M144 88 C140 92 140 94 144 91.5 M224 88 C220 92 220 94 224 91.5",
-        hair: "M64 88 C60 64 72 42 98 28 M144 88 C140 62 154 40 180 26 M224 88 C220 62 234 40 260 28 M98 88 C94 64 106 46 130 34 M180 88 C176 64 188 46 212 34",
-      } satisfies BaseDrawing,
-    },
-  ],
-};
+export interface MaterialGroup {
+  readonly title: string;
+  readonly lead?: string;
+  readonly rated?: readonly string[];
+  readonly photos?: { readonly publish: boolean; readonly images: readonly Picture[] };
+  readonly items: readonly MaterialItem[];
+}
+
+/** What a hair system is made of, from the product guide's exhibits, each group closed until it is opened. */
+export const materials: { readonly title: string; readonly intro: string; readonly groups: readonly MaterialGroup[] } =
+  {
+    title: "Materials and construction",
+    intro: "What each hair system is made of, and what that means for how it looks, breathes and lasts.",
+    groups: [
+      {
+        title: "The base: lace, mono, skin and silk",
+        lead: "The base decides everything: how natural it looks, how cool it feels, how long it lasts. The thinner the base, the better it looks and the sooner it wears.",
+        rated: ["Natural look", "Breathes", "Strength"],
+        photos: basePhotos,
+        items: [
+          {
+            name: "Lace",
+            text: "The finest, softest mesh. Its knots can be bleached until they vanish, which is why every hairline we fit is lace.",
+            ratings: ["Best", "Most", "Delicate"],
+          },
+          {
+            name: "Mono",
+            text: "Monofilament: a fine, tough mesh. It breathes, takes the most hair, and outlasts every other base.",
+            ratings: ["Good", "Well", "Strongest"],
+          },
+          {
+            name: "Skin",
+            text: "A clear polyurethane film, 0.08 to 0.10 mm thin. No mesh to see, so the hair seems to grow straight from the scalp.",
+            ratings: ["Very good", "Little", "Moderate"],
+          },
+          {
+            name: "Silk, multi-layer",
+            text: "Hair knotted onto a lace layer and drawn up through silk, so every knot sits hidden between the two. A parting shows scalp.",
+            ratings: ["Best at the parting", "Least", "Protected"],
+          },
+        ],
+      },
+      {
+        title: "How the hair is tied in: knots and loops",
+        lead: "Every hair is tied or looped into the base by hand. How it is tied decides how natural the root looks and how well it holds.",
+        rated: ["Natural look", "Shedding", "Durability"],
+        items: [
+          {
+            name: "Single knot",
+            text: "One small knot for each hair. Fine and flat, on lace and skin.",
+            ratings: ["High", "Low to medium", "Medium"],
+          },
+          {
+            name: "Double knot",
+            text: "Each hair knotted twice, for the sides and back of a mono base.",
+            ratings: ["Medium", "Low", "High"],
+          },
+          {
+            name: "Bleached knot",
+            text: "Knots lightened until they disappear. Only lace takes it, so it is kept for the hairline.",
+            ratings: ["Highest at the hairline", "Higher", "Low"],
+          },
+          {
+            name: "V-looped",
+            text: "No knot at all: each hair is looped through the skin, so it seems to grow from it.",
+            ratings: ["Very high", "Very low", "Low"],
+          },
+          {
+            name: "Injected",
+            text: "Hair set into the skin so that it stands up from the root. Made for a parting or a brushed-back style.",
+            ratings: ["Very high", "Very low", "High"],
+          },
+        ],
+      },
+      {
+        title: "The rim and the hairline",
+        lead: "The edges are where a hair system is held, and where it is seen.",
+        items: [
+          {
+            name: "Clear PU rim",
+            text: "A thin, transparent polyurethane edge. The tape grips it, never the mesh, and it disappears at the temples.",
+          },
+          {
+            name: "NPU rim",
+            text: "Polyurethane reinforced with mesh: stronger and slightly thicker, so it is kept to the sides and back, where nobody looks.",
+          },
+          {
+            name: "Lace front",
+            text: "Up to an inch of lace along the hairline, its knots bleached until they disappear. It is what lets a hairline pass a close look, and every hair system we fit has one.",
+          },
+        ],
+      },
+      {
+        title: "How much hair: density",
+        lead: "Density is how much hair is tied in, against a full natural head. More is not better: too much hair is what gives a hair system away. We match yours to the hair you still have at the sides, not the hair you had at twenty.",
+        items: [
+          { name: "80% · Light", text: "The scalp shows at a parting. For men over sixty." },
+          {
+            name: "100% · Medium light",
+            text: "Natural, without much volume. Most men's choice, and ours over forty.",
+          },
+          {
+            name: "120% · Medium",
+            text: "Visibly fuller, and holds a style. For younger men, and men whose own hair is thick.",
+          },
+          { name: "140% · Medium heavy", text: "Heavy for daily wear. On request only." },
+        ],
+      },
+      {
+        title: "The hair",
+        items: [
+          {
+            name: "100% real human hair",
+            text: "Cut, washed and styled like your own. It does not grow, so the hair system is renewed when it wears.",
+          },
+          {
+            name: "Indian remy, on Natural",
+            text: "Every hair runs the same way, root to tip, so it tangles less and holds its shine longer.",
+          },
+          {
+            name: "Matched to you",
+            text: "Colour, grey and wave matched to your own hair in daylight, at the consultation.",
+          },
+        ],
+      },
+      {
+        title: "What we do not fit, and why",
+        items: [
+          { name: "Ultra-thin skin, 0.03 mm", text: "The most invisible base made, and it lasts about a month." },
+          { name: "Full Swiss lace", text: "The most fragile base there is: one to two months." },
+          {
+            name: "Lace with no rim",
+            text: "It must be glued along its whole edge every few weeks: a salon job, not a home service.",
+          },
+          { name: "140% and denser, as standard", text: "Too much hair is what makes a hair system obvious." },
+          { name: "European hair", text: "Finer, dearer, and a poor match for Indian hair." },
+        ],
+      },
+    ],
+  };
+
+/**
+ * Whether the site gives prices. The owner took them off every page on 1 October 2026 (ADR 0103): the prices
+ * section, the invite's price list and the price range search engines read wait on this.
+ */
+export const PRICES_SHOWN = false as boolean;
 
 export const prices = {
   label: "Published prices",
@@ -607,7 +742,7 @@ export const prices = {
   example: "A standard base in the first year: {firstFit} plus twelve service visits at {service} — {firstYear}.",
   payment: "Payment on the day of the fit. Card, UPI or bank transfer.",
   book: "Book a free consultation",
-  tryOn: "Or see yourself with hair first",
+  tryOn: "Or try a new look first",
 };
 
 export const guarantee = {
@@ -621,15 +756,15 @@ export const faq = {
   items: [
     {
       q: "Will anyone be able to tell?",
-      a: "At conversational distance, no — the front hairline is where it is won or lost, and a thin-skin base puts each hair through a membrane three hundredths of a millimetre thick. Under a shower, or a hand run backwards through the hair, someone would know.",
+      a: "Not at conversational distance. The hairline is where it is won or lost, and every hair system we fit has a lace front that melts into the skin. Under a shower, or with a hand run back through the hair, someone could tell.",
     },
     {
-      q: "How long does a piece last?",
-      a: "A monofilament base runs six to eight months with monthly servicing. Thin skin is finer and shorter-lived: four to six months. The base wears out before the hair does.",
+      q: "How long does a hair system last?",
+      a: "Months, not years: the base wears out before the hair does. How many depends on the base you choose, the heat and your care, and your technician tells you what to expect from yours. The monthly visit keeps it at its best.",
     },
     {
       q: "What happens during the monthly service visit?",
-      a: `The technician lifts the piece, cleans the adhesive off the base and your scalp, checks the knots, re-seats it and trims the hair to match your own growth. About ${visitLength.service}, at your home.`,
+      a: `The technician lifts the hair system, cleans the adhesive off the base and your scalp, checks the knots, re-bonds it and trims the hair to match your own growth. About ${visitLength.service}, at your home.`,
     },
     {
       q: "Can I swim, shower and exercise with it?",
@@ -641,7 +776,7 @@ export const faq = {
     },
     {
       q: "How do you match the colour and the hairline?",
-      a: "Colour is matched against forty samples in daylight at the consultation, including the grey percentage. The hairline is drawn on your forehead with a pencil and agreed before the piece is ordered.",
+      a: "Colour is matched against forty samples in daylight at the consultation, including the grey percentage. The hairline is drawn on your forehead with a pencil and agreed with you before anything is fitted.",
     },
     {
       q: "What if I do not like it at the fit?",
@@ -652,9 +787,8 @@ export const faq = {
       a: "All of Delhi NCR: Gurgaon, Delhi, Noida, Faridabad and Ghaziabad. Mumbai and Bengaluru are next. Leave your number and we will tell you when a technician is working in your city.",
     },
     {
-      q: "What does the first year cost in total?",
-      // The bracketed clause is said only once the price book prices a premium first fit (src/lib/prices.ts).
-      a: "A standard base: {firstFit} for the first fit plus twelve monthly service visits at {service}, so {firstYear}.[ Premium: {premiumFirstFit} plus twelve at {premiumService}, so {premiumFirstYear}.] A replacement piece at six months is separate.",
+      q: "What does it cost?",
+      a: "It depends on the hair system you choose. Your technician quotes it at the free consultation, before anything is fitted. No deposit, no package.",
     },
     {
       q: "Is this the same thing as a wig?",
@@ -904,8 +1038,8 @@ export const notFound = {
 };
 
 export const pageTitles = {
-  home: `Mane Man — hair, fitted at your home across ${serviceArea}`,
-  tryOn: "See yourself with hair — Mane Man",
+  home: `Mane Man — hair systems, fitted at your home across ${serviceArea}`,
+  tryOn: "Try a new look — Mane Man",
   book: "Book a free consultation — Mane Man",
   privacy: "Privacy — Mane Man",
   terms: "Terms — Mane Man",
@@ -914,7 +1048,7 @@ export const pageTitles = {
 
 /** Each page's description, for search results and shared links. */
 export const pageDescriptions = {
-  home: hero.body,
+  home: `Undetectable hair systems in 100% real human hair, fitted at your home across ${serviceArea}. The consultation is free.`,
   tryOn: tryOnTeaser.body,
   book: booking.intro,
   privacy: "What Mane Man keeps about you, who processes it, how long it is kept, and how to have it erased.",
@@ -924,9 +1058,12 @@ export const pageDescriptions = {
 /** The business as search engines read it (LocalBusiness). Only published facts. */
 export const business = {
   name: "Mane Man",
-  description: hero.body,
+  description: pageDescriptions.home,
   /** The cities the FAQ says are covered. */
   areaServed: ["Gurgaon", "Delhi", "Noida", "Faridabad", "Ghaziabad"],
-  /** A first fit, from the cheaper tier to the dearer; the standard alone until the book prices a premium one. */
+  /**
+   * A first fit, from the cheaper tier to the dearer; the standard alone until the book prices a premium one. Given
+   * only while the site gives prices (PRICES_SHOWN).
+   */
   priceRange: "{firstFitRange}",
 };
