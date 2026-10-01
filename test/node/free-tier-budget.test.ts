@@ -88,8 +88,8 @@ describe("free-tier budget", () => {
   });
 
   it("keeps the cron's reads, busy on every run, inside its share of D1's daily reads", () => {
-    // 288 runs of 5,100 rows: about 1.5 million of the 5 million, leaving requests the rest of the 80%.
-    expect(cronRowsReadPerDay()).toBe(1_468_800);
+    // 288 runs of 5,150 rows: about 1.5 million of the 5 million, leaving requests the rest of the 80%.
+    expect(cronRowsReadPerDay()).toBe(1_483_200);
     expect(cronRowsReadPerDay()).toBeLessThanOrEqual(FREE_TIER.d1RowsReadPerDay * CRON_READ_SHARE);
     expect(CRON_READ_SHARE).toBeLessThan(HEADROOM);
   });

@@ -344,6 +344,19 @@ describe("sweeper: try-on", () => {
     expect(await env.RESULTS.head("results/new-result.png")).not.toBeNull();
   });
 
+  // Keeping a look on its day costs about eight calls to D1 and R2, of the 1,000 a run may make.
+  it("expires at most 40 looks past their day a run, and the next run the rest", async () => {
+    for (let n = 1; n <= 45; n += 1) {
+      await insertJob({ id: `look-${String(n)}`, state: "ready", expires_at: minutesAgo(n) });
+    }
+    const first = await sweep(sweepEnv().bindings, fakeDependencies(), createLogger(), OPTIONS);
+    expect(first.jobsExpired).toBe(40);
+    const second = await sweep(sweepEnv().bindings, fakeDependencies(), createLogger(), OPTIONS);
+    expect(second.jobsExpired).toBe(5);
+    const ready = await env.DB.prepare("SELECT COUNT(*) AS n FROM tryon_jobs WHERE state = 'ready'").first("n");
+    expect(ready).toBe(0);
+  });
+
   it("deletes a photo an hour after its last look, unless a look is still rendering", async () => {
     const photo = (key: string) => ({ upload_key: key, uploaded_at: minutesAgo(90) });
     await insertJob({ ...photo("uploads/done"), id: "done-1", state: "ready", created_at: minutesAgo(90) });
