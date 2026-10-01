@@ -1,6 +1,6 @@
 # 0033. The credit ledger
 
-- Status: accepted. Amended by ADR 0068: ops adjust a balance, and a credit lasts to the end of its day.
+- Status: accepted. Amended by ADR 0068: ops adjust a balance, and a credit lasts to the end of its day. Amended by [0107](0107-referral-rewards-in-the-console.md): a referral's grant gives each side the visits ops set, for as long as ops set, and a side set to 0 gets no grant.
 - Date: 2026-09-22
 
 ## Context

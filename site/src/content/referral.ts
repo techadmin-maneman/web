@@ -6,8 +6,15 @@
 // because the design's open question rules that a referred friend sees the
 // same figures. The referrer's name is filled in where {name} appears; without
 // a name the page says "You have an invite" instead.
+//
+// What the invite earns is what ops set in the console, each side apart
+// (docs/decisions/0107-referral-rewards-in-the-console.md), so no sentence types
+// a count: each is built from the reward below. Where one side gets nothing, the
+// page promises it nothing; where the reward is not known, no count is given.
+// The words for unequal sides and for nothing are ours until the owner's (open
+// point 172); with both sides at 3 they are the design's.
 
-import type { Invite } from "../lib/api.ts";
+import type { Invite, ReferralReward } from "../lib/api.ts";
 import { fill } from "../lib/text.ts";
 import { capitalised, serviceArea, visitLength } from "./service.ts";
 import { hero, notices, type Notice } from "./site.ts";
@@ -16,6 +23,64 @@ import { hero, notices, type Notice } from "./site.ts";
 function lineOf(notice: Notice): string {
   const [line = ""] = notice.lines;
   return line;
+}
+
+/** "1 service visit", "3 service visits". */
+function serviceVisits(count: number): string {
+  return count === 1 ? "1 service visit" : `${String(count)} service visits`;
+}
+
+/** "1 visit", "3 visits": the design's shorter count, once the page has said what they are. */
+function visits(count: number): string {
+  return count === 1 ? "1 visit" : `${String(count)} visits`;
+}
+
+/** The verb that agrees with a count: "lands" for one, "land" for any other. */
+function agreeing(count: number, one: string, many: string): string {
+  return count === 1 ? one : many;
+}
+
+/** The friend's visits, or none where the reward is not known. */
+const friendVisits = (reward: ReferralReward | null): number => reward?.friend_visits ?? 0;
+
+/** The navy block's offer (C1): what the invite earns each side. Null where it earns nobody anything. */
+function inviteOffer(reward: ReferralReward): string | null {
+  const { referrer_visits: referrer, friend_visits: friend } = reward;
+  if (friend === 0 && referrer === 0) return null;
+  if (friend === 0) return `Get fitted and your friend gets ${serviceVisits(referrer)} free.`;
+  if (referrer === friend) return `Get fitted and you both get ${serviceVisits(friend)} free.`;
+  if (referrer === 0) return `Get fitted and you get ${serviceVisits(friend)} free.`;
+  return `Get fitted and you get ${serviceVisits(friend)} free. Your friend gets ${String(referrer)}.`;
+}
+
+/** A code we do not know, whose visits the friend does not get. */
+function unknownBody(reward: ReferralReward | null): string {
+  const friend = friendVisits(reward);
+  if (friend === 0) return "The consultation is still free.";
+  return `The consultation is still free; the ${serviceVisits(friend)} ${agreeing(friend, "does", "do")} not apply.`;
+}
+
+/** Beneath the form: who is told of the fit, and when the friend's visits land. */
+function toldWhenFitted(name: string | null, reward: ReferralReward | null): string {
+  const told =
+    name === null ? "Whoever invited you is told when you are fitted." : `${name} is told when you are fitted.`;
+  const friend = friendVisits(reward);
+  if (friend === 0) return told;
+  return `${told} That is when the ${visits(friend)} ${agreeing(friend, "lands", "land")}.`;
+}
+
+/** The booked confirmation's line of the friend's visits (C4); null where they get none, or it is not known. */
+function visitsLand(reward: ReferralReward | null): string | null {
+  const friend = friendVisits(reward);
+  if (friend === 0) return null;
+  return `The ${serviceVisits(friend)} ${agreeing(friend, "lands", "land")} when you are fitted.`;
+}
+
+/** C4's "Code expired" frame's line. */
+function expiredBody(reward: ReferralReward | null): string {
+  const friend = friendVisits(reward);
+  if (friend === 0) return "More than 12 months old. The consultation is still free.";
+  return `More than 12 months old. The consultation is still free; the ${visits(friend)} ${agreeing(friend, "does", "do")} not apply.`;
 }
 
 export const referral = {
@@ -27,7 +92,7 @@ export const referral = {
     invited: "{name} sent you this",
     unnamed: "You have an invite",
     title: hero.title,
-    offer: "Get fitted and you both get 3 service visits free.",
+    offer: inviteOffer,
     /**
      * A code we do not know: a typo, a revoked code, or one more than 12 months
      * old (board C4, "Code expired"). The API does not say which, so the page
@@ -35,7 +100,7 @@ export const referral = {
      */
     unknown: {
       title: "We do not recognise this invite",
-      body: "The consultation is still free; the 3 service visits do not apply.",
+      body: unknownBody,
     },
   },
   prices: {
@@ -126,8 +191,7 @@ export const referral = {
     submit: "Book the consultation",
     submitOneVisit: "Book the consultation and fit",
     sending: "Booking",
-    told: "{name} is told when you are fitted. That is when the 3 visits land.",
-    toldUnnamed: "Whoever invited you is told when you are fitted. That is when the 3 visits land.",
+    told: toldWhenFitted,
   },
   /**
    * Not drawn: no board puts an address on the consultation form. The owner ruled on 27 September 2026 that the
@@ -190,7 +254,7 @@ export const referral = {
     // Not drawn: the consultation and fit in one visit costs nothing until the fit (ADR 0105). The owner approves the
     // words (open point 165).
     payOnceFitted: "pay once fitted",
-    credits: "The 3 service visits land when you are fitted.",
+    credits: visitsLand,
     back: "See the site",
     // Not drawn on C4 (docs/fidelity-method.md, "The referral landing"). The owner approves the words (open point 45).
     number: "On WhatsApp to +91 {mobile}",
@@ -217,7 +281,7 @@ export const referral = {
   expired: {
     label: "Code expired",
     title: "This invite has expired",
-    body: "More than 12 months old. The consultation is still free; the 3 visits do not apply.",
+    body: expiredBody,
   },
   /**
    * C4's frame again, for a consultation nobody could book outright: self-serve
@@ -252,12 +316,13 @@ export const referral = {
   },
   /**
    * What a shared invite's preview says (boards B1 and B2), which the mm-site Worker writes into the page. Only a
-   * valid invite promises the visits: any other books without them.
+   * valid invite promises the friend's visits, and only where there are any: any other books without them.
    */
   preview: {
     title: "{name} sent you a Mane Man invite",
     titleUnnamed: "You have a Mane Man invite",
-    description: `Home-fitted hair systems across ${serviceArea}. 3 service visits free when you're fitted.`,
+    description: (friend: number) =>
+      `Home-fitted hair systems across ${serviceArea}. ${serviceVisits(friend)} free when you're fitted.`,
     descriptionWithout: `Home-fitted hair systems across ${serviceArea}.`,
   },
 };
@@ -267,7 +332,12 @@ export function inviteTitle(name: string | null): string {
   return name === null ? referral.preview.titleUnnamed : fill(referral.preview.title, { name });
 }
 
-/** The preview's description: the visits only for an invite that carries them, never for one we could not read. */
-export function inviteDescription(invite: Invite | null): string {
-  return invite?.state === "valid" ? referral.preview.description : referral.preview.descriptionWithout;
+/**
+ * The preview's description: the friend's visits only for an invite that carries them, never for one we could not
+ * read, and never a count the reward does not give or that is not known.
+ */
+export function inviteDescription(invite: Invite | null, reward: ReferralReward | null): string {
+  const friend = friendVisits(reward);
+  if (invite?.state !== "valid" || friend === 0) return referral.preview.descriptionWithout;
+  return referral.preview.description(friend);
 }

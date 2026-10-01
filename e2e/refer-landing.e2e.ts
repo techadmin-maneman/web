@@ -138,7 +138,8 @@ test("a valid invite is remembered in this browser, and forgotten once its own b
   await visit(page, `/r/${CODE}`);
   await expect(page.getByText("Rohit sent you this")).toBeVisible();
   const remembered = () => page.evaluate(() => localStorage.getItem("mm_invite"));
-  expect(JSON.parse((await remembered()) ?? "{}")).toMatchObject({ code: CODE });
+  // The island remembers it in an effect after the name is drawn, so the test waits for it rather than racing it.
+  await expect.poll(async () => JSON.parse((await remembered()) ?? "{}") as unknown).toMatchObject({ code: CODE });
 
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
@@ -157,6 +158,31 @@ test("the invited page does say who is told, and what lands when", async ({ page
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
   await expect(page.getByText("Rohit is told when you are fitted. That is when the 3 visits land.")).toBeVisible();
+});
+
+// The owner's ruling of 1 October 2026: ops set each side's visits apart
+// (docs/decisions/0107-referral-rewards-in-the-console.md), and the page says what they set.
+test("says what ops set each side gets, and promises the friend nothing ops do not give", async ({ page }) => {
+  const reward = { referrer_visits: 3, friend_visits: 2, valid_days: 180 };
+  await mockApi(page);
+  await page.route("**/api/referral-reward", (route) => route.fulfill({ json: reward }));
+  await visit(page, `/r/${CODE}`);
+  await expect(page.getByText("Get fitted and you get 2 service visits free. Your friend gets 3.")).toBeVisible();
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  await expect(page.getByText("Rohit is told when you are fitted. That is when the 2 visits land.")).toBeVisible();
+
+  reward.friend_visits = 0;
+  await page.reload();
+  await expect(page.getByText("Get fitted and your friend gets 3 service visits free.")).toBeVisible();
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  await expect(page.getByText("Rohit is told when you are fitted.", { exact: true })).toBeVisible();
+  await fillForm(page);
+  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByRole("button", { name: "Book the consultation" }).click();
+  await expect(page.getByText("Consultation booked")).toBeVisible();
+  await expect(page.getByText(/land when you are fitted/)).toHaveCount(0);
 });
 
 test("an unserved pincode takes the number instead, and the launch alert is the visitor's choice", async ({ page }) => {

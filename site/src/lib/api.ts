@@ -23,6 +23,7 @@ export type Look = Schemas["Look"];
 export type Invite = Schemas["Invite"];
 export type PincodeAnswer = Schemas["PincodeAnswer"];
 export type PublishedPrices = Schemas["PublishedPrices"];
+export type ReferralReward = Schemas["ReferralReward"];
 export type ReferralConsultation = Schemas["ReferralConsultation"];
 export type ReferralWaitlist = Schemas["ReferralWaitlist"];
 export type Consultation = Schemas["Consultation"];
@@ -130,6 +131,11 @@ export function fetchInvite(code: string): Promise<Answer<Invite>> {
 /** The price book's figures, where the mm-site Worker did not write them into the page (local dev). */
 export function fetchPublishedPrices(): Promise<Answer<PublishedPrices>> {
   return call<PublishedPrices>("/api/published-prices");
+}
+
+/** What a referral earns, where the mm-site Worker did not write it into the page (local dev). */
+export function fetchReferralReward(): Promise<Answer<ReferralReward>> {
+  return call<ReferralReward>("/api/referral-reward");
 }
 
 export function checkPincode(pincode: string): Promise<Answer<PincodeAnswer>> {

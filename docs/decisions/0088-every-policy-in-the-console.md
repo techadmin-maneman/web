@@ -1,6 +1,6 @@
 # 0088. Every policy in the console
 
-- Status: accepted, on the owner's standing rule of 27 September 2026; extended 29 September 2026 by [0095](0095-a-booking-fsm-refuses-is-held.md): how often and how long a booking FSM refused is tried again, `fsm_retry`; amended by [0096](0096-a-no-shows-charge-and-its-dispute.md) on 29 September 2026, under which a charged no-show costs the charge its booking kept, and the move panel names the notice the visit was sold under
+- Status: accepted, on the owner's standing rule of 27 September 2026; extended 29 September 2026 by [0095](0095-a-booking-fsm-refuses-is-held.md): how often and how long a booking FSM refused is tried again, `fsm_retry`; amended by [0096](0096-a-no-shows-charge-and-its-dispute.md) on 29 September 2026, under which a charged no-show costs the charge its booking kept, and the move panel names the notice the visit was sold under; extended 1 October 2026 by [0107](0107-referral-rewards-in-the-console.md): what a referral earns, `referral_reward`, and a rule's second change, which the snapshot's trigger had refused
 - Date: 2026-09-28
 - Amends [0061](0061-ops-editable-inputs.md), whose store read a row per input and so held ten inputs at most, and whose register held numbers alone; extends [0068](0068-a-paid-hold-is-kept.md), whose hold kept the late fee it was sold under and now keeps its terms and its grace too; records the owner's rulings of 27 September 2026 on open points 7, 12, 15, 40, 53, 58, 59 and 60, and ADR 0025's items 42 and 66
 

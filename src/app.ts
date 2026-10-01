@@ -56,6 +56,7 @@ import { registerOpsProfile } from "./routes/ops-profile.ts";
 import { registerOpsStorage } from "./routes/ops-storage.ts";
 import { registerOpsWhoami } from "./routes/ops-whoami.ts";
 import { registerPublishedPrices } from "./routes/published-prices.ts";
+import { registerReferralReward } from "./routes/referral-reward.ts";
 import { registerTechAuth } from "./routes/tech-auth.ts";
 import { registerTechJobs } from "./routes/tech-jobs.ts";
 import { registerTechPieces } from "./routes/tech-pieces.ts";
@@ -77,6 +78,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerPublishedPrices,
     registerConsultations,
     registerReferralLanding,
+    // What a referral earns, for the invite's page and /book (docs/decisions/0107-referral-rewards-in-the-console.md).
+    registerReferralReward,
     registerTryonUpload,
     registerTryonGenerate,
     registerTryonClaim,
