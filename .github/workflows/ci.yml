@@ -4,8 +4,12 @@
 # push to a pull request runs the quick tier: the static checks and the unit and contract tests. The full suite adds
 # the build, the browser tests and Lighthouse, the deployed code on new migrations and the local smoke, and runs when
 # a pull request is opened ready or marked ready for review, on every push while it carries the full-ci label, and on
-# every staging deploy (scripts/lib/ci-tier.ts). Its `full suite` job is what a staging deploy looks for before it
-# skips checking a merge again (scripts/lib/already-checked.ts).
+# every staging deploy (scripts/lib/ci-tier.ts).
+#
+# No check runs twice on the same files (the owner's choice of 1 October 2026). The static checks, the unit and
+# contract tests and the full suite each take as passed what an earlier run passed on exactly these files: in a pull
+# request, an earlier run on the same head, and on a staging deploy, the merged pull request's head when the merge has
+# its files (scripts/lib/already-checked.ts).
 #
 # Jobs that do not need each other run side by side, so a run takes the longest
 # job's time rather than every job's. The browser tests are the longest, and
@@ -40,11 +44,18 @@ jobs:
     name: what changed
     runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
     timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
     outputs:
       code: ${{ steps.filter.outputs.code }}
       migrations: ${{ steps.filter.outputs.migrations }}
       dependencies: ${{ steps.filter.outputs.dependencies }}
       full: ${{ steps.tier.outputs.full }}
+      static-passed: ${{ steps.passed.outputs.static }}
+      tests-passed: ${{ steps.passed.outputs.tests }}
+      suite-passed: ${{ steps.passed.outputs.suite }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -63,6 +74,22 @@ jobs:
           LABEL: ${{ github.event.label.name }}
           LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
         run: node scripts/ci-tier.ts >> "$GITHUB_OUTPUT"
+
+      # A pull request's earlier passes count only while this run checks its head's own files: when the head holds all
+      # of main, its merge with main is the head itself. A push to main asks which pull request it merged.
+      - name: The checks these files already passed
+        id: passed
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ -z "$HEAD_SHA" ]; then
+            node scripts/already-checked.ts --repository "$GITHUB_REPOSITORY" --commit "$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          elif [ "$(git rev-parse 'HEAD^{tree}')" = "$(git rev-parse "$HEAD_SHA^{tree}")" ]; then
+            node scripts/already-checked.ts --repository "$GITHUB_REPOSITORY" --commit "$GITHUB_SHA" --head "$HEAD_SHA" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::The pull request does not hold all of main, so these files are new to CI: every check runs."
+          fi
 
       # Nothing outside a pull request is filtered: a staging deploy runs every check but the one
       # comparing with the base, which its pull request ran.
@@ -101,6 +128,7 @@ jobs:
   static:
     name: static checks
     needs: changes
+    if: needs.changes.outputs.static-passed != 'true'
     runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
     timeout-minutes: 20
     steps:
@@ -176,6 +204,8 @@ jobs:
   # change can break it.
   tests:
     name: tests (unit, contract, coverage)
+    needs: changes
+    if: needs.changes.outputs.tests-passed != 'true'
     runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
     timeout-minutes: 25
     steps:
@@ -191,7 +221,7 @@ jobs:
   old-code-on-new-schema:
     name: deployed code on these migrations
     needs: changes
-    if: needs.changes.outputs.migrations == 'true' && needs.changes.outputs.full == 'true'
+    if: needs.changes.outputs.migrations == 'true' && needs.changes.outputs.full == 'true' && needs.changes.outputs.suite-passed != 'true'
     runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
     timeout-minutes: 25
     steps:
@@ -210,7 +240,7 @@ jobs:
   build:
     name: build
     needs: changes
-    if: needs.changes.outputs.code == 'true' && needs.changes.outputs.full == 'true'
+    if: needs.changes.outputs.code == 'true' && needs.changes.outputs.full == 'true' && needs.changes.outputs.suite-passed != 'true'
     runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
     timeout-minutes: 15
     steps:
@@ -224,7 +254,7 @@ jobs:
   browser:
     name: browser tests and Lighthouse
     needs: changes
-    if: needs.changes.outputs.code == 'true' && needs.changes.outputs.full == 'true'
+    if: needs.changes.outputs.code == 'true' && needs.changes.outputs.full == 'true' && needs.changes.outputs.suite-passed != 'true'
     runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
     timeout-minutes: 30
     steps:
@@ -293,7 +323,7 @@ jobs:
   smoke:
     name: smoke (local)
     needs: changes
-    if: needs.changes.outputs.code == 'true' && needs.changes.outputs.full == 'true'
+    if: needs.changes.outputs.code == 'true' && needs.changes.outputs.full == 'true' && needs.changes.outputs.suite-passed != 'true'
     runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
     timeout-minutes: 20
     steps:
@@ -347,9 +377,9 @@ jobs:
             if [ -f "$pid" ]; then kill "$(cat "$pid")" 2> /dev/null || true; fi
           done
 
-  # Present, and green, only in a run of the full suite: a staging deploy skips checking a merge again only when
-  # its tree had one (scripts/lib/already-checked.ts). A job the full suite skipped had nothing it could affect, as
-  # the browser tests have for a documentation-only change.
+  # Present, and green, only in a run of the full suite: a later run takes the full suite as passed only on files
+  # that had one (scripts/lib/already-checked.ts). A job the full suite skipped had nothing it could affect, as the
+  # browser tests have for a documentation-only change, or had passed on these files already.
   full-suite:
     name: full suite
     needs: [changes, old-code-on-new-schema, build, browser, smoke]
