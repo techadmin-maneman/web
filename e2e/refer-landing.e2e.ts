@@ -138,7 +138,8 @@ test("a valid invite is remembered in this browser, and forgotten once its own b
   await visit(page, `/r/${CODE}`);
   await expect(page.getByText("Rohit sent you this")).toBeVisible();
   const remembered = () => page.evaluate(() => localStorage.getItem("mm_invite"));
-  expect(JSON.parse((await remembered()) ?? "{}")).toMatchObject({ code: CODE });
+  // The island remembers it in an effect after the name is drawn, so the test waits for it rather than racing it.
+  await expect.poll(async () => JSON.parse((await remembered()) ?? "{}") as unknown).toMatchObject({ code: CODE });
 
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
