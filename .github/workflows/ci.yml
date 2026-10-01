@@ -53,6 +53,9 @@ jobs:
       migrations: ${{ steps.filter.outputs.migrations }}
       dependencies: ${{ steps.filter.outputs.dependencies }}
       full: ${{ steps.tier.outputs.full }}
+      projects: ${{ steps.projects.outputs.projects }}
+      all-projects: ${{ steps.projects.outputs.all }}
+      lighthouse: ${{ steps.projects.outputs.lighthouse }}
       static-passed: ${{ steps.passed.outputs.static }}
       tests-passed: ${{ steps.passed.outputs.tests }}
       suite-passed: ${{ steps.passed.outputs.suite }}
@@ -74,6 +77,19 @@ jobs:
           LABEL: ${{ github.event.label.name }}
           LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
         run: node scripts/ci-tier.ts >> "$GITHUB_OUTPUT"
+
+      # A pull request's browser tests run only for the apps its files reach; a staging deploy runs them all
+      # (scripts/lib/e2e-projects.ts, the owner's choice of 1 October 2026).
+      - name: The browser-test projects these changes reach
+        id: projects
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
+        run: |
+          if [ -z "$BASE" ]; then
+            node scripts/e2e-projects.ts --all >> "$GITHUB_OUTPUT"
+          else
+            git diff --name-only "$BASE...HEAD" | node scripts/e2e-projects.ts >> "$GITHUB_OUTPUT"
+          fi
 
       # A pull request's earlier passes count only while this run checks its head's own files: when the head holds all
       # of main, its merge with main is the head itself. A push to main asks which pull request it merged.
@@ -252,7 +268,7 @@ jobs:
   browser:
     name: browser tests and Lighthouse
     needs: changes
-    if: needs.changes.outputs.code == 'true' && needs.changes.outputs.full == 'true' && needs.changes.outputs.suite-passed != 'true'
+    if: needs.changes.outputs.code == 'true' && needs.changes.outputs.full == 'true' && needs.changes.outputs.suite-passed != 'true' && needs.changes.outputs.projects != ''
     runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
     timeout-minutes: 30
     steps:
@@ -294,12 +310,17 @@ jobs:
           npm run build:app -- --env local
           npm run build:ops -- --env local
           npm run build:tech -- --env local
-      - name: Browser tests at 390 and 1440 px, the client and technician apps at 390 and the ops console at 1440, the technician app again on WebKit, against a local mm-api with stub providers
-        run: npm run test:e2e
+      - name: Browser tests of the apps these changes reach, against a local mm-api with stub providers
+        env:
+          PROJECTS: ${{ needs.changes.outputs.projects }}
+        run: |
+          read -ra projects <<< "$PROJECTS"
+          npx playwright test "${projects[@]}"
 
       # After the browser tests, and in their job: Lighthouse measures a page
       # load, so nothing this run starts should be competing for the machine.
       - name: Lighthouse on /, /try, /book, an invite's landing and the client app, mobile profile, against the budgets
+        if: needs.changes.outputs.lighthouse == 'true'
         run: npm run lighthouse
 
       - name: Traces of failed tests
@@ -379,7 +400,9 @@ jobs:
   # that had one (scripts/lib/already-checked.ts). A job the full suite skipped had nothing it could affect, as the
   # browser tests have for a documentation-only change, or had passed on these files already.
   full-suite:
-    name: full suite
+    # A run that tested only the apps a pull request reaches is not a full suite, so a staging deploy runs its browser
+    # tests again on everything (scripts/lib/already-checked.ts looks for this name).
+    name: ${{ needs.changes.outputs.all-projects == 'true' && 'full suite' || 'suite of the touched apps' }}
     needs: [changes, old-code-on-new-schema, build, browser, smoke]
     if: ${{ !cancelled() && needs.changes.outputs.full == 'true' }}
     runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
