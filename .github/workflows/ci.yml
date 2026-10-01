@@ -88,7 +88,7 @@ jobs:
           if [ -z "$BASE" ]; then
             node scripts/e2e-projects.ts --all >> "$GITHUB_OUTPUT"
           else
-            node scripts/e2e-projects.ts < changed.txt >> "$GITHUB_OUTPUT"
+            git diff --name-only "$BASE...HEAD" | node scripts/e2e-projects.ts >> "$GITHUB_OUTPUT"
           fi
 
       # A pull request's earlier passes count only while this run checks its head's own files: when the head holds all
