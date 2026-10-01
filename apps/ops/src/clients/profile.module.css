@@ -93,9 +93,10 @@
   gap: var(--sp-12);
 }
 
+/* Two to a row, in the panel's width. */
 .fields {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--sp-12) var(--sp-16);
 }
 
