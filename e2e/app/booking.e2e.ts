@@ -671,8 +671,14 @@ test("says the payment failed when Checkout never loads, and keeps the sheet up 
   await ordered;
   await expect(pay).toBeVisible();
   await expect(pay.getByRole("button", { name: "Pay Rs. 2,000" })).toBeDisabled();
-  await page.clock.fastForward("00:20");
   const failed = page.getByRole("dialog", { name: "The payment did not go through." });
+  // Checkout is given up on twenty seconds after it was last asked for. On a busy machine the pay step's own ask can
+  // lapse before the tap, which asks again only once the order is in, after a single jump of the clock (1 October
+  // 2026): so the clock moves on until the sheet has given up.
+  await expect(async () => {
+    await page.clock.fastForward("00:20");
+    await expect(failed).toBeVisible({ timeout: 1_000 });
+  }).toPass({ timeout: 15_000 });
   await expect(failed.getByText(/^Slot held \d:\d\d more\.$/)).toBeVisible();
 });
 
