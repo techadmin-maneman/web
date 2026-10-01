@@ -45,12 +45,15 @@ export async function keptJob(id: string): Promise<Job | null> {
  * set in the console (docs/decisions/0087-consumables-and-stock.md): its
  * partial reasons were ids alone, and it carried no consumables. It is read in
  * today's shape, so a job opened with no signal after an update still closes:
- * each reason worded from its id, and the step with nothing to start from.
+ * each reason worded from its id, and the step with nothing to start from. One
+ * kept before the hair profile carries none, and lists no step for it
+ * (docs/decisions/0106-a-clients-hair-profile.md).
  */
 function inTodaysShape(job: Job): Job {
-  const kept = job as Omit<Job, "partial_reasons" | "consumables"> & {
+  const kept = job as Omit<Job, "partial_reasons" | "consumables" | "profile"> & {
     readonly partial_reasons: readonly (Job["partial_reasons"][number] | string)[];
     readonly consumables?: Job["consumables"];
+    readonly profile?: Job["profile"];
   };
   return {
     ...kept,
@@ -58,6 +61,7 @@ function inTodaysShape(job: Job): Job {
       typeof reason === "string" ? { id: reason, label: worded(reason) } : reason,
     ),
     consumables: kept.consumables ?? [],
+    profile: kept.profile ?? null,
   };
 }
 

@@ -322,6 +322,8 @@ describe("the client's page in the console", () => {
         },
       ],
       health_consent: { state: "given", notice_version: "health-history-v1", at: NOW.toISOString() },
+      // What a correction may name: every first-fit service, by its tier and name.
+      products: [{ tier: "standard", name: "First fit" }],
     });
   });
 

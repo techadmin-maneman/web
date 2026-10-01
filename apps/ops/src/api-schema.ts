@@ -5416,6 +5416,11 @@ export interface components {
             /** @description Every version, newest first. */
             versions: components["schemas"]["HairProfileVersion"][];
             health_consent: components["schemas"]["HairHealthConsent"];
+            /** @description The products a correction may name: every first-fit service, retired or not. */
+            products: {
+                tier: string;
+                name: string;
+            }[];
         };
         HairProfile: {
             /** Format: date-time */

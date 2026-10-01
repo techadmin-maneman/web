@@ -14,6 +14,7 @@ import type { App, AppEnv } from "../http/context.ts";
 import { memberOfStaffOf } from "../http/audit.ts";
 import { correctByOps, healthConsentOf, versionsOf } from "../domain/hair-profiles.ts";
 import { liveContact } from "../domain/profile.ts";
+import { allServices } from "../domain/services.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import {
@@ -32,6 +33,9 @@ const ClientHairProfileSchema = z
     latest: z.union([HairProfileSchema, z.null()]).openapi({ description: "The latest version; null before one." }),
     versions: z.array(HairProfileVersionSchema).openapi({ description: "Every version, newest first." }),
     health_consent: HealthConsentSchema,
+    products: z
+      .array(z.object({ tier: z.string(), name: z.string() }).strict())
+      .openapi({ description: "The products a correction may name: every first-fit service, retired or not." }),
   })
   .strict()
   .openapi("ClientHairProfile");
@@ -71,14 +75,16 @@ const correctRoute = createRoute({
   },
 });
 
-/** The client's page's section: the latest version, every version, and the consent. */
+/** The client's page's section: the latest version, every version, the consent, and the products to name. */
 async function pageOf(c: Context<AppEnv>, personId: string): Promise<z.infer<typeof ClientHairProfileSchema>> {
   const versions = await versionsOf(c.env.DB, personId);
   const latest = versions[0];
+  const firstFits = (await allServices(c.env.DB)).filter((service) => service.kind === "first_fit");
   return {
     latest: latest === undefined ? null : { recorded_at: latest.recorded_at, fit: latest.fit, history: latest.history },
     versions,
     health_consent: await healthConsentOf(c.env.DB, personId),
+    products: firstFits.map((service) => ({ tier: service.tier, name: service.name })),
   };
 }
 

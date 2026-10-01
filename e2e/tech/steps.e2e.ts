@@ -5,7 +5,17 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { atTheDoor, fakeTech, heldOnPhone, JOB_ID, ROHITS_PIECE, type Fake, type Step } from "./fixtures.ts";
+import {
+  atTheDoor,
+  fakeTech,
+  heldOnPhone,
+  JOB_ID,
+  ROHITS_PIECE,
+  ROHITS_PROFILE,
+  type CardProfile,
+  type Fake,
+  type Step,
+} from "./fixtures.ts";
 
 const wcag = (page: Page) =>
   new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
@@ -433,5 +443,144 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     await page.goto(`/jobs/${JOB_ID}`);
     await expect(page.getByText(/consultation and fit/)).toBeVisible();
     await expect(page.getByText("Pays once fitted")).toBeVisible();
+  });
+});
+
+// The client's hair profile, which no board draws: the fit spec, then the consent its history needs, then the
+// history, sent as one write (docs/decisions/0106-a-clients-hair-profile.md).
+test.describe("the client's hair profile", () => {
+  const AGREED: CardProfile["health_consent"] = {
+    state: "given",
+    notice_version: "health-history-v1",
+    at: "2030-07-01T05:00:00.000Z",
+  };
+
+  async function atTheProfile(page: Page, profile?: CardProfile): Promise<Fake> {
+    const fake = await fakeTech(page);
+    fake.type = "consultation";
+    if (profile !== undefined) fake.profile = profile;
+    startedThrough(fake, "before_photos", "checklist", "consumables");
+    await page.goto(`/jobs/${JOB_ID}/profile`);
+    await expect(page.getByRole("heading", { level: 1, name: "Hair profile" })).toBeVisible();
+    return fake;
+  }
+
+  const next = (page: Page) => page.getByRole("button", { name: "Next" });
+
+  test("takes the fit spec, asks the client's consent in its own words, then the history, and sends them as one", async ({
+    page,
+  }) => {
+    const fake = await atTheProfile(page);
+    expect((await wcag(page)).violations).toEqual([]);
+    await page.getByRole("button", { name: "IV", exact: true }).click();
+    await page.getByRole("textbox", { name: "Circumference" }).fill("57.5");
+    await page.getByRole("textbox", { name: "Width" }).fill("8");
+    await page.getByRole("textbox", { name: "Length" }).fill("10");
+    await page.getByRole("button", { name: "#1B" }).click();
+    await page.getByRole("button", { name: "120%" }).click();
+    await page.getByRole("button", { name: "Mane Man Natural" }).click();
+    await page.getByRole("button", { name: "Tape", exact: true }).click();
+    expect(await gilded(page)).toEqual(["Next"]);
+    await next(page).click();
+
+    await expect(page.getByRole("heading", { level: 1, name: "Health history" })).toBeVisible();
+    await expect(page.getByText("I agree to my health history being recorded this way.")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Choose the client's answer" })).toBeDisabled();
+    expect((await wcag(page)).violations).toEqual([]);
+    await page.getByRole("button", { name: "The client agrees" }).click();
+    await next(page).click();
+
+    await page.getByRole("button", { name: "Minoxidil" }).click();
+    await page.getByRole("button", { name: "Transplant" }).click();
+    await page.getByRole("textbox", { name: "The transplant's year" }).fill("2019");
+    await page.getByRole("textbox", { name: "Skin conditions and allergies" }).fill("Dry at the crown");
+    expect((await wcag(page)).violations).toEqual([]);
+    await next(page).click();
+
+    await expect(page.getByRole("heading", { level: 1, name: "After photos" })).toBeVisible();
+    await expect.poll(() => writesTo(fake, "profile").length).toBe(1);
+    expect(writesTo(fake, "profile")[0]?.body).toEqual({
+      fit: {
+        norwood_stage: "IV",
+        head_circumference_cm: 57.5,
+        front_to_nape_cm: null,
+        ear_to_ear_cm: null,
+        temple_to_temple_cm: null,
+        base_width_in: 8,
+        base_length_in: 10,
+        colour: "1B",
+        grey_percent: null,
+        density_percent: 120,
+        wave: null,
+        hairline: null,
+        product: "natural",
+        attachment: "tape",
+      },
+      health: {
+        consent: "given",
+        notice_version: "health-history-v1",
+        remedies: ["minoxidil", "transplant"],
+        transplant_year: 2019,
+        skin_and_allergies: "Dry at the crown",
+      },
+    });
+  });
+
+  test("keeps Next dim on a figure out of its range, and says the range", async ({ page }) => {
+    await atTheProfile(page);
+    const circumference = page.getByRole("textbox", { name: "Circumference" });
+    await circumference.fill("90");
+    await expect(circumference).toHaveAccessibleDescription("40 to 70, to one decimal.");
+    await expect(page.getByRole("button", { name: "Check the figures to continue" })).toBeDisabled();
+    await circumference.fill("57.5");
+    await expect(next(page)).toBeEnabled();
+  });
+
+  test("sends the fit spec alone when the client declines, which withdraws any history", async ({ page }) => {
+    const fake = await atTheProfile(page);
+    await next(page).click();
+    await page.getByRole("button", { name: "The client declines" }).click();
+    await expect(page.getByText("Nothing of their health is recorded.", { exact: false })).toBeVisible();
+    await next(page).click();
+
+    await expect(page.getByRole("heading", { level: 1, name: "After photos" })).toBeVisible();
+    await expect.poll(() => writesTo(fake, "profile").length).toBe(1);
+    expect(writesTo(fake, "profile")[0]?.body).toMatchObject({
+      health: { consent: "refused", notice_version: "health-history-v1" },
+    });
+  });
+
+  test("starts from the profile as it stands, and asks a client who agreed to these words nothing again", async ({
+    page,
+  }) => {
+    const fake = await atTheProfile(page, { latest: ROHITS_PROFILE, health_consent: AGREED });
+    await expect(page.getByRole("button", { name: "IV", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("textbox", { name: "Circumference" })).toHaveValue("57.5");
+    await next(page).click();
+
+    await expect(page.getByText("The client agreed on 1 Jul.")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Minoxidil" })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("textbox", { name: "Skin conditions and allergies" })).toHaveValue("Dry at the crown");
+    await page.getByRole("button", { name: "The client withdraws their consent" }).click();
+    await expect(page.getByRole("button", { name: "Minoxidil" })).toHaveCount(0);
+    await next(page).click();
+
+    await expect.poll(() => writesTo(fake, "profile").length).toBe(1);
+    expect(writesTo(fake, "profile")[0]?.body).toMatchObject({
+      fit: { colour: "1B", product: "essential" },
+      health: { consent: "refused" },
+    });
+  });
+
+  test("puts the profile's tier, colour, adhesive and scalp on the piece card", async ({ page }) => {
+    const fake = await fakeTech(page);
+    fake.profile = { latest: ROHITS_PROFILE, health_consent: AGREED };
+    await page.goto(`/jobs/${JOB_ID}`);
+    const card = page.getByRole("region", { name: "The piece" });
+    await expect(card.getByText("Mane Man Essential")).toBeVisible();
+    await expect(card.getByText("8 × 10 in")).toBeVisible();
+    await expect(card.getByText("#1B / 20% grey")).toBeVisible();
+    await expect(card.getByText("Tape", { exact: true })).toBeVisible();
+    await expect(card.getByText("Dry at the crown")).toBeVisible();
   });
 });

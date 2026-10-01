@@ -13,10 +13,12 @@ import {
   CONSENTS,
   ERASURE_REQUESTED,
   fails,
+  HAIR_PROFILE,
   inkPhoto,
   jpeg,
   json,
   NEW_RECORD,
+  NO_HAIR_PROFILE,
   PHOTOS,
   PIECES,
   RECORD,
@@ -32,6 +34,8 @@ const READ_PIECES: Call = `GET ${RECORD_PATH}/pieces`;
 const READ_PHOTOS: Call = `GET ${RECORD_PATH}/photos`;
 const VIEW_PHOTOS: Call = `POST ${RECORD_PATH}/photos/view`;
 const READ_CONSENTS: Call = `GET ${RECORD_PATH}/consents`;
+const READ_HAIR_PROFILE: Call = `GET ${RECORD_PATH}/hair-profile`;
+const CORRECT_HAIR_PROFILE: Call = `POST ${RECORD_PATH}/hair-profile`;
 const ADD_CREDITS: Call = `POST ${RECORD_PATH}/credits`;
 const ATTACH_INVITE: Call = `POST ${RECORD_PATH}/referral`;
 const SUGGEST: Call = `POST ${RECORD_PATH}/address/suggestions`;
@@ -56,6 +60,7 @@ async function clientRoutes(page: Page, over: Answers = {}): Promise<void> {
     [READ_PHOTOS]: json(PHOTOS),
     [VIEW_PHOTOS]: json(VIEW),
     [READ_CONSENTS]: json(CONSENTS),
+    [READ_HAIR_PROFILE]: json(NO_HAIR_PROFILE),
     "GET /api/clients/{id}/photos/{photo_id}": jpeg(await inkPhoto()),
     ...over,
   });
@@ -75,6 +80,7 @@ test("finds clients by part of a name, and sends it in the body, never in the UR
     [FIND]: json({ clients: [CLIENT], more: false }),
     [READ_RECORD]: json(RECORD),
     [READ_PIECES]: json(PIECES),
+    [READ_HAIR_PROFILE]: json(NO_HAIR_PROFILE),
   });
   await page.goto("/clients");
 
@@ -171,6 +177,76 @@ test("writes a gap where FSM's asset has no supplier lot, replacement date or fa
 test("says so when the client has no piece yet", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/pieces`, { [READ_PIECES]: json({ pieces: [] }) });
   await expect(page.getByText("No piece has been fitted for this client.")).toBeVisible();
+});
+
+// The client's hair profile, which no board draws, above the pieces (docs/decisions/0106-a-clients-hair-profile.md).
+test.describe("the client's hair profile", () => {
+  const section = (page: Page) => page.getByRole("region", { name: "Hair profile" });
+
+  test("stands above the pieces: the latest, its history, and every version with who recorded it", async ({ page }) => {
+    await openClient(page, `/clients/${CLIENT.id}/pieces`, { [READ_HAIR_PROFILE]: json(HAIR_PROFILE) });
+    const profile = section(page);
+    await expect(profile.getByRole("definition").first()).toHaveText("IV");
+    await expect(profile.locator("dl").first()).toContainText("Colour#2");
+    await expect(profile.locator("dl").first()).toContainText("Skin conditions and allergiesDry at the crown");
+    await expect(profile.getByRole("listitem")).toHaveText([
+      /^22 Sep 2027 · ops@maneman\.in, a correction/,
+      /^21 Sep 2027 · Imran, at the consultation/,
+    ]);
+    await expect(page.getByRole("row").filter({ hasText: "MM-STD-4417-B" })).toBeVisible();
+    const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+    expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  });
+
+  test("corrects it as a new version, the form starting from the latest", async ({ page }) => {
+    const corrected = {
+      ...HAIR_PROFILE,
+      latest: { ...HAIR_PROFILE.latest, fit: { ...HAIR_PROFILE.latest.fit, colour: "3" as const } },
+    };
+    await openClient(page, `/clients/${CLIENT.id}/pieces`, {
+      [READ_HAIR_PROFILE]: json(HAIR_PROFILE),
+      [CORRECT_HAIR_PROFILE]: json(corrected),
+    });
+    await section(page).getByRole("button", { name: "Correct the profile" }).click();
+    const colour = page.getByRole("combobox", { name: "Colour" });
+    await expect(colour).toHaveValue("2");
+    const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+    expect(results.violations.map((violation) => violation.id)).toEqual([]);
+
+    await colour.selectOption({ label: "#3" });
+    const sent = page.waitForRequest(
+      (request) => request.method() === "POST" && request.url().endsWith("/hair-profile"),
+    );
+    await page.getByRole("button", { name: "Save as a new version" }).click();
+    const { fit, history } = (await sent).postDataJSON() as { fit: Record<string, unknown>; history: unknown };
+    expect(fit).toEqual({ ...HAIR_PROFILE.latest.fit, colour: "3", product_name: undefined });
+    expect(history).toEqual(HAIR_PROFILE.latest.history);
+    await expect(section(page).locator("dl").first()).toContainText("Colour#3");
+  });
+
+  test("shows no history, and offers none to correct, without the client's consent", async ({ page }) => {
+    const withoutConsent = {
+      ...HAIR_PROFILE,
+      latest: { ...HAIR_PROFILE.latest, history: null },
+      health_consent: { state: "withdrawn", notice_version: "health-history-v1", at: "2027-09-22T05:30:00.000Z" },
+    } satisfies OpsReply<"/api/clients/{id}/hair-profile">;
+    await openClient(page, `/clients/${CLIENT.id}/pieces`, { [READ_HAIR_PROFILE]: json(withoutConsent) });
+    await expect(section(page).getByText("The client declined or withdrew their consent")).toBeVisible();
+    await section(page).getByRole("button", { name: "Correct the profile" }).click();
+    await expect(page.getByRole("group", { name: "Health history" })).toHaveCount(0);
+  });
+
+  test("marks the field the API refused", async ({ page }) => {
+    await openClient(page, `/clients/${CLIENT.id}/pieces`, {
+      [READ_HAIR_PROFILE]: json(HAIR_PROFILE),
+      [CORRECT_HAIR_PROFILE]: fails(400, "invalid_request", ["fit.base_width_in"]),
+    });
+    await section(page).getByRole("button", { name: "Correct the profile" }).click();
+    await page.getByRole("textbox", { name: "Base width, in" }).fill("80");
+    await page.getByRole("button", { name: "Save as a new version" }).click();
+    await expect(page.getByRole("alert")).toHaveText("Some fields were not accepted. Check the fields marked.");
+    await expect(page.getByRole("textbox", { name: "Base width, in" })).toHaveAttribute("aria-invalid", "true");
+  });
 });
 
 // The record carried the address, the access notes and every visit, and the page showed none of them (OPS-04).

@@ -1,0 +1,141 @@
+/*
+ * The client's hair profile on their Pieces tab (HairProfile.tsx). No board draws it: it stands above the pieces
+ * on the panel the credits and the invite stand on, with the address form's fields (address.module.css), and its
+ * rows are the client page's quiet key beside the value (docs/decisions/0106-a-clients-hair-profile.md).
+ */
+
+.profile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-14);
+  max-width: var(--ops-panel);
+  margin-bottom: var(--sp-28);
+  border: var(--hairline) solid var(--paper-line);
+  padding: var(--sp-22);
+}
+
+.title,
+.subtitle {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-serif);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-14);
+  font-size: var(--fs-14);
+  font-weight: var(--weight-regular);
+  color: var(--text-muted);
+}
+
+.hint {
+  margin: 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-150);
+  color: var(--text-muted);
+}
+
+.rows {
+  margin: 0;
+  border-top: var(--hairline) solid var(--paper-line);
+}
+
+.row {
+  display: flex;
+  gap: var(--sp-16);
+  justify-content: space-between;
+  padding: var(--sp-8) 0;
+  border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+.rowKey {
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+.rowValue {
+  margin: 0;
+  font-size: var(--fs-14);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--text);
+}
+
+.versions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+}
+
+.versionList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.version {
+  border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+.versionLine {
+  padding: var(--sp-8) 0;
+  font-size: var(--fs-14);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.versionLine:focus-visible {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-12);
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: var(--sp-12) var(--sp-16);
+}
+
+.input,
+.select {
+  width: 100%;
+}
+
+.select {
+  min-height: var(--ops-row);
+  padding: 0 var(--sp-10);
+  border: var(--hairline) solid var(--paper-control);
+  border-radius: 0;
+  background: var(--paper-light);
+  font: inherit;
+  font-size: var(--fs-14);
+  color: var(--text);
+}
+
+.select:focus-visible {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
+}
+
+.history {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.error {
+  margin: 0;
+  font-size: var(--fs-14);
+  color: var(--error-on-paper);
+}
+
+.actions {
+  display: flex;
+  gap: var(--sp-10);
+}

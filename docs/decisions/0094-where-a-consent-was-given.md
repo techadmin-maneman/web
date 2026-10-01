@@ -1,6 +1,6 @@
 # 0094. Where a consent was given, and an erasure blanks a check-in's coordinates
 
-- Status: accepted, on the owner's rulings of 27 September 2026 (`docs/open-points.md`, item 50; ADR 0025, ruling 34)
+- Status: accepted, on the owner's rulings of 27 September 2026 (`docs/open-points.md`, item 50; ADR 0025, ruling 34); amended 1 October 2026 by [0106](0106-a-clients-hair-profile.md), whose health history's consent is the `technician` source's first writer
 - Date: 2026-09-28
 - Amends [0049](0049-dpdp.md), whose consent record held no place and whose erasure left a check-in's coordinates, [0019](0019-erasure.md), [0066](0066-erasure-all-or-nothing.md), which left the coordinates open, and [0080](0080-consents-given-by-booking.md), whose consents the console told apart by their notice; records a departure in ADR 0025 (item 79)
 
@@ -27,7 +27,7 @@ Several places write the same notice. The landing's consultation line (`referral
 | `app_booking`      | A booking in the app: the pay step's photograph lines (ADR 0080), and the booking sheet's "Remind me"                             | `POST /api/bookings`; `PATCH /api/consents/whatsapp_visits`                                       |
 | `app_profile`      | The profile's switch                                                                                                              | `PATCH /api/consents/{purpose}`                                                                   |
 | `app_share_sheet`  | The share sheet's card step, board F3                                                                                             | `PATCH /api/consents/photos_referral_cards`                                                       |
-| `technician`       | The technician's app. Nothing asks for a consent there yet; the owner named it, so it has its place when one does                 | None yet                                                                                          |
+| `technician`       | The technician's app: the health history's consent, asked before the profile step shows a question of it (amended by ADR 0106)    | `POST /api/tech/jobs/{id}/profile`                                                                |
 | `erasure`          | The withdrawal an erasure records for each purpose the person had given (ADR 0019), from ops' decision or the operators' endpoint | `erasePerson`                                                                                     |
 
 Ops never grant a consent, and no ops path writes one but the erasure.
@@ -60,6 +60,6 @@ Nothing else holds the fix: the check-in's job event keeps its time and distance
 
 - Ops see where each consent was given. A consent with no place reads "Not recorded" for good, since the ledger is never rewritten. There are three such: one given before this release reached the environment on a notice shown in more than one place; one the Worker it replaces writes between the migration and the deploy; and one switched from a copy of the app loaded before the deploy, which names no screen.
 - The owner approves the console's words for each place (ADR 0025, item 79).
-- `technician` has no writer until the technician's app asks for a consent.
+- `technician` had no writer until the technician's app asked for a consent: since ADR 0106, the health history's.
 - An erased client's check-ins no longer say where the technician stood; whether the technician was within the radius still does.
 - Tests: `test/node/migration-0057.test.ts` (the backfill's certain cases and the rest left empty, still append-only, the coordinates swapped and blankable, the deployed code's writes); `test/node/consent-writers.test.ts`; `test/node/policy-consents.test.ts`; each writer's place in `test/worker/consultations.test.ts`, `referrals.test.ts`, `tryon-api.test.ts`, `booking-consents.test.ts`, `client-profile.test.ts` (each of the app's screens, and none sent) and `erasure.test.ts`; the app sending its screen in `e2e/app/profile.e2e.ts`, `booking.e2e.ts` and `refer.e2e.ts`; `test/worker/ops-clients.test.ts` and `test/worker/dpdp.test.ts` (the console's answer and the export); `test/worker/erasure.test.ts` (the coordinates blanked, the rest kept); `e2e/ops/clients.e2e.ts` (the Source column, with axe).

@@ -5814,12 +5814,33 @@ Who Access let through, and where signing out goes
     },
     "health_consent": {
       "$ref": "#/components/schemas/HairHealthConsent"
+    },
+    "products": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "tier": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "tier",
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "description": "The products a correction may name: every first-fit service, retired or not."
     }
   },
   "required": [
     "latest",
     "versions",
-    "health_consent"
+    "health_consent",
+    "products"
   ],
   "additionalProperties": false
 }

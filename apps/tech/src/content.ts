@@ -4,6 +4,7 @@
 // PLACEHOLDER, pending the owner's wording.
 
 import type { Moved } from "@maneman/web-kit/api";
+import type { FitSpec, History } from "./api.ts";
 import { clock, dayMonth, todayInIndia } from "./lib/when.ts";
 
 export const signIn = {
@@ -340,6 +341,8 @@ export const steps = {
     checklist: "Service checklist",
     consumables: "Consumables used",
     piece: "The piece",
+    // PLACEHOLDER: no board draws the hair profile (ADR 0106).
+    profile: "Hair profile",
     after_photos: "After photos",
     outcome: "Outcome",
   },
@@ -473,6 +476,110 @@ export const oneVisit = {
   payment: "Payment",
   linkSent: "Link texted to the client",
   linkPaid: "Paid",
+} as const;
+
+/** Words for every code of one of the fit spec's lists, as the API names them. */
+type Words<Field extends keyof FitSpec> = Record<NonNullable<FitSpec[Field]>, string>;
+
+/**
+ * PLACEHOLDER: no board draws the client's hair profile (docs/decisions/0106-a-clients-hair-profile.md). The lists'
+ * words wait for the owner (docs/open-points.md, item 174); the codes are the API's.
+ */
+export const profile = {
+  sections: {
+    stage: "Norwood stage",
+    head: "The head, in centimetres",
+    base: "Base size, in inches",
+    colour: "Colour",
+    grey: "Grey, in per cent",
+    density: "Density",
+    wave: "Wave",
+    hairline: "Hairline",
+    product: "Product",
+    attachment: "Tape or glue",
+  },
+  measurements: {
+    head_circumference_cm: "Circumference",
+    front_to_nape_cm: "Front to nape",
+    ear_to_ear_cm: "Ear to ear, over the top",
+    temple_to_temple_cm: "Temple to temple",
+    base_width_in: "Width",
+    base_length_in: "Length",
+  },
+  // PLACEHOLDER: the owner's words for each code (item 174).
+  stages: { I: "I", II: "II", III: "III", IV: "IV", V: "V", VI: "VI", VII: "VII" } satisfies Words<"norwood_stage">,
+  colours: {
+    "1": "#1",
+    "1B": "#1B",
+    "2": "#2",
+    "3": "#3",
+    "4": "#4",
+    "5": "#5",
+    "6": "#6",
+    "7": "#7",
+    "8": "#8",
+  } satisfies Words<"colour">,
+  densities: { 80: "80%", 100: "100%", 120: "120%", 140: "140%" } satisfies Words<"density_percent">,
+  waves: { straight: "Straight", slight_wave: "Slight wave", wavy: "Wavy", curly: "Curly" } satisfies Words<"wave">,
+  hairlines: {
+    natural: "Natural",
+    receded: "Receded",
+    straight: "Straight",
+    widows_peak: "Widow's peak",
+  } satisfies Words<"hairline">,
+  attachments: { tape: "Tape", glue: "Glue", both: "Tape and glue" } satisfies Words<"attachment">,
+  remedies: {
+    none: "None",
+    minoxidil: "Minoxidil",
+    finasteride: "Finasteride",
+    transplant: "Transplant",
+    other_systems: "Other hair systems",
+    other: "Other",
+  } satisfies Record<History["remedies"][number], string>,
+  range: (min: number, max: number) => `${String(min)} to ${String(max)}, to one decimal.`,
+  greyRange: (min: number, max: number) => `${String(min)} to ${String(max)}, a whole number.`,
+  yearRange: (first: number, last: number) => `A year from ${String(first)} to ${String(last)}.`,
+  checkFigures: "Check the figures to continue",
+  health: {
+    title: "Health history",
+    // PLACEHOLDER: the client's consent, word for word as the API records it (src/config/notices.ts,
+    // health-history-v1), awaiting counsel (docs/open-points.md, item 173). New words are a new version, in both.
+    notice: {
+      version: "health-history-v1",
+      lines: [
+        "Your health history",
+        "To fit your hair system safely, your technician asks which remedies you have tried, and about any skin conditions or allergies.",
+        "Used for: Choosing your adhesive and caring for your scalp. Nothing else.",
+        "Seen by: Your technician and our operations team. Never shared outside Mane Man.",
+        "Kept: With your record, until you withdraw or ask us to delete your data.",
+        "To withdraw: Tell your technician at any visit, and it is deleted from your record.",
+        "I agree to my health history being recorded this way.",
+      ],
+    },
+    showClient: "Show the client these words, and ask.",
+    answer: "The client's answer",
+    agrees: "The client agrees",
+    declines: "The client declines",
+    notAsked: "Not asked today",
+    chooseAnswer: "Choose the client's answer",
+    declinedNote: "Nothing of their health is recorded. Any history recorded before is deleted.",
+    given: (date: string) => `The client agreed on ${date}.`,
+    withdraw: "The client withdraws their consent",
+    withdrawnNote: "Their health history is deleted from their record once this reaches us.",
+    remedies: "Remedies tried",
+    year: "The transplant's year",
+    skin: "Skin conditions and allergies",
+  },
+  // The piece card's rows from the profile: the board's Tier, Colour, Adhesive and Scalp, and the base's size.
+  card: {
+    tier: "Tier",
+    baseSize: "Base size",
+    colour: "Colour",
+    adhesive: "Adhesive",
+    scalp: "Scalp",
+    size: (width: number, length: number) => `${String(width)} × ${String(length)} in`,
+    shade: (colour: string, grey: number | null) => (grey === null ? colour : `${colour} / ${String(grey)}% grey`),
+  },
 } as const;
 
 export const types = {

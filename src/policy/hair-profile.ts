@@ -69,7 +69,7 @@ export const GREY_PERCENT = { min: 0, max: 100 } as const;
 export const SKIN_AND_ALLERGIES_MAX = 200;
 
 /** The earliest year a transplant is taken to have been done in. */
-const FIRST_TRANSPLANT_YEAR = 1970;
+export const FIRST_TRANSPLANT_YEAR = 1970;
 
 /** The visits the technician records the profile at (DEFAULTS[0]); a one visit declined is a consultation. */
 export function takesProfile(type: VisitType, oneVisit: boolean): boolean {

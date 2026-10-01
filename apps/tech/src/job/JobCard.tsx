@@ -3,13 +3,18 @@
 // photograph. A job further out has none of it: the API withholds the address
 // and the client until the day before, so the card says when they open.
 //
+// The piece card reads the board's tier, colour, adhesive and scalp from the
+// client's hair profile, with the base's size, where one is recorded; the
+// board's template is recorded nowhere, so it is not drawn
+// (docs/decisions/0106-a-clients-hair-profile.md).
+//
 // The last visit's photograph is fetched each time the card is open and never
 // kept: the API answers it `no-store`, and the service worker leaves it alone.
 
 import { Icon } from "@maneman/ui/Icon";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
-import type { Job } from "../api.ts";
-import { job as copy } from "../content.ts";
+import type { HairProfile, Job } from "../api.ts";
+import { job as copy, profile as profileCopy } from "../content.ts";
 import { PIN, STROKE } from "../icons.ts";
 import { addressLine, callLink, wayTo } from "../lib/navigate.ts";
 import { dayMonth, where } from "../lib/when.ts";
@@ -24,14 +29,50 @@ export const firstName = (name: string): string => name.trim().split(/\s+/)[0] ?
 const onTheHead = (pieces: readonly Piece[]): Piece | null =>
   pieces.find((piece) => piece.fitted_at !== null && piece.failed_at === null) ?? null;
 
+interface Line {
+  readonly key: string;
+  readonly value: string;
+}
+
+/** The board's rows the profile answers, each only where it is recorded. */
+function profileLines(profile: HairProfile | null): Line[] {
+  if (profile === null) return [];
+  const { fit, history } = profile;
+  const scalp = history?.skin_and_allergies ?? null;
+  const rows = profileCopy.card;
+  const lines: (Line | null)[] = [
+    fit.product_name === null ? null : { key: rows.tier, value: fit.product_name },
+    fit.base_width_in === null || fit.base_length_in === null
+      ? null
+      : { key: rows.baseSize, value: rows.size(fit.base_width_in, fit.base_length_in) },
+    fit.colour === null
+      ? null
+      : { key: rows.colour, value: rows.shade(profileCopy.colours[fit.colour], fit.grey_percent) },
+    fit.attachment === null ? null : { key: rows.adhesive, value: profileCopy.attachments[fit.attachment] },
+    scalp === null ? null : { key: rows.scalp, value: scalp },
+  ];
+  return lines.filter((line) => line !== null);
+}
+
 function PieceCard({ job }: { job: Job }) {
   const piece = onTheHead(job.pieces ?? []);
+  const fromProfile = profileLines(job.profile?.latest ?? null);
   const last = job.last_visit;
   return (
     <section className={styles.piece} aria-labelledby="piece-title">
       <h2 className={styles.pieceTitle} id="piece-title">
         {copy.piece.title}
       </h2>
+      {fromProfile.length > 0 && (
+        <dl className={styles.rows}>
+          {fromProfile.map((line) => (
+            <div className={styles.row} key={line.key}>
+              <dt className={styles.rowKey}>{line.key}</dt>
+              <dd className={styles.rowValue}>{line.value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
       {piece === null ? (
         <p className={styles.pieceNone}>{copy.piece.none}</p>
       ) : (

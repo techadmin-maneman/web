@@ -40,6 +40,12 @@ export type PieceLookup = Schema["PieceLookup"];
 export type UploadLink = Schema["TechnicianPhotoUrl"];
 export type PhotoTaken = Schema["TechnicianPhotoTaken"];
 export type Day = Schema["TechnicianJobs"];
+/** The client's hair profile, which the profile step sends and the piece card reads (ADR 0106). */
+export type HairProfile = Schema["HairProfile"];
+export type FitSpec = Schema["HairFitSpec"];
+export type History = Schema["HairHistory"];
+export type HealthConsent = Schema["HairHealthConsent"];
+export type ProfileRequest = Schema["TechnicianProfileRequest"];
 
 export type VisitType = NonNullable<JobSummary["type"]>;
 /** No amount ever reaches this app: a badge only (board A1). */
