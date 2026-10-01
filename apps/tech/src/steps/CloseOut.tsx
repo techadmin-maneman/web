@@ -153,7 +153,10 @@ export function CloseOut({ id }: { id: string }) {
           <dl className={styles.rows}>
             {took !== null && <Row name={copy.duration} value={copy.length(took.hours, took.minutes)} />}
             <Row name={copy.photos} value={queuedFrames > 0 ? copy.queued(queuedFrames) : copy.sent(sets * IN_A_SET)} />
-            {job.payment_link !== null && <Row name={oneVisit.payment} value={linkState(job.payment_link)} />}
+            {/* A card the phone kept from before one visits names neither. */}
+            {job.one_visit && job.payment_link !== null && (
+              <Row name={oneVisit.payment} value={linkState(job.payment_link)} />
+            )}
           </dl>
         )}
       </section>
