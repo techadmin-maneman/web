@@ -1,28 +1,29 @@
-// The try-on, v2's eight screens, on the API. The photograph is prepared in
-// the browser (lib/photo.ts) and uploads while the visitor chooses a stage and
-// a look; the render starts at Generate. The gate opens after 20 seconds, as
-// in v2, whether or not the render has finished. The number there is
-// optional, as its copy says: given, it saves the lead and sends a WhatsApp
-// copy; either way the result opens next. A visitor who has had their look
-// is shown it again, on arrival if the API knows them by then.
+// The try-on, on the API. The look goes to WhatsApp only, never to this site
+// (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md): the photograph is
+// prepared in the browser (lib/photo.ts) and uploads while the visitor chooses
+// a stage and a look; the gate then asks where to send the look, the claim
+// saves the number, and only then is the look made. The sent screen says it is
+// on its way, and watches the render until it is ready, in case it fails. A
+// visitor who has had their look is told it was sent, and a visitor arriving
+// while WhatsApp cannot send a look is told the try-on is not available.
 //
-// The screens and what moves between them are machine.ts, the timers and polls
+// The screens and what moves between them are machine.ts, the render's watch
 // hooks.ts, and each screen draws itself. This file does the work between: the
-// photograph, the upload, the render and the gate.
+// photograph, the upload, the gate and the render.
 //
-// Outside production, ?state=<screen> opens a screen directly, with stand-in
-// images and no API calls, for the fidelity screenshots and the browser tests
+// Outside production, ?state=<screen> opens a screen directly, with stand-ins
+// and no API calls, for the fidelity screenshots and the browser tests
 // (machine.ts lists the kinds each screen takes).
 
 import { useEffect, useMemo, useReducer, useRef, useState } from "preact/hooks";
 import { ICONS } from "@maneman/brand/icons";
-import { looks, stageOptions, tryOn, tryOnPromises, type TryOnPromiseName } from "../../content/site.ts";
+import { looks, notices, stageOptions, tryOn, tryOnSendsCopy } from "../../content/site.ts";
 import { track } from "../../lib/analytics.ts";
-import { claimResult, fetchLook, jobStatus, type Answer, type Look } from "../../lib/api.ts";
+import { claimLook, jobStatus, type ErrorCode } from "../../lib/api.ts";
 import { keyPerRequest } from "../../lib/idempotency.ts";
 import { isCompleteMobile } from "../../lib/phone.ts";
 import { preparePhoto, type PreparedPhoto } from "../../lib/photo.ts";
-import { startRender, startUpload, type Outcome, type Uploaded } from "../../lib/tryon.ts";
+import { onArrival, startRender, startUpload, type Arrival, type Outcome, type Uploaded } from "../../lib/tryon.ts";
 import { jobProblem, type Failure } from "../../lib/tryon-errors.ts";
 import { turnstileWidget } from "../../lib/turnstile.ts";
 import { readAttribution } from "../../lib/visit.ts";
@@ -30,30 +31,29 @@ import { Icon } from "../Drawings.tsx";
 import { Consent } from "./Consent.tsx";
 import { Failed } from "./Failed.tsx";
 import { Gate } from "./Gate.tsx";
-import { useReleased, useRenderWatch, useResult } from "./hooks.ts";
+import { useReleased, useRenderWatch } from "./hooks.ts";
 import { Looks } from "./Looks.tsx";
 import { backFrom, screenNamed, START, step } from "./machine.ts";
-import { Processing } from "./Processing.tsx";
-import { Result } from "./Result.tsx";
+import { Sent } from "./Sent.tsx";
 import { Stage } from "./Stage.tsx";
 import styles from "./TryOn.module.css";
 import { Upload } from "./Upload.tsx";
 
 interface Props {
   turnstileSiteKey: string;
-  /** Stand-in images for ?state=result. Empty in production. */
-  mockBefore: string;
-  mockAfter: string;
   /** Allow ?state= to open a screen directly (never in production). */
   allowStateSwitch: boolean;
-  /** The notices this build shows, and so whether it sends the photograph's small copy (ADR 0084). */
-  promise: TryOnPromiseName;
 }
 
+/** The gate's line for each refusal of the claim the visitor can act on there. */
+const GATE_REFUSALS: Partial<Record<ErrorCode | "network", string>> = {
+  rate_limited: tryOn.gate.errors.rateLimited,
+  job_not_claimable: tryOn.gate.errors.taken,
+};
+
 export default function TryOn(props: Props) {
-  const promise = tryOnPromises[props.promise];
   const [state, send] = useReducer(step, START);
-  const { screen, demo } = state;
+  const { screen, demo, name, mobile } = state;
   const [gateTouched, setGateTouched] = useState(false);
   const [sending, setSending] = useState(false);
   const [gateFailure, setGateFailure] = useState<string | null>(null);
@@ -65,41 +65,42 @@ export default function TryOn(props: Props) {
   // The current photograph's work. Each is replaced when a new photograph is chosen.
   const preparing = useRef<Promise<PreparedPhoto> | null>(null);
   const uploading = useRef<Promise<Outcome<Uploaded>> | null>(null);
-  const rendering = useRef<Promise<Outcome<string>> | null>(null);
   const jobId = useRef<string | null>(null);
-  // The look asked for on arrival. A photograph chosen before it answers drops it.
-  const arriving = useRef<Promise<Answer<Look>> | null>(null);
+  // What the API says on arrival. A photograph chosen before it answers drops it.
+  const arriving = useRef<Promise<Arrival> | null>(null);
 
   function fail(failure: Failure) {
     send({ type: "failed", kind: failure.kind });
     if (!demo) track({ name: "try_on_failed", failure_code: failure.code });
   }
 
-  /** A browser that has had its look is shown it again, and its render is the one the gate claims. */
-  function showLook(own: Look) {
-    jobId.current = own.job_id;
-    rendering.current = Promise.resolve({ ok: true, value: own.job_id } as const);
-    send({ type: "ownLook", look: { jobId: own.job_id, stage: own.stage, preset: own.preset } });
+  /** A refused upload or render: a browser that has had its look is told it was sent; anything else is an error. */
+  function refused(failure: Failure) {
+    if (failure.code === "look_limit_reached") send({ type: "alreadySent" });
+    else fail(failure);
   }
 
   // ?state= opens a screen with stand-ins, outside production. Otherwise Turnstile is readied, and the API asked
-  // whether this browser has had its look, so it is not asked for a photograph it cannot use (CLI-29).
+  // whether this browser has had its look and whether the try-on runs, so the visitor is not asked for a photograph
+  // the API would refuse (CLI-29).
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const wanted = screenNamed(props.allowStateSwitch ? params.get("state") : null);
     if (wanted !== undefined) {
-      send({ type: "preview", screen: wanted, kind: params.get("kind"), mockAfter: props.mockAfter });
+      send({ type: "preview", screen: wanted, kind: params.get("kind") });
       return;
     }
     if (turnstileBox.current !== null) {
       turnstile.current = turnstileWidget(turnstileBox.current, props.turnstileSiteKey);
     }
-    const asked = fetchLook();
+    const asked = onArrival();
     arriving.current = asked;
-    void asked.then((answer) => {
-      if (arriving.current === asked && answer.ok && answer.body.state !== "failed") showLook(answer.body);
+    void asked.then((arrival) => {
+      if (arriving.current !== asked) return;
+      if (arrival === "hadLook") send({ type: "alreadySent" });
+      if (arrival === "unavailable") send({ type: "failed", kind: "unavailable" });
     });
-  }, [props.allowStateSwitch, props.turnstileSiteKey, props.mockAfter]);
+  }, [props.allowStateSwitch, props.turnstileSiteKey]);
 
   // Each new screen starts at the top, with its heading focused for screen readers.
   useEffect(() => {
@@ -115,31 +116,16 @@ export default function TryOn(props: Props) {
     if (screen === "gate" && !demo) track({ name: "try_on_gate_shown" });
   }, [screen, demo]);
 
-  // Until the gate is submitted, a render that fails sends the visitor to the error screen.
-  useRenderWatch(!demo && (screen === "processing" || screen === "gate"), jobId, fail);
+  // Once the look is on its way, a render that fails sends the visitor to the error screen; its message is skipped.
+  useRenderWatch(!demo && screen === "sent" && !state.returning, jobId, fail);
 
-  // After the gate: the result, once it is ready.
-  const awaited = !demo && screen === "result" && state.rendered === null ? state.showing : null;
-  useResult(
-    awaited,
-    (rendered, showing) => {
-      send({ type: "rendered", rendered });
-      if (!showing.returning) track({ name: "try_on_completed" });
-    },
-    fail,
-  );
-
-  // Photographs and results are shown from memory; each object URL is released when replaced.
-  const { photo, rendered } = state;
-  useReleased(photo);
-  // The stand-in result is a file of the site's, not one made here.
-  useReleased(rendered !== null && rendered.file !== null ? rendered.url : null);
+  // The photograph is shown from memory; its object URL is released when replaced.
+  useReleased(state.photo);
 
   function choosePhoto(file: File) {
-    const prepared = demo ? null : preparePhoto(file, promise.sendsCopy);
+    const prepared = demo ? null : preparePhoto(file, tryOnSendsCopy);
     preparing.current = prepared;
     uploading.current = null;
-    rendering.current = null;
     jobId.current = null;
     arriving.current = null;
     send({ type: "photoChosen", photo: URL.createObjectURL(file) });
@@ -156,39 +142,11 @@ export default function TryOn(props: Props) {
     send({ type: "agreed" });
     const prepared = preparing.current;
     if (prepared === null || uploading.current !== null) return;
-    const upload = startUpload(prepared, turnstile.current, promise.photo.version);
+    const upload = startUpload(prepared, turnstile.current, notices.photo.version);
     uploading.current = upload;
     // A refusal shows at once, rather than after the visitor has chosen a look.
     void upload.then((outcome) => {
-      if (outcome.ok || uploading.current !== upload) return;
-      if (outcome.kind === "lookLimit") void showOwnLook(outcome);
-      else fail(outcome);
-    });
-  }
-
-  /** Refused for having had a look: it is shown again. Only if it is gone does the error screen say so. */
-  async function showOwnLook(refusal: Failure) {
-    const answer = await fetchLook();
-    if (answer.ok && answer.body.state !== "failed") showLook(answer.body);
-    else fail(refusal);
-  }
-
-  function generate() {
-    if (state.look < 0) return;
-    send({ type: "generate" });
-    // Back from the gate: the render already runs, and Continue only returns to the gate.
-    if (state.lookFixed) return;
-    const upload = uploading.current;
-    const stageId = stageOptions[state.stage]?.id;
-    const preset = looks[state.look]?.id;
-    if (upload === null || stageId === undefined || preset === undefined) return;
-    const render = startRender(upload, { stage: stageId, preset });
-    rendering.current = render;
-    void render.then((outcome) => {
-      if (rendering.current !== render) return;
-      if (outcome.ok) jobId.current = outcome.value;
-      else if (outcome.kind === "lookLimit") void showOwnLook(outcome);
-      else fail(outcome);
+      if (!outcome.ok && uploading.current === upload) refused(outcome);
     });
   }
 
@@ -197,63 +155,81 @@ export default function TryOn(props: Props) {
     else send({ type: "back" });
   }
 
-  // Both fields empty skips the gate; either one filled needs both.
-  const { name, mobile } = state;
-  const skipping = name.trim() === "" && mobile === "";
-  const nameBad = gateTouched && !skipping && name.trim() === "";
-  const mobileBad = gateTouched && !skipping && !isCompleteMobile(mobile);
+  /** A claim refused: a line on the gate where the visitor can act on it, else the error screen. */
+  async function claimRefused(code: ErrorCode | "network", job: string) {
+    if (code === "whatsapp_unavailable") {
+      fail({ kind: "unavailable", code });
+      return;
+    }
+    if (code === "job_not_claimable") {
+      // The photograph may have expired while the gate was open, or the try-on is saved to another number.
+      const status = await jobStatus(job);
+      const problem = status.ok ? jobProblem(status.body) : null;
+      if (problem !== null) {
+        fail(problem);
+        return;
+      }
+    }
+    if (code === "invalid_request") setGateTouched(true);
+    setGateFailure(GATE_REFUSALS[code] ?? tryOn.gate.errors.other);
+  }
+
+  /**
+   * The gate: the claim saves where the look goes, and then the look is asked for. Pressed again after an answer
+   * was lost, the claim carries the same key, so the API answers it as the first, and the render is asked again.
+   */
+  async function claimAndRender(upload: Uploaded) {
+    const stageId = stageOptions[state.stage]?.id;
+    const preset = looks[state.look]?.id;
+    if (stageId === undefined || preset === undefined) return;
+    const attribution = readAttribution();
+    const claim = {
+      job_id: upload.jobId,
+      name: name.trim(),
+      mobile,
+      stage: stageId,
+      notice_version: notices.gate.version,
+      ...(attribution === undefined ? {} : { attribution }),
+    };
+    const answer = await claimLook(claim, keyFor(claim));
+    if (!answer.ok) {
+      await claimRefused(answer.code, upload.jobId);
+      return;
+    }
+    track({ name: "try_on_claimed" });
+
+    const render = await startRender(upload, { stage: stageId, preset });
+    if (render.ok) {
+      jobId.current = render.value;
+      send({ type: "sent" });
+      track({ name: "try_on_completed" });
+      return;
+    }
+    if (render.code === "network") setGateFailure(tryOn.gate.errors.other);
+    else refused(render);
+  }
+
+  const nameBad = gateTouched && name.trim() === "";
+  const mobileBad = gateTouched && !isCompleteMobile(mobile);
   async function submitGate(event: Event) {
     event.preventDefault();
     if (sending) return;
-    if (!skipping && (name.trim() === "" || !isCompleteMobile(mobile))) {
+    if (name.trim() === "" || !isCompleteMobile(mobile)) {
       setGateTouched(true);
       return;
     }
     if (demo) {
-      send({ type: "shown", showing: state.showing, rendered: { url: props.mockAfter, file: null } });
+      send({ type: "sent" });
       return;
     }
 
     setSending(true);
     setGateFailure(null);
-    // The gate may open before the upload has finished; the claim needs the render started.
-    const render = (await rendering.current) ?? ({ ok: false, kind: "busy", code: "no_render" } as const);
-    if (!render.ok) {
-      setSending(false);
-      fail(render);
-      return;
-    }
-    const returning = state.showing?.returning ?? false;
-    if (skipping) {
-      setSending(false);
-      send({ type: "shown", showing: { jobId: render.value, claim: null, returning } });
-      return;
-    }
-    const attribution = readAttribution();
-    const claim = {
-      job_id: render.value,
-      name: name.trim(),
-      mobile,
-      notice_version: promise.gate.version,
-      ...(attribution === undefined ? {} : { attribution }),
-    };
-    const answer = await claimResult(claim, keyFor(claim));
+    // The gate may open before the upload has finished; the claim needs the photograph uploaded.
+    const upload = (await uploading.current) ?? ({ ok: false, kind: "busy", code: "no_upload" } as const);
+    if (upload.ok) await claimAndRender(upload.value);
+    else refused(upload);
     setSending(false);
-    if (answer.ok) {
-      send({ type: "shown", showing: { jobId: render.value, claim: answer.body, returning } });
-      track({ name: "try_on_claimed" });
-      return;
-    }
-    if (answer.code === "job_not_claimable") {
-      // Either the render has failed since, or the job is saved to another number.
-      const status = await jobStatus(render.value);
-      const problem = status.ok ? jobProblem(status.body) : null;
-      if (problem !== null) fail(problem);
-      else setGateFailure(tryOn.gate.errors.taken);
-      return;
-    }
-    if (answer.code === "invalid_request") setGateTouched(true);
-    setGateFailure(answer.code === "rate_limited" ? tryOn.gate.errors.rateLimited : tryOn.gate.errors.other);
   }
 
   return (
@@ -265,7 +241,7 @@ export default function TryOn(props: Props) {
         <div class={styles.topline}>
           <button type="button" class={styles.back} onClick={back}>
             <Icon path={ICONS.back} size={17} />
-            {screen === "upload" ? tryOn.backToSite : tryOn.back}
+            {backFrom(screen) === "home" ? tryOn.backToSite : tryOn.back}
           </button>
           <span class={`caps ${styles.stepLabel}`}>
             {screen === "error" ? tryOn.error.kinds[state.errorKind].step : tryOn.stepLabels[screen]}
@@ -275,7 +251,7 @@ export default function TryOn(props: Props) {
         {screen === "upload" && <Upload photo={state.photo} heading={heading} onChoose={choosePhoto} />}
         {screen === "consent" && (
           <Consent
-            notice={promise.photo}
+            notice={notices.photo}
             consent={state.consent}
             heading={heading}
             onTick={(consent) => {
@@ -299,25 +275,18 @@ export default function TryOn(props: Props) {
         {screen === "looks" && (
           <Looks
             look={state.look}
-            fixed={state.lookFixed}
             heading={heading}
             onChoose={(look) => {
               send({ type: "lookChosen", look });
             }}
-            onGenerate={generate}
-          />
-        )}
-        {screen === "processing" && (
-          <Processing
-            heading={heading}
-            onDone={() => {
-              send({ type: "processed" });
+            onContinue={() => {
+              send({ type: "lookDone" });
             }}
           />
         )}
         {screen === "gate" && (
           <Gate
-            notice={promise.gate}
+            notice={notices.gate}
             name={name}
             mobile={mobile}
             nameBad={nameBad}
@@ -334,18 +303,7 @@ export default function TryOn(props: Props) {
             onSubmit={(event) => void submitGate(event)}
           />
         )}
-        {screen === "result" && (
-          <Result
-            photo={state.photo}
-            mockBefore={props.mockBefore}
-            look={state.look}
-            showing={state.showing}
-            rendered={state.rendered}
-            demo={demo}
-            mobile={mobile}
-            heading={heading}
-          />
-        )}
+        {screen === "sent" && <Sent mobile={mobile} returning={state.returning} heading={heading} />}
         {screen === "error" && (
           <Failed
             kind={state.errorKind}

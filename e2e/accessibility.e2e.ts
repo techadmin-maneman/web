@@ -1,6 +1,5 @@
 // axe on every page and every screen, at both widths, against WCAG 2.2 AA.
-// Nothing is skipped: the try-on's countdown, which v2 draws at 1.6:1, is now
-// drawn at 4.2:1 (ADR 0022, 30).
+// Nothing is skipped.
 
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
@@ -14,13 +13,11 @@ const PAGES = [
   "/try?state=consent",
   "/try?state=stage",
   "/try?state=looks",
-  "/try?state=processing",
   "/try?state=gate",
-  "/try?state=result",
-  "/try?state=result&kind=returning",
-  "/try?state=result&kind=pending",
+  "/try?state=sent",
+  "/try?state=sent&kind=returning",
   "/try?state=error",
-  "/try?state=error&kind=lookLimit",
+  "/try?state=error&kind=unavailable",
   "/book",
   "/book?state=served",
   "/book?state=unserved",
@@ -64,7 +61,7 @@ for (const path of PAGES) {
 test("the forms' error states meet WCAG 2.2 AA", async ({ page }) => {
   await visit(page, "/try?state=gate");
   await page.getByLabel("Mobile").fill("98100");
-  await page.getByRole("button", { name: "Show me the result" }).click();
+  await page.getByRole("button", { name: "Send my look" }).click();
   await expect(page.getByText("Tell us what to call you.")).toBeVisible();
   expect(await violations(page)).toEqual([]);
 

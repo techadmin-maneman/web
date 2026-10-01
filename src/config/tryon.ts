@@ -62,13 +62,11 @@ export const COPY_LONG_EDGE_PX = 1600;
 
 /** How long the upload link from POST /api/tryon/upload-url works. */
 export const TRYON_UPLOAD_LINK_TTL_MS = 5 * MINUTE_MS;
-/** The mm_tryon cookie and its session. */
-export const TRYON_SESSION_TTL_MS = 30 * MINUTE_MS;
-export const SESSION_COOKIE = "mm_tryon";
 /** One look per visitor: the browser remembers its render this long, the photos' retention period. */
 export const LOOK_COOKIE = "mm_look";
 export const LOOK_COOKIE_TTL_MS = 30 * DAY_MS;
-/** The link GET /api/tryon/result hands the browser. */
-export const RESULT_LINK_BROWSER_TTL_MS = 15 * MINUTE_MS;
-/** The link a WhatsApp message carries, minted at send time. */
+/**
+ * The link a WhatsApp message carries, minted at send time: the only link to a look there is, since the look goes to
+ * WhatsApp only (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md).
+ */
 export const RESULT_LINK_MESSAGE_TTL_MS = HOUR_MS;

@@ -447,7 +447,7 @@ async function expireJobs(env: SweepEnv, now: Date): Promise<{ expired: number; 
   const results = pastExpiry.flatMap((row) => (row.result_key === null ? [] : [row.result_key]));
   if (results.length > 0) await env.RESULTS.delete(results);
 
-  const [expiredResults, abandonedUploads] = await db.batch([
+  const [expiredResults, abandonedUploads] = await db.batch<{ id: string }>([
     db
       .prepare(
         "UPDATE tryon_jobs SET state = 'expired' WHERE id IN (SELECT value FROM json_each(?1)) AND state = 'ready' RETURNING id",
@@ -459,10 +459,24 @@ async function expireJobs(env: SweepEnv, now: Date): Promise<{ expired: number; 
       )
       .bind(new Date(now.getTime() - PHOTO_RETENTION_MS).toISOString()),
   ]);
-  return {
-    expired: (expiredResults?.results.length ?? 0) + (abandonedUploads?.results.length ?? 0),
-    kept,
-  };
+  const abandoned = (abandonedUploads?.results ?? []).map((row) => row.id);
+  await skipLooksNeverMade(db, abandoned);
+  return { expired: (expiredResults?.results.length ?? 0) + abandoned.length, kept };
+}
+
+/**
+ * The gate is claimed before the render (ADR 0104), so a visitor who leaves between the two leaves a message waiting
+ * for a look that is never made. It is skipped once the job expires.
+ */
+async function skipLooksNeverMade(db: D1Database, jobIds: readonly string[]): Promise<void> {
+  if (jobIds.length === 0) return;
+  await db
+    .prepare(
+      `UPDATE outbound_messages SET state = 'skipped', last_error = 'no look was made'
+       WHERE state = 'waiting' AND subject_id IN (SELECT value FROM json_each(?1))`,
+    )
+    .bind(JSON.stringify(jobIds))
+    .run();
 }
 
 /**

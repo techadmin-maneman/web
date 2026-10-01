@@ -1,10 +1,6 @@
 ---
 import LegalPage from "../components/LegalPage.astro";
-import { pageDescriptions, pageTitles, privacyPage, tryOnPromises } from "../content/site.ts";
-import { TRY_ON_PROMISE } from "../lib/build.ts";
-
-// The try-on's sentences are those of the promise this build makes (ADR 0084).
-const page = privacyPage(tryOnPromises[TRY_ON_PROMISE].privacy);
+import { legalPages, pageDescriptions, pageTitles } from "../content/site.ts";
 ---
 
-<LegalPage pageTitle={pageTitles.privacy} description={pageDescriptions.privacy} page={page} />
+<LegalPage pageTitle={pageTitles.privacy} description={pageDescriptions.privacy} page={legalPages.privacy} />

@@ -6,16 +6,19 @@
 // API, each job writes its photo to R2 exactly once, and under a notice that
 // keeps a client's try-on, its small copy once more
 // (docs/decisions/0084-a-clients-try-on-is-kept.md).
+//
+// The look goes to WhatsApp only, so no photo is taken while WhatsApp cannot
+// send one (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
-import { findNotice } from "../config/notices.ts";
+import { CURRENT_NOTICE } from "../config/notices.ts";
 import { MAX_COPY_BYTES, MAX_UPLOAD_BYTES, TRYON_UPLOAD_LINK_TTL_MS } from "../config/tryon.ts";
 import { alertCeilingReached, takeFromCeiling } from "../domain/ceilings.ts";
 import { takeOne } from "../domain/rate-limit.ts";
 import { loadJob } from "../domain/tryon.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
-import { currentSession, lookCookieJob } from "../http/tryon-session.ts";
+import { lookCookieJob } from "../http/look-cookie.ts";
 import { checkTurnstile, visitorOf } from "../http/visitor.ts";
 import { copyKey } from "../domain/kept-try-ons.ts";
 import { putCounted } from "../domain/storage-meter.ts";
@@ -27,7 +30,11 @@ import { signToken, verifyToken } from "../lib/signed-token.ts";
 export const UploadUrlRequestSchema = z
   .object({
     photo_consent: z.literal(true).openapi({ description: "The photo notice was agreed to." }),
-    notice_version: z.string().min(1).max(40).openapi({ example: "photo-v1", description: "The photo notice shown." }),
+    notice_version: z
+      .string()
+      .min(1)
+      .max(40)
+      .openapi({ example: "photo-v3", description: "The photo notice shown: the current one, the only one recorded." }),
     turnstile_token: z.string().min(1).max(2048),
   })
   .strict()
@@ -54,7 +61,10 @@ export const uploadUrlRoute = createRoute({
     400: errorResponse("invalid_request: see error.fields"),
     403: errorResponse("turnstile_failed; look_limit_reached: this browser already has its look"),
     429: errorResponse("rate_limited: too many uploads from this address this hour"),
-    503: errorResponse("busy: today's upload ceiling is reached; unavailable: Turnstile could not be reached"),
+    503: errorResponse(
+      "busy: today's upload ceiling is reached; unavailable: Turnstile could not be reached; " +
+        "whatsapp_unavailable: WhatsApp cannot send the look, so the try-on does not run",
+    ),
   },
 });
 
@@ -106,9 +116,10 @@ export function registerTryonUpload(app: App): void {
     const db = c.env.DB;
     const now = deps.now();
 
-    if (findNotice(request.notice_version)?.purpose !== "tryon_photo") {
+    if (request.notice_version !== CURRENT_NOTICE.tryon_photo) {
       return c.json(errorBody("invalid_request", requestId, ["notice_version"]), 400);
     }
+    if (!settings.messaging.enabled) return c.json(errorBody("whatsapp_unavailable", requestId), 503);
 
     // One look per visitor: a browser whose last render did not fail gets no second photo.
     const lastJobId = await lookCookieJob(c);
@@ -134,31 +145,19 @@ export function registerTryonUpload(app: App): void {
       return c.json(errorBody("busy", requestId), 503);
     }
 
-    // A visitor who passed the gate keeps their session for a new photo, so its result needs no second gate
-    // (docs/decisions/0014-try-on-api.md, "Jobs, looks and sessions").
-    const session = await currentSession(c);
     const jobId = crypto.randomUUID();
     await db
       .prepare(
-        `INSERT INTO tryon_jobs (id, created_at, upload_key, state, person_id, session_id, photo_consent_version,
-           photo_consent_at, ip_hash, request_id)
-         VALUES (?1, ?2, ?3, 'awaiting_upload', ?4, ?5, ?6, ?2, ?7, ?8)`,
+        `INSERT INTO tryon_jobs (id, created_at, upload_key, state, photo_consent_version, photo_consent_at, ip_hash,
+           request_id)
+         VALUES (?1, ?2, ?3, 'awaiting_upload', ?4, ?2, ?5, ?6)`,
       )
-      .bind(
-        jobId,
-        now.toISOString(),
-        `uploads/${jobId}`,
-        session?.person_id ?? null,
-        session?.id ?? null,
-        request.notice_version,
-        visitor.ipHash,
-        requestId,
-      )
+      .bind(jobId, now.toISOString(), `uploads/${jobId}`, request.notice_version, visitor.ipHash, requestId)
       .run();
 
     const expiresAt = new Date(now.getTime() + TRYON_UPLOAD_LINK_TTL_MS);
     const token = await signToken(tryon.linkSigningKey, "upload", jobId, expiresAt);
-    c.var.log.info("tryon_upload_link", { job_id: jobId, session: session !== null });
+    c.var.log.info("tryon_upload_link", { job_id: jobId });
     return c.json(
       { job_id: jobId, upload_url: `/api/tryon/upload/${jobId}?token=${token}`, expires_at: expiresAt.toISOString() },
       201,

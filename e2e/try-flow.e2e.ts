@@ -1,5 +1,7 @@
 // The try-on on a mocked API: what the page sends, in what order, and what it
 // shows for each answer. try-api.e2e.ts runs the same flow on the local API.
+// The look goes to WhatsApp only (ADR 0104): the number is given at the gate
+// before the look is made, and the page never asks for the look itself.
 
 import type { Page, Request } from "@playwright/test";
 import sharp from "sharp";
@@ -10,8 +12,9 @@ import {
   expect,
   expectNoPersonalData,
   fakeTurnstile,
+  sendFromGate,
   test,
-  throughToGenerate,
+  throughToGate,
   visit,
 } from "./support.ts";
 
@@ -19,26 +22,26 @@ const JOB = "11111111-1111-4111-8111-111111111111";
 const LEAD = "22222222-2222-4222-8222-222222222222";
 const MOBILE = "9810000000";
 
-type Call = "uploadUrl" | "upload" | "copy" | "generate" | "status" | "claim" | "result" | "image" | "look";
+type Call = "availability" | "look" | "uploadUrl" | "upload" | "copy" | "claim" | "generate" | "status" | "result";
 interface Answer {
   readonly status: number;
   readonly json?: unknown;
-  readonly image?: Buffer;
-  /** Holds the request this long first, as a request stuck on the way would be. */
-  readonly holdMs?: number;
+  /** The request never reaches the API, as on a dropped connection. */
+  readonly abort?: boolean;
 }
 
 function callOf(request: Request): Call | null {
   const path = new URL(request.url()).pathname;
+  if (path === "/api/tryon/availability") return "availability";
+  if (path === "/api/tryon/look") return "look";
   if (path === "/api/tryon/upload-url") return "uploadUrl";
   if (path.startsWith("/api/tryon/upload/") && path.endsWith("/copy")) return "copy";
   if (path.startsWith("/api/tryon/upload/")) return "upload";
+  if (path === "/api/tryon/claim") return "claim";
   if (path === "/api/tryon/generate") return "generate";
   if (path.startsWith("/api/tryon/status/")) return "status";
-  if (path === "/api/tryon/claim") return "claim";
-  if (path.startsWith("/api/tryon/result/")) return "result";
-  if (path.startsWith("/api/result/")) return "image";
-  if (path === "/api/tryon/look") return "look";
+  // The look itself, which the page must never ask for.
+  if (path.startsWith("/api/tryon/result/") || path.startsWith("/api/result/")) return "result";
   return null;
 }
 
@@ -48,25 +51,22 @@ function callOf(request: Request): Call | null {
  */
 async function mockApi(page: Page, answers: Partial<Record<Call, Answer | Answer[]>> = {}): Promise<Request[]> {
   const later = new Date(Date.now() + 5 * 60_000).toISOString();
-  const result = await sharp({ create: { width: 300, height: 400, channels: 3, background: "#6b5a4c" } })
-    .png()
-    .toBuffer();
   const defaults: Record<Call, Answer | Answer[]> = {
+    availability: { status: 200, json: { available: true } },
+    look: { status: 404, json: { error: { code: "not_found", request_id: "test" } } },
     uploadUrl: {
       status: 201,
       json: { job_id: JOB, upload_url: `/api/tryon/upload/${JOB}?token=signed`, expires_at: later },
     },
     upload: { status: 204 },
     copy: { status: 204 },
+    claim: { status: 201, json: { lead_id: LEAD } },
     generate: { status: 202, json: { job_id: JOB, state: "queued" } },
-    status: { status: 200, json: { job_id: JOB, state: "rendering" } },
-    claim: { status: 201, json: { lead_id: LEAD, whatsapp_copy: true } },
-    result: [
-      { status: 202, json: { state: "rendering" } },
-      { status: 200, json: { url: "/api/result/signed", expires_at: later } },
+    status: [
+      { status: 200, json: { job_id: JOB, state: "rendering" } },
+      { status: 200, json: { job_id: JOB, state: "ready" } },
     ],
-    image: { status: 200, image: result },
-    look: { status: 404, json: { error: { code: "not_found", request_id: "test" } } },
+    result: { status: 404, json: { error: { code: "not_found", request_id: "test" } } },
   };
   const queues = new Map<Call, Answer[]>();
   for (const [call, answer] of Object.entries({ ...defaults, ...answers }) as [Call, Answer | Answer[]][]) {
@@ -84,19 +84,9 @@ async function mockApi(page: Page, answers: Partial<Record<Call, Answer | Answer
       return;
     }
     seen.push(request);
-    if (answer.holdMs !== undefined) {
-      await new Promise((done) => setTimeout(done, answer.holdMs));
-      // The page has given up on it by now.
-      await route.fulfill({ status: answer.status, json: answer.json }).catch(() => undefined);
-      return;
-    }
-    if (answer.image !== undefined) {
-      await route.fulfill({ status: answer.status, contentType: "image/png", body: answer.image });
-    } else if (answer.json === undefined) {
-      await route.fulfill({ status: answer.status });
-    } else {
-      await route.fulfill({ status: answer.status, json: answer.json });
-    }
+    if (answer.abort === true) await route.abort();
+    else if (answer.json === undefined) await route.fulfill({ status: answer.status });
+    else await route.fulfill({ status: answer.status, json: answer.json });
   });
   return seen;
 }
@@ -107,34 +97,54 @@ const refusal = (status: number, code: string): Answer => ({
 });
 
 const named = (seen: Request[], call: Call) => seen.filter((request) => callOf(request) === call);
+const screenIs = (page: Page, screen: string) =>
+  expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", screen);
 
 test.beforeEach(async ({ page }) => {
   await fakeTurnstile(page);
   await page.clock.install();
 });
 
-test("the whole try-on: uploaded during the choices, the gate before the render ends", async ({ page }) => {
+test("the whole try-on: uploaded during the choices, the number given before the look is made", async ({ page }) => {
   const seen = await mockApi(page);
   await visit(page, "/try");
-  await throughToGenerate(page);
-  await expect.poll(() => named(seen, "generate").length).toBe(1);
+  await throughToGate(page);
 
-  // The photograph went up before Generate was pressed, with the notice and a Turnstile token. Outside production
-  // the notice is the one awaiting counsel, which keeps a client's try-on, so its small copy followed (ADR 0084).
-  const [uploadUrl] = named(seen, "uploadUrl");
-  expect(uploadUrl?.postDataJSON()).toEqual({
+  // The photograph went up before the gate, with the notice and a Turnstile token. The notice says the look goes to
+  // WhatsApp only, and keeps a client's try-on, so its small copy followed (ADR 0084, ADR 0104).
+  await expect.poll(() => named(seen, "upload").length).toBe(1);
+  expect(named(seen, "uploadUrl")[0]?.postDataJSON()).toEqual({
     photo_consent: true,
-    notice_version: "photo-v2",
+    notice_version: "photo-v3",
     turnstile_token: DUMMY_TOKEN,
   });
-  const [upload] = named(seen, "upload");
-  expect(upload?.method()).toBe("PUT");
-  expect(await upload?.headerValue("content-type")).toBe("image/jpeg");
+  expect(await named(seen, "upload")[0]?.headerValue("content-type")).toBe("image/jpeg");
+  await expect.poll(() => named(seen, "copy").length).toBe(1);
   const [copy] = named(seen, "copy");
   expect(new URL(copy?.url() ?? "").pathname + new URL(copy?.url() ?? "").search).toBe(
     `/api/tryon/upload/${JOB}/copy?token=signed`,
   );
-  expect(await copy?.headerValue("content-type")).toBe("image/jpeg");
+  // Nothing is made before the gate has the number.
+  expect(named(seen, "generate")).toHaveLength(0);
+
+  await sendFromGate(page, MOBILE);
+  await screenIs(page, "sent");
+  await expect(page.getByRole("heading", { name: "Your new look is on its way." })).toBeVisible();
+  await expect(page.getByText("Watch WhatsApp on +91 98100 00000", { exact: false })).toBeVisible();
+
+  const [claim] = named(seen, "claim");
+  expect(claim?.postDataJSON()).toEqual({
+    job_id: JOB,
+    name: "Test Visitor",
+    mobile: "98100 00000",
+    stage: "crown",
+    notice_version: "gate-v3",
+    attribution: { landing_path: "/try" },
+  });
+  expect(await claim?.headerValue("idempotency-key")).toMatch(/^[0-9a-f-]{36}$/);
+  // The look is asked for only once the claim is saved.
+  const gateCalls = seen.map((request) => callOf(request)).filter((call) => call === "claim" || call === "generate");
+  expect(gateCalls).toEqual(["claim", "generate"]);
   expect(named(seen, "generate")[0]?.postDataJSON()).toEqual({
     job_id: JOB,
     stage: "crown",
@@ -142,31 +152,11 @@ test("the whole try-on: uploaded during the choices, the gate before the render 
     hair_color: "brown",
   });
 
-  await page.clock.runFor(20_000);
-  await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "gate");
-  await page.getByLabel("Name").fill("Test Visitor");
-  await page.getByLabel("Mobile").fill(MOBILE);
-  await page.getByRole("button", { name: "Show me the result" }).click();
+  // The page watches the render until it is ready, and never asks for the look.
+  await page.clock.runFor(10_000);
+  expect(named(seen, "result")).toHaveLength(0);
+  await expect(page.locator("[data-screen] img")).toHaveCount(0);
 
-  // Claimed while the render still runs: the result screen waits for it.
-  await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "result");
-  await expect(page.getByText("Still working on it", { exact: true }).first()).toBeVisible();
-  const [claim] = named(seen, "claim");
-  expect(claim?.postDataJSON()).toEqual({
-    job_id: JOB,
-    name: "Test Visitor",
-    mobile: "98100 00000",
-    notice_version: "gate-v2",
-    attribution: { landing_path: "/try" },
-  });
-  expect(await claim?.headerValue("idempotency-key")).toMatch(/^[0-9a-f-]{36}$/);
-
-  await page.clock.runFor(3_000);
-  await expect(page.getByRole("img", { name: "Simulated result" })).toBeVisible();
-  await expect(page.getByText("A copy is on its way to +91 98100 00000. Deleted after fourteen days.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Download" })).toHaveAttribute("aria-disabled", "false");
-
-  // No name, number or image link in any address the page asked for, or in analytics.
   for (const request of seen) {
     expect(request.url()).not.toContain("Test");
     expect(request.url()).not.toContain("98100");
@@ -180,34 +170,33 @@ test("the whole try-on: uploaded during the choices, the gate before the render 
   await expectNoPersonalData(page, ["Test Visitor", "98100", "9810000000"]);
 });
 
-test("a result request stuck on the way is dropped, and the next poll shows the result", async ({ page }) => {
-  test.setTimeout(60_000);
+test("a render that fails once the look is on its way shows the render's error, and another may be tried", async ({
+  page,
+}) => {
   await mockApi(page, {
-    result: [
-      { status: 202, json: { state: "rendering" }, holdMs: 40_000 },
-      { status: 200, json: { url: "/api/result/signed", expires_at: new Date(Date.now() + 300_000).toISOString() } },
-    ],
+    status: { status: 200, json: { job_id: JOB, state: "failed", failure_code: "render_failed" } },
   });
   await visit(page, "/try");
-  await throughToGenerate(page);
-  await page.clock.runFor(20_000);
-  await page.getByLabel("Name").fill("Test Visitor");
-  await page.getByLabel("Mobile").fill(MOBILE);
-  await page.getByRole("button", { name: "Show me the result" }).click();
-  await expect(page.getByRole("img", { name: "Simulated result" })).toBeVisible({ timeout: 20_000 });
+  await throughToGate(page);
+  await sendFromGate(page, MOBILE);
+  await screenIs(page, "sent");
+  await page.clock.runFor(3_000);
+  await expect(page.getByRole("heading", { name: "The simulation did not work this time." })).toBeVisible();
+  await page.getByRole("button", { name: "Choose another" }).click();
+  await screenIs(page, "upload");
 });
 
-test("the number is optional: an empty gate shows the result, and no lead is made", async ({ page }) => {
-  const seen = await mockApi(page);
+test("a face the renderer cannot read, found once the look is on its way, blames the photograph", async ({ page }) => {
+  await mockApi(page, {
+    status: { status: 200, json: { job_id: JOB, state: "failed", failure_code: "photo_unreadable" } },
+  });
   await visit(page, "/try");
-  await throughToGenerate(page);
-  await page.clock.runFor(20_000);
-  await page.getByRole("button", { name: "Show me the result" }).click();
-  await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "result");
+  await throughToGate(page);
+  await sendFromGate(page, MOBILE);
   await page.clock.runFor(3_000);
-  await expect(page.getByRole("img", { name: "Simulated result" })).toBeVisible();
-  await expect(page.getByText("A copy is on its way", { exact: false })).toHaveCount(0);
-  expect(named(seen, "claim")).toHaveLength(0);
+  await expect(page.getByRole("heading", { name: "We cannot use this photograph." })).toBeVisible();
+  const failed = (await analyticsEvents(page)).find(([name]) => name === "try_on_failed");
+  expect(failed?.[1]).toEqual({ failure_code: "photo_unreadable" });
 });
 
 const OWN_LOOK: Answer = {
@@ -216,32 +205,19 @@ const OWN_LOOK: Answer = {
 };
 
 // CLI-29: the visitor used to choose a photograph and agree to its use before being told they had had their look.
-test("a visitor who has had their look is shown it on arrival, before choosing a photograph", async ({ page }) => {
-  const seen = await mockApi(page, {
-    look: OWN_LOOK,
-    result: {
-      status: 200,
-      json: { url: "/api/result/signed", expires_at: new Date(Date.now() + 300_000).toISOString() },
-    },
-  });
+test("a visitor who has had their look is told on arrival that it was sent, and shown no look", async ({ page }) => {
+  const seen = await mockApi(page, { look: OWN_LOOK });
   await visit(page, "/try");
-  await expect(page.getByRole("heading", { name: "The look you had." })).toBeVisible();
-  await expect(page.getByRole("img", { name: "Simulated result" })).toBeVisible();
-  await expect(page.getByText("Light density · Natural hairline · short")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your look has already been sent." })).toBeVisible();
+  await expect(page.locator("[data-screen] img")).toHaveCount(0);
   expect(named(seen, "uploadUrl")).toHaveLength(0);
+  expect(named(seen, "result")).toHaveLength(0);
   expect((await analyticsEvents(page)).map(([name]) => name)).toEqual([]);
 });
 
-// The look made after the page opened, in another tab: the upload is refused, and the look shown.
-test("a visitor who has had their look is shown it again", async ({ page }) => {
-  const seen = await mockApi(page, {
-    uploadUrl: refusal(403, "look_limit_reached"),
-    look: [refusal(404, "not_found"), OWN_LOOK],
-    result: {
-      status: 200,
-      json: { url: "/api/result/signed", expires_at: new Date(Date.now() + 300_000).toISOString() },
-    },
-  });
+// The look made after the page opened, in another tab: the upload is refused, and the visitor told it was sent.
+test("a visitor whose upload is refused for having had their look is told it was sent", async ({ page }) => {
+  await mockApi(page, { uploadUrl: refusal(403, "look_limit_reached") });
   await visit(page, "/try");
   await page
     .locator('input[type="file"]')
@@ -249,32 +225,30 @@ test("a visitor who has had their look is shown it again", async ({ page }) => {
     .setInputFiles(await drawnHeadPhoto());
   await page.getByText("I understand, and I agree to my photograph being used this way.").click();
   await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page.getByRole("heading", { name: "The look you had." })).toBeVisible();
-  await expect(page.getByRole("img", { name: "Simulated result" })).toBeVisible();
-  await expect(page.getByText("Light density · Natural hairline · short")).toBeVisible();
-  expect(named(seen, "result")[0]?.url()).toContain(`/api/tryon/result/${JOB}`);
+  await expect(page.getByRole("heading", { name: "Your look has already been sent." })).toBeVisible();
   expect((await analyticsEvents(page)).map(([name]) => name)).not.toContain("try_on_failed");
 });
 
-test("no WhatsApp line when messaging is off", async ({ page }) => {
-  await mockApi(page, { claim: { status: 201, json: { lead_id: LEAD, whatsapp_copy: false } } });
+// ADR 0104: the look goes to WhatsApp only, so while WhatsApp cannot send it the try-on does not run.
+test("while WhatsApp cannot send a look, the visitor is told on arrival, and nothing is uploaded", async ({ page }) => {
+  const seen = await mockApi(page, { availability: { status: 200, json: { available: false } } });
   await visit(page, "/try");
-  await throughToGenerate(page);
-  await page.clock.runFor(20_000);
-  await page.getByLabel("Name").fill("Test Visitor");
-  await page.getByLabel("Mobile").fill(MOBILE);
-  await page.getByRole("button", { name: "Show me the result" }).click();
-  await page.clock.runFor(3_000);
-  await expect(page.getByRole("img", { name: "Simulated result" })).toBeVisible();
-  await expect(page.getByText("A copy is on its way", { exact: false })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "The try-on is not available right now." })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Choose another" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Book a visit instead" })).toHaveAttribute("href", "/book");
+  expect(named(seen, "uploadUrl")).toHaveLength(0);
 });
 
 // A refused upload shows as soon as it happens, while the visitor is still choosing.
 for (const [name, answers, heading] of [
-  ["one look per visitor", { uploadUrl: refusal(403, "look_limit_reached") }, "You have had your look."],
   ["a full day's uploads", { uploadUrl: refusal(503, "busy") }, "The simulation is busy just now."],
   ["a failed Turnstile check", { uploadUrl: refusal(403, "turnstile_failed") }, "The simulation is busy just now."],
   ["a refused file", { upload: refusal(422, "photo_invalid_file") }, "We cannot use this photograph."],
+  [
+    "WhatsApp switched off since the page opened",
+    { uploadUrl: refusal(503, "whatsapp_unavailable") },
+    "The try-on is not available right now.",
+  ],
 ] as const) {
   test(`the upload: ${name} shows "${heading}"`, async ({ page }) => {
     await mockApi(page, answers);
@@ -291,50 +265,44 @@ for (const [name, answers, heading] of [
 
 for (const [name, answers, heading] of [
   ["the hourly render limit", { generate: refusal(429, "rate_limited") }, "The simulation is busy just now."],
-  ["another look for the same photograph", { generate: refusal(403, "look_limit_reached") }, "You have had your look."],
+  ["today's render ceiling", { generate: refusal(503, "busy") }, "The simulation is busy just now."],
   [
-    "a failed render",
-    { status: { status: 200, json: { job_id: JOB, state: "failed", failure_code: "render_failed" } } },
-    "The simulation did not work this time.",
-  ],
-  [
-    "a face the renderer cannot read",
-    { status: { status: 200, json: { job_id: JOB, state: "failed", failure_code: "photo_unreadable" } } },
-    "We cannot use this photograph.",
+    "WhatsApp switched off at the gate",
+    { claim: refusal(503, "whatsapp_unavailable") },
+    "The try-on is not available right now.",
   ],
 ] as const) {
-  test(`the render: ${name} shows "${heading}"`, async ({ page }) => {
+  test(`the gate: ${name} shows "${heading}"`, async ({ page }) => {
     await mockApi(page, answers);
     await visit(page, "/try");
-    await throughToGenerate(page);
-    await page.clock.runFor(3_000);
+    await throughToGate(page);
+    await sendFromGate(page, MOBILE);
     await expect(page.getByRole("heading", { name: heading })).toBeVisible();
     const failed = (await analyticsEvents(page)).find(([name]) => name === "try_on_failed");
     expect(failed?.[1]).toEqual({ failure_code: expect.any(String) as unknown });
   });
 }
 
-test("a render that fails after the gate shows the render's error", async ({ page }) => {
-  await mockApi(page, { result: { status: 422, json: { state: "failed", failure_code: "render_failed" } } });
+test("the gate says when a number has had its looks today, and makes none", async ({ page }) => {
+  const seen = await mockApi(page, { claim: refusal(429, "rate_limited") });
   await visit(page, "/try");
-  await throughToGenerate(page);
-  await page.clock.runFor(20_000);
-  await page.getByLabel("Name").fill("Test Visitor");
-  await page.getByLabel("Mobile").fill(MOBILE);
-  await page.getByRole("button", { name: "Show me the result" }).click();
-  await expect(page.getByRole("heading", { name: "The simulation did not work this time." })).toBeVisible();
+  await throughToGate(page);
+  await sendFromGate(page, MOBILE);
+  await expect(page.getByText("This number has had its looks for today. Please try again tomorrow.")).toBeVisible();
+  await screenIs(page, "gate");
+  expect(named(seen, "generate")).toHaveLength(0);
 });
 
-test("the gate says when a number has had too many results today", async ({ page }) => {
-  await mockApi(page, { claim: refusal(429, "rate_limited") });
+test("the gate says when the try-on is already another number's", async ({ page }) => {
+  await mockApi(page, {
+    claim: refusal(409, "job_not_claimable"),
+    status: { status: 200, json: { job_id: JOB, state: "queued" } },
+  });
   await visit(page, "/try");
-  await throughToGenerate(page);
-  await page.clock.runFor(20_000);
-  await page.getByLabel("Name").fill("Test Visitor");
-  await page.getByLabel("Mobile").fill(MOBILE);
-  await page.getByRole("button", { name: "Show me the result" }).click();
-  await expect(page.getByText("This number has had several results today. Please try again tomorrow.")).toBeVisible();
-  await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "gate");
+  await throughToGate(page);
+  await sendFromGate(page, MOBILE);
+  await expect(page.getByText("This look is already on its way to another number.")).toBeVisible();
+  await screenIs(page, "gate");
 });
 
 // FEO-21: pressing again after the answer was lost is the same claim, so it carries the same key.
@@ -343,35 +311,50 @@ test("the gate pressed again after a lost answer sends the same request key", as
     claim: [refusal(500, "internal_error"), { status: 201, json: { lead_id: LEAD } }],
   });
   await visit(page, "/try");
-  await throughToGenerate(page);
-  await page.clock.runFor(20_000);
-  await page.getByLabel("Name").fill("Test Visitor");
-  await page.getByLabel("Mobile").fill(MOBILE);
-  await page.getByRole("button", { name: "Show me the result" }).click();
+  await throughToGate(page);
+  await sendFromGate(page, MOBILE);
   await expect(page.getByText("That did not go through. Please try again in a minute.")).toBeVisible();
-  await page.getByRole("button", { name: "Show me the result" }).click();
-  await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "result");
+  await page.getByRole("button", { name: "Send my look" }).click();
+  await screenIs(page, "sent");
   const keys = await Promise.all(named(seen, "claim").map((claim) => claim.headerValue("idempotency-key")));
   expect(keys).toHaveLength(2);
   expect(keys[1]).toBe(keys[0]);
 });
 
-// CLI-11: Back from the gate after the render has started used to offer every look, and a second look was refused
-// as look_limit_reached, losing the gate. The look now stays fixed, and Continue goes back to the gate.
-test("Back from the gate shows the chosen look fixed, and Continue returns to the gate", async ({ page }) => {
+// The claim is saved and the render's answer lost: pressing again replays the claim and asks for the render again.
+test("a render request lost after the claim is asked again, with the same claim", async ({ page }) => {
+  const seen = await mockApi(page, {
+    generate: [
+      { status: 0, abort: true },
+      { status: 202, json: { job_id: JOB, state: "queued" } },
+    ],
+  });
+  await visit(page, "/try");
+  await throughToGate(page);
+  await sendFromGate(page, MOBILE);
+  await expect(page.getByText("That did not go through. Please try again in a minute.")).toBeVisible();
+  await page.getByRole("button", { name: "Send my look" }).click();
+  await screenIs(page, "sent");
+  const keys = await Promise.all(named(seen, "claim").map((claim) => claim.headerValue("idempotency-key")));
+  expect(keys).toHaveLength(2);
+  expect(keys[1]).toBe(keys[0]);
+  expect(named(seen, "generate")).toHaveLength(2);
+});
+
+// Nothing is made before the gate, so going back from it may change the look.
+test("Back from the gate offers every look again, and nothing has been made", async ({ page }) => {
   const seen = await mockApi(page);
   await visit(page, "/try");
-  await throughToGenerate(page);
-  await page.clock.runFor(20_000);
-  await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "gate");
+  await throughToGate(page);
   await page.getByRole("button", { name: "Back", exact: true }).click();
 
-  await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "looks");
+  await screenIs(page, "looks");
   await expect(page.getByRole("radio", { name: /^Preview Light density Natural/ })).toBeChecked();
-  await expect(page.getByRole("radio", { name: /^Preview Full density Natural/ })).toBeDisabled();
+  await page.getByText("Full density").first().click();
+  await expect(page.getByRole("radio", { name: /^Preview Full density Natural/ })).toBeChecked();
   await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "gate");
-  expect(named(seen, "generate")).toHaveLength(1);
+  await screenIs(page, "gate");
+  expect(named(seen, "generate")).toHaveLength(0);
 });
 
 // FEO-19: the agreement is to one photograph's use; a second photograph is asked for afresh.

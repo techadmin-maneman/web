@@ -1,7 +1,8 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Settings } from "../../src/config/settings.ts";
-import { MAX_UPLOAD_BYTES } from "../../src/config/tryon.ts";
+import { MAX_UPLOAD_BYTES, RESULT_LINK_MESSAGE_TTL_MS } from "../../src/config/tryon.ts";
+import { signToken } from "../../src/lib/signed-token.ts";
 import {
   LOCAL_SETTINGS,
   NOW,
@@ -20,7 +21,7 @@ import { insertPerson, syntheticJpeg, syntheticPng } from "./tryon-fixtures.ts";
 
 type TryonSettingsOverride = Partial<Settings["tryon"]>;
 
-/** The try-on API as one visitor's browser sees it: it keeps its cookies (mm_look, mm_tryon) between calls. */
+/** The try-on API as one visitor's browser sees it: it keeps its cookie (mm_look) between calls. */
 function visitor(
   options: { tryon?: TryonSettingsOverride; messaging?: Partial<Settings["messaging"]>; deps?: TestDependencies } = {},
 ) {
@@ -54,21 +55,26 @@ function visitor(
     queues,
     call,
     post,
-    dropCookies: () => {
-      cookies.clear();
-    },
     cookie: (name: string) => cookies.get(name) ?? "",
     useCookie: (name: string, value: string) => {
       cookies.set(name, value);
     },
     uploadLink: (body: Record<string, unknown> = {}) =>
-      post("/api/tryon/upload-url", { photo_consent: true, notice_version: "photo-v1", turnstile_token: "t", ...body }),
+      post("/api/tryon/upload-url", { photo_consent: true, notice_version: "photo-v3", turnstile_token: "t", ...body }),
     put: (path: string, bytes: Uint8Array, contentType = "image/jpeg") =>
       call(path, { method: "PUT", headers: { "Content-Type": contentType }, body: bytes }),
     async uploaded(bytes: Uint8Array = syntheticJpeg(800, 800)): Promise<string> {
       const link = await (await this.uploadLink()).json<{ job_id: string; upload_url: string }>();
       expect((await this.put(link.upload_url, bytes)).status).toBe(204);
       return link.job_id;
+    },
+    claim: (jobId: string, mobile = "98100 00001", headers: Record<string, string> = {}, body = {}) =>
+      post("/api/tryon/claim", { job_id: jobId, name: "Arjun Mehta", mobile, stage: "crown", ...body }, headers),
+    /** Uploaded, and claimed at the gate: ready for its render. */
+    async claimed(mobile = "98100 00001"): Promise<string> {
+      const jobId = await this.uploaded();
+      expect((await this.claim(jobId, mobile)).status).toBe(201);
+      return jobId;
     },
     generate: (jobId: string, body: Record<string, unknown> = {}) =>
       post("/api/tryon/generate", {
@@ -78,8 +84,6 @@ function visitor(
         hair_color: "black",
         ...body,
       }),
-    claim: (jobId: string, mobile = "98100 00001", headers: Record<string, string> = {}) =>
-      post("/api/tryon/claim", { job_id: jobId, name: "Arjun Mehta", mobile }, headers),
   };
 }
 
@@ -87,15 +91,26 @@ function jobRow(id: string) {
   return env.DB.prepare("SELECT * FROM tryon_jobs WHERE id = ?").bind(id).first();
 }
 
+async function count(table: string): Promise<number> {
+  const row = await env.DB.prepare(`SELECT COUNT(*) AS n FROM ${table}`).first<{ n: number }>();
+  return row?.n ?? 0;
+}
+
 async function setState(id: string, state: string, extra = ""): Promise<void> {
   await env.DB.prepare(`UPDATE tryon_jobs SET state = ?${extra} WHERE id = ?`).bind(state, id).run();
 }
 
-async function makeReady(id: string): Promise<void> {
-  await env.RESULTS.put(`results/${id}.png`, syntheticPng(512, 512), { httpMetadata: { contentType: "image/png" } });
-  await env.DB.prepare("UPDATE tryon_jobs SET state = 'ready', result_key = ? WHERE id = ?")
-    .bind(`results/${id}.png`, id)
-    .run();
+async function makeReady(id: string): Promise<string> {
+  const key = `results/${id}.png`;
+  await env.RESULTS.put(key, syntheticPng(512, 512), { httpMetadata: { contentType: "image/png" } });
+  await env.DB.prepare("UPDATE tryon_jobs SET state = 'ready', result_key = ? WHERE id = ?").bind(key, id).run();
+  return key;
+}
+
+/** The link a WhatsApp message carries to the look, as the messaging queue mints it when it sends. */
+async function messageLink(resultKey: string): Promise<string> {
+  const expiresAt = new Date(NOW.getTime() + RESULT_LINK_MESSAGE_TTL_MS);
+  return `/api/result/${await signToken(LOCAL_SETTINGS.tryon.linkSigningKey, "result", resultKey, expiresAt)}`;
 }
 
 beforeEach(async () => {
@@ -114,40 +129,34 @@ describe("POST /api/tryon/upload-url", () => {
     expect(await jobRow(body.job_id)).toMatchObject({
       state: "awaiting_upload",
       upload_key: `uploads/${body.job_id}`,
-      photo_consent_version: "photo-v1",
+      photo_consent_version: "photo-v3",
       photo_consent_at: NOW.toISOString(),
       session_id: null,
       person_id: null,
     });
   });
 
-  it("ties a new photo to the session of a visitor who passed the gate, so its result needs no second gate", async () => {
+  // ADR 0104: every photo notice before v3 promised the look on screen, which the site no longer shows.
+  it("refuses consent that is not literally true, and any notice but the current photo notice", async () => {
     const browser = visitor();
-    const failed = await browser.uploaded();
-    await browser.generate(failed);
-    await browser.claim(failed);
-    await setState(failed, "failed");
-    const session = await env.DB.prepare("SELECT id, person_id FROM tryon_sessions").first<{
-      id: string;
-      person_id: string;
-    }>();
-
-    const again = await (await browser.uploadLink()).json<{ job_id: string; upload_url: string }>();
-    expect(await jobRow(again.job_id)).toMatchObject({ session_id: session?.id, person_id: session?.person_id });
-
-    expect((await browser.put(again.upload_url, syntheticJpeg(800, 800))).status).toBe(204);
-    await browser.generate(again.job_id);
-    await makeReady(again.job_id);
-    const claimant = visitor();
-    claimant.useCookie("mm_tryon", browser.cookie("mm_tryon"));
-    expect((await claimant.call(`/api/tryon/result/${again.job_id}`)).status).toBe(200);
-  });
-
-  it("refuses consent that is not literally true, and a notice that is not the photo notice", async () => {
-    const browser = visitor();
-    for (const body of [{ photo_consent: false }, { notice_version: "booking-v1" }, { extra: 1 }]) {
+    for (const body of [
+      { photo_consent: false },
+      { notice_version: "booking-v1" },
+      { notice_version: "photo-v1" },
+      { notice_version: "photo-v2" },
+      { extra: 1 },
+    ]) {
       expect((await browser.uploadLink(body)).status).toBe(400);
     }
+  });
+
+  // ADR 0104: the look goes to WhatsApp only, so with WhatsApp off the try-on does not start.
+  it("refuses while WhatsApp cannot send the look, before anything is stored or counted", async () => {
+    const refused = await visitor({ messaging: { enabled: false } }).uploadLink();
+    expect(refused.status).toBe(503);
+    expect(await refused.json()).toMatchObject({ error: { code: "whatsapp_unavailable" } });
+    expect(await count("tryon_jobs")).toBe(0);
+    expect(await count("counters")).toBe(0);
   });
 
   it("refuses a failed Turnstile check", async () => {
@@ -226,10 +235,194 @@ describe("PUT /api/tryon/upload/:job_id", () => {
   });
 });
 
-describe("POST /api/tryon/generate and GET /api/tryon/status", () => {
-  it("queues the first look, records the render choice and sends it to the render queue", async () => {
+describe("POST /api/tryon/claim, before the look is made", () => {
+  it("captures the lead once the photograph is uploaded, before any render, and opens no session", async () => {
     const browser = visitor();
     const jobId = await browser.uploaded();
+
+    const response = await browser.claim(jobId, "98100 00001", {}, { stage: "advanced" });
+    expect(response.status).toBe(201);
+    const body = await response.json<{ lead_id: string }>();
+    expect(Object.keys(body)).toEqual(["lead_id"]);
+    expect(response.headers.get("Set-Cookie")).toBeNull();
+
+    const lead = await env.DB.prepare("SELECT source, city, first_choice_window, loss_extent FROM leads WHERE id = ?")
+      .bind(body.lead_id)
+      .first();
+    expect(lead).toEqual({ source: "tryon", city: null, first_choice_window: null, loss_extent: "advanced" });
+    const person = await env.DB.prepare("SELECT mobile_e164, contactable FROM people").first();
+    expect(person).toEqual({ mobile_e164: "+919810000001", contactable: 0 }); // a try-on alone is not contact consent
+    const consents = await env.DB.prepare(
+      "SELECT purpose, notice_version, created_at, source FROM consents ORDER BY purpose",
+    ).all();
+    expect(consents.results).toEqual([
+      { purpose: "result_delivery", notice_version: "gate-v3", created_at: NOW.toISOString(), source: "try_on" },
+      { purpose: "tryon_photo", notice_version: "photo-v3", created_at: NOW.toISOString(), source: "try_on" },
+    ]);
+    expect(await jobRow(jobId)).toMatchObject({
+      state: "awaiting_upload",
+      lead_id: body.lead_id,
+      claimed_at: NOW.toISOString(),
+      session_id: null,
+    });
+    // The look's message waits for the render the claim comes before.
+    const message = await env.DB.prepare("SELECT kind, state, subject_id FROM outbound_messages").first();
+    expect(message).toEqual({ kind: "tryon_result", state: "waiting", subject_id: jobId });
+    expect(await count("tryon_sessions")).toBe(0);
+    expect(browser.queues.CRM_QUEUE.sent).toEqual([
+      { lead_id: body.lead_id, request_id: expect.any(String) as string },
+    ]);
+    expect(browser.queues.MESSAGE_QUEUE.sent).toEqual([]);
+  });
+
+  it("refuses a job whose photograph has not arrived, or whose render was asked for already", async () => {
+    const browser = visitor();
+    const link = await (await browser.uploadLink()).json<{ job_id: string }>();
+    expect(await (await browser.claim(link.job_id)).json()).toMatchObject({ error: { code: "job_not_claimable" } });
+
+    const failed = await browser.uploaded();
+    await setState(failed, "failed");
+    expect((await browser.claim(failed)).status).toBe(409);
+    expect((await browser.claim(crypto.randomUUID())).status).toBe(404);
+    expect((await browser.claim(failed, "12345")).status).toBe(400);
+    expect(await count("leads")).toBe(0);
+  });
+
+  // ADR 0104: the gate's earlier notices said the result opens on the next screen.
+  it("records the gate's current notice, and refuses any other", async () => {
+    const browser = visitor();
+    const jobId = await browser.uploaded();
+    for (const version of ["gate-v1", "gate-v2", "photo-v3"]) {
+      const refused = await browser.claim(jobId, "98100 00001", {}, { notice_version: version });
+      expect(refused.status).toBe(400);
+      expect(await refused.json()).toMatchObject({ error: { code: "invalid_request", fields: ["notice_version"] } });
+    }
+    expect((await browser.claim(jobId, "98100 00001", {}, { notice_version: "gate-v3" })).status).toBe(201);
+    const consents = await env.DB.prepare("SELECT purpose, notice_version FROM consents ORDER BY purpose").all();
+    expect(consents.results).toEqual([
+      { purpose: "result_delivery", notice_version: "gate-v3" },
+      { purpose: "tryon_photo", notice_version: "photo-v3" },
+    ]);
+  });
+
+  it("asks for the stage the visitor chose", async () => {
+    const browser = visitor();
+    const jobId = await browser.uploaded();
+    const refused = await browser.post("/api/tryon/claim", {
+      job_id: jobId,
+      name: "Arjun Mehta",
+      mobile: "98100 00001",
+    });
+    expect(refused.status).toBe(400);
+  });
+
+  // ADR 0104: a try-on whose look could not be sent does not run, so nothing of the claim is written.
+  it("refuses while WhatsApp cannot send the look, writing nothing", async () => {
+    const jobId = await visitor().uploaded();
+    const refused = await visitor({ messaging: { enabled: false } }).claim(jobId);
+    expect(refused.status).toBe(503);
+    expect(await refused.json()).toMatchObject({ error: { code: "whatsapp_unavailable" } });
+    for (const table of ["people", "consents", "leads", "outbound_messages"]) expect(await count(table)).toBe(0);
+    expect((await jobRow(jobId))?.claimed_at).toBeNull();
+  });
+
+  // Owner ruling, 30 September 2026 ("logins open, reminders fenced", ADR 0025 item 84; ADR 0097): the look answers
+  // the person who just claimed it, so it reaches any number, allowlisted or not.
+  it("takes any number off the allowlist, since the look answers the person who just claimed it", async () => {
+    const browser = visitor({ messaging: { allowlist: ["+919810000002"] } });
+    const jobId = await browser.uploaded();
+    expect((await browser.claim(jobId, "98100 00001")).status).toBe(201);
+  });
+
+  // A record one of our own scripts made stays fenced (isStagingTestRecord, src/policy/staging-test-records.ts), and
+  // its look would be held back, so its try-on does not run off the allowlist.
+  it("refuses a 'Staging test' claim off the allowlist, and takes one on it", async () => {
+    const browser = visitor({ messaging: { allowlist: ["+919810000002"] } });
+    const jobId = await browser.uploaded();
+    const asStagingTest = (mobile: string) =>
+      browser.post("/api/tryon/claim", { job_id: jobId, name: "Staging test", mobile, stage: "crown" });
+    expect(await (await asStagingTest("98100 00001")).json()).toMatchObject({
+      error: { code: "whatsapp_unavailable" },
+    });
+    expect((await asStagingTest("98100 00002")).status).toBe(201);
+  });
+
+  it("refuses a number that has had its looks sent today, as the messaging queue would skip a fourth", async () => {
+    const browser = visitor({ tryon: { resultMessageMobileDailyLimit: 0 } });
+    const jobId = await browser.uploaded();
+    const refused = await browser.claim(jobId);
+    expect(refused.status).toBe(429);
+    expect(await refused.json()).toMatchObject({ error: { code: "rate_limited" } });
+    expect(await count("leads")).toBe(0);
+  });
+
+  it("keeps a person who booked before contactable", async () => {
+    await insertPerson("p", "+919810000001");
+    await env.DB.prepare("UPDATE people SET contactable = 1").run();
+    await visitor().claimed();
+    expect(await env.DB.prepare("SELECT contactable FROM people").first()).toEqual({ contactable: 1 });
+  });
+
+  it("replays an idempotent claim with the same lead", async () => {
+    const browser = visitor();
+    const jobId = await browser.uploaded();
+    const first = await (await browser.claim(jobId, "98100 00001", { "Idempotency-Key": "claim-key-1" })).json();
+
+    const replay = await browser.claim(jobId, "98100 00001", { "Idempotency-Key": "claim-key-1" });
+    expect(replay.status).toBe(201);
+    expect(await replay.json()).toEqual(first);
+    expect(await count("leads")).toBe(1);
+  });
+
+  it("gives the same number its lead again, after its render too, and refuses another number", async () => {
+    const browser = visitor();
+    const jobId = await browser.uploaded();
+    const first = await (await browser.claim(jobId)).json<{ lead_id: string }>();
+    await browser.generate(jobId);
+
+    const again = await browser.claim(jobId);
+    expect(again.status).toBe(201);
+    expect(await again.json()).toEqual(first);
+    const stranger = await visitor().claim(jobId, "98100 00002");
+    expect(stranger.status).toBe(409);
+    expect(await count("leads")).toBe(1);
+    expect(await count("outbound_messages")).toBe(1);
+  });
+
+  it("limits claims per number per day", async () => {
+    const browser = visitor({ tryon: { claimMobileDailyLimit: 1 } });
+    const first = await browser.uploaded();
+    const second = await browser.uploaded();
+    expect((await browser.claim(first)).status).toBe(201);
+    expect((await browser.claim(second)).status).toBe(429);
+  });
+});
+
+describe("POST /api/tryon/generate and GET /api/tryon/status", () => {
+  // ADR 0104: the number is where the look goes, so no look is made without it.
+  it("refuses a job the gate has not claimed", async () => {
+    const browser = visitor();
+    const jobId = await browser.uploaded();
+    const refused = await browser.generate(jobId);
+    expect(refused.status).toBe(409);
+    expect(await refused.json()).toMatchObject({ error: { code: "claim_required" } });
+    expect(await jobRow(jobId)).toMatchObject({ state: "awaiting_upload" });
+    expect(browser.queues.RENDER_QUEUE.sent).toEqual([]);
+    expect(browser.cookie("mm_look")).toBe("");
+  });
+
+  it("makes no look while WhatsApp cannot send it", async () => {
+    const jobId = await visitor().claimed();
+    const browser = visitor({ messaging: { enabled: false } });
+    const refused = await browser.generate(jobId);
+    expect(refused.status).toBe(503);
+    expect(await refused.json()).toMatchObject({ error: { code: "whatsapp_unavailable" } });
+    expect(browser.queues.RENDER_QUEUE.sent).toEqual([]);
+  });
+
+  it("queues the first look of a claimed try-on, records the render choice and sends it to the render queue", async () => {
+    const browser = visitor();
+    const jobId = await browser.claimed();
 
     const response = await browser.generate(jobId, {
       stage: "receding",
@@ -255,7 +448,7 @@ describe("POST /api/tryon/generate and GET /api/tryon/status", () => {
 
   it("routes an unknown colour to Premium with color=original, and records why", async () => {
     const browser = visitor();
-    const jobId = await browser.uploaded();
+    const jobId = await browser.claimed();
     await browser.generate(jobId, { hair_color: "unknown" });
     expect(await jobRow(jobId)).toMatchObject({
       endpoint: "premium",
@@ -266,19 +459,16 @@ describe("POST /api/tryon/generate and GET /api/tryon/status", () => {
 
   it("returns the same job for the same request, without a second render", async () => {
     const browser = visitor();
-    const jobId = await browser.uploaded();
+    const jobId = await browser.claimed();
     await browser.generate(jobId);
     const again = await browser.generate(jobId);
     expect(await again.json()).toEqual({ job_id: jobId, state: "queued" });
     expect(browser.queues.RENDER_QUEUE.sent).toHaveLength(1);
   });
 
-  it("needs the upload first, and refuses a different look for the same photo", async () => {
+  it("refuses a different look for the same photo", async () => {
     const browser = visitor();
-    const link = await (await browser.uploadLink()).json<{ job_id: string }>();
-    expect(await (await browser.generate(link.job_id)).json()).toMatchObject({ error: { code: "upload_missing" } });
-
-    const jobId = await browser.uploaded();
+    const jobId = await browser.claimed();
     await browser.generate(jobId);
     const other = await browser.generate(jobId, { preset: "light-natural-short" });
     expect(other.status).toBe(403);
@@ -288,10 +478,10 @@ describe("POST /api/tryon/generate and GET /api/tryon/status", () => {
   it("trips the render ceiling at 3: the fourth answers 503 busy, fails its job and alerts once", async () => {
     const browser = visitor({ tryon: { renderDailyCeiling: 3, uploadIpHourlyLimit: 10, generateIpHourlyLimit: 10 } });
     const jobs = [
-      await browser.uploaded(),
-      await browser.uploaded(),
-      await browser.uploaded(),
-      await browser.uploaded(),
+      await browser.claimed("98100 00001"),
+      await browser.claimed("98100 00002"),
+      await browser.claimed("98100 00003"),
+      await browser.claimed("98100 00004"),
     ];
 
     for (const jobId of jobs.slice(0, 3)) expect((await browser.generate(jobId)).status).toBe(202);
@@ -301,6 +491,11 @@ describe("POST /api/tryon/generate and GET /api/tryon/status", () => {
 
     const status = await browser.call(`/api/tryon/status/${jobs[3] ?? ""}`);
     expect(await status.json()).toEqual({ job_id: jobs[3], state: "failed", failure_code: "busy" });
+    // Its look's message is skipped with it.
+    const skipped = await env.DB.prepare("SELECT state FROM outbound_messages WHERE subject_id = ?")
+      .bind(jobs[3] ?? "")
+      .first();
+    expect(skipped).toEqual({ state: "skipped" });
     expect(browser.deps.alerts).toEqual([expect.stringContaining("render ceiling (3)") as string]);
   });
 
@@ -312,239 +507,31 @@ describe("POST /api/tryon/generate and GET /api/tryon/status", () => {
   });
 });
 
-describe("POST /api/tryon/claim", () => {
-  it("captures the lead while the render is still running, and opens a session", async () => {
-    const browser = visitor();
-    const jobId = await browser.uploaded();
-    await browser.generate(jobId, { stage: "advanced" });
-    await setState(jobId, "rendering");
-
-    const response = await browser.claim(jobId);
-    expect(response.status).toBe(201);
-    const { lead_id: leadId, whatsapp_copy: whatsappCopy } = await response.json<{
-      lead_id: string;
-      whatsapp_copy: boolean;
-    }>();
-    expect(whatsappCopy).toBe(true);
-    expect(response.headers.get("Set-Cookie")).toMatch(
-      /^mm_tryon=[0-9a-f-]{36}; Max-Age=1800; Path=\/api\/tryon; HttpOnly; Secure; SameSite=Strict$/,
-    );
-
-    const lead = await env.DB.prepare("SELECT source, city, first_choice_window, loss_extent FROM leads WHERE id = ?")
-      .bind(leadId)
-      .first();
-    expect(lead).toEqual({ source: "tryon", city: null, first_choice_window: null, loss_extent: "advanced" });
-    const person = await env.DB.prepare("SELECT mobile_e164, contactable FROM people").first();
-    expect(person).toEqual({ mobile_e164: "+919810000001", contactable: 0 }); // a try-on alone is not contact consent
-    const consents = await env.DB.prepare(
-      "SELECT purpose, notice_version, created_at, source FROM consents ORDER BY purpose",
-    ).all();
-    expect(consents.results).toEqual([
-      { purpose: "result_delivery", notice_version: "gate-v1", created_at: NOW.toISOString(), source: "try_on" },
-      { purpose: "tryon_photo", notice_version: "photo-v1", created_at: NOW.toISOString(), source: "try_on" },
-    ]);
-    expect(await jobRow(jobId)).toMatchObject({ lead_id: leadId, claimed_at: NOW.toISOString() });
-    const message = await env.DB.prepare("SELECT state, subject_id FROM outbound_messages").first();
-    expect(message).toEqual({ state: "waiting", subject_id: jobId });
-    expect(browser.queues.CRM_QUEUE.sent).toEqual([{ lead_id: leadId, request_id: expect.any(String) as string }]);
-    expect(browser.queues.MESSAGE_QUEUE.sent).toEqual([]);
+describe("what a browser is told: never the look, which goes to WhatsApp only", () => {
+  it("says whether the try-on runs, by whether WhatsApp can send its look", async () => {
+    const on = await visitor().call("/api/tryon/availability");
+    expect(on.status).toBe(200);
+    expect(await on.json()).toEqual({ available: true });
+    const off = await visitor({ messaging: { enabled: false } }).call("/api/tryon/availability");
+    expect(await off.json()).toEqual({ available: false });
   });
 
-  // ADR 0084: staging's site shows the notices awaiting counsel, production's the published pair, and each consent
-  // records the one the page showed.
-  it("records the gate's notice the page showed, and refuses one that is not the gate's", async () => {
+  it("hands a browser no look and no link to one, whoever it is", async () => {
     const browser = visitor();
-    const link = await (
-      await browser.uploadLink({ notice_version: "photo-v2" })
-    ).json<{ job_id: string; upload_url: string }>();
-    await browser.put(link.upload_url, syntheticJpeg(800, 800));
-    await browser.generate(link.job_id);
-    const claim = (noticeVersion: string) =>
-      browser.post("/api/tryon/claim", {
-        job_id: link.job_id,
-        name: "Arjun Mehta",
-        mobile: "98100 00001",
-        notice_version: noticeVersion,
-      });
-
-    const refused = await claim("photo-v2");
-    expect(refused.status).toBe(400);
-    expect(await refused.json()).toMatchObject({ error: { code: "invalid_request", fields: ["notice_version"] } });
-
-    expect((await claim("gate-v2")).status).toBe(201);
-    const consents = await env.DB.prepare("SELECT purpose, notice_version FROM consents ORDER BY purpose").all();
-    expect(consents.results).toEqual([
-      { purpose: "result_delivery", notice_version: "gate-v2" },
-      { purpose: "tryon_photo", notice_version: "photo-v2" },
-    ]);
-  });
-
-  it("queues the message at once when the result is already ready", async () => {
-    const browser = visitor();
-    const jobId = await browser.uploaded();
+    const jobId = await browser.claimed();
     await browser.generate(jobId);
     await makeReady(jobId);
 
-    await browser.claim(jobId);
-
-    const message = await env.DB.prepare("SELECT id, state FROM outbound_messages").first<{
-      id: string;
-      state: string;
-    }>();
-    expect(message?.state).toBe("queued");
-    expect(browser.queues.MESSAGE_QUEUE.sent).toEqual([
-      { message_id: message?.id, request_id: expect.any(String) as string },
-    ]);
+    const asked = await browser.call(`/api/tryon/result/${jobId}`);
+    expect(asked.status).toBe(404);
+    const look = await browser.call("/api/tryon/look");
+    expect(JSON.stringify(await look.json())).not.toMatch(/url|\/api\/result/);
   });
 
-  it("promises no WhatsApp copy while messaging is off", async () => {
-    const browser = visitor({ messaging: { enabled: false } });
-    const jobId = await browser.uploaded();
-    await browser.generate(jobId);
-    expect(await (await browser.claim(jobId)).json()).toMatchObject({ whatsapp_copy: false });
-  });
-
-  // Owner ruling, 30 September 2026 ("logins open, reminders fenced", ADR 0025 item 84; ADR 0097): the result
-  // answers the person who just claimed it, so the promise holds for any number, allowlisted or not.
-  it("promises a WhatsApp copy to any number, since the result answers the person who just claimed it", async () => {
-    const browser = visitor({ messaging: { allowlist: ["+919810000002"] } });
-    const jobId = await browser.uploaded();
-    await browser.generate(jobId);
-    expect(await (await browser.claim(jobId, "98100 00001")).json()).toMatchObject({ whatsapp_copy: true });
-  });
-
-  // A record one of our own scripts made stays fenced, whatever the ruling above frees (isStagingTestRecord,
-  // src/policy/staging-test-records.ts).
-  it("promises no WhatsApp copy off the allowlist for a 'Staging test' claim", async () => {
-    const browser = visitor({ messaging: { allowlist: ["+919810000002"] } });
-    const jobId = await browser.uploaded();
-    await browser.generate(jobId);
-    const claimed = await browser.post("/api/tryon/claim", {
-      job_id: jobId,
-      name: "Staging test",
-      mobile: "98100 00001",
-    });
-    expect(await claimed.json()).toMatchObject({ whatsapp_copy: false });
-  });
-
-  it("keeps a person who booked before contactable", async () => {
-    await insertPerson("p", "+919810000001");
-    await env.DB.prepare("UPDATE people SET contactable = 1").run();
-    const browser = visitor();
-    const jobId = await browser.uploaded();
-    await browser.generate(jobId);
-    await browser.claim(jobId);
-    expect(await env.DB.prepare("SELECT contactable FROM people").first()).toEqual({ contactable: 1 });
-  });
-
-  it("replays an idempotent claim with the same lead and the cookie again", async () => {
-    const browser = visitor();
-    const jobId = await browser.uploaded();
-    await browser.generate(jobId);
-    const first = await (await browser.claim(jobId, "98100 00001", { "Idempotency-Key": "claim-key-1" })).json();
-    browser.dropCookies();
-
-    const replay = await browser.claim(jobId, "98100 00001", { "Idempotency-Key": "claim-key-1" });
-    expect(await replay.json()).toEqual(first);
-    expect(replay.headers.get("Set-Cookie")).toMatch(/^mm_tryon=/);
-    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM leads").first()).toEqual({ n: 1 });
-  });
-
-  it("lets the same number claim again for a fresh session, and refuses another number", async () => {
-    const browser = visitor();
-    const jobId = await browser.uploaded();
-    await browser.generate(jobId);
-    const first = await (await browser.claim(jobId)).json<{ lead_id: string }>();
-
-    const again = await browser.claim(jobId);
-    expect(await again.json()).toMatchObject({ lead_id: first.lead_id });
-    const stranger = await visitor().claim(jobId, "98100 00002");
-    expect(stranger.status).toBe(409);
-    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM leads").first()).toEqual({ n: 1 });
-  });
-
-  it("refuses a job with no render started, or one that failed", async () => {
-    const browser = visitor();
-    const jobId = await browser.uploaded();
-    expect(await (await browser.claim(jobId)).json()).toMatchObject({ error: { code: "job_not_claimable" } });
-    await browser.generate(jobId);
-    await setState(jobId, "failed");
-    expect((await browser.claim(jobId)).status).toBe(409);
-    expect((await browser.claim(crypto.randomUUID())).status).toBe(404);
-    expect((await browser.claim(jobId, "12345")).status).toBe(400);
-  });
-
-  it("limits claims per number per day", async () => {
-    const browser = visitor({ tryon: { claimMobileDailyLimit: 1 } });
-    const first = await browser.uploaded();
-    const second = await browser.uploaded();
-    await browser.generate(first);
-    await browser.generate(second);
-    expect((await browser.claim(first)).status).toBe(201);
-    expect((await browser.claim(second)).status).toBe(429);
-  });
-});
-
-describe("results, and one look per visitor", () => {
-  it("shows the result to the session that claimed it", async () => {
-    const browser = visitor();
-    const jobId = await browser.uploaded();
-    await browser.generate(jobId);
-    await browser.claim(jobId);
-    const claimant = visitor();
-    claimant.useCookie("mm_tryon", browser.cookie("mm_tryon"));
-    const running = await claimant.call(`/api/tryon/result/${jobId}`);
-    expect(running.status).toBe(202);
-    expect(await running.json()).toEqual({ state: "queued" });
-
-    await makeReady(jobId);
-    const ready = await claimant.call(`/api/tryon/result/${jobId}`);
-    expect(ready.status).toBe(200);
-    const { url } = await ready.json<{ url: string }>();
-    const image = await claimant.call(url);
-    expect(image.status).toBe(200);
-    expect(image.headers.get("Content-Type")).toBe("image/png");
-    expect(new Uint8Array(await image.arrayBuffer()).slice(0, 4)).toEqual(Uint8Array.from([0x89, 0x50, 0x4e, 0x47]));
-
-    const stranger = visitor();
-    await insertPerson("q", "+919810000009");
-    expect((await stranger.call(`/api/tryon/result/${jobId}`)).status).toBe(401);
-  });
-
-  it("shows the result to the browser that made the look, with no number given", async () => {
-    const browser = visitor();
-    const jobId = await browser.uploaded();
-    await browser.generate(jobId);
-    const running = await browser.call(`/api/tryon/result/${jobId}`);
-    expect(running.status).toBe(202);
-    await makeReady(jobId);
-    expect((await browser.call(`/api/tryon/result/${jobId}`)).status).toBe(200);
-    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM leads").first()).toEqual({ n: 0 });
-  });
-
-  it("refuses a look cookie that is made up, stale, or names another job", async () => {
-    const browser = visitor();
-    const jobId = await browser.uploaded();
-    await browser.generate(jobId);
-
-    const forger = visitor();
-    forger.useCookie("mm_look", jobId); // the bare job ID, as the cookie held before it was signed
-    expect((await forger.call(`/api/tryon/result/${jobId}`)).status).toBe(401);
-    forger.useCookie("mm_look", `${browser.cookie("mm_look")}x`);
-    expect((await forger.call(`/api/tryon/result/${jobId}`)).status).toBe(401);
-
-    const other = await visitor().uploaded();
-    expect((await browser.call(`/api/tryon/result/${other}`)).status).toBe(401);
-
-    const later = visitor({ deps: fakeDependencies({ now: () => new Date(NOW.getTime() + 31 * 24 * 3_600_000) }) });
-    later.useCookie("mm_look", browser.cookie("mm_look"));
-    expect((await later.call(`/api/tryon/result/${jobId}`)).status).toBe(401);
-  });
-
-  it("tells a browser which look it has, until the look's result is gone", async () => {
+  it("tells a browser it has had its look, after the look is gone too", async () => {
     const browser = visitor();
     expect((await browser.call("/api/tryon/look")).status).toBe(404);
-    const jobId = await browser.uploaded();
+    const jobId = await browser.claimed();
     await browser.generate(jobId, { stage: "receding", preset: "light-natural-short" });
 
     const look = await browser.call("/api/tryon/look");
@@ -555,38 +542,31 @@ describe("results, and one look per visitor", () => {
       stage: "receding",
       preset: "light-natural-short",
     });
+    // Expired, the browser has still had its look: the upload link refuses it another.
     await setState(jobId, "expired");
-    expect((await browser.call("/api/tryon/look")).status).toBe(404);
+    expect(await (await browser.call("/api/tryon/look")).json()).toMatchObject({ state: "expired" });
+    expect((await browser.uploadLink()).status).toBe(403);
   });
 
-  it("reports a failed render with its failure code", async () => {
+  it("refuses a look cookie that is made up, altered or stale", async () => {
     const browser = visitor();
-    const jobId = await browser.uploaded();
+    const jobId = await browser.claimed();
     await browser.generate(jobId);
-    await browser.claim(jobId);
-    await setState(jobId, "failed", ", failure_code = 'photo_unreadable'");
-    const response = await browser.call(`/api/tryon/result/${jobId}`);
-    expect(response.status).toBe(422);
-    expect(await response.json()).toEqual({ state: "failed", failure_code: "photo_unreadable" });
-  });
 
-  it("gives one look per visitor: no second look, even after the gate", async () => {
-    const browser = visitor();
-    const jobId = await browser.uploaded();
-    await browser.generate(jobId);
-    await browser.claim(jobId);
+    const forger = visitor();
+    forger.useCookie("mm_look", jobId); // the bare job ID, as the cookie held before it was signed
+    expect((await forger.call("/api/tryon/look")).status).toBe(404);
+    forger.useCookie("mm_look", `${browser.cookie("mm_look")}x`);
+    expect((await forger.call("/api/tryon/look")).status).toBe(404);
 
-    const look = await browser.generate(jobId, { preset: "medium-receded-medium" });
-    expect(look.status).toBe(403);
-    expect(await look.json()).toMatchObject({ error: { code: "look_limit_reached" } });
-    // The same look asked for again is the job that already exists.
-    expect(await (await browser.generate(jobId)).json()).toMatchObject({ job_id: jobId });
-    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM tryon_jobs").first()).toEqual({ n: 1 });
+    const later = visitor({ deps: fakeDependencies({ now: () => new Date(NOW.getTime() + 31 * 24 * 3_600_000) }) });
+    later.useCookie("mm_look", browser.cookie("mm_look"));
+    expect((await later.call("/api/tryon/look")).status).toBe(404);
   });
 
   it("refuses a second photo from a browser that already has its look", async () => {
     const browser = visitor();
-    const jobId = await browser.uploaded();
+    const jobId = await browser.claimed();
     const queued = await browser.generate(jobId);
     expect(queued.headers.get("Set-Cookie")).toMatch(
       /^mm_look=[\w-]+\.\d+\.[\w-]+; Max-Age=2592000; Path=\/api\/tryon; HttpOnly; Secure; SameSite=Strict$/,
@@ -599,7 +579,7 @@ describe("results, and one look per visitor", () => {
 
   it("lets a browser try another photo when its render failed", async () => {
     const browser = visitor();
-    const jobId = await browser.uploaded();
+    const jobId = await browser.claimed();
     await browser.generate(jobId);
     await setState(jobId, "failed", ", failure_code = 'photo_unreadable'");
 
@@ -607,29 +587,40 @@ describe("results, and one look per visitor", () => {
   });
 });
 
-describe("GET /api/result/:token", () => {
+describe("GET /api/result/:token, the link a WhatsApp message carries", () => {
+  it("serves the look to the WhatsApp bridge for the link's hour, and no longer", async () => {
+    const browser = visitor();
+    const jobId = await browser.claimed();
+    await browser.generate(jobId);
+    const link = await messageLink(await makeReady(jobId));
+
+    const image = await browser.call(link);
+    expect(image.status).toBe(200);
+    expect(image.headers.get("Content-Type")).toBe("image/png");
+    expect(new Uint8Array(await image.arrayBuffer()).slice(0, 4)).toEqual(Uint8Array.from([0x89, 0x50, 0x4e, 0x47]));
+
+    const anHourOn = visitor({ deps: fakeDependencies({ now: () => new Date(NOW.getTime() + 61 * 60_000) }) });
+    expect((await anHourOn.call(link)).status).toBe(404);
+  });
+
   it("refuses an invalid link, and answers busy past the daily read ceiling", async () => {
     const browser = visitor({ tryon: { resultReadDailyCeiling: 1 } });
     expect((await browser.call("/api/result/not-a-token")).status).toBe(404);
 
-    const jobId = await browser.uploaded();
+    const jobId = await browser.claimed();
     await browser.generate(jobId);
-    await browser.claim(jobId);
-    await makeReady(jobId);
-    const { url } = await (await browser.call(`/api/tryon/result/${jobId}`)).json<{ url: string }>();
-    expect((await browser.call(url)).status).toBe(200);
-    expect((await browser.call(url)).status).toBe(503);
+    const link = await messageLink(await makeReady(jobId));
+    expect((await browser.call(link)).status).toBe(200);
+    expect((await browser.call(link)).status).toBe(503);
     expect(browser.deps.alerts).toEqual([expect.stringContaining("result_read ceiling (1)") as string]);
   });
 
   it("answers 404 once the result has been deleted", async () => {
     const browser = visitor();
-    const jobId = await browser.uploaded();
+    const jobId = await browser.claimed();
     await browser.generate(jobId);
-    await browser.claim(jobId);
-    await makeReady(jobId);
-    const { url } = await (await browser.call(`/api/tryon/result/${jobId}`)).json<{ url: string }>();
-    await env.RESULTS.delete(`results/${jobId}.png`);
-    expect((await browser.call(url)).status).toBe(404);
+    const resultKey = await makeReady(jobId);
+    await env.RESULTS.delete(resultKey);
+    expect((await browser.call(await messageLink(resultKey))).status).toBe(404);
   });
 });

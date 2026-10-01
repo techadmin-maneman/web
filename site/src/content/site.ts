@@ -23,12 +23,7 @@
 
 import { WHATSAPP_NUMBER } from "@maneman/web-kit/whatsapp";
 import { LOSS_EXTENTS, type LossExtent } from "../../../src/config/booking.ts";
-import {
-  CURRENT_NOTICE,
-  findNotice,
-  LANDING_NOTICES,
-  TRY_ON_NOTICES_AWAITING_COUNSEL,
-} from "../../../src/config/notices.ts";
+import { CURRENT_NOTICE, findNotice, LANDING_NOTICES } from "../../../src/config/notices.ts";
 import { PRESETS } from "../../../src/config/presets.ts";
 import { KEEPING_NOTICES } from "../../../src/policy/kept-try-ons.ts";
 import { capitalised, serviceArea, visitLength } from "./service.ts";
@@ -67,7 +62,11 @@ function notice(version: string): Notice {
 // Notices
 // ---------------------------------------------------------------------------
 
-/** Every notice production shows, which its build refuses unless each is approved. */
+/**
+ * Every notice the site shows, which the production build refuses unless each is approved. The try-on's two say its
+ * look goes to WhatsApp only (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md), and every build shows them,
+ * so production's build waits for counsel to approve them (docs/open-points.md, item 146).
+ */
 export const notices = {
   /** The try-on consent screen. */
   photo: notice(CURRENT_NOTICE.tryon_photo),
@@ -82,38 +81,10 @@ export const notices = {
 } as const;
 
 /**
- * What the try-on promises of the photograph and the look, in two versions (docs/decisions/0084-a-clients-try-on-is-kept.md):
- * the approved one, which production shows, and the one that keeps a client's try-on, which awaits counsel
- * (docs/open-points.md, item 146) and which every other build shows. Production moves to it once counsel approves it.
+ * The site sends the photograph's small copy only under a photo notice that says a client keeps it
+ * (docs/decisions/0084-a-clients-try-on-is-kept.md).
  */
-export interface TryOnPromise {
-  readonly photo: Notice;
-  readonly gate: Notice;
-  /** The site sends the photograph's small copy only under a notice that says a client keeps it. */
-  readonly sendsCopy: boolean;
-  /** The privacy page's sentences on the try-on. */
-  readonly privacy: string;
-}
-
-export type TryOnPromiseName = "approved" | "awaitingCounsel";
-
-function tryOnPromise(photo: string, gate: string, privacy: string): TryOnPromise {
-  return { photo: notice(photo), gate: notice(gate), sendsCopy: KEEPING_NOTICES.includes(photo), privacy };
-}
-
-export const tryOnPromises: Readonly<Record<TryOnPromiseName, TryOnPromise>> = {
-  approved: tryOnPromise(
-    CURRENT_NOTICE.tryon_photo,
-    CURRENT_NOTICE.result_delivery,
-    "If you use the try-on, your photograph is used only to make your simulation. It is sent to AILabTools, the service that generates it, we never use it to train any model, and it is deleted within thirty days, usually within the hour; the simulation itself is kept for fourteen days. Giving your number at the end of the try-on is optional; if you give it, we use it to send you the result on WhatsApp and for nothing else.",
-  ),
-  // PLACEHOLDER: the try-on's sentences await counsel with the notices (docs/open-points.md, item 146).
-  awaitingCounsel: tryOnPromise(
-    TRY_ON_NOTICES_AWAITING_COUNSEL.photo,
-    TRY_ON_NOTICES_AWAITING_COUNSEL.gate,
-    "If you use the try-on, your photograph is used to make your simulation. It is sent to AILabTools, the service that generates it, we never use it to train any model, and it is deleted within thirty days, usually within the hour; the simulation itself is kept for fourteen days. Giving your number at the end of the try-on is optional; if you give it, we use it to send you the result on WhatsApp. If you then book a visit while the simulation is kept, we keep a small copy of your photograph in your Mane Man account as your before photo, until you ask us to delete it, and the simulation until the photographs of your first fit are taken; you see both when you sign in.",
-  ),
-};
+export const tryOnSendsCopy = KEEPING_NOTICES.includes(notices.photo.version);
 
 // ---------------------------------------------------------------------------
 // Placeholder blocks
@@ -261,26 +232,27 @@ export const founderNote = {
 };
 
 /**
- * The privacy page, with the try-on's sentences of one version of its promise (tryOnPromises), in the middle of its
- * first paragraph.
+ * The privacy page's sentences on the try-on: its look goes to WhatsApp only, and a client's try-on is kept
+ * (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md, 0084-a-clients-try-on-is-kept.md).
  */
-export function privacyPage(tryOnSentences: string) {
-  return {
+// PLACEHOLDER: the try-on's sentences await counsel with the notices (docs/open-points.md, item 146).
+const TRY_ON_PRIVACY =
+  "If you use the try-on, your photograph is used to make your simulation. It is sent to AILabTools, the service that generates it, we never use it to train any model, and it is deleted within thirty days, usually within the hour. Before the simulation is made, you give us your name and mobile number: we send the simulation to that number on WhatsApp, and it is never shown on this site; the simulation itself is kept for fourteen days. If you then book a visit while the simulation is kept, we keep a small copy of your photograph in your Mane Man account as your before photo, until you ask us to delete it, and the simulation until the photographs of your first fit are taken; you see both when you sign in.";
+
+/** The two long-form pages. */
+export const legalPages = {
+  privacy: {
     publish: true,
     title: "Privacy",
     paragraphs: [
-      `Mane Man Grooming Services Private Limited collects only what it needs to arrange your visit and your simulation. When you book, we keep your name, mobile number, the address the visit is at, preferred visit time and the extent of your hair loss, with how you reached this site. They are held in our own database, hosted by Cloudflare, and in the customer system our team works from, Zoho CRM; your name, number and address also go to Zoho FSM, where our technicians' visits are arranged, so that the technician finds your door. We use them to arrange and confirm the visit and for nothing else, we never sell them, and we keep your address until you ask us to erase it. ${tryOnSentences}`,
-      "The site sets two cookies of its own, both for the try-on: one keeps your session for thirty minutes, the other remembers for thirty days that you have had your one look, so that this browser can show it to you again while the simulation is kept. " +
+      `Mane Man Grooming Services Private Limited collects only what it needs to arrange your visit and your simulation. When you book, we keep your name, mobile number, the address the visit is at, preferred visit time and the extent of your hair loss, with how you reached this site. They are held in our own database, hosted by Cloudflare, and in the customer system our team works from, Zoho CRM; your name, number and address also go to Zoho FSM, where our technicians' visits are arranged, so that the technician finds your door. We use them to arrange and confirm the visit and for nothing else, we never sell them, and we keep your address until you ask us to erase it. ${TRY_ON_PRIVACY}`,
+      // PLACEHOLDER: the try-on's cookie sentence awaits counsel with its notices (docs/open-points.md, item 146).
+      "The site sets one cookie of its own, for the try-on: it remembers for thirty days that this browser has had its one look. " +
         // PLACEHOLDER: the invite's sentence awaits counsel (docs/open-points.md, item 156).
         "When you open a friend's invite, this browser also keeps the invite's code for thirty days, so that a consultation you book here later still comes with it; it is removed once a booking has used it, or on your first visit after the thirty days. " +
         "We count visits with Cloudflare Web Analytics, and measure our advertising with Google Analytics, Google Ads and Meta, which set their own cookies and never receive your name, number or photograph. Visitors' network addresses are kept only in scrambled form, to limit abuse. Under India's Digital Personal Data Protection Act, 2023, you can ask what we hold about you, have it corrected, or have it erased: message us on WhatsApp at +91 90079 73247 and we erase it the same day.",
     ],
-  };
-}
-
-/** The two long-form pages. The privacy page is production's; privacy.astro shows each build its own. */
-export const legalPages = {
-  privacy: privacyPage(tryOnPromises.approved.privacy),
+  },
   // Drafted from the site's published prices, guarantee and try-on rules; the owner approved it on 22 September 2026.
   // Its prices are quoted, not published, since the owner took them off the site on 1 October 2026 (ADR 0103).
   terms: {
@@ -290,7 +262,8 @@ export const legalPages = {
       "These terms cover the service Mane Man Grooming Services Private Limited provides: non-surgical hair systems, measured, fitted and serviced at your home across Delhi NCR. By booking a visit or using the try-on you agree to them. We may change them; the version on this page when you book is the one that applies to that booking.",
       "The first visit is a consultation: an hour, free, and with no obligation to order. Nothing is fitted at it. We confirm the day and time on WhatsApp, and you can move or cancel any visit by messaging us, at no charge. Prices are the ones we quote you before the fit. The first fit, which covers the piece, the fitting and the cut, is paid on the day of the fit by card, UPI or bank transfer, and each service visit is paid when it is made. We take no deposit and sell no package.",
       "If the fit is not right, we refit it at no charge, or refund you in full, including the fitting and the cut, within fourteen days of the fit. A hair system is bonded to the skin, so tell the technician about any skin condition, allergy or treatment before the fit; if a system is not suitable for you, we say so and do not fit it. A base wears with use and its life depends on its care, so the replacement intervals we give are typical, not promised.",
-      "The try-on is an illustrative simulation made by software from one photograph. It is not a photograph of a result, and not a promise of how a fitted piece will look: a fitted piece is matched to your own hair colour, density and growth pattern. Upload only a photograph of yourself, and only if you are eighteen or over. Each visitor gets one simulation.",
+      // The try-on's sentence on WhatsApp is ADR 0104's, for the owner's second round (docs/open-points.md, item 163).
+      "The try-on is an illustrative simulation made by software from one photograph, and sent to the WhatsApp number you give, never shown on this site. It is not a photograph of a result, and not a promise of how your hair system will look: a hair system is matched to your own hair colour, density and growth pattern. Upload only a photograph of yourself, and only if you are eighteen or over. Each visitor gets one simulation.",
       "We are responsible for the care and skill of our technicians. Beyond a refit or refund under the guarantee, and except where the law provides otherwise, our liability for a visit is limited to what you paid for it. These terms are governed by the laws of India, and the courts at New Delhi have jurisdiction. For questions or complaints, message or call us on +91 90079 73247.",
     ],
   },
@@ -489,7 +462,8 @@ export const comparison = {
 export const tryOnTeaser = {
   eyebrow: "Try-on",
   title: "See yourself with hair before anyone comes to your home.",
-  body: "One photograph, one look from six. What you get back is a simulation, not a photograph of a result. Your photograph is deleted after thirty days.",
+  // The look on WhatsApp only is ADR 0104's, for the owner's second round (docs/open-points.md, item 163).
+  body: "One photograph, one look from six, sent privately to your WhatsApp. A simulation, not a photograph of a result. Your photograph is deleted after thirty days.",
   start: "Start the try-on",
   before: "Before",
   after: "After",
@@ -867,17 +841,22 @@ export function gateCopy(gate: Notice) {
   return { caption, title, body, reassurance };
 }
 
+/**
+ * The try-on's screens. The look goes to WhatsApp only (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md), so
+ * v2's processing and result screens are gone, the gate asks for the number before the look is made, and the sent
+ * and unavailable screens, which v2 does not draw, are ADR 0104's words for the owner's second round
+ * (docs/open-points.md, item 163).
+ */
 export const tryOn = {
   back: "Back",
   backToSite: "Back to the site",
   stepLabels: {
-    upload: "Step one of five",
+    upload: "Step one of four",
     consent: "Before we begin",
-    stage: "Step two of five",
-    looks: "Step three of five",
-    processing: "Step four of five",
-    gate: "Step five of five",
-    result: "Your result",
+    stage: "Step two of four",
+    looks: "Step three of four",
+    gate: "Step four of four",
+    sent: "Sent to WhatsApp",
     error: "Cannot use this photograph",
   },
   progress: {
@@ -885,9 +864,8 @@ export const tryOn = {
     consent: "28%",
     stage: "44%",
     looks: "60%",
-    processing: "78%",
     gate: "90%",
-    result: "100%",
+    sent: "100%",
     error: "28%",
   },
   upload: {
@@ -923,61 +901,42 @@ export const tryOn = {
     body: "Six to choose from, and one simulation each, so choose the one you would wear.",
     preview: "Preview",
     choose: "Choose one to continue",
-    generate: "Generate the simulation",
-    // Not in v2: back here once the render has started, when the look can no longer change. The owner approves the words (open point 45).
-    fixed: "Your simulation is being made with this look. Each visitor gets one.",
     continue: "Continue",
   },
-  processing: {
-    title: "Working on it.",
-    seconds: 20,
-    steps: [
-      { label: "Reading the photograph", at: 2 },
-      { label: "Finding the hairline", at: 6 },
-      { label: "Placing the hair", at: 11 },
-      { label: "Matching the light", at: 16 },
-    ],
-  },
-  /** With the gate notice's words (gateCopy). */
+  /** With the gate notice's words (gateCopy). Both fields are needed: the number is where the look goes. */
   gate: {
-    ready: "Your result · ready",
+    frame: "For your WhatsApp only",
     name: "Name",
     namePlaceholder: "Your name",
     nameError: "Tell us what to call you.",
     mobile: "Mobile",
     mobilePlaceholder: "98100 00000",
-    mobileError: "Enter all ten digits so we can send the result.",
-    submit: "Show me the result",
-    sending: "Saving",
+    mobileError: "Enter all ten digits so we can send your look.",
+    submit: "Send my look",
+    sending: "Sending",
     errors: {
-      rateLimited: "This number has had several results today. Please try again tomorrow.",
-      taken: "This result is already saved to another number.",
+      rateLimited: "This number has had its looks for today. Please try again tomorrow.",
+      taken: "This look is already on its way to another number.",
       other: "That did not go through. Please try again in a minute.",
     },
   },
-  result: {
-    title: "Drag the handle to compare.",
-    before: "Before",
-    after: "After",
-    beforeAlt: "Your photograph",
-    afterAlt: "Simulated result",
-    sliderLabel: "Compare your photograph with the simulation",
-    sliderValue: "{before}% your photograph, {after}% the simulation",
-    pending: "Still working on it",
-    disclaimer:
-      "This is an illustrative simulation, not a photograph of a result. A fitted piece is matched to your own hair colour, density and growth pattern, and will differ.",
-    book: "Book a free consultation",
-    download: "Download",
-    whatsapp: "WhatsApp",
+  /** After the gate: the look is on its way to WhatsApp, and never shown here. */
+  sent: {
+    frame: "On its way to your WhatsApp",
+    title: "Your new look is on its way.",
+    /** The number the visitor gave goes between the two. */
+    to: { before: "Watch WhatsApp on ", after: ": it arrives within minutes." },
     // The simulation's retention in production, RESULT_RETENTION_DAYS, as the privacy notice gives it (ADR 0039).
-    copy: { before: "A copy is on its way to ", after: ". Deleted after fourteen days." },
-    fileName: "mane-man-simulation",
-    /** A visitor who has had their look, back again: the result alone, since the photograph is not kept. */
+    privacy: "For your privacy, it is never shown on this site, and we delete it after fourteen days.",
+    disclaimer:
+      "An illustrative simulation, not a photograph of a result. Your hair system is matched to your own hair colour, density and growth pattern.",
+    book: "Book a free consultation",
+    home: "Back to the site",
+    /** A visitor who has had their look, back again, whose number the page does not know. */
     returning: {
-      title: "The look you had.",
-      note: "Each visitor gets one simulation, and this is yours.",
+      title: "Your look has already been sent.",
+      body: "It went to the WhatsApp number you gave. Each visitor gets one look, and for your privacy it is never shown on this site.",
     },
-    share: "My Mane Man simulation. See yours at maneman.in/try",
   },
   error: {
     another: "Choose another",
@@ -1002,12 +961,12 @@ export const tryOn = {
         title: "The simulation is busy just now.",
         body: "Too many people are trying it at once, or it could not be reached. Please try again in a little while, or book a consultation and see it in person.",
       },
-      /** Only when this browser's look can no longer be shown: otherwise the page shows it again. */
-      lookLimit: {
-        step: "One look per visitor",
-        frame: "Your look is no longer kept",
-        title: "You have had your look.",
-        body: "Each visitor gets one simulation, and this browser has had its one, which is no longer kept. The consultation shows you the real thing, in person, and costs nothing.",
+      /** While WhatsApp cannot send a look, the try-on does not run (ADR 0104). It has no Choose another. */
+      unavailable: {
+        step: "Not available right now",
+        frame: "The try-on is paused",
+        title: "The try-on is not available right now.",
+        body: "Every look is sent privately on WhatsApp, and that is not open yet. Book a free consultation and see the real thing, in person.",
       },
     },
   },

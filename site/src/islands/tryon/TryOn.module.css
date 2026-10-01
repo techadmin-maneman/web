@@ -31,13 +31,10 @@
 .progress-looks {
   width: 60%;
 }
-.progress-processing {
-  width: 78%;
-}
 .progress-gate {
   width: 90%;
 }
-.progress-result {
+.progress-sent {
   width: 100%;
 }
 
@@ -81,8 +78,7 @@
 
 .title,
 .titleLarge,
-.resultTitle,
-.errorTitle {
+.noticeTitle {
   margin: 0;
   font-family: var(--font-serif);
   font-weight: var(--weight-regular);
@@ -103,8 +99,7 @@
 }
 .title:focus,
 .titleLarge:focus,
-.resultTitle:focus,
-.errorTitle:focus {
+.noticeTitle:focus {
   outline: none;
 }
 .body {
@@ -361,11 +356,6 @@
   border-color: var(--paper);
   color: var(--paper);
 }
-/* Once the render has started, the looks not chosen stand back. */
-.lookOff {
-  cursor: default;
-  color: var(--ink-muted);
-}
 .thumb {
   aspect-ratio: 4 / 3;
   display: flex;
@@ -402,47 +392,6 @@
   outline-offset: var(--focus-offset);
 }
 
-/* ---- Processing --------------------------------------------------------- */
-
-.processing {
-  max-width: var(--measure-note);
-  padding: var(--processing-pad) 0;
-}
-.ticks {
-  list-style: none;
-  padding: 0;
-  margin: var(--processing-gap) 0 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-16);
-}
-.tick {
-  display: flex;
-  gap: var(--sp-14);
-  align-items: center;
-  font-size: var(--fs-17);
-  color: var(--ink-muted);
-}
-.tick svg {
-  flex-shrink: 0;
-  color: var(--ink-line);
-}
-.tickDone {
-  color: var(--paper);
-}
-.tickDone svg {
-  color: var(--gilt);
-}
-.countdown {
-  margin-top: var(--processing-gap);
-  font-family: var(--font-serif);
-  font-size: var(--fs-countdown);
-  line-height: var(--lh-100);
-  /* v2's --ink-disabled is 1.6:1 here; this is 4.2:1, over WCAG's 3:1 for large text (ADR 0022, item 30). */
-  color: var(--ink-line-strong);
-  font-variant-numeric: lining-nums tabular-nums;
-}
-
 /* ---- Gate --------------------------------------------------------------- */
 
 .gate {
@@ -472,7 +421,7 @@
   background: var(--ink-raised);
   filter: blur(var(--gate-blur));
 }
-.gateReady {
+.gateFrameLabel {
   position: absolute;
   left: var(--sp-20);
   bottom: var(--sp-20);
@@ -565,112 +514,12 @@
   max-width: var(--measure-form);
 }
 
-/* ---- Result ------------------------------------------------------------- */
+/* ---- Error and sent: a notice in a frame -------------------------------- */
 
-.result {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--split-min-mid)), 1fr));
-  gap: var(--result-gap);
-  align-items: start;
-}
-/* A returning visitor's look: the result alone, in the result frame's size. */
-.solo {
-  /* The photograph's own shape, as on the slider's frame (site/src/lib/frame-aspect.ts). */
-  --frame-aspect: 4 / 3;
-
-  position: relative;
-  /* As tall as the cap at most, narrowing to keep the photograph's shape, so it is never letterboxed. */
-  width: min(100%, calc(var(--result-frame-max-h) * var(--frame-aspect)));
-  aspect-ratio: var(--frame-aspect);
-  background: var(--ink-frame);
-  overflow: hidden;
-}
-.solo img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-.solo .soloLabel {
-  position: absolute;
-  top: var(--sp-18);
-  right: var(--sp-18);
-  font-size: var(--fs-15);
-}
-.returningNote {
-  margin: var(--sp-18) 0 0;
-  font-size: var(--fs-body);
-  line-height: var(--lh-165);
-  color: var(--ink-soft);
-}
-/* The after side while the render is still running, in the gate's colours. Beside the photograph, BeforeAfter
-   keeps its words in the part left showing (CLI-28), where they may take two lines. */
-.pending {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-14);
-  text-align: center;
-  background: var(--ink-raised);
-  color: var(--ink-muted);
-  font-size: var(--fs-15);
-  letter-spacing: var(--tracking-12);
-}
-.chosen {
-  letter-spacing: var(--tracking-16);
-  font-size: var(--fs-15);
-  color: var(--ink-muted);
-}
-.resultTitle {
-  margin-top: var(--sp-18);
-  font-size: var(--fs-closing);
-  line-height: var(--lh-106);
-}
-.disclaimer {
-  margin-top: var(--sp-26);
-  border: var(--hairline) solid var(--ink-line);
-  padding: var(--sp-18) var(--sp-20);
-  font-size: var(--fs-15);
-  line-height: var(--lh-165);
-  color: var(--ink-soft);
-}
-.resultActions {
-  margin-top: var(--sp-28);
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-13);
-  max-width: var(--measure-form);
-}
-.pair {
-  display: flex;
-  gap: var(--sp-13);
-}
-.half {
-  flex: 1;
-  height: var(--btn-result);
-  font-size: var(--fs-15);
-  gap: var(--sp-9);
-}
-.copy {
-  margin-top: var(--sp-22);
-  font-size: var(--fs-14);
-  color: var(--ink-muted);
-  line-height: var(--lh-160);
-}
-.number {
-  font-variant-numeric: tabular-nums;
-}
-
-/* ---- Error -------------------------------------------------------------- */
-
-.errorScreen {
+.notice {
   max-width: var(--measure-note);
 }
-.errorFrame {
+.noticeFrame {
   border: var(--hairline) solid var(--ink-line);
   width: 100%;
   height: var(--error-frame-h);
@@ -684,13 +533,13 @@
   color: var(--ink-muted);
   font-size: var(--fs-15);
 }
-.errorTitle {
+.noticeTitle {
   margin-top: var(--error-title-gap);
   font-size: var(--fs-error-title);
   line-height: var(--lh-110);
   text-wrap: balance;
 }
-.errorBody {
+.noticeBody {
   margin: var(--sp-18) 0 0;
   font-size: var(--fs-body);
   line-height: var(--lh-170);
@@ -698,7 +547,21 @@
   max-width: var(--measure-error);
   text-wrap: pretty;
 }
-.errorActions {
+/* The sent screen's words on what the look is, as v2's result screen boxed its disclaimer. */
+.disclaimer {
+  margin-top: var(--sp-26);
+  border: var(--hairline) solid var(--ink-line);
+  padding: var(--sp-18) var(--sp-20);
+  font-size: var(--fs-15);
+  line-height: var(--lh-165);
+  color: var(--ink-soft);
+  max-width: var(--measure-error);
+}
+.number {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.noticeActions {
   margin-top: var(--sp-32);
   display: flex;
   flex-direction: column;

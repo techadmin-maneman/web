@@ -729,7 +729,7 @@ Request body:
 }
 ```
 
-**503**: busy: today's upload ceiling is reached; unavailable: Turnstile could not be reached
+**503**: busy: today's upload ceiling is reached; unavailable: Turnstile could not be reached; whatsapp_unavailable: WhatsApp cannot send the look, so the try-on does not run
 
 ```json
 {
@@ -799,7 +799,7 @@ Upload the photo's small copy, which a client keeps as their before photo: a JPE
 
 ### POST /api/tryon/generate
 
-Render the look for an uploaded photo: one look per visitor
+Render the look for an uploaded photo the gate has claimed: one look per visitor
 
 Request body:
 
@@ -841,7 +841,7 @@ Request body:
 }
 ```
 
-**409**: upload_missing: the photo has not been uploaded, or has been deleted
+**409**: claim_required: the gate has not been given a number to send the look to; upload_missing: the photo has not been uploaded, or has been deleted
 
 ```json
 {
@@ -857,7 +857,7 @@ Request body:
 }
 ```
 
-**503**: busy: today's render ceiling is reached
+**503**: busy: today's render ceiling is reached; whatsapp_unavailable: WhatsApp cannot send the look, so none is made
 
 ```json
 {
@@ -887,7 +887,7 @@ Where a job stands
 
 ### POST /api/tryon/claim
 
-The gate: save the lead and start a session, whether or not the result is ready
+The gate: where to send the look on WhatsApp, given before the look is made
 
 Request body:
 
@@ -897,7 +897,7 @@ Request body:
 }
 ```
 
-**201**: Saved. Sets the mm_tryon cookie.
+**201**: Saved
 
 ```json
 {
@@ -921,7 +921,7 @@ Request body:
 }
 ```
 
-**409**: job_not_claimable: no render was started, it failed, or it is another number's; idempotency_in_progress
+**409**: job_not_claimable: no photo was uploaded, its render was asked for already, or it is another number's; idempotency_in_progress
 
 ```json
 {
@@ -937,7 +937,7 @@ Request body:
 }
 ```
 
-**429**: rate_limited: too many claims from this number today
+**429**: rate_limited: this number has had its claims, or its looks, for today
 
 ```json
 {
@@ -945,27 +945,7 @@ Request body:
 }
 ```
 
-### GET /api/tryon/result/{job_id}
-
-The result, for the gate's session or the browser that made the look
-
-**200**: Ready
-
-```json
-{
-  "$ref": "#/components/schemas/ResultReady"
-}
-```
-
-**202**: Still rendering
-
-```json
-{
-  "$ref": "#/components/schemas/ResultPending"
-}
-```
-
-**401**: session_required: neither the gate's session nor this browser's look is this job's
+**503**: whatsapp_unavailable: WhatsApp cannot send the look, so the try-on does not run
 
 ```json
 {
@@ -973,25 +953,21 @@ The result, for the gate's session or the browser that made the look
 }
 ```
 
-**404**: not_found: no such job, or its result has been deleted
+### GET /api/tryon/availability
+
+Whether the try-on can run: its look is sent on WhatsApp, so not while WhatsApp cannot send it
+
+**200**: Whether it runs
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-**422**: Failed
-
-```json
-{
-  "$ref": "#/components/schemas/ResultFailed"
+  "$ref": "#/components/schemas/TryOnAvailability"
 }
 ```
 
 ### GET /api/tryon/look
 
-The look this browser already has, from its mm_look cookie
+Whether this browser has had its look, from its mm_look cookie
 
 **200**: The browser's look
 
@@ -1001,7 +977,7 @@ The look this browser already has, from its mm_look cookie
 }
 ```
 
-**404**: not_found: this browser has no look, or its result has been deleted
+**404**: not_found: this browser has no look
 
 ```json
 {
@@ -1011,7 +987,7 @@ The look this browser already has, from its mm_look cookie
 
 ### GET /api/result/{token}
 
-A result image, behind a signed link that expires
+A result image, behind the signed link a WhatsApp message carries, which expires
 
 **200**: The image
 
@@ -1187,6 +1163,8 @@ Razorpay's webhook: payments and refunds
             "session_required",
             "job_not_claimable",
             "look_limit_reached",
+            "claim_required",
+            "whatsapp_unavailable",
             "unauthorized",
             "visit_booked",
             "payment_held",
@@ -1545,6 +1523,8 @@ Razorpay's webhook: payments and refunds
             "session_required",
             "job_not_claimable",
             "look_limit_reached",
+            "claim_required",
+            "whatsapp_unavailable",
             "unauthorized",
             "visit_booked",
             "payment_held",
@@ -2064,8 +2044,8 @@ Razorpay's webhook: payments and refunds
       "type": "string",
       "minLength": 1,
       "maxLength": 40,
-      "example": "photo-v1",
-      "description": "The photo notice shown."
+      "example": "photo-v3",
+      "description": "The photo notice shown: the current one, the only one recorded."
     },
     "turnstile_token": {
       "type": "string",
@@ -2186,17 +2166,13 @@ Razorpay's webhook: payments and refunds
     "lead_id": {
       "type": "string",
       "format": "uuid"
-    },
-    "whatsapp_copy": {
-      "type": "boolean",
-      "description": "True only if messaging is on and may reach this number: the page may then say a copy is on its way."
     }
   },
   "required": [
-    "lead_id",
-    "whatsapp_copy"
+    "lead_id"
   ],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "description": "Saved: the look goes to this number on WhatsApp once it is made."
 }
 ```
 
@@ -2220,12 +2196,21 @@ Razorpay's webhook: payments and refunds
       "pattern": "^(?:\\+91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
       "example": "98100 00000"
     },
+    "stage": {
+      "type": "string",
+      "enum": [
+        "crown",
+        "receding",
+        "advanced"
+      ],
+      "description": "The hair-loss stage the visitor picked, which the render is asked for next."
+    },
     "notice_version": {
       "type": "string",
       "minLength": 1,
       "maxLength": 40,
-      "example": "gate-v1",
-      "description": "The gate's notice the page showed; the one production shows when left out. Staging's site shows the one awaiting counsel (docs/decisions/0084-a-clients-try-on-is-kept.md)."
+      "example": "gate-v3",
+      "description": "The gate's notice the page showed: the current one, the only one a claim may record, when left out (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md)."
     },
     "attribution": {
       "$ref": "#/components/schemas/Attribution"
@@ -2234,7 +2219,8 @@ Razorpay's webhook: payments and refunds
   "required": [
     "job_id",
     "name",
-    "mobile"
+    "mobile",
+    "stage"
   ],
   "additionalProperties": false
 }
@@ -2284,80 +2270,19 @@ Razorpay's webhook: payments and refunds
 }
 ```
 
-### ResultReady
+### TryOnAvailability
 
 ```json
 {
   "type": "object",
   "properties": {
-    "url": {
-      "type": "string",
-      "description": "A path on this host that serves the image for fifteen minutes."
-    },
-    "expires_at": {
-      "type": "string",
-      "format": "date-time"
+    "available": {
+      "type": "boolean",
+      "description": "False while WhatsApp cannot send a look: the try-on does not run, and the page says so."
     }
   },
   "required": [
-    "url",
-    "expires_at"
-  ],
-  "additionalProperties": false
-}
-```
-
-### ResultPending
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "state": {
-      "type": "string",
-      "enum": [
-        "awaiting_upload",
-        "queued",
-        "rendering",
-        "downloading",
-        "ready",
-        "failed",
-        "expired"
-      ]
-    }
-  },
-  "required": [
-    "state"
-  ],
-  "additionalProperties": false
-}
-```
-
-### ResultFailed
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "state": {
-      "type": "string",
-      "enum": [
-        "failed"
-      ]
-    },
-    "failure_code": {
-      "type": "string",
-      "enum": [
-        "photo_unreadable",
-        "photo_invalid_file",
-        "render_failed",
-        "busy"
-      ]
-    }
-  },
-  "required": [
-    "state",
-    "failure_code"
+    "available"
   ],
   "additionalProperties": false
 }
@@ -2421,7 +2346,8 @@ Razorpay's webhook: payments and refunds
     "stage",
     "preset"
   ],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "description": "The look this browser has had, never the image: that goes to WhatsApp only."
 }
 ```
 

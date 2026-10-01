@@ -76,8 +76,8 @@ export const TINY_JPEG = {
   ),
 };
 
-/** Walks the try-on from a chosen photograph to pressing Generate, with the stage and look as v2 offers them. */
-export async function throughToGenerate(page: Page): Promise<void> {
+/** Walks the try-on from a chosen photograph to the gate, with the stage and look as v2 offers them. */
+export async function throughToGate(page: Page): Promise<void> {
   const reach = (screen: string) => page.locator(`[data-screen="${screen}"]`).waitFor();
   await page
     .locator('input[type="file"]')
@@ -90,7 +90,15 @@ export async function throughToGenerate(page: Page): Promise<void> {
   await page.getByRole("button", { name: "Continue" }).click();
   await reach("looks");
   await page.getByText("Light density").first().click();
-  await page.getByRole("button", { name: "Generate the simulation" }).click();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await reach("gate");
+}
+
+/** Fills in the gate, which the look is sent to, and sends it. */
+export async function sendFromGate(page: Page, mobile: string, name = "Test Visitor"): Promise<void> {
+  await page.getByLabel("Name").fill(name);
+  await page.getByLabel("Mobile").fill(mobile);
+  await page.getByRole("button", { name: "Send my look" }).click();
 }
 
 /** Every command the page queued for the analytics tags (GA's dataLayer), as arrays. */

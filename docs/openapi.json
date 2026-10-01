@@ -42,6 +42,8 @@
                   "session_required",
                   "job_not_claimable",
                   "look_limit_reached",
+                  "claim_required",
+                  "whatsapp_unavailable",
                   "unauthorized",
                   "visit_booked",
                   "payment_held",
@@ -370,6 +372,8 @@
                   "session_required",
                   "job_not_claimable",
                   "look_limit_reached",
+                  "claim_required",
+                  "whatsapp_unavailable",
                   "unauthorized",
                   "visit_booked",
                   "payment_held",
@@ -844,8 +848,8 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 40,
-            "example": "photo-v1",
-            "description": "The photo notice shown."
+            "example": "photo-v3",
+            "description": "The photo notice shown: the current one, the only one recorded."
           },
           "turnstile_token": {
             "type": "string",
@@ -951,17 +955,13 @@
           "lead_id": {
             "type": "string",
             "format": "uuid"
-          },
-          "whatsapp_copy": {
-            "type": "boolean",
-            "description": "True only if messaging is on and may reach this number: the page may then say a copy is on its way."
           }
         },
         "required": [
-          "lead_id",
-          "whatsapp_copy"
+          "lead_id"
         ],
-        "additionalProperties": false
+        "additionalProperties": false,
+        "description": "Saved: the look goes to this number on WhatsApp once it is made."
       },
       "ClaimRequest": {
         "type": "object",
@@ -980,12 +980,21 @@
             "pattern": "^(?:\\+91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
             "example": "98100 00000"
           },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "crown",
+              "receding",
+              "advanced"
+            ],
+            "description": "The hair-loss stage the visitor picked, which the render is asked for next."
+          },
           "notice_version": {
             "type": "string",
             "minLength": 1,
             "maxLength": 40,
-            "example": "gate-v1",
-            "description": "The gate's notice the page showed; the one production shows when left out. Staging's site shows the one awaiting counsel (docs/decisions/0084-a-clients-try-on-is-kept.md)."
+            "example": "gate-v3",
+            "description": "The gate's notice the page showed: the current one, the only one a claim may record, when left out (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md)."
           },
           "attribution": {
             "$ref": "#/components/schemas/Attribution"
@@ -994,7 +1003,8 @@
         "required": [
           "job_id",
           "name",
-          "mobile"
+          "mobile",
+          "stage"
         ],
         "additionalProperties": false
       },
@@ -1037,67 +1047,16 @@
         "additionalProperties": false,
         "description": "Where the visitor came from, as the page saw it. All optional."
       },
-      "ResultReady": {
+      "TryOnAvailability": {
         "type": "object",
         "properties": {
-          "url": {
-            "type": "string",
-            "description": "A path on this host that serves the image for fifteen minutes."
-          },
-          "expires_at": {
-            "type": "string",
-            "format": "date-time"
+          "available": {
+            "type": "boolean",
+            "description": "False while WhatsApp cannot send a look: the try-on does not run, and the page says so."
           }
         },
         "required": [
-          "url",
-          "expires_at"
-        ],
-        "additionalProperties": false
-      },
-      "ResultPending": {
-        "type": "object",
-        "properties": {
-          "state": {
-            "type": "string",
-            "enum": [
-              "awaiting_upload",
-              "queued",
-              "rendering",
-              "downloading",
-              "ready",
-              "failed",
-              "expired"
-            ]
-          }
-        },
-        "required": [
-          "state"
-        ],
-        "additionalProperties": false
-      },
-      "ResultFailed": {
-        "type": "object",
-        "properties": {
-          "state": {
-            "type": "string",
-            "enum": [
-              "failed"
-            ]
-          },
-          "failure_code": {
-            "type": "string",
-            "enum": [
-              "photo_unreadable",
-              "photo_invalid_file",
-              "render_failed",
-              "busy"
-            ]
-          }
-        },
-        "required": [
-          "state",
-          "failure_code"
+          "available"
         ],
         "additionalProperties": false
       },
@@ -1156,7 +1115,8 @@
           "stage",
           "preset"
         ],
-        "additionalProperties": false
+        "additionalProperties": false,
+        "description": "The look this browser has had, never the image: that goes to WhatsApp only."
       },
       "ErasureResponse": {
         "type": "object",
@@ -2256,7 +2216,7 @@
             }
           },
           "503": {
-            "description": "busy: today's upload ceiling is reached; unavailable: Turnstile could not be reached",
+            "description": "busy: today's upload ceiling is reached; unavailable: Turnstile could not be reached; whatsapp_unavailable: WhatsApp cannot send the look, so the try-on does not run",
             "content": {
               "application/json": {
                 "schema": {
@@ -2393,7 +2353,7 @@
     },
     "/api/tryon/generate": {
       "post": {
-        "summary": "Render the look for an uploaded photo: one look per visitor",
+        "summary": "Render the look for an uploaded photo the gate has claimed: one look per visitor",
         "requestBody": {
           "required": true,
           "content": {
@@ -2446,7 +2406,7 @@
             }
           },
           "409": {
-            "description": "upload_missing: the photo has not been uploaded, or has been deleted",
+            "description": "claim_required: the gate has not been given a number to send the look to; upload_missing: the photo has not been uploaded, or has been deleted",
             "content": {
               "application/json": {
                 "schema": {
@@ -2466,7 +2426,7 @@
             }
           },
           "503": {
-            "description": "busy: today's render ceiling is reached",
+            "description": "busy: today's render ceiling is reached; whatsapp_unavailable: WhatsApp cannot send the look, so none is made",
             "content": {
               "application/json": {
                 "schema": {
@@ -2518,7 +2478,7 @@
     },
     "/api/tryon/claim": {
       "post": {
-        "summary": "The gate: save the lead and start a session, whether or not the result is ready",
+        "summary": "The gate: where to send the look on WhatsApp, given before the look is made",
         "parameters": [
           {
             "schema": {
@@ -2543,7 +2503,7 @@
         },
         "responses": {
           "201": {
-            "description": "Saved. Sets the mm_tryon cookie.",
+            "description": "Saved",
             "content": {
               "application/json": {
                 "schema": {
@@ -2573,7 +2533,7 @@
             }
           },
           "409": {
-            "description": "job_not_claimable: no render was started, it failed, or it is another number's; idempotency_in_progress",
+            "description": "job_not_claimable: no photo was uploaded, its render was asked for already, or it is another number's; idempotency_in_progress",
             "content": {
               "application/json": {
                 "schema": {
@@ -2593,7 +2553,17 @@
             }
           },
           "429": {
-            "description": "rate_limited: too many claims from this number today",
+            "description": "rate_limited: this number has had its claims, or its looks, for today",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "whatsapp_unavailable: WhatsApp cannot send the look, so the try-on does not run",
             "content": {
               "application/json": {
                 "schema": {
@@ -2605,67 +2575,16 @@
         }
       }
     },
-    "/api/tryon/result/{job_id}": {
+    "/api/tryon/availability": {
       "get": {
-        "summary": "The result, for the gate's session or the browser that made the look",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "required": true,
-            "name": "job_id",
-            "in": "path"
-          }
-        ],
+        "summary": "Whether the try-on can run: its look is sent on WhatsApp, so not while WhatsApp cannot send it",
         "responses": {
           "200": {
-            "description": "Ready",
+            "description": "Whether it runs",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ResultReady"
-                }
-              }
-            }
-          },
-          "202": {
-            "description": "Still rendering",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ResultPending"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "session_required: neither the gate's session nor this browser's look is this job's",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "not_found: no such job, or its result has been deleted",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Failed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ResultFailed"
+                  "$ref": "#/components/schemas/TryOnAvailability"
                 }
               }
             }
@@ -2675,7 +2594,7 @@
     },
     "/api/tryon/look": {
       "get": {
-        "summary": "The look this browser already has, from its mm_look cookie",
+        "summary": "Whether this browser has had its look, from its mm_look cookie",
         "responses": {
           "200": {
             "description": "The browser's look",
@@ -2688,7 +2607,7 @@
             }
           },
           "404": {
-            "description": "not_found: this browser has no look, or its result has been deleted",
+            "description": "not_found: this browser has no look",
             "content": {
               "application/json": {
                 "schema": {
@@ -2702,7 +2621,7 @@
     },
     "/api/result/{token}": {
       "get": {
-        "summary": "A result image, behind a signed link that expires",
+        "summary": "A result image, behind the signed link a WhatsApp message carries, which expires",
         "parameters": [
           {
             "schema": {
