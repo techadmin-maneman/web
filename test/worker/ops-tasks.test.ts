@@ -9,7 +9,6 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/http/context.ts";
-import { firstFitRequestStatement } from "../../src/domain/next-visit.ts";
 import { NEXT_VISIT_DAYS } from "../../src/policy/next-visit.ts";
 import { MAX_SYNC_ATTEMPTS } from "../../src/queues/crm-sync.ts";
 import { TASKS_SHOWN } from "../../src/routes/ops-tasks.ts";
@@ -930,8 +929,15 @@ describe("PUT /api/tasks/{group}/{id}/owner", () => {
       await ownerOf("first_fit_to_book", REQUEST, ME);
       expect(await ownersIn("first_fit_to_book")).toEqual([ME]);
 
-      // The site's form asked again: the latest request stands, on the row of the one before (src/domain/next-visit.ts).
-      await firstFitRequestStatement(env.DB, { personId: PERSON, window: "morning", now: NOW }).run();
+      // Asked again: the latest request stands, on the row of the one before, as the site's form wrote it until the
+      // owner's ruling of 1 October 2026 took the choice off the form (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+      await env.DB.prepare(
+        `INSERT INTO first_fit_requests (id, person_id, preferred_window, created_at) VALUES (?1, ?2, 'morning', ?3)
+         ON CONFLICT (person_id) DO UPDATE SET preferred_window = excluded.preferred_window,
+           created_at = excluded.created_at`,
+      )
+        .bind(crypto.randomUUID(), PERSON, NOW.toISOString())
+        .run();
       expect(tasksIn(await tasks(), "first_fit_to_book")).toMatchObject([{ id: REQUEST, owner: ME }]);
     });
 

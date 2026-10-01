@@ -20,6 +20,7 @@ import { deleteLeftFiles } from "../domain/erasure.ts";
 import { raiseInvoices } from "../domain/fsm-invoices.ts";
 import { anyHeldBooking, retryHeldBookings } from "../domain/held-bookings.ts";
 import { queueNextServiceReminders } from "../domain/next-visit.ts";
+import { sendUnsentLinks } from "../domain/payment-links.ts";
 import { readOpsInputs, type OpsInputs } from "../domain/ops-settings.ts";
 import { tellOfStorage } from "../domain/storage-meter.ts";
 import { queueReminders } from "../domain/visit-messages.ts";
@@ -181,6 +182,11 @@ async function nextServiceRemindersJob({ env, deps, log, inputs }: CronContext):
   if (reminders.length > 0) log.info("next_service_reminders_queued", { count: reminders.length });
 }
 
+async function paymentLinksJob({ env, deps, log, budget }: CronContext): Promise<void> {
+  const sent = await sendUnsentLinks(env.DB, { ...deps, log }, deps.now(), budget);
+  if (sent > 0) log.info("payment_links_sent", { count: sent });
+}
+
 async function invoicesJob({ env, deps, log, budget }: CronContext): Promise<void> {
   const done = await raiseInvoices(env.DB, deps, deps.now(), log, budget);
   if (done.raised + done.issued > 0) log.info("invoices_raised", done);
@@ -224,6 +230,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "visit_reminders", needs: "messaging", run: remindersJob },
   // The next service falling due with nothing booked (docs/decisions/0086-the-next-visit-is-offered.md).
   { name: "next_service_reminders", needs: "messaging", run: nextServiceRemindersJob },
+  // A one visit's payment link its close could not have Razorpay make (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+  { name: "payment_links", needs: "nothing", run: paymentLinksJob },
   // A finished job's invoice (ADRs 0055 and 0056), before the Books pass, which sets
   // a client's advance against the invoice once it is issued.
   { name: "invoices", needs: "fsm_and_books", run: invoicesJob },

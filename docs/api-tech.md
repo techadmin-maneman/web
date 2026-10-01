@@ -617,7 +617,7 @@ Request body:
 
 ### POST /api/tech/jobs/{id}/piece
 
-The piece: a replacement's and a first fit's step only
+The piece: a replacement's, a first fit's and a one visit's step only
 
 Request body:
 
@@ -1248,6 +1248,10 @@ The piece a label names
         }
       ]
     },
+    "one_visit": {
+      "type": "boolean",
+      "description": "A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, at the piece step."
+    },
     "sector": {
       "anyOf": [
         {
@@ -1276,9 +1280,10 @@ The piece a label names
       "enum": [
         "prepaid",
         "credit",
-        "free"
+        "free",
+        "at_visit"
       ],
-      "description": "Free for a visit the price book charges nothing for. No response to a technician carries an amount."
+      "description": "Free for a visit the price book charges nothing for; at_visit for a one visit, paid for once the client is fitted. No response to a technician carries an amount."
     },
     "slots": {
       "anyOf": [
@@ -1307,6 +1312,7 @@ The piece a label names
     "ends_at",
     "window_label",
     "type",
+    "one_visit",
     "sector",
     "status",
     "badge",
@@ -1379,6 +1385,10 @@ The piece a label names
         }
       ]
     },
+    "one_visit": {
+      "type": "boolean",
+      "description": "A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, at the piece step."
+    },
     "sector": {
       "anyOf": [
         {
@@ -1407,9 +1417,10 @@ The piece a label names
       "enum": [
         "prepaid",
         "credit",
-        "free"
+        "free",
+        "at_visit"
       ],
-      "description": "Free for a visit the price book charges nothing for. No response to a technician carries an amount."
+      "description": "Free for a visit the price book charges nothing for; at_visit for a one visit, paid for once the client is fitted. No response to a technician carries an amount."
     },
     "slots": {
       "anyOf": [
@@ -1718,6 +1729,45 @@ The piece a label names
         "$ref": "#/components/schemas/TechnicianConsumable"
       },
       "description": "Every consumable the technician may record, those this job's service is expected to use first, each with the count its stepper starts at."
+    },
+    "products": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/TechnicianProduct"
+      },
+      "description": "On a one visit, the products the client may choose, by name and never by price: the first fit's services offered on the visit's day, in ops' order. Empty for any other visit."
+    },
+    "payment_link": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "url": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The link Razorpay texted the client, to show them; null until Razorpay has made it."
+            },
+            "paid": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "url",
+            "paid"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "On a one visit closed as done with the client fitted, its payment link; else null."
     }
   },
   "required": [
@@ -1728,6 +1778,7 @@ The piece a label names
     "ends_at",
     "window_label",
     "type",
+    "one_visit",
     "sector",
     "status",
     "badge",
@@ -1745,7 +1796,9 @@ The piece a label names
     "steps",
     "checklist",
     "partial_reasons",
-    "consumables"
+    "consumables",
+    "products",
+    "payment_link"
   ],
   "additionalProperties": false
 }
@@ -1975,6 +2028,28 @@ The piece a label names
     "name",
     "unit",
     "expected"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianProduct
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "tier": {
+      "type": "string",
+      "description": "What the piece step sends back as product."
+    },
+    "name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tier",
+    "name"
   ],
   "additionalProperties": false
 }
@@ -2306,6 +2381,21 @@ The piece a label names
 
 ```json
 {
+  "anyOf": [
+    {
+      "$ref": "#/components/schemas/PieceFitted"
+    },
+    {
+      "$ref": "#/components/schemas/PieceDeclined"
+    }
+  ]
+}
+```
+
+### PieceFitted
+
+```json
+{
   "type": "object",
   "properties": {
     "piece_code": {
@@ -2360,6 +2450,12 @@ The piece a label names
       ],
       "additionalProperties": false,
       "description": "On a replacement: the piece that came off, and why it failed."
+    },
+    "product": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 32,
+      "description": "On a one visit, and only there: the product the client chose, by its tier from the card's products."
     }
   },
   "required": [
@@ -2367,6 +2463,27 @@ The piece a label names
   ],
   "additionalProperties": false,
   "description": "The piece fitted, with its base and lot, and on a replacement the one that came off. A failure_reason on the piece itself marks it as failed and fits nothing."
+}
+```
+
+### PieceDeclined
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "declined": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
+    }
+  },
+  "required": [
+    "declined"
+  ],
+  "additionalProperties": false,
+  "description": "On a one visit, and only there: the client decided against the fit, so nothing was fitted, and closing the visit as done makes it a consultation."
 }
 ```
 

@@ -2673,7 +2673,8 @@
                   "enum": [
                     "prepaid",
                     "credit",
-                    "free"
+                    "free",
+                    "at_visit"
                   ],
                   "description": "Never an amount: prepaid, credit, or free."
                 },
@@ -2888,7 +2889,8 @@
             "enum": [
               "prepaid",
               "credit",
-              "free"
+              "free",
+              "at_visit"
             ],
             "description": "Never an amount: prepaid, credit, or free."
           },
@@ -4015,6 +4017,7 @@
                     "erasure_request",
                     "grievance",
                     "draft_invoice",
+                    "payment_owed",
                     "erasure_unfinished"
                   ]
                 },
@@ -9094,6 +9097,7 @@
                 "erasure_request",
                 "grievance",
                 "draft_invoice",
+                "payment_owed",
                 "erasure_unfinished"
               ]
             },

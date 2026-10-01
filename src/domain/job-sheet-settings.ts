@@ -80,6 +80,28 @@ export async function jobSheet(db: D1Database): Promise<JobSheet> {
   };
 }
 
+/** Each item once, by its code, where it came first. */
+const onceEach = (items: readonly JobSheetItem[]): JobSheetItem[] =>
+  items.filter((item, index) => items.findIndex((other) => other.id === item.id) === index);
+
+/**
+ * The checklist a job runs: its kind's, or, for a consultation and fit in one visit, the consultation's and then the
+ * first fit's, an item both hold listed once, however the visit closed
+ * (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+ */
+export function checklistOf(
+  sheet: JobSheet,
+  job: { readonly type: VisitType; readonly oneVisit: boolean },
+): JobSheetList {
+  if (!job.oneVisit) return sheet.checklists[job.type];
+  const { consultation, first_fit: fit } = sheet.checklists;
+  return {
+    ...fit,
+    items: onceEach([...consultation.items, ...fit.items]),
+    retired: onceEach([...consultation.retired, ...fit.retired]),
+  };
+}
+
 /** Every code a list understands, retired ones included: what a phone's write is checked against. */
 export const knownCodes = (list: JobSheetList): Set<string> =>
   new Set([...list.items, ...list.retired].map((item) => item.id));

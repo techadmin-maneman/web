@@ -20,7 +20,7 @@ const BOOKED = {
   credits: false,
   invite: "unknown",
   address: "saved",
-  first_fit: false,
+  one_visit: false,
 };
 
 const CODE = "RM4K7P";
@@ -102,29 +102,27 @@ test("a served pincode books, and sends where the hair loss is", async ({ page }
   const sent = requests[0]?.postDataJSON() as Record<string, unknown>;
   expect(sent).toMatchObject({ pincode: SERVED.pincode, window: "morning", consent: true, loss_extent: "receding" });
   expect(sent.turnstile_token).toBeTruthy();
-  // The consultation alone, as the form starts: no first fit is asked for (ADR 0086).
-  expect(sent).not.toHaveProperty("first_fit");
-  await expect(page.getByText(/You asked for your first fit too/)).toBeHidden();
+  // The consultation alone, as the form starts (ADR 0105).
+  expect(sent).not.toHaveProperty("one_visit");
+  await expect(page.getByText(/Your technician brings the range/)).toBeHidden();
   // The invite's three visits are the landing's; this page promises nothing of the kind.
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeHidden();
 });
 
-// The owner's ruling of 27 September 2026 (ADR 0025, item 68; docs/decisions/0086-the-next-visit-is-offered.md): the
-// consultation is booked as ever, and the first fit asked for with it is booked and paid in the app afterwards.
-test("offers the consultation with the first fit to follow, and says where the fit is booked and paid", async ({
-  page,
-}) => {
-  const requests = await mockApi(page, { consultation: { status: 201, body: { ...BOOKED, first_fit: true } } });
+// The owner's ruling D2 of 1 October 2026 (ADR 0025, item 89; docs/decisions/0105-a-consultation-and-fit-in-one-visit.md):
+// the client chooses one visit or two. The second choice books the consultation and fit in one visit, three hours,
+// paid for once fitted; it replaces the consultation with the first fit to follow, whose tests went with it.
+test("offers the consultation and fit in one visit, and says what it holds and how it is paid", async ({ page }) => {
+  const requests = await mockApi(page, { consultation: { status: 201, body: { ...BOOKED, one_visit: true } } });
   await visit(page, "/book");
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
 
   const plan = page.getByRole("group", { name: "What to book" });
   await expect(plan.getByRole("radio")).toHaveCount(2);
-  await plan.getByText("The consultation, then my first fit").click();
-  await expect(plan.getByRole("radio", { name: "The consultation, then my first fit" })).toBeChecked();
-  const fit = page.getByRole("group", { name: "The fit, if you have a time in mind" });
-  await fit.getByText("Afternoon").click();
+  await plan.getByText("Consultation and fit, in one visit").click();
+  await expect(plan.getByRole("radio", { name: "Consultation and fit, in one visit" })).toBeChecked();
+  await expect(page.getByText(/Three hours, at home, in the morning or the afternoon\./)).toBeVisible();
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();
@@ -134,21 +132,22 @@ test("offers the consultation with the first fit to follow, and says where the f
   await page.getByLabel("Name").fill("Test Visitor");
   await page.getByLabel("Mobile").fill("9810000000");
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
-  await page.getByRole("button", { name: "Book the consultation" }).click();
+  await page.getByRole("button", { name: "Book the consultation and fit" }).click();
 
-  await expect(page.getByText("Consultation booked")).toBeVisible();
+  await expect(page.getByText("Consultation and fit booked")).toBeVisible();
   const sent = requests[0]?.postDataJSON() as Record<string, unknown>;
-  expect(sent).toMatchObject({ first_fit: { window: "afternoon" }, consent: true, loss_extent: "crown" });
+  expect(sent).toMatchObject({ one_visit: true, window: "morning", consent: true, loss_extent: "crown" });
   await expect(
     page.getByText(
-      "You asked for your first fit too. Once the consultation is done, you book the fit in the app and pay for it there.",
+      "Your technician brings the range for you to choose from. Once you are fitted, you pay by a link sent to your phone.",
     ),
   ).toBeVisible();
-  // Nothing is paid on the site: the confirmation still says the consultation is free.
-  await expect(page.getByText(/· free$/)).toBeVisible();
+  // Nothing is paid on the site, and nothing for the fit until it is done.
+  await expect(page.getByText(/· pay once fitted$/)).toBeVisible();
+  await expect(page.getByText(/· free$/)).toHaveCount(0);
 });
 
-test("asks for the fit in either window unless one is chosen, and drops it when the consultation alone is chosen", async ({
+test("offers the one visit the morning and the afternoon, never the evening, and the consultation all three", async ({
   page,
 }) => {
   const requests = await mockApi(page);
@@ -156,10 +155,16 @@ test("asks for the fit in either window unless one is chosen, and drops it when 
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
   const plan = page.getByRole("group", { name: "What to book" });
-  await plan.getByText("The consultation, then my first fit").click();
+  const windows = page.getByRole("group", { name: "Window" });
+  await windows.getByText("Evening").click();
+
+  await plan.getByText("Consultation and fit, in one visit").click();
+  await expect(windows.getByRole("radio")).toHaveCount(2);
+  await expect(windows.getByText("Evening")).toHaveCount(0);
+  await expect(windows.getByRole("radio", { name: /Morning/ })).toBeChecked();
+
   await plan.getByText("A consultation", { exact: true }).click();
-  await expect(page.getByRole("group", { name: "The fit, if you have a time in mind" })).toHaveCount(0);
-  await plan.getByText("The consultation, then my first fit").click();
+  await expect(windows.getByRole("radio")).toHaveCount(3);
 
   await fillAddress(page);
   await page.getByLabel("Name").fill("Test Visitor");
@@ -167,7 +172,7 @@ test("asks for the fit in either window unless one is chosen, and drops it when 
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
   await expect(page.getByText("Consultation booked")).toBeVisible();
-  expect((requests[0]?.postDataJSON() as Record<string, unknown>).first_fit).toEqual({ window: null });
+  expect(requests[0]?.postDataJSON() as Record<string, unknown>).not.toHaveProperty("one_visit");
 });
 
 // The owner's ruling of 27 September 2026: the full address before a slot is confirmed, on the site too (ADR 0081).
@@ -255,7 +260,7 @@ test("says nothing about an invite to someone who came here directly", async ({ 
   await page.getByRole("button", { name: "Check" }).click();
   // The page is headed once, not twice: the form beneath it repeats nothing.
   await expect(page.getByRole("heading", { name: "Book a free consultation" })).toHaveCount(1);
-  await expect(page.getByText("An hour. Nothing fitted, nothing to pay.")).toBeVisible();
+  await expect(page.getByText("An hour, and free. Or have your fit in the same visit.")).toBeVisible();
   for (const words of invited) await expect(page.getByText(words)).toHaveCount(0);
 
   await visit(page, "/book");

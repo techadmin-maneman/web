@@ -96,7 +96,7 @@ export async function landJobEvent(db: D1Database, input: EventInput): Promise<L
 
   const done = await kindsLanded(db, input.job.id);
   if (isNoShow(input.kind, input.body) && done.has("start")) return { kind: "already_started" };
-  const needs = stepBefore(input.kind, input.job.type, done, input.body);
+  const needs = stepBefore(input.kind, input.job.type, done, input.body, input.job.oneVisit !== null);
   if (needs !== null) return { kind: "out_of_order", needs };
 
   const written = await record(db, input, { superseded: false });

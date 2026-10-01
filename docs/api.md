@@ -153,8 +153,9 @@ Request body:
     "address": {
       "$ref": "#/components/schemas/TypedAddress"
     },
-    "first_fit": {
-      "$ref": "#/components/schemas/FirstFitRequest"
+    "one_visit": {
+      "type": "boolean",
+      "description": "true: the consultation and the first fit in one visit, three hours, in the morning or the afternoon; the client chooses the product with the technician and pays once fitted, so nothing is paid here. Left out or false, the consultation alone."
     },
     "consent": {
       "type": "boolean",
@@ -187,7 +188,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names what was refused, address.pincode for an address in another pincode
+**400**: invalid_request: fields names what was refused, address.pincode for an address in another pincode, window for one visit in the evening
 
 ```json
 {
@@ -488,8 +489,9 @@ Request body:
     "address": {
       "$ref": "#/components/schemas/TypedAddress"
     },
-    "first_fit": {
-      "$ref": "#/components/schemas/FirstFitRequest"
+    "one_visit": {
+      "type": "boolean",
+      "description": "true: the consultation and the first fit in one visit, three hours, in the morning or the afternoon; the client chooses the product with the technician and pays once fitted, so nothing is paid here. Left out or false, the consultation alone."
     },
     "consent": {
       "type": "boolean",
@@ -521,7 +523,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names what was refused, address.pincode for an address in another pincode
+**400**: invalid_request: fields names what was refused, address.pincode for an address in another pincode, window for one visit in the evening
 
 ```json
 {
@@ -1476,9 +1478,9 @@ Razorpay's webhook: payments and refunds
       ],
       "description": "saved: the address sent is now the person's; on_account: the person already had one, which the visit goes to, and the one sent was not written. The address on the account is never sent back."
     },
-    "first_fit": {
+    "one_visit": {
       "type": "boolean",
-      "description": "true: the first fit was asked for too, and the app offers it once the consultation is done."
+      "description": "true: the consultation and the first fit in one visit were booked, or asked for."
     }
   },
   "required": [
@@ -1489,7 +1491,7 @@ Razorpay's webhook: payments and refunds
     "credits",
     "invite",
     "address",
-    "first_fit"
+    "one_visit"
   ],
   "additionalProperties": false
 }
@@ -1723,36 +1725,6 @@ Razorpay's webhook: payments and refunds
 }
 ```
 
-### FirstFitRequest
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "window": {
-      "anyOf": [
-        {
-          "type": "string",
-          "enum": [
-            "morning",
-            "afternoon"
-          ]
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "description": "The window the fit is wanted in, or null for either. A first fit does not fit in the evening."
-    }
-  },
-  "required": [
-    "window"
-  ],
-  "additionalProperties": false,
-  "description": "Left out, the consultation alone. Sent, the first fit is asked for too: it is booked and paid for in the app once the consultation is done, and nothing is paid here."
-}
-```
-
 ### Waitlist
 
 ```json
@@ -1941,9 +1913,9 @@ Razorpay's webhook: payments and refunds
       ],
       "description": "saved: the address sent is now the person's; on_account: the person already had one, which the visit goes to, and the one sent was not written. The address on the account is never sent back."
     },
-    "first_fit": {
+    "one_visit": {
       "type": "boolean",
-      "description": "true: the first fit was asked for too, and the app offers it once the consultation is done."
+      "description": "true: the consultation and the first fit in one visit were booked, or asked for."
     }
   },
   "required": [
@@ -1954,7 +1926,7 @@ Razorpay's webhook: payments and refunds
     "credits",
     "invite",
     "address",
-    "first_fit"
+    "one_visit"
   ],
   "additionalProperties": false
 }

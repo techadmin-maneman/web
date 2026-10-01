@@ -143,7 +143,8 @@ export interface paths {
                         /** @enum {string} */
                         window: "morning" | "afternoon" | "evening";
                         address: components["schemas"]["TypedAddress"];
-                        first_fit?: components["schemas"]["FirstFitRequest"];
+                        /** @description true: the consultation and the first fit in one visit, three hours, in the morning or the afternoon; the client chooses the product with the technician and pays once fitted, so nothing is paid here. Left out or false, the consultation alone. */
+                        one_visit?: boolean;
                         /**
                          * @description "You may contact me on WhatsApp about this consultation."
                          * @enum {boolean}
@@ -162,7 +163,7 @@ export interface paths {
                         "application/json": components["schemas"]["Consultation"];
                     };
                 };
-                /** @description invalid_request: fields names what was refused, address.pincode for an address in another pincode */
+                /** @description invalid_request: fields names what was refused, address.pincode for an address in another pincode, window for one visit in the evening */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -515,7 +516,8 @@ export interface paths {
                         /** @enum {string} */
                         window: "morning" | "afternoon" | "evening";
                         address: components["schemas"]["TypedAddress"];
-                        first_fit?: components["schemas"]["FirstFitRequest"];
+                        /** @description true: the consultation and the first fit in one visit, three hours, in the morning or the afternoon; the client chooses the product with the technician and pays once fitted, so nothing is paid here. Left out or false, the consultation alone. */
+                        one_visit?: boolean;
                         /**
                          * @description "You may contact me on WhatsApp about this consultation."
                          * @enum {boolean}
@@ -534,7 +536,7 @@ export interface paths {
                         "application/json": components["schemas"]["ReferralConsultation"];
                     };
                 };
-                /** @description invalid_request: fields names what was refused, address.pincode for an address in another pincode */
+                /** @description invalid_request: fields names what was refused, address.pincode for an address in another pincode, window for one visit in the evening */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -1629,8 +1631,8 @@ export interface components {
              * @enum {string}
              */
             address: "saved" | "on_account";
-            /** @description true: the first fit was asked for too, and the app offers it once the consultation is done. */
-            first_fit: boolean;
+            /** @description true: the consultation and the first fit in one visit were booked, or asked for. */
+            one_visit: boolean;
         };
         AlreadyBooked: {
             error: {
@@ -1667,11 +1669,6 @@ export interface components {
             floor?: string | null;
             tower?: string | null;
             landmark?: string | null;
-        };
-        /** @description Left out, the consultation alone. Sent, the first fit is asked for too: it is booked and paid for in the app once the consultation is done, and nothing is paid here. */
-        FirstFitRequest: {
-            /** @description The window the fit is wanted in, or null for either. A first fit does not fit in the evening. */
-            window: ("morning" | "afternoon") | null;
         };
         Waitlist: {
             area: string | null;
@@ -1725,8 +1722,8 @@ export interface components {
              * @enum {string}
              */
             address: "saved" | "on_account";
-            /** @description true: the first fit was asked for too, and the app offers it once the consultation is done. */
-            first_fit: boolean;
+            /** @description true: the consultation and the first fit in one visit were booked, or asked for. */
+            one_visit: boolean;
         };
         ReferralWaitlist: {
             area: string | null;

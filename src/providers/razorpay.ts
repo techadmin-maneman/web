@@ -1,16 +1,22 @@
 // Razorpay, for taking payment and giving it back (docs/decisions/0045-self-serve-booking.md), and what its
-// webhook carries. Only orders and refunds are made here; what happened to a payment arrives by the signed
+// webhook carries. Orders, refunds and payment links are made here; what happened to a payment arrives by the signed
 // webhook (docs/decisions/0044-payments-mirror.md), which is the authority. Amounts are in paise. Only
 // src/providers/payments.ts chooses this client.
 //
 //   POST https://api.razorpay.com/v1/orders                   { id }
 //   POST https://api.razorpay.com/v1/payments/{id}/refund     { id }
+//   POST https://api.razorpay.com/v1/payment_links            { id, short_url }
+//   GET  https://api.razorpay.com/v1/payment_links?reference_id=  { payment_links: [{ id, short_url }] }
+//
+// A payment link is texted to the client by Razorpay itself, so it needs no template of ours and no secret beyond the
+// keys (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
 
 import { z } from "zod";
 import type { RazorpaySettings } from "../config/settings.ts";
 import { saltedHash, secretsMatch } from "../lib/hash.ts";
 import type { Logger } from "../log.ts";
 import type { PaymentsProvider } from "./payments.ts";
+import { ProviderError } from "./provider-error.ts";
 
 /** Whether a webhook body is Razorpay's: X-Razorpay-Signature is the HMAC-SHA256 of the raw body under the secret. */
 export async function signedByRazorpay(secret: string, body: string, signature: string): Promise<boolean> {
@@ -35,6 +41,16 @@ export const RazorpayPaymentSchema = z.object({
 });
 export type RazorpayPayment = z.infer<typeof RazorpayPaymentSchema>;
 
+/** The fields of Razorpay's payment link entity, as its webhook carries it, that the mirror reads. */
+export const RazorpayPaymentLinkSchema = z.object({
+  id: z.string(),
+  status: z.string(),
+  /** Ours: the visit the link is for, which a link ops make by hand in Razorpay's dashboard carries too. */
+  reference_id: z.string().nullish(),
+});
+
+export type RazorpayPaymentLink = z.infer<typeof RazorpayPaymentLinkSchema>;
+
 /** The fields of Razorpay's refund entity that the mirror reads. */
 export const RazorpayRefundSchema = z.object({
   id: z.string(),
@@ -50,6 +66,8 @@ export type RazorpayRefund = z.infer<typeof RazorpayRefundSchema>;
 
 const API = "https://api.razorpay.com/v1";
 const Created = z.object({ id: z.string() });
+const LinkMade = z.object({ id: z.string(), short_url: z.string() });
+const LinksFound = z.object({ payment_links: z.array(LinkMade) });
 /** Razorpay's reason for a refusal, as much of it as it gave. */
 const Refused = z.object({
   error: z.object({
@@ -58,15 +76,11 @@ const Refused = z.object({
   }),
 });
 
-export class RazorpayError extends Error {
-  readonly status: number;
-  readonly code: string;
-
+/** Razorpay's refusal, or its failure, read as any vendor's is (src/providers/provider-error.ts). */
+export class RazorpayError extends ProviderError {
   constructor(status: number, code: string, description: string) {
-    super(`Razorpay ${String(status)} ${code}: ${description}`);
+    super(status, code, `Razorpay ${String(status)} ${code}: ${description}`);
     this.name = "RazorpayError";
-    this.status = status;
-    this.code = code;
   }
 }
 
@@ -76,12 +90,18 @@ export function createRazorpay(
 ): PaymentsProvider {
   const authorization = `Basic ${btoa(`${settings.keyId}:${settings.keySecret}`)}`;
 
-  async function post(step: string, path: string, body: object): Promise<{ id: string }> {
+  /** One call: a POST with its body, or a GET with none. */
+  async function call<Answer>(
+    step: string,
+    path: string,
+    body: object | null,
+    shape: z.ZodType<Answer>,
+  ): Promise<Answer> {
     const started = Date.now();
     const response = await deps.fetch(`${API}${path}`, {
-      method: "POST",
+      method: body === null ? "GET" : "POST",
       headers: { Authorization: authorization, "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      ...(body === null ? {} : { body: JSON.stringify(body) }),
       signal: AbortSignal.timeout(10_000),
     });
     deps.log.info("razorpay_call", { step, status: response.status, duration_ms: Date.now() - started });
@@ -90,12 +110,36 @@ export function createRazorpay(
       const error = Refused.safeParse(answer).data?.error;
       throw new RazorpayError(response.status, error?.code ?? "UNKNOWN", error?.description ?? "no description");
     }
-    return Created.parse(answer);
+    return shape.parse(answer);
   }
 
   return {
-    createOrder: (order) => post("create_order", "/orders", { ...order, currency: "INR" }),
+    createOrder: (order) => call("create_order", "/orders", { ...order, currency: "INR" }, Created),
     refund: (paymentId, refund) =>
-      post("refund", `/payments/${encodeURIComponent(paymentId)}/refund`, { ...refund, speed: "normal" }),
+      call("refund", `/payments/${encodeURIComponent(paymentId)}/refund`, { ...refund, speed: "normal" }, Created),
+    createPaymentLink: async (link) => {
+      const made = await call(
+        "create_payment_link",
+        "/payment_links",
+        {
+          amount: link.amount,
+          currency: "INR",
+          accept_partial: false,
+          reference_id: link.reference,
+          description: link.description,
+          customer: link.customer,
+          notify: { sms: true, email: false },
+          reminder_enable: true,
+          notes: link.notes,
+        },
+        LinkMade,
+      );
+      return { id: made.id, shortUrl: made.short_url };
+    },
+    findPaymentLink: async (reference) => {
+      const path = `/payment_links?reference_id=${encodeURIComponent(reference)}`;
+      const [found] = (await call("find_payment_link", path, null, LinksFound)).payment_links;
+      return found === undefined ? null : { id: found.id, shortUrl: found.short_url };
+    },
   };
 }

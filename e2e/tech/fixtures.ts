@@ -68,8 +68,11 @@ const unlocksAt = (date: string) => at(dayBefore(date), "12:30");
 /** The slots each type takes (src/config/scheduling.ts). */
 const SLOTS: Readonly<Record<VisitType, number>> = { consultation: 1, service: 1, replacement: 1.5, first_fit: 2 };
 
-/** Rohit's visit this morning, the first of the day, of the type a test asks for. */
-const firstJob = (date: string, type: VisitType): Job => ({
+/**
+ * Rohit's visit this morning, the first of the day, of the type a test asks for; or, as one visit, his consultation
+ * and first fit together, paid for once he is fitted (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+ */
+const firstJob = (date: string, type: VisitType, oneVisit = false): Job => ({
   id: JOB_ID,
   day: "today",
   date,
@@ -77,9 +80,10 @@ const firstJob = (date: string, type: VisitType): Job => ({
   ends_at: at(date, "05:30"),
   window_label: "morning",
   type,
+  one_visit: oneVisit,
   sector: "Sector 65",
   status: "scheduled",
-  badge: "prepaid",
+  badge: oneVisit ? "at_visit" : "prepaid",
   slots: SLOTS[type],
   unlocked: true,
   unlocks_at: unlocksAt(date),
@@ -93,6 +97,7 @@ const secondJob = (date: string): Job => ({
   ends_at: at(date, "07:30"),
   window_label: "morning",
   type: "service",
+  one_visit: false,
   sector: "DLF Phase 4",
   status: "scheduled",
   badge: "credit",
@@ -110,6 +115,7 @@ const lockedJob = (date: string): Job => ({
   ends_at: at(date, "11:30"),
   window_label: "afternoon",
   type: "first_fit",
+  one_visit: false,
   sector: "Sector 43",
   status: "scheduled",
   badge: "prepaid",
@@ -129,6 +135,7 @@ const tomorrowsJob = (today: string): Job => {
     ends_at: at(date, "06:00"),
     window_label: "morning",
     type: "service",
+    one_visit: false,
     sector: "Sector 50",
     status: "scheduled",
     badge: "free",
@@ -171,6 +178,12 @@ export const CONSUMABLES: Card["consumables"] = [
   { code: "shampoo_sachet", name: "Shampoo sachet", unit: "sachet", expected: 0 },
 ];
 
+/** The products a one visit's client may choose, by name and never by price: made up, as every name here is. */
+export const PRODUCTS: Card["products"] = [
+  { tier: "essential", name: "Mane Man Essential" },
+  { tier: "natural", name: "Mane Man Natural" },
+];
+
 /** The API's piece label (src/config/pieces.ts), which it refuses a write for. */
 const PIECE_LABEL = /^MM-[A-Z0-9]{2,6}-\d{2,8}-[A-Z]$/;
 
@@ -211,12 +224,15 @@ export interface CardOptions {
   readonly reminderDelivered?: string | null;
   /** Parts of the address the client filled in beyond the fixture's two lines: flat, floor, tower, building, landmark. */
   readonly address?: AddressParts;
+  /** A consultation and fit in one visit, its products on the card. */
+  readonly oneVisit?: boolean;
 }
 
 export function card(date: string, progress: Progress, options: CardOptions = {}): Card {
   const type = options.type ?? "service";
+  const oneVisit = options.oneVisit === true;
   return {
-    ...firstJob(date, type),
+    ...firstJob(date, type, oneVisit),
     address: {
       line1: "Tower C, 14th floor",
       line2: null,
@@ -243,10 +259,12 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
         ? { date: "2030-08-22", technician: "Imran", photo_url: `/api/tech/jobs/${JOB_ID}/last-visit-photo` }
         : null,
     reminder: options.reminderDelivered === undefined ? null : { delivered_at: options.reminderDelivered },
-    steps: stepsFor(type),
+    steps: stepsFor(oneVisit ? "first_fit" : type),
     checklist: CHECKLIST,
     partial_reasons: PARTIAL_REASONS,
     consumables: CONSUMABLES,
+    products: oneVisit ? PRODUCTS : [],
+    payment_link: null,
   };
 }
 
@@ -266,6 +284,8 @@ export function lockedCard(date: string): Card {
     checklist: CHECKLIST,
     partial_reasons: PARTIAL_REASONS,
     consumables: CONSUMABLES,
+    products: [],
+    payment_link: null,
   };
 }
 
@@ -328,6 +348,8 @@ export interface Fake {
   pin: boolean;
   /** The first job's type: a replacement or a first fit has the piece step. */
   type: VisitType;
+  /** True makes the first job a consultation and fit in one visit. */
+  oneVisit: boolean;
   /** The client's pieces on the card. */
   pieces: Piece[];
   /** Parts of the address beyond the fixture's two lines. */
@@ -406,6 +428,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     waitLeftMs: null,
     pin: true,
     type: "service",
+    oneVisit: false,
     pieces: [],
     address: {},
     lastVisit: false,
@@ -426,6 +449,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       lastVisit: fake.lastVisit,
       reminderDelivered: fake.reminderDelivered,
       address: fake.address,
+      oneVisit: fake.oneVisit,
     });
 
   await on.route("**/api/tech/**", async (route: Route) => {
@@ -485,8 +509,10 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       if (changed !== null) return refuse(route, 409, "superseded", changed, fake.wentTo);
       if (path.endsWith("/no-show") && fake.tooEarly) return refuse(route, 425, "too_early_to_close");
 
-      const body = route.request().postDataJSON() as { piece_code?: string } | null;
-      if (path.endsWith("/piece") && !PIECE_LABEL.test(body?.piece_code ?? "")) {
+      // A one visit's client may decide against the fit, when the piece step carries no label.
+      const body = route.request().postDataJSON() as { piece_code?: string; declined?: boolean } | null;
+      const declined = body?.declined === true;
+      if (path.endsWith("/piece") && !declined && !PIECE_LABEL.test(body?.piece_code ?? "")) {
         return refuse(route, 400, "invalid_request", ["piece_code"]);
       }
       fake.writes.push({ path, eventId, startsAt, body });

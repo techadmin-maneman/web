@@ -10,13 +10,17 @@
 // The duration is the phone's own: it runs from the `started_at` the API keeps
 // to the instant the technician took the outcome, because nothing gives the
 // closing time back (docs/open-points.md, item 60).
+//
+// A consultation and fit in one visit closed with the client fitted says where
+// its payment link stands, once the card the API gives back has one, which no
+// board draws (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
 
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { useEffect, useState } from "react";
 import type { Job, JobSummary } from "../api.ts";
-import { closeOut as copy, job as jobCopy, titles } from "../content.ts";
+import { closeOut as copy, job as jobCopy, oneVisit, titles } from "../content.ts";
 import { STROKE } from "../icons.ts";
 import { outcomeOf } from "../lib/progress.ts";
 import { useDay, useJob, useNames } from "../lib/useDay.ts";
@@ -35,6 +39,10 @@ const IN_A_SET = 5;
 function nextAfter(jobs: readonly JobSummary[], after: string): JobSummary | null {
   return jobs.find((job) => job.starts_at > after) ?? null;
 }
+
+/** Where a one visit's payment link stands: texted to the client, or paid. */
+const linkState = (link: NonNullable<Job["payment_link"]>): string =>
+  link.paid ? oneVisit.linkPaid : oneVisit.linkSent;
 
 function Row({ name, value }: { name: string; value: string }) {
   return (
@@ -145,6 +153,10 @@ export function CloseOut({ id }: { id: string }) {
           <dl className={styles.rows}>
             {took !== null && <Row name={copy.duration} value={copy.length(took.hours, took.minutes)} />}
             <Row name={copy.photos} value={queuedFrames > 0 ? copy.queued(queuedFrames) : copy.sent(sets * IN_A_SET)} />
+            {/* A card the phone kept from before one visits names neither. */}
+            {job.one_visit && job.payment_link !== null && (
+              <Row name={oneVisit.payment} value={linkState(job.payment_link)} />
+            )}
           </dl>
         )}
       </section>

@@ -39,9 +39,13 @@ export type JobEventKind = (typeof JOB_EVENT_KINDS)[number];
  */
 export const PIECE_STEP_TYPES = ["replacement", "first_fit"] as const;
 
-/** The steps this visit type runs, in order. */
-export function stepsFor(type: VisitType): JobStep[] {
-  const takesPiece = (PIECE_STEP_TYPES as readonly string[]).includes(type);
+/**
+ * The steps this visit type runs, in order. A consultation and fit in one visit runs the first fit's, whose piece
+ * step records the product the client chose, or that they decided against it, which ends the visit as a
+ * consultation; so it keeps them however it closed (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+ */
+export function stepsFor(type: VisitType, oneVisit = false): JobStep[] {
+  const takesPiece = oneVisit || (PIECE_STEP_TYPES as readonly string[]).includes(type);
   return JOB_STEPS.filter((step) => step !== "piece" || takesPiece);
 }
 
@@ -59,11 +63,12 @@ export function stepBefore(
   type: VisitType,
   done: ReadonlySet<string>,
   body: Record<string, unknown>,
+  oneVisit = false,
 ): JobEventKind | null {
   if (kind === "check_in") return null;
   if (kind === "start" || isNoShow(kind, body)) return done.has("check_in") ? null : "check_in";
   if (!done.has("start")) return "start";
-  const wanted: readonly JobEventKind[] = stepsFor(type);
+  const wanted: readonly JobEventKind[] = stepsFor(type, oneVisit);
   const position = wanted.indexOf(kind);
   if (position <= 0) return null;
   const previous = wanted[position - 1];
