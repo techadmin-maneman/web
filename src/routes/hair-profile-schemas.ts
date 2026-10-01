@@ -77,9 +77,15 @@ export const FitSpecReadSchema = FitSpecSchema.extend({
   product_name: z.union([z.string(), z.null()]).openapi({ description: "The product's name, never its price." }),
 }).openapi("HairFitSpecRead");
 
+/** The version a write's form started from, so a write from an older copy is not taken for the latest silently. */
+export const BasedOnSchema = z.union([z.uuid(), z.null()]).openapi({
+  description: "The id of the version the form started from: the latest as it was read; null where there was none.",
+});
+
 /** The profile as it stands: a version, the latest. */
 export const HairProfileSchema = z
   .object({
+    id: z.uuid().openapi({ description: "The version's own ID, which a write names as based_on." }),
     recorded_at: z.iso.datetime(),
     fit: FitSpecReadSchema,
     history: z.union([HistorySchema, z.null()]).openapi({
@@ -90,7 +96,6 @@ export const HairProfileSchema = z
   .openapi("HairProfile");
 
 export const HairProfileVersionSchema = HairProfileSchema.extend({
-  id: z.uuid(),
   recorded_by: z.discriminatedUnion("kind", [
     z
       .object({ kind: z.literal("technician"), name: z.union([z.string(), z.null()]) })

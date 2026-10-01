@@ -273,6 +273,7 @@ export const NO_HAIR_PROFILE = {
 
 /** Rohit's fit spec as Imran took it at his consultation, and his history. */
 const AT_CONSULTATION = {
+  id: "44000000-0000-4000-8000-000000000001",
   recorded_at: "2027-09-21T05:30:00.000Z",
   fit: {
     norwood_stage: "IV",
@@ -297,6 +298,7 @@ const AT_CONSULTATION = {
 /** And ops' correction the next day: the colour, a shade lighter. */
 const CORRECTED = {
   ...AT_CONSULTATION,
+  id: "44000000-0000-4000-8000-000000000002",
   recorded_at: "2027-09-22T05:30:00.000Z",
   fit: { ...AT_CONSULTATION.fit, colour: "2" as const },
 };
@@ -306,13 +308,11 @@ export const HAIR_PROFILE = {
   versions: [
     {
       ...CORRECTED,
-      id: "44000000-0000-4000-8000-000000000002",
       recorded_by: { kind: "ops", staff: "ops@maneman.in" },
       visit: null,
     },
     {
       ...AT_CONSULTATION,
-      id: "44000000-0000-4000-8000-000000000001",
       recorded_by: { kind: "technician", name: "Imran" },
       visit: { id: VISIT_ID, date: "2027-09-21", type: "consultation" },
     },

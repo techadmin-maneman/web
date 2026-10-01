@@ -68,4 +68,25 @@ describe("clearing the technician tester", () => {
 
     expect([await left("no_show_disputes"), await left("no_show_cases"), await left("people")]).toEqual([0, 0, 0]);
   });
+
+  // A hair profile is never deleted (docs/decisions/0106-a-clients-hair-profile.md), so what it points at stays.
+  it("leaves a job a profile was taken at, its client and the technician, him inactive, and clears the rest", async () => {
+    const at = NOW.toISOString();
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO hair_profiles (id, person_id, appointment_id, event_id, technician_id, created_at, colour)
+         VALUES ('profile-1', ?1, ?2, 'event-1', ?3, ?4, '1B')`,
+      ).bind(CLIENT, JOB, TECHNICIAN, at),
+      env.DB.prepare(
+        `INSERT INTO sessions (id, subject_kind, subject_id, created_at, last_seen_at, expires_at)
+         VALUES ('session-1', 'technician', ?1, ?2, ?2, '2026-10-21T06:30:00.000Z')`,
+      ).bind(TECHNICIAN, at),
+    ]);
+
+    await clear();
+
+    expect([await left("hair_profiles"), await left("appointments"), await left("people")]).toEqual([1, 1, 1]);
+    expect(await env.DB.prepare("SELECT active FROM technicians").first()).toEqual({ active: 0 });
+    expect(await left("sessions")).toBe(0);
+  });
 });

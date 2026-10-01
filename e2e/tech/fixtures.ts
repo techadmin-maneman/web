@@ -210,6 +210,7 @@ export const ROHITS_PIECE: Piece = {
 
 /** Rohit's hair profile as his consultation took it, his history with it. */
 export const ROHITS_PROFILE: HairProfile = {
+  id: "d0000000-0000-4000-8000-000000000001",
   recorded_at: "2030-07-01T05:00:00.000Z",
   fit: {
     norwood_stage: "IV",

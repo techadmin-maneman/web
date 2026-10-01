@@ -668,6 +668,14 @@ Request body:
 }
 ```
 
+**409**: superseded: the latest version is no longer based_on; read the profile again
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/number-changes
 
 Number changes waiting for ops: both numbers proven by code
@@ -5848,6 +5856,11 @@ Who Access let through, and where signing out goes
 {
   "type": "object",
   "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The version's own ID, which a write names as based_on."
+    },
     "recorded_at": {
       "type": "string",
       "format": "date-time"
@@ -5868,6 +5881,7 @@ Who Access let through, and where signing out goes
     }
   },
   "required": [
+    "id",
     "recorded_at",
     "fit",
     "history"
@@ -6352,6 +6366,11 @@ Who Access let through, and where signing out goes
 {
   "type": "object",
   "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The version's own ID, which a write names as based_on."
+    },
     "recorded_at": {
       "type": "string",
       "format": "date-time"
@@ -6369,10 +6388,6 @@ Who Access let through, and where signing out goes
         }
       ],
       "description": "Null where none was recorded."
-    },
-    "id": {
-      "type": "string",
-      "format": "uuid"
     },
     "recorded_by": {
       "oneOf": [
@@ -6478,10 +6493,10 @@ Who Access let through, and where signing out goes
     }
   },
   "required": [
+    "id",
     "recorded_at",
     "fit",
     "history",
-    "id",
     "recorded_by",
     "visit"
   ],
@@ -6507,11 +6522,24 @@ Who Access let through, and where signing out goes
           "type": "null"
         }
       ]
+    },
+    "based_on": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The id of the version the form started from: the latest as it was read; null where there was none."
     }
   },
   "required": [
     "fit",
-    "history"
+    "history",
+    "based_on"
   ],
   "additionalProperties": false,
   "description": "The whole profile as it now stands, sent as a new version."

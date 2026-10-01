@@ -503,6 +503,8 @@ test.describe("the client's hair profile", () => {
         attachment: "tape",
       },
       history: { remedies: ["minoxidil", "transplant"], transplant_year: 2019, skin_and_allergies: "Dry at the crown" },
+      // No version stood before this one.
+      based_on: null,
     });
   });
 
@@ -516,7 +518,7 @@ test.describe("the client's hair profile", () => {
     await expect(next(page)).toBeEnabled();
   });
 
-  test("starts from the profile as it stands, and sends no history where none was said", async ({ page }) => {
+  test("starts from the profile as it stands, names it, and sends no history where none was said", async ({ page }) => {
     const fake = await atTheProfile(page, { ...ROHITS_PROFILE, history: null });
     await expect(page.getByRole("button", { name: "IV", exact: true })).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByRole("textbox", { name: "Circumference" })).toHaveValue("57.5");
@@ -527,6 +529,7 @@ test.describe("the client's hair profile", () => {
     expect(writesTo(fake, "profile")[0]?.body).toMatchObject({
       fit: { colour: "1B", product: "essential" },
       history: null,
+      based_on: ROHITS_PROFILE.id,
     });
   });
 

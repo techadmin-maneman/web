@@ -679,7 +679,7 @@ Request body:
 }
 ```
 
-**202**: Recorded
+**202**: Recorded; or, for a job with no client of ours, taken and nothing written. One taken from an older version than the latest still lands, and ops are told.
 
 ```json
 {
@@ -687,7 +687,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: see error.fields
+**400**: invalid_request: see error.fields; visit, for a visit that takes no profile
 
 ```json
 {
@@ -703,7 +703,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such job, or one with no client of ours to record it for
+**404**: not_found: no such job
 
 ```json
 {
@@ -2128,6 +2128,11 @@ The piece a label names
 {
   "type": "object",
   "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The version's own ID, which a write names as based_on."
+    },
     "recorded_at": {
       "type": "string",
       "format": "date-time"
@@ -2148,6 +2153,7 @@ The piece a label names
     }
   },
   "required": [
+    "id",
     "recorded_at",
     "fit",
     "history"
@@ -3103,11 +3109,24 @@ The piece a label names
           "type": "null"
         }
       ]
+    },
+    "based_on": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The id of the version the form started from: the latest as it was read; null where there was none."
     }
   },
   "required": [
     "fit",
-    "history"
+    "history",
+    "based_on"
   ],
   "additionalProperties": false,
   "description": "The client's whole profile as it stands now: the card's latest, changed where the technician changed it. Each is a new version."

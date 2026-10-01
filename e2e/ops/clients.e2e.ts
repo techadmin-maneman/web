@@ -218,10 +218,38 @@ test.describe("the client's hair profile", () => {
       (request) => request.method() === "POST" && request.url().endsWith("/hair-profile"),
     );
     await page.getByRole("button", { name: "Save as a new version" }).click();
-    const { fit, history } = (await sent).postDataJSON() as { fit: Record<string, unknown>; history: unknown };
-    expect(fit).toEqual({ ...HAIR_PROFILE.latest.fit, colour: "3", product_name: undefined });
-    expect(history).toEqual(HAIR_PROFILE.latest.history);
+    const body = (await sent).postDataJSON() as { fit: Record<string, unknown>; history: unknown; based_on: unknown };
+    expect(body.fit).toEqual({ ...HAIR_PROFILE.latest.fit, colour: "3", product_name: undefined });
+    expect(body.history).toEqual(HAIR_PROFILE.latest.history);
+    // The version the form was read from, so a correction never silently replaces a newer one.
+    expect(body.based_on).toBe(HAIR_PROFILE.latest.id);
     await expect(section(page).locator("dl").first()).toContainText("Colour#3");
+  });
+
+  test("reads the profile again, saving nothing, when another version became the latest meanwhile", async ({
+    page,
+  }) => {
+    const newer = {
+      ...HAIR_PROFILE,
+      latest: {
+        ...HAIR_PROFILE.latest,
+        id: "44000000-0000-4000-8000-000000000003",
+        fit: { ...HAIR_PROFILE.latest.fit, colour: "4" as const },
+      },
+    } satisfies OpsReply<"/api/clients/{id}/hair-profile">;
+    let reads = 0;
+    await openClient(page, `/clients/${CLIENT.id}/pieces`, {
+      [READ_HAIR_PROFILE]: (route) => {
+        reads += 1;
+        return json(reads === 1 ? HAIR_PROFILE : newer)(route);
+      },
+      [CORRECT_HAIR_PROFILE]: fails(409, "superseded"),
+    });
+    await section(page).getByRole("button", { name: "Correct the profile" }).click();
+    await page.getByRole("button", { name: "Save as a new version" }).click();
+
+    await expect(section(page).getByRole("alert")).toContainText("Nothing was saved: the profile changed");
+    await expect(section(page).locator("dl").first()).toContainText("Colour#4");
   });
 
   test("sends nothing while a figure is no number at all, and marks it", async ({ page }) => {

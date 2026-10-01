@@ -1182,7 +1182,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description Recorded */
+                /** @description Recorded; or, for a job with no client of ours, taken and nothing written. One taken from an older version than the latest still lands, and ops are told. */
                 202: {
                     headers: {
                         [name: string]: unknown;
@@ -1191,7 +1191,7 @@ export interface paths {
                         "application/json": components["schemas"]["TechnicianProfileRecorded"];
                     };
                 };
-                /** @description invalid_request: see error.fields */
+                /** @description invalid_request: see error.fields; visit, for a visit that takes no profile */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -1209,7 +1209,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such job, or one with no client of ours to record it for */
+                /** @description not_found: no such job */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -1702,6 +1702,11 @@ export interface components {
             name: string;
         };
         HairProfile: {
+            /**
+             * Format: uuid
+             * @description The version's own ID, which a write names as based_on.
+             */
+            id: string;
             /** Format: date-time */
             recorded_at: string;
             fit: components["schemas"]["HairFitSpecRead"];
@@ -1888,6 +1893,8 @@ export interface components {
         TechnicianProfileRequest: {
             fit: components["schemas"]["HairFitSpec"];
             history: components["schemas"]["HairHistory"] | null;
+            /** @description The id of the version the form started from: the latest as it was read; null where there was none. */
+            based_on: string | null;
         };
         OutcomeRequest: {
             /** @enum {string} */

@@ -29,7 +29,7 @@ import type { BookingWindow } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
 import { takesProfile } from "../policy/hair-profile.ts";
-import type { CardStep, JobEventKind } from "../policy/in-job-steps.ts";
+import { cardStepsFor, type CardStep, type JobEventKind } from "../policy/in-job-steps.ts";
 import { jobDay, paymentBadge, unlocked, unlocksAt, type JobDay, type PaymentBadge } from "../policy/job-visibility.ts";
 import { slotsFor } from "../policy/dispatch.ts";
 import { noShowWaitEnds, type Waits } from "../policy/no-show.ts";
@@ -149,6 +149,8 @@ export interface JobDetail extends JobSummary {
   readonly payment_link: JobPaymentLink | null;
   /** The client's hair profile as it stands; null while the job is locked, or before one is recorded. */
   readonly profile: HairProfile | null;
+  /** The screens this job runs, in order: its type's steps, and the profile where it takes one and has a client. */
+  readonly steps: CardStep[];
 }
 
 /** A product the client may choose at a one visit: a first fit's service, by its tier and its name. */
@@ -259,6 +261,7 @@ export async function jobDetail(
     products: takesProfile(type, row.one_visit !== null) ? await productsOn(db, summary.date) : [],
     payment_link: row.one_visit === null ? null : await paymentLinkOf(db, row.id),
     profile: null,
+    steps: cardStepsFor(type, row.one_visit !== null, row.person_id !== null),
   };
   if (!summary.unlocked) return locked;
   return {

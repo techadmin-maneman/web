@@ -17,7 +17,8 @@ const naming = (pattern: RegExp) => sourceFiles("src").filter((file) => pattern.
 
 describe("the hair profile's table", () => {
   it("is read and written in its own domain file alone", () => {
-    expect(naming(/\bhair_profiles\b/)).toEqual(["src/domain/hair-profiles.ts"]);
+    // The audit log names it too, only to write a correction's entry once its row is there: it reads no column of it.
+    expect(naming(/\bhair_profiles\b/).sort()).toEqual(["src/domain/audit.ts", "src/domain/hair-profiles.ts"]);
   });
 
   it("is reached through it by the routes, the card, the erasure and the export, and by no queue or provider", () => {

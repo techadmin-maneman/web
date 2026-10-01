@@ -21,7 +21,7 @@ import {
   type Remedy,
   type Wave,
 } from "../policy/hair-profile.ts";
-import { auditStatement, type AuditEntry } from "./audit.ts";
+import { auditStatementIfWritten, type AuditEntry } from "./audit.ts";
 import { serviceOf } from "./services.ts";
 
 export interface FitSpec {
@@ -49,22 +49,34 @@ export interface History {
 }
 
 export interface HairProfile {
+  /** The version's own ID, which a write names as the one it started from. */
+  readonly id: string;
   readonly recorded_at: string;
   readonly fit: FitSpec & { readonly product_name: string | null };
   readonly history: History | null;
 }
 
 export interface HairProfileVersion extends HairProfile {
-  readonly id: string;
   readonly recorded_by:
     { readonly kind: "technician"; readonly name: string | null } | { readonly kind: "ops"; readonly staff: string };
   /** The visit it was taken at, its day in India; null for a correction. */
   readonly visit: { readonly id: string; readonly date: string | null; readonly type: VisitType | null } | null;
 }
 
-/** What a write came to: the version recorded, or had been, or the fields it was refused for. */
-export type ProfileWrite =
-  { readonly kind: "recorded"; readonly replayed: boolean } | { readonly kind: "invalid"; readonly fields: string[] };
+/** What the technician's write came to: the version recorded, or had been, or the fields it was refused for. */
+export type VisitWrite =
+  | {
+      readonly kind: "recorded";
+      readonly replayed: boolean;
+      readonly versionId: string;
+      /** It was taken from a version older than the one it has now replaced as the latest. */
+      readonly fromOlder: boolean;
+    }
+  | { readonly kind: "invalid"; readonly fields: string[] };
+
+/** What ops' correction came to: recorded, refused by its fields, or the latest moved on since the form was read. */
+export type Correction =
+  { readonly kind: "recorded" } | { readonly kind: "invalid"; readonly fields: string[] } | { readonly kind: "moved" };
 
 /** The fit spec's columns, in the order the table and the API name them. */
 const FIT_COLUMNS = [
@@ -125,9 +137,10 @@ export async function latestProfile(db: D1Database, personId: string): Promise<H
 }
 
 /**
- * The technician's profile step at a visit. The route answers a replay before it gets here (profileLanded); two sends
- * of one event at once still write one version, which the unique index settles, and the one that lost is answered as
- * a replay.
+ * The technician's profile step at a visit. It lands whatever the latest is, since the technician measured the client
+ * in person; one taken from an older version than the latest says so, for ops to be told. The route answers a replay
+ * before it gets here (profileLanded); two sends of one event at once still write one version, which the unique index
+ * settles, and the one that lost is answered as a replay.
  */
 export async function recordAtVisit(
   db: D1Database,
@@ -138,21 +151,27 @@ export async function recordAtVisit(
     readonly eventId: string;
     readonly fit: FitSpec;
     readonly history: History | null;
+    /** The version the phone's form started from; null where the client had none. */
+    readonly basedOn: string | null;
     readonly now: Date;
   },
-): Promise<ProfileWrite> {
+): Promise<VisitWrite> {
   const fields = await problemsOf(db, input.fit, input.history, input.now);
   if (fields.length > 0) return { kind: "invalid", fields };
 
   const { personId, appointmentId, eventId, technicianId, fit, history, now } = input;
+  const latest = await latestIdOf(db, personId);
+  const id = crypto.randomUUID();
   const recordedBy = { appointmentId, eventId, technicianId };
-  const written = await insertVersion(db, { personId, recordedBy, fit, history, now }).run();
-  return { kind: "recorded", replayed: written.meta.changes === 0 };
+  const written = await insertVersion(db, { id, personId, recordedBy, fit, history, now }).run();
+  const replayed = written.meta.changes === 0;
+  return { kind: "recorded", replayed, versionId: id, fromOlder: !replayed && latest !== input.basedOn };
 }
 
 /**
  * Ops' correction, on the client's page: a new version under the member of staff, audited in the same batch by the
- * client's ID and the version's alone.
+ * client's ID and the version's alone. It is written only while the version the form started from is still the
+ * latest, which the statement itself checks, so a correction never silently replaces one made since.
  */
 export async function correctByOps(
   db: D1Database,
@@ -161,29 +180,38 @@ export async function correctByOps(
     readonly staff: string;
     readonly fit: FitSpec;
     readonly history: History | null;
+    /** The latest version as the form read it; null where the client had none. */
+    readonly basedOn: string | null;
     readonly now: Date;
     readonly audit: Omit<AuditEntry, "action" | "subject" | "detail">;
   },
-): Promise<ProfileWrite> {
+): Promise<Correction> {
   const fields = await problemsOf(db, input.fit, input.history, input.now);
   if (fields.length > 0) return { kind: "invalid", fields };
 
   const id = crypto.randomUUID();
   const { personId, fit, history, now } = input;
-  await db.batch([
-    insertVersion(db, { id, personId, recordedBy: { staff: input.staff }, fit, history, now }),
-    auditStatement(
-      db,
-      {
-        ...input.audit,
-        action: "hair_profile.correct",
-        subject: { kind: "person", id: personId },
-        detail: { version: id },
-      },
-      now,
-    ),
+  const entry = {
+    ...input.audit,
+    action: "hair_profile.correct" as const,
+    subject: { kind: "person", id: personId },
+    detail: { version: id },
+  };
+  const [written] = await db.batch([
+    insertVersion(db, { id, personId, recordedBy: { staff: input.staff }, fit, history, now }, input.basedOn),
+    auditStatementIfWritten(db, entry, now, { table: "hair_profiles", id }),
   ]);
-  return { kind: "recorded", replayed: false };
+  return (written?.meta.changes ?? 0) > 0 ? { kind: "recorded" } : { kind: "moved" };
+}
+
+/** The client's latest version's ID, the person bound to the parameter named. */
+const latestIdQuery = (person: string): string =>
+  `SELECT id FROM hair_profiles WHERE person_id = ${person} ORDER BY created_at DESC, rowid DESC LIMIT 1`;
+
+/** The ID of the client's latest version; null before one is recorded. */
+async function latestIdOf(db: D1Database, personId: string): Promise<string | null> {
+  const row = await db.prepare(latestIdQuery("?1")).bind(personId).first<{ id: string }>();
+  return row?.id ?? null;
 }
 
 /** An erasure's: every version of the person's profile blanked, field by field, the record of who took each kept. */
@@ -233,17 +261,21 @@ type RecordedBy =
   | { readonly appointmentId: string; readonly eventId: string; readonly technicianId: string }
   | { readonly staff: string };
 
-/** A version, written once: a second of the same event at a visit is ignored, for the unique index to settle. */
+/**
+ * A version, written once: a second of the same event at a visit is ignored, for the unique index to settle. Given
+ * `whileLatestIs`, it is written only while that is the client's latest version's ID (null: while they have none).
+ */
 function insertVersion(
   db: D1Database,
   version: {
-    readonly id?: string;
+    readonly id: string;
     readonly personId: string;
     readonly recordedBy: RecordedBy;
     readonly fit: FitSpec;
     readonly history: History | null;
     readonly now: Date;
   },
+  whileLatestIs?: string | null,
 ): D1PreparedStatement {
   const atVisit = "technicianId" in version.recordedBy ? version.recordedBy : null;
   const staff = "staff" in version.recordedBy ? version.recordedBy.staff : null;
@@ -260,7 +292,7 @@ function insertVersion(
     ...HISTORY_COLUMNS,
   ];
   const values = [
-    version.id ?? crypto.randomUUID(),
+    version.id,
     version.personId,
     atVisit?.appointmentId ?? null,
     atVisit?.eventId ?? null,
@@ -273,12 +305,22 @@ function insertVersion(
     history?.skin_and_allergies ?? null,
   ];
   const placeholders = values.map((_, index) => `?${String(index + 1)}`).join(", ");
+  if (whileLatestIs === undefined) {
+    return db
+      .prepare(
+        `INSERT INTO hair_profiles (${columns.join(", ")}) VALUES (${placeholders})
+         ON CONFLICT (appointment_id, event_id) DO NOTHING`,
+      )
+      .bind(...values);
+  }
+  // The person is ?2. IS, unlike =, takes null for null: a client with no version yet.
+  const latest = `?${String(values.length + 1)}`;
   return db
     .prepare(
-      `INSERT INTO hair_profiles (${columns.join(", ")}) VALUES (${placeholders})
-       ON CONFLICT (appointment_id, event_id) DO NOTHING`,
+      `INSERT INTO hair_profiles (${columns.join(", ")})
+       SELECT ${placeholders} WHERE (${latestIdQuery("?2")}) IS ${latest}`,
     )
-    .bind(...values);
+    .bind(...values, whileLatestIs);
 }
 
 function fitOf(row: VersionRow): HairProfile["fit"] {
@@ -312,12 +354,11 @@ function storedHistory(row: VersionRow): History | null {
 }
 
 function profileOf(row: VersionRow): HairProfile {
-  return { recorded_at: row.created_at, fit: fitOf(row), history: storedHistory(row) };
+  return { id: row.id, recorded_at: row.created_at, fit: fitOf(row), history: storedHistory(row) };
 }
 
 function versionOf(row: VersionRow): HairProfileVersion {
   return {
-    id: row.id,
     ...profileOf(row),
     recorded_by:
       row.staff === null

@@ -722,6 +722,8 @@ export const clients = {
     invalid: "Check this field.",
     refused: "Some fields were not accepted. Check the fields marked.",
     failed: "That did not go through. Nothing was saved.",
+    moved:
+      "Nothing was saved: the profile changed while you were correcting it. It is shown as it now stands; correct that.",
     save: "Save as a new version",
     saving: "Saving",
     cancel: "Cancel",

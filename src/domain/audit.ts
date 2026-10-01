@@ -146,7 +146,13 @@ export function auditStatementIfWritten(
   now: Date,
   written: {
     readonly table:
-      "grievances" | "consents" | "referral_attributions" | "stock_movements" | "task_closures" | "no_show_disputes";
+      | "grievances"
+      | "consents"
+      | "referral_attributions"
+      | "stock_movements"
+      | "task_closures"
+      | "no_show_disputes"
+      | "hair_profiles";
     readonly id: string;
   },
 ): D1PreparedStatement {

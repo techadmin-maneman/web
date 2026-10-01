@@ -62,6 +62,26 @@ const versions = () =>
 const consentRows = () =>
   env.DB.prepare("SELECT COUNT(*) AS n FROM consents WHERE person_id = ?1").bind(PERSON).first();
 
+/** The client's latest version's ID, as a card or the client's page read it; null before one. */
+const latestId = async () =>
+  (
+    await env.DB.prepare(
+      "SELECT id FROM hair_profiles WHERE person_id = ?1 ORDER BY created_at DESC, rowid DESC LIMIT 1",
+    )
+      .bind(PERSON)
+      .first<{ id: string }>()
+  )?.id ?? null;
+
+/** A write's body: the profile as it now stands, and the version its form started from, none unless named. */
+const fromPhone = (fit: object, history: object | null, basedOn: string | null = null) => ({
+  fit,
+  history,
+  based_on: basedOn,
+});
+
+/** Ops' correction, from the latest version as the page last read it. */
+const fromOps = async (fit: object, history: object | null) => fromPhone(fit, history, await latestId());
+
 describe("the technician's profile step", () => {
   it("comes before the after photographs at a consultation, and the card offers the products", async () => {
     const job = await working("consultation");
@@ -74,7 +94,7 @@ describe("the technician's profile step", () => {
 
   it("is not a step of a service visit, and its card still carries the latest profile", async () => {
     const job = await consultation();
-    await job.post(PROFILE, { fit: FIT, history: null }, "event-profile-01");
+    await job.post(PROFILE, fromPhone(FIT, null), "event-profile-01");
     await env.DB.prepare("UPDATE appointments SET type = 'service' WHERE id = ?1").bind(JOB).run();
     const serviceCard = await card(job);
     expect(serviceCard.steps).not.toContain("profile");
@@ -84,7 +104,7 @@ describe("the technician's profile step", () => {
   it("records the fit spec and the history as a version keyed to the visit, which the card then reads", async () => {
     const job = await consultation();
     const consentsBefore = await consentRows();
-    const answer = await job.post(PROFILE, { fit: FIT, history: HISTORY }, "event-profile-01");
+    const answer = await job.post(PROFILE, fromPhone(FIT, HISTORY), "event-profile-01");
 
     expect(answer.status).toBe(202);
     expect(await answer.json()).toMatchObject({ event_id: "event-profile-01", replayed: false });
@@ -109,8 +129,8 @@ describe("the technician's profile step", () => {
 
   it("records a replay once, and answers it as the first", async () => {
     const job = await consultation();
-    await job.post(PROFILE, { fit: FIT, history: HISTORY }, "event-profile-01");
-    const replay = await job.post(PROFILE, { fit: { ...FIT, colour: "2" }, history: null }, "event-profile-01");
+    await job.post(PROFILE, fromPhone(FIT, HISTORY), "event-profile-01");
+    const replay = await job.post(PROFILE, fromPhone({ ...FIT, colour: "2" }, null), "event-profile-01");
 
     expect(await replay.json()).toMatchObject({ event_id: "event-profile-01", replayed: true });
     expect((await versions()).results).toHaveLength(1);
@@ -118,8 +138,9 @@ describe("the technician's profile step", () => {
 
   it("keeps each change as a new version, the latest being the profile", async () => {
     const job = await consultation();
-    await job.post(PROFILE, { fit: FIT, history: HISTORY }, "event-profile-01");
-    await job.post(PROFILE, { fit: { ...FIT, colour: "2", grey_percent: 30 }, history: null }, "event-profile-02");
+    await job.post(PROFILE, fromPhone(FIT, HISTORY), "event-profile-01");
+    const second = fromPhone({ ...FIT, colour: "2", grey_percent: 30 }, null, await latestId());
+    await job.post(PROFILE, second, "event-profile-02");
 
     expect((await versions()).results.map((row) => row.colour)).toEqual(["1B", "2"]);
     expect(await card(job)).toMatchObject({ profile: { fit: { colour: "2", grey_percent: 30 }, history: null } });
@@ -128,12 +149,12 @@ describe("the technician's profile step", () => {
   it("takes the fit spec unanswered, field by field", async () => {
     const job = await consultation();
     const blank = Object.fromEntries(Object.keys(FIT).map((field) => [field, null]));
-    expect((await job.post(PROFILE, { fit: blank, history: null }, "event-profile-01")).status).toBe(202);
+    expect((await job.post(PROFILE, fromPhone(blank, null), "event-profile-01")).status).toBe(202);
   });
 
   it("is refused before the job is started, as any step is", async () => {
     const job = await working("consultation");
-    const answer = await job.post(PROFILE, { fit: FIT, history: null }, "event-profile-01");
+    const answer = await job.post(PROFILE, fromPhone(FIT, null), "event-profile-01");
     expect(answer.status).toBe(409);
     expect(await answer.json()).toMatchObject({ error: { code: "out_of_order", fields: ["start"] } });
   });
@@ -141,7 +162,7 @@ describe("the technician's profile step", () => {
   it("is refused for a job ops gave to another technician, and keeps nothing of it", async () => {
     const job = await consultation();
     await env.DB.prepare("UPDATE appointments SET technician_id = ?2 WHERE id = ?1").bind(JOB, SAMEER).run();
-    const answer = await job.post(PROFILE, { fit: FIT, history: HISTORY }, "event-profile-01");
+    const answer = await job.post(PROFILE, fromPhone(FIT, HISTORY), "event-profile-01");
 
     expect(answer.status).toBe(409);
     expect(await answer.json()).toMatchObject({ error: { code: "superseded", fields: ["technician"] } });
@@ -170,7 +191,7 @@ describe("the technician's profile step", () => {
     ],
   ])("refuses %s, naming the field", async (_, body, field) => {
     const job = await consultation();
-    const answer = await job.post(PROFILE, body, "event-profile-01");
+    const answer = await job.post(PROFILE, { ...body, based_on: null }, "event-profile-01");
     expect(answer.status).toBe(400);
     expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: [field] } });
     expect((await versions()).results).toEqual([]);
@@ -192,11 +213,85 @@ describe("the technician's profile step", () => {
 
   it("withholds the profile from a card still locked, as it does the client", async () => {
     const job = await consultation();
-    await job.post(PROFILE, { fit: FIT, history: HISTORY }, "event-profile-01");
+    await job.post(PROFILE, fromPhone(FIT, HISTORY), "event-profile-01");
     await env.DB.prepare("UPDATE appointments SET window_start = '2026-09-25T07:30:00.000Z' WHERE id = ?1")
       .bind(JOB)
       .run();
     expect(await card(job)).toMatchObject({ client: null, profile: null });
+  });
+
+  it("is no step of a job with no client of ours, and a write for one stops nothing behind it", async () => {
+    const job = await consultation();
+    await env.DB.prepare("UPDATE appointments SET person_id = NULL WHERE id = ?1").bind(JOB).run();
+    expect((await card(job)).steps).not.toContain("profile");
+
+    // A phone that queued it before the client was unlinked: answered as taken, so its after photographs follow.
+    const answer = await job.post(PROFILE, fromPhone(FIT, HISTORY), "event-profile-01");
+    expect(answer.status).toBe(202);
+    expect((await versions()).results).toEqual([]);
+    await job.post(`/api/tech/jobs/${JOB}/checklist`, { done: [] }, "event-checklist-01");
+    await job.post(`/api/tech/jobs/${JOB}/consumables`, { items: [] }, "event-consumables-01");
+    const after = await job.post(`/api/tech/jobs/${JOB}/photos`, { phase: "after" }, "event-afterphotos-01");
+    expect(after.status).toBe(202);
+  });
+
+  it("is refused on a visit that takes no profile, as the piece is on one that takes no piece", async () => {
+    const job = await working("service");
+    await job.workTo("checklist");
+    const answer = await job.post(PROFILE, fromPhone(FIT, null), "event-profile-01");
+    expect(answer.status).toBe(400);
+    expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["visit"] } });
+    expect((await versions()).results).toEqual([]);
+  });
+});
+
+// Offline at 13:20 the phone holds version A; ops correct it to B at 13:40; the phone sends at 15:00. The phone's
+// write lands, since the technician measured the client in person, and ops are told; ops' own correction is refused
+// once another version has become the latest, so neither ever replaces a newer one silently.
+describe("a profile written from an older copy", () => {
+  it("from the phone, lands as the latest, and ops are told by the client's ID alone", async () => {
+    const job = await consultation();
+    await job.post(PROFILE, fromPhone(FIT, HISTORY), "event-profile-01");
+    const heldByThePhone = await latestId();
+    await job.opsPost(CONSOLE, await fromOps({ ...FIT, colour: "2" }, HISTORY));
+
+    const answer = await job.post(
+      PROFILE,
+      fromPhone({ ...FIT, colour: "3" }, HISTORY, heldByThePhone),
+      "event-profile-02",
+    );
+    expect(answer.status).toBe(202);
+    expect(await card(job)).toMatchObject({ profile: { fit: { colour: "3" } } });
+    expect(job.deps.alerts).toHaveLength(1);
+    expect(job.deps.alerts[0]).toContain(PERSON);
+    for (const word of [SKIN, "minoxidil", "1B"]) expect(job.deps.alerts[0]).not.toContain(word);
+  });
+
+  it("from the phone, tells ops nothing when it was taken from the latest", async () => {
+    const job = await consultation();
+    await job.post(PROFILE, fromPhone(FIT, HISTORY), "event-profile-01");
+    await job.post(PROFILE, fromPhone({ ...FIT, colour: "2" }, HISTORY, await latestId()), "event-profile-02");
+    expect(job.deps.alerts).toEqual([]);
+  });
+
+  it("from the console, is refused, and writes and audits nothing", async () => {
+    const job = await consultation();
+    await job.post(PROFILE, fromPhone(FIT, HISTORY), "event-profile-01");
+    const readByTheConsole = await latestId();
+    await job.post(PROFILE, fromPhone({ ...FIT, colour: "2" }, HISTORY, readByTheConsole), "event-profile-02");
+
+    const answer = await job.opsPost(CONSOLE, fromPhone({ ...FIT, colour: "4" }, HISTORY, readByTheConsole));
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "superseded" } });
+    expect((await versions()).results.map((row) => row.colour)).toEqual(["1B", "2"]);
+    const audited = await env.DB.prepare("SELECT 1 FROM audit_log WHERE action = 'hair_profile.correct'").first();
+    expect(audited).toBeNull();
+  });
+
+  it("from the console, as a first profile, is refused once the technician has recorded one", async () => {
+    const job = await consultation();
+    await job.post(PROFILE, fromPhone(FIT, HISTORY), "event-profile-01");
+    expect((await job.opsPost(CONSOLE, fromPhone(FIT, null, null))).status).toBe(409);
   });
 });
 
@@ -204,7 +299,7 @@ describe("what never leaves our database", () => {
   it("puts nothing on FSM's queue, and FSM's summary of the visit carries none of it", async () => {
     const job = await consultation();
     const queued = job.fsmQueue.sent.length;
-    await job.post(PROFILE, { fit: FIT, history: HISTORY }, "event-profile-01");
+    await job.post(PROFILE, fromPhone(FIT, HISTORY), "event-profile-01");
 
     expect(job.fsmQueue.sent).toHaveLength(queued);
     const visit = { id: JOB, fsmId: "ap-today", type: "consultation" as const, oneVisit: false, personId: PERSON };
@@ -214,11 +309,8 @@ describe("what never leaves our database", () => {
 
   it("writes none of it to a log line, from the phone or the console", async () => {
     const job = await consultation();
-    await job.post(PROFILE, { fit: FIT, history: HISTORY }, "event-profile-01");
-    await job.opsPost(CONSOLE, {
-      fit: { ...FIT, colour: "2" },
-      history: { ...HISTORY, skin_and_allergies: "Psoriasis" },
-    });
+    await job.post(PROFILE, fromPhone(FIT, HISTORY), "event-profile-01");
+    await job.opsPost(CONSOLE, await fromOps({ ...FIT, colour: "2" }, { ...HISTORY, skin_and_allergies: "Psoriasis" }));
 
     const written = JSON.stringify(logs.lines());
     for (const word of [SKIN, "Psoriasis", "minoxidil"]) expect(written).not.toContain(word);
@@ -228,7 +320,7 @@ describe("what never leaves our database", () => {
 describe("the client's page in the console", () => {
   async function recorded(): Promise<Working> {
     const job = await consultation();
-    await job.post(PROFILE, { fit: FIT, history: HISTORY }, "event-profile-01");
+    await job.post(PROFILE, fromPhone(FIT, HISTORY), "event-profile-01");
     return job;
   }
 
@@ -236,11 +328,12 @@ describe("the client's page in the console", () => {
 
   it("shows the latest profile and every version, with who recorded each and at which visit", async () => {
     const job = await recorded();
+    const id = await latestId();
     expect(await read(job)).toEqual({
-      latest: { recorded_at: NOW.toISOString(), fit: FIT_AS_READ, history: HISTORY },
+      latest: { id, recorded_at: NOW.toISOString(), fit: FIT_AS_READ, history: HISTORY },
       versions: [
         {
-          id: expect.any(String) as unknown,
+          id,
           recorded_at: NOW.toISOString(),
           recorded_by: { kind: "technician", name: "Imran" },
           visit: { id: JOB, date: "2026-09-21", type: "consultation" },
@@ -255,10 +348,10 @@ describe("the client's page in the console", () => {
 
   it("records a correction as a new version under the member of staff, and audits it by its id alone", async () => {
     const job = await recorded();
-    const answer = await job.opsPost(CONSOLE, {
-      fit: { ...FIT, colour: "2" },
-      history: { ...HISTORY, skin_and_allergies: "Psoriasis" },
-    });
+    const answer = await job.opsPost(
+      CONSOLE,
+      await fromOps({ ...FIT, colour: "2" }, { ...HISTORY, skin_and_allergies: "Psoriasis" }),
+    );
 
     expect(answer.status).toBe(200);
     const page = await answer.json<{ latest: unknown; versions: { recorded_by: unknown; visit: unknown }[] }>();
@@ -277,13 +370,13 @@ describe("the client's page in the console", () => {
 
   it("records a first profile where none was taken, its history with it", async () => {
     const job = await working("consultation");
-    const answer = await job.opsPost(CONSOLE, { fit: FIT, history: HISTORY });
+    const answer = await job.opsPost(CONSOLE, await fromOps(FIT, HISTORY));
     expect(await answer.json()).toMatchObject({ latest: { fit: FIT_AS_READ, history: HISTORY }, versions: [{}] });
   });
 
   it("refuses a value off the lists, as the phone's is", async () => {
     const job = await working("consultation");
-    const answer = await job.opsPost(CONSOLE, { fit: { ...FIT, wave: "frizzy" }, history: null });
+    const answer = await job.opsPost(CONSOLE, await fromOps({ ...FIT, wave: "frizzy" }, null));
     expect(await answer.json()).toMatchObject({ error: { fields: ["fit.wave"] } });
   });
 
@@ -291,15 +384,15 @@ describe("the client's page in the console", () => {
     const job = await recorded();
     await eraseByMobile("+919810000001");
     expect((await request(job.ops, CONSOLE)).status).toBe(404);
-    expect((await job.opsPost(CONSOLE, { fit: FIT, history: null })).status).toBe(404);
+    expect((await job.opsPost(CONSOLE, fromPhone(FIT, null))).status).toBe(404);
   });
 });
 
 describe("the client's rights over it", () => {
   it("is blanked by an erasure, every version and every field of it, the record of who took each kept", async () => {
     const job = await consultation();
-    await job.post(PROFILE, { fit: FIT, history: HISTORY }, "event-profile-01");
-    await job.opsPost(CONSOLE, { fit: FIT, history: HISTORY });
+    await job.post(PROFILE, fromPhone(FIT, HISTORY), "event-profile-01");
+    await job.opsPost(CONSOLE, await fromOps(FIT, HISTORY));
     await eraseByMobile("+919810000001");
 
     const rows = await env.DB.prepare("SELECT * FROM hair_profiles ORDER BY created_at, rowid").all();
@@ -314,7 +407,7 @@ describe("the client's rights over it", () => {
 
   it("is in the export a client asks for, the history with it", async () => {
     const job = await consultation();
-    await job.post(PROFILE, { fit: FIT, history: HISTORY }, "event-profile-01");
+    await job.post(PROFILE, fromPhone(FIT, HISTORY), "event-profile-01");
     const cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: PERSON, deviceLabel: null, now: NOW })}`;
     const client = appFor("local", fakeDependencies(), {}, "client");
 

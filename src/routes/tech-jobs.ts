@@ -82,7 +82,8 @@ import { json } from "../http/openapi.ts";
 import { requireTechnicianSession, technicianOf } from "../http/technician-session.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { timeOfUuidV7 } from "../lib/uuidv7.ts";
-import { CARD_STEPS, cardStepsFor, stepsFor, type JobEventKind } from "../policy/in-job-steps.ts";
+import { CARD_STEPS, stepsFor, type JobEventKind } from "../policy/in-job-steps.ts";
+import { takesProfile } from "../policy/hair-profile.ts";
 import { PAYMENT_BADGES } from "../policy/job-visibility.ts";
 import { noShowWaitEnds } from "../policy/no-show.ts";
 import { boundedPhoneTime } from "../policy/phone-clock.ts";
@@ -90,7 +91,7 @@ import { opsInputs } from "../http/ops-inputs.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import { arrivalNotice } from "../domain/visit-messages.ts";
-import { FitSpecSchema, HairProfileSchema, HistorySchema } from "./hair-profile-schemas.ts";
+import { BasedOnSchema, FitSpecSchema, HairProfileSchema, HistorySchema } from "./hair-profile-schemas.ts";
 import { PieceSchema } from "./tech-pieces.ts";
 
 const jobId = z.object({ id: z.uuid() });
@@ -436,7 +437,7 @@ const NoShowSchema = z
   .openapi("NoShowClose");
 
 const ProfileRequestSchema = z
-  .object({ fit: FitSpecSchema, history: z.union([HistorySchema, z.null()]) })
+  .object({ fit: FitSpecSchema, history: z.union([HistorySchema, z.null()]), based_on: BasedOnSchema })
   .strict()
   .openapi("TechnicianProfileRequest", {
     description:
@@ -642,9 +643,14 @@ const profileRoute = createRoute({
   summary: "The client's hair profile, the fit spec and their history, as a new version",
   request: { params: jobId, headers: EventIdSchema, body: { required: true, ...json(ProfileRequestSchema) } },
   responses: {
-    202: { description: "Recorded", ...json(ProfileRecordedSchema) },
+    202: {
+      description:
+        "Recorded; or, for a job with no client of ours, taken and nothing written. One taken from an older version " +
+        "than the latest still lands, and ops are told.",
+      ...json(ProfileRecordedSchema),
+    },
     ...STEP_REFUSALS,
-    404: errorResponse("not_found: no such job, or one with no client of ours to record it for"),
+    400: errorResponse("invalid_request: see error.fields; visit, for a visit that takes no profile"),
   },
 });
 
@@ -704,7 +710,6 @@ export function registerTechJobs(app: App): void {
     return c.json(
       {
         ...job,
-        steps: cardStepsFor(type, job.one_visit),
         checklist: [...checklistOf(sheet, { type, oneVisit: job.one_visit }).items],
         partial_reasons: [...sheet.partialReasons.items],
         consumables: await offeredForJob(c.env.DB, await serviceOfJob(c.env.DB, { id: job.id, type }), job.date),
@@ -898,16 +903,21 @@ export function registerTechJobs(app: App): void {
   });
 
   // A new version of the client's profile, once however often the phone sends it. Like a step it is refused for a
-  // job that changed under the phone, and before the start; unlike one it is no job event, and goes to no queue.
+  // job that changed under the phone, before the start, and on a visit that takes none; unlike one it is no job event,
+  // and goes to no queue. A job with no client of ours has no profile step on its card; a write for one is answered
+  // 202 and writes nothing, so the phone's queue for the job still sends its after photographs and its outcome.
   app.openapi(profileRoute, async (c) => {
     const { technicianId } = technicianOf(c);
     const { requestId, deps } = c.var;
     const job = await namedJob(c, c.req.valid("param").id);
     if (job === null) return c.json(errorBody("not_found", requestId), 404);
-    const { personId } = job;
-    if (personId === null) return c.json(errorBody("not_found", requestId), 404);
     const headers = c.req.valid("header");
     const eventId = headers["x-client-event-id"];
+    const { personId } = job;
+    if (personId === null) {
+      c.var.log.info("profile_without_client", { appointment_id: job.id });
+      return c.json(await profileRecorded(c, job, eventId, false), 202);
+    }
     if (await profileLanded(c.env.DB, job.id, eventId)) {
       return c.json(await profileRecorded(c, job, eventId, true), 202);
     }
@@ -926,8 +936,11 @@ export function registerTechJobs(app: App): void {
     if (!(await kindsLanded(c.env.DB, job.id)).has("start")) {
       return c.json(errorBody("out_of_order", requestId, ["start"]), 409);
     }
+    if (!takesProfile(job.type, job.oneVisit !== null)) {
+      return c.json(errorBody("invalid_request", requestId, ["visit"]), 400);
+    }
 
-    const { fit, history } = c.req.valid("json");
+    const { fit, history, based_on } = c.req.valid("json");
     const written = await recordAtVisit(c.env.DB, {
       personId,
       appointmentId: job.id,
@@ -935,9 +948,11 @@ export function registerTechJobs(app: App): void {
       eventId,
       fit,
       history,
+      basedOn: based_on,
       now: deps.now(),
     });
     if (written.kind === "invalid") return c.json(errorBody("invalid_request", requestId, written.fields), 400);
+    if (written.fromOlder) await tellOfOlderBase(c, personId, written.versionId);
     return c.json(await profileRecorded(c, job, eventId, written.replayed), 202);
   });
 
@@ -1071,6 +1086,20 @@ async function oneVisitPiece(c: Ctx, job: WorkableJob, body: PieceBody): Promise
   if (!offered.some((service) => service.tier === body.product)) return { invalid: ["product"] };
   const fitted = fittedPiece(body);
   return "invalid" in fitted ? fitted : { ...fitted, product: body.product };
+}
+
+/**
+ * A profile the phone took from an older version than the latest, which it has now replaced: ops are told, by the
+ * client's ID and the version's, to compare the two. Never a word of the profile.
+ */
+async function tellOfOlderBase(c: Ctx, personId: string, versionId: string): Promise<void> {
+  await c.var.deps.alertOnce({
+    key: `hair_profile_from_older:${versionId}`,
+    message:
+      `A technician's hair profile for client ${personId} (version ${versionId}) was taken from an older version ` +
+      "than the latest, and is now the latest. Compare it with the version before it, and correct it if need be.",
+    link: `/clients/${personId}/pieces`,
+  });
 }
 
 /** The profile step's answer: the event, whether it had landed before, and where the job stands. */

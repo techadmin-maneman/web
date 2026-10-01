@@ -1097,6 +1097,15 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                /** @description superseded: the latest version is no longer based_on; read the profile again */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         delete?: never;
@@ -5422,6 +5431,11 @@ export interface components {
             }[];
         };
         HairProfile: {
+            /**
+             * Format: uuid
+             * @description The version's own ID, which a write names as based_on.
+             */
+            id: string;
             /** Format: date-time */
             recorded_at: string;
             fit: components["schemas"]["HairFitSpecRead"];
@@ -5511,13 +5525,16 @@ export interface components {
             skin_and_allergies: string | null;
         };
         HairProfileVersion: {
+            /**
+             * Format: uuid
+             * @description The version's own ID, which a write names as based_on.
+             */
+            id: string;
             /** Format: date-time */
             recorded_at: string;
             fit: components["schemas"]["HairFitSpecRead"];
             /** @description Null where none was recorded. */
             history: components["schemas"]["HairHistory"] | null;
-            /** Format: uuid */
-            id: string;
             recorded_by: {
                 /** @enum {string} */
                 kind: "technician";
@@ -5540,6 +5557,8 @@ export interface components {
         HairProfileCorrection: {
             fit: components["schemas"]["HairFitSpec"];
             history: components["schemas"]["HairHistory"] | null;
+            /** @description The id of the version the form started from: the latest as it was read; null where there was none. */
+            based_on: string | null;
         };
         NumberChangeDecision: {
             /** @enum {string} */

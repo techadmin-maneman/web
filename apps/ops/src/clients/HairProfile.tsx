@@ -183,8 +183,11 @@ function notNumbers(draft: Draft): string[] {
   return yearAsked && isNotANumber(draft.year) ? [...figures, "transplant_year"] : figures;
 }
 
-/** The correction as the API takes it; the API checks every list and range, and names any field it refuses. */
-function correctionOf(draft: Draft): HairCorrection {
+/**
+ * The correction as the API takes it, naming the latest version the form was read from; the API checks every list
+ * and range, names any field it refuses, and refuses it whole once another version has become the latest.
+ */
+function correctionOf(draft: Draft, basedOn: string | null): HairCorrection {
   const { codes, figures } = draft;
   const fit = {
     norwood_stage: codeOf(codes.norwood_stage),
@@ -199,10 +202,11 @@ function correctionOf(draft: Draft): HairCorrection {
   const skin = draft.skin.trim();
   const year = draft.remedies.includes("transplant") ? numberOf(draft.year) : null;
   const said = draft.remedies.length > 0 || year !== null || skin !== "";
-  if (!said) return { fit, history: null };
+  if (!said) return { fit, history: null, based_on: basedOn };
   return {
     fit,
     history: { remedies: [...draft.remedies], transplant_year: year, skin_and_allergies: skin === "" ? null : skin },
+    based_on: basedOn,
   };
 }
 
@@ -214,11 +218,14 @@ function CorrectionForm({
   clientId,
   page,
   onSaved,
+  onMoved,
   onCancel,
 }: {
   clientId: string;
   page: ClientHairProfile;
   onSaved: (page: ClientHairProfile) => void;
+  /** Another version became the latest while the form was open: the profile is to be read again. */
+  onMoved: () => void;
   onCancel: () => void;
 }) {
   const [draft, setDraft] = useState<Draft>(() => draftOf(page.latest));
@@ -235,9 +242,13 @@ function CorrectionForm({
         setProblem(copy.refused);
         return;
       }
-      const answer = await api.correctHairProfile(clientId, correctionOf(draft));
+      const answer = await api.correctHairProfile(clientId, correctionOf(draft, page.latest?.id ?? null));
       if (answer.ok) {
         onSaved(answer.body);
+        return;
+      }
+      if (answer.status === 409) {
+        onMoved();
         return;
       }
       const fields = answer.status === 400 ? refusedFields(answer.fields) : [];
@@ -397,6 +408,8 @@ export function HairProfile({ clientId }: { clientId: string }) {
   // What the correction answered, which stands over what was read when the tab opened.
   const [saved, setSaved] = useState<ClientHairProfile | null>(null);
   const [correcting, setCorrecting] = useState(false);
+  // A correction refused because another version became the latest meanwhile: the profile was read again.
+  const [moved, setMoved] = useState(false);
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
@@ -407,6 +420,11 @@ export function HairProfile({ clientId }: { clientId: string }) {
       <h3 className={styles.title} id="hair-profile-title">
         {copy.title}
       </h3>
+      {moved && (
+        <p className={styles.error} role="alert">
+          {copy.moved}
+        </p>
+      )}
       {page.latest === null ? <p className={styles.hint}>{copy.none}</p> : <ProfileRows profile={page.latest} />}
       {correcting ? (
         <CorrectionForm
@@ -415,6 +433,13 @@ export function HairProfile({ clientId }: { clientId: string }) {
           onSaved={(next) => {
             setSaved(next);
             setCorrecting(false);
+            setMoved(false);
+          }}
+          onMoved={() => {
+            setSaved(null);
+            setCorrecting(false);
+            setMoved(true);
+            retry();
           }}
           onCancel={() => {
             setCorrecting(false);

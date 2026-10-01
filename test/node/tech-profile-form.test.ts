@@ -63,14 +63,16 @@ describe("the profile form", () => {
     expect(historyOf({ remedies: ["transplant"], year: "2027", skin: "" }, 2026)).toBeNull();
   });
 
-  it("sends the history with the fit spec, and none where nothing of it was said", () => {
+  it("sends the history with the fit spec, none where nothing of it was said, and the version it started from", () => {
     const fit = fitOf(fitFormOf(null));
     if (fit === null) throw new Error("an empty form is a fit spec");
     const history = { remedies: ["minoxidil" as const], transplant_year: null, skin_and_allergies: "Dry" };
-    expect(bodyOf(fit, history)).toEqual({ fit, history });
-    expect(bodyOf(fit, { remedies: [], transplant_year: null, skin_and_allergies: null })).toEqual({
+    const from = "d0000000-0000-4000-8000-000000000001";
+    expect(bodyOf(fit, history, from)).toEqual({ fit, history, based_on: from });
+    expect(bodyOf(fit, { remedies: [], transplant_year: null, skin_and_allergies: null }, null)).toEqual({
       fit,
       history: null,
+      based_on: null,
     });
   });
 });

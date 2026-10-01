@@ -61,10 +61,13 @@ export const PROFILE_STEP = "profile";
 export const CARD_STEPS = [...JOB_EVENT_KINDS, PROFILE_STEP] as const;
 export type CardStep = (typeof CARD_STEPS)[number];
 
-/** The screens the card runs, in order: the visit type's steps, with the profile just before the after photographs. */
-export function cardStepsFor(type: VisitType, oneVisit = false): (JobStep | typeof PROFILE_STEP)[] {
+/**
+ * The screens the card runs, in order: the visit type's steps, with the profile just before the after photographs. A
+ * job with no client of ours has nobody to keep a profile for, so its card has no profile step.
+ */
+export function cardStepsFor(type: VisitType, oneVisit = false, hasClient = true): (JobStep | typeof PROFILE_STEP)[] {
   const steps: (JobStep | typeof PROFILE_STEP)[] = stepsFor(type, oneVisit);
-  if (!takesProfile(type, oneVisit)) return steps;
+  if (!hasClient || !takesProfile(type, oneVisit)) return steps;
   const afterPhotos = steps.indexOf("after_photos");
   return [...steps.slice(0, afterPhotos), PROFILE_STEP, ...steps.slice(afterPhotos)];
 }

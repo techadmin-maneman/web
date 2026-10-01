@@ -5,7 +5,8 @@
 //   POST /api/clients/:id/hair-profile   ops' correction: a new version under the member of staff
 //
 // The technician records the profile at a visit (POST /api/tech/jobs/:id/profile); ops correct it here. A correction
-// is audited by the client's ID and the version's, never a word of the profile.
+// names the version it started from, and is refused, 409 superseded, once another has become the latest since, so
+// it never silently replaces a newer one. It is audited by the client's ID and the version's, never a word of it.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
@@ -16,7 +17,13 @@ import { liveContact } from "../domain/profile.ts";
 import { allServices } from "../domain/services.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
-import { FitSpecSchema, HairProfileSchema, HairProfileVersionSchema, HistorySchema } from "./hair-profile-schemas.ts";
+import {
+  BasedOnSchema,
+  FitSpecSchema,
+  HairProfileSchema,
+  HairProfileVersionSchema,
+  HistorySchema,
+} from "./hair-profile-schemas.ts";
 
 const clientId = z.object({ id: z.uuid() });
 const unknownClient = errorResponse("not_found: no such client, or the client has been erased");
@@ -33,7 +40,7 @@ const ClientHairProfileSchema = z
   .openapi("ClientHairProfile");
 
 const CorrectionSchema = z
-  .object({ fit: FitSpecSchema, history: z.union([HistorySchema, z.null()]) })
+  .object({ fit: FitSpecSchema, history: z.union([HistorySchema, z.null()]), based_on: BasedOnSchema })
   .strict()
   .openapi("HairProfileCorrection", { description: "The whole profile as it now stands, sent as a new version." });
 
@@ -59,6 +66,7 @@ const correctRoute = createRoute({
     400: errorResponse("invalid_request: see error.fields"),
     403: errorResponse("access_required: no Access token, or a service token, which names no member of staff"),
     404: unknownClient,
+    409: errorResponse("superseded: the latest version is no longer based_on; read the profile again"),
   },
 });
 
@@ -68,7 +76,10 @@ async function pageOf(c: Context<AppEnv>, personId: string): Promise<z.infer<typ
   const latest = versions[0];
   const firstFits = (await allServices(c.env.DB)).filter((service) => service.kind === "first_fit");
   return {
-    latest: latest === undefined ? null : { recorded_at: latest.recorded_at, fit: latest.fit, history: latest.history },
+    latest:
+      latest === undefined
+        ? null
+        : { id: latest.id, recorded_at: latest.recorded_at, fit: latest.fit, history: latest.history },
     versions,
     products: firstFits.map((service) => ({ tier: service.tier, name: service.name })),
   };
@@ -83,7 +94,7 @@ export function registerOpsHairProfile(app: App): void {
 
   app.openapi(correctRoute, async (c) => {
     const { id } = c.req.valid("param");
-    const { fit, history } = c.req.valid("json");
+    const { fit, history, based_on } = c.req.valid("json");
     const { requestId, deps } = c.var;
     const staff = memberOfStaffOf(c);
     if (staff === null) return c.json(errorBody("access_required", requestId), 403);
@@ -94,10 +105,12 @@ export function registerOpsHairProfile(app: App): void {
       staff: staff.id,
       fit,
       history,
+      basedOn: based_on,
       now: deps.now(),
       audit: { surface: "ops", actor: staff, requestId },
     });
     if (written.kind === "invalid") return c.json(errorBody("invalid_request", requestId, written.fields), 400);
+    if (written.kind === "moved") return c.json(errorBody("superseded", requestId), 409);
     return c.json(await pageOf(c, id), 200);
   });
 }

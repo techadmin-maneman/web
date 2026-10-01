@@ -462,14 +462,6 @@
   flex-direction: column;
 }
 
-/* The consent's words, shown to the client as the API records them. */
-.noticeLine {
-  margin: 0 0 var(--sp-12);
-  font-size: var(--fs-17);
-  line-height: var(--lh-155);
-  color: var(--paper);
-}
-
 /* ---- Board B4: the close-out ----------------------------------------------- */
 
 .close {

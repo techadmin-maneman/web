@@ -2350,6 +2350,11 @@
       "HairProfile": {
         "type": "object",
         "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The version's own ID, which a write names as based_on."
+          },
           "recorded_at": {
             "type": "string",
             "format": "date-time"
@@ -2370,6 +2375,7 @@
           }
         },
         "required": [
+          "id",
           "recorded_at",
           "fit",
           "history"
@@ -2834,6 +2840,11 @@
       "HairProfileVersion": {
         "type": "object",
         "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The version's own ID, which a write names as based_on."
+          },
           "recorded_at": {
             "type": "string",
             "format": "date-time"
@@ -2851,10 +2862,6 @@
               }
             ],
             "description": "Null where none was recorded."
-          },
-          "id": {
-            "type": "string",
-            "format": "uuid"
           },
           "recorded_by": {
             "oneOf": [
@@ -2960,10 +2967,10 @@
           }
         },
         "required": [
+          "id",
           "recorded_at",
           "fit",
           "history",
-          "id",
           "recorded_by",
           "visit"
         ],
@@ -2984,11 +2991,24 @@
                 "type": "null"
               }
             ]
+          },
+          "based_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The id of the version the form started from: the latest as it was read; null where there was none."
           }
         },
         "required": [
           "fit",
-          "history"
+          "history",
+          "based_on"
         ],
         "additionalProperties": false,
         "description": "The whole profile as it now stands, sent as a new version."
@@ -8160,6 +8180,16 @@
           },
           "404": {
             "description": "not_found: no such client, or the client has been erased",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "superseded: the latest version is no longer based_on; read the profile again",
             "content": {
               "application/json": {
                 "schema": {

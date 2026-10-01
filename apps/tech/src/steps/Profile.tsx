@@ -68,11 +68,18 @@ function productOptions(job: Job, latest: HairProfile | null): Option<string>[] 
   return [...offered, { id: kept, label: latest?.fit.product_name ?? kept }];
 }
 
-/** Where the form starts: what the API refused, being put right, else the client's profile as it stands. */
-function startingPoint(job: Job, refused: Queued | null): { fit: FitSpec | null; history: History | null } {
+/**
+ * Where the form starts: what the API refused, being put right, else the client's profile as the card holds it. The
+ * version it started from goes with the write.
+ */
+function startingPoint(
+  job: Job,
+  refused: Queued | null,
+): { fit: FitSpec | null; history: History | null; basedOn: string | null } {
   const sent = (refused?.body ?? null) as ProfileRequest | null;
-  if (sent !== null) return { fit: sent.fit, history: sent.history };
-  return { fit: job.profile?.fit ?? null, history: job.profile?.history ?? null };
+  if (sent !== null) return { fit: sent.fit, history: sent.history, basedOn: sent.based_on };
+  const latest = job.profile;
+  return { fit: latest?.fit ?? null, history: latest?.history ?? null, basedOn: latest?.id ?? null };
 }
 
 /** A list of choices under its title, one tap each. */
@@ -364,7 +371,7 @@ function ProfileForm({
         setPage("fit");
       }}
       onAction={() => {
-        if (spec !== null && said !== null) onFinish(bodyOf(spec, said));
+        if (spec !== null && said !== null) onFinish(bodyOf(spec, said, start.basedOn));
       }}
     >
       <HistoryFields form={history} thisYear={thisYear} onChange={setHistory} />

@@ -157,8 +157,11 @@ export function historyOf(form: HistoryForm, thisYear: number): History | null {
   return { remedies: [...form.remedies], transplant_year: year, skin_and_allergies: skin === "" ? null : skin };
 }
 
-/** The whole body: the fit spec, and the history, as none where nothing of it was said. */
-export function bodyOf(fit: FitSpec, history: History): ProfileRequest {
+/**
+ * The whole body: the fit spec, the history, as none where nothing of it was said, and the version the form started
+ * from, so ops hear of one taken from a copy older than the latest.
+ */
+export function bodyOf(fit: FitSpec, history: History, basedOn: string | null): ProfileRequest {
   const said = history.remedies.length > 0 || history.transplant_year !== null || history.skin_and_allergies !== null;
-  return { fit, history: said ? history : null };
+  return { fit, history: said ? history : null, based_on: basedOn };
 }
