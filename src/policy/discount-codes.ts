@@ -94,7 +94,7 @@ export interface CodeBooking {
 /**
  * Why a code does not apply to a booking; null when it does. Whoever entered it is told only that it does not apply
  * (docs/decisions/0108-discount-codes.md); the reason is logged. A code is for a visit sold: a move is not one, so
- * neither its late fee nor the visit a late move books in its place takes a code (ADR 0025, item 101).
+ * neither its late fee nor the visit a late move books in its place takes a code (a default taken for the owner to confirm, ADR 0108).
  */
 export type CodeRefusal = "switched_off" | "expired" | "not_covered" | "used_up" | "used_by_client" | "credit" | "move";
 

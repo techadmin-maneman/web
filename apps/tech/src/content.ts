@@ -474,8 +474,8 @@ export const oneVisit = {
   linkSent: "Link texted to the client",
   linkPaid: "Paid",
   /**
-   * PLACEHOLDER: a discount code the client gives the technician before the link goes (docs/decisions/0108-discount-codes.md;
-   * docs/open-points.md, item 180). It comes off the product's price in the link; no amount is shown here.
+   * PLACEHOLDER: a discount code the client gives the technician before the link goes (docs/decisions/0108-discount-codes.md).
+   * It comes off the product's price in the link; no amount is shown here.
    */
   code: {
     label: "Discount code, if the client has one",

@@ -299,17 +299,11 @@ The owner's ruling D2 of 1 October 2026 ([0103](0103-the-home-pages-first-copy-r
 
 ## Discount codes, 1 October 2026
 
-The owner asked on 1 October 2026 "to allow for discount codes to be generated and used before invoicing", and answered each question in turn. Built the same day ([0108](0108-discount-codes.md)); what the answers left open was taken as below, for the owner to confirm (`docs/open-points.md`, items 180 to 182).
-
-100. **Discount codes.** Nothing in the briefs offered a discount but a referral's credits. **Ruled 1 October 2026 by the owner**, one question at a time, and quoted by `src/policy/discount-codes.ts`:
+100. **Discount codes.** **Ruled 1 October 2026 by the owner**, asked "to allow for discount codes to be generated and used before invoicing", and quoted by `src/policy/discount-codes.ts`; built in [0108](0108-discount-codes.md), which lists the defaults taken for the owner to confirm:
      - % or rupees, per code: a percentage, with an optional rupee cap, or a fixed rupee amount, taken off before GST, so the invoice shows the discounted price.
      - Ops choose per code what it covers: the first fit (the one-visit consultation and fit included), service visits, replacements, or any of them.
      - Client, technician or ops enter it: the client where they pay or book, the technician before sending the pay-at-visit link, ops on a booking in the console; always before the invoice is made.
      - Ops set limits per code: an expiry date, total uses (one, many or unlimited), once per client; one code per booking; never on a visit a referral credit pays for; ops can switch a code off at any time, and its uses stay on record.
-
-     **Built 1 October 2026** ([0108](0108-discount-codes.md)): codes made in Settings · Discount codes, one or a batch of single-use codes; entered at the app's pay step before Checkout has its order, on `/book` with the one visit, by the technician before the one visit's payment link, and by ops on a visit not yet paid for, linked or invoiced; the Checkout order, the link, the payment and the invoice carry the discounted price, the invoice by Books' line discount before tax; a wrong code is told only that it does not apply, and every check is counted.
-
-101. **What the rulings left open.** **Taken 1 October 2026, for the owner to confirm** ([0108](0108-discount-codes.md); open point 182): a move takes no code, neither its late fee nor the visit a late move books; a code on a booking stays once entered, however the code is changed after; ops enter no code on a visit already paid for, and refund through the existing path instead; the invite's page takes no code, though an invited friend may give one at the app's pay step or to the technician, the rulings excluding only a visit a credit pays for; a booking cancelled keeps its use until ops take it off; a code ops type keeps to the letters and digits none reads as another, so no I, L, O, 0 or 1; and a one visit the client declines gives its code back.
 
 ## Inputs still owed
 

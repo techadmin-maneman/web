@@ -124,9 +124,8 @@ export const referral = {
     },
     /**
      * Not drawn: a discount code for the consultation and fit in one visit, on /book only, as the owner ruled on
-     * 1 October 2026 (docs/decisions/0108-discount-codes.md). Placeholder words for the owner to approve (open point
-     * 180), not marked, since the mark refuses the site's production build (ADR 0081). A code that does not apply is
-     * told only that.
+     * 1 October 2026 (docs/decisions/0108-discount-codes.md). Placeholder words for the owner to approve, not marked,
+     * since the mark refuses the site's production build (ADR 0081). A code that does not apply is told only that.
      */
     code: {
       label: "Discount code (optional)",
@@ -259,7 +258,7 @@ export const referral = {
     other: "Something went wrong at our end. Please try again.",
     // Not drawn: the number already has a consultation to come (ADR 0025, item 41). The owner approves the words (open point 45).
     alreadyBooked: "This number already has a consultation, {when}. To change it, message us on WhatsApp.",
-    // Not drawn: the discount code given does not apply, whatever the reason (ADR 0108). The owner approves the words (open point 180).
+    // Not drawn: the discount code given does not apply, whatever the reason (ADR 0108). The owner approves the words.
     codeNotApplicable: "That discount code does not apply. Check it, or leave it out to book without it.",
   },
   /**

@@ -423,8 +423,8 @@ export const booking = {
       switchIt: "You can switch it off in Profile.",
     },
     /**
-     * PLACEHOLDER, every line: no board draws a discount code (docs/decisions/0108-discount-codes.md;
-     * docs/open-points.md, item 180). A code that does not apply is told only that, whatever the reason.
+     * PLACEHOLDER, every line: no board draws a discount code (docs/decisions/0108-discount-codes.md).
+     * A code that does not apply is told only that, whatever the reason.
      */
     code: {
       open: "Have a discount code?",

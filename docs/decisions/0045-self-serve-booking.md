@@ -1,6 +1,6 @@
 # 0045. Self-serve booking and prepayment
 
-- Status: accepted; moving and cancelling in ADR 0046; a paid hold kept, and FSM written once, in ADR 0068; no hold without an address, in ADR 0079; amended 1 October 2026 by [0105](0105-a-consultation-and-fit-in-one-visit.md): a consultation and fit in one visit, booked from the site, is not prepaid but paid for at the visit, by a payment link once the client is fitted; amended 1 October 2026 by [0108](0108-discount-codes.md): a discount code entered at the pay step, before Checkout has its order, prices the hold again
+- Status: accepted; moving and cancelling in ADR 0046; a paid hold kept, and FSM written once, in ADR 0068; no hold without an address, in ADR 0079; amended 1 October 2026 by [0105](0105-a-consultation-and-fit-in-one-visit.md): a consultation and fit in one visit, booked from the site, is not prepaid but paid for at the visit, by a payment link once the client is fitted
 - Date: 2026-09-22
 
 ## Context

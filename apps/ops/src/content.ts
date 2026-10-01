@@ -462,8 +462,8 @@ export const clients = {
     past: "Done",
     columns: ["Date", "Time", "Visit", "Technician", "State", "Discount code"],
     /**
-     * PLACEHOLDER: a discount code on a visit, which no board draws (docs/decisions/0108-discount-codes.md;
-     * docs/open-points.md, item 180). Entered or taken off only while the visit is not paid for or invoiced.
+     * PLACEHOLDER: a discount code on a visit, which no board draws (docs/decisions/0108-discount-codes.md).
+     * Entered or taken off only while the visit is not paid for or invoiced.
      */
     code: {
       none: "None",
@@ -1557,8 +1557,8 @@ export const settings = {
     "job-sheet": "Job sheet",
   },
   /**
-   * PLACEHOLDER, every line of it: no board draws discount codes (docs/decisions/0108-discount-codes.md;
-   * docs/open-points.md, item 180). What a code takes off is shown before it is made, as a price is set
+   * PLACEHOLDER, every line of it: no board draws discount codes (docs/decisions/0108-discount-codes.md).
+   * What a code takes off is shown before it is made, as a price is set
    * (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
    */
   discountCodes: {
