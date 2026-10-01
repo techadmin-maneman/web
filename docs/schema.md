@@ -1054,7 +1054,7 @@ Made by `0014_payments.sql`.
 
 A person who came through an invite, to the first invite they used, what became of its grant, and who attached it and why where ops did (ADR 0048, ADR 0089).
 
-Made by `0021_referrals.sql`; changed by `0037_cron_indexes.sql`, `0044_hand_offs_and_messages.sql`, `0051_invites_ops_attach.sql`, `0060_flat_task_reads.sql`.
+Made by `0021_referrals.sql`; changed by `0037_cron_indexes.sql`, `0044_hand_offs_and_messages.sql`, `0051_invites_ops_attach.sql`, `0060_flat_task_reads.sql`, `0061_referral_reward_kept.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1076,6 +1076,9 @@ Made by `0021_referrals.sql`; changed by `0037_cron_indexes.sql`, `0044_hand_off
 | `friend_first_name` | TEXT | yes |  |  |
 | `attached_by` | TEXT | yes |  |  |
 | `attach_reason` | TEXT | yes |  |  |
+| `referrer_visits` | INTEGER | yes |  |  |
+| `friend_visits` | INTEGER | yes |  |  |
+| `credit_valid_days` | INTEGER | yes |  |  |
 
 Indexes:
 

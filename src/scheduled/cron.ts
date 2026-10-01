@@ -161,8 +161,8 @@ async function utilisationJob({ env, deps, log }: CronContext): Promise<void> {
   if (date !== null) log.info("dispatch_utilisation_recorded", { date });
 }
 
-async function referralsJob({ env, deps, log }: CronContext): Promise<void> {
-  const messages = await referralPass(env.DB, deps.now(), log);
+async function referralsJob({ env, deps, log, inputs }: CronContext): Promise<void> {
+  const messages = await referralPass(env.DB, deps.now(), log, (await inputs()).referralReward);
   await queueMessages(env.MESSAGE_QUEUE, messages, "referrals");
 }
 

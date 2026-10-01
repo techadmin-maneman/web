@@ -707,6 +707,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/referral-reward": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What a referral earns now, as ops set it. Cacheable for a minute. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The reward */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ReferralReward"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tryon/upload-url": {
         parameters: {
             query?: never;
@@ -1617,10 +1653,10 @@ export interface components {
             /** @enum {string} */
             window: "morning" | "afternoon" | "evening";
             area: string;
-            /** @description Whether the invite's 3 service visits apply. */
+            /** @description Whether the invite's service visits apply. */
             credits: boolean;
             /**
-             * @description valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown: no invite came with it, or a code we do not have.
+             * @description valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the invite's visits do not apply; or unknown: no invite came with it, or a code we do not have.
              * @enum {string}
              */
             invite: "valid" | "expired" | "unknown";
@@ -1675,10 +1711,10 @@ export interface components {
         };
         Waitlist: {
             area: string | null;
-            /** @description Whether the invite's 3 service visits apply. */
+            /** @description Whether the invite's service visits apply. */
             credits: boolean;
             /**
-             * @description valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown: no invite came with it, or a code we do not have.
+             * @description valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the invite's visits do not apply; or unknown: no invite came with it, or a code we do not have.
              * @enum {string}
              */
             invite: "valid" | "expired" | "unknown";
@@ -1713,10 +1749,10 @@ export interface components {
             /** @enum {string} */
             window: "morning" | "afternoon" | "evening";
             area: string;
-            /** @description Whether the invite's 3 service visits apply. */
+            /** @description Whether the invite's service visits apply. */
             credits: boolean;
             /**
-             * @description valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown: no invite came with it, or a code we do not have.
+             * @description valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the invite's visits do not apply; or unknown: no invite came with it, or a code we do not have.
              * @enum {string}
              */
             invite: "valid" | "expired" | "unknown";
@@ -1730,13 +1766,22 @@ export interface components {
         };
         ReferralWaitlist: {
             area: string | null;
-            /** @description Whether the invite's 3 service visits apply. */
+            /** @description Whether the invite's service visits apply. */
             credits: boolean;
             /**
-             * @description valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown: no invite came with it, or a code we do not have.
+             * @description valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the invite's visits do not apply; or unknown: no invite came with it, or a code we do not have.
              * @enum {string}
              */
             invite: "valid" | "expired" | "unknown";
+        };
+        /** @description What each side is given when a friend's first fit is done, as it stands now. A grant is given what is in force when the friend is fitted, and keeps it. */
+        ReferralReward: {
+            /** @description The free service visits the client who sent the invite gets; 0 for none. */
+            referrer_visits: number;
+            /** @description The free service visits the friend they invited gets; 0 for none. */
+            friend_visits: number;
+            /** @description How many days the credits last from the grant. */
+            valid_days: number;
         };
         UploadUrlResponse: {
             /** Format: uuid */

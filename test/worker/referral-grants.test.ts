@@ -15,7 +15,18 @@ import {
 import { erasePerson } from "../../src/domain/erasure.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { createLogger } from "../../src/log.ts";
-import { appFor, captureLogs, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
+import { REFERRAL_REWARD, type ReferralReward } from "../../src/policy/referral-reward.ts";
+import { CRON_JOBS, runCronJobs } from "../../src/scheduled/cron.ts";
+import {
+  appFor,
+  captureLogs,
+  fakeDependencies,
+  fakeQueue,
+  LOCAL_CONFIG,
+  markDatabase,
+  NOW,
+  request,
+} from "./helpers.ts";
 
 const REFERRER = "11111111-1111-4111-8111-111111111111";
 const FRIEND = "22222222-2222-4222-8222-222222222222";
@@ -84,9 +95,9 @@ const messagesWritten = async () =>
 describe("the grant", () => {
   // The referrer was told and the friend, whose credits they also were, never was (LIFE-10).
   it("gives both sides 3 service visits once the friend's first fit is done, and tells them both", async () => {
-    expect(await settleReferrals(env.DB, NOW)).toMatchObject({ granted: 0 });
+    expect(await settleReferrals(env.DB, NOW, REFERRAL_REWARD)).toMatchObject({ granted: 0 });
     await firstFit(FIT, FRIEND);
-    const settled = await settleReferrals(env.DB, NOW);
+    const settled = await settleReferrals(env.DB, NOW, REFERRAL_REWARD);
     expect(settled).toMatchObject({ granted: 1, held: 0, expired: 0 });
     expect(settled.messageIds).toHaveLength(2);
     expect(await state()).toEqual({ grant_state: "granted", fraud_signals: null });
@@ -105,20 +116,20 @@ describe("the grant", () => {
         "Thank you for the introduction.",
     );
 
-    expect(await settleReferrals(env.DB, NOW)).toMatchObject({ granted: 0 });
+    expect(await settleReferrals(env.DB, NOW, REFERRAL_REWARD)).toMatchObject({ granted: 0 });
     expect((await creditBalance(env.DB, FRIEND, NOW)).visits).toBe(3);
   });
 
   it("waits while the first fit is only partly done", async () => {
     await firstFit(FIT, FRIEND, "partial");
-    expect(await settleReferrals(env.DB, NOW)).toMatchObject({ granted: 0, held: 0 });
+    expect(await settleReferrals(env.DB, NOW, REFERRAL_REWARD)).toMatchObject({ granted: 0, held: 0 });
     expect((await state())?.grant_state).toBe("pending");
   });
 
   it("credits and tells only the friend when the referrer has since been erased", async () => {
     await firstFit(FIT, FRIEND);
     await env.DB.prepare("UPDATE people SET erased_at = ?1 WHERE id = ?2").bind(NOW.toISOString(), REFERRER).run();
-    const settled = await settleReferrals(env.DB, NOW);
+    const settled = await settleReferrals(env.DB, NOW, REFERRAL_REWARD);
     expect(settled).toMatchObject({ granted: 1 });
     expect(settled.messageIds).toHaveLength(1);
     expect(await messagesWritten()).toEqual([{ person_id: FRIEND, kind: "friend_credited", subject_id: ATTRIBUTION }]);
@@ -133,8 +144,159 @@ describe("the grant", () => {
     ).run();
     await attribution(ATTRIBUTION, FRIEND, "waitlist", "400050");
     await firstFit(FIT, FRIEND);
-    expect(await settleReferrals(env.DB, NOW)).toMatchObject({ granted: 0, expired: 1 });
+    expect(await settleReferrals(env.DB, NOW, REFERRAL_REWARD)).toMatchObject({ granted: 0, expired: 1 });
     expect((await state())?.grant_state).toBe("expired");
+  });
+});
+
+/** What ops set in Settings · Rules, as the console writes it. */
+async function rewardSet(reward: ReferralReward) {
+  await env.DB.prepare(
+    "INSERT OR REPLACE INTO ops_settings (name, value, set_by, set_at) VALUES ('referral_reward', ?1, 'ops@localhost', ?2)",
+  )
+    .bind(JSON.stringify(reward), NOW.toISOString())
+    .run();
+}
+
+/** The five-minute cron's referral pass, which reads what ops set as it runs. */
+async function referralsRun(now = NOW) {
+  const queue = fakeQueue();
+  await runCronJobs(
+    CRON_JOBS.filter((job) => job.name === "referrals"),
+    {
+      env: { ...env, MESSAGE_QUEUE: queue },
+      deps: fakeDependencies({ now: () => now }),
+      config: LOCAL_CONFIG,
+      log: createLogger(),
+    },
+  );
+  return queue.sent;
+}
+
+const grantsOf = async (personId: string) =>
+  (
+    await env.DB.prepare(
+      "SELECT visits, expires_at FROM credit_ledger WHERE person_id = ?1 AND kind = 'grant' ORDER BY created_at",
+    )
+      .bind(personId)
+      .all()
+  ).results;
+
+const toldReferrer = async () => {
+  const composed = await composeFriendFitted(env.DB, ATTRIBUTION, REFERRER);
+  return "skip" in composed ? composed : renderMessage(composed.template, composed.params);
+};
+
+// The owner's ruling of 1 October 2026: ops set each side's visits and how long they last
+// (docs/decisions/0107-referral-rewards-in-the-console.md).
+describe("what a referral earns, as ops set it", () => {
+  it("gives each side what is set when the friend is fitted, for as long as is set, and says so", async () => {
+    // The invite was booked under the committed reward; what counts is what is set when the friend is fitted.
+    await rewardSet({ referrer_visits: 2, friend_visits: 4, valid_days: 90 });
+    await firstFit(FIT, FRIEND);
+    expect(await referralsRun()).toHaveLength(2);
+    // 90 days on, to the end of that day in India.
+    const expiry = "2026-12-20T18:29:59.999Z";
+    expect(await grantsOf(REFERRER)).toEqual([{ visits: 2, expires_at: expiry }]);
+    expect(await grantsOf(FRIEND)).toEqual([{ visits: 4, expires_at: expiry }]);
+    expect(await toldReferrer()).toBe(
+      "Hello Rohit, Karan has been fitted. You have 2 service visits free, until 20 Dec 2026, and Karan has 4 " +
+        "service visits. Thank you for the introduction.",
+    );
+    await visitsConsent(FRIEND);
+    expect(await told("friend_credited", FRIEND)).toBe(
+      "Hello Karan, your first fit is done, so the invite you came with gives you 4 service visits free, until " +
+        "20 Dec 2026. Your balance is in the app.",
+    );
+  });
+
+  it("leaves what was given as it was when ops change it, and gives the next friend the new figures", async () => {
+    await firstFit(FIT, FRIEND);
+    await referralsRun();
+    await rewardSet({ referrer_visits: 1, friend_visits: 1, valid_days: 30 });
+    expect(await grantsOf(FRIEND)).toEqual([{ visits: 3, expires_at: "2027-09-21T18:29:59.999Z" }]);
+    expect(await toldReferrer()).toBe(
+      "Hello Rohit, Karan has been fitted. You each have 3 service visits free, until 21 Sep 2027. " +
+        "Thank you for the introduction.",
+    );
+
+    const next = "55555555-5555-4555-8555-555555555555";
+    await person(next, "Vikram Sethi", "+919810000003");
+    await attribution("66666666-6666-4666-8666-666666666666", next);
+    await firstFit("77777777-7777-4777-8777-777777777777", next);
+    await referralsRun();
+    expect(await grantsOf(next)).toEqual([{ visits: 1, expires_at: "2026-10-21T18:29:59.999Z" }]);
+    expect((await creditBalance(env.DB, REFERRER, NOW)).visits).toBe(4);
+  });
+
+  it("gives a side set to nothing no credits, and tells the friend nothing they were not given", async () => {
+    await rewardSet({ referrer_visits: 3, friend_visits: 0, valid_days: 365 });
+    await firstFit(FIT, FRIEND);
+    await referralsRun();
+    expect(await grantsOf(FRIEND)).toEqual([]);
+    expect(await messagesWritten()).toEqual([{ person_id: REFERRER, kind: "friend_fitted", subject_id: ATTRIBUTION }]);
+    expect(await toldReferrer()).toBe(
+      "Hello Rohit, Karan has been fitted. You have 3 service visits free, until 21 Sep 2027. Thank you for the introduction.",
+    );
+  });
+
+  it("still thanks a referrer set to nothing, as the referrer is always told of the fit", async () => {
+    await rewardSet({ referrer_visits: 0, friend_visits: 1, valid_days: 365 });
+    await firstFit(FIT, FRIEND);
+    await referralsRun();
+    expect(await grantsOf(REFERRER)).toEqual([]);
+    expect(await grantsOf(FRIEND)).toEqual([{ visits: 1, expires_at: "2027-09-21T18:29:59.999Z" }]);
+    expect(await toldReferrer()).toBe("Hello Rohit, Karan has been fitted. Thank you for the introduction.");
+    await visitsConsent(FRIEND);
+    expect(await told("friend_credited", FRIEND)).toBe(
+      "Hello Karan, your first fit is done, so the invite you came with gives you 1 service visit free, until " +
+        "21 Sep 2027. Your balance is in the app.",
+    );
+  });
+
+  describe("a grant held for review", () => {
+    const ops = () => appFor("local", fakeDependencies(), {}, "ops");
+    const decide = (decision: "approve" | "reject") =>
+      request(
+        ops(),
+        `/api/referrals/${ATTRIBUTION}/decision`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Origin: "https://maneman.test" },
+          body: JSON.stringify({ decision, reason: "Checked with both" }),
+        },
+        { MESSAGE_QUEUE: fakeQueue() },
+      );
+
+    async function heldUnder(reward: ReferralReward) {
+      await rewardSet(reward);
+      // The referrer once changed to the friend's number: the same-mobile rule holds the grant.
+      await env.DB.prepare(
+        `INSERT INTO number_change_requests (id, person_id, created_at, new_mobile_e164, state, decided_at)
+         VALUES ('change-1', ?1, ?2, '+919810000002', 'confirmed', ?2)`,
+      )
+        .bind(REFERRER, NOW.toISOString())
+        .run();
+      await firstFit(FIT, FRIEND);
+      await referralsRun();
+      expect((await state())?.grant_state).toBe("held");
+    }
+
+    it("is given what was set when the friend was fitted, not what is set when ops approve it", async () => {
+      await heldUnder({ referrer_visits: 2, friend_visits: 5, valid_days: 60 });
+      await rewardSet({ referrer_visits: 6, friend_visits: 6, valid_days: 365 });
+      expect((await decide("approve")).status).toBe(200);
+      expect(await grantsOf(REFERRER)).toEqual([{ visits: 2, expires_at: "2026-11-20T18:29:59.999Z" }]);
+      expect(await grantsOf(FRIEND)).toEqual([{ visits: 5, expires_at: "2026-11-20T18:29:59.999Z" }]);
+    });
+
+    it("is refused to only a side it would have given visits", async () => {
+      await heldUnder({ referrer_visits: 0, friend_visits: 3, valid_days: 365 });
+      expect((await decide("reject")).status).toBe(200);
+      expect(await messagesWritten()).toEqual([
+        { person_id: FRIEND, kind: "referral_rejected", subject_id: ATTRIBUTION },
+      ]);
+    });
   });
 });
 
@@ -156,7 +318,7 @@ describe("fraud holds", () => {
         .run();
     }
     await firstFit(FIT, FRIEND);
-    expect(await settleReferrals(env.DB, NOW)).toMatchObject({ granted: 0, held: 1, messageIds: [] });
+    expect(await settleReferrals(env.DB, NOW, REFERRAL_REWARD)).toMatchObject({ granted: 0, held: 1, messageIds: [] });
     expect(await state()).toEqual({ grant_state: "held", fraud_signals: '["shared_address","shared_upi"]' });
     expect((await creditBalance(env.DB, FRIEND, NOW)).visits).toBe(0);
   });
@@ -171,12 +333,12 @@ describe("fraud holds", () => {
     }
     // Five fits this month: all granted, since none passes the cap of 5 (the friend's own is still waiting).
     await env.DB.prepare("UPDATE referral_attributions SET grant_state = 'held' WHERE id = ?1").bind(ATTRIBUTION).run();
-    expect(await settleReferrals(env.DB, NOW)).toMatchObject({ granted: 5, held: 0 });
+    expect(await settleReferrals(env.DB, NOW, REFERRAL_REWARD)).toMatchObject({ granted: 5, held: 0 });
     await env.DB.prepare("UPDATE referral_attributions SET grant_state = 'pending' WHERE id = ?1")
       .bind(ATTRIBUTION)
       .run();
     await firstFit(FIT, FRIEND);
-    expect(await settleReferrals(env.DB, NOW)).toMatchObject({ granted: 0, held: 1 });
+    expect(await settleReferrals(env.DB, NOW, REFERRAL_REWARD)).toMatchObject({ granted: 0, held: 1 });
     expect(await state()).toEqual({ grant_state: "held", fraud_signals: '["monthly_cap"]' });
   });
 
@@ -189,7 +351,7 @@ describe("fraud holds", () => {
       .bind(REFERRER, NOW.toISOString())
       .run();
     await firstFit(FIT, FRIEND);
-    expect(await settleReferrals(env.DB, NOW)).toMatchObject({ held: 1 });
+    expect(await settleReferrals(env.DB, NOW, REFERRAL_REWARD)).toMatchObject({ held: 1 });
     expect(await state()).toEqual({ grant_state: "held", fraud_signals: '["same_mobile"]' });
   });
 
@@ -204,7 +366,7 @@ describe("fraud holds", () => {
       env.DB.prepare("UPDATE people SET mobile_e164 = '+919810000009' WHERE id = ?1").bind(FRIEND),
     ]);
     await firstFit(FIT, FRIEND);
-    expect(await settleReferrals(env.DB, NOW)).toMatchObject({ held: 1 });
+    expect(await settleReferrals(env.DB, NOW, REFERRAL_REWARD)).toMatchObject({ held: 1 });
     expect(await state()).toEqual({ grant_state: "held", fraud_signals: '["same_mobile"]' });
   });
 
@@ -221,7 +383,7 @@ describe("fraud holds", () => {
         .run();
     }
     await firstFit(FIT, FRIEND);
-    expect(await settleReferrals(env.DB, NOW)).toMatchObject({ granted: 1, held: 0 });
+    expect(await settleReferrals(env.DB, NOW, REFERRAL_REWARD)).toMatchObject({ granted: 1, held: 0 });
   });
 });
 
@@ -229,7 +391,7 @@ describe("a friend with two first fits done (BIZ-13)", () => {
   it("settles the referral once, and tells each of them once", async () => {
     await firstFit(FIT, FRIEND);
     await firstFit("fit-second-0000-4000-8000-000000000000", FRIEND, "done", "2026-09-21T03:30:00.000Z");
-    const settled = await settleReferrals(env.DB, NOW);
+    const settled = await settleReferrals(env.DB, NOW, REFERRAL_REWARD);
     expect(settled).toMatchObject({ granted: 1 });
     expect(settled.messageIds).toHaveLength(2);
     const told = await env.DB.prepare(
@@ -371,40 +533,57 @@ describe("the referrer's tracker, after the friend is erased", () => {
 
   it("names the friend until they are erased, then nobody, rather than writing Erased", async () => {
     await firstFit(FIT, FRIEND);
-    await settleReferrals(env.DB, NOW);
-    expect(await tracker()).toEqual([{ first_name: "Karan", month: "2026-09" }]);
+    await settleReferrals(env.DB, NOW, REFERRAL_REWARD);
+    expect(await tracker()).toEqual([{ first_name: "Karan", month: "2026-09", visits: 3 }]);
 
     await erasePerson(env, FRIEND, NOW, createLogger());
 
     // An erasure keeps no name of theirs, not even on another client's page (open point 63, for counsel).
-    expect(await tracker()).toEqual([{ first_name: null, month: "2026-09" }]);
+    expect(await tracker()).toEqual([{ first_name: null, month: "2026-09", visits: 3 }]);
   });
 
   it("names nobody for a friend erased before names were kept, rather than writing Erased", async () => {
     await firstFit(FIT, FRIEND);
-    await settleReferrals(env.DB, NOW);
+    await settleReferrals(env.DB, NOW, REFERRAL_REWARD);
     await env.DB.prepare("UPDATE referral_attributions SET friend_first_name = NULL").run();
     await erasePerson(env, FRIEND, NOW, createLogger());
 
-    expect(await tracker()).toEqual([{ first_name: null, month: "2026-09" }]);
+    expect(await tracker()).toEqual([{ first_name: null, month: "2026-09", visits: 3 }]);
+  });
+
+  // The tracker typed 3 beside every friend, whatever the grant gave (docs/decisions/0107-referral-rewards-in-the-console.md).
+  it("says beside each friend what the referrer was given for them, and nothing where it gave none", async () => {
+    await rewardSet({ referrer_visits: 2, friend_visits: 3, valid_days: 365 });
+    await firstFit(FIT, FRIEND);
+    await referralsRun();
+    const next = "55555555-5555-4555-8555-555555555555";
+    await person(next, "Vikram Sethi", "+919810000003");
+    await attribution("66666666-6666-4666-8666-666666666666", next);
+    await firstFit("77777777-7777-4777-8777-777777777777", next, "done", "2026-09-21T03:30:00.000Z");
+    await rewardSet({ referrer_visits: 0, friend_visits: 3, valid_days: 365 });
+    await referralsRun();
+    expect(await tracker()).toEqual([
+      { first_name: "Vikram", month: "2026-09", visits: 0 },
+      { first_name: "Karan", month: "2026-09", visits: 2 },
+    ]);
   });
 });
 
 describe("what the friend is told (LIFE-10)", () => {
   it("that the invite's credits are theirs, without naming who invited them", async () => {
     await firstFit(FIT, FRIEND);
-    await settleReferrals(env.DB, NOW);
+    await settleReferrals(env.DB, NOW, REFERRAL_REWARD);
     await visitsConsent(FRIEND);
     expect(await told("friend_credited", FRIEND)).toBe(
       "Hello Karan, your first fit is done, so the invite you came with gives you 3 service visits free, until " +
-        "21 Sep 2027. They are in the app.",
+        "21 Sep 2027. Your balance is in the app.",
     );
   });
 
   // The landing's consultation line is consent to WhatsApp about visits; the credits are service visits.
   it("nothing, without their consent to WhatsApp about visits", async () => {
     await firstFit(FIT, FRIEND);
-    await settleReferrals(env.DB, NOW);
+    await settleReferrals(env.DB, NOW, REFERRAL_REWARD);
     expect(await told("friend_credited", FRIEND)).toEqual({ skip: "no consent to WhatsApp about visits" });
     await visitsConsent(FRIEND);
     await env.DB.prepare("UPDATE referral_attributions SET grant_state = 'rejected'").run();
@@ -447,7 +626,7 @@ describe("credits after the grant", () => {
 
   it("are taken back when the friend's first fit is refunded in full under the guarantee", async () => {
     await firstFit(FIT, FRIEND);
-    await settleReferrals(env.DB, NOW);
+    await settleReferrals(env.DB, NOW, REFERRAL_REWARD);
     await env.DB.prepare(
       `INSERT INTO payments (id, person_id, appointment_id, razorpay_payment_id, amount, currency, status,
          refunded_amount, created_at, updated_at)

@@ -685,6 +685,18 @@ Request body:
 }
 ```
 
+### GET /api/referral-reward
+
+What a referral earns now, as ops set it. Cacheable for a minute.
+
+**200**: The reward
+
+```json
+{
+  "$ref": "#/components/schemas/ReferralReward"
+}
+```
+
 ### POST /api/tryon/upload-url
 
 Record the photo consent and get a link to upload one photo
@@ -1457,7 +1469,7 @@ Razorpay's webhook: payments and refunds
     },
     "credits": {
       "type": "boolean",
-      "description": "Whether the invite's 3 service visits apply."
+      "description": "Whether the invite's service visits apply."
     },
     "invite": {
       "type": "string",
@@ -1466,7 +1478,7 @@ Razorpay's webhook: payments and refunds
         "expired",
         "unknown"
       ],
-      "description": "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown: no invite came with it, or a code we do not have."
+      "description": "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the invite's visits do not apply; or unknown: no invite came with it, or a code we do not have."
     },
     "address": {
       "type": "string",
@@ -1771,7 +1783,7 @@ Razorpay's webhook: payments and refunds
     },
     "credits": {
       "type": "boolean",
-      "description": "Whether the invite's 3 service visits apply."
+      "description": "Whether the invite's service visits apply."
     },
     "invite": {
       "type": "string",
@@ -1780,7 +1792,7 @@ Razorpay's webhook: payments and refunds
         "expired",
         "unknown"
       ],
-      "description": "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown: no invite came with it, or a code we do not have."
+      "description": "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the invite's visits do not apply; or unknown: no invite came with it, or a code we do not have."
     }
   },
   "required": [
@@ -1922,7 +1934,7 @@ Razorpay's webhook: payments and refunds
     },
     "credits": {
       "type": "boolean",
-      "description": "Whether the invite's 3 service visits apply."
+      "description": "Whether the invite's service visits apply."
     },
     "invite": {
       "type": "string",
@@ -1931,7 +1943,7 @@ Razorpay's webhook: payments and refunds
         "expired",
         "unknown"
       ],
-      "description": "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown: no invite came with it, or a code we do not have."
+      "description": "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the invite's visits do not apply; or unknown: no invite came with it, or a code we do not have."
     },
     "address": {
       "type": "string",
@@ -1978,7 +1990,7 @@ Razorpay's webhook: payments and refunds
     },
     "credits": {
       "type": "boolean",
-      "description": "Whether the invite's 3 service visits apply."
+      "description": "Whether the invite's service visits apply."
     },
     "invite": {
       "type": "string",
@@ -1987,7 +1999,7 @@ Razorpay's webhook: payments and refunds
         "expired",
         "unknown"
       ],
-      "description": "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown: no invite came with it, or a code we do not have."
+      "description": "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the invite's visits do not apply; or unknown: no invite came with it, or a code we do not have."
     }
   },
   "required": [
@@ -1996,6 +2008,35 @@ Razorpay's webhook: payments and refunds
     "invite"
   ],
   "additionalProperties": false
+}
+```
+
+### ReferralReward
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "referrer_visits": {
+      "type": "integer",
+      "description": "The free service visits the client who sent the invite gets; 0 for none."
+    },
+    "friend_visits": {
+      "type": "integer",
+      "description": "The free service visits the friend they invited gets; 0 for none."
+    },
+    "valid_days": {
+      "type": "integer",
+      "description": "How many days the credits last from the grant."
+    }
+  },
+  "required": [
+    "referrer_visits",
+    "friend_visits",
+    "valid_days"
+  ],
+  "additionalProperties": false,
+  "description": "What each side is given when a friend's first fit is done, as it stands now. A grant is given what is in force when the friend is fitted, and keeps it."
 }
 ```
 

@@ -287,6 +287,14 @@ The owner's answers to open points 60 and 71 are built ([0096](0096-a-no-shows-c
     - **The words the screens need, which v2 does not draw**, are ours until the owner's second round (item 163).
     - **The client app's try-on is unchanged**: a client still sees their own try-on behind their login (items 63 and 65).
 
+## What a referral earns, 1 October 2026
+
+89. **Each side's visits, and how long they last, set in the console.** The prompt's rule gave the referrer and the referred 3 service-visit credits each, expiring 365 days after the grant, and the code held both figures, the app a copy of the 3, and about a dozen sentences typed it. The owner asked "how are referrals configured? Is it a hard coded number? If so, make it editable in ops dashboard", and of the rewards, "for both the referree and the referred", and chose "Each side's visits + validity": Ops set, in the console, the referrer's free service visits and the referred friend's free service visits separately, and how long the credits last. **Built 1 October 2026** ([0107](0107-referral-rewards-in-the-console.md)): `referral_reward` in Settings · Rules, 3, 3 and 365 days to begin with, each side 0 to 12 visits and the credits 30 to 1,095 days, and every sentence on the site, in the app and in the WhatsApp texts reads the figures. **Taken 1 October 2026, for the owner to confirm:**
+    - **The reward is the one in force when the friend is fitted**, not when the invite was sent or the consultation booked: the coordinator's default. A grant held for review is given the one in force when it was held, whenever ops approve it, and credits already given keep their visits and their date.
+    - **A side set to 0 is given nothing, and told nothing of visits.** The friend's page then promises the friend none, and the friend is sent no message of credits and no rejection; a referrer given nothing is still told their friend was fitted, and thanked.
+    - **The words for unequal sides and for 0** ("Get fitted and you get 2 service visits free. Your friend gets 3.") are ours until the owner words them (`docs/open-points.md`, item 165).
+    - **The figure is the referral's alone.** Visits ops give by hand and the back-filled log of before January keep 365 days.
+
 ## Inputs still owed
 
 The inputs each milestone needs are listed in the Phase 2 plan and in the provisioning table of `docs/prompts/phase2-backend.md`; what is still owed before production is `docs/open-points.md`. The FSM trial's findings are written up in `docs/decisions/fsm-trial.md`. The licence for our own apps was ruled by the owner on 23 September 2026, so P2-M4 went ahead (`docs/decisions/fsm-licensing.md`); Zoho's written answer is still wanted for the file (`docs/open-points.md`, item 30). (Corrected 27 September 2026: this said both were pending. Migration 0026's header still says P2-M4 waits on the licence; an applied migration is never edited, so `docs/migrations.md` records the correction.)

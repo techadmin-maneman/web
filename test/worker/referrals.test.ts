@@ -164,6 +164,34 @@ describe("GET /api/r/:code", () => {
   });
 });
 
+// The owner's ruling of 1 October 2026 (docs/decisions/0107-referral-rewards-in-the-console.md): the site's words
+// and the app's read what ops set, never a figure of their own.
+describe("what a referral earns, for the pages that say it", () => {
+  const unequal = { referrer_visits: 2, friend_visits: 0, valid_days: 90 };
+  const setReward = () =>
+    env.DB.prepare(
+      "INSERT INTO ops_settings (name, value, set_by, set_at) VALUES ('referral_reward', ?1, 'ops@localhost', ?2)",
+    )
+      .bind(JSON.stringify(unequal), NOW.toISOString())
+      .run();
+
+  it("is answered on the site's host as ops set it, the committed figures until they do, kept a minute", async () => {
+    const answer = await request(site(), "/api/referral-reward");
+    expect(answer.headers.get("Cache-Control")).toBe("public, max-age=60");
+    expect(await answer.json()).toEqual({ referrer_visits: 3, friend_visits: 3, valid_days: 365 });
+    await setReward();
+    expect(await (await request(site(), "/api/referral-reward")).json()).toEqual(unequal);
+    expect((await request(client(), "/api/referral-reward")).status).toBe(404);
+  });
+
+  it("reaches the app with the Home card, for a lead's Refer tab as for a fitted client's", async () => {
+    await setReward();
+    const cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: REFERRER, deviceLabel: null, now: NOW })}`;
+    const me = await (await request(client(), "/api/me", { headers: { Cookie: cookie } })).json();
+    expect(me).toMatchObject({ state: "nothing_booked", referral_reward: unequal });
+  });
+});
+
 describe("GET /api/pincodes/:pin", () => {
   it("says whether we come there, and refuses what is not an Indian pincode", async () => {
     await pincode("122018", "Gurgaon South City II", true);

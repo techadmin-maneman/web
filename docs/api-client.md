@@ -2218,6 +2218,9 @@ Request body:
         "next"
       ],
       "additionalProperties": false
+    },
+    "referral_reward": {
+      "$ref": "#/components/schemas/ReferralReward"
     }
   },
   "required": [
@@ -2230,7 +2233,8 @@ Request body:
     "being_booked",
     "credits",
     "prompt",
-    "booking"
+    "booking",
+    "referral_reward"
   ],
   "additionalProperties": false
 }
@@ -2470,6 +2474,35 @@ Request body:
   ],
   "additionalProperties": false,
   "description": "Its price tomorrow, the first day it can be booked."
+}
+```
+
+### ReferralReward
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "referrer_visits": {
+      "type": "integer",
+      "description": "The free service visits the client who sent the invite gets; 0 for none."
+    },
+    "friend_visits": {
+      "type": "integer",
+      "description": "The free service visits the friend they invited gets; 0 for none."
+    },
+    "valid_days": {
+      "type": "integer",
+      "description": "How many days the credits last from the grant."
+    }
+  },
+  "required": [
+    "referrer_visits",
+    "friend_visits",
+    "valid_days"
+  ],
+  "additionalProperties": false,
+  "description": "What a referral earns now, as ops set it: the Refer tab's promise, for a lead as for a fitted client, and the invite's preview say it (docs/decisions/0107-referral-rewards-in-the-console.md)."
 }
 ```
 
@@ -5327,11 +5360,16 @@ Request body:
           "month": {
             "type": "string",
             "description": "YYYY-MM, in India."
+          },
+          "visits": {
+            "type": "integer",
+            "description": "The service visits the client was given for this friend: what a referral earned when the friend was fitted, 0 where it gave the referrer none (docs/decisions/0107-referral-rewards-in-the-console.md)."
           }
         },
         "required": [
           "first_name",
-          "month"
+          "month",
+          "visits"
         ]
       },
       "description": "Friends whose first fit closed as done, most recent first."
