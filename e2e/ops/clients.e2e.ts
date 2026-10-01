@@ -236,6 +236,20 @@ test.describe("the client's hair profile", () => {
     await expect(page.getByRole("group", { name: "Health history" })).toHaveCount(0);
   });
 
+  test("sends nothing while a figure is no number at all, and marks it", async ({ page }) => {
+    let sent = 0;
+    page.on("request", (request) => {
+      if (request.method() === "POST" && request.url().endsWith("/hair-profile")) sent += 1;
+    });
+    await openClient(page, `/clients/${CLIENT.id}/pieces`, { [READ_HAIR_PROFILE]: json(HAIR_PROFILE) });
+    await section(page).getByRole("button", { name: "Correct the profile" }).click();
+    await page.getByRole("textbox", { name: "Grey, %" }).fill("twenty");
+    await page.getByRole("button", { name: "Save as a new version" }).click();
+    await expect(page.getByRole("textbox", { name: "Grey, %" })).toHaveAttribute("aria-invalid", "true");
+    await expect(page.getByRole("alert")).toHaveText("Some fields were not accepted. Check the fields marked.");
+    expect(sent).toBe(0);
+  });
+
   test("marks the field the API refused", async ({ page }) => {
     await openClient(page, `/clients/${CLIENT.id}/pieces`, {
       [READ_HAIR_PROFILE]: json(HAIR_PROFILE),

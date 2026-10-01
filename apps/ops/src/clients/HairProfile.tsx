@@ -172,9 +172,18 @@ function draftOf(latest: HairProfileView | null): Draft {
   };
 }
 
-/** A figure as typed: nothing is null, and what is not a number is sent as one so the API names the field. */
+/** A figure as typed: nothing is null. One that is not a number at all is caught before it is sent (notNumbers). */
 const numberOf = (text: string): number | null => (text.trim() === "" ? null : Number(text.trim()));
 const codeOf = (text: string): string | null => (text === "" ? null : text);
+
+const isNotANumber = (text: string): boolean => text.trim() !== "" && !Number.isFinite(Number(text.trim()));
+
+/** The figures typed that are no number, which JSON would send as nothing; the API checks the ranges of the rest. */
+function notNumbers(draft: Draft): string[] {
+  const figures: string[] = FIGURES.filter((field) => isNotANumber(draft.figures[field]));
+  const yearAsked = draft.remedies.includes("transplant");
+  return yearAsked && isNotANumber(draft.year) ? [...figures, "transplant_year"] : figures;
+}
 
 /** The correction as the API takes it; the API checks every list and range, and names any field it refuses. */
 function correctionOf(draft: Draft, withHistory: boolean): HairCorrection {
@@ -222,6 +231,12 @@ function CorrectionForm({
 
   const save = () =>
     once(async () => {
+      const typedWrong = notNumbers(draft);
+      if (typedWrong.length > 0) {
+        setRefused(typedWrong);
+        setProblem(copy.refused);
+        return;
+      }
       const answer = await api.correctHairProfile(clientId, correctionOf(draft, withHistory));
       if (answer.ok) {
         onSaved(answer.body);

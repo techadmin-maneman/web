@@ -380,7 +380,8 @@ function ProfileForm({
   const [page, setPage] = useState<Page>("fit");
   const [fit, setFit] = useState<FitForm>(() => fitFormOf(start.fit));
   const [answer, setAnswer] = useState<Answer | null>(onFile ? "agrees" : null);
-  const [history, setHistory] = useState<HistoryForm>(() => historyFormOf(onFile ? start.history : null));
+  // Shown only once the client has agreed, so it may start from what was recorded or refused before.
+  const [history, setHistory] = useState<HistoryForm>(() => historyFormOf(start.history));
   const [withdrawn, setWithdrawn] = useState(false);
 
   const spec = fitOf(fit);
