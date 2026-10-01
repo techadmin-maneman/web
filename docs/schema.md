@@ -588,7 +588,7 @@ Indexes:
 
 Every version of a client's hair profile, the fit spec and the history: the technician's at a visit, once for each of the phone's events, and ops' corrections. Never changed, only blanked (ADR 0106).
 
-Made by `0063_hair_profiles.sql`.
+Made by `0064_hair_profiles.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |

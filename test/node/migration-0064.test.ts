@@ -1,4 +1,4 @@
-// Migration 0063: a client's hair profile (docs/decisions/0106-a-clients-hair-profile.md), applied to a database that
+// Migration 0064: a client's hair profile (docs/decisions/0106-a-clients-hair-profile.md), applied to a database that
 // already holds a client, a visit and a technician, as staging's does. Every name and number is made up.
 
 import { readdirSync, readFileSync } from "node:fs";
@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 const MIGRATIONS = readdirSync("migrations")
   .filter((file) => file.endsWith(".sql"))
   .sort();
-const THIS = MIGRATIONS.find((file) => file.startsWith("0063_")) ?? "";
+const THIS = MIGRATIONS.find((file) => file.startsWith("0064_")) ?? "";
 
 const AT = "2026-10-01T06:30:00.000Z";
 
@@ -49,7 +49,7 @@ function version(db: DatabaseSync, id: string, eventId: string | null = "event-1
   ).run(id, eventId, AT);
 }
 
-describe("migration 0063", () => {
+describe("migration 0064", () => {
   it("keeps a version of the profile once for each of the phone's events at a visit", () => {
     const db = migrated();
     version(db, "v1");

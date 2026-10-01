@@ -1,4 +1,4 @@
--- Migration number: 0063
+-- Migration number: 0064
 --
 -- A client's hair profile (docs/decisions/0106-a-clients-hair-profile.md): the
 -- fit spec a piece is made to, and the history of what they have tried, by the

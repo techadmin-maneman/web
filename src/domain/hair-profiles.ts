@@ -3,7 +3,7 @@
 //
 // A version is the whole profile as it stood when it was recorded: the phone and the console each start from the
 // latest and send it back whole, so the latest version is the profile, and a replacement is ordered to it. None is
-// ever changed; an erasure blanks every one (migration 0063 holds the table to that).
+// ever changed; an erasure blanks every one (migration 0064 holds the table to that).
 //
 // The history is health information, recorded with the fit spec as the owner ruled. This file and the export are all
 // that read it; nothing here logs it, audits it or hands it to a queue, so it never reaches Zoho CRM, FSM or Books.
