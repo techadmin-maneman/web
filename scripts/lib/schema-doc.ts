@@ -74,7 +74,7 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "Every move ops make on the dispatch board: from where to where, by whom, why, what FSM said, and whether the client was told (ADR 0069).",
   events: "What happened, for analysis, with no personal data in its payload.",
   first_fit_requests:
-    "A first fit asked for on the site's form with the consultation, for the app to offer once the consultation is done; a person's latest stands (ADR 0086).",
+    "A first fit asked for on the site's form with the consultation, for the app to offer once the consultation is done; a person's latest stands (ADR 0086). The form asks for none since 1 October 2026 (ADR 0105).",
   fsm_items:
     "FSM's catalogue, to read each appointment's visit type from its service item and to compare FSM's prices with the price book (ADR 0032, ADR 0073).",
   grievances: "A client's grievance, and the answer ops recorded (ADR 0049, ADR 0078).",
@@ -99,6 +99,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   partial_reasons:
     "The reasons a job may be left partly done, as ops set them, one they took off kept as retired; none means the committed list (ADR 0087).",
   outbound_messages: "Each WhatsApp message, from queued to sent, delivered and read (ADR 0041).",
+  payment_links:
+    "The Razorpay payment link a consultation and fit in one visit is paid by once the client is fitted: one a visit, the product and its price, when Razorpay made and texted it, and the payment that paid it (ADR 0105).",
   payments: "The mirror of Razorpay's payments, and where each stands in Books (ADR 0044).",
   people:
     "One row per person, keyed by mobile number. D1 owns the identity; the CRM's ID is only a reference (ADR 0011).",

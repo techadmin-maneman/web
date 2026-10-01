@@ -30,7 +30,7 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [deployment_identity](#deployment_identity): Which environment's database this is, so a Worker refuses to serve on another's (ADR 0003).
 - [dispatch_moves](#dispatch_moves): Every move ops make on the dispatch board: from where to where, by whom, why, what FSM said, and whether the client was told (ADR 0069).
 - [events](#events): What happened, for analysis, with no personal data in its payload.
-- [first_fit_requests](#first_fit_requests): A first fit asked for on the site's form with the consultation, for the app to offer once the consultation is done; a person's latest stands (ADR 0086).
+- [first_fit_requests](#first_fit_requests): A first fit asked for on the site's form with the consultation, for the app to offer once the consultation is done; a person's latest stands (ADR 0086). The form asks for none since 1 October 2026 (ADR 0105).
 - [fsm_items](#fsm_items): FSM's catalogue, to read each appointment's visit type from its service item and to compare FSM's prices with the price book (ADR 0032, ADR 0073).
 - [grievances](#grievances): A client's grievance, and the answer ops recorded (ADR 0049, ADR 0078).
 - [idempotency](#idempotency): The stored answer to each `Idempotency-Key`, so a request sent again gets its first answer (ADR 0011).
@@ -45,7 +45,7 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [otp_challenges](#otp_challenges): Each one-time code sent, as a hash, with its sends and attempts (ADR 0030, ADR 0052).
 - [outbound_messages](#outbound_messages): Each WhatsApp message, from queued to sent, delivered and read (ADR 0041).
 - [partial_reasons](#partial_reasons): The reasons a job may be left partly done, as ops set them, one they took off kept as retired; none means the committed list (ADR 0087).
-- [payment_links](#payment_links): 
+- [payment_links](#payment_links): The Razorpay payment link a consultation and fit in one visit is paid by once the client is fitted: one a visit, the product and its price, when Razorpay made and texted it, and the payment that paid it (ADR 0105).
 - [payments](#payments): The mirror of Razorpay's payments, and where each stands in Books (ADR 0044).
 - [people](#people): One row per person, keyed by mobile number. D1 owns the identity; the CRM's ID is only a reference (ADR 0011).
 - [photo_sets](#photo_sets): A visit's set of photographs, before or after (ADR 0028).
@@ -529,7 +529,7 @@ Indexes:
 
 ## first_fit_requests
 
-A first fit asked for on the site's form with the consultation, for the app to offer once the consultation is done; a person's latest stands (ADR 0086).
+A first fit asked for on the site's form with the consultation, for the app to offer once the consultation is done; a person's latest stands (ADR 0086). The form asks for none since 1 October 2026 (ADR 0105).
 
 Made by `0047_first_fit_requests.sql`; changed by `0056_task_owners.sql`.
 
@@ -875,7 +875,7 @@ Made by `0049_consumables_and_stock.sql`.
 
 ## payment_links
 
-
+The Razorpay payment link a consultation and fit in one visit is paid by once the client is fitted: one a visit, the product and its price, when Razorpay made and texted it, and the payment that paid it (ADR 0105).
 
 Made by `0061_one_visit.sql`.
 
