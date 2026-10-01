@@ -244,6 +244,17 @@
   margin-top: var(--sp-16);
 }
 
+/* A one visit's choice of product, which no board draws: the outcome's choices, inside the piece's field (ADR 0105). */
+.choiceList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-12);
+}
+
+.choiceList + .note {
+  padding: var(--sp-16) 0 0;
+}
+
 /* The label's field, drawn where the board draws "Scan the piece": 64 px, the whole of it the input, edged in paper. */
 .scan {
   display: flex;

@@ -76,16 +76,18 @@ describe("job visibility", () => {
 
   it(RULES[2], () => {
     // Board A1's Free on a visit that costs nothing is a badge too (ADR 0025, item 33).
-    expect([...PAYMENT_BADGES]).toEqual(["prepaid", "credit", "free"]);
+    expect([...PAYMENT_BADGES]).toEqual(["prepaid", "credit", "free", "at_visit"]);
     // No answer to a technician carries an amount: test/worker/field-operations.test.ts reads the API's own.
   });
 
   it("badges a visit a credit paid for as Credit, one that costs nothing as Free, and any other as Prepaid", () => {
-    expect(paymentBadge({ onCredit: true, free: false })).toBe("credit");
+    expect(paymentBadge({ onCredit: true, free: false, oneVisit: false })).toBe("credit");
     // A credit is named even on a day the visit would have been free.
-    expect(paymentBadge({ onCredit: true, free: true })).toBe("credit");
-    expect(paymentBadge({ onCredit: false, free: true })).toBe("free");
-    expect(paymentBadge({ onCredit: false, free: false })).toBe("prepaid");
+    expect(paymentBadge({ onCredit: true, free: true, oneVisit: false })).toBe("credit");
+    expect(paymentBadge({ onCredit: false, free: true, oneVisit: false })).toBe("free");
+    expect(paymentBadge({ onCredit: false, free: false, oneVisit: false })).toBe("prepaid");
+    // A consultation and fit in one visit is paid for at it, which no board draws (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+    expect(paymentBadge({ onCredit: false, free: false, oneVisit: true })).toBe("at_visit");
   });
 });
 

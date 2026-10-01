@@ -382,3 +382,56 @@ test("a step the API refused can be corrected where it stands in the queue, not 
   await page.goto("/waiting");
   await expect(page.getByText("Everything has reached us.")).toBeVisible();
 });
+
+// A consultation and fit in one visit, which no board draws: the client chooses the product with the technician at
+// the piece step, or decides against the fit (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+test.describe("the piece of a consultation and fit in one visit", () => {
+  async function onTheChoice(page: Page): Promise<Fake> {
+    const fake = await fakeTech(page);
+    fake.type = "first_fit";
+    fake.oneVisit = true;
+    startedThrough(fake, "before_photos", "checklist", "consumables");
+    await page.goto(`/jobs/${JOB_ID}/piece`);
+    await expect(page.getByRole("heading", { level: 1, name: "The piece" })).toBeVisible();
+    return fake;
+  }
+
+  test("asks the client's choice first, by name, and sends the product with the piece fitted", async ({ page }) => {
+    const fake = await onTheChoice(page);
+    await expect(
+      page.getByRole("button", { name: "Choose the product, or that the client decided against it" }),
+    ).toBeDisabled();
+    expect((await wcag(page)).violations).toEqual([]);
+
+    await page.getByRole("button", { name: "Mane Man Natural" }).click();
+    await expect(page.getByRole("button", { name: "Mane Man Natural" })).toHaveAttribute("aria-pressed", "true");
+    await page.getByRole("textbox", { name: "The new piece's label" }).fill("MM-NAT-5120-A");
+    await page.getByRole("button", { name: "Next" }).click();
+
+    await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
+    expect(writesTo(fake, "piece")[0]?.body).toEqual({ piece_code: "MM-NAT-5120-A", product: "natural" });
+  });
+
+  test("records that the client decided against it, and asks for no label", async ({ page }) => {
+    const fake = await onTheChoice(page);
+    await page.getByRole("button", { name: "Decided against it" }).click();
+    await expect(
+      page.getByText("Nothing is fitted. Closing as done ends the visit as a consultation, with nothing to pay."),
+    ).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "The new piece's label" })).toHaveCount(0);
+    expect((await wcag(page)).violations).toEqual([]);
+    await page.getByRole("button", { name: "Next" }).click();
+
+    await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
+    expect(writesTo(fake, "piece")[0]?.body).toEqual({ declined: true });
+  });
+
+  test("names the job a consultation and fit, paid for once fitted", async ({ page }) => {
+    const fake = await fakeTech(page);
+    fake.type = "first_fit";
+    fake.oneVisit = true;
+    await page.goto(`/jobs/${JOB_ID}`);
+    await expect(page.getByText(/consultation and fit/)).toBeVisible();
+    await expect(page.getByText("Pays once fitted")).toBeVisible();
+  });
+});

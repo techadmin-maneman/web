@@ -79,7 +79,9 @@ export async function syncAppointment(db: D1Database, fsm: FsmProvider, fsmId: s
         // first_seen_at is the first sync's alone, so an update leaves it. The tier is the hold's that booked the
         // visit, where one did, else its item's. A time FSM holds that the mirror did not is a move made in FSM,
         // by ops, since our own moves write the mirror as they write FSM: the client's notice goes on counting
-        // from the time before it (ADR 0096).
+        // from the time before it (ADR 0096). A one visit stays on the first fit's item in FSM whatever the client
+        // decided, so it keeps the product they were fitted with, and one they declined stays a consultation
+        // (ADR 0105).
         `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, tier, window_start, window_end,
            technician_id, status, fsm_status, service_city, service_pincode, fsm_modified_at, synced_at, first_seen_at)
          VALUES (?1, ?2, ?3, ?4, ?5,
@@ -87,8 +89,9 @@ export async function syncAppointment(db: D1Database, fsm: FsmProvider, fsmId: s
              ORDER BY h.created_at LIMIT 1), ?15),
            ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?14)
          ON CONFLICT (fsm_id) DO UPDATE SET
-           fsm_work_order_id = excluded.fsm_work_order_id, person_id = excluded.person_id, type = excluded.type,
-           tier = excluded.tier,
+           fsm_work_order_id = excluded.fsm_work_order_id, person_id = excluded.person_id,
+           type = iif(appointments.one_visit = 'declined', appointments.type, excluded.type),
+           tier = iif(appointments.one_visit IN ('fitted', 'declined'), appointments.tier, excluded.tier),
            start_before_move = iif(julianday(excluded.window_start) <> julianday(appointments.window_start),
              COALESCE(appointments.start_before_move, appointments.window_start), appointments.start_before_move),
            window_start = excluded.window_start, window_end = excluded.window_end,

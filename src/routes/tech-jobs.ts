@@ -12,8 +12,10 @@
 //   POST /api/tech/jobs/:id/photos               the set is complete: attach it to FSM
 //   POST /api/tech/jobs/:id/checklist            the service checklist
 //   POST /api/tech/jobs/:id/consumables          what was used, with quantities
-//   POST /api/tech/jobs/:id/piece                the piece fitted, or the one that failed
-//   POST /api/tech/jobs/:id/outcome              done, or partial with a reason
+//   POST /api/tech/jobs/:id/piece                the piece fitted, or the one that failed; on a one visit, the
+//                                                product chosen with it, or that the client decided against it
+//   POST /api/tech/jobs/:id/outcome              done, or partial with a reason; a one visit closed as done
+//                                                sends the client its payment link
 //   POST /api/tech/jobs/:id/no-show              refused before the wait ends
 //
 // "Every write accepts the client-generated X-Client-Event-Id, which is
@@ -25,6 +27,12 @@
 // check-in's own `at`, else the millisecond its event ID, a UUIDv7, begins with.
 //
 // No response here carries an amount.
+//
+// A consultation and fit in one visit runs the first fit's steps, its checklist
+// the consultation's and the fit's; the client chooses the product with the
+// technician, or decides against it, at the piece step, and closing it as done
+// makes it the product's visit, whose payment link Razorpay then texts to the
+// client, or a consultation (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
@@ -43,11 +51,13 @@ import {
   type MovedTo,
   type Superseding,
 } from "../domain/job-events.ts";
-import { jobSheet, knownCodes } from "../domain/job-sheet-settings.ts";
+import { checklistOf, jobSheet, knownCodes } from "../domain/job-sheet-settings.ts";
 import { recordJobUse } from "../domain/job-use.ts";
 import { tellOfLowStock } from "../domain/stock.ts";
 import { roomFor } from "../domain/storage-meter.ts";
 import { noShowReadiness, openNoShowCase } from "../domain/no-shows.ts";
+import { closeOneVisit } from "../domain/one-visit.ts";
+import { offeredServices } from "../domain/services.ts";
 import { jobDetail, jobsOn, lastVisitPhoto, progressOf, workableJob, type WorkableJob } from "../domain/tech-jobs.ts";
 import {
   anglesHeld,
@@ -105,6 +115,11 @@ const JobSummarySchema = z
     ends_at: z.union([z.iso.datetime(), z.null()]),
     window_label: z.enum(BOOKING_WINDOWS),
     type: z.union([z.enum(VISIT_TYPES), z.null()]),
+    one_visit: z.boolean().openapi({
+      description:
+        "A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, " +
+        "at the piece step.",
+    }),
     sector: z.union([z.string(), z.null()]).openapi({
       description:
         "The area, never the street: the one the visit's pincode is in, from the service area; else the address's " +
@@ -113,7 +128,8 @@ const JobSummarySchema = z
     status: z.enum(["scheduled", "dispatched", "in_progress", "completed", "cancelled", "terminated", "other"]),
     badge: z.enum(PAYMENT_BADGES).openapi({
       description:
-        "Free for a visit the price book charges nothing for. No response to a technician carries an amount.",
+        "Free for a visit the price book charges nothing for; at_visit for a one visit, paid for once the client is " +
+        "fitted. No response to a technician carries an amount.",
     }),
     slots: z
       .union([z.number(), z.null()])
@@ -159,6 +175,14 @@ const OfferedSchema = z
   })
   .strict()
   .openapi("TechnicianConsumable");
+
+const ProductSchema = z
+  .object({
+    tier: z.string().openapi({ description: "What the piece step sends back as product." }),
+    name: z.string(),
+  })
+  .strict()
+  .openapi("TechnicianProduct");
 
 const JobDetailSchema = JobSummarySchema.extend({
   address: z
@@ -224,6 +248,24 @@ const JobDetailSchema = JobSummarySchema.extend({
       "Every consumable the technician may record, those this job's service is expected to use first, " +
       "each with the count its stepper starts at.",
   }),
+  products: z.array(ProductSchema).openapi({
+    description:
+      "On a one visit, the products the client may choose, by name and never by price: the first fit's services " +
+      "offered on the visit's day, in ops' order. Empty for any other visit.",
+  }),
+  payment_link: z
+    .union([
+      z
+        .object({
+          url: z.union([z.string(), z.null()]).openapi({
+            description: "The link Razorpay texted the client, to show them; null until Razorpay has made it.",
+          }),
+          paid: z.boolean(),
+        })
+        .strict(),
+      z.null(),
+    ])
+    .openapi({ description: "On a one visit closed as done with the client fitted, its payment link; else null." }),
 }).openapi("TechnicianJobDetail");
 
 const AcceptedSchema = z
@@ -316,7 +358,7 @@ const ConsumablesRequestSchema = z
       "catalogue does not hold is refused, fields items.",
   });
 
-const PieceRequestSchema = z
+const PieceFittedSchema = z
   .object({
     piece_code: z.string().min(3).max(40),
     base: z.string().min(1).max(60).nullable().optional(),
@@ -328,12 +370,27 @@ const PieceRequestSchema = z
       .nullable()
       .optional()
       .openapi({ description: "On a replacement: the piece that came off, and why it failed." }),
+    product: z.string().min(1).max(32).optional().openapi({
+      description:
+        "On a one visit, and only there: the product the client chose, by its tier from the card's products.",
+    }),
   })
   .strict()
-  .openapi("PieceRequest", {
+  .openapi("PieceFitted", {
     description:
       "The piece fitted, with its base and lot, and on a replacement the one that came off. A failure_reason on the piece itself marks it as failed and fits nothing.",
   });
+
+const PieceDeclinedSchema = z
+  .object({ declined: z.literal(true) })
+  .strict()
+  .openapi("PieceDeclined", {
+    description:
+      "On a one visit, and only there: the client decided against the fit, so nothing was fitted, and closing the " +
+      "visit as done makes it a consultation.",
+  });
+
+const PieceRequestSchema = z.union([PieceFittedSchema, PieceDeclinedSchema]).openapi("PieceRequest");
 
 const OutcomeRequestSchema = z
   .discriminatedUnion("outcome", [
@@ -368,6 +425,10 @@ const STEP_REFUSALS = {
   401: errorResponse("session_required; device_revoked: ops revoked this phone, so drop the cached jobs"),
   404: errorResponse("not_found: no such job"),
   409: errorResponse("superseded: FSM moved the job; out_of_order: send the step before this one first"),
+  503: errorResponse(
+    "unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment " +
+      "link, at its close); send it again, which lands nothing new",
+  ),
 };
 
 /** A check-in's or a start's conflict, which may also be on the wrong day. */
@@ -534,7 +595,7 @@ const consumablesRoute = createRoute({
 const pieceRoute = createRoute({
   method: "post",
   path: "/api/tech/jobs/{id}/piece",
-  summary: "The piece: a replacement's and a first fit's step only",
+  summary: "The piece: a replacement's, a first fit's and a one visit's step only",
   request: { params: jobId, headers: EventIdSchema, body: { required: true, ...json(PieceRequestSchema) } },
   responses: {
     202: RECORDED,
@@ -598,8 +659,8 @@ export function registerTechJobs(app: App): void {
     return c.json(
       {
         ...job,
-        steps: stepsFor(type),
-        checklist: [...sheet.checklists[type].items],
+        steps: stepsFor(type, job.one_visit),
+        checklist: [...checklistOf(sheet, { type, oneVisit: job.one_visit }).items],
         partial_reasons: [...sheet.partialReasons.items],
         consumables: await offeredForJob(c.env.DB, await serviceOfJob(c.env.DB, { id: job.id, type }), job.date),
       },
@@ -751,7 +812,8 @@ export function registerTechJobs(app: App): void {
   app.openapi(checklistRoute, (c) => {
     const { done } = c.req.valid("json");
     return step(c, "checklist", async (job) => {
-      const known = knownCodes((await jobSheet(c.env.DB)).checklists[job.type]);
+      const list = checklistOf(await jobSheet(c.env.DB), { type: job.type, oneVisit: job.oneVisit !== null });
+      const known = knownCodes(list);
       const unknown = done.filter((item) => !known.has(item));
       return unknown.length > 0 ? { invalid: ["done"] } : { done };
     });
@@ -776,35 +838,40 @@ export function registerTechJobs(app: App): void {
           touched: [technicianId],
           lowered: used.lowered ? [technicianId] : [],
         });
+        return "kept";
       },
     );
   });
 
   app.openapi(pieceRoute, (c) => {
     const body = c.req.valid("json");
-    return step(c, "piece", (job) => {
+    return step(c, "piece", async (job) => {
+      if (job.oneVisit !== null) return oneVisitPiece(c, job, body);
+      if ("declined" in body || body.product !== undefined) return { invalid: ["product"] };
       if (!(stepsFor(job.type) as string[]).includes("piece")) return { invalid: ["piece_code"] };
-      if (!isPieceCode(body.piece_code)) return { invalid: ["piece_code"] };
-      const oldPiece = body.old_piece ?? null;
-      if (oldPiece !== null && !isPieceCode(oldPiece.piece_code)) return { invalid: ["old_piece"] };
-      return {
-        piece_code: body.piece_code,
-        base: body.base ?? null,
-        supplier_lot: body.supplier_lot ?? null,
-        failure_reason: body.failure_reason ?? null,
-        old_piece: oldPiece,
-      };
+      return fittedPiece(body);
     });
   });
 
-  // The reasons ops set; one they have taken off since the phone kept the job is still taken.
+  // The reasons ops set; one they have taken off since the phone kept the job is still taken. A one visit closed as
+  // done becomes a consultation or the product's visit, and asks for its payment link, once however often it lands.
   app.openapi(outcomeRoute, (c) => {
     const body = c.req.valid("json");
-    return step(c, "outcome", async () => {
-      if (body.outcome === "done") return { outcome: "done" };
-      const known = knownCodes((await jobSheet(c.env.DB)).partialReasons);
-      return known.has(body.reason) ? { outcome: "partial", reason: body.reason } : { invalid: ["reason"] };
-    });
+    return step(
+      c,
+      "outcome",
+      async () => {
+        if (body.outcome === "done") return { outcome: "done" };
+        const known = knownCodes((await jobSheet(c.env.DB)).partialReasons);
+        return known.has(body.reason) ? { outcome: "partial", reason: body.reason } : { invalid: ["reason"] };
+      },
+      async (job) => {
+        if (job.oneVisit === null || body.outcome !== "done") return "kept";
+        const { deps, log } = c.var;
+        const sent = await closeOneVisit(c.env.DB, { ...deps, log }, job, deps.now());
+        return sent === "unavailable" ? "unavailable" : "kept";
+      },
+    );
   });
 
   app.openapi(noShowRoute, async (c) => {
@@ -872,7 +939,7 @@ async function step(
   c: Ctx,
   kind: JobEventKind,
   build: (job: WorkableJob) => StepBody | Promise<StepBody>,
-  landed?: (job: WorkableJob) => Promise<void>,
+  landed?: (job: WorkableJob) => Promise<Kept>,
 ) {
   const job = await namedJob(c, c.req.param("id") ?? "");
   if (job === null) return c.json(errorBody("not_found", c.var.requestId), 404);
@@ -882,8 +949,47 @@ async function step(
   }
   const landing = await land(c, job, kind, built);
   if (!landing.ok) return c.json(refusalOf(c, landing), 409);
-  if (landed !== undefined) await landed(job);
+  const kept = landed === undefined ? "kept" : await landed(job);
+  if (kept === "unavailable") return c.json(errorBody("unavailable", c.var.requestId), 503);
   return c.json(landing.accepted, 202);
+}
+
+/**
+ * What a step kept of its own once it landed: kept, or a vendor that could not be reached for now, which the phone
+ * hears as a 503 and sends the step again for, landing nothing new.
+ */
+type Kept = "kept" | "unavailable";
+
+type PieceBody = z.infer<typeof PieceRequestSchema>;
+
+/** A piece fitted, or the one that failed, as any job's piece step records it. */
+function fittedPiece(body: z.infer<typeof PieceFittedSchema>): StepBody {
+  if (!isPieceCode(body.piece_code)) return { invalid: ["piece_code"] };
+  const oldPiece = body.old_piece ?? null;
+  if (oldPiece !== null && !isPieceCode(oldPiece.piece_code)) return { invalid: ["old_piece"] };
+  return {
+    piece_code: body.piece_code,
+    base: body.base ?? null,
+    supplier_lot: body.supplier_lot ?? null,
+    failure_reason: body.failure_reason ?? null,
+    old_piece: oldPiece,
+  };
+}
+
+/**
+ * A one visit's piece step: the client decided against the fit, or chose one of the products offered on the visit's
+ * day and was fitted with a new piece from the technician's kit, so nothing came off and nothing failed.
+ */
+async function oneVisitPiece(c: Ctx, job: WorkableJob, body: PieceBody): Promise<StepBody> {
+  if ("declined" in body) return { declined: true };
+  if (body.product === undefined) return { invalid: ["product"] };
+  if ((body.old_piece ?? null) !== null || (body.failure_reason ?? null) !== null) {
+    return { invalid: ["old_piece", "failure_reason"] };
+  }
+  const offered = await offeredServices(c.env.DB, indiaDate(job.windowStart), ["first_fit"]);
+  if (!offered.some((service) => service.tier === body.product)) return { invalid: ["product"] };
+  const fitted = fittedPiece(body);
+  return "invalid" in fitted ? fitted : { ...fitted, product: body.product };
 }
 
 /** What landing an event came to: the write, or the 409 the route answers. */

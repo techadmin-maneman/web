@@ -269,7 +269,9 @@ export interface LiveVisit {
 
 /**
  * The client's visit of this kind still to happen: booked, or paid for and on its way to FSM, other than the
- * hold `exceptHoldId`. Null when there is none, and always for a kind a client may have several of.
+ * hold `exceptHoldId`. Null when there is none, and always for a kind a client may have several of. A consultation
+ * and fit in one visit is the client's consultation still to happen as well as their first fit
+ * (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
  */
 export async function liveVisitOf(
   db: D1Database,
@@ -281,7 +283,8 @@ export async function liveVisitOf(
   const booked = await db
     .prepare(
       `SELECT window_start FROM appointments
-       WHERE person_id = ?1 AND type = ?2 AND deleted_at IS NULL AND status IN ('scheduled', 'dispatched', 'in_progress')
+       WHERE person_id = ?1 AND (type = ?2 OR (?2 = 'consultation' AND one_visit = 'booked')) AND deleted_at IS NULL
+         AND status IN ('scheduled', 'dispatched', 'in_progress')
        ORDER BY window_start LIMIT 1`,
     )
     .bind(personId, type)
@@ -293,7 +296,8 @@ export async function liveVisitOf(
   const paid = await db
     .prepare(
       `SELECT date, window_label FROM slot_holds
-       WHERE person_id = ?1 AND type = ?2 AND state = 'held' AND confirmed_at IS NOT NULL AND id IS NOT ?3 LIMIT 1`,
+       WHERE person_id = ?1 AND (type = ?2 OR (?2 = 'consultation' AND one_visit = 1)) AND state = 'held'
+         AND confirmed_at IS NOT NULL AND id IS NOT ?3 LIMIT 1`,
     )
     .bind(personId, type, exceptHoldId)
     .first<{ date: string; window_label: BookingWindow }>();
@@ -408,6 +412,8 @@ export async function holdSlot(
     pincode?: string | null;
     /** Paid for with a service-visit credit instead of money (ADR 0033). */
     useCredit?: boolean;
+    /** A consultation and fit in one visit, booked from the site with nothing paid (ADR 0105). */
+    oneVisit?: boolean;
     /** A move in place, which keeps the visit's technician; or a new visit replacing it. */
     moves?: { readonly visit: Moving; readonly kind: "move" | "replace" };
     /**
@@ -422,7 +428,7 @@ export async function holdSlot(
   holdSeconds: number,
   graceSeconds: number = PAYMENT_GRACE_SECONDS,
 ): Promise<Hold | null> {
-  const { personId, service, date, window, price, moves, useCredit = false, from = "app" } = input;
+  const { personId, service, date, window, price, moves, useCredit = false, oneVisit = false, from = "app" } = input;
   const units = unitsFor(service.minutes);
   if ((await loadBlackouts(db, date, date)).has(date)) return null;
   const moving = moves?.kind === "move" ? moves.visit : null;
@@ -454,9 +460,9 @@ export async function holdSlot(
             `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
                amount_ex_gst, gst_percent, state, expires_at, created_at, updated_at, moves_appointment_id, move_kind,
                use_credit, pincode, late_fee_ex_gst, late_fee_gst_percent, confirmed_at, queued_at, tier, minutes,
-               grace_seconds, change_notice_hours, late_change_charge, no_show_charge)
+               grace_seconds, change_notice_hours, late_change_charge, no_show_charge, one_visit)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, 'held', ?11, ?12, ?12, ?13, ?14, ?15, ?16, ?17, ?18,
-               ?19, ?19, ?20, ?21, ?22, ?23, ?24, ?25)`,
+               ?19, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26)`,
           )
           .bind(
             id,
@@ -484,6 +490,7 @@ export async function holdSlot(
             input.terms?.noticeHours ?? null,
             input.terms?.lateCharge ?? null,
             input.terms?.noShowCharge ?? null,
+            oneVisit ? 1 : 0,
           ),
         ...claimsOf(start, units, window).map((claim) =>
           db

@@ -163,7 +163,10 @@ export const dispatch = {
     /** Beneath the name: "Fri 19 Sep · 12 to 4 pm · Imran Qureshi". */
     when: (date: string, hours: string, technician: string) => `${date} · ${hours} · ${technician}`,
     /** The badge at the drawer's head: never an amount (ADR 0025, item 33). */
-    badges: { prepaid: "Prepaid", credit: "Credit", free: "Free" } as Readonly<Record<string, string>>,
+    // PLACEHOLDER: at_visit, a consultation and fit in one visit, paid for once the client is fitted (ADR 0105).
+    badges: { prepaid: "Prepaid", credit: "Credit", free: "Free", at_visit: "Pays at the visit" } as Readonly<
+      Record<string, string>
+    >,
     rows: { type: "Type", area: "Area", state: "State", referred: "Referred by" },
     /** "Service visit · 1 slot", as the board writes it; a first fit takes 2. */
     type: (name: string, slots: number) => `${name} · ${String(slots)} ${slots === 1 ? "slot" : "slots"}`,
@@ -1086,6 +1089,8 @@ export const tasks = {
     grievance: "Grievance",
     // PLACEHOLDER: two groups the board does not draw (docs/decisions/0067-alerts-and-silent-failures.md).
     draft_invoice: "Draft invoice",
+    // PLACEHOLDER: a group the board does not draw (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+    payment_owed: "Payment owed",
     erasure_unfinished: "Erasure left in FSM",
   } as Readonly<Record<string, string>>,
   /** The first line of a no-show whose client has since been erased: the visit, which is all that is left. */
@@ -1133,6 +1138,11 @@ export const tasks = {
     /** "Asked for 23 Sep 2026, morning": the day nobody could book for them, self-serve booking being off. */
     consultation_request: (day: string, when: string) => `Asked for ${day}, ${when}`,
     /**
+     * PLACEHOLDER: "+ consultation and fit in one visit", after the day and window asked for: book the client's first
+     * fit in FSM for three hours, paid for at the visit (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+     */
+    withOneVisit: "+ consultation and fit in one visit",
+    /**
      * PLACEHOLDER: "+ first fit, afternoon", after the consultation asked for: the site's form asked for the fit
      * too, which the client books and pays for in the app once the consultation is done (ADR 0086).
      */
@@ -1167,6 +1177,12 @@ export const tasks = {
     grievance: "Raised in the client's own app",
     // PLACEHOLDER: the client cannot open the invoice until somebody sends it in Books.
     draft_invoice: (visit: string) => `Visit of ${visit}, still a draft in Books`,
+    /**
+     * PLACEHOLDER: "Mane Man Natural, Rs. 45,000; link sent": a one visit's client was fitted and has not paid. A
+     * link not sent waits for ops to send one from Razorpay's dashboard (ADR 0105).
+     */
+    payment_owed: (product: string, amount: string, sent: boolean) =>
+      `${product}, ${amount}; ${sent ? "link sent" : "link not sent"}`,
     // PLACEHOLDER: the sweeper has stopped asking FSM; the contact is anonymised by hand.
     erasure_unfinished: (contact: string) => `FSM contact ${contact} still holds their details`,
     // PLACEHOLDER: a held grant whose fraud signals were not recorded.

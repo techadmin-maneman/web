@@ -3,12 +3,7 @@ import type { LossExtent } from "../../../../src/config/booking.ts";
 import { referral } from "../../content/referral.ts";
 import { track } from "../../lib/analytics.ts";
 import { addressToSend, emptyAddress, missingParts, type AddressFields } from "../../lib/address.ts";
-import {
-  bookConsultation,
-  bookPublicConsultation,
-  type ConsultationRequest,
-  type ReferralConsultation,
-} from "../../lib/api.ts";
+import { bookConsultation, bookPublicConsultation, type ReferralConsultation } from "../../lib/api.ts";
 import { dayStrip, indiaTomorrow } from "../../lib/dates.ts";
 import { mobileDigits } from "../../lib/phone.ts";
 import { forgetInvite, rememberedInvite } from "../../lib/remembered-invite.ts";
@@ -22,23 +17,23 @@ import { codeInPath } from "./page.ts";
 import { useTurnstileForm } from "./useTurnstileForm.ts";
 
 type BookingWindow = ReferralConsultation["window"];
-/** The window a first fit is asked for in, or "any" for either (FirstFitRequest). */
-type FitWindow = "any" | NonNullable<NonNullable<ConsultationRequest["first_fit"]>["window"]>;
-type Plan = "consultation" | "first_fit";
+type Plan = "consultation" | "one_visit";
+
+/** The windows a consultation and fit in one visit can start in: src/policy/one-visit.ts, ONE_VISIT_WINDOWS. */
+const ONE_VISIT_WINDOWS: readonly BookingWindow[] = ["morning", "afternoon"];
 
 /** How far ahead the date strip reaches, from tomorrow: src/config/scheduling.ts, BOOKING_DAYS. */
 const DAYS = 14;
 
 /**
  * Board C2: the pincode is served, so the page books a free consultation. The form also takes the address the
- * consultation is at, which no board draws, so nothing is booked without one (ADR 0081). It may ask for the first
- * fit to follow, which no board draws either: the consultation is booked as ever, and the fit is booked and paid for
- * in the app once the consultation is done (ADR 0086).
+ * consultation is at, which no board draws, so nothing is booked without one (ADR 0081). It may book the
+ * consultation and fit in one visit instead, which no board draws either: three hours, in the morning or the
+ * afternoon, paid for once the client is fitted (ADR 0105).
  */
 export function Consultation(props: FormProps & { onBooked: (booking: Booking) => void }) {
   const form = useTurnstileForm(props.turnstileSiteKey);
   const [plan, setPlan] = useState<Plan>("consultation");
-  const [fitWindow, setFitWindow] = useState<FitWindow>("any");
   const [date, setDate] = useState(indiaTomorrow());
   const [window, setWindow] = useState<BookingWindow>("morning");
   const [address, setAddress] = useState<AddressFields>(() => emptyAddress(props.answer.city));
@@ -55,7 +50,7 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
       date,
       window,
       address: addressToSend(address, pincode),
-      ...(plan === "first_fit" ? { first_fit: { window: fitWindow === "any" ? null : fitWindow } } : {}),
+      ...(plan === "one_visit" ? { one_visit: true } : {}),
       consent: true as const,
     };
     // The site's own page carries where this visit came from, where the hair loss is, and the invite this browser
@@ -89,6 +84,15 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
 
   const { consultation } = referral;
   const choices = consultation.plan;
+  const windows = consultation.windows.filter(
+    (option) => plan === "consultation" || ONE_VISIT_WINDOWS.includes(option.id as BookingWindow),
+  );
+
+  function choosePlan(chosen: Plan) {
+    setPlan(chosen);
+    // The one visit does not start in the evening: a window it cannot take is not kept for it.
+    if (chosen === "one_visit" && !ONE_VISIT_WINDOWS.includes(window)) setWindow("morning");
+  }
   return (
     <form class={styles.form} onSubmit={submit} noValidate>
       <div>
@@ -109,38 +113,15 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
                 class="visually-hidden"
                 checked={plan === option.id}
                 onChange={() => {
-                  setPlan(option.id as Plan);
+                  choosePlan(option.id as Plan);
                 }}
               />
               <span class={styles.windowLabel}>{option.label}</span>
             </label>
           ))}
         </div>
-        {plan === "first_fit" && <p class={styles.planNote}>{choices.note}</p>}
+        {plan === "one_visit" && <p class={styles.planNote}>{choices.note}</p>}
       </fieldset>
-
-      {plan === "first_fit" && (
-        <fieldset class={styles.group}>
-          <legend class={`caps ${styles.legend}`}>{choices.fitLegend}</legend>
-          <div class={styles.windows}>
-            {choices.fitWindows.map((option) => (
-              <label key={option.id} class={`${styles.window} ${fitWindow === option.id ? styles.windowOn : ""}`}>
-                <input
-                  type="radio"
-                  name="fit-window"
-                  class="visually-hidden"
-                  checked={fitWindow === option.id}
-                  onChange={() => {
-                    setFitWindow(option.id as FitWindow);
-                  }}
-                />
-                <span class={styles.windowLabel}>{option.label}</span>
-                {option.hours !== "" && <span class={styles.windowHours}>{option.hours}</span>}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-      )}
 
       <fieldset class={styles.group}>
         <legend class={`caps ${styles.legend}`}>{consultation.date}</legend>
@@ -166,7 +147,7 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
       <fieldset class={styles.group}>
         <legend class={`caps ${styles.legend}`}>{consultation.window}</legend>
         <div class={styles.windows}>
-          {consultation.windows.map((option) => (
+          {windows.map((option) => (
             <label key={option.id} class={`${styles.window} ${window === option.id ? styles.windowOn : ""}`}>
               <input
                 type="radio"
@@ -207,7 +188,7 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
       <Send
         failure={form.failure}
         sending={form.sending}
-        label={consultation.submit}
+        label={plan === "one_visit" ? consultation.submitOneVisit : consultation.submit}
         sendingLabel={consultation.sending}
       />
       {props.credits && (

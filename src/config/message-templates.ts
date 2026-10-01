@@ -21,6 +21,10 @@ const TEMPLATES: Readonly<Record<string, string>> = {
   // {{6}} the amount ("Rs. 2,000"), {{7}} the payment's reference, {{8}} where a refund goes ("UPI"), {{9}} how many
   // minutes the technician waited, for a no-show, and {{10}} what goes back of a no-show's charge.
   consultation_booked_v1: "Hello {{1}}, your free consultation is booked for {{3}}, {{4}}. We will see you then.",
+  // The consultation and fit in one visit, booked from the site with nothing paid
+  // (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+  one_visit_booked_v1:
+    "Hello {{1}}, your consultation and fit is booked for {{3}}, {{4}}. You pay only once you are fitted.",
   visit_booked_v1:
     "Hello {{1}}, your {{2}} is booked for {{3}}, {{4}}, with {{5}}. Paid {{6}}, reference {{7}}. The receipt is in the app.",
   visit_booked_credit_v1:

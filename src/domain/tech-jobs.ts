@@ -17,6 +17,10 @@
 // piece step's "Pick from the list"), the last visit's after photograph, the
 // no-show wait, and whether the day-before WhatsApp reached the client (board
 // B5). The photograph itself is served on its own, and never cached.
+//
+// A consultation and fit in one visit also carries the products the client may
+// choose at it, by name and never by price, and where the payment link closing
+// it sent stands (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
 
 import type { BookingWindow } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
@@ -25,12 +29,14 @@ import type { JobEventKind } from "../policy/in-job-steps.ts";
 import { jobDay, paymentBadge, unlocked, unlocksAt, type JobDay, type PaymentBadge } from "../policy/job-visibility.ts";
 import { slotsFor } from "../policy/dispatch.ts";
 import { noShowWaitEnds, type Waits } from "../policy/no-show.ts";
+import { paidAtTheVisit, type OneVisitState } from "../policy/one-visit.ts";
 import { unitsFor } from "../policy/visit-length.ts";
 import { latestArrival } from "./check-ins.ts";
 import type { AppointmentStatus } from "./fsm-mirror.ts";
 import { EVIDENCE_MESSAGE } from "./no-shows.ts";
 import { piecesOf, type Piece } from "./pieces.ts";
 import { bookedMinutes } from "./scheduling.ts";
+import { offeredServices } from "./services.ts";
 import { windowAt } from "../policy/windows.ts";
 import { firstNameOf } from "../lib/names.ts";
 
@@ -45,6 +51,8 @@ export interface JobSummary {
   readonly ends_at: string | null;
   readonly window_label: BookingWindow;
   readonly type: VisitType | null;
+  /** A consultation and fit in one visit, which runs the first fit's steps with the client's choice at the piece. */
+  readonly one_visit: boolean;
   /** Where the visit is, at the coarsest useful grain: a locked job shows this and nothing else of the place. */
   readonly sector: string | null;
   readonly status: AppointmentStatus;
@@ -127,6 +135,22 @@ export interface JobDetail extends JobSummary {
   readonly last_visit: LastVisit | null;
   /** The day-before WhatsApp, or the arrival one, and when it reached the client's phone. */
   readonly reminder: { readonly delivered_at: string | null } | null;
+  /** On a one visit, the products the client may choose, by name: the first fit's services offered that day. */
+  readonly products: Product[];
+  /** On a one visit closed as done, the link the client pays by, and whether they have. */
+  readonly payment_link: JobPaymentLink | null;
+}
+
+/** A product the client may choose at a one visit: a first fit's service, by its tier and its name. */
+export interface Product {
+  readonly tier: string;
+  readonly name: string;
+}
+
+/** The payment link a one visit sent: its address, once Razorpay made it, and whether it is paid. */
+export interface JobPaymentLink {
+  readonly url: string | null;
+  readonly paid: boolean;
 }
 
 interface JobRow {
@@ -134,6 +158,7 @@ interface JobRow {
   window_start: string;
   window_end: string | null;
   type: VisitType | null;
+  one_visit: OneVisitState | null;
   status: AppointmentStatus;
   person_id: string | null;
   service_city: string | null;
@@ -165,7 +190,7 @@ interface JobRow {
 // `free`: the price book's row for the visit's own service, its kind and its tier (the standard tier's where the
 // mirror knows no other), on the visit's day in India charges nothing, as it does a consultation.
 const SELECT_JOB = `
-  SELECT a.id, a.window_start, a.window_end, a.type, a.status, a.person_id, a.service_city, a.client_note,
+  SELECT a.id, a.window_start, a.window_end, a.type, a.one_visit, a.status, a.person_id, a.service_city, a.client_note,
     sp.area AS pincode_area,
     p.name AS client_name, p.mobile_e164 AS client_mobile,
     d.line1, d.line2, d.building, d.tower, d.floor, d.flat, d.landmark, d.locality, d.city, d.pincode,
@@ -221,6 +246,8 @@ export async function jobDetail(
     pieces: null,
     last_visit: null,
     reminder: null,
+    products: row.one_visit === null ? [] : await productsOn(db, summary.date),
+    payment_link: row.one_visit === null ? null : await paymentLinkOf(db, row.id),
   };
   if (!summary.unlocked) return locked;
   return {
@@ -235,6 +262,22 @@ export async function jobDetail(
     last_visit: await lastVisitOf(db, row),
     reminder: await reminderOf(db, row.id),
   };
+}
+
+/** The products a one visit offers on its day: the first fit's services offered and priced then, in ops' order. */
+async function productsOn(db: D1Database, date: string): Promise<Product[]> {
+  return (await offeredServices(db, date, ["first_fit"])).map((service) => ({
+    tier: service.tier,
+    name: service.name,
+  }));
+}
+
+async function paymentLinkOf(db: D1Database, appointmentId: string): Promise<JobPaymentLink | null> {
+  const link = await db
+    .prepare("SELECT short_url, paid_at FROM payment_links WHERE appointment_id = ?1")
+    .bind(appointmentId)
+    .first<{ short_url: string | null; paid_at: string | null }>();
+  return link === null ? null : { url: link.short_url, paid: link.paid_at !== null };
 }
 
 /** Dates as the piece lookup names them: the fitted and due dates are days, the failure an instant. */
@@ -336,6 +379,8 @@ export interface WorkableJob {
   readonly id: string;
   readonly personId: string | null;
   readonly type: VisitType;
+  /** Where a consultation and fit in one visit stands; null for any other visit. */
+  readonly oneVisit: OneVisitState | null;
   readonly fsmId: string;
   readonly status: AppointmentStatus;
   readonly windowStart: Date;
@@ -345,7 +390,7 @@ export interface WorkableJob {
 export async function workableJob(db: D1Database, jobId: string): Promise<WorkableJob | null> {
   const row = await db
     .prepare(
-      `SELECT id, person_id, type, fsm_id, status, window_start, technician_id FROM appointments
+      `SELECT id, person_id, type, one_visit, fsm_id, status, window_start, technician_id FROM appointments
        WHERE id = ?1 AND deleted_at IS NULL AND type IS NOT NULL AND window_start IS NOT NULL`,
     )
     .bind(jobId)
@@ -353,6 +398,7 @@ export async function workableJob(db: D1Database, jobId: string): Promise<Workab
       id: string;
       person_id: string | null;
       type: VisitType;
+      one_visit: OneVisitState | null;
       fsm_id: string;
       status: AppointmentStatus;
       window_start: string;
@@ -364,6 +410,7 @@ export async function workableJob(db: D1Database, jobId: string): Promise<Workab
     id: row.id,
     personId: row.person_id,
     type: row.type,
+    oneVisit: row.one_visit,
     fsmId: row.fsm_id,
     status: row.status,
     windowStart: new Date(row.window_start),
@@ -387,6 +434,7 @@ function summaryOf(row: JobRow, now: Date, unlockHour: number): JobSummary {
     ends_at: row.window_end,
     window_label: windowAt(indiaTime(starts)),
     type: row.type,
+    one_visit: row.one_visit !== null,
     // "only time, type and sector": the area, never the street, whether the job is unlocked or not. The visit's
     // pincode names it first, as the dispatch board does (ADR 0069).
     sector: row.pincode_area ?? row.locality ?? row.service_city,
@@ -399,7 +447,7 @@ function summaryOf(row: JobRow, now: Date, unlockHour: number): JobSummary {
 }
 
 function badgeOf(row: JobRow): PaymentBadge {
-  return paymentBadge({ onCredit: row.on_credit === 1, free: row.free === 1 });
+  return paymentBadge({ onCredit: row.on_credit === 1, free: row.free === 1, oneVisit: paidAtTheVisit(row.one_visit) });
 }
 
 /** What the phone has already sent for this job, from the events it landed. */

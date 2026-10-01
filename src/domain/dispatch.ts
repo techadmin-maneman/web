@@ -31,6 +31,7 @@ import {
   type MoveRefusal,
 } from "../policy/dispatch.ts";
 import { paymentBadge, type PaymentBadge } from "../policy/job-visibility.ts";
+import { paidAtTheVisit, type OneVisitState } from "../policy/one-visit.ts";
 import { FREE_CHANGE_NOTICE_HOURS } from "../policy/moving-a-visit.ts";
 import { unitsFor } from "../policy/visit-length.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
@@ -172,8 +173,8 @@ const ON_THE_BOARD = "('scheduled', 'dispatched', 'in_progress', 'completed')";
  * database. A job is the standard tier's where the mirror knows no other.
  */
 const BOARD_JOBS = `
-  SELECT a.id, a.type, a.status, a.window_start, a.window_end, a.technician_id, a.service_city, a.service_pincode,
-    a.asked_window, a.person_id, d.locality, sp.area, s.minutes AS service_minutes,
+  SELECT a.id, a.type, a.one_visit, a.status, a.window_start, a.window_end, a.technician_id, a.service_city,
+    a.service_pincode, a.asked_window, a.person_id, d.locality, sp.area, s.minutes AS service_minutes,
     p.name AS client_name, p.mobile_e164 AS client_mobile, p.erased_at AS client_erased_at,
     ${LATEST_VISITS_CONSENT} AS whatsapp_visits,
     (SELECT referrer.name FROM referral_attributions r
@@ -292,6 +293,8 @@ interface BoardJobRow {
   referred_by: string | null;
   on_credit: number;
   free: number;
+  /** Where a consultation and fit in one visit stands; null for any other visit. */
+  one_visit: OneVisitState | null;
   /** Null where no hold sold the visit; the committed notice where one did and kept none. */
   sold_notice_hours: number | null;
 }
@@ -304,7 +307,11 @@ function visitOf(job: BoardJobRow): Visit {
     sector: job.area ?? job.locality ?? job.service_city,
     pincode: job.service_pincode,
     person: clientOf(job),
-    badge: paymentBadge({ onCredit: job.on_credit === 1, free: job.free === 1 }),
+    badge: paymentBadge({
+      onCredit: job.on_credit === 1,
+      free: job.free === 1,
+      oneVisit: paidAtTheVisit(job.one_visit),
+    }),
     slots: slotsFor(unitsFor(bookedMinutes(job))),
   };
 }

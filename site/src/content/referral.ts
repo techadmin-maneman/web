@@ -94,7 +94,9 @@ export const referral = {
   consultation: {
     served: "We come to {area}",
     title: "Book a free consultation",
-    body: `${capitalised(visitLength.consultation)}. Nothing fitted, nothing to pay.`,
+    // The consultation alone fits nothing; the one visit, its second choice, fits the client then (ADR 0105). The
+    // owner reviews these words with the home page's second round (open point 162).
+    body: `${capitalised(visitLength.consultation)}, and free. Or have your fit in the same visit.`,
     forPincode: "For {pincode}",
     date: "Pick a date",
     window: "Window",
@@ -104,29 +106,25 @@ export const referral = {
       { id: "evening", label: "Evening", hours: "4 to 8 pm" },
     ],
     /**
-     * Not drawn: what to book, the consultation alone or with the first fit to follow (ADR 0025, item 68;
-     * docs/decisions/0086-the-next-visit-is-offered.md). The two choices are the owner's own words; the rest are
-     * placeholder words for the owner to approve (open point 45), not marked as the apps' are, since the mark
-     * refuses the site's production build (ADR 0081). The consent line recorded is the consultation's, unchanged,
-     * and whether it covers the fit is counsel's (open point 41).
+     * Not drawn: what to book, the consultation alone or the consultation and fit in one visit, as the owner ruled
+     * on 1 October 2026 (ADR 0025, item 89; docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). "A
+     * consultation" is the owner's; the rest are placeholder words for the owner to approve (open points 45 and
+     * 162), not marked as the apps' are, since the mark refuses the site's production build (ADR 0081). The consent
+     * line recorded is the consultation's, unchanged, and whether it covers the fit is counsel's (open point 41).
      */
     plan: {
       legend: "What to book",
       options: [
         { id: "consultation", label: "A consultation" },
-        { id: "first_fit", label: "The consultation, then my first fit" },
+        { id: "one_visit", label: "Consultation and fit, in one visit" },
       ],
-      note: "The fit is booked and paid for in the app once the consultation is done. Nothing is paid now.",
-      // A first fit takes two slots, which do not fit in the evening's (docs/decisions/0035-window-slot-map.md).
-      fitLegend: "The fit, if you have a time in mind",
-      fitWindows: [
-        { id: "any", label: "Either", hours: "" },
-        { id: "morning", label: "Morning", hours: "9 am to 12 pm" },
-        { id: "afternoon", label: "Afternoon", hours: "12 to 4 pm" },
-      ],
+      // The first fit's three hours do not fit in the evening's half-slots (docs/decisions/0035-window-slot-map.md),
+      // so the form offers the one visit the morning and the afternoon.
+      note: `${capitalised(visitLength.firstFit)}, at home, in the morning or the afternoon. Choose your hair system with your technician and leave wearing it. Pay once fitted, by a link to your phone; decide against it and you pay nothing.`,
     },
     consent: lineOf(notices.consultation),
     submit: "Book the consultation",
+    submitOneVisit: "Book the consultation and fit",
     sending: "Booking",
     told: "{name} is told when you are fitted. That is when the 3 visits land.",
     toldUnnamed: "Whoever invited you is told when you are fitted. That is when the 3 visits land.",
@@ -198,13 +196,15 @@ export const referral = {
     // words (open point 45).
     addressOnAccount:
       "We come to the address already on your account, not the one given here. To change it, message us on WhatsApp.",
-    // Not drawn: the first fit was asked for with the consultation (ADR 0086). The owner approves the words (open
-    // point 45).
-    firstFit:
-      "You asked for your first fit too. Once the consultation is done, you book the fit in the app and pay for it there.",
+    // Not drawn: the consultation and fit in one visit (ADR 0105). The owner approves the words (open points 45 and
+    // 162).
+    labelOneVisit: "Consultation and fit booked",
+    oneVisit:
+      "Your technician brings the range for you to choose from. Once you are fitted, you pay by a link sent to your phone.",
     calendar: "Add to calendar",
     calendarFile: "mane-man-consultation.ics",
     calendarTitle: "Mane Man consultation",
+    calendarTitleOneVisit: "Mane Man consultation and fit",
     app: "See it in the app",
   },
   /**
@@ -223,6 +223,8 @@ export const referral = {
    */
   requested: {
     label: "Consultation requested",
+    // Not drawn: the consultation and fit in one visit, asked for while self-serve booking is off (ADR 0105).
+    labelOneVisit: "Consultation and fit requested",
     body: "We message you on WhatsApp to fix the hour.",
     asked: "You asked for",
   },

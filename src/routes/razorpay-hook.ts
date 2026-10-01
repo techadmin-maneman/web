@@ -6,7 +6,10 @@
 //
 // Subscribed events (runbook, step 11c): order.paid, payment.authorized,
 // payment.captured, payment.failed, refund.created, refund.processed,
-// refund.failed, refund.speed_changed. Any other is acknowledged and ignored.
+// refund.failed, refund.speed_changed, and payment_link.paid, which names the
+// payment link a one visit's client paid by and so the visit it is for
+// (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). Any other is
+// acknowledged and ignored.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
@@ -14,11 +17,14 @@ import { paymentStatusOf, recordPayment, recordRefund } from "../domain/payments
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { sha256Hex } from "../lib/hash.ts";
+import { markLinkPaid, visitOfLink } from "../domain/payment-links.ts";
 import {
+  RazorpayPaymentLinkSchema,
   RazorpayPaymentSchema,
   RazorpayRefundSchema,
   signedByRazorpay,
   type RazorpayPayment,
+  type RazorpayPaymentLink,
 } from "../providers/razorpay.ts";
 
 const EventSchema = z.object({
@@ -27,6 +33,7 @@ const EventSchema = z.object({
     .object({
       payment: z.object({ entity: z.looseObject({ id: z.string() }) }).optional(),
       refund: z.object({ entity: z.looseObject({ id: z.string() }) }).optional(),
+      payment_link: z.object({ entity: z.looseObject({ id: z.string() }) }).optional(),
     })
     .optional(),
 });
@@ -42,6 +49,28 @@ export const razorpayHookRoute = createRoute({
     409: errorResponse("not_ready: a refund for a payment not yet recorded; Razorpay retries it"),
   },
 });
+
+/**
+ * A one visit's payment link paid: the payment recorded as the visit's, by the link it paid, whatever notes it
+ * carries, and the link marked paid. False for a link that is not ours.
+ */
+async function linkPaid(
+  db: D1Database,
+  paid: { readonly link: RazorpayPaymentLink; readonly payment: RazorpayPayment },
+  hashSalt: string,
+  now: Date,
+): Promise<boolean> {
+  const ours = await visitOfLink(db, { razorpayLinkId: paid.link.id, reference: paid.link.reference_id ?? null });
+  if (ours === null) return false;
+  const notes =
+    ours.personId === null
+      ? { appointment_id: ours.appointmentId }
+      : { appointment_id: ours.appointmentId, person_id: ours.personId };
+  await recordPayment(db, { ...paid.payment, notes }, "captured", hashSalt, now);
+  const paidAt = new Date(paid.payment.created_at * 1000).toISOString();
+  await markLinkPaid(db, ours.linkId, { razorpayPaymentId: paid.payment.id, paidAt }, now);
+  return true;
+}
 
 /** The hold a payment was for, from the notes our order gave it. */
 function holdOfNotes(notes: RazorpayPayment["notes"]): string | null {
@@ -86,7 +115,12 @@ export function registerRazorpayHook(app: App): void {
     }
 
     // An entity not of Razorpay's shape throws, so the event is answered 500 and Razorpay sends it again.
-    if (payload?.payment !== undefined && !event.startsWith("refund.")) {
+    if (event === "payment_link.paid" && payload?.payment_link !== undefined && payload.payment !== undefined) {
+      const link = RazorpayPaymentLinkSchema.parse(payload.payment_link.entity);
+      const payment = RazorpayPaymentSchema.parse(payload.payment.entity);
+      const paid = await linkPaid(db, { link, payment }, config.settings.ipHashSalt, now);
+      log.info("razorpay_hook_link_paid", { ours: paid });
+    } else if (payload?.payment !== undefined && !event.startsWith("refund.")) {
       const payment = RazorpayPaymentSchema.parse(payload.payment.entity);
       const status = paymentStatusOf(event, payment);
       if (status !== null) await recordPayment(db, payment, status, config.settings.ipHashSalt, now);

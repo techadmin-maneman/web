@@ -46,6 +46,7 @@ const summary = (id: string, date: string) =>
     ends_at: null,
     window_label: "morning",
     type: "service",
+    one_visit: false,
     sector: "Sector 65",
     status: "scheduled",
     badge: "prepaid",
@@ -89,6 +90,8 @@ const card = (id: string, date: string) =>
     checklist: [],
     partial_reasons: [],
     consumables: [],
+    products: [],
+    payment_link: null,
   }) as Job;
 
 const arrival = {

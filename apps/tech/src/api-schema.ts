@@ -497,6 +497,15 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                /** @description unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment link, at its close); send it again, which lands nothing new */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         delete?: never;
@@ -569,6 +578,15 @@ export interface paths {
                 };
                 /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day */
                 409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment link, at its close); send it again, which lands nothing new */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -895,6 +913,15 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                /** @description unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment link, at its close); send it again, which lands nothing new */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         delete?: never;
@@ -971,6 +998,15 @@ export interface paths {
                 };
                 /** @description superseded: FSM moved the job; out_of_order: send the step before this one first */
                 409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment link, at its close); send it again, which lands nothing new */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1061,6 +1097,15 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                /** @description unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment link, at its close); send it again, which lands nothing new */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         delete?: never;
@@ -1078,7 +1123,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** The piece: a replacement's and a first fit's step only */
+        /** The piece: a replacement's, a first fit's and a one visit's step only */
         post: {
             parameters: {
                 query?: never;
@@ -1137,6 +1182,15 @@ export interface paths {
                 };
                 /** @description superseded: FSM moved the job; out_of_order: send the step before this one first */
                 409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment link, at its close); send it again, which lands nothing new */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1227,6 +1281,15 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                /** @description unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment link, at its close); send it again, which lands nothing new */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         delete?: never;
@@ -1308,6 +1371,15 @@ export interface paths {
                 };
                 /** @description too_early_to_close: the wait has not run out */
                 425: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment link, at its close); send it again, which lands nothing new */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1475,15 +1547,17 @@ export interface components {
             /** @enum {string} */
             window_label: "morning" | "afternoon" | "evening";
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            /** @description A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, at the piece step. */
+            one_visit: boolean;
             /** @description The area, never the street: the one the visit's pincode is in, from the service area; else the address's locality, or the city. */
             sector: string | null;
             /** @enum {string} */
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
             /**
-             * @description Free for a visit the price book charges nothing for. No response to a technician carries an amount.
+             * @description Free for a visit the price book charges nothing for; at_visit for a one visit, paid for once the client is fitted. No response to a technician carries an amount.
              * @enum {string}
              */
-            badge: "prepaid" | "credit" | "free";
+            badge: "prepaid" | "credit" | "free" | "at_visit";
             /** @description How much of the day the visit takes: 1, 1.5 or 2 slots. Null for an unknown type. */
             slots: number | null;
             unlocked: boolean;
@@ -1503,15 +1577,17 @@ export interface components {
             /** @enum {string} */
             window_label: "morning" | "afternoon" | "evening";
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            /** @description A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, at the piece step. */
+            one_visit: boolean;
             /** @description The area, never the street: the one the visit's pincode is in, from the service area; else the address's locality, or the city. */
             sector: string | null;
             /** @enum {string} */
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
             /**
-             * @description Free for a visit the price book charges nothing for. No response to a technician carries an amount.
+             * @description Free for a visit the price book charges nothing for; at_visit for a one visit, paid for once the client is fitted. No response to a technician carries an amount.
              * @enum {string}
              */
-            badge: "prepaid" | "credit" | "free";
+            badge: "prepaid" | "credit" | "free" | "at_visit";
             /** @description How much of the day the visit takes: 1, 1.5 or 2 slots. Null for an unknown type. */
             slots: number | null;
             unlocked: boolean;
@@ -1565,6 +1641,14 @@ export interface components {
             partial_reasons: components["schemas"]["JobSheetItem"][];
             /** @description Every consumable the technician may record, those this job's service is expected to use first, each with the count its stepper starts at. */
             consumables: components["schemas"]["TechnicianConsumable"][];
+            /** @description On a one visit, the products the client may choose, by name and never by price: the first fit's services offered on the visit's day, in ops' order. Empty for any other visit. */
+            products: components["schemas"]["TechnicianProduct"][];
+            /** @description On a one visit closed as done with the client fitted, its payment link; else null. */
+            payment_link: {
+                /** @description The link Razorpay texted the client, to show them; null until Razorpay has made it. */
+                url: string | null;
+                paid: boolean;
+            } | null;
         };
         TechnicianJobProgress: {
             checked_in_at: string | null;
@@ -1597,6 +1681,11 @@ export interface components {
             unit: string;
             /** @description How many this job's service is expected to use; 0 for one it lists no use for. */
             expected: number;
+        };
+        TechnicianProduct: {
+            /** @description What the piece step sends back as product. */
+            tier: string;
+            name: string;
         };
         CheckIn: {
             passed: boolean;
@@ -1665,8 +1754,9 @@ export interface components {
                 quantity: number;
             })[];
         };
+        PieceRequest: components["schemas"]["PieceFitted"] | components["schemas"]["PieceDeclined"];
         /** @description The piece fitted, with its base and lot, and on a replacement the one that came off. A failure_reason on the piece itself marks it as failed and fits nothing. */
-        PieceRequest: {
+        PieceFitted: {
             piece_code: string;
             base?: string | null;
             supplier_lot?: string | null;
@@ -1676,6 +1766,13 @@ export interface components {
                 piece_code: string;
                 failure_reason: string;
             } | null;
+            /** @description On a one visit, and only there: the product the client chose, by its tier from the card's products. */
+            product?: string;
+        };
+        /** @description On a one visit, and only there: the client decided against the fit, so nothing was fitted, and closing the visit as done makes it a consultation. */
+        PieceDeclined: {
+            /** @enum {boolean} */
+            declined: true;
         };
         OutcomeRequest: {
             /** @enum {string} */

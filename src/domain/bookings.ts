@@ -84,6 +84,8 @@ interface HoldRow {
   moves_appointment_id: string | null;
   move_kind: "move" | "replace" | null;
   use_credit: number;
+  /** 1 for a consultation and fit in one visit, booked from the site with nothing paid (ADR 0105). */
+  one_visit: number;
   fsm_tried_at: string | null;
   fsm_work_order_id: string | null;
   fsm_appointment_id: string | null;
@@ -104,7 +106,7 @@ async function holdOf(db: D1Database, holdId: string): Promise<HoldRow | null> {
       `SELECT h.id, h.person_id, p.name AS person_name, h.type, h.tier, h.minutes, s.name AS service_name, h.date,
               h.start_unit, h.technician_id, t.fsm_id AS technician_fsm_id, h.amount, h.state, h.expires_at,
               h.grace_seconds, h.confirmed_at, h.razorpay_order_id, h.appointment_id, h.moves_appointment_id, h.move_kind,
-              h.use_credit, h.fsm_tried_at, h.fsm_work_order_id, h.fsm_appointment_id, h.fsm_held_at, h.queued_at,
+              h.use_credit, h.one_visit, h.fsm_tried_at, h.fsm_work_order_id, h.fsm_appointment_id, h.fsm_held_at, h.queued_at,
               h.refunded_at, h.pincode, sp.city
        FROM slot_holds h JOIN technicians t ON t.id = h.technician_id JOIN people p ON p.id = h.person_id
        LEFT JOIN serviceable_pincodes sp ON sp.pincode = h.pincode
@@ -335,7 +337,8 @@ async function bookNewVisit(
   const appointmentId = hold.fsm_appointment_id ?? (await appointmentFor(db, fsm, hold, workOrder, options));
 
   // FSM's webhook may have mirrored the appointment already; either way the visit is the one with its FSM ID. Its
-  // tier is the hold's whatever the mirror read from its item, which may be its kind's where FSM had none of its own.
+  // tier is the hold's whatever the mirror read from its item, which may be its kind's where FSM had none of its own,
+  // and a one visit is marked as one, which FSM's item does not say.
   const { start, end } = visitTimes(hold.date, hold.start_unit, heldMinutes(hold));
   const at = now.toISOString();
   const visitId = "(SELECT id FROM appointments WHERE fsm_id = ?1)";
@@ -343,10 +346,12 @@ async function bookNewVisit(
     db
       .prepare(
         `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, tier, window_start, window_end,
-           technician_id, status, fsm_status, service_city, service_pincode, fsm_modified_at, synced_at, first_seen_at)
-         VALUES (?2, ?1, ?3, ?4, ?5, ?12, ?6, ?7, ?8, 'scheduled', 'Scheduled', ?9, ?10, ?11, ?11, ?11)
+           technician_id, status, fsm_status, service_city, service_pincode, fsm_modified_at, synced_at, first_seen_at,
+           one_visit)
+         VALUES (?2, ?1, ?3, ?4, ?5, ?12, ?6, ?7, ?8, 'scheduled', 'Scheduled', ?9, ?10, ?11, ?11, ?11, ?13)
          ON CONFLICT (fsm_id) DO UPDATE SET
            tier = excluded.tier,
+           one_visit = COALESCE(appointments.one_visit, excluded.one_visit),
            service_city = COALESCE(appointments.service_city, excluded.service_city),
            service_pincode = COALESCE(appointments.service_pincode, excluded.service_pincode)`,
       )
@@ -363,6 +368,7 @@ async function bookNewVisit(
         hold.pincode,
         at,
         hold.tier,
+        hold.one_visit === 1 ? "booked" : null,
       ),
     db
       .prepare(
@@ -377,13 +383,13 @@ async function bookNewVisit(
          WHERE razorpay_order_id = ?3 AND appointment_id IS NULL`,
       )
       .bind(appointmentId, at, hold.razorpay_order_id),
-    // The consultation an invited friend booked, so ops' referral record names it.
+    // The consultation an invited friend booked, so ops' referral record names it: a one visit is theirs too.
     db
       .prepare(
         `UPDATE referral_attributions SET consultation_appointment_id = ${visitId}, updated_at = ?2
-         WHERE referred_person_id = ?3 AND consultation_appointment_id IS NULL AND ?4 = 'consultation'`,
+         WHERE referred_person_id = ?3 AND consultation_appointment_id IS NULL AND (?4 = 'consultation' OR ?5 = 1)`,
       )
-      .bind(appointmentId, at, hold.person_id, hold.type),
+      .bind(appointmentId, at, hold.person_id, hold.type, hold.one_visit),
     ...(options.alongside ?? []),
   ]);
   const booked = await holdOf(db, hold.id);
@@ -491,10 +497,14 @@ async function keepAppointment(db: D1Database, holdId: string, appointmentId: st
   await db.prepare("UPDATE slot_holds SET fsm_appointment_id = ?2 WHERE id = ?1").bind(holdId, appointmentId).run();
 }
 
-/** The message a new booking sends: a move's, a consultation's, or the payment's receipt. */
+/**
+ * The message a new booking sends: a move's, the site's booking of a consultation or of one visit, which nothing paid
+ * for, or the payment's receipt.
+ */
 function confirmationOf(hold: HoldRow): VisitMessageKind {
   if (hold.move_kind === "replace") return "reschedule_confirmation";
-  return hold.type === "consultation" ? "consultation_confirmation" : "payment_receipt";
+  if (hold.type === "consultation" || hold.one_visit === 1) return "consultation_confirmation";
+  return "payment_receipt";
 }
 
 /**

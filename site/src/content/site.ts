@@ -288,7 +288,7 @@ export const legalPages = {
     title: "Terms",
     paragraphs: [
       "These terms cover the service Mane Man Grooming Services Private Limited provides: non-surgical hair systems, measured, fitted and serviced at your home across Delhi NCR. By booking a visit or using the try-on you agree to them. We may change them; the version on this page when you book is the one that applies to that booking.",
-      "The first visit is a consultation: an hour, free, and with no obligation to order. Nothing is fitted at it. We confirm the day and time on WhatsApp, and you can move or cancel any visit by messaging us, at no charge. Prices are the ones we quote you before the fit. The first fit, which covers the piece, the fitting and the cut, is paid on the day of the fit by card, UPI or bank transfer, and each service visit is paid when it is made. We take no deposit and sell no package.",
+      "The first visit is a consultation: an hour, free, and with no obligation to order. Nothing is fitted at it, unless you book the consultation and fit in one visit: three hours, in which your technician fits the hair system you choose with him, paid for once you are fitted, and nothing if you decide against it. We confirm the day and time on WhatsApp, and you can move or cancel any visit by messaging us, at no charge. Prices are the ones we quote you before the fit. The first fit, which covers the piece, the fitting and the cut, is paid on the day of the fit by card, UPI or bank transfer, and each service visit is paid when it is made. We take no deposit and sell no package.",
       "If the fit is not right, we refit it at no charge, or refund you in full, including the fitting and the cut, within fourteen days of the fit. A hair system is bonded to the skin, so tell the technician about any skin condition, allergy or treatment before the fit; if a system is not suitable for you, we say so and do not fit it. A base wears with use and its life depends on its care, so the replacement intervals we give are typical, not promised.",
       "The try-on is an illustrative simulation made by software from one photograph. It is not a photograph of a result, and not a promise of how a fitted piece will look: a fitted piece is matched to your own hair colour, density and growth pattern. Upload only a photograph of yourself, and only if you are eighteen or over. Each visitor gets one simulation.",
       "We are responsible for the care and skill of our technicians. Beyond a refit or refund under the guarantee, and except where the law provides otherwise, our liability for a visit is limited to what you paid for it. These terms are governed by the laws of India, and the courts at New Delhi have jurisdiction. For questions or complaints, message or call us on +91 90079 73247.",
@@ -1023,7 +1023,9 @@ export const tryOn = {
  */
 export const booking = {
   title: "Book a free consultation",
-  intro: `Nothing is fitted on the first visit. He measures your scalp and matches your colour, then leaves. ${capitalised(visitLength.consultation)}, nothing to pay.`,
+  // The consultation fits nothing; the consultation and fit in one visit, the form's second choice, does
+  // (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). The owner reviews the words (open point 162).
+  intro: `He measures your scalp and matches your colour: ${visitLength.consultation}, with nothing to pay. Or book the fit in the same visit, and end it wearing your hair system.`,
   extent: "Extent of hair loss",
 };
 
