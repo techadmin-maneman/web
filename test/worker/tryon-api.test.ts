@@ -398,6 +398,32 @@ describe("POST /api/tryon/claim, before the look is made", () => {
     expect((await browser.claim(first)).status).toBe(201);
     expect((await browser.claim(second)).status).toBe(429);
   });
+
+  // The owner's ruling of 1 October 2026: "One per number, every 30 days" (LOOK_PER_NUMBER_DAYS).
+  it("refuses a number that had a look in the last thirty days, but not for a look never made or failed", async () => {
+    const browser = visitor({ tryon: { claimMobileDailyLimit: 10 } });
+    const made = await browser.uploaded();
+    expect((await browser.claim(made)).status).toBe(201);
+    // Claimed, but its render never asked for: no look yet.
+    expect((await browser.claim(await browser.uploaded())).status).toBe(201);
+
+    await env.DB.prepare("UPDATE tryon_jobs SET submit_started_at = claimed_at, state = 'ready' WHERE id = ?")
+      .bind(made)
+      .run();
+    const refused = await browser.claim(await browser.uploaded());
+    expect(refused.status).toBe(403);
+    expect(await refused.json()).toMatchObject({ error: { code: "look_limit_reached" } });
+
+    await setState(made, "failed");
+    expect((await browser.claim(await browser.uploaded())).status).toBe(201);
+
+    await env.DB.prepare(
+      "UPDATE tryon_jobs SET state = 'ready', claimed_at = strftime('%Y-%m-%dT%H:%M:%fZ', claimed_at, '-31 days') WHERE id = ?",
+    )
+      .bind(made)
+      .run();
+    expect((await browser.claim(await browser.uploaded())).status).toBe(201);
+  });
 });
 
 describe("POST /api/tryon/generate and GET /api/tryon/status", () => {

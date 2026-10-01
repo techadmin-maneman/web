@@ -78,3 +78,5 @@ Every word above that v2 does not have is ours until the owner's second round (i
   - `test/worker/notices.test.ts`, `test/node/site-content.test.ts` and `test/node/site-production-gate.test.ts`: the notices, the words, and the production build refused on them alone.
   - `test/node/site-tryon-machine.test.ts`: the screens.
   - `e2e/try.e2e.ts`, `e2e/try-flow.e2e.ts`, `e2e/try-api.e2e.ts` and `e2e/accessibility.e2e.ts`: the screens, the order of the calls, the sent and unavailable screens, and the local API end to end. The tests that asserted the look on screen now assert the sent screen.
+
+**Amended by the owner, 1 October 2026:** one look per WhatsApp number every thirty days ("One per number, every 30 days"), held at the claim, since the number is known before the look is made (`LOOK_PER_NUMBER_DAYS`, src/policy/tryon-delivery.ts). A look counts once its render was asked for and did not fail; a number that had one is shown that its look was already sent. The three-a-day caps stay as abuse limits.

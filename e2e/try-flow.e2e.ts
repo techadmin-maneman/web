@@ -226,6 +226,16 @@ test("a visitor whose upload is refused for having had their look is told it was
   expect((await analyticsEvents(page)).map(([name]) => name)).not.toContain("try_on_failed");
 });
 
+// The owner's ruling of 1 October 2026: one look per number every thirty days, held at the gate.
+test("a number that had its look in the last thirty days is told at the gate that it was sent", async ({ page }) => {
+  const seen = await mockApi(page, { claim: refusal(403, "look_limit_reached") });
+  await visit(page, "/try");
+  await throughToGate(page);
+  await sendFromGate(page, MOBILE);
+  await expect(page.getByRole("heading", { name: "Your look has already been sent." })).toBeVisible();
+  expect(named(seen, "generate")).toHaveLength(0);
+});
+
 // ADR 0104: the look goes to WhatsApp only, so while WhatsApp cannot send it the try-on does not run.
 test("while WhatsApp cannot send a look, the visitor is told on arrival, and nothing is uploaded", async ({ page }) => {
   const seen = await mockApi(page, { availability: { status: 200, json: { available: false } } });
