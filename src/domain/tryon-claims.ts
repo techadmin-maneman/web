@@ -25,6 +25,19 @@ export async function reserveJob(db: D1Database, jobId: string, now: Date): Prom
   return reserved !== null;
 }
 
+/** Whether this number had a look made, or being made, since `since`: a render asked for that did not fail. */
+export async function hadLookSince(db: D1Database, mobileE164: string, since: Date): Promise<boolean> {
+  const row = await db
+    .prepare(
+      `SELECT 1 AS found FROM tryon_jobs j JOIN people p ON p.id = j.person_id
+       WHERE p.mobile_e164 = ? AND j.claimed_at >= ? AND j.submit_started_at IS NOT NULL AND j.state <> 'failed'
+       LIMIT 1`,
+    )
+    .bind(mobileE164, since.toISOString())
+    .first<{ found: number }>();
+  return row !== null;
+}
+
 export interface NewClaim {
   readonly job: JobRow;
   readonly mobileE164: string;
