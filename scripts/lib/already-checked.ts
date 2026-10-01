@@ -4,8 +4,10 @@
 // A squash merge of a pull request that was up to date with main has exactly
 // the tree of the pull request's head. CI ran on that pull request against its
 // merge with main, which then had the same tree. So when the pushed tree is the
-// head's tree and that head passed CI, the deploy would only check the same
-// files twice. Anything else, or anything GitHub cannot tell us, runs CI.
+// head's tree and that head passed CI's full suite, the deploy would only check
+// the same files twice. A pass of the quick tier alone checked nothing a browser
+// sees (scripts/lib/ci-tier.ts), so it does not count. Anything else, or
+// anything GitHub cannot tell us, runs CI.
 //
 // It imports nothing from node_modules: its job installs nothing.
 
@@ -40,11 +42,25 @@ async function treeOf(get: GitHubGet, repository: string, commit: string): Promi
   return field(await get(`/repos/${repository}/git/commits/${commit}`), "tree", "sha");
 }
 
-async function passedCi(get: GitHubGet, repository: string, head: string): Promise<boolean> {
-  const query = `head_sha=${head}&event=pull_request&status=success&per_page=1`;
-  const runs = await get(`/repos/${repository}/actions/workflows/ci.yml/runs?${query}`);
-  const count = field(runs, "total_count");
-  return typeof count === "number" && count > 0;
+/** The job only a run of the full suite has (.github/workflows/ci.yml). */
+export const FULL_SUITE_JOB = "full suite";
+
+/** Whether one of the head's successful ci runs ran the full suite, and it passed. */
+async function passedFullSuite(get: GitHubGet, repository: string, head: string): Promise<boolean> {
+  const query = `head_sha=${head}&event=pull_request&status=success&per_page=10`;
+  const runs = field(await get(`/repos/${repository}/actions/workflows/ci.yml/runs?${query}`), "workflow_runs");
+  if (!Array.isArray(runs)) return false;
+  for (const run of runs as unknown[]) {
+    const jobs = field(
+      await get(`/repos/${repository}/actions/runs/${String(field(run, "id"))}/jobs?per_page=100`),
+      "jobs",
+    );
+    const full = Array.isArray(jobs)
+      ? (jobs as unknown[]).find((job) => field(job, "name") === FULL_SUITE_JOB)
+      : undefined;
+    if (field(full, "conclusion") === "success") return true;
+  }
+  return false;
 }
 
 async function decide(get: GitHubGet, repository: string, commit: string): Promise<Answer> {
@@ -58,10 +74,10 @@ async function decide(get: GitHubGet, repository: string, commit: string): Promi
   if (mergedTree === undefined || mergedTree !== headTree) {
     return { checked: false, reason: `the merge's files differ from #${pull.number}'s head, which CI checked` };
   }
-  if (!(await passedCi(get, repository, pull.head))) {
-    return { checked: false, reason: `#${pull.number}'s head has no successful ci run` };
+  if (!(await passedFullSuite(get, repository, pull.head))) {
+    return { checked: false, reason: `#${pull.number}'s head has no successful run of ci's full suite` };
   }
-  return { checked: true, reason: `the same files as #${pull.number}'s head, which passed ci` };
+  return { checked: true, reason: `the same files as #${pull.number}'s head, which passed ci's full suite` };
 }
 
 export async function alreadyChecked(repository: string, commit: string, get: GitHubGet): Promise<Answer> {
