@@ -89,6 +89,25 @@ function consumables(now: string): string[] {
   ];
 }
 
+/**
+ * The four products a consultation and fit in one visit offers, as first-fit services, each with a made-up price, as
+ * ops keep them in Settings · Services (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). Once only.
+ */
+function products(now: string): string[] {
+  const range = [
+    ["essential", "Mane Man Essential", 2_500_000],
+    ["active", "Mane Man Active", 3_000_000],
+    ["natural", "Mane Man Natural", 3_500_000],
+    ["natmax", "Mane Man NatMax", 4_000_000],
+  ] as const;
+  return [
+    `INSERT OR IGNORE INTO services (kind, tier, name, minutes, sort, updated_by, updated_at) VALUES
+       ${range.map(([tier, name], index) => row("first_fit", tier, name, 180, index + 1, "seed", now)).join(", ")};`,
+    `INSERT OR IGNORE INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from) VALUES
+       ${range.map(([tier, , amount]) => row("first_fit", tier, amount, 0, "2026-01-01")).join(", ")};`,
+  ];
+}
+
 async function seedTechnician(): Promise<void> {
   const now = new Date().toISOString();
   const visit = (date: string, window: keyof typeof WINDOWS) => {
@@ -125,6 +144,7 @@ async function seedTechnician(): Promise<void> {
        fsm_status, service_city, service_pincode, fsm_modified_at, synced_at) VALUES
        ${visit(indiaDate(0), "morning")}, ${visit(indiaDate(0), "afternoon")}, ${visit(indiaDate(1), "morning")};`,
     ...consumables(now),
+    ...products(now),
   ];
   const folder = await mkdtemp(join(tmpdir(), "mm-seed-"));
   try {
@@ -152,4 +172,5 @@ Seeded. Every login code is ${LOCAL_LOGIN_CODE}.
     ${spaced(late.mobile)}   a paid visit in three hours, inside the 24 hours a change is charged in
   technician app (http://tech.localhost:${String(PORTS.tech)})
     ${spaced(TECHNICIAN.mobile)}   ${TECHNICIAN.name}: two jobs today and one tomorrow at ${CLIENT.name}'s
+  the four products a consultation and fit in one visit offers, as first-fit services, with made-up prices
 `);
