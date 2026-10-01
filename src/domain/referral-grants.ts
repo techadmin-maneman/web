@@ -3,6 +3,11 @@
 // WhatsApp that their friend was fitted and the friend one that the credits are theirs, or the grant is held for
 // ops' review; a grant ops reject is told to both (docs/decisions/0074-hand-offs-and-messages.md). A referrer who
 // has since been erased gets nothing; their friend keeps what the invite promised (ADR 0025, item 24).
+//
+// A consultation and fit in one visit is paid for after it, by a link (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md),
+// so its grant waits until a payment for it is in, by its link or one ops made by hand: until then nothing was sold,
+// and the fraud rules, which compare the two people's payments, have none of the friend's to compare (ADR 0025,
+// item 93).
 
 import { fullDate } from "@maneman/web-kit/dates";
 import { indiaDate } from "../lib/india-time.ts";
@@ -172,6 +177,8 @@ const ATTRIBUTION = `SELECT r.id, r.code, rc.person_id AS referrer_id, rp.erased
   JOIN people fp ON fp.id = r.referred_person_id
   CROSS JOIN appointments a ON a.person_id = r.referred_person_id AND a.type = 'first_fit' AND a.status = 'completed'
     AND a.deleted_at IS NULL
+    AND (a.one_visit IS NULL OR EXISTS (SELECT 1 FROM payments p WHERE p.appointment_id = a.id AND p.kind = 'visit'
+      AND p.status IN ('captured', 'partially_refunded')))
   JOIN visits v ON v.appointment_id = a.id AND v.outcome = 'done'
   LEFT JOIN serviceable_pincodes pin ON pin.pincode = r.pincode`;
 

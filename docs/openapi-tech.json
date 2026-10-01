@@ -2083,16 +2083,6 @@
                 }
               }
             }
-          },
-          "503": {
-            "description": "unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment link, at its close); send it again, which lands nothing new",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -2176,16 +2166,6 @@
           },
           "409": {
             "description": "superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment link, at its close); send it again, which lands nothing new",
             "content": {
               "application/json": {
                 "schema": {
@@ -2523,16 +2503,6 @@
                 }
               }
             }
-          },
-          "503": {
-            "description": "unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment link, at its close); send it again, which lands nothing new",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -2626,16 +2596,6 @@
           },
           "409": {
             "description": "superseded: FSM moved the job; out_of_order: send the step before this one first",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment link, at its close); send it again, which lands nothing new",
             "content": {
               "application/json": {
                 "schema": {
@@ -2743,16 +2703,6 @@
                 }
               }
             }
-          },
-          "503": {
-            "description": "unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment link, at its close); send it again, which lands nothing new",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -2846,16 +2796,6 @@
           },
           "409": {
             "description": "superseded: FSM moved the job; out_of_order: send the step before this one first",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment link, at its close); send it again, which lands nothing new",
             "content": {
               "application/json": {
                 "schema": {
@@ -2963,16 +2903,6 @@
                 }
               }
             }
-          },
-          "503": {
-            "description": "unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment link, at its close); send it again, which lands nothing new",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
         }
       }
@@ -3066,16 +2996,6 @@
           },
           "425": {
             "description": "too_early_to_close: the wait has not run out",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment link, at its close); send it again, which lands nothing new",
             "content": {
               "application/json": {
                 "schema": {

@@ -27,6 +27,7 @@ const CRON_PATH = [
   "src/domain/asked-windows.ts",
   "src/domain/books-sync.ts",
   "src/domain/referral-grants.ts",
+  "src/domain/payment-links.ts",
   "src/domain/credits.ts",
   "src/domain/visit-messages.ts",
   "src/domain/next-visit.ts",

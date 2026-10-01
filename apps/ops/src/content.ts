@@ -164,7 +164,7 @@ export const dispatch = {
     when: (date: string, hours: string, technician: string) => `${date} · ${hours} · ${technician}`,
     /** The badge at the drawer's head: never an amount (ADR 0025, item 33). */
     // PLACEHOLDER: at_visit, a consultation and fit in one visit, paid for once the client is fitted (ADR 0105).
-    badges: { prepaid: "Prepaid", credit: "Credit", free: "Free", at_visit: "Pays at the visit" } as Readonly<
+    badges: { prepaid: "Prepaid", credit: "Credit", free: "Free", at_visit: "Pays once fitted" } as Readonly<
       Record<string, string>
     >,
     rows: { type: "Type", area: "Area", state: "State", referred: "Referred by" },

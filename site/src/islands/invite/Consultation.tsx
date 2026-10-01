@@ -1,5 +1,6 @@
 import { useState } from "preact/hooks";
 import type { LossExtent } from "../../../../src/config/booking.ts";
+import { ONE_VISIT_WINDOWS } from "../../../../src/policy/one-visit.ts";
 import { referral } from "../../content/referral.ts";
 import { track } from "../../lib/analytics.ts";
 import { addressToSend, emptyAddress, missingParts, type AddressFields } from "../../lib/address.ts";
@@ -19,8 +20,8 @@ import { useTurnstileForm } from "./useTurnstileForm.ts";
 type BookingWindow = ReferralConsultation["window"];
 type Plan = "consultation" | "one_visit";
 
-/** The windows a consultation and fit in one visit can start in: src/policy/one-visit.ts, ONE_VISIT_WINDOWS. */
-const ONE_VISIT_WINDOWS: readonly BookingWindow[] = ["morning", "afternoon"];
+/** Whether a consultation and fit in one visit can start in a window: the morning or the afternoon. */
+const oneVisitStartsIn = (window: BookingWindow): boolean => (ONE_VISIT_WINDOWS as readonly string[]).includes(window);
 
 /** How far ahead the date strip reaches, from tomorrow: src/config/scheduling.ts, BOOKING_DAYS. */
 const DAYS = 14;
@@ -85,13 +86,13 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
   const { consultation } = referral;
   const choices = consultation.plan;
   const windows = consultation.windows.filter(
-    (option) => plan === "consultation" || ONE_VISIT_WINDOWS.includes(option.id as BookingWindow),
+    (option) => plan === "consultation" || oneVisitStartsIn(option.id as BookingWindow),
   );
 
   function choosePlan(chosen: Plan) {
     setPlan(chosen);
     // The one visit does not start in the evening: a window it cannot take is not kept for it.
-    if (chosen === "one_visit" && !ONE_VISIT_WINDOWS.includes(window)) setWindow("morning");
+    if (chosen === "one_visit" && !oneVisitStartsIn(window)) setWindow("morning");
   }
   return (
     <form class={styles.form} onSubmit={submit} noValidate>

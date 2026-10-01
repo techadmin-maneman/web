@@ -56,6 +56,10 @@ function saveCalendar(result: ReferralConsultation) {
   downloadFile(referral.booked.calendarFile, "text/calendar", file);
 }
 
+/** What the visit costs now, beside where it is: the consultation nothing, the one visit nothing until the fit. */
+const costOf = (result: ReferralConsultation): string =>
+  result.one_visit ? referral.booked.payOnceFitted : referral.booked.free;
+
 /** The block's label: booked or asked for, the consultation or the consultation and fit. */
 function labelOf(result: ReferralConsultation): string {
   if (result.state === "requested") {
@@ -78,7 +82,7 @@ export function Booked(props: { booking: Booking; heading: HeadingRef }) {
           {asked ? `${referral.requested.asked} ${headline}` : headline}
         </h1>
         <p class={styles.doneBlockBody}>{asked ? referral.requested.body : referral.booked.body}</p>
-        <p class={styles.doneBlockWhere}>{`${place} · ${referral.booked.free}`}</p>
+        <p class={styles.doneBlockWhere}>{`${place} · ${costOf(result)}`}</p>
       </div>
       <div class={styles.doneAfter}>
         <p class={styles.doneNumber}>{fill(referral.booked.number, { mobile })}</p>

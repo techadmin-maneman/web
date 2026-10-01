@@ -120,7 +120,7 @@ export const referral = {
       ],
       // The first fit's three hours do not fit in the evening's half-slots (docs/decisions/0035-window-slot-map.md),
       // so the form offers the one visit the morning and the afternoon.
-      note: `${capitalised(visitLength.firstFit)}, at home, in the morning or the afternoon. Choose your hair system with your technician and leave wearing it. Pay once fitted, by a link to your phone; decide against it and you pay nothing.`,
+      note: `${capitalised(visitLength.firstFit)}, at home, in the morning or the afternoon. Choose your hair system with your technician and have it fitted there and then. Pay once fitted, by a link to your phone; decide against it and you pay nothing.`,
     },
     consent: lineOf(notices.consultation),
     submit: "Book the consultation",
@@ -187,6 +187,9 @@ export const referral = {
     label: "Consultation booked",
     body: "A technician messages you the day before.",
     free: "free",
+    // Not drawn: the consultation and fit in one visit costs nothing until the fit (ADR 0105). The owner approves the
+    // words (open point 165).
+    payOnceFitted: "pay once fitted",
     credits: "The 3 service visits land when you are fitted.",
     back: "See the site",
     // Not drawn on C4 (docs/fidelity-method.md, "The referral landing"). The owner approves the words (open point 45).

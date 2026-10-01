@@ -19,7 +19,19 @@ import { createStubBooks } from "../../src/providers/books.ts";
 import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
 import { createStubPayments, type PaymentsProvider, type StubPayments } from "../../src/providers/payments.ts";
 import { ProviderError } from "../../src/providers/provider-error.ts";
-import { appFor, captureLogs, fakeDependencies, LOCAL_SETTINGS, markDatabase, NOW, request } from "./helpers.ts";
+import { CRON_JOBS, runCronJobs } from "../../src/scheduled/cron.ts";
+import { termsOfVisit } from "../../src/domain/visit-changes.ts";
+import { ONE_VISIT_TERMS } from "../../src/policy/one-visit.ts";
+import {
+  appFor,
+  captureLogs,
+  fakeDependencies,
+  LOCAL_CONFIG,
+  LOCAL_SETTINGS,
+  markDatabase,
+  NOW,
+  request,
+} from "./helpers.ts";
 import { JOB, PERSON, working, type Working } from "./job-fixtures.ts";
 
 /** Mane Man Natural, at Rs. 45,000 with no GST, as staging's book has no GST. */
@@ -61,6 +73,13 @@ async function toThePiece(job: Working, piece: object): Promise<Response> {
 
 const closeAsDone = (job: Working, eventId = "event-outcome-01") =>
   job.post(path("outcome"), { outcome: "done" }, eventId);
+
+/** The cron's job that asks again for a link a close could not have made, on its own. */
+const linksJob = (job: Working) =>
+  runCronJobs(
+    CRON_JOBS.filter((cronJob) => cronJob.name === "payment_links"),
+    { env, deps: job.deps, config: LOCAL_CONFIG, log: createLogger() },
+  );
 
 const visitRow = () => env.DB.prepare("SELECT type, tier, one_visit FROM appointments WHERE id = ?1").bind(JOB).first();
 const linkRow = () =>
@@ -172,7 +191,8 @@ describe("closing a one visit the client was fitted at", () => {
     ]);
   });
 
-  it("answers 503 while Razorpay cannot be reached, and asks again when the phone sends the close again", async () => {
+  // The phone's outbox is one queue for every job, so a close that did not land would hold the rest of the day.
+  it("lands while Razorpay cannot be reached, and the cron sends the link once it can", async () => {
     const stub = createStubPayments();
     let reachable = false;
     const payments: PaymentsProvider = {
@@ -182,24 +202,58 @@ describe("closing a one visit the client was fitted at", () => {
     const job = await oneVisit({ payments });
     await toThePiece(job, { ...A_PIECE, product: NATURAL.tier });
 
-    expect((await closeAsDone(job)).status).toBe(503);
+    expect((await closeAsDone(job)).status).toBe(202);
+    expect(await linkRow()).toMatchObject({ made: 0, sent_at: null });
+    await linksJob(job);
     expect(await linkRow()).toMatchObject({ made: 0, sent_at: null });
 
     reachable = true;
-    expect((await closeAsDone(job)).status).toBe(202);
+    await linksJob(job);
     expect(stub.made.links).toHaveLength(1);
     expect(await linkRow()).toMatchObject({ made: 1 });
+    await linksJob(job);
+    expect(stub.made.links).toHaveLength(1);
   });
 
-  it("tells ops once when Razorpay refuses the link, with the visit's ID to make one by hand", async () => {
+  // Razorpay made and texted the link, and its answer never came: the next ask is refused for the same reference.
+  it("keeps the link a try whose answer never came made, rather than calling it refused", async () => {
+    const stub = createStubPayments();
+    let answerLost = true;
+    const payments: PaymentsProvider = {
+      ...stub,
+      createPaymentLink: async (link) => {
+        const made = await stub.createPaymentLink(link);
+        if (!answerLost) return made;
+        answerLost = false;
+        throw new Error("The operation was aborted due to timeout");
+      },
+    };
+    const job = await oneVisit({ payments });
+    await toThePiece(job, { ...A_PIECE, product: NATURAL.tier });
+    expect((await closeAsDone(job)).status).toBe(202);
+    expect(await linkRow()).toMatchObject({ made: 0 });
+
+    await linksJob(job);
+    expect(stub.made.links).toHaveLength(1);
+    expect(await linkRow()).toMatchObject({ made: 1 });
+    expect(job.deps.alerts).toEqual([]);
+  });
+
+  it("tells ops once when Razorpay refuses the link, with the visit's ID to make one by hand, and asks no more", async () => {
+    let asked = 0;
     const refusing: PaymentsProvider = {
       ...createStubPayments(),
-      createPaymentLink: () => Promise.reject(new ProviderError(400, "BAD_REQUEST_ERROR", "Payment links are off")),
+      createPaymentLink: () => {
+        asked += 1;
+        return Promise.reject(new ProviderError(400, "BAD_REQUEST_ERROR", "Payment links are off"));
+      },
     };
     const job = await oneVisit({ payments: refusing });
     await toThePiece(job, { ...A_PIECE, product: NATURAL.tier });
 
     expect((await closeAsDone(job)).status).toBe(202);
+    await linksJob(job);
+    expect(asked).toBe(1);
     expect(job.deps.alerts).toHaveLength(1);
     expect(job.deps.alerts[0]).toContain(`reference ${JOB}`);
     const { tasks } = await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS);
@@ -374,10 +428,90 @@ describe("Razorpay's word that a one visit's link is paid", () => {
     await deliver(linkPaid({ id: "plink_by_hand", reference_id: JOB }), "evt-2");
     const payment = await env.DB.prepare("SELECT appointment_id FROM payments").first();
     expect(payment).toEqual({ appointment_id: JOB });
+    expect(await linkRow()).toMatchObject({ paid_at: "2026-09-22T08:57:15.000Z" });
+  });
+
+  it("finds the visit by its reference for a link ops made by hand where no close made one", async () => {
+    await oneVisit();
+    expect((await deliver(linkPaid({ id: "plink_by_hand", reference_id: JOB }), "evt-4")).status).toBe(200);
+    const payment = await env.DB.prepare("SELECT person_id, appointment_id, kind, status FROM payments").first();
+    expect(payment).toEqual({ person_id: PERSON, appointment_id: JOB, kind: "visit", status: "captured" });
+    expect(await linkRow()).toBeNull();
   });
 
   it("records nothing for a link that is not ours, whose payment its own event records", async () => {
     await deliver(linkPaid({ id: "plink_other", reference_id: "someone-else" }), "evt-3");
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM payments").first()).toEqual({ n: 0 });
+  });
+});
+
+// While self-serve booking is off, a one visit is a request ops book in FSM by hand (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+describe("a one visit ops book by hand while booking is off", () => {
+  const BY_HAND = "ap-by-hand";
+
+  /** FSM's first fit for the client, as ops booked it: on the first fit's item, for three hours, tomorrow. */
+  const fsmWithTheFit = () =>
+    createStubFsm({
+      ...EMPTY_FSM,
+      items: [{ id: "item-fit", name: "First fit", type: "Service", price: 3_000_000 }],
+      appointments: [
+        {
+          id: BY_HAND,
+          name: "AP-9",
+          status: "Scheduled",
+          workOrderId: "wo-by-hand",
+          contactId: "contact-1",
+          scheduledStart: "2026-09-22T09:00:00+05:30",
+          scheduledEnd: "2026-09-22T12:00:00+05:30",
+          actualStart: null,
+          actualEnd: null,
+          technicianIds: ["resource-1"],
+          serviceIds: ["item-fit"],
+          serviceCity: "Gurgaon",
+          servicePincode: "122018",
+          modifiedAt: "2026-09-21T12:00:00+05:30",
+        },
+      ],
+    });
+
+  const asked = (oneVisit: number) =>
+    env.DB.prepare(
+      `INSERT INTO consultation_requests (id, person_id, pincode, requested_date, requested_window, created_at, one_visit)
+       VALUES (?1, ?2, '122018', '2026-09-22', 'morning', ?3, ?4)`,
+    )
+      .bind(crypto.randomUUID(), PERSON, NOW.toISOString(), oneVisit)
+      .run();
+
+  const handBooked = () =>
+    env.DB.prepare("SELECT id, one_visit FROM appointments WHERE fsm_id = ?1")
+      .bind(BY_HAND)
+      .first<{ id: string; one_visit: string | null }>();
+
+  it("is marked as one visit when the mirror first sees it, sold to cost nothing, and its request leaves the board", async () => {
+    await working("service");
+    await asked(1);
+    await syncAppointment(env.DB, fsmWithTheFit(), BY_HAND, NOW);
+
+    const visit = await handBooked();
+    expect(visit?.one_visit).toBe("booked");
+    const booked = await env.DB.prepare("SELECT booked FROM consultation_requests").first();
+    expect(booked).toEqual({ booked: 1 });
+    const { tasks } = await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS);
+    expect(tasks.filter((task) => task.group === "consultation_request")).toEqual([]);
+
+    const inForce = { noticeHours: 24, lateCharge: "late_fee", noShowCharge: "late_fee" } as const;
+    const sold = await termsOfVisit(
+      env.DB,
+      { id: visit?.id ?? "", type: "first_fit", start: new Date("2026-09-22T03:30:00.000Z") },
+      inForce,
+    );
+    expect(sold).toEqual({ terms: ONE_VISIT_TERMS, lateFee: null });
+  });
+
+  it("leaves a first fit alone for a client who asked for the consultation alone", async () => {
+    await working("service");
+    await asked(0);
+    await syncAppointment(env.DB, fsmWithTheFit(), BY_HAND, NOW);
+    expect((await handBooked())?.one_visit).toBeNull();
   });
 });

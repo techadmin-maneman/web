@@ -80,14 +80,18 @@ export async function syncAppointment(db: D1Database, fsm: FsmProvider, fsmId: s
         // visit, where one did, else its item's. A time FSM holds that the mirror did not is a move made in FSM,
         // by ops, since our own moves write the mirror as they write FSM: the client's notice goes on counting
         // from the time before it (ADR 0096). A one visit stays on the first fit's item in FSM whatever the client
-        // decided, so it keeps the product they were fitted with, and one they declined stays a consultation
-        // (ADR 0105).
+        // decided, so it keeps the product they were fitted with, and one they declined stays a consultation; and a
+        // first fit first seen for a client whose one visit asked for while booking was off still waits is the one
+        // ops booked for it by hand, and is marked as one (ADR 0105).
         `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, tier, window_start, window_end,
-           technician_id, status, fsm_status, service_city, service_pincode, fsm_modified_at, synced_at, first_seen_at)
+           technician_id, status, fsm_status, service_city, service_pincode, fsm_modified_at, synced_at, first_seen_at,
+           one_visit)
          VALUES (?1, ?2, ?3, ?4, ?5,
            COALESCE((SELECT h.tier FROM slot_holds h WHERE h.appointment_id = ?1 AND h.state = 'booked'
              ORDER BY h.created_at LIMIT 1), ?15),
-           ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?14)
+           ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?14,
+           iif(?5 = 'first_fit' AND EXISTS (SELECT 1 FROM consultation_requests r
+             WHERE r.person_id = ?4 AND r.one_visit = 1 AND r.booked = 0), 'booked', NULL))
          ON CONFLICT (fsm_id) DO UPDATE SET
            fsm_work_order_id = excluded.fsm_work_order_id, person_id = excluded.person_id,
            type = iif(appointments.one_visit = 'declined', appointments.type, excluded.type),

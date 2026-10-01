@@ -186,7 +186,7 @@ Indexes:
 - `appointments_to_invoice`: on (`window_start`), where `status = 'completed' AND invoice_issued_at IS NULL AND fsm_work_order_id IS NOT NULL AND deleted_at IS NULL`
 - A `UNIQUE` constraint: unique on (`fsm_id`)
 
-Triggers: `appointments_consultation_booked_added`, `appointments_consultation_booked_changed`, `appointments_consultation_booked_taken_out`, `appointments_followed_up_added`, `appointments_followed_up_changed`, `appointments_followed_up_taken_out`, `appointments_last_visits_added`, `appointments_last_visits_changed`, `appointments_last_visits_taken_out`, `appointments_replacement_booked_added`, `appointments_replacement_booked_changed`, `appointments_replacement_booked_taken_out`.
+Triggers: `appointments_consultation_booked_added`, `appointments_consultation_booked_changed`, `appointments_consultation_booked_taken_out`, `appointments_first_fit_books_one_visit_added`, `appointments_first_fit_books_one_visit_changed`, `appointments_followed_up_added`, `appointments_followed_up_changed`, `appointments_followed_up_taken_out`, `appointments_last_visits_added`, `appointments_last_visits_changed`, `appointments_last_visits_taken_out`, `appointments_replacement_booked_added`, `appointments_replacement_booked_changed`, `appointments_replacement_booked_taken_out`.
 
 ## audit_log
 
@@ -890,6 +890,7 @@ Made by `0061_one_visit.sql`.
 | `razorpay_link_id` | TEXT | yes |  |  |
 | `short_url` | TEXT | yes |  |  |
 | `sent_at` | TEXT | yes |  |  |
+| `refused_at` | TEXT | yes |  |  |
 | `razorpay_payment_id` | TEXT | yes |  |  |
 | `paid_at` | TEXT | yes |  |  |
 | `created_at` | TEXT | no |  |  |
@@ -898,6 +899,7 @@ Made by `0061_one_visit.sql`.
 Indexes:
 
 - `payment_links_unpaid`: on (`created_at`), where `paid_at IS NULL`
+- `payment_links_unsent`: on (`created_at`), where `sent_at IS NULL AND refused_at IS NULL`
 - A `UNIQUE` constraint: unique on (`appointment_id`)
 - A `UNIQUE` constraint: unique on (`razorpay_link_id`)
 

@@ -425,10 +425,6 @@ const STEP_REFUSALS = {
   401: errorResponse("session_required; device_revoked: ops revoked this phone, so drop the cached jobs"),
   404: errorResponse("not_found: no such job"),
   409: errorResponse("superseded: FSM moved the job; out_of_order: send the step before this one first"),
-  503: errorResponse(
-    "unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment " +
-      "link, at its close); send it again, which lands nothing new",
-  ),
 };
 
 /** A check-in's or a start's conflict, which may also be on the wrong day. */
@@ -838,7 +834,6 @@ export function registerTechJobs(app: App): void {
           touched: [technicianId],
           lowered: used.lowered ? [technicianId] : [],
         });
-        return "kept";
       },
     );
   });
@@ -854,7 +849,8 @@ export function registerTechJobs(app: App): void {
   });
 
   // The reasons ops set; one they have taken off since the phone kept the job is still taken. A one visit closed as
-  // done becomes a consultation or the product's visit, and asks for its payment link, once however often it lands.
+  // done becomes a consultation or the product's visit, and asks Razorpay for its payment link once, however often
+  // it lands: the close lands whatever Razorpay answers, and the cron asks again for a link it could not make.
   app.openapi(outcomeRoute, (c) => {
     const body = c.req.valid("json");
     return step(
@@ -866,10 +862,9 @@ export function registerTechJobs(app: App): void {
         return known.has(body.reason) ? { outcome: "partial", reason: body.reason } : { invalid: ["reason"] };
       },
       async (job) => {
-        if (job.oneVisit === null || body.outcome !== "done") return "kept";
+        if (job.oneVisit === null || body.outcome !== "done") return;
         const { deps, log } = c.var;
-        const sent = await closeOneVisit(c.env.DB, { ...deps, log }, job, deps.now());
-        return sent === "unavailable" ? "unavailable" : "kept";
+        await closeOneVisit(c.env.DB, { ...deps, log }, job, deps.now());
       },
     );
   });
@@ -939,7 +934,7 @@ async function step(
   c: Ctx,
   kind: JobEventKind,
   build: (job: WorkableJob) => StepBody | Promise<StepBody>,
-  landed?: (job: WorkableJob) => Promise<Kept>,
+  landed?: (job: WorkableJob) => Promise<void>,
 ) {
   const job = await namedJob(c, c.req.param("id") ?? "");
   if (job === null) return c.json(errorBody("not_found", c.var.requestId), 404);
@@ -949,16 +944,9 @@ async function step(
   }
   const landing = await land(c, job, kind, built);
   if (!landing.ok) return c.json(refusalOf(c, landing), 409);
-  const kept = landed === undefined ? "kept" : await landed(job);
-  if (kept === "unavailable") return c.json(errorBody("unavailable", c.var.requestId), 503);
+  if (landed !== undefined) await landed(job);
   return c.json(landing.accepted, 202);
 }
-
-/**
- * What a step kept of its own once it landed: kept, or a vendor that could not be reached for now, which the phone
- * hears as a 503 and sends the step again for, landing nothing new.
- */
-type Kept = "kept" | "unavailable";
 
 type PieceBody = z.infer<typeof PieceRequestSchema>;
 

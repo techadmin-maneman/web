@@ -142,6 +142,9 @@ test("offers the consultation and fit in one visit, and says what it holds and h
       "Your technician brings the range for you to choose from. Once you are fitted, you pay by a link sent to your phone.",
     ),
   ).toBeVisible();
+  // Nothing is paid on the site, and nothing for the fit until it is done.
+  await expect(page.getByText(/· pay once fitted$/)).toBeVisible();
+  await expect(page.getByText(/· free$/)).toHaveCount(0);
 });
 
 test("offers the one visit the morning and the afternoon, never the evening, and the consultation all three", async ({

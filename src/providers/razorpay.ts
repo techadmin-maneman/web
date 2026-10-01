@@ -6,6 +6,7 @@
 //   POST https://api.razorpay.com/v1/orders                   { id }
 //   POST https://api.razorpay.com/v1/payments/{id}/refund     { id }
 //   POST https://api.razorpay.com/v1/payment_links            { id, short_url }
+//   GET  https://api.razorpay.com/v1/payment_links?reference_id=  { payment_links: [{ id, short_url }] }
 //
 // A payment link is texted to the client by Razorpay itself, so it needs no template of ours and no secret beyond the
 // keys (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
@@ -66,6 +67,7 @@ export type RazorpayRefund = z.infer<typeof RazorpayRefundSchema>;
 const API = "https://api.razorpay.com/v1";
 const Created = z.object({ id: z.string() });
 const LinkMade = z.object({ id: z.string(), short_url: z.string() });
+const LinksFound = z.object({ payment_links: z.array(LinkMade) });
 /** Razorpay's reason for a refusal, as much of it as it gave. */
 const Refused = z.object({
   error: z.object({
@@ -88,12 +90,18 @@ export function createRazorpay(
 ): PaymentsProvider {
   const authorization = `Basic ${btoa(`${settings.keyId}:${settings.keySecret}`)}`;
 
-  async function post<Answer>(step: string, path: string, body: object, shape: z.ZodType<Answer>): Promise<Answer> {
+  /** One call: a POST with its body, or a GET with none. */
+  async function call<Answer>(
+    step: string,
+    path: string,
+    body: object | null,
+    shape: z.ZodType<Answer>,
+  ): Promise<Answer> {
     const started = Date.now();
     const response = await deps.fetch(`${API}${path}`, {
-      method: "POST",
+      method: body === null ? "GET" : "POST",
       headers: { Authorization: authorization, "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      ...(body === null ? {} : { body: JSON.stringify(body) }),
       signal: AbortSignal.timeout(10_000),
     });
     deps.log.info("razorpay_call", { step, status: response.status, duration_ms: Date.now() - started });
@@ -106,11 +114,11 @@ export function createRazorpay(
   }
 
   return {
-    createOrder: (order) => post("create_order", "/orders", { ...order, currency: "INR" }, Created),
+    createOrder: (order) => call("create_order", "/orders", { ...order, currency: "INR" }, Created),
     refund: (paymentId, refund) =>
-      post("refund", `/payments/${encodeURIComponent(paymentId)}/refund`, { ...refund, speed: "normal" }, Created),
+      call("refund", `/payments/${encodeURIComponent(paymentId)}/refund`, { ...refund, speed: "normal" }, Created),
     createPaymentLink: async (link) => {
-      const made = await post(
+      const made = await call(
         "create_payment_link",
         "/payment_links",
         {
@@ -127,6 +135,11 @@ export function createRazorpay(
         LinkMade,
       );
       return { id: made.id, shortUrl: made.short_url };
+    },
+    findPaymentLink: async (reference) => {
+      const path = `/payment_links?reference_id=${encodeURIComponent(reference)}`;
+      const [found] = (await call("find_payment_link", path, null, LinksFound)).payment_links;
+      return found === undefined ? null : { id: found.id, shortUrl: found.short_url };
     },
   };
 }

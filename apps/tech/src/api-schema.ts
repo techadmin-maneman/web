@@ -497,15 +497,6 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment link, at its close); send it again, which lands nothing new */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
             };
         };
         delete?: never;
@@ -578,15 +569,6 @@ export interface paths {
                 };
                 /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day */
                 409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment link, at its close); send it again, which lands nothing new */
-                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -913,15 +895,6 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment link, at its close); send it again, which lands nothing new */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
             };
         };
         delete?: never;
@@ -998,15 +971,6 @@ export interface paths {
                 };
                 /** @description superseded: FSM moved the job; out_of_order: send the step before this one first */
                 409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment link, at its close); send it again, which lands nothing new */
-                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1097,15 +1061,6 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment link, at its close); send it again, which lands nothing new */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
             };
         };
         delete?: never;
@@ -1182,15 +1137,6 @@ export interface paths {
                 };
                 /** @description superseded: FSM moved the job; out_of_order: send the step before this one first */
                 409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment link, at its close); send it again, which lands nothing new */
-                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1281,15 +1227,6 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment link, at its close); send it again, which lands nothing new */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
             };
         };
         delete?: never;
@@ -1371,15 +1308,6 @@ export interface paths {
                 };
                 /** @description too_early_to_close: the wait has not run out */
                 425: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment link, at its close); send it again, which lands nothing new */
-                503: {
                     headers: {
                         [name: string]: unknown;
                     };

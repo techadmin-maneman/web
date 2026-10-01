@@ -52,7 +52,8 @@ export const razorpayHookRoute = createRoute({
 
 /**
  * A one visit's payment link paid: the payment recorded as the visit's, by the link it paid, whatever notes it
- * carries, and the link marked paid. False for a link that is not ours.
+ * carries, and the link marked paid where the close made one; a link ops made by hand has no row of ours. False for
+ * a link that names no visit of ours.
  */
 async function linkPaid(
   db: D1Database,
@@ -67,6 +68,7 @@ async function linkPaid(
       ? { appointment_id: ours.appointmentId }
       : { appointment_id: ours.appointmentId, person_id: ours.personId };
   await recordPayment(db, { ...paid.payment, notes }, "captured", hashSalt, now);
+  if (ours.linkId === null) return true;
   const paidAt = new Date(paid.payment.created_at * 1000).toISOString();
   await markLinkPaid(db, ours.linkId, { razorpayPaymentId: paid.payment.id, paidAt }, now);
   return true;

@@ -273,14 +273,6 @@ Request body:
 }
 ```
 
-**503**: unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment link, at its close); send it again, which lands nothing new
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
 ### POST /api/tech/jobs/{id}/start
 
 Start the job. The duration runs from here to the outcome
@@ -318,14 +310,6 @@ Start the job. The duration runs from here to the outcome
 ```
 
 **409**: superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-**503**: unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment link, at its close); send it again, which lands nothing new
 
 ```json
 {
@@ -527,14 +511,6 @@ Request body:
 }
 ```
 
-**503**: unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment link, at its close); send it again, which lands nothing new
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
 ### POST /api/tech/jobs/{id}/checklist
 
 The service checklist, per visit type
@@ -580,14 +556,6 @@ Request body:
 ```
 
 **409**: superseded: FSM moved the job; out_of_order: send the step before this one first
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-**503**: unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment link, at its close); send it again, which lands nothing new
 
 ```json
 {
@@ -647,14 +615,6 @@ Request body:
 }
 ```
 
-**503**: unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment link, at its close); send it again, which lands nothing new
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
 ### POST /api/tech/jobs/{id}/piece
 
 The piece: a replacement's, a first fit's and a one visit's step only
@@ -700,14 +660,6 @@ Request body:
 ```
 
 **409**: superseded: FSM moved the job; out_of_order: send the step before this one first
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-**503**: unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment link, at its close); send it again, which lands nothing new
 
 ```json
 {
@@ -767,14 +719,6 @@ Request body:
 }
 ```
 
-**503**: unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment link, at its close); send it again, which lands nothing new
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
 ### POST /api/tech/jobs/{id}/no-show
 
 Close the job as a no-show, once the wait has run
@@ -820,14 +764,6 @@ Close the job as a no-show, once the wait has run
 ```
 
 **425**: too_early_to_close: the wait has not run out
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-**503**: unavailable: the step landed, and what it does once landed could not be done for now (a one visit's payment link, at its close); send it again, which lands nothing new
 
 ```json
 {

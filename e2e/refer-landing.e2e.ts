@@ -571,7 +571,9 @@ test("offers the consultation alone or with the fit in one visit, and asks ops f
   const plan = page.getByRole("group", { name: "What to book" });
   await expect(plan.getByRole("radio", { name: "A consultation" })).toBeChecked();
   await plan.getByText("Consultation and fit, in one visit").click();
-  await expect(plan.getByText(/Choose your hair system with your technician and leave wearing it\./)).toBeVisible();
+  await expect(
+    plan.getByText(/Choose your hair system with your technician and have it fitted there and then\./),
+  ).toBeVisible();
   // The morning or the afternoon: the first fit's three hours cannot start in the evening.
   await expect(page.getByRole("group", { name: "Window" }).getByRole("radio")).toHaveCount(2);
   const results = await new AxeBuilder({ page })

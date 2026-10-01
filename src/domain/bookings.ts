@@ -338,7 +338,7 @@ async function bookNewVisit(
 
   // FSM's webhook may have mirrored the appointment already; either way the visit is the one with its FSM ID. Its
   // tier is the hold's whatever the mirror read from its item, which may be its kind's where FSM had none of its own,
-  // and a one visit is marked as one, which FSM's item does not say.
+  // and it is a one visit exactly when its hold was, whatever the mirror took it for, since FSM's item does not say.
   const { start, end } = visitTimes(hold.date, hold.start_unit, heldMinutes(hold));
   const at = now.toISOString();
   const visitId = "(SELECT id FROM appointments WHERE fsm_id = ?1)";
@@ -351,7 +351,7 @@ async function bookNewVisit(
          VALUES (?2, ?1, ?3, ?4, ?5, ?12, ?6, ?7, ?8, 'scheduled', 'Scheduled', ?9, ?10, ?11, ?11, ?11, ?13)
          ON CONFLICT (fsm_id) DO UPDATE SET
            tier = excluded.tier,
-           one_visit = COALESCE(appointments.one_visit, excluded.one_visit),
+           one_visit = excluded.one_visit,
            service_city = COALESCE(appointments.service_city, excluded.service_city),
            service_pincode = COALESCE(appointments.service_pincode, excluded.service_pincode)`,
       )

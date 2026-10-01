@@ -105,7 +105,9 @@ const FIRST_FIT_EPISODE = "s.consulted_start";
  * booked or done, `booked`, which the database keeps as their consultations are
  * written (migration 0056): a look reads the requests still waiting, not every
  * request a lead ever made. One asked for as a consultation and fit in one visit
- * goes too once ops have booked the client's first fit (migration 0061). So with the rest (migration 0060): a move ops made is
+ * is booked too once ops have booked the client's first fit, which migration
+ * 0061's triggers keep; the arm still asks for the first fit itself, since a
+ * consultation of the client's written later sets `booked` by consultations alone. So with the rest (migration 0060): a move ops made is
  * read only while its visit is to come and nobody has recorded a call about it, a
  * piece only while no replacement is booked for it, `replacement_booked`, and a
  * grant only while it is held.

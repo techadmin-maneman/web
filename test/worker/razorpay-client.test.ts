@@ -125,6 +125,19 @@ describe("Razorpay: payment links", () => {
     await expect(refused).rejects.toMatchObject({ status: 400, code: "BAD_REQUEST_ERROR", refusal: true });
   });
 
+  it("finds the link made under a reference, by a GET that sends no body, and answers none where there is none", async () => {
+    const { payments, calls } = razorpay({
+      [`${API}/payment_links?reference_id=visit-1`]: () =>
+        json({ payment_links: [{ id: "plink_9", short_url: "https://rzp.io/i/abc", reference_id: "visit-1" }] }),
+      [`${API}/payment_links?reference_id=visit-2`]: () => json({ payment_links: [] }),
+    });
+
+    expect(await payments.findPaymentLink("visit-1")).toEqual({ id: "plink_9", shortUrl: "https://rzp.io/i/abc" });
+    expect(calls[0]?.method).toBe("GET");
+    expect(calls[0]?.body).toBe("");
+    expect(await payments.findPaymentLink("visit-2")).toBeNull();
+  });
+
   it("fails loudly on a link it cannot read, rather than keeping one with no address", async () => {
     const { payments } = razorpay({ [`${API}/payment_links`]: () => json({ id: "plink_9" }) });
     await expect(payments.createPaymentLink(LINK)).rejects.toThrow();
@@ -147,6 +160,7 @@ describe("payments where none is connected", () => {
         notes: {},
       }),
     ).rejects.toThrow(/PAYMENTS_PROVIDER is none/);
+    await expect(none.findPaymentLink("visit-1")).rejects.toThrow(/PAYMENTS_PROVIDER is none/);
     expect(calls).toEqual([]);
   });
 });
