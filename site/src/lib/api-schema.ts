@@ -1770,14 +1770,10 @@ export interface components {
              */
             failure_code?: "photo_unreadable" | "photo_invalid_file" | "render_failed" | "busy";
         };
+        /** @description The look, for the stage the gate's claim gave the try-on. */
         GenerateRequest: {
             /** Format: uuid */
             job_id: string;
-            /**
-             * @description The hair-loss stage the visitor picked.
-             * @enum {string}
-             */
-            stage: "crown" | "receding" | "advanced";
             /** @enum {string} */
             preset: "full-natural-short" | "full-straight-medium" | "medium-natural-short" | "medium-receded-medium" | "light-natural-short" | "light-receded-cropped";
             /**
@@ -1798,7 +1794,7 @@ export interface components {
             /** @example 98100 00000 */
             mobile: string;
             /**
-             * @description The hair-loss stage the visitor picked, which the render is asked for next.
+             * @description The hair-loss stage the visitor picked: the lead's, and the one the look is made for.
              * @enum {string}
              */
             stage: "crown" | "receding" | "advanced";
@@ -1824,16 +1820,12 @@ export interface components {
             /** @description False while WhatsApp cannot send a look: the try-on does not run, and the page says so. */
             available: boolean;
         };
-        /** @description The look this browser has had, never the image: that goes to WhatsApp only. */
+        /** @description The look this browser has had: its state alone. The look goes to WhatsApp only. */
         Look: {
             /** Format: uuid */
             job_id: string;
             /** @enum {string} */
             state: "awaiting_upload" | "queued" | "rendering" | "downloading" | "ready" | "failed" | "expired";
-            /** @enum {string} */
-            stage: "crown" | "receding" | "advanced";
-            /** @enum {string} */
-            preset: "full-natural-short" | "full-straight-medium" | "medium-natural-short" | "medium-receded-medium" | "light-natural-short" | "light-receded-cropped";
             /**
              * @description Only when state is failed.
              * @enum {string}

@@ -8,13 +8,14 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
-import { PRESET_IDS, type PresetId } from "../config/presets.ts";
-import { FAILURE_CODES, JOB_STATES, TRYON_STAGES } from "../config/tryon.ts";
+import { FAILURE_CODES, JOB_STATES } from "../config/tryon.ts";
 import { alertCeilingReached, takeFromCeiling } from "../domain/ceilings.ts";
 import { loadJob } from "../domain/tryon.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { lookCookieJob } from "../http/look-cookie.ts";
 import { verifyToken } from "../lib/signed-token.ts";
+import { tryOnRuns } from "../policy/tryon-delivery.ts";
+import { statusOf } from "./tryon-generate.ts";
 
 export const AvailabilitySchema = z
   .object({
@@ -25,16 +26,16 @@ export const AvailabilitySchema = z
   .strict()
   .openapi("TryOnAvailability");
 
+// Only whether the browser has had its look, and whether it failed: never the image, nor what was asked of it, which
+// outlives an erasure on an expired job's row (src/domain/erasure.ts).
 export const LookSchema = z
   .object({
     job_id: z.uuid(),
     state: z.enum(JOB_STATES),
-    stage: z.enum(TRYON_STAGES),
-    preset: z.enum(PRESET_IDS),
     failure_code: z.enum(FAILURE_CODES).optional().openapi({ description: "Only when state is failed." }),
   })
   .strict()
-  .openapi("Look", { description: "The look this browser has had, never the image: that goes to WhatsApp only." });
+  .openapi("Look", { description: "The look this browser has had: its state alone. The look goes to WhatsApp only." });
 
 export const availabilityRoute = createRoute({
   method: "get",
@@ -74,17 +75,14 @@ export const resultImageRoute = createRoute({
 });
 
 export function registerTryonResult(app: App): void {
-  app.openapi(availabilityRoute, (c) => c.json({ available: c.var.config.settings.messaging.enabled }, 200));
+  app.openapi(availabilityRoute, (c) => c.json({ available: tryOnRuns(c.var.config.settings.messaging) }, 200));
 
   app.openapi(lookRoute, async (c) => {
     const jobId = await lookCookieJob(c);
     const job = jobId === null ? null : await loadJob(c.env.DB, jobId);
     if (job === null) return c.json(errorBody("not_found", c.var.requestId), 404);
-    // The cookie is set as a render is asked for, so its job has a stage and a look. Once the look has expired, the
-    // browser has still had it: the upload link refuses it another (ADR 0104).
-    if (job.stage === null || job.preset === null) return c.json(errorBody("not_found", c.var.requestId), 404);
-    const look = { job_id: job.id, state: job.state, stage: job.stage, preset: job.preset as PresetId };
-    return c.json(job.failure_code === null ? look : { ...look, failure_code: job.failure_code }, 200);
+    // Once the look has expired, the browser has still had it: the upload link refuses it another (ADR 0104).
+    return c.json(statusOf(job), 200);
   });
 
   app.openapi(resultImageRoute, async (c) => {
@@ -106,7 +104,7 @@ export function registerTryonResult(app: App): void {
     return c.body(object.body, 200, {
       "Content-Type": object.httpMetadata?.contentType ?? "image/png",
       "Content-Length": String(object.size),
-      // The link itself expires; the bridge may keep the image as long as the link lasts.
+      // The link itself expires within the hour; the bridge may keep the image for fifteen minutes of it.
       "Cache-Control": "private, max-age=900",
     });
   });

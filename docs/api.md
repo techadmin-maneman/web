@@ -2113,15 +2113,6 @@ Razorpay's webhook: payments and refunds
       "type": "string",
       "format": "uuid"
     },
-    "stage": {
-      "type": "string",
-      "enum": [
-        "crown",
-        "receding",
-        "advanced"
-      ],
-      "description": "The hair-loss stage the visitor picked."
-    },
     "preset": {
       "type": "string",
       "enum": [
@@ -2149,11 +2140,11 @@ Razorpay's webhook: payments and refunds
   },
   "required": [
     "job_id",
-    "stage",
     "preset",
     "hair_color"
   ],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "description": "The look, for the stage the gate's claim gave the try-on."
 }
 ```
 
@@ -2203,7 +2194,7 @@ Razorpay's webhook: payments and refunds
         "receding",
         "advanced"
       ],
-      "description": "The hair-loss stage the visitor picked, which the render is asked for next."
+      "description": "The hair-loss stage the visitor picked: the lead's, and the one the look is made for."
     },
     "notice_version": {
       "type": "string",
@@ -2310,25 +2301,6 @@ Razorpay's webhook: payments and refunds
         "expired"
       ]
     },
-    "stage": {
-      "type": "string",
-      "enum": [
-        "crown",
-        "receding",
-        "advanced"
-      ]
-    },
-    "preset": {
-      "type": "string",
-      "enum": [
-        "full-natural-short",
-        "full-straight-medium",
-        "medium-natural-short",
-        "medium-receded-medium",
-        "light-natural-short",
-        "light-receded-cropped"
-      ]
-    },
     "failure_code": {
       "type": "string",
       "enum": [
@@ -2342,12 +2314,10 @@ Razorpay's webhook: payments and refunds
   },
   "required": [
     "job_id",
-    "state",
-    "stage",
-    "preset"
+    "state"
   ],
   "additionalProperties": false,
-  "description": "The look this browser has had, never the image: that goes to WhatsApp only."
+  "description": "The look this browser has had: its state alone. The look goes to WhatsApp only."
 }
 ```
 
