@@ -318,6 +318,40 @@ describe("ops, when the audit entry cannot be written", () => {
       booking_until: null,
     });
   });
+
+  // Discount codes (docs/decisions/0108-discount-codes.md).
+  it("makes no discount code, switches none off, and enters none on a visit or takes it off", async () => {
+    const code = { code: "TENOFF", kind: "percent", value: 10, covers: ["service"], once_per_client: true };
+    expect((await send(ops, "POST", "/api/discount-codes", code)).status).toBe(500);
+    expect(await one("SELECT COUNT(*) AS codes FROM discount_codes")).toEqual({ codes: 0 });
+
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO discount_codes (id, code, kind, value, covers_first_fit, covers_service, covers_replacement,
+           once_per_client, created_by, created_at)
+         VALUES ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'TENOFF', 'percent', 10, 0, 1, 0, 1, 'ops@localhost', ?1)`,
+      ).bind(AT),
+      env.DB.prepare(
+        `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, fsm_modified_at,
+           synced_at)
+         VALUES (?1, 'fsm-1', ?2, 'service', 'scheduled', 'Scheduled', '2026-09-23T04:30:00.000Z', ?3, ?3)`,
+      ).bind(VISIT, PERSON, AT),
+    ]);
+    expect((await send(ops, "POST", "/api/discount-codes/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/off")).status).toBe(500);
+    expect(await one("SELECT switched_off_at FROM discount_codes")).toEqual({ switched_off_at: null });
+    expect((await send(ops, "POST", `/api/visits/${VISIT}/discount-code`, { code: "TENOFF" })).status).toBe(500);
+    expect(await one("SELECT COUNT(*) AS uses FROM discount_code_uses")).toEqual({ uses: 0 });
+
+    await env.DB.prepare(
+      `INSERT INTO discount_code_uses (id, code_id, person_id, appointment_id, amount_off, given_by, given_by_id,
+         created_at)
+       VALUES ('use-1', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', ?1, ?2, 20000, 'ops', 'ops@localhost', ?3)`,
+    )
+      .bind(PERSON, VISIT, AT)
+      .run();
+    expect((await send(ops, "POST", `/api/visits/${VISIT}/discount-code/remove`)).status).toBe(500);
+    expect(await one("SELECT removed_at FROM discount_code_uses")).toEqual({ removed_at: null });
+  });
 });
 
 describe("the client, when the audit entry cannot be written", () => {

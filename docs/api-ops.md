@@ -3263,6 +3263,185 @@ Who Access let through, and where signing out goes
 }
 ```
 
+### GET /api/discount-codes
+
+The latest discount codes made, each with its uses and what it has taken off
+
+**200**: The codes
+
+```json
+{
+  "$ref": "#/components/schemas/DiscountCodes"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/discount-codes
+
+Make a code, typed or generated, or a batch of single-use codes
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/DiscountCodesNew"
+}
+```
+
+**201**: Made
+
+```json
+{
+  "$ref": "#/components/schemas/DiscountCodesMade"
+}
+```
+
+**400**: invalid_request: fields names code when it is not one a code can be, count for a typed code made more than once, value for a percentage over 100, cap on an amount, covers named twice, expires_on before today, and max_uses for a batch whose codes are not single-use
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: code_exists: a code with that text exists already
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/discount-codes/{id}/off
+
+Switch a code off: no booking takes it from then on, and its uses stay as they are
+
+**204**: Off, or off already
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/visits/{id}/discount-code
+
+Enter a discount code on a client's visit, before it is paid for, its link is made, or it is invoiced
+
+Request body:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40
+    }
+  },
+  "required": [
+    "code"
+  ],
+  "additionalProperties": false
+}
+```
+
+**200**: The code on the visit
+
+```json
+{
+  "$ref": "#/components/schemas/VisitDiscountCode"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: already_discounted: the visit carries a code; price_settled: it is paid for, its payment link is made, it is invoiced, or FSM has cancelled it
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**422**: code_not_applicable: the code does not apply to this visit
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/visits/{id}/discount-code/remove
+
+Take the code off a client's visit, before it is paid for, its link is made, or it is invoiced
+
+**204**: Taken off; its use stays on record, marked removed
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such visit, or it carries no code
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: price_settled: it is paid for, its payment link is made, or it is invoiced
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ## Schemas
 
 ### ErrorResponse
@@ -3333,7 +3512,11 @@ Who Access let through, and where signing out goes
             "already_invited",
             "already_fitted",
             "already_disputed",
-            "not_disputable"
+            "not_disputable",
+            "code_not_applicable",
+            "already_discounted",
+            "price_settled",
+            "code_exists"
           ]
         },
         "request_id": {
@@ -3959,6 +4142,51 @@ Who Access let through, and where signing out goes
         }
       ],
       "description": "For a visit left partly done, ops closing its task without a follow-up visit; null otherwise."
+    },
+    "discount_code": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "amount_off": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "In paise before GST; null until the visit's price is known."
+            },
+            "given_by": {
+              "type": "string",
+              "enum": [
+                "client",
+                "technician",
+                "ops"
+              ]
+            }
+          },
+          "required": [
+            "code",
+            "amount_off",
+            "given_by"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The discount code on the visit (docs/decisions/0108-discount-codes.md); else null."
+    },
+    "price_open": {
+      "type": "boolean",
+      "description": "Not yet paid for, linked or invoiced, so a discount code may still be entered on it or taken off."
     }
   },
   "required": [
@@ -3975,7 +4203,9 @@ Who Access let through, and where signing out goes
     "technician",
     "place",
     "outcome",
-    "closed_without_follow_up"
+    "closed_without_follow_up",
+    "discount_code",
+    "price_open"
   ],
   "additionalProperties": false
 }
@@ -5446,7 +5676,11 @@ Who Access let through, and where signing out goes
             "already_invited",
             "already_fitted",
             "already_disputed",
-            "not_disputable"
+            "not_disputable",
+            "code_not_applicable",
+            "already_discounted",
+            "price_settled",
+            "code_exists"
           ]
         },
         "request_id": {
@@ -10207,6 +10441,343 @@ Who Access let through, and where signing out goes
   "required": [
     "signed_in_as",
     "sign_out"
+  ],
+  "additionalProperties": false
+}
+```
+
+### DiscountCodes
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "today": {
+      "type": "string",
+      "format": "date",
+      "description": "India's date, the first a code may expire on."
+    },
+    "batch_most": {
+      "type": "integer",
+      "description": "The most codes one press generates."
+    },
+    "listed_most": {
+      "type": "integer",
+      "description": "The most codes the list shows, the latest made first."
+    },
+    "codes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/DiscountCode"
+      }
+    }
+  },
+  "required": [
+    "today",
+    "batch_most",
+    "listed_most",
+    "codes"
+  ],
+  "additionalProperties": false
+}
+```
+
+### DiscountCode
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "code": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "percent",
+        "amount"
+      ]
+    },
+    "value": {
+      "type": "integer",
+      "description": "Per cent for a percentage; paise before GST for an amount."
+    },
+    "cap": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The most a percentage takes off, in paise before GST; null for none."
+    },
+    "covers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "first_fit",
+          "service",
+          "replacement"
+        ]
+      },
+      "description": "The kinds of visit it takes money off."
+    },
+    "expires_on": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The last day in India it may be entered; null for no end."
+    },
+    "max_uses": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "How many bookings it may be on; null for no limit."
+    },
+    "once_per_client": {
+      "type": "boolean"
+    },
+    "batch_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The codes generated with it in one press; null for one made alone."
+    },
+    "created_by": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "switched_off": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "by": {
+              "type": "string"
+            },
+            "at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          "required": [
+            "by",
+            "at"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Who switched it off and when; null while it is on."
+    },
+    "uses": {
+      "type": "integer",
+      "description": "The bookings it stands on."
+    },
+    "given": {
+      "type": "integer",
+      "description": "What it has taken off those bookings, in paise before GST, as far as their prices are known."
+    }
+  },
+  "required": [
+    "id",
+    "code",
+    "kind",
+    "value",
+    "cap",
+    "covers",
+    "expires_on",
+    "max_uses",
+    "once_per_client",
+    "batch_id",
+    "created_by",
+    "created_at",
+    "switched_off",
+    "uses",
+    "given"
+  ],
+  "additionalProperties": false
+}
+```
+
+### DiscountCodesMade
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "codes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "The codes made, in capitals."
+    }
+  },
+  "required": [
+    "codes"
+  ],
+  "additionalProperties": false
+}
+```
+
+### DiscountCodesNew
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "maxLength": 40,
+      "description": "A code ops typed, 4 to 16 letters and digits, none of I, L, O, 0 or 1; left out, each code is generated."
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100,
+      "description": "How many to generate, one if left out; more than one is a batch of single-use codes."
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "percent",
+        "amount"
+      ]
+    },
+    "value": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100000000,
+      "description": "Per cent, 1 to 100, for a percentage; paise before GST for an amount."
+    },
+    "cap": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000000
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A percentage's most, in paise before GST; none if left out."
+    },
+    "covers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "first_fit",
+          "service",
+          "replacement"
+        ]
+      },
+      "minItems": 1,
+      "maxItems": 3
+    },
+    "expires_on": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The last day in India it may be entered, today or later; no end if left out."
+    },
+    "max_uses": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "How many bookings it may be on; no limit if left out. A batch's codes are 1 each."
+    },
+    "once_per_client": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "kind",
+    "value",
+    "covers",
+    "once_per_client"
+  ],
+  "additionalProperties": false
+}
+```
+
+### VisitDiscountCode
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "amount_off": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "In paise before GST; null until the visit's price is known, as a one visit's is."
+    },
+    "given_by": {
+      "type": "string",
+      "enum": [
+        "client",
+        "technician",
+        "ops"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "amount_off",
+    "given_by"
   ],
   "additionalProperties": false
 }

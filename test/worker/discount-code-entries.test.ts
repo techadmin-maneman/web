@@ -1,0 +1,461 @@
+// A discount code entered on a booking (docs/decisions/0108-discount-codes.md): by the client at the app's pay step,
+// on the site's form for a consultation and fit in one visit, and by the technician before the visit's payment link.
+// Each takes the code off before GST, and the order, the link and the payment carry what is left. NOW is Monday 21
+// September 2026, 12 noon in India; staging's book has a service visit at Rs. 2,000 and a first fit at Rs. 30,000,
+// with no GST, from the 22nd. Every name, number and code here is made up.
+
+import { env } from "cloudflare:workers";
+import { beforeEach, describe, expect, it } from "vitest";
+import { confirmBooking } from "../../src/domain/bookings.ts";
+import { grantCredits } from "../../src/domain/credits.ts";
+import { priceAfterCode } from "../../src/domain/discount-code-uses.ts";
+import { makeCodes, type NewCodes } from "../../src/domain/discount-codes.ts";
+import { openSession } from "../../src/domain/sessions.ts";
+import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
+import { createStubPayments } from "../../src/providers/payments.ts";
+import {
+  appFor,
+  captureLogs,
+  fakeDependencies,
+  fakeQueue,
+  markDatabase,
+  NOW,
+  request,
+  savedAddress,
+} from "./helpers.ts";
+import { JOB, working } from "./job-fixtures.ts";
+
+const PERSON = "11111111-1111-4111-8111-111111111111";
+const OTHER = "55555555-5555-4555-8555-555555555555";
+const MINUTE = 60_000;
+const at = (minutes: number) => new Date(NOW.getTime() + minutes * MINUTE);
+
+/** Ten per cent off service visits and first fits, any number of times, once a client. */
+const TEN_OFF: NewCodes = {
+  code: "TENOFF",
+  count: 1,
+  kind: "percent",
+  value: 10,
+  cap: null,
+  covers: ["first_fit", "service"],
+  expiresOn: null,
+  maxUses: null,
+  oncePerClient: true,
+};
+
+const make = (code: Partial<NewCodes> = {}) =>
+  makeCodes(
+    env.DB,
+    { ...TEN_OFF, ...code },
+    { actor: { kind: "staff", id: "ops@localhost" }, requestId: "r", now: NOW },
+  );
+
+const cookies = new Map<string, string>();
+
+/** A fitted client, with an address and a session in the app. */
+async function fittedClient(id: string, mobile: string) {
+  await env.DB.prepare(
+    "INSERT INTO people (id, created_at, mobile_e164, name, fsm_contact_id) VALUES (?1, ?2, ?3, 'Rohit Malhotra', ?4)",
+  )
+    .bind(id, NOW.toISOString(), mobile, `contact-${id}`)
+    .run();
+  await savedAddress(id);
+  await env.DB.prepare(
+    `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end, technician_id,
+       fsm_modified_at, synced_at)
+     VALUES (?1, ?2, ?3, 'first_fit', 'completed', 'Completed', '2026-08-01T03:30:00.000Z', '2026-08-01T06:30:00.000Z',
+       't1', ?4, ?4)`,
+  )
+    .bind(`fit-${id}`, `fsm-fit-${id}`, id, NOW.toISOString())
+    .run();
+  cookies.set(
+    id,
+    `mm_app=${await openSession(env.DB, { kind: "client", subjectId: id, deviceLabel: null, now: NOW })}`,
+  );
+}
+
+function call(personId: string, path: string, init: { method?: string; body?: object } = {}, now = NOW) {
+  return request(
+    appFor("local", fakeDependencies({ now: () => now }), {}, "client"),
+    path,
+    {
+      method: init.method ?? "GET",
+      headers: {
+        Cookie: cookies.get(personId) ?? "",
+        "Content-Type": "application/json",
+        Origin: "https://maneman.test",
+      },
+      ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
+    },
+    { FSM_QUEUE: fakeQueue() },
+  );
+}
+
+interface HoldAnswer {
+  id: string;
+  price: { amount_ex_gst: number; amount: number; gst_percent: number };
+  discount: { code: string; amount_ex_gst: number | null; list_price: { amount: number } | null } | null;
+}
+
+/** A service visit held on Thursday afternoon. */
+async function heldService(personId: string, now = NOW): Promise<HoldAnswer> {
+  const held = await call(
+    personId,
+    "/api/holds",
+    { method: "POST", body: { type: "service", date: "2026-09-24", window: "afternoon" } },
+    now,
+  );
+  return held.json<HoldAnswer>();
+}
+
+const enter = (personId: string, holdId: string, code: string, now = NOW) =>
+  call(personId, `/api/holds/${holdId}/discount-code`, { method: "POST", body: { code } }, now);
+
+const uses = () =>
+  env.DB.prepare(
+    "SELECT hold_id, appointment_id, amount_off, given_by, removed_at IS NOT NULL AS removed FROM discount_code_uses",
+  ).all();
+
+/** The technician the app and the site book, where the technician's own tests bring theirs. */
+async function technician() {
+  await env.DB.prepare(
+    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 'resource-1', 'Imran Qureshi', 'IQ', 1, ?1)",
+  )
+    .bind(NOW.toISOString())
+    .run();
+}
+
+beforeEach(async () => {
+  await markDatabase();
+  captureLogs();
+  cookies.clear();
+});
+
+describe("the client, at the app's pay step", () => {
+  beforeEach(async () => {
+    await technician();
+    await fittedClient(PERSON, "+919810000001");
+  });
+
+  it("takes the code off the price before GST, and Checkout's order is made for what is left", async () => {
+    await make();
+    const hold = await heldService(PERSON);
+    const entered = await enter(PERSON, hold.id, " tenoff ");
+    expect(entered.status).toBe(200);
+    expect(await entered.json()).toMatchObject({
+      id: hold.id,
+      price: { amount_ex_gst: 180_000, amount: 180_000, gst_percent: 0 },
+      discount: { code: "TENOFF", amount_ex_gst: 20_000, list_price: { amount_ex_gst: 200_000, amount: 200_000 } },
+    });
+
+    const payments = createStubPayments();
+    const started = await request(
+      appFor("local", fakeDependencies({ payments }), {}, "client"),
+      "/api/bookings",
+      {
+        method: "POST",
+        headers: {
+          Cookie: cookies.get(PERSON) ?? "",
+          "Content-Type": "application/json",
+          Origin: "https://maneman.test",
+        },
+        body: JSON.stringify({ hold_id: hold.id }),
+      },
+      { FSM_QUEUE: fakeQueue() },
+    );
+    expect(await started.json()).toMatchObject({ checkout: { amount: 180_000 } });
+    expect(payments.made.orders).toMatchObject([{ amount: 180_000 }]);
+    expect((await uses()).results).toEqual([
+      { hold_id: hold.id, appointment_id: null, amount_off: 20_000, given_by: "client", removed: 0 },
+    ]);
+  });
+
+  it("charges GST on what is left", async () => {
+    await env.DB.prepare(
+      "INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from) VALUES ('service', 'standard', 200000, 18, '2026-09-23')",
+    ).run();
+    await make();
+    const hold = await heldService(PERSON);
+    expect(hold.price).toEqual({ amount_ex_gst: 200_000, amount: 236_000, gst_percent: 18 });
+    const entered = await (await enter(PERSON, hold.id, "TENOFF")).json<HoldAnswer>();
+    expect(entered.price).toEqual({ amount_ex_gst: 180_000, amount: 212_400, gst_percent: 18 });
+  });
+
+  it("says only that a code does not apply, whatever the reason, and changes nothing", async () => {
+    await make({ code: "FITONLY", covers: ["first_fit"] });
+    await make({ code: "GONEOFF", expiresOn: "2026-09-20" });
+    const hold = await heldService(PERSON);
+    for (const code of ["NOSUCH", "FITONLY", "GONEOFF"]) {
+      const answer = await enter(PERSON, hold.id, code);
+      expect(answer.status).toBe(422);
+      expect(await answer.json()).toEqual({ error: { code: "code_not_applicable", request_id: expect.any(String) } });
+    }
+    const unchanged = await (await call(PERSON, `/api/holds/${hold.id}`)).json<HoldAnswer>();
+    expect(unchanged).toMatchObject({ price: { amount: 200_000 }, discount: null });
+    expect((await uses()).results).toEqual([]);
+  });
+
+  it("takes one code a booking, and gives the price back when the code comes off", async () => {
+    await make();
+    await make({ code: "FIVEOFF", value: 5 });
+    const hold = await heldService(PERSON);
+    await enter(PERSON, hold.id, "TENOFF");
+    const second = await enter(PERSON, hold.id, "FIVEOFF");
+    expect(second.status).toBe(409);
+    expect(await second.json()).toMatchObject({ error: { code: "already_discounted" } });
+
+    const removed = await call(PERSON, `/api/holds/${hold.id}/discount-code`, { method: "DELETE" });
+    expect(removed.status).toBe(200);
+    expect(await removed.json()).toMatchObject({ price: { amount_ex_gst: 200_000, amount: 200_000 }, discount: null });
+    expect((await enter(PERSON, hold.id, "FIVEOFF")).status).toBe(200);
+    // The use taken off stays on record, marked removed.
+    expect((await uses()).results).toEqual([
+      expect.objectContaining({ amount_off: 20_000, removed: 1 }),
+      expect.objectContaining({ amount_off: 10_000, removed: 0 }),
+    ]);
+  });
+
+  it("is refused once Checkout has its order, so the order and the price never part", async () => {
+    await make();
+    await make({ code: "FIVEOFF", value: 5 });
+    const hold = await heldService(PERSON);
+    await enter(PERSON, hold.id, "TENOFF");
+    await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: hold.id } });
+    const removing = await call(PERSON, `/api/holds/${hold.id}/discount-code`, { method: "DELETE" });
+    expect(await removing.json()).toMatchObject({ error: { code: "price_settled" } });
+    expect(removing.status).toBe(409);
+    expect((await call(PERSON, `/api/holds/${hold.id}`)).status).toBe(200);
+  });
+
+  it("is never taken on a visit a referral credit pays for", async () => {
+    await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "ops", sourceId: "o1", now: NOW }).run();
+    await make();
+    const hold = await heldService(PERSON);
+    const answer = await enter(PERSON, hold.id, "TENOFF");
+    expect(answer.status).toBe(422);
+  });
+
+  it("is once per client while their booking stands, and theirs again once a hold they let go took it", async () => {
+    await make();
+    const first = await heldService(PERSON);
+    await enter(PERSON, first.id, "TENOFF");
+    // A second hold lets the first go, with the code it carried.
+    const second = await heldService(PERSON);
+    expect((await enter(PERSON, second.id, "TENOFF")).status).toBe(200);
+  });
+
+  it("counts a code's last use only while its hold keeps its time unpaid", async () => {
+    await make({ code: "ONEUSE", oncePerClient: false, maxUses: 1 });
+    await fittedClient(OTHER, "+919810000005");
+    const mine = await heldService(PERSON);
+    expect((await enter(PERSON, mine.id, "ONEUSE")).status).toBe(200);
+    const theirs = await heldService(OTHER);
+    expect((await enter(OTHER, theirs.id, "ONEUSE")).status).toBe(422);
+    // Twenty minutes on, the first hold has lapsed unpaid: the use no longer stands.
+    const later = await heldService(OTHER, at(20));
+    expect((await enter(OTHER, later.id, "ONEUSE", at(20))).status).toBe(200);
+  });
+
+  it("refunds a discounted payment what was paid, and no more", async () => {
+    await make();
+    const hold = await heldService(PERSON);
+    await enter(PERSON, hold.id, "TENOFF");
+    const started = await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: hold.id } });
+    const { checkout } = await started.json<{ checkout: { order_id: string; amount: number } }>();
+    // Razorpay made the payment twenty minutes on, after the hold and its grace had run out.
+    await env.DB.prepare(
+      `INSERT INTO payments (id, person_id, razorpay_order_id, razorpay_payment_id, amount, currency, status,
+         captured_at, created_at, updated_at)
+       VALUES ('pay-1', ?1, ?2, 'pay_late', ?3, 'INR', 'captured', ?4, ?4, ?4)`,
+    )
+      .bind(PERSON, checkout.order_id, checkout.amount, at(20).toISOString())
+      .run();
+    await env.DB.prepare("UPDATE slot_holds SET confirmed_at = ?2 WHERE id = ?1")
+      .bind(hold.id, at(20).toISOString())
+      .run();
+    const payments = createStubPayments();
+    const outcome = await confirmBooking(env.DB, createStubFsm(EMPTY_FSM), payments, hold.id, at(20), {
+      labelAsTest: false,
+    });
+    expect(outcome).toBe("refunded");
+    expect(payments.made.refunds).toEqual([{ paymentId: "pay_late", amount: 180_000 }]);
+  });
+
+  it("is tried ten times a day, right or wrong", async () => {
+    await make();
+    const hold = await heldService(PERSON);
+    for (let tries = 0; tries < 10; tries += 1) expect((await enter(PERSON, hold.id, "NOSUCH")).status).toBe(422);
+    expect((await enter(PERSON, hold.id, "TENOFF")).status).toBe(429);
+  });
+});
+
+describe("the site's form, for a consultation and fit in one visit", () => {
+  const ADDRESS = {
+    flat: "Flat 402",
+    floor: "4",
+    tower: "Tower C",
+    line1: "Palm Grove Society",
+    line2: null,
+    landmark: "Opposite the park",
+    locality: "Sector 65",
+    city: "Gurgaon",
+    pincode: "122018",
+    access_notes: null,
+  };
+  const book = (body: object, settings = {}) =>
+    request(
+      appFor("local", fakeDependencies(), settings, "public"),
+      "/api/consultation",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Karan Bhatia",
+          mobile: "9810000002",
+          loss_extent: "crown",
+          turnstile_token: "token",
+          pincode: "122018",
+          date: "2026-09-23",
+          window: "morning",
+          consent: true,
+          address: ADDRESS,
+          one_visit: true,
+          ...body,
+        }),
+      },
+      { FSM_QUEUE: fakeQueue(), CRM_QUEUE: fakeQueue() },
+    );
+
+  beforeEach(async () => {
+    await technician();
+    await env.DB.prepare(
+      "INSERT INTO serviceable_pincodes (pincode, area, city, served, launched_at) VALUES ('122018', 'Sector 65', 'Gurgaon', 1, ?1)",
+    )
+      .bind(NOW.toISOString())
+      .run();
+  });
+
+  it("keeps the code on the booking, to come off the product's price at the link", async () => {
+    await make();
+    const answer = await book({ discount_code: "tenoff" });
+    expect(answer.status).toBe(201);
+    expect(await answer.json()).toMatchObject({ state: "booked", one_visit: true, discount_code: true });
+    expect((await uses()).results).toEqual([
+      { hold_id: expect.any(String), appointment_id: null, amount_off: null, given_by: "client", removed: 0 },
+    ]);
+  });
+
+  it("refuses the booking for a code that does not apply, naming the box, and writes nothing", async () => {
+    await make({ code: "SVCONLY", covers: ["service"] });
+    for (const body of [
+      { discount_code: "SVCONLY" },
+      { discount_code: "NOSUCH" },
+      { one_visit: false, discount_code: "TENOFF" },
+    ]) {
+      const answer = await book(body);
+      expect(answer.status).toBe(422);
+      expect(await answer.json()).toMatchObject({ error: { code: "code_not_applicable", fields: ["discount_code"] } });
+    }
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM slot_holds").first("n")).toBe(0);
+  });
+
+  it("keeps the code on the request while booking is off, and the Tasks board names it", async () => {
+    await make();
+    const answer = await book({ discount_code: "TENOFF" }, { selfServeBooking: false });
+    expect(await answer.json()).toMatchObject({ state: "requested", discount_code: true });
+    const asked = await env.DB.prepare("SELECT one_visit, discount_code FROM consultation_requests").first();
+    expect(asked).toEqual({ one_visit: 1, discount_code: "TENOFF" });
+    expect((await uses()).results).toEqual([]);
+  });
+
+  it("refuses a single-use code another client's booking already stands on", async () => {
+    await make({ code: "ONEUSE", maxUses: 1, oncePerClient: false });
+    const theirs = await book({ discount_code: "ONEUSE" });
+    expect(await theirs.json()).toMatchObject({ discount_code: true });
+    const mine = await book({ mobile: "9810000003", discount_code: "ONEUSE" });
+    expect(mine.status).toBe(422);
+  });
+
+  it("stays the visit's code once the booking is in FSM, and comes off the product's price there", async () => {
+    await make();
+    await book({ discount_code: "TENOFF" });
+    const [hold] = (await env.DB.prepare("SELECT id FROM slot_holds").all<{ id: string }>()).results;
+    const fsm = createStubFsm({
+      ...EMPTY_FSM,
+      items: [{ id: "item-fit", name: "First fit", type: "Service", price: null }],
+    });
+    await confirmBooking(env.DB, fsm, createStubPayments(), hold?.id ?? "", NOW, { labelAsTest: false });
+    const visit = await env.DB.prepare("SELECT id FROM appointments").first<{ id: string }>();
+    const listed = { amount_ex_gst: 3_000_000, amount: 3_000_000, gst_percent: 0 };
+    const after = await priceAfterCode(env.DB, visit?.id ?? "", listed);
+    expect(after).toMatchObject({ off: 300_000, price: { amount: 2_700_000 } });
+  });
+});
+
+describe("the technician, before a one visit's payment link", () => {
+  const NATURAL = { tier: "natural", name: "Mane Man Natural", amount: 4_500_000 };
+  const A_PIECE = { piece_code: "MM-NAT-4417-A", base: "Lace", supplier_lot: "L-22" };
+
+  async function oneVisit(payments = createStubPayments()) {
+    const job = await working("first_fit", { payments });
+    await env.DB.batch([
+      env.DB.prepare("UPDATE appointments SET one_visit = 'booked' WHERE id = ?1").bind(JOB),
+      env.DB.prepare(
+        `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
+         VALUES ('first_fit', ?1, ?2, 180, 1, 'ops@localhost', ?3)`,
+      ).bind(NATURAL.tier, NATURAL.name, NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from)
+         VALUES ('first_fit', ?1, ?2, 0, '2026-09-01')`,
+      ).bind(NATURAL.tier, NATURAL.amount),
+    ]);
+    return job;
+  }
+
+  const fitted = async (job: Awaited<ReturnType<typeof oneVisit>>) => {
+    await job.workTo("consumables");
+    await job.post(`/api/tech/jobs/${JOB}/consumables`, { items: [] }, "event-consumables-01");
+    await job.post(`/api/tech/jobs/${JOB}/piece`, { ...A_PIECE, product: NATURAL.tier }, "event-piece-01");
+    await job.post(`/api/tech/jobs/${JOB}/photos`, { phase: "after" }, "event-afterphotos-01");
+  };
+
+  it("takes the code off the product's price in the link, and no amount reaches the phone", async () => {
+    await make();
+    const payments = createStubPayments();
+    const job = await oneVisit(payments);
+    const entered = await job.post(`/api/tech/jobs/${JOB}/discount-code`, { code: "tenoff" }, "unused");
+    expect(entered.status).toBe(200);
+    expect(await entered.json()).toEqual({ code: "TENOFF" });
+
+    await fitted(job);
+    await job.post(`/api/tech/jobs/${JOB}/outcome`, { outcome: "done" }, "event-outcome-01");
+    expect(payments.made.links).toMatchObject([{ amount: 4_050_000 }]);
+    const link = await env.DB.prepare("SELECT amount, amount_ex_gst FROM payment_links").first();
+    expect(link).toEqual({ amount: 4_050_000, amount_ex_gst: 4_050_000 });
+    expect((await uses()).results).toEqual([
+      { hold_id: null, appointment_id: JOB, amount_off: 450_000, given_by: "technician", removed: 0 },
+    ]);
+  });
+
+  it("is refused once the link is made, and on a visit paid ahead", async () => {
+    await make();
+    const job = await oneVisit();
+    await fitted(job);
+    await job.post(`/api/tech/jobs/${JOB}/outcome`, { outcome: "done" }, "event-outcome-01");
+    const late = await job.post(`/api/tech/jobs/${JOB}/discount-code`, { code: "TENOFF" }, "unused");
+    expect(late.status).toBe(409);
+    expect(await late.json()).toMatchObject({ error: { code: "price_settled" } });
+
+    await env.DB.prepare("UPDATE appointments SET one_visit = NULL WHERE id = ?1").bind(JOB).run();
+    const prepaid = await job.post(`/api/tech/jobs/${JOB}/discount-code`, { code: "TENOFF" }, "unused");
+    expect(await prepaid.json()).toMatchObject({ error: { code: "price_settled" } });
+  });
+
+  it("says only that a code does not apply", async () => {
+    await make({ code: "SVCONLY", covers: ["service"] });
+    const job = await oneVisit();
+    const answer = await job.post(`/api/tech/jobs/${JOB}/discount-code`, { code: "SVCONLY" }, "unused");
+    expect(answer.status).toBe(422);
+    expect(await answer.json()).toEqual({ error: { code: "code_not_applicable", request_id: expect.any(String) } });
+  });
+});

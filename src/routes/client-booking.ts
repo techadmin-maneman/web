@@ -130,7 +130,7 @@ const AvailabilitySchema = z
   .strict()
   .openapi("Availability");
 
-const HoldSchema = z
+export const HoldSchema = z
   .object({
     id: z.uuid(),
     type: z.enum(VISIT_TYPES),
@@ -173,6 +173,22 @@ const HoldSchema = z
         z.null(),
       ])
       .openapi({ description: "A service-visit credit covers it, so payment is skipped (board C5)." }),
+    discount: z
+      .union([
+        z
+          .object({
+            code: z.string(),
+            amount_ex_gst: z.union([z.number().int(), z.null()]).openapi({
+              description: "In paise: what the code takes off before GST; null until the price it comes off is known.",
+            }),
+            list_price: z
+              .union([PriceSchema, z.null()])
+              .openapi({ description: "The price before the code; price is what is left, with GST on it." }),
+          })
+          .strict(),
+        z.null(),
+      ])
+      .openapi({ description: "The discount code entered on it (docs/decisions/0108-discount-codes.md); else null." }),
   })
   .strict()
   .openapi("Hold");

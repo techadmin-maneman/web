@@ -22,7 +22,9 @@
 // The form may book the consultation and the first fit in one visit instead:
 // three hours, morning or afternoon, with nothing paid here; the client chooses
 // the product with the technician and pays by a link once fitted
-// (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+// (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). That one may
+// carry a discount code, which comes off the product's price at the link
+// (docs/decisions/0108-discount-codes.md).
 //
 // Either may carry the code of an invite the visitor opened on this browser in the
 // last 30 days, and is then attributed to it exactly as the landing's would be. A
@@ -131,6 +133,18 @@ const ConsultationRequestSchema = z
     window: z.enum(BOOKING_WINDOWS),
     address: TypedAddressSchema,
     one_visit: OneVisitRequestSchema,
+    discount_code: z
+      .string()
+      .trim()
+      .min(1)
+      .max(40)
+      .optional()
+      .openapi({
+        description:
+          "A discount code for the consultation and fit in one visit, as typed, any case: it comes off the product's " +
+          "price at the payment link (docs/decisions/0108-discount-codes.md). A code that does not apply refuses " +
+          "the booking, code_not_applicable, and so does any code with the consultation alone.",
+      }),
     consent: z.literal(true).openapi({ description: '"You may contact me on WhatsApp about this consultation."' }),
   })
   .strict();
@@ -155,6 +169,11 @@ const ConsultationSchema = z
     invite: InviteStateSchema,
     address: AddressOutcomeSchema,
     one_visit: OneVisitOutcomeSchema,
+    discount_code: z.boolean().openapi({
+      description:
+        "true: the code given stands on the booking, or on the request ops book from; false when none was given, " +
+        "or another booking took the code's last use a moment before, and the booking stands without it.",
+    }),
   })
   .strict()
   .openapi("Consultation");
@@ -202,7 +221,8 @@ const consultationRoute = createRoute({
     409: takenOrBooked,
     422: errorResponse(
       "not_bookable: the pincode is not served, the day is not open, or this number is past consultations and " +
-        "books in the app; idempotency_key_reused: the key was used with a different body",
+        "books in the app; code_not_applicable: the discount code does not apply, fields names discount_code; " +
+        "idempotency_key_reused: the key was used with a different body",
     ),
     429: errorResponse("rate_limited"),
     503: errorResponse("unavailable: Turnstile could not be reached"),
@@ -257,10 +277,12 @@ export function registerConsultations(app: App): void {
         invite: await rememberedInvite(c, body.invite_code),
         source: "site_booking",
         plan: planOf(body.one_visit),
+        discountCode: body.discount_code ?? null,
       });
       if (!booked.ok) return booked;
-      const { state, date, window, area, credits, invite, address, oneVisit } = booked;
-      return { ok: true, body: { state, date, window, area, credits, invite, address, one_visit: oneVisit } };
+      const { state, date, window, area, credits, invite, address, oneVisit, discountCode } = booked;
+      const answer = { state, date, window, area, credits, invite, address, one_visit: oneVisit };
+      return { ok: true, body: { ...answer, discount_code: discountCode } };
     });
     if (run.kind === "replay") return c.json(run.body, 201);
     if (run.kind === "in_progress") return c.json(errorBody("idempotency_in_progress", requestId), 409);

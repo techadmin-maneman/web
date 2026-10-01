@@ -275,6 +275,8 @@ export function registerReferralLanding(app: App): void {
         invite: await invite(c, code),
         source: "referral_landing",
         plan: planOf(body.one_visit),
+        // An invite's page takes no discount code: the invite is its offer (docs/decisions/0108-discount-codes.md).
+        discountCode: null,
       });
       if (!booked.ok) return booked;
       return {

@@ -82,7 +82,11 @@
                   "already_invited",
                   "already_fitted",
                   "already_disputed",
-                  "not_disputable"
+                  "not_disputable",
+                  "code_not_applicable",
+                  "already_discounted",
+                  "price_settled",
+                  "code_exists"
                 ]
               },
               "request_id": {
@@ -3192,6 +3196,50 @@
               }
             ],
             "description": "A service-visit credit covers it, so payment is skipped (board C5)."
+          },
+          "discount": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "amount_ex_gst": {
+                    "anyOf": [
+                      {
+                        "type": "integer"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "In paise: what the code takes off before GST; null until the price it comes off is known."
+                  },
+                  "list_price": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/Price"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "The price before the code; price is what is left, with GST on it."
+                  }
+                },
+                "required": [
+                  "code",
+                  "amount_ex_gst",
+                  "list_price"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The discount code entered on it (docs/decisions/0108-discount-codes.md); else null."
           }
         },
         "required": [
@@ -3213,7 +3261,8 @@
           "paid",
           "visit_id",
           "moves_visit_id",
-          "credit"
+          "credit",
+          "discount"
         ],
         "additionalProperties": false
       },
@@ -3313,6 +3362,21 @@
         },
         "required": [
           "hold_id"
+        ],
+        "additionalProperties": false
+      },
+      "DiscountCodeEntry": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40,
+            "description": "As the client typed it, any case."
+          }
+        },
+        "required": [
+          "code"
         ],
         "additionalProperties": false
       },
@@ -5392,6 +5456,150 @@
           },
           "409": {
             "description": "hold_expired: the hold lapsed, was let go, or is booked already; or ops_assisted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/holds/{id}/discount-code": {
+      "post": {
+        "summary": "Take a discount code off the hold's price, before Checkout has its order",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscountCodeEntry"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The hold, priced with the code taken off",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Hold"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "already_discounted: the hold carries a code; hold_expired; price_settled: Checkout has its order, or it is paid for; ops_assisted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "code_not_applicable: the code does not apply to this booking",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited: too many codes tried today, or from this address this hour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Take the code off the hold again, before Checkout has its order",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The hold, at its price again",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Hold"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such hold of the client's, or it carries no code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "hold_expired: the hold ran out; price_settled: Checkout has its order, or it is paid for; ops_assisted",
             "content": {
               "application/json": {
                 "schema": {

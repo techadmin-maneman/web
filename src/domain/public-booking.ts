@@ -35,6 +35,10 @@
 // fit marked as one, three hours, with nothing paid. The client chooses the
 // product with the technician and pays by a link once fitted, so the site still
 // takes no money (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+// The site's own form may carry a discount code for it, which stands on the
+// booking and comes off the product's price at the link; while booking is off,
+// it is kept on the request, for ops to enter on the visit they book
+// (docs/decisions/0108-discount-codes.md).
 //
 // The number, the Turnstile token and the day's limits are checked by the
 // route's side (src/http/public-form.ts), which this is handed as checkPerson:
@@ -54,6 +58,7 @@ import { bookableService } from "./services.ts";
 import type { ConsentSource } from "../policy/consents.ts";
 import { typedAddress, type TypedAddress } from "../policy/site-booking.ts";
 import { currentAddress, firstAddressStatement, type Address } from "./profile.ts";
+import { checkForOneVisit, codeOnHold, useOnNewHold } from "./discount-code-holds.ts";
 import { attribute, type Invite, type InviteState, type Via } from "./referrals.ts";
 import { bookableTypes, holdSlot, liveVisitOf, type HeldService, type LiveVisit } from "./scheduling.ts";
 import { saveBookingLead, type Attribution } from "./leads.ts";
@@ -89,7 +94,8 @@ export interface Refusal<Status extends number = 400 | 403 | 409 | 422 | 429 | 5
     | "unavailable"
     | "taken"
     | "not_bookable"
-    | "already_booked";
+    | "already_booked"
+    | "code_not_applicable";
   /** For already_booked: the consultation the number already has. */
   readonly booked?: LiveVisit;
   /** For invalid_request: the field refused, where the request was well formed and did not add up. */
@@ -261,15 +267,18 @@ function requestStatement(
     window: BookingWindow;
     oneVisit: boolean;
     invite: Invite | null;
+    /** The discount code given for the one visit, which ops enter on the visit they book (ADR 0108). */
+    discountCode: string | null;
     now: Date;
   },
 ): D1PreparedStatement {
   return db
     .prepare(
       `INSERT INTO consultation_requests (id, person_id, pincode, requested_date, requested_window, referral_code,
-         created_at, one_visit)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
-       ON CONFLICT (person_id, requested_date, requested_window) DO UPDATE SET one_visit = excluded.one_visit`,
+         created_at, one_visit, discount_code)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+       ON CONFLICT (person_id, requested_date, requested_window) DO UPDATE SET
+         one_visit = excluded.one_visit, discount_code = excluded.discount_code`,
     )
     .bind(
       crypto.randomUUID(),
@@ -280,6 +289,7 @@ function requestStatement(
       input.invite?.code ?? null,
       input.now.toISOString(),
       input.oneVisit ? 1 : 0,
+      input.discountCode,
     );
 }
 
@@ -340,6 +350,11 @@ export interface ConsultationRequest {
   readonly source: Extract<ConsentSource, "site_booking" | "referral_landing">;
   /** The consultation alone, or the consultation and the first fit in one visit, paid for at the visit. */
   readonly plan: Plan;
+  /**
+   * A discount code for the one visit, as typed on /book; null for none. It comes off the product's price at the
+   * payment link (docs/decisions/0108-discount-codes.md).
+   */
+  readonly discountCode: string | null;
 }
 
 export interface Booked {
@@ -361,6 +376,8 @@ export interface Booked {
   readonly address: TypedAddress;
   /** Whether it is the consultation and the first fit in one visit. */
   readonly oneVisit: boolean;
+  /** Whether the discount code given stands on the booking, or on the request ops book it from. */
+  readonly discountCode: boolean;
 }
 
 /**
@@ -390,6 +407,8 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   const knownId = await personWithMobile(db, checked.mobile);
   const refused = knownId === null ? null : await consultationRefusal(db, knownId);
   if (refused !== null) return refused;
+  const code = request.discountCode === null ? null : await oneVisitCode(form, request.discountCode, knownId, oneVisit);
+  if (code?.ok === false) return code;
   const person = formPerson(db, {
     knownId,
     mobile: checked.mobile,
@@ -426,6 +445,8 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
         pincode: request.pincode,
         from: "site",
         alongside,
+        afterHold: (newHold) =>
+          code === null ? [] : [useOnNewHold(db, { codeId: code.codeId, personId: person.id, holdId: newHold }, now)],
       },
       now,
       HOLD_SECONDS,
@@ -435,8 +456,12 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     await form.queues.fsm.send({ hold_id: hold.id, request_id: requestId } satisfies FsmSyncMessage);
   } else {
     const asked = { personId: person.id, pincode: request.pincode, date: request.date, window: request.window };
-    await db.batch([...alongside, requestStatement(db, { ...asked, oneVisit, invite: request.invite, now })]);
+    const kept = { oneVisit, invite: request.invite, discountCode: code?.code ?? null, now };
+    await db.batch([...alongside, requestStatement(db, { ...asked, ...kept })]);
   }
+  // The code's use is written with the hold only while the code still has a use left for it, which another booking
+  // may have taken a moment before.
+  const codeStands = code !== null && (holdId === null || (await codeOnHold(db, holdId)) !== null);
   // Someone we knew may be in FSM and the CRM already, with no address. Someone new is added to both with this
   // one, by the booking and its lead.
   if (knownId !== null && address === "saved") await form.syncContact(person.id);
@@ -467,6 +492,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     invited: request.invite !== null,
     credits: invited.credits,
     one_visit: oneVisit,
+    discount_code: codeStands,
   });
   return {
     ok: true,
@@ -478,7 +504,30 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     invite: invited.invite,
     address,
     oneVisit,
+    discountCode: codeStands,
   };
+}
+
+/**
+ * The code given on the form, checked: only a consultation and fit in one visit takes one, a consultation costing
+ * nothing. One that does not apply refuses the booking, so the client can take it out or put it right; the form
+ * says only that it does not apply, and the reason is logged.
+ */
+async function oneVisitCode(
+  form: FormRequest,
+  text: string,
+  knownId: string | null,
+  oneVisit: boolean,
+): Promise<{ readonly ok: true; readonly codeId: string; readonly code: string } | Refusal> {
+  const notApplicable = { ok: false, status: 422, code: "code_not_applicable", fields: ["discount_code"] } as const;
+  if (!oneVisit) {
+    form.log.info("discount_code_refused", { reason: "not_covered" });
+    return notApplicable;
+  }
+  const checked = await checkForOneVisit(form.db, text, knownId, form.now);
+  if (checked.ok) return checked;
+  form.log.info("discount_code_refused", { reason: checked.reason });
+  return notApplicable;
 }
 
 export interface WaitlistRequest {

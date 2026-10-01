@@ -53,7 +53,15 @@ export type ClientTab = (typeof CLIENT_TABS)[number];
 const OPENING_TAB: ClientTab = "pieces";
 
 /** What Settings holds, in the order the section lists it. Rules has the section's own path. */
-export const SETTINGS_TABS = ["rules", "prices", "area", "blackouts", "consumables", "job-sheet"] as const;
+export const SETTINGS_TABS = [
+  "rules",
+  "prices",
+  "discount-codes",
+  "area",
+  "blackouts",
+  "consumables",
+  "job-sheet",
+] as const;
 export type SettingsTab = (typeof SETTINGS_TABS)[number];
 
 export type Route =
@@ -63,7 +71,7 @@ export type Route =
 
 const DISPATCH: Route = { page: "dispatch" };
 const CLIENT_PATH = /^\/clients(?:\/([0-9a-f-]{36})(?:\/(visits|pieces|payments|photos|consents|history))?)?$/;
-const SETTINGS_PATH = /^\/settings(?:\/(prices|area|blackouts|consumables|job-sheet))?$/;
+const SETTINGS_PATH = /^\/settings(?:\/(prices|discount-codes|area|blackouts|consumables|job-sheet))?$/;
 
 /** The tab a client's path names; Pieces without one, as the board draws the page. */
 const clientTabOf = (named: string | undefined): ClientTab => CLIENT_TABS.find((tab) => tab === named) ?? OPENING_TAB;

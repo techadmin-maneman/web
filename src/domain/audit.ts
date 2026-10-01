@@ -91,6 +91,12 @@ export const AUDIT_ACTIONS = [
   "booking.refund",
   "booking.stop",
   "booking.give_back",
+  // Discount codes (docs/decisions/0108-discount-codes.md): ops making codes, switching one off, and entering one on
+  // a client's visit or taking it off.
+  "discount_code.make",
+  "discount_code.switch_off",
+  "discount_code.apply",
+  "discount_code.remove",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
@@ -143,7 +149,13 @@ export function auditStatementIfWritten(
   now: Date,
   written: {
     readonly table:
-      "grievances" | "consents" | "referral_attributions" | "stock_movements" | "task_closures" | "no_show_disputes";
+      | "grievances"
+      | "consents"
+      | "referral_attributions"
+      | "stock_movements"
+      | "task_closures"
+      | "no_show_disputes"
+      | "discount_code_uses";
     readonly id: string;
   },
 ): D1PreparedStatement {
@@ -191,6 +203,28 @@ export function auditStatementIfBooked(
        WHERE EXISTS (SELECT 1 FROM slot_holds WHERE id = ?10 AND state = 'booked' AND appointment_id = ?11)`,
     )
     .bind(...valuesOf(entry, now), booked.holdId, booked.visitId);
+}
+
+/**
+ * The entry for a row stamped earlier in the same batch, by a statement that stamps nothing when another request
+ * stamped it a moment before: written only if the row carries this entry's own time. A discount code switched off,
+ * or a use taken off its booking (docs/decisions/0108-discount-codes.md).
+ */
+export function auditStatementIfStamped(
+  db: D1Database,
+  entry: AuditEntry,
+  now: Date,
+  stamped:
+    | { readonly table: "discount_codes"; readonly column: "switched_off_at"; readonly id: string }
+    | { readonly table: "discount_code_uses"; readonly column: "removed_at"; readonly id: string },
+): D1PreparedStatement {
+  return db
+    .prepare(
+      `INSERT INTO audit_log (${COLUMNS})
+       SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9
+       WHERE EXISTS (SELECT 1 FROM ${stamped.table} WHERE id = ?10 AND ${stamped.column} = ?1)`,
+    )
+    .bind(...valuesOf(entry, now), stamped.id);
 }
 
 export async function recordAudit(db: D1Database, entry: AuditEntry, now: Date): Promise<void> {

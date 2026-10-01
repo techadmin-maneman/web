@@ -2,7 +2,8 @@
 // (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md; src/policy/one-visit.ts).
 //
 // It is made when the technician closes the visit as done, for the product the client chose, at its price in the
-// price book on the visit's day, and Razorpay texts it to the client itself. A visit has one link, and its row is
+// price book on the visit's day, less any discount code entered on the booking before GST
+// (docs/decisions/0108-discount-codes.md), and Razorpay texts it to the client itself. A visit has one link, and its row is
 // written before Razorpay is asked. The close asks once and lands whatever Razorpay answers, so a phone is never held
 // up by it; a link the close could not have made, for a timeout, a 5xx or a missing key, is asked for again by the
 // five-minute cron, a few a run. Razorpay refuses a second link under the same reference, which is what a try whose
@@ -22,6 +23,7 @@ import { failureReason, type Logger } from "../log.ts";
 import type { PaymentsProvider } from "../providers/payments.ts";
 import { isRefusal } from "../providers/provider-error.ts";
 import type { AlertOnce, ResolveAlert } from "./alerts.ts";
+import { priceAfterCode } from "./discount-code-uses.ts";
 import { priceOf } from "./price-book.ts";
 import { serviceOf } from "./services.ts";
 
@@ -66,7 +68,10 @@ const failedKey = (appointmentId: string) => `payment_link_failed:${appointmentI
 
 const LINK_COLUMNS = "id, amount, sent_at, refused_at";
 
-/** The visit's link, or a new one for the product at its price on the visit's day; null where the book has no price. */
+/**
+ * The visit's link, or a new one for the product at its price on the visit's day, less the visit's discount code
+ * before GST; null where the book has no price. What the code takes off is fixed in the batch that writes the link.
+ */
 async function linkFor(db: D1Database, visit: FittedVisit, now: Date): Promise<LinkRow | null> {
   const current = () =>
     db
@@ -75,25 +80,28 @@ async function linkFor(db: D1Database, visit: FittedVisit, now: Date): Promise<L
       .first<LinkRow>();
   const existing = await current();
   if (existing !== null) return existing;
-  const price = await priceOf(db, "first_fit", visit.day, visit.tier);
-  if (price === null) return null;
+  const listed = await priceOf(db, "first_fit", visit.day, visit.tier);
+  if (listed === null) return null;
+  const { price, fix } = await priceAfterCode(db, visit.appointmentId, listed);
   // Another close of the same visit may write it first; either way the row is the visit's one.
-  await db
-    .prepare(
-      `INSERT INTO payment_links (id, appointment_id, tier, amount, amount_ex_gst, gst_percent, created_at, updated_at)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7)
-       ON CONFLICT (appointment_id) DO NOTHING`,
-    )
-    .bind(
-      crypto.randomUUID(),
-      visit.appointmentId,
-      visit.tier,
-      price.amount,
-      price.amount_ex_gst,
-      price.gst_percent,
-      now.toISOString(),
-    )
-    .run();
+  await db.batch([
+    ...fix,
+    db
+      .prepare(
+        `INSERT INTO payment_links (id, appointment_id, tier, amount, amount_ex_gst, gst_percent, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7)
+         ON CONFLICT (appointment_id) DO NOTHING`,
+      )
+      .bind(
+        crypto.randomUUID(),
+        visit.appointmentId,
+        visit.tier,
+        price.amount,
+        price.amount_ex_gst,
+        price.gst_percent,
+        now.toISOString(),
+      ),
+  ]);
   return current();
 }
 
