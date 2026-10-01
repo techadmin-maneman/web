@@ -68,12 +68,9 @@ export async function startUpload(
   return { ok: true, value: { jobId: link.body.job_id, hairColor: photo.hairColor } };
 }
 
-/** Starts the render of a claimed try-on. The value is the job to follow. */
-export async function startRender(
-  uploaded: Uploaded,
-  choice: Pick<GenerateRequest, "stage" | "preset">,
-): Promise<Outcome<string>> {
-  const answer = await generateLook({ job_id: uploaded.jobId, hair_color: uploaded.hairColor, ...choice });
+/** Starts the render of a claimed try-on, for the stage its claim gave. The value is the job to follow. */
+export async function startRender(uploaded: Uploaded, preset: GenerateRequest["preset"]): Promise<Outcome<string>> {
+  const answer = await generateLook({ job_id: uploaded.jobId, hair_color: uploaded.hairColor, preset });
   if (!answer.ok) return refused(answer.code);
   const problem = jobProblem(answer.body);
   return problem === null ? { ok: true, value: answer.body.job_id } : failed(problem);

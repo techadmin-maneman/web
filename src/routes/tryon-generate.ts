@@ -2,7 +2,8 @@
 //
 // A look is made only for a try-on the gate has claimed, since the number is
 // where it goes: to WhatsApp only, never to the site
-// (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md). One look per
+// (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md). It is made for
+// the stage the claim gave, the lead's extent of hair loss too. One look per
 // visitor (the owner's decision, docs/decisions/0018-one-look-pro-only-lead-notices.md):
 // the first generate for an upload renders it; the same look asked for again
 // returns that job; any other look is refused. The mm_look cookie then keeps
@@ -12,7 +13,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
 import { PRESET_IDS, findPreset } from "../config/presets.ts";
-import { FAILURE_CODES, HAIR_COLORS, JOB_STATES, TRYON_STAGES } from "../config/tryon.ts";
+import { FAILURE_CODES, HAIR_COLORS, JOB_STATES } from "../config/tryon.ts";
 import { alertCeilingReached, takeFromCeiling } from "../domain/ceilings.ts";
 import { takeOne } from "../domain/rate-limit.ts";
 import { chooseRender } from "../domain/render-choice.ts";
@@ -21,19 +22,19 @@ import { errorBody, errorResponse } from "../http/errors.ts";
 import { setLookCookie } from "../http/look-cookie.ts";
 import { visitorOf } from "../http/visitor.ts";
 import { indiaHour } from "../lib/india-time.ts";
+import { tryOnRuns } from "../policy/tryon-delivery.ts";
 import type { RenderMessage } from "../queues/render.ts";
 
 export const GenerateRequestSchema = z
   .object({
     job_id: z.uuid(),
-    stage: z.enum(TRYON_STAGES).openapi({ description: "The hair-loss stage the visitor picked." }),
     preset: z.enum(PRESET_IDS),
     hair_color: z
       .enum(HAIR_COLORS)
       .openapi({ description: "From the browser's detector; unknown if it could not tell." }),
   })
   .strict()
-  .openapi("GenerateRequest");
+  .openapi("GenerateRequest", { description: "The look, for the stage the gate's claim gave the try-on." });
 
 export const JobStatusSchema = z
   .object({
@@ -102,10 +103,11 @@ export function registerTryonGenerate(app: App): void {
     const preset = findPreset(request.preset);
     if (job === null) return c.json(errorBody("not_found", requestId), 404);
     if (preset === undefined) return c.json(errorBody("invalid_request", requestId, ["preset"]), 400);
-    if (job.lead_id === null) return c.json(errorBody("claim_required", requestId), 409);
-    if (!settings.messaging.enabled) return c.json(errorBody("whatsapp_unavailable", requestId), 503);
+    // The claim gives the job its lead and its stage.
+    if (job.lead_id === null || job.stage === null) return c.json(errorBody("claim_required", requestId), 409);
+    if (!tryOnRuns(settings.messaging)) return c.json(errorBody("whatsapp_unavailable", requestId), 503);
 
-    const choice = chooseRender(request.stage, preset, request.hair_color, settings.tryon.unknownColorRoute);
+    const choice = chooseRender(job.stage, preset, request.hair_color, settings.tryon.unknownColorRoute);
     const outcome = job.state === "awaiting_upload" ? await startFirstLook(c, job, choice) : sameLookAgain(job, choice);
 
     if ("error" in outcome) return c.json(errorBody(outcome.error, requestId), outcome.status);

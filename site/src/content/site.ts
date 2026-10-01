@@ -966,7 +966,7 @@ export const tryOn = {
         step: "Not available right now",
         frame: "The try-on is paused",
         title: "The try-on is not available right now.",
-        body: "Every look is sent privately on WhatsApp, and that is not open yet. Book a free consultation and see the real thing, in person.",
+        body: "Every look is sent privately on WhatsApp, which is not open yet. Book a free consultation and see the real thing, in person.",
       },
     },
   },

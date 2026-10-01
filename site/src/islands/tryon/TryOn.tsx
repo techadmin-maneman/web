@@ -204,7 +204,7 @@ export default function TryOn(props: Props) {
       track({ name: "try_on_claimed" });
     }
 
-    const render = await startRender(upload, { stage: stageId, preset });
+    const render = await startRender(upload, preset);
     if (render.ok) {
       jobId.current = render.value;
       send({ type: "sent" });

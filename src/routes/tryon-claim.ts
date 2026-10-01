@@ -43,9 +43,9 @@ export const ClaimRequestSchema = z
     job_id: z.uuid(),
     name: z.string().trim().min(1).max(60),
     mobile: z.string().regex(INDIAN_MOBILE_PATTERN).openapi({ example: "98100 00000" }),
-    stage: z
-      .enum(TRYON_STAGES)
-      .openapi({ description: "The hair-loss stage the visitor picked, which the render is asked for next." }),
+    stage: z.enum(TRYON_STAGES).openapi({
+      description: "The hair-loss stage the visitor picked: the lead's, and the one the look is made for.",
+    }),
     notice_version: z
       .string()
       .min(1)
@@ -142,7 +142,7 @@ async function claim(c: Context<AppEnv>, request: z.infer<typeof ClaimRequestSch
   if (!claimable(job)) return { ok: false, status: 409, code: "job_not_claimable" };
 
   const why = undelivered({
-    messagingOn: settings.messaging.enabled,
+    messaging: settings.messaging,
     heldBack: heldBackByAllowlist(settings.messaging, {
       mobile_e164: mobileE164,
       name: request.name,

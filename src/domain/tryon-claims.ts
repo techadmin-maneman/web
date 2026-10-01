@@ -29,7 +29,7 @@ export interface NewClaim {
   readonly job: JobRow;
   readonly mobileE164: string;
   readonly name: string;
-  /** The stage the visitor chose, which the render is asked for next; the lead's extent of hair loss. */
+  /** The stage the visitor chose: the lead's extent of hair loss, and the stage the render is made for. */
   readonly stage: LossExtent;
   /** The gate's notice the page showed. */
   readonly gateNotice: string;
@@ -93,9 +93,10 @@ export async function recordClaim(db: D1Database, claim: NewClaim): Promise<stri
           attribution.landing_path ?? null,
           claim.requestId,
         ),
+      // The render is made for the stage the lead records (src/routes/tryon-generate.ts).
       db
-        .prepare(`UPDATE tryon_jobs SET person_id = ${personId}, lead_id = ? WHERE id = ?`)
-        .bind(mobileE164, leadId, job.id),
+        .prepare(`UPDATE tryon_jobs SET person_id = ${personId}, lead_id = ?, stage = ? WHERE id = ?`)
+        .bind(mobileE164, leadId, claim.stage, job.id),
       db
         .prepare(
           `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_id, state)

@@ -25,6 +25,7 @@ import { putCounted } from "../domain/storage-meter.ts";
 import { checkCopy, checkPhoto } from "../domain/photo.ts";
 import { indiaHour } from "../lib/india-time.ts";
 import { KEEPING_NOTICES } from "../policy/kept-try-ons.ts";
+import { tryOnRuns } from "../policy/tryon-delivery.ts";
 import { signToken, verifyToken } from "../lib/signed-token.ts";
 
 export const UploadUrlRequestSchema = z
@@ -119,7 +120,7 @@ export function registerTryonUpload(app: App): void {
     if (request.notice_version !== CURRENT_NOTICE.tryon_photo) {
       return c.json(errorBody("invalid_request", requestId, ["notice_version"]), 400);
     }
-    if (!settings.messaging.enabled) return c.json(errorBody("whatsapp_unavailable", requestId), 503);
+    if (!tryOnRuns(settings.messaging)) return c.json(errorBody("whatsapp_unavailable", requestId), 503);
 
     // One look per visitor: a browser whose last render did not fail gets no second photo.
     const lastJobId = await lookCookieJob(c);

@@ -17,7 +17,7 @@ Until now the site did the opposite. The gate opened after v2's 20-second countd
 The try-on runs upload, consent, stage, looks, gate, sent. Nothing renders before the gate, so v2's countdown is gone, and the looks screen's button continues to the gate.
 
 - **The gate needs the name and the number**, since the number is where the look goes. Its button sends the look.
-- **The claim comes before the render.** `POST /api/tryon/claim` is accepted once the photograph is uploaded and before its render is asked for. It carries the stage the visitor chose, which is the lead's extent of hair loss, since no render has recorded one yet. The look's message waits for the render, as a claim made while rendering did before.
+- **The claim comes before the render.** `POST /api/tryon/claim` is accepted once the photograph is uploaded and before its render is asked for. It carries the stage the visitor chose, which is the lead's extent of hair loss, and the job keeps it: the render is made for that stage, and `POST /api/tryon/generate` takes none of its own, so the lead and the look cannot disagree. The look's message waits for the render, as a claim made while rendering did before.
 - **The render needs the claim.** `POST /api/tryon/generate` refuses a try-on no claim has, `409 claim_required`.
 - **The claim opens no session.** Nothing on the site reads one any more, so the `mm_tryon` cookie is gone, and `tryon_sessions` is written no more; the sweeper deletes what is left. The same number claiming again, after an answer was lost, gets its lead again; another number is refused.
 - **A visitor who leaves between the two** leaves a claimed try-on with no render: it expires after the hour, as an unfinished upload does, and its message is skipped ("no look was made").
@@ -25,7 +25,7 @@ The try-on runs upload, consent, stage, looks, gate, sent. Nothing renders befor
 ### Never on the site
 
 - **No route hands a browser the look, or a link to it.** `GET /api/tryon/result/{job_id}` is gone, with the fifteen-minute browser link. `GET /api/result/{token}` stays: it serves the signed one-hour link a WhatsApp message carries, which the bridge fetches to send the image, under the same daily read ceiling (ADR 0014).
-- **`GET /api/tryon/look` says only whether this browser has had its look**: the job's state, stage and look, never the image. It now answers for an expired look too, since the upload link refuses that browser another photograph whether or not its look is still kept (it answered 404 once the look expired, ADR 0024).
+- **`GET /api/tryon/look` says only whether this browser has had its look**: the job's state, and how it failed, never the image nor the stage and look asked for, which an erasure leaves on the expired job's row. It now answers for an expired look too, since the upload link refuses that browser another photograph whether or not its look is still kept (it answered 404 once the look expired, ADR 0024).
 - **The site has no result screen**: no slider, no Download, no share. The browser never holds a look, so the slider's result frame and `site/src/lib/frame-aspect.ts` are gone; the home page's teaser keeps the design's own pair.
 
 ### The sent screen
@@ -70,7 +70,7 @@ Every word above that v2 does not have is ours until the owner's second round (i
 - **Every look made is a lead with a number.** A visitor who would not give one no longer sees a look.
 - **Production's site cannot be built** until counsel approves `photo-v3` and `gate-v3` (item 146), and its try-on does not run until WhatsApp does (item 164).
 - **Staging's looks made before this change without a number**: their browsers are told the look was sent, though none was. Staging keeps a look three days.
-- **No database change.** The contract loses one route and gains one, the claim gains `stage` and loses `whatsapp_copy`, and two error codes are added; `docs/openapi*.json`, `docs/api*.md` and the generated types are regenerated.
+- **No database change.** The contract loses one route and gains one, the claim gains `stage` and loses `whatsapp_copy`, the render's request and the look's answer lose theirs, and two error codes are added; `docs/openapi*.json`, `docs/api*.md` and the generated types are regenerated.
 - **Tests.**
   - `test/node/policy-tryon-delivery.test.ts`: the rule.
   - `test/worker/tryon-api.test.ts`: the claim before the render, the render refused without it, no result route, the look said without the image, and every refusal while WhatsApp cannot send.

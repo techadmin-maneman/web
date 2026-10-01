@@ -9,6 +9,7 @@ import {
   TURNSTILE_URL,
   appFor,
   captureLogs,
+  eraseByMobile,
   fakeDependencies,
   fakeFetch,
   fakeQueue,
@@ -70,16 +71,15 @@ function visitor(
     },
     claim: (jobId: string, mobile = "98100 00001", headers: Record<string, string> = {}, body = {}) =>
       post("/api/tryon/claim", { job_id: jobId, name: "Arjun Mehta", mobile, stage: "crown", ...body }, headers),
-    /** Uploaded, and claimed at the gate: ready for its render. */
-    async claimed(mobile = "98100 00001"): Promise<string> {
+    /** Uploaded, and claimed at the gate for a stage: ready for its render. */
+    async claimed(mobile = "98100 00001", stage = "crown"): Promise<string> {
       const jobId = await this.uploaded();
-      expect((await this.claim(jobId, mobile)).status).toBe(201);
+      expect((await this.claim(jobId, mobile, {}, { stage })).status).toBe(201);
       return jobId;
     },
     generate: (jobId: string, body: Record<string, unknown> = {}) =>
       post("/api/tryon/generate", {
         job_id: jobId,
-        stage: "crown",
         preset: "full-natural-short",
         hair_color: "black",
         ...body,
@@ -259,8 +259,10 @@ describe("POST /api/tryon/claim, before the look is made", () => {
       { purpose: "result_delivery", notice_version: "gate-v3", created_at: NOW.toISOString(), source: "try_on" },
       { purpose: "tryon_photo", notice_version: "photo-v3", created_at: NOW.toISOString(), source: "try_on" },
     ]);
+    // The job keeps the claim's stage, which its render is made for.
     expect(await jobRow(jobId)).toMatchObject({
       state: "awaiting_upload",
+      stage: "advanced",
       lead_id: body.lead_id,
       claimed_at: NOW.toISOString(),
       session_id: null,
@@ -420,15 +422,11 @@ describe("POST /api/tryon/generate and GET /api/tryon/status", () => {
     expect(browser.queues.RENDER_QUEUE.sent).toEqual([]);
   });
 
-  it("queues the first look of a claimed try-on, records the render choice and sends it to the render queue", async () => {
+  it("queues the first look of a claimed try-on, for the claim's stage, and sends it to the render queue", async () => {
     const browser = visitor();
-    const jobId = await browser.claimed();
+    const jobId = await browser.claimed("98100 00001", "receding");
 
-    const response = await browser.generate(jobId, {
-      stage: "receding",
-      preset: "light-receded-cropped",
-      hair_color: "grey",
-    });
+    const response = await browser.generate(jobId, { preset: "light-receded-cropped", hair_color: "grey" });
     expect(response.status).toBe(202);
     expect(await response.json()).toEqual({ job_id: jobId, state: "queued" });
     expect(await jobRow(jobId)).toMatchObject({
@@ -444,6 +442,15 @@ describe("POST /api/tryon/generate and GET /api/tryon/status", () => {
 
     const status = await browser.call(`/api/tryon/status/${jobId}`);
     expect(await status.json()).toEqual({ job_id: jobId, state: "queued" });
+  });
+
+  // The stage is the claim's alone, so the lead and the render cannot disagree.
+  it("takes no stage of its own", async () => {
+    const browser = visitor();
+    const jobId = await browser.claimed();
+    const refused = await browser.generate(jobId, { stage: "advanced" });
+    expect(refused.status).toBe(400);
+    expect(await jobRow(jobId)).toMatchObject({ state: "awaiting_upload", stage: "crown" });
   });
 
   it("routes an unknown colour to Premium with color=original, and records why", async () => {
@@ -528,23 +535,21 @@ describe("what a browser is told: never the look, which goes to WhatsApp only", 
     expect(JSON.stringify(await look.json())).not.toMatch(/url|\/api\/result/);
   });
 
-  it("tells a browser it has had its look, after the look is gone too", async () => {
+  // Its state alone: not the stage or the look asked for, which an erasure leaves on an expired job's row.
+  it("tells a browser it has had its look, and nothing of what it asked, after the look is gone too", async () => {
     const browser = visitor();
     expect((await browser.call("/api/tryon/look")).status).toBe(404);
-    const jobId = await browser.claimed();
-    await browser.generate(jobId, { stage: "receding", preset: "light-natural-short" });
+    const jobId = await browser.claimed("98100 00001", "receding");
+    await browser.generate(jobId, { preset: "light-natural-short" });
 
     const look = await browser.call("/api/tryon/look");
     expect(look.status).toBe(200);
-    expect(await look.json()).toEqual({
-      job_id: jobId,
-      state: "queued",
-      stage: "receding",
-      preset: "light-natural-short",
-    });
-    // Expired, the browser has still had its look: the upload link refuses it another.
-    await setState(jobId, "expired");
-    expect(await (await browser.call("/api/tryon/look")).json()).toMatchObject({ state: "expired" });
+    expect(await look.json()).toEqual({ job_id: jobId, state: "queued" });
+
+    // Erased, and so expired, the browser has still had its look: the upload link refuses it another.
+    expect(await eraseByMobile("+919810000001")).not.toBeNull();
+    expect(await jobRow(jobId)).toMatchObject({ state: "expired", stage: "receding", preset: "light-natural-short" });
+    expect(await (await browser.call("/api/tryon/look")).json()).toEqual({ job_id: jobId, state: "expired" });
     expect((await browser.uploadLink()).status).toBe(403);
   });
 

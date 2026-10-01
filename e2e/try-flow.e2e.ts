@@ -145,9 +145,9 @@ test("the whole try-on: uploaded during the choices, the number given before the
   // The look is asked for only once the claim is saved.
   const gateCalls = seen.map((request) => callOf(request)).filter((call) => call === "claim" || call === "generate");
   expect(gateCalls).toEqual(["claim", "generate"]);
+  // The stage is the claim's, so the look is made for the stage the lead records.
   expect(named(seen, "generate")[0]?.postDataJSON()).toEqual({
     job_id: JOB,
-    stage: "crown",
     preset: "light-natural-short",
     hair_color: "brown",
   });
@@ -199,10 +199,7 @@ test("a face the renderer cannot read, found once the look is on its way, blames
   expect(failed?.[1]).toEqual({ failure_code: "photo_unreadable" });
 });
 
-const OWN_LOOK: Answer = {
-  status: 200,
-  json: { job_id: JOB, state: "ready", stage: "receding", preset: "light-natural-short" },
-};
+const OWN_LOOK: Answer = { status: 200, json: { job_id: JOB, state: "ready" } };
 
 // CLI-29: the visitor used to choose a photograph and agree to its use before being told they had had their look.
 test("a visitor who has had their look is told on arrival that it was sent, and shown no look", async ({ page }) => {

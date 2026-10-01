@@ -88,6 +88,6 @@ step("upload", { status: upload.status, bytes: photo.byteLength, ...inspectImage
 // 3. The gate, where the look will go; 4. the look; 5. its render, whose message then goes to the handset.
 const gate = await post("/api/tryon/claim", { job_id: jobId, name: "Staging test", mobile, stage: values.stage });
 step("claim", { status: gate.status, ...gate.body, mobile: `…${mobile.slice(-4)}` });
-const look = { job_id: jobId, stage: values.stage, preset: values.preset, hair_color: values.color };
+const look = { job_id: jobId, preset: values.preset, hair_color: values.color };
 step("generate", await post("/api/tryon/generate", look));
 step("result", { state: await waitForResult(jobId), check: "the look on the handset's WhatsApp" });
