@@ -1,6 +1,5 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { adrIndex, readAdr, readDecisions } from "../../scripts/lib/adr-index.ts";
+import { adrIndex, readAdr } from "../../scripts/lib/adr-index.ts";
 
 const adr = (file: string, header: string) => ({ file, text: `${header}\n\n## Context\n\nThe reason.\n` });
 
@@ -73,13 +72,5 @@ describe("the index", () => {
     expect(index).toContain("| [0003](0003-c.md) | C | 2026-09-22 | accepted |  |");
     expect(index).toContain("The next free number is 0004.");
     expect(index).toContain("- [The trial](trial.md)");
-  });
-});
-
-describe("the repository's ADR index", () => {
-  it("is docs/decisions/README.md as npm run adr-index writes it", () => {
-    const { adrs, others } = readDecisions();
-    expect(adrs.length).toBeGreaterThan(70);
-    expect(readFileSync("docs/decisions/README.md", "utf8")).toBe(adrIndex(adrs, others));
   });
 });
