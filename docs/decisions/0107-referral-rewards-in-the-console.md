@@ -70,3 +70,5 @@ Ops could change each rule once. `setOpsSetting` wrote `ops_settings` with an up
 - **The register holds one more input**, and the snapshot stays far under `MAX_SNAPSHOT_BYTES`.
 - **mm-site asks mm-api for the reward** about once a minute per isolate on `/r/:code` and `/book`, beside the prices (ADR 0073); a failed read keeps the last good one, and failing that the pages promise no count.
 - **Owed by the owner:** whether the reward should be the one in force when the friend is fitted (ADR 0025, item 94), and the words for unequal sides and for 0 (item 172).
+
+**Confirmed by the owner, 1 October 2026:** the reward that applies is the one in force when the friend is fitted.

@@ -14,14 +14,15 @@ import { CURRENT_NOTICE } from "../config/notices.ts";
 import { TRYON_STAGES } from "../config/tryon.ts";
 import { isSpent, takeOne } from "../domain/rate-limit.ts";
 import { loadJob, type JobRow } from "../domain/tryon.ts";
-import { leadOfOwnClaim, recordClaim, reserveJob } from "../domain/tryon-claims.ts";
+import { hadLookSince, leadOfOwnClaim, recordClaim, reserveJob } from "../domain/tryon-claims.ts";
 import { errorBody, errorResponse, type ErrorCode } from "../http/errors.ts";
 import { IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
 import { visitorOf } from "../http/visitor.ts";
 import { saltedHash } from "../lib/hash.ts";
+import { DAY_MS } from "../lib/durations.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
-import { undelivered } from "../policy/tryon-delivery.ts";
+import { LOOK_PER_NUMBER_DAYS, undelivered } from "../policy/tryon-delivery.ts";
 import { heldBackByAllowlist, resultMessageCap } from "../queues/messaging.ts";
 
 const AttributionSchema = z
@@ -80,6 +81,7 @@ export const claimRoute = createRoute({
     201: { description: "Saved", content: { "application/json": { schema: ClaimResponseSchema } } },
     400: errorResponse("invalid_request: see error.fields"),
     404: errorResponse("not_found"),
+    403: errorResponse("look_limit_reached: this number had its look in the last thirty days"),
     409: errorResponse(
       "job_not_claimable: no photo was uploaded, its render was asked for already, or it is another number's; " +
         "idempotency_in_progress",
@@ -96,7 +98,7 @@ type Outcome =
   | { readonly ok: true; readonly body: ClaimResponse }
   | {
       readonly ok: false;
-      readonly status: 400 | 404 | 409 | 429 | 503;
+      readonly status: 400 | 403 | 404 | 409 | 429 | 503;
       readonly code: ErrorCode;
       readonly fields?: string[];
     };
@@ -140,6 +142,9 @@ async function claim(c: Context<AppEnv>, request: z.infer<typeof ClaimRequestSch
   if (job === null) return { ok: false, status: 404, code: "not_found" };
   if (job.lead_id !== null) return claimAgain(c, job, mobileE164);
   if (!claimable(job)) return { ok: false, status: 409, code: "job_not_claimable" };
+  if (await hadLookSince(db, mobileE164, new Date(now.getTime() - LOOK_PER_NUMBER_DAYS * DAY_MS))) {
+    return { ok: false, status: 403, code: "look_limit_reached" };
+  }
 
   const why = undelivered({
     messaging: settings.messaging,

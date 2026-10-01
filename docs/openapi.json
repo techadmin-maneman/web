@@ -2510,6 +2510,16 @@
               }
             }
           },
+          "403": {
+            "description": "look_limit_reached: this number had its look in the last thirty days",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "404": {
             "description": "not_found",
             "content": {

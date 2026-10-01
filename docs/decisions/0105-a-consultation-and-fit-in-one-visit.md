@@ -81,3 +81,5 @@ Every word this adds is a placeholder, for the owner (open points 45, 162 and 16
 - **It does not track pieces in the stock ledger.** A piece fitted is FSM's asset, as any first fit's; the ledger keeps consumables (ADR 0087). How many pieces of each base a kit carries is the owner's to say (open point 168).
 - **It does not name the one visit in the client app**, whose visits list it as a first fit with nothing prepaid.
 - **It does not send the link on WhatsApp.** Razorpay's SMS reaches the client without a template or consent of ours; a WhatsApp copy can follow with the owner's words.
+
+**Confirmed by the owner, 1 October 2026:** an unpaid one visit carries no no-show charge and no late-move fee; the payment link goes by Razorpay's SMS; a visit declined at the door is a free consultation; an invited friend's referral visits land once the one visit's payment is in.

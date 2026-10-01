@@ -927,6 +927,14 @@ Request body:
 }
 ```
 
+**403**: look_limit_reached: this number had its look in the last thirty days
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 **404**: not_found
 
 ```json

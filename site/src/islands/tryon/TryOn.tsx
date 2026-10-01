@@ -163,6 +163,10 @@ export default function TryOn(props: Props) {
       fail({ kind: "unavailable", code });
       return;
     }
+    if (code === "look_limit_reached") {
+      send({ type: "alreadySent" });
+      return;
+    }
     if (code === "job_not_claimable") {
       // The photograph may have expired while the gate was open, or the try-on is saved to another number.
       const status = await jobStatus(job);
