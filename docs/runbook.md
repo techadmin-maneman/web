@@ -636,7 +636,7 @@ Where GitHub Actions jobs run is the repository variable `CI_RUNNER`: `maneman` 
 
 - **One fewer runner:** `docker rm -f maneman-runner-2`, then remove it in Settings → Actions → Runners. Nothing in the workflows names a particular runner, only the `maneman` label they share.
 
-- **Move the jobs to GitHub's runners:** `gh variable set CI_RUNNER --body github`, as it is now. They then spend GitHub's minutes, about twice as fast as one job did: GitHub bills each job a minute at least (docs/decisions/0006-deployment-pipeline.md, "Parallel jobs"). When the minutes run out, GitHub starts no job: staging stops deploying and production cannot release. A merge whose files already passed CI as a pull request does not run it again before its staging deploy.
+- **Move the jobs to GitHub's runners:** `gh variable set CI_RUNNER --body github`. They then spend GitHub's minutes, about twice as fast as one job did: GitHub bills each job a minute at least (docs/decisions/0006-deployment-pipeline.md, "Parallel jobs"). When the minutes run out, GitHub starts no job: staging stops deploying and production cannot release. Wherever the jobs run, a check that already passed on the same files is not run again (docs/decisions/0006-deployment-pipeline.md, "Checks are not repeated").
 - **Move them back to the machine:** check both runners are listening (above), then `gh variable set CI_RUNNER --body maneman`.
 - **After a new runner release,** the agent updates itself; the image's pinned version only matters for a fresh set-up.
 
