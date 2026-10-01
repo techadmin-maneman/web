@@ -930,7 +930,7 @@ Staging writes to the owner's real FSM and Books (open point 19), and production
 3. Delete: `node --env-file=.env.fsm-scripts scripts/staging-records.ts --delete private/staging-records-<date>.json`. It reads the org again and deletes only what the file keeps and the org still marks as staging's, what points at a record before it: Books' refunds and payments, FSM's appointments, Books' invoices, FSM's work orders and Requests, then the contacts. Each line says `deleted`, `already gone` or `refused` with FSM's or Books' reason.
 4. A refusal is usually a record another still points at: run the delete again, and anything freed by the first run goes. What stays refused is put right by hand in FSM or Books.
 
-FSM's API deletes no invoice, so the list names FSM's invoices of staging's work orders, and any of no work order, apart: delete them in FSM's Invoices screen once the run has deleted their work orders. Nothing of production reads them, since its invoice pass reads each of its own work orders' invoice.
+FSM's API deletes no invoice, so the list names FSM's invoices of staging's work orders apart: delete them in FSM's Invoices screen, if it still shows them, once the run has deleted their work orders and Books' invoices. On 1 October 2026 it showed none: FSM's API went on listing the three invoices as links of no work order, which neither FSM's screens nor anything of ours reads. Nothing of production reads them, since its invoice pass reads each of its own work orders' invoice.
 
 FSM keeps a deleted record in its recycle bin, out of every list the API gives, so production's reconciliation never sees it.
 

@@ -101,7 +101,8 @@ const idOf = (row: Row, key = "id"): string => text(row[key]);
 
 /**
  * What the org holds of staging's now; the look-alikes it holds beside them; and FSM's invoices of staging's work
- * orders, or of none, which only FSM's own screen deletes.
+ * orders, which only FSM's own screen deletes. Once their work orders and Books invoices are gone, FSM's screens show
+ * them no more, though its API still lists them, of no work order, and nothing reads them: they are not listed.
  */
 async function stagingRecords(): Promise<{ records: StagingRecord[]; lookAlikes: string[]; byHand: string[] }> {
   const records: StagingRecord[] = [];
@@ -123,8 +124,9 @@ async function stagingRecords(): Promise<{ records: StagingRecord[]; lookAlikes:
   const workOrders = new Set(records.filter((record) => record.kind === "fsm/Work_Orders").map((record) => record.id));
   for (const row of await fsmRows("Invoices")) {
     const workOrder = (row.Work_Order as { id?: string } | null | undefined)?.id;
-    if (workOrder === undefined) byHand.push(`${idOf(row)} ${text(row.Name)}, of no work order`);
-    else if (workOrders.has(workOrder)) byHand.push(`${idOf(row)} ${text(row.Name)}, of a staging work order`);
+    if (workOrder !== undefined && workOrders.has(workOrder)) {
+      byHand.push(`${idOf(row)} ${text(row.Name)}, of a staging work order`);
+    }
   }
   for (const row of await fsmRows("Contacts")) {
     judge("fsm/Contacts", idOf(row), text(row.Full_Name), isStagingMarked(text(row.Full_Name)));
