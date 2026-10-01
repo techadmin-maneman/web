@@ -1,6 +1,6 @@
 # 0107. What a referral earns, set in the console, each side apart
 
-- Status: accepted, on the owner's ruling of 1 October 2026 (ADR 0025, item 89). What the ruling left open is taken for the owner to confirm (item 89), and the words for unequal sides and for 0 await the owner's (`docs/open-points.md`, item 165).
+- Status: accepted, on the owner's ruling of 1 October 2026 (ADR 0025, item 94). What the ruling left open is taken for the owner to confirm (item 94), and the words for unequal sides and for 0 await the owner's (`docs/open-points.md`, item 172).
 - Date: 2026-10-01
 - Amends [0048](0048-referrals.md), whose grant gave each side 3 service visits expiring in 365 days, and the prompt's rule as `src/policy/referral-reward.ts` quotes it, "the referrer and the referred each get 3 service-visit credits"; extends [0088](0088-every-policy-in-the-console.md) by one more input; follows [0073](0073-prices-from-the-price-book.md), whose way of writing a figure into the site this takes
 
@@ -28,9 +28,9 @@ On 1 October 2026 the owner asked: "how are referrals configured? Is it a hard c
 
 ### The reward in force when the friend is fitted
 
-**The grant reads the reward when the friend's first fit settles the referral**, on the five-minute cron that settles it (`src/scheduled/referrals.ts`), not when the invite was sent or the consultation booked. This is the coordinator's default, for the owner to confirm (ADR 0025, item 89): a reward is earned by the fit, and an invite can wait a year on a waitlist (ADR 0048) through any number of changes.
+**The grant reads the reward when the friend's first fit settles the referral**, on the five-minute cron that settles it (`src/scheduled/referrals.ts`), not when the invite was sent or the consultation booked. This is the coordinator's default, for the owner to confirm (ADR 0025, item 94): a reward is earned by the fit, and an invite can wait a year on a waitlist (ADR 0048) through any number of changes. A consultation and fit in one visit settles the referral once its payment is in ([0105](0105-a-consultation-and-fit-in-one-visit.md); ADR 0025, item 93), and takes the reward in force then.
 
-- **The referral keeps the reward it was settled under.** Migration 0061 adds `referrer_visits`, `friend_visits` and `credit_valid_days` to `referral_attributions`, written when the referral is granted or held. A grant held for review is given what was in force when it was held, whenever ops approve it, and a rejection is told to each side that reward would have given visits. A grant held before the migration kept none, and takes the reward in force when ops decide it. So does an invite ops attach after the friend's first fit, which is held for review as it is attached (the owner's ruling of 30 September 2026 on open point 157): it keeps no reward, and takes the one in force when ops approve it, the simplest rule consistent with the rest.
+- **The referral keeps the reward it was settled under.** Migration 0062 adds `referrer_visits`, `friend_visits` and `credit_valid_days` to `referral_attributions`, written when the referral is granted or held. A grant held for review is given what was in force when it was held, whenever ops approve it, and a rejection is told to each side that reward would have given visits. A grant held before the migration kept none, and takes the reward in force when ops decide it. So does an invite ops attach after the friend's first fit, which is held for review as it is attached (the owner's ruling of 30 September 2026 on open point 157): it keeps no reward, and takes the one in force when ops approve it, the simplest rule consistent with the rest.
 - **Credits already given keep their visits and their date.** The ledger holds each grant's visits and expiry (ADR 0033), and nothing a setting does reaches back into it.
 - **The credits' life is the referral's alone.** Visits ops give by hand in the client's page, and the back-filled log of before January (`scripts/import-referrals.ts`), keep 365 days.
 
@@ -46,7 +46,7 @@ On 1 October 2026 the owner asked: "how are referrals configured? Is it a hard c
 - **The app.** `GET /api/me` answers `referral_reward`, so the Refer tab's promise, for a lead as for a fitted client, and the invite's preview read it, the preview held to the landing's by `test/node/app-invite-preview.test.ts`. `GET /api/refer` gives each fitted friend's `visits`. The app's copy of the 3, `apps/app/src/lib/referral.ts`, is gone. The Refer pages read both through a view that lets them be missing (`apps/app/src/refer/reward.ts`), since the service worker serves the Home it kept, which may be from before this release, when the network is slow or absent, and an mm-api rolled back answers neither: the pages then give no count, as the site does.
 - **The WhatsApp texts** take the counts as words ("1 service visit", "3 service visits"), so `friend_fitted_v1` and `friend_credited_v1` give way to `friend_fitted_v2` and `friend_credited_v2`. The referrer's text is one of four, by what each side was given: the same (`friend_fitted_v2`), different (`friend_fitted_each_v1`), nothing to the friend (`friend_fitted_yours_v1`), nothing to the referrer (`friend_fitted_thanks_v1`). Each is composed from the ledger when it is sent. The friend's now ends "Your balance is in the app.", where it said "They are in the app.", which one visit would not be.
 - **The console** names no count either: the client's invite reads "What it earns", and a pending one "Given when this client is fitted".
-- **The words for unequal sides and for 0** are ours, in the owner's voice (ADR 0103), until the owner words them (`docs/open-points.md`, item 165):
+- **The words for unequal sides and for 0** are ours, in the owner's voice (ADR 0103), until the owner words them (`docs/open-points.md`, item 172):
 
 | Reward            | The landing's offer                                               |
 | ----------------- | ----------------------------------------------------------------- |
@@ -66,7 +66,7 @@ Ops could change each rule once. `setOpsSetting` wrote `ops_settings` with an up
 ## Consequences
 
 - **The contract** gains `GET /api/referral-reward` on the public host, `referral_reward` on `GET /api/me` and `visits` on each of `GET /api/refer`'s fitted friends; `docs/openapi*.json`, `docs/api*.md` and the apps' schemas are regenerated.
-- **Migration 0061** adds three nullable columns; the Worker already deployed reads none of them.
+- **Migration 0062** adds three nullable columns; the Worker already deployed reads none of them.
 - **The register holds one more input**, and the snapshot stays far under `MAX_SNAPSHOT_BYTES`.
 - **mm-site asks mm-api for the reward** about once a minute per isolate on `/r/:code` and `/book`, beside the prices (ADR 0073); a failed read keeps the last good one, and failing that the pages promise no count.
-- **Owed by the owner:** whether the reward should be the one in force when the friend is fitted (ADR 0025, item 89), and the words for unequal sides and for 0 (item 165).
+- **Owed by the owner:** whether the reward should be the one in force when the friend is fitted (ADR 0025, item 94), and the words for unequal sides and for 0 (item 172).

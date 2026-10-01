@@ -561,7 +561,7 @@ const serviceVisits = (count: number): string => (count === 1 ? "1 service visit
 
 /**
  * Board F1's promise, from the referrer's side. With both at 3 it is the board's; the words for unequal sides, for 0
- * and for a reward not known, which gives no count, are PLACEHOLDER, pending the owner's (docs/open-points.md, item 165).
+ * and for a reward not known, which gives no count, are PLACEHOLDER, pending the owner's (docs/open-points.md, item 172).
  */
 function promiseOf(reward: Reward | null): string {
   const fitted = "When a friend you refer is fitted,";

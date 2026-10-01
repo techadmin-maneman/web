@@ -421,6 +421,10 @@
               }
             ]
           },
+          "one_visit": {
+            "type": "boolean",
+            "description": "A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, at the piece step."
+          },
           "sector": {
             "anyOf": [
               {
@@ -449,9 +453,10 @@
             "enum": [
               "prepaid",
               "credit",
-              "free"
+              "free",
+              "at_visit"
             ],
-            "description": "Free for a visit the price book charges nothing for. No response to a technician carries an amount."
+            "description": "Free for a visit the price book charges nothing for; at_visit for a one visit, paid for once the client is fitted. No response to a technician carries an amount."
           },
           "slots": {
             "anyOf": [
@@ -480,6 +485,7 @@
           "ends_at",
           "window_label",
           "type",
+          "one_visit",
           "sector",
           "status",
           "badge",
@@ -547,6 +553,10 @@
               }
             ]
           },
+          "one_visit": {
+            "type": "boolean",
+            "description": "A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, at the piece step."
+          },
           "sector": {
             "anyOf": [
               {
@@ -575,9 +585,10 @@
             "enum": [
               "prepaid",
               "credit",
-              "free"
+              "free",
+              "at_visit"
             ],
-            "description": "Free for a visit the price book charges nothing for. No response to a technician carries an amount."
+            "description": "Free for a visit the price book charges nothing for; at_visit for a one visit, paid for once the client is fitted. No response to a technician carries an amount."
           },
           "slots": {
             "anyOf": [
@@ -886,6 +897,45 @@
               "$ref": "#/components/schemas/TechnicianConsumable"
             },
             "description": "Every consumable the technician may record, those this job's service is expected to use first, each with the count its stepper starts at."
+          },
+          "products": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TechnicianProduct"
+            },
+            "description": "On a one visit, the products the client may choose, by name and never by price: the first fit's services offered on the visit's day, in ops' order. Empty for any other visit."
+          },
+          "payment_link": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "The link Razorpay texted the client, to show them; null until Razorpay has made it."
+                  },
+                  "paid": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "url",
+                  "paid"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "On a one visit closed as done with the client fitted, its payment link; else null."
           }
         },
         "required": [
@@ -896,6 +946,7 @@
           "ends_at",
           "window_label",
           "type",
+          "one_visit",
           "sector",
           "status",
           "badge",
@@ -913,7 +964,9 @@
           "steps",
           "checklist",
           "partial_reasons",
-          "consumables"
+          "consumables",
+          "products",
+          "payment_link"
         ],
         "additionalProperties": false
       },
@@ -1123,6 +1176,23 @@
           "name",
           "unit",
           "expected"
+        ],
+        "additionalProperties": false
+      },
+      "TechnicianProduct": {
+        "type": "object",
+        "properties": {
+          "tier": {
+            "type": "string",
+            "description": "What the piece step sends back as product."
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "tier",
+          "name"
         ],
         "additionalProperties": false
       },
@@ -1404,6 +1474,16 @@
         "description": "What was used, each by the code the job's card gave it. None used is an empty list. A code the catalogue does not hold is refused, fields items."
       },
       "PieceRequest": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/PieceFitted"
+          },
+          {
+            "$ref": "#/components/schemas/PieceDeclined"
+          }
+        ]
+      },
+      "PieceFitted": {
         "type": "object",
         "properties": {
           "piece_code": {
@@ -1458,6 +1538,12 @@
             ],
             "additionalProperties": false,
             "description": "On a replacement: the piece that came off, and why it failed."
+          },
+          "product": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "description": "On a one visit, and only there: the product the client chose, by its tier from the card's products."
           }
         },
         "required": [
@@ -1465,6 +1551,22 @@
         ],
         "additionalProperties": false,
         "description": "The piece fitted, with its base and lot, and on a replacement the one that came off. A failure_reason on the piece itself marks it as failed and fits nothing."
+      },
+      "PieceDeclined": {
+        "type": "object",
+        "properties": {
+          "declined": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        },
+        "required": [
+          "declined"
+        ],
+        "additionalProperties": false,
+        "description": "On a one visit, and only there: the client decided against the fit, so nothing was fitted, and closing the visit as done makes it a consultation."
       },
       "OutcomeRequest": {
         "oneOf": [
@@ -2607,7 +2709,7 @@
     },
     "/api/tech/jobs/{id}/piece": {
       "post": {
-        "summary": "The piece: a replacement's and a first fit's step only",
+        "summary": "The piece: a replacement's, a first fit's and a one visit's step only",
         "parameters": [
           {
             "schema": {

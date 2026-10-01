@@ -277,7 +277,7 @@ export const OPS_SETTINGS = [
     source: "src/policy/next-visit.ts",
   },
   {
-    // The owner's ruling of 1 October 2026: each side's visits, and how long they last (ADR 0025, item 89).
+    // The owner's ruling of 1 October 2026: each side's visits, and how long they last (ADR 0025, item 94).
     name: "referral_reward",
     title: "What a referral earns",
     note: "The free service visits the client who sent an invite gets, and those their friend gets, once the friend's first fit is done, and how long the credits last from then. Either side may get 0. A change reaches every friend fitted after it, and the site, the app and the WhatsApp messages say the new figures; credits already given keep their visits and their date.",

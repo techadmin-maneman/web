@@ -2555,7 +2555,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    group: "untold_move" | "held_booking" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "erasure_unfinished";
+                    group: "untold_move" | "held_booking" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "erasure_unfinished";
                     id: string;
                 };
                 cookie?: never;
@@ -5388,7 +5388,7 @@ export interface components {
                  * @description Never an amount: prepaid, credit, or free.
                  * @enum {string}
                  */
-                badge: "prepaid" | "credit" | "free";
+                badge: "prepaid" | "credit" | "free" | "at_visit";
                 /** @description Consultation 1, service 1, replacement 1.5, first fit 2. */
                 slots: number;
                 /** Format: date-time */
@@ -5430,7 +5430,7 @@ export interface components {
              * @description Never an amount: prepaid, credit, or free.
              * @enum {string}
              */
-            badge: "prepaid" | "credit" | "free";
+            badge: "prepaid" | "credit" | "free" | "at_visit";
             /** @description Consultation 1, service 1, replacement 1.5, first fit 2. */
             slots: number;
             /** Format: date-time */
@@ -5716,7 +5716,7 @@ export interface components {
             staff: string[];
             groups: {
                 /** @enum {string} */
-                group: "untold_move" | "held_booking" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "erasure_unfinished";
+                group: "untold_move" | "held_booking" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "erasure_unfinished";
                 /** @description How many are waiting in the group, all of them. */
                 count: number;
                 /** @description Ops may close a task of the group without doing its thing, with a reason. */

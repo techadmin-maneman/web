@@ -117,7 +117,7 @@ describe("content", () => {
     ]);
     expect(site.faq.items[2]?.a).toMatch(/About ninety minutes, at your home\.$/);
     expect(site.closing.title).toBe("The consultation takes an hour and costs nothing.");
-    expect(referral.consultation.body).toBe("An hour. Nothing fitted, nothing to pay.");
+    expect(referral.consultation.body).toBe("An hour, and free. Or have your fit in the same visit.");
     expect(referral.howItWorks.steps.map((step) => step.body)).toEqual([
       "An hour. A scalp template and a colour match.",
       "Three hours. You leave the house wearing it.",

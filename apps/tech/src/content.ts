@@ -165,6 +165,8 @@ export const stopped: Readonly<Record<string, string>> = {
   not_found: "This job is no longer on your list, so what it holds cannot reach us.",
   piece_code: "The piece's label was not accepted.",
   old_piece: "The label of the piece that came off was not accepted.",
+  // PLACEHOLDER: a one visit's product, no longer offered when the step reached us (ADR 0105).
+  product: "That product is not offered that day.",
   done: "A checklist item was not recognised.",
   reason: "That reason was not accepted.",
   invalid_request: "We could not record this.",
@@ -448,6 +450,29 @@ export const badges = {
   prepaid: "Prepaid",
   credit: "Credit",
   free: "Free",
+  // PLACEHOLDER: no board draws a consultation and fit in one visit, paid for once the client is fitted (ADR 0105).
+  at_visit: "Pays once fitted",
+} as const;
+
+/**
+ * PLACEHOLDER: no board draws a consultation and fit in one visit
+ * (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). The client chooses the product with the technician
+ * at the piece step, or decides against it; closing the visit as done then texts them a payment link, or ends it as
+ * a consultation. Never an amount.
+ */
+export const oneVisit = {
+  name: "Consultation and fit",
+  nameLower: "consultation and fit",
+  checklist: "Consultation and fit checklist",
+  choice: "The client's choice",
+  declined: "Decided against it",
+  chooseFirst: "Choose the product, or that the client decided against it",
+  declinedNote: "Nothing is fitted. Closing as done ends the visit as a consultation, with nothing to pay.",
+  closeNote:
+    "Closing as done texts the client a payment link for the product they chose. If they decided against it, the visit ends as a consultation.",
+  payment: "Payment",
+  linkSent: "Link texted to the client",
+  linkPaid: "Paid",
 } as const;
 
 export const types = {

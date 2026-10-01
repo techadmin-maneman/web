@@ -60,17 +60,25 @@ export const unlocked = (windowStart: Date, now: Date, hour: number = UNLOCK_HOU
 /**
  * The only money a technician's job carries: a badge, never an amount. The
  * prompt names two; board A1 draws a third, Free, on a visit the price book
- * charges nothing for, such as a consultation (ADR 0025, item 33).
+ * charges nothing for, such as a consultation (ADR 0025, item 33). A fourth,
+ * which no board draws, marks a consultation and fit in one visit, paid for
+ * once the client is fitted (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
  */
-export const PAYMENT_BADGES = ["prepaid", "credit", "free"] as const;
+export const PAYMENT_BADGES = ["prepaid", "credit", "free", "at_visit"] as const;
 export type PaymentBadge = (typeof PAYMENT_BADGES)[number];
 
 /**
- * A visit a service-visit credit paid for is Credit; one the price book
- * charges nothing for on its day is Free; any other was paid for ahead. The
- * technician's card and the dispatch board read the same badge.
+ * A one visit is paid for at the visit; a visit a service-visit credit paid
+ * for is Credit; one the price book charges nothing for on its day is Free;
+ * any other was paid for ahead. The technician's card and the dispatch board
+ * read the same badge.
  */
-export function paymentBadge(visit: { readonly onCredit: boolean; readonly free: boolean }): PaymentBadge {
+export function paymentBadge(visit: {
+  readonly onCredit: boolean;
+  readonly free: boolean;
+  readonly oneVisit: boolean;
+}): PaymentBadge {
+  if (visit.oneVisit) return "at_visit";
   if (visit.onCredit) return "credit";
   if (visit.free) return "free";
   return "prepaid";

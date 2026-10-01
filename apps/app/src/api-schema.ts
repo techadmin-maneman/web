@@ -3313,7 +3313,7 @@ export interface components {
                 /** @description The service visits the client was given for this friend: what a referral earned when the friend was fitted, 0 where it gave the referrer none (docs/decisions/0107-referral-rewards-in-the-console.md). */
                 visits: number;
             }[];
-            /** @description For a client who came through an invite, where its credits stand when they are not simply in the balance: checking while ops review the grant, refused once ops rejected it. Null otherwise. */
+            /** @description For a client who came through an invite, where its credits stand when they are not simply in the balance: checking while ops review the grant, refused once ops rejected it. Null otherwise, and where the reward it was held under gives the friend no visits. */
             invite_credits: ("checking" | "refused") | null;
         };
         Grievance: {

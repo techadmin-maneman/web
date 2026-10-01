@@ -6124,7 +6124,8 @@ Who Access let through, and where signing out goes
             "enum": [
               "prepaid",
               "credit",
-              "free"
+              "free",
+              "at_visit"
             ],
             "description": "Never an amount: prepaid, credit, or free."
           },
@@ -6344,7 +6345,8 @@ Who Access let through, and where signing out goes
       "enum": [
         "prepaid",
         "credit",
-        "free"
+        "free",
+        "at_visit"
       ],
       "description": "Never an amount: prepaid, credit, or free."
     },
@@ -7556,6 +7558,7 @@ Who Access let through, and where signing out goes
               "erasure_request",
               "grievance",
               "draft_invoice",
+              "payment_owed",
               "erasure_unfinished"
             ]
           },

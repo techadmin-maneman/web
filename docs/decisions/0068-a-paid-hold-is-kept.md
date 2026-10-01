@@ -1,6 +1,6 @@
 # 0068. A paid hold is kept
 
-- Status: accepted; extended 28 September 2026 by [0088](0088-every-policy-in-the-console.md): a hold keeps its grace, the notice and what its kind costs inside it, and a no-show's charge, as it keeps its late fee; its give-up on FSM's fifth refusal superseded 29 September 2026 by [0095](0095-a-booking-fsm-refuses-is-held.md): the booking is held with its slot and its payment, tried every hour for a day, and booked or refunded by ops
+- Status: accepted; extended 28 September 2026 by [0088](0088-every-policy-in-the-console.md): a hold keeps its grace, the notice and what its kind costs inside it, and a no-show's charge, as it keeps its late fee; its give-up on FSM's fifth refusal superseded 29 September 2026 by [0095](0095-a-booking-fsm-refuses-is-held.md): the booking is held with its slot and its payment, tried every hour for a day, and booked or refunded by ops; amended 1 October 2026 by [0105](0105-a-consultation-and-fit-in-one-visit.md): a consultation and fit in one visit holds no payment, is booked at once as the site's free consultation is, and is sold to cost nothing if missed or moved
 - Date: 2026-09-25
 - Amends [0044](0044-payments-mirror.md), [0045](0045-self-serve-booking.md) and [0046](0046-moving-and-cancelling.md); follows [0057](0057-one-payment-per-tap.md)
 

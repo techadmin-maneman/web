@@ -21,6 +21,10 @@
 // An invoice is issued only when it totals what the client was sold the visit
 // for, and never for a visit a referral credit paid for until the CA rules how
 // (src/policy/prepayment.ts). Otherwise the draft is held, and ops are told.
+//
+// A consultation and fit in one visit that the client declined is not invoiced
+// at all: it was a free consultation, though FSM's work order is still on the
+// first fit's item (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
 
 import { rupees } from "@maneman/web-kit/money";
 import { STANDARD_TIER, type VisitType } from "../config/visit-types.ts";
@@ -88,7 +92,8 @@ export async function raiseInvoices(
     .prepare(
       `SELECT id, person_id, fsm_work_order_id, type, tier, window_start, window_end FROM appointments
        WHERE status = 'completed' AND invoice_issued_at IS NULL AND fsm_work_order_id IS NOT NULL
-         AND deleted_at IS NULL AND (invoice_checked_at IS NULL OR invoice_checked_at < ?1)
+         AND deleted_at IS NULL AND one_visit IS NOT 'declined'
+         AND (invoice_checked_at IS NULL OR invoice_checked_at < ?1)
        ORDER BY window_start LIMIT ?2`,
     )
     .bind(recheck, PER_PASS)

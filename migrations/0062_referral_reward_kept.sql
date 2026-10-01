@@ -1,4 +1,4 @@
--- Migration number: 0061
+-- Migration number: 0062
 -- The reward a referral was settled under (docs/decisions/0107-referral-rewards-in-the-console.md): each side's
 -- service visits and how many days they last, as ops had set them when the friend's first fit settled it. A grant
 -- held for ops' review is given what was in force then, not what is in force on the day ops approve it.

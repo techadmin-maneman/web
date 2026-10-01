@@ -573,12 +573,13 @@ test("a booked consultation names the number, and offers the calendar and the ap
   expect(calendar).toContain("DTEND:20260925T063000Z");
 });
 
-// The owner's ruling of 27 September 2026 (ADR 0025, item 68; docs/decisions/0086-the-next-visit-is-offered.md): the
-// form offers the consultation alone or with the first fit, which is asked for here and booked and paid in the app.
-test("offers the consultation alone or with the first fit, and sends the fit asked for, in its window", async ({
+// The owner's ruling D2 of 1 October 2026 (ADR 0025, item 89; docs/decisions/0105-a-consultation-and-fit-in-one-visit.md):
+// the form offers the consultation alone, or the consultation and fit in one visit, paid for once fitted. It replaces
+// the consultation with the first fit to follow, whose test went with it.
+test("offers the consultation alone or with the fit in one visit, and asks ops for it while booking is off", async ({
   page,
 }) => {
-  const booked = {
+  const asked = {
     state: "requested",
     date: "2026-09-25",
     window: "morning",
@@ -586,25 +587,21 @@ test("offers the consultation alone or with the first fit, and sends the fit ask
     credits: true,
     invite: "valid",
     address: "saved",
-    first_fit: true,
+    one_visit: true,
   };
-  const requests = await mockApi(page, { consultation: { status: 201, body: booked } });
+  const requests = await mockApi(page, { consultation: { status: 201, body: asked } });
   await visit(page, `/r/${CODE}`);
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
 
   const plan = page.getByRole("group", { name: "What to book" });
   await expect(plan.getByRole("radio", { name: "A consultation" })).toBeChecked();
-  const fit = page.getByRole("group", { name: "The fit, if you have a time in mind" });
-  await expect(fit).toHaveCount(0);
-  await plan.getByText("The consultation, then my first fit").click();
+  await plan.getByText("Consultation and fit, in one visit").click();
   await expect(
-    plan.getByText("The fit is booked and paid for in the app once the consultation is done. Nothing is paid now."),
+    plan.getByText(/Choose your hair system with your technician and have it fitted there and then\./),
   ).toBeVisible();
-  // Either, the morning or the afternoon: a first fit cannot start in the evening.
-  await expect(fit.getByRole("radio")).toHaveCount(3);
-  await expect(fit.getByRole("radio", { name: "Either" })).toBeChecked();
-  await fit.getByText("Morning").click();
+  // The morning or the afternoon: the first fit's three hours cannot start in the evening.
+  await expect(page.getByRole("group", { name: "Window" }).getByRole("radio")).toHaveCount(2);
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();
@@ -612,18 +609,13 @@ test("offers the consultation alone or with the first fit, and sends the fit ask
 
   await fillForm(page);
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
-  await page.getByRole("button", { name: "Book the consultation" }).click();
+  await page.getByRole("button", { name: "Book the consultation and fit" }).click();
 
-  await expect(page.getByText("Consultation requested")).toBeVisible();
+  await expect(page.getByText("Consultation and fit requested")).toBeVisible();
   const sent = requests[0]?.postDataJSON() as Record<string, unknown>;
-  expect(sent.first_fit).toEqual({ window: "morning" });
+  expect(sent.one_visit).toBe(true);
   // The consent recorded is the consultation's own line, unchanged.
   expect(sent.consent).toBe(true);
-  await expect(
-    page.getByText(
-      "You asked for your first fit too. Once the consultation is done, you book the fit in the app and pay for it there.",
-    ),
-  ).toBeVisible();
 });
 
 test("a consultation asked for, not booked, offers no calendar and no app", async ({ page }) => {

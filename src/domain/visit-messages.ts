@@ -13,6 +13,7 @@ import { FSM_SERVICE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
 import { DAY_BEFORE_REMINDER_HOUR } from "../policy/job-visibility.ts";
 import type { Charge } from "../policy/moving-a-visit.ts";
+import type { OneVisitState } from "../policy/one-visit.ts";
 import { WAIVER_GIVES_BACK, type DisputeRuling, type NoShowDecision, type Waiver } from "../policy/no-show.ts";
 import type { AppointmentStatus } from "./fsm-mirror.ts";
 import { consentGiven, type MessageKind } from "./messages.ts";
@@ -167,6 +168,9 @@ function windowHours(start: Date): string {
     : `${first.number} ${first.half} to ${last.number} ${last.half}`;
 }
 
+/** What a message calls a consultation and fit in one visit while it is still to happen (ADR 0105). PLACEHOLDER COPY. */
+const ONE_VISIT_NAME = "consultation and fit";
+
 /** Where a refund goes back to, by the payment's method, as a message names it. */
 export const DESTINATIONS: Readonly<Record<string, string>> = { upi: "UPI", card: "card", netbanking: "bank account" };
 
@@ -186,13 +190,14 @@ export async function composeVisitMessage(
 
   const visit = await db
     .prepare(
-      `SELECT a.type, a.window_start, a.status, p.name, t.name AS technician
+      `SELECT a.type, a.one_visit, a.window_start, a.status, p.name, t.name AS technician
        FROM appointments a JOIN people p ON p.id = a.person_id LEFT JOIN technicians t ON t.id = a.technician_id
        WHERE a.id = ?1 AND a.person_id = ?2 AND a.deleted_at IS NULL`,
     )
     .bind(appointmentId, personId)
     .first<{
       type: VisitType | null;
+      one_visit: OneVisitState | null;
       window_start: string | null;
       status: AppointmentStatus;
       name: string;
@@ -205,7 +210,7 @@ export async function composeVisitMessage(
   const start = new Date(visit.window_start);
   const params = [
     firstNameOf(visit.name),
-    FSM_SERVICE_NAMES[visit.type].toLowerCase(),
+    visit.one_visit === "booked" ? ONE_VISIT_NAME : FSM_SERVICE_NAMES[visit.type].toLowerCase(),
     shortDate(indiaDate(start)),
     windowHours(start),
     visit.technician === null ? "our technician" : firstNameOf(visit.technician),
@@ -214,7 +219,9 @@ export async function composeVisitMessage(
     "",
   ];
 
-  if (kind === "consultation_confirmation") return { template: "consultation_booked_v1", params };
+  if (kind === "consultation_confirmation") {
+    return { template: visit.one_visit === null ? "consultation_booked_v1" : "one_visit_booked_v1", params };
+  }
   if (kind === "visit_reminder") return { template: "visit_reminder_v1", params };
   if (kind === "arrival_notice") return { template: "technician_arrived_v1", params };
   if (kind === "no_show_decided") return noShowRuling(db, appointmentId, params);

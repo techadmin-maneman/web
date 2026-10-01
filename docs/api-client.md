@@ -5387,7 +5387,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "For a client who came through an invite, where its credits stand when they are not simply in the balance: checking while ops review the grant, refused once ops rejected it. Null otherwise."
+      "description": "For a client who came through an invite, where its credits stand when they are not simply in the balance: checking while ops review the grant, refused once ops rejected it. Null otherwise, and where the reward it was held under gives the friend no visits."
     }
   },
   "required": [

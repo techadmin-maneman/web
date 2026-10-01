@@ -11,10 +11,14 @@
 // The duration runs from Start job to here, and the technician never types a
 // time: the phone records the instant this screen's action was taken
 // (apps/tech/src/store/jobs.ts).
+//
+// On a consultation and fit in one visit, Done says what closing it does, which
+// no board draws: the client is texted a payment link for the product they
+// chose, or the visit ends as a consultation (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
 
 import { useState } from "react";
 import type { PartialReason } from "../api.ts";
-import { job as jobCopy, steps as copy } from "../content.ts";
+import { job as jobCopy, oneVisit, steps as copy } from "../content.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
@@ -36,6 +40,7 @@ export function Outcome({ id }: { id: string }) {
   if (loaded.state === "failed") return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} />;
 
   const reasons = loaded.value.partial_reasons;
+  const closesOneVisit = loaded.value.one_visit && choice === "done";
   const ready = choice === "done" || (choice === "partial" && reason !== null);
 
   return (
@@ -73,6 +78,8 @@ export function Outcome({ id }: { id: string }) {
           {copy.outcome.partial}
         </button>
       </div>
+
+      {closesOneVisit && <p className={styles.note}>{oneVisit.closeNote}</p>}
 
       {choice === "partial" && (
         <ul className={styles.reasons}>

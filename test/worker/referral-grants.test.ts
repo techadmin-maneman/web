@@ -120,6 +120,26 @@ describe("the grant", () => {
     expect((await creditBalance(env.DB, FRIEND, NOW)).visits).toBe(3);
   });
 
+  // A consultation and fit in one visit is paid for after it, by a link (ADR 0025, item 93;
+  // docs/decisions/0105-a-consultation-and-fit-in-one-visit.md): nothing was sold until the payment is in.
+  it("waits for a one visit's payment, and grants on the pass after it is in", async () => {
+    await firstFit(FIT, FRIEND);
+    await env.DB.prepare("UPDATE appointments SET one_visit = 'fitted' WHERE id = ?1").bind(FIT).run();
+    expect(await settleReferrals(env.DB, NOW, REFERRAL_REWARD)).toMatchObject({ granted: 0, held: 0 });
+    expect((await state())?.grant_state).toBe("pending");
+    expect((await creditBalance(env.DB, FRIEND, NOW)).visits).toBe(0);
+
+    await env.DB.prepare(
+      `INSERT INTO payments (id, person_id, appointment_id, razorpay_payment_id, amount, currency, status, captured_at,
+         created_at, updated_at)
+       VALUES ('payment-link-1', ?1, ?2, 'pay_link_1', 4500000, 'INR', 'captured', ?3, ?3, ?3)`,
+    )
+      .bind(FRIEND, FIT, NOW.toISOString())
+      .run();
+    expect(await settleReferrals(env.DB, NOW, REFERRAL_REWARD)).toMatchObject({ granted: 1 });
+    expect((await creditBalance(env.DB, FRIEND, NOW)).visits).toBe(3);
+  });
+
   it("waits while the first fit is only partly done", async () => {
     await firstFit(FIT, FRIEND, "partial");
     expect(await settleReferrals(env.DB, NOW, REFERRAL_REWARD)).toMatchObject({ granted: 0, held: 0 });
@@ -290,7 +310,7 @@ describe("what a referral earns, as ops set it", () => {
       expect(await grantsOf(FRIEND)).toEqual([{ visits: 5, expires_at: "2026-11-20T18:29:59.999Z" }]);
     });
 
-    // A grant held before migration 0061 kept no reward; so does an invite ops attach after the fit, held as it is made.
+    // A grant held before migration 0062 kept no reward; so does an invite ops attach after the fit, held as it is made.
     it("is given the reward in force when ops approve it, where it kept none", async () => {
       await heldUnder({ referrer_visits: 2, friend_visits: 2, valid_days: 60 });
       await env.DB.prepare(

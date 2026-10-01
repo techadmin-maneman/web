@@ -232,7 +232,7 @@ describe("POST /api/r/:code/consultation", () => {
       credits: true,
       invite: "valid",
       address: "saved",
-      first_fit: false,
+      one_visit: false,
     });
     expect(queue.sent).toEqual([{ hold_id: expect.any(String) as string, request_id: expect.any(String) as string }]);
     const friend = await env.DB.prepare(
@@ -445,7 +445,7 @@ describe("POST /api/r/:code/consultation", () => {
       credits: true,
       invite: "valid",
       address: "saved",
-      first_fit: false,
+      one_visit: false,
     });
     // Nothing is held and FSM is not told; the lead and the invite still stand.
     expect(fsm.sent).toEqual([]);
@@ -466,8 +466,9 @@ describe("POST /api/r/:code/consultation", () => {
     });
   });
 
-  // An invited friend may ask for the first fit to follow as well, as the site's own form may (ADR 0086).
-  it("books the consultation with the first fit asked for, which the app offers once the consultation is done", async () => {
+  // An invited friend may book the consultation and fit in one visit, as the site's own form may (ADR 0105); the
+  // first fit to follow, which the form asked for until the owner's ruling of 1 October 2026, is gone with it.
+  it("books the consultation and fit in one visit, with the invite's credits, and nothing paid", async () => {
     await pincode("122018", "Gurgaon South City II", true);
     const code = await codeOf();
     const answer = await request(
@@ -480,17 +481,18 @@ describe("POST /api/r/:code/consultation", () => {
         window: "morning",
         consent: true,
         address: ADDRESS,
-        first_fit: { window: "morning" },
+        one_visit: true,
       }),
       { FSM_QUEUE: fakeQueue() },
     );
     expect(answer.status).toBe(201);
-    expect(await answer.json()).toMatchObject({ state: "booked", credits: true, first_fit: true });
-    const asked = await env.DB.prepare(
-      `SELECT r.preferred_window FROM first_fit_requests r JOIN people p ON p.id = r.person_id
+    expect(await answer.json()).toMatchObject({ state: "booked", credits: true, one_visit: true });
+    const held = await env.DB.prepare(
+      `SELECT h.type, h.amount, h.one_visit FROM slot_holds h JOIN people p ON p.id = h.person_id
        WHERE p.mobile_e164 = '+919810000002'`,
     ).first();
-    expect(asked).toEqual({ preferred_window: "morning" });
+    expect(held).toEqual({ type: "first_fit", amount: 0, one_visit: 1 });
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM first_fit_requests").first()).toEqual({ n: 0 });
   });
 });
 
