@@ -1,12 +1,12 @@
 // A client's hair profile (docs/decisions/0106-a-clients-hair-profile.md): the fit spec a piece is made to, and the
 // history of what they have tried. The owner chose "Fit spec + history" on 1 October 2026; who records it, who sees
-// it and where it lives were taken by the build, for the owner to confirm (ADR 0025, items 95 to 99).
+// it and where it lives were taken by the build, for the owner to confirm (ADR 0106).
 //
 // The technician records it at a consultation and at a consultation and fit in one visit, ops correct it in the
 // console, and every change is a new version (src/domain/hair-profiles.ts). The history is health information: the
 // phone asks the client for a consent of its own before it shows a question of it (src/policy/consents.ts).
 //
-// The lists below are codes; their words are each app's, placeholders for the owner (docs/open-points.md, item 174).
+// The lists below are codes; their words are each app's, placeholders for the owner (docs/open-points.md, item 42).
 // There is no CHECK on them in the database, so the owner's corrections need no migration.
 
 import type { VisitType } from "../config/visit-types.ts";
@@ -17,7 +17,7 @@ export const RULES = [
   "History: remedies tried (none, minoxidil, finasteride, transplant with its year, other hair systems, other: many may apply), skin conditions and allergies (short free text).",
 ] as const;
 
-/** What the build took, for the owner to confirm (ADR 0025, items 95 to 98). */
+/** What the build took, for the owner to confirm (ADR 0106). */
 export const DEFAULTS = [
   "Who records it: the technician, at a consultation and at the one-visit fit; ops can correct it on the client's page in the console. Every change is a new version.",
   "Who sees it: technicians and ops. NOT the client's app this round.",

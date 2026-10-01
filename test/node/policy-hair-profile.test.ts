@@ -1,5 +1,5 @@
 // A client's hair profile (src/policy/hair-profile.ts), each rule named by the owner's ruling of 1 October 2026, or
-// by what the build took for the owner to confirm (ADR 0025, items 95 to 99).
+// by what the build took for the owner to confirm (ADR 0106).
 
 import { describe, expect, it } from "vitest";
 import { CONSENT_PURPOSES, HEALTH_HISTORY } from "../../src/policy/consents.ts";

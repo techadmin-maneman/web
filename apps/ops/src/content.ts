@@ -666,7 +666,7 @@ export const clients = {
   },
   /*
    * PLACEHOLDER, all of it: no board draws the client's hair profile (docs/decisions/0106-a-clients-hair-profile.md).
-   * The lists' words wait for the owner (docs/open-points.md, item 174); the codes are the API's.
+   * The lists' words wait for the owner (docs/open-points.md, item 42); the codes are the API's.
    */
   profile: {
     title: "Hair profile",

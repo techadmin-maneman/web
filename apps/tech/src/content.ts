@@ -483,7 +483,7 @@ type Words<Field extends keyof FitSpec> = Record<NonNullable<FitSpec[Field]>, st
 
 /**
  * PLACEHOLDER: no board draws the client's hair profile (docs/decisions/0106-a-clients-hair-profile.md). The lists'
- * words wait for the owner (docs/open-points.md, item 174); the codes are the API's.
+ * words wait for the owner (docs/open-points.md, item 42); the codes are the API's.
  */
 export const profile = {
   sections: {
@@ -506,7 +506,7 @@ export const profile = {
     base_width_in: "Width",
     base_length_in: "Length",
   },
-  // PLACEHOLDER: the owner's words for each code (item 174).
+  // PLACEHOLDER: the owner's words for each code (item 42).
   stages: { I: "I", II: "II", III: "III", IV: "IV", V: "V", VI: "VI", VII: "VII" } satisfies Words<"norwood_stage">,
   colours: {
     "1": "#1",
