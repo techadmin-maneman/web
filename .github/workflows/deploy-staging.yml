@@ -1,6 +1,6 @@
-# On every merge to main: run the PR checks again, unless the merged tree is one
-# whose pull request passed them, then migrate the staging database, deploy every
-# Worker to staging and smoke-test each staging host.
+# On every merge to main: run the PR checks on what merged, taking as passed each
+# check the merged pull request's head passed on the same files, then migrate the
+# staging database, deploy every Worker to staging and smoke-test each staging host.
 #
 # The steps call scripts that decide; the shell only runs them in order
 # (docs/decisions/0006-deployment-pipeline.md, "Deploys that prove what they shipped").
@@ -24,42 +24,19 @@ concurrency:
 
 jobs:
   # A squash merge of a pull request that was up to date with main has the same
-  # tree as the pull request's head, which ci.yml has already passed. Checking it
-  # again only costs time; anything else runs every check.
-  already-checked:
-    name: merged tree already passed CI
-    runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
-    timeout-minutes: 5
+  # tree as the pull request's head, so each check that head passed is taken as
+  # passed (scripts/lib/already-checked.ts); anything else runs.
+  checks:
     permissions:
       contents: read
-      pull-requests: read
       actions: read
-    outputs:
-      checked: ${{ steps.check.outputs.checked }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version-file: .nvmrc
-      - name: Is this tree a pull request head that passed CI?
-        id: check
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: node scripts/already-checked.ts --repository "${{ github.repository }}" --commit "${{ github.sha }}" >> "$GITHUB_OUTPUT"
-
-  checks:
-    needs: already-checked
-    if: ${{ !cancelled() && needs.already-checked.outputs.checked != 'true' }}
+      pull-requests: read
     uses: ./.github/workflows/ci.yml
 
   deploy:
     name: deploy staging
-    needs: [already-checked, checks]
-    if: >-
-      ${{ !cancelled() && (needs.checks.result == 'success' ||
-      (needs.checks.result == 'skipped' && needs.already-checked.outputs.checked == 'true')) }}
+    needs: checks
+    if: ${{ !cancelled() && needs.checks.result == 'success' }}
     runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
     timeout-minutes: 25
     environment:

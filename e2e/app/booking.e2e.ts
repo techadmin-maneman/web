@@ -143,7 +143,9 @@ async function openSheet(page: Page): Promise<void> {
 async function toWindows(page: Page): Promise<void> {
   await openSheet(page);
   const sheet = page.getByRole("dialog", { name: "Pick a date" });
-  await expect(sheet.getByText("Step 1 of 3")).toBeVisible();
+  // The sheet asks the API for the services and the free days first; on 1 October 2026 a busy machine left it
+  // "Loading" past the five seconds an expectation waits by default.
+  await expect(sheet.getByText("Step 1 of 3")).toBeVisible({ timeout: 30_000 });
   await sheet.getByRole("radio").and(page.locator(":enabled")).first().click();
   await sheet.getByRole("button", { name: "Continue" }).click();
 }
