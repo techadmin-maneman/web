@@ -1,6 +1,6 @@
-// Refer (board F1): what a referral earns, the client's credit, and the two ways on: sharing an invite (F2 to
-// F4, ShareSheet) and seeing who has been fitted (F5 and F6, /refer/fitted). The tracker shows completed fits
-// only (docs/decisions/0048-referrals.md). A client who came through an invite whose credits ops are reviewing,
+// Refer (board F1): what a referral earns, as ops set it (docs/decisions/0107-referral-rewards-in-the-console.md),
+// the client's credit, and the two ways on: sharing an invite (F2 to F4, ShareSheet) and seeing who has been
+// fitted (F5 and F6, /refer/fitted). The tracker shows completed fits only (docs/decisions/0048-referrals.md). A client who came through an invite whose credits ops are reviewing,
 // or refused, is told so beneath the credit (docs/decisions/0074-hand-offs-and-messages.md; the board draws none).
 //
 // Until their first fit a client has nothing to vouch for, and the invite's own words ("Had my hair system
@@ -74,9 +74,10 @@ export function ShareButton({
 }
 
 function Invite({ state, onChanged }: { state: Refer; onChanged: () => void }) {
+  const { me } = useSession();
   return (
     <div className={styles.page}>
-      <p className={styles.promise}>{refer.promise}</p>
+      <p className={styles.promise}>{refer.promise(me.referral_reward)}</p>
       <CreditTile credits={state.credits} />
       {state.invite_credits !== null && (
         <p className={styles.inviteCredits}>{refer.inviteCredits[state.invite_credits]}</p>
@@ -104,7 +105,7 @@ export function ReferScreen() {
   const { me } = useSession();
   return (
     <Shell header={{ kind: "tab", title: refer.title }} tab="/refer">
-      {me.state === "fitted" ? <Fitted /> : <EmptyState lines={empty.refer.lines} />}
+      {me.state === "fitted" ? <Fitted /> : <EmptyState lines={empty.refer.lines(me.referral_reward)} />}
     </Shell>
   );
 }

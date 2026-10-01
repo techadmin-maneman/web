@@ -99,7 +99,7 @@ function Bubble({ state, card }: { state: Refer; card: Shown }) {
         <CardPreview shown={card} />
         <div className={styles.bubbleText}>
           <p className={styles.bubbleTitle}>{refer.preview.heading(state.named ? me.first_name : null)}</p>
-          <p className={styles.bubbleLine}>{refer.preview.body}</p>
+          <p className={styles.bubbleLine}>{refer.preview.body(me.referral_reward.friend_visits)}</p>
           <p className={styles.bubbleDomain}>{refer.preview.domain}</p>
         </div>
       </div>

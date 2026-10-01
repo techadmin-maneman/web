@@ -6,7 +6,7 @@
 
 import { ICONS } from "@maneman/brand/icons";
 import { referral } from "../../content/referral.ts";
-import type { PincodeAnswer, ReferralConsultation, ReferralWaitlist } from "../../lib/api.ts";
+import type { PincodeAnswer, ReferralConsultation, ReferralReward, ReferralWaitlist } from "../../lib/api.ts";
 import { clientAppOrigin } from "../../lib/app-link.ts";
 import { ENVIRONMENT } from "../../lib/build.ts";
 import { consultationCalendar } from "../../lib/calendar.ts";
@@ -39,13 +39,13 @@ export function windowHours(window: ReferralConsultation["window"]): string {
 }
 
 /** C4's "Code expired" frame, without "Book anyway": it shows once the booking has been made. */
-function Expired() {
+function Expired(props: { reward: ReferralReward | null }) {
   const { expired } = referral;
   return (
     <div class={styles.doneFrame}>
       <div class={`caps ${styles.doneLabel}`}>{expired.label}</div>
       <h2 class={styles.frameTitle}>{expired.title}</h2>
-      <p class={styles.frameBody}>{expired.body}</p>
+      <p class={styles.frameBody}>{expired.body(props.reward)}</p>
     </div>
   );
 }
@@ -55,9 +55,10 @@ function saveCalendar(result: ReferralConsultation) {
   downloadFile(referral.booked.calendarFile, "text/calendar", file);
 }
 
-export function Booked(props: { booking: Booking; heading: HeadingRef }) {
+export function Booked(props: { booking: Booking; reward: ReferralReward | null; heading: HeadingRef }) {
   const { result, mobile, place } = props.booking;
   const asked = result.state === "requested";
+  const credits = result.credits ? referral.booked.credits(props.reward) : null;
   const headline = bookedHeadline(result.date, windowHours(result.window));
   const app = clientAppOrigin(ENVIRONMENT);
   return (
@@ -75,8 +76,8 @@ export function Booked(props: { booking: Booking; heading: HeadingRef }) {
         <p class={styles.doneNumber}>{fill(referral.booked.number, { mobile })}</p>
         {result.address === "on_account" && <p class={styles.doneNote}>{referral.booked.addressOnAccount}</p>}
         {result.first_fit && <p class={styles.doneNote}>{referral.booked.firstFit}</p>}
-        {result.credits && <p class={styles.doneNote}>{referral.booked.credits}</p>}
-        {result.invite === "expired" && <Expired />}
+        {credits !== null && <p class={styles.doneNote}>{credits}</p>}
+        {result.invite === "expired" && <Expired reward={props.reward} />}
         <div class={styles.doneActions}>
           {!asked && (
             <button
@@ -103,7 +104,12 @@ export function Booked(props: { booking: Booking; heading: HeadingRef }) {
   );
 }
 
-export function Listed(props: { listing: Listing; name: string | null; heading: HeadingRef }) {
+export function Listed(props: {
+  listing: Listing;
+  name: string | null;
+  reward: ReferralReward | null;
+  heading: HeadingRef;
+}) {
   const { listed } = referral;
   const { area, credits, invite } = props.listing;
   return (
@@ -119,7 +125,7 @@ export function Listed(props: { listing: Listing; name: string | null; heading: 
         </p>
       </div>
       <div class={styles.doneAfter}>
-        {invite === "expired" && <Expired />}
+        {invite === "expired" && <Expired reward={props.reward} />}
         <div class={styles.doneActions}>
           <a class="btn btn--lg btn--ink" href="/try">
             {listed.tryOn}

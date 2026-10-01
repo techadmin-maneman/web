@@ -15,11 +15,16 @@
 // the card's versioned image, which is what makes a revoke reach new shares. It also writes the invite into the
 // page, so the island shows it without a second request. When mm-api cannot say what the invite is, the page is
 // served as built and the island asks for it itself: a failure is never shown as a code we do not know.
+//
+// What a referral earns, as ops set it (docs/decisions/0107-referral-rewards-in-the-console.md), is asked for and kept
+// as the prices are, on the landing and on /book, which confirms a booking made with an invite. It goes onto <body>
+// for the island, and the preview promises the friend's visits from it, only where there are any.
 
 import { inviteDescription, inviteTitle } from "./content/referral.ts";
-import type { Invite, PublishedPrices } from "./lib/api.ts";
+import type { Invite, PublishedPrices, ReferralReward } from "./lib/api.ts";
 import { cardPath, HOUSE_CARD, isInvite } from "./lib/invite.ts";
 import { fillPrices, isPublishedPrices, premiumOf, priceWords, standardOf, type PriceWords } from "./lib/prices.ts";
+import { isReferralReward } from "./lib/reward.ts";
 import { faqPage, jsonLd, localBusiness } from "./lib/structured-data.ts";
 
 export interface SiteEnv {
@@ -33,8 +38,11 @@ const CODE = /^\/r\/([A-Za-z0-9]{4,12})\/?$/;
 /** The pages besides the landing that show a price. */
 const PRICED_PAGES = new Set(["/", "/book"]);
 
-/** How long the book's answer is kept: the console's own minute (docs/decisions/0061-ops-editable-inputs.md). */
-const PRICES_KEPT_MS = 60_000;
+/** The page besides the landing that says what a referral earns. */
+const REWARD_PAGE = "/book";
+
+/** How long an answer of mm-api's is kept: the console's own minute (docs/decisions/0061-ops-editable-inputs.md). */
+const KEPT_MS = 60_000;
 
 /** The invite, or null when mm-api could not say: down, refusing, or answering a shape we do not know. */
 async function lookUp(env: SiteEnv, visit: Request, origin: string, code: string): Promise<Invite | null> {
@@ -64,6 +72,33 @@ async function askForPrices(env: SiteEnv, origin: string): Promise<PublishedPric
   }
 }
 
+/** What a referral earns, or null when mm-api could not say. */
+async function askForReward(env: SiteEnv, origin: string): Promise<ReferralReward | null> {
+  try {
+    const answer = await env.API.fetch(new Request(`${origin}/api/referral-reward`));
+    if (!answer.ok) return null;
+    const body: unknown = await answer.json();
+    return isReferralReward(body) ? body : null;
+  } catch {
+    return null;
+  }
+}
+
+type Ask<T> = (env: SiteEnv, origin: string) => Promise<T | null>;
+
+/** An answer kept a minute on `clock`, then asked again; the last good one while mm-api stops answering. */
+function keptAMinute<T>(clock: () => number, ask: Ask<T>): Ask<T> {
+  let kept: { value: T; at: number } | null = null;
+  return async (env, origin) => {
+    const now = clock();
+    if (kept !== null && now - kept.at < KEPT_MS) return kept.value;
+    const value = await ask(env, origin);
+    if (value === null) return kept?.value ?? null;
+    kept = { value, at: now };
+    return value;
+  };
+}
+
 /**
  * The built file, asked for whole. A browser revalidating a rewritten page would otherwise be told "not modified"
  * by the file's own ETag, and keep the figures it was given last week.
@@ -85,11 +120,13 @@ function withoutValidators(page: Response): Response {
 
 class Meta {
   readonly invite: Invite | null;
+  readonly reward: ReferralReward | null;
   readonly origin: string;
   readonly code: string;
 
-  constructor(invite: Invite | null, origin: string, code: string) {
+  constructor(invite: Invite | null, reward: ReferralReward | null, origin: string, code: string) {
     this.invite = invite;
+    this.reward = reward;
     this.origin = origin;
     this.code = code;
   }
@@ -102,7 +139,7 @@ class Meta {
     const name = this.invite?.referrer_first_name ?? null;
     const image = this.invite === null ? HOUSE_CARD : cardPath(this.invite, this.code);
     if (property === "og:title") element.setAttribute("content", inviteTitle(name));
-    if (property === "og:description") element.setAttribute("content", inviteDescription(this.invite));
+    if (property === "og:description") element.setAttribute("content", inviteDescription(this.invite, this.reward));
     if (property === "og:image" || property === "og:image:secure_url") {
       element.setAttribute("content", this.origin + image);
     }
@@ -169,19 +206,10 @@ function writePrices(rewriter: HTMLRewriter, prices: PublishedPrices): void {
   rewriter.on("body", new Written("data-prices", JSON.stringify(prices)));
 }
 
-/** The Worker, keeping the book's answer for a minute on `clock`: a test gives it its own. */
+/** The Worker, keeping the book's answer and the reward for a minute on `clock`: a test gives it its own. */
 export function createSiteWorker(clock: () => number = Date.now) {
-  let kept: { prices: PublishedPrices; at: number } | null = null;
-
-  /** The book's figures: kept a minute, then asked again; the last good answer if mm-api stops answering. */
-  async function publishedPrices(env: SiteEnv, origin: string): Promise<PublishedPrices | null> {
-    const now = clock();
-    if (kept !== null && now - kept.at < PRICES_KEPT_MS) return kept.prices;
-    const prices = await askForPrices(env, origin);
-    if (prices === null) return kept?.prices ?? null;
-    kept = { prices, at: now };
-    return prices;
-  }
+  const publishedPrices = keptAMinute(clock, askForPrices);
+  const referralReward = keptAMinute(clock, askForReward);
 
   return {
     async fetch(request: Request, env: SiteEnv): Promise<Response> {
@@ -194,14 +222,17 @@ export function createSiteWorker(clock: () => number = Date.now) {
       const page = await env.ASSETS.fetch(builtFile(request, `${url.origin}${path}`));
       if (!page.ok || request.method !== "GET") return page;
 
-      const [prices, invite] = await Promise.all([
+      const saysReward = code !== undefined || url.pathname === REWARD_PAGE;
+      const [prices, invite, reward] = await Promise.all([
         publishedPrices(env, url.origin),
         code === undefined ? null : lookUp(env, request, url.origin, code),
+        saysReward ? referralReward(env, url.origin) : null,
       ]);
       const rewriter = new HTMLRewriter();
       if (prices !== null) writePrices(rewriter, prices);
+      if (reward !== null) rewriter.on("body", new Written("data-reward", JSON.stringify(reward)));
       if (code !== undefined) {
-        rewriter.on("meta", new Meta(invite, url.origin, code));
+        rewriter.on("meta", new Meta(invite, reward, url.origin, code));
         if (invite !== null) rewriter.on("#invite", new Written("data-invite", JSON.stringify({ ...invite, code })));
       }
       return rewriter.transform(withoutValidators(page));

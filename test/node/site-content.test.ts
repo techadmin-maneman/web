@@ -171,7 +171,7 @@ describe("content", () => {
     expect(site.pageDescriptions.home).toContain("across Delhi NCR");
     expect(referral.arrival.title).toBe(site.hero.title);
     expect(referral.waitlist.body).toBe("Delhi NCR only, for now.");
-    expect(referral.preview.description).toMatch(/^Home-fitted hair systems across Delhi NCR\./);
+    expect(referral.preview.description(3)).toMatch(/^Home-fitted hair systems across Delhi NCR\./);
   });
 
   // CLI-19: production keeps a result fourteen days (ADR 0039), as the privacy notice says.

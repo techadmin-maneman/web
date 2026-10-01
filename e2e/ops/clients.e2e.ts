@@ -363,7 +363,7 @@ test("names the invite a client came with, who sent it, and where its visits sta
     "href",
     "/clients/22000000-0000-4000-8000-000000000009",
   );
-  await expect(invite).toContainText("Their 3 visitsGiven");
+  await expect(invite).toContainText("What it earnsGiven");
   await expect(invite).toContainText("Since20 Oct 2026");
   await expect(invite.getByText("Attached by")).toHaveCount(0);
   await expect(invite.getByRole("button", { name: "Attach the invite" })).toHaveCount(0);
@@ -399,7 +399,7 @@ test("attaches an invite to a client who came with none, with why, and shows it 
 
   await expect(invite.getByRole("status")).toHaveText("Attached. The CRM is sent it too.");
   await expect(invite).toContainText("CodeRM4K7P");
-  await expect(invite).toContainText("Their 3 visitsGiven to both when this client is fitted");
+  await expect(invite).toContainText("What it earnsGiven when this client is fitted");
   await expect(invite).toContainText("Attached byops@maneman.in");
   await expect(invite).toContainText("WhyTold us Rohit sent him");
 });

@@ -210,11 +210,7 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
         label={consultation.submit}
         sendingLabel={consultation.sending}
       />
-      {props.credits && (
-        <p class={styles.told}>
-          {props.name === null ? consultation.toldUnnamed : fill(consultation.told, { name: props.name })}
-        </p>
-      )}
+      {props.credits && <p class={styles.told}>{consultation.told(props.name, props.reward)}</p>}
     </form>
   );
 }

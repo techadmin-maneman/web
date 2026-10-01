@@ -349,12 +349,63 @@ test("makes their own card, records one consent and stores one card, when Allow 
   await expect.poll(() => sharedSoFar(page)).toEqual([cardWithInvite(stored[0] ?? 0)]);
 });
 
+/**
+ * One of the local mm-api's answers on the app's host, with `change` made to it. Only the browser resolves
+ * app.localhost, so the answer is fetched from the app's server by its address, on the app's own host.
+ */
+async function changed(page: Page, path: string, change: (answer: Record<string, unknown>) => unknown) {
+  await page.route(`**${path}`, async (route) => {
+    const answer = await route.fetch({
+      url: `http://127.0.0.1:${String(PORTS.app)}${path}`,
+      headers: { ...route.request().headers(), host: `app.localhost:${String(PORTS.app)}` },
+    });
+    await route.fulfill({ response: answer, json: change((await answer.json()) as Record<string, unknown>) });
+  });
+}
+
+// The owner's ruling of 1 October 2026: ops set each side's visits apart
+// (docs/decisions/0107-referral-rewards-in-the-console.md).
+test("says what ops set each side gets, and beside each friend what the client earned", async ({ page }) => {
+  await changed(page, "/api/me", (me) => ({
+    ...me,
+    referral_reward: { referrer_visits: 2, friend_visits: 4, valid_days: 180 },
+  }));
+  await changed(page, "/api/refer", (refer) => ({
+    ...refer,
+    fitted: [
+      { first_name: "Karan", month: "2026-09", visits: 2 },
+      { first_name: "Vikram", month: "2026-08", visits: 0 },
+    ],
+  }));
+  await toRefer(page);
+  await expect(
+    page.getByText("When a friend you refer is fitted, you get 2 service visits free, and your friend gets 4."),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Share an invite" }).click();
+  const sheet = page.getByRole("dialog", { name: "Which card?" });
+  await sheet.getByRole("radio", { name: /A Mane Man example/ }).click();
+  await sheet.getByRole("button", { name: "Continue to share" }).click();
+  const preview = page.getByRole("dialog", { name: "Preview · what your friend sees" });
+  await expect(
+    preview.getByText("Home-fitted hair systems across Delhi NCR. 4 service visits free when you're fitted."),
+  ).toBeVisible();
+  await preview.getByRole("button", { name: "Close" }).click();
+
+  await page.getByRole("link", { name: "See who has been fitted" }).click();
+  const friends = page.getByRole("listitem");
+  await expect(friends.filter({ hasText: "Karan" })).toContainText("2 visits earned");
+  await expect(friends.filter({ hasText: "Vikram" })).not.toContainText("earned");
+  await expect(page.getByText("visits earned", { exact: true })).toBeVisible();
+});
+
 // Board B2: before their first fit a client has nothing to vouch for, and the invite's own words would not be
 // true, so Refer is reachable but empty (CLI-07).
 test("a client not yet fitted sees Refer's empty state, with no invite to send", async ({ page }) => {
   await signIn(page);
   await page.getByRole("navigation").getByRole("link", { name: "Refer" }).click();
   await expect(page.getByText("Nobody you have referred has been fitted yet.")).toBeVisible();
+  await expect(page.getByText("When a friend you refer is fitted, you both get 3 service visits free.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Share an invite" })).toHaveCount(0);
   await scan(page);
 });

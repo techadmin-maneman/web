@@ -10,7 +10,9 @@
 // mm-api not answering the Worker — the island fetches it, and any code books.
 // The prices arrive the same way, from the price book, onto <body>, and are
 // fetched where they did not (docs/decisions/0073-prices-from-the-price-book.md),
-// while the site gives prices at all (PRICES_SHOWN).
+// while the site gives prices at all (PRICES_SHOWN). So does what a referral
+// earns, as ops set it (docs/decisions/0107-referral-rewards-in-the-console.md),
+// which every sentence that gives a count is built from.
 //
 // The pincode check is usePincode.ts, the two forms Consultation.tsx and
 // Waitlist.tsx, which send through useTurnstileForm.ts, and the confirmations
@@ -22,16 +24,23 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { referral } from "../../content/referral.ts";
 import { booking, PRICES_SHOWN } from "../../content/site.ts";
-import { fetchInvite, fetchPublishedPrices, type Invite as InviteAnswer } from "../../lib/api.ts";
+import {
+  fetchInvite,
+  fetchPublishedPrices,
+  fetchReferralReward,
+  type Invite as InviteAnswer,
+  type ReferralReward,
+} from "../../lib/api.ts";
 import { cardPath, HOUSE_CARD, isInvite } from "../../lib/invite.ts";
 import { BUILT_WORDS, isPublishedPrices, priceWords, standardOf, type PriceWords } from "../../lib/prices.ts";
 import { rememberInvite } from "../../lib/remembered-invite.ts";
+import { isReferralReward } from "../../lib/reward.ts";
 import { fill } from "../../lib/text.ts";
 import { Consultation } from "./Consultation.tsx";
 import { Booked, Listed, type Booking, type Listing } from "./Done.tsx";
 import { HowItWorks } from "./HowItWorks.tsx";
 import styles from "./Invite.module.css";
-import { codeInPath, inviteInPage, pricesInPage } from "./page.ts";
+import { codeInPath, inviteInPage, pricesInPage, rewardInPage } from "./page.ts";
 import { PincodePanel } from "./PincodePanel.tsx";
 import { Prices } from "./Prices.tsx";
 import { previewNamed, SAMPLE, sampleBooking } from "./preview.ts";
@@ -62,6 +71,8 @@ export default function Invite(props: Props) {
   const [invite, setInvite] = useState<InviteAnswer | null>(null);
   // Read before the first draw, so hydrating keeps the figures the Worker wrote into the page.
   const [prices, setPrices] = useState<PriceWords>(() => pricesInPage() ?? BUILT_WORDS);
+  // Null until it is known: no sentence gives a count without it.
+  const [reward, setReward] = useState<ReferralReward | null>(() => rewardInPage());
   const [state, setState] = useState<State>("arrival");
   const [booked, setBooked] = useState<Booking | null>(null);
   const [listed, setListed] = useState<Listing | null>(null);
@@ -70,7 +81,7 @@ export default function Invite(props: Props) {
 
   const invited = (props.mode ?? "invited") === "invited";
   const name = invited ? (invite?.referrer_first_name ?? null) : null;
-  // Only a valid invite carries the 3 visits; the API books any other without them.
+  // Only a valid invite carries its visits; the API books any other without them.
   const credits = invited && invite?.state === "valid";
 
   // The invite: from the page where the Worker wrote it, otherwise from the API.
@@ -97,6 +108,14 @@ export default function Invite(props: Props) {
     if (!PRICES_SHOWN || pricesInPage() !== null) return;
     void fetchPublishedPrices().then((found) => {
       if (found.ok && isPublishedPrices(found.body)) setPrices(priceWords(standardOf(found.body)));
+    });
+  }, []);
+
+  // What a referral earns: from the page where the Worker wrote it, otherwise from the API.
+  useEffect(() => {
+    if (rewardInPage() !== null) return;
+    void fetchReferralReward().then((found) => {
+      if (found.ok && isReferralReward(found.body)) setReward(found.body);
     });
   }, []);
 
@@ -127,12 +146,16 @@ export default function Invite(props: Props) {
     name,
     invited,
     credits,
+    reward,
     turnstileSiteKey: props.turnstileSiteKey,
     onChangePincode: pincode.change,
   };
+  const offer = credits && reward !== null ? referral.arrival.offer(reward) : null;
 
-  if (state === "booked" && booked !== null) return <Booked booking={booked} heading={heading} />;
-  if (state === "listed" && listed !== null) return <Listed listing={listed} name={name} heading={heading} />;
+  if (state === "booked" && booked !== null) return <Booked booking={booked} reward={reward} heading={heading} />;
+  if (state === "listed" && listed !== null) {
+    return <Listed listing={listed} name={name} reward={reward} heading={heading} />;
+  }
   const { answer } = pincode;
   return (
     <section class={styles.arrival}>
@@ -148,11 +171,11 @@ export default function Invite(props: Props) {
           </h1>
           <div class={styles.offer}>
             {!invited && <p>{booking.intro}</p>}
-            {credits && <p>{referral.arrival.offer}</p>}
+            {offer !== null && <p>{offer}</p>}
             {invited && invite !== null && !credits && (
               <p>
                 <span class={styles.unknownTitle}>{referral.arrival.unknown.title}</span>
-                <span class={styles.unknownBody}>{referral.arrival.unknown.body}</span>
+                <span class={styles.unknownBody}>{referral.arrival.unknown.body(reward)}</span>
               </p>
             )}
           </div>
