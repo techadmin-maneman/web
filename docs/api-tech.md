@@ -667,6 +667,58 @@ Request body:
 }
 ```
 
+### POST /api/tech/jobs/{id}/profile
+
+The client's hair profile, as a new version, with their history only once they have agreed to it
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianProfileRequest"
+}
+```
+
+**202**: Recorded
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianProfileRecorded"
+}
+```
+
+**400**: invalid_request: see error.fields
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**401**: session_required; device_revoked: ops revoked this phone, so drop the cached jobs
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such job, or one with no client of ours to record it for
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: superseded: FSM moved the job; out_of_order: send the step before this one first
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/tech/jobs/{id}/outcome
 
 Done, or partial with a reason
@@ -1704,10 +1756,11 @@ The piece a label names
           "consumables",
           "piece",
           "after_photos",
-          "outcome"
+          "outcome",
+          "profile"
         ]
       },
-      "description": "The steps this visit type runs, in order."
+      "description": "The steps this visit type runs, in order; a consultation's and a one visit's take the profile."
     },
     "checklist": {
       "type": "array",
@@ -1735,7 +1788,7 @@ The piece a label names
       "items": {
         "$ref": "#/components/schemas/TechnicianProduct"
       },
-      "description": "On a one visit, the products the client may choose, by name and never by price: the first fit's services offered on the visit's day, in ops' order. Empty for any other visit."
+      "description": "On a one visit and a consultation, the products by name and never by price: the first fit's services offered on the visit's day, in ops' order, which a one visit's client chooses from and the profile names. Empty for any other visit."
     },
     "payment_link": {
       "anyOf": [
@@ -1768,6 +1821,38 @@ The piece a label names
         }
       ],
       "description": "On a one visit closed as done with the client fitted, its payment link; else null."
+    },
+    "profile": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "latest": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/HairProfile"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The client's latest version, which the profile step starts from; null before one."
+            },
+            "health_consent": {
+              "$ref": "#/components/schemas/HairHealthConsent"
+            }
+          },
+          "required": [
+            "latest",
+            "health_consent"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The client's hair profile as it stands, for the piece card and the profile step, and their consent to its history: the step asks for it again unless it was given on the notice the phone shows. Null until the day before the visit."
     }
   },
   "required": [
@@ -1798,7 +1883,8 @@ The piece a label names
     "partial_reasons",
     "consumables",
     "products",
-    "payment_link"
+    "payment_link",
+    "profile"
   ],
   "additionalProperties": false
 }
@@ -1867,9 +1953,11 @@ The piece a label names
           "consumables",
           "piece",
           "after_photos",
-          "outcome"
+          "outcome",
+          "profile"
         ]
-      }
+      },
+      "description": "The steps that have reached us, in that order: the job's events, and the profile once recorded."
     },
     "outcome": {
       "anyOf": [
@@ -2052,6 +2140,557 @@ The piece a label names
     "name"
   ],
   "additionalProperties": false
+}
+```
+
+### HairProfile
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "recorded_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "fit": {
+      "$ref": "#/components/schemas/HairFitSpecRead"
+    },
+    "history": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/HairHistory"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Null where none was recorded with the client's consent, or the client withdrew it."
+    }
+  },
+  "required": [
+    "recorded_at",
+    "fit",
+    "history"
+  ],
+  "additionalProperties": false
+}
+```
+
+### HairFitSpecRead
+
+```json
+{
+  "description": "Every field is sent, null where it was not taken.",
+  "type": "object",
+  "properties": {
+    "norwood_stage": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "I",
+        "II",
+        "III",
+        "IV",
+        "V",
+        "VI",
+        "VII",
+        null
+      ]
+    },
+    "head_circumference_cm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 40,
+      "maximum": 70,
+      "description": "In centimetres, 40 to 70, to one decimal."
+    },
+    "front_to_nape_cm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 20,
+      "maximum": 50,
+      "description": "In centimetres, 20 to 50, to one decimal."
+    },
+    "ear_to_ear_cm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 20,
+      "maximum": 50,
+      "description": "In centimetres, over the top, 20 to 50, to one decimal."
+    },
+    "temple_to_temple_cm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 20,
+      "maximum": 50,
+      "description": "In centimetres, 20 to 50, to one decimal."
+    },
+    "base_width_in": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 2,
+      "maximum": 12,
+      "description": "In inches, 2 to 12, to one decimal."
+    },
+    "base_length_in": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 2,
+      "maximum": 14,
+      "description": "In inches, 2 to 14, to one decimal."
+    },
+    "colour": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "1B",
+        null
+      ],
+      "description": "The suppliers' colour code, #1B written 1B."
+    },
+    "grey_percent": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 100
+    },
+    "density_percent": {
+      "anyOf": [
+        {
+          "type": "number",
+          "enum": [
+            80
+          ]
+        },
+        {
+          "type": "number",
+          "enum": [
+            100
+          ]
+        },
+        {
+          "type": "number",
+          "enum": [
+            120
+          ]
+        },
+        {
+          "type": "number",
+          "enum": [
+            140
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "In per cent."
+    },
+    "wave": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "straight",
+        "slight_wave",
+        "wavy",
+        "curly",
+        null
+      ]
+    },
+    "hairline": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "natural",
+        "receded",
+        "straight",
+        "widows_peak",
+        null
+      ]
+    },
+    "product": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-z][a-z0-9_]{0,31}$",
+      "description": "The product, by the tier of its first-fit service: one the services table holds, retired or not."
+    },
+    "attachment": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "tape",
+        "glue",
+        "both",
+        null
+      ],
+      "description": "Tape, glue, or both."
+    },
+    "product_name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The product's name, never its price."
+    }
+  },
+  "required": [
+    "norwood_stage",
+    "head_circumference_cm",
+    "front_to_nape_cm",
+    "ear_to_ear_cm",
+    "temple_to_temple_cm",
+    "base_width_in",
+    "base_length_in",
+    "colour",
+    "grey_percent",
+    "density_percent",
+    "wave",
+    "hairline",
+    "product",
+    "attachment",
+    "product_name"
+  ],
+  "additionalProperties": false
+}
+```
+
+### HairFitSpec
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "norwood_stage": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "I",
+        "II",
+        "III",
+        "IV",
+        "V",
+        "VI",
+        "VII",
+        null
+      ]
+    },
+    "head_circumference_cm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 40,
+      "maximum": 70,
+      "description": "In centimetres, 40 to 70, to one decimal."
+    },
+    "front_to_nape_cm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 20,
+      "maximum": 50,
+      "description": "In centimetres, 20 to 50, to one decimal."
+    },
+    "ear_to_ear_cm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 20,
+      "maximum": 50,
+      "description": "In centimetres, over the top, 20 to 50, to one decimal."
+    },
+    "temple_to_temple_cm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 20,
+      "maximum": 50,
+      "description": "In centimetres, 20 to 50, to one decimal."
+    },
+    "base_width_in": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 2,
+      "maximum": 12,
+      "description": "In inches, 2 to 12, to one decimal."
+    },
+    "base_length_in": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 2,
+      "maximum": 14,
+      "description": "In inches, 2 to 14, to one decimal."
+    },
+    "colour": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "1B",
+        null
+      ],
+      "description": "The suppliers' colour code, #1B written 1B."
+    },
+    "grey_percent": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 100
+    },
+    "density_percent": {
+      "anyOf": [
+        {
+          "type": "number",
+          "enum": [
+            80
+          ]
+        },
+        {
+          "type": "number",
+          "enum": [
+            100
+          ]
+        },
+        {
+          "type": "number",
+          "enum": [
+            120
+          ]
+        },
+        {
+          "type": "number",
+          "enum": [
+            140
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "In per cent."
+    },
+    "wave": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "straight",
+        "slight_wave",
+        "wavy",
+        "curly",
+        null
+      ]
+    },
+    "hairline": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "natural",
+        "receded",
+        "straight",
+        "widows_peak",
+        null
+      ]
+    },
+    "product": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-z][a-z0-9_]{0,31}$",
+      "description": "The product, by the tier of its first-fit service: one the services table holds, retired or not."
+    },
+    "attachment": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "tape",
+        "glue",
+        "both",
+        null
+      ],
+      "description": "Tape, glue, or both."
+    }
+  },
+  "required": [
+    "norwood_stage",
+    "head_circumference_cm",
+    "front_to_nape_cm",
+    "ear_to_ear_cm",
+    "temple_to_temple_cm",
+    "base_width_in",
+    "base_length_in",
+    "colour",
+    "grey_percent",
+    "density_percent",
+    "wave",
+    "hairline",
+    "product",
+    "attachment"
+  ],
+  "additionalProperties": false,
+  "description": "Every field is sent, null where it was not taken."
+}
+```
+
+### HairHistory
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "remedies": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "none",
+          "minoxidil",
+          "finasteride",
+          "transplant",
+          "other_systems",
+          "other"
+        ]
+      },
+      "maxItems": 6,
+      "description": "Every remedy the client has tried, each once; none, said alone, for none. Empty: not answered."
+    },
+    "transplant_year": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1900,
+      "maximum": 2100,
+      "description": "With a transplant only, and no later than this year."
+    },
+    "skin_and_allergies": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 200
+    }
+  },
+  "required": [
+    "remedies",
+    "transplant_year",
+    "skin_and_allergies"
+  ],
+  "additionalProperties": false,
+  "description": "Health information: recorded only with the client's consent to it."
+}
+```
+
+### HairHealthConsent
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "given",
+        "not_given",
+        "withdrawn"
+      ],
+      "description": "withdrawn: the client declined, or withdrew it; not_given: they have never been asked."
+    },
+    "notice_version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "state",
+    "notice_version",
+    "at"
+  ],
+  "additionalProperties": false,
+  "description": "The client's consent to their health history, as it stands."
 }
 ```
 
@@ -2484,6 +3123,147 @@ The piece a label names
   ],
   "additionalProperties": false,
   "description": "On a one visit, and only there: the client decided against the fit, so nothing was fitted, and closing the visit as done makes it a consultation."
+}
+```
+
+### TechnicianProfileRecorded
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "event_id": {
+      "type": "string"
+    },
+    "replayed": {
+      "type": "boolean",
+      "description": "True when this write had already landed."
+    },
+    "progress": {
+      "$ref": "#/components/schemas/TechnicianJobProgress"
+    }
+  },
+  "required": [
+    "event_id",
+    "replayed",
+    "progress"
+  ],
+  "additionalProperties": false,
+  "description": "Kept in our records alone: nothing of it goes to FSM."
+}
+```
+
+### TechnicianProfileRequest
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "fit": {
+      "$ref": "#/components/schemas/HairFitSpec"
+    },
+    "health": {
+      "$ref": "#/components/schemas/HairHealthAnswer"
+    }
+  },
+  "required": [
+    "fit",
+    "health"
+  ],
+  "additionalProperties": false,
+  "description": "The client's whole profile as it stands now: the card's latest, changed where the technician changed it. Each is a new version."
+}
+```
+
+### HairHealthAnswer
+
+```json
+{
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "remedies": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minoxidil",
+              "finasteride",
+              "transplant",
+              "other_systems",
+              "other"
+            ]
+          },
+          "maxItems": 6,
+          "description": "Every remedy the client has tried, each once; none, said alone, for none. Empty: not answered."
+        },
+        "transplant_year": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1900,
+          "maximum": 2100,
+          "description": "With a transplant only, and no later than this year."
+        },
+        "skin_and_allergies": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "consent": {
+          "type": "string",
+          "enum": [
+            "given"
+          ]
+        },
+        "notice_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "The notice the phone showed the client."
+        }
+      },
+      "required": [
+        "remedies",
+        "transplant_year",
+        "skin_and_allergies",
+        "consent",
+        "notice_version"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "consent": {
+          "type": "string",
+          "enum": [
+            "refused"
+          ]
+        },
+        "notice_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "The notice the phone showed the client."
+        }
+      },
+      "required": [
+        "consent",
+        "notice_version"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "null"
+    }
+  ]
 }
 ```
 

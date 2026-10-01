@@ -996,6 +996,115 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/clients/{id}/hair-profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The client's hair profile, every version of it, and their consent to its history */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The profile */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ClientHairProfile"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such client, or the client has been erased */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Correct the client's hair profile: a new version, under the member of staff, audited */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["HairProfileCorrection"];
+                };
+            };
+            responses: {
+                /** @description Recorded, and the profile as it now stands */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ClientHairProfile"];
+                    };
+                };
+                /** @description invalid_request: see error.fields; history, where the client has not agreed to it */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required: no Access token, or a service token, which names no member of staff */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such client, or the client has been erased */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/number-changes": {
         parameters: {
             query?: never;
@@ -5300,6 +5409,144 @@ export interface components {
             /** @description Google's Place ID for the building, if one was chosen. */
             place_id?: string | null;
             session_token?: string | null;
+        };
+        ClientHairProfile: {
+            /** @description The latest version; null before one. */
+            latest: components["schemas"]["HairProfile"] | null;
+            /** @description Every version, newest first. */
+            versions: components["schemas"]["HairProfileVersion"][];
+            health_consent: components["schemas"]["HairHealthConsent"];
+        };
+        HairProfile: {
+            /** Format: date-time */
+            recorded_at: string;
+            fit: components["schemas"]["HairFitSpecRead"];
+            /** @description Null where none was recorded with the client's consent, or the client withdrew it. */
+            history: components["schemas"]["HairHistory"] | null;
+        };
+        /** @description Every field is sent, null where it was not taken. */
+        HairFitSpecRead: {
+            /** @enum {string|null} */
+            norwood_stage: "I" | "II" | "III" | "IV" | "V" | "VI" | "VII" | null;
+            /** @description In centimetres, 40 to 70, to one decimal. */
+            head_circumference_cm: number | null;
+            /** @description In centimetres, 20 to 50, to one decimal. */
+            front_to_nape_cm: number | null;
+            /** @description In centimetres, over the top, 20 to 50, to one decimal. */
+            ear_to_ear_cm: number | null;
+            /** @description In centimetres, 20 to 50, to one decimal. */
+            temple_to_temple_cm: number | null;
+            /** @description In inches, 2 to 12, to one decimal. */
+            base_width_in: number | null;
+            /** @description In inches, 2 to 14, to one decimal. */
+            base_length_in: number | null;
+            /**
+             * @description The suppliers' colour code, #1B written 1B.
+             * @enum {string|null}
+             */
+            colour: "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "1B" | null;
+            grey_percent: number | null;
+            /** @description In per cent. */
+            density_percent: 80 | 100 | 120 | 140 | null;
+            /** @enum {string|null} */
+            wave: "straight" | "slight_wave" | "wavy" | "curly" | null;
+            /** @enum {string|null} */
+            hairline: "natural" | "receded" | "straight" | "widows_peak" | null;
+            /** @description The product, by the tier of its first-fit service: one the services table holds, retired or not. */
+            product: string | null;
+            /**
+             * @description Tape, glue, or both.
+             * @enum {string|null}
+             */
+            attachment: "tape" | "glue" | "both" | null;
+            /** @description The product's name, never its price. */
+            product_name: string | null;
+        };
+        /** @description Every field is sent, null where it was not taken. */
+        HairFitSpec: {
+            /** @enum {string|null} */
+            norwood_stage: "I" | "II" | "III" | "IV" | "V" | "VI" | "VII" | null;
+            /** @description In centimetres, 40 to 70, to one decimal. */
+            head_circumference_cm: number | null;
+            /** @description In centimetres, 20 to 50, to one decimal. */
+            front_to_nape_cm: number | null;
+            /** @description In centimetres, over the top, 20 to 50, to one decimal. */
+            ear_to_ear_cm: number | null;
+            /** @description In centimetres, 20 to 50, to one decimal. */
+            temple_to_temple_cm: number | null;
+            /** @description In inches, 2 to 12, to one decimal. */
+            base_width_in: number | null;
+            /** @description In inches, 2 to 14, to one decimal. */
+            base_length_in: number | null;
+            /**
+             * @description The suppliers' colour code, #1B written 1B.
+             * @enum {string|null}
+             */
+            colour: "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "1B" | null;
+            grey_percent: number | null;
+            /** @description In per cent. */
+            density_percent: 80 | 100 | 120 | 140 | null;
+            /** @enum {string|null} */
+            wave: "straight" | "slight_wave" | "wavy" | "curly" | null;
+            /** @enum {string|null} */
+            hairline: "natural" | "receded" | "straight" | "widows_peak" | null;
+            /** @description The product, by the tier of its first-fit service: one the services table holds, retired or not. */
+            product: string | null;
+            /**
+             * @description Tape, glue, or both.
+             * @enum {string|null}
+             */
+            attachment: "tape" | "glue" | "both" | null;
+        };
+        /** @description Health information: recorded only with the client's consent to it. */
+        HairHistory: {
+            /** @description Every remedy the client has tried, each once; none, said alone, for none. Empty: not answered. */
+            remedies: ("none" | "minoxidil" | "finasteride" | "transplant" | "other_systems" | "other")[];
+            /** @description With a transplant only, and no later than this year. */
+            transplant_year: number | null;
+            skin_and_allergies: string | null;
+        };
+        HairProfileVersion: {
+            /** Format: date-time */
+            recorded_at: string;
+            fit: components["schemas"]["HairFitSpecRead"];
+            /** @description Null where none was recorded with the client's consent, or the client withdrew it. */
+            history: components["schemas"]["HairHistory"] | null;
+            /** Format: uuid */
+            id: string;
+            recorded_by: {
+                /** @enum {string} */
+                kind: "technician";
+                name: string | null;
+            } | {
+                /** @enum {string} */
+                kind: "ops";
+                staff: string;
+            };
+            /** @description The visit it was taken at; null for a correction. */
+            visit: {
+                /** Format: uuid */
+                id: string;
+                /** @description Its day in India. */
+                date: string | null;
+                type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            } | null;
+        };
+        /** @description The client's consent to their health history, as it stands. */
+        HairHealthConsent: {
+            /**
+             * @description withdrawn: the client declined, or withdrew it; not_given: they have never been asked.
+             * @enum {string}
+             */
+            state: "given" | "not_given" | "withdrawn";
+            notice_version: string | null;
+            at: string | null;
+        };
+        /** @description The whole profile as it now stands, sent as a new version. */
+        HairProfileCorrection: {
+            fit: components["schemas"]["HairFitSpec"];
+            /** @description The history as it now stands; refused, field history, unless the client's consent to it stands. */
+            history: components["schemas"]["HairHistory"] | null;
         };
         NumberChangeDecision: {
             /** @enum {string} */

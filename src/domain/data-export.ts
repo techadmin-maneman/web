@@ -6,8 +6,10 @@
 // photographs, and when, as the owner ruled (docs/open-points.md, item 68),
 // and what they asked for on the site's form while no visit was booked: a
 // consultation's day and window, and a first fit (ADR 0086). And each no-show
-// charge they disputed, in their words, and how ops ruled (ADR 0096).
+// charge they disputed, in their words, and how ops ruled (ADR 0096). And every
+// version of their hair profile, their health history with it (ADR 0106).
 
+import { exportedProfiles } from "./hair-profiles.ts";
 import { allViews } from "./photo-views.ts";
 
 /** Each no-show charge the client disputed, in their words, and how ops ruled; never ops' reason. */
@@ -90,5 +92,6 @@ export async function everythingHeldAbout(db: D1Database, personId: string): Pro
     first_fit_requests: firstFitRequests,
     no_show_disputes: disputes,
     photo_views: await allViews(db, personId),
+    hair_profile: await exportedProfiles(db, personId),
   };
 }

@@ -33,6 +33,7 @@ import { registerOpsDispatch } from "./routes/ops-dispatch.ts";
 import { registerOpsDisputes } from "./routes/ops-disputes.ts";
 import { registerOpsField } from "./routes/ops-field.ts";
 import { registerOpsGrievances } from "./routes/ops-grievances.ts";
+import { registerOpsHairProfile } from "./routes/ops-hair-profile.ts";
 import { registerOpsJobSheet } from "./routes/ops-job-sheet.ts";
 import { registerOpsPayments } from "./routes/ops-payments.ts";
 import { registerOpsReferrals } from "./routes/ops-referrals.ts";
@@ -112,6 +113,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsClientReferral,
     // An address a client gives ops on the phone (docs/decisions/0092-task-owners.md).
     registerOpsClientAddress,
+    // A client's hair profile (docs/decisions/0106-a-clients-hair-profile.md).
+    registerOpsHairProfile,
     registerOpsProfile,
     registerOpsReferrals,
     registerOpsGrievances,

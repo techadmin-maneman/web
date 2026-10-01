@@ -4,6 +4,7 @@
 // src/queues/fsm-sync.ts.
 
 import type { VisitType } from "../config/visit-types.ts";
+import { takesProfile } from "./hair-profile.ts";
 
 export const RULES = [
   "Five before photographs: front, top, left, right, hair.",
@@ -47,6 +48,25 @@ export const PIECE_STEP_TYPES = ["replacement", "first_fit"] as const;
 export function stepsFor(type: VisitType, oneVisit = false): JobStep[] {
   const takesPiece = oneVisit || (PIECE_STEP_TYPES as readonly string[]).includes(type);
   return JOB_STEPS.filter((step) => step !== "piece" || takesPiece);
+}
+
+/**
+ * The client's hair profile, a screen of the card at a consultation and a one visit (src/policy/hair-profile.ts). It
+ * lands in its own table, not as a job event, so the order the API holds a phone's events to leaves it out, and a
+ * phone that never sends it holds nothing back (docs/decisions/0106-a-clients-hair-profile.md).
+ */
+export const PROFILE_STEP = "profile";
+
+/** Every screen a card's steps can name: the job's events, and the profile. */
+export const CARD_STEPS = [...JOB_EVENT_KINDS, PROFILE_STEP] as const;
+export type CardStep = (typeof CARD_STEPS)[number];
+
+/** The screens the card runs, in order: the visit type's steps, with the profile just before the after photographs. */
+export function cardStepsFor(type: VisitType, oneVisit = false): (JobStep | typeof PROFILE_STEP)[] {
+  const steps: (JobStep | typeof PROFILE_STEP)[] = stepsFor(type, oneVisit);
+  if (!takesProfile(type, oneVisit)) return steps;
+  const afterPhotos = steps.indexOf("after_photos");
+  return [...steps.slice(0, afterPhotos), PROFILE_STEP, ...steps.slice(afterPhotos)];
 }
 
 /** Whether an event closes the job as a no-show (src/policy/no-show.ts). */

@@ -14,6 +14,7 @@
 //   POST /api/tech/jobs/:id/consumables          what was used, with quantities
 //   POST /api/tech/jobs/:id/piece                the piece fitted, or the one that failed; on a one visit, the
 //                                                product chosen with it, or that the client decided against it
+//   POST /api/tech/jobs/:id/profile              the client's hair profile, and their history with their consent
 //   POST /api/tech/jobs/:id/outcome              done, or partial with a reason; a one visit closed as done
 //                                                sends the client its payment link
 //   POST /api/tech/jobs/:id/no-show              refused before the wait ends
@@ -33,6 +34,11 @@
 // technician, or decides against it, at the piece step, and closing it as done
 // makes it the product's visit, whose payment link Razorpay then texts to the
 // client, or a consultation (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+//
+// A consultation and a one visit also take the client's hair profile, just
+// before the after photographs. It is not a job event: it lands in its own
+// table, never reaches FSM, and the job's order leaves it out, so it needs only
+// the start (docs/decisions/0106-a-clients-hair-profile.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
@@ -43,7 +49,9 @@ import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
 import { latestArrival, recordArrival } from "../domain/check-ins.ts";
 import { allConsumables, offeredForJob, serviceOfJob } from "../domain/consumables.ts";
+import { profileLanded, recordAtVisit } from "../domain/hair-profiles.ts";
 import {
+  kindsLanded,
   landJobEvent,
   wasTheirs,
   whatChanged,
@@ -74,7 +82,7 @@ import { json } from "../http/openapi.ts";
 import { requireTechnicianSession, technicianOf } from "../http/technician-session.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { timeOfUuidV7 } from "../lib/uuidv7.ts";
-import { JOB_EVENT_KINDS, stepsFor, type JobEventKind } from "../policy/in-job-steps.ts";
+import { CARD_STEPS, cardStepsFor, stepsFor, type JobEventKind } from "../policy/in-job-steps.ts";
 import { PAYMENT_BADGES } from "../policy/job-visibility.ts";
 import { noShowWaitEnds } from "../policy/no-show.ts";
 import { boundedPhoneTime } from "../policy/phone-clock.ts";
@@ -82,6 +90,7 @@ import { opsInputs } from "../http/ops-inputs.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import { arrivalNotice } from "../domain/visit-messages.ts";
+import { FitSpecSchema, HairProfileSchema, HealthAnswerSchema, HealthConsentSchema } from "./hair-profile-schemas.ts";
 import { PieceSchema } from "./tech-pieces.ts";
 
 const jobId = z.object({ id: z.uuid() });
@@ -155,7 +164,9 @@ const ProgressSchema = z
       description: "How far from the address that check-in was; null when nothing could be measured.",
     }),
     started_at: z.union([z.iso.datetime(), z.null()]),
-    steps_done: z.array(z.enum(JOB_EVENT_KINDS)),
+    steps_done: z.array(z.enum(CARD_STEPS)).openapi({
+      description: "The steps that have reached us, in that order: the job's events, and the profile once recorded.",
+    }),
     outcome: z.union([z.string(), z.null()]),
   })
   .strict()
@@ -236,7 +247,9 @@ const JobDetailSchema = JobSummarySchema.extend({
   reminder: z
     .union([z.object({ delivered_at: z.union([z.iso.datetime(), z.null()]) }).strict(), z.null()])
     .openapi({ description: "The day-before or arrival WhatsApp to the client, and when it was delivered." }),
-  steps: z.array(z.enum(JOB_EVENT_KINDS)).openapi({ description: "The steps this visit type runs, in order." }),
+  steps: z.array(z.enum(CARD_STEPS)).openapi({
+    description: "The steps this visit type runs, in order; a consultation's and a one visit's take the profile.",
+  }),
   checklist: z
     .array(JobSheetItemSchema)
     .openapi({ description: "This kind of visit's checklist, as ops set it in the console, in its order." }),
@@ -250,8 +263,9 @@ const JobDetailSchema = JobSummarySchema.extend({
   }),
   products: z.array(ProductSchema).openapi({
     description:
-      "On a one visit, the products the client may choose, by name and never by price: the first fit's services " +
-      "offered on the visit's day, in ops' order. Empty for any other visit.",
+      "On a one visit and a consultation, the products by name and never by price: the first fit's services " +
+      "offered on the visit's day, in ops' order, which a one visit's client chooses from and the profile names. " +
+      "Empty for any other visit.",
   }),
   payment_link: z
     .union([
@@ -266,6 +280,24 @@ const JobDetailSchema = JobSummarySchema.extend({
       z.null(),
     ])
     .openapi({ description: "On a one visit closed as done with the client fitted, its payment link; else null." }),
+  profile: z
+    .union([
+      z
+        .object({
+          latest: z.union([HairProfileSchema, z.null()]).openapi({
+            description: "The client's latest version, which the profile step starts from; null before one.",
+          }),
+          health_consent: HealthConsentSchema,
+        })
+        .strict(),
+      z.null(),
+    ])
+    .openapi({
+      description:
+        "The client's hair profile as it stands, for the piece card and the profile step, and their consent to its " +
+        "history: the step asks for it again unless it was given on the notice the phone shows. Null until the day " +
+        "before the visit.",
+    }),
 }).openapi("TechnicianJobDetail");
 
 const AcceptedSchema = z
@@ -415,6 +447,24 @@ const NoShowSchema = z
   })
   .strict()
   .openapi("NoShowClose");
+
+const ProfileRequestSchema = z
+  .object({ fit: FitSpecSchema, health: HealthAnswerSchema })
+  .strict()
+  .openapi("TechnicianProfileRequest", {
+    description:
+      "The client's whole profile as it stands now: the card's latest, changed where the technician changed it. " +
+      "Each is a new version.",
+  });
+
+const ProfileRecordedSchema = z
+  .object({
+    event_id: z.string(),
+    replayed: z.boolean().openapi({ description: "True when this write had already landed." }),
+    progress: ProgressSchema,
+  })
+  .strict()
+  .openapi("TechnicianProfileRecorded", { description: "Kept in our records alone: nothing of it goes to FSM." });
 
 /** A step that landed, or had landed before. */
 const RECORDED = { description: "Recorded", ...json(AcceptedSchema) };
@@ -599,6 +649,18 @@ const pieceRoute = createRoute({
   },
 });
 
+const profileRoute = createRoute({
+  method: "post",
+  path: "/api/tech/jobs/{id}/profile",
+  summary: "The client's hair profile, as a new version, with their history only once they have agreed to it",
+  request: { params: jobId, headers: EventIdSchema, body: { required: true, ...json(ProfileRequestSchema) } },
+  responses: {
+    202: { description: "Recorded", ...json(ProfileRecordedSchema) },
+    ...STEP_REFUSALS,
+    404: errorResponse("not_found: no such job, or one with no client of ours to record it for"),
+  },
+});
+
 const outcomeRoute = createRoute({
   method: "post",
   path: "/api/tech/jobs/{id}/outcome",
@@ -655,7 +717,7 @@ export function registerTechJobs(app: App): void {
     return c.json(
       {
         ...job,
-        steps: stepsFor(type, job.one_visit),
+        steps: cardStepsFor(type, job.one_visit),
         checklist: [...checklistOf(sheet, { type, oneVisit: job.one_visit }).items],
         partial_reasons: [...sheet.partialReasons.items],
         consumables: await offeredForJob(c.env.DB, await serviceOfJob(c.env.DB, { id: job.id, type }), job.date),
@@ -848,6 +910,50 @@ export function registerTechJobs(app: App): void {
     });
   });
 
+  // A new version of the client's profile, once however often the phone sends it. Like a step it is refused for a
+  // job that changed under the phone, and before the start; unlike one it is no job event, and goes to no queue.
+  app.openapi(profileRoute, async (c) => {
+    const { technicianId } = technicianOf(c);
+    const { requestId, deps } = c.var;
+    const job = await namedJob(c, c.req.valid("param").id);
+    if (job === null) return c.json(errorBody("not_found", requestId), 404);
+    const { personId } = job;
+    if (personId === null) return c.json(errorBody("not_found", requestId), 404);
+    const headers = c.req.valid("header");
+    const eventId = headers["x-client-event-id"];
+    if (await profileLanded(c.env.DB, job.id, eventId)) {
+      return c.json(await profileRecorded(c, job, eventId, true), 202);
+    }
+
+    const heldStart = headers["x-job-starts-at"];
+    const superseding = await whatChanged(
+      c.env.DB,
+      job,
+      technicianId,
+      heldStart === undefined ? null : new Date(heldStart),
+    );
+    if (superseding.changed.length > 0) {
+      c.var.log.info("profile_superseded", { appointment_id: job.id, changed: superseding.changed });
+      return c.json(refusalOf(c, superseded(superseding)), 409);
+    }
+    if (!(await kindsLanded(c.env.DB, job.id)).has("start")) {
+      return c.json(errorBody("out_of_order", requestId, ["start"]), 409);
+    }
+
+    const { fit, health } = c.req.valid("json");
+    const written = await recordAtVisit(c.env.DB, {
+      personId,
+      appointmentId: job.id,
+      technicianId,
+      eventId,
+      fit,
+      health,
+      now: deps.now(),
+    });
+    if (written.kind === "invalid") return c.json(errorBody("invalid_request", requestId, written.fields), 400);
+    return c.json(await profileRecorded(c, job, eventId, written.replayed), 202);
+  });
+
   // The reasons ops set; one they have taken off since the phone kept the job is still taken. A one visit closed as
   // done becomes a consultation or the product's visit, and asks Razorpay for its payment link once, however often
   // it lands: the close lands whatever Razorpay answers, and the cron asks again for a link it could not make.
@@ -978,6 +1084,17 @@ async function oneVisitPiece(c: Ctx, job: WorkableJob, body: PieceBody): Promise
   if (!offered.some((service) => service.tier === body.product)) return { invalid: ["product"] };
   const fitted = fittedPiece(body);
   return "invalid" in fitted ? fitted : { ...fitted, product: body.product };
+}
+
+/** The profile step's answer: the event, whether it had landed before, and where the job stands. */
+async function profileRecorded(
+  c: Ctx,
+  job: WorkableJob,
+  eventId: string,
+  replayed: boolean,
+): Promise<z.infer<typeof ProfileRecordedSchema>> {
+  const { noShowWaitMin } = await opsInputs(c);
+  return { event_id: eventId, replayed, progress: await progressOf(c.env.DB, job, noShowWaitMin) };
 }
 
 /** What landing an event came to: the write, or the 409 the route answers. */
