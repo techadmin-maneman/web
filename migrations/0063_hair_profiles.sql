@@ -1,5 +1,4 @@
 -- Migration number: 0063
--- contract: docs/decisions/0106-a-clients-hair-profile.md
 --
 -- A client's hair profile (docs/decisions/0106-a-clients-hair-profile.md): the
 -- fit spec a piece is made to, and the history of what they have tried, by the
@@ -10,20 +9,10 @@
 -- write is refused by the unique index; ops' corrections name neither, and
 -- name the member of staff instead. A version is never changed and never
 -- deleted: the one change its trigger lets through is a column blanked, which
--- is what an erasure does, and a client withdrawing the consent to their
--- history. The codes (the stage, the colour, the wave and the rest) are not
--- checked here: their lists live in src/policy/hair-profile.ts, awaiting the
--- owner's words, and a CHECK could change only by rebuilding the table.
---
--- consents is rebuilt to take the history's own purpose, health_history: SQLite
--- cannot change a CHECK in place, and nothing references consents. Every row is
--- copied across unchanged, its rowid with it, since the code tells a person's
--- consents of one moment apart by their rowid. The table stays append-only:
--- its index and triggers are made again with it, as migration 0009 did.
---
--- The code already deployed names none of this, and writes consents as before.
-
-PRAGMA defer_foreign_keys = true;
+-- is what an erasure does. The codes (the stage, the colour, the wave and the
+-- rest) are not checked here: their lists live in src/policy/hair-profile.ts,
+-- awaiting the owner's words, and a CHECK could change only by rebuilding the
+-- table. Expand only: the code already deployed names none of it.
 
 CREATE TABLE hair_profiles (
   id TEXT PRIMARY KEY,
@@ -48,7 +37,7 @@ CREATE TABLE hair_profiles (
   hairline TEXT,
   product TEXT,
   attachment TEXT,
-  -- The history, recorded only with the client's consent to it (consents, purpose health_history).
+  -- The history: remedies tried (a JSON array of codes), a transplant's year, skin conditions and allergies.
   remedies TEXT,
   transplant_year INTEGER,
   skin_and_allergies TEXT,
@@ -89,43 +78,4 @@ CREATE TRIGGER hair_profiles_no_delete
 BEFORE DELETE ON hair_profiles
 BEGIN
   SELECT RAISE(ABORT, 'a hair profile is kept: an erasure blanks it');
-END;
-
-CREATE TABLE consents_next (
-  id TEXT PRIMARY KEY,
-  person_id TEXT NOT NULL REFERENCES people (id),
-  purpose TEXT NOT NULL CHECK (purpose IN (
-    -- Phase 1: agreements given on the public site.
-    'contact', 'tryon_photo', 'result_delivery',
-    -- Phase 2: each switched on or off by the client in the app, each with its own date.
-    'photos_own_record', 'photos_referral_cards', 'photos_marketing', 'whatsapp_visits', 'whatsapp_launches',
-    -- The client's health history, asked for on the technician's phone (docs/decisions/0106-a-clients-hair-profile.md).
-    'health_history'
-  )),
-  notice_version TEXT NOT NULL,
-  granted INTEGER NOT NULL CHECK (granted IN (0, 1)),
-  created_at TEXT NOT NULL,
-  ip_hash TEXT,
-  source TEXT
-);
-
-INSERT INTO consents_next (rowid, id, person_id, purpose, notice_version, granted, created_at, ip_hash, source)
-SELECT rowid, id, person_id, purpose, notice_version, granted, created_at, ip_hash, source FROM consents;
-
-DROP TABLE consents;
-
-ALTER TABLE consents_next RENAME TO consents;
-
-CREATE INDEX consents_by_person ON consents (person_id);
-
-CREATE TRIGGER consents_no_update
-BEFORE UPDATE ON consents
-BEGIN
-  SELECT RAISE(ABORT, 'consents are append-only');
-END;
-
-CREATE TRIGGER consents_no_delete
-BEFORE DELETE ON consents
-BEGIN
-  SELECT RAISE(ABORT, 'consents are append-only');
 END;

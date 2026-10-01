@@ -3,7 +3,7 @@
 // remedies a client can say together, and the body the step sends
 // (docs/decisions/0106-a-clients-hair-profile.md).
 
-import type { FitSpec, HealthConsent, History, ProfileRequest } from "../api.ts";
+import type { FitSpec, History, ProfileRequest } from "../api.ts";
 
 /** Each measurement's range, as src/policy/hair-profile.ts has it: the API refuses a figure outside it. */
 export const MEASUREMENTS = {
@@ -157,19 +157,8 @@ export function historyOf(form: HistoryForm, thisYear: number): History | null {
   return { remedies: [...form.remedies], transplant_year: year, skin_and_allergies: skin === "" ? null : skin };
 }
 
-/** What the client said to the consent the history needs, or that the technician did not ask. */
-export type Answer = "agrees" | "declines" | "not_asked";
-
-/** Whether the client agreed to these words already, so they are not asked again. */
-export const agreedTo = (consent: HealthConsent | null, version: string): boolean =>
-  consent?.state === "given" && consent.notice_version === version;
-
-/** The whole body: the fit spec, and the history only where the client agreed to it, on the words they saw. */
-export function bodyOf(
-  fit: FitSpec,
-  health: { readonly answer: Answer; readonly history: History; readonly version: string },
-): ProfileRequest {
-  if (health.answer === "not_asked") return { fit, health: null };
-  if (health.answer === "declines") return { fit, health: { consent: "refused", notice_version: health.version } };
-  return { fit, health: { consent: "given", notice_version: health.version, ...health.history } };
+/** The whole body: the fit spec, and the history, as none where nothing of it was said. */
+export function bodyOf(fit: FitSpec, history: History): ProfileRequest {
+  const said = history.remedies.length > 0 || history.transplant_year !== null || history.skin_and_allergies !== null;
+  return { fit, history: said ? history : null };
 }

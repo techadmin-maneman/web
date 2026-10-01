@@ -4,13 +4,10 @@
 // CURRENT_NOTICE at it. test/worker/notices.test.ts fails if a published text
 // changes.
 
-import type { ConsentPurpose, HealthHistoryPurpose } from "../policy/consents.ts";
+import type { ConsentPurpose } from "../policy/consents.ts";
 
-/**
- * Phase 1's agreements, given on the public site; Phase 2's consents, switched in the client app; and the health
- * history's, given on the technician's phone.
- */
-export type NoticePurpose = "contact" | "tryon_photo" | "result_delivery" | ConsentPurpose | HealthHistoryPurpose;
+/** Phase 1's agreements, given on the public site, and Phase 2's consents, switched in the client app. */
+export type NoticePurpose = "contact" | "tryon_photo" | "result_delivery" | ConsentPurpose;
 
 export interface Notice {
   readonly version: string;
@@ -202,22 +199,6 @@ export const NOTICES: readonly Notice[] = [
     purpose: "contact",
     text: ["You may contact me about this request."],
   },
-  // The technician's phone shows it to the client before any question of their health history, and records their
-  // answer (docs/decisions/0106-a-clients-hair-profile.md), word for word as apps/tech/src/content.ts holds it.
-  // PLACEHOLDER: the words await counsel (docs/open-points.md, item 173); words counsel changes become v2.
-  {
-    version: "health-history-v1",
-    purpose: "health_history",
-    text: [
-      "Your health history",
-      "To fit your hair system safely, your technician asks which remedies you have tried, and about any skin conditions or allergies.",
-      "Used for: Choosing your adhesive and caring for your scalp. Nothing else.",
-      "Seen by: Your technician and our operations team. Never shared outside Mane Man.",
-      "Kept: With your record, until you withdraw or ask us to delete your data.",
-      "To withdraw: Tell your technician at any visit, and it is deleted from your record.",
-      "I agree to my health history being recorded this way.",
-    ],
-  },
 ];
 
 /** The lines the referral landing shows, by what they are given for. */
@@ -236,7 +217,6 @@ export const CURRENT_NOTICE: Readonly<Record<NoticePurpose, string>> = {
   photos_marketing: "photos-marketing-v1",
   whatsapp_visits: "whatsapp-visits-v1",
   whatsapp_launches: "whatsapp-launches-v1",
-  health_history: "health-history-v1",
 };
 
 /**

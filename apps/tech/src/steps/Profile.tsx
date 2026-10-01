@@ -2,11 +2,10 @@
 // step, and a consultation and fit in one visit's once the product is chosen and fitted, just before the after
 // photographs.
 //
-// Three pages under the one step. The fit spec first. Then the consent the history needs, which the client gives or
-// declines apart from everything else, on words the phone shows them word for word; a client who agreed to these
-// words before is not asked again, and may withdraw at any visit, which deletes their history. Then the history, only
-// once they have agreed. Each page starts from the client's profile as it stands, or from what the API refused, and
-// the step sends the profile whole: each version is the profile as it was then.
+// Two pages under the one step: the fit spec, then the history, the remedies the client has tried and their skin
+// conditions and allergies, which the owner ruled need no consent of their own. Each page starts from the client's
+// profile as it stands, or from what the API refused, and the step sends the profile whole: each version is the
+// profile as it was then.
 //
 // Figures are typed, to one decimal, and checked against the API's ranges before Next takes them. Everything else is
 // one tap, and a second tap on what is chosen takes it off.
@@ -14,11 +13,10 @@
 import { useId, useState } from "react";
 import type { FitSpec, HairProfile, History, Job, ProfileRequest } from "../api.ts";
 import { job as jobCopy, profile as copy, steps as stepsCopy } from "../content.ts";
-import { dayMonth, todayInIndia } from "../lib/when.ts";
+import { todayInIndia } from "../lib/when.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import type { Queued } from "../store/outbox.ts";
 import {
-  agreedTo,
   bodyOf,
   DENSITIES,
   FIRST_TRANSPLANT_YEAR,
@@ -31,7 +29,6 @@ import {
   toggleRemedy,
   typedFigures,
   yearOf,
-  type Answer,
   type Choices,
   type FitForm,
   type HistoryForm,
@@ -41,7 +38,7 @@ import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
 import styles from "./steps.module.css";
 
-type Page = "fit" | "consent" | "history";
+type Page = "fit" | "history";
 
 interface Option<T> {
   readonly id: T;
@@ -74,9 +71,8 @@ function productOptions(job: Job, latest: HairProfile | null): Option<string>[] 
 /** Where the form starts: what the API refused, being put right, else the client's profile as it stands. */
 function startingPoint(job: Job, refused: Queued | null): { fit: FitSpec | null; history: History | null } {
   const sent = (refused?.body ?? null) as ProfileRequest | null;
-  if (sent !== null) return { fit: sent.fit, history: sent.health?.consent === "given" ? sent.health : null };
-  const latest = job.profile?.latest ?? null;
-  return { fit: latest?.fit ?? null, history: latest?.history ?? null };
+  if (sent !== null) return { fit: sent.fit, history: sent.history };
+  return { fit: job.profile?.fit ?? null, history: job.profile?.history ?? null };
 }
 
 /** A list of choices under its title, one tap each. */
@@ -264,50 +260,6 @@ function FitFields({
   );
 }
 
-/** The client's answer to the consent, under the words they are shown. */
-function ConsentFields({ answer, onAnswer }: { answer: Answer | null; onAnswer: (answer: Answer) => void }) {
-  const answers: Option<Answer>[] = [
-    { id: "agrees", label: copy.health.agrees },
-    { id: "declines", label: copy.health.declines },
-    { id: "not_asked", label: copy.health.notAsked },
-  ];
-  return (
-    <>
-      <section className={styles.field} aria-labelledby="health-notice">
-        <h2 className={styles.fieldTitle} id="health-notice">
-          {copy.health.showClient}
-        </h2>
-        {copy.health.notice.lines.map((line) => (
-          <p className={styles.noticeLine} key={line}>
-            {line}
-          </p>
-        ))}
-      </section>
-      <section className={styles.field} aria-labelledby="health-answer">
-        <h2 className={styles.fieldTitle} id="health-answer">
-          {copy.health.answer}
-        </h2>
-        <div className={styles.choiceList}>
-          {answers.map((option) => (
-            <button
-              key={option.id}
-              className={answer === option.id ? styles.choiceOn : styles.choice}
-              type="button"
-              aria-pressed={answer === option.id}
-              onClick={() => {
-                onAnswer(option.id);
-              }}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-        {answer === "declines" && <p className={styles.note}>{copy.health.declinedNote}</p>}
-      </section>
-    </>
-  );
-}
-
 function HistoryFields({
   form,
   thisYear,
@@ -321,7 +273,7 @@ function HistoryFields({
   return (
     <>
       <Chips
-        title={copy.health.remedies}
+        title={copy.history.remedies}
         options={optionsOf(copy.remedies)}
         isChosen={(id) => form.remedies.includes(id)}
         onChoose={(id) => {
@@ -331,7 +283,7 @@ function HistoryFields({
       {form.remedies.includes("transplant") && (
         <div className={styles.field}>
           <Figure
-            label={copy.health.year}
+            label={copy.history.year}
             value={form.year}
             invalid={yearOf(form, thisYear) === "invalid"}
             hint={copy.yearRange(FIRST_TRANSPLANT_YEAR, thisYear)}
@@ -343,7 +295,7 @@ function HistoryFields({
       )}
       <div className={styles.field}>
         <label className={styles.fieldLabel} htmlFor={skinId}>
-          {copy.health.skin}
+          {copy.history.skin}
         </label>
         <input
           className={styles.box64}
@@ -372,27 +324,15 @@ function ProfileForm({
   onFinish: (body: ProfileRequest) => void;
   onBack: () => void;
 }) {
-  const { version } = copy.health.notice;
-  const consent = job.profile?.health_consent ?? null;
-  const onFile = agreedTo(consent, version);
   const start = startingPoint(job, refused);
   const thisYear = Number(todayInIndia().slice(0, 4));
   const [page, setPage] = useState<Page>("fit");
   const [fit, setFit] = useState<FitForm>(() => fitFormOf(start.fit));
-  const [answer, setAnswer] = useState<Answer | null>(onFile ? "agrees" : null);
-  // Shown only once the client has agreed, so it may start from what was recorded or refused before.
   const [history, setHistory] = useState<HistoryForm>(() => historyFormOf(start.history));
-  const [withdrawn, setWithdrawn] = useState(false);
 
   const spec = fitOf(fit);
-  const answered = historyOf(history, thisYear);
+  const said = historyOf(history, thisYear);
   const notice = refused === null ? null : stepsCopy.corrected.other;
-  const agreedAt = onFile ? (consent?.at ?? null) : null;
-  const finish = (chosen: Answer) => {
-    if (spec === null) return;
-    const given = answered ?? { remedies: [], transplant_year: null, skin_and_allergies: null };
-    onFinish(bodyOf(spec, { answer: chosen, history: given, version }));
-  };
 
   if (page === "fit") {
     return (
@@ -405,31 +345,10 @@ function ProfileForm({
         notice={notice}
         onBack={onBack}
         onAction={() => {
-          setPage(onFile ? "history" : "consent");
+          setPage("history");
         }}
       >
-        <FitFields form={fit} products={productOptions(job, job.profile?.latest ?? null)} onChange={setFit} />
-      </StepFrame>
-    );
-  }
-
-  if (page === "consent") {
-    return (
-      <StepFrame
-        key="consent"
-        title={copy.health.title}
-        action={stepsCopy.next}
-        ready={answer !== null}
-        unfinished={copy.health.chooseAnswer}
-        onBack={() => {
-          setPage("fit");
-        }}
-        onAction={() => {
-          if (answer === "agrees") setPage("history");
-          else if (answer !== null) finish(answer);
-        }}
-      >
-        <ConsentFields answer={answer} onAnswer={setAnswer} />
+        <FitFields form={fit} products={productOptions(job, job.profile)} onChange={setFit} />
       </StepFrame>
     );
   }
@@ -437,36 +356,18 @@ function ProfileForm({
   return (
     <StepFrame
       key="history"
-      title={copy.health.title}
+      title={copy.history.title}
       action={stepsCopy.next}
-      ready={withdrawn || answered !== null}
+      ready={spec !== null && said !== null}
       unfinished={copy.checkFigures}
       onBack={() => {
-        setPage(onFile ? "fit" : "consent");
+        setPage("fit");
       }}
       onAction={() => {
-        finish(withdrawn ? "declines" : "agrees");
+        if (spec !== null && said !== null) onFinish(bodyOf(spec, said));
       }}
     >
-      {agreedAt !== null && (
-        <p className={styles.note}>{copy.health.given(dayMonth(todayInIndia(new Date(agreedAt))))}</p>
-      )}
-      {!withdrawn && <HistoryFields form={history} thisYear={thisYear} onChange={setHistory} />}
-      {onFile && (
-        <div className={styles.field}>
-          <button
-            className={withdrawn ? styles.choiceOn : styles.choice}
-            type="button"
-            aria-pressed={withdrawn}
-            onClick={() => {
-              setWithdrawn(!withdrawn);
-            }}
-          >
-            {copy.health.withdraw}
-          </button>
-          {withdrawn && <p className={styles.note}>{copy.health.withdrawnNote}</p>}
-        </div>
-      )}
+      <HistoryFields form={history} thisYear={thisYear} onChange={setHistory} />
     </StepFrame>
   );
 }

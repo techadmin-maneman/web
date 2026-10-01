@@ -679,8 +679,6 @@ export const clients = {
     aVisit: "visit",
     fit: "Fit spec",
     history: "Health history",
-    historyNotGiven: "The client has not agreed to their health history being recorded.",
-    historyWithdrawn: "The client declined or withdrew their consent to their health history.",
     versions: "Every version",
     rows: {
       norwood_stage: "Norwood stage",

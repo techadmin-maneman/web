@@ -312,7 +312,7 @@ Asked what we record about leads and clients, the owner learned that we keep a t
 - Fit spec: Norwood stage I–VII; head measurements (circumference, front to nape, ear to ear over the top, temple to temple, in centimetres); base size (width × length, inches, as suppliers order); colour code (#1, #1B, #2 …) and grey percentage; density (80, 100, 120, 140%); wave (straight, slight wave, wavy, curly); hairline style; the product; tape, glue or both.
 - History: remedies tried (none, minoxidil, finasteride, transplant with its year, other hair systems, other: many may apply), skin conditions and allergies (short free text).
 
-**Built 1 October 2026** ([0106](0106-a-clients-hair-profile.md)), which lists what the build took for the owner to confirm.
+Asked on the same day about a separate consent to the history, **the owner ruled:** "Why does it need further consent? This is the information that client has told us. No new consent is needed for it." **Built 1 October 2026** ([0106](0106-a-clients-hair-profile.md)), which lists what the build took for the owner to confirm.
 
 ## Inputs still owed
 

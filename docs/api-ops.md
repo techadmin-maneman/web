@@ -598,7 +598,7 @@ Request body:
 
 ### GET /api/clients/{id}/hair-profile
 
-The client's hair profile, every version of it, and their consent to its history
+The client's hair profile, and every version of it
 
 **200**: The profile
 
@@ -644,7 +644,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: see error.fields; history, where the client has not agreed to it
+**400**: invalid_request: see error.fields
 
 ```json
 {
@@ -5812,9 +5812,6 @@ Who Access let through, and where signing out goes
       },
       "description": "Every version, newest first."
     },
-    "health_consent": {
-      "$ref": "#/components/schemas/HairHealthConsent"
-    },
     "products": {
       "type": "array",
       "items": {
@@ -5839,7 +5836,6 @@ Who Access let through, and where signing out goes
   "required": [
     "latest",
     "versions",
-    "health_consent",
     "products"
   ],
   "additionalProperties": false
@@ -5868,7 +5864,7 @@ Who Access let through, and where signing out goes
           "type": "null"
         }
       ],
-      "description": "Null where none was recorded with the client's consent, or the client withdrew it."
+      "description": "Null where none was recorded."
     }
   },
   "required": [
@@ -6346,7 +6342,7 @@ Who Access let through, and where signing out goes
     "skin_and_allergies"
   ],
   "additionalProperties": false,
-  "description": "Health information: recorded only with the client's consent to it."
+  "description": "Health information the client told us: our records alone, never Zoho or a log."
 }
 ```
 
@@ -6372,7 +6368,7 @@ Who Access let through, and where signing out goes
           "type": "null"
         }
       ],
-      "description": "Null where none was recorded with the client's consent, or the client withdrew it."
+      "description": "Null where none was recorded."
     },
     "id": {
       "type": "string",
@@ -6493,53 +6489,6 @@ Who Access let through, and where signing out goes
 }
 ```
 
-### HairHealthConsent
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "state": {
-      "type": "string",
-      "enum": [
-        "given",
-        "not_given",
-        "withdrawn"
-      ],
-      "description": "withdrawn: the client declined, or withdrew it; not_given: they have never been asked."
-    },
-    "notice_version": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "at": {
-      "anyOf": [
-        {
-          "type": "string",
-          "format": "date-time"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    }
-  },
-  "required": [
-    "state",
-    "notice_version",
-    "at"
-  ],
-  "additionalProperties": false,
-  "description": "The client's consent to their health history, as it stands."
-}
-```
-
 ### HairProfileCorrection
 
 ```json
@@ -6557,8 +6506,7 @@ Who Access let through, and where signing out goes
         {
           "type": "null"
         }
-      ],
-      "description": "The history as it now stands; refused, field history, unless the client's consent to it stands."
+      ]
     }
   },
   "required": [

@@ -14,7 +14,7 @@
 //   POST /api/tech/jobs/:id/consumables          what was used, with quantities
 //   POST /api/tech/jobs/:id/piece                the piece fitted, or the one that failed; on a one visit, the
 //                                                product chosen with it, or that the client decided against it
-//   POST /api/tech/jobs/:id/profile              the client's hair profile, and their history with their consent
+//   POST /api/tech/jobs/:id/profile              the client's hair profile: the fit spec and their history
 //   POST /api/tech/jobs/:id/outcome              done, or partial with a reason; a one visit closed as done
 //                                                sends the client its payment link
 //   POST /api/tech/jobs/:id/no-show              refused before the wait ends
@@ -90,7 +90,7 @@ import { opsInputs } from "../http/ops-inputs.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import { arrivalNotice } from "../domain/visit-messages.ts";
-import { FitSpecSchema, HairProfileSchema, HealthAnswerSchema, HealthConsentSchema } from "./hair-profile-schemas.ts";
+import { FitSpecSchema, HairProfileSchema, HistorySchema } from "./hair-profile-schemas.ts";
 import { PieceSchema } from "./tech-pieces.ts";
 
 const jobId = z.object({ id: z.uuid() });
@@ -280,24 +280,11 @@ const JobDetailSchema = JobSummarySchema.extend({
       z.null(),
     ])
     .openapi({ description: "On a one visit closed as done with the client fitted, its payment link; else null." }),
-  profile: z
-    .union([
-      z
-        .object({
-          latest: z.union([HairProfileSchema, z.null()]).openapi({
-            description: "The client's latest version, which the profile step starts from; null before one.",
-          }),
-          health_consent: HealthConsentSchema,
-        })
-        .strict(),
-      z.null(),
-    ])
-    .openapi({
-      description:
-        "The client's hair profile as it stands, for the piece card and the profile step, and their consent to its " +
-        "history: the step asks for it again unless it was given on the notice the phone shows. Null until the day " +
-        "before the visit.",
-    }),
+  profile: z.union([HairProfileSchema, z.null()]).openapi({
+    description:
+      "The client's hair profile as it stands, for the piece card and for the profile step to start from. Null until " +
+      "the day before the visit, or before one is recorded.",
+  }),
 }).openapi("TechnicianJobDetail");
 
 const AcceptedSchema = z
@@ -449,7 +436,7 @@ const NoShowSchema = z
   .openapi("NoShowClose");
 
 const ProfileRequestSchema = z
-  .object({ fit: FitSpecSchema, health: HealthAnswerSchema })
+  .object({ fit: FitSpecSchema, history: z.union([HistorySchema, z.null()]) })
   .strict()
   .openapi("TechnicianProfileRequest", {
     description:
@@ -652,7 +639,7 @@ const pieceRoute = createRoute({
 const profileRoute = createRoute({
   method: "post",
   path: "/api/tech/jobs/{id}/profile",
-  summary: "The client's hair profile, as a new version, with their history only once they have agreed to it",
+  summary: "The client's hair profile, the fit spec and their history, as a new version",
   request: { params: jobId, headers: EventIdSchema, body: { required: true, ...json(ProfileRequestSchema) } },
   responses: {
     202: { description: "Recorded", ...json(ProfileRecordedSchema) },
@@ -940,14 +927,14 @@ export function registerTechJobs(app: App): void {
       return c.json(errorBody("out_of_order", requestId, ["start"]), 409);
     }
 
-    const { fit, health } = c.req.valid("json");
+    const { fit, history } = c.req.valid("json");
     const written = await recordAtVisit(c.env.DB, {
       personId,
       appointmentId: job.id,
       technicianId,
       eventId,
       fit,
-      health,
+      history,
       now: deps.now(),
     });
     if (written.kind === "invalid") return c.json(errorBody("invalid_request", requestId, written.fields), 400);

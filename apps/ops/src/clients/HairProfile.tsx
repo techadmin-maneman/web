@@ -1,10 +1,8 @@
 // The client's hair profile, on their Pieces tab (docs/decisions/0106-a-clients-hair-profile.md): the profile as it
-// stands, the fit spec a replacement is ordered to and the history recorded with the client's consent; then every
-// version, who recorded it and at which visit; and the form ops correct it with. No board draws it: board B1's
-// Pieces tab draws the pieces alone (docs/fidelity-method.md).
+// stands, the fit spec a replacement is ordered to and the client's history; then every version, who recorded it and
+// at which visit; and the form ops correct it with. No board draws it: board B1's Pieces tab draws the pieces alone.
 //
-// A correction is the whole profile as it now stands, sent as a new version, so the form starts from the latest. The
-// history is shown and corrected only while the client's consent to it stands: ops never give one.
+// A correction is the whole profile as it now stands, sent as a new version, so the form starts from the latest.
 
 import { Button } from "@maneman/ui/Button";
 import { Checkbox, Field, TextInput } from "@maneman/ui/Field";
@@ -186,7 +184,7 @@ function notNumbers(draft: Draft): string[] {
 }
 
 /** The correction as the API takes it; the API checks every list and range, and names any field it refuses. */
-function correctionOf(draft: Draft, withHistory: boolean): HairCorrection {
+function correctionOf(draft: Draft): HairCorrection {
   const { codes, figures } = draft;
   const fit = {
     norwood_stage: codeOf(codes.norwood_stage),
@@ -198,9 +196,10 @@ function correctionOf(draft: Draft, withHistory: boolean): HairCorrection {
     attachment: codeOf(codes.attachment),
     ...Object.fromEntries(FIGURES.map((field) => [field, numberOf(figures[field])])),
   } as Fit;
-  if (!withHistory) return { fit, history: null };
   const skin = draft.skin.trim();
   const year = draft.remedies.includes("transplant") ? numberOf(draft.year) : null;
+  const said = draft.remedies.length > 0 || year !== null || skin !== "";
+  if (!said) return { fit, history: null };
   return {
     fit,
     history: { remedies: [...draft.remedies], transplant_year: year, skin_and_allergies: skin === "" ? null : skin },
@@ -222,7 +221,6 @@ function CorrectionForm({
   onSaved: (page: ClientHairProfile) => void;
   onCancel: () => void;
 }) {
-  const withHistory = page.health_consent.state === "given";
   const [draft, setDraft] = useState<Draft>(() => draftOf(page.latest));
   const [refused, setRefused] = useState<readonly string[]>([]);
   const [problem, setProblem] = useState<string | null>(null);
@@ -237,7 +235,7 @@ function CorrectionForm({
         setProblem(copy.refused);
         return;
       }
-      const answer = await api.correctHairProfile(clientId, correctionOf(draft, withHistory));
+      const answer = await api.correctHairProfile(clientId, correctionOf(draft));
       if (answer.ok) {
         onSaved(answer.body);
         return;
@@ -312,57 +310,55 @@ function CorrectionForm({
           return select(field, field === "product" ? products : listOf(field));
         })}
       </div>
-      {withHistory && (
-        <fieldset className={styles.history}>
-          <legend className={styles.subtitle}>{copy.history}</legend>
-          {Object.entries(copy.remedies).map(([remedy, label]) => (
-            <Checkbox
-              key={remedy}
-              label={label}
-              checked={draft.remedies.includes(remedy as Remedy)}
-              disabled={busy}
-              onChange={() => {
-                setDraft((was) => ({ ...was, remedies: toggled(was.remedies, remedy as Remedy) }));
-              }}
-            />
-          ))}
-          {draft.remedies.includes("transplant") && (
-            <Field label={copy.rows.transplant_year} error={refused.includes("transplant_year") ? copy.invalid : null}>
-              {(control) => (
-                <TextInput
-                  {...control}
-                  className={styles.input}
-                  inputMode="numeric"
-                  value={draft.year}
-                  disabled={busy}
-                  onChange={(event) => {
-                    const year = event.target.value;
-                    setDraft((was) => ({ ...was, year }));
-                  }}
-                />
-              )}
-            </Field>
-          )}
-          <Field
-            label={copy.rows.skin_and_allergies}
-            error={refused.includes("skin_and_allergies") ? copy.invalid : null}
-          >
+      <fieldset className={styles.history}>
+        <legend className={styles.subtitle}>{copy.history}</legend>
+        {Object.entries(copy.remedies).map(([remedy, label]) => (
+          <Checkbox
+            key={remedy}
+            label={label}
+            checked={draft.remedies.includes(remedy as Remedy)}
+            disabled={busy}
+            onChange={() => {
+              setDraft((was) => ({ ...was, remedies: toggled(was.remedies, remedy as Remedy) }));
+            }}
+          />
+        ))}
+        {draft.remedies.includes("transplant") && (
+          <Field label={copy.rows.transplant_year} error={refused.includes("transplant_year") ? copy.invalid : null}>
             {(control) => (
               <TextInput
                 {...control}
                 className={styles.input}
-                maxLength={200}
-                value={draft.skin}
+                inputMode="numeric"
+                value={draft.year}
                 disabled={busy}
                 onChange={(event) => {
-                  const skin = event.target.value;
-                  setDraft((was) => ({ ...was, skin }));
+                  const year = event.target.value;
+                  setDraft((was) => ({ ...was, year }));
                 }}
               />
             )}
           </Field>
-        </fieldset>
-      )}
+        )}
+        <Field
+          label={copy.rows.skin_and_allergies}
+          error={refused.includes("skin_and_allergies") ? copy.invalid : null}
+        >
+          {(control) => (
+            <TextInput
+              {...control}
+              className={styles.input}
+              maxLength={200}
+              value={draft.skin}
+              disabled={busy}
+              onChange={(event) => {
+                const skin = event.target.value;
+                setDraft((was) => ({ ...was, skin }));
+              }}
+            />
+          )}
+        </Field>
+      </fieldset>
       {problem !== null && (
         <p className={styles.error} role="alert">
           {problem}
@@ -395,12 +391,6 @@ function productOptions(products: Products, latest: HairProfileView | null): { v
   return [...options, { value: kept, label: latest?.fit.product_name ?? kept }];
 }
 
-/** Why the history is not shown, where the client's consent to it does not stand. */
-function noHistoryLine(page: ClientHairProfile): string | null {
-  if (page.health_consent.state === "given") return null;
-  return page.health_consent.state === "withdrawn" ? copy.historyWithdrawn : copy.historyNotGiven;
-}
-
 export function HairProfile({ clientId }: { clientId: string }) {
   const load = useCallback(() => api.clientHairProfile(clientId), [clientId]);
   const [loaded, retry] = useLoad(load);
@@ -412,14 +402,12 @@ export function HairProfile({ clientId }: { clientId: string }) {
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
 
   const page = saved ?? loaded.value;
-  const noHistory = noHistoryLine(page);
   return (
     <section className={styles.profile} aria-labelledby="hair-profile-title">
       <h3 className={styles.title} id="hair-profile-title">
         {copy.title}
       </h3>
       {page.latest === null ? <p className={styles.hint}>{copy.none}</p> : <ProfileRows profile={page.latest} />}
-      {noHistory !== null && <p className={styles.hint}>{noHistory}</p>}
       {correcting ? (
         <CorrectionForm
           clientId={clientId}

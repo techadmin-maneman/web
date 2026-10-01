@@ -69,22 +69,9 @@ export const HistorySchema = z
     skin_and_allergies: z.string().trim().min(1).max(SKIN_AND_ALLERGIES_MAX).nullable(),
   })
   .strict()
-  .openapi("HairHistory", { description: "Health information: recorded only with the client's consent to it." });
-
-const NoticeVersion = z.string().min(1).max(64).openapi({ description: "The notice the phone showed the client." });
-
-/**
- * What the technician's phone says of the history: the client agreed, on the notice it showed, and answered; the
- * client declined, which withdraws any consent given before and blanks the history in every version; or, as null,
- * the technician did not ask.
- */
-export const HealthAnswerSchema = z
-  .discriminatedUnion("consent", [
-    HistorySchema.extend({ consent: z.literal("given"), notice_version: NoticeVersion }).strict(),
-    z.object({ consent: z.literal("refused"), notice_version: NoticeVersion }).strict(),
-  ])
-  .nullable()
-  .openapi("HairHealthAnswer");
+  .openapi("HairHistory", {
+    description: "Health information the client told us: our records alone, never Zoho or a log.",
+  });
 
 export const FitSpecReadSchema = FitSpecSchema.extend({
   product_name: z.union([z.string(), z.null()]).openapi({ description: "The product's name, never its price." }),
@@ -96,22 +83,11 @@ export const HairProfileSchema = z
     recorded_at: z.iso.datetime(),
     fit: FitSpecReadSchema,
     history: z.union([HistorySchema, z.null()]).openapi({
-      description: "Null where none was recorded with the client's consent, or the client withdrew it.",
+      description: "Null where none was recorded.",
     }),
   })
   .strict()
   .openapi("HairProfile");
-
-export const HealthConsentSchema = z
-  .object({
-    state: z.enum(["given", "not_given", "withdrawn"]).openapi({
-      description: "withdrawn: the client declined, or withdrew it; not_given: they have never been asked.",
-    }),
-    notice_version: z.union([z.string(), z.null()]),
-    at: z.union([z.iso.datetime(), z.null()]),
-  })
-  .strict()
-  .openapi("HairHealthConsent", { description: "The client's consent to their health history, as it stands." });
 
 export const HairProfileVersionSchema = HairProfileSchema.extend({
   id: z.uuid(),

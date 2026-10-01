@@ -1,19 +1,16 @@
 // A client's hair profile (docs/decisions/0106-a-clients-hair-profile.md; src/policy/hair-profile.ts): every version
-// of the fit spec and the history, the technician's and ops', and the consent the history needs.
+// of the fit spec and the history, the technician's and ops'.
 //
 // A version is the whole profile as it stood when it was recorded: the phone and the console each start from the
 // latest and send it back whole, so the latest version is the profile, and a replacement is ordered to it. None is
-// ever changed. An erasure blanks every one, and a client withdrawing the consent to their history blanks the
-// history in every one (migration 0063 holds the table to that).
+// ever changed; an erasure blanks every one (migration 0063 holds the table to that).
 //
-// The history is health information. This file and the export are all that read it; nothing here logs it, audits
-// it or hands it to a queue, so it never reaches Zoho CRM, FSM or Books.
+// The history is health information, recorded with the fit spec as the owner ruled. This file and the export are all
+// that read it; nothing here logs it, audits it or hands it to a queue, so it never reaches Zoho CRM, FSM or Books.
 
-import { findNotice } from "../config/notices.ts";
 import type { VisitType } from "../config/visit-types.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { firstNameOf } from "../lib/names.ts";
-import { HEALTH_HISTORY } from "../policy/consents.ts";
 import {
   historyProblems,
   type Attachment,
@@ -51,12 +48,6 @@ export interface History {
   readonly skin_and_allergies: string | null;
 }
 
-/** What the technician's phone says of the history: given, with it; refused; or, as null, not asked. */
-export type HealthAnswer =
-  | ({ readonly consent: "given"; readonly notice_version: string } & History)
-  | { readonly consent: "refused"; readonly notice_version: string }
-  | null;
-
 export interface HairProfile {
   readonly recorded_at: string;
   readonly fit: FitSpec & { readonly product_name: string | null };
@@ -69,12 +60,6 @@ export interface HairProfileVersion extends HairProfile {
     { readonly kind: "technician"; readonly name: string | null } | { readonly kind: "ops"; readonly staff: string };
   /** The visit it was taken at, its day in India; null for a correction. */
   readonly visit: { readonly id: string; readonly date: string | null; readonly type: VisitType | null } | null;
-}
-
-export interface HealthConsent {
-  readonly state: "given" | "not_given" | "withdrawn";
-  readonly notice_version: string | null;
-  readonly at: string | null;
 }
 
 /** What a write came to: the version recorded, or had been, or the fields it was refused for. */
@@ -139,29 +124,10 @@ export async function latestProfile(db: D1Database, personId: string): Promise<H
   return row === null ? null : profileOf(row);
 }
 
-/** The client's consent to their history: their latest answer, and the notice they gave it on. */
-export async function healthConsentOf(db: D1Database, personId: string): Promise<HealthConsent> {
-  const latest = await db
-    .prepare(
-      `SELECT granted, notice_version, created_at FROM consents WHERE person_id = ?1 AND purpose = ?2
-       ORDER BY created_at DESC, rowid DESC LIMIT 1`,
-    )
-    .bind(personId, HEALTH_HISTORY)
-    .first<{ granted: number; notice_version: string; created_at: string }>();
-  if (latest === null) return { state: "not_given", notice_version: null, at: null };
-  return {
-    state: latest.granted === 1 ? "given" : "withdrawn",
-    notice_version: latest.notice_version,
-    at: latest.created_at,
-  };
-}
-
 /**
- * The technician's profile step at a visit. With the client's consent the history is recorded beside the fit spec; a
- * client who declines has only the fit spec recorded, and the history blanked in every version before, since their
- * consent to it is withdrawn. The consent, the blanking and the version land in one batch. The route answers a replay
- * before it gets here (profileLanded); two sends of one event at once still write one version, which the unique
- * index settles, and the one that lost is answered as a replay.
+ * The technician's profile step at a visit. The route answers a replay before it gets here (profileLanded); two sends
+ * of one event at once still write one version, which the unique index settles, and the one that lost is answered as
+ * a replay.
  */
 export async function recordAtVisit(
   db: D1Database,
@@ -171,35 +137,22 @@ export async function recordAtVisit(
     readonly technicianId: string;
     readonly eventId: string;
     readonly fit: FitSpec;
-    readonly health: HealthAnswer;
+    readonly history: History | null;
     readonly now: Date;
   },
 ): Promise<ProfileWrite> {
-  const fields = [...(await fitProblems(db, input.fit)), ...healthProblems(input.health, input.now)];
+  const fields = await problemsOf(db, input.fit, input.history, input.now);
   if (fields.length > 0) return { kind: "invalid", fields };
 
-  const health = input.health;
-  const history = health?.consent === "given" ? historyOf(health) : null;
-  const statements = [
-    ...(health === null ? [] : [consentStatement(db, input.personId, health, input.now)]),
-    ...(health?.consent === "refused" ? [blankHistories(db, input.personId)] : []),
-    insertVersion(db, {
-      personId: input.personId,
-      recordedBy: { appointmentId: input.appointmentId, eventId: input.eventId, technicianId: input.technicianId },
-      fit: input.fit,
-      history,
-      now: input.now,
-    }),
-  ];
-  const outcome = await db.batch(statements);
-  // A second send of the same event that landed while this one was being checked: answered as the first.
-  const written = (outcome.at(-1)?.meta.changes ?? 0) > 0;
-  return { kind: "recorded", replayed: !written };
+  const { personId, appointmentId, eventId, technicianId, fit, history, now } = input;
+  const recordedBy = { appointmentId, eventId, technicianId };
+  const written = await insertVersion(db, { personId, recordedBy, fit, history, now }).run();
+  return { kind: "recorded", replayed: written.meta.changes === 0 };
 }
 
 /**
  * Ops' correction, on the client's page: a new version under the member of staff, audited in the same batch by the
- * client's ID and the version's alone. A history only while the client's consent to it stands: ops never give one.
+ * client's ID and the version's alone.
  */
 export async function correctByOps(
   db: D1Database,
@@ -212,12 +165,7 @@ export async function correctByOps(
     readonly audit: Omit<AuditEntry, "action" | "subject" | "detail">;
   },
 ): Promise<ProfileWrite> {
-  const fields = await fitProblems(db, input.fit);
-  if (input.history !== null) {
-    const consent = await healthConsentOf(db, input.personId);
-    if (consent.state !== "given") fields.push("history");
-    else fields.push(...historyProblems(input.history, input.now).map((field) => `history.${field}`));
-  }
+  const fields = await problemsOf(db, input.fit, input.history, input.now);
   if (fields.length > 0) return { kind: "invalid", fields };
 
   const id = crypto.randomUUID();
@@ -229,10 +177,10 @@ export async function correctByOps(
       {
         ...input.audit,
         action: "hair_profile.correct",
-        subject: { kind: "person", id: input.personId },
+        subject: { kind: "person", id: personId },
         detail: { version: id },
       },
-      input.now,
+      now,
     ),
   ]);
   return { kind: "recorded", replayed: false };
@@ -273,73 +221,12 @@ export async function profileTakenAt(db: D1Database, appointmentId: string): Pro
   return row?.at ?? null;
 }
 
-/** What the technician's card carries of the client: their profile as it stands, and their consent to its history. */
-export async function profileForCard(
-  db: D1Database,
-  personId: string,
-): Promise<{ readonly latest: HairProfile | null; readonly health_consent: HealthConsent }> {
-  return { latest: await latestProfile(db, personId), health_consent: await healthConsentOf(db, personId) };
-}
-
-/** A product the services table does not hold as a first fit's, retired or not. */
-async function fitProblems(db: D1Database, fit: FitSpec): Promise<string[]> {
-  if (fit.product === null) return [];
-  return (await serviceOf(db, "first_fit", fit.product)) === null ? ["fit.product"] : [];
-}
-
-/** A history that does not hold together, or an answer on a notice that is not the history's. */
-function healthProblems(health: HealthAnswer, now: Date): string[] {
-  if (health === null) return [];
-  if (findNotice(health.notice_version)?.purpose !== HEALTH_HISTORY) return ["health.notice_version"];
-  if (health.consent === "refused") return [];
-  return historyProblems(health, now).map((field) => `health.${field}`);
-}
-
-const historyOf = (health: History): History => ({
-  remedies: health.remedies,
-  transplant_year: health.transplant_year,
-  skin_and_allergies: health.skin_and_allergies,
-});
-
-/**
- * The client's answer, on the notice the phone showed. The same answer on the same notice is not a new one and
- * writes nothing; the statement settles that, so two sends at once record it once (ADR 0058). Recorded as the
- * technician's: the phone is his, so no address of the client's is kept with it.
- */
-function consentStatement(
-  db: D1Database,
-  personId: string,
-  answer: NonNullable<HealthAnswer>,
-  now: Date,
-): D1PreparedStatement {
-  return db
-    .prepare(
-      `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash, source)
-       SELECT ?1, ?2, ?3, ?4, ?5, ?6, NULL, 'technician'
-       WHERE NOT EXISTS (
-         SELECT 1 FROM (SELECT granted, notice_version FROM consents WHERE person_id = ?2 AND purpose = ?3
-                        ORDER BY created_at DESC, rowid DESC LIMIT 1)
-         WHERE granted = ?5 AND notice_version = ?4
-       )`,
-    )
-    .bind(
-      crypto.randomUUID(),
-      personId,
-      HEALTH_HISTORY,
-      answer.notice_version,
-      answer.consent === "given" ? 1 : 0,
-      now.toISOString(),
-    );
-}
-
-/** The client withdrew their consent to their history: it goes from every version. */
-function blankHistories(db: D1Database, personId: string): D1PreparedStatement {
-  return db
-    .prepare(
-      `UPDATE hair_profiles SET remedies = NULL, transplant_year = NULL, skin_and_allergies = NULL
-       WHERE person_id = ?1 AND (remedies IS NOT NULL OR transplant_year IS NOT NULL OR skin_and_allergies IS NOT NULL)`,
-    )
-    .bind(personId);
+/** The fields that do not hold: a product the services table holds as no first fit's, and a history that clashes. */
+async function problemsOf(db: D1Database, fit: FitSpec, history: History | null, now: Date): Promise<string[]> {
+  const fields: string[] = [];
+  if (fit.product !== null && (await serviceOf(db, "first_fit", fit.product)) === null) fields.push("fit.product");
+  if (history !== null) fields.push(...historyProblems(history, now).map((field) => `history.${field}`));
+  return fields;
 }
 
 type RecordedBy =

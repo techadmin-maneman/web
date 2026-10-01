@@ -31,7 +31,6 @@ describe("the statements that write a consent", () => {
     const files = new Set(consentWrites().map((write) => write.file));
     expect([...files].sort()).toEqual([
       "src/domain/erasure.ts",
-      "src/domain/hair-profiles.ts",
       "src/domain/profile.ts",
       "src/domain/public-booking.ts",
       "src/domain/tryon-claims.ts",

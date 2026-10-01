@@ -669,7 +669,7 @@ Request body:
 
 ### POST /api/tech/jobs/{id}/profile
 
-The client's hair profile, as a new version, with their history only once they have agreed to it
+The client's hair profile, the fit spec and their history, as a new version
 
 Request body:
 
@@ -1825,34 +1825,13 @@ The piece a label names
     "profile": {
       "anyOf": [
         {
-          "type": "object",
-          "properties": {
-            "latest": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/HairProfile"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "The client's latest version, which the profile step starts from; null before one."
-            },
-            "health_consent": {
-              "$ref": "#/components/schemas/HairHealthConsent"
-            }
-          },
-          "required": [
-            "latest",
-            "health_consent"
-          ],
-          "additionalProperties": false
+          "$ref": "#/components/schemas/HairProfile"
         },
         {
           "type": "null"
         }
       ],
-      "description": "The client's hair profile as it stands, for the piece card and the profile step, and their consent to its history: the step asks for it again unless it was given on the notice the phone shows. Null until the day before the visit."
+      "description": "The client's hair profile as it stands, for the piece card and for the profile step to start from. Null until the day before the visit, or before one is recorded."
     }
   },
   "required": [
@@ -2165,7 +2144,7 @@ The piece a label names
           "type": "null"
         }
       ],
-      "description": "Null where none was recorded with the client's consent, or the client withdrew it."
+      "description": "Null where none was recorded."
     }
   },
   "required": [
@@ -2643,54 +2622,7 @@ The piece a label names
     "skin_and_allergies"
   ],
   "additionalProperties": false,
-  "description": "Health information: recorded only with the client's consent to it."
-}
-```
-
-### HairHealthConsent
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "state": {
-      "type": "string",
-      "enum": [
-        "given",
-        "not_given",
-        "withdrawn"
-      ],
-      "description": "withdrawn: the client declined, or withdrew it; not_given: they have never been asked."
-    },
-    "notice_version": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "at": {
-      "anyOf": [
-        {
-          "type": "string",
-          "format": "date-time"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    }
-  },
-  "required": [
-    "state",
-    "notice_version",
-    "at"
-  ],
-  "additionalProperties": false,
-  "description": "The client's consent to their health history, as it stands."
+  "description": "Health information the client told us: our records alone, never Zoho or a log."
 }
 ```
 
@@ -3162,108 +3094,23 @@ The piece a label names
     "fit": {
       "$ref": "#/components/schemas/HairFitSpec"
     },
-    "health": {
-      "$ref": "#/components/schemas/HairHealthAnswer"
+    "history": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/HairHistory"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   },
   "required": [
     "fit",
-    "health"
+    "history"
   ],
   "additionalProperties": false,
   "description": "The client's whole profile as it stands now: the card's latest, changed where the technician changed it. Each is a new version."
-}
-```
-
-### HairHealthAnswer
-
-```json
-{
-  "oneOf": [
-    {
-      "type": "object",
-      "properties": {
-        "remedies": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "enum": [
-              "none",
-              "minoxidil",
-              "finasteride",
-              "transplant",
-              "other_systems",
-              "other"
-            ]
-          },
-          "maxItems": 6,
-          "description": "Every remedy the client has tried, each once; none, said alone, for none. Empty: not answered."
-        },
-        "transplant_year": {
-          "type": [
-            "integer",
-            "null"
-          ],
-          "minimum": 1900,
-          "maximum": 2100,
-          "description": "With a transplant only, and no later than this year."
-        },
-        "skin_and_allergies": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "minLength": 1,
-          "maxLength": 200
-        },
-        "consent": {
-          "type": "string",
-          "enum": [
-            "given"
-          ]
-        },
-        "notice_version": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 64,
-          "description": "The notice the phone showed the client."
-        }
-      },
-      "required": [
-        "remedies",
-        "transplant_year",
-        "skin_and_allergies",
-        "consent",
-        "notice_version"
-      ],
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "properties": {
-        "consent": {
-          "type": "string",
-          "enum": [
-            "refused"
-          ]
-        },
-        "notice_version": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 64,
-          "description": "The notice the phone showed the client."
-        }
-      },
-      "required": [
-        "consent",
-        "notice_version"
-      ],
-      "additionalProperties": false
-    },
-    {
-      "type": "null"
-    }
-  ]
 }
 ```
 

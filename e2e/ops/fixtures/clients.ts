@@ -264,15 +264,14 @@ const PRODUCTS = [
   { tier: "essential", name: "Mane Man Essential" },
 ];
 
-/** A client whose profile nobody has recorded, and who has never been asked about their history. */
+/** A client whose profile nobody has recorded. */
 export const NO_HAIR_PROFILE = {
   latest: null,
   versions: [],
-  health_consent: { state: "not_given", notice_version: null, at: null },
   products: PRODUCTS,
 } satisfies HairProfilePage;
 
-/** Rohit's fit spec as Imran took it at his consultation, and his history with his consent. */
+/** Rohit's fit spec as Imran took it at his consultation, and his history. */
 const AT_CONSULTATION = {
   recorded_at: "2027-09-21T05:30:00.000Z",
   fit: {
@@ -318,7 +317,6 @@ export const HAIR_PROFILE = {
       visit: { id: VISIT_ID, date: "2027-09-21", type: "consultation" },
     },
   ],
-  health_consent: { state: "given", notice_version: "health-history-v1", at: "2027-09-21T05:30:00.000Z" },
   products: PRODUCTS,
 } satisfies HairProfilePage;
 

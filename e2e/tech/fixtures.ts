@@ -28,8 +28,7 @@ type VisitType = NonNullable<Job["type"]>;
 export type Progress = Card["progress"];
 export type Step = Progress["steps_done"][number];
 export type Piece = TechReply<"/api/tech/pieces/lookup">["piece"];
-export type CardProfile = NonNullable<Card["profile"]>;
-export type HairProfile = NonNullable<CardProfile["latest"]>;
+export type HairProfile = NonNullable<Card["profile"]>;
 
 export const ME = {
   name: "Imran Qureshi",
@@ -209,13 +208,7 @@ export const ROHITS_PIECE: Piece = {
   failure_reason: null,
 };
 
-/** Rohit's profile as no visit has recorded it: nothing taken, and never asked about his history. */
-export const NO_PROFILE: CardProfile = {
-  latest: null,
-  health_consent: { state: "not_given", notice_version: null, at: null },
-};
-
-/** Rohit's hair profile as his consultation took it, his history with his consent. */
+/** Rohit's hair profile as his consultation took it, his history with it. */
 export const ROHITS_PROFILE: HairProfile = {
   recorded_at: "2030-07-01T05:00:00.000Z",
   fit: {
@@ -268,7 +261,7 @@ export interface CardOptions {
   /** A consultation and fit in one visit, its products on the card. */
   readonly oneVisit?: boolean;
   /** The client's hair profile as it stands; none recorded unless a test gives one. */
-  readonly profile?: CardProfile;
+  readonly profile?: HairProfile | null;
 }
 
 export function card(date: string, progress: Progress, options: CardOptions = {}): Card {
@@ -308,7 +301,7 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
     consumables: CONSUMABLES,
     products: oneVisit || type === "consultation" ? PRODUCTS : [],
     payment_link: null,
-    profile: options.profile ?? NO_PROFILE,
+    profile: options.profile ?? null,
   };
 }
 
@@ -397,8 +390,8 @@ export interface Fake {
   oneVisit: boolean;
   /** The client's pieces on the card. */
   pieces: Piece[];
-  /** The client's hair profile on the card, and their consent to its history. */
-  profile: CardProfile;
+  /** The client's hair profile on the card, or none recorded. */
+  profile: HairProfile | null;
   /** Parts of the address beyond the fixture's two lines. */
   address: AddressParts;
   /** Whether the client has a last visit with an after photograph. */
@@ -477,7 +470,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     type: "service",
     oneVisit: false,
     pieces: [],
-    profile: NO_PROFILE,
+    profile: null,
     address: {},
     lastVisit: false,
     reminderDelivered: undefined,

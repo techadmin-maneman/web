@@ -1161,7 +1161,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** The client's hair profile, as a new version, with their history only once they have agreed to it */
+        /** The client's hair profile, the fit spec and their history, as a new version */
         post: {
             parameters: {
                 query?: never;
@@ -1660,12 +1660,8 @@ export interface components {
                 url: string | null;
                 paid: boolean;
             } | null;
-            /** @description The client's hair profile as it stands, for the piece card and the profile step, and their consent to its history: the step asks for it again unless it was given on the notice the phone shows. Null until the day before the visit. */
-            profile: {
-                /** @description The client's latest version, which the profile step starts from; null before one. */
-                latest: components["schemas"]["HairProfile"] | null;
-                health_consent: components["schemas"]["HairHealthConsent"];
-            } | null;
+            /** @description The client's hair profile as it stands, for the piece card and for the profile step to start from. Null until the day before the visit, or before one is recorded. */
+            profile: components["schemas"]["HairProfile"] | null;
         };
         TechnicianJobProgress: {
             checked_in_at: string | null;
@@ -1709,7 +1705,7 @@ export interface components {
             /** Format: date-time */
             recorded_at: string;
             fit: components["schemas"]["HairFitSpecRead"];
-            /** @description Null where none was recorded with the client's consent, or the client withdrew it. */
+            /** @description Null where none was recorded. */
             history: components["schemas"]["HairHistory"] | null;
         };
         /** @description Every field is sent, null where it was not taken. */
@@ -1786,23 +1782,13 @@ export interface components {
              */
             attachment: "tape" | "glue" | "both" | null;
         };
-        /** @description Health information: recorded only with the client's consent to it. */
+        /** @description Health information the client told us: our records alone, never Zoho or a log. */
         HairHistory: {
             /** @description Every remedy the client has tried, each once; none, said alone, for none. Empty: not answered. */
             remedies: ("none" | "minoxidil" | "finasteride" | "transplant" | "other_systems" | "other")[];
             /** @description With a transplant only, and no later than this year. */
             transplant_year: number | null;
             skin_and_allergies: string | null;
-        };
-        /** @description The client's consent to their health history, as it stands. */
-        HairHealthConsent: {
-            /**
-             * @description withdrawn: the client declined, or withdrew it; not_given: they have never been asked.
-             * @enum {string}
-             */
-            state: "given" | "not_given" | "withdrawn";
-            notice_version: string | null;
-            at: string | null;
         };
         CheckIn: {
             passed: boolean;
@@ -1901,24 +1887,8 @@ export interface components {
         /** @description The client's whole profile as it stands now: the card's latest, changed where the technician changed it. Each is a new version. */
         TechnicianProfileRequest: {
             fit: components["schemas"]["HairFitSpec"];
-            health: components["schemas"]["HairHealthAnswer"];
+            history: components["schemas"]["HairHistory"] | null;
         };
-        HairHealthAnswer: {
-            /** @description Every remedy the client has tried, each once; none, said alone, for none. Empty: not answered. */
-            remedies: ("none" | "minoxidil" | "finasteride" | "transplant" | "other_systems" | "other")[];
-            /** @description With a transplant only, and no later than this year. */
-            transplant_year: number | null;
-            skin_and_allergies: string | null;
-            /** @enum {string} */
-            consent: "given";
-            /** @description The notice the phone showed the client. */
-            notice_version: string;
-        } | {
-            /** @enum {string} */
-            consent: "refused";
-            /** @description The notice the phone showed the client. */
-            notice_version: string;
-        } | null;
         OutcomeRequest: {
             /** @enum {string} */
             outcome: "done";

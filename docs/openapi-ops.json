@@ -2319,9 +2319,6 @@
             },
             "description": "Every version, newest first."
           },
-          "health_consent": {
-            "$ref": "#/components/schemas/HairHealthConsent"
-          },
           "products": {
             "type": "array",
             "items": {
@@ -2346,7 +2343,6 @@
         "required": [
           "latest",
           "versions",
-          "health_consent",
           "products"
         ],
         "additionalProperties": false
@@ -2370,7 +2366,7 @@
                 "type": "null"
               }
             ],
-            "description": "Null where none was recorded with the client's consent, or the client withdrew it."
+            "description": "Null where none was recorded."
           }
         },
         "required": [
@@ -2833,7 +2829,7 @@
           "skin_and_allergies"
         ],
         "additionalProperties": false,
-        "description": "Health information: recorded only with the client's consent to it."
+        "description": "Health information the client told us: our records alone, never Zoho or a log."
       },
       "HairProfileVersion": {
         "type": "object",
@@ -2854,7 +2850,7 @@
                 "type": "null"
               }
             ],
-            "description": "Null where none was recorded with the client's consent, or the client withdrew it."
+            "description": "Null where none was recorded."
           },
           "id": {
             "type": "string",
@@ -2973,48 +2969,6 @@
         ],
         "additionalProperties": false
       },
-      "HairHealthConsent": {
-        "type": "object",
-        "properties": {
-          "state": {
-            "type": "string",
-            "enum": [
-              "given",
-              "not_given",
-              "withdrawn"
-            ],
-            "description": "withdrawn: the client declined, or withdrew it; not_given: they have never been asked."
-          },
-          "notice_version": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": [
-          "state",
-          "notice_version",
-          "at"
-        ],
-        "additionalProperties": false,
-        "description": "The client's consent to their health history, as it stands."
-      },
       "HairProfileCorrection": {
         "type": "object",
         "properties": {
@@ -3029,8 +2983,7 @@
               {
                 "type": "null"
               }
-            ],
-            "description": "The history as it now stands; refused, field history, unless the client's consent to it stands."
+            ]
           }
         },
         "required": [
@@ -8106,7 +8059,7 @@
     },
     "/api/clients/{id}/hair-profile": {
       "get": {
-        "summary": "The client's hair profile, every version of it, and their consent to its history",
+        "summary": "The client's hair profile, and every version of it",
         "parameters": [
           {
             "schema": {
@@ -8186,7 +8139,7 @@
             }
           },
           "400": {
-            "description": "invalid_request: see error.fields; history, where the client has not agreed to it",
+            "description": "invalid_request: see error.fields",
             "content": {
               "application/json": {
                 "schema": {

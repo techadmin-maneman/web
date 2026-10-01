@@ -79,7 +79,7 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "FSM's catalogue, to read each appointment's visit type from its service item and to compare FSM's prices with the price book (ADR 0032, ADR 0073).",
   grievances: "A client's grievance, and the answer ops recorded (ADR 0049, ADR 0078).",
   hair_profiles:
-    "Every version of a client's hair profile, the fit spec and the history taken with its own consent: the technician's at a visit, once for each of the phone's events, and ops' corrections. Never changed, only blanked (ADR 0106).",
+    "Every version of a client's hair profile, the fit spec and the history: the technician's at a visit, once for each of the phone's events, and ops' corrections. Never changed, only blanked (ADR 0106).",
   idempotency: "The stored answer to each `Idempotency-Key`, so a request sent again gets its first answer (ADR 0011).",
   job_events:
     "The technician app's writes, each once by the ID the phone gave it, and whether it has reached FSM (ADR 0038, ADR 0065).",

@@ -21,9 +21,8 @@
 // A consultation and fit in one visit also carries the products the client may
 // choose at it, by name and never by price, and where the payment link closing
 // it sent stands (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
-// It and a consultation carry the client's hair profile as it stands and their
-// consent to its history, for the profile step to start from; every unlocked
-// card carries the profile, for the piece card
+// Every unlocked card carries the client's hair profile as it stands, for the
+// piece card and for the profile step to start from
 // (docs/decisions/0106-a-clients-hair-profile.md).
 
 import type { BookingWindow } from "../config/scheduling.ts";
@@ -38,7 +37,7 @@ import { paidAtTheVisit, type OneVisitState } from "../policy/one-visit.ts";
 import { unitsFor } from "../policy/visit-length.ts";
 import { latestArrival } from "./check-ins.ts";
 import type { AppointmentStatus } from "./fsm-mirror.ts";
-import { profileForCard, profileTakenAt, type HairProfile, type HealthConsent } from "./hair-profiles.ts";
+import { latestProfile, profileTakenAt, type HairProfile } from "./hair-profiles.ts";
 import { EVIDENCE_MESSAGE } from "./no-shows.ts";
 import { piecesOf, type Piece } from "./pieces.ts";
 import { bookedMinutes } from "./scheduling.ts";
@@ -148,8 +147,8 @@ export interface JobDetail extends JobSummary {
   readonly products: Product[];
   /** On a one visit closed as done, the link the client pays by, and whether they have. */
   readonly payment_link: JobPaymentLink | null;
-  /** The client's hair profile as it stands, and their consent to its history; null while the job is locked. */
-  readonly profile: { readonly latest: HairProfile | null; readonly health_consent: HealthConsent } | null;
+  /** The client's hair profile as it stands; null while the job is locked, or before one is recorded. */
+  readonly profile: HairProfile | null;
 }
 
 /** A product the client may choose at a one visit: a first fit's service, by its tier and its name. */
@@ -273,7 +272,7 @@ export async function jobDetail(
     pieces: row.person_id === null ? [] : (await piecesOf(db, row.person_id)).map(cardPiece),
     last_visit: await lastVisitOf(db, row),
     reminder: await reminderOf(db, row.id),
-    profile: row.person_id === null ? null : await profileForCard(db, row.person_id),
+    profile: row.person_id === null ? null : await latestProfile(db, row.person_id),
   };
 }
 

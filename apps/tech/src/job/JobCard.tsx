@@ -56,7 +56,7 @@ function profileLines(profile: HairProfile | null): Line[] {
 
 function PieceCard({ job }: { job: Job }) {
   const piece = onTheHead(job.pieces ?? []);
-  const fromProfile = profileLines(job.profile?.latest ?? null);
+  const fromProfile = profileLines(job.profile);
   const last = job.last_visit;
   return (
     <section className={styles.piece} aria-labelledby="piece-title">

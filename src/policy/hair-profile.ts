@@ -3,8 +3,8 @@
 // it and where it lives were taken by the build, for the owner to confirm (ADR 0106).
 //
 // The technician records it at a consultation and at a consultation and fit in one visit, ops correct it in the
-// console, and every change is a new version (src/domain/hair-profiles.ts). The history is health information: the
-// phone asks the client for a consent of its own before it shows a question of it (src/policy/consents.ts).
+// console, and every change is a new version (src/domain/hair-profiles.ts). The history is recorded with the fit
+// spec, on no consent of its own: the owner ruled it is what the client has told us (RULES[2]).
 //
 // The lists below are codes; their words are each app's, placeholders for the owner (docs/open-points.md, item 42).
 // There is no CHECK on them in the database, so the owner's corrections need no migration.
@@ -15,13 +15,13 @@ import { indiaDate } from "../lib/india-time.ts";
 export const RULES = [
   "Fit spec: Norwood stage I–VII; head measurements (circumference, front to nape, ear to ear over the top, temple to temple, in centimetres); base size (width × length, inches, as suppliers order); colour code (#1, #1B, #2 …) and grey percentage; density (80, 100, 120, 140%); wave (straight, slight wave, wavy, curly); hairline style; the product; tape, glue or both.",
   "History: remedies tried (none, minoxidil, finasteride, transplant with its year, other hair systems, other: many may apply), skin conditions and allergies (short free text).",
+  "Why does it need further consent? This is the information that client has told us. No new consent is needed for it.",
 ] as const;
 
 /** What the build took, for the owner to confirm (ADR 0106). */
 export const DEFAULTS = [
   "Who records it: the technician, at a consultation and at the one-visit fit; ops can correct it on the client's page in the console. Every change is a new version.",
   "Who sees it: technicians and ops. NOT the client's app this round.",
-  "Health history needs its own consent. Without the consent, only the fit spec is recorded.",
   "Where it lives: our D1 only. The history never goes to Zoho CRM, FSM or Books, nor into logs or the audit log.",
 ] as const;
 

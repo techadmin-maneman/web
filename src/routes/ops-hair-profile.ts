@@ -1,29 +1,22 @@
 // A client's hair profile on their page in the console (docs/decisions/0106-a-clients-hair-profile.md). On the ops
 // surface behind Access:
 //
-//   GET  /api/clients/:id/hair-profile   the profile as it stands, every version, and the consent to its history
+//   GET  /api/clients/:id/hair-profile   the profile as it stands, and every version
 //   POST /api/clients/:id/hair-profile   ops' correction: a new version under the member of staff
 //
-// The technician records the profile at a visit (POST /api/tech/jobs/:id/profile). Ops correct it here, the fit spec
-// always, the history only while the client's consent to it stands: ops never give a consent. A correction is
-// audited by the client's ID and the version's, never a word of the profile.
+// The technician records the profile at a visit (POST /api/tech/jobs/:id/profile); ops correct it here. A correction
+// is audited by the client's ID and the version's, never a word of the profile.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
 import { memberOfStaffOf } from "../http/audit.ts";
-import { correctByOps, healthConsentOf, versionsOf } from "../domain/hair-profiles.ts";
+import { correctByOps, versionsOf } from "../domain/hair-profiles.ts";
 import { liveContact } from "../domain/profile.ts";
 import { allServices } from "../domain/services.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
-import {
-  FitSpecSchema,
-  HairProfileSchema,
-  HairProfileVersionSchema,
-  HealthConsentSchema,
-  HistorySchema,
-} from "./hair-profile-schemas.ts";
+import { FitSpecSchema, HairProfileSchema, HairProfileVersionSchema, HistorySchema } from "./hair-profile-schemas.ts";
 
 const clientId = z.object({ id: z.uuid() });
 const unknownClient = errorResponse("not_found: no such client, or the client has been erased");
@@ -32,7 +25,6 @@ const ClientHairProfileSchema = z
   .object({
     latest: z.union([HairProfileSchema, z.null()]).openapi({ description: "The latest version; null before one." }),
     versions: z.array(HairProfileVersionSchema).openapi({ description: "Every version, newest first." }),
-    health_consent: HealthConsentSchema,
     products: z
       .array(z.object({ tier: z.string(), name: z.string() }).strict())
       .openapi({ description: "The products a correction may name: every first-fit service, retired or not." }),
@@ -41,19 +33,14 @@ const ClientHairProfileSchema = z
   .openapi("ClientHairProfile");
 
 const CorrectionSchema = z
-  .object({
-    fit: FitSpecSchema,
-    history: z.union([HistorySchema, z.null()]).openapi({
-      description: "The history as it now stands; refused, field history, unless the client's consent to it stands.",
-    }),
-  })
+  .object({ fit: FitSpecSchema, history: z.union([HistorySchema, z.null()]) })
   .strict()
   .openapi("HairProfileCorrection", { description: "The whole profile as it now stands, sent as a new version." });
 
 const readRoute = createRoute({
   method: "get",
   path: "/api/clients/{id}/hair-profile",
-  summary: "The client's hair profile, every version of it, and their consent to its history",
+  summary: "The client's hair profile, and every version of it",
   request: { params: clientId },
   responses: {
     200: { description: "The profile", ...json(ClientHairProfileSchema) },
@@ -69,13 +56,13 @@ const correctRoute = createRoute({
   request: { params: clientId, body: { required: true, ...json(CorrectionSchema) } },
   responses: {
     200: { description: "Recorded, and the profile as it now stands", ...json(ClientHairProfileSchema) },
-    400: errorResponse("invalid_request: see error.fields; history, where the client has not agreed to it"),
+    400: errorResponse("invalid_request: see error.fields"),
     403: errorResponse("access_required: no Access token, or a service token, which names no member of staff"),
     404: unknownClient,
   },
 });
 
-/** The client's page's section: the latest version, every version, the consent, and the products to name. */
+/** The client's page's section: the latest version, every version, and the products to name. */
 async function pageOf(c: Context<AppEnv>, personId: string): Promise<z.infer<typeof ClientHairProfileSchema>> {
   const versions = await versionsOf(c.env.DB, personId);
   const latest = versions[0];
@@ -83,7 +70,6 @@ async function pageOf(c: Context<AppEnv>, personId: string): Promise<z.infer<typ
   return {
     latest: latest === undefined ? null : { recorded_at: latest.recorded_at, fit: latest.fit, history: latest.history },
     versions,
-    health_consent: await healthConsentOf(c.env.DB, personId),
     products: firstFits.map((service) => ({ tier: service.tier, name: service.name })),
   };
 }

@@ -33,7 +33,7 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [first_fit_requests](#first_fit_requests): A first fit asked for on the site's form with the consultation, for the app to offer once the consultation is done; a person's latest stands (ADR 0086). The form asks for none since 1 October 2026 (ADR 0105).
 - [fsm_items](#fsm_items): FSM's catalogue, to read each appointment's visit type from its service item and to compare FSM's prices with the price book (ADR 0032, ADR 0073).
 - [grievances](#grievances): A client's grievance, and the answer ops recorded (ADR 0049, ADR 0078).
-- [hair_profiles](#hair_profiles): Every version of a client's hair profile, the fit spec and the history taken with its own consent: the technician's at a visit, once for each of the phone's events, and ops' corrections. Never changed, only blanked (ADR 0106).
+- [hair_profiles](#hair_profiles): Every version of a client's hair profile, the fit spec and the history: the technician's at a visit, once for each of the phone's events, and ops' corrections. Never changed, only blanked (ADR 0106).
 - [idempotency](#idempotency): The stored answer to each `Idempotency-Key`, so a request sent again gets its first answer (ADR 0011).
 - [job_events](#job_events): The technician app's writes, each once by the ID the phone gave it, and whether it has reached FSM (ADR 0038, ADR 0065).
 - [last_visits](#last_visits): Each client's last first fit, service or replacement done, and last consultation done, kept by triggers from the view `last_visits_now` as their visits change; the Tasks board's At-risk client and First fit to book read it (ADR 0086).
@@ -275,7 +275,7 @@ Made by `0002_lead_path.sql`.
 
 What each person agreed to, under which notice's version, and where (ADR 0094). Rows are only ever added (ADR 0042, ADR 0049).
 
-Made by `0002_lead_path.sql`; changed by `0009_consents_v2.sql`, `0057_consent_sources_and_checkin_coordinates.sql`, `0063_hair_profiles.sql`.
+Made by `0002_lead_path.sql`; changed by `0009_consents_v2.sql`, `0057_consent_sources_and_checkin_coordinates.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -586,7 +586,7 @@ Indexes:
 
 ## hair_profiles
 
-Every version of a client's hair profile, the fit spec and the history taken with its own consent: the technician's at a visit, once for each of the phone's events, and ops' corrections. Never changed, only blanked (ADR 0106).
+Every version of a client's hair profile, the fit spec and the history: the technician's at a visit, once for each of the phone's events, and ops' corrections. Never changed, only blanked (ADR 0106).
 
 Made by `0063_hair_profiles.sql`.
 

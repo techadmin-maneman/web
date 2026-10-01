@@ -1003,7 +1003,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The client's hair profile, every version of it, and their consent to its history */
+        /** The client's hair profile, and every version of it */
         get: {
             parameters: {
                 query?: never;
@@ -1070,7 +1070,7 @@ export interface paths {
                         "application/json": components["schemas"]["ClientHairProfile"];
                     };
                 };
-                /** @description invalid_request: see error.fields; history, where the client has not agreed to it */
+                /** @description invalid_request: see error.fields */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -5415,7 +5415,6 @@ export interface components {
             latest: components["schemas"]["HairProfile"] | null;
             /** @description Every version, newest first. */
             versions: components["schemas"]["HairProfileVersion"][];
-            health_consent: components["schemas"]["HairHealthConsent"];
             /** @description The products a correction may name: every first-fit service, retired or not. */
             products: {
                 tier: string;
@@ -5426,7 +5425,7 @@ export interface components {
             /** Format: date-time */
             recorded_at: string;
             fit: components["schemas"]["HairFitSpecRead"];
-            /** @description Null where none was recorded with the client's consent, or the client withdrew it. */
+            /** @description Null where none was recorded. */
             history: components["schemas"]["HairHistory"] | null;
         };
         /** @description Every field is sent, null where it was not taken. */
@@ -5503,7 +5502,7 @@ export interface components {
              */
             attachment: "tape" | "glue" | "both" | null;
         };
-        /** @description Health information: recorded only with the client's consent to it. */
+        /** @description Health information the client told us: our records alone, never Zoho or a log. */
         HairHistory: {
             /** @description Every remedy the client has tried, each once; none, said alone, for none. Empty: not answered. */
             remedies: ("none" | "minoxidil" | "finasteride" | "transplant" | "other_systems" | "other")[];
@@ -5515,7 +5514,7 @@ export interface components {
             /** Format: date-time */
             recorded_at: string;
             fit: components["schemas"]["HairFitSpecRead"];
-            /** @description Null where none was recorded with the client's consent, or the client withdrew it. */
+            /** @description Null where none was recorded. */
             history: components["schemas"]["HairHistory"] | null;
             /** Format: uuid */
             id: string;
@@ -5537,20 +5536,9 @@ export interface components {
                 type: ("consultation" | "first_fit" | "service" | "replacement") | null;
             } | null;
         };
-        /** @description The client's consent to their health history, as it stands. */
-        HairHealthConsent: {
-            /**
-             * @description withdrawn: the client declined, or withdrew it; not_given: they have never been asked.
-             * @enum {string}
-             */
-            state: "given" | "not_given" | "withdrawn";
-            notice_version: string | null;
-            at: string | null;
-        };
         /** @description The whole profile as it now stands, sent as a new version. */
         HairProfileCorrection: {
             fit: components["schemas"]["HairFitSpec"];
-            /** @description The history as it now stands; refused, field history, unless the client's consent to it stands. */
             history: components["schemas"]["HairHistory"] | null;
         };
         NumberChangeDecision: {

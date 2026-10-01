@@ -1,6 +1,5 @@
-// Migration 0063: a client's hair profile, and the consent its history needs
-// (docs/decisions/0106-a-clients-hair-profile.md). Applied to a database that already holds consents, as staging's
-// does, and then written to as the Worker deployed before it writes. Every name and number is made up.
+// Migration 0063: a client's hair profile (docs/decisions/0106-a-clients-hair-profile.md), applied to a database that
+// already holds a client, a visit and a technician, as staging's does. Every name and number is made up.
 
 import { readdirSync, readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
@@ -13,23 +12,7 @@ const THIS = MIGRATIONS.find((file) => file.startsWith("0063_")) ?? "";
 
 const AT = "2026-10-01T06:30:00.000Z";
 
-interface ConsentRow {
-  rowid: number;
-  id: string;
-  person_id: string;
-  purpose: string;
-  notice_version: string;
-  granted: number;
-  created_at: string;
-  ip_hash: string | null;
-  source: string | null;
-}
-
-/**
- * The database before this migration: a client, a visit, a technician, and consents of one moment, which the code
- * tells apart by their rowid, at rowids a copy that numbered them afresh would not keep.
- */
-function beforeThisMigration(): DatabaseSync {
+function migrated(): DatabaseSync {
   const db = new DatabaseSync(":memory:");
   db.exec("PRAGMA foreign_keys = ON");
   for (const file of MIGRATIONS.filter((name) => name < THIS)) {
@@ -43,24 +26,12 @@ function beforeThisMigration(): DatabaseSync {
       VALUES ('t1', 'resource-1', 'A Technician', 'AT', 1, 'Gurgaon', '+919810000009', '${AT}');
     INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, fsm_modified_at, synced_at)
       VALUES ('a1', 'ap-1', 'p1', 'consultation', 'in_progress', 'In Progress', '${AT}', '${AT}', '${AT}');
-    INSERT INTO consents (rowid, id, person_id, purpose, notice_version, granted, created_at, ip_hash, source)
-      VALUES (7, 'c-z', 'p1', 'whatsapp_visits', 'whatsapp-visits-v1', 1, '${AT}', 'a-hash', 'app_profile'),
-             (3, 'c-a', 'p1', 'whatsapp_visits', 'whatsapp-visits-v1', 0, '${AT}', NULL, NULL),
-             (12, 'c-m', 'p1', 'contact', 'booking-v1', 1, '${AT}', 'b-hash', 'site_booking');
   `);
-  return db;
-}
-
-function migrated(): DatabaseSync {
-  const db = beforeThisMigration();
   db.exec("BEGIN");
   db.exec(readFileSync(`migrations/${THIS}`, "utf8"));
   db.exec("COMMIT");
   return db;
 }
-
-const consents = (db: DatabaseSync) =>
-  db.prepare("SELECT rowid, * FROM consents ORDER BY rowid").all() as unknown as ConsentRow[];
 
 /** A statement, run as expect() runs what it is to see throw. */
 const running = (db: DatabaseSync, sql: string) => () => {
@@ -79,38 +50,6 @@ function version(db: DatabaseSync, id: string, eventId: string | null = "event-1
 }
 
 describe("migration 0063", () => {
-  it("keeps every consent as it was, its order among those of one moment included", () => {
-    const before = consents(beforeThisMigration());
-    expect(consents(migrated())).toEqual(before);
-  });
-
-  it("takes the health history's consent, and still refuses a purpose it does not know", () => {
-    const db = migrated();
-    db.exec(`INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, source)
-             VALUES ('c-h', 'p1', 'health_history', 'health-history-v1', 1, '${AT}', 'technician')`);
-    const unknownPurpose = `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at)
-                            VALUES ('c-x', 'p1', 'anything', 'v1', 1, '${AT}')`;
-    expect(running(db, unknownPurpose)).toThrow(/CHECK/);
-  });
-
-  it("leaves the consent record append-only, and found by its person", () => {
-    const db = migrated();
-    expect(running(db, "UPDATE consents SET granted = 1 WHERE id = 'c-a'")).toThrow(/append-only/);
-    expect(running(db, "DELETE FROM consents WHERE id = 'c-a'")).toThrow(/append-only/);
-    const plan = db.prepare("EXPLAIN QUERY PLAN SELECT * FROM consents WHERE person_id = 'p1'").all();
-    expect(JSON.stringify(plan)).toContain("consents_by_person");
-  });
-
-  it("takes the deployed Worker's consent writes as they are", () => {
-    const db = migrated();
-    db.prepare(
-      `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash, source)
-       SELECT ?, 'p1', 'photos_marketing', 'photos-marketing-v1', 1, ?, 'c-hash', 'app_profile'
-       WHERE NOT EXISTS (SELECT 1 FROM consents WHERE person_id = 'p1' AND purpose = 'photos_marketing')`,
-    ).run("c-n", AT);
-    expect(consents(db).map((row) => row.id)).toContain("c-n");
-  });
-
   it("keeps a version of the profile once for each of the phone's events at a visit", () => {
     const db = migrated();
     version(db, "v1");
@@ -147,10 +86,9 @@ describe("migration 0063", () => {
     expect(running(db, "UPDATE hair_profiles SET created_at = 'now' WHERE id = 'v1'")).toThrow(/only blanked/);
     expect(running(db, "DELETE FROM hair_profiles WHERE id = 'v1'")).toThrow(/kept/);
 
-    db.exec(`UPDATE hair_profiles SET remedies = NULL, transplant_year = NULL, skin_and_allergies = NULL
-             WHERE id = 'v1'`);
     db.exec(`UPDATE hair_profiles SET norwood_stage = NULL, head_circumference_cm = NULL, colour = NULL,
-               grey_percent = NULL, density_percent = NULL, product = NULL, attachment = NULL WHERE id = 'v1'`);
+               grey_percent = NULL, density_percent = NULL, product = NULL, attachment = NULL, remedies = NULL,
+               transplant_year = NULL, skin_and_allergies = NULL WHERE id = 'v1'`);
     expect(
       db.prepare("SELECT norwood_stage, colour, skin_and_allergies, technician_id FROM hair_profiles").get(),
     ).toEqual({ norwood_stage: null, colour: null, skin_and_allergies: null, technician_id: "t1" });

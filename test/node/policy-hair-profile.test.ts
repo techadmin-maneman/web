@@ -2,7 +2,8 @@
 // by what the build took for the owner to confirm (ADR 0106).
 
 import { describe, expect, it } from "vitest";
-import { CONSENT_PURPOSES, HEALTH_HISTORY } from "../../src/policy/consents.ts";
+import { NOTICES } from "../../src/config/notices.ts";
+import { CONSENT_PURPOSES } from "../../src/policy/consents.ts";
 import {
   ATTACHMENTS,
   COLOURS,
@@ -92,9 +93,9 @@ describe("a client's hair profile", () => {
     expect(cardStepsFor("service", false)).toEqual(stepsFor("service"));
   });
 
-  it(DEFAULTS[2], () => {
-    // A purpose of its own, never one of the five the client switches in the app.
-    expect(HEALTH_HISTORY).toBe("health_history");
-    expect(CONSENT_PURPOSES).not.toContain(HEALTH_HISTORY);
+  it(RULES[2], () => {
+    // No purpose of its own: the five the client switches are all there are, and no notice asks for a history.
+    expect(CONSENT_PURPOSES).toHaveLength(5);
+    expect(NOTICES.filter((notice) => /remed|allerg|health/i.test(notice.text.join(" ")))).toEqual([]);
   });
 });

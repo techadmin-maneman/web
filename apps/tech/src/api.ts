@@ -44,7 +44,6 @@ export type Day = Schema["TechnicianJobs"];
 export type HairProfile = Schema["HairProfile"];
 export type FitSpec = Schema["HairFitSpec"];
 export type History = Schema["HairHistory"];
-export type HealthConsent = Schema["HairHealthConsent"];
 export type ProfileRequest = Schema["TechnicianProfileRequest"];
 
 export type VisitType = NonNullable<JobSummary["type"]>;

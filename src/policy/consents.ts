@@ -27,17 +27,9 @@ export const CONSENT_PURPOSES = [
 export type ConsentPurpose = (typeof CONSENT_PURPOSES)[number];
 
 /**
- * The client's health history: the remedies they have tried, and their skin conditions and allergies. A purpose apart
- * from the five, asked for on the technician's phone before any question of it, and never switched in the client
- * app (docs/decisions/0106-a-clients-hair-profile.md; src/policy/hair-profile.ts).
- */
-export const HEALTH_HISTORY = "health_history";
-export type HealthHistoryPurpose = typeof HEALTH_HISTORY;
-
-/**
  * Every place a consent is given, kept on its row. The owner's four, split where one screen or page is several:
  * the site's booking form, its waitlist and an invite's page; the site's try-on; the app's booking, profile and share
- * sheet; the technician, whose phone asks for the health history's; and the withdrawal an erasure records.
+ * sheet; the technician, where nothing asks for one yet; and the withdrawal an erasure records.
  */
 export const CONSENT_SOURCES = [
   "site_booking",

@@ -1,8 +1,8 @@
-// A client's hair profile (docs/decisions/0106-a-clients-hair-profile.md): the technician records the fit spec at a
-// consultation and at a one visit, and the history only once the client has agreed to it apart; every change is a
-// new version; ops read every version and correct the latest on the client's page; an erasure blanks them, and the
-// export carries them. None of it reaches FSM, a log line or the audit log. NOW is Monday 21 September 2026, 12 noon
-// in India; the visit is today at 13:00. Every name and number is made up.
+// A client's hair profile (docs/decisions/0106-a-clients-hair-profile.md): the technician records the fit spec and the
+// history at a consultation and at a one visit, on no consent of its own, as the owner ruled; every change is a new
+// version; ops read every version and correct the latest on the client's page; an erasure blanks them, and the export
+// carries them. None of it reaches FSM, a log line or the audit log. NOW is Monday 21 September 2026, 12 noon in
+// India; the visit is today at 13:00. Every name and number is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -34,8 +34,6 @@ const FIT = {
 /** Words of the history that must never leave our database. */
 const SKIN = "Dry at the crown, allergic to latex";
 const HISTORY = { remedies: ["minoxidil", "transplant"], transplant_year: 2019, skin_and_allergies: SKIN };
-const GIVEN = { consent: "given", notice_version: "health-history-v1", ...HISTORY };
-const REFUSED = { consent: "refused", notice_version: "health-history-v1" };
 
 const FIT_AS_READ = { ...FIT, product_name: "First fit" };
 
@@ -61,13 +59,8 @@ const versions = () =>
      ORDER BY created_at, rowid`,
   ).all();
 
-const healthConsents = () =>
-  env.DB.prepare(
-    `SELECT notice_version, granted, source, ip_hash FROM consents
-     WHERE person_id = ?1 AND purpose = 'health_history' ORDER BY created_at, rowid`,
-  )
-    .bind(PERSON)
-    .all();
+const consentRows = () =>
+  env.DB.prepare("SELECT COUNT(*) AS n FROM consents WHERE person_id = ?1").bind(PERSON).first();
 
 describe("the technician's profile step", () => {
   it("comes before the after photographs at a consultation, and the card offers the products", async () => {
@@ -75,22 +68,23 @@ describe("the technician's profile step", () => {
     expect(await card(job)).toMatchObject({
       steps: ["before_photos", "checklist", "consumables", "profile", "after_photos", "outcome"],
       products: [{ tier: "standard", name: "First fit" }],
-      profile: { latest: null, health_consent: { state: "not_given", notice_version: null, at: null } },
+      profile: null,
     });
   });
 
   it("is not a step of a service visit, and its card still carries the latest profile", async () => {
     const job = await consultation();
-    await job.post(PROFILE, { fit: FIT, health: null }, "event-profile-01");
+    await job.post(PROFILE, { fit: FIT, history: null }, "event-profile-01");
     await env.DB.prepare("UPDATE appointments SET type = 'service' WHERE id = ?1").bind(JOB).run();
     const serviceCard = await card(job);
     expect(serviceCard.steps).not.toContain("profile");
-    expect(serviceCard).toMatchObject({ products: [], profile: { latest: { fit: FIT_AS_READ, history: null } } });
+    expect(serviceCard).toMatchObject({ products: [], profile: { fit: FIT_AS_READ, history: null } });
   });
 
-  it("records the fit spec as a version keyed to the visit, which the card then reads", async () => {
+  it("records the fit spec and the history as a version keyed to the visit, which the card then reads", async () => {
     const job = await consultation();
-    const answer = await job.post(PROFILE, { fit: FIT, health: null }, "event-profile-01");
+    const consentsBefore = await consentRows();
+    const answer = await job.post(PROFILE, { fit: FIT, history: HISTORY }, "event-profile-01");
 
     expect(answer.status).toBe(202);
     expect(await answer.json()).toMatchObject({ event_id: "event-profile-01", replayed: false });
@@ -101,47 +95,45 @@ describe("the technician's profile step", () => {
         technician_id: IMRAN,
         staff: null,
         colour: "1B",
-        remedies: null,
-        skin_and_allergies: null,
+        remedies: '["minoxidil","transplant"]',
+        skin_and_allergies: SKIN,
       },
     ]);
     expect(await card(job)).toMatchObject({
       progress: { steps_done: ["before_photos", "profile"] },
-      profile: {
-        latest: { recorded_at: NOW.toISOString(), fit: FIT_AS_READ, history: null },
-        health_consent: { state: "not_given" },
-      },
+      profile: { recorded_at: NOW.toISOString(), fit: FIT_AS_READ, history: HISTORY },
     });
+    // The owner ruled it needs no consent of its own: none is asked for, and none written.
+    expect(await consentRows()).toEqual(consentsBefore);
   });
 
   it("records a replay once, and answers it as the first", async () => {
     const job = await consultation();
-    await job.post(PROFILE, { fit: FIT, health: GIVEN }, "event-profile-01");
-    const replay = await job.post(PROFILE, { fit: { ...FIT, colour: "2" }, health: GIVEN }, "event-profile-01");
+    await job.post(PROFILE, { fit: FIT, history: HISTORY }, "event-profile-01");
+    const replay = await job.post(PROFILE, { fit: { ...FIT, colour: "2" }, history: null }, "event-profile-01");
 
     expect(await replay.json()).toMatchObject({ event_id: "event-profile-01", replayed: true });
     expect((await versions()).results).toHaveLength(1);
-    expect((await healthConsents()).results).toHaveLength(1);
   });
 
   it("keeps each change as a new version, the latest being the profile", async () => {
     const job = await consultation();
-    await job.post(PROFILE, { fit: FIT, health: null }, "event-profile-01");
-    await job.post(PROFILE, { fit: { ...FIT, colour: "2", grey_percent: 30 }, health: null }, "event-profile-02");
+    await job.post(PROFILE, { fit: FIT, history: HISTORY }, "event-profile-01");
+    await job.post(PROFILE, { fit: { ...FIT, colour: "2", grey_percent: 30 }, history: null }, "event-profile-02");
 
     expect((await versions()).results.map((row) => row.colour)).toEqual(["1B", "2"]);
-    expect(await card(job)).toMatchObject({ profile: { latest: { fit: { colour: "2", grey_percent: 30 } } } });
+    expect(await card(job)).toMatchObject({ profile: { fit: { colour: "2", grey_percent: 30 }, history: null } });
   });
 
   it("takes the fit spec unanswered, field by field", async () => {
     const job = await consultation();
     const blank = Object.fromEntries(Object.keys(FIT).map((field) => [field, null]));
-    expect((await job.post(PROFILE, { fit: blank, health: null }, "event-profile-01")).status).toBe(202);
+    expect((await job.post(PROFILE, { fit: blank, history: null }, "event-profile-01")).status).toBe(202);
   });
 
   it("is refused before the job is started, as any step is", async () => {
     const job = await working("consultation");
-    const answer = await job.post(PROFILE, { fit: FIT, health: null }, "event-profile-01");
+    const answer = await job.post(PROFILE, { fit: FIT, history: null }, "event-profile-01");
     expect(answer.status).toBe(409);
     expect(await answer.json()).toMatchObject({ error: { code: "out_of_order", fields: ["start"] } });
   });
@@ -149,38 +141,32 @@ describe("the technician's profile step", () => {
   it("is refused for a job ops gave to another technician, and keeps nothing of it", async () => {
     const job = await consultation();
     await env.DB.prepare("UPDATE appointments SET technician_id = ?2 WHERE id = ?1").bind(JOB, SAMEER).run();
-    const answer = await job.post(PROFILE, { fit: FIT, health: GIVEN }, "event-profile-01");
+    const answer = await job.post(PROFILE, { fit: FIT, history: HISTORY }, "event-profile-01");
 
     expect(answer.status).toBe(409);
     expect(await answer.json()).toMatchObject({ error: { code: "superseded", fields: ["technician"] } });
     expect((await versions()).results).toEqual([]);
-    expect((await healthConsents()).results).toEqual([]);
   });
 
   it.each([
     [
       "a measurement past its range",
-      { fit: { ...FIT, head_circumference_cm: 90 }, health: null },
+      { fit: { ...FIT, head_circumference_cm: 90 }, history: null },
       "fit.head_circumference_cm",
     ],
-    ["a measurement to two decimals", { fit: { ...FIT, base_width_in: 8.25 }, health: null }, "fit.base_width_in"],
-    ["a colour not on the list", { fit: { ...FIT, colour: "9Z" }, health: null }, "fit.colour"],
-    ["a density not on the list", { fit: { ...FIT, density_percent: 110 }, health: null }, "fit.density_percent"],
-    ["a product that is no first fit", { fit: { ...FIT, product: "nonesuch" }, health: null }, "fit.product"],
+    ["a measurement to two decimals", { fit: { ...FIT, base_width_in: 8.25 }, history: null }, "fit.base_width_in"],
+    ["a colour not on the list", { fit: { ...FIT, colour: "9Z" }, history: null }, "fit.colour"],
+    ["a density not on the list", { fit: { ...FIT, density_percent: 110 }, history: null }, "fit.density_percent"],
+    ["a product that is no first fit", { fit: { ...FIT, product: "nonesuch" }, history: null }, "fit.product"],
     [
       '"none" beside a remedy',
-      { fit: FIT, health: { ...GIVEN, remedies: ["none", "minoxidil"], transplant_year: null } },
-      "health.remedies",
+      { fit: FIT, history: { ...HISTORY, remedies: ["none", "minoxidil"], transplant_year: null } },
+      "history.remedies",
     ],
     [
       "a transplant's year to come",
-      { fit: FIT, health: { ...GIVEN, transplant_year: 2027 } },
-      "health.transplant_year",
-    ],
-    [
-      "a notice the history is not asked on",
-      { fit: FIT, health: { ...GIVEN, notice_version: "booking-v1" } },
-      "health.notice_version",
+      { fit: FIT, history: { ...HISTORY, transplant_year: 2027 } },
+      "history.transplant_year",
     ],
   ])("refuses %s, naming the field", async (_, body, field) => {
     const job = await consultation();
@@ -205,9 +191,8 @@ describe("the technician's profile step", () => {
   });
 
   it("withholds the profile from a card still locked, as it does the client", async () => {
-    const job = await working("consultation");
-    await job.workTo("checklist");
-    await job.post(PROFILE, { fit: FIT, health: GIVEN }, "event-profile-01");
+    const job = await consultation();
+    await job.post(PROFILE, { fit: FIT, history: HISTORY }, "event-profile-01");
     await env.DB.prepare("UPDATE appointments SET window_start = '2026-09-25T07:30:00.000Z' WHERE id = ?1")
       .bind(JOB)
       .run();
@@ -215,69 +200,11 @@ describe("the technician's profile step", () => {
   });
 });
 
-describe("the history, and the consent it needs", () => {
-  it("is recorded with the client's consent, given at the technician's phone on the notice it showed", async () => {
-    const job = await consultation();
-    await job.post(PROFILE, { fit: FIT, health: GIVEN }, "event-profile-01");
-
-    expect((await healthConsents()).results).toEqual([
-      { notice_version: "health-history-v1", granted: 1, source: "technician", ip_hash: null },
-    ]);
-    expect(await card(job)).toMatchObject({
-      profile: {
-        latest: { history: HISTORY },
-        health_consent: { state: "given", notice_version: "health-history-v1", at: NOW.toISOString() },
-      },
-    });
-  });
-
-  it("asks once: the same answer on the same notice records no second consent", async () => {
-    const job = await consultation();
-    await job.post(PROFILE, { fit: FIT, health: GIVEN }, "event-profile-01");
-    const finasteride = { ...GIVEN, remedies: ["finasteride"], transplant_year: null };
-    expect((await job.post(PROFILE, { fit: FIT, health: finasteride }, "event-profile-02")).status).toBe(202);
-
-    expect((await healthConsents()).results).toHaveLength(1);
-    expect(await card(job)).toMatchObject({ profile: { latest: { history: { remedies: ["finasteride"] } } } });
-  });
-
-  it("is not recorded without it: a client who declines has the fit spec alone, and the refusal kept", async () => {
-    const job = await consultation();
-    await job.post(PROFILE, { fit: FIT, health: REFUSED }, "event-profile-01");
-
-    expect((await healthConsents()).results).toEqual([
-      { notice_version: "health-history-v1", granted: 0, source: "technician", ip_hash: null },
-    ]);
-    expect((await versions()).results).toMatchObject([{ colour: "1B", remedies: null, skin_and_allergies: null }]);
-    expect(await card(job)).toMatchObject({ profile: { health_consent: { state: "withdrawn" } } });
-  });
-
-  it("is not asked when the technician does not ask, and no consent is written either way", async () => {
-    const job = await consultation();
-    await job.post(PROFILE, { fit: FIT, health: null }, "event-profile-01");
-    expect((await healthConsents()).results).toEqual([]);
-  });
-
-  it("is blanked in every version when the client withdraws, the fit spec kept", async () => {
-    const job = await consultation();
-    await job.post(PROFILE, { fit: FIT, health: GIVEN }, "event-profile-01");
-    await job.post(PROFILE, { fit: FIT, health: GIVEN }, "event-profile-02");
-    await job.post(PROFILE, { fit: FIT, health: REFUSED }, "event-profile-03");
-
-    expect((await versions()).results.map((row) => [row.colour, row.remedies, row.skin_and_allergies])).toEqual([
-      ["1B", null, null],
-      ["1B", null, null],
-      ["1B", null, null],
-    ]);
-    expect((await healthConsents()).results.map((row) => row.granted)).toEqual([1, 0]);
-  });
-});
-
 describe("what never leaves our database", () => {
   it("puts nothing on FSM's queue, and FSM's summary of the visit carries none of it", async () => {
     const job = await consultation();
     const queued = job.fsmQueue.sent.length;
-    await job.post(PROFILE, { fit: FIT, health: GIVEN }, "event-profile-01");
+    await job.post(PROFILE, { fit: FIT, history: HISTORY }, "event-profile-01");
 
     expect(job.fsmQueue.sent).toHaveLength(queued);
     const visit = { id: JOB, fsmId: "ap-today", type: "consultation" as const, oneVisit: false, personId: PERSON };
@@ -287,7 +214,7 @@ describe("what never leaves our database", () => {
 
   it("writes none of it to a log line, from the phone or the console", async () => {
     const job = await consultation();
-    await job.post(PROFILE, { fit: FIT, health: GIVEN }, "event-profile-01");
+    await job.post(PROFILE, { fit: FIT, history: HISTORY }, "event-profile-01");
     await job.opsPost(CONSOLE, {
       fit: { ...FIT, colour: "2" },
       history: { ...HISTORY, skin_and_allergies: "Psoriasis" },
@@ -301,7 +228,7 @@ describe("what never leaves our database", () => {
 describe("the client's page in the console", () => {
   async function recorded(): Promise<Working> {
     const job = await consultation();
-    await job.post(PROFILE, { fit: FIT, health: GIVEN }, "event-profile-01");
+    await job.post(PROFILE, { fit: FIT, history: HISTORY }, "event-profile-01");
     return job;
   }
 
@@ -321,7 +248,6 @@ describe("the client's page in the console", () => {
           history: HISTORY,
         },
       ],
-      health_consent: { state: "given", notice_version: "health-history-v1", at: NOW.toISOString() },
       // What a correction may name: every first-fit service, by its tier and name.
       products: [{ tier: "standard", name: "First fit" }],
     });
@@ -349,19 +275,10 @@ describe("the client's page in the console", () => {
     for (const word of ["Psoriasis", SKIN, "minoxidil"]) expect(everyEntry).not.toContain(word);
   });
 
-  it("refuses a history without the client's consent: ops never give one", async () => {
+  it("records a first profile where none was taken, its history with it", async () => {
     const job = await working("consultation");
     const answer = await job.opsPost(CONSOLE, { fit: FIT, history: HISTORY });
-
-    expect(answer.status).toBe(400);
-    expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["history"] } });
-    expect((await versions()).results).toEqual([]);
-  });
-
-  it("records a first profile where none was taken, the fit spec alone", async () => {
-    const job = await working("consultation");
-    const answer = await job.opsPost(CONSOLE, { fit: FIT, history: null });
-    expect(await answer.json()).toMatchObject({ latest: { fit: FIT_AS_READ, history: null }, versions: [{}] });
+    expect(await answer.json()).toMatchObject({ latest: { fit: FIT_AS_READ, history: HISTORY }, versions: [{}] });
   });
 
   it("refuses a value off the lists, as the phone's is", async () => {
@@ -381,7 +298,7 @@ describe("the client's page in the console", () => {
 describe("the client's rights over it", () => {
   it("is blanked by an erasure, every version and every field of it, the record of who took each kept", async () => {
     const job = await consultation();
-    await job.post(PROFILE, { fit: FIT, health: GIVEN }, "event-profile-01");
+    await job.post(PROFILE, { fit: FIT, history: HISTORY }, "event-profile-01");
     await job.opsPost(CONSOLE, { fit: FIT, history: HISTORY });
     await eraseByMobile("+919810000001");
 
@@ -393,13 +310,11 @@ describe("the client's rights over it", () => {
       expect([appointment_id, event_id, technician_id, staff].some((value) => value !== null)).toBe(true);
       expect(Object.values(profile).every((value) => value === null)).toBe(true);
     }
-    // Its consent withdrawn by the erasure, as every purpose they had given is.
-    expect((await healthConsents()).results.at(-1)).toMatchObject({ granted: 0, source: "erasure" });
   });
 
   it("is in the export a client asks for, the history with it", async () => {
     const job = await consultation();
-    await job.post(PROFILE, { fit: FIT, health: GIVEN }, "event-profile-01");
+    await job.post(PROFILE, { fit: FIT, history: HISTORY }, "event-profile-01");
     const cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: PERSON, deviceLabel: null, now: NOW })}`;
     const client = appFor("local", fakeDependencies(), {}, "client");
 

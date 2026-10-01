@@ -224,18 +224,6 @@ test.describe("the client's hair profile", () => {
     await expect(section(page).locator("dl").first()).toContainText("Colour#3");
   });
 
-  test("shows no history, and offers none to correct, without the client's consent", async ({ page }) => {
-    const withoutConsent = {
-      ...HAIR_PROFILE,
-      latest: { ...HAIR_PROFILE.latest, history: null },
-      health_consent: { state: "withdrawn", notice_version: "health-history-v1", at: "2027-09-22T05:30:00.000Z" },
-    } satisfies OpsReply<"/api/clients/{id}/hair-profile">;
-    await openClient(page, `/clients/${CLIENT.id}/pieces`, { [READ_HAIR_PROFILE]: json(withoutConsent) });
-    await expect(section(page).getByText("The client declined or withdrew their consent")).toBeVisible();
-    await section(page).getByRole("button", { name: "Correct the profile" }).click();
-    await expect(page.getByRole("group", { name: "Health history" })).toHaveCount(0);
-  });
-
   test("sends nothing while a figure is no number at all, and marks it", async ({ page }) => {
     let sent = 0;
     page.on("request", (request) => {
