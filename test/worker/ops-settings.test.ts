@@ -14,6 +14,7 @@ import type { App } from "../../src/http/context.ts";
 import { renderMessage } from "../../src/config/message-templates.ts";
 import { COMMITTED, createCachedOpsInputs, readOpsInputs, SETTINGS_TTL_MS } from "../../src/domain/ops-settings.ts";
 import { NEXT_VISIT_DAY_BOUNDS, NEXT_VISIT_DAYS } from "../../src/policy/next-visit.ts";
+import { REFERRAL_REWARD } from "../../src/policy/referral-reward.ts";
 import { composeLaunchAlert } from "../../src/domain/waitlist.ts";
 import { pincodeUpsert } from "../../scripts/lib/pincodes.ts";
 import { appFor, countRowsRead, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
@@ -282,6 +283,14 @@ describe("the store a request reads", () => {
     expect(await snapshot()).toEqual({ address_unlock_hour: 17 });
   });
 
+  // Found 1 October 2026: the snapshot's trigger refused a rule's second change, so the console answered 500.
+  it("takes a second change of the same rule, and holds the second", async () => {
+    expect((await post("/api/settings/checkin_radius_m", { value: 150 })).status).toBe(200);
+    expect((await post("/api/settings/checkin_radius_m", { value: 250 })).status).toBe(200);
+    expect(await snapshot()).toEqual({ checkin_radius_m: 250 });
+    expect(await named("checkin_radius_m")).toMatchObject({ value: 250, set_by: "ops@localhost" });
+  });
+
   it("follows a row written by hand, as a runbook's SQL would write one", async () => {
     await env.DB.prepare(
       "INSERT INTO ops_settings (name, value, set_by, set_at) VALUES ('checkin_radius_m', '300', 'ops', ?1)",
@@ -366,6 +375,54 @@ describe("the next visit's days", () => {
     });
     expect(JSON.parse(results[1]?.detail ?? "{}")).toMatchObject({ to: JSON.stringify(NEXT_VISIT_DAYS), reset: true });
     expect(await named("booking_days")).toMatchObject({ value: NEXT_VISIT_DAYS, set_by: null });
+  });
+});
+
+// The owner's ruling of 1 October 2026 (docs/decisions/0107-referral-rewards-in-the-console.md).
+describe("what a referral earns", () => {
+  const reward = (referrer: number, friend: number, days: number) => ({
+    referrer_visits: referrer,
+    friend_visits: friend,
+    valid_days: days,
+  });
+
+  it("answers each side's visits and the credits' life, each with its own bounds, before anybody sets them", async () => {
+    const rule = await named("referral_reward");
+    expect(rule).toMatchObject({
+      unit: "service visits",
+      keys: ["referrer_visits", "friend_visits", "valid_days"],
+      value: REFERRAL_REWARD,
+      default: REFERRAL_REWARD,
+      source: "src/policy/referral-reward.ts",
+      set_by: null,
+    });
+    expect((rule as Setting & { bounds: unknown }).bounds).toEqual({
+      referrer_visits: { min: 0, max: 12, unit: "service visits" },
+      friend_visits: { min: 0, max: 12, unit: "service visits" },
+      valid_days: { min: 30, max: 1095, unit: "days" },
+    });
+  });
+
+  it("takes each side apart, nothing for one of them, and a change after the first", async () => {
+    expect((await post("/api/settings/referral_reward", { value: reward(3, 2, 180) })).status).toBe(200);
+    const again = await post("/api/settings/referral_reward", { value: reward(0, 2, 180) });
+    expect(again.status).toBe(200);
+    expect(await again.json<Setting>()).toMatchObject({ value: reward(0, 2, 180), set_by: "ops@localhost" });
+    expect((await readOpsInputs(env.DB, NOW)).referralReward).toEqual(reward(0, 2, 180));
+    const { results } = await auditFor("setting.change");
+    expect(results.map((entry) => JSON.parse(entry.detail) as unknown)).toEqual([
+      { from: JSON.stringify(REFERRAL_REWARD), to: JSON.stringify(reward(3, 2, 180)), reset: false },
+      { from: JSON.stringify(reward(3, 2, 180)), to: JSON.stringify(reward(0, 2, 180)), reset: false },
+    ]);
+  });
+
+  it("refuses more than a year of visits, or credits that last less than a month, naming the box", async () => {
+    const visits = await post("/api/settings/referral_reward", { value: reward(13, 3, 365) });
+    expect(visits.status).toBe(400);
+    expect(await visits.json()).toMatchObject({ error: { fields: ["referral_reward.referrer_visits"] } });
+    const days = await post("/api/settings/referral_reward", { value: reward(3, 3, 7) });
+    expect(await days.json()).toMatchObject({ error: { fields: ["referral_reward.valid_days"] } });
+    expect((await named("referral_reward")).value).toEqual(REFERRAL_REWARD);
   });
 });
 

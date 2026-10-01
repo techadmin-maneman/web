@@ -145,6 +145,26 @@ export const SETTINGS = {
       set_by: null,
       set_at: null,
     },
+    {
+      name: "referral_reward",
+      kind: "number",
+      title: "What a referral earns",
+      note: "The free service visits the client who sent an invite gets, and those their friend gets.",
+      unit: "service visits",
+      min: 0,
+      max: 1095,
+      keys: ["referrer_visits", "friend_visits", "valid_days"],
+      bounds: {
+        referrer_visits: { min: 0, max: 12, unit: "service visits" },
+        friend_visits: { min: 0, max: 12, unit: "service visits" },
+        valid_days: { min: 30, max: 1095, unit: "days" },
+      },
+      value: { referrer_visits: 3, friend_visits: 3, valid_days: 365 },
+      default: { referrer_visits: 3, friend_visits: 3, valid_days: 365 },
+      source: "src/policy/referral-reward.ts",
+      set_by: null,
+      set_at: null,
+    },
   ],
 } satisfies OpsReply<"/api/settings">;
 

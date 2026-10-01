@@ -98,15 +98,23 @@ const TEMPLATES: Readonly<Record<string, string>> = {
   // When a pincode launches, to those on its waitlist who asked to be told (docs/decisions/0048-referrals.md).
   // PLACEHOLDER COPY: {{1}} their first name, {{2}} the area, {{3}} where to book.
   launch_alert_v1: "Hello {{1}}, we now come to {{2}}. Your free consultation can be booked here: {{3}}",
-  // To a referrer, when their friend's first fit closes as done (docs/decisions/0048-referrals.md). PLACEHOLDER COPY:
-  // {{1}} the referrer's first name, {{2}} the friend's, {{3}} the visits each gets, {{4}} when they expire.
-  friend_fitted_v1:
-    "Hello {{1}}, {{2}} has been fitted. You each have {{3}} service visits free, until {{4}}. Thank you for the introduction.",
-  // To the friend, when the grant lands, and to both sides when ops reject a held one
+  // To a referrer, when their friend's first fit closes as done (docs/decisions/0048-referrals.md), in the words for
+  // what each side was given, which ops set apart (docs/decisions/0107-referral-rewards-in-the-console.md): the same,
+  // different, nothing for the friend, or nothing for the referrer. PLACEHOLDER COPY: {{1}} the referrer's first name,
+  // {{2}} the friend's, {{3}} the referrer's visits ("3 service visits"), {{4}} when they expire, {{5}} the friend's.
+  friend_fitted_v2:
+    "Hello {{1}}, {{2}} has been fitted. You each have {{3}} free, until {{4}}. Thank you for the introduction.",
+  friend_fitted_each_v1:
+    "Hello {{1}}, {{2}} has been fitted. You have {{3}} free, until {{4}}, and {{2}} has {{5}}. Thank you for the introduction.",
+  friend_fitted_yours_v1:
+    "Hello {{1}}, {{2}} has been fitted. You have {{3}} free, until {{4}}. Thank you for the introduction.",
+  friend_fitted_thanks_v1: "Hello {{1}}, {{2}} has been fitted. Thank you for the introduction.",
+  // To the friend, when the grant lands, and to a side that would have been given visits when ops reject a held one
   // (docs/decisions/0074-hand-offs-and-messages.md). PLACEHOLDER COPY: {{1}} the first name of the one told, and in
-  // the credits {{2}} the visits and {{3}} when they expire, in the referrer's rejection {{2}} the friend's first name.
-  friend_credited_v1:
-    "Hello {{1}}, your first fit is done, so the invite you came with gives you {{2}} service visits free, until {{3}}. They are in the app.",
+  // the credits {{2}} the visits ("3 service visits") and {{3}} when they expire, in the referrer's rejection {{2}}
+  // the friend's first name.
+  friend_credited_v2:
+    "Hello {{1}}, your first fit is done, so the invite you came with gives you {{2}} free, until {{3}}. Your balance is in the app.",
   referral_rejected_referrer_v1:
     "Hello {{1}}, we could not give the service visits for {{2}}'s first fit. Message us if you would like to know why.",
   referral_rejected_friend_v1:
@@ -137,6 +145,10 @@ export function renderMessage(name: string, params: readonly string[]): string |
 }
 
 const PLACEHOLDER = /\{\{(\d+)\}\}/g;
+
+/** A count of service visits as the texts write it: "1 service visit", "3 service visits". */
+export const serviceVisits = (count: number): string =>
+  count === 1 ? "1 service visit" : `${String(count)} service visits`;
 
 export function isKnownTemplate(name: string): boolean {
   return name in TEMPLATES;

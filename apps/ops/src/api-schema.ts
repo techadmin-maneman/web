@@ -2966,7 +2966,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "fsm_retry" | "technician_work" | "booking_days";
+                    name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "fsm_retry" | "technician_work" | "booking_days" | "referral_reward";
                 };
                 cookie?: never;
             };
@@ -5167,7 +5167,7 @@ export interface components {
                 name: string;
             } | null;
             /**
-             * @description pending until the client's first fit; held for ops' review; approved or granted, the 3 visits given; rejected; expired, lapsed on a waitlist; clawed_back, the first fit refunded.
+             * @description pending until the client's first fit; held for ops' review; approved or granted, the reward given; rejected; expired, lapsed on a waitlist; clawed_back, the first fit refunded.
              * @enum {string}
              */
             grant: "pending" | "held" | "approved" | "rejected" | "granted" | "expired" | "clawed_back";
@@ -6093,7 +6093,7 @@ export interface components {
         OpsSetting: components["schemas"]["NumberRule"] | components["schemas"]["ChoiceRule"];
         NumberRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "fsm_retry" | "technician_work" | "booking_days";
+            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "fsm_retry" | "technician_work" | "booking_days" | "referral_reward";
             title: string;
             note: string;
             /** @description The module the default lives in. */
@@ -6128,7 +6128,7 @@ export interface components {
         };
         ChoiceRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "fsm_retry" | "technician_work" | "booking_days";
+            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "fsm_retry" | "technician_work" | "booking_days" | "referral_reward";
             title: string;
             note: string;
             /** @description The module the default lives in. */

@@ -190,6 +190,40 @@ test.describe("the rules", () => {
     await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
   });
 
+  // The owner's ruling of 1 October 2026: each side's visits, and how long they last
+  // (docs/decisions/0107-referral-rewards-in-the-console.md).
+  test("sets what a referral earns each side, nothing for one, after showing the change", async ({ page }) => {
+    await open(page, "/settings", {
+      "POST /api/settings/referral_reward": (route) => {
+        const reward = SETTINGS.settings.find((rule) => rule.name === "referral_reward");
+        const { value } = route.request().postDataJSON() as { value: unknown };
+        return json({ ...reward, value, set_by: "ops@maneman.in" })(route);
+      },
+    });
+    const reward = page.getByRole("group", { name: "What a referral earns" });
+    await expect(reward.getByLabel("The client who sent the invite")).toHaveValue("3");
+    await expect(reward.getByLabel("The friend they invited")).toHaveValue("3");
+    await expect(reward.getByLabel("The credits last")).toHaveValue("365");
+    await expect(reward).toContainText("0 to 12 service visits, a whole number");
+    await expect(reward).toContainText("30 to 1095 days, a whole number");
+
+    await reward.getByLabel("The client who sent the invite").fill("2");
+    await reward.getByLabel("The friend they invited").fill("0");
+    await page.getByRole("listitem").filter({ has: reward }).getByRole("button", { name: "Save" }).click();
+    const check = page.getByRole("group", { name: "Check the change" });
+    await expect(check.getByRole("listitem")).toHaveText([
+      "The client who sent the invite: 3 service visits → 2 service visits.",
+      "The friend they invited: 3 service visits → 0 service visits.",
+    ]);
+
+    const request = posted(page, "/api/settings/referral_reward");
+    await check.getByRole("button", { name: "Save" }).click();
+    expect((await request).postDataJSON()).toEqual({
+      value: { referrer_visits: 2, friend_visits: 0, valid_days: 365 },
+    });
+    await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
+  });
+
   // Every figure a rule of the code held is ops' now (docs/decisions/0088-every-policy-in-the-console.md).
   test("says each box's own unit where a rule's figures count in two", async ({ page }) => {
     await open(page);
