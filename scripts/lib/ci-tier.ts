@@ -1,8 +1,8 @@
 // Which tier of CI an event runs (docs/decisions/0006-deployment-pipeline.md, "Two tiers"). The quick tier, the
 // static checks and the unit and contract tests, runs on every push to a pull request. The full suite adds the
 // build, the browser tests and Lighthouse, the deployed code on new migrations and the local smoke, and runs once a
-// pull request is ready for review, again whenever it carries the full-ci label, and on every staging deploy, which
-// checks what merged unless it is exactly a tree that passed the full suite.
+// pull request is ready for review, again whenever it carries the full-ci label, and on every staging deploy. Either
+// tier skips a check the same files already passed (scripts/lib/already-checked.ts).
 //
 // It imports nothing from node_modules: its job installs nothing.
 

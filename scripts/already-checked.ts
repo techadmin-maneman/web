@@ -1,14 +1,18 @@
-// Prints checked=true when the commit deploy-staging is about to deploy has the
-// same files as a pull request head that passed CI, else checked=false
-// (scripts/lib/already-checked.ts). The reason goes to stderr, for the log.
+// Prints, for each check CI may take as passed, whether the files this run checks already passed it
+// (scripts/lib/already-checked.ts): static=true, tests=false, suite=false. The reason goes to stderr, for the log.
 //
-//   GITHUB_TOKEN=… node scripts/already-checked.ts --repository owner/repo --commit <sha> >> "$GITHUB_OUTPUT"
+//   GITHUB_TOKEN=… node scripts/already-checked.ts --repository owner/repo --commit <sha> [--head <sha>] >> "$GITHUB_OUTPUT"
+//
+// --head is a pull request's head, given when the run checks the head's own files; without it, --commit is a push to
+// main.
 
 import { parseArgs } from "node:util";
-import { alreadyChecked } from "./lib/already-checked.ts";
+import { alreadyChecked, REUSABLE_CHECKS, type Answer, type ReusableCheck } from "./lib/already-checked.ts";
 
-const { values } = parseArgs({ options: { repository: { type: "string" }, commit: { type: "string" } } });
-const { repository = "", commit = "" } = values;
+const { values } = parseArgs({
+  options: { repository: { type: "string" }, commit: { type: "string" }, head: { type: "string" } },
+});
+const { repository = "", commit = "", head } = values;
 const token = process.env.GITHUB_TOKEN ?? "";
 
 async function get(path: string): Promise<unknown> {
@@ -19,10 +23,12 @@ async function get(path: string): Promise<unknown> {
   return response.json();
 }
 
-const answer =
+const answer: Answer =
   repository === "" || commit === "" || token === ""
-    ? { checked: false, reason: "no repository, commit or token given" }
-    : await alreadyChecked(repository, commit, get);
+    ? { passed: [], reason: "no repository, commit or token given" }
+    : await alreadyChecked(repository, commit, get, head === "" ? undefined : head);
 
-console.error(`${answer.checked ? "already checked" : "CI runs"}: ${answer.reason}`);
-console.log(`checked=${String(answer.checked)}`);
+console.error(`already passed: ${answer.reason}`);
+for (const check of Object.keys(REUSABLE_CHECKS) as ReusableCheck[]) {
+  console.log(`${check}=${String(answer.passed.includes(check))}`);
+}
