@@ -127,7 +127,8 @@ async function linkFor(db: D1Database, visit: FittedVisit, now: Date): Promise<L
 /**
  * A one visit a discount code made free: what the code took is fixed, nothing is owed, so no link and no task, and
  * the client is told on WhatsApp, once, as a paid visit's client is. The message is queued here and the sweeper sends
- * it within minutes, as it sends any the queue never had.
+ * it within minutes, as it sends any the queue never had. The visit is marked as owing nothing, which settles an
+ * invited friend's referral as a payment would (src/domain/referral-grants.ts).
  */
 async function settleFree(
   db: D1Database,
@@ -145,7 +146,13 @@ async function settleFree(
     kind: "nothing_to_pay",
     now,
   });
-  await db.batch([...fix, ...(told === null ? [message.statement] : [])]);
+  await db.batch([
+    ...fix,
+    db
+      .prepare("UPDATE appointments SET nothing_owed_at = COALESCE(nothing_owed_at, ?2) WHERE id = ?1")
+      .bind(visit.appointmentId, now.toISOString()),
+    ...(told === null ? [message.statement] : []),
+  ]);
 }
 
 /** The visit's link at its close: written once, then asked of Razorpay once; what could not be made waits for the cron. */

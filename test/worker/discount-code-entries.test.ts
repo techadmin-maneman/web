@@ -609,6 +609,9 @@ describe("the technician, before a one visit's payment link", () => {
     // The other is the arrival notice of the technician's check-in.
     expect(told.results).toEqual([{ kind: "arrival_notice" }, { kind: "nothing_to_pay" }]);
     expect((await uses()).results).toMatchObject([{ amount_off: NATURAL.amount }]);
+    // Owing nothing, the fit settles an invited friend's referral as a payment would.
+    const visit = await env.DB.prepare("SELECT nothing_owed_at FROM appointments WHERE id = ?1").bind(JOB).first();
+    expect(visit).toEqual({ nothing_owed_at: NOW.toISOString() });
     // The close settled its price, so the code stays on it, as on a visit paid for.
     const ops = { kind: "ops", actor: { kind: "staff", id: "ops@localhost" } } as const;
     expect(await removeFromVisit(env.DB, { visitId: JOB, by: ops, requestId: "r" }, NOW)).toBe("price_settled");

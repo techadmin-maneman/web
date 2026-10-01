@@ -94,3 +94,7 @@ END;
 -- The code the site's form was given with a consultation and fit in one visit asked for while self-serve booking is
 -- off, as it was typed and found to apply: ops enter it on the visit they book by hand, which the Tasks board says.
 ALTER TABLE consultation_requests ADD COLUMN discount_code TEXT;
+
+-- When the close of a consultation and fit in one visit found its discount code left nothing to pay, so no payment
+-- link was made: the fit itself then settles the friend's referral, which otherwise waits for the link's payment.
+ALTER TABLE appointments ADD COLUMN nothing_owed_at TEXT;

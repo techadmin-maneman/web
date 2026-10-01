@@ -23,12 +23,12 @@ The owner asked "to allow for discount codes to be generated and used before inv
 - A cancelled booking: "The use comes back", whatever was paid or refunded.
 - An invited friend: "Yes, codes are for anyone". The owner retired the referral rule "There is no other discount for the referred person"; credits still pay first.
 - A free visit: "send whatsapp message even when the code makes the visit free".
+- An invited friend's one visit made free: "Yes, once fitted". With nothing owed, the fit settles the referral on the next pass (`appointments.nothing_owed_at`), where it otherwise waits for the link's payment (ADR 0025, item 93).
 
 ## Still the owner's
 
 - Every word of the boxes, the refusals and the two WhatsApp templates is a placeholder; the templates need Meta's approval before production.
 - Codes ops type use only letters and digits that cannot be misread (no I, L, O, 0, 1): a default.
-- An invited friend's one visit made free has no payment, so its referral grant, which waits for one (ADR 0025, item 93), never settles: neither side gets credits.
 
 ## Production depends on
 
