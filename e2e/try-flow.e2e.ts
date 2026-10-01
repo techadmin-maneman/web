@@ -339,6 +339,9 @@ test("a render request lost after the claim is asked again, with the same claim"
   expect(keys).toHaveLength(2);
   expect(keys[1]).toBe(keys[0]);
   expect(named(seen, "generate")).toHaveLength(2);
+  // The claim answered again is the same lead: one conversion.
+  const claims = (await analyticsEvents(page)).filter(([name]) => name === "try_on_claimed");
+  expect(claims).toHaveLength(1);
 });
 
 // Nothing is made before the gate, so going back from it may change the look.

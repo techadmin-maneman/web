@@ -32,9 +32,6 @@ export const JOB_STATES = [
 ] as const;
 export type JobState = (typeof JOB_STATES)[number];
 
-/** Still going: the customer should keep waiting. */
-export const RUNNING_STATES: readonly JobState[] = ["queued", "rendering", "downloading"];
-
 /** Why a job failed, as the customer's page is told. */
 export const FAILURE_CODES = ["photo_unreadable", "photo_invalid_file", "render_failed", "busy"] as const;
 export type FailureCode = (typeof FAILURE_CODES)[number];

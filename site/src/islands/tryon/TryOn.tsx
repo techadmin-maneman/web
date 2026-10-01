@@ -66,6 +66,8 @@ export default function TryOn(props: Props) {
   const preparing = useRef<Promise<PreparedPhoto> | null>(null);
   const uploading = useRef<Promise<Outcome<Uploaded>> | null>(null);
   const jobId = useRef<string | null>(null);
+  // The try-on whose claim analytics has counted.
+  const claimCounted = useRef<string | null>(null);
   // What the API says on arrival. A photograph chosen before it answers drops it.
   const arriving = useRef<Promise<Arrival> | null>(null);
 
@@ -196,7 +198,11 @@ export default function TryOn(props: Props) {
       await claimRefused(answer.code, upload.jobId);
       return;
     }
-    track({ name: "try_on_claimed" });
+    // A claim answered again is the same lead, and the same conversion.
+    if (claimCounted.current !== upload.jobId) {
+      claimCounted.current = upload.jobId;
+      track({ name: "try_on_claimed" });
+    }
 
     const render = await startRender(upload, { stage: stageId, preset });
     if (render.ok) {
