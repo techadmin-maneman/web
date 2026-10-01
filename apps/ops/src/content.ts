@@ -646,9 +646,9 @@ export const clients = {
     code: "Code",
     from: "Sent by",
     erased: "A client since erased",
-    grant: "Their 3 visits",
+    grant: "What it earns",
     grants: {
-      pending: "Given to both when this client is fitted",
+      pending: "Given when this client is fitted",
       held: "Held for review",
       approved: "Given",
       granted: "Given",
@@ -1696,6 +1696,12 @@ export const settings = {
         first_fit_to_book: "First fit to book, after the consultation",
         horizon: "How far ahead a visit may be booked",
         invoice_prompt: "A new invoice on Home",
+      },
+      // PLACEHOLDER: what a referral earns, each side apart (docs/decisions/0107-referral-rewards-in-the-console.md).
+      referral_reward: {
+        referrer_visits: "The client who sent the invite",
+        friend_visits: "The friend they invited",
+        valid_days: "The credits last",
       },
     } as Readonly<Record<string, Readonly<Record<string, string>>>>,
     /**

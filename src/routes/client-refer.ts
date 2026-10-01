@@ -54,13 +54,22 @@ const ReferSchema = z
               "friend erased before names were kept: never the word the erasure leaves.",
           }),
           month: z.string().openapi({ description: "YYYY-MM, in India." }),
+          visits: z
+            .number()
+            .int()
+            .openapi({
+              description:
+                "The service visits the client was given for this friend: what a referral earned when the friend was " +
+                "fitted, 0 where it gave the referrer none (docs/decisions/0107-referral-rewards-in-the-console.md).",
+            }),
         }),
       )
       .openapi({ description: "Friends whose first fit closed as done, most recent first." }),
     invite_credits: z.union([z.enum(["checking", "refused"]), z.null()]).openapi({
       description:
         "For a client who came through an invite, where its credits stand when they are not simply in the " +
-        "balance: checking while ops review the grant, refused once ops rejected it. Null otherwise.",
+        "balance: checking while ops review the grant, refused once ops rejected it. Null otherwise, and where the " +
+        "reward it was held under gives the friend no visits.",
     }),
   })
   .strict()
@@ -71,6 +80,7 @@ interface FittedRow {
   name: string;
   erased_at: string | null;
   window_start: string;
+  visits: number | null;
 }
 
 /**
@@ -85,6 +95,18 @@ function friendName(friend: FittedRow): string | null {
 
 /** The invite a client came through, where its grant waits on ops or was refused by them. */
 const INVITE_CREDITS: Readonly<Record<string, "checking" | "refused">> = { held: "checking", rejected: "refused" };
+
+/**
+ * Where the credits of the invite the client came with stand, when not simply in the balance. A friend the reward it
+ * was held under gave nothing has no credits to check or refuse (docs/decisions/0107-referral-rewards-in-the-console.md);
+ * one held before rewards were kept, whose figure is null, may have some.
+ */
+function inviteCredits(
+  invited: { grant_state: string; friend_visits: number | null } | null,
+): "checking" | "refused" | null {
+  if (invited === null || invited.friend_visits === 0) return null;
+  return INVITE_CREDITS[invited.grant_state] ?? null;
+}
 
 /** The client's code, made from their initials the first time they need one. */
 async function codeOf(db: D1Database, personId: string, now: Date): Promise<string> {
@@ -197,16 +219,18 @@ export function registerClientRefer(app: App): void {
       creditBalance(db, session.subjectId, now),
       db
         .prepare(
-          `SELECT r.friend_first_name, p.name, p.erased_at, a.window_start FROM referral_attributions r
+          `SELECT r.friend_first_name, p.name, p.erased_at, a.window_start, g.visits FROM referral_attributions r
            JOIN people p ON p.id = r.referred_person_id JOIN appointments a ON a.id = r.first_fit_appointment_id
+           LEFT JOIN credit_ledger g ON g.kind = 'grant' AND g.source_kind = 'referral' AND g.source_id = r.id
+             AND g.person_id = ?2
            WHERE r.code = ?1 AND r.grant_state IN ('approved', 'granted') ORDER BY a.window_start DESC`,
         )
-        .bind(code)
+        .bind(code, session.subjectId)
         .all<FittedRow>(),
       db
-        .prepare("SELECT grant_state FROM referral_attributions WHERE referred_person_id = ?1")
+        .prepare("SELECT grant_state, friend_visits FROM referral_attributions WHERE referred_person_id = ?1")
         .bind(session.subjectId)
-        .first<{ grant_state: string }>(),
+        .first<{ grant_state: string; friend_visits: number | null }>(),
     ]);
     const consented = (invite?.referrerFirstName ?? null) !== null;
     return c.json(
@@ -219,8 +243,9 @@ export function registerClientRefer(app: App): void {
         fitted: fitted.results.map((friend) => ({
           first_name: friendName(friend),
           month: indiaDate(new Date(friend.window_start)).slice(0, 7),
+          visits: friend.visits ?? 0,
         })),
-        invite_credits: INVITE_CREDITS[invited?.grant_state ?? ""] ?? null,
+        invite_credits: inviteCredits(invited),
       },
       200,
     );

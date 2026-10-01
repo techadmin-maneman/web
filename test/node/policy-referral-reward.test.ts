@@ -1,8 +1,16 @@
-// What a referral earns, each rule named by the prompt's own words (src/policy/referral-reward.ts).
+// What a referral earns, each rule named by the prompt's own words, or the owner's (src/policy/referral-reward.ts).
 
 import { describe, expect, it } from "vitest";
+import { checkValue, settingNamed } from "../../src/config/ops-settings.ts";
+import { COMMITTED } from "../../src/domain/ops-settings.ts";
 import { indiaDate } from "../../src/lib/india-time.ts";
-import { CREDIT_TTL_DAYS, creditExpiry, RULES, takesCredit } from "../../src/policy/referral-reward.ts";
+import {
+  CREDIT_TTL_DAYS,
+  creditExpiry,
+  REFERRAL_REWARD,
+  RULES,
+  takesCredit,
+} from "../../src/policy/referral-reward.ts";
 
 describe("referral credits", () => {
   it(`${RULES[0]} ${RULES[2]}`, () => {
@@ -26,5 +34,28 @@ describe("referral credits", () => {
     expect(indiaDate(expires)).toBe("2027-09-21");
     // Granted at 9 am: the same day, not 9 am of it.
     expect(creditExpiry(new Date("2026-09-21T03:30:00Z")).toISOString()).toBe("2027-09-21T18:29:59.999Z");
+  });
+
+  it(RULES[4], () => {
+    // Until ops set them, each side gets the prompt's 3 and the credits last its 365 days.
+    expect(REFERRAL_REWARD).toEqual({ referrer_visits: 3, friend_visits: 3, valid_days: 365 });
+    expect(COMMITTED.referralReward).toEqual(REFERRAL_REWARD);
+    // Each side apart, and either may be given nothing.
+    const setting = settingNamed("referral_reward");
+    if (setting === undefined) throw new Error("referral_reward is not in the register");
+    expect(checkValue(setting, { referrer_visits: 3, friend_visits: 0, valid_days: 365 })).toMatchObject({ ok: true });
+    expect(checkValue(setting, { referrer_visits: 0, friend_visits: 2, valid_days: 90 })).toMatchObject({ ok: true });
+    // A sane maximum of visits, and a life no shorter than a month or longer than three years.
+    for (const refused of [
+      { referrer_visits: 13, friend_visits: 3, valid_days: 365 },
+      { referrer_visits: 3, friend_visits: -1, valid_days: 365 },
+      { referrer_visits: 3, friend_visits: 3, valid_days: 29 },
+      { referrer_visits: 3, friend_visits: 3, valid_days: 1096 },
+      { referrer_visits: 3, friend_visits: 1.5, valid_days: 365 },
+    ]) {
+      expect(checkValue(setting, refused), JSON.stringify(refused)).toMatchObject({ ok: false });
+    }
+    // The credits last as long as ops set, to the end of that day in India.
+    expect(creditExpiry(new Date("2026-09-21T18:00:00Z"), 30).toISOString()).toBe("2026-10-21T18:29:59.999Z");
   });
 });

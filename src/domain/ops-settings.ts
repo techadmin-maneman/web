@@ -28,6 +28,7 @@ import type { NextVisitDays } from "../policy/next-visit.ts";
 import type { Charges } from "../policy/moving-a-visit.ts";
 import type { Waiver, Waits } from "../policy/no-show.ts";
 import type { PhoneClock } from "../policy/phone-clock.ts";
+import type { ReferralReward } from "../policy/referral-reward.ts";
 import type { Slas } from "../policy/tasks.ts";
 import type { TechnicianWorkFigures } from "../policy/technician-work.ts";
 import { auditStatement, type AuditActor } from "./audit.ts";
@@ -53,6 +54,7 @@ export interface OpsInputs {
   readonly paymentHold: PaymentHold;
   readonly fsmRetry: FsmRetry;
   readonly technicianWork: TechnicianWorkFigures;
+  readonly referralReward: ReferralReward;
 }
 
 /** What one input is at this moment, and whether anybody set it. */
@@ -93,6 +95,7 @@ function shape(values: Readonly<Record<OpsSettingName, SettingValue>>): OpsInput
     paymentHold: values.payment_hold as PaymentHold,
     fsmRetry: values.fsm_retry as FsmRetry,
     technicianWork: values.technician_work as TechnicianWorkFigures,
+    referralReward: values.referral_reward as ReferralReward,
   };
 }
 
@@ -223,14 +226,13 @@ export async function setOpsSetting(
   const { setting, value, actor, requestId, now } = input;
   const states = await settingStates(db);
   const was = states.find((state) => state.setting.name === setting.name);
+  // OR REPLACE, not an upsert: SQLite runs a trigger's statements under the conflict policy of the statement that
+  // fired it, and under an upsert's the snapshot trigger's own OR REPLACE refused a second change of the same rule.
   const change =
     value === null
       ? db.prepare("DELETE FROM ops_settings WHERE name = ?1").bind(setting.name)
       : db
-          .prepare(
-            `INSERT INTO ops_settings (name, value, set_by, set_at) VALUES (?1, ?2, ?3, ?4)
-             ON CONFLICT (name) DO UPDATE SET value = excluded.value, set_by = excluded.set_by, set_at = excluded.set_at`,
-          )
+          .prepare("INSERT OR REPLACE INTO ops_settings (name, value, set_by, set_at) VALUES (?1, ?2, ?3, ?4)")
           .bind(setting.name, JSON.stringify(value), actor.id, now.toISOString());
 
   await db.batch([

@@ -86,11 +86,11 @@ const Person = {
 export const InviteStateSchema = z.enum(["valid", "expired", "unknown"]).openapi({
   description:
     "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so " +
-    "the consultation is still free and the 3 visits do not apply; or unknown: no invite came with it, or a code " +
-    "we do not have.",
+    "the consultation is still free and the invite's visits do not apply; or unknown: no invite came with it, or a " +
+    "code we do not have.",
 });
 
-export const CreditsSchema = z.boolean().openapi({ description: "Whether the invite's 3 service visits apply." });
+export const CreditsSchema = z.boolean().openapi({ description: "Whether the invite's service visits apply." });
 
 /** What a booking did with the address it was sent (src/policy/site-booking.ts). */
 export const AddressOutcomeSchema = z.enum(["saved", "on_account"]).openapi({

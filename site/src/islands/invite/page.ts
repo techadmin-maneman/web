@@ -1,9 +1,11 @@
 // What the landing reads from its own page: the code in the address, and what the mm-site Worker wrote in before
-// any JavaScript ran (site/src/worker.ts), the invite on #invite and the price book's figures on <body>.
+// any JavaScript ran (site/src/worker.ts), the invite on #invite, and the price book's figures and what a referral
+// earns on <body>.
 
-import type { Invite } from "../../lib/api.ts";
+import type { Invite, ReferralReward } from "../../lib/api.ts";
 import { isInvite } from "../../lib/invite.ts";
 import { isPublishedPrices, priceWords, standardOf, type PriceWords } from "../../lib/prices.ts";
+import { isReferralReward } from "../../lib/reward.ts";
 
 /**
  * The code in the address: /r/ABC123. Empty where the page is opened without one, and while
@@ -37,6 +39,19 @@ export function pricesInPage(): PriceWords | null {
   try {
     const parsed: unknown = JSON.parse(written);
     return isPublishedPrices(parsed) ? priceWords(standardOf(parsed)) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** What a referral earns, as the Worker wrote it onto the page, if it did and it reads as one. Null while it is built. */
+export function rewardInPage(): ReferralReward | null {
+  if (typeof document === "undefined") return null;
+  const written = document.body.dataset.reward;
+  if (written === undefined || written === "") return null;
+  try {
+    const parsed: unknown = JSON.parse(written);
+    return isReferralReward(parsed) ? parsed : null;
   } catch {
     return null;
   }

@@ -2697,6 +2697,7 @@ export interface components {
                     window: ("morning" | "afternoon" | "evening") | null;
                 } | null;
             };
+            referral_reward: components["schemas"]["ReferralReward"];
         };
         VisitSummary: {
             /** Format: uuid */
@@ -2752,6 +2753,15 @@ export interface components {
             /** @description In paise, GST included: what the client pays. */
             amount: number;
             gst_percent: number;
+        };
+        /** @description What a referral earns now, as ops set it: the Refer tab's promise, for a lead as for a fitted client, and the invite's preview say it (docs/decisions/0107-referral-rewards-in-the-console.md). */
+        ReferralReward: {
+            /** @description The free service visits the client who sent the invite gets; 0 for none. */
+            referrer_visits: number;
+            /** @description The free service visits the friend they invited gets; 0 for none. */
+            friend_visits: number;
+            /** @description How many days the credits last from the grant. */
+            valid_days: number;
         };
         Profile: {
             name: string;
@@ -3448,8 +3458,10 @@ export interface components {
                 first_name: string | null;
                 /** @description YYYY-MM, in India. */
                 month: string;
+                /** @description The service visits the client was given for this friend: what a referral earned when the friend was fitted, 0 where it gave the referrer none (docs/decisions/0107-referral-rewards-in-the-console.md). */
+                visits: number;
             }[];
-            /** @description For a client who came through an invite, where its credits stand when they are not simply in the balance: checking while ops review the grant, refused once ops rejected it. Null otherwise. */
+            /** @description For a client who came through an invite, where its credits stand when they are not simply in the balance: checking while ops review the grant, refused once ops rejected it. Null otherwise, and where the reward it was held under gives the friend no visits. */
             invite_credits: ("checking" | "refused") | null;
         };
         Grievance: {

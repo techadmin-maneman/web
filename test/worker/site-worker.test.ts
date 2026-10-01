@@ -69,10 +69,19 @@ const WITH_PREMIUM = {
 type Api = (request: Request) => Response | Promise<Response>;
 
 const isPriceRequest = (request: Request) => new URL(request.url).pathname === "/api/published-prices";
+const isRewardRequest = (request: Request) => new URL(request.url).pathname === "/api/referral-reward";
+
+/** What a referral earns as the console begins, each side 3 visits for a year. */
+const REWARD = { referrer_visits: 3, friend_visits: 3, valid_days: 365 };
 
 /** mm-api answering the book with `book`, and anything else with `other`. */
 function withPrices(other: Api = () => Response.json(VALID), book: object = PRICES): Api {
   return (request) => (isPriceRequest(request) ? Response.json(book) : other(request));
+}
+
+/** mm-api answering what a referral earns with `reward`, and anything else with `other`. */
+function withReward(other: Api = () => Response.json(VALID), reward: object = REWARD): Api {
+  return (request) => (isRewardRequest(request) ? Response.json(reward) : other(request));
 }
 
 function siteEnv(api: Api, page = PAGE): { env: SiteEnv; asked: Request[]; files: Request[] } {
@@ -127,11 +136,46 @@ function readPriced(html: string) {
 
 describe("the site Worker at /r/:code", () => {
   it("names the referrer and promises the visits for a valid invite", async () => {
-    const page = await open(() => Response.json(VALID));
+    const page = await open(withReward());
     expect(page.meta("og:title")).toBe("Rohit sent you a Mane Man invite");
     expect(page.meta("og:description")).toContain("3 service visits free");
     expect(page.meta("og:image")).toBe("https://maneman.in/api/og/RM4K7P.jpg?v=3");
     expect(JSON.parse(page.invite)).toEqual({ ...VALID, code: "RM4K7P" });
+  });
+
+  // The owner's ruling of 1 October 2026: ops set what each side gets (docs/decisions/0107-referral-rewards-in-the-console.md).
+  it("promises the friend the visits ops set, and none where ops set the friend none", async () => {
+    const unequal = await open(withReward(undefined, { referrer_visits: 3, friend_visits: 2, valid_days: 90 }));
+    expect(unequal.meta("og:description")).toContain("2 service visits free");
+    const none = await open(withReward(undefined, { referrer_visits: 3, friend_visits: 0, valid_days: 90 }));
+    expect(none.meta("og:description")).not.toContain("service visit");
+  });
+
+  it.each([
+    ["answers 503", () => Response.json({ error: { code: "unavailable" } }, { status: 503 })],
+    ["answers a shape it does not know", () => Response.json({ referrer_visits: 3, friend_visits: "3" })],
+  ])("promises no count when mm-api %s for the reward", async (_, failed: Api) => {
+    const page = await open((request) => (isRewardRequest(request) ? failed(request) : Response.json(VALID)));
+    expect(page.meta("og:description")).not.toContain("service visit");
+    expect(page.html).not.toContain("data-reward");
+  });
+
+  it("gives the landing's island what a referral earns, and asks for it once a minute", async () => {
+    let now = 0;
+    const worker = createSiteWorker(() => now);
+    const visit = async () => {
+      const { env, asked } = siteEnv(withReward());
+      const html = await (await worker.fetch(new Request("https://maneman.in/r/RM4K7P"), env)).text();
+      const written = /data-reward="([^"]*)"/.exec(html)?.[1]?.replaceAll("&quot;", '"');
+      return { written: written === undefined ? null : (JSON.parse(written) as unknown), asked };
+    };
+    const first = await visit();
+    expect(first.written).toEqual(REWARD);
+    expect(first.asked.filter(isRewardRequest)).toHaveLength(1);
+    now = 59_000;
+    expect((await visit()).asked.filter(isRewardRequest)).toHaveLength(0);
+    now = 61_000;
+    expect((await visit()).asked.filter(isRewardRequest)).toHaveLength(1);
   });
 
   // REQ-S8-01: a code the API does not know books without credits, so its preview must not promise them.
@@ -245,6 +289,15 @@ describe("the site Worker on a page that shows a price", () => {
   it("gives the booking form's island the book's answer", async () => {
     const page = await visit("/book", withPrices());
     expect(page.written).toEqual(PRICES);
+  });
+
+  // /book confirms a booking made with an invite in the landing's words, so it says what the invite earns too.
+  it("gives /book's island what a referral earns, and asks for it nowhere else but the landing", async () => {
+    const book = await visit("/book", withPrices(withReward()));
+    expect(book.html).toContain(`data-reward="${JSON.stringify(REWARD).replaceAll('"', "&quot;")}"`);
+    const home = await visit("/", withPrices(withReward()));
+    expect(home.asked.filter(isRewardRequest)).toEqual([]);
+    expect(home.html).not.toContain("data-reward");
   });
 
   it("asks mm-api for the book once a minute, however many pages it serves", async () => {

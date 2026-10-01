@@ -4877,7 +4877,7 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
         "expired",
         "clawed_back"
       ],
-      "description": "pending until the client's first fit; held for ops' review; approved or granted, the 3 visits given; rejected; expired, lapsed on a waitlist; clawed_back, the first fit refunded."
+      "description": "pending until the client's first fit; held for ops' review; approved or granted, the reward given; rejected; expired, lapsed on a waitlist; clawed_back, the first fit refunded."
     },
     "since": {
       "type": "string",
@@ -8291,7 +8291,8 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
         "payment_hold",
         "fsm_retry",
         "technician_work",
-        "booking_days"
+        "booking_days",
+        "referral_reward"
       ]
     },
     "title": {
@@ -8462,7 +8463,8 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
         "payment_hold",
         "fsm_retry",
         "technician_work",
-        "booking_days"
+        "booking_days",
+        "referral_reward"
       ]
     },
     "title": {
