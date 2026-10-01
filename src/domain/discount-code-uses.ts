@@ -330,6 +330,20 @@ export async function removeFromVisit(
   return "removed";
 }
 
+/**
+ * The code on a one visit the client decided against, taken off by the system: nothing was sold, so the code is the
+ * client's to use again, and counts against its limits no more.
+ */
+export function releaseDeclined(db: D1Database, visitId: string, now: Date): D1PreparedStatement {
+  return db
+    .prepare(
+      `UPDATE discount_code_uses SET removed_at = ?2, removed_by = 'system', removed_by_id = 'declined'
+       WHERE removed_at IS NULL AND (appointment_id = ?1
+         OR hold_id IN (SELECT h.id FROM slot_holds h WHERE h.appointment_id = ?1))`,
+    )
+    .bind(visitId, now.toISOString());
+}
+
 /** A visit's code as the client's page shows it, and whether ops may still enter or take off one. */
 export interface ClientVisitCode {
   readonly code: { readonly code: string; readonly amount_off: number | null; readonly given_by: GivenBy } | null;

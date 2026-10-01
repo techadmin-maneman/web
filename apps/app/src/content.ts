@@ -422,6 +422,29 @@ export const booking = {
       switchEither: "You can switch either off in Profile.",
       switchIt: "You can switch it off in Profile.",
     },
+    /**
+     * PLACEHOLDER, every line: no board draws a discount code (docs/decisions/0108-discount-codes.md;
+     * docs/open-points.md, item 180). A code that does not apply is told only that, whatever the reason.
+     */
+    code: {
+      open: "Have a discount code?",
+      label: "Discount code",
+      apply: "Apply",
+      applying: "Applying",
+      /** "Code TENOFF: Rs. 200 off", before GST, beneath the price. */
+      applied: (code: string, off: string) => `Code ${code}: ${off} off`,
+      remove: "Remove code",
+      removing: "Removing",
+      errors: {
+        code_not_applicable: "That code does not apply to this visit.",
+        rate_limited: "Too many codes tried. Try again tomorrow.",
+        already_discounted: "This visit already has a code.",
+        price_settled: "Payment has started, so the code can no longer change.",
+        hold_expired: "Your slot hold has run out. Pick a window again.",
+        offline: "You are offline. Connect, then try again.",
+        unknown: "That did not go through. Try again.",
+      } as Readonly<Record<string, string>>,
+    },
   },
   /**
    * Board C5's late-fee line, which C7 repeats word for word: the ex-GST figure, and the inclusive one after it,

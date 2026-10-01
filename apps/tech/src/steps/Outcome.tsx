@@ -14,12 +14,14 @@
 //
 // On a consultation and fit in one visit, Done says what closing it does, which
 // no board draws: the client is texted a payment link for the product they
-// chose, or the visit ends as a consultation (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+// chose, or the visit ends as a consultation (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md), and
+// takes a discount code the client gives, before the link goes (docs/decisions/0108-discount-codes.md).
 
 import { useState } from "react";
 import type { PartialReason } from "../api.ts";
 import { job as jobCopy, oneVisit, steps as copy } from "../content.ts";
 import { Failed, Loading } from "../states/States.tsx";
+import { DiscountCode } from "./DiscountCode.tsx";
 import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
 import styles from "./steps.module.css";
@@ -80,6 +82,7 @@ export function Outcome({ id }: { id: string }) {
       </div>
 
       {closesOneVisit && <p className={styles.note}>{oneVisit.closeNote}</p>}
+      {closesOneVisit && <DiscountCode jobId={id} />}
 
       {choice === "partial" && (
         <ul className={styles.reasons}>

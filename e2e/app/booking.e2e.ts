@@ -241,6 +241,7 @@ async function holdAs(page: Page, terms: Hold): Promise<() => Hold> {
       visit_id: null,
       moves_visit_id: null,
       credit: null,
+      discount: null,
       ...terms,
     };
     return route.fulfill({ status: 201, json: last });

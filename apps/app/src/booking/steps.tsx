@@ -20,6 +20,7 @@ import { firstName } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { AddressForm } from "../profile/AddressForm.tsx";
 import type { PayMethod } from "./checkout.ts";
+import { CodeBox } from "./CodeBox.tsx";
 import { consentLines } from "./consents.ts";
 import styles from "./booking.module.css";
 
@@ -393,6 +394,8 @@ export function PayStep(props: {
   onRemind: (remind: boolean) => void;
   onMethod: (method: PayMethod) => void;
   onPay: () => void;
+  /** The hold priced again, once a discount code is applied or removed. */
+  onHold: (hold: Hold) => void;
 }) {
   const { hold, moving } = props;
   const copy = booking.pay;
@@ -403,6 +406,9 @@ export function PayStep(props: {
   // A move in place keeps the visit as it was booked: only its new time, and what the move costs, are shown.
   const inPlace = moving !== undefined && moving.cost !== "charged";
   const isFirstFit = hold.type === "first_fit" && !inPlace;
+  // A code is for a visit sold, never a move, nor one a credit pays for, nor a consultation, which costs nothing.
+  const takesACode = moving === undefined && !covered && hold.type !== "consultation";
+  const listPrice = hold.discount?.list_price ?? null;
   return (
     <>
       <Heading title={copy.title} aside={copy.held(minutesAndSeconds(left))} />
@@ -417,6 +423,7 @@ export function PayStep(props: {
           </div>
           <div className={styles.money}>
             {covered && <p className={styles.was}>{rupees(hold.price.amount_ex_gst)}</p>}
+            {listPrice !== null && <p className={styles.was}>{rupees(listPrice.amount_ex_gst)}</p>}
             <p className={styles.amount}>{amountLine(hold, covered, free)}</p>
             {!free && <p className={styles.incl}>{copy.incl(rupees(hold.price.amount))}</p>}
           </div>
@@ -430,6 +437,7 @@ export function PayStep(props: {
         {isFirstFit && <p className={styles.line}>{copy.guarantee(technician)}</p>}
         <ChangeTerms hold={hold} moving={inPlace ? moving : undefined} covered={covered} />
       </div>
+      {takesACode && <CodeBox hold={hold} busy={props.busy} onHold={props.onHold} />}
       {!free && (
         <>
           <h3 className={styles.label}>{copy.with}</h3>

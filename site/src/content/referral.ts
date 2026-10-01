@@ -122,6 +122,16 @@ export const referral = {
       // so the form offers the one visit the morning and the afternoon.
       note: `${capitalised(visitLength.firstFit)}, at home, in the morning or the afternoon. Choose your hair system with your technician and have it fitted there and then. Pay once fitted, by a link to your phone; decide against it and you pay nothing.`,
     },
+    /**
+     * Not drawn: a discount code for the consultation and fit in one visit, on /book only, as the owner ruled on
+     * 1 October 2026 (docs/decisions/0108-discount-codes.md). Placeholder words for the owner to approve (open point
+     * 180), not marked, since the mark refuses the site's production build (ADR 0081). A code that does not apply is
+     * told only that.
+     */
+    code: {
+      label: "Discount code (optional)",
+      hint: "It comes off the price of your hair system when you pay.",
+    },
     consent: lineOf(notices.consultation),
     submit: "Book the consultation",
     submitOneVisit: "Book the consultation and fit",
@@ -249,6 +259,8 @@ export const referral = {
     other: "Something went wrong at our end. Please try again.",
     // Not drawn: the number already has a consultation to come (ADR 0025, item 41). The owner approves the words (open point 45).
     alreadyBooked: "This number already has a consultation, {when}. To change it, message us on WhatsApp.",
+    // Not drawn: the discount code given does not apply, whatever the reason (ADR 0108). The owner approves the words (open point 180).
+    codeNotApplicable: "That discount code does not apply. Check it, or leave it out to book without it.",
   },
   /**
    * What a shared invite's preview says (boards B1 and B2), which the mm-site Worker writes into the page. Only a

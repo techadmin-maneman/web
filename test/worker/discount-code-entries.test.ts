@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { confirmBooking } from "../../src/domain/bookings.ts";
 import { grantCredits } from "../../src/domain/credits.ts";
 import { priceAfterCode } from "../../src/domain/discount-code-uses.ts";
-import { makeCodes, type NewCodes } from "../../src/domain/discount-codes.ts";
+import { listCodes, makeCodes, type NewCodes } from "../../src/domain/discount-codes.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
 import { createStubPayments } from "../../src/providers/payments.ts";
@@ -32,7 +32,7 @@ const at = (minutes: number) => new Date(NOW.getTime() + minutes * MINUTE);
 
 /** Ten per cent off service visits and first fits, any number of times, once a client. */
 const TEN_OFF: NewCodes = {
-  code: "TENOFF",
+  code: "TENPC",
   count: 1,
   kind: "percent",
   value: 10,
@@ -97,14 +97,15 @@ interface HoldAnswer {
   discount: { code: string; amount_ex_gst: number | null; list_price: { amount: number } | null } | null;
 }
 
-/** A service visit held on Thursday afternoon. */
-async function heldService(personId: string, now = NOW): Promise<HoldAnswer> {
+/** A service visit held on Thursday, in the afternoon unless another window is named: one technician comes. */
+async function heldService(personId: string, now = NOW, window = "afternoon"): Promise<HoldAnswer> {
   const held = await call(
     personId,
     "/api/holds",
-    { method: "POST", body: { type: "service", date: "2026-09-24", window: "afternoon" } },
+    { method: "POST", body: { type: "service", date: "2026-09-24", window } },
     now,
   );
+  expect(held.status).toBe(201);
   return held.json<HoldAnswer>();
 }
 
@@ -140,12 +141,12 @@ describe("the client, at the app's pay step", () => {
   it("takes the code off the price before GST, and Checkout's order is made for what is left", async () => {
     await make();
     const hold = await heldService(PERSON);
-    const entered = await enter(PERSON, hold.id, " tenoff ");
+    const entered = await enter(PERSON, hold.id, " tenpc ");
     expect(entered.status).toBe(200);
     expect(await entered.json()).toMatchObject({
       id: hold.id,
       price: { amount_ex_gst: 180_000, amount: 180_000, gst_percent: 0 },
-      discount: { code: "TENOFF", amount_ex_gst: 20_000, list_price: { amount_ex_gst: 200_000, amount: 200_000 } },
+      discount: { code: "TENPC", amount_ex_gst: 20_000, list_price: { amount_ex_gst: 200_000, amount: 200_000 } },
     });
 
     const payments = createStubPayments();
@@ -177,15 +178,15 @@ describe("the client, at the app's pay step", () => {
     await make();
     const hold = await heldService(PERSON);
     expect(hold.price).toEqual({ amount_ex_gst: 200_000, amount: 236_000, gst_percent: 18 });
-    const entered = await (await enter(PERSON, hold.id, "TENOFF")).json<HoldAnswer>();
+    const entered = await (await enter(PERSON, hold.id, "TENPC")).json<HoldAnswer>();
     expect(entered.price).toEqual({ amount_ex_gst: 180_000, amount: 212_400, gst_percent: 18 });
   });
 
   it("says only that a code does not apply, whatever the reason, and changes nothing", async () => {
-    await make({ code: "FITONLY", covers: ["first_fit"] });
-    await make({ code: "GONEOFF", expiresOn: "2026-09-20" });
+    await make({ code: "FT25", covers: ["first_fit"] });
+    await make({ code: "EXP25", expiresOn: "2026-09-20" });
     const hold = await heldService(PERSON);
-    for (const code of ["NOSUCH", "FITONLY", "GONEOFF"]) {
+    for (const code of ["NOSUCH", "FT25", "EXP25"]) {
       const answer = await enter(PERSON, hold.id, code);
       expect(answer.status).toBe(422);
       expect(await answer.json()).toEqual({ error: { code: "code_not_applicable", request_id: expect.any(String) } });
@@ -197,17 +198,17 @@ describe("the client, at the app's pay step", () => {
 
   it("takes one code a booking, and gives the price back when the code comes off", async () => {
     await make();
-    await make({ code: "FIVEOFF", value: 5 });
+    await make({ code: "FVEPC", value: 5 });
     const hold = await heldService(PERSON);
-    await enter(PERSON, hold.id, "TENOFF");
-    const second = await enter(PERSON, hold.id, "FIVEOFF");
+    await enter(PERSON, hold.id, "TENPC");
+    const second = await enter(PERSON, hold.id, "FVEPC");
     expect(second.status).toBe(409);
     expect(await second.json()).toMatchObject({ error: { code: "already_discounted" } });
 
     const removed = await call(PERSON, `/api/holds/${hold.id}/discount-code`, { method: "DELETE" });
     expect(removed.status).toBe(200);
     expect(await removed.json()).toMatchObject({ price: { amount_ex_gst: 200_000, amount: 200_000 }, discount: null });
-    expect((await enter(PERSON, hold.id, "FIVEOFF")).status).toBe(200);
+    expect((await enter(PERSON, hold.id, "FVEPC")).status).toBe(200);
     // The use taken off stays on record, marked removed.
     expect((await uses()).results).toEqual([
       expect.objectContaining({ amount_off: 20_000, removed: 1 }),
@@ -217,9 +218,9 @@ describe("the client, at the app's pay step", () => {
 
   it("is refused once Checkout has its order, so the order and the price never part", async () => {
     await make();
-    await make({ code: "FIVEOFF", value: 5 });
+    await make({ code: "FVEPC", value: 5 });
     const hold = await heldService(PERSON);
-    await enter(PERSON, hold.id, "TENOFF");
+    await enter(PERSON, hold.id, "TENPC");
     await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: hold.id } });
     const removing = await call(PERSON, `/api/holds/${hold.id}/discount-code`, { method: "DELETE" });
     expect(await removing.json()).toMatchObject({ error: { code: "price_settled" } });
@@ -231,35 +232,47 @@ describe("the client, at the app's pay step", () => {
     await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "ops", sourceId: "o1", now: NOW }).run();
     await make();
     const hold = await heldService(PERSON);
-    const answer = await enter(PERSON, hold.id, "TENOFF");
+    const answer = await enter(PERSON, hold.id, "TENPC");
     expect(answer.status).toBe(422);
   });
 
-  it("is once per client while their booking stands, and theirs again once a hold they let go took it", async () => {
+  it("is once per client while their booking stands", async () => {
     await make();
     const first = await heldService(PERSON);
-    await enter(PERSON, first.id, "TENOFF");
+    await enter(PERSON, first.id, "TENPC");
+    // Paid for: the hold keeps its time until it is booked, and its code stands with it.
+    await env.DB.prepare("UPDATE slot_holds SET confirmed_at = ?2 WHERE id = ?1")
+      .bind(first.id, NOW.toISOString())
+      .run();
+    const second = await heldService(PERSON, NOW, "morning");
+    expect((await enter(PERSON, second.id, "TENPC")).status).toBe(422);
+  });
+
+  it("is the client's again once a hold they let go took it", async () => {
+    await make();
+    const first = await heldService(PERSON);
+    await enter(PERSON, first.id, "TENPC");
     // A second hold lets the first go, with the code it carried.
-    const second = await heldService(PERSON);
-    expect((await enter(PERSON, second.id, "TENOFF")).status).toBe(200);
+    const second = await heldService(PERSON, NOW, "morning");
+    expect((await enter(PERSON, second.id, "TENPC")).status).toBe(200);
   });
 
   it("counts a code's last use only while its hold keeps its time unpaid", async () => {
-    await make({ code: "ONEUSE", oncePerClient: false, maxUses: 1 });
+    await make({ code: "UNQ5", oncePerClient: false, maxUses: 1 });
     await fittedClient(OTHER, "+919810000005");
     const mine = await heldService(PERSON);
-    expect((await enter(PERSON, mine.id, "ONEUSE")).status).toBe(200);
-    const theirs = await heldService(OTHER);
-    expect((await enter(OTHER, theirs.id, "ONEUSE")).status).toBe(422);
+    expect((await enter(PERSON, mine.id, "UNQ5")).status).toBe(200);
+    const theirs = await heldService(OTHER, NOW, "morning");
+    expect((await enter(OTHER, theirs.id, "UNQ5")).status).toBe(422);
     // Twenty minutes on, the first hold has lapsed unpaid: the use no longer stands.
-    const later = await heldService(OTHER, at(20));
-    expect((await enter(OTHER, later.id, "ONEUSE", at(20))).status).toBe(200);
+    const later = await heldService(OTHER, at(20), "evening");
+    expect((await enter(OTHER, later.id, "UNQ5", at(20))).status).toBe(200);
   });
 
   it("refunds a discounted payment what was paid, and no more", async () => {
     await make();
     const hold = await heldService(PERSON);
-    await enter(PERSON, hold.id, "TENOFF");
+    await enter(PERSON, hold.id, "TENPC");
     const started = await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: hold.id } });
     const { checkout } = await started.json<{ checkout: { order_id: string; amount: number } }>();
     // Razorpay made the payment twenty minutes on, after the hold and its grace had run out.
@@ -285,7 +298,7 @@ describe("the client, at the app's pay step", () => {
     await make();
     const hold = await heldService(PERSON);
     for (let tries = 0; tries < 10; tries += 1) expect((await enter(PERSON, hold.id, "NOSUCH")).status).toBe(422);
-    expect((await enter(PERSON, hold.id, "TENOFF")).status).toBe(429);
+    expect((await enter(PERSON, hold.id, "TENPC")).status).toBe(429);
   });
 });
 
@@ -337,7 +350,7 @@ describe("the site's form, for a consultation and fit in one visit", () => {
 
   it("keeps the code on the booking, to come off the product's price at the link", async () => {
     await make();
-    const answer = await book({ discount_code: "tenoff" });
+    const answer = await book({ discount_code: "tenpc" });
     expect(answer.status).toBe(201);
     expect(await answer.json()).toMatchObject({ state: "booked", one_visit: true, discount_code: true });
     expect((await uses()).results).toEqual([
@@ -346,11 +359,11 @@ describe("the site's form, for a consultation and fit in one visit", () => {
   });
 
   it("refuses the booking for a code that does not apply, naming the box, and writes nothing", async () => {
-    await make({ code: "SVCONLY", covers: ["service"] });
+    await make({ code: "SVC25", covers: ["service"] });
     for (const body of [
-      { discount_code: "SVCONLY" },
+      { discount_code: "SVC25" },
       { discount_code: "NOSUCH" },
-      { one_visit: false, discount_code: "TENOFF" },
+      { one_visit: false, discount_code: "TENPC" },
     ]) {
       const answer = await book(body);
       expect(answer.status).toBe(422);
@@ -361,24 +374,24 @@ describe("the site's form, for a consultation and fit in one visit", () => {
 
   it("keeps the code on the request while booking is off, and the Tasks board names it", async () => {
     await make();
-    const answer = await book({ discount_code: "TENOFF" }, { selfServeBooking: false });
+    const answer = await book({ discount_code: "TENPC" }, { selfServeBooking: false });
     expect(await answer.json()).toMatchObject({ state: "requested", discount_code: true });
     const asked = await env.DB.prepare("SELECT one_visit, discount_code FROM consultation_requests").first();
-    expect(asked).toEqual({ one_visit: 1, discount_code: "TENOFF" });
+    expect(asked).toEqual({ one_visit: 1, discount_code: "TENPC" });
     expect((await uses()).results).toEqual([]);
   });
 
   it("refuses a single-use code another client's booking already stands on", async () => {
-    await make({ code: "ONEUSE", maxUses: 1, oncePerClient: false });
-    const theirs = await book({ discount_code: "ONEUSE" });
+    await make({ code: "UNQ5", maxUses: 1, oncePerClient: false });
+    const theirs = await book({ discount_code: "UNQ5" });
     expect(await theirs.json()).toMatchObject({ discount_code: true });
-    const mine = await book({ mobile: "9810000003", discount_code: "ONEUSE" });
+    const mine = await book({ mobile: "9810000003", discount_code: "UNQ5" });
     expect(mine.status).toBe(422);
   });
 
   it("stays the visit's code once the booking is in FSM, and comes off the product's price there", async () => {
     await make();
-    await book({ discount_code: "TENOFF" });
+    await book({ discount_code: "TENPC" });
     const [hold] = (await env.DB.prepare("SELECT id FROM slot_holds").all<{ id: string }>()).results;
     const fsm = createStubFsm({
       ...EMPTY_FSM,
@@ -423,9 +436,9 @@ describe("the technician, before a one visit's payment link", () => {
     await make();
     const payments = createStubPayments();
     const job = await oneVisit(payments);
-    const entered = await job.post(`/api/tech/jobs/${JOB}/discount-code`, { code: "tenoff" }, "unused");
+    const entered = await job.post(`/api/tech/jobs/${JOB}/discount-code`, { code: "tenpc" }, "unused");
     expect(entered.status).toBe(200);
-    expect(await entered.json()).toEqual({ code: "TENOFF" });
+    expect(await entered.json()).toEqual({ code: "TENPC" });
 
     await fitted(job);
     await job.post(`/api/tech/jobs/${JOB}/outcome`, { outcome: "done" }, "event-outcome-01");
@@ -442,19 +455,34 @@ describe("the technician, before a one visit's payment link", () => {
     const job = await oneVisit();
     await fitted(job);
     await job.post(`/api/tech/jobs/${JOB}/outcome`, { outcome: "done" }, "event-outcome-01");
-    const late = await job.post(`/api/tech/jobs/${JOB}/discount-code`, { code: "TENOFF" }, "unused");
+    const late = await job.post(`/api/tech/jobs/${JOB}/discount-code`, { code: "TENPC" }, "unused");
     expect(late.status).toBe(409);
     expect(await late.json()).toMatchObject({ error: { code: "price_settled" } });
 
     await env.DB.prepare("UPDATE appointments SET one_visit = NULL WHERE id = ?1").bind(JOB).run();
-    const prepaid = await job.post(`/api/tech/jobs/${JOB}/discount-code`, { code: "TENOFF" }, "unused");
+    const prepaid = await job.post(`/api/tech/jobs/${JOB}/discount-code`, { code: "TENPC" }, "unused");
     expect(await prepaid.json()).toMatchObject({ error: { code: "price_settled" } });
   });
 
-  it("says only that a code does not apply", async () => {
-    await make({ code: "SVCONLY", covers: ["service"] });
+  it("gives the code back when the client decides against the fit, and nothing is sold", async () => {
+    await make({ code: "UNQ5", maxUses: 1 });
     const job = await oneVisit();
-    const answer = await job.post(`/api/tech/jobs/${JOB}/discount-code`, { code: "SVCONLY" }, "unused");
+    await job.post(`/api/tech/jobs/${JOB}/discount-code`, { code: "UNQ5" }, "unused");
+    await job.workTo("consumables");
+    await job.post(`/api/tech/jobs/${JOB}/consumables`, { items: [] }, "event-consumables-01");
+    await job.post(`/api/tech/jobs/${JOB}/piece`, { declined: true }, "event-piece-01");
+    await job.post(`/api/tech/jobs/${JOB}/photos`, { phase: "after" }, "event-afterphotos-01");
+    await job.post(`/api/tech/jobs/${JOB}/outcome`, { outcome: "done" }, "event-outcome-01");
+    const use = await env.DB.prepare("SELECT removed_by, removed_by_id FROM discount_code_uses").first();
+    expect(use).toEqual({ removed_by: "system", removed_by_id: "declined" });
+    const [code] = await listCodes(env.DB, NOW, "UNQ5");
+    expect(code?.uses).toBe(0);
+  });
+
+  it("says only that a code does not apply", async () => {
+    await make({ code: "SVC25", covers: ["service"] });
+    const job = await oneVisit();
+    const answer = await job.post(`/api/tech/jobs/${JOB}/discount-code`, { code: "SVC25" }, "unused");
     expect(answer.status).toBe(422);
     expect(await answer.json()).toEqual({ error: { code: "code_not_applicable", request_id: expect.any(String) } });
   });

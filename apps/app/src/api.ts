@@ -149,6 +149,10 @@ export const api = {
     client.post("/api/holds", { body: { ...serviceOf(wanted, moving), date, window } }),
   holdById: (id: string) => client.get("/api/holds/{id}", { path: { id } }),
   releaseHold: (id: string) => client.delete("/api/holds/{id}", { path: { id } }),
+  /** A discount code off the hold's price, before Checkout has its order; the hold, priced again. */
+  enterCode: (holdId: string, code: string) =>
+    client.post("/api/holds/{id}/discount-code", { path: { id: holdId }, body: { code } }),
+  removeCode: (holdId: string) => client.delete("/api/holds/{id}/discount-code", { path: { id: holdId } }),
   /** `consents`: the photograph purposes whose lines the pay step showed, which the tap agrees to (ADR 0080). */
   book: (holdId: string, consents: readonly BookingConsent[]) =>
     client.post("/api/bookings", {

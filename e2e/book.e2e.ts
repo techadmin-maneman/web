@@ -21,6 +21,7 @@ const BOOKED = {
   invite: "unknown",
   address: "saved",
   one_visit: false,
+  discount_code: false,
 };
 
 const CODE = "RM4K7P";

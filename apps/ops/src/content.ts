@@ -460,7 +460,37 @@ export const clients = {
     },
     upcoming: "To come",
     past: "Done",
-    columns: ["Date", "Time", "Visit", "Technician", "State"],
+    columns: ["Date", "Time", "Visit", "Technician", "State", "Discount code"],
+    /**
+     * PLACEHOLDER: a discount code on a visit, which no board draws (docs/decisions/0108-discount-codes.md;
+     * docs/open-points.md, item 180). Entered or taken off only while the visit is not paid for or invoiced.
+     */
+    code: {
+      none: "None",
+      /** "TENOFF, Rs. 200 off": what it takes off before GST, once the visit's price is known. */
+      applied: (code: string, off: string | null) => (off === null ? code : `${code}, ${off} off`),
+      givenBy: { client: "by the client", technician: "by the technician", ops: "by ops" } as Readonly<
+        Record<string, string>
+      >,
+      enter: "Enter a code",
+      /** The button's whole name, since every row's says the same. */
+      enterLabel: (visit: string) => `Enter a discount code on the visit of ${visit}`,
+      label: "Discount code",
+      apply: "Apply",
+      applying: "Applying",
+      cancel: "Cancel",
+      remove: "Take it off",
+      removeLabel: (visit: string) => `Take the discount code off the visit of ${visit}`,
+      removing: "Taking it off",
+      errors: {
+        code_not_applicable: "That code does not apply to this visit.",
+        already_discounted: "This visit has a code already.",
+        price_settled: "This visit is paid for or invoiced, so its code stays as it is.",
+        not_found: "The code is already off this visit.",
+        offline: "You are offline. Connect, then try again.",
+        unknown: "That did not go through. Nothing was changed.",
+      } as Readonly<Record<string, string>>,
+    },
     noUpcoming: "Nothing booked.",
     noPast: "No visit done yet.",
     /** "9 am to 12", as the dispatch drawer writes a window. */
@@ -1585,11 +1615,12 @@ export const settings = {
     showAll: "Show the latest",
     none: "No code yet.",
     noneFound: "No code has that text.",
-    columns: ["Code", "Takes off", "Covers", "Last day", "Uses", "Given", ""],
-    noEnd: "No end",
+    /** How far a code is used: "3 of 10 uses", or "3 uses" with no limit. */
     usesOf: (uses: number, most: number | null) =>
-      most === null ? String(uses) : `${String(uses)} of ${String(most)}`,
-    switchedOff: "Switched off",
+      most === null ? `${String(uses)} ${uses === 1 ? "use" : "uses"}` : `${String(uses)} of ${String(most)} uses`,
+    given: (amount: string) => `${amount} given`,
+    madeBy: (who: string, when: string) => `Made by ${who} on ${when}`,
+    switchedOffBy: (who: string, when: string) => `Switched off by ${who} on ${when}`,
     switchOff: "Switch off",
     switchOffLabel: (code: string) => `Switch off ${code}`,
     switchTitle: (code: string) => `Switch off ${code}?`,

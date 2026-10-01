@@ -49,7 +49,7 @@ const audited = (action: string) =>
 
 /** Ten per cent off service visits, made in the console. */
 const TEN_OFF = {
-  code: "TENOFF",
+  code: "TENPC",
   kind: "percent",
   value: 10,
   covers: ["service"],
@@ -60,7 +60,7 @@ const make = (code: Partial<NewCodes> = {}) =>
   makeCodes(
     env.DB,
     {
-      code: "TENOFF",
+      code: "TENPC",
       count: 1,
       kind: "percent",
       value: 10,
@@ -97,15 +97,15 @@ beforeEach(async () => {
 
 describe("Settings · Discount codes", () => {
   it("makes a code ops typed, in capitals, and audits it with IDs and codes only", async () => {
-    const made = await post("/api/discount-codes", { ...TEN_OFF, code: "tenoff", expires_on: "2026-12-31" });
+    const made = await post("/api/discount-codes", { ...TEN_OFF, code: "tenpc", expires_on: "2026-12-31" });
     expect(made.status).toBe(201);
-    expect(await made.json()).toEqual({ codes: ["TENOFF"] });
+    expect(await made.json()).toEqual({ codes: ["TENPC"] });
     expect(await listed()).toMatchObject([
-      { code: "TENOFF", max_uses: null, batch_id: null, switched_off: null, uses: 0, given: 0 },
+      { code: "TENPC", max_uses: null, batch_id: null, switched_off: null, uses: 0, given: 0 },
     ]);
     const [entry] = (await audited("discount_code.make")).results;
     expect(entry).toMatchObject({ actor: "ops@localhost", subject_kind: "discount_code" });
-    expect(JSON.parse(entry?.detail ?? "{}")).toEqual({ count: 1, codes: "TENOFF" });
+    expect(JSON.parse(entry?.detail ?? "{}")).toEqual({ count: 1, codes: "TENPC" });
   });
 
   it("generates a batch of single-use codes, of letters and digits no one misreads", async () => {
@@ -138,7 +138,7 @@ describe("Settings · Discount codes", () => {
 
   it("refuses a code that exists already, whatever its case", async () => {
     await post("/api/discount-codes", TEN_OFF);
-    const again = await post("/api/discount-codes", { ...TEN_OFF, code: "tenOff" });
+    const again = await post("/api/discount-codes", { ...TEN_OFF, code: "tenPc" });
     expect(again.status).toBe(409);
     expect(await again.json()).toMatchObject({ error: { code: "code_exists" } });
   });
@@ -146,7 +146,7 @@ describe("Settings · Discount codes", () => {
   it("switches a code off, after which it does not apply, and keeps its uses", async () => {
     await clientWithVisit();
     await make();
-    await enterOnVisit(env.DB, { visitId: VISIT, text: "TENOFF", by: { kind: "ops", id: "ops@localhost" } }, NOW);
+    await enterOnVisit(env.DB, { visitId: VISIT, text: "TENPC", by: { kind: "ops", id: "ops@localhost" } }, NOW);
     const [code] = await listed();
     expect((await post(`/api/discount-codes/${code?.id ?? ""}/off`)).status).toBe(204);
     expect((await post(`/api/discount-codes/${code?.id ?? ""}/off`)).status).toBe(204);
@@ -154,14 +154,14 @@ describe("Settings · Discount codes", () => {
     expect((await audited("discount_code.switch_off")).results).toHaveLength(1);
 
     await post(`/api/visits/${VISIT}/discount-code/remove`);
-    const again = await post(`/api/visits/${VISIT}/discount-code`, { code: "TENOFF" });
+    const again = await post(`/api/visits/${VISIT}/discount-code`, { code: "TENPC" });
     expect(again.status).toBe(422);
   });
 
   it("finds one code by its text, however old", async () => {
     await make();
-    await make({ code: "FIVEOFF", value: 5 });
-    expect((await listed("?code=fiveoff")).map((code) => code.code)).toEqual(["FIVEOFF"]);
+    await make({ code: "FVEPC", value: 5 });
+    expect((await listed("?code=fvepc")).map((code) => code.code)).toEqual(["FVEPC"]);
   });
 });
 
@@ -182,20 +182,20 @@ describe("a code on a client's visit, in the console", () => {
 
   it("enters one on a visit not yet paid for, which the client's page then shows, and audits it", async () => {
     expect(await clientVisit()).toMatchObject({ discount_code: null, price_open: true });
-    const entered = await post(`/api/visits/${VISIT}/discount-code`, { code: "tenoff" });
+    const entered = await post(`/api/visits/${VISIT}/discount-code`, { code: "tenpc" });
     expect(entered.status).toBe(200);
-    expect(await entered.json()).toEqual({ code: "TENOFF", amount_off: 20_000, given_by: "ops" });
+    expect(await entered.json()).toEqual({ code: "TENPC", amount_off: 20_000, given_by: "ops" });
     expect(await clientVisit()).toMatchObject({
-      discount_code: { code: "TENOFF", amount_off: 20_000, given_by: "ops" },
+      discount_code: { code: "TENPC", amount_off: 20_000, given_by: "ops" },
       price_open: true,
     });
     const [entry] = (await audited("discount_code.apply")).results;
     expect(entry).toMatchObject({ actor: "ops@localhost", subject_kind: "appointment", subject_id: VISIT });
-    expect(JSON.parse(entry?.detail ?? "{}")).toEqual({ code: "TENOFF" });
+    expect(JSON.parse(entry?.detail ?? "{}")).toEqual({ code: "TENPC" });
   });
 
   it("takes it off again, audited, and the use stays on record, marked removed", async () => {
-    await post(`/api/visits/${VISIT}/discount-code`, { code: "TENOFF" });
+    await post(`/api/visits/${VISIT}/discount-code`, { code: "TENPC" });
     expect((await post(`/api/visits/${VISIT}/discount-code/remove`)).status).toBe(204);
     expect(await clientVisit()).toMatchObject({ discount_code: null });
     const use = await env.DB.prepare("SELECT removed_by, removed_by_id FROM discount_code_uses").first();
@@ -212,7 +212,7 @@ describe("a code on a client's visit, in the console", () => {
     )
       .bind(PERSON, VISIT, NOW.toISOString())
       .run();
-    const paid = await post(`/api/visits/${VISIT}/discount-code`, { code: "TENOFF" });
+    const paid = await post(`/api/visits/${VISIT}/discount-code`, { code: "TENPC" });
     expect(paid.status).toBe(409);
     expect(await paid.json()).toMatchObject({ error: { code: "price_settled" } });
     expect(await clientVisit()).toMatchObject({ price_open: false });
@@ -221,13 +221,13 @@ describe("a code on a client's visit, in the console", () => {
       env.DB.prepare("DELETE FROM payments"),
       env.DB.prepare("UPDATE appointments SET fsm_invoice_id = 'inv-1' WHERE id = ?1").bind(VISIT),
     ]);
-    expect((await post(`/api/visits/${VISIT}/discount-code`, { code: "TENOFF" })).status).toBe(409);
+    expect((await post(`/api/visits/${VISIT}/discount-code`, { code: "TENPC" })).status).toBe(409);
   });
 
   it("takes one code a visit", async () => {
-    await make({ code: "FIVEOFF", value: 5 });
-    await post(`/api/visits/${VISIT}/discount-code`, { code: "TENOFF" });
-    const second = await post(`/api/visits/${VISIT}/discount-code`, { code: "FIVEOFF" });
+    await make({ code: "FVEPC", value: 5 });
+    await post(`/api/visits/${VISIT}/discount-code`, { code: "TENPC" });
+    const second = await post(`/api/visits/${VISIT}/discount-code`, { code: "FVEPC" });
     expect(second.status).toBe(409);
     expect(await second.json()).toMatchObject({ error: { code: "already_discounted" } });
   });
@@ -259,7 +259,7 @@ describe("the invoice of a visit a code was entered on", () => {
   beforeEach(async () => {
     await clientWithVisit();
     await make();
-    await enterOnVisit(env.DB, { visitId: VISIT, text: "TENOFF", by: { kind: "ops", id: "ops@localhost" } }, NOW);
+    await enterOnVisit(env.DB, { visitId: VISIT, text: "TENPC", by: { kind: "ops", id: "ops@localhost" } }, NOW);
     await env.DB.prepare("UPDATE appointments SET status = 'completed' WHERE id = ?1").bind(VISIT).run();
   });
 
@@ -289,7 +289,7 @@ describe("the invoice of a visit a code was entered on", () => {
     };
     expect(await invoicePass(books)).toEqual({ raised: 1, issued: 0 });
     expect(alerted).toHaveLength(1);
-    expect(alerted[0]).toContain("TENOFF");
+    expect(alerted[0]).toContain("TENPC");
     expect(alerted[0]).toContain("nothing here sends it");
   });
 

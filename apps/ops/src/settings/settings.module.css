@@ -576,3 +576,24 @@
   font-family: var(--font-serif);
   font-size: var(--fs-18);
 }
+
+/* ---- Discount codes ------------------------------------------------------ */
+
+/* What a code covers: one square box a kind of visit, each on its own line under the question. */
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+  margin: var(--sp-16) 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.choices legend {
+  margin-bottom: var(--sp-8);
+  padding: 0;
+}
+
+.once {
+  margin-top: var(--sp-16);
+}

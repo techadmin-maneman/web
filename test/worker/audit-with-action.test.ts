@@ -321,7 +321,7 @@ describe("ops, when the audit entry cannot be written", () => {
 
   // Discount codes (docs/decisions/0108-discount-codes.md).
   it("makes no discount code, switches none off, and enters none on a visit or takes it off", async () => {
-    const code = { code: "TENOFF", kind: "percent", value: 10, covers: ["service"], once_per_client: true };
+    const code = { code: "TENPC", kind: "percent", value: 10, covers: ["service"], once_per_client: true };
     expect((await send(ops, "POST", "/api/discount-codes", code)).status).toBe(500);
     expect(await one("SELECT COUNT(*) AS codes FROM discount_codes")).toEqual({ codes: 0 });
 
@@ -329,7 +329,7 @@ describe("ops, when the audit entry cannot be written", () => {
       env.DB.prepare(
         `INSERT INTO discount_codes (id, code, kind, value, covers_first_fit, covers_service, covers_replacement,
            once_per_client, created_by, created_at)
-         VALUES ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'TENOFF', 'percent', 10, 0, 1, 0, 1, 'ops@localhost', ?1)`,
+         VALUES ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'TENPC', 'percent', 10, 0, 1, 0, 1, 'ops@localhost', ?1)`,
       ).bind(AT),
       env.DB.prepare(
         `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, fsm_modified_at,
@@ -339,7 +339,7 @@ describe("ops, when the audit entry cannot be written", () => {
     ]);
     expect((await send(ops, "POST", "/api/discount-codes/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/off")).status).toBe(500);
     expect(await one("SELECT switched_off_at FROM discount_codes")).toEqual({ switched_off_at: null });
-    expect((await send(ops, "POST", `/api/visits/${VISIT}/discount-code`, { code: "TENOFF" })).status).toBe(500);
+    expect((await send(ops, "POST", `/api/visits/${VISIT}/discount-code`, { code: "TENPC" })).status).toBe(500);
     expect(await one("SELECT COUNT(*) AS uses FROM discount_code_uses")).toEqual({ uses: 0 });
 
     await env.DB.prepare(
