@@ -11,6 +11,8 @@ import { grantCredits } from "../../src/domain/credits.ts";
 import { priceAfterCode } from "../../src/domain/discount-code-uses.ts";
 import { listCodes, makeCodes, type NewCodes } from "../../src/domain/discount-codes.ts";
 import { openSession } from "../../src/domain/sessions.ts";
+import { outstandingTasks } from "../../src/domain/tasks.ts";
+import { TASK_SLA_HOURS } from "../../src/policy/tasks.ts";
 import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
 import { createStubPayments } from "../../src/providers/payments.ts";
 import {
@@ -381,6 +383,10 @@ describe("the site's form, for a consultation and fit in one visit", () => {
     const asked = await env.DB.prepare("SELECT one_visit, discount_code FROM consultation_requests").first();
     expect(asked).toEqual({ one_visit: 1, discount_code: "TENPC" });
     expect((await uses()).results).toEqual([]);
+    const { tasks } = await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS);
+    expect(tasks.filter((task) => task.group === "consultation_request")).toMatchObject([
+      { detail: "2026-09-23 morning one_visit TENPC" },
+    ]);
   });
 
   it("refuses a single-use code another client's booking already stands on", async () => {
