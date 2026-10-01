@@ -680,3 +680,35 @@
   display: inline-flex;
   margin-top: var(--sp-16);
 }
+
+/* A discount code typed on a visit (docs/decisions/0108-discount-codes.md): the box and its two buttons on a line. */
+.codeForm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-8);
+}
+
+.codeInput {
+  width: var(--ops-piece-column);
+  height: var(--field-h);
+  padding: 0 var(--sp-10);
+  border: var(--hairline) solid var(--paper-control);
+  background: var(--white);
+  font: inherit;
+  font-size: var(--fs-15);
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.codeInput:focus-visible {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: calc(-1 * var(--focus-width));
+}
+
+.codeError {
+  flex-basis: 100%;
+  margin: var(--sp-6) 0 0;
+  font-size: var(--fs-14);
+  color: var(--error-on-paper);
+}

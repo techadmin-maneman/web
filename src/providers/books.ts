@@ -19,6 +19,13 @@
 //   GET  /books/v3/customerpayments?organization_id=&customer_id=&reference_number=
 //                                                                     { customerpayments: [{ payment_id, reference_number }] }
 //   GET  /books/v3/customerpayments/{id}/refunds?organization_id=     { payment_refunds: [{ payment_refund_id, reference_number }] }
+//
+// A discount code's line discount on a draft before it is sent (docs/decisions/0108-discount-codes.md) follows the
+// same documentation and has not been tried on the org either (docs/open-points.md, item 181):
+//
+//   PUT  /books/v3/invoices/{id}?organization_id=                     { invoice: {...} }, with every line, the
+//                                                                     visit's line carrying the discount in rupees,
+//                                                                     discount_type item_level, before tax
 
 import { z } from "zod";
 import type { ZohoFsmSettings } from "../config/settings.ts";
@@ -72,6 +79,12 @@ export interface BooksProvider {
    * just raised: an issued invoice can be undone only with a credit note.
    */
   issueInvoice(id: string): Promise<void>;
+  /**
+   * Takes a discount code's amount, in paise, off a draft's visit line before tax, so the invoice shows the price,
+   * the discount and the total; answers the invoice as it now stands. Only `raiseInvoices` calls it, on an invoice it
+   * has just raised and not yet sent.
+   */
+  discountInvoice(id: string, amountOff: number): Promise<BooksInvoice>;
   /** Null while Books has no such invoice, which the app shows as "Document unavailable". */
   invoicePdf(id: string): Promise<BooksPdf | null>;
   /** The payment Books holds for this customer under our reference; null if it holds none. */
@@ -101,6 +114,7 @@ export function createBooksProvider(
   return {
     invoice: off,
     issueInvoice: off,
+    discountInvoice: off,
     invoicePdf: off,
     findPayment: off,
     recordPayment: off,
@@ -120,6 +134,31 @@ const Invoice = z.object({
   status: z.string(),
 });
 
+/** A draft with its lines, as a discount is written onto it: each line is sent back, or Books removes it. */
+const InvoiceWithLines = Invoice.extend({
+  customer_id: z.string(),
+  line_items: z
+    .array(
+      z.looseObject({
+        line_item_id: z.string(),
+        rate: z.number(),
+        quantity: z.number(),
+        discount: z.union([z.number(), z.string()]).optional(),
+      }),
+    )
+    .min(1),
+});
+
+type BooksLine = z.infer<typeof InvoiceWithLines>["line_items"][number];
+
+/** The visit's line, which a discount comes off: the dearest, since a visit's work order bills its service first. */
+const visitLine = (lines: readonly BooksLine[]): BooksLine | undefined =>
+  lines.reduce<BooksLine | undefined>(
+    (dearest, line) =>
+      dearest === undefined || line.rate * line.quantity > dearest.rate * dearest.quantity ? line : dearest,
+    undefined,
+  );
+
 const Recorded = z.object({ payment: z.object({ payment_id: z.string() }) });
 const Refunded = z.object({ payment_refund: z.object({ payment_refund_id: z.string() }) });
 
@@ -135,6 +174,16 @@ const RefundsFound = z.object({
 
 /** Paise as Books takes an amount: rupees. */
 const rupees = (paise: number) => paise / 100;
+
+/** An invoice as Books gives it, its amounts in paise. */
+const booksInvoiceOf = (invoice: z.infer<typeof Invoice>): BooksInvoice => ({
+  id: invoice.invoice_id,
+  number: invoice.invoice_number,
+  date: invoice.date,
+  total: Math.round(invoice.total * 100),
+  balance: Math.round((invoice.balance ?? invoice.total) * 100),
+  status: invoice.status,
+});
 
 function createZohoBooks(settings: ZohoFsmSettings, orgId: string, deps: ZohoRequesterDependencies): BooksProvider {
   // Books shares the FSM client, and so its token.
@@ -158,15 +207,7 @@ function createZohoBooks(settings: ZohoFsmSettings, orgId: string, deps: ZohoReq
     invoice: (id) =>
       orNull(async () => {
         const answer = await (await request("invoice", path(id))).json<{ invoice?: unknown }>();
-        const invoice = Invoice.parse(answer.invoice);
-        return {
-          id: invoice.invoice_id,
-          number: invoice.invoice_number,
-          date: invoice.date,
-          total: Math.round(invoice.total * 100),
-          balance: Math.round((invoice.balance ?? invoice.total) * 100),
-          status: invoice.status,
-        };
+        return booksInvoiceOf(Invoice.parse(answer.invoice));
       }),
 
     async issueInvoice(id) {
@@ -174,6 +215,26 @@ function createZohoBooks(settings: ZohoFsmSettings, orgId: string, deps: ZohoReq
         method: "POST",
         body: {},
       });
+    },
+
+    async discountInvoice(id, amountOff) {
+      const read = await (await request("invoice", path(id))).json<{ invoice?: unknown }>();
+      const draft = InvoiceWithLines.parse(read.invoice);
+      const discounted = visitLine(draft.line_items);
+      const body = {
+        customer_id: draft.customer_id,
+        discount_type: "item_level",
+        is_discount_before_tax: true,
+        line_items: draft.line_items.map((line) =>
+          line === discounted ? { ...line, discount: rupees(amountOff) } : line,
+        ),
+      };
+      const written = await (
+        await request("discount_invoice", path(id), { method: "PUT", body })
+      ).json<{
+        invoice?: unknown;
+      }>();
+      return booksInvoiceOf(Invoice.parse(written.invoice));
     },
 
     invoicePdf: (id) =>
@@ -255,9 +316,19 @@ export interface StubBooks extends BooksProvider {
     readonly refunds: (NewBooksRefund & { paymentId: string })[];
     /** The invoices marked sent, in the order they were. */
     readonly issued: string[];
+    /** The discounts written onto drafts, in paise before GST. */
+    readonly discounts: { invoiceId: string; amountOff: number }[];
   };
   /** Makes the next record of this kind take effect and then fail, as a call does whose answer never came. */
   loseAnswer(step: "recordPayment" | "recordRefund"): void;
+}
+
+/**
+ * What the stub's drafts total before a discount, in paise: the work order's figure, which the stub cannot know, as
+ * FSM raised the draft. A discount then leaves that figure less the discount, as Books leaves it with GST at 0%.
+ */
+interface StubBooksWorld {
+  readonly draftTotal: number;
 }
 
 const blankPdf = () => ({
@@ -270,12 +341,13 @@ const blankPdf = () => ({
  * it records. Its IDs are unique, as a new stub answers each local request. An invoice is a draft until it is
  * issued, as Books has it.
  */
-export function createStubBooks(): StubBooks {
+export function createStubBooks(world: StubBooksWorld = { draftTotal: 0 }): StubBooks {
   const made = {
     payments: [] as NewBooksPayment[],
     applied: [] as { paymentId: string; invoiceId: string; amount: number }[],
     refunds: [] as (NewBooksRefund & { paymentId: string })[],
     issued: [] as string[],
+    discounts: [] as { invoiceId: string; amountOff: number }[],
   };
   // What the stub recorded, by the keys a retry looks it up by.
   const paymentIds = new Map<string, string>();
@@ -314,6 +386,11 @@ export function createStubBooks(): StubBooks {
     issueInvoice: (id) => {
       made.issued.push(id);
       return Promise.resolve();
+    },
+    discountInvoice: (id, amountOff) => {
+      made.discounts.push({ invoiceId: id, amountOff });
+      const total = world.draftTotal - amountOff;
+      return Promise.resolve({ id, number: "INV-000001", date: "2026-09-22", total, balance: total, status: "draft" });
     },
     invoice: (id) =>
       Promise.resolve(

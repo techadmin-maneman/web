@@ -1,8 +1,9 @@
 // What closing a consultation and fit in one visit as done makes of it
 // (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md; src/policy/one-visit.ts). The technician's piece step
 // recorded what the client decided: the product they chose and were fitted with, whose payment link then goes to
-// them, or that they decided against it, which makes the visit a consultation, with nothing charged. A close the
-// phone sends again finds the visit as the first one left it, and asks for the link only while it is still unsent.
+// them, or that they decided against it, which makes the visit a consultation, with nothing charged and any discount
+// code on it given back (docs/decisions/0108-discount-codes.md). A close the phone sends again finds the visit as the
+// first one left it, and asks for the link only while it is still unsent.
 //
 // A visit closed partly done, or as a no-show, stays a one visit still to be decided: ops follow it up from the
 // Tasks board, as any visit so closed, and nothing is charged or sent.
@@ -10,6 +11,7 @@
 import { STANDARD_TIER } from "../config/visit-types.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import type { Decision } from "../policy/one-visit.ts";
+import { releaseDeclined } from "./discount-code-uses.ts";
 import { eventsOf } from "./job-events.ts";
 import { sendPaymentLink, type LinkDeps, type LinkSent } from "./payment-links.ts";
 
@@ -42,10 +44,12 @@ export async function closeOneVisit(
   if (decision === null || job.personId === null) return null;
 
   if ("declined" in decision) {
-    await db
-      .prepare("UPDATE appointments SET one_visit = 'declined', type = 'consultation', tier = ?2 WHERE id = ?1")
-      .bind(job.id, STANDARD_TIER)
-      .run();
+    await db.batch([
+      db
+        .prepare("UPDATE appointments SET one_visit = 'declined', type = 'consultation', tier = ?2 WHERE id = ?1")
+        .bind(job.id, STANDARD_TIER),
+      ...releaseDeclined(db, job.id, now),
+    ]);
     return null;
   }
   await db

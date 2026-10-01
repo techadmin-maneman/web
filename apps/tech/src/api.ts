@@ -168,6 +168,17 @@ export const api = {
   piece: (code: string, jobId: string) =>
     client.get("/api/tech/pieces/lookup", { query: { code, job: jobId }, patience: PATIENCE_MS.write }),
 
+  /**
+   * A discount code on a one visit, before its payment link goes (docs/decisions/0108-discount-codes.md). Asked
+   * straight, not through the outbox: the technician must hear at once whether it applies.
+   */
+  discountCode: (jobId: string, code: string) =>
+    client.post("/api/tech/jobs/{id}/discount-code", {
+      path: { id: jobId },
+      body: { code },
+      patience: PATIENCE_MS.write,
+    }),
+
   /** A link to PUT one photograph to, good for fifteen minutes. */
   uploadLink: (jobId: string, phase: Phase, angle: Angle) =>
     client.post("/api/tech/jobs/{id}/photos/upload-url", {

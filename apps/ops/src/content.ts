@@ -460,7 +460,37 @@ export const clients = {
     },
     upcoming: "To come",
     past: "Done",
-    columns: ["Date", "Time", "Visit", "Technician", "State"],
+    columns: ["Date", "Time", "Visit", "Technician", "State", "Discount code"],
+    /**
+     * PLACEHOLDER: a discount code on a visit, which no board draws (docs/decisions/0108-discount-codes.md).
+     * Entered or taken off only while the visit is not paid for or invoiced.
+     */
+    code: {
+      none: "None",
+      /** "TENOFF, Rs. 200 off": what it takes off before GST, once the visit's price is known. */
+      applied: (code: string, off: string | null) => (off === null ? code : `${code}, ${off} off`),
+      givenBy: { client: "by the client", technician: "by the technician", ops: "by ops" } as Readonly<
+        Record<string, string>
+      >,
+      enter: "Enter a code",
+      /** The button's whole name, since every row's says the same. */
+      enterLabel: (visit: string) => `Enter a discount code on the visit of ${visit}`,
+      label: "Discount code",
+      apply: "Apply",
+      applying: "Applying",
+      cancel: "Cancel",
+      remove: "Take it off",
+      removeLabel: (visit: string) => `Take the discount code off the visit of ${visit}`,
+      removing: "Taking it off",
+      errors: {
+        code_not_applicable: "That code does not apply to this visit.",
+        already_discounted: "This visit has a code already.",
+        price_settled: "This visit is paid for or invoiced, so its code stays as it is.",
+        not_found: "The code is already off this visit.",
+        offline: "You are offline. Connect, then try again.",
+        unknown: "That did not go through. Nothing was changed.",
+      } as Readonly<Record<string, string>>,
+    },
     noUpcoming: "Nothing booked.",
     noPast: "No visit done yet.",
     /** "9 am to 12", as the dispatch drawer writes a window. */
@@ -1143,6 +1173,11 @@ export const tasks = {
      */
     withOneVisit: "+ consultation and fit in one visit",
     /**
+     * PLACEHOLDER: ", code WEDDNG25", after the one visit: the discount code the client gave on the form, which ops
+     * enter on the visit once they have booked it (docs/decisions/0108-discount-codes.md).
+     */
+    withCode: (code: string) => `, code ${code}`,
+    /**
      * PLACEHOLDER: "+ first fit, afternoon", after the consultation asked for: the site's form asked for the fit
      * too, which the client books and pays for in the app once the consultation is done (ADR 0086).
      */
@@ -1515,10 +1550,96 @@ export const settings = {
   tabs: {
     rules: "Rules",
     prices: "Services and prices",
+    "discount-codes": "Discount codes",
     area: "Service area",
     blackouts: "Blackout days",
     consumables: "Consumables",
     "job-sheet": "Job sheet",
+  },
+  /**
+   * PLACEHOLDER, every line of it: no board draws discount codes (docs/decisions/0108-discount-codes.md).
+   * What a code takes off is shown before it is made, as a price is set
+   * (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
+   */
+  discountCodes: {
+    title: "Discount codes",
+    note:
+      "A code takes money off a first fit, a service visit or a replacement, before GST. The client enters it where " +
+      "they pay or book, the technician before sending a payment link, ops on a visit. It is never taken on a visit " +
+      "a referral credit pays for, and once a visit is paid for or invoiced its code stays as it is.",
+    make: "Make codes",
+    how: "The code",
+    typed: "Type one",
+    generated: "Generate them",
+    code: "Code",
+    codeHint: "4 to 16 letters and figures. Not I, L, O, 0 or 1, which read as each other.",
+    count: "How many",
+    countHint: (most: number) => `1 to ${String(most)}. More than one makes each a single-use code.`,
+    takesOff: "Takes off",
+    percent: "A percentage",
+    amount: "An amount",
+    value: "Per cent",
+    rupeesOff: "Rupees",
+    cap: "At most, in rupees",
+    capHint: "Optional. Leave empty for no cap.",
+    covers: "Covers",
+    coverNames: {
+      first_fit: "First fit, and the consultation and fit in one visit",
+      service: "Service visits",
+      replacement: "Replacements",
+    } as Readonly<Record<string, string>>,
+    expires: "Last day it may be used",
+    expiresHint: "Optional. Leave empty for no end.",
+    maxUses: "Total uses",
+    maxUsesHint: "Optional. Leave empty for no limit.",
+    oncePerClient: "Once per client",
+    check: "Check",
+    checkTitle: "Make these codes?",
+    send: "Make them",
+    sending: "Making",
+    back: "Back",
+    /** One line of the check: what each code takes off. */
+    off: (what: string) => `Takes off ${what} before GST`,
+    percentOff: (percent: number, cap: string | null) =>
+      cap === null ? `${String(percent)}%` : `${String(percent)}%, at most ${cap}`,
+    covering: (kinds: string) => `On ${kinds}`,
+    until: (day: string | null) => (day === null ? "No end" : `Until ${day}, the last day`),
+    usesLine: (uses: number | null, once: boolean) =>
+      `${uses === null ? "Any number of uses" : `${String(uses)} ${uses === 1 ? "use" : "uses"} in all`}${once ? ", once per client" : ""}`,
+    oneTyped: (code: string) => `The code ${code}`,
+    manyGenerated: (count: number) => `${String(count)} codes, generated, each used once`,
+    oneGenerated: "One code, generated",
+    made: (codes: readonly string[]) => `Made: ${codes.join(", ")}`,
+    find: "Find a code",
+    findButton: "Find",
+    showAll: "Show the latest",
+    none: "No code yet.",
+    noneFound: "No code has that text.",
+    /** How far a code is used: "3 of 10 uses", or "3 uses" with no limit. */
+    usesOf: (uses: number, most: number | null) =>
+      most === null ? `${String(uses)} ${uses === 1 ? "use" : "uses"}` : `${String(uses)} of ${String(most)} uses`,
+    given: (amount: string) => `${amount} given`,
+    madeBy: (who: string, when: string) => `Made by ${who} on ${when}`,
+    switchedOffBy: (who: string, when: string) => `Switched off by ${who} on ${when}`,
+    switchOff: "Switch off",
+    switchOffLabel: (code: string) => `Switch off ${code}`,
+    switchTitle: (code: string) => `Switch off ${code}?`,
+    switchLine: (uses: number) =>
+      `No booking takes it from now on. ${String(uses)} ${uses === 1 ? "booking keeps" : "bookings keep"} it, as sold.`,
+    switching: "Switching off",
+    errors: {
+      code: "A code is 4 to 16 letters and figures, none of them I, L, O, 0 or 1.",
+      count: "A code you type is made once. Generate them to make more.",
+      value: "A percentage is 1 to 100.",
+      cap: "Only a percentage takes a cap.",
+      covers: "Choose what the code covers.",
+      expires_on: "The last day cannot be before today.",
+      max_uses: "Generated codes are single-use: one use each.",
+      code_exists: "A code with that text exists already.",
+      not_found: "That code is gone. Reload to see the list as it stands.",
+      offline: "You are offline. Connect, then try again.",
+      unknown: "That did not go through. Nothing was changed.",
+    } as Readonly<Record<string, string>>,
   },
   rules: {
     title: "Rules",

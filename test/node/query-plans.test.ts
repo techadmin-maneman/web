@@ -28,6 +28,8 @@ const CRON_PATH = [
   "src/domain/books-sync.ts",
   "src/domain/referral-grants.ts",
   "src/domain/payment-links.ts",
+  // A visit's discount code, read by the payment link and the invoice pass (docs/decisions/0108-discount-codes.md).
+  "src/domain/discount-code-uses.ts",
   "src/domain/credits.ts",
   "src/domain/visit-messages.ts",
   "src/domain/next-visit.ts",

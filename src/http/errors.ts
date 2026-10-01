@@ -94,6 +94,13 @@ export const ERROR_CODES = [
   // was disputed already, or took nothing to give back.
   "already_disputed",
   "not_disputable",
+  // Discount codes (docs/decisions/0108-discount-codes.md): the code entered does not apply, which is all its enterer
+  // is told; the booking carries a code already; the booking's price is settled, so no code goes on or comes off; or
+  // ops typed a code that already exists.
+  "code_not_applicable",
+  "already_discounted",
+  "price_settled",
+  "code_exists",
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 

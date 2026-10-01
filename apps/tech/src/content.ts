@@ -473,6 +473,25 @@ export const oneVisit = {
   payment: "Payment",
   linkSent: "Link texted to the client",
   linkPaid: "Paid",
+  /**
+   * PLACEHOLDER: a discount code the client gives the technician before the link goes (docs/decisions/0108-discount-codes.md).
+   * It comes off the product's price in the link; no amount is shown here.
+   */
+  code: {
+    label: "Discount code, if the client has one",
+    apply: "Apply code",
+    applying: "Checking",
+    /** Said once it applies: the link carries it, and nothing else is shown. */
+    applied: (code: string) => `Code ${code} applied. The payment link will take it off.`,
+    errors: {
+      code_not_applicable: "That code does not apply to this visit.",
+      already_discounted: "This visit already has a code.",
+      price_settled: "The payment link has gone, so the code can no longer change.",
+      rate_limited: "Too many codes tried. Try again tomorrow.",
+      offline: "You are offline. A code needs a signal: try again once you have one.",
+      unknown: "That did not go through. Try again.",
+    } as Readonly<Record<string, string>>,
+  },
 } as const;
 
 export const types = {

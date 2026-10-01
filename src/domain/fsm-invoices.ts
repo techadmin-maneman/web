@@ -25,18 +25,24 @@
 // A consultation and fit in one visit that the client declined is not invoiced
 // at all: it was a free consultation, though FSM's work order is still on the
 // first fit's item (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+//
+// A discount code entered on the booking comes off the visit's line in Books
+// before GST, before the total is checked, so the invoice shows the price, the
+// discount and the total (docs/decisions/0108-discount-codes.md).
 
 import { rupees } from "@maneman/web-kit/money";
 import { STANDARD_TIER, type VisitType } from "../config/visit-types.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { failureReason, type Logger } from "../log.ts";
+import { discounted } from "../policy/discount-codes.ts";
 import { invoiceHold, type InvoiceHold, type SoldVisit } from "../policy/prepayment.ts";
 import type { BooksProvider } from "../providers/books.ts";
 import type { FsmInvoice, FsmProvider } from "../providers/fsm.ts";
 import { isRefusal } from "../providers/provider-error.ts";
 import type { AlertOnce, ResolveAlert } from "./alerts.ts";
-import { priceOf } from "./price-book.ts";
+import { codeOnVisit, priceAfterCode } from "./discount-code-uses.ts";
+import { priceOf, type Price } from "./price-book.ts";
 import { HOUR_MS } from "../lib/durations.ts";
 
 /** How many a pass bills at most. */
@@ -148,12 +154,25 @@ async function invoiceVisit(pass: Pass, visit: Visit): Promise<{ raised: boolean
     return { raised: false, issued: false };
   }
 
+  // A discount code entered on the booking comes off the visit's line before GST, so the invoice shows the price,
+  // the discount and the total (docs/decisions/0108-discount-codes.md).
+  const code = await codeOff(db, visit);
+  let total = invoice.total;
+  if (code !== null && code.off > 0) {
+    try {
+      total = (await deps.books.discountInvoice(invoice.booksInvoiceId, code.off)).total;
+    } catch (error) {
+      await tellUndiscounted(pass, visit, invoice, code, error);
+      return { raised: true, issued: false };
+    }
+  }
+
   // Checked before it is sent: an issued invoice is undone only by a credit note.
-  const sold = await soldVisit(db, visit);
-  const hold = invoiceHold(invoice.total, sold);
+  const sold = await soldVisit(db, visit, code?.off ?? 0);
+  const hold = invoiceHold(total, sold);
   if (hold !== null) {
     pass.log.warn("invoice_held", { appointment_id: visit.id, hold });
-    await tellHeld(pass, visit, invoice, hold, sold);
+    await tellHeld(pass, visit, { ...invoice, total }, hold, sold);
     return { raised: true, issued: false };
   }
 
@@ -170,12 +189,46 @@ async function invoiceVisit(pass: Pass, visit: Visit): Promise<{ raised: boolean
 }
 
 /**
- * What the client was sold the visit for: what they paid for it, or, for a
- * visit no payment names, the price book's price on the day it happened. And
- * whether a referral credit paid for it, by the ledger or by the hold that
- * booked it.
+ * What the visit's discount code takes off before GST, fixed now where it was not yet; null for a visit with no code,
+ * or one whose price the book does not have, which the check below then holds.
  */
-async function soldVisit(db: D1Database, visit: Visit): Promise<SoldVisit> {
+async function codeOff(db: D1Database, visit: Visit): Promise<{ code: string; off: number } | null> {
+  const code = await codeOnVisit(db, visit.id);
+  if (code === null) return null;
+  if (code.amountOff !== null) return { code: code.code, off: code.amountOff };
+  const price = await listPrice(db, visit);
+  if (price === null) return null;
+  const after = await priceAfterCode(db, visit.id, price);
+  await db.batch(after.fix);
+  return { code: code.code, off: after.off };
+}
+
+/** Books would not take the code's discount on the draft: it is held, and ops told what to set before sending it. */
+async function tellUndiscounted(
+  pass: Pass,
+  visit: Visit,
+  invoice: FsmInvoice,
+  code: { code: string; off: number },
+  error: unknown,
+): Promise<void> {
+  pass.log.warn("invoice_discount_failed", { appointment_id: visit.id, error });
+  await pass.deps.alertOnce({
+    key: `invoice_draft:${visit.id}`,
+    message:
+      `Invoice ${invoice.booksInvoiceId} of visit ${visit.id} is held as a draft in Books: the code ${code.code} ` +
+      `takes ${rupees(code.off)} off before GST, and Books would not take the discount (${failureReason(error, 200)}). ` +
+      "Set it on the visit's line in Books and send the invoice there: nothing here sends it.",
+    link: linkTo(visit),
+  });
+}
+
+/**
+ * What the client was sold the visit for: what they paid for it, or, for a
+ * visit no payment names, the price book's price on the day it happened, less
+ * the discount code entered on it. And whether a referral credit paid for it,
+ * by the ledger or by the hold that booked it.
+ */
+async function soldVisit(db: D1Database, visit: Visit, off: number): Promise<SoldVisit> {
   const row = await db
     .prepare(
       `SELECT
@@ -189,17 +242,14 @@ async function soldVisit(db: D1Database, visit: Visit): Promise<SoldVisit> {
   const paidWithCredit = row?.with_credit === 1;
   const paid = row?.paid ?? null;
   if (paid !== null) return { soldFor: paid, paidWithCredit };
-  return { soldFor: await listPrice(db, visit), paidWithCredit };
+  const price = await listPrice(db, visit);
+  return { soldFor: price === null ? null : discounted(price, off).amount, paidWithCredit };
 }
 
-/**
- * The price book's price, with GST, for the visit's own service on the day it happened in India; null where there is
- * none.
- */
-async function listPrice(db: D1Database, visit: Visit): Promise<number | null> {
-  if (visit.type === null || visit.window_start === null) return null;
-  const price = await priceOf(db, visit.type, indiaDate(new Date(visit.window_start)), visit.tier ?? STANDARD_TIER);
-  return price?.amount ?? null;
+/** The price book's price for the visit's own service on the day it happened in India; null where there is none. */
+function listPrice(db: D1Database, visit: Visit): Promise<Price | null> {
+  if (visit.type === null || visit.window_start === null) return Promise.resolve(null);
+  return priceOf(db, visit.type, indiaDate(new Date(visit.window_start)), visit.tier ?? STANDARD_TIER);
 }
 
 /** The draft's alert, saying why it is held. It shares the draft's key, so a visit is told of once. */
