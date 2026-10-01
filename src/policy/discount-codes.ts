@@ -6,12 +6,14 @@
 
 import { withGst } from "../config/gst.ts";
 import type { VisitType } from "../config/visit-types.ts";
+import { takesCredit } from "./referral-reward.ts";
 
 export const RULES = [
   "% or rupees, per code: a percentage, with an optional rupee cap, or a fixed rupee amount, taken off before GST, so the invoice shows the discounted price.",
   "Ops choose per code what it covers: the first fit (the one-visit consultation and fit included), service visits, replacements, or any of them.",
   "Client, technician or ops enter it: the client where they pay or book, the technician before sending the pay-at-visit link, ops on a booking in the console; always before the invoice is made.",
   "Ops set limits per code: an expiry date, total uses (one, many or unlimited), once per client; one code per booking; never on a visit a referral credit pays for; ops can switch a code off at any time, and its uses stay on record.",
+  "Discount codes can be applied once credit paid visits are over: a client who still holds referral credits uses them first, and a code applies only to a visit no credit can pay for.",
 ] as const;
 
 export const DISCOUNT_KINDS = ["percent", "amount"] as const;
@@ -85,7 +87,7 @@ export interface CodeState {
 /** The booking a code is entered on, as far as a code cares. */
 export interface CodeBooking {
   readonly type: VisitType;
-  /** A referral credit pays for it. */
+  /** A referral credit pays for it (RULES[3]), or one the client still holds could (RULES[4]). */
   readonly onCredit: boolean;
   /** It moves a visit already booked, for free, for its late fee, or as a new visit in its place. */
   readonly moves: boolean;
@@ -93,8 +95,8 @@ export interface CodeBooking {
 
 /**
  * Why a code does not apply to a booking; null when it does. Whoever entered it is told only that it does not apply
- * (docs/decisions/0108-discount-codes.md); the reason is logged. A code is for a visit sold: a move is not one, so
- * neither its late fee nor the visit a late move books in its place takes a code (a default taken for the owner to confirm, ADR 0108).
+ * (docs/decisions/0108-discount-codes.md); the reason is logged. A visit's code moves with it, as the owner ruled
+ * on 1 October 2026, but a move takes no code of its own: neither its late fee nor the visit a late move books.
  */
 export type CodeRefusal = "switched_off" | "expired" | "not_covered" | "used_up" | "used_by_client" | "credit" | "move";
 
@@ -108,6 +110,13 @@ export function codeRefusal(code: CodeState, booking: CodeBooking, today: string
   if (code.oncePerClient && code.usedByClient) return "used_by_client";
   return null;
 }
+
+/**
+ * Whether a credit the client still holds would pay for a visit of this kind (RULES[4]): one a credit can pay, a
+ * service visit, while they hold one. The credit is spent first, so no code goes on it.
+ */
+export const creditComesFirst = (type: VisitType, creditsHeld: number): boolean =>
+  takesCredit(type, null) && creditsHeld > 0;
 
 /**
  * How often a code may be checked (docs/decisions/0108-discount-codes.md): a client's number ten times a day, and

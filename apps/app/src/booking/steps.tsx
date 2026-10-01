@@ -11,6 +11,7 @@ import { Icon } from "@maneman/ui/Icon";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { indiaClock, indiaDate, shortDate, weekdayDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
+import { useState } from "react";
 import type { Availability, BookingConsent, BookingWindow, Hold, MoveTerms, OfferedService, Price } from "../api.ts";
 import { booking, change, messages, profile, states, VISIT_TYPES, WINDOW_HOURS, WINDOW_NAMES } from "../content.ts";
 import { CHECK, CLOCK } from "../icons.ts";
@@ -409,6 +410,8 @@ export function PayStep(props: {
   // A code is for a visit sold, never a move, nor one a credit pays for, nor a consultation, which costs nothing.
   const takesACode = moving === undefined && !covered && hold.type !== "consultation";
   const listPrice = hold.discount?.list_price ?? null;
+  // A code being applied or taken off may change the price: Pay waits for it, so the order is for the price shown.
+  const [codeSending, setCodeSending] = useState(false);
   return (
     <>
       <Heading title={copy.title} aside={copy.held(minutesAndSeconds(left))} />
@@ -437,7 +440,7 @@ export function PayStep(props: {
         {isFirstFit && <p className={styles.line}>{copy.guarantee(technician)}</p>}
         <ChangeTerms hold={hold} moving={inPlace ? moving : undefined} covered={covered} />
       </div>
-      {takesACode && <CodeBox hold={hold} busy={props.busy} onHold={props.onHold} />}
+      {takesACode && <CodeBox hold={hold} busy={props.busy} onHold={props.onHold} onSending={setCodeSending} />}
       {!free && (
         <>
           <h3 className={styles.label}>{copy.with}</h3>
@@ -491,7 +494,7 @@ export function PayStep(props: {
         variant="primary"
         size="action"
         className={styles.primary}
-        disabled={props.busy || left === 0}
+        disabled={props.busy || codeSending || left === 0}
         busy={props.busy}
         onClick={props.onPay}
       >

@@ -54,12 +54,16 @@ export const termsOf = (row: { kind: DiscountKind; value: number; cap: number | 
 
 /**
  * Whether a use stands, `use` naming the discount_code_uses row and `now` the bound parameter for now: not taken off
- * its booking, and not on a hold that was let go, or that stopped keeping its time with nothing paid.
+ * its booking, not on a hold that was let go, or that stopped keeping its time with nothing paid, and not on a visit
+ * cancelled, by the client, by ops or by FSM, which gives the code back, as the owner ruled on 1 October 2026.
  */
 export const standing = (use: string, now: string): string =>
   `${use}.removed_at IS NULL AND (${use}.hold_id IS NULL OR EXISTS (
      SELECT 1 FROM slot_holds held WHERE held.id = ${use}.hold_id AND (held.state = 'booked'
-       OR (held.state = 'held' AND (held.confirmed_at IS NOT NULL OR ${graceEnds("held")} > ${now})))))`;
+       OR (held.state = 'held' AND (held.confirmed_at IS NOT NULL OR ${graceEnds("held")} > ${now})))))
+   AND NOT EXISTS (SELECT 1 FROM appointments gone
+     WHERE gone.id IN (${use}.appointment_id, (SELECT booked.appointment_id FROM slot_holds booked WHERE booked.id = ${use}.hold_id))
+       AND (gone.status = 'cancelled' OR gone.deleted_at IS NOT NULL))`;
 
 /** What ops ask for when they make codes. */
 export interface NewCodes {

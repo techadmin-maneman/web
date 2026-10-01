@@ -37,13 +37,15 @@ export function Outcome({ id }: { id: string }) {
   const { loaded, retry, refused, finish, back } = useStep(id, "outcome");
   const [choice, setChoice] = useState<Choice>(null);
   const [reason, setReason] = useState<PartialReason["id"] | null>(null);
+  const [codeChecking, setCodeChecking] = useState(false);
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} />;
 
   const reasons = loaded.value.partial_reasons;
   const closesOneVisit = loaded.value.one_visit && choice === "done";
-  const ready = choice === "done" || (choice === "partial" && reason !== null);
+  // A code being checked would change the link closing the visit sends: Next waits for it.
+  const ready = !codeChecking && (choice === "done" || (choice === "partial" && reason !== null));
 
   return (
     <StepFrame
@@ -82,7 +84,7 @@ export function Outcome({ id }: { id: string }) {
       </div>
 
       {closesOneVisit && <p className={styles.note}>{oneVisit.closeNote}</p>}
-      {closesOneVisit && <DiscountCode jobId={id} />}
+      {closesOneVisit && <DiscountCode jobId={id} onChecking={setCodeChecking} />}
 
       {choice === "partial" && (
         <ul className={styles.reasons}>

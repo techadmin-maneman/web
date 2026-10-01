@@ -13,7 +13,7 @@ const copy = oneVisit.code;
 
 const said = (code: string): string => copy.errors[code] ?? copy.errors.unknown ?? "";
 
-export function DiscountCode({ jobId }: { jobId: string }) {
+export function DiscountCode({ jobId, onChecking }: { jobId: string; onChecking: (checking: boolean) => void }) {
   const [typed, setTyped] = useState("");
   const [checking, setChecking] = useState(false);
   const [applied, setApplied] = useState<string | null>(null);
@@ -21,9 +21,11 @@ export function DiscountCode({ jobId }: { jobId: string }) {
 
   const apply = async () => {
     setChecking(true);
+    onChecking(true);
     setProblem(null);
     const answer = await api.discountCode(jobId, typed.trim());
     setChecking(false);
+    onChecking(false);
     if (!answer.ok) {
       setProblem(said(answer.code));
       return;

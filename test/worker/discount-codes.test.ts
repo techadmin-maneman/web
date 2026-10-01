@@ -6,6 +6,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createAlertOnce, createResolveAlert } from "../../src/domain/alerts.ts";
+import { grantCredits } from "../../src/domain/credits.ts";
 import { enterOnVisit } from "../../src/domain/discount-code-uses.ts";
 import { makeCodes, type NewCodes } from "../../src/domain/discount-codes.ts";
 import { raiseInvoices } from "../../src/domain/fsm-invoices.ts";
@@ -233,7 +234,77 @@ describe("a code on a client's visit, in the console", () => {
     expect(second.status).toBe(409);
     expect(await second.json()).toMatchObject({ error: { code: "already_discounted" } });
   });
+
+  // The owner's ruling of 1 October 2026: "Discount codes can be applied once credit paid visits are over".
+  it("takes no code on a service visit while the client holds a credit that could pay it", async () => {
+    await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "ops", sourceId: "o1", now: NOW }).run();
+    const refused = await post(`/api/visits/${VISIT}/discount-code`, { code: "TENPC" });
+    expect(refused.status).toBe(422);
+    expect(await refused.json()).toMatchObject({ error: { code: "code_not_applicable" } });
+  });
+
+  // The owner's ruling of 1 October 2026, "the use comes back", and the review of #177: a prepaid visit cancelled
+  // and refunded kept its code's use, which nothing could then take off.
+  it("gives a code's use back when its visit is cancelled, paid for and refunded or not", async () => {
+    await make({ code: "UNQ5", maxUses: 1, oncePerClient: false });
+    await post(`/api/visits/${VISIT}/discount-code`, { code: "UNQ5" });
+    await env.DB.batch([
+      env.DB.prepare("UPDATE appointments SET status = 'cancelled', fsm_status = 'Cancelled' WHERE id = ?1").bind(
+        VISIT,
+      ),
+      env.DB.prepare(
+        `INSERT INTO payments (id, person_id, appointment_id, razorpay_payment_id, amount, currency, status,
+           refunded_amount, captured_at, created_at, updated_at)
+         VALUES ('pay-1', ?1, ?2, 'pay_1', 180000, 'INR', 'refunded', 180000, ?3, ?3, ?3)`,
+      ).bind(PERSON, VISIT, NOW.toISOString()),
+    ]);
+    expect(await listed("?code=UNQ5")).toMatchObject([{ code: "UNQ5", uses: 0 }]);
+
+    const other = await otherVisit();
+    const again = await post(`/api/visits/${other}/discount-code`, { code: "UNQ5" });
+    expect(again.status).toBe(200);
+  });
+
+  // Review of #177: every limit test was refused by the check before the use's own statement could refuse it.
+  it("takes a code's last use once when two entries reach it together, the second told it does not apply", async () => {
+    await make({ code: "UNQ5", maxUses: 1, oncePerClient: false });
+    const other = await otherVisit();
+    // The other entry lands between this one's check and its write.
+    const racing = new Proxy(env.DB, {
+      get(target, property) {
+        if (property === "batch") {
+          return async (statements: D1PreparedStatement[]) => {
+            await enterOnVisit(target, { visitId: other, text: "UNQ5", by: OPS }, NOW);
+            return target.batch(statements);
+          };
+        }
+        const value: unknown = Reflect.get(target, property);
+        return typeof value === "function" ? (value as (...args: unknown[]) => unknown).bind(target) : value;
+      },
+    });
+    const entered = await enterOnVisit(racing, { visitId: VISIT, text: "UNQ5", by: OPS }, NOW);
+    expect(entered).toEqual({ kind: "not_applicable", reason: "taken_meanwhile" });
+    const written = await env.DB.prepare("SELECT appointment_id FROM discount_code_uses").all();
+    expect(written.results).toEqual([{ appointment_id: other }]);
+  });
 });
+
+/** A second client's service visit, not yet paid for, for a code's other use. */
+async function otherVisit(): Promise<string> {
+  const id = "22222222-2222-4222-8222-222222222223";
+  await env.DB.batch([
+    env.DB.prepare(
+      "INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('person-2', ?1, '+919810000002', 'Karan Bhatia')",
+    ).bind(NOW.toISOString()),
+    env.DB.prepare(
+      `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, tier, status, fsm_status,
+         window_start, window_end, fsm_modified_at, synced_at)
+       VALUES (?1, 'fsm-2', 'fsm-wo-2', 'person-2', 'service', 'standard', 'scheduled', 'Scheduled',
+         '2026-09-23T08:30:00.000Z', '2026-09-23T10:00:00.000Z', ?2, ?2)`,
+    ).bind(id, NOW.toISOString()),
+  ]);
+  return id;
+}
 
 describe("the invoice of a visit a code was entered on", () => {
   /** After the visit, on Wednesday 23 September, when staging's book has no GST. */

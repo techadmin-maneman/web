@@ -41,6 +41,7 @@ import { BOOKING_DAYS, BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { FSM_SERVICE_NAMES, VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
 import { recordBookingConsents } from "../domain/booking-consents.ts";
 import { startBooking } from "../domain/bookings.ts";
+import { codeToCarry } from "../domain/discount-code-uses.ts";
 import { creditBalance } from "../domain/credits.ts";
 import { priceOf, type Price } from "../domain/price-book.ts";
 import { checkoutHold, clientHold, releaseHold } from "../domain/holds.ts";
@@ -501,6 +502,10 @@ export function registerClientBooking(app: App): void {
       takesCredit(type, moves?.kind ?? null) && (await creditBalance(c.env.DB, session.subjectId, now)).visits > 0;
     const inputs = await opsInputs(c);
     const sold = await soldAs(c, { type, date, move: move?.terms ?? null, kind: moves?.kind ?? null }, inputs);
+    // A visit moved late books a new one in its place, which keeps the visit's discount code, unless a credit pays it
+    // (docs/decisions/0108-discount-codes.md).
+    const carried =
+      moves?.kind === "replace" && !useCredit ? await codeToCarry(c.env.DB, moves.visit.visitId, price, now) : null;
     const hold = await holdSlot(
       c.env.DB,
       {
@@ -508,13 +513,14 @@ export function registerClientBooking(app: App): void {
         service: { type, tier: service.tier, minutes: service.minutes },
         date,
         window,
-        price,
+        price: carried?.price ?? price,
         lateFee: sold.lateFee,
         terms: sold.terms,
         pincode: address.pincode,
         useCredit,
         from: "app",
         ...(moves === undefined ? {} : { moves }),
+        afterHold: (holdId) => (carried === null ? [] : [carried.useOn(holdId)]),
       },
       now,
       inputs.paymentHold.countdown * 60,

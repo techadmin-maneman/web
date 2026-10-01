@@ -6,15 +6,17 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { confirmBooking } from "../../src/domain/bookings.ts";
+import { confirmBooking, startBooking } from "../../src/domain/bookings.ts";
 import { grantCredits } from "../../src/domain/credits.ts";
-import { priceAfterCode } from "../../src/domain/discount-code-uses.ts";
+import { removeFromHold } from "../../src/domain/discount-code-holds.ts";
+import { priceAfterCode, removeFromVisit } from "../../src/domain/discount-code-uses.ts";
+import { composeVisitMessage } from "../../src/domain/visit-messages.ts";
 import { listCodes, makeCodes, type NewCodes } from "../../src/domain/discount-codes.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { outstandingTasks } from "../../src/domain/tasks.ts";
 import { TASK_SLA_HOURS } from "../../src/policy/tasks.ts";
 import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
-import { createStubPayments } from "../../src/providers/payments.ts";
+import { createStubPayments, type PaymentsProvider } from "../../src/providers/payments.ts";
 import {
   appFor,
   captureLogs,
@@ -240,6 +242,74 @@ describe("the client, at the app's pay step", () => {
     expect(answer.status).toBe(422);
   });
 
+  // The owner's ruling of 1 October 2026: "Discount codes can be applied once credit paid visits are over".
+  it("waits for the client's credits to be spent: a service visit a credit could pay takes no code", async () => {
+    await make();
+    const hold = await heldService(PERSON);
+    // The hold was made before the credit was given, so no credit pays it; one still could.
+    await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "ops", sourceId: "o1", now: NOW }).run();
+    const answer = await enter(PERSON, hold.id, "TENPC");
+    expect(answer.status).toBe(422);
+    expect(await answer.json()).toMatchObject({ error: { code: "code_not_applicable" } });
+  });
+
+  // The owner's ruling of 1 October 2026: "send whatsapp message even when the code makes the visit free".
+  it("books a visit a code makes free without Checkout, and tells the client on WhatsApp as a paid one is told", async () => {
+    await make({ code: "ALLFREE", kind: "amount", value: 200_000 });
+    await env.DB.prepare(
+      `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, source)
+       VALUES ('consent-w', ?1, 'whatsapp_visits', 'whatsapp-visits-v1', 1, ?2, 'app_profile')`,
+    )
+      .bind(PERSON, NOW.toISOString())
+      .run();
+    const hold = await heldService(PERSON);
+    expect(await (await enter(PERSON, hold.id, "ALLFREE")).json()).toMatchObject({ price: { amount: 0 } });
+    const started = await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: hold.id } });
+    expect(await started.json()).toMatchObject({ checkout: null });
+
+    const fsm = createStubFsm({
+      ...EMPTY_FSM,
+      items: [{ id: "item-service", name: "Service visit", type: "Service", price: null }],
+    });
+    expect(await confirmBooking(env.DB, fsm, createStubPayments(), hold.id, NOW, { labelAsTest: false })).toBe(
+      "booked",
+    );
+    const told = await env.DB.prepare("SELECT kind, subject_id FROM outbound_messages").first<{
+      kind: string;
+      subject_id: string;
+    }>();
+    expect(told?.kind).toBe("payment_receipt");
+    const composed = await composeVisitMessage(env.DB, "payment_receipt", told?.subject_id ?? "", PERSON);
+    expect(composed).toMatchObject({ template: "visit_booked_code_v1" });
+  });
+
+  // Review of #177: an order made for a price a code changed meanwhile was kept.
+  it("makes Checkout's order again when a code comes off as the order is made, so the order is the hold's price", async () => {
+    await make();
+    const hold = await heldService(PERSON);
+    await enter(PERSON, hold.id, "TENPC");
+    const stub = createStubPayments();
+    let first = true;
+    const racing: PaymentsProvider = {
+      ...stub,
+      createOrder: async (order) => {
+        const made = await stub.createOrder(order);
+        if (first) {
+          first = false;
+          await removeFromHold(env.DB, { holdId: hold.id, personId: PERSON }, NOW);
+        }
+        return made;
+      },
+    };
+    const started = await startBooking(env.DB, racing, hold.id, PERSON, NOW);
+    expect(stub.made.orders.map((order) => order.amount)).toEqual([180_000, 200_000]);
+    const kept = await env.DB.prepare("SELECT amount, razorpay_order_id FROM slot_holds WHERE id = ?1")
+      .bind(hold.id)
+      .first<{ amount: number; razorpay_order_id: string }>();
+    expect(kept?.amount).toBe(200_000);
+    expect(started).toEqual({ kind: "pay", orderId: kept?.razorpay_order_id });
+  });
+
   it("is once per client while their booking stands", async () => {
     await make();
     const first = await heldService(PERSON);
@@ -296,6 +366,45 @@ describe("the client, at the app's pay step", () => {
     });
     expect(outcome).toBe("refunded");
     expect(payments.made.refunds).toEqual([{ paymentId: "pay_late", amount: 180_000 }]);
+  });
+
+  // The owner's ruling of 1 October 2026, "the use comes back", and the review of #177: a prepaid booking cancelled
+  // and refunded kept its code's use, which nothing could then take off.
+  it("gives a code's use back when the visit it booked is cancelled, though it was paid for and refunded", async () => {
+    await make({ code: "UNQ5", oncePerClient: false, maxUses: 1 });
+    await fittedClient(OTHER, "+919810000005");
+    const hold = await heldService(PERSON);
+    await enter(PERSON, hold.id, "UNQ5");
+    const started = await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: hold.id } });
+    const { checkout } = await started.json<{ checkout: { order_id: string; amount: number } }>();
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO payments (id, person_id, razorpay_order_id, razorpay_payment_id, amount, currency, status,
+           captured_at, created_at, updated_at)
+         VALUES ('pay-1', ?1, ?2, 'pay_1', ?3, 'INR', 'captured', ?4, ?4, ?4)`,
+      ).bind(PERSON, checkout.order_id, checkout.amount, NOW.toISOString()),
+      env.DB.prepare("UPDATE slot_holds SET confirmed_at = ?2 WHERE id = ?1").bind(hold.id, NOW.toISOString()),
+    ]);
+    const fsm = createStubFsm({
+      ...EMPTY_FSM,
+      items: [{ id: "item-service", name: "Service visit", type: "Service", price: null }],
+    });
+    expect(await confirmBooking(env.DB, fsm, createStubPayments(), hold.id, NOW, { labelAsTest: false })).toBe(
+      "booked",
+    );
+    const theirs = await heldService(OTHER, NOW, "morning");
+    expect((await enter(OTHER, theirs.id, "UNQ5")).status).toBe(422);
+
+    await env.DB.batch([
+      env.DB.prepare(
+        `UPDATE appointments SET status = 'cancelled', fsm_status = 'Cancelled'
+         WHERE id = (SELECT appointment_id FROM slot_holds WHERE id = ?1)`,
+      ).bind(hold.id),
+      env.DB.prepare("UPDATE payments SET status = 'refunded', refunded_amount = amount WHERE id = 'pay-1'"),
+    ]);
+    expect((await enter(OTHER, theirs.id, "UNQ5")).status).toBe(200);
+    const [code] = await listCodes(env.DB, NOW, "UNQ5");
+    expect(code?.uses).toBe(1);
   });
 
   it("is tried ten times a day, right or wrong", async () => {
@@ -470,6 +579,39 @@ describe("the technician, before a one visit's payment link", () => {
     await env.DB.prepare("UPDATE appointments SET one_visit = NULL WHERE id = ?1").bind(JOB).run();
     const prepaid = await job.post(`/api/tech/jobs/${JOB}/discount-code`, { code: "TENPC" }, "unused");
     expect(await prepaid.json()).toMatchObject({ error: { code: "price_settled" } });
+  });
+
+  it("still takes a code on a first fit while the client holds credits, which pay only service visits", async () => {
+    await make();
+    const job = await oneVisit();
+    await grantCredits(env.DB, { personId: PERSON, visits: 3, source: "ops", sourceId: "o1", now: NOW }).run();
+    const entered = await job.post(`/api/tech/jobs/${JOB}/discount-code`, { code: "TENPC" }, "unused");
+    expect(entered.status).toBe(200);
+  });
+
+  // Review of #177: a ₹0 link, which Razorpay refuses, left ops a task that never closed.
+  it("settles a one visit a code makes free: no link, nothing owed, and the client told on WhatsApp", async () => {
+    await make({ code: "ALLFREE", kind: "amount", value: NATURAL.amount });
+    const payments = createStubPayments();
+    const job = await oneVisit(payments);
+    await job.post(`/api/tech/jobs/${JOB}/discount-code`, { code: "ALLFREE" }, "unused");
+    await fitted(job);
+    await job.post(`/api/tech/jobs/${JOB}/outcome`, { outcome: "done" }, "event-outcome-01");
+
+    expect(payments.made.links).toEqual([]);
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM payment_links").first("n")).toBe(0);
+    const { tasks } = await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS);
+    expect(tasks.filter((task) => task.group === "payment_owed")).toEqual([]);
+    expect(job.deps.alerts).toEqual([]);
+    const told = await env.DB.prepare("SELECT kind FROM outbound_messages WHERE subject_id = ?1 ORDER BY kind")
+      .bind(JOB)
+      .all();
+    // The other is the arrival notice of the technician's check-in.
+    expect(told.results).toEqual([{ kind: "arrival_notice" }, { kind: "nothing_to_pay" }]);
+    expect((await uses()).results).toMatchObject([{ amount_off: NATURAL.amount }]);
+    // The close settled its price, so the code stays on it, as on a visit paid for.
+    const ops = { kind: "ops", actor: { kind: "staff", id: "ops@localhost" } } as const;
+    expect(await removeFromVisit(env.DB, { visitId: JOB, by: ops, requestId: "r" }, NOW)).toBe("price_settled");
   });
 
   it("gives the code back when the client decides against the fit, and nothing is sold", async () => {

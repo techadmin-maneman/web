@@ -29,6 +29,12 @@ const TEMPLATES: Readonly<Record<string, string>> = {
     "Hello {{1}}, your {{2}} is booked for {{3}}, {{4}}, with {{5}}. Paid {{6}}, reference {{7}}. The receipt is in the app.",
   visit_booked_credit_v1:
     "Hello {{1}}, your {{2}} is booked for {{3}}, {{4}}, with {{5}}. One of your visit credits covers it.",
+  // A visit a discount code made free (docs/decisions/0108-discount-codes.md): booked with nothing to pay.
+  visit_booked_code_v1:
+    "Hello {{1}}, your {{2}} is booked for {{3}}, {{4}}, with {{5}}. Your discount code covers it, so there is nothing to pay.",
+  // A consultation and fit in one visit a discount code made free, once the client is fitted.
+  visit_fitted_code_v1:
+    "Hello {{1}}, you are fitted. Your discount code covers your hair system, so there is nothing to pay.",
   visit_reminder_v1: "Hello {{1}}, a reminder that your {{2}} is tomorrow, {{3}}, {{4}}, with {{5}}.",
   visit_moved_v1: "Hello {{1}}, your {{2}} is now on {{3}}, {{4}}, with {{5}}.",
   // At the technician's check-in (docs/decisions/0074-hand-offs-and-messages.md), the no-show's evidence.
@@ -176,6 +182,7 @@ export const MESSAGE_CLASSES: Readonly<Record<MessageKind, MessageClass>> = {
   tryon_result: "answering", // the result of the try-on the person just claimed
   consultation_confirmation: "answering", // the booking they just made
   payment_receipt: "answering",
+  nothing_to_pay: "automatic", // the technician's close of a one visit, not the client's own action
   reschedule_confirmation: "answering", // the client's own move
   cancel_confirmation: "answering", // the client's own cancel
   waitlist_confirmation: "answering", // their own place on the list, just joined

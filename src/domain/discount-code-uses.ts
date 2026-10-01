@@ -14,6 +14,7 @@ import { indiaDate } from "../lib/india-time.ts";
 import {
   amountOff,
   codeRefusal,
+  creditComesFirst,
   discounted,
   normalisedCode,
   type CodeBooking,
@@ -23,6 +24,7 @@ import {
 } from "../policy/discount-codes.ts";
 import type { OneVisitState } from "../policy/one-visit.ts";
 import { auditStatementIfStamped, auditStatementIfWritten, type AuditActor, type AuditEntry } from "./audit.ts";
+import { creditBalance } from "./credits.ts";
 import { CODE_COLUMNS, coversOf, standing, termsOf, type CodeRow } from "./discount-codes.ts";
 import { priceOf, type Price } from "./price-book.ts";
 
@@ -48,11 +50,13 @@ export const unpaidHold = (hold: string): string =>
 
 /**
  * A visit, `visit` naming its ID in the query, while its price may change: not invoiced, not paid for, and no payment
- * link made for it. A refunded payment was a payment.
+ * link made for it. A refunded payment was a payment. A one visit closed with the client fitted has its price fixed by
+ * the close, though a code that left nothing to pay made no link.
  */
 const openVisit = (visit: string): string =>
   `EXISTS (SELECT 1 FROM appointments open_visit WHERE open_visit.id = ${visit} AND open_visit.deleted_at IS NULL
-     AND open_visit.fsm_invoice_id IS NULL AND open_visit.invoice_issued_at IS NULL)
+     AND open_visit.fsm_invoice_id IS NULL AND open_visit.invoice_issued_at IS NULL
+     AND open_visit.one_visit IS NOT 'fitted')
    AND NOT EXISTS (SELECT 1 FROM payments paid WHERE paid.appointment_id = ${visit} AND paid.kind = 'visit'
      AND paid.status IN ('captured', 'refunded', 'partially_refunded'))
    AND NOT EXISTS (SELECT 1 FROM payment_links link WHERE link.appointment_id = ${visit})`;
@@ -67,7 +71,10 @@ export type Refused = CodeRefusal | "unknown";
 /** A code entered on a booking: the code it is, or why it does not apply. */
 type Checked = { readonly ok: true; readonly code: CodeRow } | { readonly ok: false; readonly reason: Refused };
 
-/** The code a text names, and whether it applies to the booking for this client, its limits read as they stand now. */
+/**
+ * The code a text names, and whether it applies to the booking for this client, its limits read as they stand now.
+ * Every entry point checks here, so a credit the client still holds is spent before any code at each of them.
+ */
 export async function checkCode(
   db: D1Database,
   text: string,
@@ -96,7 +103,9 @@ export async function checkCode(
     oncePerClient: code.once_per_client === 1,
     usedByClient: (counted?.theirs ?? 0) > 0,
   };
-  const refusal = codeRefusal(state, booking, indiaDate(now));
+  const credits = booking.onCredit ? 0 : (await creditBalance(db, personId, now)).visits;
+  const onCredit = booking.onCredit || creditComesFirst(booking.type, credits);
+  const refusal = codeRefusal(state, { ...booking, onCredit }, indiaDate(now));
   return refusal === null ? { ok: true, code } : { ok: false, reason: refusal };
 }
 
@@ -248,6 +257,68 @@ export async function codeOnVisit(db: D1Database, visitId: string): Promise<Visi
     }>();
   if (row === null) return null;
   return { useId: row.id, code: row.code, terms: termsOf(row), amountOff: row.amount_off, givenBy: row.given_by };
+}
+
+/** A visit's code as a late move carries it to the visit it books in its place. */
+interface CarriedCode {
+  /** The new visit's price, with the code's discount taken off as it was on the visit moved. */
+  readonly price: Price;
+  /** The use on the new visit's hold, written in the hold's own batch. */
+  readonly useOn: (holdId: string) => D1PreparedStatement;
+}
+
+/**
+ * The code a visit moved late carries to the new visit booked in its place, as the owner ruled on 1 October 2026:
+ * the same code and the same discount, written as a use on the new hold whatever the code's limits now say, since
+ * no new use is counted. The visit moved is cancelled once the new one is booked, and its use then stands no more.
+ * Null for a visit with no code, or whose discount was not yet fixed.
+ */
+export async function codeToCarry(
+  db: D1Database,
+  visitId: string,
+  price: Price,
+  now: Date,
+): Promise<CarriedCode | null> {
+  const columns = "u.code_id, u.person_id, u.amount_off, u.given_by, u.given_by_id";
+  const use = await db
+    .prepare(
+      `SELECT ${columns} FROM discount_code_uses u WHERE u.appointment_id = ?1 AND u.removed_at IS NULL
+       UNION ALL
+       SELECT ${columns} FROM slot_holds h JOIN discount_code_uses u ON u.hold_id = h.id
+       WHERE h.appointment_id = ?1 AND h.state = 'booked' AND u.removed_at IS NULL
+       LIMIT 1`,
+    )
+    .bind(visitId)
+    .first<{
+      code_id: string;
+      person_id: string;
+      amount_off: number | null;
+      given_by: GivenBy;
+      given_by_id: string;
+    }>();
+  const took = use?.amount_off ?? null;
+  if (use === null || took === null) return null;
+  const off = Math.min(took, price.amount_ex_gst);
+  return {
+    price: discounted(price, off),
+    useOn: (holdId) =>
+      db
+        .prepare(
+          `INSERT INTO discount_code_uses (id, code_id, person_id, hold_id, amount_off, given_by, given_by_id,
+             created_at)
+           VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)`,
+        )
+        .bind(
+          crypto.randomUUID(),
+          use.code_id,
+          use.person_id,
+          holdId,
+          off,
+          use.given_by,
+          use.given_by_id,
+          now.toISOString(),
+        ),
+  };
 }
 
 /** The visit's own price in the book on its day: its service's, or a one visit's product once chosen. */
@@ -408,9 +479,15 @@ export async function priceAfterCode(
   db: D1Database,
   visitId: string,
   price: Price,
-): Promise<{ readonly price: Price; readonly off: number; readonly fix: D1PreparedStatement[] }> {
+): Promise<{
+  readonly price: Price;
+  readonly off: number;
+  readonly fix: D1PreparedStatement[];
+  /** The use read, for `codeAsRead`; null for none. */
+  readonly useId: string | null;
+}> {
   const code = await codeOnVisit(db, visitId);
-  if (code === null) return { price, off: 0, fix: [] };
+  if (code === null) return { price, off: 0, fix: [], useId: null };
   const off = code.amountOff ?? amountOff(code.terms, price.amount_ex_gst);
   const fix =
     code.amountOff === null
@@ -420,5 +497,16 @@ export async function priceAfterCode(
             .bind(code.useId, off),
         ]
       : [];
-  return { price: discounted(price, off), off, fix };
+  return { price: discounted(price, off), off, fix, useId: code.useId };
 }
+
+/**
+ * True while the visit's code is still the one read, `visit` and `use` naming the bound parameters for the visit's ID
+ * and the use read, or NULL for none: what charges a price is written only while no code went on or came off since.
+ */
+export const codeAsRead = (visit: string, use: string): string =>
+  `(SELECT COUNT(*) FROM discount_code_uses u WHERE u.appointment_id = ${visit} AND u.removed_at IS NULL)
+   + (SELECT COUNT(*) FROM slot_holds h JOIN discount_code_uses u ON u.hold_id = h.id
+       WHERE h.appointment_id = ${visit} AND h.state = 'booked' AND u.removed_at IS NULL)
+   = (CASE WHEN ${use} IS NULL THEN 0 ELSE 1 END)
+   AND (${use} IS NULL OR EXISTS (SELECT 1 FROM discount_code_uses u WHERE u.id = ${use} AND u.removed_at IS NULL))`;

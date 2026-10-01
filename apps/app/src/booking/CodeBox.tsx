@@ -14,18 +14,30 @@ const copy = booking.pay.code;
 
 const said = (code: string): string => copy.errors[code] ?? copy.errors.unknown ?? "";
 
-export function CodeBox({ hold, busy, onHold }: { hold: Hold; busy: boolean; onHold: (hold: Hold) => void }) {
+export function CodeBox(props: {
+  hold: Hold;
+  busy: boolean;
+  onHold: (hold: Hold) => void;
+  /** True while a code is being applied or taken off, when the price may change and Pay must wait. */
+  onSending: (sending: boolean) => void;
+}) {
+  const { hold, busy, onHold } = props;
   const [open, setOpen] = useState(false);
   const [typed, setTyped] = useState("");
   const [sending, setSending] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const applied = hold.discount;
 
+  const send = (going: boolean) => {
+    setSending(going);
+    props.onSending(going);
+  };
+
   const apply = async () => {
-    setSending(true);
+    send(true);
     setProblem(null);
     const answer = await api.enterCode(hold.id, typed.trim());
-    setSending(false);
+    send(false);
     if (!answer.ok) {
       setProblem(said(answer.code));
       return;
@@ -36,10 +48,10 @@ export function CodeBox({ hold, busy, onHold }: { hold: Hold; busy: boolean; onH
   };
 
   const remove = async () => {
-    setSending(true);
+    send(true);
     setProblem(null);
     const answer = await api.removeCode(hold.id);
-    setSending(false);
+    send(false);
     if (!answer.ok) {
       setProblem(said(answer.code));
       return;

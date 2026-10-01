@@ -23,12 +23,13 @@ import { failureReason, type Logger } from "../log.ts";
 import type { PaymentsProvider } from "../providers/payments.ts";
 import { isRefusal } from "../providers/provider-error.ts";
 import type { AlertOnce, ResolveAlert } from "./alerts.ts";
-import { priceAfterCode } from "./discount-code-uses.ts";
+import { codeAsRead, priceAfterCode } from "./discount-code-uses.ts";
 import { priceOf } from "./price-book.ts";
 import { serviceOf } from "./services.ts";
+import { visitMessage } from "./visit-messages.ts";
 
-/** What asking for the link came to. */
-export type LinkSent = "sent" | "already_sent" | "unpriced" | "refused" | "unavailable";
+/** What asking for the link came to; "free" when a discount code left nothing to pay, so no link was asked for. */
+export type LinkSent = "sent" | "already_sent" | "unpriced" | "refused" | "unavailable" | "free";
 
 export interface LinkDeps {
   readonly payments: PaymentsProvider;
@@ -68,41 +69,83 @@ const failedKey = (appointmentId: string) => `payment_link_failed:${appointmentI
 
 const LINK_COLUMNS = "id, amount, sent_at, refused_at";
 
+/** What the visit's link came to: the row, nothing to pay, no price in the book, or a code changing as it was made. */
+type LinkFor =
+  { readonly kind: "link"; readonly row: LinkRow } | { readonly kind: "free" | "unpriced" | "code_changing" };
+
+/** A code going on or coming off the visit as its link is written makes the link be read again, this many times. */
+const LINK_TRIES = 3;
+
 /**
  * The visit's link, or a new one for the product at its price on the visit's day, less the visit's discount code
- * before GST; null where the book has no price. What the code takes off is fixed in the batch that writes the link.
+ * before GST. What the code takes off is fixed in the batch that writes the link, which is written only while the code
+ * is still the one read. A code that leaves nothing to pay settles the visit instead, with no link and nothing owed,
+ * and the client told on WhatsApp (docs/decisions/0108-discount-codes.md).
  */
-async function linkFor(db: D1Database, visit: FittedVisit, now: Date): Promise<LinkRow | null> {
+async function linkFor(db: D1Database, visit: FittedVisit, now: Date): Promise<LinkFor> {
   const current = () =>
     db
       .prepare(`SELECT ${LINK_COLUMNS} FROM payment_links WHERE appointment_id = ?1`)
       .bind(visit.appointmentId)
       .first<LinkRow>();
-  const existing = await current();
-  if (existing !== null) return existing;
-  const listed = await priceOf(db, "first_fit", visit.day, visit.tier);
-  if (listed === null) return null;
-  const { price, fix } = await priceAfterCode(db, visit.appointmentId, listed);
-  // Another close of the same visit may write it first; either way the row is the visit's one.
-  await db.batch([
-    ...fix,
-    db
-      .prepare(
-        `INSERT INTO payment_links (id, appointment_id, tier, amount, amount_ex_gst, gst_percent, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7)
-         ON CONFLICT (appointment_id) DO NOTHING`,
-      )
-      .bind(
-        crypto.randomUUID(),
-        visit.appointmentId,
-        visit.tier,
-        price.amount,
-        price.amount_ex_gst,
-        price.gst_percent,
-        now.toISOString(),
-      ),
-  ]);
-  return current();
+  for (let tries = 0; tries < LINK_TRIES; tries += 1) {
+    const existing = await current();
+    if (existing !== null) return { kind: "link", row: existing };
+    const listed = await priceOf(db, "first_fit", visit.day, visit.tier);
+    if (listed === null) return { kind: "unpriced" };
+    const after = await priceAfterCode(db, visit.appointmentId, listed);
+    if (after.price.amount === 0) {
+      await settleFree(db, visit, after.fix, now);
+      return { kind: "free" };
+    }
+    // Another close of the same visit may write it first; either way the row is the visit's one.
+    await db.batch([
+      ...after.fix,
+      db
+        .prepare(
+          `INSERT INTO payment_links (id, appointment_id, tier, amount, amount_ex_gst, gst_percent, created_at,
+             updated_at)
+           SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7 WHERE ${codeAsRead("?2", "?8")}
+           ON CONFLICT (appointment_id) DO NOTHING`,
+        )
+        .bind(
+          crypto.randomUUID(),
+          visit.appointmentId,
+          visit.tier,
+          after.price.amount,
+          after.price.amount_ex_gst,
+          after.price.gst_percent,
+          now.toISOString(),
+          after.useId,
+        ),
+    ]);
+  }
+  const written = await current();
+  return written === null ? { kind: "code_changing" } : { kind: "link", row: written };
+}
+
+/**
+ * A one visit a discount code made free: what the code took is fixed, nothing is owed, so no link and no task, and
+ * the client is told on WhatsApp, once, as a paid visit's client is. The message is queued here and the sweeper sends
+ * it within minutes, as it sends any the queue never had.
+ */
+async function settleFree(
+  db: D1Database,
+  visit: FittedVisit,
+  fix: readonly D1PreparedStatement[],
+  now: Date,
+): Promise<void> {
+  const told = await db
+    .prepare("SELECT 1 FROM outbound_messages WHERE subject_id = ?1 AND kind = 'nothing_to_pay'")
+    .bind(visit.appointmentId)
+    .first();
+  const message = visitMessage(db, {
+    personId: visit.personId,
+    appointmentId: visit.appointmentId,
+    kind: "nothing_to_pay",
+    now,
+  });
+  await db.batch([...fix, ...(told === null ? [message.statement] : [])]);
 }
 
 /** The visit's link at its close: written once, then asked of Razorpay once; what could not be made waits for the cron. */
@@ -112,21 +155,28 @@ export async function sendPaymentLink(
   visit: FittedVisit,
   now: Date,
 ): Promise<LinkSent> {
-  const link = await linkFor(db, visit, now);
-  if (link === null) {
+  const made = await linkFor(db, visit, now);
+  if (made.kind === "free") return "free";
+  if (made.kind !== "link") {
     await deps.alertOnce({
       key: refusedKey(visit.appointmentId),
-      message:
-        `Visit ${visit.appointmentId} was a consultation and fit, and the client was fitted with ${visit.tier}, ` +
-        "which the price book has no price for that day, so no payment link was sent. Price it, then send the " +
-        `client a link from Razorpay's dashboard with reference ${visit.appointmentId}.`,
+      message: `${notMade(visit, made.kind)} Send the client a link from Razorpay's dashboard with reference ${visit.appointmentId}.`,
       link: `/clients/${visit.personId}`,
     });
-    return "unpriced";
+    return made.kind === "unpriced" ? "unpriced" : "unavailable";
   }
+  const link = made.row;
   if (link.sent_at !== null) return "already_sent";
   if (link.refused_at !== null) return "refused";
   return askRazorpay(db, deps, link, visit, now);
+}
+
+/** Why a one visit's link was not made, for ops. */
+function notMade(visit: FittedVisit, why: "unpriced" | "code_changing"): string {
+  const fitted = `Visit ${visit.appointmentId} was a consultation and fit, and the client was fitted with ${visit.tier}`;
+  if (why === "unpriced")
+    return `${fitted}, which the price book has no price for that day, so no payment link was sent. Price it first.`;
+  return `${fitted}; a discount code went on or came off it each time its payment link was written, so none was sent.`;
 }
 
 interface UnsentRow extends LinkRow {

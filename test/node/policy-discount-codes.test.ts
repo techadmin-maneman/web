@@ -6,6 +6,7 @@ import {
   CODE_ALPHABET,
   codeRefusal,
   COVERABLE,
+  creditComesFirst,
   discounted,
   isCodeText,
   normalisedCode,
@@ -84,6 +85,15 @@ describe("discount codes", () => {
     expect(codeRefusal(OPEN, { ...FIRST_FIT, type: "service", onCredit: true }, TODAY)).toBe("credit");
     // Ops can switch a code off at any time.
     expect(codeRefusal({ ...OPEN, switchedOff: true }, FIRST_FIT, TODAY)).toBe("switched_off");
+  });
+
+  it(RULES[4], () => {
+    // A credit pays a service visit, so a client holding one spends it before any code.
+    expect(creditComesFirst("service", 1)).toBe(true);
+    expect(creditComesFirst("service", 0)).toBe(false);
+    // No credit pays a first fit or a replacement, so a code goes on one whatever credits are held.
+    expect(creditComesFirst("first_fit", 3)).toBe(false);
+    expect(creditComesFirst("replacement", 3)).toBe(false);
   });
 
   it("is for a visit sold, not for moving one: a move's fee, or the visit a late move books, takes no code", () => {
