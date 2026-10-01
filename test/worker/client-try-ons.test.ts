@@ -165,6 +165,7 @@ describe("GET /api/photos's try-ons", () => {
       job,
       mobileE164: MOBILE,
       name: "Rohit Malhotra",
+      stage: "crown",
       gateNotice: "gate-v1",
       attribution: {},
       ipHash: "ip-hash",

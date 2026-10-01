@@ -1,39 +1,22 @@
 // The try-on's screens and what moves between them: one function of the state
 // and what just happened, with no fetching and no timers, so a test can walk it
 // (test/node/site-tryon-machine.test.ts). TryOn.tsx sends it events and does
-// the work around them: the upload, the render, the gate and the result.
+// the work around them: the upload, the gate, the render and its watch.
+//
+// The look goes to WhatsApp only, never to the site
+// (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md): the gate follows
+// the looks, and the sent screen the gate.
 
-import { looks, stageOptions, tryOn } from "../../content/site.ts";
-import type { ClaimResponse } from "../../lib/api.ts";
+import { tryOn } from "../../content/site.ts";
 import type { ErrorKind } from "../../lib/tryon-errors.ts";
 
-export const SCREENS = ["upload", "consent", "stage", "looks", "processing", "gate", "result", "error"] as const;
+export const SCREENS = ["upload", "consent", "stage", "looks", "gate", "sent", "error"] as const;
 export type Screen = (typeof SCREENS)[number];
 const ERROR_KINDS = Object.keys(tryOn.error.kinds) as ErrorKind[];
 
-/** The look on the result screen: its job, the gate's answer if a number was given, and whether it is a returning visitor's. */
-export interface Showing {
-  readonly jobId: string;
-  readonly claim: ClaimResponse | null;
-  readonly returning: boolean;
-}
-
-/** The finished render: shown from memory, and the same file for Download and WhatsApp. */
-export interface Rendered {
-  readonly url: string;
-  readonly file: File | null;
-}
-
-/** A look this browser has already had: its job, and the stage and look it was made with. */
-export interface OwnLook {
-  readonly jobId: string;
-  readonly stage: string;
-  readonly preset: string;
-}
-
 export interface TryOnState {
   readonly screen: Screen;
-  /** Opened with ?state=, outside production: stand-in images and no API calls. */
+  /** Opened with ?state=, outside production: stand-ins and no API calls. */
   readonly demo: boolean;
   /** The chosen photograph, shown from memory. */
   readonly photo: string | null;
@@ -41,14 +24,12 @@ export interface TryOnState {
   /** Indexes into stageOptions and looks; no look is -1. */
   readonly stage: number;
   readonly look: number;
-  /** Generate has been pressed for this photograph: its look can no longer change (ADR 0022, 24). */
-  readonly lookFixed: boolean;
   /** The gate's fields, kept when the visitor goes back and returns. */
   readonly name: string;
   readonly mobile: string;
   readonly errorKind: ErrorKind;
-  readonly showing: Showing | null;
-  readonly rendered: Rendered | null;
+  /** On the sent screen: a visitor back after their look, whose number the page does not know. */
+  readonly returning: boolean;
 }
 
 export const START: TryOnState = {
@@ -58,29 +39,25 @@ export const START: TryOnState = {
   consent: false,
   stage: 0,
   look: -1,
-  lookFixed: false,
   name: "",
   mobile: "",
   errorKind: "photo",
-  showing: null,
-  rendered: null,
+  returning: false,
 };
 
 export type TryOnEvent =
-  | { readonly type: "preview"; readonly screen: Screen; readonly kind: string | null; readonly mockAfter: string }
+  | { readonly type: "preview"; readonly screen: Screen; readonly kind: string | null }
   | { readonly type: "photoChosen"; readonly photo: string }
   | { readonly type: "consentTicked"; readonly consent: boolean }
   | { readonly type: "agreed" }
   | { readonly type: "stageChosen"; readonly stage: number }
   | { readonly type: "stageDone" }
   | { readonly type: "lookChosen"; readonly look: number }
-  | { readonly type: "generate" }
-  | { readonly type: "processed" }
+  | { readonly type: "lookDone" }
   | { readonly type: "nameTyped"; readonly name: string }
   | { readonly type: "mobileTyped"; readonly mobile: string }
-  | { readonly type: "shown"; readonly showing: Showing | null; readonly rendered?: Rendered }
-  | { readonly type: "rendered"; readonly rendered: Rendered }
-  | { readonly type: "ownLook"; readonly look: OwnLook }
+  | { readonly type: "sent" }
+  | { readonly type: "alreadySent" }
   | { readonly type: "failed"; readonly kind: ErrorKind }
   | { readonly type: "back" }
   | { readonly type: "again" };
@@ -90,7 +67,7 @@ export function screenNamed(name: string | null): Screen | undefined {
   return SCREENS.find((screen) => screen === name);
 }
 
-/** v2's back control: upload → home, error → upload, result → gate, gate → looks, else the previous screen. */
+/** v2's back control: upload → home, error → upload, gate → looks, else the previous screen; once sent, home. */
 export function backFrom(screen: Screen): Screen | "home" {
   switch (screen) {
     case "upload":
@@ -101,57 +78,40 @@ export function backFrom(screen: Screen): Screen | "home" {
       return "consent";
     case "looks":
       return "stage";
-    case "processing":
-      return "looks";
     case "gate":
       return "looks";
-    case "result":
-      return "gate";
+    case "sent":
+      return "home";
     case "error":
       return "upload";
   }
 }
 
-/** The looks screen's button: choose one, generate it, or, once it is being made, go on to the gate. */
-export function lookLabel(look: number, fixed: boolean): string {
-  if (fixed) return tryOn.looks.continue;
-  return look >= 0 ? tryOn.looks.generate : tryOn.looks.choose;
+/** The looks screen's button: choose one, then go on to the gate. */
+export function lookLabel(look: number): string {
+  return look >= 0 ? tryOn.looks.continue : tryOn.looks.choose;
 }
 
 /**
- * ?state=<screen> with its stand-ins. ?state=error&kind=<busy|renderFailed|lookLimit> opens the other error copy,
- * ?state=result&kind=returning a returning visitor's look, and ?state=result&kind=pending the result still rendering.
+ * ?state=<screen> with its stand-ins. ?state=error&kind=<renderFailed|busy|unavailable> opens the other error copy,
+ * and ?state=sent&kind=returning a returning visitor's.
  */
-function preview(screen: Screen, kind: string | null, mockAfter: string): TryOnState {
+function preview(screen: Screen, kind: string | null): TryOnState {
   const opened = { ...START, demo: true, screen };
   if (screen === "gate") return { ...opened, look: 0 };
   if (screen === "error") return { ...opened, errorKind: ERROR_KINDS.find((known) => known === kind) ?? "photo" };
-  if (screen !== "result") return opened;
+  if (screen !== "sent") return opened;
   const returning = kind === "returning";
-  return {
-    ...opened,
-    look: 0,
-    mobile: returning ? "" : tryOn.gate.mobilePlaceholder,
-    showing: { jobId: "demo", claim: null, returning },
-    rendered: kind === "pending" ? null : { url: mockAfter, file: null },
-  };
+  return { ...opened, look: 0, returning, mobile: returning ? "" : tryOn.gate.mobilePlaceholder };
 }
 
 export function step(state: TryOnState, event: TryOnEvent): TryOnState {
   switch (event.type) {
     case "preview":
-      return preview(event.screen, event.kind, event.mockAfter);
+      return preview(event.screen, event.kind);
     case "photoChosen":
       // The agreement is to this photograph's use, so each new one is asked for afresh.
-      return {
-        ...state,
-        screen: "consent",
-        photo: event.photo,
-        consent: false,
-        lookFixed: false,
-        showing: null,
-        rendered: null,
-      };
+      return { ...state, screen: "consent", photo: event.photo, consent: false };
     case "consentTicked":
       return { ...state, consent: event.consent };
     case "agreed":
@@ -161,35 +121,17 @@ export function step(state: TryOnState, event: TryOnEvent): TryOnState {
     case "stageDone":
       return { ...state, screen: "looks" };
     case "lookChosen":
-      return state.lookFixed ? state : { ...state, look: event.look };
-    case "generate":
-      if (state.look < 0) return state;
-      // Back from the gate returns to the looks with the look fixed, and Continue goes back to the gate.
-      if (state.lookFixed) return { ...state, screen: "gate" };
-      return { ...state, screen: "processing", lookFixed: true };
-    case "processed":
-      return state.screen === "processing" ? { ...state, screen: "gate" } : state;
+      return { ...state, look: event.look };
+    case "lookDone":
+      return state.look >= 0 ? { ...state, screen: "gate" } : state;
     case "nameTyped":
       return { ...state, name: event.name };
     case "mobileTyped":
       return { ...state, mobile: event.mobile };
-    case "shown":
-      return { ...state, screen: "result", showing: event.showing, rendered: event.rendered ?? state.rendered };
-    case "rendered":
-      return { ...state, rendered: event.rendered };
-    case "ownLook":
-      return {
-        ...state,
-        screen: "result",
-        stage: Math.max(
-          0,
-          stageOptions.findIndex((option) => option.id === event.look.stage),
-        ),
-        look: looks.findIndex((option) => option.id === event.look.preset),
-        lookFixed: true,
-        showing: { jobId: event.look.jobId, claim: null, returning: true },
-        rendered: null,
-      };
+    case "sent":
+      return { ...state, screen: "sent", returning: false };
+    case "alreadySent":
+      return { ...state, screen: "sent", returning: true };
     case "failed":
       return { ...state, screen: "error", errorKind: event.kind };
     case "back": {

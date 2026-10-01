@@ -22,7 +22,7 @@ import { onAllowlist, type MessagingSettings } from "../config/settings.ts";
 import { RESULT_LINK_MESSAGE_TTL_MS } from "../config/tryon.ts";
 import type { Dependencies } from "../dependencies.ts";
 import type { StaticConfig } from "../guard.ts";
-import { takeOne } from "../domain/rate-limit.ts";
+import { takeOne, type Limit } from "../domain/rate-limit.ts";
 import { saltedHash } from "../lib/hash.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { signToken } from "../lib/signed-token.ts";
@@ -94,29 +94,39 @@ const isVisitKind = (kind: string): kind is VisitMessageKind =>
 
 /**
  * Whether staging's allowlist should hold this message back: an automatic kind (ADR 0097), or one about a record
- * our own scripts made, whatever its kind (isStagingTestRecord, src/policy/staging-test-records.ts).
+ * our own scripts made, whatever its kind (isStagingTestRecord, src/policy/staging-test-records.ts). The try-on's
+ * gate asks it too, since a try-on whose look would be held back does not run (ADR 0104).
  */
-const heldBackByAllowlist = (
+export const heldBackByAllowlist = (
   messaging: MessagingSettings,
   row: Pick<MessageRow, "mobile_e164" | "name" | "kind">,
 ): boolean =>
   (messageClass(row.kind) === "automatic" || isStagingTestRecord(row.name)) && !onAllowlist(messaging, row.mobile_e164);
 
+/** The daily cap on try-on results sent to one number, which the gate checks before a look is made (ADR 0104). */
+export async function resultMessageCap(
+  settings: Pick<StaticConfig["settings"], "ipHashSalt" | "tryon">,
+  mobileE164: string,
+  now: Date,
+): Promise<Limit> {
+  return {
+    scope: "message:result:mobile",
+    key: await saltedHash(settings.ipHashSalt, `mobile:${mobileE164}`),
+    window: indiaDate(now),
+    limit: settings.tryon.resultMessageMobileDailyLimit,
+  };
+}
+
 /** The try-on result: the person's result image, within the daily cap on result messages to one number. */
 async function resultContent(db: D1Database, config: StaticConfig, row: MessageRow, now: Date): Promise<Content> {
-  const { messaging, tryon, ipHashSalt } = config.settings;
+  const { messaging, tryon } = config.settings;
   const job = await db
     .prepare("SELECT result_key, state FROM tryon_jobs WHERE id = ?1")
     .bind(row.subject_id)
     .first<{ result_key: string | null; state: string }>();
   if (job?.state !== "ready" || job.result_key === null) return { skip: "no result to send" };
   if (row.attempts === 0) {
-    const withinCap = await takeOne(db, {
-      scope: "message:result:mobile",
-      key: await saltedHash(ipHashSalt, `mobile:${row.mobile_e164}`),
-      window: indiaDate(now),
-      limit: tryon.resultMessageMobileDailyLimit,
-    });
+    const withinCap = await takeOne(db, await resultMessageCap(config.settings, row.mobile_e164, now));
     if (!withinCap) return { skip: "daily message limit reached" };
   }
   const resultKey = job.result_key;

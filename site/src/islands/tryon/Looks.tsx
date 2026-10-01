@@ -3,32 +3,27 @@ import { lookLabel } from "./machine.ts";
 import { Title, type HeadingRef } from "./Title.tsx";
 import styles from "./TryOn.module.css";
 
-/** Step three: the six looks. Once a render has started, only its look shows as chosen (ADR 0022, 24). */
+/** Step three: the six looks. Continue goes on to the gate, which asks where to send the look before it is made. */
 export function Looks(props: {
   look: number;
-  fixed: boolean;
   heading: HeadingRef;
   onChoose: (look: number) => void;
-  onGenerate: () => void;
+  onContinue: () => void;
 }) {
-  const { look, fixed } = props;
+  const { look } = props;
   return (
     <div>
       <Title heading={props.heading}>{tryOn.looks.title}</Title>
-      <p class={styles.body}>{fixed ? tryOn.looks.fixed : tryOn.looks.body}</p>
+      <p class={styles.body}>{tryOn.looks.body}</p>
       <fieldset class={`${styles.choices} ${styles.lookGrid}`}>
         <legend class="visually-hidden">{tryOn.looks.title}</legend>
         {looks.map((option, index) => (
-          <label
-            key={option.id}
-            class={`${styles.look} ${look === index ? styles.picked : ""} ${fixed && look !== index ? styles.lookOff : ""}`}
-          >
+          <label key={option.id} class={`${styles.look} ${look === index ? styles.picked : ""}`}>
             <input
               type="radio"
               name="look"
               class="visually-hidden"
               checked={look === index}
-              disabled={fixed && look !== index}
               onChange={() => {
                 props.onChoose(index);
               }}
@@ -47,9 +42,9 @@ export function Looks(props: {
         type="button"
         class={`${styles.next} ${styles.nextSpaced} ${look >= 0 ? styles.nextOn : styles.nextOff}`}
         aria-disabled={look < 0}
-        onClick={props.onGenerate}
+        onClick={props.onContinue}
       >
-        {lookLabel(look, fixed)}
+        {lookLabel(look)}
       </button>
     </div>
   );

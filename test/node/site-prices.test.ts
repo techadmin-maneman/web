@@ -185,13 +185,19 @@ describe("the site's prices", () => {
 });
 
 describe("the publish gate, on prices", () => {
+  // The try-on's notices await counsel (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md), which the gate also
+  // refuses (test/node/site-content.test.ts); here every notice is counted approved, so the prices are read alone.
+  const approved = Object.fromEntries(
+    Object.entries(site.notices).map(([name, notice]) => [name, { ...notice, approved: true }]),
+  );
+
   // FEO-22: the landing's prices were typed, and the gate never read referral.ts.
   it("stops a price typed into the landing", () => {
     const [first, second] = referral.prices.rows;
     if (first === undefined || second === undefined) throw new Error("the landing has lost a price row");
     const landing = { ...referral, prices: { rows: [{ ...first, amount: "Rs. 25,000" }, second] } };
 
-    expect(publishProblems(undefined, undefined, [site, landing])).toEqual([
+    expect(publishProblems(undefined, approved, [site, landing])).toEqual([
       'a price is typed by hand, "Rs. 25,000": every price comes from the price book (docs/decisions/0073-prices-from-the-price-book.md)',
     ]);
   });
@@ -199,11 +205,11 @@ describe("the publish gate, on prices", () => {
   it("stops a price typed into the site, with the sign the site wrote before as well", () => {
     for (const typed of ["Rs. 43,000", "₹43,000"]) {
       const home = { ...site, prices: { ...site.prices, example: `A standard base in the first year: ${typed}.` } };
-      expect(publishProblems(undefined, undefined, [home, referral]), typed).toHaveLength(1);
+      expect(publishProblems(undefined, approved, [home, referral]), typed).toHaveLength(1);
     }
   });
 
   it("lets through what a transplant and medication cost, which are not our prices", () => {
-    expect(publishProblems(undefined, undefined, [site, referral])).toEqual([]);
+    expect(publishProblems(undefined, approved, [site, referral])).toEqual([]);
   });
 });
