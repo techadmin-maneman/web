@@ -39,6 +39,11 @@ export type PhotoView = Body<paths["/api/clients/{id}/photos/view"]["post"]>;
 export type Consents = Body<paths["/api/clients/{id}/consents"]["get"]>;
 export type Consent = Consents["consents"][number];
 export type Piece = Body<paths["/api/clients/{id}/pieces"]["get"]>["pieces"][number];
+/** The client's hair profile, and every version of it (ADR 0106). */
+export type ClientHairProfile = Body<paths["/api/clients/{id}/hair-profile"]["get"]>;
+export type HairProfileVersion = ClientHairProfile["versions"][number];
+export type HairProfileView = NonNullable<ClientHairProfile["latest"]>;
+export type HairCorrection = Sent<paths["/api/clients/{id}/hair-profile"]["post"]>;
 
 export type Tasks = Body<paths["/api/tasks"]["get"]>;
 export type TaskGroup = Tasks["groups"][number];
@@ -270,6 +275,11 @@ export const api = {
   clientConsents: (id: string) => client.get("/api/clients/{id}/consents", { path: { id } }),
   /** The client's pieces. The route reads FSM afresh first, since FSM is the record. */
   clientPieces: (id: string) => client.get("/api/clients/{id}/pieces", { path: { id } }),
+  /** The client's hair profile as it stands, and every version of it. */
+  clientHairProfile: (id: string) => client.get("/api/clients/{id}/hair-profile", { path: { id } }),
+  /** A correction: the whole profile as it now stands, a new version under the caller's name, audited. */
+  correctHairProfile: (id: string, correction: HairCorrection) =>
+    client.post("/api/clients/{id}/hair-profile", { path: { id }, body: correction }),
   /** Every queue ops still have to work through, and whose each task is. A task leaves when its row is decided. */
   tasks: () => client.get("/api/tasks"),
   /** A task made a member of staff's, by their Access e-mail, or nobody's with null (ADR 0092). */

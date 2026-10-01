@@ -172,7 +172,8 @@ async function movedTo(db: D1Database, job: WorkableJob): Promise<MovedTo | null
   return technician === "" ? null : { technician, at: row.moved_at };
 }
 
-async function kindsLanded(db: D1Database, appointmentId: string): Promise<Set<string>> {
+/** The kinds of event a job holds, superseded ones aside. */
+export async function kindsLanded(db: D1Database, appointmentId: string): Promise<Set<string>> {
   const { results } = await db
     .prepare("SELECT kind FROM job_events WHERE appointment_id = ?1 AND superseded = 0")
     .bind(appointmentId)

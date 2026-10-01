@@ -91,6 +91,9 @@ export const AUDIT_ACTIONS = [
   "booking.refund",
   "booking.stop",
   "booking.give_back",
+  // Ops correcting a client's hair profile, which keeps every version (docs/decisions/0106-a-clients-hair-profile.md).
+  // The entry names the client and the version, never a word of the profile.
+  "hair_profile.correct",
   // Discount codes (docs/decisions/0108-discount-codes.md): ops making codes, switching one off, and entering one on
   // a client's visit or taking it off.
   "discount_code.make",
@@ -155,6 +158,7 @@ export function auditStatementIfWritten(
       | "stock_movements"
       | "task_closures"
       | "no_show_disputes"
+      | "hair_profiles"
       | "discount_code_uses";
     readonly id: string;
   },

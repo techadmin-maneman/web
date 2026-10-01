@@ -305,6 +305,15 @@ The owner's ruling D2 of 1 October 2026 ([0103](0103-the-home-pages-first-copy-r
     - **The words for unequal sides and for 0** ("Get fitted and you get 2 service visits free. Your friend gets 3.") are ours until the owner words them (`docs/open-points.md`, item 172).
     - **The figure is the referral's alone.** Visits ops give by hand and the back-filled log of before January keep 365 days.
 
+## A client's hair profile, 1 October 2026
+
+Asked what we record about leads and clients, the owner learned that we keep a three-level loss extent, visit photographs and each piece's label, base, lot and dates. Offered "Fit spec + history", "Fit spec only" or "Not now", **the owner ruled "Fit spec + history" on 1 October 2026**:
+
+- Fit spec: Norwood stage I–VII; head measurements (circumference, front to nape, ear to ear over the top, temple to temple, in centimetres); base size (width × length, inches, as suppliers order); colour code (#1, #1B, #2 …) and grey percentage; density (80, 100, 120, 140%); wave (straight, slight wave, wavy, curly); hairline style; the product; tape, glue or both.
+- History: remedies tried (none, minoxidil, finasteride, transplant with its year, other hair systems, other: many may apply), skin conditions and allergies (short free text).
+
+Asked on the same day about a separate consent to the history, **the owner ruled:** "Why does it need further consent? This is the information that client has told us. No new consent is needed for it." **Built 1 October 2026** ([0106](0106-a-clients-hair-profile.md)), which lists what the build took for the owner to confirm.
+
 ## Discount codes, 1 October 2026
 
 100. **Discount codes.** **Ruled 1 October 2026 by the owner**, asked "to allow for discount codes to be generated and used before invoicing", and quoted by `src/policy/discount-codes.ts`; built in [0108](0108-discount-codes.md), which lists the defaults taken for the owner to confirm:

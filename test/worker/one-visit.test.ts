@@ -88,14 +88,15 @@ const linkRow = () =>
   ).first();
 
 describe("the technician's card", () => {
-  it("names the products the client may choose, never a price, and runs the first fit's steps", async () => {
+  it("names the products the client may choose, never a price, and runs the first fit's steps and the profile", async () => {
     const job = await oneVisit();
     const card = await (await job.get(`/api/tech/jobs/${JOB}`)).json<Record<string, unknown>>();
     expect(card).toMatchObject({
       type: "first_fit",
       one_visit: true,
       badge: "at_visit",
-      steps: ["before_photos", "checklist", "consumables", "piece", "after_photos", "outcome"],
+      // The first fit's, with the client's hair profile once the product is chosen and fitted (ADR 0106).
+      steps: ["before_photos", "checklist", "consumables", "piece", "profile", "after_photos", "outcome"],
       products: [
         { tier: "standard", name: "First fit" },
         { tier: "natural", name: "Mane Man Natural" },

@@ -1,6 +1,6 @@
 // What `node scripts/seed-technician-tester.ts --clear` deletes from staging: the test technician, the jobs he
-// walked and everything they left, and the invented client. A row goes before the rows it refers to, since D1
-// keeps foreign keys (test/worker/technician-tester.test.ts).
+// walked and everything they left, and the invented client, save the rows a hair profile points at, which stay. A row
+// goes before the rows it refers to, since D1 keeps foreign keys (test/worker/technician-tester.test.ts).
 
 /** A value as SQL: quoted, with its quotes doubled; NULL for null. */
 export const quote = (value: string | number | null): string =>
@@ -31,9 +31,15 @@ export function clearTester(technicianIds: readonly string[], personIds: readonl
     `DELETE FROM dispatch_moves WHERE appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
     `DELETE FROM visit_changes WHERE appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
     `DELETE FROM visits WHERE appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
-    `DELETE FROM appointments WHERE technician_id IN (${ids});`,
+    // A hair profile is never deleted (migration 0064), so a job one was taken at, the invented client it is of and
+    // the technician who took it stay, the technician made inactive so nothing books or dispatches him; the rest of
+    // what they left goes.
+    `DELETE FROM appointments WHERE technician_id IN (${ids})
+       AND id NOT IN (SELECT appointment_id FROM hair_profiles WHERE appointment_id IS NOT NULL);`,
     `DELETE FROM addresses WHERE person_id IN (${persons});`,
-    `DELETE FROM people WHERE id IN (${persons});`,
+    `DELETE FROM people WHERE id IN (${persons})
+       AND id NOT IN (SELECT person_id FROM hair_profiles)
+       AND id NOT IN (SELECT person_id FROM appointments WHERE person_id IS NOT NULL);`,
     `DELETE FROM otp_challenges WHERE technician_id IN (${ids});`,
     `DELETE FROM technician_devices WHERE technician_id IN (${ids});`,
     `DELETE FROM sessions WHERE subject_kind = 'technician' AND subject_id IN (${ids});`,
@@ -41,6 +47,9 @@ export function clearTester(technicianIds: readonly string[], personIds: readonl
     // else on staging can take a slot on him while the fixture stands.
     `DELETE FROM slot_claims WHERE technician_id IN (${ids});`,
     `DELETE FROM slot_holds WHERE technician_id IN (${ids});`,
-    `DELETE FROM technicians WHERE id IN (${ids});`,
+    `UPDATE technicians SET active = 0 WHERE id IN (${ids});`,
+    `DELETE FROM technicians WHERE id IN (${ids})
+       AND id NOT IN (SELECT technician_id FROM hair_profiles WHERE technician_id IS NOT NULL)
+       AND id NOT IN (SELECT technician_id FROM appointments WHERE technician_id IS NOT NULL);`,
   ];
 }

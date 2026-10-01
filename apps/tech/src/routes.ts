@@ -29,6 +29,7 @@ export const ROUTES: readonly TechRoute[] = [
   { method: "POST", path: "/tech/jobs/{id}/checklist" },
   { method: "POST", path: "/tech/jobs/{id}/consumables" },
   { method: "POST", path: "/tech/jobs/{id}/piece" },
+  { method: "POST", path: "/tech/jobs/{id}/profile" },
   { method: "POST", path: "/tech/jobs/{id}/outcome" },
   { method: "POST", path: "/tech/jobs/{id}/no-show" },
   { method: "POST", path: "/tech/jobs/{id}/discount-code" },
@@ -60,7 +61,7 @@ export const DEVICE_REVOKED = "device_revoked";
 /** The no-show wait has not run out. The job is untouched and the countdown goes on. */
 export const TOO_EARLY_TO_CLOSE = "too_early_to_close";
 
-/** The kinds of write the phone queues, named as the API's job events are. */
+/** The kinds of write the phone queues, named as the API's job events are, and the client's hair profile. */
 export const EVENT_KINDS = [
   "check_in",
   "start",
@@ -68,6 +69,7 @@ export const EVENT_KINDS = [
   "checklist",
   "consumables",
   "piece",
+  "profile",
   "after_photos",
   "outcome",
   "no_show",
@@ -83,6 +85,7 @@ const ROUTE_OF: Readonly<Record<EventKind, string>> = {
   checklist: "checklist",
   consumables: "consumables",
   piece: "piece",
+  profile: "profile",
   outcome: "outcome",
   no_show: "no-show",
 };

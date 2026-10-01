@@ -28,6 +28,7 @@ type VisitType = NonNullable<Job["type"]>;
 export type Progress = Card["progress"];
 export type Step = Progress["steps_done"][number];
 export type Piece = TechReply<"/api/tech/pieces/lookup">["piece"];
+export type HairProfile = NonNullable<Card["profile"]>;
 
 export const ME = {
   name: "Imran Qureshi",
@@ -207,10 +208,44 @@ export const ROHITS_PIECE: Piece = {
   failure_reason: null,
 };
 
-const stepsFor = (type: VisitType): Step[] =>
-  type === "replacement" || type === "first_fit"
-    ? ["before_photos", "checklist", "consumables", "piece", "after_photos", "outcome"]
-    : ["before_photos", "checklist", "consumables", "after_photos", "outcome"];
+/** Rohit's hair profile as his consultation took it, his history with it. */
+export const ROHITS_PROFILE: HairProfile = {
+  id: "d0000000-0000-4000-8000-000000000001",
+  recorded_at: "2030-07-01T05:00:00.000Z",
+  fit: {
+    norwood_stage: "IV",
+    head_circumference_cm: 57.5,
+    front_to_nape_cm: 36,
+    ear_to_ear_cm: 33.5,
+    temple_to_temple_cm: 34,
+    base_width_in: 8,
+    base_length_in: 10,
+    colour: "1B",
+    grey_percent: 20,
+    density_percent: 120,
+    wave: "slight_wave",
+    hairline: "natural",
+    product: "essential",
+    product_name: "Mane Man Essential",
+    attachment: "tape",
+  },
+  history: { remedies: ["minoxidil"], transplant_year: null, skin_and_allergies: "Dry at the crown" },
+};
+
+/** The API's steps (src/policy/in-job-steps.ts): a consultation and a one visit take the profile. */
+function stepsFor(type: VisitType, oneVisit = false): Step[] {
+  const takesPiece = oneVisit || type === "replacement" || type === "first_fit";
+  const takesProfile = oneVisit || type === "consultation";
+  return [
+    "before_photos",
+    "checklist",
+    "consumables",
+    ...(takesPiece ? (["piece"] as const) : []),
+    ...(takesProfile ? (["profile"] as const) : []),
+    "after_photos",
+    "outcome",
+  ];
+}
 
 /** Parts of the address the client filled in beyond the fixture's two lines: flat, floor, tower, building, landmark. */
 type AddressParts = Partial<NonNullable<Card["address"]>>;
@@ -226,6 +261,8 @@ export interface CardOptions {
   readonly address?: AddressParts;
   /** A consultation and fit in one visit, its products on the card. */
   readonly oneVisit?: boolean;
+  /** The client's hair profile as it stands; none recorded unless a test gives one. */
+  readonly profile?: HairProfile | null;
 }
 
 export function card(date: string, progress: Progress, options: CardOptions = {}): Card {
@@ -259,12 +296,13 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
         ? { date: "2030-08-22", technician: "Imran", photo_url: `/api/tech/jobs/${JOB_ID}/last-visit-photo` }
         : null,
     reminder: options.reminderDelivered === undefined ? null : { delivered_at: options.reminderDelivered },
-    steps: stepsFor(oneVisit ? "first_fit" : type),
+    steps: stepsFor(oneVisit ? "first_fit" : type, oneVisit),
     checklist: CHECKLIST,
     partial_reasons: PARTIAL_REASONS,
     consumables: CONSUMABLES,
-    products: oneVisit ? PRODUCTS : [],
+    products: oneVisit || type === "consultation" ? PRODUCTS : [],
     payment_link: null,
+    profile: options.profile ?? null,
   };
 }
 
@@ -286,6 +324,7 @@ export function lockedCard(date: string): Card {
     consumables: CONSUMABLES,
     products: [],
     payment_link: null,
+    profile: null,
   };
 }
 
@@ -352,6 +391,8 @@ export interface Fake {
   oneVisit: boolean;
   /** The client's pieces on the card. */
   pieces: Piece[];
+  /** The client's hair profile on the card, or none recorded. */
+  profile: HairProfile | null;
   /** Parts of the address beyond the fixture's two lines. */
   address: AddressParts;
   /** Whether the client has a last visit with an after photograph. */
@@ -430,6 +471,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     type: "service",
     oneVisit: false,
     pieces: [],
+    profile: null,
     address: {},
     lastVisit: false,
     reminderDelivered: undefined,
@@ -450,6 +492,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       reminderDelivered: fake.reminderDelivered,
       address: fake.address,
       oneVisit: fake.oneVisit,
+      profile: fake.profile,
     });
 
   await on.route("**/api/tech/**", async (route: Route) => {
@@ -540,6 +583,11 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       if (path.endsWith("/start")) {
         fake.progress = { ...fake.progress, started_at: new Date().toISOString() };
         return reply(route, 202, accepted(fake, eventId));
+      }
+      // The profile is no job event: its answer carries no FSM write (docs/decisions/0106-a-clients-hair-profile.md).
+      if (path.endsWith("/profile")) {
+        fake.progress = { ...fake.progress, steps_done: [...fake.progress.steps_done, "profile"] };
+        return reply(route, 202, { event_id: eventId ?? "", replayed: false, progress: fake.progress });
       }
       if (path.endsWith("/no-show")) {
         fake.progress = { ...fake.progress, outcome: "no_show" };

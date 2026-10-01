@@ -92,6 +92,7 @@ const card = (id: string, date: string) =>
     consumables: [],
     products: [],
     payment_link: null,
+    profile: null,
   }) as Job;
 
 const arrival = {

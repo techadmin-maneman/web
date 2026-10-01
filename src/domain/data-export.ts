@@ -7,8 +7,10 @@
 // and what they asked for on the site's form while no visit was booked: a
 // consultation's day and window, and a first fit (ADR 0086). And each no-show
 // charge they disputed, in their words, and how ops ruled (ADR 0096). And each
-// discount code entered on a booking of theirs (ADR 0108).
+// discount code entered on a booking of theirs (ADR 0108). And every version of
+// their hair profile, their history with it (ADR 0106).
 
+import { exportedProfiles } from "./hair-profiles.ts";
 import { allViews } from "./photo-views.ts";
 
 /** Each no-show charge the client disputed, in their words, and how ops ruled; never ops' reason. */
@@ -101,5 +103,6 @@ export async function everythingHeldAbout(db: D1Database, personId: string): Pro
     no_show_disputes: disputes,
     discount_codes: discountCodes,
     photo_views: await allViews(db, personId),
+    hair_profile: await exportedProfiles(db, personId),
   };
 }

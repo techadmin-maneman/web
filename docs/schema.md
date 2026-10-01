@@ -35,6 +35,7 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [first_fit_requests](#first_fit_requests): A first fit asked for on the site's form with the consultation, for the app to offer once the consultation is done; a person's latest stands (ADR 0086). The form asks for none since 1 October 2026 (ADR 0105).
 - [fsm_items](#fsm_items): FSM's catalogue, to read each appointment's visit type from its service item and to compare FSM's prices with the price book (ADR 0032, ADR 0073).
 - [grievances](#grievances): A client's grievance, and the answer ops recorded (ADR 0049, ADR 0078).
+- [hair_profiles](#hair_profiles): Every version of a client's hair profile, the fit spec and the history: the technician's at a visit, once for each of the phone's events, and ops' corrections. Never changed, only blanked (ADR 0106).
 - [idempotency](#idempotency): The stored answer to each `Idempotency-Key`, so a request sent again gets its first answer (ADR 0011).
 - [job_events](#job_events): The technician app's writes, each once by the ID the phone gave it, and whether it has reached FSM (ADR 0038, ADR 0065).
 - [last_visits](#last_visits): Each client's last first fit, service or replacement done, and last consultation done, kept by triggers from the view `last_visits_now` as their visits change; the Tasks board's At-risk client and First fit to book read it (ADR 0086).
@@ -648,6 +649,46 @@ Indexes:
 
 - `grievances_by_person`: on (`person_id`)
 - `grievances_by_state`: on (`state`, `created_at`)
+
+## hair_profiles
+
+Every version of a client's hair profile, the fit spec and the history: the technician's at a visit, once for each of the phone's events, and ops' corrections. Never changed, only blanked (ADR 0106).
+
+Made by `0064_hair_profiles.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `person_id` | TEXT | no |  | → `people.id` |
+| `appointment_id` | TEXT | yes |  | → `appointments.id` |
+| `event_id` | TEXT | yes |  |  |
+| `technician_id` | TEXT | yes |  | → `technicians.id` |
+| `staff` | TEXT | yes |  |  |
+| `created_at` | TEXT | no |  |  |
+| `norwood_stage` | TEXT | yes |  |  |
+| `head_circumference_cm` | REAL | yes |  |  |
+| `front_to_nape_cm` | REAL | yes |  |  |
+| `ear_to_ear_cm` | REAL | yes |  |  |
+| `temple_to_temple_cm` | REAL | yes |  |  |
+| `base_width_in` | REAL | yes |  |  |
+| `base_length_in` | REAL | yes |  |  |
+| `colour` | TEXT | yes |  |  |
+| `grey_percent` | INTEGER | yes |  |  |
+| `density_percent` | INTEGER | yes |  |  |
+| `wave` | TEXT | yes |  |  |
+| `hairline` | TEXT | yes |  |  |
+| `product` | TEXT | yes |  |  |
+| `attachment` | TEXT | yes |  |  |
+| `remedies` | TEXT | yes |  |  |
+| `transplant_year` | INTEGER | yes |  |  |
+| `skin_and_allergies` | TEXT | yes |  |  |
+
+Indexes:
+
+- `hair_profiles_by_event`: unique on (`appointment_id`, `event_id`)
+- `hair_profiles_by_person`: on (`person_id`, `created_at`)
+
+Triggers: `hair_profiles_no_delete`, `hair_profiles_only_blanked`.
 
 ## idempotency
 

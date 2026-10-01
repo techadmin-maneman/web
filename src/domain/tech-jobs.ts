@@ -21,11 +21,15 @@
 // A consultation and fit in one visit also carries the products the client may
 // choose at it, by name and never by price, and where the payment link closing
 // it sent stands (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+// Every unlocked card carries the client's hair profile as it stands, for the
+// piece card and for the profile step to start from
+// (docs/decisions/0106-a-clients-hair-profile.md).
 
 import type { BookingWindow } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
-import type { JobEventKind } from "../policy/in-job-steps.ts";
+import { takesProfile } from "../policy/hair-profile.ts";
+import { cardStepsFor, type CardStep, type JobEventKind } from "../policy/in-job-steps.ts";
 import { jobDay, paymentBadge, unlocked, unlocksAt, type JobDay, type PaymentBadge } from "../policy/job-visibility.ts";
 import { slotsFor } from "../policy/dispatch.ts";
 import { noShowWaitEnds, type Waits } from "../policy/no-show.ts";
@@ -33,6 +37,7 @@ import { paidAtTheVisit, type OneVisitState } from "../policy/one-visit.ts";
 import { unitsFor } from "../policy/visit-length.ts";
 import { latestArrival } from "./check-ins.ts";
 import type { AppointmentStatus } from "./fsm-mirror.ts";
+import { latestProfile, profileTakenAt, type HairProfile } from "./hair-profiles.ts";
 import { EVIDENCE_MESSAGE } from "./no-shows.ts";
 import { piecesOf, type Piece } from "./pieces.ts";
 import { bookedMinutes } from "./scheduling.ts";
@@ -95,8 +100,8 @@ export interface JobProgress {
   /** How far from the door that check-in was; null when nothing was measured. */
   readonly distance_m: number | null;
   readonly started_at: string | null;
-  /** The steps sent so far, in the order they were taken. */
-  readonly steps_done: JobEventKind[];
+  /** The steps sent so far, in the order they reached us: the job's events, and the profile once it is recorded. */
+  readonly steps_done: CardStep[];
   readonly outcome: string | null;
 }
 
@@ -135,10 +140,17 @@ export interface JobDetail extends JobSummary {
   readonly last_visit: LastVisit | null;
   /** The day-before WhatsApp, or the arrival one, and when it reached the client's phone. */
   readonly reminder: { readonly delivered_at: string | null } | null;
-  /** On a one visit, the products the client may choose, by name: the first fit's services offered that day. */
+  /**
+   * On a one visit and a consultation, the products by name: the first fit's services offered that day, which the
+   * one visit's client chooses from and the profile step names.
+   */
   readonly products: Product[];
   /** On a one visit closed as done, the link the client pays by, and whether they have. */
   readonly payment_link: JobPaymentLink | null;
+  /** The client's hair profile as it stands; null while the job is locked, or before one is recorded. */
+  readonly profile: HairProfile | null;
+  /** The screens this job runs, in order: its type's steps, and the profile where it takes one and has a client. */
+  readonly steps: CardStep[];
 }
 
 /** A product the client may choose at a one visit: a first fit's service, by its tier and its name. */
@@ -246,8 +258,10 @@ export async function jobDetail(
     pieces: null,
     last_visit: null,
     reminder: null,
-    products: row.one_visit === null ? [] : await productsOn(db, summary.date),
+    products: takesProfile(type, row.one_visit !== null) ? await productsOn(db, summary.date) : [],
     payment_link: row.one_visit === null ? null : await paymentLinkOf(db, row.id),
+    profile: null,
+    steps: cardStepsFor(type, row.one_visit !== null, row.person_id !== null),
   };
   if (!summary.unlocked) return locked;
   return {
@@ -261,10 +275,11 @@ export async function jobDetail(
     pieces: row.person_id === null ? [] : (await piecesOf(db, row.person_id)).map(cardPiece),
     last_visit: await lastVisitOf(db, row),
     reminder: await reminderOf(db, row.id),
+    profile: row.person_id === null ? null : await latestProfile(db, row.person_id),
   };
 }
 
-/** The products a one visit offers on its day: the first fit's services offered and priced then, in ops' order. */
+/** The products offered on a visit's day: the first fit's services offered and priced then, in ops' order. */
 async function productsOn(db: D1Database, date: string): Promise<Product[]> {
   return (await offeredServices(db, date, ["first_fit"])).map((service) => ({
     tier: service.tier,
@@ -458,11 +473,11 @@ export async function progressOf(
 ): Promise<JobProgress> {
   const { results } = await db
     .prepare(
-      `SELECT kind, body, occurred_at FROM job_events
+      `SELECT kind, body, occurred_at, received_at FROM job_events
        WHERE appointment_id = ?1 AND superseded = 0 ORDER BY received_at, rowid`,
     )
     .bind(job.id)
-    .all<{ kind: JobEventKind; body: string; occurred_at: string }>();
+    .all<{ kind: JobEventKind; body: string; occurred_at: string; received_at: string }>();
   const checkIn = results.find((event) => event.kind === "check_in");
   const start = results.find((event) => event.kind === "start");
   const outcome = results.findLast((event) => event.kind === "outcome");
@@ -472,11 +487,24 @@ export async function progressOf(
     wait_ends_at: arrival === null ? null : noShowWaitEnds(arrival, job.type, waits).toISOString(),
     distance_m: arrival?.distanceM ?? null,
     started_at: start?.occurred_at ?? null,
-    steps_done: results
-      .filter((event) => event.kind !== "check_in" && event.kind !== "start")
-      .map((event) => event.kind),
+    steps_done: await stepsDone(db, job.id, results),
     outcome: outcome === undefined ? null : outcomeOf(outcome.body),
   };
+}
+
+/** The steps that have reached us, in the order they did: the job's events after the start, and the profile. */
+async function stepsDone(
+  db: D1Database,
+  jobId: string,
+  events: readonly { kind: JobEventKind; received_at: string }[],
+): Promise<CardStep[]> {
+  const steps: { step: CardStep; at: string }[] = events
+    .filter((event) => event.kind !== "check_in" && event.kind !== "start")
+    .map((event) => ({ step: event.kind, at: event.received_at }));
+  const profileAt = await profileTakenAt(db, jobId);
+  if (profileAt !== null) steps.push({ step: "profile", at: profileAt });
+  // A stable sort: steps that reached us in the same millisecond keep the order they were read in.
+  return steps.sort((a, b) => a.at.localeCompare(b.at)).map((taken) => taken.step);
 }
 
 function outcomeOf(body: string): string | null {
