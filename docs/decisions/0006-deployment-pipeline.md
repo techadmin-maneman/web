@@ -79,6 +79,10 @@ The two runners share one six-core machine. Alone, the unit and contract tests t
 - **The deploy has one way in.** `deploy-staging.yml` calls `ci.yml` on every merge, and `ci.yml` decides what is left to run; the deploy's own "merged tree already passed CI" job is gone. A merge whose pull request passed everything runs three short jobs and deploys.
 - **The tests that counted on a quiet machine** now wait for what they wait for: the booking tests' helper waits for the API's answer to a hold rather than five seconds for the pay step, and for the booking sheet to finish loading (`e2e/app/picking.ts`, `e2e/app/booking.e2e.ts`).
 
+## Only the touched app (1 October 2026)
+
+The owner's choice, after a run failed on load again: a pull request's browser tests run only the projects its files reach (`scripts/lib/e2e-projects.ts`): the site's two widths for `site/` and the top-level specs, one app's project for that app and its specs, every project for anything shared (the API, the packages, the config, the test support). Lighthouse runs when the site or the client app is tested. Such a run's suite job is named "suite of the touched apps", not "full suite", so a staging deploy still runs the browser tests on everything. In CI a step now waits up to fifteen seconds and a test up to a minute (`playwright.config.ts`), since the other runner shares the machine.
+
 ## Deploys that prove what they shipped (25 September 2026)
 
 An audit on 24 September 2026 found a green deploy could leave three of the five Workers undeployed or stale, and nothing would say so. What changed:

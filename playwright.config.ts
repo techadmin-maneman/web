@@ -33,6 +33,12 @@ export default defineConfig({
    * dropped connections and tests failed for want of a CPU, not a defect.
    */
   workers: local ? undefined : 3,
+  /*
+   * The same machine also runs the other runner's job, so a page there can take longer than five seconds to answer:
+   * in CI a step waits up to fifteen, and a test a minute (1 October 2026, after load failed a run of six tests).
+   */
+  timeout: local ? 30_000 : 60_000,
+  expect: { timeout: local ? 5_000 : 15_000 },
   reporter: local ? "list" : [["list"], ["github"]],
   use: { baseURL: `http://127.0.0.1:${String(PORTS.site)}`, trace: "retain-on-failure" },
   webServer: [
