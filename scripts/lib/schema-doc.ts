@@ -69,6 +69,10 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "Service-visit credits, entry by entry, each drawing on the grant it spends; a balance is summed, never kept (ADR 0033).",
   cron_jobs: "Each job of the five-minute cron, and how many runs in a row it has failed (ADR 0067).",
   deletion_requests: "A client's request to be erased, waiting for ops, and what ops decided (ADR 0042, ADR 0078).",
+  discount_code_uses:
+    "Each time a discount code was entered on a booking, its hold or its visit: by whom, and what it took off before GST once the price was known. Never deleted: one taken off is marked removed (ADR 0108).",
+  discount_codes:
+    "The discount codes ops make: a percentage with an optional cap or an amount, the kinds of visit each covers, its last day and limits, and whether it is switched off (ADR 0108).",
   deployment_identity: "Which environment's database this is, so a Worker refuses to serve on another's (ADR 0003).",
   dispatch_moves:
     "Every move ops make on the dispatch board: from where to where, by whom, why, what FSM said, and whether the client was told (ADR 0069).",

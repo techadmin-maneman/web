@@ -71,6 +71,10 @@ export type SettingValue = OpsSetting["value"];
 export type Blackout = Body<paths["/api/blackouts"]["get"]>["blackouts"][number];
 export type BlackoutAdd = Sent<paths["/api/blackouts"]["post"]>;
 export type BlackoutRemove = Sent<paths["/api/blackouts/remove"]["post"]>;
+/** Discount codes, and a code on a client's visit (docs/decisions/0108-discount-codes.md). */
+export type DiscountCode = Body<paths["/api/discount-codes"]["get"]>["codes"][number];
+export type DiscountCodesNew = Sent<paths["/api/discount-codes"]["post"]>;
+export type VisitDiscountCode = NonNullable<ClientVisit["discount_code"]>;
 export type Price = Body<paths["/api/prices"]["post"]>["prices"][number];
 export type PriceChange = Sent<paths["/api/prices"]["post"]>;
 export type PriceWithdrawal = Sent<paths["/api/prices/withdraw"]["post"]>;
@@ -365,6 +369,17 @@ export const api = {
   addBlackouts: (period: BlackoutAdd) => client.post("/api/blackouts", { body: period }),
   /** The days from the first to the last are offered again. */
   removeBlackouts: (period: BlackoutRemove) => client.post("/api/blackouts/remove", { body: period }),
+  /** The latest codes made, or the one with this text, each with its uses and what it has given. */
+  discountCodes: (code: string | null = null) =>
+    client.get("/api/discount-codes", code === null ? {} : { query: { code } }),
+  /** One code typed, or one or more generated; more than one generated are single-use. */
+  makeDiscountCodes: (codes: DiscountCodesNew) => client.post("/api/discount-codes", { body: codes }),
+  /** No booking takes it from now on; the bookings that carry it keep it. */
+  switchOffDiscountCode: (id: string) => client.post("/api/discount-codes/{id}/off", { path: { id } }),
+  /** Only on a visit not yet paid for, linked or invoiced; one code a visit. */
+  enterVisitCode: (visitId: string, code: string) =>
+    client.post("/api/visits/{id}/discount-code", { path: { id: visitId }, body: { code } }),
+  removeVisitCode: (visitId: string) => client.post("/api/visits/{id}/discount-code/remove", { path: { id: visitId } }),
   /** Every pincode, with how many wait there and how many serving it would tell. */
   serviceArea: () => client.get("/api/service-area"),
   /**

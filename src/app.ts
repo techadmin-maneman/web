@@ -20,6 +20,9 @@ import { registerClientBooking } from "./routes/client-booking.ts";
 import { registerClientChanges } from "./routes/client-changes.ts";
 import { registerClientNotes } from "./routes/client-notes.ts";
 import { registerClientData } from "./routes/client-data.ts";
+import { registerClientDiscountCodes } from "./routes/client-discount-codes.ts";
+import { registerOpsDiscountCodes } from "./routes/ops-discount-codes.ts";
+import { registerTechDiscountCodes } from "./routes/tech-discount-codes.ts";
 import { registerClientDisputes } from "./routes/client-disputes.ts";
 import { registerClientRefer } from "./routes/client-refer.ts";
 import { registerOpsBlackouts } from "./routes/ops-blackouts.ts";
@@ -101,6 +104,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerClientDisputes,
     registerClientPayments,
     registerClientBooking,
+    // After the booking: it puts the session and the self-serve switch on every /api/holds/* route.
+    registerClientDiscountCodes,
     registerClientChanges,
     // After the changes: they put the session and the self-serve switch on every /api/appointments/* route.
     registerClientNotes,
@@ -140,8 +145,11 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     // What the photographs and cards hold in R2 (docs/decisions/0093-the-storage-meter.md).
     registerOpsStorage,
     registerOpsWhoami,
+    // Discount codes, and a code on a client's visit (docs/decisions/0108-discount-codes.md).
+    registerOpsDiscountCodes,
   ],
-  tech: [registerHealth, registerTechAuth, registerTechJobs, registerTechPieces],
+  // The discount code after the jobs, which put the technician's session on every /api/tech/jobs/* route.
+  tech: [registerHealth, registerTechAuth, registerTechJobs, registerTechPieces, registerTechDiscountCodes],
 };
 
 export function createApp(

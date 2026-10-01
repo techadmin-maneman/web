@@ -851,6 +851,66 @@ The piece a label names
 }
 ```
 
+### POST /api/tech/jobs/{id}/discount-code
+
+Enter a discount code on a one visit, before its payment link is made
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianDiscountCode"
+}
+```
+
+**200**: It comes off the product's price at the payment link
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianDiscountCodeApplied"
+}
+```
+
+**401**: session_required; device_revoked
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such job of this technician's
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: already_discounted: the visit carries a code; price_settled: its payment link is made, or it is not a one visit, whose client paid ahead
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**422**: code_not_applicable: the code does not apply to this visit
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**429**: rate_limited: too many codes tried today, or from this address this hour
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ## Schemas
 
 ### ErrorResponse
@@ -921,7 +981,11 @@ The piece a label names
             "already_invited",
             "already_fitted",
             "already_disputed",
-            "not_disputable"
+            "not_disputable",
+            "code_not_applicable",
+            "already_discounted",
+            "price_settled",
+            "code_exists"
           ]
         },
         "request_id": {
@@ -3243,5 +3307,43 @@ The piece a label names
   ],
   "additionalProperties": false,
   "description": "Whether the label is one of the job's client's pieces."
+}
+```
+
+### TechnicianDiscountCodeApplied
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "The code, as it is kept: in capitals."
+    }
+  },
+  "required": [
+    "code"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianDiscountCode
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40,
+      "description": "As the client gave it, any case."
+    }
+  },
+  "required": [
+    "code"
+  ],
+  "additionalProperties": false
 }
 ```

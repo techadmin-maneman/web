@@ -314,6 +314,14 @@ Asked what we record about leads and clients, the owner learned that we keep a t
 
 Asked on the same day about a separate consent to the history, **the owner ruled:** "Why does it need further consent? This is the information that client has told us. No new consent is needed for it." **Built 1 October 2026** ([0106](0106-a-clients-hair-profile.md)), which lists what the build took for the owner to confirm.
 
+## Discount codes, 1 October 2026
+
+100. **Discount codes.** **Ruled 1 October 2026 by the owner**, asked "to allow for discount codes to be generated and used before invoicing", and quoted by `src/policy/discount-codes.ts`; built in [0108](0108-discount-codes.md), which lists the defaults taken for the owner to confirm:
+     - % or rupees, per code: a percentage, with an optional rupee cap, or a fixed rupee amount, taken off before GST, so the invoice shows the discounted price.
+     - Ops choose per code what it covers: the first fit (the one-visit consultation and fit included), service visits, replacements, or any of them.
+     - Client, technician or ops enter it: the client where they pay or book, the technician before sending the pay-at-visit link, ops on a booking in the console; always before the invoice is made.
+     - Ops set limits per code: an expiry date, total uses (one, many or unlimited), once per client; one code per booking; never on a visit a referral credit pays for; ops can switch a code off at any time, and its uses stay on record.
+
 ## Inputs still owed
 
 The inputs each milestone needs are listed in the Phase 2 plan and in the provisioning table of `docs/prompts/phase2-backend.md`; what is still owed before production is `docs/open-points.md`. The FSM trial's findings are written up in `docs/decisions/fsm-trial.md`. The licence for our own apps was ruled by the owner on 23 September 2026, so P2-M4 went ahead (`docs/decisions/fsm-licensing.md`); Zoho's written answer is still wanted for the file (`docs/open-points.md`, item 30). (Corrected 27 September 2026: this said both were pending. Migration 0026's header still says P2-M4 waits on the licence; an applied migration is never edited, so `docs/migrations.md` records the correction.)

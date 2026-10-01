@@ -122,7 +122,7 @@ const OUTSTANDING = [
   UNION ALL
   SELECT 'consultation_request', r.id, r.person_id, pe.name,
          r.requested_date || ' ' || r.requested_window
-           || CASE WHEN r.one_visit = 1 THEN ' one_visit'
+           || CASE WHEN r.one_visit = 1 THEN ' one_visit' || COALESCE(' ' || r.discount_code, '')
                    WHEN f.id IS NULL THEN ''
                    ELSE ' first_fit ' || COALESCE(f.preferred_window, 'any') END,
          r.created_at, NULL, ''

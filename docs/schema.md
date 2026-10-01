@@ -28,6 +28,8 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [cron_jobs](#cron_jobs): Each job of the five-minute cron, and how many runs in a row it has failed (ADR 0067).
 - [deletion_requests](#deletion_requests): A client's request to be erased, waiting for ops, and what ops decided (ADR 0042, ADR 0078).
 - [deployment_identity](#deployment_identity): Which environment's database this is, so a Worker refuses to serve on another's (ADR 0003).
+- [discount_code_uses](#discount_code_uses): Each time a discount code was entered on a booking, its hold or its visit: by whom, and what it took off before GST once the price was known. Never deleted: one taken off is marked removed (ADR 0108).
+- [discount_codes](#discount_codes): The discount codes ops make: a percentage with an optional cap or an amount, the kinds of visit each covers, its last day and limits, and whether it is switched off (ADR 0108).
 - [dispatch_moves](#dispatch_moves): Every move ops make on the dispatch board: from where to where, by whom, why, what FSM said, and whether the client was told (ADR 0069).
 - [events](#events): What happened, for analysis, with no personal data in its payload.
 - [first_fit_requests](#first_fit_requests): A first fit asked for on the site's form with the consultation, for the app to offer once the consultation is done; a person's latest stands (ADR 0086). The form asks for none since 1 October 2026 (ADR 0105).
@@ -142,7 +144,7 @@ Indexes:
 
 The mirror of FSM's appointments: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice (ADR 0032).
 
-Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`, `0059_no_show_charges_and_disputes.sql`, `0060_flat_task_reads.sql`, `0061_one_visit.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`, `0059_no_show_charges_and_disputes.sql`, `0060_flat_task_reads.sql`, `0061_one_visit.sql`, `0063_discount_codes.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -174,6 +176,7 @@ Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_i
 | `tier` | TEXT | yes |  |  |
 | `start_before_move` | TEXT | yes |  |  |
 | `one_visit` | TEXT | yes |  |  |
+| `nothing_owed_at` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -298,7 +301,7 @@ Triggers: `consents_no_delete`, `consents_no_update`.
 
 A consultation asked for while self-serve booking is off, for ops to fix the hour (ADR 0060).
 
-Made by `0032_consultation_requests.sql`; changed by `0056_task_owners.sql`, `0061_one_visit.sql`.
+Made by `0032_consultation_requests.sql`; changed by `0056_task_owners.sql`, `0061_one_visit.sql`, `0063_discount_codes.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -311,6 +314,7 @@ Made by `0032_consultation_requests.sql`; changed by `0056_task_owners.sql`, `00
 | `created_at` | TEXT | no |  |  |
 | `booked` | INTEGER | no | `0` |  |
 | `one_visit` | INTEGER | no | `0` |  |
+| `discount_code` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -478,6 +482,68 @@ Made by `0001_deployment_identity.sql`.
 | `marked_at` | TEXT | no | `strftime('%Y-%m-%dT%H:%M:%fZ', 'now')` |  |
 
 Triggers: `deployment_identity_no_delete`, `deployment_identity_no_update`.
+
+## discount_code_uses
+
+Each time a discount code was entered on a booking, its hold or its visit: by whom, and what it took off before GST once the price was known. Never deleted: one taken off is marked removed (ADR 0108).
+
+Made by `0063_discount_codes.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `code_id` | TEXT | no |  | → `discount_codes.id` |
+| `person_id` | TEXT | no |  | → `people.id` |
+| `hold_id` | TEXT | yes |  | → `slot_holds.id` |
+| `appointment_id` | TEXT | yes |  | → `appointments.id` |
+| `amount_off` | INTEGER | yes |  |  |
+| `given_by` | TEXT | no |  |  |
+| `given_by_id` | TEXT | no |  |  |
+| `created_at` | TEXT | no |  |  |
+| `removed_at` | TEXT | yes |  |  |
+| `removed_by` | TEXT | yes |  |  |
+| `removed_by_id` | TEXT | yes |  |  |
+
+Indexes:
+
+- `discount_code_uses_by_code`: on (`code_id`, `person_id`)
+- `discount_code_uses_by_hold`: on (`hold_id`), where `hold_id IS NOT NULL`
+- `discount_code_uses_by_person`: on (`person_id`)
+- `discount_code_uses_by_visit`: on (`appointment_id`), where `appointment_id IS NOT NULL`
+- `discount_code_uses_one_per_hold`: unique on (`hold_id`), where `hold_id IS NOT NULL AND removed_at IS NULL`
+- `discount_code_uses_one_per_visit`: unique on (`appointment_id`), where `appointment_id IS NOT NULL AND removed_at IS NULL`
+
+Triggers: `discount_code_uses_kept`, `discount_code_uses_written_once`.
+
+## discount_codes
+
+The discount codes ops make: a percentage with an optional cap or an amount, the kinds of visit each covers, its last day and limits, and whether it is switched off (ADR 0108).
+
+Made by `0063_discount_codes.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `code` | TEXT | no |  |  |
+| `kind` | TEXT | no |  |  |
+| `value` | INTEGER | no |  |  |
+| `cap` | INTEGER | yes |  |  |
+| `covers_first_fit` | INTEGER | no |  |  |
+| `covers_service` | INTEGER | no |  |  |
+| `covers_replacement` | INTEGER | no |  |  |
+| `expires_on` | TEXT | yes |  |  |
+| `max_uses` | INTEGER | yes |  |  |
+| `once_per_client` | INTEGER | no |  |  |
+| `batch_id` | TEXT | yes |  |  |
+| `created_by` | TEXT | no |  |  |
+| `created_at` | TEXT | no |  |  |
+| `switched_off_by` | TEXT | yes |  |  |
+| `switched_off_at` | TEXT | yes |  |  |
+
+Indexes:
+
+- `discount_codes_by_batch`: on (`batch_id`), where `batch_id IS NOT NULL`
+- A `UNIQUE` constraint: unique on (`code`)
 
 ## dispatch_moves
 

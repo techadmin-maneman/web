@@ -122,6 +122,9 @@ const paidInMoney = (hold: { amount: number; use_credit: number }) => hold.amoun
 
 export type Started = { readonly kind: "free" } | { readonly kind: "pay"; readonly orderId: string };
 
+/** A hold's price may change while its order is made, by a discount code entered or taken off; then it is made again. */
+const BOOKING_TRIES = 2;
+
 /**
  * Starts paying for the client's live hold: its Razorpay order, made once, or, for a free visit, the hold
  * confirmed. Null when the hold is not live, or when a consultation or first fit like it has been booked since.
@@ -133,19 +136,38 @@ export async function startBooking(
   personId: string,
   now: Date,
 ): Promise<Started | null> {
+  for (let tries = 0; tries < BOOKING_TRIES; tries += 1) {
+    const started = await tryStartBooking(db, payments, holdId, personId, now);
+    if (started !== "price_changed") return started;
+  }
+  return null;
+}
+
+/**
+ * One try. The hold's price is read, and the order made for it, or the hold confirmed free; each is written only while
+ * the hold still costs what was read, so an order is never kept for a price a discount code changed meanwhile
+ * (docs/decisions/0108-discount-codes.md), and the try answers "price_changed" for the next.
+ */
+async function tryStartBooking(
+  db: D1Database,
+  payments: PaymentsProvider,
+  holdId: string,
+  personId: string,
+  now: Date,
+): Promise<Started | null | "price_changed"> {
   const hold = await holdOf(db, holdId);
   if (hold?.person_id !== personId || hold.state !== "held" || hold.expires_at <= now.toISOString()) return null;
   const isNewVisit = hold.moves_appointment_id === null;
   if (isNewVisit && (await liveVisitOf(db, personId, hold.type, hold.id)) !== null) return null;
   if (!paidInMoney(hold)) {
-    await db
+    const confirmed = await db
       .prepare(
         `UPDATE slot_holds SET confirmed_at = COALESCE(confirmed_at, ?2), queued_at = ?2, updated_at = ?2
-         WHERE id = ?1`,
+         WHERE id = ?1 AND (amount = 0 OR use_credit = 1) RETURNING id`,
       )
       .bind(hold.id, now.toISOString())
-      .run();
-    return { kind: "free" };
+      .first();
+    return confirmed === null ? "price_changed" : { kind: "free" };
   }
   if (hold.razorpay_order_id !== null) return { kind: "pay", orderId: hold.razorpay_order_id };
   const order = await payments.createOrder({
@@ -155,17 +177,18 @@ export async function startBooking(
   });
   // Two bookings of one hold at the same moment both found no order, and both made one. The write
   // settles which of them is the hold's, and the one that lost answers with the winner's, so a hold
-  // is only ever paid for on the order it names (ADR 0057).
+  // is only ever paid for on the order it names (ADR 0057). It is the hold's only while the hold still
+  // costs what the order was made for.
   const claimed = await db
     .prepare(
       `UPDATE slot_holds SET razorpay_order_id = ?1, updated_at = ?2
-       WHERE id = ?3 AND razorpay_order_id IS NULL RETURNING razorpay_order_id`,
+       WHERE id = ?3 AND razorpay_order_id IS NULL AND amount = ?4 RETURNING razorpay_order_id`,
     )
-    .bind(order.id, now.toISOString(), hold.id)
+    .bind(order.id, now.toISOString(), hold.id, hold.amount)
     .first();
   if (claimed !== null) return { kind: "pay", orderId: order.id };
   const won = (await holdOf(db, holdId))?.razorpay_order_id ?? null;
-  return won === null ? null : { kind: "pay", orderId: won };
+  return won === null ? "price_changed" : { kind: "pay", orderId: won };
 }
 
 /**

@@ -602,6 +602,8 @@ test("offers the consultation alone or with the fit in one visit, and asks ops f
   ).toBeVisible();
   // The morning or the afternoon: the first fit's three hours cannot start in the evening.
   await expect(page.getByRole("group", { name: "Window" }).getByRole("radio")).toHaveCount(2);
+  // The invite is this page's offer: no discount code here (docs/decisions/0108-discount-codes.md).
+  await expect(page.getByLabel("Discount code (optional)")).toHaveCount(0);
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();

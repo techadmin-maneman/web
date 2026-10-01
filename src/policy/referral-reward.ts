@@ -6,12 +6,13 @@ import type { VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant } from "../lib/india-time.ts";
 import { DAY_MS } from "../lib/durations.ts";
 
+// The prompt's "There is no other discount for the referred person" was retired by the owner on 1 October 2026:
+// discount codes are for anyone, an invited friend too, and credits still pay first (docs/decisions/0108-discount-codes.md).
 export const RULES = [
   "When a referred person's first fit closes as done, the referrer and the referred each get 3 service-visit credits.",
-  "There is no other discount for the referred person.",
   "Credits are usable on any day.",
   "Credits expire config CREDIT_TTL_DAYS after grant (365 by default; the design shows an expiry date of 3 Jan 2028).",
-  // The owner's ruling of 1 October 2026 (ADR 0025, item 94). It amends the first and the fourth: their 3 and their
+  // The owner's ruling of 1 October 2026 (ADR 0025, item 94). It amends the first and the third: their 3 and their
   // 365 are each side's visits and the credits' life until ops set others.
   "Ops set, in the console, the referrer's free service visits and the referred friend's free service visits separately, and how long the credits last.",
 ] as const;

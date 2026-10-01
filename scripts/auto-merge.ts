@@ -62,10 +62,20 @@ if (!verdict.merge) {
   process.exit(0);
 }
 
-await github("PUT", `/pulls/${String(pull.number)}/merge`, {
-  merge_method: "squash",
-  sha: pull.head.sha,
-  commit_title: `${pull.title} (#${String(pull.number)})`,
+const merged = await fetch(`https://api.github.com/repos/${repository}/pulls/${String(pull.number)}/merge`, {
+  method: "PUT",
+  headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" },
+  body: JSON.stringify({
+    merge_method: "squash",
+    sha: pull.head.sha,
+    commit_title: `${pull.title} (#${String(pull.number)})`,
+  }),
 });
+// 405: GitHub cannot merge it as it stands, most often a conflict with main, which only a new push can settle.
+if (merged.status === 405) {
+  console.log(`#${String(pull.number)} is not mergeable as it stands: merge main into it`);
+  process.exit(0);
+}
+if (!merged.ok) throw new Error(`HTTP ${String(merged.status)} merging #${String(pull.number)}`);
 await github("POST", "/actions/workflows/deploy-staging.yml/dispatches", { ref: "main" });
 console.log(`#${String(pull.number)} merged, and the staging deploy started`);

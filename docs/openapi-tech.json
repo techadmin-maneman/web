@@ -82,7 +82,11 @@
                   "already_invited",
                   "already_fitted",
                   "already_disputed",
-                  "not_disputable"
+                  "not_disputable",
+                  "code_not_applicable",
+                  "already_discounted",
+                  "price_settled",
+                  "code_exists"
                 ]
               },
               "request_id": {
@@ -2229,6 +2233,34 @@
         ],
         "additionalProperties": false,
         "description": "Whether the label is one of the job's client's pieces."
+      },
+      "TechnicianDiscountCodeApplied": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The code, as it is kept: in capitals."
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "additionalProperties": false
+      },
+      "TechnicianDiscountCode": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40,
+            "description": "As the client gave it, any case."
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "additionalProperties": false
       }
     },
     "parameters": {}
@@ -3718,6 +3750,94 @@
           },
           "404": {
             "description": "not_found: no piece with that label",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tech/jobs/{id}/discount-code": {
+      "post": {
+        "summary": "Enter a discount code on a one visit, before its payment link is made",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TechnicianDiscountCode"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "It comes off the product's price at the payment link",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TechnicianDiscountCodeApplied"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required; device_revoked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such job of this technician's",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "already_discounted: the visit carries a code; price_settled: its payment link is made, or it is not a one visit, whose client paid ahead",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "code_not_applicable: the code does not apply to this visit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited: too many codes tried today, or from this address this hour",
             "content": {
               "application/json": {
                 "schema": {

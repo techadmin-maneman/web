@@ -30,7 +30,8 @@ const DAYS = 14;
  * Board C2: the pincode is served, so the page books a free consultation. The form also takes the address the
  * consultation is at, which no board draws, so nothing is booked without one (ADR 0081). It may book the
  * consultation and fit in one visit instead, which no board draws either: three hours, in the morning or the
- * afternoon, paid for once the client is fitted (ADR 0105).
+ * afternoon, paid for once the client is fitted (ADR 0105), and, on the site's own page, with a discount code that
+ * comes off the hair system's price when they pay (ADR 0108).
  */
 export function Consultation(props: FormProps & { onBooked: (booking: Booking) => void }) {
   const form = useTurnstileForm(props.turnstileSiteKey);
@@ -39,8 +40,11 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
   const [window, setWindow] = useState<BookingWindow>("morning");
   const [address, setAddress] = useState<AddressFields>(() => emptyAddress(props.answer.city));
   const [extent, setExtent] = useState<LossExtent>("crown");
+  const [code, setCode] = useState("");
   const days = dayStrip(indiaTomorrow(), DAYS);
   const { pincode } = props.answer;
+  // The site's own page takes a discount code for the one visit; an invite's page is the invite's offer (ADR 0108).
+  const takesCode = plan === "one_visit" && !props.invited;
 
   function submit(event: Event) {
     const { fields } = form;
@@ -63,6 +67,7 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
       loss_extent: extent,
       ...(attribution === undefined ? {} : { attribution }),
       ...(remembered === null ? {} : { invite_code: remembered }),
+      ...(takesCode && code.trim() !== "" ? { discount_code: code.trim() } : {}),
     };
     const invite = props.invited ? codeInPath() : remembered;
     void form.submit(
@@ -123,6 +128,29 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
         </div>
         {plan === "one_visit" && <p class={styles.planNote}>{choices.note}</p>}
       </fieldset>
+
+      {takesCode && (
+        <div>
+          <label class={styles.label} for="invite-consultation-code">
+            {consultation.code.label}
+          </label>
+          <input
+            id="invite-consultation-code"
+            class={styles.input}
+            value={code}
+            autocomplete="off"
+            autocapitalize="characters"
+            spellcheck={false}
+            aria-describedby="invite-consultation-code-hint"
+            onInput={(event) => {
+              setCode(event.currentTarget.value);
+            }}
+          />
+          <p id="invite-consultation-code-hint" class={styles.hint}>
+            {consultation.code.hint}
+          </p>
+        </div>
+      )}
 
       <fieldset class={styles.group}>
         <legend class={`caps ${styles.legend}`}>{consultation.date}</legend>

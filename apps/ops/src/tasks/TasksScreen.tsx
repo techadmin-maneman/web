@@ -122,11 +122,13 @@ function subOf(group: Group, task: Task, now: Date): string {
   }
   if (group === "consultation_request") {
     // The day and the window, as the request recorded them: both are always there. Then the first fit, where the
-    // site's form asked for it too, and the window it was wanted in.
-    const [day = "", when = "", plan, fitIn] = task.detail?.split(" ") ?? [];
+    // site's form asked for it too, and the window it was wanted in; or the one visit, and its discount code.
+    const [day = "", when = "", plan, fitInOrCode] = task.detail?.split(" ") ?? [];
     const asked = copy.consultation_request(fullDate(indiaDate(day)), dispatch.windows[when] ?? when);
-    if (plan === "one_visit") return `${asked} ${copy.withOneVisit}`;
-    return plan === "first_fit" ? `${asked} ${copy.withFirstFit(fitWindow(fitIn))}` : asked;
+    if (plan === "one_visit") {
+      return `${asked} ${copy.withOneVisit}${fitInOrCode === undefined ? "" : copy.withCode(fitInOrCode)}`;
+    }
+    return plan === "first_fit" ? `${asked} ${copy.withFirstFit(fitWindow(fitInOrCode))}` : asked;
   }
   if (group === "first_fit_to_book") {
     // The consultation's start, and the window the fit was asked for in.

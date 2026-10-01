@@ -140,6 +140,20 @@ describe("the grant", () => {
     expect((await creditBalance(env.DB, FRIEND, NOW)).visits).toBe(3);
   });
 
+  // The owner's ruling of 1 October 2026, "Yes, once fitted": with nothing owed, the fit itself settles the referral.
+  it("grants on the pass after a one visit a discount code left nothing to pay, with no payment", async () => {
+    await firstFit(FIT, FRIEND);
+    await env.DB.prepare("UPDATE appointments SET one_visit = 'fitted' WHERE id = ?1").bind(FIT).run();
+    expect(await settleReferrals(env.DB, NOW, REFERRAL_REWARD)).toMatchObject({ granted: 0 });
+
+    await env.DB.prepare("UPDATE appointments SET nothing_owed_at = ?2 WHERE id = ?1")
+      .bind(FIT, NOW.toISOString())
+      .run();
+    expect(await settleReferrals(env.DB, NOW, REFERRAL_REWARD)).toMatchObject({ granted: 1, held: 0 });
+    expect((await creditBalance(env.DB, FRIEND, NOW)).visits).toBe(3);
+    expect((await creditBalance(env.DB, REFERRER, NOW)).visits).toBe(3);
+  });
+
   it("waits while the first fit is only partly done", async () => {
     await firstFit(FIT, FRIEND, "partial");
     expect(await settleReferrals(env.DB, NOW, REFERRAL_REWARD)).toMatchObject({ granted: 0, held: 0 });

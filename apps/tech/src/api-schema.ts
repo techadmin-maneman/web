@@ -1463,6 +1463,93 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tech/jobs/{id}/discount-code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Enter a discount code on a one visit, before its payment link is made */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TechnicianDiscountCode"];
+                };
+            };
+            responses: {
+                /** @description It comes off the product's price at the payment link */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TechnicianDiscountCodeApplied"];
+                    };
+                };
+                /** @description session_required; device_revoked */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such job of this technician's */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description already_discounted: the visit carries a code; price_settled: its payment link is made, or it is not a one visit, whose client paid ahead */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description code_not_applicable: the code does not apply to this visit */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description rate_limited: too many codes tried today, or from this address this hour */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1470,7 +1557,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_fitted" | "already_disputed" | "not_disputable";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_fitted" | "already_disputed" | "not_disputable" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -1916,6 +2003,14 @@ export interface components {
         PieceLookup: {
             piece: components["schemas"]["Piece"];
             belongs_to_this_job: boolean;
+        };
+        TechnicianDiscountCodeApplied: {
+            /** @description The code, as it is kept: in capitals. */
+            code: string;
+        };
+        TechnicianDiscountCode: {
+            /** @description As the client gave it, any case. */
+            code: string;
         };
     };
     responses: never;

@@ -78,6 +78,7 @@ describe("POST /api/consultation", () => {
       invite: "unknown",
       address: "saved",
       one_visit: false,
+      discount_code: false,
     });
     expect(fsm.sent).toEqual([{ hold_id: expect.any(String) as string, request_id: expect.any(String) as string }]);
     expect(crm.sent).toEqual([{ lead_id: expect.any(String) as string, request_id: expect.any(String) as string }]);
@@ -169,6 +170,7 @@ describe("POST /api/consultation", () => {
       invite: "unknown",
       address: "saved",
       one_visit: false,
+      discount_code: false,
     });
     expect(fsm.sent).toEqual([]);
     expect(crm.sent).toHaveLength(1);
@@ -505,6 +507,7 @@ describe("an invite the browser remembered", () => {
       invite: "valid",
       address: "saved",
       one_visit: false,
+      discount_code: false,
     });
     expect((await attributions()).results).toEqual([
       { code: "RM4K7P", via: "consultation", pincode: "122018", grant_state: "pending" },
@@ -688,6 +691,7 @@ describe("a consultation and fit in one visit", () => {
       invite: "unknown",
       address: "saved",
       one_visit: true,
+      discount_code: false,
     });
     expect(fsm.sent).toHaveLength(1);
     const held = await env.DB.prepare(

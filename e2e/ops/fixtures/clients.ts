@@ -49,6 +49,8 @@ export const RECORD = {
         place: "Sector 65, Gurgaon 122018",
         outcome: null,
         closed_without_follow_up: null,
+        discount_code: null,
+        price_open: false,
       },
     ],
     past: [
@@ -67,6 +69,8 @@ export const RECORD = {
         place: "Sector 65, Gurgaon 122018",
         outcome: "done",
         closed_without_follow_up: null,
+        discount_code: null,
+        price_open: false,
       },
     ],
   },

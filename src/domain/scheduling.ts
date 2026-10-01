@@ -154,7 +154,7 @@ export interface Moving {
  * When an unpaid hold stops keeping its time: its countdown, then the grace it was made with, or the committed two
  * minutes for a hold made before holds kept one. `hold` names the slot_holds row in the query it goes into.
  */
-const graceEnds = (hold: string): string =>
+export const graceEnds = (hold: string): string =>
   `strftime('%Y-%m-%dT%H:%M:%fZ', ${hold}.expires_at, '+' || COALESCE(${hold}.grace_seconds, ${String(PAYMENT_GRACE_SECONDS)}) || ' seconds')`;
 
 /** A dispatch move opened before this, and still open, never finished. */
@@ -423,6 +423,8 @@ export async function holdSlot(
     from?: "app" | "site";
     /** Written in the same batch, so they stand or fall with the hold: the person and their consent, from the site. */
     alongside?: readonly D1PreparedStatement[];
+    /** Written after the hold, in its batch, given its ID: the site's discount code (docs/decisions/0108-discount-codes.md). */
+    afterHold?: (holdId: string) => readonly D1PreparedStatement[];
   },
   now: Date,
   holdSeconds: number,
@@ -497,6 +499,7 @@ export async function holdSlot(
             .prepare("INSERT INTO slot_claims (technician_id, date, claim, hold_id) VALUES (?1, ?2, ?3, ?4)")
             .bind(technician.id, date, claim, id),
         ),
+        ...(input.afterHold?.(id) ?? []),
       ]);
       return { id, service, date, window, technician, startUnit: start, price, expiresAt };
     } catch (error) {

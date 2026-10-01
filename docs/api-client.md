@@ -1182,6 +1182,102 @@ Request body:
 }
 ```
 
+### POST /api/holds/{id}/discount-code
+
+Take a discount code off the hold's price, before Checkout has its order
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/DiscountCodeEntry"
+}
+```
+
+**200**: The hold, priced with the code taken off
+
+```json
+{
+  "$ref": "#/components/schemas/Hold"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: already_discounted: the hold carries a code; hold_expired; price_settled: Checkout has its order, or it is paid for; ops_assisted
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**422**: code_not_applicable: the code does not apply to this booking
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**429**: rate_limited: too many codes tried today, or from this address this hour
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### DELETE /api/holds/{id}/discount-code
+
+Take the code off the hold again, before Checkout has its order
+
+**200**: The hold, at its price again
+
+```json
+{
+  "$ref": "#/components/schemas/Hold"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such hold of the client's, or it carries no code
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: hold_expired: the hold ran out; price_settled: Checkout has its order, or it is paid for; ops_assisted
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/appointments/{id}/reschedule
 
 What moving a visit costs, or start the move a hold makes
@@ -1586,7 +1682,11 @@ Request body:
             "already_invited",
             "already_fitted",
             "already_disputed",
-            "not_disputable"
+            "not_disputable",
+            "code_not_applicable",
+            "already_discounted",
+            "price_settled",
+            "code_exists"
           ]
         },
         "request_id": {
@@ -4934,6 +5034,50 @@ Request body:
         }
       ],
       "description": "A service-visit credit covers it, so payment is skipped (board C5)."
+    },
+    "discount": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "amount_ex_gst": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "In paise: what the code takes off before GST; null until the price it comes off is known."
+            },
+            "list_price": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Price"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The price before the code; price is what is left, with GST on it."
+            }
+          },
+          "required": [
+            "code",
+            "amount_ex_gst",
+            "list_price"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The discount code entered on it (docs/decisions/0108-discount-codes.md); else null."
     }
   },
   "required": [
@@ -4955,7 +5099,8 @@ Request body:
     "paid",
     "visit_id",
     "moves_visit_id",
-    "credit"
+    "credit",
+    "discount"
   ],
   "additionalProperties": false
 }
@@ -5065,6 +5210,26 @@ Request body:
   },
   "required": [
     "hold_id"
+  ],
+  "additionalProperties": false
+}
+```
+
+### DiscountCodeEntry
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40,
+      "description": "As the client typed it, any case."
+    }
+  },
+  "required": [
+    "code"
   ],
   "additionalProperties": false
 }

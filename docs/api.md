@@ -157,6 +157,12 @@ Request body:
       "type": "boolean",
       "description": "true: the consultation and the first fit in one visit, three hours, in the morning or the afternoon; the client chooses the product with the technician and pays once fitted, so nothing is paid here. Left out or false, the consultation alone."
     },
+    "discount_code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40,
+      "description": "A discount code for the consultation and fit in one visit, as typed, any case: it comes off the product's price at the payment link (docs/decisions/0108-discount-codes.md). A code that does not apply refuses the booking, code_not_applicable, and so does any code with the consultation alone."
+    },
     "consent": {
       "type": "boolean",
       "enum": [
@@ -219,7 +225,7 @@ Request body:
 }
 ```
 
-**422**: not_bookable: the pincode is not served, the day is not open, or this number is past consultations and books in the app; idempotency_key_reused: the key was used with a different body
+**422**: not_bookable: the pincode is not served, the day is not open, or this number is past consultations and books in the app; code_not_applicable: the discount code does not apply, fields names discount_code; idempotency_key_reused: the key was used with a different body
 
 ```json
 {
@@ -1225,7 +1231,11 @@ Razorpay's webhook: payments and refunds
             "already_invited",
             "already_fitted",
             "already_disputed",
-            "not_disputable"
+            "not_disputable",
+            "code_not_applicable",
+            "already_discounted",
+            "price_settled",
+            "code_exists"
           ]
         },
         "request_id": {
@@ -1501,6 +1511,10 @@ Razorpay's webhook: payments and refunds
     "one_visit": {
       "type": "boolean",
       "description": "true: the consultation and the first fit in one visit were booked, or asked for."
+    },
+    "discount_code": {
+      "type": "boolean",
+      "description": "true: the code given stands on the booking, or on the request ops book from; false when none was given, or another booking took the code's last use a moment before, and the booking stands without it."
     }
   },
   "required": [
@@ -1511,7 +1525,8 @@ Razorpay's webhook: payments and refunds
     "credits",
     "invite",
     "address",
-    "one_visit"
+    "one_visit",
+    "discount_code"
   ],
   "additionalProperties": false
 }
@@ -1585,7 +1600,11 @@ Razorpay's webhook: payments and refunds
             "already_invited",
             "already_fitted",
             "already_disputed",
-            "not_disputable"
+            "not_disputable",
+            "code_not_applicable",
+            "already_discounted",
+            "price_settled",
+            "code_exists"
           ]
         },
         "request_id": {

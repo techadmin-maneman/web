@@ -75,7 +75,8 @@ describe("ci.yml's two tiers", () => {
   });
 
   it("names the job a later run looks for before it takes the full suite as passed", () => {
-    expect(jobOf("full-suite")).toContain(`name: ${FULL_SUITE_JOB}`);
+    // Only a run of every project is named so: a run of the touched apps alone is not a full suite.
+    expect(jobOf("full-suite")).toContain(`needs.changes.outputs.all-projects == 'true' && '${FULL_SUITE_JOB}'`);
     expect(jobOf("checks")).toContain("full-suite");
   });
 
