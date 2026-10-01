@@ -21,6 +21,10 @@ export const ERROR_CODES = [
   "session_required",
   "job_not_claimable",
   "look_limit_reached",
+  // The look goes to WhatsApp only (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md): a render waits for the
+  // gate's claim, and no try-on runs while WhatsApp cannot send its look.
+  "claim_required",
+  "whatsapp_unavailable",
   // Erasure (docs/decisions/0019-erasure.md), and what it waits for: a visit still booked, or a payment
   // held with no visit behind it (docs/decisions/0066-erasure-all-or-nothing.md).
   "unauthorized",

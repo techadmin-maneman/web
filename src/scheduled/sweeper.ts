@@ -447,7 +447,17 @@ async function expireJobs(env: SweepEnv, now: Date): Promise<{ expired: number; 
   const results = pastExpiry.flatMap((row) => (row.result_key === null ? [] : [row.result_key]));
   if (results.length > 0) await env.RESULTS.delete(results);
 
-  const [expiredResults, abandonedUploads] = await db.batch([
+  const abandonedBefore = new Date(now.getTime() - PHOTO_RETENTION_MS).toISOString();
+  const [, expiredResults, abandonedUploads] = await db.batch([
+    // The gate is claimed before the render (ADR 0104), so a visitor who leaves between the two leaves a message
+    // waiting for a look never made. It is skipped with its job, in the same batch, before the job's state changes.
+    db
+      .prepare(
+        `UPDATE outbound_messages SET state = 'skipped', last_error = 'no look was made'
+         WHERE state = 'waiting' AND kind = 'tryon_result' AND subject_id IN (
+           SELECT id FROM tryon_jobs WHERE state = 'awaiting_upload' AND created_at < ?1)`,
+      )
+      .bind(abandonedBefore),
     db
       .prepare(
         "UPDATE tryon_jobs SET state = 'expired' WHERE id IN (SELECT value FROM json_each(?1)) AND state = 'ready' RETURNING id",
@@ -457,7 +467,7 @@ async function expireJobs(env: SweepEnv, now: Date): Promise<{ expired: number; 
       .prepare(
         "UPDATE tryon_jobs SET state = 'expired' WHERE state = 'awaiting_upload' AND created_at < ?1 RETURNING id",
       )
-      .bind(new Date(now.getTime() - PHOTO_RETENTION_MS).toISOString()),
+      .bind(abandonedBefore),
   ]);
   return {
     expired: (expiredResults?.results.length ?? 0) + (abandonedUploads?.results.length ?? 0),

@@ -8,17 +8,15 @@
 import type { ComponentChildren } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { ICONS } from "@maneman/brand/icons";
-import { fitFrameToPhotos } from "../lib/frame-aspect.ts";
 import { fill } from "../lib/text.ts";
 import styles from "./BeforeAfter.module.css";
 
 interface Props {
-  /** The two images: named slots from an Astro page, or props from another island. */
+  /** The two images, named slots from the Astro page. */
   before?: ComponentChildren;
   after?: ComponentChildren;
-  /** Where the handle starts: 46% in the teaser, 50% on the result. */
-  start: 46 | 50;
-  size: "teaser" | "result";
+  /** Where the handle starts, as v2's teaser draws it. */
+  start: 46;
   beforeLabel: string;
   afterLabel: string;
   sliderLabel: string;
@@ -36,15 +34,8 @@ export default function BeforeAfter(props: Props) {
     frame.current?.style.setProperty("--position", `${String(position)}%`);
   }, [position]);
 
-  // The result frame takes the shape of the photographs in it, so neither is cropped.
-  useEffect(() => fitFrameToPhotos(frame.current), [props.before, props.after]);
-
-  const chevron = props.size === "teaser" ? 15 : 16;
   return (
-    <div
-      ref={frame}
-      class={`${styles.frame} ${styles[props.size]} ${props.start === 46 ? styles.from46 : styles.from50}`}
-    >
+    <div ref={frame} class={`${styles.frame} ${styles.teaser} ${styles.from46}`}>
       <div class={styles.layer}>{props.after}</div>
       <div class={`${styles.layer} ${styles.before}`}>{props.before}</div>
       <span class={`label ${styles.corner} ${styles.left}`}>{props.beforeLabel}</span>
@@ -56,8 +47,8 @@ export default function BeforeAfter(props: Props) {
           <svg
             key={path}
             viewBox="0 0 24 24"
-            width={chevron}
-            height={chevron}
+            width={15}
+            height={15}
             fill="none"
             stroke="currentColor"
             stroke-width="1.6"

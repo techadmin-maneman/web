@@ -7,20 +7,8 @@
 .teaser {
   height: var(--teaser-frame-h);
 }
-/* The photograph's own shape, which the page writes once one has loaded
-   (site/src/lib/frame-aspect.ts); the design's 4 by 3 until then. A frame as tall as the cap
-   narrows to keep that shape, so the photograph fills it and is never letterboxed. */
-.result {
-  --frame-aspect: 4 / 3;
-
-  width: min(100%, calc(var(--result-frame-max-h) * var(--frame-aspect)));
-  aspect-ratio: var(--frame-aspect);
-}
 .from46 {
   --position: 46%;
-}
-.from50 {
-  --position: 50%;
 }
 
 .layer {
@@ -37,17 +25,8 @@
   /* The teaser's pair fills its band, as v2 draws it. */
   object-fit: cover;
 }
-/* A visitor's own photograph is contained, never cropped: a face must not lose its hairline to the frame. */
-.result .layer :global(img) {
-  object-fit: contain;
-}
 .before {
   clip-path: inset(0 calc(100% - var(--position)) 0 0);
-}
-/* A note in place of the after image, as the try-on shows while its render runs, sits in the part the before image
-   leaves showing, clear of the handle, and follows the handle as it moves (CLI-28). */
-.layer > [data-after-note] {
-  padding-inline: calc(var(--position) + var(--sp-26)) var(--sp-26);
 }
 
 /* Two classes, so the size wins over the global .label rule. */
@@ -58,20 +37,11 @@
 .teaser .corner {
   top: var(--sp-20);
 }
-.result .corner {
-  top: var(--sp-18);
-}
 .teaser .left {
   left: var(--sp-20);
 }
 .teaser .right {
   right: var(--sp-20);
-}
-.result .left {
-  left: var(--sp-18);
-}
-.result .right {
-  right: var(--sp-18);
 }
 .frame .tag {
   position: absolute;
@@ -106,10 +76,6 @@
 .teaser .handle {
   width: var(--teaser-handle);
   height: var(--teaser-handle);
-}
-.result .handle {
-  width: var(--result-handle);
-  height: var(--result-handle);
 }
 
 /* The input covers the frame, invisible; its focus ring moves to the handle. */
