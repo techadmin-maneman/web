@@ -48,7 +48,7 @@ export async function closeOneVisit(
       db
         .prepare("UPDATE appointments SET one_visit = 'declined', type = 'consultation', tier = ?2 WHERE id = ?1")
         .bind(job.id, STANDARD_TIER),
-      releaseDeclined(db, job.id, now),
+      ...releaseDeclined(db, job.id, now),
     ]);
     return null;
   }

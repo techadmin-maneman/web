@@ -142,9 +142,10 @@ export function useStatement(
            WHERE u.code_id = c.id AND ${standing("u", "?9")}))
          AND (c.once_per_client = 0 OR NOT EXISTS (SELECT 1 FROM discount_code_uses u
            WHERE u.code_id = c.id AND u.person_id = ?3 AND ${standing("u", "?9")}))
-         AND NOT EXISTS (SELECT 1 FROM discount_code_uses u WHERE u.removed_at IS NULL
-           AND (u.hold_id = ?4 OR u.appointment_id = ?5
-             OR u.hold_id IN (SELECT h.id FROM slot_holds h WHERE h.appointment_id = ?5)))`,
+         AND NOT EXISTS (SELECT 1 FROM discount_code_uses u WHERE u.hold_id = ?4 AND u.removed_at IS NULL)
+         AND NOT EXISTS (SELECT 1 FROM discount_code_uses u WHERE u.appointment_id = ?5 AND u.removed_at IS NULL)
+         AND NOT EXISTS (SELECT 1 FROM slot_holds h JOIN discount_code_uses u ON u.hold_id = h.id
+           WHERE h.appointment_id = ?5 AND u.removed_at IS NULL)`,
     )
     .bind(
       use.id,
@@ -228,9 +229,12 @@ export async function codeOnVisit(db: D1Database, visitId: string): Promise<Visi
     .prepare(
       `SELECT u.id, c.code, c.kind, c.value, c.cap, u.amount_off, u.given_by
        FROM discount_code_uses u JOIN discount_codes c ON c.id = u.code_id
-       WHERE u.removed_at IS NULL AND (u.appointment_id = ?1
-         OR u.hold_id IN (SELECT h.id FROM slot_holds h WHERE h.appointment_id = ?1 AND h.state = 'booked'))
-       ORDER BY u.created_at LIMIT 1`,
+       WHERE u.appointment_id = ?1 AND u.removed_at IS NULL
+       UNION ALL
+       SELECT u.id, c.code, c.kind, c.value, c.cap, u.amount_off, u.given_by
+       FROM slot_holds h JOIN discount_code_uses u ON u.hold_id = h.id JOIN discount_codes c ON c.id = u.code_id
+       WHERE h.appointment_id = ?1 AND h.state = 'booked' AND u.removed_at IS NULL
+       LIMIT 1`,
     )
     .bind(visitId)
     .first<{
@@ -342,14 +346,19 @@ export async function removeFromVisit(
  * The code on a one visit the client decided against, taken off by the system: nothing was sold, so the code is the
  * client's to use again, and counts against its limits no more.
  */
-export function releaseDeclined(db: D1Database, visitId: string, now: Date): D1PreparedStatement {
-  return db
-    .prepare(
-      `UPDATE discount_code_uses SET removed_at = ?2, removed_by = 'system', removed_by_id = 'declined'
-       WHERE removed_at IS NULL AND (appointment_id = ?1
-         OR hold_id IN (SELECT h.id FROM slot_holds h WHERE h.appointment_id = ?1))`,
-    )
-    .bind(visitId, now.toISOString());
+export function releaseDeclined(db: D1Database, visitId: string, now: Date): D1PreparedStatement[] {
+  const removed = "removed_at = ?2, removed_by = 'system', removed_by_id = 'declined'";
+  return [
+    db
+      .prepare(`UPDATE discount_code_uses SET ${removed} WHERE appointment_id = ?1 AND removed_at IS NULL`)
+      .bind(visitId, now.toISOString()),
+    db
+      .prepare(
+        `UPDATE discount_code_uses SET ${removed}
+         WHERE hold_id IN (SELECT h.id FROM slot_holds h WHERE h.appointment_id = ?1) AND removed_at IS NULL`,
+      )
+      .bind(visitId, now.toISOString()),
+  ];
 }
 
 /** A visit's code as the client's page shows it, and whether ops may still enter or take off one. */
@@ -361,30 +370,29 @@ interface ClientVisitCode {
 
 /** Every visit of the client's, by its ID, with its code and whether its price is still open. */
 export async function clientVisitCodes(db: D1Database, personId: string): Promise<Map<string, ClientVisitCode>> {
-  const { results } = await db
-    .prepare(
-      `WITH visit_codes AS (
-         SELECT COALESCE(u.appointment_id, h.appointment_id) AS visit_id, c.code, u.amount_off, u.given_by
+  const [visits, codes] = await Promise.all([
+    db
+      .prepare(
+        `SELECT a.id, (${openVisit("a.id")}) AS open FROM appointments a
+         WHERE a.person_id = ?1 AND a.deleted_at IS NULL`,
+      )
+      .bind(personId)
+      .all<{ id: string; open: number }>(),
+    db
+      .prepare(
+        `SELECT COALESCE(u.appointment_id, h.appointment_id) AS visit_id, c.code, u.amount_off, u.given_by
          FROM discount_code_uses u JOIN discount_codes c ON c.id = u.code_id
          LEFT JOIN slot_holds h ON h.id = u.hold_id AND h.state = 'booked'
-         WHERE u.person_id = ?1 AND u.removed_at IS NULL)
-       SELECT a.id, (${openVisit("a.id")}) AS open, vc.code, vc.amount_off, vc.given_by
-       FROM appointments a LEFT JOIN visit_codes vc ON vc.visit_id = a.id
-       WHERE a.person_id = ?1 AND a.deleted_at IS NULL`,
-    )
-    .bind(personId)
-    .all<{ id: string; open: number; code: string | null; amount_off: number | null; given_by: GivenBy | null }>();
+         WHERE u.person_id = ?1 AND u.removed_at IS NULL`,
+      )
+      .bind(personId)
+      .all<{ visit_id: string | null; code: string; amount_off: number | null; given_by: GivenBy }>(),
+  ]);
+  const codeOf = new Map(
+    codes.results.map((row) => [row.visit_id, { code: row.code, amount_off: row.amount_off, given_by: row.given_by }]),
+  );
   return new Map(
-    results.map((row) => [
-      row.id,
-      {
-        code:
-          row.code === null || row.given_by === null
-            ? null
-            : { code: row.code, amount_off: row.amount_off, given_by: row.given_by },
-        open: row.open === 1,
-      },
-    ]),
+    visits.results.map((visit) => [visit.id, { code: codeOf.get(visit.id) ?? null, open: visit.open === 1 }]),
   );
 }
 

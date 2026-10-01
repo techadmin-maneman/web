@@ -810,6 +810,7 @@ test.describe("the discount codes", () => {
 
   test("switches a code off only once ops have read what it leaves on record", async ({ page }) => {
     const [wedding] = DISCOUNT_CODES.codes;
+    if (wedding === undefined) throw new Error("the fixture has no code");
     const off = `POST /api/discount-codes/${wedding.id}/off` as const;
     await open(page, "/settings/discount-codes", { [off]: empty() });
     await page.getByRole("button", { name: "Switch off WEDDNG25" }).click();

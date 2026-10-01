@@ -505,7 +505,9 @@ Made by `0064_discount_codes.sql`.
 Indexes:
 
 - `discount_code_uses_by_code`: on (`code_id`, `person_id`)
+- `discount_code_uses_by_hold`: on (`hold_id`), where `hold_id IS NOT NULL`
 - `discount_code_uses_by_person`: on (`person_id`)
+- `discount_code_uses_by_visit`: on (`appointment_id`), where `appointment_id IS NOT NULL`
 - `discount_code_uses_one_per_hold`: unique on (`hold_id`), where `hold_id IS NOT NULL AND removed_at IS NULL`
 - `discount_code_uses_one_per_visit`: unique on (`appointment_id`), where `appointment_id IS NOT NULL AND removed_at IS NULL`
 

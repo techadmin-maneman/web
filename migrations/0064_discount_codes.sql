@@ -72,6 +72,10 @@ CREATE INDEX discount_code_uses_by_code ON discount_code_uses (code_id, person_i
 -- A client's uses, which their page in the console and their data export read.
 CREATE INDEX discount_code_uses_by_person ON discount_code_uses (person_id);
 
+-- A booking's uses, removed or not, which the payment link and the invoice pass read by the hold or the visit.
+CREATE INDEX discount_code_uses_by_hold ON discount_code_uses (hold_id) WHERE hold_id IS NOT NULL;
+CREATE INDEX discount_code_uses_by_visit ON discount_code_uses (appointment_id) WHERE appointment_id IS NOT NULL;
+
 CREATE TRIGGER discount_code_uses_kept BEFORE DELETE ON discount_code_uses
 BEGIN
   SELECT RAISE(ABORT, 'a discount code''s uses stay on record');
