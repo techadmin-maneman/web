@@ -1,0 +1,65 @@
+---
+// The range: the four hair systems, each named, with its line and what it is made of.
+import { range } from "../../content/site.ts";
+---
+
+<section id="range" class="container range" data-section="range">
+  <h2 class="section-title">{range.title}</h2>
+  <p class="lead intro">{range.intro}</p>
+  <ul class="products">
+    {range.products.map((product) => (
+      <li class="product">
+        <h3 class="caps">{product.name}</h3>
+        <p class="tagline">{product.tagline}</p>
+        <p class="body">{product.body}</p>
+      </li>
+    ))}
+  </ul>
+</section>
+
+<style>
+  .range {
+    padding-top: var(--section-gap);
+  }
+  .section-title {
+    margin-bottom: var(--sp-12);
+  }
+  .intro {
+    margin: 0 0 var(--intro-gap);
+  }
+  .products {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--range-card-min)), 1fr));
+    column-gap: var(--split-gap);
+    border-top: var(--hairline) solid var(--text);
+  }
+  .product {
+    padding: var(--range-pad-y) 0;
+    border-bottom: var(--hairline) solid var(--paper-line);
+  }
+  h3 {
+    margin: 0;
+    font-weight: var(--weight-regular);
+    font-size: var(--fs-17);
+    color: var(--text-muted);
+  }
+  .tagline {
+    margin: var(--sp-12) 0 0;
+    font-family: var(--font-serif);
+    font-size: var(--fs-range-tagline);
+    line-height: var(--lh-115);
+    letter-spacing: var(--tracking-heading);
+    text-wrap: balance;
+  }
+  .body {
+    margin: var(--sp-14) 0 0;
+    font-size: var(--fs-16);
+    line-height: var(--lh-160);
+    color: var(--text-soft);
+    max-width: var(--measure-short);
+    text-wrap: pretty;
+  }
+</style>

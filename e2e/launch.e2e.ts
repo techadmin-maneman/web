@@ -28,8 +28,8 @@ test("the home page loads under 60 KB of JavaScript, gzipped, and none of the tr
 });
 
 const ROUTES = [
-  { path: "/", title: "Mane Man — hair, fitted at your home across Delhi NCR" },
-  { path: "/try", title: "See yourself with hair — Mane Man" },
+  { path: "/", title: "Mane Man — hair systems, fitted at your home across Delhi NCR" },
+  { path: "/try", title: "Try a new look — Mane Man" },
   { path: "/book", title: "Book a free consultation — Mane Man" },
   { path: "/privacy", title: "Privacy — Mane Man" },
   { path: "/terms", title: "Terms — Mane Man" },
@@ -56,6 +56,8 @@ test("the home page describes the business and its FAQ as structured data", asyn
     .evaluateAll((scripts) => scripts.map((script) => JSON.parse(script.textContent) as Record<string, unknown>));
   const business = data.find((item) => item["@type"] === "LocalBusiness");
   expect(business).toMatchObject({ name: "Mane Man", url: "https://maneman.in/", telephone: "+919007973247" });
+  // The owner took the prices off the site on 1 October 2026 (ADR 0103).
+  expect(business).not.toHaveProperty("priceRange");
   const faq = data.find((item) => item["@type"] === "FAQPage") as { mainEntity: { name: string }[] } | undefined;
   const questions = await page.locator("[data-section=faq] summary > span").allTextContents();
   expect(faq?.mainEntity.map((question) => question.name)).toEqual(questions.map((question) => question.trim()));

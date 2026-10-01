@@ -10,7 +10,7 @@
 import type { Invite } from "../lib/api.ts";
 import { fill } from "../lib/text.ts";
 import { capitalised, serviceArea, visitLength } from "./service.ts";
-import { notices, type Notice } from "./site.ts";
+import { hero, notices, type Notice } from "./site.ts";
 
 /** A one-line notice's words, as the backend records them with the consent (src/config/notices.ts). */
 function lineOf(notice: Notice): string {
@@ -19,11 +19,14 @@ function lineOf(notice: Notice): string {
 }
 
 export const referral = {
-  /** The navy block at the top, before the pincode is known (C1). The design's "in Gurgaon" is the site's area. */
+  /**
+   * The navy block at the top, before the pincode is known (C1). Its title is the home page's, as the design's was
+   * until the owner rewrote the home page on 1 October 2026 (ADR 0103).
+   */
   arrival: {
     invited: "{name} sent you this",
     unnamed: "You have an invite",
-    title: `Hair, fitted at your home across ${serviceArea}.`,
+    title: hero.title,
     offer: "Get fitted and you both get 3 service visits free.",
     /**
      * A code we do not know: a typo, a revoked code, or one more than 12 months
@@ -230,7 +233,7 @@ export const referral = {
     body: "We message you when a technician starts working there.",
     creditsFrom: "{name}’s invite holds for 12 months after that.",
     credits: "The invite holds for 12 months after that.",
-    tryOn: "See yourself with hair",
+    tryOn: "Try a new look",
     back: "See the site",
   },
   errors: {

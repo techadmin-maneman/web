@@ -1,6 +1,7 @@
 ---
-// Who comes to your home: three technician cards. Placeholder people until
-// the block is published; in production an unpublished block shows nothing.
+// Who comes to your home: three technician cards, each with their years and
+// fits. Placeholder people until the block is published; in production an
+// unpublished block shows nothing.
 import { placeholderTag, technicians } from "../../content/site.ts";
 import { SHOW_PLACEHOLDER_TAGS, isShown } from "../../lib/build.ts";
 import DesignPicture from "../DesignPicture.astro";
@@ -9,7 +10,6 @@ import DesignPicture from "../DesignPicture.astro";
 {isShown(technicians) && (
   <section class="container technicians" data-section="technicians">
     <h2 class="section-title">{technicians.title}</h2>
-    <p class="lead intro">{technicians.intro}</p>
     <ul class="three-up cards">
       {technicians.people.map((person) => (
         <li class="card">
@@ -35,7 +35,6 @@ import DesignPicture from "../DesignPicture.astro";
                 <dd>{person.fits}</dd>
               </div>
             </dl>
-            <p class="note">{person.note}</p>
           </div>
         </li>
       ))}
@@ -48,10 +47,7 @@ import DesignPicture from "../DesignPicture.astro";
     padding-top: var(--section-gap);
   }
   .section-title {
-    margin-bottom: var(--sp-12);
-  }
-  .intro {
-    margin: 0 0 var(--intro-gap);
+    margin-bottom: var(--intro-gap);
   }
   .cards {
     list-style: none;
@@ -111,12 +107,5 @@ import DesignPicture from "../DesignPicture.astro";
     font-size: var(--fs-13);
     color: var(--text-muted);
     margin-top: var(--sp-5);
-  }
-  .note {
-    margin: 0;
-    font-size: var(--fs-15);
-    line-height: var(--lh-160);
-    color: var(--text-soft);
-    text-wrap: pretty;
   }
 </style>
