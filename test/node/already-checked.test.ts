@@ -12,9 +12,13 @@ interface Repo {
   pulls?: unknown;
   mergeTree?: string;
   headTree?: string;
-  greenRuns?: number;
+  /** The jobs of each of the head's successful ci runs, by name and conclusion. */
+  greenRuns?: Record<string, string>[];
   failing?: string;
 }
+
+const FULL = { "tests (unit, contract, coverage)": "success", "full suite": "success" };
+const QUICK = { "tests (unit, contract, coverage)": "success", "full suite": "skipped" };
 
 /** A fake GitHub API over one merged pull request. */
 function github(repo: Repo = {}): GitHubGet {
@@ -25,10 +29,16 @@ function github(repo: Repo = {}): GitHubGet {
     }
     if (path === `/repos/o/r/git/commits/${MERGE}`) return Promise.resolve({ tree: { sha: repo.mergeTree ?? "t1" } });
     if (path === `/repos/o/r/git/commits/${HEAD}`) return Promise.resolve({ tree: { sha: repo.headTree ?? "t1" } });
+    const runs = repo.greenRuns ?? [FULL];
     if (path.startsWith("/repos/o/r/actions/workflows/ci.yml/runs?")) {
       expect(path).toContain(`head_sha=${HEAD}`);
       expect(path).toContain("status=success");
-      return Promise.resolve({ total_count: repo.greenRuns ?? 1 });
+      return Promise.resolve({ total_count: runs.length, workflow_runs: runs.map((_, index) => ({ id: index })) });
+    }
+    const job = /^\/repos\/o\/r\/actions\/runs\/(\d+)\/jobs/.exec(path);
+    if (job !== null) {
+      const jobs = runs[Number(job[1])] ?? {};
+      return Promise.resolve({ jobs: Object.entries(jobs).map(([name, conclusion]) => ({ name, conclusion })) });
     }
     return Promise.reject(new Error(`unexpected ${path}`));
   };
@@ -46,7 +56,14 @@ describe("a merge already checked", () => {
   });
 
   it("is not one whose pull request head never passed CI", async () => {
-    expect((await alreadyChecked("o/r", MERGE, github({ greenRuns: 0 }))).checked).toBe(false);
+    expect((await alreadyChecked("o/r", MERGE, github({ greenRuns: [] }))).checked).toBe(false);
+  });
+
+  // The quick tier checks nothing a browser sees (scripts/lib/ci-tier.ts).
+  it("is not one whose head passed only the quick tier, and is one with a full run among quick ones", async () => {
+    const quickOnly = await alreadyChecked("o/r", MERGE, github({ greenRuns: [QUICK, QUICK] }));
+    expect(quickOnly).toEqual({ checked: false, reason: "#7's head has no successful run of ci's full suite" });
+    expect((await alreadyChecked("o/r", MERGE, github({ greenRuns: [QUICK, FULL] }))).checked).toBe(true);
   });
 
   it("is not a push that no pull request merged", async () => {
