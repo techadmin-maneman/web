@@ -68,7 +68,8 @@ const ReferSchema = z
     invite_credits: z.union([z.enum(["checking", "refused"]), z.null()]).openapi({
       description:
         "For a client who came through an invite, where its credits stand when they are not simply in the " +
-        "balance: checking while ops review the grant, refused once ops rejected it. Null otherwise.",
+        "balance: checking while ops review the grant, refused once ops rejected it. Null otherwise, and where the " +
+        "reward it was held under gives the friend no visits.",
     }),
   })
   .strict()
@@ -94,6 +95,18 @@ function friendName(friend: FittedRow): string | null {
 
 /** The invite a client came through, where its grant waits on ops or was refused by them. */
 const INVITE_CREDITS: Readonly<Record<string, "checking" | "refused">> = { held: "checking", rejected: "refused" };
+
+/**
+ * Where the credits of the invite the client came with stand, when not simply in the balance. A friend the reward it
+ * was held under gave nothing has no credits to check or refuse (docs/decisions/0107-referral-rewards-in-the-console.md);
+ * one held before rewards were kept, whose figure is null, may have some.
+ */
+function inviteCredits(
+  invited: { grant_state: string; friend_visits: number | null } | null,
+): "checking" | "refused" | null {
+  if (invited === null || invited.friend_visits === 0) return null;
+  return INVITE_CREDITS[invited.grant_state] ?? null;
+}
 
 /** The client's code, made from their initials the first time they need one. */
 async function codeOf(db: D1Database, personId: string, now: Date): Promise<string> {
@@ -215,9 +228,9 @@ export function registerClientRefer(app: App): void {
         .bind(code, session.subjectId)
         .all<FittedRow>(),
       db
-        .prepare("SELECT grant_state FROM referral_attributions WHERE referred_person_id = ?1")
+        .prepare("SELECT grant_state, friend_visits FROM referral_attributions WHERE referred_person_id = ?1")
         .bind(session.subjectId)
-        .first<{ grant_state: string }>(),
+        .first<{ grant_state: string; friend_visits: number | null }>(),
     ]);
     const consented = (invite?.referrerFirstName ?? null) !== null;
     return c.json(
@@ -232,7 +245,7 @@ export function registerClientRefer(app: App): void {
           month: indiaDate(new Date(friend.window_start)).slice(0, 7),
           visits: friend.visits ?? 0,
         })),
-        invite_credits: INVITE_CREDITS[invited?.grant_state ?? ""] ?? null,
+        invite_credits: inviteCredits(invited),
       },
       200,
     );

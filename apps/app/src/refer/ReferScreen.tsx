@@ -19,6 +19,7 @@ import { EmptyState } from "../home/TabScreens.tsx";
 import { useSession } from "../session.ts";
 import { Loading } from "../states/Loading.tsx";
 import { PageFailed } from "../states/PageFailed.tsx";
+import { rewardOf } from "./reward.ts";
 import { ShareSheet } from "./ShareSheet.tsx";
 import styles from "./refer.module.css";
 
@@ -77,7 +78,7 @@ function Invite({ state, onChanged }: { state: Refer; onChanged: () => void }) {
   const { me } = useSession();
   return (
     <div className={styles.page}>
-      <p className={styles.promise}>{refer.promise(me.referral_reward)}</p>
+      <p className={styles.promise}>{refer.promise(rewardOf(me))}</p>
       <CreditTile credits={state.credits} />
       {state.invite_credits !== null && (
         <p className={styles.inviteCredits}>{refer.inviteCredits[state.invite_credits]}</p>
@@ -105,7 +106,7 @@ export function ReferScreen() {
   const { me } = useSession();
   return (
     <Shell header={{ kind: "tab", title: refer.title }} tab="/refer">
-      {me.state === "fitted" ? <Fitted /> : <EmptyState lines={empty.refer.lines(me.referral_reward)} />}
+      {me.state === "fitted" ? <Fitted /> : <EmptyState lines={empty.refer.lines(rewardOf(me))} />}
     </Shell>
   );
 }

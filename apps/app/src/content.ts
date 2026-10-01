@@ -560,11 +560,13 @@ interface Reward {
 const serviceVisits = (count: number): string => (count === 1 ? "1 service visit" : `${String(count)} service visits`);
 
 /**
- * Board F1's promise, from the referrer's side. With both at 3 it is the board's; the words for unequal sides and
- * for 0 are PLACEHOLDER, pending the owner's (docs/open-points.md, item 165).
+ * Board F1's promise, from the referrer's side. With both at 3 it is the board's; the words for unequal sides, for 0
+ * and for a reward not known, which gives no count, are PLACEHOLDER, pending the owner's (docs/open-points.md, item 165).
  */
-function promiseOf({ referrer_visits: mine, friend_visits: theirs }: Reward): string {
+function promiseOf(reward: Reward | null): string {
   const fitted = "When a friend you refer is fitted,";
+  if (reward === null) return `${fitted} we tell you.`;
+  const { referrer_visits: mine, friend_visits: theirs } = reward;
   if (mine === 0 && theirs === 0) return `${fitted} we tell you.`;
   if (mine === 0) return `${fitted} they get ${serviceVisits(theirs)} free.`;
   if (theirs === mine) return `${fitted} you both get ${serviceVisits(mine)} free.`;
@@ -607,10 +609,11 @@ export const refer = {
     title: "Preview · what your friend sees",
     heading: (name: string | null) =>
       name === null ? "You have a Mane Man invite" : `${name} sent you a Mane Man invite`,
-    body: (friendVisits: number) =>
-      friendVisits === 0
-        ? "Home-fitted hair systems across Delhi NCR."
-        : `Home-fitted hair systems across Delhi NCR. ${serviceVisits(friendVisits)} free when you're fitted.`,
+    body: (reward: Reward | null) => {
+      const friend = reward?.friend_visits ?? 0;
+      if (friend === 0) return "Home-fitted hair systems across Delhi NCR.";
+      return `Home-fitted hair systems across Delhi NCR. ${serviceVisits(friend)} free when you're fitted.`;
+    },
     domain: "maneman.in",
     message: (link: string) => `Had my hair system fitted at home by these people. Worth a look — ${link}`,
     via: "Share via",
@@ -822,7 +825,7 @@ export const empty = {
   },
   refer: {
     title: "Refer",
-    lines: (reward: Reward): readonly [string, string] => [
+    lines: (reward: Reward | null): readonly [string, string] => [
       "Nobody you have referred has been fitted yet.",
       promiseOf(reward),
     ],

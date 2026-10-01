@@ -290,6 +290,35 @@ describe("what a referral earns, as ops set it", () => {
       expect(await grantsOf(FRIEND)).toEqual([{ visits: 5, expires_at: "2026-11-20T18:29:59.999Z" }]);
     });
 
+    // A grant held before migration 0061 kept no reward; so does an invite ops attach after the fit, held as it is made.
+    it("is given the reward in force when ops approve it, where it kept none", async () => {
+      await heldUnder({ referrer_visits: 2, friend_visits: 2, valid_days: 60 });
+      await env.DB.prepare(
+        "UPDATE referral_attributions SET referrer_visits = NULL, friend_visits = NULL, credit_valid_days = NULL",
+      ).run();
+      await rewardSet({ referrer_visits: 4, friend_visits: 1, valid_days: 30 });
+      expect((await decide("approve")).status).toBe(200);
+      expect(await grantsOf(REFERRER)).toEqual([{ visits: 4, expires_at: "2026-10-21T18:29:59.999Z" }]);
+      expect(await grantsOf(FRIEND)).toEqual([{ visits: 1, expires_at: "2026-10-21T18:29:59.999Z" }]);
+    });
+
+    it("tells a friend it gives nothing neither that it is being checked nor that it was refused", async () => {
+      await heldUnder({ referrer_visits: 3, friend_visits: 0, valid_days: 365 });
+      const client = appFor("local", fakeDependencies(), {}, "client");
+      const cookie = `mm_app=${await openClientSession(FRIEND)}`;
+      const inviteCredits = async () =>
+        (
+          await (
+            await request(client, "/api/refer", { headers: { Cookie: cookie } })
+          ).json<{
+            invite_credits: unknown;
+          }>()
+        ).invite_credits;
+      expect(await inviteCredits()).toBeNull();
+      expect((await decide("reject")).status).toBe(200);
+      expect(await inviteCredits()).toBeNull();
+    });
+
     it("is refused to only a side it would have given visits", async () => {
       await heldUnder({ referrer_visits: 0, friend_visits: 3, valid_days: 365 });
       expect((await decide("reject")).status).toBe(200);

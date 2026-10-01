@@ -116,6 +116,25 @@ describe("the publish gate, on what a referral earns", () => {
     ]);
   });
 
+  it.each([
+    "Get fitted and you both get three service visits free.",
+    "Rohit is told when you are fitted. That is when the three visits land.",
+    "The consultation is still free; the three service visits do not apply.",
+  ])("stops a reward spelled out in words: %s", (typed) => {
+    const landing = { ...referral, booked: { ...referral.booked, credits: typed } };
+    expect(publishProblems(undefined, approved, [site, landing])).toHaveLength(1);
+  });
+
+  // The site's own words for a year of visits, and for the fit, are no reward.
+  it("lets through visits counted in words that are no reward", () => {
+    const words = {
+      example: "A standard base in the first year: {firstFit} plus twelve service visits at {service}.",
+      hero: "Transformation and confidence, delivered in one visit.",
+      cell: "One visit a month",
+    };
+    expect(publishProblems(undefined, approved, [site, referral, words])).toEqual([]);
+  });
+
   it("finds none in the site or the landing as they are", () => {
     expect(publishProblems(undefined, approved, [site, referral])).toEqual([]);
   });

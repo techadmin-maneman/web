@@ -60,12 +60,19 @@ function typedPrices(pages: readonly unknown[]): string[] {
   return pages.flatMap(stringsIn).filter((text) => TYPED_PRICE.test(text) && !OTHER_PEOPLES_PRICES.has(text));
 }
 
-/** A count of visits written into a sentence, "3 service visits", where what a referral earns should build it. */
-const TYPED_VISITS = /\b\d+ (?:service )?visits?\b/;
+/** A count of visits in figures written into a sentence, "3 service visits", where what a referral earns should build it. */
+const VISITS_IN_FIGURES = /\b\d+ (?:service )?visits?\b/;
+
+/**
+ * A count in words, only where a reward is said of it: "three service visits free", "the three visits land". The site
+ * rightly writes "twelve service visits" for a year of them and "in one visit" for the fit, which are no reward.
+ */
+const REWARD_IN_WORDS =
+  /\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve) (?:service )?visits? (?:free|lands?|do(?:es)? not apply)\b/i;
 
 /** Every count of visits the pages give that is typed by hand. */
 function typedVisits(pages: readonly unknown[]): string[] {
-  return pages.flatMap(stringsIn).filter((text) => TYPED_VISITS.test(text));
+  return pages.flatMap(stringsIn).filter((text) => VISITS_IN_FIGURES.test(text) || REWARD_IN_WORDS.test(text));
 }
 
 export function publishProblems(

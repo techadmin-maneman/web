@@ -25,6 +25,7 @@ import { focusIfLost } from "../lib/arrival.ts";
 import { useSession } from "../session.ts";
 import { composeCard, firstFitPhotos, type FirstFitPair } from "./card.ts";
 import { CardPreview, houseCard, type Shown } from "./CardPreview.tsx";
+import { rewardOf } from "./reward.ts";
 import { forOtherApps, inviteFile, withCard } from "./share.ts";
 import styles from "./refer.module.css";
 
@@ -99,7 +100,7 @@ function Bubble({ state, card }: { state: Refer; card: Shown }) {
         <CardPreview shown={card} />
         <div className={styles.bubbleText}>
           <p className={styles.bubbleTitle}>{refer.preview.heading(state.named ? me.first_name : null)}</p>
-          <p className={styles.bubbleLine}>{refer.preview.body(me.referral_reward.friend_visits)}</p>
+          <p className={styles.bubbleLine}>{refer.preview.body(rewardOf(me))}</p>
           <p className={styles.bubbleDomain}>{refer.preview.domain}</p>
         </div>
       </div>

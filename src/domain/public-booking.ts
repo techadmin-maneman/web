@@ -313,7 +313,7 @@ export interface Booked {
   readonly date: string;
   readonly window: BookingWindow;
   readonly area: string;
-  /** Whether the invite's three service visits apply. */
+  /** Whether the invite's service visits apply. */
   readonly credits: boolean;
   /** The invite as it stands for this person: expired when theirs lapsed while they waited (src/policy/invites.ts). */
   readonly invite: InviteState;

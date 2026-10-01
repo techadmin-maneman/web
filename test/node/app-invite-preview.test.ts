@@ -18,7 +18,13 @@ describe("the app's preview of an invite", () => {
 
   it.each([3, 2, 1, 0])("says what a valid invite's preview says beneath it, the friend given %i", (friend) => {
     const reward = { referrer_visits: 3, friend_visits: friend, valid_days: 365 };
-    expect(refer.preview.body(friend)).toBe(inviteDescription(VALID, reward));
+    expect(refer.preview.body(reward)).toBe(inviteDescription(VALID, reward));
+  });
+
+  // A Home the phone kept from before mm-api answered the reward carries none (apps/app/src/refer/reward.ts).
+  it("gives no count where the reward is not known, as the landing gives none", () => {
+    expect(refer.preview.body(null)).toBe(inviteDescription(VALID, null));
+    expect(refer.preview.body(null)).toBe("Home-fitted hair systems across Delhi NCR.");
   });
 });
 
@@ -42,6 +48,14 @@ describe("the app's promise of what a referral earns", () => {
     expect(empty.refer.lines({ referrer_visits: 2, friend_visits: 4 })).toEqual([
       "Nobody you have referred has been fitted yet.",
       "When a friend you refer is fitted, you get 2 service visits free, and your friend gets 4.",
+    ]);
+  });
+
+  it("gives no count where the reward is not known", () => {
+    expect(refer.promise(null)).toBe("When a friend you refer is fitted, we tell you.");
+    expect(empty.refer.lines(null)).toEqual([
+      "Nobody you have referred has been fitted yet.",
+      "When a friend you refer is fitted, we tell you.",
     ]);
   });
 

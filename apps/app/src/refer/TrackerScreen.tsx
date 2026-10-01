@@ -16,6 +16,7 @@ import { useSession } from "../session.ts";
 import { Loading } from "../states/Loading.tsx";
 import { PageFailed } from "../states/PageFailed.tsx";
 import { ShareButton } from "./ReferScreen.tsx";
+import { rewardOf, visitsFor } from "./reward.ts";
 import styles from "./refer.module.css";
 
 /** "Fitted Aug 2027", from the month the API gives as YYYY-MM. */
@@ -96,7 +97,7 @@ function RevokeCard({ onRevoked }: { onRevoked: () => void }) {
 /** Board F5: what the fits have earned, what is left, and each friend fitted. */
 function Friends({ state }: { state: Refer }) {
   const copy = refer.fitted;
-  const earned = state.fitted.reduce((sum, friend) => sum + friend.visits, 0);
+  const earned = state.fitted.reduce((sum, friend) => sum + visitsFor(friend), 0);
   return (
     <>
       <div className={styles.figures}>
@@ -110,15 +111,18 @@ function Friends({ state }: { state: Refer }) {
         </p>
       </div>
       <ul className={styles.friends}>
-        {state.fitted.map((friend, index) => (
-          <li key={`${friend.first_name ?? ""}-${friend.month}-${String(index)}`} className={styles.friend}>
-            <div>
-              <p className={styles.friendName}>{friend.first_name ?? copy.unnamed}</p>
-              <p className={styles.friendWhen}>{copy.when(monthName(friend.month))}</p>
-            </div>
-            {friend.visits > 0 && <p className={styles.friendEarned}>{copy.each(friend.visits)}</p>}
-          </li>
-        ))}
+        {state.fitted.map((friend, index) => {
+          const visits = visitsFor(friend);
+          return (
+            <li key={`${friend.first_name ?? ""}-${friend.month}-${String(index)}`} className={styles.friend}>
+              <div>
+                <p className={styles.friendName}>{friend.first_name ?? copy.unnamed}</p>
+                <p className={styles.friendWhen}>{copy.when(monthName(friend.month))}</p>
+              </div>
+              {visits > 0 && <p className={styles.friendEarned}>{copy.each(visits)}</p>}
+            </li>
+          );
+        })}
       </ul>
       <p className={styles.only}>{copy.only}</p>
     </>
@@ -131,7 +135,7 @@ function Nobody({ state, onChanged }: { state: Refer; onChanged: () => void }) {
   return (
     <div className={styles.nobody}>
       <p className={styles.nobodyTitle}>{refer.fitted.none}</p>
-      <p className={styles.nobodyLine}>{refer.promise(me.referral_reward)}</p>
+      <p className={styles.nobodyLine}>{refer.promise(rewardOf(me))}</p>
       <ShareButton state={state} onChanged={onChanged} small />
     </div>
   );
@@ -154,7 +158,7 @@ export function TrackerScreen() {
   const { me } = useSession();
   return (
     <Shell header={{ kind: "back", title: refer.fitted.title, to: "/refer", label: refer.fitted.back }} tab="/refer">
-      {me.state === "fitted" ? <Tracker /> : <EmptyState lines={empty.refer.lines(me.referral_reward)} />}
+      {me.state === "fitted" ? <Tracker /> : <EmptyState lines={empty.refer.lines(rewardOf(me))} />}
     </Shell>
   );
 }

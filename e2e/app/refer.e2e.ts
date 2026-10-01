@@ -399,6 +399,37 @@ test("says what ops set each side gets, and beside each friend what the client e
   await expect(page.getByText("visits earned", { exact: true })).toBeVisible();
 });
 
+// The Home the service worker kept from before mm-api answered the reward, and an mm-api rolled back, carry none,
+// nor each friend's visits (apps/app/src/refer/reward.ts): Refer still draws, and gives no count.
+test("draws Refer, its preview and its tracker, with no count, where the answers carry no reward", async ({ page }) => {
+  await changed(page, "/api/me", ({ referral_reward: _gone, ...me }) => me);
+  await changed(page, "/api/refer", (refer) => ({ ...refer, fitted: [{ first_name: "Karan", month: "2026-09" }] }));
+  await toRefer(page);
+  await expect(page.getByText("When a friend you refer is fitted, we tell you.")).toBeVisible();
+
+  await page.getByRole("button", { name: "Share an invite" }).click();
+  const sheet = page.getByRole("dialog", { name: "Which card?" });
+  await sheet.getByRole("radio", { name: /A Mane Man example/ }).click();
+  await sheet.getByRole("button", { name: "Continue to share" }).click();
+  const preview = page.getByRole("dialog", { name: "Preview · what your friend sees" });
+  await expect(preview.getByText("Home-fitted hair systems across Delhi NCR.", { exact: true })).toBeVisible();
+  await preview.getByRole("button", { name: "Close" }).click();
+
+  await page.getByRole("link", { name: "See who has been fitted" }).click();
+  const karan = page.getByRole("listitem").filter({ hasText: "Karan" });
+  await expect(karan).toContainText("Fitted Sep 2026");
+  await expect(karan).not.toContainText("earned");
+  await expect(page.getByText("NaN")).toHaveCount(0);
+});
+
+test("draws a lead's empty Refer, with no count, where the Home carries no reward", async ({ page }) => {
+  await changed(page, "/api/me", ({ referral_reward: _gone, ...me }) => me);
+  await signIn(page);
+  await page.getByRole("navigation").getByRole("link", { name: "Refer" }).click();
+  await expect(page.getByText("Nobody you have referred has been fitted yet.")).toBeVisible();
+  await expect(page.getByText("When a friend you refer is fitted, we tell you.")).toBeVisible();
+});
+
 // Board B2: before their first fit a client has nothing to vouch for, and the invite's own words would not be
 // true, so Refer is reachable but empty (CLI-07).
 test("a client not yet fitted sees Refer's empty state, with no invite to send", async ({ page }) => {
