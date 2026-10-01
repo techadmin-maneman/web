@@ -1,8 +1,6 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   citedPoints,
-  citingFiles,
   nextFreeNumber,
   openPointProblems,
   readOpenPoints,
@@ -123,20 +121,5 @@ describe("citing an open point from another file", () => {
     expect(referenceProblems(files, new Set([3]))).toEqual([
       "docs/x.md:2 cites open point 12, which is not in docs/open-points.md",
     ]);
-  });
-});
-
-describe("the repository's open points", () => {
-  const markdown = readFileSync("docs/open-points.md", "utf8");
-  const numbers = new Set(readOpenPoints(markdown).map((point) => point.number));
-
-  it("have one number each, no settled row in an open table, and cite only points that exist", () => {
-    expect(openPointProblems(markdown)).toEqual([]);
-  });
-
-  it("are cited only by numbers that exist, wherever they are cited", () => {
-    const files = citingFiles().map((path) => ({ path, text: readFileSync(path, "utf8") }));
-    expect(files.length).toBeGreaterThan(50);
-    expect(referenceProblems(files, numbers)).toEqual([]);
   });
 });

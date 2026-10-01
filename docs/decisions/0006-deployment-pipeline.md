@@ -79,6 +79,10 @@ The two runners share one six-core machine. Alone, the unit and contract tests t
 - **The deploy has one way in.** `deploy-staging.yml` calls `ci.yml` on every merge, and `ci.yml` decides what is left to run; the deploy's own "merged tree already passed CI" job is gone. A merge whose pull request passed everything runs three short jobs and deploys.
 - **The tests that counted on a quiet machine** now wait for what they wait for: the booking tests' helper waits for the API's answer to a hold rather than five seconds for the pay step, and for the booking sheet to finish loading (`e2e/app/picking.ts`, `e2e/app/booking.e2e.ts`).
 
+## Merged when green (1 October 2026)
+
+The owner's choice, to put the effort into features: a ready pull request merges itself once a full CI run passes on its current head (`.github/workflows/auto-merge.yml`, deciding in `scripts/lib/auto-merge.ts`), and the workflow then starts the staging deploy, since a merge made with its own token starts no workflow by its push. GitHub's own auto-merge needs branch protection, which this plan has not. A pull request that touches payments, refunds, credits, discounts or personal or health data carries the `hold-for-review` label until its review is done. Production deploys stay manual. The same day the checks that policed paperwork rather than the product were retired: rules quoting their source word for word, the ADR index, and the open points' numbering and citations (`npm run check:open-points` is still there to run by hand).
+
 ## Deploys that prove what they shipped (25 September 2026)
 
 An audit on 24 September 2026 found a green deploy could leave three of the five Workers undeployed or stale, and nothing would say so. What changed:
