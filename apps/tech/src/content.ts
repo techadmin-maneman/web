@@ -332,7 +332,7 @@ export const capture = {
   finish: "Done",
 } as const;
 
-/** The six in-job steps (board B), in the order the API runs them. */
+/** The six in-job steps (board B), and the hair profile no board draws, in the order the API runs them. */
 export const steps = {
   back: "Back",
   of: (done: number, total: number) => `${String(done)} of ${String(total)}`,
