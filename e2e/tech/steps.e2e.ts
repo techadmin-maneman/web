@@ -414,7 +414,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
 
   test("records that the client decided against it, and asks for no label", async ({ page }) => {
     const fake = await onTheChoice(page);
-    await page.getByRole("button", { name: "Decided against it" }).click();
+    await page.getByRole("button", { name: "Decided against it", exact: true }).click();
     await expect(
       page.getByText("Nothing is fitted. Closing as done ends the visit as a consultation, with nothing to pay."),
     ).toBeVisible();
