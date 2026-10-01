@@ -768,7 +768,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description busy: today's upload ceiling is reached; unavailable: Turnstile could not be reached */
+                /** @description busy: today's upload ceiling is reached; unavailable: Turnstile could not be reached; whatsapp_unavailable: WhatsApp cannot send the look, so the try-on does not run */
                 503: {
                     headers: {
                         [name: string]: unknown;
@@ -927,7 +927,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Render the look for an uploaded photo: one look per visitor */
+        /** Render the look for an uploaded photo the gate has claimed: one look per visitor */
         post: {
             parameters: {
                 query?: never;
@@ -977,7 +977,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description upload_missing: the photo has not been uploaded, or has been deleted */
+                /** @description claim_required: the gate has not been given a number to send the look to; upload_missing: the photo has not been uploaded, or has been deleted */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -995,7 +995,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description busy: today's render ceiling is reached */
+                /** @description busy: today's render ceiling is reached; whatsapp_unavailable: WhatsApp cannot send the look, so none is made */
                 503: {
                     headers: {
                         [name: string]: unknown;
@@ -1068,7 +1068,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** The gate: save the lead and start a session, whether or not the result is ready */
+        /** The gate: where to send the look on WhatsApp, given before the look is made */
         post: {
             parameters: {
                 query?: never;
@@ -1084,7 +1084,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description Saved. Sets the mm_tryon cookie. */
+                /** @description Saved */
                 201: {
                     headers: {
                         [name: string]: unknown;
@@ -1111,7 +1111,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description job_not_claimable: no render was started, it failed, or it is another number's; idempotency_in_progress */
+                /** @description job_not_claimable: no photo was uploaded, its render was asked for already, or it is another number's; idempotency_in_progress */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1129,8 +1129,17 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description rate_limited: too many claims from this number today */
+                /** @description rate_limited: this number has had its claims, or its looks, for today */
                 429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description whatsapp_unavailable: WhatsApp cannot send the look, so the try-on does not run */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1146,68 +1155,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/tryon/result/{job_id}": {
+    "/api/tryon/availability": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** The result, for the gate's session or the browser that made the look */
+        /** Whether the try-on can run: its look is sent on WhatsApp, so not while WhatsApp cannot send it */
         get: {
             parameters: {
                 query?: never;
                 header?: never;
-                path: {
-                    job_id: string;
-                };
+                path?: never;
                 cookie?: never;
             };
             requestBody?: never;
             responses: {
-                /** @description Ready */
+                /** @description Whether it runs */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["ResultReady"];
-                    };
-                };
-                /** @description Still rendering */
-                202: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ResultPending"];
-                    };
-                };
-                /** @description session_required: neither the gate's session nor this browser's look is this job's */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description not_found: no such job, or its result has been deleted */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Failed */
-                422: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ResultFailed"];
+                        "application/json": components["schemas"]["TryOnAvailability"];
                     };
                 };
             };
@@ -1227,7 +1198,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The look this browser already has, from its mm_look cookie */
+        /** Whether this browser has had its look, from its mm_look cookie */
         get: {
             parameters: {
                 query?: never;
@@ -1246,7 +1217,7 @@ export interface paths {
                         "application/json": components["schemas"]["Look"];
                     };
                 };
-                /** @description not_found: this browser has no look, or its result has been deleted */
+                /** @description not_found: this browser has no look */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -1272,7 +1243,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** A result image, behind a signed link that expires */
+        /** A result image, behind the signed link a WhatsApp message carries, which expires */
         get: {
             parameters: {
                 query?: never;
@@ -1576,7 +1547,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_fitted" | "already_disputed" | "not_disputable";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_fitted" | "already_disputed" | "not_disputable";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -1666,7 +1637,7 @@ export interface components {
         AlreadyBooked: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_fitted" | "already_disputed" | "not_disputable";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_fitted" | "already_disputed" | "not_disputable";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -1779,8 +1750,8 @@ export interface components {
              */
             photo_consent: true;
             /**
-             * @description The photo notice shown.
-             * @example photo-v1
+             * @description The photo notice shown: the current one, the only one recorded.
+             * @example photo-v3
              */
             notice_version: string;
             turnstile_token: string;
@@ -1796,14 +1767,10 @@ export interface components {
              */
             failure_code?: "photo_unreadable" | "photo_invalid_file" | "render_failed" | "busy";
         };
+        /** @description The look, for the stage the gate's claim gave the try-on. */
         GenerateRequest: {
             /** Format: uuid */
             job_id: string;
-            /**
-             * @description The hair-loss stage the visitor picked.
-             * @enum {string}
-             */
-            stage: "crown" | "receding" | "advanced";
             /** @enum {string} */
             preset: "full-natural-short" | "full-straight-medium" | "medium-natural-short" | "medium-receded-medium" | "light-natural-short" | "light-receded-cropped";
             /**
@@ -1812,11 +1779,10 @@ export interface components {
              */
             hair_color: "black" | "brown" | "lightBrown" | "grey" | "silver" | "white" | "unknown";
         };
+        /** @description Saved: the look goes to this number on WhatsApp once it is made. */
         ClaimResponse: {
             /** Format: uuid */
             lead_id: string;
-            /** @description True only if messaging is on and may reach this number: the page may then say a copy is on its way. */
-            whatsapp_copy: boolean;
         };
         ClaimRequest: {
             /** Format: uuid */
@@ -1825,8 +1791,13 @@ export interface components {
             /** @example 98100 00000 */
             mobile: string;
             /**
-             * @description The gate's notice the page showed; the one production shows when left out. Staging's site shows the one awaiting counsel (docs/decisions/0084-a-clients-try-on-is-kept.md).
-             * @example gate-v1
+             * @description The hair-loss stage the visitor picked: the lead's, and the one the look is made for.
+             * @enum {string}
+             */
+            stage: "crown" | "receding" | "advanced";
+            /**
+             * @description The gate's notice the page showed: the current one, the only one a claim may record, when left out (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md).
+             * @example gate-v3
              */
             notice_version?: string;
             attribution?: components["schemas"]["Attribution"];
@@ -1842,31 +1813,16 @@ export interface components {
             referrer?: string;
             landing_path?: string;
         };
-        ResultReady: {
-            /** @description A path on this host that serves the image for fifteen minutes. */
-            url: string;
-            /** Format: date-time */
-            expires_at: string;
+        TryOnAvailability: {
+            /** @description False while WhatsApp cannot send a look: the try-on does not run, and the page says so. */
+            available: boolean;
         };
-        ResultPending: {
-            /** @enum {string} */
-            state: "awaiting_upload" | "queued" | "rendering" | "downloading" | "ready" | "failed" | "expired";
-        };
-        ResultFailed: {
-            /** @enum {string} */
-            state: "failed";
-            /** @enum {string} */
-            failure_code: "photo_unreadable" | "photo_invalid_file" | "render_failed" | "busy";
-        };
+        /** @description The look this browser has had: its state alone. The look goes to WhatsApp only. */
         Look: {
             /** Format: uuid */
             job_id: string;
             /** @enum {string} */
             state: "awaiting_upload" | "queued" | "rendering" | "downloading" | "ready" | "failed" | "expired";
-            /** @enum {string} */
-            stage: "crown" | "receding" | "advanced";
-            /** @enum {string} */
-            preset: "full-natural-short" | "full-straight-medium" | "medium-natural-short" | "medium-receded-medium" | "light-natural-short" | "light-receded-cropped";
             /**
              * @description Only when state is failed.
              * @enum {string}

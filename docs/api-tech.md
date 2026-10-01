@@ -893,6 +893,8 @@ The piece a label names
             "session_required",
             "job_not_claimable",
             "look_limit_reached",
+            "claim_required",
+            "whatsapp_unavailable",
             "unauthorized",
             "visit_booked",
             "payment_held",

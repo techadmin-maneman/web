@@ -16,8 +16,8 @@ export const RULES = [
   "Stored in a new bucket per environment, mm-{env}-client-photos, with no lifecycle rule.",
 ] as const;
 
-/** The photo notices that tell the visitor a client's try-on is kept. */
-export const KEEPING_NOTICES: readonly string[] = ["photo-v2"];
+/** The photo notices that tell the visitor a client's try-on is kept: v2, and v3, which sends the look to WhatsApp. */
+export const KEEPING_NOTICES: readonly string[] = ["photo-v2", "photo-v3"];
 
 export interface HeldTryOn {
   readonly id: string;

@@ -142,7 +142,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   technicians:
     "The mirror of FSM's technicians: name, initials, mobile number and zone; and on staging the few written by hand for a test, which the sync leaves alone (ADR 0032, ADR 0052).",
   tryon_jobs: "One try-on render: the photograph, the look, the provider's job and the result (ADR 0014, ADR 0015).",
-  tryon_sessions: "The try-on gate's session, which shows a visitor their result without the gate again (ADR 0014).",
+  tryon_sessions:
+    "The try-on gate's session, which showed a visitor their result (ADR 0014); written no more since the look goes to WhatsApp only (ADR 0104).",
   visit_blackouts: "Days on which no visit is offered.",
   visit_changes: "Each move or cancel a client made, with its notice and what it cost (ADR 0046).",
   visits: "What an appointment became once FSM closed it: the outcome, its reason and its times (ADR 0032, ADR 0074).",

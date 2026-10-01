@@ -57,7 +57,7 @@ Every price on the site and the landing is the price book's, which ops set in th
 
 ## Approving a notice
 
-The site shows five consent notices, each the backend's, in `src/config/notices.ts`: the try-on's photograph and gate notices, the booking form's agreement on `/book` and `/r/:code`, and the waitlist's agreement and its optional launch alert (`notices` in `site/src/content/site.ts`). The page shows that text, and a consent row records its version. The try-on's two come in two versions (`tryOnPromises`, ADR 0084): production shows the approved pair, and every other build the pair that keeps a client's try-on, which awaits counsel (`TRY_ON_PROMISE`, `site/src/lib/build.ts`), with the privacy page's try-on sentences to match.
+The site shows five consent notices, each the backend's, in `src/config/notices.ts`: the try-on's photograph and gate notices, the booking form's agreement on `/book` and `/r/:code`, and the waitlist's agreement and its optional launch alert (`notices` in `site/src/content/site.ts`). The page shows that text, and a consent row records its version. The try-on's two, `photo-v3` and `gate-v3`, send its look to WhatsApp only and keep a client's try-on (ADR 0104, ADR 0084); every build shows them, with the privacy page's try-on sentences to match, so production's build refuses until counsel approves them (`docs/open-points.md`, item 146).
 
 - **Once counsel approves a notice,** add its version to `APPROVED_NOTICES` in `site.ts`.
 - **To change the wording,** add a new version in `src/config/notices.ts`, point `CURRENT_NOTICE` at it, and approve that version. A published version is never edited.
@@ -74,7 +74,7 @@ The site calls `mm-api` on its own host, `/api/*`. The request and response type
 - **Idempotency.** Each submission attempt sends a new `Idempotency-Key`.
 - **Attribution.** The first page of a visit stores its campaign tags, referring site and landing path in `sessionStorage` (`site/src/lib/attribution.ts`). Never a query string.
 
-- **The try-on.** `site/src/lib/tryon.ts` chains the calls. Continue on the consent screen prepares the photograph (`photo.ts`: resize, re-encode and the hair colour from `hair-colour.ts`) and uploads it, then, under the notice that keeps a client's try-on, its small copy (`@maneman/web-kit/small-jpeg`, ADR 0084); Generate starts the render once the upload is done; the gate, if the visitor gives a number, claims the result while it renders; the result screen asks for it every 3 seconds. A browser that has had its look is shown it again (`GET /api/tryon/look`, ADR 0024). `tryon-errors.ts` decides which error the visitor sees.
+- **The try-on.** `site/src/lib/tryon.ts` chains the calls. On arrival the page asks whether this browser has had its look and whether the try-on runs (`GET /api/tryon/look` and `GET /api/tryon/availability`). Continue on the consent screen prepares the photograph (`photo.ts`: resize, re-encode and the hair colour from `hair-colour.ts`) and uploads it, then, under the notice that keeps a client's try-on, its small copy (`@maneman/web-kit/small-jpeg`, ADR 0084). The look goes to WhatsApp only (ADR 0104): the gate's _Send my look_ claims the try-on with the name and number, then asks for the render, and the sent screen watches it every 3 seconds until it is ready, in case it fails. The page never asks for the look. A browser that has had its look is told it was sent. `tryon-errors.ts` decides which error the visitor sees.
 
 The browser tests run the site against a local `mm-api` with stub providers (`playwright.config.ts`). Run `node scripts/ensure-dev-vars.ts && npm run db:local` once first.
 
@@ -83,7 +83,7 @@ The browser tests run the site against a local `mm-api` with stub providers (`pl
 - **Tokens.** Every colour, size and space comes from `tokens.css`, and `test/node/site-tokens.test.ts` fails on a raw value. Media query conditions keep their pixels, since CSS custom properties cannot be used there.
 - **No inline styles.** A component renders no `style` attribute; an island that must move something sets a CSS variable from script instead.
 - **Placeholder tags and `noindex`.** Staging and local show the design's tags and are not indexed. Production shows no tags and is indexed.
-- **Previewing a screen.** Outside production, `?state=` opens any try-on screen (`/try?state=gate`) or booking state (`/book?state=listed`), with stand-in images and no API calls. `/try?state=error&kind=busy` shows another error (`renderFailed`, `busy` or `lookLimit`). The screenshots and tests use it.
+- **Previewing a screen.** Outside production, `?state=` opens any try-on screen (`/try?state=gate`) or booking state (`/book?state=listed`), with stand-in images and no API calls. `/try?state=error&kind=busy` shows another error (`renderFailed`, `busy` or `unavailable`), and `/try?state=sent&kind=returning` a returning visitor's sent screen. The screenshots and tests use it.
 - **No photographs of people in tests.** The try-on tests upload a drawn head (`test/node/drawn-head.ts`).
 
 ## Adding the analytics IDs
@@ -104,7 +104,7 @@ The IDs go in `site/src/lib/analytics-ids.ts`, one set for each environment: a G
 
 Production still serves `site/placeholder/production`. To go live:
 
-1. Keep `npm run build:site -- --env production` passing. It has passed since 22 September 2026, when the terms and the phone number were published; `test/node/site-production-gate.test.ts` checks it. **A passing build is not a finished home page:** every placeholder block is left out of it, so today's production home page has no photograph or film at all.
+1. Make `npm run build:site -- --env production` pass. It passed from 22 September 2026, when the terms and the phone number were published, until 1 October 2026: since then the try-on's look goes to WhatsApp only, and its notices that say so, `photo-v3` and `gate-v3`, wait for counsel (ADR 0104; `docs/open-points.md`, item 146). `test/node/site-production-gate.test.ts` holds the build refusing those two and nothing else, and checks what it ships once it passes. **A passing build is not a finished home page:** every placeholder block is left out of it, so today's production home page has no photograph or film at all.
 2. **Look at the production build's home page before going live** (`npm run build:site -- --env production`, then serve `site/dist/production`). Each unpublished block is an open point (`docs/open-points.md`, items 73 to 81): the owner supplies its cleared material, or the section goes. The build ships none of the design's placeholder files, even unlinked, and the gate test checks that too.
 3. Add production's analytics IDs (`docs/open-points.md`, item 84). Bot Fight Mode is off, by the owner's ruling of 22 September 2026 (ADR 0025, item 12), so it needs no decision here.
 4. In `site/wrangler.jsonc`, point production's `assets.directory` at `./dist/production`.

@@ -55,37 +55,34 @@ describe("content", () => {
     expect(site.looks[0]).toMatchObject({ density: "Full density", detail: "Natural hairline · short" });
   });
 
-  it("builds the consent screen and the gate from the backend's notices, word for word, in either promise", () => {
-    for (const promise of Object.values(site.tryOnPromises)) {
-      const consent = site.consentCopy(promise.photo);
-      expect(consent.title).toBe("What happens to your photograph.");
-      expect(consent.rows.map((row) => row.k)).toEqual([
-        "Used for",
-        "Kept for",
-        "Training",
-        "Shared with",
-        "To withdraw",
-      ]);
-      expect(consent.agreement).toBe("I understand, and I agree to my photograph being used this way.");
-      expect(site.gateCopy(promise.gate).title).toBe("Where should we send it?");
-    }
+  it("builds the consent screen and the gate from the backend's notices, word for word", () => {
+    const consent = site.consentCopy(site.notices.photo);
+    expect(consent.title).toBe("What happens to your photograph.");
+    expect(consent.rows.map((row) => row.k)).toEqual([
+      "Used for",
+      "Kept for",
+      "Training",
+      "Shared with",
+      "To withdraw",
+    ]);
+    expect(consent.agreement).toBe("I understand, and I agree to my photograph being used this way.");
+    expect(site.gateCopy(site.notices.gate).title).toBe("Where should we send it?");
   });
 
-  // ADR 0084: the notices that keep a client's try-on await counsel, so production keeps the approved pair, and
-  // today's rules, and sends no copy.
-  it("makes production the approved promise, and every other build the one awaiting counsel, which sends the copy", () => {
-    const { approved, awaitingCounsel } = site.tryOnPromises;
-    expect(approved.photo).toEqual(site.notices.photo);
-    expect(approved.gate).toEqual(site.notices.gate);
-    expect([approved.photo.approved, approved.gate.approved, approved.sendsCopy]).toEqual([true, true, false]);
-    expect([awaitingCounsel.photo.version, awaitingCounsel.gate.version]).toEqual(["photo-v2", "gate-v2"]);
-    expect([awaitingCounsel.photo.approved, awaitingCounsel.sendsCopy]).toEqual([false, true]);
-    expect(site.privacyPage(awaitingCounsel.privacy).paragraphs[0]).toContain(
-      "we keep a small copy of your photograph in your Mane Man account as your before photo",
-    );
-    expect(readFileSync("site/src/lib/build.ts", "utf8")).toContain(
-      `TRY_ON_PROMISE: TryOnPromiseName = IS_PRODUCTION ? "approved" : "awaitingCounsel"`,
-    );
+  // ADR 0104: the look goes to WhatsApp only, never to the site, so every build shows the notices that say so, which
+  // await counsel and still keep a client's try-on (ADR 0084).
+  it("says on every page of the try-on that the look goes to WhatsApp only, and never promises it on screen", () => {
+    expect([site.notices.photo.version, site.notices.gate.version]).toEqual(["photo-v3", "gate-v3"]);
+    expect([site.notices.photo.approved, site.notices.gate.approved]).toEqual([false, false]);
+    expect(site.tryOnSendsCopy).toBe(true);
+    const privacy = site.legalPages.privacy.paragraphs.join(" ");
+    expect(privacy).toContain("we send the simulation to that number on WhatsApp, and it is never shown on this site");
+    expect(privacy).toContain("we keep a small copy of your photograph in your Mane Man account as your before photo");
+    expect(privacy).not.toMatch(/show it to you again|optional/);
+    expect(site.tryOnTeaser.body).toContain("sent privately to your WhatsApp");
+    expect(site.legalPages.terms.paragraphs.join(" ")).toContain("never shown on this site");
+    const words = JSON.stringify({ tryOn: site.tryOn, notices: [site.notices.photo, site.notices.gate] });
+    expect(words).not.toMatch(/next screen|Download|Drag the handle|hair patch/i);
   });
 
   it("makes the small copy the size the API keeps, as the technician's camera makes a visit photograph", () => {
@@ -180,7 +177,7 @@ describe("content", () => {
   // CLI-19: production keeps a result fourteen days (ADR 0039), as the privacy notice says.
   it("keeps the try-on's result for as long as the privacy notice says", () => {
     expect(site.legalPages.privacy.paragraphs[0]).toContain("the simulation itself is kept for fourteen days");
-    expect(site.tryOn.result.copy.after).toBe(". Deleted after fourteen days.");
+    expect(site.tryOn.sent.privacy).toContain("we delete it after fourteen days");
   });
 
   it("publishes only blocks whose material is real: the business number, the privacy notice and the terms", () => {
@@ -192,13 +189,21 @@ describe("content", () => {
 });
 
 describe("the publish gate", () => {
-  it("lets production through: every published block is real and every notice approved", () => {
-    expect(publishProblems()).toEqual([]);
+  // ADR 0104: production can no longer show the approved v1 pair, which promised the look on screen, so its build
+  // waits for counsel to approve the try-on's new notices (docs/open-points.md, item 146), and for nothing else.
+  it("stops production on the try-on's notices awaiting counsel alone: every published block is real", () => {
+    expect(publishProblems()).toEqual([
+      "the photo notice (photo-v3) is not approved",
+      "the gate notice (gate-v3) is not approved",
+    ]);
+    expect(publishProblems(undefined, APPROVED)).toEqual([]);
   });
 
   it("stops a notice that is not approved", () => {
-    const notices = { ...site.notices, photo: { ...site.notices.photo, approved: false } };
-    expect(publishProblems(undefined, notices)).toContain("the photo notice (photo-v1) is not approved");
+    const notices = { ...APPROVED, consultation: { ...site.notices.consultation, approved: false } };
+    expect(publishProblems(undefined, notices)).toEqual([
+      "the consultation notice (referral-consultation-v1) is not approved",
+    ]);
   });
 
   it("stops a published block that still holds the design's placeholder material", () => {

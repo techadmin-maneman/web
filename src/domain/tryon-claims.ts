@@ -1,12 +1,15 @@
-// A try-on claimed at the gate (docs/decisions/0014-try-on-api.md): the person, their two consents, the lead, the
-// session and the result message, written together; or, for a job its number claimed before, a fresh session.
+// A try-on claimed at the gate (docs/decisions/0014-try-on-api.md): the person, their two consents, the lead and the
+// result message, written together; or, for a job its number claimed before, that claim's lead again.
 // POST /api/tryon/claim (src/routes/tryon-claim.ts) checks the request and the limits first, and queues the lead and
 // the message after.
+//
+// The claim comes before the render, since the look goes to WhatsApp only and the number is where it goes
+// (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md). It opens no session: nothing on the site shows the look.
 //
 // A try-on lead does not make the person contactable: the gate's consent
 // permits sending this result and nothing else (docs/decisions/0012-zoho-sync.md).
 
-import { TRYON_SESSION_TTL_MS } from "../config/tryon.ts";
+import type { LossExtent } from "../config/booking.ts";
 import type { Attribution } from "./leads.ts";
 import { recordEvent, type JobRow } from "./tryon.ts";
 
@@ -26,6 +29,8 @@ export interface NewClaim {
   readonly job: JobRow;
   readonly mobileE164: string;
   readonly name: string;
+  /** The stage the visitor chose: the lead's extent of hair loss, and the stage the render is made for. */
+  readonly stage: LossExtent;
   /** The gate's notice the page showed. */
   readonly gateNotice: string;
   readonly attribution: Attribution;
@@ -34,23 +39,16 @@ export interface NewClaim {
   readonly now: Date;
 }
 
-export interface Claimed {
-  readonly leadId: string;
-  readonly sessionId: string;
-  readonly messageId: string;
-  /** Queued when the result is already ready, so it can go at once; else it waits for the render. */
-  readonly messageState: "queued" | "waiting";
-}
-
-/** Writes a reserved job's claim in one batch. If the batch fails, the job's reservation is let go. */
-export async function recordClaim(db: D1Database, claim: NewClaim): Promise<Claimed> {
+/**
+ * Writes a reserved job's claim in one batch, and returns its lead. The look's message waits for the render, which
+ * the claim comes before (src/queues/render.ts queues it once the look is stored). If the batch fails, the job's
+ * reservation is let go.
+ */
+export async function recordClaim(db: D1Database, claim: NewClaim): Promise<string> {
   const { job, mobileE164, attribution, now } = claim;
   const leadId = crypto.randomUUID();
-  const sessionId = crypto.randomUUID();
-  const messageId = crypto.randomUUID();
   const at = now.toISOString();
   const personId = "(SELECT id FROM people WHERE mobile_e164 = ?)";
-  const messageState = job.state === "ready" ? "queued" : "waiting";
 
   try {
     await db.batch([
@@ -84,7 +82,7 @@ export async function recordClaim(db: D1Database, claim: NewClaim): Promise<Clai
           leadId,
           mobileE164,
           at,
-          job.stage,
+          claim.stage,
           attribution.utm_source ?? null,
           attribution.utm_medium ?? null,
           attribution.utm_campaign ?? null,
@@ -95,48 +93,33 @@ export async function recordClaim(db: D1Database, claim: NewClaim): Promise<Clai
           attribution.landing_path ?? null,
           claim.requestId,
         ),
+      // The render is made for the stage the lead records (src/routes/tryon-generate.ts).
       db
-        .prepare(`INSERT INTO tryon_sessions (id, person_id, created_at, expires_at) VALUES (?, ${personId}, ?, ?)`)
-        .bind(sessionId, mobileE164, at, new Date(now.getTime() + TRYON_SESSION_TTL_MS).toISOString()),
-      db
-        .prepare(`UPDATE tryon_jobs SET person_id = ${personId}, lead_id = ?, session_id = ? WHERE id = ?`)
-        .bind(mobileE164, leadId, sessionId, job.id),
+        .prepare(`UPDATE tryon_jobs SET person_id = ${personId}, lead_id = ?, stage = ? WHERE id = ?`)
+        .bind(mobileE164, leadId, claim.stage, job.id),
       db
         .prepare(
-          `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_id, state, queued_at)
-           VALUES (?, ?, ${personId}, 'tryon_result', ?, ?, ?)`,
+          `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_id, state)
+           VALUES (?, ?, ${personId}, 'tryon_result', ?, 'waiting')`,
         )
-        .bind(messageId, at, mobileE164, job.id, messageState, messageState === "queued" ? at : null),
+        .bind(crypto.randomUUID(), at, mobileE164, job.id),
       recordEvent(db, "tryon_claimed", leadId, { job_id: job.id, job_state: job.state }, now),
     ]);
   } catch (error) {
     await db.prepare("UPDATE tryon_jobs SET claimed_at = NULL WHERE id = ?1").bind(job.id).run();
     throw error;
   }
-  return { leadId, sessionId, messageId, messageState };
+  return leadId;
 }
 
 /**
- * A job already claimed, claimed again: by the same number it gets a fresh session (the first cookie may have been
- * lost); by another it is refused, null, so a job ID alone never opens someone else's result.
+ * The lead of a job already claimed, when its own number claims it again (the first answer may have been lost);
+ * null for any other number, so a job ID alone never joins someone else's try-on.
  */
-export async function reclaimJob(
-  db: D1Database,
-  input: { job: JobRow; mobileE164: string; now: Date },
-): Promise<{ readonly leadId: string; readonly sessionId: string } | null> {
-  const { job, now } = input;
+export async function leadOfOwnClaim(db: D1Database, job: JobRow, mobileE164: string): Promise<string | null> {
   const owner = await db
     .prepare("SELECT id FROM people WHERE id = ?1 AND mobile_e164 = ?2")
-    .bind(job.person_id, input.mobileE164)
+    .bind(job.person_id, mobileE164)
     .first<{ id: string }>();
-  if (owner === null || job.lead_id === null) return null;
-
-  const sessionId = crypto.randomUUID();
-  await db.batch([
-    db
-      .prepare("INSERT INTO tryon_sessions (id, person_id, created_at, expires_at) VALUES (?1, ?2, ?3, ?4)")
-      .bind(sessionId, owner.id, now.toISOString(), new Date(now.getTime() + TRYON_SESSION_TTL_MS).toISOString()),
-    db.prepare("UPDATE tryon_jobs SET session_id = ?1 WHERE id = ?2").bind(sessionId, job.id),
-  ]);
-  return { leadId: job.lead_id, sessionId };
+  return owner === null ? null : job.lead_id;
 }

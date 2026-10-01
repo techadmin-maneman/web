@@ -16,9 +16,9 @@ export type UploadUrlRequest = Schemas["UploadUrlRequest"];
 export type UploadUrlResponse = Schemas["UploadUrlResponse"];
 export type GenerateRequest = Schemas["GenerateRequest"];
 export type JobStatus = Schemas["JobStatus"];
-export type FailureCode = Schemas["ResultFailed"]["failure_code"];
 export type ClaimRequest = Schemas["ClaimRequest"];
 export type ClaimResponse = Schemas["ClaimResponse"];
+export type TryOnAvailability = Schemas["TryOnAvailability"];
 export type Look = Schemas["Look"];
 export type Invite = Schemas["Invite"];
 export type PincodeAnswer = Schemas["PincodeAnswer"];
@@ -75,8 +75,20 @@ function post<T>(path: string, body: unknown, idempotencyKey?: string): Promise<
   return call<T>(path, { method: "POST", headers, body: JSON.stringify(body) });
 }
 
-// The try-on, in order: a link to upload one photo, the upload, the render,
-// its progress, the gate, and the result once the gate has given a session.
+// The try-on, in order: whether it runs and whether this browser has had its
+// look, a link to upload one photo, the upload, the gate, the render and its
+// progress. The look itself goes to WhatsApp only, so no call here fetches it
+// (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md).
+
+/** Whether the try-on runs: not while WhatsApp cannot send its look. */
+export function fetchAvailability(): Promise<Answer<TryOnAvailability>> {
+  return call<TryOnAvailability>("/api/tryon/availability");
+}
+
+/** The look this browser has had, if any: never the image. */
+export function fetchLook(): Promise<Answer<Look>> {
+  return call<Look>("/api/tryon/look");
+}
 
 export function requestUploadUrl(request: UploadUrlRequest): Promise<Answer<UploadUrlResponse>> {
   return post<UploadUrlResponse>("/api/tryon/upload-url", request);
@@ -93,6 +105,11 @@ export function uploadCopy(uploadUrl: string, copy: Blob): Promise<Answer<null>>
   return call<null>(`${path}/copy?${query}`, { method: "PUT", headers: { "Content-Type": "image/jpeg" }, body: copy });
 }
 
+/** The gate: where the look goes on WhatsApp, given before the look is made. */
+export function claimLook(claim: ClaimRequest, idempotencyKey: string): Promise<Answer<ClaimResponse>> {
+  return post<ClaimResponse>("/api/tryon/claim", claim, idempotencyKey);
+}
+
 /** The job to follow is the one this returns, which may differ from the one sent. */
 export function generateLook(request: GenerateRequest): Promise<Answer<JobStatus>> {
   return post<JobStatus>("/api/tryon/generate", request);
@@ -100,37 +117,6 @@ export function generateLook(request: GenerateRequest): Promise<Answer<JobStatus
 
 export function jobStatus(jobId: string): Promise<Answer<JobStatus>> {
   return call<JobStatus>(`/api/tryon/status/${jobId}`, { signal: AbortSignal.timeout(POLL_TIMEOUT_MS) });
-}
-
-/** The look this browser already has, for a visitor who comes back. */
-export function fetchLook(): Promise<Answer<Look>> {
-  return call<Look>("/api/tryon/look");
-}
-
-/** The gate: optional, for a WhatsApp copy. It also opens a session that can see the result. */
-export function claimResult(claim: ClaimRequest, idempotencyKey: string): Promise<Answer<ClaimResponse>> {
-  return post<ClaimResponse>("/api/tryon/claim", claim, idempotencyKey);
-}
-
-export type ResultAnswer =
-  | { readonly kind: "ready"; readonly url: string }
-  | { readonly kind: "pending" }
-  | { readonly kind: "failed"; readonly failureCode: FailureCode }
-  | { readonly kind: "error"; readonly code: ErrorCode | "network" };
-
-/** The result: a link to the image, still rendering, failed, or an error. */
-export async function fetchResult(jobId: string): Promise<ResultAnswer> {
-  let response: Response;
-  try {
-    response = await fetch(`/api/tryon/result/${jobId}`, { signal: AbortSignal.timeout(POLL_TIMEOUT_MS) });
-  } catch {
-    return { kind: "error", code: "network" };
-  }
-  const body: unknown = await response.json().catch(() => null);
-  if (response.status === 200) return { kind: "ready", url: (body as Schemas["ResultReady"]).url };
-  if (response.status === 202) return { kind: "pending" };
-  if (response.status === 422) return { kind: "failed", failureCode: (body as Schemas["ResultFailed"]).failure_code };
-  return { kind: "error", code: (body as Partial<Schemas["ErrorResponse"]> | null)?.error?.code ?? "network" };
 }
 
 // The referral landing at /r/:code. The invite usually arrives in the page the

@@ -50,7 +50,7 @@ v2 still decides the type, spacing and colour of every section it drew. The word
 
 ## Still to build
 
-- **The try-on's result on WhatsApp only (D3).** The number is asked for before the look is made, and the notices are redone with counsel (`docs/open-points.md`, item 146).
+- **The try-on's result on WhatsApp only (D3).** The number is asked for before the look is made, and the notices are redone with counsel (`docs/open-points.md`, item 146). Built 1 October 2026 ([0104](0104-the-try-ons-look-on-whatsapp-only.md)).
 - **The photographs (D6).** One face through every stage, from the nose up; stages three to seven grouped, leading to one image of the fitted hair system; and an image under each of the comparison's three columns. Made with AI and marked as illustrations until a real shoot, which comes before production.
 - **A consultation and fit in one visit (D2).** The client chooses the product before the visit, the slot is long enough for both, the fit is paid for at the visit and the technician carries the piece. Until then the site books the consultation as before, and the terms and `/book` still say nothing is fitted at it.
 

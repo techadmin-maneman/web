@@ -5,7 +5,7 @@ import { Icon } from "../Drawings.tsx";
 import { Title, type HeadingRef } from "./Title.tsx";
 import styles from "./TryOn.module.css";
 
-/** Step five: the result is ready. The name and number are optional, as the gate's notice says. */
+/** Step four: where to send the look on WhatsApp, before it is made. Both fields are needed (ADR 0104). */
 export function Gate(props: {
   notice: Notice;
   name: string;
@@ -27,7 +27,7 @@ export function Gate(props: {
         <div class={styles.gateFrame}>
           <div class={styles.gateLeft} />
           <div class={styles.gateRight} />
-          <span class={`caps ${styles.gateReady}`}>{tryOn.gate.ready}</span>
+          <span class={`caps ${styles.gateFrameLabel}`}>{tryOn.gate.frame}</span>
         </div>
         <p class={styles.gateCaption}>{words.caption}</p>
       </div>
@@ -46,6 +46,7 @@ export function Gate(props: {
               placeholder={tryOn.gate.namePlaceholder}
               autocomplete="name"
               maxLength={60}
+              aria-required="true"
               aria-invalid={nameBad}
               aria-describedby={nameBad ? "gate-name-error" : undefined}
               onInput={(event) => {
@@ -73,6 +74,7 @@ export function Gate(props: {
                 placeholder={tryOn.gate.mobilePlaceholder}
                 inputMode="numeric"
                 autocomplete="tel-national"
+                aria-required="true"
                 aria-invalid={mobileBad}
                 aria-describedby={mobileBad ? "gate-mobile-error" : undefined}
                 onInput={(event) => {

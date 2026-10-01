@@ -104,6 +104,8 @@ Leads were booked through the real staging API with the `staging-lead` workflow:
 
 ## M3: try-on and messaging
 
+**Since 1 October 2026 the try-on's look goes to WhatsApp only** ([ADR 0104](decisions/0104-the-try-ons-look-on-whatsapp-only.md)): the gate's claim comes before the render and opens no session, `GET /api/tryon/result` is gone, and the claim no longer answers `whatsapp_copy`. The proofs below and under F3 are of the try-on as it was then; the new order is proven locally (`test/worker/tryon-api.test.ts`, `e2e/try-api.e2e.ts`), and `scripts/staging-tryon.ts` runs it on staging with an allowlisted number.
+
 Merged in PR #6. Fixes from the staging proof: PR #7 (a WhatsApp send that timed out is not retried), PR #8 (slow renders are followed for 15 minutes) and PR #9 (timing for stalled consumer runs). The code is also checked locally against the stub AILabTools, which the real adapter talks to over a fake HTTP API with the documented response shapes.
 
 | Requirement                                                        | Evidence                                                                                                                                                                                                                                                                                                                                                                           | Result                       |
