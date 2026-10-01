@@ -1,6 +1,6 @@
 # 0006. Deployment pipeline
 
-- Status: accepted (required checks and reviewers wait for the GitHub plan; see 0008). Amended 25 September 2026: "Deploys that prove what they shipped"; 27 September 2026: the coverage gate ([0075](0075-tests-held-to-the-contract-and-the-local-stack.md)).
+- Status: accepted (required checks and reviewers wait for the GitHub plan; see 0008). Amended 25 September 2026: "Deploys that prove what they shipped"; 27 September 2026: the coverage gate ([0075](0075-tests-held-to-the-contract-and-the-local-stack.md)); 1 October 2026: "Two tiers", and the jobs back on the owner's machine.
 - Date: 2026-09-21
 
 ## Decision
@@ -46,6 +46,8 @@ GitHub gives a private repository 2,000 minutes of its runners a month. Ten jobs
 
 **Where the jobs run today (27 September 2026).** `CI_RUNNER` has been `github` since 23 September 2026, 09:21 in India, so every job runs on GitHub's runners and is billed, at seven jobs a pull request and again on each staging deploy that is not skipped ("Deploys that prove what they shipped", below). The machine above is still set up and takes the jobs back when the variable is `maneman`. Whether to go back to it, pay for GitHub's minutes, or thin the runs is the owner's decision (`docs/open-points.md`, item 88).
 
+**Back on the machine (1 October 2026).** GitHub's minutes ran out on 30 September 2026 and `CI_RUNNER` went back to `maneman` that evening. On 1 October 2026 the owner chose to keep it there, with the runs thinned ("Two tiers", below).
+
 ## Parallel jobs (23 September 2026)
 
 One job ran every check in turn, about thirteen minutes, of which the browser tests were four. A second runner (docs/runbook.md, "The CI runner") means independent checks can run at the same time, so `ci.yml` is six jobs again, grouped so each is worth an install of its own, and a `checks` job that needs them all.
@@ -57,6 +59,15 @@ One job ran every check in turn, about thirteen minutes, of which the browser te
 - **Each job installs for itself.** `npm ci` from the runner's own npm cache takes about 40 seconds, and the jobs it repeats for run beside each other, so it costs less than the waiting it removes. Caching `node_modules` between jobs would mean GitHub's cache over the network, which took three to six minutes a run on this machine ("The runner", above).
 - **On GitHub's runners a run bills seven jobs,** each a minute at least, where it used to bill one. The escape hatch in the runbook is that much dearer; on the machine the minutes are free.
 - **Nothing about what runs changed:** every check the one job ran still runs, in the same order within its job, on every pull request that can affect it and on every staging deploy.
+
+## Two tiers (1 October 2026)
+
+The week to 1 October 2026 ran `ci.yml` 211 times for 30 merged pull requests, 62 of them cancelled part-way by a newer push: every push to a pull request ran all seven jobs, about 46 minutes of jobs, and two runs at once on the owner's machine took every core and timed out on load. The owner chose two tiers:
+
+- **The quick tier, on every push:** the static checks and the unit and contract tests, about eleven minutes. They catch most of what is wrong, and they are what a push while the work goes on needs.
+- **The full suite, once:** the build, the browser tests and Lighthouse, the deployed code on new migrations and the local smoke, when a pull request is opened ready or marked ready for review, on every push while it carries the `full-ci` label, and on every staging deploy (`scripts/lib/ci-tier.ts`). Work in progress is opened as a draft, so its pushes run the quick tier until it is ready.
+- **Nothing untested reaches staging.** A staging deploy skips re-checking a merge only when its tree is exactly a pull request head that passed the full suite, which only its `full suite` job shows (`scripts/lib/already-checked.ts`); a quick pass does not count. A push after the full run, such as a fix from review or main merged in, is checked by the full suite at the deploy instead, which then stops before deploying if it fails.
+- **About half the minutes.** One or two full runs a pull request, against about seven before. A labelled run is grouped apart from the pushes, so adding a label never cancels a run.
 
 ## Deploys that prove what they shipped (25 September 2026)
 

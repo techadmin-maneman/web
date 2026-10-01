@@ -1,5 +1,12 @@
 # Every pull request, and every staging deploy (called from deploy-staging.yml).
 #
+# Two tiers (docs/decisions/0006-deployment-pipeline.md, "Two tiers"; the owner's choice of 1 October 2026). Every
+# push to a pull request runs the quick tier: the static checks and the unit and contract tests. The full suite adds
+# the build, the browser tests and Lighthouse, the deployed code on new migrations and the local smoke, and runs when
+# a pull request is opened ready or marked ready for review, on every push while it carries the full-ci label, and on
+# every staging deploy (scripts/lib/ci-tier.ts). Its `full suite` job is what a staging deploy looks for before it
+# skips checking a merge again (scripts/lib/already-checked.ts).
+#
 # Jobs that do not need each other run side by side, so a run takes the longest
 # job's time rather than every job's. The browser tests are the longest, and
 # they start at once: nothing waits behind a check it does not need.
@@ -11,19 +18,21 @@
 #
 # Jobs run on the owner's machine, two at a time, when the repository variable
 # CI_RUNNER is "maneman" (docs/runbook.md, "The CI runner"), else on GitHub's
-# runners, which bill each job; it has been "github" since 23 September 2026
-# (docs/decisions/0006-deployment-pipeline.md, "The runner").
+# runners, which bill each job. It is "maneman" since 30 September 2026, the
+# owner's choice (docs/decisions/0006-deployment-pipeline.md, "The runner").
 name: ci
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, labeled]
   workflow_call:
 
 permissions:
   contents: read
 
+# A label being added runs apart from the pushes, so labelling a pull request never cancels its run.
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}${{ github.event.action == 'labeled' && format('-{0}', github.event.label.name) || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -35,11 +44,25 @@ jobs:
       code: ${{ steps.filter.outputs.code }}
       migrations: ${{ steps.filter.outputs.migrations }}
       dependencies: ${{ steps.filter.outputs.dependencies }}
+      full: ${{ steps.tier.outputs.full }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0 # the filter compares with the base branch
           persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: The quick tier, or the full suite
+        id: tier
+        env:
+          EVENT: ${{ github.event_name }}
+          ACTION: ${{ github.event.action }}
+          DRAFT: ${{ github.event.pull_request.draft }}
+          LABEL: ${{ github.event.label.name }}
+          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        run: node scripts/ci-tier.ts >> "$GITHUB_OUTPUT"
 
       # Nothing outside a pull request is filtered: a staging deploy runs every check but the one
       # comparing with the base, which its pull request ran.
@@ -168,7 +191,7 @@ jobs:
   old-code-on-new-schema:
     name: deployed code on these migrations
     needs: changes
-    if: needs.changes.outputs.migrations == 'true'
+    if: needs.changes.outputs.migrations == 'true' && needs.changes.outputs.full == 'true'
     runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
     timeout-minutes: 25
     steps:
@@ -187,7 +210,7 @@ jobs:
   build:
     name: build
     needs: changes
-    if: needs.changes.outputs.code == 'true'
+    if: needs.changes.outputs.code == 'true' && needs.changes.outputs.full == 'true'
     runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
     timeout-minutes: 15
     steps:
@@ -201,7 +224,7 @@ jobs:
   browser:
     name: browser tests and Lighthouse
     needs: changes
-    if: needs.changes.outputs.code == 'true'
+    if: needs.changes.outputs.code == 'true' && needs.changes.outputs.full == 'true'
     runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
     timeout-minutes: 30
     steps:
@@ -270,7 +293,7 @@ jobs:
   smoke:
     name: smoke (local)
     needs: changes
-    if: needs.changes.outputs.code == 'true'
+    if: needs.changes.outputs.code == 'true' && needs.changes.outputs.full == 'true'
     runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
     timeout-minutes: 20
     steps:
@@ -324,12 +347,44 @@ jobs:
             if [ -f "$pid" ]; then kill "$(cat "$pid")" 2> /dev/null || true; fi
           done
 
+  # Present, and green, only in a run of the full suite: a staging deploy skips checking a merge again only when
+  # its tree had one (scripts/lib/already-checked.ts). A job the full suite skipped had nothing it could affect, as
+  # the browser tests have for a documentation-only change.
+  full-suite:
+    name: full suite
+    needs: [changes, old-code-on-new-schema, build, browser, smoke]
+    if: ${{ !cancelled() && needs.changes.outputs.full == 'true' }}
+    runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
+    timeout-minutes: 5
+    steps:
+      - name: Each job of the full suite passed, or had nothing to do
+        env:
+          RESULTS: |
+            old-code-on-new-schema ${{ needs.old-code-on-new-schema.result }}
+            build ${{ needs.build.result }}
+            browser ${{ needs.browser.result }}
+            smoke ${{ needs.smoke.result }}
+        run: |
+          failed=""
+          while read -r job result; do
+            [ -n "$job" ] || continue
+            echo "$job: $result"
+            case "$result" in
+              success | skipped) ;;
+              *) failed="$failed $job" ;;
+            esac
+          done <<< "$RESULTS"
+          if [ -n "$failed" ]; then
+            echo "::error::these jobs of the full suite did not pass:$failed"
+            exit 1
+          fi
+
   # The gate: deploy-staging.yml waits for this workflow, and main's protection
   # waits for this job's name (docs/decisions/0008, when the plan allows it).
-  # A job that was skipped had nothing it could affect, which is a pass.
+  # A job that was skipped had nothing it could affect, or was not this tier's, which is a pass.
   checks:
     name: checks
-    needs: [changes, static, tests, old-code-on-new-schema, build, browser, smoke]
+    needs: [changes, static, tests, old-code-on-new-schema, build, browser, smoke, full-suite]
     if: ${{ !cancelled() }}
     runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
     timeout-minutes: 5
@@ -344,6 +399,7 @@ jobs:
             build ${{ needs.build.result }}
             browser ${{ needs.browser.result }}
             smoke ${{ needs.smoke.result }}
+            full-suite ${{ needs.full-suite.result }}
         run: |
           failed=""
           while read -r job result; do

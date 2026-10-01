@@ -5,6 +5,7 @@
 
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { FULL_SUITE_JOB } from "../../scripts/lib/already-checked.ts";
 import { WORKERS } from "../../scripts/lib/workers.ts";
 
 const DEPLOYS = [
@@ -54,5 +55,27 @@ describe("the production release", () => {
 
   it("restores whatever a failed deploy left serving, not only what a finished deploy step did", () => {
     expect(text).not.toMatch(/steps\.\w+\.outcome }}" == "success"/);
+  });
+});
+
+// docs/decisions/0006-deployment-pipeline.md, "Two tiers": the quick tier on every push, the full suite once.
+describe("ci.yml's two tiers", () => {
+  const text = workflow("ci.yml");
+  /** One job's block, from its key to the next job's. */
+  const jobOf = (key: string) => text.split(`\n  ${key}:\n`)[1]?.split(/\n {2}[a-z-]+:\n/)[0] ?? "";
+
+  it("runs the build, the browser tests, the smoke and the old code on new migrations only in the full suite", () => {
+    for (const key of ["build", "browser", "smoke", "old-code-on-new-schema"]) {
+      expect(jobOf(key), key).toContain("needs.changes.outputs.full == 'true'");
+    }
+    for (const key of ["static", "tests"]) {
+      expect(jobOf(key), key).toContain("runs-on:");
+      expect(jobOf(key), key).not.toContain("outputs.full");
+    }
+  });
+
+  it("names the job a staging deploy looks for before it skips checking a merge again", () => {
+    expect(jobOf("full-suite")).toContain(`name: ${FULL_SUITE_JOB}`);
+    expect(jobOf("checks")).toContain("full-suite");
   });
 });
