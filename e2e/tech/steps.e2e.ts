@@ -426,6 +426,38 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     expect(writesTo(fake, "piece")[0]?.body).toEqual({ declined: true });
   });
 
+  // A discount code the client gives, before the link goes (docs/decisions/0108-discount-codes.md).
+  test("takes a discount code before the link goes, asked at once, and says only that a wrong one does not apply", async ({
+    page,
+  }) => {
+    const fake = await fakeTech(page);
+    fake.type = "first_fit";
+    fake.oneVisit = true;
+    startedThrough(fake, "before_photos", "checklist", "consumables", "piece", "after_photos");
+    const asked: unknown[] = [];
+    await page.route(`**/api/tech/jobs/${JOB_ID}/discount-code`, (route) => {
+      const body = route.request().postDataJSON() as { code: string };
+      asked.push(body);
+      if (body.code === "WEDDNG25") return route.fulfill({ json: { code: "WEDDNG25" } });
+      return route.fulfill({ status: 422, json: { error: { code: "code_not_applicable", request_id: "test" } } });
+    });
+    await page.goto(`/jobs/${JOB_ID}/outcome`);
+    const box = page.getByLabel("Discount code, if the client has one");
+    await expect(box).toHaveCount(0);
+    await page.getByRole("button", { name: "Done", exact: true }).click();
+    await box.fill("wrong1");
+    await page.getByRole("button", { name: "Apply code" }).click();
+    await expect(page.getByRole("alert")).toHaveText("That code does not apply to this visit.");
+
+    await box.fill("WEDDNG25");
+    await page.getByRole("button", { name: "Apply code" }).click();
+    await expect(page.getByText("Code WEDDNG25 applied. The payment link will take it off.")).toBeVisible();
+    expect((await wcag(page)).violations).toEqual([]);
+    expect(asked).toEqual([{ code: "wrong1" }, { code: "WEDDNG25" }]);
+    // Asked straight, never queued in the outbox.
+    expect(writesTo(fake, "discount-code")).toHaveLength(0);
+  });
+
   test("names the job a consultation and fit, paid for once fitted", async ({ page }) => {
     const fake = await fakeTech(page);
     fake.type = "first_fit";

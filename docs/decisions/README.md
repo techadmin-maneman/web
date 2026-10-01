@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/adr-index.test.ts` fails until it is run after a record is added or its status changes. The next free number is 0106.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/adr-index.test.ts` fails until it is run after a record is added or its status changes. The next free number is 0109.
 
 | ADR | Decision | Date | Status | Changed by |
 | --- | --- | --- | --- | --- |
@@ -50,7 +50,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0042](0042-client-profile.md) | The client's profile: address, consents, number change, deletion | 2026-09-22 | accepted | [0080](0080-consents-given-by-booking.md) |
 | [0043](0043-client-app.md) | The client app: build, Worker and policy | 2026-09-22 | accepted |  |
 | [0044](0044-payments-mirror.md) | The payments mirror | 2026-09-22 | accepted | [0067](0067-alerts-and-silent-failures.md), [0068](0068-a-paid-hold-is-kept.md) |
-| [0045](0045-self-serve-booking.md) | Self-serve booking and prepayment | 2026-09-22 | accepted | [0068](0068-a-paid-hold-is-kept.md), [0079](0079-an-address-before-a-slot.md), [0086](0086-the-next-visit-is-offered.md) |
+| [0045](0045-self-serve-booking.md) | Self-serve booking and prepayment | 2026-09-22 | accepted | [0068](0068-a-paid-hold-is-kept.md), [0079](0079-an-address-before-a-slot.md), [0086](0086-the-next-visit-is-offered.md), [0108](0108-discount-codes.md) |
 | [0046](0046-moving-and-cancelling.md) | Moving and cancelling a visit | 2026-09-22 | accepted | [0068](0068-a-paid-hold-is-kept.md), [0096](0096-a-no-shows-charge-and-its-dispute.md) |
 | [0047](0047-visit-messages.md) | Messages about a client's visits | 2026-09-22 | accepted | [0074](0074-hand-offs-and-messages.md) |
 | [0048](0048-referrals.md) | Referrals and the waitlist | 2026-09-22 | accepted | [0060](0060-an-invited-friend-reaches-ops-and-the-crm.md), [0071](0071-what-ops-see-before-a-setting-changes.md), [0074](0074-hand-offs-and-messages.md), [0080](0080-consents-given-by-booking.md), [0089](0089-an-invite-is-not-lost.md) |
@@ -73,7 +73,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0065](0065-a-technicians-writes-reach-fsm.md) | A technician's writes reach FSM, in order, on a clock we can hold him to | 2026-09-25 | accepted | [0087](0087-consumables-and-stock.md) |
 | [0066](0066-erasure-all-or-nothing.md) | Erasure is all or nothing | 2026-09-25 | accepted | [0094](0094-where-a-consent-was-given.md) |
 | [0067](0067-alerts-and-silent-failures.md) | A failure that needs a person reaches one, once, with the IDs to act on | 2026-09-25 | accepted |  |
-| [0068](0068-a-paid-hold-is-kept.md) | A paid hold is kept | 2026-09-25 | accepted | [0095](0095-a-booking-fsm-refuses-is-held.md) |
+| [0068](0068-a-paid-hold-is-kept.md) | A paid hold is kept | 2026-09-25 | accepted | [0095](0095-a-booking-fsm-refuses-is-held.md), [0108](0108-discount-codes.md) |
 | [0069](0069-dispatch-under-concurrency.md) | Dispatch under concurrency | 2026-09-25 | accepted |  |
 | [0070](0070-vendor-correctness.md) | What we write to Zoho is right, written once, and asked for sparingly | 2026-09-25 | accepted | [0104](0104-the-try-ons-look-on-whatsapp-only.md) |
 | [0071](0071-what-ops-see-before-a-setting-changes.md) | What ops see before a setting changes, and who the console says they are | 2026-09-26 | accepted | [0086](0086-the-next-visit-is-offered.md) |
@@ -104,6 +104,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0103](0103-the-home-pages-first-copy-round.md) | The home page's first copy round | 2026-10-01 | accepted |  |
 | [0104](0104-the-try-ons-look-on-whatsapp-only.md) | The try-on's look on WhatsApp only | 2026-10-01 | accepted, on the owner's ruling D3 of 1 October 2026 |  |
 | [0105](0105-a-consultation-and-fit-in-one-visit.md) | A consultation and fit in one visit | 2026-10-01 | accepted, on the owner's ruling D2 of 1 October 2026 and the rulings of the same day on the piece, the payment and the length |  |
+| [0108](0108-discount-codes.md) | Discount codes | 2026-10-01 | accepted, on the owner's rulings of 1 October 2026 |  |
 
 ## Records beside them
 

@@ -1,6 +1,6 @@
 # 0056. The invoice is issued, and shown beside the visit
 
-- Status: accepted
+- Status: accepted; amended 1 October 2026 by [0108](0108-discount-codes.md): a discount code on the visit is written onto the draft as its line discount, before tax, before its total is checked and the draft issued
 - Date: 2026-09-23
 
 ## Context

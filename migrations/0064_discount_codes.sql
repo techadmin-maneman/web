@@ -69,6 +69,9 @@ CREATE UNIQUE INDEX discount_code_uses_one_per_visit ON discount_code_uses (appo
 -- A code's uses, and a client's of it, which its limits count.
 CREATE INDEX discount_code_uses_by_code ON discount_code_uses (code_id, person_id);
 
+-- A client's uses, which their page in the console and their data export read.
+CREATE INDEX discount_code_uses_by_person ON discount_code_uses (person_id);
+
 CREATE TRIGGER discount_code_uses_kept BEFORE DELETE ON discount_code_uses
 BEGIN
   SELECT RAISE(ABORT, 'a discount code''s uses stay on record');

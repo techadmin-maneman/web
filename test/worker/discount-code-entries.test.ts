@@ -189,7 +189,9 @@ describe("the client, at the app's pay step", () => {
     for (const code of ["NOSUCH", "FT25", "EXP25"]) {
       const answer = await enter(PERSON, hold.id, code);
       expect(answer.status).toBe(422);
-      expect(await answer.json()).toEqual({ error: { code: "code_not_applicable", request_id: expect.any(String) } });
+      expect(await answer.json()).toEqual({
+        error: { code: "code_not_applicable", request_id: expect.any(String) as string },
+      });
     }
     const unchanged = await (await call(PERSON, `/api/holds/${hold.id}`)).json<HoldAnswer>();
     expect(unchanged).toMatchObject({ price: { amount: 200_000 }, discount: null });
@@ -354,7 +356,7 @@ describe("the site's form, for a consultation and fit in one visit", () => {
     expect(answer.status).toBe(201);
     expect(await answer.json()).toMatchObject({ state: "booked", one_visit: true, discount_code: true });
     expect((await uses()).results).toEqual([
-      { hold_id: expect.any(String), appointment_id: null, amount_off: null, given_by: "client", removed: 0 },
+      { hold_id: expect.any(String) as string, appointment_id: null, amount_off: null, given_by: "client", removed: 0 },
     ]);
   });
 
@@ -484,6 +486,8 @@ describe("the technician, before a one visit's payment link", () => {
     const job = await oneVisit();
     const answer = await job.post(`/api/tech/jobs/${JOB}/discount-code`, { code: "SVC25" }, "unused");
     expect(answer.status).toBe(422);
-    expect(await answer.json()).toEqual({ error: { code: "code_not_applicable", request_id: expect.any(String) } });
+    expect(await answer.json()).toEqual({
+      error: { code: "code_not_applicable", request_id: expect.any(String) as string },
+    });
   });
 });

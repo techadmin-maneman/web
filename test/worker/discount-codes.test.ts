@@ -266,7 +266,9 @@ describe("the invoice of a visit a code was entered on", () => {
   it("takes the code off the visit's line in Books before GST, then sends it: price, discount and total", async () => {
     const books = createStubBooks({ draftTotal: 200_000 });
     expect(await invoicePass(books)).toEqual({ raised: 1, issued: 1 });
-    expect(books.made.discounts).toEqual([{ invoiceId: expect.stringMatching(/^stub-invoice-/), amountOff: 20_000 }]);
+    expect(books.made.discounts).toEqual([
+      { invoiceId: expect.stringMatching(/^stub-invoice-/) as string, amountOff: 20_000 },
+    ]);
     expect(books.made.issued).toHaveLength(1);
   });
 

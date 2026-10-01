@@ -332,6 +332,42 @@ test("confirms a visit a credit covers as a credit used, never as a payment", as
   await expect(confirmed.getByText("Rs. 2,000")).toHaveCount(0);
 });
 
+// A discount code at the pay step (docs/decisions/0108-discount-codes.md), which no board draws. The API prices the
+// hold again; it is answered here, as the local database holds no code.
+test("takes a discount code off the price at the pay step, says only that a wrong one does not apply, and takes it off", async ({
+  page,
+}) => {
+  const hold = await holdAs(page, {});
+  let applies = false;
+  await page.route(/\/api\/holds\/[0-9a-f-]{36}\/discount-code$/, (route) => {
+    if (route.request().method() === "DELETE") return route.fulfill({ json: hold() });
+    if (!applies) {
+      return route.fulfill({ status: 422, json: { error: { code: "code_not_applicable", request_id: "test" } } });
+    }
+    const list = { amount_ex_gst: 200_000, amount: 200_000, gst_percent: 0 };
+    const discount = { code: "WEDDNG25", amount_ex_gst: 20_000, list_price: list };
+    return route.fulfill({
+      json: { ...hold(), price: { ...list, amount_ex_gst: 180_000, amount: 180_000 }, discount },
+    });
+  });
+  await toPayment(page);
+  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
+  await pay.getByRole("button", { name: "Have a discount code?" }).click();
+  await pay.getByLabel("Discount code").fill("wrong1");
+  await pay.getByRole("button", { name: "Apply" }).click();
+  await expect(pay.getByRole("alert")).toHaveText("That code does not apply to this visit.");
+
+  applies = true;
+  await pay.getByLabel("Discount code").fill("weddng25");
+  await pay.getByRole("button", { name: "Apply" }).click();
+  await expect(pay.getByText("Code WEDDNG25: Rs. 200 off")).toBeVisible();
+  await expect(pay.getByRole("button", { name: "Pay Rs. 1,800" })).toBeVisible();
+  await scanOf(page);
+
+  await pay.getByRole("button", { name: "Remove code" }).click();
+  await expect(pay.getByRole("button", { name: "Pay Rs. 2,000" })).toBeVisible();
+});
+
 test("asks whether to remind the client on WhatsApp, and records it when they say yes", async ({ page }) => {
   await fakeCheckout(page, "paid");
   await confirmedByRazorpay(page);

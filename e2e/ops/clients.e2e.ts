@@ -11,6 +11,7 @@ import {
   answer,
   CLIENT,
   CONSENTS,
+  empty,
   ERASURE_REQUESTED,
   fails,
   inkPhoto,
@@ -270,6 +271,52 @@ test("asks for what an address cannot do without before it sends one", async ({ 
   expect(sent).toBe(0);
   await form.getByRole("button", { name: "Cancel" }).click();
   await expect(page.getByRole("button", { name: "Record an address they give you" })).toBeFocused();
+});
+
+// A discount code on a visit not yet paid for or invoiced (docs/decisions/0108-discount-codes.md), which no board draws.
+test("enters a discount code on a visit not yet paid for, says when one does not apply, and takes it off", async ({
+  page,
+}) => {
+  const [coming] = RECORD.visits.upcoming;
+  if (coming === undefined) throw new Error("the record has no visit to come");
+  const open = {
+    ...RECORD,
+    visits: { ...RECORD.visits, upcoming: [{ ...coming, prepaid: false, price_open: true }] },
+  } satisfies OpsReply<"/api/clients/{id}">;
+  const entered = `POST /api/visits/${coming.id}/discount-code` as const;
+  const removed = `POST /api/visits/${coming.id}/discount-code/remove` as const;
+  let applies = false;
+  await openClient(page, `/clients/${CLIENT.id}/visits`, {
+    [READ_RECORD]: json(open),
+    [entered]: (route) =>
+      applies
+        ? json({ code: "WEDDNG25", amount_off: 50_000, given_by: "ops" })(route)
+        : fails(422, "code_not_applicable")(route),
+    [removed]: empty(),
+  });
+  const row = page.getByRole("region", { name: "To come" }).getByRole("row").nth(1);
+  await row.getByRole("button", { name: "Enter a discount code on the visit of 25 Sep 2027" }).click();
+  await row.getByLabel("Discount code").fill("wrong1");
+  await row.getByRole("button", { name: "Apply" }).click();
+  await expect(row.getByRole("alert")).toHaveText("That code does not apply to this visit.");
+
+  applies = true;
+  await row.getByLabel("Discount code").fill("weddng25");
+  await row.getByRole("button", { name: "Apply" }).click();
+  await expect(row).toContainText("WEDDNG25, Rs. 500 off");
+  await expect(row).toContainText("by ops");
+  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+
+  await row.getByRole("button", { name: "Take the discount code off the visit of 25 Sep 2027" }).click();
+  await expect(row.getByRole("button", { name: "Enter a discount code on the visit of 25 Sep 2027" })).toBeVisible();
+});
+
+test("offers no code on a visit already paid for", async ({ page }) => {
+  await openClient(page, `/clients/${CLIENT.id}/visits`, { [READ_RECORD]: json(RECORD) });
+  const row = page.getByRole("region", { name: "To come" }).getByRole("row").nth(1);
+  await expect(row).toContainText("None");
+  await expect(row.getByRole("button", { name: /discount code/ })).toHaveCount(0);
 });
 
 // A visit left partly done that ops closed without a follow-up, from the Tasks board (ADR 0092).

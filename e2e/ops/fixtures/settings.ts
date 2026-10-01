@@ -163,6 +163,52 @@ export const BLACKOUTS = {
 } satisfies OpsReply<"/api/blackouts">;
 
 /**
+ * Discount codes (docs/decisions/0108-discount-codes.md): a percentage with a cap, on first fits and service visits,
+ * used three times; and an amount off replacements, switched off, its one use kept.
+ */
+export const DISCOUNT_CODES = {
+  today: "2027-09-21",
+  batch_most: 100,
+  listed_most: 200,
+  codes: [
+    {
+      id: "51000000-0000-4000-8000-000000000001",
+      code: "WEDDNG25",
+      kind: "percent",
+      value: 25,
+      cap: 500_000,
+      covers: ["first_fit", "service"],
+      expires_on: "2027-12-31",
+      max_uses: 50,
+      once_per_client: true,
+      batch_id: null,
+      created_by: "ops@maneman.in",
+      created_at: "2027-09-01T06:00:00.000Z",
+      switched_off: null,
+      uses: 3,
+      given: 1_200_000,
+    },
+    {
+      id: "51000000-0000-4000-8000-000000000002",
+      code: "RPLC2K",
+      kind: "amount",
+      value: 200_000,
+      cap: null,
+      covers: ["replacement"],
+      expires_on: null,
+      max_uses: null,
+      once_per_client: false,
+      batch_id: null,
+      created_by: "ops@maneman.in",
+      created_at: "2027-08-01T06:00:00.000Z",
+      switched_off: { by: "owner@maneman.in", at: "2027-09-10T06:00:00.000Z" },
+      uses: 1,
+      given: 200_000,
+    },
+  ],
+} satisfies OpsReply<"/api/discount-codes">;
+
+/**
  * The services, kind by kind (docs/decisions/0085-services-ops-can-edit.md): each kind's standard service, a
  * premium first fit ops added and FSM has no item for yet, a lace replacement retired, and a service visit whose new
  * price starts in October, with the one it replaced folded into its history.

@@ -148,6 +148,45 @@ test("offers the consultation and fit in one visit, and says what it holds and h
   await expect(page.getByText(/· free$/)).toHaveCount(0);
 });
 
+// A discount code for the one visit, on /book only (docs/decisions/0108-discount-codes.md), which no board draws.
+test("takes a discount code with the one visit, and says only that a wrong one does not apply", async ({ page }) => {
+  let applies = false;
+  const requests = await mockApi(page);
+  await page.route("**/api/consultation", (route) => {
+    requests.push(route.request());
+    if (applies) {
+      return route.fulfill({ status: 201, json: { ...BOOKED, one_visit: true, discount_code: true } });
+    }
+    const refused = { error: { code: "code_not_applicable", request_id: "test", fields: ["discount_code"] } };
+    return route.fulfill({ status: 422, json: refused });
+  });
+  await visit(page, "/book");
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  await expect(page.getByLabel("Discount code (optional)")).toHaveCount(0);
+  await page.getByRole("group", { name: "What to book" }).getByText("Consultation and fit, in one visit").click();
+  await page.getByLabel("Discount code (optional)").fill("wrong1");
+  await fillAddress(page);
+  await page.getByLabel("Name").fill("Test Visitor");
+  await page.getByLabel("Mobile").fill("9810000000");
+  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByRole("button", { name: "Book the consultation and fit" }).click();
+  await expect(
+    page.getByText("That discount code does not apply. Check it, or leave it out to book without it."),
+  ).toBeVisible();
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+
+  applies = true;
+  await page.getByLabel("Discount code (optional)").fill(" WEDDNG25 ");
+  await page.getByRole("button", { name: "Book the consultation and fit" }).click();
+  await expect(page.getByText("Consultation and fit booked")).toBeVisible();
+  const sent = requests.at(-1)?.postDataJSON() as Record<string, unknown>;
+  expect(sent).toMatchObject({ one_visit: true, discount_code: "WEDDNG25" });
+});
+
 test("offers the one visit the morning and the afternoon, never the evening, and the consultation all three", async ({
   page,
 }) => {

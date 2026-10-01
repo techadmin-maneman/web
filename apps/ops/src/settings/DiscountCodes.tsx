@@ -151,10 +151,22 @@ export function DiscountCodes() {
   const [finding, setFinding] = useState<string | null>(null);
   const load = useCallback(() => api.discountCodes(finding), [finding]);
   const [loaded, retry] = useLoad(load);
+  /** The list as it was read again after a change, so the form above it keeps what it says. */
+  const [refreshed, setRefreshed] = useState<readonly DiscountCode[] | null>(null);
+
+  const find = (code: string | null) => {
+    setRefreshed(null);
+    setFinding(code);
+  };
+  const refresh = async () => {
+    const answer = await api.discountCodes(finding);
+    if (answer.ok) setRefreshed(answer.body.codes);
+  };
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
-  const { codes, today, batch_most: most } = loaded.value;
+  const { today, batch_most: most } = loaded.value;
+  const codes = refreshed ?? loaded.value.codes;
 
   return (
     <section className={styles.panel} aria-labelledby="discount-codes">
@@ -164,14 +176,14 @@ export function DiscountCodes() {
         </h2>
       </div>
       <p className={styles.note}>{copy.note}</p>
-      <DiscountCodeForm today={today} most={most} onMade={retry} />
-      <FindForm finding={finding} onFind={setFinding} />
+      <DiscountCodeForm today={today} most={most} onMade={() => void refresh()} />
+      <FindForm finding={finding} onFind={find} />
       {codes.length === 0 ? (
         <p className={styles.note}>{finding === null ? copy.none : copy.noneFound}</p>
       ) : (
         <ul className={styles.rules}>
           {codes.map((code) => (
-            <CodeRow key={code.id} code={code} onSwitched={retry} />
+            <CodeRow key={code.id} code={code} onSwitched={() => void refresh()} />
           ))}
         </ul>
       )}
