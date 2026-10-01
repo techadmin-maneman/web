@@ -1,4 +1,4 @@
--- Migration number: 0064
+-- Migration number: 0063
 -- Discount codes (docs/decisions/0108-discount-codes.md; the owner's rulings of 1 October 2026). Ops generate codes
 -- in the console, and the client, the technician or ops enter one on a booking before it is invoiced.
 --
