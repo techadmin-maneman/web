@@ -137,7 +137,8 @@ describe("a visit's payment the client was not home for", () => {
   });
 
   it("has the receipt alone: no invoice comes for a visit that did not happen", () => {
-    expect(documentsOf(notHome("charged"))).toEqual(["receipt"]);
+    const detail = { ...notHome("charged"), documents: { invoice: null, receipt: null } };
+    expect(documentsOf(detail)).toEqual(["receipt"]);
   });
 });
 

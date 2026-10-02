@@ -3,12 +3,13 @@
 
 import { fullDate, indiaClock, indiaDate, listDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
-import type { CreditLine, Entry } from "../api.ts";
+import type { CreditLine, Entry, EntryDetail } from "../api.ts";
 import { payments, VISIT_TYPES } from "../content.ts";
 import { priceFigures } from "../lib/money.ts";
 import { visitName } from "../lib/visit.ts";
 
 type PaymentEntry = Extract<Entry, { kind: "payment" }>;
+type PaymentDetail = Extract<EntryDetail, { kind: "payment" }>;
 
 /** The visit's kind, else the kind being booked while there is no visit yet, else only that it was a payment. */
 function paidFor(entry: Entry): string {
@@ -114,20 +115,22 @@ export function missingInvoice(entry: PaymentEntry, today: string): "invoiceAfte
 }
 
 /**
- * Whether the visit's invoice will ever come for this payment. It will not for a charge or a visit the client was
- * not home for (the visit did not happen), a late fee (not the visit), a payment refunded in full, or a booking
+ * Whether the visit's invoice is this payment's, issued or still to come. It is never a charge's or a no-show's
+ * (the visit did not happen) or a late fee's (not the visit). One already issued stays, even once the payment is
+ * refunded in full under the guarantee. Otherwise none comes for a payment refunded in full, or for a booking
  * refunded or let go before it became a visit.
  */
-function invoiceComes(entry: PaymentEntry): boolean {
+function invoiceComes(entry: PaymentDetail): boolean {
   if (entry.charge !== null || entry.no_show !== null) return false;
   if (entry.purpose === "late_fee") return false;
+  if (entry.documents.invoice !== null) return true;
   if (entry.status === "refunded") return false;
   if (entry.visit === null && entry.booking !== null && !entry.booking.under_way) return false;
   return true;
 }
 
-/** A payment's documents: the visit's invoice, where one will come, and the receipt. */
-export function documentsOf(entry: PaymentEntry): ("invoice" | "receipt")[] {
+/** A payment's documents: the visit's invoice, where it is the payment's, and the receipt. */
+export function documentsOf(entry: PaymentDetail): ("invoice" | "receipt")[] {
   return invoiceComes(entry) ? ["invoice", "receipt"] : ["receipt"];
 }
 

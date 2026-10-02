@@ -3,7 +3,7 @@
 // days" of a refund begun eighteen days ago, were both untrue.
 
 import { describe, expect, it } from "vitest";
-import type { Entry, VisitDetail } from "../../apps/app/src/api.ts";
+import type { Entry, EntryDetail, VisitDetail } from "../../apps/app/src/api.ts";
 import { documentsOf, missingInvoice, refundIsLate } from "../../apps/app/src/payments/entry.ts";
 import { invoiceState } from "../../apps/app/src/lib/visit.ts";
 
@@ -55,8 +55,9 @@ const payment = (overrides: Record<string, unknown>) =>
     purpose: "visit",
     charge: null,
     no_show: null,
+    documents: { invoice: null, receipt: null },
     ...overrides,
-  }) as unknown as Extract<Entry, { kind: "payment" }>;
+  }) as unknown as Extract<EntryDetail, { kind: "payment" }>;
 
 /** A first fit paid for a week ahead, not yet a visit: being booked, or refunded before it became one. */
 const booked = (underWay: boolean) =>
@@ -98,6 +99,12 @@ describe("a payment's documents", () => {
     expect(documentsOf(booked(false))).toEqual(["receipt"]);
     expect(documentsOf(payment({ status: "partially_refunded" }))).toEqual(["invoice", "receipt"]);
     expect(documentsOf(booked(true))).toEqual(["invoice", "receipt"]);
+  });
+
+  it("keep an invoice already issued when the payment is later refunded in full under the guarantee", () => {
+    const invoiced = { invoice: "v", receipt: "p" };
+    expect(documentsOf(payment({ status: "refunded", documents: invoiced }))).toEqual(["invoice", "receipt"]);
+    expect(documentsOf(payment({ purpose: "late_fee", documents: invoiced }))).toEqual(["receipt"]);
   });
 });
 
