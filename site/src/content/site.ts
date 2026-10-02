@@ -287,6 +287,8 @@ export const header = {
 };
 
 export const stickyBar = {
+  /** What a screen reader calls the bar's landmark. */
+  label: "Book or message us",
   whatsappLabel: "Message us on WhatsApp",
   book: "Book a visit",
 };
@@ -971,10 +973,12 @@ export const tryOn = {
  */
 export const booking = {
   title: "Book a free consultation",
+  /** The heading once the consultation and fit in one visit is chosen. */
+  titleOneVisit: "Book a consultation and fit",
   // The consultation fits nothing; the consultation and fit in one visit, the form's second choice, does
   // (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). The owner reviews the words (open point 162).
   intro: `He measures your scalp and matches your colour: ${visitLength.consultation}, with nothing to pay. Or book the fit in the same visit, and end it wearing your hair system.`,
-  extent: "Extent of hair loss",
+  extent: "Extent of hair loss (optional)",
 };
 
 // ---------------------------------------------------------------------------

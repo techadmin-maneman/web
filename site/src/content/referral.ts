@@ -149,6 +149,7 @@ export const referral = {
     placeholder: "122018",
     check: "Check",
     checking: "Checking",
+    empty: "Enter your pincode.",
     invalid: "That is not a six-digit Indian pincode.",
     failed: "We could not check that just now. Try again.",
     // Not drawn: a pincode typed wrong could only be put right by reloading the page. The owner approves the words (open point 45).
@@ -159,16 +160,18 @@ export const referral = {
   consultation: {
     served: "We come to {area}",
     title: "Book a free consultation",
+    titleOneVisit: "Book a consultation and fit",
     // The consultation alone fits nothing; the one visit, its second choice, fits the client then (ADR 0105). The
     // owner reviews these words with the home page's second round (open point 162).
     body: `${capitalised(visitLength.consultation)}, and free. Or have your fit in the same visit.`,
     forPincode: "For {pincode}",
     date: "Pick a date",
     window: "Window",
+    // A no-break space keeps "am" and "pm" on the line of their hour.
     windows: [
-      { id: "morning", label: "Morning", hours: "9 am to 12 pm" },
-      { id: "afternoon", label: "Afternoon", hours: "12 to 4 pm" },
-      { id: "evening", label: "Evening", hours: "4 to 8 pm" },
+      { id: "morning", label: "Morning", hours: "9 am to 12 pm" },
+      { id: "afternoon", label: "Afternoon", hours: "12 to 4 pm" },
+      { id: "evening", label: "Evening", hours: "4 to 8 pm" },
     ],
     /**
      * Not drawn: what to book, the consultation alone or the consultation and fit in one visit, as the owner ruled
@@ -206,17 +209,16 @@ export const referral = {
   },
   /**
    * Not drawn: no board puts an address on the consultation form. The owner ruled on 27 September 2026 that the
-   * site takes the full address before a consultation is booked (ADR 0025, item 62; ADR 0081), so the fields and
-   * their words are the client app's own (apps/app/src/content.ts, `profile.form`). The owner approves the words
-   * (open point 45).
+   * site takes the full address before a consultation is booked (ADR 0025, item 62; ADR 0081), so the fields are
+   * the client app's own (apps/app/src/content.ts, `profile.form`). The owner approves the words (open point 45).
    */
   address: {
-    legend: "Where we come",
+    legend: "Your address",
     labels: {
       flat: "Flat or house number",
       floor: "Floor (optional)",
       tower: "Tower or block (optional)",
-      line1: "Building, society or street",
+      line1: "Building or society",
       line2: "Street (optional)",
       landmark: "Landmark (optional)",
       locality: "Sector or area",
@@ -225,10 +227,11 @@ export const referral = {
     },
     errors: {
       flat: "Please give the flat or house number.",
-      line1: "Please give the building, society or street.",
+      line1: "Please give the building or society.",
       locality: "Please give the sector or area.",
       city: "Please give the city.",
     },
+    more: "Add floor, tower or landmark",
     pincode: "Pincode",
     accessHint: "A gate code, or where to park. Your technician sees it the day before the visit.",
   },
@@ -267,12 +270,13 @@ export const referral = {
     // words (open point 165).
     payOnceFitted: "pay once fitted",
     credits: visitsLand,
-    back: "See the site",
+    back: "Back to the site",
     // Not drawn on C4 (docs/fidelity-method.md, "The referral landing"). The owner approves the words (open point 45).
-    number: "On WhatsApp to +91 {mobile}",
+    number: "We’ll send the details to +91 {mobile} on WhatsApp.",
     // Not drawn: the number already had an address, which the booking kept rather than the one typed (ADR 0081). It
     // names no part of that address, since whoever typed the number may not be its owner. The owner approves the
     // words (open point 45).
+    placeOnAccount: "At the address on your account",
     addressOnAccount:
       "We come to the address already on your account, not the one given here. To change it, message us on WhatsApp.",
     // Not drawn: the consultation and fit in one visit (ADR 0105). The owner approves the words (open points 45 and
@@ -284,7 +288,9 @@ export const referral = {
     calendarFile: "mane-man-consultation.ics",
     calendarTitle: "Mane Man consultation",
     calendarTitleOneVisit: "Mane Man consultation and fit",
-    app: "See it in the app",
+    calendarNote: "Your technician comes to you.",
+    calendarApp: "Manage it in the Mane Man app: {url}",
+    app: "Open the app",
   },
   /**
    * C4's "Code expired" frame. The invite has lapsed for this friend only, which the API can tell once they have
@@ -315,7 +321,7 @@ export const referral = {
     creditsFrom: "{name}’s invite holds for 12 months after that.",
     credits: "The invite holds for 12 months after that.",
     tryOn: "Try a new look",
-    back: "See the site",
+    back: "Back to the site",
   },
   errors: {
     rateLimited: "That is a few too many tries. Please try again tomorrow.",

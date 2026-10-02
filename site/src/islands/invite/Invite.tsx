@@ -36,8 +36,9 @@ import { BUILT_WORDS, isPublishedPrices, pricesOf, priceWords, type PriceWords }
 import { rememberInvite } from "../../lib/remembered-invite.ts";
 import { isReferralReward } from "../../lib/reward.ts";
 import { fill } from "../../lib/text.ts";
-import { Consultation } from "./Consultation.tsx";
+import { Consultation, type Plan } from "./Consultation.tsx";
 import { Booked, Listed, type Booking, type Listing } from "./Done.tsx";
+import { onStepChange, pushStep, startAtPincode } from "./history.ts";
 import { HowItWorks } from "./HowItWorks.tsx";
 import styles from "./Invite.module.css";
 import { codeInPath, inviteInPage, pricesInPage, rewardInPage } from "./page.ts";
@@ -66,6 +67,12 @@ type State = "arrival" | "booked" | "listed";
 /** The card the page shows: the referrer's own while it is live, else our house one. */
 const CARD = { width: 1200, height: 630 };
 
+/** /book's heading: what is being booked, once the pincode has opened the form. */
+function bookTitle(plan: Plan, served: boolean): string {
+  if (served && plan === "one_visit") return booking.titleOneVisit;
+  return booking.title;
+}
+
 export default function Invite(props: Props) {
   // Null until the invite is known: the page then says only what is true of every invite.
   const [invite, setInvite] = useState<InviteAnswer | null>(null);
@@ -76,6 +83,7 @@ export default function Invite(props: Props) {
   const [state, setState] = useState<State>("arrival");
   const [booked, setBooked] = useState<Booking | null>(null);
   const [listed, setListed] = useState<Listing | null>(null);
+  const [plan, setPlan] = useState<Plan>("consultation");
   const pincode = usePincode();
   const heading = useRef<HTMLHeadingElement>(null);
 
@@ -136,6 +144,28 @@ export default function Invite(props: Props) {
   }, [props.allowStateSwitch]);
 
   useEffect(() => {
+    startAtPincode();
+  }, []);
+
+  // Back and Forward move between the page's steps; a confirmation shows again only while this page holds it.
+  useEffect(
+    () =>
+      onStepChange((entry) => {
+        if (entry.step === "done" && booked !== null) {
+          setState("booked");
+          return;
+        }
+        if (entry.step === "done" && listed !== null) {
+          setState("listed");
+          return;
+        }
+        setState("arrival");
+        pincode.show(entry.answer);
+      }),
+    [booked, listed],
+  );
+
+  useEffect(() => {
     if (state !== "arrival") {
       globalThis.scrollTo(0, 0);
       heading.current?.focus();
@@ -167,7 +197,7 @@ export default function Invite(props: Props) {
             </div>
           )}
           <h1 ref={heading} tabIndex={-1} class={styles.title}>
-            {invited ? referral.arrival.title : booking.title}
+            {invited ? referral.arrival.title : bookTitle(plan, answer?.served === true)}
           </h1>
           <div class={styles.offer}>
             {!invited && <p>{booking.intro}</p>}
@@ -186,9 +216,13 @@ export default function Invite(props: Props) {
             <Consultation
               {...formProps}
               answer={answer}
+              plan={plan}
+              onPlan={setPlan}
               onBooked={(result) => {
                 setBooked(result);
+                setListed(null);
                 setState("booked");
+                pushStep("done", answer);
               }}
             />
           )}
@@ -198,7 +232,9 @@ export default function Invite(props: Props) {
               answer={answer}
               onListed={(result) => {
                 setListed(result);
+                setBooked(null);
                 setState("listed");
+                pushStep("done", answer);
               }}
             />
           )}
