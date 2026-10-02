@@ -54,7 +54,7 @@ import { addDays, indiaDate } from "../lib/india-time.ts";
 import type { Logger } from "../log.ts";
 import type { SoldTerms } from "../policy/moving-a-visit.ts";
 import { bookingNeedsProof } from "../policy/number-proof.ts";
-import { ONE_VISIT_TERMS, ONE_VISIT_WINDOWS, type Plan } from "../policy/one-visit.ts";
+import { ONE_VISIT_TERMS, planStartsIn, type Plan } from "../policy/one-visit.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import type { Price } from "./price-book.ts";
 import { recordConsent } from "./consents.ts";
@@ -319,7 +319,7 @@ const nothingPaid = (price: Price): Price => ({ amount: 0, amount_ex_gst: 0, gst
  * (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). Null when the day offers neither, and what the
  * person asked for waits for ops.
  */
-async function siteVisit(db: D1Database, plan: Plan, date: string): Promise<SiteVisit | null> {
+export async function siteVisit(db: D1Database, plan: Plan, date: string): Promise<SiteVisit | null> {
   if (plan === "one_visit") {
     const [fit] = await offeredProducts(db, date);
     if (fit === undefined) return null;
@@ -402,7 +402,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   }
   // The first fit's three hours do not fit in the evening (src/policy/one-visit.ts), which the form does not offer.
   const oneVisit = request.plan === "one_visit";
-  if (oneVisit && !(ONE_VISIT_WINDOWS as readonly BookingWindow[]).includes(request.window)) {
+  if (!planStartsIn(request.plan, request.window)) {
     return { ok: false, status: 400, code: "invalid_request", fields: ["window"] };
   }
   if (oneVisit && (await offeredProducts(db, request.date)).length === 0) {
