@@ -124,10 +124,12 @@ test.describe("consent", () => {
     await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "stage");
   });
 
+  // CP-07: the line pointed to a footer /try does not have.
   test("the words privacy notice link to /privacy, and nothing else is added", async ({ page }) => {
     await open(page, "consent");
     await expect(page.getByRole("link", { name: "privacy notice" })).toHaveAttribute("href", "/privacy");
-    await expect(page.getByText("is two paragraphs long, and it is linked in the footer.")).toBeVisible();
+    await expect(page.getByText("Read the full privacy notice.")).toBeVisible();
+    await expect(page.getByText("footer", { exact: false })).toHaveCount(0);
   });
 });
 
@@ -142,6 +144,9 @@ test.describe("stage and looks", () => {
   test("six looks; the button changes once one is picked, and goes on to the gate", async ({ page }) => {
     await open(page, "looks");
     await expect(page.getByRole("radio")).toHaveCount(6);
+    // UX-22: until all six looks have a picture, no empty box stands in for one.
+    await expect(page.getByText("Preview", { exact: true })).toHaveCount(0);
+    await expect(page.locator("[data-screen] fieldset img")).toHaveCount(0);
     const next = page.getByRole("button", { name: "Choose one to continue" });
     await expect(next).toHaveAttribute("aria-disabled", "true");
     await page.getByText("Light density").first().click();
@@ -194,9 +199,9 @@ test.describe("sent", () => {
     await open(page, "sent");
     await expect(page.getByRole("heading", { name: "Your new look is on its way." })).toBeVisible();
     await expect(
-      page.getByText("Watch WhatsApp on +91 98100 00000: it arrives within minutes.", { exact: false }),
+      page.getByText("It'll reach WhatsApp on +91 98100 00000 within minutes. We delete it after 14 days."),
     ).toBeVisible();
-    await expect(page.getByText("it is never shown on this site", { exact: false })).toBeVisible();
+    await expect(page.getByText("never shown on this site", { exact: false })).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Book a free consultation" })).toHaveAttribute("href", "/book");
     await expect(page.getByRole("link", { name: "Back to the site" })).toHaveAttribute("href", "/");
     await expect(page.locator("[data-screen] img")).toHaveCount(0);
@@ -207,7 +212,7 @@ test.describe("sent", () => {
   test("tells a returning visitor their look was sent, without a number or the look", async ({ page }) => {
     await page.goto("/try?state=sent&kind=returning");
     await expect(page.getByRole("heading", { name: "Your look has already been sent." })).toBeVisible();
-    await expect(page.getByText("It went to the WhatsApp number you gave.", { exact: false })).toBeVisible();
+    await expect(page.getByText("We sent it to the WhatsApp number you gave.", { exact: false })).toBeVisible();
     await expect(page.getByText("+91", { exact: false })).toHaveCount(0);
     await expect(page.locator("[data-screen] img")).toHaveCount(0);
   });
@@ -240,8 +245,8 @@ test.describe("error", () => {
     {
       kind: "unavailable",
       step: "Not available right now",
-      frame: "The try-on is paused",
-      heading: "The try-on is not available right now.",
+      frame: "Paused",
+      heading: "The try-on is paused.",
       another: false,
     },
   ];

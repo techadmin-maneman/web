@@ -190,7 +190,7 @@ describe("content", () => {
   // CLI-19: production keeps a result fourteen days (ADR 0039), as the privacy notice says.
   it("keeps the try-on's result for as long as the privacy notice says", () => {
     expect(site.legalPages.privacy.paragraphs[0]).toContain("the simulation itself is kept for fourteen days");
-    expect(site.tryOn.sent.privacy).toContain("we delete it after fourteen days");
+    expect(site.tryOn.sent.privacy).toBe("We delete it after 14 days.");
   });
 
   it("publishes only blocks whose material is real: the business number, the privacy notice and the terms", () => {
@@ -218,6 +218,24 @@ describe("the second copy round", () => {
     expect(site.booking.intro).toMatch(/^Your technician measures your scalp/);
     expect(site.pageDescriptions.book).toBe(site.booking.intro);
     expect(site.tryOn.stage.body).not.toMatch(/\bHe\b/);
+  });
+
+  // CP-07: every try-on screen said again that the look is never shown here; the gate's notice says it once.
+  it("leaves where the look goes to the gate, and points to a privacy notice /try has", () => {
+    const screens = JSON.stringify(site.tryOn);
+    expect(screens).not.toMatch(/never shown|privately|for your privacy/i);
+    expect(site.gateCopy(site.notices.gate).caption).toContain("WhatsApp");
+    const { before, link, after } = site.tryOn.consent.privacy;
+    expect(before + link + after).toBe("Read the full privacy notice.");
+  });
+
+  // CP-07, UX-22: the look picker showed six empty boxes labelled "Preview".
+  it("draws the looks' pictures only once all six have one, and labels no empty box", () => {
+    expect(site.tryOn.looks).not.toHaveProperty("preview");
+    expect(site.lookPictures()).toBeNull();
+    const six = site.looks.map((look) => ({ picture: `${look.id}.jpg` }));
+    expect(site.lookPictures(six)).toEqual(site.looks.map((look) => `${look.id}.jpg`));
+    expect(site.lookPictures([...six.slice(1), { picture: undefined }])).toBeNull();
   });
 
   it("says how long each choice on the booking form takes", () => {

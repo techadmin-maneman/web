@@ -3,14 +3,18 @@ import { lookLabel } from "./machine.ts";
 import { Title, type HeadingRef } from "./Title.tsx";
 import styles from "./TryOn.module.css";
 
-/** Step three: the six looks. Continue goes on to the gate, which asks where to send the look before it is made. */
+/**
+ * Step three: the six looks. Continue goes on to the gate, which asks where to send the look before it is made.
+ * Each look shows its picture only when every look has one (`thumbnails`); otherwise its words alone.
+ */
 export function Looks(props: {
   look: number;
+  thumbnails: readonly string[] | null;
   heading: HeadingRef;
   onChoose: (look: number) => void;
   onContinue: () => void;
 }) {
-  const { look } = props;
+  const { look, thumbnails } = props;
   return (
     <div>
       <Title heading={props.heading}>{tryOn.looks.title}</Title>
@@ -28,9 +32,11 @@ export function Looks(props: {
                 props.onChoose(index);
               }}
             />
-            <span class={styles.thumb}>
-              <span class={styles.thumbLabel}>{tryOn.looks.preview}</span>
-            </span>
+            {thumbnails !== null && (
+              <span class={styles.thumb}>
+                <img class={styles.thumbImage} src={thumbnails[index]} alt="" loading="lazy" decoding="async" />
+              </span>
+            )}
             <span class={styles.lookText}>
               <span class={styles.lookDensity}>{option.density}</span>
               <span class={styles.lookDetail}>{option.detail}</span>

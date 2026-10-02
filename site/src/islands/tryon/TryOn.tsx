@@ -43,6 +43,8 @@ interface Props {
   turnstileSiteKey: string;
   /** Allow ?state= to open a screen directly (never in production). */
   allowStateSwitch: boolean;
+  /** The look picker's pictures, in the looks' order, or null until every look has one. */
+  lookThumbnails: readonly string[] | null;
 }
 
 /** The gate's line for each refusal of the claim the visitor can act on there. */
@@ -286,6 +288,7 @@ export default function TryOn(props: Props) {
         {screen === "looks" && (
           <Looks
             look={state.look}
+            thumbnails={props.lookThumbnails}
             heading={heading}
             onChoose={(look) => {
               send({ type: "lookChosen", look });
