@@ -1291,7 +1291,8 @@ Who is waiting, by pincode, the longest wait first
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The area's name once ops have named it; null until then, and for a pincode we do not know."
           },
           "city": {
             "anyOf": [
@@ -4089,6 +4090,7 @@ Request body:
             "look_limit_reached",
             "claim_required",
             "whatsapp_unavailable",
+            "number_not_proved",
             "unauthorized",
             "visit_booked",
             "payment_held",
@@ -6790,6 +6792,7 @@ Request body:
             "look_limit_reached",
             "claim_required",
             "whatsapp_unavailable",
+            "number_not_proved",
             "unauthorized",
             "visit_booked",
             "payment_held",

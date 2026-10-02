@@ -1006,7 +1006,7 @@ export const waitlist = {
     date: "Launch date",
     dateHint: "The day a technician starts coming. A held referral invite lapses twelve months from it.",
     /** PLACEHOLDER: where the area's name in the message comes from, and where it is changed (OPS-13). */
-    named: "The message uses the area's name as Service area sets it.",
+    named: "The message names the area once Service area gives it a name, and its city until then.",
     rename: "Change the name",
     /**
      * What each of them gets. The words are launch_alert_v1's in

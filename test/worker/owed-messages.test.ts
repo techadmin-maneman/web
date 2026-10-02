@@ -357,11 +357,13 @@ describe("the no-show ruling (LIFE-07)", () => {
 });
 
 describe("the waitlist confirmation (REQ-03)", () => {
-  async function listed(launchAlert: boolean) {
+  /** Someone listed in Bandra, whose area ops have named unless `named` is false. */
+  async function listed(launchAlert: boolean, named = true) {
     await env.DB.batch([
       env.DB.prepare(
-        "INSERT INTO serviceable_pincodes (pincode, area, city, served) VALUES ('400050', 'Bandra', 'Mumbai', 0)",
-      ),
+        `INSERT INTO serviceable_pincodes (pincode, area, city, served, area_named_by)
+         VALUES ('400050', 'Bandra', 'Mumbai', 0, ?1)`,
+      ).bind(named ? "ops@localhost" : null),
       env.DB.prepare(
         `INSERT INTO waitlist_entries (id, pincode, person_id, contact_consent_at, launch_alert, created_at)
          VALUES (?1, '400050', ?2, ?3, ?4, ?3)`,
@@ -377,6 +379,12 @@ describe("the waitlist confirmation (REQ-03)", () => {
     expect(sent.text).toBe(
       "Hello Karan, you are on our list for Bandra. We will message you on WhatsApp when we come there.",
     );
+  });
+
+  // CP-25 of the audit, 2 October 2026: "you are on our list for 400050", a bare pincode.
+  it("names the pincode as one until ops name the area", async () => {
+    const sent = await send(await listed(false, false));
+    expect(sent.text).toBe("Hello Karan, you are on our list for pincode 400050. We do not come there yet.");
   });
 
   it("promises nothing more to one who did not ask to be told of the launch", async () => {

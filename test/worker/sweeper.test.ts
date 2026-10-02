@@ -96,12 +96,17 @@ describe("sweeper: leads", () => {
     expect((await env.DB.prepare("SELECT id FROM tryon_sessions").all()).results).toEqual([{ id: "live" }]);
   });
 
-  it("removes login codes a day past expiry, and client sessions 30 days after they end", async () => {
+  it("removes login codes and the site's number codes a day past expiry, and client sessions 30 days after they end", async () => {
     const day = 24 * 60;
     const challenge = (id: string, expiredMinutesAgo: number) =>
       env.DB.prepare(
         `INSERT INTO otp_challenges (id, created_at, purpose, channel, last_sent_at, expires_at)
          VALUES (?1, ?2, 'login', 'whatsapp', ?2, ?3)`,
+      ).bind(id, minutesAgo(expiredMinutesAgo + 10), minutesAgo(expiredMinutesAgo));
+    const numberCode = (id: string, expiredMinutesAgo: number) =>
+      env.DB.prepare(
+        `INSERT INTO number_codes (id, created_at, mobile_hash, code_hash, expires_at)
+         VALUES (?1, ?2, 'mobile-hash', 'code-hash', ?3)`,
       ).bind(id, minutesAgo(expiredMinutesAgo + 10), minutesAgo(expiredMinutesAgo));
     const session = (id: string, expires: string, revoked: string | null) =>
       env.DB.prepare(
@@ -111,6 +116,8 @@ describe("sweeper: leads", () => {
     await env.DB.batch([
       challenge("old-code", day + 1),
       challenge("recent-code", 60),
+      numberCode("old-number-code", day + 1),
+      numberCode("recent-number-code", 60),
       session("long-expired", minutesAgo(31 * day), null),
       session("long-revoked", minutesAhead(day), minutesAgo(31 * day)),
       session("recently-revoked", minutesAhead(day), minutesAgo(day)),
@@ -120,6 +127,7 @@ describe("sweeper: leads", () => {
     await sweep(sweepEnv().bindings, fakeDependencies(), createLogger(), OPTIONS);
 
     expect((await env.DB.prepare("SELECT id FROM otp_challenges").all()).results).toEqual([{ id: "recent-code" }]);
+    expect((await env.DB.prepare("SELECT id FROM number_codes").all()).results).toEqual([{ id: "recent-number-code" }]);
     expect((await env.DB.prepare("SELECT id FROM sessions ORDER BY id").all()).results).toEqual([
       { id: "live" },
       { id: "recently-revoked" },
