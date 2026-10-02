@@ -9,9 +9,9 @@
 //   POST  /api/deletion-request
 // Each consent switch is audited in the same batch as the switch, and a switch
 // to the state a purpose already holds writes neither a ledger row (ADR 0058)
-// nor an audit entry. A number
-// change or deletion request is audited as it is made; its effect comes only
-// with ops' decision, which is audited in turn (src/routes/ops-profile.ts).
+// nor an audit entry. A number change or deletion request is audited as it is
+// made; its effect comes only with ops' decision, which is audited in turn
+// (src/routes/ops-profile.ts).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
