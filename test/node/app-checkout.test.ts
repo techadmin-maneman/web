@@ -168,7 +168,7 @@ describe("paying in Checkout", () => {
     const { pay } = await checkout();
     void pay(ORDER, payBy());
 
-    const prefill = razorpay.opened[0]?.["prefill"] as Record<string, unknown>;
+    const prefill = razorpay.opened[0]?.prefill as Record<string, unknown>;
     expect(prefill).not.toHaveProperty("method");
     expect(prefill).not.toHaveProperty("email");
   });
