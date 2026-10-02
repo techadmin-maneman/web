@@ -44,10 +44,10 @@ async function problemsOn(
 ): Promise<string[]> {
   const context = await browser.newContext({ serviceWorkers: "block" });
   try {
-    await context.route("**/*", (route) => {
+    await context.route("**/*", async (route) => {
       const request = route.request();
       if (!isOwnHost(request.url(), environment)) return route.continue();
-      return route.continue({ headers: { ...request.headers(), ...access } });
+      return route.continue({ headers: { ...(await request.allHeaders()), ...access } });
     });
     const page = await context.newPage();
     const refused = await recordPolicyRefusals(page);
