@@ -11,20 +11,20 @@
 // and ZOHO_BOOKS_ORG_ID. No secret is printed.
 
 import { parseArgs } from "node:util";
-import { FSM_BASE_PART_NAME, FSM_SERVICE_NAMES, type VisitType } from "../src/config/visit-types.ts";
+import { FSM_BASE_PART_NAME, FSM_STANDARD_ITEMS, type StandardKind } from "../src/config/visit-types.ts";
 import { refreshTokenForScript } from "./lib/zoho-script-token.ts";
 
 /**
- * A new item's price in rupees before GST: the price book's own since 22
- * September 2026 (migration 0018), so a new org starts in line with it. FSM
+ * A new standard item's price in rupees before GST: the price book's own since
+ * 22 September 2026 (migration 0018), so a new org starts in line with it. FSM
  * prices its invoices from these. The cron's hourly check compares them with
  * the book afterwards, and the push keeps them in line once the owner switches
  * it on (docs/decisions/0073-prices-from-the-price-book.md). An item that
- * already exists is left as it is.
+ * already exists is left as it is. A first fit has no standard item: each hair
+ * system ops add in the console needs its own, made in FSM by hand or by the push.
  */
-const NEW_ITEM_PRICES: Readonly<Record<VisitType, number>> = {
+const NEW_ITEM_PRICES: Readonly<Record<StandardKind, number>> = {
   consultation: 0,
-  first_fit: 30_000,
   service: 2_000,
   replacement: 15_000,
 };
@@ -115,12 +115,12 @@ const territories = await call("GET", "/fsm/v1/Territories");
 const territoryCount = (territories.json as { data?: unknown[] } | null)?.data?.length ?? 0;
 report(territoryCount > 0, "territories", String(territoryCount));
 
-// The catalogue: a service item per visit type, and the base part.
+// The catalogue: a service item per standard service, and the base part.
 const wanted: { name: string; type: "Service" | "Part"; price: number }[] = [
-  ...(Object.entries(FSM_SERVICE_NAMES) as [VisitType, string][]).map(([type, name]) => ({
+  ...FSM_STANDARD_ITEMS.map(({ kind, name }) => ({
     name,
     type: "Service" as const,
-    price: NEW_ITEM_PRICES[type],
+    price: NEW_ITEM_PRICES[kind],
   })),
   { name: FSM_BASE_PART_NAME, type: "Part", price: PLACEHOLDER_BASE_PRICE },
 ];

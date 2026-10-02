@@ -436,7 +436,7 @@ The client surface reads visits from Zoho FSM and documents from Zoho Books (doc
 
    The Books organisation ID is on Books → Settings → Organisation Profile.
 
-3. **The org.** Check it, then create what is missing: a service item for each visit type and the base part. A new visit item takes the price book's own figure of 22 September 2026; from then on the cron's hourly check compares each item with the book (step 8).
+3. **The org.** Check it, then create what is missing: a service item for the consultation, the service visit and the replacement, and the base part. A new visit item takes the price book's own figure of 22 September 2026; from then on the cron's hourly check compares each item with the book (step 8). A first fit has no item of its own: each hair system ops add in the console needs one, named exactly as the console names it, and a first fit is not booked into FSM until it has one.
 
    ```sh
    node --env-file=.env.fsm-<env> scripts/setup-fsm.ts --check

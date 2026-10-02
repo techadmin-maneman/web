@@ -43,7 +43,7 @@ import type { PaymentsProvider } from "../providers/payments.ts";
 import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
 import type { AlertOnce } from "./alerts.ts";
 import type { OpsInputs } from "./ops-settings.ts";
-import { priceOf, type Price } from "./price-book.ts";
+import { lateFeeOn, priceOf, type Price } from "./price-book.ts";
 import { askRefund, refundReceipt } from "./refunds.ts";
 import { bookedMinutes } from "./scheduling.ts";
 import { windowTimesOf } from "../policy/slot-times.ts";
@@ -271,7 +271,7 @@ export async function termsOfVisit(
   if (sold === null && (await isOneVisit(db, visit.id))) return { terms: ONE_VISIT_TERMS, lateFee: null };
   const lateFeeItem = LATE_FEES[visit.type];
   const lateFee =
-    lateFeeItem === undefined ? null : (sold?.lateFee ?? (await priceOf(db, lateFeeItem, indiaDate(visit.start))));
+    lateFeeItem === undefined ? null : (sold?.lateFee ?? (await lateFeeOn(db, lateFeeItem, indiaDate(visit.start))));
   return { terms: sold?.terms ?? inForce, lateFee };
 }
 

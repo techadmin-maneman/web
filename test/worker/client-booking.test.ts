@@ -153,7 +153,9 @@ describe("GET /api/availability", () => {
     const lead = await client(true);
     const service = await request(app, "/api/availability?type=service", { headers: { Cookie: lead.cookie } });
     expect(service.status).toBe(422);
-    const firstFit = await request(app, "/api/availability?type=first_fit", { headers: { Cookie: lead.cookie } });
+    const firstFit = await request(app, "/api/availability?type=first_fit&tier=standard", {
+      headers: { Cookie: lead.cookie },
+    });
     expect(firstFit.status).toBe(200);
 
     const off = appFor("local", fakeDependencies(), { ...LOCAL_SETTINGS, selfServeBooking: false }, "client");
@@ -267,7 +269,9 @@ describe("POST /api/holds", () => {
   // What the pay step says a late change costs is what the hold was sold under (docs/decisions/0088-every-policy-in-the-console.md).
   it("answers a late fee only where the hold was sold to charge one", async () => {
     const lead = await client(true);
-    const byFee = await (await hold(lead, { type: "first_fit", date: "2026-09-24", window: "morning" })).json();
+    const byFee = await (
+      await hold(lead, { type: "first_fit", tier: "standard", date: "2026-09-24", window: "morning" })
+    ).json();
     expect(byFee).toMatchObject({ late_change_charge: "late_fee", late_fee: { amount_ex_gst: 400000 } });
 
     await env.DB.prepare(
@@ -282,7 +286,7 @@ describe("POST /api/holds", () => {
     // A new isolate, so the setting is read afresh rather than from the minute's cache.
     const afresh = later(0);
     const byVisit = await (
-      await hold(other, { type: "first_fit", date: "2026-09-25", window: "morning" }, afresh)
+      await hold(other, { type: "first_fit", tier: "standard", date: "2026-09-25", window: "morning" }, afresh)
     ).json();
     expect(byVisit).toMatchObject({ late_change_charge: "visit", late_fee: null });
   });
@@ -303,15 +307,21 @@ describe("POST /api/holds", () => {
   // The horizon is ops' to set, 45 days from tomorrow to begin with (docs/decisions/0086-the-next-visit-is-offered.md).
   it("carries a first fit's late fee, and refuses a day past the 45 days from tomorrow", async () => {
     const lead = await client(true);
-    const answer = await hold(lead, { type: "first_fit", date: "2026-09-24", window: "morning" });
+    const answer = await hold(lead, { type: "first_fit", tier: "standard", date: "2026-09-24", window: "morning" });
     expect(await answer.json()).toMatchObject({
       price: { amount_ex_gst: 3000000, amount: 3000000 },
       late_fee: { amount_ex_gst: 400000, amount: 400000 },
       ends_at: "2026-09-24T06:30:00.000Z",
     });
-    expect((await hold(lead, { type: "first_fit", date: "2026-11-06", window: "morning" })).status).toBe(422);
-    expect((await hold(lead, { type: "first_fit", date: "2026-09-21", window: "evening" })).status).toBe(422);
-    expect((await hold(lead, { type: "first_fit", date: "2026-11-05", window: "morning" })).status).toBe(201);
+    expect(
+      (await hold(lead, { type: "first_fit", tier: "standard", date: "2026-11-06", window: "morning" })).status,
+    ).toBe(422);
+    expect(
+      (await hold(lead, { type: "first_fit", tier: "standard", date: "2026-09-21", window: "evening" })).status,
+    ).toBe(422);
+    expect(
+      (await hold(lead, { type: "first_fit", tier: "standard", date: "2026-11-05", window: "morning" })).status,
+    ).toBe(201);
   });
 
   it("holds the visit at the pincode of the client's saved address", async () => {
@@ -373,13 +383,13 @@ describe("what a client may book, and when (docs/decisions/0068-a-paid-hold-is-k
   it("offers no second first fit while one is still to happen, nor starts paying for one (LIFE-09)", async () => {
     const lead = await client(true);
     const first = await (
-      await hold(lead, { type: "first_fit", date: "2026-09-24", window: "morning" })
+      await hold(lead, { type: "first_fit", tier: "standard", date: "2026-09-24", window: "morning" })
     ).json<{
       id: string;
     }>();
     // Ops booked the first fit in FSM meanwhile.
     await visit(lead.id, "first_fit", "scheduled", "2026-09-25T03:30:00.000Z", SANDEEP);
-    const second = await hold(lead, { type: "first_fit", date: "2026-09-26", window: "morning" });
+    const second = await hold(lead, { type: "first_fit", tier: "standard", date: "2026-09-26", window: "morning" });
     expect(second.status).toBe(422);
     const paying = await request(app, "/api/bookings", {
       method: "POST",
@@ -541,5 +551,69 @@ describe("choosing a service", () => {
       headers: { Cookie: lead.cookie },
     });
     expect(answer.status).toBe(422);
+  });
+
+  // The owner's decision of 2 October 2026: only the hair systems ops offer, and no generic first fit in their place.
+  describe("a first fit, sold only as a hair system ops offer", () => {
+    /** Ops retire the first fit the migrations began with, as they retire any service in the console. */
+    const retireTheFirstFit = () =>
+      env.DB.prepare(
+        "UPDATE services SET retired_date = '2026-09-01' WHERE kind = 'first_fit' AND tier = 'standard'",
+      ).run();
+    const codeOf = async (answer: Response) => (await answer.json<{ error: { code: string } }>()).error.code;
+
+    it("lists on Home only the hair systems ops offer, by their names and prices", async () => {
+      const lead = await client(true);
+      await retireTheFirstFit();
+      await service("first_fit", "essential", "Mane Man Essential", 180, 3_200_000);
+
+      const me = await (
+        await request(app, "/api/me", { headers: { Cookie: lead.cookie } })
+      ).json<{
+        booking: { services: { type: string; tier: string; name: string }[]; next: { tier: string | null } | null };
+      }>();
+      expect(me.booking.services).toEqual([
+        expect.objectContaining({ type: "first_fit", tier: "essential", name: "Mane Man Essential" }),
+      ]);
+      expect(me.booking.next).toMatchObject({ tier: "essential" });
+    });
+
+    it("books the hair system named, and refuses a first fit that names none", async () => {
+      const lead = await client(true);
+      await retireTheFirstFit();
+      await service("first_fit", "essential", "Mane Man Essential", 180, 3_200_000);
+
+      const unnamed = await hold(lead, { type: "first_fit", date: "2026-09-24", window: "morning" });
+      expect(unnamed.status).toBe(422);
+      expect(await codeOf(unnamed)).toBe("not_bookable");
+
+      const named = await hold(lead, { type: "first_fit", tier: "essential", date: "2026-09-24", window: "morning" });
+      expect(named.status).toBe(201);
+      expect(await named.json()).toMatchObject({
+        service: { tier: "essential", name: "Mane Man Essential" },
+        price: { amount_ex_gst: 3_200_000 },
+      });
+    });
+
+    it("refuses a first fit as no_product while ops offer no hair system, and lists none", async () => {
+      const lead = await client(true);
+      await retireTheFirstFit();
+
+      const days = await request(app, "/api/availability?type=first_fit", { headers: { Cookie: lead.cookie } });
+      expect(days.status).toBe(422);
+      expect(await codeOf(days)).toBe("no_product");
+      const held = await hold(lead, { type: "first_fit", tier: "standard", date: "2026-09-24", window: "morning" });
+      expect(held.status).toBe(422);
+      expect(await codeOf(held)).toBe("no_product");
+
+      const me = await (
+        await request(app, "/api/me", { headers: { Cookie: lead.cookie } })
+      ).json<{
+        booking: { types: string[]; services: unknown[]; next: unknown };
+      }>();
+      expect(me.booking.types).toEqual(["first_fit"]);
+      expect(me.booking.services).toEqual([]);
+      expect(me.booking.next).toMatchObject({ type: "first_fit", tier: null });
+    });
   });
 });

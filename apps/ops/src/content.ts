@@ -759,7 +759,7 @@ export const clients = {
     formTitle: "Correct the hair profile",
     formNote: "Saved as a new version under your name. Every version before it is kept.",
     notRecorded: "Not recorded",
-    product: "The first fit's tier",
+    product: "Hair system",
     invalid: "Check this field.",
     refused: "Some fields were not accepted. Check the fields marked.",
     failed: "That did not go through. Nothing was saved.",
@@ -1864,6 +1864,10 @@ export const settings = {
       "already sold moves. Each service reaches FSM's catalogue as its own item.",
     /** The four kinds, as the rest of the console names them. */
     kinds: dispatch.typeNames,
+    /** Under First fit: its services are the hair systems clients choose from, and nothing stands in for them. */
+    hairSystems:
+      "Clients book a first fit only as one of these hair systems, by its name and price here. With none offered " +
+      "and priced, first fits and the consultation and fit in one visit cannot be booked.",
     /** "180 minutes · code premium": how long it is held and booked for, and what the price book prices it by. */
     facts: (minutes: number, tier: string) => `${String(minutes)} minutes · code ${tier}`,
     fsm: { linked: "In FSM's catalogue", notYet: "Not found in FSM's catalogue yet" },
@@ -1899,6 +1903,7 @@ export const settings = {
       up: "Move up",
       down: "Move down",
       add: (kind: string) => `Add a service to ${kind}`,
+      addHairSystem: "Add a hair system",
     },
     /** Each button named for a screen reader with what it acts on. */
     labels: {
@@ -1983,8 +1988,8 @@ export const settings = {
       was_valid_from: "That price applies already, so it stays in the book.",
       service_exists: "Another service already has that name, or this kind that code. Nothing was changed.",
       last_of_kind:
-        "Each kind keeps one service that is never retired and has a price, so clients can always book it. Add and " +
-        "price the one that replaces it first.",
+        "A consultation, a service visit and a replacement each keep one service that is never retired and has a " +
+        "price, so clients can always book them. Add and price the one that replaces it first.",
       service_retired: "The service is retired by that day, so it takes no price from then. Nothing was changed.",
       not_found: "That is no longer in the console. Reload to see it as it stands.",
       offline: "You are offline. Connect, then try again.",

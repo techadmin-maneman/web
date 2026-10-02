@@ -394,7 +394,7 @@ function toggled(chosen: readonly Remedy[], remedy: Remedy): Remedy[] {
   return [...chosen.filter((each) => each !== "none"), remedy];
 }
 
-/** Every first-fit service, and the profile's product where it is one no longer held, so the form keeps it. */
+/** The hair systems offered today, and the profile's product where it is no longer one, so the form keeps it. */
 function productOptions(products: Products, latest: HairProfileView | null): { value: string; label: string }[] {
   const options = products.map((product) => ({ value: product.tier, label: product.name }));
   const kept = latest?.fit.product ?? null;
