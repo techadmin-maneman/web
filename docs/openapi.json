@@ -2624,15 +2624,8 @@
               }
             }
           },
-          "404": {
-            "description": "not_found: this browser has no look",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
+          "204": {
+            "description": "This browser has had no look yet"
           }
         }
       }

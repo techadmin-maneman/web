@@ -67,7 +67,7 @@ Staging's column is as its deploy of 27 September 2026 found it: all five Worker
 | 12. Evolution receipts: token, bypass          | done                                                   | not yet                                                                                   |
 | 12. Evolution receipts: the webhook            | open: the shared instance's webhook                    | not yet                                                                                   |
 | 13. The address search (Google)                | `google`, and Google refuses the key (open point 54)   | not yet: `none`                                                                           |
-| 14. Cloudflare Web Analytics                   | not recorded: check it (step 14)                       | not recorded: check it (step 14)                                                          |
+| 14. Cloudflare's edge scripts                  | owed: both reach every host (step 14)                  | owed: the same zone settings (step 14)                                                    |
 
 ### 1. Resources
 
@@ -597,17 +597,20 @@ Everything below is at <https://console.cloud.google.com>, signed in as the acco
 - **To stop all spending at once.** Set `"GEOCODE_DAILY_CEILING": "0"` in `wrangler.jsonc` and deploy, or set `"GEOCODE_PROVIDER": "none"`. Either way the form keeps working, typed.
 - **A charge appears at all.** Something is wrong, because the quotas in step 4 cannot reach the free allowance. Disable the key in **Credentials**, set `GEOCODE_PROVIDER` to `none`, and find out how before re-enabling it.
 
-### 14. Cloudflare Web Analytics
+### 14. Cloudflare's edge scripts: Web Analytics and JavaScript detections
 
-The site counts its visits with Cloudflare Web Analytics, and its privacy notice says so. It needs no code: Cloudflare adds its beacon to each page at the edge, and the site's content security policy allows the beacon's two hosts (`site/src/lib/static-files.ts`). Nothing in the repository can tell whether it is switched on, so check each environment and write the answer in the table above.
+Cloudflare can add two scripts to a page at its edge, where no local run sees them. The staging deploy's last step opens every staging host's pages in Chromium and fails while any page refuses one (`npm run smoke:csp -- --environment staging`).
 
-1. Cloudflare dashboard → **Web Analytics**. The site's hostname should be listed (`maneman.in`, and `staging.maneman.in` for staging). If it is not: **Add a site**, choose the hostname, and keep the automatic setup.
-2. Open a page of the site and view its source. It should load `https://static.cloudflareinsights.com/beacon.min.js`. On staging, sign in through Access first. Production serves its placeholder page until go-live, so check it again on the site's first day there.
-3. Within a few minutes the dashboard counts the visit.
+- **Web Analytics' beacon,** from `static.cloudflareinsights.com`. The site counts its visits with it, and its privacy notice says so; the site's policy allows the beacon's two hosts (`site/src/lib/static-files.ts`). The client app, the ops console and the technician app keep it out (`docs/open-points.md`, item 144).
+- **JavaScript detections,** an inline script that loads `/cdn-cgi/challenge-platform/`. It changes with every request, so no hash can allow it, and no surface's policy does (ADR 0023, section 2). It stays off (item 111).
 
-If the page carries no beacon, the automatic setup is not reaching the pages the Worker serves. The manual snippet, a `<script defer>` from `static.cloudflareinsights.com` with the site's token, then goes in `site/src/layouts/Site.astro`; the policy already allows its host.
+On 2 October 2026 both reached every staging host: the beacon reached the app, ops and technician hosts as well as the site, through the single rule Web Analytics makes for the whole zone, and the detections script reached every host. Both are the zone's settings, so production has the same.
 
-The client app's policy does not allow the beacon (`apps/app/headers.ts`), and ADR 0043 allows none there (`docs/open-points.md`, item 144). Switch it on for `app.maneman.in` only after the policy allows it.
+1. **JavaScript detections off.** Cloudflare dashboard → `maneman.in` → **Security** → **Settings** (on the older dashboard, **Security** → **Bots**): check **Bot Fight Mode** is off, then turn **JavaScript detections** off. Cloudflare's documentation says they cannot be turned off while Bot Fight Mode is on. If the dashboard offers no such switch and the check below still fails, say so in item 111: the remaining choice is ADR 0023's option c, a nonce stamped per request.
+2. **The beacon on the site only.** Cloudflare dashboard → **Web Analytics** → the site for `maneman.in` → **Manage site** → **Advanced options** → **Add rule**. Add one rule for each of `app-staging.maneman.in`, `ops-staging.maneman.in`, `tech-staging.maneman.in`, `app.maneman.in`, `ops.maneman.in` and `tech.maneman.in`: action **Disable**, path `*`. Then **Update**. The zone's own rule keeps the beacon on `maneman.in` and `staging.maneman.in`.
+3. **Check.** Re-run the latest `deploy-staging` run, or run `npm run smoke:csp -- --environment staging` from a checkout with `.env.staging-access` beside it (step 3). Every page passes. Then rerun Lighthouse on staging's site home, `/book`, the app's Home and the technician's Today: best practices should be back at or above the 95 budget. Write the date in the table above.
+
+If the site's pages carry no beacon once the rules are in, the automatic setup is not reaching the pages the Worker serves. The manual snippet, a `<script defer>` from `static.cloudflareinsights.com` with the site's token, then goes in `site/src/layouts/Site.astro`; the policy already allows its host.
 
 ### Before the first production release of Phase 2
 

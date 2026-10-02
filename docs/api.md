@@ -1005,13 +1005,7 @@ Whether this browser has had its look, from its mm_look cookie
 }
 ```
 
-**404**: not_found: this browser has no look
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
+**204**: This browser has had no look yet
 
 ### GET /api/result/{token}
 
