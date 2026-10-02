@@ -296,6 +296,62 @@
         ],
         "additionalProperties": false
       },
+      "OpenWindows": {
+        "type": "object",
+        "properties": {
+          "plan": {
+            "type": "string",
+            "enum": [
+              "consultation",
+              "one_visit"
+            ]
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "windows": {
+                  "type": "object",
+                  "properties": {
+                    "morning": {
+                      "type": "boolean"
+                    },
+                    "afternoon": {
+                      "type": "boolean"
+                    },
+                    "evening": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "morning",
+                    "afternoon",
+                    "evening"
+                  ],
+                  "additionalProperties": false,
+                  "description": "true where booking that window now would be taken; false where it is full."
+                }
+              },
+              "required": [
+                "date",
+                "windows"
+              ],
+              "additionalProperties": false
+            },
+            "description": "The days the form offers: 14, from tomorrow in India."
+          }
+        },
+        "required": [
+          "plan",
+          "days"
+        ],
+        "additionalProperties": false
+      },
       "Consultation": {
         "type": "object",
         "properties": {
@@ -1151,6 +1207,70 @@
           },
           "503": {
             "description": "unavailable: the book lacks the standard service visit or replacement, so the site shows its own",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/availability/public": {
+      "get": {
+        "summary": "The days and windows the booking form can book, open or full. Cacheable for a minute.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[1-8]\\d{5}$",
+              "description": "A six-digit Indian pincode."
+            },
+            "required": true,
+            "description": "A six-digit Indian pincode.",
+            "name": "pincode",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "consultation",
+                "one_visit"
+              ],
+              "description": "The consultation alone, or the consultation and fit in one visit."
+            },
+            "required": true,
+            "description": "The consultation alone, or the consultation and fit in one visit.",
+            "name": "plan",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Each day's three windows",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenWindows"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names the pincode or the plan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "not_bookable: the pincode is not served",
             "content": {
               "application/json": {
                 "schema": {
