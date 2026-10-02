@@ -6,7 +6,6 @@ import { track } from "../../lib/analytics.ts";
 import { addressToSend, emptyAddress, missingParts, type AddressFields } from "../../lib/address.ts";
 import { bookConsultation, bookPublicConsultation, type ReferralConsultation } from "../../lib/api.ts";
 import { dayStrip, indiaTomorrow } from "../../lib/dates.ts";
-import { mobileDigits } from "../../lib/phone.ts";
 import { forgetInvite, rememberedInvite } from "../../lib/remembered-invite.ts";
 import { fill } from "../../lib/text.ts";
 import { readAttribution } from "../../lib/visit.ts";
@@ -15,7 +14,7 @@ import { placeOf, type Booking } from "./Done.tsx";
 import { ExtentFieldset, ForPincode, PersonFieldset, Send, type FormProps } from "./fields.tsx";
 import styles from "./Invite.module.css";
 import { codeInPath } from "./page.ts";
-import { useTurnstileForm } from "./useTurnstileForm.ts";
+import { mobileToSend, useTurnstileForm } from "./useTurnstileForm.ts";
 
 type BookingWindow = ReferralConsultation["window"];
 type Plan = "consultation" | "one_visit";
@@ -50,7 +49,7 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
     const { fields } = form;
     const request = {
       name: fields.name.trim(),
-      mobile: mobileDigits(fields.mobile),
+      mobile: mobileToSend(fields),
       pincode,
       date,
       window,

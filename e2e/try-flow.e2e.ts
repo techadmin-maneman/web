@@ -136,7 +136,7 @@ test("the whole try-on: uploaded during the choices, the number given before the
   expect(claim?.postDataJSON()).toEqual({
     job_id: JOB,
     name: "Test Visitor",
-    mobile: "98100 00000",
+    mobile: "9810000000",
     stage: "crown",
     notice_version: "gate-v3",
     attribution: { landing_path: "/try" },

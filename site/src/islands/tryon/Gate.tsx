@@ -1,6 +1,6 @@
 import { ICONS } from "@maneman/brand/icons";
+import { formatMobileField } from "@maneman/web-kit/mobile";
 import { gateCopy, tryOn, type Notice } from "../../content/site.ts";
-import { formatMobile } from "../../lib/phone.ts";
 import { Icon } from "../Drawings.tsx";
 import { Title, type HeadingRef } from "./Title.tsx";
 import styles from "./TryOn.module.css";
@@ -78,7 +78,7 @@ export function Gate(props: {
                 aria-invalid={mobileBad}
                 aria-describedby={mobileBad ? "gate-mobile-error" : undefined}
                 onInput={(event) => {
-                  props.onMobile(formatMobile(event.currentTarget.value));
+                  props.onMobile(formatMobileField(event.currentTarget.value));
                 }}
               />
             </div>

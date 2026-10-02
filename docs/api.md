@@ -2225,7 +2225,7 @@ Razorpay's webhook: payments and refunds
     },
     "mobile": {
       "type": "string",
-      "pattern": "^(?:\\+91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
+      "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
       "example": "98100 00000"
     },
     "stage": {
@@ -2522,7 +2522,7 @@ Razorpay's webhook: payments and refunds
   "properties": {
     "mobile": {
       "type": "string",
-      "pattern": "^(?:\\+91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
+      "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
       "example": "98100 00000"
     },
     "override_open_bookings": {

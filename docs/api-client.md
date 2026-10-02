@@ -1848,7 +1848,7 @@ Request body:
   "properties": {
     "mobile": {
       "type": "string",
-      "pattern": "^(?:\\+91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
+      "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
       "example": "98100 00000"
     }
   },
@@ -3115,7 +3115,7 @@ Request body:
   "properties": {
     "new_mobile": {
       "type": "string",
-      "pattern": "^(?:\\+91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$"
+      "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$"
     }
   },
   "required": [

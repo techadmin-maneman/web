@@ -1125,7 +1125,7 @@ Request body:
   "properties": {
     "mobile": {
       "type": "string",
-      "pattern": "^(?:\\+91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$"
+      "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$"
     },
     "device_id": {
       "type": "string",
