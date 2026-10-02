@@ -332,6 +332,35 @@ test("confirms a visit a credit covers as a credit used, never as a payment", as
   await expect(confirmed.getByText("Rs. 2,000")).toHaveCount(0);
 });
 
+test("shows the price, and opens no Checkout, when the credit went on another booking in the meantime", async ({
+  page,
+}) => {
+  await fakeCheckout(page, "paid");
+  const hold = await holdAs(page, { credit: { remaining: 0 } });
+  const checkout = { key_id: "rzp_test", order_id: "order_1", amount: 200000, currency: "INR", name: "Mane Man" };
+  await page.route("**/api/bookings", (route) =>
+    route.fulfill({
+      status: 201,
+      json: {
+        hold_id: hold().id,
+        checkout: { ...checkout, description: "Service visit", prefill: { name: "Rohit Malhotra", contact: "" } },
+      },
+    }),
+  );
+  await page.route(/\/api\/holds\/[0-9a-f-]{36}$/, (route) =>
+    route.request().method() === "GET" ? route.fulfill({ json: { ...hold(), credit: null } }) : route.fallback(),
+  );
+  await toPayment(page);
+  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
+  await pay.getByRole("button", { name: "Confirm visit" }).click();
+
+  await expect(
+    pay.getByText("Your visit credit is already on another booking, so this visit is charged at the price below."),
+  ).toBeVisible();
+  await expect(pay.getByText("1 visit credit used")).toHaveCount(0);
+  await expect(pay.getByRole("button", { name: "Pay Rs. 2,000" })).toBeVisible();
+});
+
 // A discount code at the pay step (docs/decisions/0108-discount-codes.md), which no board draws. The API prices the
 // hold again; it is answered here, as the local database holds no code.
 test("takes a discount code off the price at the pay step, says only that a wrong one does not apply, and takes it off", async ({
