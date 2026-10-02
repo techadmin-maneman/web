@@ -511,6 +511,12 @@
   outline-offset: calc(-1 * var(--focus-width));
 }
 
+.offlineLine {
+  font-size: var(--fs-15);
+  line-height: var(--lh-155);
+  color: var(--text-soft);
+}
+
 .changeTitle {
   font-family: var(--font-serif);
   font-size: var(--fs-24);

@@ -7,6 +7,7 @@
 // browser (FEO-31).
 
 import { useEffect, useState, type ReactNode } from "react";
+import { afterSheets, atSheetEntry } from "./sheetHistory.ts";
 
 /** The path shown, which keys each page so it opens at its top. */
 export function usePath(): string {
@@ -23,18 +24,26 @@ export function usePath(): string {
   return path;
 }
 
-/** Moves to `path` as a link within the app does: a new entry in the history, and no reload. */
+/**
+ * Moves to `path` as a link within the app does: a new entry in the history, and no reload. An open sheet's entry
+ * gives way to the page instead, so Back from it returns to the page the sheet was over.
+ */
 export function go(path: string): void {
-  if (window.location.pathname === path) return;
-  window.history.pushState(null, "", path);
-  window.dispatchEvent(new PopStateEvent("popstate"));
+  afterSheets(() => {
+    if (window.location.pathname === path) return;
+    if (atSheetEntry()) window.history.replaceState(null, "", path);
+    else window.history.pushState(null, "", path);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  });
 }
 
 /** Puts `path` in place of the one shown, as a page that has moved does: no new entry in the history, and no reload. */
 export function redirect(path: string): void {
-  if (window.location.pathname === path) return;
-  window.history.replaceState(null, "", path);
-  window.dispatchEvent(new PopStateEvent("popstate"));
+  afterSheets(() => {
+    if (window.location.pathname === path) return;
+    window.history.replaceState(null, "", path);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  });
 }
 
 /** The parts of a click that say where the person wants the link opened. */
