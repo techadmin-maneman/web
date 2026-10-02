@@ -83,6 +83,7 @@ export const RECORD = {
       amount_ex_gst: 200_000,
       gst_percent: 18,
       visit: { id: VISIT_ID, date: "2027-08-22", type: "service" },
+      booking: null,
       status: "captured",
       method: "upi",
       reference: "MM-2027-0841",

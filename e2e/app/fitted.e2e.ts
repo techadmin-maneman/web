@@ -281,17 +281,24 @@ test("Payments: one list of payments and refunds, an entry's documents, and a do
   await tab(page, "Payments").click();
   const entries = page.getByRole("main").getByRole("link");
   await expect(entries).toHaveCount(3);
-  await expect(entries.nth(0)).toContainText("refund to UPI");
+  // A refund is titled a refund and reads as money coming back, never as a second charge (MON-19).
+  await expect(entries.nth(0)).toContainText("Refund");
+  await expect(entries.nth(0)).toContainText("Service visit");
+  await expect(entries.nth(0)).toContainText("+ Rs. 1,000");
+  await expect(entries.nth(0)).toContainText("back to your UPI");
   await expect(entries.nth(0)).toContainText("Refund processing");
+  await expect(entries.nth(1)).toContainText("Service visit");
   await expect(entries.nth(1)).toContainText("Rs. 2,000");
-  await expect(entries.nth(1)).toContainText("Rs. 2,000 incl.");
+  await expect(entries.nth(1)).not.toContainText("incl.");
   await expect(entries.nth(1)).toContainText("Paid");
   await expect(entries.nth(2)).toContainText("First fit");
   await expect(entries.nth(2)).toContainText("Rs. 30,000");
 
   await entries.nth(1).click();
   await expect(page.getByRole("heading", { level: 1, name: "Service visit" })).toBeVisible();
-  await expect(page.getByText("Rs. 2,000 including GST at 0%")).toBeVisible();
+  await expect(page.getByText("Rs. 2,000", { exact: true })).toBeVisible();
+  // No rate was recorded for this payment, so nothing is said of GST at all (MON-49).
+  await expect(page.getByText(/GST at/)).toHaveCount(0);
   await expect(page.getByText(client.reference)).toBeVisible();
   const documents = {
     "Tax invoice": `/api/documents/${client.service.id}`,
@@ -320,14 +327,14 @@ test("Payments: one list of payments and refunds, an entry's documents, and a do
 
   await page.getByRole("link", { name: "Back to payments" }).click();
   await entries.nth(0).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Service visit · refund" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Refund", exact: true })).toBeVisible();
   // Begun eighteen days ago, it is past Razorpay's 5 to 7 working days, and the client is told so (CLI-25).
   await expect(page.getByText("Refund processing · taking longer than it should")).toBeVisible();
   await expect(page.getByRole("link", { name: "Message us" })).toHaveAttribute(
     "href",
     new RegExp(encodeURIComponent("My refund for service visit from")),
   );
-  await expect(page.getByText("Rs. 1,000", { exact: true })).toBeVisible();
+  await expect(page.getByText("+ Rs. 1,000", { exact: true })).toBeVisible();
 });
 
 test("each read surface meets WCAG 2.2 AA", async ({ page }) => {
