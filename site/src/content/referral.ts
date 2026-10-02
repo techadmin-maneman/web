@@ -107,7 +107,7 @@ export const referral = {
     rows: [
       {
         what: "First fit, from",
-        note: "Standard base",
+        note: "The hair system you choose",
         amount: "{firstFit}",
         incl: "The piece, the fitting and the cut",
       },
@@ -186,6 +186,8 @@ export const referral = {
       // The first fit's three hours do not fit in the evening's half-slots (docs/decisions/0035-window-slot-map.md),
       // so the form offers the one visit the morning and the afternoon.
       note: `${capitalised(visitLength.firstFit)}, at home, in the morning or the afternoon. Choose your hair system with your technician and have it fitted there and then. Pay once fitted, by a link to your phone; decide against it and you pay nothing.`,
+      // Not drawn: no hair system is offered in the console yet, so only the consultation can be booked.
+      notYet: "Consultation and fit in one visit is not available to book yet.",
     },
     /**
      * Not drawn: a discount code for the consultation and fit in one visit, on /book only, as the owner ruled on
@@ -325,6 +327,8 @@ export const referral = {
     alreadyBooked: "This number already has a consultation, {when}. To change it, message us on WhatsApp.",
     // Not drawn: the discount code given does not apply, whatever the reason (ADR 0108). The owner approves the words.
     codeNotApplicable: "That discount code does not apply. Check it, or leave it out to book without it.",
+    // Not drawn: the one visit was asked for while no hair system is offered in the console.
+    noProduct: "Consultation and fit in one visit is not available to book yet. Book the consultation instead.",
   },
   /**
    * What a shared invite's preview says (boards B1 and B2), which the mm-site Worker writes into the page. Only a

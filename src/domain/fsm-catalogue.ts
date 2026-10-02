@@ -5,7 +5,8 @@
 //
 // Each service has its own service item in FSM: the one whose ID is kept on it, else the one with its name, whose ID
 // is then kept, so the two stay together whatever either is renamed to. A booking goes on its service's item, or,
-// where FSM has none yet, on its kind's standard item, and ops are told once.
+// where FSM has none yet, on its kind's standard item, and ops are told once. A first fit has no standard item: it
+// waits for ops until FSM has its hair system's own.
 //
 // The check reads only, and runs on the cron once an hour: each service offered today, with its price today,
 // against its item's name and price. A difference, or an item FSM does not have, is told once, with the item's ID
@@ -25,7 +26,13 @@
 // settle an hour on. It never touches a part's price, and a retired consumable's part is left as it is.
 
 import { rupees } from "@maneman/web-kit/money";
-import { FSM_SERVICE_NAMES, STANDARD_TIER, VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
+import {
+  hasStandardService,
+  STANDARD_TIER,
+  VISIT_TYPE_NAMES,
+  VISIT_TYPES,
+  type VisitType,
+} from "../config/visit-types.ts";
 import { createCallBudget, type CallBudget } from "../lib/call-budget.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { failureReason, type Logger } from "../log.ts";
@@ -49,18 +56,24 @@ const sameName = (a: string, b: string): boolean => a.trim().toLowerCase() === b
 
 /**
  * The FSM service item a service is: the one whose ID is kept on it, else the one with its name, else, for a kind's
- * standard service, the one scripts/setup-fsm.ts made for the kind (FSM_SERVICE_NAMES).
+ * standard service, the one scripts/setup-fsm.ts made for the kind, named as the kind is.
  */
 function itemOf(items: readonly FsmItem[], service: Service): FsmItem | undefined {
   const services = items.filter((item) => item.type === "Service");
   return (
     services.find((item) => item.id === service.fsm_item_id) ??
     services.find((item) => sameName(item.name, service.name)) ??
-    (service.tier === STANDARD_TIER
-      ? services.find((item) => sameName(item.name, FSM_SERVICE_NAMES[service.kind]))
-      : undefined)
+    (isStandard(service) ? standardItemOf(items, service.kind) : undefined)
   );
 }
+
+/** Whether a service is its kind's standard one. A first fit has none, whatever its hair systems are coded. */
+const isStandard = (service: { readonly kind: VisitType; readonly tier: string }): boolean =>
+  service.tier === STANDARD_TIER && hasStandardService(service.kind);
+
+/** The item scripts/setup-fsm.ts made for a kind's standard service, named as the kind is. */
+const standardItemOf = (items: readonly FsmItem[], kind: VisitType): FsmItem | undefined =>
+  items.find((item) => item.type === "Service" && sameName(item.name, VISIT_TYPE_NAMES[kind]));
 
 /** FSM's catalogue as a check or a push read it. */
 interface Catalogue {
@@ -146,10 +159,12 @@ const fallbackKey = (kind: VisitType, tier: string) => `fsm_item_fallback:${kind
 
 /**
  * The FSM item a booking of this service goes on: the service's own, found by its ID or its name, which is then
- * kept. Where FSM has none, its kind's standard item, so a booking never fails for an item nobody has made yet:
- * FSM then invoices the visit at that item's price, and the invoice check holds the invoice as a draft where that is
- * not what the client paid (ADR 0070). Ops are told once, and the fallback is logged each time. Throws only where
- * FSM has no item for the kind at all, which scripts/setup-fsm.ts makes.
+ * kept. Where FSM has none, a kind with a standard service books on that one's item, so a booking never fails for an
+ * item nobody has made yet: FSM then invoices the visit at that item's price, and the invoice check holds the invoice
+ * as a draft where that is not what the client paid (ADR 0070). Ops are told once, and the fallback is logged each
+ * time. A first fit goes only on its own hair system's item: with none in FSM it throws, and the booking waits for
+ * ops as any FSM refuses (src/domain/held-bookings.ts). Throws too where FSM has no item for the kind at all, which
+ * scripts/setup-fsm.ts makes.
  */
 export async function itemForService(
   db: D1Database,
@@ -164,12 +179,11 @@ export async function itemForService(
     await keepFsmItem(db, service, own.id);
     return own;
   }
+  if (!hasStandardService(wanted.kind)) return await noHairSystemItem(wanted, service?.name ?? wanted.tier, deps);
 
   const standard = await serviceOf(db, wanted.kind, STANDARD_TIER);
-  const fallback =
-    (standard === null ? undefined : itemOf(items, standard)) ??
-    items.find((item) => item.type === "Service" && sameName(item.name, FSM_SERVICE_NAMES[wanted.kind]));
-  const name = FSM_SERVICE_NAMES[wanted.kind];
+  const fallback = (standard === null ? undefined : itemOf(items, standard)) ?? standardItemOf(items, wanted.kind);
+  const name = VISIT_TYPE_NAMES[wanted.kind];
   if (fallback === undefined) throw new Error(`FSM has no ${name} item: run scripts/setup-fsm.ts`);
   deps.log.warn("fsm_item_fallback", { kind: wanted.kind, tier: wanted.tier, fsm_item_id: fallback.id });
   await deps.alertOnce?.({
@@ -182,6 +196,24 @@ export async function itemForService(
     link: PRICES_LINK,
   });
   return fallback;
+}
+
+/** A first fit whose hair system FSM has no item for: ops are told once what to add, and the booking is refused. */
+async function noHairSystemItem(
+  wanted: { readonly kind: VisitType; readonly tier: string },
+  name: string,
+  deps: ItemDeps,
+): Promise<never> {
+  deps.log.warn("fsm_item_missing", { kind: wanted.kind, tier: wanted.tier });
+  await deps.alertOnce?.({
+    key: fallbackKey(wanted.kind, wanted.tier),
+    message:
+      `FSM's catalogue has no item for the hair system "${name}", so its first fits cannot be booked into FSM. Add ` +
+      `it in FSM as a service named exactly "${name}", at the console's price. Until then each booking of it is ` +
+      "held for you, as one FSM refuses is.",
+    link: PRICES_LINK,
+  });
+  throw new Error(`FSM has no item for the hair system ${wanted.tier}`);
 }
 
 export interface CatalogueDeps {
@@ -410,10 +442,13 @@ function gapMessage(gap: Gap, pushed: boolean): string {
         `make it at the price book's ${book}: look for fsm_catalogue_push_failed in the logs, and make it in FSM by hand.`
       );
     }
+    const meanwhile = hasStandardService(service.kind)
+      ? `that visit is booked on its kind's item and cannot be invoiced at the price book's ${book}`
+      : `its first fits are held for you, not booked into FSM, until it has one at the price book's ${book}`;
     return (
-      `FSM's catalogue has no service item named "${service.name}", so that visit is booked on its kind's item and ` +
-      `cannot be invoiced at the price book's ${book}. The push to FSM is off (FSM_CATALOGUE_PUSH): make the item in ` +
-      "FSM by hand, named exactly so, or run scripts/setup-fsm.ts (docs/runbook.md) for a kind's own four."
+      `FSM's catalogue has no service item named "${service.name}", so ${meanwhile}. The push to FSM is off ` +
+      "(FSM_CATALOGUE_PUSH): make the item in FSM by hand, named exactly so, or run scripts/setup-fsm.ts " +
+      "(docs/runbook.md) for the standard services' own."
     );
   }
   const lines: string[] = [];

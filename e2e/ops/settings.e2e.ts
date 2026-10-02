@@ -423,9 +423,12 @@ test.describe("the services and their prices", () => {
     await expect(page.getByRole("button", { name: /^Correct/ })).toHaveCount(1);
   });
 
-  test("adds a service to a kind, its code made from its name and its length its kind's", async ({ page }) => {
+  test("adds a hair system to the first fit, its code made from its name and its length its kind's", async ({
+    page,
+  }) => {
     await open(page, "/settings/prices", { "POST /api/services": json(SERVICES, 201) });
-    await page.getByRole("button", { name: "Add a service to First fit" }).click();
+    await expect(page.getByText("Clients book a first fit only as one of these hair systems")).toBeVisible();
+    await page.getByRole("button", { name: "Add a hair system" }).click();
     await page.getByLabel("Name", { exact: true }).fill("Thin skin");
     await expect(page.getByLabel("Code")).toHaveValue("thin_skin");
     await expect(page.getByLabel("Length, in minutes")).toHaveValue("180");
@@ -472,18 +475,18 @@ test.describe("the services and their prices", () => {
 
   test("retires a service from a day, and says why a kind's last one stays", async ({ page }) => {
     await open(page, "/settings/prices", {
-      "POST /api/services/first_fit/standard/retire": fails(409, "last_of_kind"),
+      "POST /api/services/replacement/standard/retire": fails(409, "last_of_kind"),
     });
-    await page.getByRole("button", { name: "Retire First fit" }).click();
+    await page.getByRole("button", { name: "Retire Replacement" }).click();
     await page.getByLabel("Clients stop seeing it from").fill("2027-10-01");
     await page.getByRole("button", { name: "Check the change" }).click();
     await expect(page.getByRole("group", { name: "Check the change" })).toContainText(
-      "Clients stop seeing First fit from 1 Oct 2027. Visits already sold stay as they were sold.",
+      "Clients stop seeing Replacement from 1 Oct 2027. Visits already sold stay as they were sold.",
     );
-    const request = posted(page, "/api/services/first_fit/standard/retire");
+    const request = posted(page, "/api/services/replacement/standard/retire");
     await page.getByRole("button", { name: "Save it" }).click();
     expect((await request).postDataJSON()).toEqual({ from: "2027-10-01" });
-    await expect(page.getByRole("alert")).toContainText("Each kind keeps one service that is never retired");
+    await expect(page.getByRole("alert")).toContainText("each keep one service that is never retired");
   });
 
   test("offers a retired service again, once asked", async ({ page }) => {

@@ -169,6 +169,8 @@ export interface Settings {
   readonly alertWebhookUrl: string | null;
   /** Where new-lead notices are posted: LEAD_WEBHOOK_URL, or else the alert webhook. */
   readonly leadWebhookUrl: string | null;
+  /** HEARTBEAT_URL: the outside monitor the cron pings after each run (src/providers/heartbeat.ts). Optional. */
+  readonly heartbeatUrl: string | null;
   /** The operators' secret for POST /api/erasure (docs/decisions/0019-erasure.md). */
   readonly erasureSecret: string;
   /** Present when CRM_PROVIDER is "zoho". */
@@ -338,6 +340,10 @@ export function readSettings(
   if (leadWebhookUrl !== null && !leadWebhookUrl.startsWith("https://")) {
     read.problems.push("LEAD_WEBHOOK_URL must be an https:// URL");
   }
+  const heartbeatUrl = read.optionalText("HEARTBEAT_URL");
+  if (heartbeatUrl !== null && !heartbeatUrl.startsWith("https://")) {
+    read.problems.push("HEARTBEAT_URL must be an https:// URL");
+  }
 
   const zoho = readZoho(read, providers);
   const zohoFsm = readZohoFsm(read, providers);
@@ -374,6 +380,7 @@ export function readSettings(
     ipHashSalt,
     alertWebhookUrl: alertWebhookUrl === "" ? null : alertWebhookUrl,
     leadWebhookUrl: leadWebhookUrl ?? (alertWebhookUrl === "" ? null : alertWebhookUrl),
+    heartbeatUrl,
     erasureSecret: read.key("ERASURE_SECRET"),
     zoho,
     zohoFsm,

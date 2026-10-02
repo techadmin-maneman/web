@@ -16,6 +16,7 @@ import { describe, expect, it } from "vitest";
 
 const CRON_PATH = [
   "src/scheduled/cron.ts",
+  "src/domain/cron-runs.ts",
   "src/domain/alerts.ts",
   "src/scheduled/sweeper.ts",
   "src/scheduled/reconcile-fsm.ts",
@@ -61,6 +62,7 @@ const SMALL_TABLES = new Set([
   "services",
   "sync_cursors",
   "cron_jobs",
+  "cron_runs",
   // One row, what Phase 2's buckets hold (docs/decisions/0093-the-storage-meter.md).
   "storage_meter",
 ]);

@@ -56,6 +56,8 @@ export const shell = {
    */
   lapsed: "Your sign-in to the console has run out, so nothing more can be read or saved. Reload to sign in again.",
   reload: "Reload",
+  /** PLACEHOLDER: a person Access lets in whom the enforced Staff list does not name. */
+  notListed: "You are not on the Staff list, so the console is closed to you. Ask the owner to add you.",
 } as const;
 
 export const states = {
@@ -757,7 +759,7 @@ export const clients = {
     formTitle: "Correct the hair profile",
     formNote: "Saved as a new version under your name. Every version before it is kept.",
     notRecorded: "Not recorded",
-    product: "The first fit's tier",
+    product: "Hair system",
     invalid: "Check this field.",
     refused: "Some fields were not accepted. Check the fields marked.",
     failed: "That did not go through. Nothing was saved.",
@@ -1628,6 +1630,7 @@ export const settings = {
     blackouts: "Blackout days",
     consumables: "Consumables",
     "job-sheet": "Job sheet",
+    staff: "Staff",
   },
   /**
    * PLACEHOLDER, every line of it: no board draws discount codes (docs/decisions/0108-discount-codes.md).
@@ -1861,6 +1864,10 @@ export const settings = {
       "already sold moves. Each service reaches FSM's catalogue as its own item.",
     /** The four kinds, as the rest of the console names them. */
     kinds: dispatch.typeNames,
+    /** Under First fit: its services are the hair systems clients choose from, and nothing stands in for them. */
+    hairSystems:
+      "Clients book a first fit only as one of these hair systems, by its name and price here. With none offered " +
+      "and priced, first fits and the consultation and fit in one visit cannot be booked.",
     /** "180 minutes · code premium": how long it is held and booked for, and what the price book prices it by. */
     facts: (minutes: number, tier: string) => `${String(minutes)} minutes · code ${tier}`,
     fsm: { linked: "In FSM's catalogue", notYet: "Not found in FSM's catalogue yet" },
@@ -1896,6 +1903,7 @@ export const settings = {
       up: "Move up",
       down: "Move down",
       add: (kind: string) => `Add a service to ${kind}`,
+      addHairSystem: "Add a hair system",
     },
     /** Each button named for a screen reader with what it acts on. */
     labels: {
@@ -1980,8 +1988,8 @@ export const settings = {
       was_valid_from: "That price applies already, so it stays in the book.",
       service_exists: "Another service already has that name, or this kind that code. Nothing was changed.",
       last_of_kind:
-        "Each kind keeps one service that is never retired and has a price, so clients can always book it. Add and " +
-        "price the one that replaces it first.",
+        "A consultation, a service visit and a replacement each keep one service that is never retired and has a " +
+        "price, so clients can always book them. Add and price the one that replaces it first.",
       service_retired: "The service is retired by that day, so it takes no price from then. Nothing was changed.",
       not_found: "That is no longer in the console. Reload to see it as it stands.",
       offline: "You are offline. Connect, then try again.",
@@ -2247,6 +2255,125 @@ export const settings = {
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Nothing was changed.",
     } as Readonly<Record<string, string>>,
+  },
+  /**
+   * PLACEHOLDER, every line of it: no board draws the Staff page. A change is shown before it is saved.
+   */
+  staff: {
+    title: "Staff",
+    note:
+      "Who may use the console, and for what. Each grant gives one department at one level, nationally, across a " +
+      "zone or in one city. View sees; Act does the day's work; Manage also refunds, waives, sets prices, codes and " +
+      "settings, deletes accounts and grants access.",
+    departments: {
+      operations: "Operations",
+      customer_care: "Customer Care",
+      finance: "Finance",
+      growth: "Growth",
+      admin: "Admin",
+    },
+    levels: { view: "View", act: "Act", manage: "Manage" },
+    national: "National",
+    zone: (name: string) => `${name} zone`,
+    zones: "Zones",
+    cities: "Cities",
+    grant: (department: string, level: string, place: string) => `${department} · ${level} · ${place}`,
+    columns: { person: "Person", access: "Access", state: "Status" },
+    noAccess: "No access yet",
+    active: "Let in",
+    inactive: "Switched off",
+    add: "Add a person",
+    change: "Change",
+    changeLabel: (email: string) => `Change ${email}`,
+    form: {
+      addTitle: "Add a person",
+      changeTitle: (email: string) => `Change ${email}`,
+      email: "Sign-in e-mail",
+      emailHint: "The address they sign in to the console with.",
+      letIn: "Let them in",
+      access: "Access",
+      department: "Department",
+      level: "Level",
+      place: "Where",
+      addGrant: "Add a department",
+      removeGrant: "Remove",
+      removeGrantLabel: (grant: string) => `Remove ${grant}`,
+      review: "Review",
+      cancel: "Cancel",
+    },
+    confirm: {
+      title: "Check the change",
+      adds: (email: string) => `Adds ${email}.`,
+      letsIn: "Lets them in again.",
+      switchesOff: "Switches them off: the console closes to them.",
+      gives: (grant: string) => `Gives ${grant}`,
+      takes: (grant: string) => `Takes away ${grant}`,
+      nothing: "Nothing has changed.",
+      send: "Save it",
+      sending: "Saving",
+      back: "Change it",
+    },
+    saved: "Saved.",
+    errors: {
+      email: "Enter the e-mail they sign in with.",
+      already_listed: "This person is already on the list. Use Change beside their e-mail.",
+      place: "Choose where this access applies.",
+      grants: "Give each department once for each place.",
+      not_permitted: "You can grant access only within your own area, and only with Admin · Manage.",
+      last_admin: "Someone must keep Admin · Manage nationally. Give it to another person first.",
+      offline: "You are offline. Connect, then try again.",
+      unknown: "That did not go through. Nothing was changed.",
+    } as Readonly<Record<string, string>>,
+    enforcement: {
+      title: "Access control",
+      off:
+        "Not enforced yet. Everyone Access lets in can open every section, and each call this list would refuse is " +
+        "logged. Check the list, then start enforcing.",
+      on: "Enforced. People open only the departments and places granted here; anyone not listed sees nothing.",
+      setBy: (who: string, when: string) => `Switched by ${who} on ${when}`,
+      start: "Start enforcing",
+      stop: "Stop enforcing",
+      startTitle: "Start enforcing access?",
+      startLine: "From now on, only the people listed here can use the console, and only as granted.",
+      stopTitle: "Stop enforcing access?",
+      stopLine: "Everyone Access lets in will open every section again.",
+      sending: "Saving",
+      back: "Go back",
+      onlyNational: "Only someone with Admin · Manage nationally can switch this.",
+      errors: {
+        not_permitted: "Only someone with Admin · Manage nationally can switch this.",
+        offline: "You are offline. Connect, then try again.",
+        unknown: "That did not go through. Nothing was changed.",
+      } as Readonly<Record<string, string>>,
+    },
+    tokens: {
+      title: "Service tokens",
+      note:
+        "Automated access, such as the test runner's. A token listed here can do everything except grant access; " +
+        "one not listed is refused once access is enforced.",
+      none: "No service token is listed.",
+      addedBy: (who: string, when: string) => `Added by ${who} on ${when}`,
+      clientId: "Client ID",
+      clientIdHint: "From Cloudflare Access, under Service credentials.",
+      label: "Name",
+      add: "Add the token",
+      adding: "Adding",
+      remove: "Remove",
+      removeLabel: (label: string) => `Remove ${label}`,
+      removeTitle: (label: string) => `Remove ${label}?`,
+      removeLine: "Whatever uses it is refused once access is enforced.",
+      removing: "Removing",
+      back: "Keep it",
+      onlyNational: "Only someone with Admin · Manage nationally can change service tokens.",
+      errors: {
+        client_id: "Paste the client ID exactly as Cloudflare Access shows it.",
+        label: "Give it a short name.",
+        not_found: "That token is no longer listed. Reload to see the list as it stands.",
+        not_permitted: "Only someone with Admin · Manage nationally can change service tokens.",
+        offline: "You are offline. Connect, then try again.",
+        unknown: "That did not go through. Nothing was changed.",
+      } as Readonly<Record<string, string>>,
+    },
   },
 } as const;
 

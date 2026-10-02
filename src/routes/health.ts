@@ -1,6 +1,8 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
 import { ENVIRONMENTS } from "../config/environments.ts";
+import { lastCompletedAt } from "../domain/cron-runs.ts";
+import type { Logger } from "../log.ts";
 
 export const HealthSchema = z
   .object({
@@ -14,6 +16,10 @@ export const HealthSchema = z
     d1: z.enum(["ok", "unmarked", "mismatch", "unreachable"]).openapi({
       description:
         "ok: reachable and marked as this environment's database. unmarked: no identity row. mismatch: marked as another environment's database.",
+    }),
+    cron_completed_at: z.string().nullable().openapi({
+      description:
+        "When the five-minute cron last finished a run; null before its first, or when the database is not this environment's. Information only: status does not depend on it.",
     }),
   })
   .strict()
@@ -33,6 +39,16 @@ export const healthRoute = createRoute({
   },
 });
 
+/** Never a reason for the check to fail. */
+async function cronCompletedAt(db: D1Database, log: Logger): Promise<string | null> {
+  try {
+    return await lastCompletedAt(db);
+  } catch (error) {
+    log.warn("cron_run_unreadable", { error });
+    return null;
+  }
+}
+
 export function registerHealth(app: App): void {
   app.openapi(healthRoute, async (c) => {
     const identity = await c.var.checkIdentity(c.env.DB, c.var.config.environment);
@@ -43,6 +59,7 @@ export function registerHealth(app: App): void {
       version_id: version.id,
       version_tag: version.tag === "" ? null : version.tag,
       d1: identity.state,
+      cron_completed_at: identity.state === "ok" ? await cronCompletedAt(c.env.DB, c.var.log) : null,
     };
     if (identity.state !== "ok") {
       c.var.log.error("health_unavailable", { d1: identity.state });

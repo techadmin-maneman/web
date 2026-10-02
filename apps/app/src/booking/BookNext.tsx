@@ -39,7 +39,7 @@ export function BookNext({ className, otherClassName }: { className?: string; ot
         label={label}
         message={message}
         {...(type === undefined ? {} : { type })}
-        {...(tier === undefined ? {} : { tier })}
+        {...(tier === undefined || tier === null ? {} : { tier })}
         {...(offer === undefined ? {} : { offer })}
       />
       {other !== undefined && me.booking.types.includes(other) && (
