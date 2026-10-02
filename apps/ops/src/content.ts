@@ -1500,7 +1500,14 @@ export const technicians = {
     },
   },
   // PLACEHOLDER: the board draws no way to add, change or switch off a technician, so every line below is ours.
-  fields: { name: "Name", mobile: "Mobile", zone: "Zone (optional)" },
+  fields: {
+    name: "Name",
+    mobile: "Mobile",
+    zone: "Zone (optional)",
+    city: "City",
+    cityHint: "Staff with access to this city see him. With no city, only national staff do.",
+    noCity: "No city",
+  },
   add: {
     open: "Add a technician",
     title: "Add a technician",
@@ -1514,6 +1521,7 @@ export const technicians = {
     title: "Details",
     mobile: "Mobile",
     zone: "Zone",
+    city: "City",
     change: "Change details",
     changeLabel: (name: string) => `Change ${name}'s details`,
     save: "Save changes",

@@ -2324,7 +2324,7 @@ export interface paths {
                         "application/json": components["schemas"]["TechnicianId"];
                     };
                 };
-                /** @description invalid_request: no name, or not an Indian mobile */
+                /** @description invalid_request: no name, not an Indian mobile, or not one of our cities */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -2918,7 +2918,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Change a technician's name, number or zone */
+        /** Change a technician's name, number, zone or city */
         patch: {
             parameters: {
                 query?: never;
@@ -2943,7 +2943,7 @@ export interface paths {
                         "application/json": components["schemas"]["TechnicianId"];
                     };
                 };
-                /** @description invalid_request: nothing to change, no name, or not an Indian mobile */
+                /** @description invalid_request: nothing to change, no name, not an Indian mobile, or not one of our cities */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -6840,6 +6840,8 @@ export interface components {
                 name: string;
                 initials: string;
                 zone: string | null;
+                /** @description The city he works in, which staff access by place reads; null for none. */
+                city: string | null;
                 /** @description The number he signs in with, +91 and ten digits; null where none is recorded. */
                 mobile: string | null;
                 /** @description Whether ops change him here. While FSM is the record of field work, a technician FSM lists is changed in FSM; one ops added is theirs. */
@@ -6860,11 +6862,15 @@ export interface components {
                 id: string;
                 name: string;
                 zone: string | null;
+                /** @description The city he works in, which staff access by place reads; null for none. */
+                city: string | null;
                 /** @description The number he signs in with, +91 and ten digits; null where none is recorded. */
                 mobile: string | null;
                 /** @description Whether ops change him here. While FSM is the record of field work, a technician FSM lists is changed in FSM; one ops added is theirs. */
                 editable: boolean;
             }[];
+            /** @description The cities a technician may be given, in display order. */
+            cities: string[];
         };
         TechnicianLeave: {
             /** Format: uuid */
@@ -7059,6 +7065,8 @@ export interface components {
             mobile: string;
             /** @description Where he mostly works, in ops' words; null for none. */
             zone?: string | null;
+            /** @description The city he works in, one of GET /api/technicians' cities. Staff with a grant of that city or its zone see him; with none, only a national grant does. */
+            city?: string | null;
         };
         /** @description Only what is sent changes. */
         TechnicianChange: {
@@ -7068,6 +7076,8 @@ export interface components {
             mobile?: string;
             /** @description Where he mostly works, in ops' words; null for none. */
             zone?: string | null;
+            /** @description The city he works in, one of GET /api/technicians' cities. Staff with a grant of that city or its zone see him; with none, only a national grant does. */
+            city?: string | null;
         };
         TechnicianDeactivated: {
             /** @description His visits still to come, now unassigned: each waits in the dispatch board's tray for ops to give it to another. A visit already begun stays his. Empty when he was switched off already. */

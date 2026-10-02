@@ -35,6 +35,13 @@ export type Caller =
   | { readonly kind: "person"; readonly active: boolean; readonly grants: readonly Grant[] }
   | { readonly kind: "service"; readonly allowed: boolean };
 
+/** What one call is judged by: whether the list is enforced, who the caller is to it, and each city's zone. */
+export interface CallerAccess {
+  readonly enforced: boolean;
+  readonly caller: Caller;
+  readonly zoneOf: ZoneOfCity;
+}
+
 /** A member of staff as the Staff page edits them. */
 export interface StaffEntry {
   readonly active: boolean;
@@ -73,6 +80,46 @@ export function can(
       reaches(grant.level, level) &&
       (where === "anywhere" || takesIn(grant.place, where, zoneOf)),
   );
+}
+
+/**
+ * The places a caller's work in a department reaches: everywhere, or only some cities. A record is in one city, found
+ * by src/domain/places.ts; a record whose city cannot be found is reached only everywhere.
+ */
+export type PlacesReached =
+  | { readonly kind: "everywhere" }
+  | { readonly kind: "cities"; readonly cities: ReadonlySet<string> };
+
+const EVERYWHERE: PlacesReached = { kind: "everywhere" };
+const NOWHERE: PlacesReached = { kind: "cities", cities: new Set() };
+
+function citiesIn(place: Place, zoneOf: ZoneOfCity): string[] {
+  if (place.geography === "city") return [place.name];
+  if (place.geography === "national") return [];
+  return [...zoneOf].filter(([, zone]) => zone === place.name).map(([city]) => city);
+}
+
+/**
+ * Where a caller may see or do a department's work at a level: everywhere with a national grant, else the cities their
+ * city and zone grants name. Everywhere while the Staff list is not enforced, since nothing is narrowed then.
+ */
+export function placesReached(access: CallerAccess, department: Department, level: Level): PlacesReached {
+  const { caller, zoneOf } = access;
+  if (!access.enforced || can(caller, department, level, NATIONAL, zoneOf)) return EVERYWHERE;
+  if (caller.kind === "service" || !caller.active) return NOWHERE;
+
+  const cities = new Set<string>();
+  for (const grant of caller.grants) {
+    if (grant.department !== department || !reaches(grant.level, level)) continue;
+    for (const city of citiesIn(grant.place, zoneOf)) cities.add(city);
+  }
+  return { kind: "cities", cities };
+}
+
+/** Whether a record in this city is within reach. One with no city is reached only everywhere. */
+export function reachesCity(reached: PlacesReached, city: string | null): boolean {
+  if (reached.kind === "everywhere") return true;
+  return city !== null && reached.cities.has(city);
 }
 
 export function samePlace(one: Place, other: Place): boolean {

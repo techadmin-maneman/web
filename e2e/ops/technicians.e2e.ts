@@ -386,10 +386,16 @@ test("adds a technician, whose number signs in at once", async ({ page }) => {
   await form.getByRole("textbox", { name: "Name" }).fill("Naveen Rao");
   await form.getByRole("textbox", { name: "Mobile" }).fill("+91 98100 00007");
   await form.getByRole("textbox", { name: "Zone (optional)" }).fill("Sec 66–80");
+  await form.getByRole("combobox", { name: "City" }).selectOption("Noida");
   const sent = page.waitForRequest((request) => request.method() === "POST" && request.url().endsWith("/technicians"));
   await form.getByRole("button", { name: "Add technician" }).click();
 
-  expect((await sent).postDataJSON()).toEqual({ name: "Naveen Rao", mobile: "9810000007", zone: "Sec 66–80" });
+  expect((await sent).postDataJSON()).toEqual({
+    name: "Naveen Rao",
+    mobile: "9810000007",
+    zone: "Sec 66–80",
+    city: "Noida",
+  });
   await expect(form).toBeHidden();
   await expect(page.getByRole("status")).toContainText("Naveen Rao is added. He can sign in now.");
   const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
@@ -445,6 +451,21 @@ test("changes a technician's details, sending only what changed", async ({ page 
   await expect(page.getByRole("row").filter({ hasText: "Imran Qureshi" })).toContainText("Sec 1–39");
 });
 
+test("moves a technician to another city, or to none", async ({ page }) => {
+  await openWith(page, { [CHANGE]: json({ id: IMRAN }) });
+  const panel = await panelOf(page, "Imran Qureshi");
+  await expect(panel.getByRole("definition").filter({ hasText: "Gurgaon" })).toBeVisible();
+
+  await panel.getByRole("button", { name: "Change Imran Qureshi's details" }).click();
+  const city = panel.getByRole("combobox", { name: "City" });
+  await expect(city).toHaveValue("Gurgaon");
+  await city.selectOption("No city");
+  const sent = page.waitForRequest((request) => request.method() === "PATCH");
+  await panel.getByRole("button", { name: "Save changes" }).click();
+
+  expect((await sent).postDataJSON()).toEqual({ city: null });
+});
+
 test("switches a technician off only once asked, and lists the visits he no longer holds", async ({ page }) => {
   const { roster, reply } = rosterOf(TECHNICIANS);
   await openWith(page, { [SWITCH_OFF]: json(SWITCHED_OFF) }, reply);
@@ -456,8 +477,11 @@ test("switches a technician off only once asked, and lists the visits he no long
   await panel.getByRole("button", { name: "Switch off Imran Qureshi" }).click();
 
   roster.current = {
+    ...TECHNICIANS,
     technicians: TECHNICIANS.technicians.filter((each) => each.id !== IMRAN),
-    switched_off: [{ id: IMRAN, name: "Imran Qureshi", zone: "Sec 40–65", mobile: "+919810000001", editable: true }],
+    switched_off: [
+      { id: IMRAN, name: "Imran Qureshi", zone: "Sec 40–65", city: "Gurgaon", mobile: "+919810000001", editable: true },
+    ],
   };
   await panel.getByRole("button", { name: "Switch him off" }).click();
 
@@ -490,6 +514,7 @@ test("lists the technicians switched off apart, and switches one back on", async
   const panel = page.getByRole("dialog", { name: "Ravi Kumar" });
   await expect(panel.getByRole("heading", { name: "Phones" })).toBeHidden();
   roster.current = {
+    ...TECHNICIANS,
     technicians: [...TECHNICIANS.technicians, { ...RAVI, initials: "RK", devices: [], leave: [] }],
     switched_off: [],
   };
