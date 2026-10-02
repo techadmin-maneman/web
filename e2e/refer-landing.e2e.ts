@@ -79,7 +79,7 @@ test("the invite names the referrer, and a served pincode opens the consultation
 
   await expect(page.getByText("Rohit sent you this")).toBeVisible();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Transformation and confidence, delivered in one visit.",
+    "A hair system, fitted at home. The consultation is free.",
   );
   await expect(page.getByText("Get fitted and you both get 3 service visits free.")).toBeVisible();
 
@@ -267,7 +267,7 @@ test("an invite that cannot be fetched is neither refused nor promised", async (
   await visit(page, `/r/${CODE}`);
 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Transformation and confidence, delivered in one visit.",
+    "A hair system, fitted at home. The consultation is free.",
   );
   await expect(page.getByText("You have an invite")).toBeVisible();
   await expect(page.getByText("We do not recognise this invite")).toBeHidden();
@@ -448,7 +448,7 @@ test("a keyboard user sees which day, window and agreement has focus", async ({ 
 
   await page.keyboard.press("Tab"); // Change the pincode
   await page.keyboard.press("Tab"); // what to book (ADR 0086)
-  await expect(page.getByRole("radio", { name: "A consultation" })).toBeFocused();
+  await expect(page.getByRole("radio", { name: "Consultation · an hour" })).toBeFocused();
   expect(await outlineOf(page, "label")).toBe("solid 2px");
   await page.keyboard.press("Tab"); // the date strip
   await expect(page.getByRole("group", { name: "Pick a date" }).getByRole("radio").first()).toBeFocused();
@@ -600,11 +600,12 @@ test("offers the consultation alone or with the fit in one visit, and asks ops f
   await page.getByRole("button", { name: "Check" }).click();
 
   const plan = page.getByRole("group", { name: "What to book" });
-  await expect(plan.getByRole("radio", { name: "A consultation" })).toBeChecked();
-  await plan.getByText("Consultation and fit, in one visit").click();
+  await expect(plan.getByRole("radio", { name: "Consultation · an hour" })).toBeChecked();
+  await plan.getByText("Consultation and fit · three hours").click();
   await expect(
     plan.getByText(/Choose your hair system with your technician and have it fitted there and then\./),
   ).toBeVisible();
+  // CP-20: the form's heading follows what it books.
   await expect(page.getByRole("heading", { level: 2, name: "Book a consultation and fit" })).toBeVisible();
   // The morning or the afternoon: the first fit's three hours cannot start in the evening.
   await expect(page.getByRole("group", { name: "Window" }).getByRole("radio")).toHaveCount(2);

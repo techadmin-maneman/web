@@ -27,7 +27,8 @@ A referral earns each side 3 service-visit credits, which expire 365 days after 
 
 - The hold says so (`credit: { remaining }`), and booking skips payment.
 - Once the visit is booked, one credit is redeemed for it, from the grant that expires soonest.
-- If a credit was spent elsewhere in the minutes between, the visit stands, as ops would let it.
+- Once the client confirms a credit visit, its credit is spoken for until the visit is booked (`spendableCredits`): no other booking counts on it, and a hold whose credit another booking took first is paid for in money instead. The redeem is written in the same batch as the booking.
+- If a credit was spent elsewhere in the minutes between, the visit stands, as ops would let it, and ops are told.
 - First fits, replacements and consultations are never covered: the credits are service visits.
 
 **Changing a visit paid with a credit** (ADR 0046):

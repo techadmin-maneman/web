@@ -46,6 +46,7 @@ Nothing here needs a release. The first two have dates.
 - [ ] **Production's AILabTools key** (item 153): `W secret put AILAB_API_KEY --env production`, with a key of production's own.
 - [ ] **Staging's refund account:** the owner's "Razorpay – staging test" ID as `BOOKS_REFUND_ACCOUNT_ID` in `env.staging.vars`, released through CI (item 10).
 - [ ] **Staging's cron heartbeat** (RB, "The outside watchers", point 1): a healthchecks.io check, its ping URL as staging's `HEARTBEAT_URL`; and Account Analytics: Read on `mm-ci-staging`, so each staging deploy reports mm-api's CPU time (RB 6).
+- [ ] **The watch on the daily allowances** (RB, "The daily allowances"): an Account API Token with Account Analytics: Read and nothing else, as staging's `CLOUDFLARE_ANALYTICS_TOKEN`. Within the hour staging's logs show `daily_allowances_read`.
 
 ## 2. Proofs on staging
 
@@ -81,6 +82,7 @@ Each is written up in `docs/verification.md` when it passes. The payment run is 
 - [ ] The dedicated WhatsApp number (item 38) and `MESSAGING_ENABLED` `"true"` in production's vars (item 164): the try-on's look goes to WhatsApp only, so while it is off the try-on does not run (ADR 0104).
 - [ ] Production's AILabTools key and resources (section 1).
 - [ ] The outside watchers (RB, "The outside watchers"): production's healthchecks.io check as its `HEARTBEAT_URL`, and an uptime monitor on `https://maneman.in/api/health`. After the release, the check shows a ping every five minutes and `GET /api/health` a `cron_completed_at` minutes old.
+- [ ] The daily allowances watched from production (RB, "The daily allowances"): the analytics token put on production as `CLOUDFLARE_ANALYTICS_TOKEN` and deleted from staging (`W secret delete CLOUDFLARE_ANALYTICS_TOKEN --env staging`), so the alerts come once.
 
 **The code**, in one pull request through CI and staging: production's `assets.directory` in `site/wrangler.jsonc` pointed at `./dist/production`, a production site build before "Deploy mm-site" in `deploy-production.yml` (`docs/frontend.md`, steps 4 and 5), and the analytics IDs.
 
@@ -108,7 +110,7 @@ With self-serve booking off, a consultation booked on the site is a request: the
 **Provisioning** (RB 7, 11, 11a, 11b, 11c, 12 and 13):
 
 - [ ] DNS and Access for `app.maneman.in`, `ops.maneman.in` and `tech.maneman.in`, with `mm-ci-production` on each (RB 11, points 1 and 2); `ACCESS_OPS_AUD` for the ops console (RB 11, point 3).
-- [ ] FSM and Books: the client and its secrets, `setup-fsm.ts --check`, the providers `zoho`, the hosts and `ZOHO_BOOKS_ORG_ID`, and `BOOKS_REFUND_ACCOUNT_ID` of the account "Razorpay" (RB 11b, points 1 to 7).
+- [ ] FSM and Books: each one's client and its secrets, `setup-fsm.ts --check`, the providers `zoho`, the hosts and `ZOHO_BOOKS_ORG_ID`, and `BOOKS_REFUND_ACCOUNT_ID` of the account "Razorpay" (RB 11b, points 1 to 7).
 - [ ] FSM's two webhooks for production, the second for deletion, with a token you keep (item 31; RB 11b, point 6).
 - [ ] The rest of production's secrets, each before the release that needs it (RB 7): `OTP_PEPPER` (`openssl rand -hex 32`), `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `EVOLUTION_WEBHOOK_TOKEN`, and `GOOGLE_MAPS_API_KEY` once production has its own restricted key (RB 13). A required secret left empty stops every request, so check `GET /api/health` after each.
 - [ ] Bootstrap `mm-ops-production` and `mm-tech-production`, and add both to `mm-ci-production` (RB 11, point 6; RB 6).

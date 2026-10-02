@@ -29,6 +29,7 @@ import {
   fetchPublishedPrices,
   fetchReferralReward,
   type Invite as InviteAnswer,
+  type PincodeAnswer,
   type ReferralReward,
 } from "../../lib/api.ts";
 import { cardPath, HOUSE_CARD, isInvite } from "../../lib/invite.ts";
@@ -67,9 +68,10 @@ type State = "arrival" | "booked" | "listed";
 /** The card the page shows: the referrer's own while it is live, else our house one. */
 const CARD = { width: 1200, height: 630 };
 
-/** /book's heading: what is being booked, once the pincode has opened the form. */
-function bookTitle(plan: Plan, served: boolean): string {
-  if (served && plan === "one_visit") return booking.titleOneVisit;
+/** The site's own page is headed with what it books: the plan chosen, or the waitlist where we do not come yet. */
+function bookingTitle(answer: PincodeAnswer | null, plan: Plan): string {
+  if (answer?.served === false) return booking.titleWaitlist;
+  if (answer?.served === true && plan === "one_visit") return booking.titleOneVisit;
   return booking.title;
 }
 
@@ -81,9 +83,10 @@ export default function Invite(props: Props) {
   // Null until it is known: no sentence gives a count without it.
   const [reward, setReward] = useState<ReferralReward | null>(() => rewardInPage());
   const [state, setState] = useState<State>("arrival");
+  // Kept here rather than in the form, so the page's heading follows it and a changed pincode keeps it.
+  const [plan, setPlan] = useState<Plan>("consultation");
   const [booked, setBooked] = useState<Booking | null>(null);
   const [listed, setListed] = useState<Listing | null>(null);
-  const [plan, setPlan] = useState<Plan>("consultation");
   const pincode = usePincode();
   const heading = useRef<HTMLHeadingElement>(null);
 
@@ -197,7 +200,7 @@ export default function Invite(props: Props) {
             </div>
           )}
           <h1 ref={heading} tabIndex={-1} class={styles.title}>
-            {invited ? referral.arrival.title : bookTitle(plan, answer?.served === true)}
+            {invited ? referral.arrival.title : bookingTitle(answer, plan)}
           </h1>
           <div class={styles.offer}>
             {!invited && <p>{booking.intro}</p>}
@@ -217,7 +220,7 @@ export default function Invite(props: Props) {
               {...formProps}
               answer={answer}
               plan={plan}
-              onPlan={setPlan}
+              onPlanChange={setPlan}
               onBooked={(result) => {
                 setBooked(result);
                 setListed(null);

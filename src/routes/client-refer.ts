@@ -10,7 +10,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
 import { PUBLIC_ORIGIN } from "../config/environments.ts";
-import { creditBalance } from "../domain/credits.ts";
+import { spendableCredits } from "../domain/credits.ts";
 import { liveCard, MAX_CARD_BYTES, revokeCard, storeCard } from "../domain/referral-cards.ts";
 import { inviteOf, referralCodeOf } from "../domain/referrals.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
@@ -216,7 +216,7 @@ export function registerClientRefer(app: App): void {
       // The invite as the landing reads it, with naming on: it names the client exactly when they have agreed to
       // the cards' current lines.
       inviteOf(db, code, true),
-      creditBalance(db, session.subjectId, now),
+      spendableCredits(db, session.subjectId, now),
       db
         .prepare(
           `SELECT r.friend_first_name, p.name, p.erased_at, a.window_start, g.visits FROM referral_attributions r

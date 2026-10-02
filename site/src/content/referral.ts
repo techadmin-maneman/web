@@ -17,7 +17,7 @@
 import type { Invite, ReferralReward } from "../lib/api.ts";
 import { fill } from "../lib/text.ts";
 import { capitalised, serviceArea, visitLength } from "./service.ts";
-import { hero, notices, type Notice } from "./site.ts";
+import { notices, type Notice } from "./site.ts";
 
 /** A one-line notice's words, as the backend records them with the consent (src/config/notices.ts). */
 function lineOf(notice: Notice): string {
@@ -84,14 +84,11 @@ function expiredBody(reward: ReferralReward | null): string {
 }
 
 export const referral = {
-  /**
-   * The navy block at the top, before the pincode is known (C1). Its title is the home page's, as the design's was
-   * until the owner rewrote the home page on 1 October 2026 (ADR 0103).
-   */
+  /** The navy block at the top, before the pincode is known (C1). */
   arrival: {
     invited: "{name} sent you this",
     unnamed: "You have an invite",
-    title: hero.title,
+    title: "A hair system, fitted at home. The consultation is free.",
     offer: inviteOffer,
     /**
      * A code we do not know: a typo, a revoked code, or one more than 12 months
@@ -109,7 +106,7 @@ export const referral = {
         what: "First fit, from",
         note: "The hair system you choose",
         amount: "{firstFit}",
-        incl: "The piece, the fitting and the cut",
+        incl: "With the fitting and the cut",
       },
       {
         what: "Service visit",
@@ -133,7 +130,7 @@ export const referral = {
       {
         n: "2",
         title: "The fit, also at home",
-        body: `${capitalised(visitLength.firstFit)}. You leave the house wearing it.`,
+        body: `${capitalised(visitLength.firstFit)}. You're wearing it by the end.`,
       },
       {
         n: "3",
@@ -159,10 +156,10 @@ export const referral = {
   /** The consultation form, shown when the pincode is served (C2). */
   consultation: {
     served: "We come to {area}",
+    /** The form's heading on the invite, which follows what it books. */
     title: "Book a free consultation",
     titleOneVisit: "Book a consultation and fit",
-    // The consultation alone fits nothing; the one visit, its second choice, fits the client then (ADR 0105). The
-    // owner reviews these words with the home page's second round (open point 162).
+    /** On the invite only: the site's own page says it in its introduction. */
     body: `${capitalised(visitLength.consultation)}, and free. Or have your fit in the same visit.`,
     forPincode: "For {pincode}",
     date: "Pick a date",
@@ -173,22 +170,15 @@ export const referral = {
       { id: "afternoon", label: "Afternoon", hours: "12 to 4 pm" },
       { id: "evening", label: "Evening", hours: "4 to 8 pm" },
     ],
-    /**
-     * Not drawn: what to book, the consultation alone or the consultation and fit in one visit, as the owner ruled
-     * on 1 October 2026 (ADR 0025, item 89; docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). "A
-     * consultation" is the owner's; the rest are placeholder words for the owner to approve (open points 45 and
-     * 162), not marked as the apps' are, since the mark refuses the site's production build (ADR 0081). The consent
-     * line recorded is the consultation's, unchanged, and whether it covers the fit is counsel's (open point 41).
-     */
+    /** Not drawn: what to book, the consultation alone or the consultation and fit in one visit. */
     plan: {
       legend: "What to book",
       options: [
-        { id: "consultation", label: "A consultation" },
-        { id: "one_visit", label: "Consultation and fit, in one visit" },
+        { id: "consultation", label: `Consultation · ${visitLength.consultation}` },
+        { id: "one_visit", label: `Consultation and fit · ${visitLength.firstFit}` },
       ],
-      // The first fit's three hours do not fit in the evening's half-slots (docs/decisions/0035-window-slot-map.md),
-      // so the form offers the one visit the morning and the afternoon.
-      note: `${capitalised(visitLength.firstFit)}, at home, in the morning or the afternoon. Choose your hair system with your technician and have it fitted there and then. Pay once fitted, by a link to your phone; decide against it and you pay nothing.`,
+      // The first fit's three hours do not fit in the evening's half-slots, so the one visit starts earlier.
+      note: "Starts in the morning or the afternoon. Choose your hair system with your technician and have it fitted there and then. Pay once fitted, by a link to your phone; decide against it and you pay nothing.",
       // Not drawn: no hair system is offered in the console yet, so only the consultation can be booked.
       notYet: "Consultation and fit in one visit is not available to book yet.",
     },

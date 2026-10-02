@@ -438,7 +438,7 @@ export function PayStep(props: {
             <span>{copy.credit.remaining(hold.credit.remaining)}</span>
           </p>
         )}
-        {isFirstFit && <p className={styles.line}>{copy.guarantee(technician)}</p>}
+        {isFirstFit && <p className={styles.line}>{copy.guarantee}</p>}
         <ChangeTerms hold={hold} moving={inPlace ? moving : undefined} covered={covered} />
       </div>
       {takesACode && <CodeBox hold={hold} busy={props.busy} onHold={props.onHold} onSending={setCodeSending} />}

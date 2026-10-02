@@ -5,9 +5,20 @@ import { scriptRefreshToken, USE_WORKER_TOKEN } from "../../scripts/lib/zoho-scr
 
 describe("a script's Zoho refresh token", () => {
   it("is the scripts' own, for each client", () => {
-    const env = { ZOHO_SCRIPTS_REFRESH_TOKEN: "crm-scripts", ZOHO_FSM_SCRIPTS_REFRESH_TOKEN: "fsm-scripts" };
+    const env = {
+      ZOHO_SCRIPTS_REFRESH_TOKEN: "crm-scripts",
+      ZOHO_FSM_SCRIPTS_REFRESH_TOKEN: "fsm-scripts",
+      ZOHO_BOOKS_SCRIPTS_REFRESH_TOKEN: "books-scripts",
+    };
     expect(scriptRefreshToken("crm", env, [])).toEqual({ token: "crm-scripts", warning: null });
     expect(scriptRefreshToken("fsm", env, [])).toEqual({ token: "fsm-scripts", warning: null });
+    expect(scriptRefreshToken("books", env, [])).toEqual({ token: "books-scripts", warning: null });
+  });
+
+  it("is never FSM's for Books", () => {
+    const env = { ZOHO_FSM_SCRIPTS_REFRESH_TOKEN: "fsm-scripts", ZOHO_FSM_REFRESH_TOKEN: "fsm-worker" };
+    const refused = scriptRefreshToken("books", env, [USE_WORKER_TOKEN]);
+    expect("problem" in refused ? refused.problem : "").toContain("ZOHO_BOOKS_SCRIPTS_REFRESH_TOKEN is not set");
   });
 
   it("is never the Worker's unless the person running the script asks for it", () => {
