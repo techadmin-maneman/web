@@ -596,8 +596,7 @@ describe("the credit ledger", () => {
     }).run();
     expect(await creditBalance(db, REFERRER, NOW)).toEqual({ visits: 5, earliestExpiry: soon.toISOString() });
 
-    const redeem = await redeemCredit(db, REFERRER, "visit-1", NOW);
-    await redeem?.run();
+    await redeemCredit(db, REFERRER, "visit-1", NOW).run();
     const drawn = await db
       .prepare(
         "SELECT g.source_id FROM credit_ledger r JOIN credit_ledger g ON g.id = r.grant_id WHERE r.kind = 'redeem'",
