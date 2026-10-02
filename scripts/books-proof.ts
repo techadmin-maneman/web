@@ -96,7 +96,7 @@ async function readCustomer(customerId: string) {
 async function proofItem(): Promise<{ id: string; rate: number }> {
   const held = (await books.items()).find((item) => item.name === PROOF_ITEM);
   if (held !== undefined) return held;
-  return { id: await books.createItem({ name: PROOF_ITEM, rate: 200_000 }), rate: 200_000 };
+  return { id: await books.createItem({ name: PROOF_ITEM, rate: 200_000, sac: null }), rate: 200_000 };
 }
 
 const reference = `staging-proof-${crypto.randomUUID()}`;
@@ -144,7 +144,7 @@ try {
 
   const { id: itemId, rate: rateBefore } = await proofItem();
   const rate = rateBefore === 200_000 ? 250_000 : 200_000;
-  await books.updateItem(itemId, { name: PROOF_ITEM, rate });
+  await books.updateItem(itemId, { name: PROOF_ITEM, rate, sac: null });
   const item = (await books.items()).find((each) => each.id === itemId);
   const moved = `${itemId} from ${String(rateBefore)} to ${String(item?.rate)} paise`;
   check("a new rate is written over the proof item", item?.rate === rate, moved);

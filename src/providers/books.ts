@@ -26,6 +26,8 @@ export interface BooksInvoice {
   readonly balance: number;
   /** Books' status word: draft, sent, paid, void and so on. */
   readonly status: string;
+  /** The reference it was raised under: the appointment's ID on one we raised; null for none. */
+  readonly reference: string | null;
 }
 
 export interface BooksPdf {
@@ -91,7 +93,7 @@ export interface NewBooksInvoice {
     readonly description: string;
     /** The price book's price on the day, GST included. */
     readonly rate: number;
-    /** Taken off before tax; 0 for none. */
+    /** Taken off the rate, GST included, before Books works out the tax; 0 for none. */
     readonly discount: number;
   };
 }
@@ -103,12 +105,15 @@ export interface BooksItem {
   /** Its selling price, in paise. */
   readonly rate: number;
   readonly active: boolean;
+  /** Its SAC code; null for none. */
+  readonly sac: string | null;
 }
 
-/** A service item to add, or to write over one. Its rate in paise. */
+/** A service item to add, or to write over one. Its rate in paise; a SAC code of null is left as Books has it. */
 export interface BooksItemDetails {
   readonly name: string;
   readonly rate: number;
+  readonly sac: string | null;
 }
 
 /** What erasing a customer left: nothing, or a blank, inactive customer a document or payment still names. */
@@ -351,14 +356,16 @@ function stubDocumentsAndPayments(made: StubMade, world: StubBooksWorld, control
     discountInvoice: (id, amountOff) => {
       made.discounts.push({ invoiceId: id, amountOff });
       const total = world.draftTotal - amountOff;
-      return Promise.resolve({ id, number: "INV-000001", date: "2026-09-22", total, balance: total, status: "draft" });
+      const draft = { id, number: "INV-000001", date: "2026-09-22", total, balance: total, status: "draft" };
+      return Promise.resolve({ ...draft, reference: null });
     },
     invoice: (id) => {
       const raised = invoicesById.get(id);
       if (raised !== undefined) return Promise.resolve({ ...raised, status: issuedOrDraft(id) });
       if (!id.startsWith("stub-")) return Promise.resolve(null);
       const number = `INV-${id.slice(5).padStart(6, "0")}`;
-      return Promise.resolve({ id, number, date: "2026-09-22", total: 0, balance: 0, status: issuedOrDraft(id) });
+      const status = issuedOrDraft(id);
+      return Promise.resolve({ id, number, date: "2026-09-22", total: 0, balance: 0, status, reference: null });
     },
     invoicePdf: (id) => Promise.resolve(id.startsWith("stub-") ? blankPdf() : null),
     async findInvoice(reference) {
@@ -373,7 +380,7 @@ function stubDocumentsAndPayments(made: StubMade, world: StubBooksWorld, control
       const id = `stub-invoice-${crypto.randomUUID()}`;
       const total = invoice.line.rate - invoice.line.discount;
       const number = `INV-${String(made.invoices.length).padStart(6, "0")}`;
-      const raised = { id, number, date: invoice.date, total, balance: total, status: "draft" };
+      const raised = { id, number, date: invoice.date, total, balance: total, status: "draft", reference: invoice.reference };
       invoicesById.set(id, raised);
       invoicesByReference.set(invoice.reference, raised);
       return controls.answer("createInvoice", raised, id);
@@ -431,7 +438,7 @@ function stubItems(made: StubMade, world: StubBooksWorld, controls: StubControls
       await controls.check("createItem");
       made.itemsMade.push({ ...item });
       const id = `stub-item-${crypto.randomUUID()}`;
-      held.push({ id, name: item.name, rate: item.rate, active: true });
+      held.push({ id, name: item.name, rate: item.rate, active: true, sac: item.sac });
       return controls.answer("createItem", id, id);
     },
     async updateItem(itemId, item) {
@@ -439,7 +446,7 @@ function stubItems(made: StubMade, world: StubBooksWorld, controls: StubControls
       made.itemUpdates.push({ itemId, ...item });
       const index = held.findIndex((each) => each.id === itemId);
       const current = held[index];
-      if (current !== undefined) held[index] = { ...current, name: item.name, rate: item.rate };
+      if (current !== undefined) held[index] = { ...current, name: item.name, rate: item.rate, sac: item.sac ?? current.sac };
     },
   };
   return stub;

@@ -27,6 +27,10 @@ const CRON_PATH = [
   "src/domain/fsm-invoices.ts",
   "src/domain/asked-windows.ts",
   "src/domain/books-sync.ts",
+  // Books without FSM: each client's customer, each finished visit's invoice, and each service's item.
+  "src/domain/books-customers.ts",
+  "src/domain/books-invoices.ts",
+  "src/domain/books-items.ts",
   "src/domain/referral-grants.ts",
   "src/domain/payment-links.ts",
   // A visit's discount code, read by the payment link and the invoice pass (docs/decisions/0108-discount-codes.md).
