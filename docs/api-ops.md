@@ -513,7 +513,7 @@ Request body:
 }
 ```
 
-**409**: taken: nobody chosen is free in that window now; already_booked: a consultation or first fit is still to come; terms_changed: the client's last credit went on another booking a moment before
+**409**: taken: nobody chosen is free in that window now; already_booked: a consultation or first fit is still to come, or a payment link for one is open; terms_changed: the client's last credit went on another booking a moment before
 
 ```json
 {

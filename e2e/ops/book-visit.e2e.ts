@@ -149,7 +149,9 @@ test("books a consultation asked for from its Tasks row, on the day and window a
   const consultation = {
     ...WINDOWS,
     kind: "consultation",
-    services: [{ tier: "standard", name: "Consultation", minutes: 60, price: { ...SERVICE_PRICE, amount: 0, amount_ex_gst: 0 } }],
+    services: [
+      { tier: "standard", name: "Consultation", minutes: 60, price: { ...SERVICE_PRICE, amount: 0, amount_ex_gst: 0 } },
+    ],
     service: { tier: "standard", name: "Consultation", minutes: 60 },
     pays: "nothing",
   } satisfies OpsReply<"/api/visits/availability">;
@@ -186,7 +188,9 @@ test("books a consultation asked for from its Tasks row, on the day and window a
   await expect(booking).toContainText("Nothing to pay.");
   await booking.getByRole("button", { name: "Book it" }).click();
   await expect(booking.getByRole("status")).toContainText("Booked.");
-  expect(sent).toEqual([{ client: CLIENT.id, kind: "consultation", tier: "standard", date: "2027-09-24", window: "morning" }]);
+  expect(sent).toEqual([
+    { client: CLIENT.id, kind: "consultation", tier: "standard", date: "2027-09-24", window: "morning" },
+  ]);
 
   await booking.getByRole("button", { name: "Close" }).click();
   await expect(tasks.getByRole("listitem")).toHaveCount(0);

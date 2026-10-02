@@ -31,7 +31,7 @@ import type { OpsInputs } from "./ops-settings.ts";
 import { recordPayment } from "./payments.ts";
 import { lateFeeOn, type Price } from "./price-book.ts";
 import { currentAddress } from "./profile.ts";
-import { holdSlot, liveVisitOf, type Hold } from "./scheduling.ts";
+import { graceEnds, holdSlot, liveVisitOf, ONE_AT_A_TIME, type Hold } from "./scheduling.ts";
 import { bookableService, offeredProducts, type PricedService } from "./services.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
 import { termsInForce } from "./visit-changes.ts";
@@ -94,9 +94,27 @@ export function bookableRange(now: Date, inputs: Pick<OpsInputs, "nextVisitDays"
   return { opens: tomorrow, last: lastBookableDay(tomorrow, inputs.nextVisitDays) };
 }
 
-/** A consultation or a first fit still to come, which a second of its kind would double. */
-async function alreadyToCome(db: D1Database, asked: VisitAsked): Promise<boolean> {
+/**
+ * A payment link ops sent for a consultation or first fit of the client's that can still be paid: until its hold's
+ * grace is over, since Razorpay may still be taking the payment.
+ */
+async function linkStillOpen(db: D1Database, personId: string, kind: VisitType, now: Date): Promise<boolean> {
+  if (!ONE_AT_A_TIME.includes(kind)) return false;
+  const open = await db
+    .prepare(
+      `SELECT 1 FROM slot_holds
+       WHERE person_id = ?1 AND type = ?2 AND pay_by_link = 1 AND state = 'held' AND ${graceEnds("slot_holds")} > ?3
+       LIMIT 1`,
+    )
+    .bind(personId, kind, now.toISOString())
+    .first();
+  return open !== null;
+}
+
+/** A consultation or a first fit still to come, or a link open for one, which a second of its kind would double. */
+async function alreadyToCome(db: D1Database, asked: VisitAsked, now: Date): Promise<boolean> {
   if ((await liveVisitOf(db, asked.personId, asked.kind)) !== null) return true;
+  if (await linkStillOpen(db, asked.personId, asked.kind, now)) return true;
   return asked.oneVisit && (await liveVisitOf(db, asked.personId, "consultation")) !== null;
 }
 
@@ -158,7 +176,7 @@ export async function saleFor(
   }
   const { opens, last } = bookableRange(now, inputs);
   if (asked.date < opens || asked.date > last) return refused({ status: 422, code: "not_bookable" });
-  if (await alreadyToCome(db, asked)) return refused({ status: 409, code: "already_booked" });
+  if (await alreadyToCome(db, asked, now)) return refused({ status: 409, code: "already_booked" });
 
   const service = await bookableService(db, asked.kind, asked.tier, asked.date);
   if (service === null) return refused({ status: 422, code: await noServiceRefusal(db, asked) });
@@ -374,7 +392,9 @@ export async function recordHoldLinkPaid(
 ): Promise<void> {
   const { hold, payment, orderId } = paid;
   await db
-    .prepare("UPDATE slot_holds SET razorpay_order_id = ?2, updated_at = ?3 WHERE id = ?1 AND razorpay_order_id IS NULL")
+    .prepare(
+      "UPDATE slot_holds SET razorpay_order_id = ?2, updated_at = ?3 WHERE id = ?1 AND razorpay_order_id IS NULL",
+    )
     .bind(hold.id, orderId, now.toISOString())
     .run();
   const notes = { hold_id: hold.id, person_id: hold.personId };

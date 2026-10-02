@@ -170,7 +170,9 @@ describe("the migrations, against a database that is in use", () => {
                '${AT}', '${AT}')`;
     db.exec(hold("h1"));
     db.exec(hold("h2"));
-    db.exec("UPDATE slot_holds SET pay_by_link = 1, payment_link_id = 'plink_1', payment_link_url = 'u' WHERE id = 'h2'");
+    db.exec(
+      "UPDATE slot_holds SET pay_by_link = 1, payment_link_id = 'plink_1', payment_link_url = 'u' WHERE id = 'h2'",
+    );
     const holds = db.prepare("SELECT id, pay_by_link, payment_link_id FROM slot_holds ORDER BY id").all();
     expect(holds).toEqual([
       { id: "h1", pay_by_link: 0, payment_link_id: null },

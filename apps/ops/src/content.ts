@@ -563,7 +563,7 @@ export const clients = {
       retry: "Try again",
       errors: {
         taken: "That window was taken a moment ago. Choose another.",
-        already_booked: "They already have a visit of this kind to come.",
+        already_booked: "They already have one of these to come, or a payment link open for one.",
         not_bookable: "That day or service cannot be booked.",
         no_product: "No hair system is on sale that day.",
         code_not_applicable: "That code does not apply to this visit.",
@@ -1322,13 +1322,13 @@ export const tasks = {
     /** "Asked for 23 Sep 2026, morning": the day nobody could book for them, self-serve booking being off. */
     consultation_request: (day: string, when: string) => `Asked for ${day}, ${when}`,
     /**
-     * PLACEHOLDER: "+ consultation and fit in one visit", after the day and window asked for: book the client's first
-     * fit in FSM for three hours, paid for at the visit (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+     * PLACEHOLDER: "+ consultation and fit in one visit", after the day and window asked for: book it from the row,
+     * paid for once the client is fitted (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
      */
     withOneVisit: "+ consultation and fit in one visit",
     /**
-     * PLACEHOLDER: ", code WEDDNG25", after the one visit: the discount code the client gave on the form, which ops
-     * enter on the visit once they have booked it (docs/decisions/0108-discount-codes.md).
+     * PLACEHOLDER: ", code WEDDNG25", after the one visit: the discount code the client gave on the form, which the
+     * booking from the row starts with (docs/decisions/0108-discount-codes.md).
      */
     withCode: (code: string) => `, code ${code}`,
     /**

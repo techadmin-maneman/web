@@ -1,6 +1,6 @@
 // A task done by booking the client a visit: a consultation asked for, a first fit to book, and a replacement due
 // (src/policy/tasks.ts). The row opens the panel the client's page books from, started from what the task holds; the
-// task leaves the board once the visit is booked.
+// task leaves the board once the visit is booked, and stays while a payment link for it waits to be paid.
 
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useRef, useState } from "react";
@@ -79,7 +79,7 @@ export function BookFromTask({
           prefill={prefill}
           onClose={(booked) => {
             setOpen(false);
-            if (booked?.outcome === "booked") onBooked();
+            if (booked !== null && booked.outcome !== "awaiting_payment") onBooked();
             else requestAnimationFrame(() => opener.current?.focus());
           }}
         />

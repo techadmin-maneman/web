@@ -65,7 +65,8 @@ function payLine(choice: Choice, offered: VisitAvailability): string {
 
 /** What came of the booking: booked, on its way, or a link sent and the slot held until it closes. */
 function outcomeOf(booked: VisitBooked): string {
-  if (booked.link !== null) return copy.outcomes.awaiting_payment(rupees(booked.price.amount), whenOf(booked.link.open_until));
+  if (booked.link !== null)
+    return copy.outcomes.awaiting_payment(rupees(booked.price.amount), whenOf(booked.link.open_until));
   if (booked.outcome === "booked") return copy.outcomes.booked;
   return copy.outcomes.being_booked;
 }

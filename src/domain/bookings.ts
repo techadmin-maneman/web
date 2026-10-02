@@ -97,6 +97,8 @@ interface HoldRow {
   use_credit: number;
   /** 1 for a consultation and fit in one visit, booked from the site with nothing paid (ADR 0105). */
   one_visit: number;
+  /** 1 for a visit ops booked that the client pays for by the payment link ops sent, and by nothing else. */
+  pay_by_link: number;
   fsm_tried_at: string | null;
   fsm_work_order_id: string | null;
   fsm_appointment_id: string | null;
@@ -117,7 +119,7 @@ async function holdOf(db: D1Database, holdId: string): Promise<HoldRow | null> {
       `SELECT h.id, h.person_id, p.name AS person_name, h.type, h.tier, h.minutes, s.name AS service_name, h.date,
               h.start_unit, h.technician_id, t.fsm_id AS technician_fsm_id, h.amount, h.state, h.expires_at,
               h.grace_seconds, h.confirmed_at, h.razorpay_order_id, h.appointment_id, h.moves_appointment_id, h.move_kind,
-              h.use_credit, h.one_visit, h.fsm_tried_at, h.fsm_work_order_id, h.fsm_appointment_id, h.fsm_held_at, h.queued_at,
+              h.use_credit, h.one_visit, h.pay_by_link, h.fsm_tried_at, h.fsm_work_order_id, h.fsm_appointment_id, h.fsm_held_at, h.queued_at,
               h.refunded_at, h.pincode, sp.city
        FROM slot_holds h JOIN technicians t ON t.id = h.technician_id JOIN people p ON p.id = h.person_id
        LEFT JOIN serviceable_pincodes sp ON sp.pincode = h.pincode
@@ -141,7 +143,8 @@ const BOOKING_TRIES = 2;
 
 /**
  * Starts paying for the client's live hold: its Razorpay order, made once, or, for a free visit, the hold
- * confirmed. Null when the hold is not live, or when a consultation or first fit like it has been booked since.
+ * confirmed. Null when the hold is not live, when it is paid for by the link ops sent, or when a consultation or first
+ * fit like it has been booked since.
  */
 export async function startBooking(
   db: D1Database,
@@ -172,6 +175,7 @@ async function tryStartBooking(
 ): Promise<Started | null | "price_changed"> {
   const hold = await holdOf(db, holdId);
   if (hold?.person_id !== personId || hold.state !== "held" || hold.expires_at <= now.toISOString()) return null;
+  if (hold.pay_by_link === 1) return null;
   const isNewVisit = hold.moves_appointment_id === null;
   if (isNewVisit && (await liveVisitOf(db, personId, hold.type, hold.id)) !== null) return null;
   if (!paidInMoney(hold)) {

@@ -6,7 +6,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { FieldRecord } from "../../src/config/field-record.ts";
-import { confirmBooking } from "../../src/domain/bookings.ts";
+import { confirmBooking, startBooking } from "../../src/domain/bookings.ts";
 import { creditBalance, grantCredits } from "../../src/domain/credits.ts";
 import { makeCodes, type NewCodes } from "../../src/domain/discount-codes.ts";
 import { holdSlot } from "../../src/domain/scheduling.ts";
@@ -91,7 +91,9 @@ async function visit(personId: string | null, type: string, status: string, star
 
 /** Rohit, with his address saved: new to us, consulted, or fitted. */
 async function rohit(stage: "new" | "consulted" | "fitted" = "new") {
-  await env.DB.prepare("INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, '+919810000001', 'Rohit Malhotra')")
+  await env.DB.prepare(
+    "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, '+919810000001', 'Rohit Malhotra')",
+  )
     .bind(ROHIT, NOW.toISOString())
     .run();
   await savedAddress(ROHIT, "122018");
@@ -201,13 +203,25 @@ describe("POST /api/visits: what is booked at once", () => {
 
   it("books with the technician ops chose, and refuses him in a window he is busy in", async () => {
     await rohit("fitted");
-    const chosen = await book({ client: ROHIT, kind: "service", date: WEDNESDAY, window: "morning", technician: SANDEEP });
+    const chosen = await book({
+      client: ROHIT,
+      kind: "service",
+      date: WEDNESDAY,
+      window: "morning",
+      technician: SANDEEP,
+    });
     const body = await chosen.json<{ hold_id: string; technician: object }>();
     expect(body.technician).toEqual({ id: SANDEEP, name: "Sandeep Rawat" });
     expect((await holdOf(body.hold_id))?.technician_id).toBe(SANDEEP);
 
     await visit(null, "service", "scheduled", "2026-09-23T06:30:00.000Z", IMRAN); // Wednesday, 12 noon
-    const busy = await book({ client: ROHIT, kind: "service", date: WEDNESDAY, window: "afternoon", technician: IMRAN });
+    const busy = await book({
+      client: ROHIT,
+      kind: "service",
+      date: WEDNESDAY,
+      window: "afternoon",
+      technician: IMRAN,
+    });
     expect(busy.status).toBe(409);
     expect(await busy.json()).toMatchObject({ error: { code: "taken" } });
   });
@@ -251,7 +265,14 @@ describe("POST /api/visits: what is booked at once", () => {
 
   it("refuses a one visit in the evening, or one that is not a first fit", async () => {
     await rohit();
-    const evening = await book({ client: ROHIT, kind: "first_fit", tier: NATURAL.tier, one_visit: true, date: WEDNESDAY, window: "evening" });
+    const evening = await book({
+      client: ROHIT,
+      kind: "first_fit",
+      tier: NATURAL.tier,
+      one_visit: true,
+      date: WEDNESDAY,
+      window: "evening",
+    });
     expect(evening.status).toBe(400);
     expect(await evening.json()).toMatchObject({ error: { code: "invalid_request", fields: ["window"] } });
     const service = await book({ client: ROHIT, kind: "service", one_visit: true, date: WEDNESDAY, window: "morning" });
@@ -274,9 +295,17 @@ describe("POST /api/visits: what is booked at once", () => {
 describe("POST /api/visits: a paid visit goes out as a payment link", () => {
   it("holds the slot and sends a link for the visit's price that closes with the hold; nothing is booked yet", async () => {
     await rohit("consulted");
-    const answer = await book({ client: ROHIT, kind: "first_fit", tier: NATURAL.tier, date: "2026-09-25", window: "morning" });
+    const answer = await book({
+      client: ROHIT,
+      kind: "first_fit",
+      tier: NATURAL.tier,
+      date: "2026-09-25",
+      window: "morning",
+    });
     expect(answer.status).toBe(201);
-    const body = await answer.json<{ hold_id: string; link: { url: string; open_until: string } } & Record<string, unknown>>();
+    const body = await answer.json<
+      { hold_id: string; link: { url: string; open_until: string } } & Record<string, unknown>
+    >();
     expect(body).toMatchObject({
       outcome: "awaiting_payment",
       pays: "link",
@@ -337,7 +366,10 @@ describe("POST /api/visits: a paid visit goes out as a payment link", () => {
       createPaymentLink: () => Promise.reject(new ProviderError(503, "SERVER_ERROR", "down")),
       findPaymentLink: () => Promise.resolve(null),
     };
-    const answer = await book({ client: ROHIT, kind: "service", date: WEDNESDAY, window: "evening" }, { payments: down });
+    const answer = await book(
+      { client: ROHIT, kind: "service", date: WEDNESDAY, window: "evening" },
+      { payments: down },
+    );
     expect(answer.status).toBe(503);
     expect(await answer.json()).toMatchObject({ error: { code: "unavailable" } });
     expect(await holdsCount()).toBe(0);
@@ -347,14 +379,27 @@ describe("POST /api/visits: a paid visit goes out as a payment link", () => {
     await rohit("fitted");
     const lost: PaymentsProvider = {
       ...createStubPayments(),
-      createPaymentLink: () => Promise.reject(new ProviderError(400, "BAD_REQUEST_ERROR", "reference_id already exists")),
+      createPaymentLink: () =>
+        Promise.reject(new ProviderError(400, "BAD_REQUEST_ERROR", "reference_id already exists")),
       findPaymentLink: () => Promise.resolve({ id: "plink_made", shortUrl: "https://rzp.io/i/made" }),
     };
-    const answer = await book({ client: ROHIT, kind: "service", date: WEDNESDAY, window: "evening" }, { payments: lost });
+    const answer = await book(
+      { client: ROHIT, kind: "service", date: WEDNESDAY, window: "evening" },
+      { payments: lost },
+    );
     expect(answer.status).toBe(201);
     const body = await answer.json<{ hold_id: string; link: object }>();
     expect(body.link).toMatchObject({ url: "https://rzp.io/i/made" });
     expect(await holdOf(body.hold_id)).toMatchObject({ payment_link_id: "plink_made" });
+  });
+
+  it("is paid by its link alone: the client's own Checkout cannot start paying for it", async () => {
+    await rohit("fitted");
+    const answer = await book({ client: ROHIT, kind: "service", date: WEDNESDAY, window: "evening" });
+    const { hold_id: holdId } = await answer.json<{ hold_id: string }>();
+    expect(await startBooking(env.DB, payments, holdId, ROHIT, NOW)).toBeNull();
+    expect(payments.made.orders).toEqual([]);
+    expect(await holdOf(holdId)).toMatchObject({ state: "held", razorpay_order_id: null });
   });
 
   it("is never let go when the client makes a hold of their own in the app meanwhile", async () => {
@@ -364,7 +409,13 @@ describe("POST /api/visits: a paid visit goes out as a payment link", () => {
     const price = { amount: SERVICE_PRICE, amount_ex_gst: SERVICE_PRICE, gst_percent: 0 };
     const own = await holdSlot(
       env.DB,
-      { personId: ROHIT, service: { type: "service", tier: "standard", minutes: 90 }, date: "2026-09-24", window: "morning", price },
+      {
+        personId: ROHIT,
+        service: { type: "service", tier: "standard", minutes: 90 },
+        date: "2026-09-24",
+        window: "morning",
+        price,
+      },
       NOW,
       600,
     );
@@ -377,9 +428,52 @@ describe("POST /api/visits: what is refused", () => {
   it("refuses a second first fit while one is still to come", async () => {
     await rohit("consulted");
     await visit(ROHIT, "first_fit", "scheduled", "2026-09-28T03:30:00.000Z", IMRAN);
-    const answer = await book({ client: ROHIT, kind: "first_fit", tier: NATURAL.tier, date: WEDNESDAY, window: "morning" });
+    const answer = await book({
+      client: ROHIT,
+      kind: "first_fit",
+      tier: NATURAL.tier,
+      date: WEDNESDAY,
+      window: "morning",
+    });
     expect(answer.status).toBe(409);
     expect(await answer.json()).toMatchObject({ error: { code: "already_booked" } });
+  });
+
+  it("refuses a second first fit while the link for the first is still open, and sends no second link", async () => {
+    await rohit("consulted");
+    const first = await book({
+      client: ROHIT,
+      kind: "first_fit",
+      tier: NATURAL.tier,
+      date: WEDNESDAY,
+      window: "morning",
+    });
+    expect(await first.json()).toMatchObject({ outcome: "awaiting_payment" });
+    const second = await book({
+      client: ROHIT,
+      kind: "first_fit",
+      tier: NATURAL.tier,
+      date: "2026-09-25",
+      window: "morning",
+    });
+    expect(second.status).toBe(409);
+    expect(await second.json()).toMatchObject({ error: { code: "already_booked" } });
+    expect(payments.made.links).toHaveLength(1);
+    expect(await holdsCount()).toBe(1);
+  });
+
+  it("books a first fit again once the first link has closed unpaid", async () => {
+    await rohit("consulted");
+    await book({ client: ROHIT, kind: "first_fit", tier: NATURAL.tier, date: WEDNESDAY, window: "morning" });
+    await env.DB.prepare("UPDATE slot_holds SET expires_at = ?1, grace_seconds = 0").bind(NOW.toISOString()).run();
+    const again = await book({
+      client: ROHIT,
+      kind: "first_fit",
+      tier: NATURAL.tier,
+      date: "2026-09-25",
+      window: "morning",
+    });
+    expect(again.status).toBe(201);
   });
 
   it("refuses a client it does not have, and one who has been erased", async () => {
@@ -468,8 +562,16 @@ describe("a payment link for a visit ops booked, paid", () => {
     const payment = await env.DB.prepare(
       "SELECT person_id, razorpay_order_id, amount_ex_gst, status FROM payments WHERE razorpay_payment_id = 'pay_link_1'",
     ).first();
-    expect(payment).toEqual({ person_id: ROHIT, razorpay_order_id: "order_link_1", amount_ex_gst: SERVICE_PRICE, status: "captured" });
-    expect(await holdOf(holdId)).toMatchObject({ razorpay_order_id: "order_link_1", confirmed_at: paidAt.toISOString() });
+    expect(payment).toEqual({
+      person_id: ROHIT,
+      razorpay_order_id: "order_link_1",
+      amount_ex_gst: SERVICE_PRICE,
+      status: "captured",
+    });
+    expect(await holdOf(holdId)).toMatchObject({
+      razorpay_order_id: "order_link_1",
+      confirmed_at: paidAt.toISOString(),
+    });
     expect(queue.sent).toContainEqual({ hold_id: holdId, request_id: expect.any(String) as string });
 
     const booked = await confirmBooking(env.DB, fsm(), payments, holdId, paidAt, { labelAsTest: false });
@@ -486,6 +588,30 @@ describe("a payment link for a visit ops booked, paid", () => {
     const given = await confirmBooking(env.DB, fsm(), payments, holdId, lapsed, { labelAsTest: false });
     expect(given).toBe("refunded");
     expect(payments.made.refunds).toEqual([{ paymentId: "pay_link_1", amount: SERVICE_PRICE }]);
+  });
+
+  it("takes a replacement due off the Tasks board once its link is paid and the visit is booked", async () => {
+    await rohit("fitted");
+    await env.DB.prepare(
+      `INSERT INTO pieces (id, fsm_id, person_id, piece_code, base, supplier_lot, fitted_at, replacement_due_at, synced_at)
+       VALUES ('piece-1', 'piece-1', ?1, 'MM-STD-4417-C', 'Mono', 'L-2704', '2026-03-01', '2026-09-01', ?2)`,
+    )
+      .bind(ROHIT, NOW.toISOString())
+      .run();
+    const groups = async () => (await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS)).tasks.map((task) => task.group);
+    expect(await groups()).toContain("replacement_order");
+
+    const answer = await book(
+      { client: ROHIT, kind: "replacement", date: WEDNESDAY, window: "morning" },
+      { record: "ours" },
+    );
+    const { hold_id: holdId, price } = await answer.json<{ hold_id: string; price: { amount: number } }>();
+    expect(await groups()).toContain("replacement_order");
+
+    const linkId = (await holdOf(holdId))?.payment_link_id ?? "";
+    const paidAt = new Date(NOW.getTime() + 60 * 60_000);
+    await deliver(linkPaid({ id: linkId, reference_id: holdId }, paidAt, price.amount), "evt-4", "ours");
+    expect(await groups()).not.toContain("replacement_order");
   });
 
   it("books the visit in the webhook's own request where our own database holds the record", async () => {
@@ -568,7 +694,11 @@ describe("POST /api/visits, where our own database holds the record of field wor
     const answer = await book({ client: ROHIT, kind: "service", date: WEDNESDAY, window: "evening" }, ours);
     const body = await answer.json<{ hold_id: string; outcome: string }>();
     expect(body.outcome).toBe("awaiting_payment");
-    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM appointments WHERE person_id = ?1 AND status = 'scheduled'").bind(ROHIT).first()).toEqual({ n: 0 });
+    expect(
+      await env.DB.prepare("SELECT COUNT(*) AS n FROM appointments WHERE person_id = ?1 AND status = 'scheduled'")
+        .bind(ROHIT)
+        .first(),
+    ).toEqual({ n: 0 });
   });
 });
 
@@ -586,7 +716,12 @@ describe("GET /api/visits/availability", () => {
       days: { date: string; windows: { window: string; technicians: { id: string }[] }[] }[];
     }>();
     expect(body.services).toEqual([
-      { tier: "standard", name: "Service visit", minutes: 90, price: { amount_ex_gst: SERVICE_PRICE, amount: SERVICE_PRICE, gst_percent: 0 } },
+      {
+        tier: "standard",
+        name: "Service visit",
+        minutes: 90,
+        price: { amount_ex_gst: SERVICE_PRICE, amount: SERVICE_PRICE, gst_percent: 0 },
+      },
     ]);
     expect(body.pays).toBe("link");
     expect(body.days).toHaveLength(14);

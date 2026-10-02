@@ -113,10 +113,7 @@ const OpsBookingSchema = z
     window: z.enum(BOOKING_WINDOWS),
     technician: TechnicianSchema,
     link: z
-      .union([
-        z.object({ url: z.string(), open_until: z.iso.datetime() }).strict(),
-        z.null(),
-      ])
+      .union([z.object({ url: z.string(), open_until: z.iso.datetime() }).strict(), z.null()])
       .openapi({ description: "The payment link Razorpay texted the client, and when it closes and the slot goes." }),
   })
   .strict()
@@ -130,7 +127,11 @@ const availabilityRoute = createRoute({
     query: z.object({
       client: z.uuid(),
       kind: z.enum(VISIT_TYPES),
-      tier: z.string().regex(PRICE_TIER).optional().openapi({ description: "The service; left out, the first offered." }),
+      tier: z
+        .string()
+        .regex(PRICE_TIER)
+        .optional()
+        .openapi({ description: "The service; left out, the first offered." }),
       from: z.iso.date().optional().openapi({ description: "The first day; tomorrow if left out, or if earlier." }),
     }),
   },
@@ -138,48 +139,46 @@ const availabilityRoute = createRoute({
     200: { description: "Each day's windows", ...json(OpsAvailabilitySchema) },
     403: errorResponse("access_required"),
     404: errorResponse("not_found: no such client, or one who has been erased"),
-    422: errorResponse("not_bookable: the kind offers no such service; no_product: a first fit, with no hair system on sale"),
+    422: errorResponse(
+      "not_bookable: the kind offers no such service; no_product: a first fit, with no hair system on sale",
+    ),
   },
 });
+
+const VisitToBookSchema = z
+  .object({
+    client: z.uuid(),
+    kind: z.enum(VISIT_TYPES),
+    tier: z.string().regex(PRICE_TIER).optional().openapi({
+      description: "The service; left out, the kind's standard one. A first fit names the hair system.",
+    }),
+    technician: z.string().min(1).max(100).optional().openapi({
+      description: "The technician ops chose; left out, whoever is free, the client's regular one first.",
+    }),
+    date: z.iso.date(),
+    window: z.enum(BOOKING_WINDOWS),
+    one_visit: z
+      .boolean()
+      .optional()
+      .openapi({ description: "A consultation and fit in one visit: a first fit, morning or afternoon." }),
+    code: z.string().min(1).max(40).optional().openapi({ description: "A discount code the client gave." }),
+  })
+  .strict()
+  .openapi("VisitToBook");
 
 const bookRoute = createRoute({
   method: "post",
   path: "/api/visits",
   summary: "Book a visit for a client: at once when nothing is paid at booking, else by a payment link",
-  request: {
-    body: {
-      required: true,
-      ...json(
-        z
-          .object({
-            client: z.uuid(),
-            kind: z.enum(VISIT_TYPES),
-            tier: z.string().regex(PRICE_TIER).optional().openapi({
-              description: "The service; left out, the kind's standard one. A first fit names the hair system.",
-            }),
-            technician: z.string().min(1).max(100).optional().openapi({
-              description: "The technician ops chose; left out, whoever is free, the client's regular one first.",
-            }),
-            date: z.iso.date(),
-            window: z.enum(BOOKING_WINDOWS),
-            one_visit: z
-              .boolean()
-              .optional()
-              .openapi({ description: "A consultation and fit in one visit: a first fit, morning or afternoon." }),
-            code: z.string().min(1).max(40).optional().openapi({ description: "A discount code the client gave." }),
-          })
-          .strict()
-          .openapi("VisitToBook"),
-      ),
-    },
-  },
+  request: { body: { required: true, ...json(VisitToBookSchema) } },
   responses: {
     201: { description: "Booked, on its way, or waiting for the link to be paid", ...json(OpsBookingSchema) },
     400: errorResponse("invalid_request: a one visit that is not a first fit, or in the evening"),
     403: errorResponse("access_required"),
     404: errorResponse("not_found: no such client, or one who has been erased"),
     409: errorResponse(
-      "taken: nobody chosen is free in that window now; already_booked: a consultation or first fit is still to come; " +
+      "taken: nobody chosen is free in that window now; already_booked: a consultation or first fit is still to " +
+        "come, or a payment link for one is open; " +
         "terms_changed: the client's last credit went on another booking a moment before",
     ),
     422: errorResponse(
@@ -237,6 +236,42 @@ const bookingBody = ({ hold, sale, outcome, visitId, link }: Answer) => ({
   link,
 });
 
+/** Each day's windows from `start`, and who is free in each; nobody on a day the client may not book. */
+async function windowsOffered(
+  db: D1Database,
+  clientId: string,
+  service: PricedService,
+  days: { readonly start: string; readonly range: { readonly opens: string; readonly last: string } },
+  now: Date,
+) {
+  const visit = { minutes: service.minutes, until: service.retired_date };
+  const [free, schedule] = await Promise.all([
+    freeTechnicians(db, clientId, visit, days.start, BOOKING_DAYS, now),
+    loadSlotSchedule(db),
+  ]);
+  const shut = (date: string) => date < days.range.opens || date > days.range.last;
+  return free.map(({ date, windows }) => {
+    const hours = windowTimesOf(schedule.on(date));
+    const offered = windows.map((each) => ({
+      window: each.window,
+      ...hours[each.window],
+      technicians: shut(date) ? [] : each.technicians.map((one) => ({ id: one.id, name: one.name })),
+    }));
+    return { date, windows: offered };
+  });
+}
+
+const askedOf = (body: z.infer<typeof VisitToBookSchema>): VisitAsked => ({
+  personId: body.client,
+  kind: body.kind,
+  tier: body.tier,
+  technicianId: body.technician,
+  date: body.date,
+  window: body.window,
+  oneVisit: body.one_visit === true,
+  code: body.code,
+});
+
 export function registerOpsVisits(app: App): void {
   app.openapi(availabilityRoute, async (c) => {
     const { client, kind, tier, from } = c.req.valid("query");
@@ -253,23 +288,11 @@ export function registerOpsVisits(app: App): void {
       const refusal = kind === "first_fit" && services.length === 0 ? "no_product" : "not_bookable";
       return c.json(errorBody(refusal, c.var.requestId), 422);
     }
-    const visit = { minutes: service.minutes, until: service.retired_date };
-    const [days, schedule, credits, onCredit] = await Promise.all([
-      freeTechnicians(db, client, visit, start, BOOKING_DAYS, now),
-      loadSlotSchedule(db),
+    const [strip, credits, onCredit] = await Promise.all([
+      windowsOffered(db, client, service, { start, range }, now),
       spendableCredits(db, client, now),
       paysByCredit(db, client, kind, now),
     ]);
-    const shut = (date: string) => date < range.opens || date > range.last;
-    const strip = days.map(({ date, windows }) => {
-      const hours = windowTimesOf(schedule.on(date));
-      const offered = windows.map((each) => ({
-        window: each.window,
-        ...hours[each.window],
-        technicians: shut(date) ? [] : each.technicians.map((one) => ({ id: one.id, name: one.name })),
-      }));
-      return { date, windows: offered };
-    });
     return c.json(
       {
         kind,
@@ -284,17 +307,7 @@ export function registerOpsVisits(app: App): void {
   });
 
   app.openapi(bookRoute, async (c) => {
-    const body = c.req.valid("json");
-    const asked: VisitAsked = {
-      personId: body.client,
-      kind: body.kind,
-      tier: body.tier,
-      technicianId: body.technician,
-      date: body.date,
-      window: body.window,
-      oneVisit: body.one_visit === true,
-      code: body.code,
-    };
+    const asked = askedOf(c.req.valid("json"));
     const db = c.env.DB;
     const now = c.var.deps.now();
     const inputs = await opsInputs(c);
