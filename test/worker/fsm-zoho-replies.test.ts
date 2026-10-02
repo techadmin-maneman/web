@@ -479,4 +479,33 @@ describe("FSM: what FSM said, kept readable", () => {
         "the answer has keys code",
     );
   });
+
+  it("names the keys of a blueprint refusal's details when they name no field, and none of their values", async () => {
+    const blueprint = `${FSM_API}/Service_Appointments/ap-1/actions/blueprint`;
+    const { provider } = fsm({
+      [`${blueprint}/transitions`]: () => json({ transitions: [{ id: "transition-start", name: "Start Work" }] }),
+      [blueprint]: () =>
+        json(
+          {
+            code: "BP_ACTION_ERROR",
+            details: { action_id: "8229000000777001", reason: "Rohit Malhotra is on another job" },
+            message: "Error occured while processing blueprint actions",
+            status: "error",
+          },
+          400,
+        ),
+    });
+
+    const error: unknown = await provider
+      .transitionAppointment("ap-1", "Start Work", "Started on the phone")
+      .catch((caught: unknown) => caught);
+
+    expect(error).toMatchObject({
+      code: "BP_ACTION_ERROR",
+      refusal: true,
+      message:
+        "Zoho 400 BP_ACTION_ERROR: Error occured while processing blueprint actions " +
+        "(details has keys action_id, reason)",
+    });
+  });
 });

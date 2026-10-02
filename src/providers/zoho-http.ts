@@ -314,7 +314,10 @@ export function zohoErrorFrom(status: number, json: unknown): ZohoError {
   return new ZohoError(status, code, field === "" ? message : `${message} (${field})`);
 }
 
-/** The field a refusal names: its API name, the type Zoho expected and where it sat. Never the value sent. */
+/**
+ * The field a refusal names: its API name, the type Zoho expected and where it sat. Details naming no field, as a
+ * blueprint's refusal may, are told by their keys. Never the value sent.
+ */
 function refusedField(details: unknown): string {
   if (typeof details !== "object" || details === null) return "";
   const { api_name: name, expected_data_type: expected, json_path: path } = details as Record<string, unknown>;
@@ -322,6 +325,7 @@ function refusedField(details: unknown): string {
   if (typeof name === "string") parts.push(`field ${name}`);
   if (typeof expected === "string") parts.push(`expected ${expected}`);
   if (typeof path === "string") parts.push(`at ${path}`);
+  if (parts.length === 0 && Object.keys(details).length > 0) parts.push(`details has ${shapeOf(details)}`);
   return parts.join(", ");
 }
 
