@@ -102,6 +102,8 @@ export const AUDIT_ACTIONS = [
   "discount_code.switch_off",
   "discount_code.apply",
   "discount_code.remove",
+  // Ops sending a visit's steps that were given up on to FSM again.
+  "visit.fsm_resend",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
@@ -215,7 +217,7 @@ export function auditStatementIfBooked(
 /**
  * The entry for a row stamped earlier in the same batch, by a statement that stamps nothing when another request
  * stamped it a moment before: written only if the row carries this entry's own time. A discount code switched off,
- * or a use taken off its booking (docs/decisions/0108-discount-codes.md).
+ * a use taken off its booking (docs/decisions/0108-discount-codes.md), or a visit's steps put back to wait for FSM.
  */
 export function auditStatementIfStamped(
   db: D1Database,
@@ -223,7 +225,8 @@ export function auditStatementIfStamped(
   now: Date,
   stamped:
     | { readonly table: "discount_codes"; readonly column: "switched_off_at"; readonly id: string }
-    | { readonly table: "discount_code_uses"; readonly column: "removed_at"; readonly id: string },
+    | { readonly table: "discount_code_uses"; readonly column: "removed_at"; readonly id: string }
+    | { readonly table: "job_events"; readonly column: "updated_at"; readonly id: string },
 ): D1PreparedStatement {
   return db
     .prepare(

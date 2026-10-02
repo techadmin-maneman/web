@@ -8,12 +8,15 @@
 //   - a clash refused
 //   - a no-show closed with its evidence
 //   - an FSM write that fails and is retried
+//   - an FSM outage waited out, and a visit given up on sent to FSM again
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { uuidv7 } from "../../apps/tech/src/store/uuidv7.ts";
 import type { App } from "../../src/http/context.ts";
 import { occupancy, placement } from "../../src/domain/scheduling.ts";
+import { createCallBudget } from "../../src/lib/call-budget.ts";
+import { DAY_MS, MINUTE_MS } from "../../src/lib/durations.ts";
 import { readMeter } from "../../src/domain/storage-meter.ts";
 import { MAX_PHOTO_BYTES, MAX_THUMBNAIL_BYTES } from "../../src/domain/tech-photos.ts";
 import { PHASE_2_SHARE_BYTES, RUNAWAY_CEILING_BYTES } from "../../src/policy/storage-share.ts";
@@ -26,7 +29,9 @@ import {
   type FsmAppointment,
   type StubFsm,
 } from "../../src/providers/fsm.ts";
+import { ZohoError } from "../../src/providers/zoho-http.ts";
 import { handleFsmSyncBatch } from "../../src/queues/fsm-sync.ts";
+import { sweep, type SweepEnv } from "../../src/scheduled/sweeper.ts";
 import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request, type TestDependencies } from "./helpers.ts";
 import { syntheticJpeg, syntheticPng } from "./tryon-fixtures.ts";
 
@@ -1013,7 +1018,9 @@ describe("closing the job", () => {
     const fifth = batchOf(eventId, 5);
     await handleFsmSyncBatch(fifth as unknown as MessageBatch, queueEnv(), deps, createLogger());
     expect(await writeStateOf(eventId)).toBe("rejected");
-    expect(deps.alerts).toEqual([expect.stringMatching(/check_in did not reach FSM after 5 attempts/)]);
+    expect(deps.alerts).toEqual([
+      expect.stringMatching(/^FSM refused a technician's check_in on visit .*: FSM does not offer Dispatch/),
+    ]);
   });
 
   it("counts a step FSM has already taken as written, when ops moved the job in FSM first", async () => {
@@ -1048,19 +1055,70 @@ describe("closing the job", () => {
     expect(await writeStateOf(eventId)).toBe("written");
   });
 
-  it("gives up after five attempts, alerts, and keeps the event", async () => {
-    await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
-    await runFsmQueue();
-    await post(`/api/tech/jobs/${TODAY_JOB}/start`, undefined, "event-start-01");
-    const eventId = await eventRowId("event-start-01");
-    fsm.failNext("updateAppointment", "FSM said 500");
+  it("gives up on a step FSM refuses after five attempts, alerts, and keeps the event", async () => {
+    const eventId = await startLanded();
+    fsm.refuseNext("updateAppointment");
 
     const fifth = batchOf(eventId, 5);
     await handleFsmSyncBatch(fifth as unknown as MessageBatch, queueEnv(), deps, createLogger());
 
     expect(fifth.messages[0]?.ack).toHaveBeenCalled();
     expect(await writeStateOf(eventId)).toBe("rejected");
-    expect(deps.alerts).toEqual([expect.stringMatching(/did not reach FSM after 5 attempts/)]);
+    expect(deps.alerts).toEqual([expect.stringMatching(/^FSM refused a technician's start on visit/)]);
+  });
+
+  it("keeps a step waiting when FSM cannot be reached after five attempts, and alerts nobody yet", async () => {
+    const eventId = await startLanded();
+    fsm.failNext("updateAppointment", "FSM said 500");
+
+    const fifth = batchOf(eventId, 5);
+    await handleFsmSyncBatch(fifth as unknown as MessageBatch, queueEnv(), deps, createLogger());
+
+    expect(fifth.messages[0]?.ack).toHaveBeenCalled();
+    expect(await writeStateOf(eventId)).toBe("pending");
+    expect(await fsmErrorOf(eventId)).toBe("FSM said 500");
+    expect(deps.alerts).toEqual([]);
+  });
+
+  // Tries land at 0, 30, 90, 210 and 450 s; a token Zoho refused is not asked for again for ten minutes.
+  it("waits out a token cool-down longer than its quick tries, and the sweeper's next send writes it", async () => {
+    const eventId = await startLanded();
+    vi.spyOn(fsm, "updateAppointment").mockRejectedValueOnce(
+      new ZohoError(0, "TOKEN_COOLING_DOWN", "Zoho refused a new access token", false),
+    );
+    const fifth = batchOf(eventId, 5);
+    await handleFsmSyncBatch(fifth as unknown as MessageBatch, queueEnv(), deps, createLogger());
+    expect(await writeStateOf(eventId)).toBe("pending");
+
+    // Twelve minutes in, the cool-down is over; the sweeper sends the step again a quarter of an hour after its try.
+    const later = fakeDependencies({ fsm, now: () => new Date(NOW.getTime() + 16 * MINUTE_MS) });
+    await sweep(sweepEnv(), later, createLogger(), { creditFloor: 0, budget: createCallBudget(Infinity) });
+    expect(fsmQueue.sent.at(-1)).toEqual({ job_event_id: eventId, request_id: "sweeper" });
+
+    await runFsmQueue();
+    expect(await writeStateOf(eventId)).toBe("written");
+    expect(deps.alerts).toEqual([]);
+  });
+
+  it("tries a waiting step once each time it is sent again, and gives it up a day after it landed", async () => {
+    const eventId = await startLanded();
+    fsm.failNext("updateAppointment", "FSM said 503");
+    await handleFsmSyncBatch(batchOf(eventId, 5) as unknown as MessageBatch, queueEnv(), deps, createLogger());
+
+    fsm.failNext("updateAppointment", "FSM said 503");
+    const sentAgain = batchOf(eventId, 1);
+    await handleFsmSyncBatch(sentAgain as unknown as MessageBatch, queueEnv(), deps, createLogger());
+    expect(sentAgain.messages[0]?.retry).not.toHaveBeenCalled();
+    expect(sentAgain.messages[0]?.ack).toHaveBeenCalled();
+    expect(await writeStateOf(eventId)).toBe("pending");
+
+    const aDayOn = fakeDependencies({ fsm, now: () => new Date(NOW.getTime() + DAY_MS) });
+    fsm.failNext("updateAppointment", "FSM said 503");
+    await handleFsmSyncBatch(batchOf(eventId, 1) as unknown as MessageBatch, queueEnv(), aDayOn, createLogger());
+    expect(await writeStateOf(eventId)).toBe("rejected");
+    expect(aDayOn.alerts).toEqual([
+      expect.stringMatching(/start on visit .* did not reach FSM in the day after it landed: FSM said 503/),
+    ]);
   });
 });
 
@@ -1101,18 +1159,84 @@ describe("the order a job reaches FSM in", () => {
     await beforePhotos();
     await runFsmQueue();
     await finishJob();
-    fsm.failNext("updateAppointment", "FSM said 500");
-    await runFsmQueue();
-
-    const last = batchOf(await eventRowId("event-checklist-01"), 5);
-    fsm.failNext("updateAppointment", "FSM said 500");
-    await handleFsmSyncBatch(last as unknown as MessageBatch, queueEnv(), deps, createLogger());
+    await checklistRefusedFiveTimes();
 
     expect(fsm.made.transitioned.map(({ name }) => name)).not.toContain("Complete Work");
     expect(await writeStateOf(await eventRowId("event-outcome-01"))).toBe("rejected");
     expect(deps.alerts).toEqual([
-      expect.stringMatching(/checklist did not reach FSM after 5 attempts.*consumables, after_photos, outcome/),
+      expect.stringMatching(/^FSM refused a technician's checklist.*consumables, after_photos, outcome/),
     ]);
+  });
+
+  it("keeps a job's later steps waiting while an earlier one waits out an outage, then writes them in order", async () => {
+    await startJob();
+    await beforePhotos();
+    await runFsmQueue();
+    await finishJob();
+    fsm.failNext("updateAppointment", "FSM said 500");
+    await runFsmQueue();
+    const checklist = await eventRowId("event-checklist-01");
+    fsm.failNext("updateAppointment", "FSM said 500");
+    await handleFsmSyncBatch(batchOf(checklist, 5) as unknown as MessageBatch, queueEnv(), deps, createLogger());
+
+    expect(await writeStatesOf(TODAY_JOB)).toEqual(["pending", "written"]);
+    expect(deps.alerts).toEqual([]);
+
+    // FSM is back: the sweeper's send writes the checklist, and each step sends the next one on.
+    await handleFsmSyncBatch(batchOf(checklist, 1) as unknown as MessageBatch, queueEnv(), deps, createLogger());
+    await runFsmQueue();
+    expect(fsm.made.transitioned.map(({ name }) => name)).toEqual(["Dispatch", "Start Work", "Complete Work"]);
+    expect(await writeStatesOf(TODAY_JOB)).toEqual(["written"]);
+  });
+});
+
+describe("sending a visit to FSM again", () => {
+  async function closedButGivenUp(): Promise<void> {
+    await startJob();
+    await beforePhotos();
+    await runFsmQueue();
+    await post(`/api/tech/jobs/${TODAY_JOB}/checklist`, { done: ["piece_removed"] }, "event-checklist-01");
+    await post(`/api/tech/jobs/${TODAY_JOB}/consumables`, { items: [] }, "event-consumables-01");
+    await post(`/api/tech/jobs/${TODAY_JOB}/photos`, { phase: "after" }, "event-afterphotos-01");
+    await post(`/api/tech/jobs/${TODAY_JOB}/outcome`, { outcome: "done" }, "event-outcome-01");
+    await checklistRefusedFiveTimes();
+  }
+
+  const resend = (visitId: string) => opsPost(`/api/visits/${visitId}/fsm-resend`, {});
+
+  it("sends the steps given up on to FSM again, in the order they landed, and records who asked", async () => {
+    await closedButGivenUp();
+    expect(await writeStatesOf(TODAY_JOB)).toEqual(["rejected", "written"]);
+
+    const answer = await resend(TODAY_JOB);
+    expect(answer.status).toBe(200);
+    expect(await answer.json()).toEqual({ steps: ["checklist", "consumables", "after_photos", "outcome"] });
+    expect(await writeStatesOf(TODAY_JOB)).toEqual(["pending", "written"]);
+
+    await runFsmQueue();
+    expect(fsm.made.transitioned.map(({ name }) => name)).toEqual(["Dispatch", "Start Work", "Complete Work"]);
+    expect(await writeStatesOf(TODAY_JOB)).toEqual(["written"]);
+    const audit = await env.DB.prepare(
+      "SELECT actor, subject_kind, subject_id, detail FROM audit_log WHERE action = 'visit.fsm_resend'",
+    ).all();
+    expect(audit.results).toEqual([
+      { actor: "ops@localhost", subject_kind: "appointment", subject_id: TODAY_JOB, detail: '{"steps":4}' },
+    ]);
+  });
+
+  it("answers 404 for a visit with nothing given up, and leaves a step superseded on the phone as it was", async () => {
+    await env.DB.prepare(
+      `INSERT INTO job_events (id, appointment_id, event_id, technician_id, kind, body, occurred_at, received_at,
+         fsm_write_state, superseded, updated_at)
+       VALUES ('superseded-1', ?1, 'event-superseded-01', ?2, 'check_in', '{}', ?3, ?3, 'rejected', 1, ?3)`,
+    )
+      .bind(TODAY_JOB, IMRAN, NOW.toISOString())
+      .run();
+
+    expect((await resend(TODAY_JOB)).status).toBe(404);
+    expect((await resend(crypto.randomUUID())).status).toBe(404);
+    expect(await writeStateOf("superseded-1")).toBe("rejected");
+    expect(fsmQueue.sent).toEqual([]);
   });
 });
 
@@ -1630,6 +1754,33 @@ function queueEnv() {
   return { ...env, FSM_QUEUE: fsmQueue, MESSAGE_QUEUE: messageQueue } as unknown as typeof env;
 }
 
+function sweepEnv(): SweepEnv {
+  return {
+    ...env,
+    FSM_QUEUE: fsmQueue,
+    MESSAGE_QUEUE: messageQueue,
+    CRM_QUEUE: fakeQueue(),
+    RENDER_QUEUE: fakeQueue(),
+  } as unknown as SweepEnv;
+}
+
+/** Checks in, has FSM take it, and lands the start, not yet sent on; its row's ID. */
+async function startLanded(): Promise<string> {
+  await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
+  await runFsmQueue();
+  await post(`/api/tech/jobs/${TODAY_JOB}/start`, undefined, "event-start-01");
+  return eventRowId("event-start-01");
+}
+
+/** FSM refuses the checklist on its first try and on its fifth, its last. */
+async function checklistRefusedFiveTimes(): Promise<void> {
+  fsm.refuseNext("updateAppointment");
+  await runFsmQueue();
+  fsm.refuseNext("updateAppointment");
+  const last = batchOf(await eventRowId("event-checklist-01"), 5);
+  await handleFsmSyncBatch(last as unknown as MessageBatch, queueEnv(), deps, createLogger());
+}
+
 function batchOf(jobEventId: string, attempts: number) {
   return {
     queue: "mm-fsm-sync-local",
@@ -1673,6 +1824,13 @@ async function writeStateOf(id: string): Promise<string> {
     .bind(id)
     .first<{ fsm_write_state: string }>();
   return row?.fsm_write_state ?? "";
+}
+
+async function fsmErrorOf(id: string): Promise<string | null> {
+  const row = await env.DB.prepare("SELECT fsm_error FROM job_events WHERE id = ?1")
+    .bind(id)
+    .first<{ fsm_error: string | null }>();
+  return row?.fsm_error ?? null;
 }
 
 async function mirrorStatusOf(appointmentId: string) {

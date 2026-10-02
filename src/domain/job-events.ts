@@ -22,11 +22,13 @@ import { firstNameOf } from "../lib/names.ts";
 import { isNoShow, stepBefore, type JobEventKind } from "../policy/in-job-steps.ts";
 import { namesTheOtherTechnician } from "../policy/job-visibility.ts";
 import { onTheVisitsDay } from "../policy/phone-clock.ts";
+import { auditStatementIfStamped, type AuditEntry } from "./audit.ts";
 import type { WorkableJob } from "./tech-jobs.ts";
 
 export type FsmWriteState = "pending" | "written" | "rejected";
 
-const EVENT_COLUMNS = "id, appointment_id, event_id, kind, body, occurred_at, fsm_write_state, superseded";
+const EVENT_COLUMNS =
+  "id, appointment_id, event_id, kind, body, occurred_at, received_at, fsm_write_state, fsm_error, superseded";
 
 export interface JobEvent {
   readonly id: string;
@@ -35,7 +37,11 @@ export interface JobEvent {
   readonly kind: JobEventKind;
   readonly body: Record<string, unknown>;
   readonly occurredAt: string;
+  /** When it landed, by our clock. */
+  readonly receivedAt: string;
   readonly fsmWriteState: FsmWriteState;
+  /** Why it has not reached FSM, once its quick tries are spent: it waits out an outage, or it was given up. */
+  readonly fsmError: string | null;
   readonly superseded: boolean;
 }
 
@@ -274,6 +280,52 @@ export async function rejectPendingAfter(
   return results.sort((a, b) => a.received_at.localeCompare(b.received_at) || a.rowid - b.rowid).map((row) => row.kind);
 }
 
+/** A visit's steps put back to wait for FSM: their kinds in the order they landed, and the first, to send on. */
+export interface PutBack {
+  readonly kinds: readonly JobEventKind[];
+  readonly firstId: string;
+}
+
+/**
+ * Puts every step of a visit that was given up on back to wait for FSM, in one batch with its audit entry. A step
+ * superseded on the phone never goes to FSM, and stays as it is. Null when there was none, the visit is gone, or
+ * another call put them back first: its entry is written, and this one's is not.
+ */
+export async function putBackForFsm(
+  db: D1Database,
+  appointmentId: string,
+  now: Date,
+  audit: AuditEntry,
+): Promise<PutBack | null> {
+  const { results: givenUp } = await db
+    .prepare(
+      `SELECT e.id, e.kind FROM job_events e JOIN appointments a ON a.id = e.appointment_id
+       WHERE e.appointment_id = ?1 AND a.deleted_at IS NULL AND e.superseded = 0 AND e.fsm_write_state = 'rejected'
+       ORDER BY e.received_at, e.rowid`,
+    )
+    .bind(appointmentId)
+    .all<{ id: string; kind: JobEventKind }>();
+  const first = givenUp[0];
+  if (first === undefined) return null;
+
+  const [putBack] = await db.batch([
+    db
+      .prepare(
+        `UPDATE job_events SET fsm_write_state = 'pending', fsm_error = NULL, updated_at = ?2
+         WHERE id IN (SELECT value FROM json_each(?1)) AND fsm_write_state = 'rejected'
+         RETURNING id`,
+      )
+      .bind(JSON.stringify(givenUp.map((row) => row.id)), now.toISOString()),
+    auditStatementIfStamped(db, { ...audit, detail: { steps: givenUp.length } }, now, {
+      table: "job_events",
+      column: "updated_at",
+      id: first.id,
+    }),
+  ]);
+  if ((putBack?.results.length ?? 0) === 0) return null;
+  return { kinds: givenUp.map((row) => row.kind), firstId: first.id };
+}
+
 /** Marks what FSM did with the event. A rejection keeps FSM's status and message, never record data. */
 export async function markFsmWrite(
   db: D1Database,
@@ -295,7 +347,9 @@ interface EventRow {
   kind: JobEventKind;
   body: string;
   occurred_at: string;
+  received_at: string;
   fsm_write_state: FsmWriteState;
+  fsm_error: string | null;
   superseded: number;
 }
 
@@ -307,7 +361,9 @@ function eventOf(row: EventRow): JobEvent {
     kind: row.kind,
     body: JSON.parse(row.body) as Record<string, unknown>,
     occurredAt: row.occurred_at,
+    receivedAt: row.received_at,
     fsmWriteState: row.fsm_write_state,
+    fsmError: row.fsm_error,
     superseded: row.superseded === 1,
   };
 }

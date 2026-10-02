@@ -18,6 +18,8 @@
 // a lead in FSM by hand. A booking FSM would not take is not given up: it is
 // held, with its slot and its payment, tried again every hour for a day, and
 // waits for ops to book it or refund it (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
+// Nor is a technician's step that FSM could not be reached for: it waits, and
+// the sweeper sends it again until a day after it landed (src/policy/fsm-write-retries.ts).
 
 import { z } from "zod";
 import type { VisitType } from "../config/visit-types.ts";
@@ -28,15 +30,25 @@ import { pushCatalogue } from "../domain/fsm-catalogue.ts";
 import { logDeactivated, syncAppointment } from "../domain/fsm-mirror.ts";
 import { heldAlert, heldAlertKey, holdForFsm, isHeldForFsm, toLinkAlertKey } from "../domain/held-bookings.ts";
 import { streetOf } from "../domain/profile.ts";
-import { eventById, markFsmWrite, nextPending, rejectPendingAfter, unwrittenBefore } from "../domain/job-events.ts";
+import {
+  eventById,
+  markFsmWrite,
+  nextPending,
+  rejectPendingAfter,
+  unwrittenBefore,
+  type JobEvent,
+} from "../domain/job-events.ts";
 import { writeEventToFsm, type JobForFsm } from "../domain/job-sheet.ts";
 import { readOpsInputs } from "../domain/ops-settings.ts";
 import { exportVisitPhotos } from "../domain/visit-photos.ts";
 import { fsmText } from "../lib/fsm-text.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { failureReason, type Logger } from "../log.ts";
+import { givesUp } from "../policy/fsm-write-retries.ts";
 import { REFUSALS_BEFORE_HELD } from "../policy/held-bookings.ts";
+import type { JobEventKind } from "../policy/in-job-steps.ts";
 import type { FsmContactUpdate, FsmProvider } from "../providers/fsm.ts";
+import { isRefusal } from "../providers/provider-error.ts";
 import { MAX_SYNC_ATTEMPTS } from "./crm-sync.ts";
 import type { MessagingMessage } from "./messaging.ts";
 import { retryWithBackoff } from "./backoff.ts";
@@ -278,8 +290,10 @@ async function syncCatalogue(
 /**
  * Passes one write from a technician's outbox to FSM. A failure is retried on
  * the same schedule as everything else here, so the technician's work is never
- * lost to a refusal FSM will take a minute later; the fifth attempt alerts, and
- * the event is marked rejected for ops to enter by hand.
+ * lost to a refusal FSM will take a minute later. After the fifth attempt a
+ * refusal is given up on, and ops are told to enter it by hand; any other
+ * failure leaves the write waiting, for the sweeper to send again a quarter of
+ * an hour on, until a day after it landed.
  *
  * A job's writes reach FSM in the order they landed, as ADR 0053 has it. Each
  * is its own message and a failed one is retried minutes later, so a write
@@ -347,20 +361,17 @@ async function writeJobEvent(
   } catch (error) {
     const reason = failureReason(error);
     log.warn("job_event_write_failed", { appointment_id: job.id, kind: event.kind, attempt: message.attempts, reason });
-    if (message.attempts < MAX_FSM_SYNC_ATTEMPTS) {
+    if (!isLastQuickTry(message, event)) {
       retryWithBackoff(message, FIRST_RETRY_DELAY_SECONDS);
       return;
     }
-    await markFsmWrite(db, event.id, "rejected", deps.now(), reason);
-    const behind = await rejectPendingAfter(db, event, deps.now(), `the ${event.kind} before it did not reach FSM`);
-    await deps.resolveAlert(`job_event_pending:${event.id}`);
-    await deps.alert(
-      `A technician's ${event.kind} did not reach FSM after ${String(message.attempts)} attempts ` +
-        `on visit ${job.id}: ${reason}. ` +
-        (behind.length === 0
-          ? "Enter it in FSM by hand."
-          : `Enter it in FSM by hand, with what came after it and was held back: ${behind.join(", ")}.`),
-    );
+    const failed = { refused: isRefusal(error), landedAt: event.receivedAt };
+    if (givesUp(failed, deps.now())) {
+      await giveUpOnStep(db, deps, { visitId: job.id, event, reason, refused: failed.refused });
+    } else {
+      await markFsmWrite(db, event.id, "pending", deps.now(), reason);
+      log.warn("job_event_write_deferred", { appointment_id: job.id, kind: event.kind, reason });
+    }
     message.ack();
     return;
   }
@@ -369,6 +380,38 @@ async function writeJobEvent(
   if (next !== null) {
     await env.FSM_QUEUE.send({ job_event_id: next.id, request_id: options.requestId } satisfies FsmSyncMessage);
   }
+}
+
+/**
+ * Whether this failure ends the write's quick tries. A write already waiting out an outage is tried once each time
+ * the sweeper sends it, rather than five times over.
+ */
+const isLastQuickTry = (message: Message, event: JobEvent): boolean =>
+  message.attempts >= MAX_FSM_SYNC_ATTEMPTS || event.fsmError !== null;
+
+/** Gives up on a technician's step, and on every step of the job behind it, and tells ops what to enter by hand. */
+async function giveUpOnStep(
+  db: D1Database,
+  deps: Dependencies,
+  step: { visitId: string; event: JobEvent; reason: string; refused: boolean },
+): Promise<void> {
+  const { visitId, event, reason, refused } = step;
+  await markFsmWrite(db, event.id, "rejected", deps.now(), reason);
+  const behind = await rejectPendingAfter(db, event, deps.now(), `the ${event.kind} before it did not reach FSM`);
+  await deps.resolveAlert(`job_event_pending:${event.id}`);
+  await deps.alert(givenUpAlert({ visitId, kind: event.kind, reason, refused }, behind));
+}
+
+function givenUpAlert(
+  step: { visitId: string; kind: JobEventKind; reason: string; refused: boolean },
+  behind: readonly JobEventKind[],
+): string {
+  const { visitId, kind, reason } = step;
+  const what = step.refused
+    ? `FSM refused a technician's ${kind} on visit ${visitId}: ${reason}.`
+    : `A technician's ${kind} on visit ${visitId} did not reach FSM in the day after it landed: ${reason}.`;
+  if (behind.length === 0) return `${what} Enter it in FSM by hand.`;
+  return `${what} Enter it in FSM by hand, with what came after it and was held back: ${behind.join(", ")}.`;
 }
 
 /** The appointment a job event belongs to, with what FSM needs to write against it. */

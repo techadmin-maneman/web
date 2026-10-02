@@ -24,6 +24,7 @@ import { cycleDaysFor, type Cycles } from "../config/pieces.ts";
 import { FSM_SERVICE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaIso } from "../lib/india-time.ts";
 import { STATUS_AFTER, type AppointmentTransition, type FsmProvider } from "../providers/fsm.ts";
+import { ProviderError } from "../providers/provider-error.ts";
 import { allConsumables } from "./consumables.ts";
 import { statusOf } from "./fsm-mirror.ts";
 import { eventsOf, type JobEvent } from "./job-events.ts";
@@ -122,8 +123,8 @@ export async function writeEventToFsm(
  * Moves the appointment on by one transition. FSM offers only what its
  * blueprint allows from where the appointment is, so one it does not offer is
  * either behind it already or refused, and the appointment's status says
- * which. A refusal throws: the queue tries again, and alerts after its last
- * attempt, rather than counting a step FSM never took as written.
+ * which. A refusal throws: the queue tries again, and gives the step up after
+ * its last attempt, rather than counting a step FSM never took as written.
  *
  * Once FSM has taken the step, the mirror takes its status at once, so the
  * board and the client's app follow the job without waiting for FSM's webhook.
@@ -141,7 +142,8 @@ async function moveAppointment(
 
   const status = (await deps.fsm.appointment(job.fsmId))?.status;
   if (status === undefined || !ALREADY_PAST[transition].includes(status)) {
-    throw new Error(`FSM does not offer ${transition} on this appointment, which is ${status ?? "not in FSM"}`);
+    const message = `FSM does not offer ${transition} on this appointment, which is ${status ?? "not in FSM"}`;
+    throw new ProviderError(0, "TRANSITION_NOT_OFFERED", message, true);
   }
   await mirrorStatus(deps.db, job.id, status);
   return "nothing_to_write";

@@ -352,6 +352,27 @@ describe("ops, when the audit entry cannot be written", () => {
     expect((await send(ops, "POST", `/api/visits/${VISIT}/discount-code/remove`)).status).toBe(500);
     expect(await one("SELECT removed_at FROM discount_code_uses")).toEqual({ removed_at: null });
   });
+
+  it("sends no step of a visit to FSM again", async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, fsm_modified_at,
+           synced_at)
+         VALUES (?1, 'fsm-1', ?2, 'service', 'in_progress', 'In Progress', ?3, ?3, ?3)`,
+      ).bind(VISIT, PERSON, AT),
+      env.DB.prepare(
+        `INSERT INTO job_events (id, appointment_id, event_id, technician_id, kind, body, occurred_at, received_at,
+           fsm_write_state, fsm_error, updated_at)
+         VALUES ('event-1', ?1, 'phone-event-1', ?2, 'outcome', '{}', ?3, ?3, 'rejected', 'Zoho 400 INVALID_DATA', ?3)`,
+      ).bind(VISIT, TECHNICIAN, AT),
+    ]);
+
+    expect((await send(ops, "POST", `/api/visits/${VISIT}/fsm-resend`)).status).toBe(500);
+    expect(await one("SELECT fsm_write_state, fsm_error FROM job_events")).toEqual({
+      fsm_write_state: "rejected",
+      fsm_error: "Zoho 400 INVALID_DATA",
+    });
+  });
 });
 
 describe("the client, when the audit entry cannot be written", () => {

@@ -5,7 +5,7 @@
 //   bookings    a booked lead never put on its queue, after 2 minutes  -> fsm-sync
 //   erasures    a person erased whose CRM record is not yet blanked     -> crm-sync
 //               or whose FSM contact is not yet anonymised              -> fsm-sync
-//   job steps   a technician's step not written to FSM for 15 minutes -> fsm-sync
+//   job steps   a technician's step not written to FSM for 15 minutes, lost or waiting out an outage -> fsm-sync
 //               and after an hour, an alert naming it
 //   messages    queued but unsent for over 5 minutes                  -> messaging
 //   renders     queued but never started, or rendering past the give-up time -> render
@@ -37,7 +37,10 @@ import { DAY_MS, HOUR_MS, MINUTE_MS } from "../lib/durations.ts";
 /** A pending lead, or a queued job, older than this has lost its queue message. */
 const PENDING_GRACE_MS = 2 * MINUTE_MS;
 const MESSAGE_GRACE_MS = 5 * MINUTE_MS;
-/** Past the fsm-sync consumer's whole retry chain: 30 s, 1, 2 and 4 minutes. */
+/**
+ * Past the fsm-sync consumer's whole retry chain, 30 s, 1, 2 and 4 minutes; and how often a step waiting out an
+ * outage is sent again.
+ */
 const JOB_EVENT_GRACE_MS = 15 * MINUTE_MS;
 /** A step still not in FSM after this has outlived several sends, and ops are told. */
 const JOB_EVENT_ALERT_AFTER_MS = 60 * MINUTE_MS;
@@ -217,9 +220,9 @@ async function requeueFsmErasures(run: SweepRun): Promise<void> {
 /** A technician's steps not written to FSM, sent to fsm-sync again, and ops told of one stuck an hour. */
 async function requeueJobEvents(run: SweepRun): Promise<string[]> {
   const { db, env, now, before, deps } = run;
-  // A technician's steps whose queue message was lost, or never sent. Only a job's earliest step
-  // waiting for FSM: the consumer sends each next one on once the one before it is written. Each is
-  // stamped as it is sent, so it is not sent again while its retries may still be running.
+  // A technician's steps whose queue message was lost, or never sent, or that wait out an outage. Only
+  // a job's earliest step waiting for FSM: the consumer sends each next one on once the one before it
+  // is written. Each is stamped as it is sent, so it is not sent again while its retries may still be running.
   const jobEvents = await ids(
     db
       .prepare(
@@ -400,7 +403,8 @@ async function alertStuckJobEvents(db: D1Database, deps: Dependencies, landedBef
       key: `job_event_pending:${step.id}`,
       message:
         `A technician's ${step.kind} (job event ${step.id}) on visit ${step.appointment_id} has waited over an hour ` +
-        "to reach FSM. The sweeper keeps sending it; if it has not landed soon, enter it in FSM by hand.",
+        "to reach FSM. It is sent again every 15 minutes until a day after it landed, and you are told if it is " +
+        "given up.",
       link: step.person_id === null ? "/dispatch" : `/clients/${step.person_id}`,
     });
   }

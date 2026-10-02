@@ -211,6 +211,19 @@ describe("sweeper: a technician's steps", () => {
     expect(again.queues.fsm.sent).toEqual([]);
   });
 
+  it("sends a step waiting out an outage again a quarter of an hour after its last try", async () => {
+    const waiting = (id: string, triedMinutesAgo: number) =>
+      env.DB.prepare(
+        "UPDATE job_events SET fsm_error = 'Zoho 503 HTTP_ERROR: request failed', updated_at = ?2 WHERE id = ?1",
+      ).bind(id, minutesAgo(triedMinutesAgo));
+    await env.DB.batch([waiting("lost-start", 16), waiting("fresh-start", 5)]);
+    const { bindings, queues } = sweepEnv();
+
+    await sweep(bindings, fakeDependencies(), createLogger(), OPTIONS);
+
+    expect(queues.fsm.sent).toEqual([{ job_event_id: "lost-start", request_id: "sweeper" }]);
+  });
+
   it("tells ops once of a job's step still not in FSM an hour after it landed, with IDs only", async () => {
     await step("stuck-start", "visit-fresh", "check_in", 61).run();
     const deps = fakeDependencies();
@@ -218,7 +231,7 @@ describe("sweeper: a technician's steps", () => {
     await sweep(sweepEnv().bindings, deps, createLogger(), OPTIONS);
     expect(deps.alerts).toEqual([
       "A technician's check_in (job event stuck-start) on visit visit-fresh has waited over an hour to reach FSM. " +
-        "The sweeper keeps sending it; if it has not landed soon, enter it in FSM by hand. " +
+        "It is sent again every 15 minutes until a day after it landed, and you are told if it is given up. " +
         "http://ops.localhost:4323/dispatch",
     ]);
 
