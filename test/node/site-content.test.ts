@@ -2,7 +2,9 @@
 
 import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { GUARANTEE } from "@maneman/web-kit/guarantee";
 import { describe, expect, it } from "vitest";
+import { booking as appBooking } from "../../apps/app/src/content.ts";
 import { DESIGN_PLACEHOLDERS, type PlaceholderBlockName } from "../../site/src/content/design-placeholders.ts";
 import { referral } from "../../site/src/content/referral.ts";
 import * as site from "../../site/src/content/site.ts";
@@ -108,7 +110,6 @@ describe("content", () => {
     expect(published).not.toMatch(/forty minutes|about an hour|one hour|ninety minutes · at your table/i);
     expect(site.discretionBand.text).toMatch(/^Three hours at your own table/);
     expect(site.howItWorks.steps.map((step) => step.meta)).toEqual([
-      "Fifteen minutes · free",
       "An hour · free",
       "Three hours · at your home",
       "Every month · ninety minutes",
@@ -118,7 +119,7 @@ describe("content", () => {
     expect(referral.consultation.body).toBe("An hour, and free. Or have your fit in the same visit.");
     expect(referral.howItWorks.steps.map((step) => step.body)).toEqual([
       "An hour. A scalp template and a colour match.",
-      "Three hours. You leave the house wearing it.",
+      "Three hours. You're wearing it by the end.",
       "Lifted, cleaned, re-bonded, trimmed. Ninety minutes.",
     ]);
   });
@@ -167,7 +168,6 @@ describe("content", () => {
     expect(site.footer.area).toBe("Delhi NCR · home service only");
     expect(site.pageTitles.home).toContain("across Delhi NCR");
     expect(site.pageDescriptions.home).toContain("across Delhi NCR");
-    expect(referral.arrival.title).toBe(site.hero.title);
     expect(referral.waitlist.body).toBe("Delhi NCR only, for now.");
     expect(referral.preview.description(3)).toMatch(/^Home-fitted hair systems across Delhi NCR\./);
   });
@@ -183,6 +183,60 @@ describe("content", () => {
       .filter(([, block]) => block.publish)
       .map(([name]) => name);
     expect(published).toEqual(["whatsapp", "privacy", "terms"]);
+  });
+});
+
+describe("the second copy round", () => {
+  // The placeholder quotes and founder's note are the design's, kept until the owner supplies real ones.
+  const pages = JSON.stringify({ ...site, testimonials: null, founderNote: null }) + JSON.stringify(referral);
+
+  // CP-06: the FAQ concedes a hand through the hair can tell, so nothing may claim it cannot.
+  it("calls the hair 100% real human hair in the hero, and claims nowhere that it is undetectable", () => {
+    expect(site.hero.sequence).toContain("100% real human hair.");
+    expect(pages).not.toMatch(/undetectable/i);
+    expect(site.pageDescriptions.home).toMatch(/^Hair systems in 100% real human hair/);
+    expect(referral.arrival.title).toBe("A hair system, fitted at home. The consultation is free.");
+  });
+
+  // CP-20: /book and its search snippet opened "He measures your scalp", with nobody for "He" to be.
+  it("names the technician on /book and in the try-on before anything is said of him", () => {
+    expect(site.booking.intro).toMatch(/^Your technician measures your scalp/);
+    expect(site.pageDescriptions.book).toBe(site.booking.intro);
+    expect(site.tryOn.stage.body).not.toMatch(/\bHe\b/);
+  });
+
+  it("says how long each choice on the booking form takes", () => {
+    expect(referral.consultation.plan.options.map((option) => option.label)).toEqual([
+      "Consultation · an hour",
+      "Consultation and fit · three hours",
+    ]);
+  });
+
+  // CP-44: the site promised a refit or a refund within 14 days; the app's pay step, that the technician stops.
+  it("gives the guarantee in one sentence on the home page, in the FAQ and at the app's pay step", () => {
+    const answer = site.faq.items.find((item) => item.q === "What if I do not like it at the fit?")?.a;
+    expect(site.guarantee.text).toBe(GUARANTEE);
+    expect(answer).toBe(GUARANTEE);
+    expect(appBooking.pay.guarantee).toBe(GUARANTEE);
+  });
+
+  // CP-45: no flow books a telephone consultation, so How it works does not offer one.
+  it("promises no phone call in How it works", () => {
+    expect(JSON.stringify(site.howItWorks)).not.toMatch(/telephon|phone|call/i);
+    expect(site.howItWorks.steps.map((step) => step.number)).toEqual(["01", "02", "03"]);
+    expect(site.stepPhotos.images).toHaveLength(site.howItWorks.steps.length);
+  });
+
+  // CP-46: "for just" sneered. The owner kept "Two of these are not ours." on 2 October 2026.
+  it("keeps the owner's comparison line and gives a transplant's cost without a sneer", () => {
+    expect(site.comparison.intro).toBe("Two of these are not ours.");
+    expect(JSON.stringify(site.comparison)).not.toMatch(/\bjust\b/);
+  });
+
+  // CP-47: the prices block is hidden, but switched on it said a client pays on the day of the fit, and "piece".
+  it("keeps the hidden prices true to how a client pays, in hair systems rather than pieces", () => {
+    expect(site.prices.payment).not.toMatch(/on the day of the fit/);
+    expect(JSON.stringify({ site: site.prices, landing: referral.prices })).not.toMatch(/\bpiece\b/i);
   });
 });
 

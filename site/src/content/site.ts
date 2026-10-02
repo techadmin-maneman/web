@@ -21,6 +21,7 @@
 // Images are file names in design/assets; src/lib/images.ts resolves them.
 // `{city}` and similar are filled in by the page.
 
+import { GUARANTEE } from "@maneman/web-kit/guarantee";
 import { WHATSAPP_NUMBER } from "@maneman/web-kit/whatsapp";
 import { LOSS_EXTENTS, type LossExtent } from "../../../src/config/booking.ts";
 import { CURRENT_NOTICE, findNotice, LANDING_NOTICES } from "../../../src/config/notices.ts";
@@ -137,10 +138,6 @@ export const teaserPair = {
 export const stepPhotos = {
   publish: false,
   images: [
-    {
-      file: "step-01-call.jpg",
-      alt: "A notebook of scalp measurements and a sketched head, beside a phone and a steel ruler",
-    },
     { file: "step-02-template.jpg", alt: "Hands laying strips of tape over cling film on the crown of a head" },
     { file: "step-03-fit.jpg", alt: "Barber’s scissors trimming hair at a bonded hairline" },
     {
@@ -287,6 +284,8 @@ export const header = {
 };
 
 export const stickyBar = {
+  /** What a screen reader calls the bar's landmark. */
+  label: "Book or message us",
   whatsappLabel: "Message us on WhatsApp",
   book: "Book a visit",
 };
@@ -322,9 +321,9 @@ export const placeholderTag = "Placeholder";
 
 export const hero = {
   /** Shown one at a time over the footage, once, settling on the last. */
-  sequence: ["Undetectable.", "100% Real Hair.", "At Home.", "Be the Main Man, Again."],
-  title: "Transformation and confidence, delivered in one visit.",
-  body: "A specialist at your home, at a time that suits you. A hair system customised to you. Your look, transformed on the spot.",
+  sequence: ["Natural up close.", "100% real human hair.", "Fitted at home.", "Be the Main Man again."],
+  title: "A full head of hair, fitted at home.",
+  body: "Your technician comes when it suits you, matches a hair system to your own hair and fits it.",
   tryOn: "Try a new look",
   book: "Book a free consultation",
   // Not in v2: the footage loops, so it can be stopped (WCAG 2.2.2). The owner approves the words (open point 45).
@@ -439,7 +438,7 @@ export const comparison = {
     {
       label: "Cost",
       cells: [
-        "Rs. 1.2–3 lakh, for just 4,000–5,000 hairs",
+        "Rs. 1.2–3 lakh for 4,000–5,000 hairs",
         "Rs. 800–2,000 a month, for life",
         "Quoted at your free consultation",
       ],
@@ -482,26 +481,20 @@ export const howItWorks = {
   steps: [
     {
       number: "01",
-      title: "Free telephonic consultation",
-      body: "Tell us where you are and what you want. We tell you, straight, what a hair system can do for you.",
-      meta: "Fifteen minutes · free",
-    },
-    {
-      number: "02",
       title: "Consultation at home",
       body: "Your scalp measured, your colour matched in daylight, and your hair system chosen with you.",
       meta: `${capitalised(visitLength.consultation)} · free`,
     },
     {
-      number: "03",
+      number: "02",
       title: "The fit",
       body: "The same visit or a later one: your choice. Bonded, cut into your own hair and styled. Your new look, on the spot.",
       meta: `${capitalised(visitLength.firstFit)} · at your home`,
     },
     {
-      number: "04",
+      number: "03",
       title: "Monthly service",
-      body: "Every month it is lifted, cleaned, re-bonded and trimmed to your own growth. Undetectable, month after month.",
+      body: "Lifted, cleaned, re-bonded and trimmed to your own growth, so it looks right every month.",
       meta: `Every month · ${visitLength.service}`,
     },
   ],
@@ -514,8 +507,8 @@ export const range = {
   products: [
     {
       name: "Mane Man Essential",
-      tagline: "Built to last. Easy to wear.",
-      body: "Fine mono, the strongest base we fit, with a soft lace hairline. The one to start with.",
+      tagline: "Built for everyday wear. The place to start.",
+      body: "Fine mono, the strongest base we fit, with a soft lace hairline.",
     },
     {
       name: "Mane Man Active",
@@ -658,7 +651,7 @@ export const materials: { readonly title: string; readonly intro: string; readon
             text: "Cut, washed and styled like your own. It does not grow, so the hair system is renewed when it wears.",
           },
           {
-            name: "Indian remy, on Natural",
+            name: "Indian remy hair, on Mane Man Natural",
             text: "Every hair runs the same way, root to tip, so it tangles less and holds its shine longer.",
           },
           {
@@ -695,22 +688,22 @@ export const PRICES_SHOWN = false as boolean;
  */
 export const prices = {
   label: "Published prices",
-  intro: "No consultation fee, no deposit, no package. You pay for the piece and for the visits you take.",
+  intro: "No consultation fee, no deposit, no package. You pay for your hair system and the visits you take.",
   column: "Price",
   rows: [
     { label: "First fit", note: "Your hair system, the fitting and the cut", amount: "From {firstFit}" },
     { label: "Monthly service visit", note: "Refit, clean, trim — at your home", amount: "{service}" },
-    { label: "Replacement piece", note: "Every six months", amount: "{replacement}" },
+    { label: "Replacement hair system", note: "Every six months", amount: "{replacement}" },
   ],
   example: "Your first year, from {firstYear}: the first fit and twelve service visits at {service}.",
-  payment: "Payment on the day of the fit. Card, UPI or bank transfer.",
+  payment: "Pay by UPI or card: in the app as you book, or by a link once you are fitted.",
   book: "Book a free consultation",
   tryOn: "Or try a new look first",
 };
 
 export const guarantee = {
   label: "The guarantee",
-  text: "If the fit is not right we will refit it at no charge, or refund you in full, within fourteen days.",
+  text: GUARANTEE,
 };
 
 export const faq = {
@@ -743,7 +736,7 @@ export const faq = {
     },
     {
       q: "What if I do not like it at the fit?",
-      a: "Fourteen days to change your mind: we refit it at no charge or refund you in full, including the fitting and the cut.",
+      a: GUARANTEE,
     },
     {
       q: "Which cities do you cover?",
@@ -882,7 +875,7 @@ export const tryOn = {
   },
   stage: {
     title: "Where are you now?",
-    body: "Pick whichever is closest. He measures properly at the visit.",
+    body: "Pick whichever is closest. Your technician measures properly at the visit.",
     continue: "Continue",
   },
   looks: {
@@ -970,11 +963,12 @@ export const tryOn = {
  * The form's words are the landing's (referral.ts); these are the page's own.
  */
 export const booking = {
+  /** The page's heading follows what the form books, and where we do not come yet, the waitlist. */
   title: "Book a free consultation",
-  // The consultation fits nothing; the consultation and fit in one visit, the form's second choice, does
-  // (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). The owner reviews the words (open point 162).
-  intro: `He measures your scalp and matches your colour: ${visitLength.consultation}, with nothing to pay. Or book the fit in the same visit, and end it wearing your hair system.`,
-  extent: "Extent of hair loss",
+  titleOneVisit: "Book a consultation and fit",
+  titleWaitlist: "Not in your area yet",
+  intro: `Your technician measures your scalp and matches your colour: ${visitLength.consultation}, free. Or add the fit and wear your hair system the same day.`,
+  extent: "Extent of hair loss (optional)",
 };
 
 // ---------------------------------------------------------------------------
@@ -998,7 +992,7 @@ export const pageTitles = {
 
 /** Each page's description, for search results and shared links. */
 export const pageDescriptions = {
-  home: `Undetectable hair systems in 100% real human hair, fitted at your home across ${serviceArea}. The consultation is free.`,
+  home: `Hair systems in 100% real human hair, fitted at your home across ${serviceArea}. The consultation is free.`,
   tryOn: tryOnTeaser.body,
   book: booking.intro,
   privacy: "What Mane Man keeps about you, who processes it, how long it is kept, and how to have it erased.",

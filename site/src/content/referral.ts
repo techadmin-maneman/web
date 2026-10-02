@@ -17,7 +17,7 @@
 import type { Invite, ReferralReward } from "../lib/api.ts";
 import { fill } from "../lib/text.ts";
 import { capitalised, serviceArea, visitLength } from "./service.ts";
-import { hero, notices, type Notice } from "./site.ts";
+import { notices, type Notice } from "./site.ts";
 
 /** A one-line notice's words, as the backend records them with the consent (src/config/notices.ts). */
 function lineOf(notice: Notice): string {
@@ -84,14 +84,11 @@ function expiredBody(reward: ReferralReward | null): string {
 }
 
 export const referral = {
-  /**
-   * The navy block at the top, before the pincode is known (C1). Its title is the home page's, as the design's was
-   * until the owner rewrote the home page on 1 October 2026 (ADR 0103).
-   */
+  /** The navy block at the top, before the pincode is known (C1). */
   arrival: {
     invited: "{name} sent you this",
     unnamed: "You have an invite",
-    title: hero.title,
+    title: "A hair system, fitted at home. The consultation is free.",
     offer: inviteOffer,
     /**
      * A code we do not know: a typo, a revoked code, or one more than 12 months
@@ -109,7 +106,7 @@ export const referral = {
         what: "First fit, from",
         note: "The hair system you choose",
         amount: "{firstFit}",
-        incl: "The piece, the fitting and the cut",
+        incl: "With the fitting and the cut",
       },
       {
         what: "Service visit",
@@ -133,7 +130,7 @@ export const referral = {
       {
         n: "2",
         title: "The fit, also at home",
-        body: `${capitalised(visitLength.firstFit)}. You leave the house wearing it.`,
+        body: `${capitalised(visitLength.firstFit)}. You're wearing it by the end.`,
       },
       {
         n: "3",
@@ -149,6 +146,7 @@ export const referral = {
     placeholder: "122018",
     check: "Check",
     checking: "Checking",
+    empty: "Enter your pincode.",
     invalid: "That is not a six-digit Indian pincode.",
     failed: "We could not check that just now. Try again.",
     // Not drawn: a pincode typed wrong could only be put right by reloading the page. The owner approves the words (open point 45).
@@ -158,34 +156,29 @@ export const referral = {
   /** The consultation form, shown when the pincode is served (C2). */
   consultation: {
     served: "We come to {area}",
+    /** The form's heading on the invite, which follows what it books. */
     title: "Book a free consultation",
-    // The consultation alone fits nothing; the one visit, its second choice, fits the client then (ADR 0105). The
-    // owner reviews these words with the home page's second round (open point 162).
+    titleOneVisit: "Book a consultation and fit",
+    /** On the invite only: the site's own page says it in its introduction. */
     body: `${capitalised(visitLength.consultation)}, and free. Or have your fit in the same visit.`,
     forPincode: "For {pincode}",
     date: "Pick a date",
     window: "Window",
+    // A no-break space keeps "am" and "pm" on the line of their hour.
     windows: [
-      { id: "morning", label: "Morning", hours: "9 am to 12 pm" },
-      { id: "afternoon", label: "Afternoon", hours: "12 to 4 pm" },
-      { id: "evening", label: "Evening", hours: "4 to 8 pm" },
+      { id: "morning", label: "Morning", hours: "9 am to 12 pm" },
+      { id: "afternoon", label: "Afternoon", hours: "12 to 4 pm" },
+      { id: "evening", label: "Evening", hours: "4 to 8 pm" },
     ],
-    /**
-     * Not drawn: what to book, the consultation alone or the consultation and fit in one visit, as the owner ruled
-     * on 1 October 2026 (ADR 0025, item 89; docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). "A
-     * consultation" is the owner's; the rest are placeholder words for the owner to approve (open points 45 and
-     * 162), not marked as the apps' are, since the mark refuses the site's production build (ADR 0081). The consent
-     * line recorded is the consultation's, unchanged, and whether it covers the fit is counsel's (open point 41).
-     */
+    /** Not drawn: what to book, the consultation alone or the consultation and fit in one visit. */
     plan: {
       legend: "What to book",
       options: [
-        { id: "consultation", label: "A consultation" },
-        { id: "one_visit", label: "Consultation and fit, in one visit" },
+        { id: "consultation", label: `Consultation · ${visitLength.consultation}` },
+        { id: "one_visit", label: `Consultation and fit · ${visitLength.firstFit}` },
       ],
-      // The first fit's three hours do not fit in the evening's half-slots (docs/decisions/0035-window-slot-map.md),
-      // so the form offers the one visit the morning and the afternoon.
-      note: `${capitalised(visitLength.firstFit)}, at home, in the morning or the afternoon. Choose your hair system with your technician and have it fitted there and then. Pay once fitted, by a link to your phone; decide against it and you pay nothing.`,
+      // The first fit's three hours do not fit in the evening's half-slots, so the one visit starts earlier.
+      note: "Starts in the morning or the afternoon. Choose your hair system with your technician and have it fitted there and then. Pay once fitted, by a link to your phone; decide against it and you pay nothing.",
       // Not drawn: no hair system is offered in the console yet, so only the consultation can be booked.
       notYet: "Consultation and fit in one visit is not available to book yet.",
     },
@@ -206,17 +199,16 @@ export const referral = {
   },
   /**
    * Not drawn: no board puts an address on the consultation form. The owner ruled on 27 September 2026 that the
-   * site takes the full address before a consultation is booked (ADR 0025, item 62; ADR 0081), so the fields and
-   * their words are the client app's own (apps/app/src/content.ts, `profile.form`). The owner approves the words
-   * (open point 45).
+   * site takes the full address before a consultation is booked (ADR 0025, item 62; ADR 0081), so the fields are
+   * the client app's own (apps/app/src/content.ts, `profile.form`). The owner approves the words (open point 45).
    */
   address: {
-    legend: "Where we come",
+    legend: "Your address",
     labels: {
       flat: "Flat or house number",
       floor: "Floor (optional)",
       tower: "Tower or block (optional)",
-      line1: "Building, society or street",
+      line1: "Building or society",
       line2: "Street (optional)",
       landmark: "Landmark (optional)",
       locality: "Sector or area",
@@ -225,10 +217,11 @@ export const referral = {
     },
     errors: {
       flat: "Please give the flat or house number.",
-      line1: "Please give the building, society or street.",
+      line1: "Please give the building or society.",
       locality: "Please give the sector or area.",
       city: "Please give the city.",
     },
+    more: "Add floor, tower or landmark",
     pincode: "Pincode",
     accessHint: "A gate code, or where to park. Your technician sees it the day before the visit.",
   },
@@ -270,7 +263,7 @@ export const referral = {
     credits: visitsLand,
     appHint: "See it in the app too: sign in with this number.",
     app: "Open the app",
-    back: "See the site",
+    back: "Back to the site",
   },
   /**
    * C4's "Code expired" frame. The invite has lapsed for this friend only, which the API can tell once they have
@@ -299,7 +292,7 @@ export const referral = {
     creditsFrom: "{name}’s invite holds for 12 months after that.",
     credits: "The invite holds for 12 months after that.",
     tryOn: "Try a new look",
-    back: "See the site",
+    back: "Back to the site",
   },
   errors: {
     rateLimited: "That is a few too many tries. Please try again tomorrow.",

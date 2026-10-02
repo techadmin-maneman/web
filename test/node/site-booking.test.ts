@@ -1,9 +1,11 @@
 // The booking form's helpers.
 
 import { describe, expect, it } from "vitest";
+import { stepOf } from "../../site/src/islands/invite/step.ts";
 import { addressToSend, emptyAddress, missingParts } from "../../site/src/lib/address.ts";
 import { signInLink } from "../../site/src/lib/app-link.ts";
 import { attributionFrom } from "../../site/src/lib/attribution.ts";
+import { dayStrip, stripMonths } from "../../site/src/lib/dates.ts";
 import { keyPerRequest } from "../../site/src/lib/idempotency.ts";
 
 // FEO-21: a key that changed on every press protected nothing.
@@ -88,5 +90,36 @@ describe("the address a consultation is at", () => {
       pincode: "122018",
       access_notes: null,
     });
+  });
+});
+
+// BK-60, UX-33: the strip read "Sat 3 … Fri 16" with no month, to the eye and to a screen reader.
+describe("the date strip", () => {
+  it("reads each day out in full, with its month", () => {
+    const [first] = dayStrip("2026-10-03", 14);
+    expect(first).toMatchObject({ weekday: "Sat", number: "3", month: "October", label: "Saturday 3 October" });
+  });
+
+  it("names the month above it, or both months where it crosses a month's end", () => {
+    expect(stripMonths(dayStrip("2026-10-03", 14))).toBe("October");
+    const crossing = dayStrip("2026-10-24", 14);
+    expect(crossing.map((day) => day.label).slice(7, 9)).toEqual(["Saturday 31 October", "Sunday 1 November"]);
+    expect(stripMonths(crossing)).toBe("October – November");
+  });
+});
+
+// BK-60, UX-38: Back left the page and lost the form; each step is now an entry in the history.
+describe("the page's steps in the browser's history", () => {
+  const answer = { pincode: "122018", served: true, area: "Sector 65", city: "Gurgaon" };
+
+  it("reads back the step and the pincode's answer the page wrote", () => {
+    expect(stepOf({ step: "form", answer })).toEqual({ step: "form", answer });
+    expect(stepOf({ step: "done", answer })).toEqual({ step: "done", answer });
+  });
+
+  it("reads anything else as the pincode field", () => {
+    for (const state of [null, undefined, "form", { step: "form" }, { step: "elsewhere", answer }, { answer }]) {
+      expect(stepOf(state)).toEqual({ step: "pincode", answer: null });
+    }
   });
 });

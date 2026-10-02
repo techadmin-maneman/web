@@ -28,8 +28,8 @@ describe("the texts file", () => {
 
   it("gives each line of copy the code below its mark, so the owner reads the words themselves", () => {
     const found = placeholderTexts(copyFiles(process.cwd()));
-    const ended = found.find((item) => item.id === "apps/app/src/content.ts:49");
-    expect(ended?.note).toContain("the design draws no session that ended");
+    const ended = found.find((item) => item.note.includes("the design draws no session that ended"));
+    expect(ended?.id).toMatch(/^apps\/app\/src\/content\.ts:\d+$/);
     expect(ended?.source).toContain("Your session has ended");
   });
 
