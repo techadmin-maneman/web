@@ -12,9 +12,10 @@
 // calls to D1, R2 and the queues are a separate allowance of 1,000 a run, kept
 // by each job's batch sizes (docs/decisions/0093-the-storage-meter.md).
 
+import { fieldRecord } from "../config/field-record.ts";
 import type { Dependencies } from "../dependencies.ts";
 import { resolveAskedWindows } from "../domain/asked-windows.ts";
-import { requeueUnbookedHolds } from "../domain/bookings.ts";
+import { bookUnbookedHolds, requeueUnbookedHolds } from "../domain/bookings.ts";
 import { syncBooks, type BooksSyncOptions } from "../domain/books-sync.ts";
 import { finishRun, startRun } from "../domain/cron-runs.ts";
 import { alertAgedDeletions } from "../domain/deletion.ts";
@@ -26,7 +27,7 @@ import { anyHeldBooking, retryHeldBookings } from "../domain/held-bookings.ts";
 import { queueNextServiceReminders } from "../domain/next-visit.ts";
 import { sendUnsentLinks } from "../domain/payment-links.ts";
 import { readOpsInputs, type OpsInputs } from "../domain/ops-settings.ts";
-import { tellOfStorage } from "../domain/storage-meter.ts";
+import { readDatabaseBytes, tellOfDatabaseSize, tellOfStorage } from "../domain/storage-meter.ts";
 import { queueReminders } from "../domain/visit-messages.ts";
 import type { StaticConfig } from "../guard.ts";
 import { createCallBudget, type CallBudget } from "../lib/call-budget.ts";
@@ -115,9 +116,15 @@ async function sweepJob({ env, deps, config, log, budget }: CronContext): Promis
 
 /**
  * Holds paid for, or booked free, and neither booked nor refunded: one the queue lost goes back on it half an hour on,
- * and one FSM has refused five times running as often and for as long as ops set.
+ * and one FSM has refused five times running as often and for as long as ops set. Where our own database holds the
+ * record, each is booked here instead.
  */
-async function unbookedHoldsJob({ env, deps, log, budget, inputs }: CronContext): Promise<void> {
+async function unbookedHoldsJob(context: CronContext): Promise<void> {
+  if (fieldRecord(context.config.providers) === "ours") {
+    await bookUnbookedHoldsJob(context);
+    return;
+  }
+  const { env, deps, log, budget, inputs } = context;
   const now = deps.now();
   const requeued = await requeueUnbookedHolds(
     env.DB,
@@ -128,6 +135,14 @@ async function unbookedHoldsJob({ env, deps, log, budget, inputs }: CronContext)
   if (!(await anyHeldBooking(env.DB))) return;
   const retried = await retryHeldBookings(env.DB, { queue: env.FSM_QUEUE, log }, now, (await inputs()).fsmRetry);
   if (retried > 0) log.info("held_bookings_retried", { count: retried });
+}
+
+async function bookUnbookedHoldsJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
+  const notify = (messageId: string) =>
+    env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: "unbooked-holds" } satisfies MessagingMessage);
+  const pass = { ...deps, notify, labelAsTest: config.environment !== "production", budget, log };
+  const booked = await bookUnbookedHolds(env.DB, pass, deps.now());
+  if (booked > 0) log.warn("unbooked_holds_booked", { count: booked });
 }
 
 async function erasedFilesJob({ env, deps, log }: CronContext): Promise<void> {
@@ -152,11 +167,15 @@ async function deletionAlertsJob({ env, deps }: CronContext): Promise<void> {
   await alertAgedDeletions(env.DB, deps.now(), deps.alert);
 }
 
-/** Once an hour, on the half hour: the share fills over months, and the hour's other checks run on the hour. */
+/**
+ * Once an hour, on the half hour: R2's share and the database fill over months, and the hour's other checks run on
+ * the hour.
+ */
 async function storageMeterJob({ env, deps }: CronContext): Promise<void> {
   const minute = deps.now().getUTCMinutes();
   if (minute < 30 || minute >= 35) return;
   await tellOfStorage(env.DB, deps.alertOnce);
+  await tellOfDatabaseSize(env.DB, deps.alertOnce, await readDatabaseBytes(env.DB));
 }
 
 /** Once an hour, at a quarter past, where a token to read the account's analytics is set. */
@@ -229,7 +248,7 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "sweeper", needs: "nothing", run: sweepJob },
   // A hold paid for and neither booked nor refunded half an hour on (docs/decisions/0068-a-paid-hold-is-kept.md), and
   // one FSM refused five times running, tried every hour for a day (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
-  { name: "unbooked_holds", needs: "fsm", run: unbookedHoldsJob },
+  { name: "unbooked_holds", needs: "nothing", run: unbookedHoldsJob },
   // What an erasure could not delete from R2 at the time (docs/decisions/0066-erasure-all-or-nothing.md).
   { name: "erased_files", needs: "nothing", run: erasedFilesJob },
   // The FSM mirror's repair (docs/decisions/0032-fsm-mirror.md).
@@ -239,7 +258,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   // as parts (docs/decisions/0087-consumables-and-stock.md).
   { name: "fsm_catalogue", needs: "fsm", run: catalogueJob },
   { name: "deletion_alerts", needs: "nothing", run: deletionAlertsJob },
-  // What the photographs and cards hold of R2, told at half, 80% and all of their share (docs/decisions/0093).
+  // What the photographs and cards hold of R2, told at half, 80% and all of their share (docs/decisions/0093), and
+  // the database against D1's limit, told at half, 80% and 95%.
   { name: "storage_meter", needs: "nothing", run: storageMeterJob },
   // What the account has used today of the free plan's daily allowances, told at 70%.
   { name: "daily_allowances", needs: "nothing", run: dailyAllowancesJob },

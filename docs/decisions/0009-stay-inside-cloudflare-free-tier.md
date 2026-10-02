@@ -9,16 +9,16 @@ The owner requires that Cloudflare's free limits are never exceeded and that the
 
 On 21 September 2026 the account (`a2e185075b1b8eef3bee24b72f45ace3`) was confirmed to be on the **Workers Free** plan: Cloudflare rejected an upload that set a CPU limit, "CPU limits are not supported for the Free plan" (code 100328). Cloudflare's pricing pages state what happens at each limit:
 
-| Product                   | Free allowance                                                 | Past the allowance                   |
-| ------------------------- | -------------------------------------------------------------- | ------------------------------------ |
-| Workers requests          | 100,000 a day                                                  | requests fail                        |
-| Workers CPU               | 10 ms per invocation                                           | the invocation fails                 |
-| Workers Logs              | 200,000 events a day, 3-day retention                          | events are dropped                   |
-| D1                        | 5M rows read and 100,000 written a day; 5 GB                   | queries fail until 00:00 UTC         |
-| Queues                    | 10,000 operations a day; 24-hour retention                     | operations fail                      |
-| Static assets (mm-site)   | unlimited                                                      | not applicable                       |
-| **R2 (Standard storage)** | **10 GB-month; 1M Class A and 10M Class B operations a month** | **billed; there is no spending cap** |
-| Access (Zero Trust)       | 50 users                                                       | more seats are paid                  |
+| Product                   | Free allowance                                                                     | Past the allowance                                             |
+| ------------------------- | ---------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Workers requests          | 100,000 a day                                                                      | requests fail                                                  |
+| Workers CPU               | 10 ms per invocation                                                               | the invocation fails                                           |
+| Workers Logs              | 200,000 events a day, 3-day retention                                              | events are dropped                                             |
+| D1                        | 5M rows read and 100,000 written a day; 500 MB a database, 5 GB across the account | queries fail until 00:00 UTC; past the size, every write fails |
+| Queues                    | 10,000 operations a day; 24-hour retention                                         | operations fail                                                |
+| Static assets (mm-site)   | unlimited                                                                          | not applicable                                                 |
+| **R2 (Standard storage)** | **10 GB-month; 1M Class A and 10M Class B operations a month**                     | **billed; there is no spending cap**                           |
+| Access (Zero Trust)       | 50 users                                                                           | more seats are paid                                            |
 
 On Workers Free every product except R2 fails closed, which is an outage rather than a charge. R2 charges the card, and the only way to stop that is not to use it past the allowance.
 
@@ -55,3 +55,7 @@ D1's 5 million rows read a day had no budget, and the five-minute cron read whol
 - **`test/node/query-plans.test.ts`** plans each statement on those paths against every migration, and fails when one reads a growing table from end to end.
 - **`test/worker/cron-reads.test.ts`** runs every cron job over a finished history and again over twice that history, and fails when a run reads more for it. A quiet run reads about 70 rows, and 100 in the evening (`CRON_ROWS_READ_PER_QUIET_RUN`, `scripts/lib/free-tier-budget.ts`).
 - **`scripts/lib/free-tier-budget.ts`** models the cron's reads: production busy on every run (5,000 rows) and staging at rest, about 1.5 million a day. `test/node/free-tier-budget.test.ts` holds that under 40% of the allowance, which leaves requests the rest of the 80%.
+
+## Update, 2 October 2026: D1's size
+
+The table said 5 GB for D1. That is the account's total across its databases; one database may hold 500 MB, and past it every write fails, the audit entry each ops call writes first among them, so the console, booking and payments stop together. The hourly `storage_meter` cron job now reads the database's size, which D1 gives with any statement's answer, and tells ops once at 50%, 80% and 95% (`src/policy/database-size.ts`, the alerts `d1_size:<mark>`). Settings shows it beside the R2 meter. The runbook's "D1 growing" says what to do.

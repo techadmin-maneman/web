@@ -1,18 +1,15 @@
 // Board C4, the landing's confirmations: the consultation booked (or asked for, while self-serve booking is off),
-// the number on a waitlist, and the invite that has expired for this friend. The booked one also carries what no
-// board draws: the number we message, that we come to the address already on the account where there was one, what
-// a consultation and fit in one visit holds (ADR 0105), the discount code sent with it and whether it stands (ADR
-// 0108), a calendar file for the window, and the way into the client app.
+// the number on a waitlist, and the invite that has expired for this friend. The booked one says the same to every
+// number, since whoever typed it may not be its owner (src/policy/site-booking.ts): the details go to the number on
+// WhatsApp, and the client app shows them once its owner signs in with a code. It also says whether the discount code
+// sent with it stands (ADR 0108).
 
 import { ICONS } from "@maneman/brand/icons";
 import { rupees } from "@maneman/web-kit/money";
 import { referral } from "../../content/referral.ts";
 import type { Consultation, ReferralConsultation, ReferralReward, ReferralWaitlist } from "../../lib/api.ts";
-import { clientAppOrigin } from "../../lib/app-link.ts";
+import { clientAppOrigin, signInLink } from "../../lib/app-link.ts";
 import { ENVIRONMENT } from "../../lib/build.ts";
-import { consultationCalendar } from "../../lib/calendar.ts";
-import { bookedHeadline } from "../../lib/dates.ts";
-import { downloadFile } from "../../lib/download.ts";
 import { fill } from "../../lib/text.ts";
 import { Icon } from "../Drawings.tsx";
 import styles from "./Invite.module.css";
@@ -20,34 +17,20 @@ import styles from "./Invite.module.css";
 type HeadingRef = { current: HTMLHeadingElement | null };
 
 /**
- * A booking's answer, with the number the visitor typed, the place they gave and the discount code they sent: the
- * answer carries none of them. Only the site's own page sends a code, and only its answer says whether it stands.
+ * A booking's answer, with the number the visitor typed and the discount code they sent: the answer carries neither.
+ * Only the site's own page sends a code, and only its answer says whether it stands.
  */
 export interface Booking {
   readonly result: ReferralConsultation | Consultation;
   readonly mobile: string;
-  /** "Sector 65, Gurgaon 122018", as C4 writes it. */
-  readonly place: string;
-  /** The address typed, in one line, for the calendar file. */
-  readonly address: string;
   /** As it was sent; null for none. */
   readonly code: string | null;
 }
 
 type StandingCode = NonNullable<Consultation["discount_code"]>;
 
-/** Where the confirmation says the visit is: the place typed, unless the account's own address was kept. */
-function placeShown(booking: Booking): string {
-  if (booking.result.address === "on_account") return referral.booked.placeOnAccount;
-  return booking.place;
-}
-
 /** The waitlist's answer, the landing's or /book's: /book's carries the invite this browser remembered, if any. */
 export type Listing = Pick<ReferralWaitlist, "area" | "credits" | "invite">;
-
-export function windowHours(window: ReferralConsultation["window"]): string {
-  return referral.consultation.windows.find((option) => option.id === window)?.hours ?? "";
-}
 
 /** C4's "Code expired" frame, without "Book anyway": it shows once the booking has been made. */
 function Expired(props: { reward: ReferralReward | null }) {
@@ -61,22 +44,15 @@ function Expired(props: { reward: ReferralReward | null }) {
   );
 }
 
-/** The calendar entry's note: who comes, and where to manage the visit when there is an app to name. */
-function calendarNote(app: string | null): string {
-  const { calendarNote: note, calendarApp } = referral.booked;
-  if (app === null) return note;
-  return `${note} ${fill(calendarApp, { url: app })}`;
-}
-
-function saveCalendar(booking: Booking, app: string | null) {
-  const { result } = booking;
-  const title = result.one_visit ? referral.booked.calendarTitleOneVisit : referral.booked.calendarTitle;
-  const location = result.address === "on_account" ? null : booking.address;
-  const file = consultationCalendar(result.date, result.window, title, new Date(), {
-    location,
-    description: calendarNote(app),
-  });
-  downloadFile(referral.booked.calendarFile, "text/calendar", file);
+/**
+ * Opens the app's sign-in with the number filled in. The number is added only as the link is followed, so no
+ * analytics tag that reads the page's links ever sees it. A click asking for a new tab opens the plain sign-in.
+ */
+function openApp(event: MouseEvent, appOrigin: string, mobile: string): void {
+  const plainClick = event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
+  if (!plainClick) return;
+  event.preventDefault();
+  window.location.assign(signInLink(appOrigin, mobile));
 }
 
 /** What a code takes off the hair system's price, before GST: "Rs. 1,000 off", or "10% off, up to Rs. 2,000". */
@@ -94,57 +70,36 @@ function codeNote(booking: Booking): string | null {
   return referral.booked.code.applied(standing.code, offOf(standing));
 }
 
-/** What the visit costs now, beside where it is: the consultation nothing, the one visit nothing until the fit. */
-const costOf = (result: ReferralConsultation): string =>
-  result.one_visit ? referral.booked.payOnceFitted : referral.booked.free;
-
-/** The block's label: booked or asked for, the consultation or the consultation and fit. */
-function labelOf(result: ReferralConsultation): string {
-  if (result.state === "requested") {
-    return result.one_visit ? referral.requested.labelOneVisit : referral.requested.label;
-  }
-  return result.one_visit ? referral.booked.labelOneVisit : referral.booked.label;
-}
-
 export function Booked(props: { booking: Booking; reward: ReferralReward | null; heading: HeadingRef }) {
   const { result, mobile } = props.booking;
-  const asked = result.state === "requested";
+  const copy = result.state === "requested" ? referral.requested : referral.booked;
   const credits = result.credits ? referral.booked.credits(props.reward) : null;
   const code = codeNote(props.booking);
-  const headline = bookedHeadline(result.date, windowHours(result.window));
   const app = clientAppOrigin(ENVIRONMENT);
   return (
     <section class={styles.done}>
       <div class={`${styles.doneBlock} on-ink`}>
-        <div class={`caps ${styles.doneBlockLabel}`}>{labelOf(result)}</div>
+        <div class={`caps ${styles.doneBlockLabel}`}>{copy.label}</div>
         <Icon path={ICONS.tick} size={26} stroke={1.7} />
         <h1 ref={props.heading} tabIndex={-1} class={styles.doneBlockTitle}>
-          {asked ? `${referral.requested.asked} ${headline}` : headline}
+          {copy.title}
         </h1>
-        <p class={styles.doneBlockBody}>{asked ? referral.requested.body : referral.booked.body}</p>
-        <p class={styles.doneBlockWhere}>{`${placeShown(props.booking)} · ${costOf(result)}`}</p>
+        <p class={styles.doneBlockBody}>{fill(copy.body, { mobile })}</p>
       </div>
       <div class={styles.doneAfter}>
-        <p class={styles.doneNumber}>{fill(referral.booked.number, { mobile })}</p>
-        {result.address === "on_account" && <p class={styles.doneNote}>{referral.booked.addressOnAccount}</p>}
-        {result.one_visit && <p class={styles.doneNote}>{referral.booked.oneVisit}</p>}
         {code !== null && <p class={styles.doneNote}>{code}</p>}
         {credits !== null && <p class={styles.doneNote}>{credits}</p>}
         {result.invite === "expired" && <Expired reward={props.reward} />}
+        {app !== null && <p class={styles.doneNote}>{referral.booked.appHint}</p>}
         <div class={styles.doneActions}>
-          {!asked && (
-            <button
-              type="button"
+          {app !== null && (
+            <a
               class="btn btn--lg btn--ink"
-              onClick={() => {
-                saveCalendar(props.booking, app);
+              href={app}
+              onClick={(event) => {
+                openApp(event, app, mobile);
               }}
             >
-              {referral.booked.calendar}
-            </button>
-          )}
-          {!asked && app !== null && (
-            <a class="btn btn--lg btn--line-on-paper" href={app}>
               {referral.booked.app}
             </a>
           )}

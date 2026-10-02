@@ -1,7 +1,8 @@
 // Settings, under Admin: the rules, the days no visit is offered, the
 // consumables with each service's expected use, and the job sheet the
 // technician app reads with a job. Above them, one line says what the
-// photographs and referral cards hold in R2 against their share.
+// photographs and referral cards hold in R2 against their share, and another
+// what the database holds against its limit.
 //
 // The price book, the discount codes, the service area and the Staff list are
 // sections of their own departments (./PanelScreens.tsx).
@@ -25,11 +26,20 @@ function Panel({ tab }: { tab: SettingsTab }) {
   return <Rules />;
 }
 
-/** The storage meter's figure, once it is read; nothing while it is not, since the panels are what ops came for. */
+/**
+ * The storage meter's figure and the database's size, once they are read; nothing while they are not, since the
+ * panels are what ops came for.
+ */
 function Storage() {
   const [loaded] = useLoad(api.storage);
   if (loaded.state !== "loaded") return null;
-  return <p className={styles.storage}>{settings.storage(loaded.value.held_bytes, loaded.value.share_bytes)}</p>;
+  const storage = loaded.value;
+  return (
+    <div className={styles.storage}>
+      <p>{settings.storage(storage.held_bytes, storage.share_bytes)}</p>
+      <p>{settings.database(storage.database_bytes, storage.database_limit_bytes)}</p>
+    </div>
+  );
 }
 
 export function SettingsScreen({ tab }: { tab: SettingsTab }) {

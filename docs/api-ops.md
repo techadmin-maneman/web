@@ -3568,7 +3568,7 @@ Request body:
 
 ### GET /api/storage
 
-What the photographs and referral cards hold in R2, against their share
+What the photographs and referral cards hold in R2, against their share, and the database against its limit
 
 **200**: The storage meter
 
@@ -3999,7 +3999,6 @@ Request body:
             "not_bookable",
             "hold_expired",
             "address_required",
-            "already_booked",
             "not_changeable",
             "terms_changed",
             "consent_required",
@@ -4898,15 +4897,29 @@ Request body:
     },
     "amount": {
       "type": "integer",
-      "description": "In paise, GST included."
+      "description": "In paise, GST included: the main figure."
     },
     "amount_ex_gst": {
-      "type": "integer",
-      "description": "In paise, before GST: the main figure."
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "In paise, before GST; null where no rate was recorded for it."
     },
     "gst_percent": {
-      "type": "number",
-      "description": "The GST rate the amount includes."
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The GST rate the amount includes; null where none was recorded."
     },
     "visit": {
       "anyOf": [
@@ -4950,6 +4963,43 @@ Request body:
         }
       ],
       "description": "The visit it paid for, when known."
+    },
+    "booking": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "consultation",
+                "first_fit",
+                "service",
+                "replacement"
+              ]
+            },
+            "date": {
+              "type": "string",
+              "format": "date",
+              "description": "India's day the visit was held for."
+            },
+            "under_way": {
+              "type": "boolean",
+              "description": "Still being booked; false once refunded or let go."
+            }
+          },
+          "required": [
+            "type",
+            "date",
+            "under_way"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What it paid for while there is no visit yet: the booking its hold was making."
     },
     "status": {
       "type": "string",
@@ -5087,6 +5137,7 @@ Request body:
     "amount_ex_gst",
     "gst_percent",
     "visit",
+    "booking",
     "status",
     "method",
     "reference",
@@ -5204,15 +5255,29 @@ Request body:
     },
     "amount": {
       "type": "integer",
-      "description": "In paise, GST included."
+      "description": "In paise, GST included: the main figure."
     },
     "amount_ex_gst": {
-      "type": "integer",
-      "description": "In paise, before GST: the main figure."
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "In paise, before GST; null where no rate was recorded for it."
     },
     "gst_percent": {
-      "type": "number",
-      "description": "The GST rate the amount includes."
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The GST rate the amount includes; null where none was recorded."
     },
     "visit": {
       "anyOf": [
@@ -5257,6 +5322,43 @@ Request body:
       ],
       "description": "The visit it paid for, when known."
     },
+    "booking": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "consultation",
+                "first_fit",
+                "service",
+                "replacement"
+              ]
+            },
+            "date": {
+              "type": "string",
+              "format": "date",
+              "description": "India's day the visit was held for."
+            },
+            "under_way": {
+              "type": "boolean",
+              "description": "Still being booked; false once refunded or let go."
+            }
+          },
+          "required": [
+            "type",
+            "date",
+            "under_way"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What it paid for while there is no visit yet: the booking its hold was making."
+    },
     "status": {
       "type": "string",
       "enum": [
@@ -5297,6 +5399,7 @@ Request body:
     "amount_ex_gst",
     "gst_percent",
     "visit",
+    "booking",
     "status",
     "destination",
     "speed"
@@ -6213,7 +6316,6 @@ Request body:
             "not_bookable",
             "hold_expired",
             "address_required",
-            "already_booked",
             "not_changeable",
             "terms_changed",
             "consent_required",
@@ -12199,12 +12301,22 @@ Request body:
     "ceiling_bytes": {
       "type": "integer",
       "description": "Past this the technician app's photographs are refused and wait on the phones."
+    },
+    "database_bytes": {
+      "type": "integer",
+      "description": "What this environment's D1 database holds."
+    },
+    "database_limit_bytes": {
+      "type": "integer",
+      "description": "D1's limit on one database on the free plan; past it every write fails."
     }
   },
   "required": [
     "held_bytes",
     "share_bytes",
-    "ceiling_bytes"
+    "ceiling_bytes",
+    "database_bytes",
+    "database_limit_bytes"
   ],
   "additionalProperties": false
 }

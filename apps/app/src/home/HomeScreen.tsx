@@ -9,27 +9,30 @@
 // with the sheet opened on its day and window; a replacement is booked here like any other visit.
 
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { fullDate, indiaDate, listMonth, shortDate } from "@maneman/web-kit/dates";
+import { fullDate, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { documentUrl, type Me } from "../api.ts";
-import { BOOKING_URL, home, messages, VISIT_TYPES, visits, WINDOW_NAMES, windowText } from "../content.ts";
+import { BOOKING_URL, home, messages, VISIT_TYPES, visits, windowText } from "../content.ts";
 import { BookButton } from "../booking/BookButton.tsx";
 import { BookNext } from "../booking/BookNext.tsx";
 import type { ChangingVisit } from "../booking/ChangeSheet.tsx";
 import { visitName } from "../lib/visit.ts";
 import { useSession } from "../session.ts";
 import { AppLink, Shell } from "./Shell.tsx";
+import { monthNow, nextVisitWords, replacementLine } from "./next-visit-words.ts";
 import { Actions, changingOf, hasBegun, notingOf, VisitCard, whenText, type NotingVisit } from "./VisitCard.tsx";
 import styles from "./home.module.css";
 
 export function HomeScreen() {
   const { me, offline } = useSession();
+  // A Home the phone kept from an earlier release has no invoice line at all.
+  const invoice = me.invoice ?? null;
   return (
     <Shell header={{ kind: "home" }} tab="/">
       <div className={styles.home}>
         <HomeBody me={me} offline={offline} />
         {me.credits !== null && <CreditTile credits={me.credits} />}
         {me.prompt !== null && <Prompt prompt={me.prompt} />}
-        {me.invoice !== null && <InvoiceLine invoice={me.invoice} />}
+        {invoice !== null && <InvoiceLine invoice={invoice} />}
       </div>
     </Shell>
   );
@@ -185,13 +188,10 @@ function Prompt({ prompt }: { prompt: NonNullable<Me["prompt"]> }) {
 
 /** The next visit, booked on its day and window; beside a service, the replacement once that may be booked. */
 function NextVisitPrompt({ prompt }: { prompt: PromptOf<"next_visit"> }) {
-  const copy = home.prompt;
-  const windowName = prompt.window === null ? null : WINDOW_NAMES[prompt.window];
+  const words = nextVisitWords(prompt, monthNow(new Date()));
   return (
     <div className={styles.prompt}>
-      <p className={styles.promptLine}>
-        {copy.nextVisit(VISIT_TYPES[prompt.type], shortDate(prompt.date), windowName)}
-      </p>
+      <p className={styles.promptLine}>{words.line}</p>
       <div className={styles.promptActions}>
         <BookButton
           quiet
@@ -199,7 +199,7 @@ function NextVisitPrompt({ prompt }: { prompt: PromptOf<"next_visit"> }) {
           type={prompt.type}
           tier={prompt.tier}
           offer={{ date: prompt.date, window: prompt.window }}
-          label={copy.bookNext}
+          label={words.book}
           message={prompt.type === "replacement" ? messages.bookReplacement : messages.book}
         />
         {prompt.type === "replacement" && <Involves />}
@@ -219,13 +219,10 @@ function NextVisitPrompt({ prompt }: { prompt: PromptOf<"next_visit"> }) {
 
 /** The month the piece in wear falls due, never a day of it, once that month may be booked. */
 function ReplacementPrompt({ prompt }: { prompt: PromptOf<"replacement_due"> }) {
-  const now = new Date();
-  const thisMonth = `${String(now.getFullYear())}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const month = listMonth(prompt.month, now.getFullYear());
-  const overdue = prompt.month < thisMonth;
+  const thisMonth = monthNow(new Date());
   return (
     <div className={styles.prompt}>
-      <p className={styles.promptLine}>{overdue ? visits.record.overdue(month) : visits.record.due(month)}</p>
+      <p className={styles.promptLine}>{replacementLine(prompt.month, thisMonth)}</p>
       <div className={styles.promptActions}>
         <BookButton
           quiet

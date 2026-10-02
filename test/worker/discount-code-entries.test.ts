@@ -567,6 +567,17 @@ describe("the site's form, for a consultation and fit in one visit", () => {
     });
   });
 
+  // P1-71: a number we know that books nothing hears what a new number would, its code included.
+  it("answers a number we know, which books nothing, with the code as a new number hears it", async () => {
+    await make();
+    expect((await book({})).status).toBe(201);
+    const again = await book({ discount_code: "tenpc", date: "2026-09-24" });
+    expect(again.status).toBe(201);
+    expect(await again.json()).toMatchObject({ state: "booked", one_visit: true, discount_code: TENPC_STANDS });
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM slot_holds").first("n")).toBe(1);
+    expect((await uses()).results).toEqual([]);
+  });
+
   it("keeps the code on the booking, to come off the product's price at the link", async () => {
     await make();
     const answer = await book({ discount_code: "tenpc" });

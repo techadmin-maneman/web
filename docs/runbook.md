@@ -309,10 +309,10 @@ Zoho names a new field from its label, so the script reads each one back: the sy
 
    It confirms every field, type and pick-list value the sync writes, and lists the Leads assignment rules with their IDs. Fill in `ZOHO_LAR_ID`, run it again until it passes, then `W secret bulk` the file and delete it. The next lead proves the setup end to end: it should reach Zoho within a minute, assigned and with its proposed date.
 
-7. **A refresh token for scripts.** Zoho mints at most ten access tokens in ten minutes from one refresh token, so a script run by hand must never share the Worker's: a proof that did took FSM down with it (`docs/open-points.md`, item 32). Repeat step 5.2 and 5.3 with the same Self Client to get a second refresh token, with only the scopes the scripts need (`ZohoCRM.settings.fields.ALL`, `ZohoCRM.settings.assignment_rules.READ`; for FSM and for Books, the same scopes as their own clients, step 11b). Keep it in the scripts' own git-ignored file, never in a Worker secret:
+7. **A refresh token for scripts.** Zoho mints at most ten access tokens in ten minutes from one refresh token, so a script run by hand must never share the Worker's: a proof that did took FSM down with it (`docs/open-points.md`, item 32). Repeat step 5.2 and 5.3 with the same Self Client to get a second refresh token, with only the scopes the scripts need (`ZohoCRM.settings.fields.ALL`, `ZohoCRM.settings.assignment_rules.READ`; for FSM and for Books, the same scopes as the Worker's FSM and Books tokens, step 11b). Keep it in the scripts' own git-ignored file, never in a Worker secret:
    - the CRM's as `ZOHO_SCRIPTS_REFRESH_TOKEN`, beside `ZOHO_CLIENT_ID`, `ZOHO_CLIENT_SECRET` and the hosts;
    - FSM's as `ZOHO_FSM_SCRIPTS_REFRESH_TOKEN`, beside `ZOHO_FSM_CLIENT_ID`, `ZOHO_FSM_CLIENT_SECRET` and the hosts;
-   - Books' as `ZOHO_BOOKS_SCRIPTS_REFRESH_TOKEN`, beside `ZOHO_BOOKS_CLIENT_ID`, `ZOHO_BOOKS_CLIENT_SECRET`, the hosts and `ZOHO_BOOKS_ORG_ID`, in `.env.books-scripts`. Until Books has its own Self Client, these hold the FSM scripts' values.
+   - Books' as `ZOHO_BOOKS_SCRIPTS_REFRESH_TOKEN`, beside `ZOHO_BOOKS_CLIENT_ID`, `ZOHO_BOOKS_CLIENT_SECRET`, the hosts and `ZOHO_BOOKS_ORG_ID`, in `.env.books-scripts`.
 
    `scripts/check-zoho-setup.ts`, `scripts/setup-crm.ts` and `scripts/setup-fsm.ts` stop, naming this step, when theirs is missing (`scripts/lib/zoho-script-token.ts`). In an emergency, with the scripts' token lost, `--use-worker-token` runs one on the Worker's token on purpose; every token it mints is one the Worker cannot for ten minutes.
 
@@ -419,15 +419,15 @@ Changing it later voids every code in flight; sessions are unaffected. SMS stays
 
 ### 11b. Zoho FSM and Books
 
-The client surface reads visits from Zoho FSM and documents from Zoho Books (docs/decisions/0032-fsm-mirror.md). Both are in the real org (ADR 0025, item 26), each on an API client of its own, separate from the CRM's.
+The client surface reads visits from Zoho FSM and documents from Zoho Books (docs/decisions/0032-fsm-mirror.md). Both are in the real org (ADR 0025, item 26), each on a refresh token of its own.
 
-1. **The clients.** In `https://api-console.zoho.in`, as an administrator of the org: Add Client → Self Client, once for FSM and once for Books. On **Generate Code**, use FSM's scopes in `docs/phase2-inputs.md`, section 3, and for Books `ZohoBooks.contacts.ALL`, `ZohoBooks.invoices.ALL`, `ZohoBooks.customerpayments.ALL`, `ZohoBooks.creditnotes.ALL`, `ZohoBooks.settings.READ`, `ZohoBooks.settings.CREATE` and `ZohoBooks.settings.UPDATE`. Exchange each code for a refresh token within its 10 minutes:
+1. **The refresh tokens.** Zoho allows one Self Client per account, so FSM and Books use the CRM's (step 8.5): the same client ID and secret, and a new code for each. In `https://api-console.zoho.in`, as an administrator of the org, open that Self Client. On **Generate Code**, use FSM's scopes in `docs/phase2-inputs.md`, section 3, and for Books `ZohoBooks.contacts.ALL`, `ZohoBooks.invoices.ALL`, `ZohoBooks.customerpayments.ALL`, `ZohoBooks.creditnotes.ALL`, `ZohoBooks.settings.READ`, `ZohoBooks.settings.CREATE` and `ZohoBooks.settings.UPDATE`. Exchange each code for a refresh token within its 10 minutes:
 
    ```sh
    curl -X POST "https://accounts.zoho.in/oauth/v2/token?grant_type=authorization_code&client_id=<id>&client_secret=<secret>&code=<code>"
    ```
 
-   Until Books has its own Self Client, Books' secrets hold the FSM client's ID, secret and refresh token, whose scopes already cover Books' customers, invoices and payments. Each still keeps its own access token.
+   FSM's and Books' secrets hold the same client ID and secret, and a refresh token each. Each keeps its own access token.
 
 2. **The files.** Put FSM's values in `.env.fsm-<env>` and Books' in `.env.books-<env>`. Git ignores both.
 
@@ -743,6 +743,21 @@ If the total nears 8 GB:
 1. Stop the try-on as above. Its results then leave over the retention days and give their share back.
 2. Never delete a client's photographs to make room: they are the client's record, promised kept. The owner decided on 27 September 2026 to pay for R2 past the free allowance (open point 151; ADR 0093), so the bill is the cost of keeping them.
 
+### D1 growing
+
+Each environment's database may hold 500 MB on Workers Free (ADR 0009). Past it every write fails, the audit entry each ops call writes first among them, so the console, bookings and payments stop together. The `storage_meter` cron job reads its size once an hour, on the half hour, and tells ops once at 50%, 80% and 95% (the alerts `d1_size:50`, `d1_size:80` and `d1_size:95`). Settings shows it beside the R2 meter.
+
+Where it stands: `npx wrangler d1 info maneman-staging --env staging` (or production's) gives the size. What fills it is usually the audit log:
+
+```sql
+SELECT COUNT(*) AS entries, MIN(at) AS oldest FROM audit_log;
+SELECT action, COUNT(*) AS entries FROM audit_log GROUP BY action ORDER BY entries DESC LIMIT 10;
+```
+
+At 50%, tell the developers. Never delete rows by hand to make room: the audit log and the credit ledger refuse it by trigger, and the rest are clients' records and the history of their money. The audit log's retention, two years once counsel confirms it, is what takes rows off it. At 80%, the owner decides between that and Workers Paid, which holds 10 GB a database and needs a new ADR (ADR 0009).
+
+A mark is told once for good; to hear of one again after the database shrank below it, `UPDATE storage_meter SET database_told_percent = 0 WHERE id = 1;`.
+
 ---
 
 ## Alerts and the cron
@@ -826,6 +841,7 @@ The chat shows the message; the `alerts` table keeps it under its key. Most aler
 | FSM's catalogue does not hold _n_ of the consumables as ours                             | `fsm_catalogue:consumables`                                                                               | when each is linked                  | add or rename each part in FSM at Rs. 0, as it says (ADR 0087)          |
 | Stock is low in the central store, or in technician _id_'s kit                           | `low_stock:central`, `low_stock:kit:<technician>`                                                         | when the place is no longer low      | record a delivery or a transfer on the Stock page                       |
 | Client _id_'s new number, address or invite did not reach FSM (or the CRM)               | `fsm_contact_update:<person>`, `crm_contact_update:<person>`, `contact_sync:<person>`                     | when a later update goes through     | update the contact or lead by hand, as it says                          |
+| The database holds _n_ MB, _p_% of the 500 MB Cloudflare's free plan allows it           | `d1_size:<mark>`                                                                                          | not closed; told once a mark         | "D1 growing"                                                            |
 | AILabTools credits are down to _n_                                                       | `ailab_credits_low`                                                                                       | when topped up                       | "Credits are low"                                                       |
 | Try-on job _id_ failed, or its result was billed but never downloaded                    | none                                                                                                      | not kept                             | "Try-on and WhatsApp"                                                   |
 | The daily _name_ ceiling is reached                                                      | none: told once a day                                                                                     | not kept                             | "A ceiling was reached"; section 13 for geocode                         |
@@ -870,7 +886,7 @@ Nothing to do at first. A lead's first failure is retried by the queue 30 second
 Symptoms: every sync fails with `invalid_code` or `INVALID_TOKEN`.
 
 1. Make a new refresh token (Zoho, step 5 of "Provisioning an environment").
-2. `W secret put ZOHO_REFRESH_TOKEN --env <env>`
+2. `W secret put ZOHO_REFRESH_TOKEN --env <env>` (`ZOHO_FSM_REFRESH_TOKEN` for FSM, `ZOHO_BOOKS_REFRESH_TOKEN` for Books).
 3. Drop the cached access token: `DELETE FROM zoho_access_tokens WHERE client = 'crm';` (`'fsm'` for FSM, `'books'` for Books).
 4. The sweeper delivers the waiting leads within five minutes. Replay any that already gave up.
 
