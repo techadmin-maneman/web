@@ -1589,7 +1589,8 @@ Razorpay's webhook: payments and refunds
       ]
     },
     "area": {
-      "type": "string"
+      "type": "string",
+      "description": "The area once ops have named it, its city until then."
     },
     "credits": {
       "type": "boolean",
@@ -1721,7 +1722,8 @@ Razorpay's webhook: payments and refunds
         {
           "type": "null"
         }
-      ]
+      ],
+      "description": "Null until ops have named the area, and for a pincode we do not know."
     },
     "credits": {
       "type": "boolean",
@@ -1822,7 +1824,7 @@ Razorpay's webhook: payments and refunds
           "type": "null"
         }
       ],
-      "description": "Null for a pincode we do not know."
+      "description": "The area's name once ops have named it; null until then, and for a pincode we do not know."
     },
     "city": {
       "anyOf": [
@@ -1872,7 +1874,8 @@ Razorpay's webhook: payments and refunds
       ]
     },
     "area": {
-      "type": "string"
+      "type": "string",
+      "description": "The area once ops have named it, its city until then."
     },
     "credits": {
       "type": "boolean",
@@ -1919,7 +1922,8 @@ Razorpay's webhook: payments and refunds
         {
           "type": "null"
         }
-      ]
+      ],
+      "description": "Null until ops have named the area, and for a pincode we do not know."
     },
     "credits": {
       "type": "boolean",

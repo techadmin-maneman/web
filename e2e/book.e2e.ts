@@ -176,6 +176,14 @@ test("a served pincode books, and sends where the hair loss is", async ({ page }
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeHidden();
 });
 
+// BK-27 and CP-25 of the audit, 2 October 2026: "We come to Masjid Moth", the post office's name for the area.
+test("greets a served pincode by its city until ops name its area", async ({ page }) => {
+  await mockApi(page);
+  await page.route("**/api/pincodes/*", (route) => route.fulfill({ json: { ...SERVED, area: null } }));
+  await openForm(page);
+  await expect(page.getByRole("heading", { name: "We come to Gurgaon" })).toBeVisible();
+});
+
 // The owner's ruling D2 of 1 October 2026 (ADR 0025, item 89; docs/decisions/0105-a-consultation-and-fit-in-one-visit.md):
 // the client chooses one visit or two. The second choice books the consultation and fit in one visit, three hours,
 // paid for once fitted; it replaces the consultation with the first fit to follow, whose tests went with it.

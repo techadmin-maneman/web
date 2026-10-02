@@ -68,21 +68,26 @@ import { availability, bookableTypes, holdSlot, liveVisitOf, type HeldService } 
 import { saveBookingLead, type Attribution } from "./leads.ts";
 import { siteNotice, type SiteNoticeKind } from "./site-notices.ts";
 import { waitlistConfirmation } from "./waitlist.ts";
+import { namedArea } from "./area-names.ts";
 
 /** A pincode we know, and whether a technician works there. */
 export interface Pincode {
   readonly pincode: string;
-  readonly area: string;
+  /** Null until ops have named the area. */
+  readonly area: string | null;
   readonly city: string;
   readonly served: number;
 }
 
 export function pincodeOf(db: D1Database, pin: string): Promise<Pincode | null> {
   return db
-    .prepare("SELECT pincode, area, city, served FROM serviceable_pincodes WHERE pincode = ?1")
+    .prepare(`SELECT pincode, ${namedArea("p")} AS area, city, served FROM serviceable_pincodes p WHERE pincode = ?1`)
     .bind(pin)
     .first<Pincode>();
 }
+
+/** Where a booking is, as the client reads it: the area once ops have named it, its city until then. */
+const placeOf = (pincode: Pincode): string => pincode.area ?? pincode.city;
 
 /**
  * Why a submission was refused, in the codes the routes answer with. Each route
@@ -381,6 +386,7 @@ export interface Booked {
   readonly state: "booked" | "requested";
   readonly date: string;
   readonly window: BookingWindow;
+  /** The area once ops have named it, its city until then. */
   readonly area: string;
   /** Whether the invite's service visits apply. */
   readonly credits: boolean;
@@ -522,7 +528,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     state,
     date: request.date,
     window: request.window,
-    area: pincode.area,
+    area: placeOf(pincode),
     credits: invited.credits,
     invite: invited.invite,
     oneVisit,
@@ -553,7 +559,7 @@ async function answerAsForANewNumber(
     state,
     date: request.date,
     window: request.window,
-    area: pincode.area,
+    area: placeOf(pincode),
     // A new number carries a valid invite's credits.
     credits: request.invite !== null,
     invite: request.invite === null ? "unknown" : "valid",
@@ -629,6 +635,7 @@ export interface WaitlistRequest {
 
 export interface Listed {
   readonly ok: true;
+  /** Null until ops have named the area, and for a pincode we do not know. */
   readonly area: string | null;
   readonly credits: boolean;
   readonly invite: InviteState;

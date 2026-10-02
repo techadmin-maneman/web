@@ -1187,7 +1187,8 @@ Who is waiting, by pincode, the longest wait first
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The area's name once ops have named it; null until then, and for a pincode we do not know."
           },
           "city": {
             "anyOf": [

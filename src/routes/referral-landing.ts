@@ -66,7 +66,9 @@ const PincodeAnswerSchema = z
   .object({
     pincode: z.string(),
     served: z.boolean(),
-    area: z.union([z.string(), z.null()]).openapi({ description: "Null for a pincode we do not know." }),
+    area: z.union([z.string(), z.null()]).openapi({
+      description: "The area's name once ops have named it; null until then, and for a pincode we do not know.",
+    }),
     city: z.union([z.string(), z.null()]),
   })
   .strict()
@@ -168,7 +170,7 @@ const consultationRoute = createRoute({
               }),
               date: z.iso.date(),
               window: z.enum(BOOKING_WINDOWS),
-              area: z.string(),
+              area: z.string().openapi({ description: "The area once ops have named it, its city until then." }),
               credits: CreditsSchema,
               invite: InviteStateSchema,
               one_visit: OneVisitOutcomeSchema,
@@ -208,7 +210,13 @@ const waitlistRoute = createRoute({
       content: {
         "application/json": {
           schema: z
-            .object({ area: z.union([z.string(), z.null()]), credits: CreditsSchema, invite: InviteStateSchema })
+            .object({
+              area: z
+                .union([z.string(), z.null()])
+                .openapi({ description: "Null until ops have named the area, and for a pincode we do not know." }),
+              credits: CreditsSchema,
+              invite: InviteStateSchema,
+            })
             .strict()
             .openapi("ReferralWaitlist"),
         },
