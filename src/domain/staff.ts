@@ -1,4 +1,4 @@
-// The Staff list (migrations/0068_staff_and_access.sql): each member of staff by their Access e-mail and their grants,
+// The Staff list (migrations/0069_staff_and_access.sql): each member of staff by their Access e-mail and their grants,
 // the service tokens let in as before, the zones that group cities, and whether the console enforces the list yet.
 // Who may do what with them is src/policy/access.ts.
 

@@ -1,4 +1,4 @@
-// The Staff list as a test sets it up (migrations/0068_staff_and_access.sql): people and their grants, service tokens,
+// The Staff list as a test sets it up (migrations/0069_staff_and_access.sql): people and their grants, service tokens,
 // and the switch. Every address and ID is made up.
 
 import { env } from "cloudflare:workers";

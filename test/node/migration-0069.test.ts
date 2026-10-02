@@ -1,4 +1,4 @@
-// Migration 0068: the Staff list, applied to a database whose audit log already holds ops calls, as staging's does.
+// Migration 0069: the Staff list, applied to a database whose audit log already holds ops calls, as staging's does.
 // Nobody who used the console may be locked out by it, and a service token is never listed as a person. Every address
 // and ID is made up.
 
@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
 const MIGRATIONS = readdirSync("migrations")
   .filter((file) => file.endsWith(".sql"))
   .sort();
-const THIS = MIGRATIONS.find((file) => file.startsWith("0068_")) ?? "";
+const THIS = MIGRATIONS.find((file) => file.startsWith("0069_")) ?? "";
 
 const AT = "2026-10-01T06:30:00.000Z";
 
@@ -42,7 +42,7 @@ const STAGING_LIKE = [
   call("technician", "technician-1", "tech"),
 ].join("\n");
 
-describe("migration 0068", () => {
+describe("migration 0069", () => {
   it("lists each person who used the console, with every department at MANAGE nationally", () => {
     const db = migrated(STAGING_LIKE);
     expect(db.prepare("SELECT email, active FROM staff ORDER BY email").all()).toEqual([

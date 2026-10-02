@@ -64,7 +64,7 @@ A record whose city cannot be found is shown only to national grants. Each route
 
 ## Seeded so that nobody is locked out
 
-Migration 0068 lists every person in the ops audit log (Access e-mails, `actor_kind = 'staff'`) with every department at Manage, nationally, and puts every service token in it (`actor_kind = 'service'`) on the token list, never on the Staff list. On staging that is one person and the CI token.
+Migration 0069 lists every person in the ops audit log (Access e-mails, `actor_kind = 'staff'`) with every department at Manage, nationally, and puts every service token in it (`actor_kind = 'service'`) on the token list, never on the Staff list. On staging that is one person and the CI token.
 
 ## Rollout
 

@@ -1,4 +1,4 @@
--- Migration number: 0068
+-- Migration number: 0069
 -- Who may do what in the ops console. Each member of staff is listed by their Cloudflare Access e-mail, with grants
 -- of a department at a level over a place: national, a zone of cities, or one city. Service tokens keep the access
 -- every caller had before, by an explicit list. One row says whether the console enforces any of it yet, and it
@@ -66,12 +66,12 @@ INSERT INTO staff_access_mode (id, enforced) VALUES (1, 0);
 -- Nobody who has used the console is locked out: each person in its audit log is listed with every department at
 -- MANAGE, nationally, and each service token in it keeps its access. A service token is never listed as a person.
 INSERT INTO staff (email, active, added_by, added_at)
-  SELECT DISTINCT lower(actor), 1, 'migration 0068', strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+  SELECT DISTINCT lower(actor), 1, 'migration 0069', strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
   FROM audit_log
   WHERE surface = 'ops' AND actor_kind = 'staff' AND instr(actor, '@') > 1;
 
 INSERT INTO staff_grants (email, department, level, geography, place, granted_by, granted_at)
-  SELECT staff.email, departments.name, 'manage', 'national', NULL, 'migration 0068', staff.added_at
+  SELECT staff.email, departments.name, 'manage', 'national', NULL, 'migration 0069', staff.added_at
   FROM staff
   CROSS JOIN (
     SELECT 'operations' AS name
@@ -82,6 +82,6 @@ INSERT INTO staff_grants (email, department, level, geography, place, granted_by
   ) AS departments;
 
 INSERT INTO staff_service_tokens (client_id, label, added_by, added_at)
-  SELECT DISTINCT actor, 'In use before the Staff list', 'migration 0068', strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+  SELECT DISTINCT actor, 'In use before the Staff list', 'migration 0069', strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
   FROM audit_log
   WHERE surface = 'ops' AND actor_kind = 'service';

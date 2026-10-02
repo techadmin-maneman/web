@@ -272,7 +272,7 @@ Made by `0049_consumables_and_stock.sql`.
 
 The cities Phase 1's booking form offered. The leads it left name one, a booking's lead names its pincode's, the dispatch board filters by them, and a zone groups them for staff access (ADR 0109).
 
-Made by `0002_lead_path.sql`; changed by `0068_staff_and_access.sql`.
+Made by `0002_lead_path.sql`; changed by `0069_staff_and_access.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1444,7 +1444,7 @@ Triggers: `slot_times_no_delete`, `slot_times_no_update`.
 
 Each member of staff on the console's Staff list, by their Access e-mail, and whether they are let in (ADR 0109).
 
-Made by `0068_staff_and_access.sql`.
+Made by `0069_staff_and_access.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1459,7 +1459,7 @@ Made by `0068_staff_and_access.sql`.
 
 One row: whether the console enforces the Staff list yet, and who last switched it (ADR 0109).
 
-Made by `0068_staff_and_access.sql`.
+Made by `0069_staff_and_access.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1472,7 +1472,7 @@ Made by `0068_staff_and_access.sql`.
 
 What each member of staff may do: a department, at a level, over a place, national, a zone or a city (ADR 0109).
 
-Made by `0068_staff_and_access.sql`.
+Made by `0069_staff_and_access.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1493,7 +1493,7 @@ Indexes:
 
 The Access service tokens let in as every caller was before the Staff list, such as CI's (ADR 0109).
 
-Made by `0068_staff_and_access.sql`.
+Made by `0069_staff_and_access.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1915,7 +1915,7 @@ Made by `0010_zoho_tokens.sql`.
 
 A region made of cities, as NCR is, which a grant of staff access may name (ADR 0109).
 
-Made by `0068_staff_and_access.sql`.
+Made by `0069_staff_and_access.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |

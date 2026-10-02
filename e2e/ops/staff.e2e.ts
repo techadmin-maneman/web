@@ -20,7 +20,7 @@ const BOOK: OpsReply<"/api/staff"> = {
         { department: "admin", level: "manage", geography: "national", place: null },
         { department: "finance", level: "manage", geography: "national", place: null },
       ],
-      added_by: "migration 0068",
+      added_by: "migration 0069",
       added_at: AT,
       changed_by: null,
       changed_at: null,
@@ -36,7 +36,7 @@ const BOOK: OpsReply<"/api/staff"> = {
     },
   ],
   service_tokens: [
-    { client_id: "a1b2c3d4.access", label: "In use before the Staff list", added_by: "migration 0068", added_at: AT },
+    { client_id: "a1b2c3d4.access", label: "In use before the Staff list", added_by: "migration 0069", added_at: AT },
   ],
   zones: [{ name: "NCR", cities: ["Gurgaon", "Delhi", "Noida", "Faridabad", "Ghaziabad"] }],
   cities: ["Gurgaon", "Delhi", "Noida", "Faridabad", "Ghaziabad", "Mumbai", "Bengaluru"],
