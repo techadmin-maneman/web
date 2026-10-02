@@ -1,7 +1,8 @@
 // The production build's gate (docs/frontend.md). A production build stops if
 // a published block still holds the design's placeholder material, if a
-// consent notice has not been approved, if a price on the site or the
-// landing is typed into its sentence rather than filled from the price book
+// consent notice or a legal page's wording has not been approved, if a price
+// on the site or the landing is typed into its sentence rather than filled
+// from the price book
 // (docs/decisions/0073-prices-from-the-price-book.md), or if a count of the
 // visits a referral earns is typed rather than built from what ops set
 // (docs/decisions/0107-referral-rewards-in-the-console.md). Staging builds never run it.
@@ -79,6 +80,7 @@ export function publishProblems(
   blocks: Readonly<Record<PlaceholderBlockName, Block>> = BLOCKS,
   notices: Readonly<Record<string, site.Notice>> = site.notices,
   pages: readonly unknown[] = [site, referral],
+  legalPages: Readonly<Record<string, { readonly approved: boolean }>> = site.legalPages,
 ): string[] {
   const problems: string[] = [];
   for (const [name, block] of Object.entries(blocks) as [PlaceholderBlockName, Block][]) {
@@ -94,6 +96,9 @@ export function publishProblems(
   }
   for (const [name, notice] of Object.entries(notices)) {
     if (!notice.approved) problems.push(`the ${name} notice (${notice.version}) is not approved`);
+  }
+  for (const [name, page] of Object.entries(legalPages)) {
+    if (!page.approved) problems.push(`the ${name} page's wording is not approved`);
   }
   for (const price of typedPrices(pages)) {
     problems.push(

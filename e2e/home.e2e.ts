@@ -326,13 +326,25 @@ test.describe("other pages", () => {
     await expect(page.locator("header")).toBeVisible();
   });
 
-  test("privacy and terms carry their text, with no placeholder tag", async ({ page }) => {
+  // UX-39, CP-51: a heading per topic, and the number to ask for erasure is a link a phone can tap.
+  test("privacy and terms carry their text under a heading per topic, with the number as a WhatsApp link", async ({
+    page,
+  }) => {
     await page.goto("/privacy");
-    await expect(page.locator("article p")).toHaveCount(2);
+    await expect(page.locator("article h2")).toHaveCount(6);
+    await expect(page.getByRole("heading", { name: "Your rights" })).toBeVisible();
+    await expect(page.locator("article a", { hasText: "+91 90079 73247" })).toHaveAttribute(
+      "href",
+      "https://wa.me/919007973247",
+    );
     await expect(page.locator(".label", { hasText: "Placeholder" })).toHaveCount(0);
     await page.goto("/terms");
-    await expect(page.locator("article p")).toHaveCount(5);
+    await expect(page.locator("article h2")).toHaveCount(8);
     await expect(page.getByText("the courts at New Delhi have jurisdiction", { exact: false })).toBeVisible();
+    await expect(page.locator("article a", { hasText: "+91 90079 73247" })).toHaveAttribute(
+      "href",
+      "https://wa.me/919007973247",
+    );
     await expect(page.locator(".label", { hasText: "Placeholder" })).toHaveCount(0);
   });
 

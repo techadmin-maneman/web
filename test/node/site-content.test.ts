@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { GUARANTEE } from "@maneman/web-kit/guarantee";
 import { describe, expect, it } from "vitest";
-import { booking as appBooking } from "../../apps/app/src/content.ts";
+import { booking as appBooking, change as appChange } from "../../apps/app/src/content.ts";
 import { DESIGN_PLACEHOLDERS, type PlaceholderBlockName } from "../../site/src/content/design-placeholders.ts";
 import { referral } from "../../site/src/content/referral.ts";
 import * as site from "../../site/src/content/site.ts";
@@ -17,6 +17,7 @@ import { fill } from "../../site/src/lib/text.ts";
 import { PRESETS } from "../../src/config/presets.ts";
 import { COPY_LONG_EDGE_PX, MAX_COPY_BYTES } from "../../src/config/tryon.ts";
 import { VISIT_BLOCKS } from "../../src/config/scheduling.ts";
+import { DELETION_DECIDED_WITHIN_DAYS } from "../../src/policy/account-deletion.ts";
 
 const BLOCKS: Record<PlaceholderBlockName, { publish: boolean }> = {
   whatsapp: site.whatsapp,
@@ -35,6 +36,17 @@ const BLOCKS: Record<PlaceholderBlockName, { publish: boolean }> = {
 const APPROVED = Object.fromEntries(
   Object.entries(site.notices).map(([name, notice]) => [name, { ...notice, approved: true }]),
 );
+const LEGAL_APPROVED = { privacy: { approved: true }, terms: { approved: true } };
+
+/** Every paragraph of a legal page, as one text. */
+function textOf(page: site.LegalPage): string {
+  return page.sections.flatMap((section) => section.paragraphs).join(" ");
+}
+
+/** A legal page whose text is real, as counsel would hand it over. */
+function realPage(page: site.LegalPage): site.LegalPage {
+  return { ...page, publish: true, sections: [{ heading: "Real", paragraphs: ["Real text."] }] };
+}
 
 /** Every file name mentioned anywhere in the content. */
 function filesIn(value: unknown): string[] {
@@ -76,12 +88,12 @@ describe("content", () => {
     expect([site.notices.photo.version, site.notices.gate.version]).toEqual(["photo-v3", "gate-v3"]);
     expect([site.notices.photo.approved, site.notices.gate.approved]).toEqual([false, false]);
     expect(site.tryOnSendsCopy).toBe(true);
-    const privacy = site.legalPages.privacy.paragraphs.join(" ");
+    const privacy = textOf(site.legalPages.privacy);
     expect(privacy).toContain("we send the simulation to that number on WhatsApp, and it is never shown on this site");
     expect(privacy).toContain("we keep a small copy of your photograph in your Mane Man account as your before photo");
     expect(privacy).not.toMatch(/show it to you again|optional/);
     expect(site.tryOnTeaser.body).toContain("sent privately to your WhatsApp");
-    expect(site.legalPages.terms.paragraphs.join(" ")).toContain("never shown on this site");
+    expect(textOf(site.legalPages.terms)).toContain("never shown on this site");
     const words = JSON.stringify({ tryOn: site.tryOn, notices: [site.notices.photo, site.notices.gate] });
     expect(words).not.toMatch(/next screen|Download|Drag the handle|hair patch/i);
   });
@@ -175,7 +187,7 @@ describe("content", () => {
 
   // CLI-19: production keeps a result fourteen days (ADR 0039), as the privacy notice says.
   it("keeps the try-on's result for as long as the privacy notice says", () => {
-    expect(site.legalPages.privacy.paragraphs[0]).toContain("the simulation itself is kept for fourteen days");
+    expect(textOf(site.legalPages.privacy)).toContain("the simulation itself is kept for fourteen days");
     expect(site.tryOn.sent.privacy).toContain("we delete it after fourteen days");
   });
 
@@ -241,20 +253,62 @@ describe("the second copy round", () => {
   });
 });
 
+describe("the legal pages", () => {
+  const pages = [site.legalPages.privacy, site.legalPages.terms];
+
+  // UX-39, CP-51: both pages were unbroken paragraphs, and a phone could not tap the number to ask for erasure.
+  it("give each topic its own heading, and the WhatsApp number only as a link", () => {
+    for (const page of pages) {
+      expect(page.sections.length, page.title).toBeGreaterThan(3);
+      for (const section of page.sections) expect(section.heading, page.title).not.toBe("");
+      expect(textOf(page), page.title).toContain("{whatsapp}");
+      expect(textOf(page), page.title).not.toContain("90079 73247");
+    }
+    expect(site.whatsapp.label).toBe(`WhatsApp · ${site.whatsapp.display}`);
+  });
+
+  // CP-51: the notice of 22 September 2026 erased "the same day", let any visit move free by message, took payment
+  // on the day of the fit, and offered a call.
+  it("say what Phase 2 does: erasure decided within seven days, visits paid at booking, changes in the app", () => {
+    const privacy = textOf(site.legalPages.privacy);
+    const terms = textOf(site.legalPages.terms);
+    expect(privacy).not.toContain("the same day");
+    expect(DELETION_DECIDED_WITHIN_DAYS).toBe(7);
+    expect(privacy).toContain("We decide a request to erase within seven days.");
+    expect(privacy).toContain("Invoices are kept for eight years, as the law requires.");
+    expect(terms).not.toMatch(/on the day of the fit|by messaging us, at no charge|\bcall\b|\bwith him\b|\bpiece\b/);
+    expect(terms).toContain("A visit you book in the app is paid when you book it");
+    expect(terms).toContain("You can move or cancel a visit in the app.");
+    expect(terms).toContain("5 to 7 working days");
+    expect(appChange.cancel.refund("Rs. 1", "UPI")).toContain("5 to 7 working days");
+  });
+});
+
 describe("the publish gate", () => {
   // ADR 0104: production can no longer show the approved v1 pair, which promised the look on screen, so its build
-  // waits for counsel to approve the try-on's new notices (docs/open-points.md, item 146), and for nothing else.
-  it("stops production on the try-on's notices awaiting counsel alone: every published block is real", () => {
+  // waits for counsel to approve the try-on's new notices (docs/open-points.md, item 146), and the legal pages'
+  // Phase 2 wording, and for nothing else.
+  it("stops production on what awaits counsel alone: every published block is real", () => {
     expect(publishProblems()).toEqual([
       "the photo notice (photo-v3) is not approved",
       "the gate notice (gate-v3) is not approved",
+      "the privacy page's wording is not approved",
+      "the terms page's wording is not approved",
     ]);
-    expect(publishProblems(undefined, APPROVED)).toEqual([]);
+    expect(publishProblems(undefined, APPROVED, undefined, LEGAL_APPROVED)).toEqual([]);
+  });
+
+  // CP-51: the pages' Phase 2 wording is a draft until counsel signs it off.
+  it("stops a legal page whose wording is not approved", () => {
+    const legal = { ...LEGAL_APPROVED, terms: { approved: false } };
+    expect(publishProblems(undefined, APPROVED, undefined, legal)).toEqual([
+      "the terms page's wording is not approved",
+    ]);
   });
 
   it("stops a notice that is not approved", () => {
     const notices = { ...APPROVED, consultation: { ...site.notices.consultation, approved: false } };
-    expect(publishProblems(undefined, notices)).toEqual([
+    expect(publishProblems(undefined, notices, undefined, LEGAL_APPROVED)).toEqual([
       "the consultation notice (referral-consultation-v1) is not approved",
     ]);
   });
@@ -263,10 +317,10 @@ describe("the publish gate", () => {
     const blocks = {
       ...BLOCKS,
       technicians: { ...site.technicians, publish: true },
-      privacy: { ...site.legalPages.privacy, publish: true, paragraphs: ["Real text."] },
-      terms: { ...site.legalPages.terms, publish: true, paragraphs: ["Real text."] },
+      privacy: realPage(site.legalPages.privacy),
+      terms: realPage(site.legalPages.terms),
     };
-    const problems = publishProblems(blocks, APPROVED);
+    const problems = publishProblems(blocks, APPROVED, undefined, LEGAL_APPROVED);
     expect(problems).toHaveLength(1);
     expect(problems[0]).toMatch(/^technicians is published but still holds the design's placeholder material: /);
     expect(problems[0]).toContain("Imran Qureshi");
@@ -276,19 +330,19 @@ describe("the publish gate", () => {
     const blocks = {
       ...BLOCKS,
       founderNote: { ...site.founderNote, publish: true, paragraphs: ["A real note."] },
-      privacy: { ...site.legalPages.privacy, publish: true, paragraphs: ["Real text."] },
-      terms: { ...site.legalPages.terms, publish: true, paragraphs: ["Real text."] },
+      privacy: realPage(site.legalPages.privacy),
+      terms: realPage(site.legalPages.terms),
     };
-    expect(publishProblems(blocks, APPROVED)).toEqual([]);
+    expect(publishProblems(blocks, APPROVED, undefined, LEGAL_APPROVED)).toEqual([]);
   });
 
   it("ignores unpublished blocks: they do not render in production", () => {
     const blocks = {
       ...BLOCKS,
-      privacy: { ...site.legalPages.privacy, publish: true, paragraphs: ["Real text."] },
-      terms: { ...site.legalPages.terms, publish: true, paragraphs: ["Real text."] },
+      privacy: realPage(site.legalPages.privacy),
+      terms: realPage(site.legalPages.terms),
     };
-    expect(publishProblems(blocks, APPROVED)).toEqual([]);
+    expect(publishProblems(blocks, APPROVED, undefined, LEGAL_APPROVED)).toEqual([]);
   });
 });
 
