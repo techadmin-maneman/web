@@ -3,8 +3,8 @@
 //
 // Zoho refuses a record carrying a pick-list value the org does not have, so a
 // lead written with the referral fields before they exist would not reach the
-// CRM at all. scripts/setup-crm.ts creates them; the owner or the coordinator
-// runs it, then turns this on. Staging and production write to the one org
+// CRM at all. scripts/setup-crm.ts created them on 2 October 2026, and this
+// was turned on. Staging and production write to the one org
 // (docs/decisions/0020-production-on-the-zoho-test-org.md), so one switch serves
 // both.
 
@@ -15,7 +15,7 @@ import type { BookingWindow } from "./scheduling.ts";
  * and the Referral_Code and Booked_Window fields. Widened from its literal, so
  * the code for either answer stays checked while the switch stands at one.
  */
-export const CRM_ORG_HAS_REFERRAL_FIELDS = false as boolean;
+export const CRM_ORG_HAS_REFERRAL_FIELDS = true as boolean;
 
 /** Lead_Source's value for a lead who came through a friend's invite. */
 export const REFERRAL_LEAD_SOURCE = "Referral";
