@@ -526,13 +526,11 @@ test("leaves a technician FSM lists to FSM: no change and no switch off here", a
   await expect(panel.getByRole("button", { name: /^Switch off/ })).toHaveCount(0);
 });
 
-test("says plainly who may change technicians", async ({ page }) => {
+test("says plainly when the person's access does not reach a switch", async ({ page }) => {
   await openWith(page, { [SWITCH_OFF]: fails(403, "not_permitted") });
   const panel = await panelOf(page, "Imran Qureshi");
   await panel.getByRole("button", { name: "Switch off Imran Qureshi" }).click();
   await panel.getByRole("button", { name: "Switch him off" }).click();
 
-  await expect(panel.getByRole("alert")).toHaveText(
-    "Only someone with Operations · Manage can add, change or switch off technicians.",
-  );
+  await expect(panel.getByRole("alert")).toHaveText("Your access doesn't include this. Ask an admin.");
 });

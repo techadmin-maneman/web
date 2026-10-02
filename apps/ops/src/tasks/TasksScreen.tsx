@@ -27,7 +27,7 @@ import { useRef, useState } from "react";
 import type { Task, TaskGroup, Tasks } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { dispatch, referrals, tasks } from "../content.ts";
-import { whoami } from "../lib/access.ts";
+import { taskNeed, useAccess, whoami } from "../lib/access.ts";
 import { daysUntil } from "../lib/due.ts";
 import { readTasks } from "../lib/waiting.ts";
 import { rowPath } from "../lib/target.ts";
@@ -173,10 +173,16 @@ function slaText(days: number): string {
   return tasks.sla.left(days);
 }
 
-/** What the row's actions need beyond the task: who is signed in, who a task may be given to, and what changed. */
+/**
+ * What the row's actions need beyond the task: who is signed in, who a task may be given to, what their access lets
+ * them do with it, and what changed.
+ */
 interface Acting {
   readonly me: string | null;
   readonly staff: readonly string[];
+  /** Whether they may take it, give it or hand it back: Act in the department that decides its group. */
+  readonly mayOwn: boolean;
+  /** Whether they may close it without a follow-up: a group that allows it, and access that reaches it. */
   readonly closable: boolean;
   readonly owner: string | null;
   readonly onOwner: (owner: string | null) => void;
@@ -246,6 +252,7 @@ function sinceRead(board: Tasks, closed: readonly string[], now: Date): Tasks {
 function Queue() {
   const [loaded, retry] = useLoad(readTasks);
   const [signedIn] = useLoad(whoami);
+  const access = useAccess();
   const [owners, setOwners] = useState<ReadonlyMap<string, string | null>>(new Map());
   const [closed, setClosed] = useState<readonly string[]>([]);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -262,7 +269,8 @@ function Queue() {
     return {
       me,
       staff,
-      closable: group.closable,
+      mayOwn: access.reaches(taskNeed(group.group, "act")),
+      closable: group.closable && access.mayCall("POST /api/tasks/{group}/{id}/close"),
       owner: changed === undefined ? task.owner : changed,
       onOwner: (owner) => {
         setOwners((was) => new Map(was).set(key, owner));

@@ -18,6 +18,7 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { useEffect, useRef, useState } from "react";
 import { api, type AreaChange, type ServedPincode } from "../api.ts";
 import { settings } from "../content.ts";
+import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { readServiceAreaCsv, serviceAreaCsv, type CsvRead } from "./csv.ts";
 import styles from "./settings.module.css";
@@ -98,7 +99,15 @@ function uploadRefusal(read: Extract<CsvRead, { ok: false }>): string {
   return copy.upload.badDate(read.pincode);
 }
 
-function PincodeRow({ pincode, row, onChange }: { pincode: ServedPincode; row: Row; onChange: (next: Row) => void }) {
+interface PincodeRowProps {
+  readonly pincode: ServedPincode;
+  readonly row: Row;
+  /** Whether the person's access lets them change it; if not, its boxes only show how it stands. */
+  readonly mayChange: boolean;
+  readonly onChange: (next: Row) => void;
+}
+
+function PincodeRow({ pincode, row, mayChange, onChange }: PincodeRowProps) {
   const id = pincode.pincode;
   return (
     <tr>
@@ -112,6 +121,7 @@ function PincodeRow({ pincode, row, onChange }: { pincode: ServedPincode; row: R
           type="text"
           maxLength={40}
           aria-label={copy.areaLabel(id)}
+          disabled={!mayChange}
           value={row.area}
           onChange={(event) => {
             onChange({ ...row, area: event.target.value });
@@ -123,6 +133,7 @@ function PincodeRow({ pincode, row, onChange }: { pincode: ServedPincode; row: R
           className={styles.box}
           type="checkbox"
           aria-label={copy.served(id)}
+          disabled={!mayChange}
           checked={row.served}
           onChange={(event) => {
             onChange({ ...row, served: event.target.checked });
@@ -134,6 +145,7 @@ function PincodeRow({ pincode, row, onChange }: { pincode: ServedPincode; row: R
           className={styles.cellDate}
           type="date"
           aria-label={copy.launchOn(id)}
+          disabled={!mayChange}
           value={row.launch_on ?? ""}
           onChange={(event) => {
             onChange({ ...row, launch_on: event.target.value === "" ? null : event.target.value });
@@ -250,6 +262,7 @@ function Area({ pincodes: loadedPincodes }: { pincodes: readonly ServedPincode[]
   const [draft, setDraft] = useState<Draft>(() => draftOf(loadedPincodes));
   const [saving, setSaving] = useState<Saving>({ step: "editing" });
   const [upload, setUpload] = useState<Upload | null>(null);
+  const mayChange = useAccess().mayCall("POST /api/service-area");
 
   const inCity = pincodes.filter((each) => each.city === city);
   const changes = changesIn(pincodes, draft);
@@ -361,23 +374,25 @@ function Area({ pincodes: loadedPincodes }: { pincodes: readonly ServedPincode[]
         })}
       </nav>
 
-      <div className={styles.actions}>
-        {[true, false].map((served) => (
-          <Button
-            variant="outline"
-            size="small"
-            key={String(served)}
-            className={styles.quiet}
-            onClick={() => {
-              const next: Record<string, Row> = { ...draft };
-              for (const each of inCity) next[each.pincode] = { ...(next[each.pincode] ?? rowOf(each)), served };
-              edit(next);
-            }}
-          >
-            {served ? copy.bulk.serve(city) : copy.bulk.stop(city)}
-          </Button>
-        ))}
-      </div>
+      {mayChange && (
+        <div className={styles.actions}>
+          {[true, false].map((served) => (
+            <Button
+              variant="outline"
+              size="small"
+              key={String(served)}
+              className={styles.quiet}
+              onClick={() => {
+                const next: Record<string, Row> = { ...draft };
+                for (const each of inCity) next[each.pincode] = { ...(next[each.pincode] ?? rowOf(each)), served };
+                edit(next);
+              }}
+            >
+              {served ? copy.bulk.serve(city) : copy.bulk.stop(city)}
+            </Button>
+          ))}
+        </div>
+      )}
 
       <Table className={styles.table}>
         <thead>
@@ -395,6 +410,7 @@ function Area({ pincodes: loadedPincodes }: { pincodes: readonly ServedPincode[]
               key={each.pincode}
               pincode={each}
               row={draft[each.pincode] ?? rowOf(each)}
+              mayChange={mayChange}
               onChange={(next) => {
                 edit({ ...draft, [each.pincode]: next });
               }}
@@ -404,7 +420,7 @@ function Area({ pincodes: loadedPincodes }: { pincodes: readonly ServedPincode[]
       </Table>
       <p className={styles.hint}>{copy.hint}</p>
 
-      {checking ? (
+      {checking && (
         <LaunchCheck
           launching={launching}
           busy={busy}
@@ -413,7 +429,8 @@ function Area({ pincodes: loadedPincodes }: { pincodes: readonly ServedPincode[]
             setSaving({ step: "editing" });
           }}
         />
-      ) : (
+      )}
+      {!checking && mayChange && (
         <div className={styles.actions}>
           <Button
             variant="primary"
@@ -431,7 +448,7 @@ function Area({ pincodes: loadedPincodes }: { pincodes: readonly ServedPincode[]
           {copy.badName(badName.pincode)}
         </p>
       )}
-      {changes.length === 0 && saving.step === "editing" && <p className={styles.hint}>{copy.nothing}</p>}
+      {mayChange && changes.length === 0 && saving.step === "editing" && <p className={styles.hint}>{copy.nothing}</p>}
       {saving.step === "saved" && (
         <p className={styles.saved} role="status">
           {copy.saved(saving.changed, saving.alerted)}
@@ -443,49 +460,51 @@ function Area({ pincodes: loadedPincodes }: { pincodes: readonly ServedPincode[]
         </p>
       )}
 
-      <fieldset className={styles.group}>
-        <legend className={styles.ruleTitle}>{copy.upload.title}</legend>
-        <div className={styles.field}>
-          <label className={styles.fieldLabel} htmlFor="area-file">
-            {copy.upload.label}
-          </label>
-          <input
-            className={styles.file}
-            id="area-file"
-            type="file"
-            accept=".csv,text/csv"
-            aria-describedby="area-file-hint"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file !== undefined) void readFile(file);
-            }}
-          />
-          <p className={styles.hint} id="area-file-hint">
-            {copy.upload.hint}
-          </p>
-        </div>
-        {upload?.step === "read" && (
-          <FilePreview
-            rows={upload.rows}
-            onApply={() => {
-              applyFile(upload.rows);
-            }}
-            onCancel={() => {
-              setUpload(null);
-            }}
-          />
-        )}
-        {upload?.step === "applied" && (
-          <p className={styles.saved} role="status">
-            {copy.upload.applied}
-          </p>
-        )}
-        {upload?.step === "failed" && (
-          <p className={styles.error} role="alert">
-            {upload.says}
-          </p>
-        )}
-      </fieldset>
+      {mayChange && (
+        <fieldset className={styles.group}>
+          <legend className={styles.ruleTitle}>{copy.upload.title}</legend>
+          <div className={styles.field}>
+            <label className={styles.fieldLabel} htmlFor="area-file">
+              {copy.upload.label}
+            </label>
+            <input
+              className={styles.file}
+              id="area-file"
+              type="file"
+              accept=".csv,text/csv"
+              aria-describedby="area-file-hint"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file !== undefined) void readFile(file);
+              }}
+            />
+            <p className={styles.hint} id="area-file-hint">
+              {copy.upload.hint}
+            </p>
+          </div>
+          {upload?.step === "read" && (
+            <FilePreview
+              rows={upload.rows}
+              onApply={() => {
+                applyFile(upload.rows);
+              }}
+              onCancel={() => {
+                setUpload(null);
+              }}
+            />
+          )}
+          {upload?.step === "applied" && (
+            <p className={styles.saved} role="status">
+              {copy.upload.applied}
+            </p>
+          )}
+          {upload?.step === "failed" && (
+            <p className={styles.error} role="alert">
+              {upload.says}
+            </p>
+          )}
+        </fieldset>
+      )}
     </section>
   );
 }
