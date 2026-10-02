@@ -12,7 +12,8 @@
 // clients' bookings (docs/decisions/0108-discount-codes.md). The Staff list: who may use
 // the console, and for what. Above them, one line says
 // what the photographs and referral cards hold in R2 against their share
-// (docs/decisions/0093-the-storage-meter.md).
+// (docs/decisions/0093-the-storage-meter.md), and another what the database
+// holds against its limit.
 
 import { Tabs, TAB } from "@maneman/ui/Tabs";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -41,11 +42,20 @@ function Panel({ tab }: { tab: SettingsTab }) {
   return <Rules />;
 }
 
-/** The storage meter's figure, once it is read; nothing while it is not, since the panels are what ops came for. */
+/**
+ * The storage meter's figure and the database's size, once they are read; nothing while they are not, since the
+ * panels are what ops came for.
+ */
 function Storage() {
   const [loaded] = useLoad(api.storage);
   if (loaded.state !== "loaded") return null;
-  return <p className={styles.storage}>{settings.storage(loaded.value.held_bytes, loaded.value.share_bytes)}</p>;
+  const storage = loaded.value;
+  return (
+    <div className={styles.storage}>
+      <p>{settings.storage(storage.held_bytes, storage.share_bytes)}</p>
+      <p>{settings.database(storage.database_bytes, storage.database_limit_bytes)}</p>
+    </div>
+  );
 }
 
 export function SettingsScreen({ tab }: { tab: SettingsTab }) {

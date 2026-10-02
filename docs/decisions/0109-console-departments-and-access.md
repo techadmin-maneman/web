@@ -60,7 +60,7 @@ Every route's department and lowest level is one table, `ROUTE_NEEDS` in `src/po
 
 A record whose city cannot be found is shown only to national grants. Each route that narrows its reads and writes this way changes its line in `ROUTE_NEEDS` to `ownPlaces`, with a test that a city grant sees its own city's records and not another's.
 
-**Enforcement is a switch.** `staff_access_mode` holds it, off to begin with. Off, nothing is refused but the switch, the tokens and a token's change to the list (above), and each call the list would have refused is logged (`staff_access_would_refuse`, with the route and what it asked; the call's `ops.call` audit entry, under the same request ID, names the person). On, it is refused (`staff_access_refused`) after its audit entry is written. Every change to the list, the switch or the tokens is audited under the person who made it (`staff.set`, `staff.enforce`, `staff.token_add`, `staff.token_remove`).
+**Enforcement is a switch.** `staff_access_mode` holds it, off to begin with. Off, nothing is refused but the switch, the tokens and a token's change to the list (above), and each call the list would have refused is logged (`staff_access_would_refuse`, with the route and what it asked; the call's `ops.call` audit entry, under the same request ID, names the person; a GET of a path the person looked at within the ten minutes before has none of its own, and the first look's entry names them, ADR 0031). On, it is refused (`staff_access_refused`) after its audit entry is written. Every change to the list, the switch or the tokens is audited under the person who made it (`staff.set`, `staff.enforce`, `staff.token_add`, `staff.token_remove`).
 
 ## Seeded so that nobody is locked out
 

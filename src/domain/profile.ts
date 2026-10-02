@@ -298,6 +298,7 @@ export async function consentsOf(db: D1Database, personId: string): Promise<Cons
  *
  * The statement returns the row's date when it wrote one, and nothing when it did not. The row keeps which of the
  * app's screens made the switch, or none where the app did not say (docs/decisions/0094-where-a-consent-was-given.md).
+ * Returns the row's ID too, for an audit entry written only with it.
  */
 export function switchConsent(
   db: D1Database,
@@ -309,8 +310,9 @@ export function switchConsent(
     ipHash: string;
     now: Date;
   },
-): D1PreparedStatement {
-  return db
+): { readonly id: string; readonly statement: D1PreparedStatement } {
+  const id = crypto.randomUUID();
+  const statement = db
     .prepare(
       `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash, source)
        SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8
@@ -322,7 +324,7 @@ export function switchConsent(
        RETURNING created_at`,
     )
     .bind(
-      crypto.randomUUID(),
+      id,
       options.personId,
       options.purpose,
       CURRENT_NOTICE[options.purpose],
@@ -331,6 +333,7 @@ export function switchConsent(
       options.ipHash,
       options.source,
     );
+  return { id, statement };
 }
 
 /**

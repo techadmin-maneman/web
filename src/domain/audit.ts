@@ -4,8 +4,8 @@
 // not happen. What only reads, an export or a photograph viewed, writes its
 // entry first, and a failed write stops the read.
 //
-// Every call to the ops console is recorded as it arrives by auditCall, and the
-// member of staff behind it named, in src/http/audit.ts.
+// Each call to the ops console is recorded as it arrives by auditCall, with the
+// member of staff behind it and whose record it opened, in src/http/audit.ts.
 
 import type { Surface } from "../config/environments.ts";
 import type { RulingClaim } from "./ruling-claims.ts";
@@ -238,6 +238,28 @@ export function auditStatementIfStamped(
        WHERE EXISTS (SELECT 1 FROM ${stamped.table} WHERE id = ?10 AND ${stamped.column} = ?1)`,
     )
     .bind(...valuesOf(entry, now), stamped.id);
+}
+
+/**
+ * The entry, unless its actor wrote one with the same action and detail after `since`: a board polling, or a record
+ * opened again and again, is one entry for the stretch.
+ */
+export function auditStatementUnlessRepeated(
+  db: D1Database,
+  entry: AuditEntry,
+  now: Date,
+  since: Date,
+): D1PreparedStatement {
+  return db
+    .prepare(
+      `INSERT INTO audit_log (${COLUMNS})
+       SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9
+       WHERE NOT EXISTS (
+         SELECT 1 FROM audit_log
+         WHERE actor_kind = ?3 AND actor = ?4 AND at > ?10 AND action = ?5 AND detail IS ?9
+       )`,
+    )
+    .bind(...valuesOf(entry, now), since.toISOString());
 }
 
 export async function recordAudit(db: D1Database, entry: AuditEntry, now: Date): Promise<void> {

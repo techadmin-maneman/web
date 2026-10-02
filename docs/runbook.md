@@ -712,6 +712,21 @@ If the total nears 8 GB:
 1. Stop the try-on as above. Its results then leave over the retention days and give their share back.
 2. Never delete a client's photographs to make room: they are the client's record, promised kept. The owner decided on 27 September 2026 to pay for R2 past the free allowance (open point 151; ADR 0093), so the bill is the cost of keeping them.
 
+### D1 growing
+
+Each environment's database may hold 500 MB on Workers Free (ADR 0009). Past it every write fails, the audit entry each ops call writes first among them, so the console, bookings and payments stop together. The `storage_meter` cron job reads its size once an hour, on the half hour, and tells ops once at 50%, 80% and 95% (the alerts `d1_size:50`, `d1_size:80` and `d1_size:95`). Settings shows it beside the R2 meter.
+
+Where it stands: `npx wrangler d1 info maneman-staging --env staging` (or production's) gives the size. What fills it is usually the audit log:
+
+```sql
+SELECT COUNT(*) AS entries, MIN(at) AS oldest FROM audit_log;
+SELECT action, COUNT(*) AS entries FROM audit_log GROUP BY action ORDER BY entries DESC LIMIT 10;
+```
+
+At 50%, tell the developers. Never delete rows by hand to make room: the audit log and the credit ledger refuse it by trigger, and the rest are clients' records and the history of their money. The audit log's retention, two years once counsel confirms it, is what takes rows off it. At 80%, the owner decides between that and Workers Paid, which holds 10 GB a database and needs a new ADR (ADR 0009).
+
+A mark is told once for good; to hear of one again after the database shrank below it, `UPDATE storage_meter SET database_told_percent = 0 WHERE id = 1;`.
+
 ---
 
 ## Alerts and the cron
@@ -791,6 +806,7 @@ The chat shows the message; the `alerts` table keeps it under its key. Most aler
 | FSM's catalogue does not hold _n_ of the consumables as ours                             | `fsm_catalogue:consumables`                                                                               | when each is linked                  | add or rename each part in FSM at Rs. 0, as it says (ADR 0087)          |
 | Stock is low in the central store, or in technician _id_'s kit                           | `low_stock:central`, `low_stock:kit:<technician>`                                                         | when the place is no longer low      | record a delivery or a transfer on the Stock page                       |
 | Client _id_'s new number, address or invite did not reach FSM (or the CRM)               | `fsm_contact_update:<person>`, `crm_contact_update:<person>`, `contact_sync:<person>`                     | when a later update goes through     | update the contact or lead by hand, as it says                          |
+| The database holds _n_ MB, _p_% of the 500 MB Cloudflare's free plan allows it           | `d1_size:<mark>`                                                                                          | not closed; told once a mark         | "D1 growing"                                                            |
 | AILabTools credits are down to _n_                                                       | `ailab_credits_low`                                                                                       | when topped up                       | "Credits are low"                                                       |
 | Try-on job _id_ failed, or its result was billed but never downloaded                    | none                                                                                                      | not kept                             | "Try-on and WhatsApp"                                                   |
 | The daily _name_ ceiling is reached                                                      | none: told once a day                                                                                     | not kept                             | "A ceiling was reached"; section 13 for geocode                         |

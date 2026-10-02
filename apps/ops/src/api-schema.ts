@@ -4881,7 +4881,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** What the photographs and referral cards hold in R2, against their share */
+        /** What the photographs and referral cards hold in R2, against their share, and the database against its limit */
         get: {
             parameters: {
                 query?: never;
@@ -7293,6 +7293,10 @@ export interface components {
             share_bytes: number;
             /** @description Past this the technician app's photographs are refused and wait on the phones. */
             ceiling_bytes: number;
+            /** @description What this environment's D1 database holds. */
+            database_bytes: number;
+            /** @description D1's limit on one database on the free plan; past it every write fails. */
+            database_limit_bytes: number;
         };
         Whoami: {
             /** @description A member of staff's e-mail, or a service token's ID. */

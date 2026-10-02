@@ -3388,7 +3388,7 @@ Request body:
 
 ### GET /api/storage
 
-What the photographs and referral cards hold in R2, against their share
+What the photographs and referral cards hold in R2, against their share, and the database against its limit
 
 **200**: The storage meter
 
@@ -11732,12 +11732,22 @@ Request body:
     "ceiling_bytes": {
       "type": "integer",
       "description": "Past this the technician app's photographs are refused and wait on the phones."
+    },
+    "database_bytes": {
+      "type": "integer",
+      "description": "What this environment's D1 database holds."
+    },
+    "database_limit_bytes": {
+      "type": "integer",
+      "description": "D1's limit on one database on the free plan; past it every write fails."
     }
   },
   "required": [
     "held_bytes",
     "share_bytes",
-    "ceiling_bytes"
+    "ceiling_bytes",
+    "database_bytes",
+    "database_limit_bytes"
   ],
   "additionalProperties": false
 }
