@@ -9,7 +9,16 @@ import { newReferralCode } from "../../src/domain/referrals.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
 import { createStubPayments } from "../../src/providers/payments.ts";
-import { appFor, captureLogs, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
+import {
+  appFor,
+  captureLogs,
+  fakeDependencies,
+  fakeQueue,
+  markDatabase,
+  NOW,
+  provedNumberCode,
+  request,
+} from "./helpers.ts";
 
 const REFERRER = "11111111-1111-4111-8111-111111111111";
 const DAY = 86_400_000;
@@ -20,11 +29,13 @@ async function person(id: string, name: string, mobile: string) {
     .run();
 }
 
-async function pincode(pin: string, area: string, served: boolean) {
+/** A pincode whose area ops have named, unless `named` is false: its name is then still the post offices'. */
+async function pincode(pin: string, area: string, served: boolean, named = true) {
   await env.DB.prepare(
-    "INSERT INTO serviceable_pincodes (pincode, area, city, served, launched_at) VALUES (?1, ?2, 'Gurgaon', ?3, ?4)",
+    `INSERT INTO serviceable_pincodes (pincode, area, city, served, launched_at, area_named_by)
+     VALUES (?1, ?2, 'Gurgaon', ?3, ?4, ?5)`,
   )
-    .bind(pin, area, served ? 1 : 0, served ? "2026-09-01T18:30:00.000Z" : null)
+    .bind(pin, area, served ? 1 : 0, served ? "2026-09-01T18:30:00.000Z" : null, named ? "ops@localhost" : null)
     .run();
 }
 
@@ -209,6 +220,17 @@ describe("GET /api/pincodes/:pin", () => {
     });
     expect((await request(site(), "/api/pincodes/12345")).status).toBe(400);
     expect((await request(site(), "/api/pincodes/012345")).status).toBe(400);
+  });
+
+  // BK-27 and CP-25 of the audit, 2 October 2026: "We come to Sec37 Noida", the post office's name for the area.
+  it("names no area ops have not named yet, so the page names the city", async () => {
+    await pincode("122003", "Sec37", true, false);
+    expect(await (await request(site(), "/api/pincodes/122003")).json()).toEqual({
+      pincode: "122003",
+      served: true,
+      area: null,
+      city: "Gurgaon",
+    });
   });
 });
 
@@ -484,6 +506,7 @@ describe("POST /api/r/:code/consultation", () => {
         consent: true,
         address: ADDRESS,
         one_visit: true,
+        number_code_id: await provedNumberCode("+919810000002"),
       }),
       { FSM_QUEUE: fakeQueue() },
     );

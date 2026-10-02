@@ -30,6 +30,9 @@ export type ReferralWaitlist = Schemas["ReferralWaitlist"];
 export type Consultation = Schemas["Consultation"];
 export type Waitlist = Schemas["Waitlist"];
 export type TypedAddress = Schemas["TypedAddress"];
+export type NumberCodeRequest = Schemas["NumberCodeRequest"];
+export type NumberCode = Schemas["NumberCode"];
+export type NumberCodeVerify = Schemas["NumberCodeVerify"];
 export type PublicConsultationRequest = Body<"/api/consultation">;
 export type PublicWaitlistRequest = Body<"/api/waitlist">;
 export type ConsultationRequest = Body<"/api/r/{code}/consultation">;
@@ -66,6 +69,17 @@ function post<T>(path: string, body: unknown, idempotencyKey?: string): Promise<
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (idempotencyKey !== undefined) headers["Idempotency-Key"] = idempotencyKey;
   return call<T>(path, { method: "POST", headers, body: JSON.stringify(body) });
+}
+
+// The WhatsApp code that proves the number typed, before /book's one visit or
+// /try's gate acts on it.
+
+export function askForNumberCode(request: NumberCodeRequest): Promise<Answer<NumberCode>> {
+  return post<NumberCode>("/api/number-code", request);
+}
+
+export function verifyNumberCode(codeId: string, code: string): Promise<Answer<NumberCodeVerify>> {
+  return post<NumberCodeVerify>("/api/number-code/verify", { code_id: codeId, code });
 }
 
 // The try-on, in order: whether it runs and whether this browser has had its
