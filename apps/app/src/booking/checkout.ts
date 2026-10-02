@@ -63,14 +63,15 @@ export function pay(checkout: NonNullable<Booking["checkout"]>, method: PayMetho
   const Razorpay = window.Razorpay;
   if (Razorpay === undefined) return Promise.resolve("failed");
   const secondsToPay = Math.max(1, secondsUntil(Date.parse(payBy)));
+  const closedByMs = secondsToPay * 1000 + CLOSING_MS;
   return new Promise<Paid>((resolve) => {
+    const giveUp = window.setTimeout(() => {
+      resolve("dismissed");
+    }, closedByMs);
     const answer = (outcome: Paid) => {
       window.clearTimeout(giveUp);
       resolve(outcome);
     };
-    const giveUp = window.setTimeout(() => {
-      answer("dismissed");
-    }, secondsToPay * 1000 + CLOSING_MS);
     const razorpay = new Razorpay({
       key: checkout.key_id,
       order_id: checkout.order_id,

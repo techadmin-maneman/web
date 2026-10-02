@@ -26,6 +26,7 @@
 // was made with, and the mirror's copy carries the hold's tier, since the hold
 // is what was sold (docs/decisions/0085-services-ops-can-edit.md).
 
+import type { BookingWindow } from "../config/scheduling.ts";
 import { VISIT_TYPE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { indiaIso } from "../lib/india-time.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
@@ -41,7 +42,7 @@ import { itemForService } from "./fsm-catalogue.ts";
 import { fsmContactOf, type Place } from "./fsm-contacts.ts";
 import { toLinkAlert, toLinkAlertKey } from "./held-bookings.ts";
 import { askRefund, refundReceipt } from "./refunds.ts";
-import { graceEndOf, heldVisitTimes, liveVisitOf } from "./scheduling.ts";
+import { graceEndOf, heldVisitTimes, liveVisitOf, retakeSlot } from "./scheduling.ts";
 import { hasBegun, visitBegun } from "./visit-begun.ts";
 import { visitPayment } from "./visit-changes.ts";
 import { visitMessage, type VisitMessageKind } from "./visit-messages.ts";
@@ -71,6 +72,7 @@ interface HoldRow {
   /** Its service's name as it is now; null only where no service is its kind and tier. */
   service_name: string | null;
   date: string;
+  window_label: BookingWindow;
   start_unit: number;
   technician_id: string;
   technician_fsm_id: string;
@@ -105,7 +107,7 @@ async function holdOf(db: D1Database, holdId: string): Promise<HoldRow | null> {
   return db
     .prepare(
       `SELECT h.id, h.person_id, p.name AS person_name, h.type, h.tier, h.minutes, s.name AS service_name, h.date,
-              h.start_unit, h.technician_id, t.fsm_id AS technician_fsm_id, h.amount, h.state, h.expires_at,
+              h.window_label, h.start_unit, h.technician_id, t.fsm_id AS technician_fsm_id, h.amount, h.state, h.expires_at,
               h.grace_seconds, h.confirmed_at, h.razorpay_order_id, h.appointment_id, h.moves_appointment_id, h.move_kind,
               h.use_credit, h.one_visit, h.fsm_tried_at, h.fsm_work_order_id, h.fsm_appointment_id, h.fsm_held_at, h.queued_at,
               h.refunded_at, h.pincode, sp.city
@@ -236,6 +238,22 @@ function paidTooLate(hold: HoldRow, payment: CapturedPayment): boolean {
 }
 
 /**
+ * A new visit's hold let go once its grace ended, whose payment was made in time but heard of only since: it takes its
+ * time back where that is still free, so it is booked rather than refunded. Never a move, nor a hold refunded already.
+ */
+async function retakenInTime(
+  db: D1Database,
+  hold: HoldRow,
+  payment: CapturedPayment | null,
+  now: Date,
+): Promise<boolean> {
+  if (payment === null || paidTooLate(hold, payment)) return false;
+  if (hold.confirmed_at === null || hold.refunded_at !== null || hold.moves_appointment_id !== null) return false;
+  if ((await liveVisitOf(db, hold.person_id, hold.type, hold.id)) !== null) return false;
+  return retakeSlot(db, hold, now);
+}
+
+/**
  * Books a hold in FSM once it is paid for (or free), then in the mirror. A payment made too late is refunded
  * instead. Throws when FSM fails, so the queue tries again; answers "being_booked" while another consumer is
  * writing it, which the queue tries again later. A booking held for ops writes nothing to FSM while a visit of the
@@ -267,7 +285,8 @@ export async function confirmBooking(
     await giveBack(db, payments, hold.id, now, "its payment was refunded", options.alongside);
     return "refunded";
   }
-  if (hold.state === "released" || (payment !== null && paidTooLate(hold, payment))) {
+  const stillLetGo = hold.state === "released" && !(await retakenInTime(db, hold, payment, now));
+  if (stillLetGo || (payment !== null && paidTooLate(hold, payment))) {
     await giveBack(db, payments, hold.id, now, "the hold had lapsed", options.alongside);
     return payment === null ? "lapsed" : "refunded";
   }

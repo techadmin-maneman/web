@@ -244,12 +244,15 @@ export function BookingSheet({
     if (ordered.current !== hold.id) void api.releaseHold(hold.id);
   };
 
+  // A function, so TypeScript does not take the ref as unchanged across an await.
+  const isPaying = () => starting.current;
+
   /**
    * The hold's time has run out. A payment Razorpay took in time keeps the hold, so the API is asked first. While the
    * client is paying, this waits: payFor runs it again with Checkout's answer.
    */
   const lapse = async (hold: Hold) => {
-    if (starting.current) return;
+    if (isPaying()) return;
     const now = await api.holdById(hold.id);
     if (now.ok && now.body.paid) {
       changed.current = true;
@@ -257,7 +260,7 @@ export function BookingSheet({
       return;
     }
     // The client tapped Pay while the API was answering.
-    if (starting.current) return;
+    if (isPaying()) return;
     setStep({ kind: "expired" });
     letGo(hold);
   };
@@ -371,21 +374,18 @@ export function BookingSheet({
     starting.current = true;
     setBusy(true);
     setProblem(null);
-    let outcome: Paid | null = null;
-    try {
-      outcome = await startPaying(hold, how);
-    } finally {
+    const outcome = await startPaying(hold, how).finally(() => {
       starting.current = false;
       setBusy(false);
-    }
+    });
     if (outcome === "paid") {
       changed.current = true;
       setStep({ kind: "confirming", hold });
       return;
     }
-    if (outcome === "failed") setStep({ kind: "failed", hold });
     // The hold's time may have run out while the client was paying, and its lapse waited for this answer.
     if (hasRunOut(hold)) void lapse(hold);
+    else if (outcome === "failed") setStep({ kind: "failed", hold });
   };
 
   const day = availability?.days.find((each) => each.date === date);

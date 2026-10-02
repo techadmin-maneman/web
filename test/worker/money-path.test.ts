@@ -222,6 +222,43 @@ describe("a hold with a Razorpay order, let go before its grace ends", () => {
   });
 });
 
+// A payment made in time whose webhook lands only after the hold was let go at the end of its grace (MON-03).
+describe("a payment made in time, heard of after its hold was let go", () => {
+  const otherHolds = async (date: string, window: string) => {
+    await fittedPerson(OTHER, "+919810000005", "Karan Bhatia");
+    return call(OTHER, "/api/holds", { method: "POST", body: { type: "service", date, window } }, at(730));
+  };
+
+  it("is booked on its own time, taken back, when nobody has taken that since", async () => {
+    const ordered = await heldAndOrdered(PERSON);
+    expect((await otherHolds("2026-09-30", "morning")).status).toBe(201);
+    expect(await holdRow(ordered.holdId)).toEqual({ state: "released", refunded_at: null });
+    await webhook("payment.captured", "evt_r1", payment("pay_r1", ordered, at(570)), at(750));
+    const payments = createStubPayments();
+    const fsm = createStubFsm(world());
+    const outcome = await confirmBooking(env.DB, fsm, payments, ordered.holdId, at(751), { labelAsTest: true });
+    expect(outcome).toBe("booked");
+    expect(payments.made.refunds).toEqual([]);
+    expect(fsm.made.visits).toMatchObject([{ start: "2026-09-24T12:00:00+05:30" }]);
+  });
+
+  it("is refunded when another client has held its time since", async () => {
+    const ordered = await heldAndOrdered(PERSON);
+    expect((await otherHolds("2026-09-24", "afternoon")).status).toBe(201);
+    await webhook("payment.captured", "evt_r2", payment("pay_r2", ordered, at(570)), at(750));
+    const payments = createStubPayments();
+    const outcome = await confirmBooking(env.DB, createStubFsm(world()), payments, ordered.holdId, at(751), {
+      labelAsTest: true,
+    });
+    expect(outcome).toBe("refunded");
+    expect(payments.made.refunds).toEqual([{ paymentId: "pay_r2", amount: 200000 }]);
+    const claims = await env.DB.prepare("SELECT COUNT(*) AS n FROM slot_claims WHERE hold_id = ?1")
+      .bind(ordered.holdId)
+      .first();
+    expect(claims).toEqual({ n: 0 });
+  });
+});
+
 // The grace is ops' to set, and a hold is judged by the one it was made with
 // (docs/decisions/0088-every-policy-in-the-console.md).
 describe("a payment made in the grace its hold was made with", () => {
