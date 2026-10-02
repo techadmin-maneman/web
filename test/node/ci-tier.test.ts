@@ -31,6 +31,13 @@ describe("the CI tier", () => {
     expect(ciTier(push({ action: "labeled", label: "docs", labels: ["docs", "full-ci"] }))).toBe("quick");
   });
 
+  // A pull request touching money or personal data merges once labelled reviewed (scripts/lib/auto-merge.ts).
+  it("is full when a ready pull request is labelled reviewed, so it merges on a pass, and quick on a draft", () => {
+    expect(ciTier(push({ action: "labeled", label: "reviewed", labels: ["reviewed"] }))).toBe("full");
+    expect(ciTier(push({ action: "labeled", label: "reviewed", labels: ["reviewed"], draft: true }))).toBe("quick");
+    expect(ciTier(push({ labels: ["reviewed"] }))).toBe("quick");
+  });
+
   it("is full for a staging deploy, which checks what merged", () => {
     expect(ciTier(push({ event: "push", action: "" }))).toBe("full");
   });

@@ -1,7 +1,7 @@
-# A ready pull request merges itself once its full CI run passes, and its merge deploys to staging (the owner's choice
-# of 1 October 2026; docs/decisions/0006-deployment-pipeline.md, "Merged when green"). GitHub's own auto-merge needs
-# branch protection, which this plan has not. A pull request labelled hold-for-review (payments, refunds, credits,
-# discounts, personal or health data) waits for its review; the decision is scripts/lib/auto-merge.ts.
+# A ready pull request merges itself once its full CI run passes, and its merge deploys to staging
+# (docs/decisions/0006-deployment-pipeline.md, "Merged when green"). One that touches money or personal data waits for
+# the reviewed label, and one labelled hold-for-review waits whatever it touches; the decision is
+# scripts/lib/auto-merge.ts.
 name: auto-merge
 
 on:
