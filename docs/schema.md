@@ -224,8 +224,9 @@ Indexes:
 - `appointments_by_window_end`: on (`window_end`)
 - `appointments_by_window_start`: on (`window_start`)
 - `appointments_done_visits`: on (`window_start`), where `status = 'completed' AND type IN ('first_fit', 'service', 'replacement') AND deleted_at IS NULL`
+- `appointments_held_drafts`: on (`window_start`), where `status = 'completed' AND invoice_issued_at IS NULL AND fsm_invoice_id IS NOT NULL AND deleted_at IS NULL`
 - `appointments_live_by_person`: on (`person_id`), where `status IN ('scheduled', 'dispatched', 'in_progress') AND deleted_at IS NULL`
-- `appointments_to_bill`: on (`window_start`), where `status = 'completed' AND invoice_issued_at IS NULL AND deleted_at IS NULL`
+- `appointments_to_bill`: on (`window_start`), where `status = 'completed' AND invoice_issued_at IS NULL AND deleted_at IS NULL AND type IN ('first_fit', 'service', 'replacement') AND one_visit IS NOT 'declined'`
 - `appointments_to_invoice`: on (`window_start`), where `status = 'completed' AND invoice_issued_at IS NULL AND fsm_work_order_id IS NOT NULL AND deleted_at IS NULL`
 - A `UNIQUE` constraint: unique on (`fsm_id`)
 
