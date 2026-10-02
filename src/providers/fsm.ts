@@ -327,6 +327,11 @@ export interface FsmProvider {
   requestPreference(workOrderId: string): Promise<FsmRequestPreference | null>;
   /** Anonymises an erased client's contact: name, numbers, e-mail and street; the city stays for the records. */
   eraseContact(contactId: string): Promise<void>;
+  /**
+   * Writes the client's note on an appointment, over the one written before, so FSM holds only the latest. An empty
+   * note blanks it, since FSM's API deletes no note; one never written stays unwritten.
+   */
+  writeClientNote(appointmentId: string, note: string): Promise<void>;
 }
 
 export function createFsmProvider(
@@ -430,6 +435,8 @@ export interface StubFsm extends FsmProvider {
     readonly parts: string[];
     /** Each catalogue item renamed. */
     readonly renamedItems: { itemId: string; name: string }[];
+    /** Each client's note written, the latest last. */
+    readonly clientNotes: { appointmentId: string; note: string }[];
   };
   /** Makes the next call of this kind throw, so a test can prove the retry. */
   failNext(step: StubFsmStep, message?: string): void;
@@ -469,7 +476,8 @@ export type StubFsmStep =
   | "rescheduleVisit"
   | "invoiceWorkOrder"
   | "requestPreference"
-  | "updateContact";
+  | "updateContact"
+  | "writeClientNote";
 
 /**
  * Local and test stand-in: answers from the world it is given, and reaches nothing. What is written stays with it,
@@ -496,6 +504,7 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
     itemUpdates: [] as { itemId: string; name: string; price: number }[],
     parts: [] as string[],
     renamedItems: [] as { itemId: string; name: string }[],
+    clientNotes: [] as { appointmentId: string; note: string }[],
   };
   const failures = new Map<StubFsmStep, Error>();
   /** Throws once if the test asked this step to fail; a retry then succeeds. */
@@ -763,6 +772,11 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
       made.erased.push(contactId);
       return Promise.resolve();
     },
+    writeClientNote: (appointmentId, note) => {
+      checkFailure("writeClientNote");
+      made.clientNotes.push({ appointmentId, note });
+      return Promise.resolve();
+    },
   };
 }
 
@@ -796,6 +810,7 @@ function createUnconnectedFsm(): FsmProvider {
     invoiceWorkOrder: off,
     requestPreference: off,
     eraseContact: off,
+    writeClientNote: off,
     assets: off,
     createAsset: off,
     updateAsset: off,

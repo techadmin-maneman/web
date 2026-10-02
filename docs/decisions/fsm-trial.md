@@ -196,11 +196,13 @@ put back as it was, and appointment AP-22, `8229000000306647`.
   with `{ data: [{ Note_Content }] }` answers 201 with the note's ID under
   `data[0].details.id`; `GET` on the same path lists them, and
   `PUT /fsm/v1/Service_Appointments/{id}/Notes/{note id}` changes one. The
-  appointment's note is listed under its work order's Notes too. 500
-  characters are kept whole.
+  appointment's note is listed under its work order's Notes too. A note of
+  40,000 characters is kept whole, and a `Note_Title` beside it is kept.
+- **An empty note blanks it.** `PUT` with `Note_Content: ""` answers 200, and
+  the note reads back with no content.
 - **A note cannot be deleted by the API.** `DELETE` on the note's path, on
   `/Notes/{id}` and with `?ids=` each answer `400 INVALID_MODULE`. What the
-  erasure cannot delete it overwrites, as it does the contact's name.
+  erasure cannot delete it blanks (`docs/decisions/0099-the-clients-note-in-fsm.md`).
 
 The one note made is left on AP-22, reading "Staging test: a client's note,
 tried 30 September 2026", for the staging clean-up (`docs/open-points.md`,

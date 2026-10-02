@@ -550,6 +550,57 @@ describe("FSM: a client's changed number or address", () => {
   });
 });
 
+// Tried on the org on 30 September 2026 (docs/decisions/fsm-trial.md, "Text FSM keeps").
+describe("FSM: a client's note on an appointment", () => {
+  const NOTES = `${FSM_API}/Service_Appointments/ap-1/Notes`;
+  const writes = (calls: { method: string; url: string; body: string }[]) =>
+    calls
+      .filter((call) => call.method !== "GET" && call.url.startsWith(FSM_API))
+      .map((call) => ({ method: call.method, url: call.url, body: JSON.parse(call.body) as unknown }));
+
+  it("adds the note, titled as the client's, where the appointment has none", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [NOTES]: (call) =>
+        call.method === "GET" ? new Response(null, { status: 204 }) : json({ data: [{ code: "SUCCESS" }] }, 201),
+    });
+    await provider.writeClientNote("ap-1", "Ring twice");
+    expect(writes(calls)).toEqual([
+      { method: "POST", url: NOTES, body: { data: [{ Note_Title: "From the client", Note_Content: "Ring twice" }] } },
+    ]);
+  });
+
+  it("changes the client's note in place, and leaves ops' own notes alone", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      // Matched by prefix, so the note's own path comes before the list's.
+      [`${NOTES}/note-1`]: () => json({ data: [{ code: "SUCCESS" }] }),
+      [NOTES]: () =>
+        json({
+          data: [
+            { id: "note-ops", Note_Title: null, Note_Content: "Called the client" },
+            { id: "note-1", Note_Title: "From the client", Note_Content: "Ring twice" },
+          ],
+        }),
+    });
+    await provider.writeClientNote("ap-1", "The lift is out");
+    await provider.writeClientNote("ap-1", "");
+    expect(writes(calls)).toEqual([
+      { method: "PUT", url: `${NOTES}/note-1`, body: { data: [{ Note_Content: "The lift is out" }] } },
+      { method: "PUT", url: `${NOTES}/note-1`, body: { data: [{ Note_Content: "" }] } },
+    ]);
+  });
+
+  it("writes nothing to blank a note that was never written", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [NOTES]: () => new Response(null, { status: 204 }),
+    });
+    await provider.writeClientNote("ap-1", "");
+    expect(writes(calls)).toEqual([]);
+  });
+});
+
 describe("FSM: moving and cancelling a visit", () => {
   it("reschedules an appointment through its action, with the new times", async () => {
     const { fsm: provider, calls } = fsm({

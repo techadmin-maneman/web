@@ -33,6 +33,9 @@
 //   POST /fsm/v1/Invoices                                        the work order, the line IDs and $finance_data;
 //        answers Books' ID under data.Invoices[0].finance_data.Invoice_Id
 //   GET  /fsm/v1/Invoices/{id}                                   { data: [invoice with ZBilling_InvoiceId] }
+//   GET  /fsm/v1/Service_Appointments/{id}/Notes                 { data: [note with Note_Title] }, or 204
+//   POST /fsm/v1/Service_Appointments/{id}/Notes                 { data: [{ Note_Title, Note_Content }] }
+//   PUT  /fsm/v1/Service_Appointments/{id}/Notes/{note id}       { data: [{ Note_Content }] }; no call deletes one
 //
 // Three reads have not yet been tried on the org, and nothing waits on them
 // (docs/decisions/0068-a-paid-hold-is-kept.md): a contact looked for by mobile
@@ -136,6 +139,10 @@ const Invoice = z.object({ id: z.string(), ZBilling_InvoiceId: z.string().nullis
 
 /** The Request a work order was converted from; absent on one our own booking made outright. */
 const WorkOrderRequest = z.object({ Request: Reference });
+const Note = z.object({ id: z.string(), Note_Title: z.string().nullish() });
+
+/** The title the client's note carries in FSM, so it is found again among the notes ops write. */
+export const CLIENT_NOTE_TITLE = "From the client";
 
 /** What the client asked for, as `createRequest` wrote it. */
 const RequestPreference = z.object({
@@ -839,6 +846,27 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDepe
             },
           ],
         },
+      });
+    },
+
+    // Tried on the real org on 30 September 2026 (docs/decisions/fsm-trial.md, "Text FSM keeps"). Found by its
+    // title, so a write whose answer was lost is changed rather than made twice.
+    async writeClientNote(appointmentId, note) {
+      const path = `/Service_Appointments/${appointmentId}/Notes`;
+      const ours = records(await json("client_note_read", path), "data", Note).find(
+        (written) => written.Note_Title === CLIENT_NOTE_TITLE,
+      );
+      if (ours !== undefined) {
+        await request("client_note_change", `/fsm/v1${path}/${ours.id}`, {
+          method: "PUT",
+          body: { data: [{ Note_Content: note }] },
+        });
+        return;
+      }
+      if (note === "") return;
+      await request("client_note_add", `/fsm/v1${path}`, {
+        method: "POST",
+        body: { data: [{ Note_Title: CLIENT_NOTE_TITLE, Note_Content: note }] },
       });
     },
   };

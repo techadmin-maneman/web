@@ -5,8 +5,9 @@
 // booked lead to send to FSM as a Request (src/domain/fsm-leads.ts), a hold paid
 // for in the app to book as a visit (src/domain/bookings.ts), an erased
 // person whose FSM contact is to be anonymised (docs/decisions/0049-dpdp.md),
-// or a client whose new number or address their contact is to take
-// (docs/decisions/0070-vendor-correctness.md). One asks for FSM's catalogue to
+// a client whose new number or address their contact is to take
+// (docs/decisions/0070-vendor-correctness.md), or a client's note on their visit
+// for its appointment (docs/decisions/0099-the-clients-note-in-fsm.md). One asks for FSM's catalogue to
 // take the price book's prices, while the owner has that push switched on
 // (docs/decisions/0073-prices-from-the-price-book.md).
 //
@@ -23,6 +24,7 @@ import { z } from "zod";
 import type { VisitType } from "../config/visit-types.ts";
 import type { Dependencies } from "../dependencies.ts";
 import { confirmBooking, unbookedAlertKey, type ConfirmOptions } from "../domain/bookings.ts";
+import { CLIENT_NOTE_MAX_CHARS, clientNoteAlertKey } from "../domain/client-notes.ts";
 import { pushCatalogue } from "../domain/fsm-catalogue.ts";
 import { sendLeadToFsm } from "../domain/fsm-leads.ts";
 import { logDeactivated, syncAppointment } from "../domain/fsm-mirror.ts";
@@ -32,10 +34,11 @@ import { eventById, markFsmWrite, nextPending, rejectPendingAfter, unwrittenBefo
 import { writeEventToFsm, type JobForFsm } from "../domain/job-sheet.ts";
 import { readOpsInputs } from "../domain/ops-settings.ts";
 import { exportVisitPhotos } from "../domain/visit-photos.ts";
+import { fsmText } from "../lib/fsm-text.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { failureReason, type Logger } from "../log.ts";
 import { REFUSALS_BEFORE_HELD } from "../policy/held-bookings.ts";
-import type { FsmContactUpdate } from "../providers/fsm.ts";
+import type { FsmContactUpdate, FsmProvider } from "../providers/fsm.ts";
 import { MAX_SYNC_ATTEMPTS } from "./crm-sync.ts";
 import type { MessagingMessage } from "./messaging.ts";
 import { retryWithBackoff } from "./backoff.ts";
@@ -61,6 +64,8 @@ export const FsmSyncMessageSchema = z.union([
   z.object({ update_contact_person_id: z.string().min(1), request_id: z.string() }),
   /** FSM's catalogue to take the price book's prices (src/domain/fsm-catalogue.ts). */
   z.object({ catalogue_sync: z.literal(true), request_id: z.string() }),
+  /** A client's note on their visit, written to its appointment (src/routes/client-notes.ts). */
+  z.object({ note_appointment_id: z.uuid(), request_id: z.string() }),
 ]);
 export type FsmSyncMessage = z.infer<typeof FsmSyncMessageSchema>;
 
@@ -108,6 +113,16 @@ export async function handleFsmSyncBatch(
       await updateContact(
         message,
         parsed.data.update_contact_person_id,
+        db,
+        deps,
+        log.child({ request_id: parsed.data.request_id }),
+      );
+      continue;
+    }
+    if ("note_appointment_id" in parsed.data) {
+      await writeClientNote(
+        message,
+        parsed.data.note_appointment_id,
         db,
         deps,
         log.child({ request_id: parsed.data.request_id }),
@@ -416,6 +431,7 @@ async function eraseContact(
     return;
   }
   try {
+    await blankClientNotes(db, deps.fsm, personId);
     await deps.fsm.eraseContact(contactId);
     await db
       .prepare("UPDATE people SET fsm_erased_at = ?2 WHERE id = ?1")
@@ -444,6 +460,69 @@ async function eraseContact(
     }
   }
   message.ack();
+}
+
+/** Blanks an erased client's notes on their appointments in FSM, which FSM's API cannot delete. */
+async function blankClientNotes(db: D1Database, fsm: FsmProvider, personId: string): Promise<void> {
+  const noted = await db
+    .prepare("SELECT id, fsm_id FROM appointments WHERE person_id = ?1 AND fsm_note_written_at IS NOT NULL")
+    .bind(personId)
+    .all<{ id: string; fsm_id: string }>();
+  for (const visit of noted.results) {
+    await fsm.writeClientNote(visit.fsm_id, "");
+    await db.prepare("UPDATE appointments SET fsm_note_written_at = NULL WHERE id = ?1").bind(visit.id).run();
+  }
+}
+
+/**
+ * Writes a client's note on their visit over the one on its FSM appointment, read afresh from D1, so a note sent
+ * late never stands over a later one. Nothing is written for an erased client. The fifth failure tells ops; the
+ * technician reads the note in their app whether or not FSM has it.
+ */
+async function writeClientNote(
+  message: Message,
+  visitId: string,
+  db: D1Database,
+  deps: Dependencies,
+  log: Logger,
+): Promise<void> {
+  const visit = await db
+    .prepare(
+      `SELECT a.fsm_id, a.person_id, a.client_note FROM appointments a JOIN people p ON p.id = a.person_id
+       WHERE a.id = ?1 AND a.deleted_at IS NULL AND a.client_note IS NOT NULL AND p.erased_at IS NULL`,
+    )
+    .bind(visitId)
+    .first<{ fsm_id: string; person_id: string; client_note: string }>();
+  if (visit === null) {
+    message.ack();
+    return;
+  }
+  try {
+    await deps.fsm.writeClientNote(visit.fsm_id, fsmText(visit.client_note, CLIENT_NOTE_MAX_CHARS));
+    await db
+      .prepare("UPDATE appointments SET fsm_note_written_at = ?2 WHERE id = ?1")
+      .bind(visitId, deps.now().toISOString())
+      .run();
+    await deps.resolveAlert(clientNoteAlertKey(visitId));
+    log.info("fsm_client_note_written", { appointment_id: visitId });
+    message.ack();
+  } catch (error) {
+    const reason = failureReason(error);
+    log.warn("fsm_client_note_failed", { appointment_id: visitId, attempt: message.attempts, reason });
+    if (message.attempts < MAX_FSM_SYNC_ATTEMPTS) {
+      retryWithBackoff(message, FIRST_RETRY_DELAY_SECONDS);
+      return;
+    }
+    await deps.alertOnce({
+      key: clientNoteAlertKey(visitId),
+      message:
+        `The client's note on visit ${visitId} did not reach FSM appointment ${visit.fsm_id} after ` +
+        `${String(message.attempts)} attempts: ${reason}. The technician reads it in their app; add it to the ` +
+        "appointment in FSM by hand.",
+      link: `/clients/${visit.person_id}`,
+    });
+    message.ack();
+  }
 }
 
 /**
