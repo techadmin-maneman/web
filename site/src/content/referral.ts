@@ -269,36 +269,19 @@ export const referral = {
     mobileError: "Please enter a ten-digit mobile number.",
     consentError: "We need this to contact you.",
   },
-  /** What each answer says (C4). */
+  /**
+   * What a booking answers (C4), the same for every number, since whoever typed it may not be its owner: the details
+   * go to the number on WhatsApp, and the app shows them once its owner signs in with a code. Not drawn as worded
+   * here; the owner approves the words.
+   */
   booked: {
-    label: "Consultation booked",
-    body: "A technician messages you the day before.",
-    free: "free",
-    // Not drawn: the consultation and fit in one visit costs nothing until the fit (ADR 0105). The owner approves the
-    // words (open point 165).
-    payOnceFitted: "pay once fitted",
+    label: "Booking received",
+    title: "Check WhatsApp",
+    body: "Your booking details are on their way to +91 {mobile}.",
     credits: visitsLand,
-    back: "Back to the site",
-    // Not drawn on C4 (docs/fidelity-method.md, "The referral landing"). The owner approves the words (open point 45).
-    number: "We’ll send the details to +91 {mobile} on WhatsApp.",
-    // Not drawn: the number already had an address, which the booking kept rather than the one typed (ADR 0081). It
-    // names no part of that address, since whoever typed the number may not be its owner. The owner approves the
-    // words (open point 45).
-    placeOnAccount: "At the address on your account",
-    addressOnAccount:
-      "We come to the address already on your account, not the one given here. To change it, message us on WhatsApp.",
-    // Not drawn: the consultation and fit in one visit (ADR 0105). The owner approves the words (open points 45 and
-    // 162).
-    labelOneVisit: "Consultation and fit booked",
-    oneVisit:
-      "Your technician brings the range for you to choose from. Once you are fitted, you pay by a link sent to your phone.",
-    calendar: "Add to calendar",
-    calendarFile: "mane-man-consultation.ics",
-    calendarTitle: "Mane Man consultation",
-    calendarTitleOneVisit: "Mane Man consultation and fit",
-    calendarNote: "Your technician comes to you.",
-    calendarApp: "Manage it in the Mane Man app: {url}",
+    appHint: "See it in the app too: sign in with this number.",
     app: "Open the app",
+    back: "Back to the site",
   },
   /**
    * C4's "Code expired" frame. The invite has lapsed for this friend only, which the API can tell once they have
@@ -315,11 +298,9 @@ export const referral = {
    * (docs/decisions/0060-an-invited-friend-reaches-ops-and-the-crm.md).
    */
   requested: {
-    label: "Consultation requested",
-    // Not drawn: the consultation and fit in one visit, asked for while self-serve booking is off (ADR 0105).
-    labelOneVisit: "Consultation and fit requested",
-    body: "We message you on WhatsApp to fix the hour.",
-    asked: "You asked for",
+    label: "Request received",
+    title: "We will message you",
+    body: "On WhatsApp, at +91 {mobile}, to fix the hour.",
   },
   listed: {
     label: "On the list",
@@ -337,8 +318,6 @@ export const referral = {
     taken: "That window has just gone. Please pick another.",
     notBookable: "That day is no longer open. Please pick another.",
     other: "Something went wrong at our end. Please try again.",
-    // Not drawn: the number already has a consultation to come (ADR 0025, item 41). The owner approves the words (open point 45).
-    alreadyBooked: "This number already has a consultation, {when}. To change it, message us on WhatsApp.",
     // Not drawn: the discount code given does not apply, whatever the reason (ADR 0108). The owner approves the words.
     codeNotApplicable: "That discount code does not apply. Check it, or leave it out to book without it.",
     // Not drawn: the one visit was asked for while no hair system is offered in the console.

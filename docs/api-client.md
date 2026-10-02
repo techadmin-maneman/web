@@ -1658,7 +1658,6 @@ Request body:
             "not_bookable",
             "hold_expired",
             "address_required",
-            "already_booked",
             "not_changeable",
             "terms_changed",
             "consent_required",
@@ -2138,10 +2137,15 @@ Request body:
               ],
               "description": "The service of its kind it offers, as booking.next's (ADR 0085)."
             },
+            "due_on": {
+              "type": "string",
+              "format": "date",
+              "description": "India's day it fell or falls due: a service's from the last visit and the cadence, a replacement's the piece's own. Before `date`, it has passed."
+            },
             "date": {
               "type": "string",
               "format": "date",
-              "description": "India's day it falls due: the last visit's day and the cadence; tomorrow once passed."
+              "description": "India's day it is offered on: the day it falls due, or tomorrow once that has passed."
             },
             "window": {
               "anyOf": [
@@ -2168,6 +2172,7 @@ Request body:
             "kind",
             "type",
             "tier",
+            "due_on",
             "date",
             "window",
             "replacement_bookable"
@@ -2299,10 +2304,15 @@ Request body:
                   ],
                   "description": "The service it is offered as: the one the client's last visit of its kind was, while that is offered, else its kind's first in the console's order (ADR 0085). Null while its kind offers none, as a first fit does before ops offer a hair system: it cannot be booked yet."
                 },
+                "due_on": {
+                  "type": "string",
+                  "format": "date",
+                  "description": "India's day it fell or falls due: a service's from the last visit and the cadence, a replacement's the piece's own, a first fit's from the consultation and the lead time."
+                },
                 "date": {
                   "type": "string",
                   "format": "date",
-                  "description": "India's day it is offered on."
+                  "description": "India's day it is offered on: the day it falls due, or tomorrow once that has passed."
                 },
                 "window": {
                   "anyOf": [
@@ -2323,6 +2333,7 @@ Request body:
               "required": [
                 "type",
                 "tier",
+                "due_on",
                 "date",
                 "window"
               ],
@@ -2332,7 +2343,7 @@ Request body:
               "type": "null"
             }
           ],
-          "description": "What the app offers next, with nothing booked, for the booking sheet to open with: the first fit once the consultation is done, from the lead time and in the window the site's request asked for; or the next service on its due day, in the last visit's window, or the replacement where the piece falls due first (ADR 0086)."
+          "description": "What the app offers next, with nothing booked, for the booking sheet to open with: the first fit once the consultation is done, from the lead time and in the window the site's request asked for; or the next service on its due day, in the last visit's window, or the replacement where the piece falls due first, on the earlier of its own due day and the service's (ADR 0086)."
         }
       },
       "required": [

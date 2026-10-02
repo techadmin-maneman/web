@@ -32,6 +32,18 @@ const ADDRESS = {
   access_notes: "Gate 2, visitor parking",
 };
 
+/** What every number is answered for 23 September's morning, whether we know it or not (PS-06). */
+const BOOKED_MORNING = {
+  state: "booked",
+  date: "2026-09-23",
+  window: "morning",
+  area: "Gurgaon South City II",
+  credits: false,
+  invite: "unknown",
+  one_visit: false,
+  discount_code: false,
+};
+
 const site = (settings = {}) => appFor("local", fakeDependencies(), settings, "public");
 const post = (body: unknown) => ({
   method: "POST",
@@ -76,7 +88,6 @@ describe("POST /api/consultation", () => {
       area: "Gurgaon South City II",
       credits: false,
       invite: "unknown",
-      address: "saved",
       one_visit: false,
       discount_code: false,
     });
@@ -168,7 +179,6 @@ describe("POST /api/consultation", () => {
       area: "Gurgaon South City II",
       credits: false,
       invite: "unknown",
-      address: "saved",
       one_visit: false,
       discount_code: false,
     });
@@ -265,7 +275,8 @@ describe("the address the consultation is at", () => {
   });
 
   // The form needs no login, only a number: whoever types one must not move where that person's visits go.
-  it("never replaces the address a person already has: it is kept, the visit goes to it, and the answer says so", async () => {
+  // PS-06: the page answers as it would for a new number, and only the number's owner is told, on WhatsApp.
+  it("never replaces the address a person already has: the visit goes to it, and only WhatsApp says so", async () => {
     await env.DB.prepare(
       `INSERT INTO people (id, created_at, mobile_e164, name, fsm_contact_id, zoho_lead_id)
        VALUES ('p-known', ?1, '+919810000002', 'Karan Bhatia', 'contact-7', 'lead-7')`,
@@ -278,10 +289,11 @@ describe("the address the consultation is at", () => {
     ).run();
     const fsm = fakeQueue();
     const crm = fakeQueue();
-    const answer = await book({ address: ADDRESS }, { FSM_QUEUE: fsm, CRM_QUEUE: crm });
+    const messages = fakeQueue();
+    const answer = await book({ address: ADDRESS }, { FSM_QUEUE: fsm, CRM_QUEUE: crm, MESSAGE_QUEUE: messages });
 
     expect(answer.status).toBe(201);
-    expect(await answer.json()).toMatchObject({ state: "booked", address: "on_account" });
+    expect(await answer.json()).toEqual(BOOKED_MORNING);
     const addresses = await env.DB.prepare(
       "SELECT id, line1, replaced_at FROM addresses WHERE person_id = 'p-known'",
     ).all();
@@ -289,18 +301,23 @@ describe("the address the consultation is at", () => {
     // Nothing about them changed, so nothing is sent on to FSM or the CRM but the booking and its lead.
     expect(fsm.sent).not.toContainEqual(expect.objectContaining({ update_contact_person_id: "p-known" }));
     expect(crm.sent).not.toContainEqual(expect.objectContaining({ update_person_id: "p-known" }));
+    const told = await env.DB.prepare("SELECT id, person_id, kind FROM outbound_messages").all<{ id: string }>();
+    expect(told.results).toEqual([
+      { id: expect.any(String) as string, person_id: "p-known", kind: "address_on_account" },
+    ]);
+    expect(messages.sent).toEqual([{ message_id: told.results[0]?.id, request_id: expect.any(String) as string }]);
   });
 
   it("leaves the first address untouched when the same number books again with another", async () => {
     const first = await book({ address: ADDRESS });
-    expect(await first.json()).toMatchObject({ state: "booked", address: "saved" });
+    expect(await first.json()).toEqual(BOOKED_MORNING);
     // Ops cancel the first, so the number may book a consultation again.
     await env.DB.prepare("UPDATE slot_holds SET state = 'released'").run();
 
     const elsewhere = { ...ADDRESS, flat: "House 9", line1: "Rose Lane", locality: "Sector 45" };
     const second = await book({ date: "2026-09-24", address: elsewhere });
     expect(second.status).toBe(201);
-    expect(await second.json()).toMatchObject({ state: "booked", address: "on_account" });
+    expect(await second.json()).toEqual({ ...BOOKED_MORNING, date: "2026-09-24" });
     const addresses = await env.DB.prepare(
       `SELECT a.flat, a.line1, a.locality, a.replaced_at FROM addresses a JOIN people p ON p.id = a.person_id
        WHERE p.mobile_e164 = '+919810000002'`,
@@ -321,8 +338,9 @@ describe("the address the consultation is at", () => {
     const crm = fakeQueue();
     const answer = await book({ address: ADDRESS }, { FSM_QUEUE: fsm, CRM_QUEUE: crm });
 
-    expect(await answer.json()).toMatchObject({ address: "saved" });
+    expect(await answer.json()).toEqual(BOOKED_MORNING);
     expect(await count("SELECT COUNT(*) AS n FROM addresses WHERE person_id = 'p-known'")).toBe(1);
+    expect(await count("SELECT COUNT(*) AS n FROM outbound_messages")).toBe(0);
     expect(fsm.sent).toContainEqual({ update_contact_person_id: "p-known", request_id: expect.any(String) as string });
     expect(crm.sent).toContainEqual({ update_person_id: "p-known", request_id: expect.any(String) as string });
   });
@@ -528,7 +546,6 @@ describe("an invite the browser remembered", () => {
       area: "Gurgaon South City II",
       credits: true,
       invite: "valid",
-      address: "saved",
       one_visit: false,
       discount_code: false,
     });
@@ -615,10 +632,12 @@ describe("an invite the browser remembered", () => {
 });
 
 // A form anyone can fill in with a number (docs/decisions/0068-a-paid-hold-is-kept.md).
+// The page answers it as it would a new number, so it never says whose a number is; its owner is told the rest on
+// WhatsApp (PS-06, BK-31).
 describe("a number the site already knows", () => {
-  const book = (body: object, queue = fakeQueue()) =>
+  const book = (body: object, queue = fakeQueue(), settings = {}) =>
     request(
-      site(),
+      site(settings),
       "/api/consultation",
       post({ ...VISITOR, pincode: "122018", consent: true, address: ADDRESS, ...body }),
       {
@@ -627,20 +646,46 @@ describe("a number the site already knows", () => {
       },
     );
   const count = async (sql: string) => (await env.DB.prepare(sql).first<{ n: number }>())?.n;
+  const karans = "(SELECT id FROM people WHERE mobile_e164 = '+919810000002')";
+  /** What the number's owner was told on WhatsApp, oldest first. */
+  const told = async () => {
+    const rows = await env.DB.prepare(
+      `SELECT kind FROM outbound_messages WHERE person_id = ${karans} ORDER BY created_at, rowid`,
+    ).all<{ kind: string }>();
+    return rows.results.map((row) => row.kind);
+  };
+
+  async function fittedClient() {
+    await env.DB.prepare(
+      "INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p-fitted', ?1, '+919810000002', 'Karan Bhatia')",
+    )
+      .bind(NOW.toISOString())
+      .run();
+    await env.DB.prepare(
+      `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end,
+         fsm_modified_at, synced_at)
+       VALUES ('fit', 'fsm-fit', 'p-fitted', 'first_fit', 'completed', 'Completed', '2026-08-01T03:30:00.000Z',
+         '2026-08-01T06:30:00.000Z', ?1, ?1)`,
+    )
+      .bind(NOW.toISOString())
+      .run();
+  }
 
   beforeEach(async () => {
     await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
   });
 
-  it("is answered already_booked, with the day and window it has, rather than booked twice (CLI-02)", async () => {
+  it("with a consultation to come gets a new number's answer, books nothing, and is told on WhatsApp", async () => {
     expect((await book({ date: "2026-09-23", window: "morning" })).status).toBe(201);
-    const again = await book({ name: "Karan B. again", date: "2026-09-24", window: "evening" });
-    expect(again.status).toBe(409);
-    expect(await again.json()).toEqual({
-      error: { code: "already_booked", request_id: expect.any(String) as string },
-      booked: { date: "2026-09-23", window: "morning" },
-    });
-    expect(await count("SELECT COUNT(*) AS n FROM slot_holds")).toBe(1);
+    const again = await book({ name: "Somebody Else", date: "2026-09-24", window: "evening" });
+    const stranger = await book({ mobile: "9810000003", date: "2026-09-24", window: "evening" });
+
+    expect(again.status).toBe(201);
+    expect(await again.json()).toEqual(await stranger.json());
+    expect(await count(`SELECT COUNT(*) AS n FROM slot_holds WHERE person_id = ${karans}`)).toBe(1);
+    expect(await count(`SELECT COUNT(*) AS n FROM consents WHERE person_id = ${karans}`)).toBe(1);
+    expect(await count(`SELECT COUNT(*) AS n FROM leads WHERE person_id = ${karans}`)).toBe(1);
+    expect(await told()).toEqual(["consultation_exists"]);
   });
 
   it("is never renamed by the form (BIZ-03)", async () => {
@@ -655,24 +700,31 @@ describe("a number the site already knows", () => {
     });
   });
 
-  it("books no consultation for a client past them, who books in the app (BIZ-03)", async () => {
-    await env.DB.prepare(
-      "INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p-fitted', ?1, '+919810000002', 'Karan Bhatia')",
-    )
-      .bind(NOW.toISOString())
-      .run();
-    await env.DB.prepare(
-      `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end,
-         fsm_modified_at, synced_at)
-       VALUES ('fit', 'fsm-fit', 'p-fitted', 'first_fit', 'completed', 'Completed', '2026-08-01T03:30:00.000Z',
-         '2026-08-01T06:30:00.000Z', ?1, ?1)`,
-    )
-      .bind(NOW.toISOString())
-      .run();
+  it("books no consultation for a client past them, and tells them on WhatsApp to book in the app (BK-31)", async () => {
+    await fittedClient();
     const answer = await book({ date: "2026-09-23", window: "morning" });
-    expect(answer.status).toBe(422);
-    expect((await answer.json<{ error: { code: string } }>()).error.code).toBe("not_bookable");
+    expect(answer.status).toBe(201);
+    expect(await answer.json()).toEqual(BOOKED_MORNING);
     expect(await count("SELECT COUNT(*) AS n FROM slot_holds")).toBe(0);
+    expect(await count("SELECT COUNT(*) AS n FROM consents")).toBe(0);
+    expect(await told()).toEqual(["book_in_app"]);
+  });
+
+  it("is answered taken when nobody is free, as a new number is, and told nothing", async () => {
+    await fittedClient();
+    await env.DB.prepare("UPDATE technicians SET active = 0").run();
+    const answer = await book({ date: "2026-09-23", window: "morning" });
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "taken" } });
+    expect(await told()).toEqual([]);
+  });
+
+  it("is answered requested while self-serve booking is off, as a new number is, and leaves ops nothing", async () => {
+    await fittedClient();
+    const answer = await book({ date: "2026-09-23", window: "morning" }, fakeQueue(), { selfServeBooking: false });
+    expect(await answer.json()).toEqual({ ...BOOKED_MORNING, state: "requested" });
+    expect(await count("SELECT COUNT(*) AS n FROM consultation_requests")).toBe(0);
+    expect(await told()).toEqual(["book_in_app"]);
   });
 
   it("leaves no person, consent or address behind when the window has gone (ARCH-05)", async () => {
@@ -740,7 +792,6 @@ describe("a consultation and fit in one visit", () => {
       area: "Gurgaon South City II",
       credits: false,
       invite: "unknown",
-      address: "saved",
       one_visit: true,
       discount_code: false,
     });
@@ -830,15 +881,14 @@ describe("a consultation and fit in one visit", () => {
 
   it("is the number's consultation still to happen, so neither can be booked again beside it", async () => {
     expect((await book({ one_visit: true })).status).toBe(201);
-    for (const second of [{}, { one_visit: true }]) {
-      const answer = await book({ date: "2026-09-24", ...second });
-      expect(answer.status).toBe(409);
-      expect(await answer.json()).toMatchObject({
-        error: { code: "already_booked" },
-        booked: { date: "2026-09-23", window: "morning" },
-      });
+    for (const oneVisit of [false, true]) {
+      const answer = await book({ date: "2026-09-24", one_visit: oneVisit });
+      expect(answer.status).toBe(201);
+      expect(await answer.json()).toEqual({ ...BOOKED_MORNING, date: "2026-09-24", one_visit: oneVisit });
     }
     expect(await count("SELECT COUNT(*) AS n FROM slot_holds")).toBe(1);
+    const told = await env.DB.prepare("SELECT kind FROM outbound_messages").all();
+    expect(told.results).toEqual([{ kind: "consultation_exists" }, { kind: "consultation_exists" }]);
   });
 
   it("leaves nothing behind when its three hours are not free", async () => {

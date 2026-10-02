@@ -192,7 +192,7 @@ Request body:
 }
 ```
 
-**201**: Booked, or asked for
+**201**: Booked, or asked for. A number with a consultation still to happen, or past consultations, gets the answer a new number would, books nothing, and is told why on WhatsApp.
 
 ```json
 {
@@ -216,22 +216,15 @@ Request body:
 }
 ```
 
-**409**: taken: that window has gone; already_booked: this number has a consultation still to happen; idempotency_in_progress: the first request with this key is still running
+**409**: taken: that window has gone; idempotency_in_progress: the first request with this key is still running
 
 ```json
 {
-  "anyOf": [
-    {
-      "$ref": "#/components/schemas/ErrorResponse"
-    },
-    {
-      "$ref": "#/components/schemas/AlreadyBooked"
-    }
-  ]
+  "$ref": "#/components/schemas/ErrorResponse"
 }
 ```
 
-**422**: not_bookable: the pincode is not served, the day is not open, or this number is past consultations and books in the app; code_not_applicable: the discount code does not apply, fields names discount_code; no_product: one visit, on a day the console offers no hair system; idempotency_key_reused: the key was used with a different body
+**422**: not_bookable: the pincode is not served, or the day is not open; code_not_applicable: the discount code does not apply, fields names discount_code; no_product: one visit, on a day the console offers no hair system; idempotency_key_reused: the key was used with a different body
 
 ```json
 {
@@ -540,7 +533,7 @@ Request body:
 }
 ```
 
-**201**: Booked, or asked for
+**201**: Booked, or asked for. A number with a consultation still to happen, or past consultations, gets the answer a new number would, books nothing, and is told why on WhatsApp.
 
 ```json
 {
@@ -564,22 +557,15 @@ Request body:
 }
 ```
 
-**409**: taken: that window has gone; already_booked: this number has a consultation still to happen; idempotency_in_progress: the first request with this key is still running
+**409**: taken: that window has gone; idempotency_in_progress: the first request with this key is still running
 
 ```json
 {
-  "anyOf": [
-    {
-      "$ref": "#/components/schemas/ErrorResponse"
-    },
-    {
-      "$ref": "#/components/schemas/AlreadyBooked"
-    }
-  ]
+  "$ref": "#/components/schemas/ErrorResponse"
 }
 ```
 
-**422**: not_bookable: the pincode is not served, the day is not open, or this number is past consultations; no_product: one visit, on a day the console offers no hair system; idempotency_key_reused: the key was used with a different body
+**422**: not_bookable: the pincode is not served, or the day is not open; no_product: one visit, on a day the console offers no hair system; idempotency_key_reused: the key was used with a different body
 
 ```json
 {
@@ -1227,7 +1213,6 @@ Razorpay's webhook: payments and refunds
             "not_bookable",
             "hold_expired",
             "address_required",
-            "already_booked",
             "not_changeable",
             "terms_changed",
             "consent_required",
@@ -1530,14 +1515,6 @@ Razorpay's webhook: payments and refunds
       ],
       "description": "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the invite's visits do not apply; or unknown: no invite came with it, or a code we do not have."
     },
-    "address": {
-      "type": "string",
-      "enum": [
-        "saved",
-        "on_account"
-      ],
-      "description": "saved: the address sent is now the person's; on_account: the person already had one, which the visit goes to, and the one sent was not written. The address on the account is never sent back."
-    },
     "one_visit": {
       "type": "boolean",
       "description": "true: the consultation and the first fit in one visit were booked, or asked for."
@@ -1554,166 +1531,8 @@ Razorpay's webhook: payments and refunds
     "area",
     "credits",
     "invite",
-    "address",
     "one_visit",
     "discount_code"
-  ],
-  "additionalProperties": false
-}
-```
-
-### AlreadyBooked
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "error": {
-      "type": "object",
-      "properties": {
-        "code": {
-          "type": "string",
-          "enum": [
-            "not_found",
-            "invalid_request",
-            "turnstile_failed",
-            "rate_limited",
-            "idempotency_in_progress",
-            "idempotency_key_reused",
-            "environment_mismatch",
-            "unavailable",
-            "internal_error",
-            "busy",
-            "photo_invalid_file",
-            "upload_already_received",
-            "upload_missing",
-            "session_required",
-            "job_not_claimable",
-            "look_limit_reached",
-            "claim_required",
-            "whatsapp_unavailable",
-            "unauthorized",
-            "visit_booked",
-            "payment_held",
-            "forbidden_origin",
-            "access_required",
-            "code_expired",
-            "too_early",
-            "number_in_use",
-            "not_ready",
-            "ops_assisted",
-            "taken",
-            "not_bookable",
-            "hold_expired",
-            "address_required",
-            "already_booked",
-            "not_changeable",
-            "terms_changed",
-            "consent_required",
-            "device_revoked",
-            "superseded",
-            "out_of_order",
-            "not_today",
-            "already_started",
-            "technician_inactive",
-            "managed_in_fsm",
-            "clash",
-            "on_leave",
-            "does_not_fit",
-            "fsm_refused",
-            "fsm_partly",
-            "too_early_to_close",
-            "no_service_area",
-            "service_exists",
-            "last_of_kind",
-            "service_retired",
-            "no_product",
-            "unknown_invite",
-            "own_invite",
-            "already_invited",
-            "already_disputed",
-            "not_disputable",
-            "dispute_window_closed",
-            "code_not_applicable",
-            "already_discounted",
-            "price_settled",
-            "code_exists",
-            "slot_times_too_soon",
-            "not_permitted",
-            "last_admin"
-          ]
-        },
-        "request_id": {
-          "type": "string"
-        },
-        "fields": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller."
-        },
-        "moved": {
-          "type": "object",
-          "properties": {
-            "technician": {
-              "type": "string",
-              "description": "Their first name, and nothing else of theirs"
-            },
-            "at": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "When ops moved the job to them; null when it was moved in FSM itself"
-            }
-          },
-          "required": [
-            "technician",
-            "at"
-          ],
-          "additionalProperties": false,
-          "description": "superseded, to a technician's phone, for a job given to another technician: whom, and when (docs/open-points.md, item 92)."
-        }
-      },
-      "required": [
-        "code",
-        "request_id"
-      ],
-      "additionalProperties": false
-    },
-    "booked": {
-      "type": "object",
-      "properties": {
-        "date": {
-          "type": "string",
-          "format": "date"
-        },
-        "window": {
-          "type": "string",
-          "enum": [
-            "morning",
-            "afternoon",
-            "evening"
-          ]
-        }
-      },
-      "required": [
-        "date",
-        "window"
-      ],
-      "additionalProperties": false,
-      "description": "The day and window of the consultation still to happen."
-    }
-  },
-  "required": [
-    "error",
-    "booked"
   ],
   "additionalProperties": false
 }
@@ -1979,14 +1798,6 @@ Razorpay's webhook: payments and refunds
       ],
       "description": "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the invite's visits do not apply; or unknown: no invite came with it, or a code we do not have."
     },
-    "address": {
-      "type": "string",
-      "enum": [
-        "saved",
-        "on_account"
-      ],
-      "description": "saved: the address sent is now the person's; on_account: the person already had one, which the visit goes to, and the one sent was not written. The address on the account is never sent back."
-    },
     "one_visit": {
       "type": "boolean",
       "description": "true: the consultation and the first fit in one visit were booked, or asked for."
@@ -1999,7 +1810,6 @@ Razorpay's webhook: payments and refunds
     "area",
     "credits",
     "invite",
-    "address",
     "one_visit"
   ],
   "additionalProperties": false

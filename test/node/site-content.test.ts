@@ -8,7 +8,6 @@ import { booking as appBooking } from "../../apps/app/src/content.ts";
 import { DESIGN_PLACEHOLDERS, type PlaceholderBlockName } from "../../site/src/content/design-placeholders.ts";
 import { referral } from "../../site/src/content/referral.ts";
 import * as site from "../../site/src/content/site.ts";
-import { bookedHeadline } from "../../site/src/lib/dates.ts";
 import { siteEnvironment } from "../../site/src/lib/environment.ts";
 import { HOUSE_CARD, HOUSE_CARD_VERSION } from "../../site/src/lib/invite.ts";
 import { publishProblems } from "../../site/src/lib/publish-gate.ts";
@@ -308,11 +307,6 @@ describe("the publish gate", () => {
 });
 
 describe("site helpers", () => {
-  it("writes the booked headline as board C4 does, from the date and the window's hours", () => {
-    expect(bookedHeadline("2026-09-21", "9 am to 12 pm")).toBe("Monday 21 Sep, 9 am to 12 pm");
-    expect(bookedHeadline("2027-01-02", "4 to 8 pm")).toBe("Saturday 2 Jan, 4 to 8 pm");
-  });
-
   it("fills content holes and leaves unknown ones", () => {
     expect(fill("not yet in {city}.", { city: "Mumbai" })).toBe("not yet in Mumbai.");
     expect(fill("{unknown}", {})).toBe("{unknown}");

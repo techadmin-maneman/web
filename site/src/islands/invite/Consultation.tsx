@@ -3,10 +3,9 @@ import type { LossExtent } from "../../../../src/config/booking.ts";
 import { ONE_VISIT_WINDOWS } from "../../../../src/policy/one-visit.ts";
 import { referral } from "../../content/referral.ts";
 import { track } from "../../lib/analytics.ts";
-import { addressLine, addressToSend, emptyAddress, missingParts, type AddressFields } from "../../lib/address.ts";
+import { addressToSend, emptyAddress, missingParts, type AddressFields } from "../../lib/address.ts";
 import { bookConsultation, bookPublicConsultation, type ReferralConsultation } from "../../lib/api.ts";
 import { dayStrip, indiaTomorrow, stripMonths } from "../../lib/dates.ts";
-import { placeOf } from "../../lib/place.ts";
 import { forgetInvite, rememberedInvite } from "../../lib/remembered-invite.ts";
 import { fill } from "../../lib/text.ts";
 import { readAttribution } from "../../lib/visit.ts";
@@ -93,12 +92,7 @@ export function Consultation(props: ConsultationProps) {
         track({ name: "lead_submitted", page, served: true, area: props.answer.area, window, loss_extent });
         track({ name: "booking_confirmed", page, area: booked.area, window: booked.window, state: booked.state });
         if (invite !== null) forgetInvite(invite);
-        props.onBooked({
-          result: booked,
-          mobile: fields.mobile,
-          place: placeOf(props.answer, address),
-          address: addressLine(address, pincode),
-        });
+        props.onBooked({ result: booked, mobile: fields.mobile });
       },
       missingParts(address).length === 0,
     );

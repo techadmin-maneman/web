@@ -319,6 +319,7 @@ describe("GET /api/me's prompt and invoice line", () => {
       kind: "next_visit",
       type: "service",
       tier: "standard",
+      due_on: "2026-10-10",
       date: "2026-10-10",
       window: "morning",
       replacement_bookable: false,

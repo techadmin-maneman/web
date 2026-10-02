@@ -1,8 +1,7 @@
-// The booked state's headline, as board C4 writes it: "Saturday 21 Sep, 9 am to 12 pm".
+// The booking form's days, in India's calendar.
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const SHORT_WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const MONTH_NAMES = [
   "January",
   "February",
@@ -22,12 +21,6 @@ const MONTH_NAMES = [
 function partsOf(date: string): { day: number; month: number; weekday: number } {
   const [year = 0, month = 1, day = 1] = date.split("-").map(Number);
   return { day, month, weekday: new Date(Date.UTC(year, month - 1, day)).getUTCDay() };
-}
-
-/** From "2026-09-21" and "9 am to 12 pm". */
-export function bookedHeadline(date: string, windowHours: string): string {
-  const { day, month, weekday } = partsOf(date);
-  return `${WEEKDAYS[weekday] ?? ""} ${String(day)} ${MONTHS[month - 1] ?? ""}, ${windowHours}`;
 }
 
 /** Today in India, as a calendar date. The visitor's own clock may be anywhere. */
