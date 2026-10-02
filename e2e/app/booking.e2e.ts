@@ -355,7 +355,7 @@ test("shows the price, and opens no Checkout, when the credit went on another bo
   await pay.getByRole("button", { name: "Confirm visit" }).click();
 
   await expect(
-    pay.getByText("Your visit credit is already on another booking, so this visit is paid. The price is below."),
+    pay.getByText("Your visit credit is already on another booking, so this visit is charged at the price below."),
   ).toBeVisible();
   await expect(pay.getByText("1 visit credit used")).toHaveCount(0);
   await expect(pay.getByRole("button", { name: "Pay Rs. 2,000" })).toBeVisible();
