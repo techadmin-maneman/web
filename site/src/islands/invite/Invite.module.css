@@ -685,14 +685,6 @@
   color: var(--ink-soft);
 }
 
-.doneBlockWhere {
-  margin: var(--sp-20) 0 0;
-  padding-top: var(--sp-18);
-  border-top: var(--hairline) solid var(--ink-rule);
-  font-size: var(--fs-15);
-  color: var(--ink-soft);
-}
-
 /* On the list, and the invite that has expired: the paper frames. */
 .doneFrame {
   padding: var(--sp-22) var(--sp-20);
@@ -725,15 +717,10 @@
   gap: var(--sp-20);
 }
 
-.doneNumber,
 .doneNote {
   margin: 0;
   font-size: var(--fs-15);
   color: var(--text-muted);
-}
-
-.doneNumber {
-  font-variant-numeric: tabular-nums;
 }
 
 .doneActions {

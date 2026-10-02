@@ -167,6 +167,17 @@ test("a number with no booking sees the same screen, and no code opens it", asyn
   await expect(page.getByRole("alert")).toHaveText("That code did not match. Four attempts left.");
 });
 
+// The site's booking confirmation opens the app with the number typed there.
+test("a link from the site's booking fills in its number, and the code is still asked for", async ({ page }) => {
+  const mobile = randomMobile();
+  await page.goto(`/#mobile=${mobile}`);
+  await expect(page.getByRole("textbox", { name: "Mobile number" })).toHaveValue(mobile);
+  // The number is taken off the address at once, so it is not left in the browser's history.
+  await expect(page).not.toHaveURL(/mobile=/);
+  await page.getByRole("button", { name: "Send code on WhatsApp" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Enter the code" })).toBeVisible();
+});
+
 test("A3 is reached by choice, and points to booking and WhatsApp", async ({ page }) => {
   await sendCode(page, randomMobile());
   await page.getByRole("button", { name: "No booking on this number?" }).click();
