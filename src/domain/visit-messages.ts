@@ -8,7 +8,7 @@
 
 import { shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
-import { FSM_SERVICE_NAMES, type VisitType } from "../config/visit-types.ts";
+import { VISIT_TYPE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
 import { DAY_BEFORE_REMINDER_HOUR } from "../policy/job-visibility.ts";
 import type { Charge } from "../policy/moving-a-visit.ts";
@@ -244,7 +244,7 @@ export async function composeVisitMessage(
   const start = new Date(visit.window_start);
   const params = [
     firstNameOf(visit.name),
-    visit.one_visit === "booked" ? ONE_VISIT_NAME : FSM_SERVICE_NAMES[visit.type].toLowerCase(),
+    visit.one_visit === "booked" ? ONE_VISIT_NAME : VISIT_TYPE_NAMES[visit.type].toLowerCase(),
     shortDate(indiaDate(start)),
     windowHours(start, await loadSlotSchedule(db)),
     visit.technician === null ? "our technician" : firstNameOf(visit.technician),

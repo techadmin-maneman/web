@@ -39,10 +39,9 @@ describe("GET /api/published-prices", () => {
     expect(await response.json()).toEqual({
       on: "2026-09-26",
       tier: "standard",
-      first_fit: firstFit,
       service,
       replacement,
-      // Every service offered: the four standard ones the console starts with (migration 0050).
+      // Every service offered: the four the console starts with (migration 0050), the first fit's among them.
       services: [
         { type: "consultation", tier: "standard", name: "Consultation", minutes: 60, price: free },
         { type: "first_fit", tier: "standard", name: "First fit", minutes: 180, price: firstFit },
@@ -52,7 +51,6 @@ describe("GET /api/published-prices", () => {
     });
   });
 
-  // The site's Premium column is the book's premium tier where the console offers one (ADR 0085).
   it("carries every service offered today, each in its kind, and leaves out one retired or unpriced", async () => {
     const service = (kind: string, tier: string, name: string, sort: number, retired: string | null = null) =>
       env.DB.prepare(
@@ -84,15 +82,30 @@ describe("GET /api/published-prices", () => {
     expect((await request(appFor("local", today()), "/api/published-prices")).status).toBe(503);
   });
 
+  // The owner's decision of 2 October 2026: only the hair systems ops offer, and no generic first fit in their place.
+  it("prices a first fit only as the hair systems offered, and answers with none while ops offer none", async () => {
+    await env.DB.prepare("UPDATE services SET retired_date = '2026-09-26' WHERE kind = 'first_fit'").run();
+
+    const response = await request(appFor("local", today()), "/api/published-prices");
+
+    expect(response.status).toBe(200);
+    const body = await response.json<Record<string, unknown> & { services: { type: string }[] }>();
+    expect(body).not.toHaveProperty("first_fit");
+    expect(body.services.map((each) => each.type)).toEqual(["consultation", "service", "replacement"]);
+  });
+
   it("follows a change from its day, and never shows one still to come or another tier's", async () => {
     await priceRow("service", 250_000, 18, "2026-09-26");
     await priceRow("first_fit", 3_500_000, 0, "2026-09-27");
     await priceRow("replacement", 3_000_000, 0, "2026-09-26", "premium");
 
-    const body = await pricesOn();
+    const body = (await pricesOn()) as Record<string, unknown> & {
+      services: { type: string; price: { amount_ex_gst: number } }[];
+    };
 
     expect(body.service).toEqual({ amount_ex_gst: 250_000, amount: 295_000, gst_percent: 18 });
-    expect(body.first_fit).toEqual({ amount_ex_gst: 3_000_000, amount: 3_000_000, gst_percent: 0 });
+    const firstFit = body.services.find((each) => each.type === "first_fit");
+    expect(firstFit?.price).toEqual({ amount_ex_gst: 3_000_000, amount: 3_000_000, gst_percent: 0 });
     expect(body.replacement).toEqual({ amount_ex_gst: 1_500_000, amount: 1_500_000, gst_percent: 0 });
   });
 

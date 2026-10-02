@@ -1,6 +1,6 @@
 # 0023. Launch hardening: headers, analytics, budgets
 
-- Status: accepted. Item 2 was settled by the owner on 22 September 2026: Bot Fight Mode is off, option a (ADR 0025, item 12). Section 3 updated 25 September 2026 for the booking pages of ADR 0051 and the referral landing.
+- Status: accepted. Item 2 was settled by the owner on 22 September 2026: Bot Fight Mode is off, option a (ADR 0025, item 12), and corrected 2 October 2026: JavaScript detections were still on. Section 3 updated 25 September 2026 for the booking pages of ADR 0051 and the referral landing.
 - Date: 2026-09-22
 
 ## Context
@@ -37,7 +37,9 @@ As built, the policy blocks the script. Each page then logs one policy error in 
 
 Staging runs as (b) until the owner decides.
 
-**Decided: a.** Bot Fight Mode was turned off on 21 September 2026, since it challenged CI's smoke tests (ADR 0008's update of that day), and the owner ruled it stays off on 22 September 2026 (ADR 0025, item 12). No script is blocked, on staging or in production.
+**Decided: a.** Bot Fight Mode was turned off on 21 September 2026, since it challenged CI's smoke tests (ADR 0008's update of that day), and the owner ruled it stays off on 22 September 2026 (ADR 0025, item 12).
+
+**Corrected 2 October 2026:** the script was still added to every page of every staging host, and blocked there, so JavaScript detections are on for the zone with Bot Fight Mode off. They are turned off in the dashboard (`docs/runbook.md`, step 14; `docs/open-points.md`, item 111), and never allowed with `'unsafe-inline'`. The same day showed Web Analytics' beacon reaching the app, ops and technician hosts, whose policies refuse it (item 144). Neither shows in a local run, the browser tests' or Lighthouse's, since both are added at the edge: so after every staging deploy, `npm run smoke:csp` opens each staging host's pages in Chromium and fails on any refusal.
 
 ### 3. Analytics
 

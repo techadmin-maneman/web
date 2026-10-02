@@ -53,7 +53,7 @@ async function mockApi(page: Page, answers: Partial<Record<Call, Answer | Answer
   const later = new Date(Date.now() + 5 * 60_000).toISOString();
   const defaults: Record<Call, Answer | Answer[]> = {
     availability: { status: 200, json: { available: true } },
-    look: { status: 404, json: { error: { code: "not_found", request_id: "test" } } },
+    look: { status: 204 },
     uploadUrl: {
       status: 201,
       json: { job_id: JOB, upload_url: `/api/tryon/upload/${JOB}?token=signed`, expires_at: later },
@@ -136,7 +136,7 @@ test("the whole try-on: uploaded during the choices, the number given before the
   expect(claim?.postDataJSON()).toEqual({
     job_id: JOB,
     name: "Test Visitor",
-    mobile: "98100 00000",
+    mobile: "9810000000",
     stage: "crown",
     notice_version: "gate-v3",
     attribution: { landing_path: "/try" },

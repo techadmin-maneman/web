@@ -14,9 +14,10 @@ import type { App, AppEnv } from "../http/context.ts";
 import { memberOfStaffOf } from "../http/audit.ts";
 import { correctByOps, versionsOf } from "../domain/hair-profiles.ts";
 import { liveContact } from "../domain/profile.ts";
-import { allServices } from "../domain/services.ts";
+import { offeredProducts } from "../domain/services.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
+import { indiaDate } from "../lib/india-time.ts";
 import {
   BasedOnSchema,
   FitSpecSchema,
@@ -32,9 +33,10 @@ const ClientHairProfileSchema = z
   .object({
     latest: z.union([HairProfileSchema, z.null()]).openapi({ description: "The latest version; null before one." }),
     versions: z.array(HairProfileVersionSchema).openapi({ description: "Every version, newest first." }),
-    products: z
-      .array(z.object({ tier: z.string(), name: z.string() }).strict())
-      .openapi({ description: "The products a correction may name: every first-fit service, retired or not." }),
+    products: z.array(z.object({ tier: z.string(), name: z.string() }).strict()).openapi({
+      description:
+        "The products a correction may name: the hair systems offered today, as the technician's card lists them.",
+    }),
   })
   .strict()
   .openapi("ClientHairProfile");
@@ -74,14 +76,14 @@ const correctRoute = createRoute({
 async function pageOf(c: Context<AppEnv>, personId: string): Promise<z.infer<typeof ClientHairProfileSchema>> {
   const versions = await versionsOf(c.env.DB, personId);
   const latest = versions[0];
-  const firstFits = (await allServices(c.env.DB)).filter((service) => service.kind === "first_fit");
+  const hairSystems = await offeredProducts(c.env.DB, indiaDate(c.var.deps.now()));
   return {
     latest:
       latest === undefined
         ? null
         : { id: latest.id, recorded_at: latest.recorded_at, fit: latest.fit, history: latest.history },
     versions,
-    products: firstFits.map((service) => ({ tier: service.tier, name: service.name })),
+    products: hairSystems.map((service) => ({ tier: service.tier, name: service.name })),
   };
 }
 

@@ -3,59 +3,44 @@
 // figures in src/content/prices.ts; mm-site's Worker fills the same sentences again from the price book, and the
 // booking form's island does the same with what the Worker gives it. All three use these words, so they agree.
 //
-// Premium is the book's too: the services ops code premium in the console (docs/decisions/0085-services-ops-can-edit.md).
-// While the book prices no premium first fit there are no premium words, so a clause that needs one, "[ Premium:
-// {premiumFirstFit}.]", is left out, and an element that shows one stays hidden (data-premium, site/src/worker.ts).
+// A first fit is priced only as the hair systems ops offer in the console: {firstFit} is the cheapest of them, and
+// {firstFitRange} runs from it to the dearest. While ops offer none there are no first-fit words, so a clause that
+// needs one, "[ From {firstFit}.]", is left out, and a sentence that needs one says nothing.
 
 import { rupees } from "@maneman/web-kit/money";
-import { BUILT_STANDARD, type TierPrices } from "../content/prices.ts";
+import { BUILT_PRICES, type SitePrices } from "../content/prices.ts";
 import type { PublishedPrices } from "./api.ts";
 import { fill } from "./text.ts";
 
 /** "Twelve monthly service visits": the first year is the first fit and a service visit a month. */
 const FIRST_YEAR_SERVICE_VISITS = 12;
 
-/** The code a premium service carries within its kind, as the console makes it from the name "Premium". */
-const PREMIUM_TIER = "premium";
-
-/** The holes a sentence may give a price in: the standard tier's always, premium's once the book prices it. */
-const STANDARD_HOLES = ["firstFit", "service", "replacement", "firstYear", "firstFitRange"] as const;
-const PREMIUM_HOLES = ["premiumFirstFit", "premiumService", "premiumReplacement", "premiumFirstYear"] as const;
-const PRICE_HOLES = [...STANDARD_HOLES, ...PREMIUM_HOLES];
+/** The holes a sentence may give a price in: a service visit's and a replacement's always, a first fit's once offered. */
+const STANDARD_HOLES = ["service", "replacement"] as const;
+const FIRST_FIT_HOLES = ["firstFit", "firstYear", "firstFitRange"] as const;
+const PRICE_HOLES = [...STANDARD_HOLES, ...FIRST_FIT_HOLES];
 
 export type PriceWords = Readonly<Record<(typeof STANDARD_HOLES)[number], string>> &
-  Readonly<Partial<Record<(typeof PREMIUM_HOLES)[number], string>>>;
+  Readonly<Partial<Record<(typeof FIRST_FIT_HOLES)[number], string>>>;
 
-function firstYear(tier: TierPrices): number {
-  return tier.first_fit + FIRST_YEAR_SERVICE_VISITS * tier.service;
-}
-
-/** The words for every hole, from the standard tier's figures and, where the book prices one, the premium tier's. */
-export function priceWords(standard: TierPrices, premium: TierPrices | null = null): PriceWords {
-  const words = {
-    firstFit: rupees(standard.first_fit),
-    service: rupees(standard.service),
-    replacement: rupees(standard.replacement),
-    firstYear: rupees(firstYear(standard)),
-    firstFitRange: rupees(standard.first_fit),
-  };
-  if (premium === null) return words;
-  const cheaperFirstFit = Math.min(standard.first_fit, premium.first_fit);
-  const dearerFirstFit = Math.max(standard.first_fit, premium.first_fit);
+/** The words for every hole: a service visit's and a replacement's, and a first fit's while ops offer a hair system. */
+export function priceWords(prices: SitePrices): PriceWords {
+  const words = { service: rupees(prices.service), replacement: rupees(prices.replacement) };
+  if (prices.firstFits.length === 0) return words;
+  const cheapest = Math.min(...prices.firstFits);
+  const dearest = Math.max(...prices.firstFits);
   return {
     ...words,
-    firstFitRange: `${rupees(cheaperFirstFit)}–${rupees(dearerFirstFit)}`,
-    premiumFirstFit: rupees(premium.first_fit),
-    premiumService: rupees(premium.service),
-    premiumReplacement: rupees(premium.replacement),
-    premiumFirstYear: rupees(firstYear(premium)),
+    firstFit: rupees(cheapest),
+    firstYear: rupees(cheapest + FIRST_YEAR_SERVICE_VISITS * prices.service),
+    firstFitRange: cheapest === dearest ? rupees(cheapest) : `${rupees(cheapest)}–${rupees(dearest)}`,
   };
 }
 
 /** The words a page is built with: the Worker writes the book's over them. */
-export const BUILT_WORDS: PriceWords = priceWords(BUILT_STANDARD);
+export const BUILT_WORDS: PriceWords = priceWords(BUILT_PRICES);
 
-/** A clause given only where every price in it is known: "[ Premium: {premiumFirstFit}.]". */
+/** A clause given only where every price in it is known: "[ From {firstFit}.]". */
 const CLAUSE = /\[([^\]]*)\]/g;
 const HOLE = /\{(\w+)\}/g;
 
@@ -67,7 +52,7 @@ function known(text: string, words: PriceWords): boolean {
 
 /**
  * A sentence with its prices filled. A clause in [ ] is left out unless every price in it is known; a sentence
- * that needs a price not known outside one says nothing, as a premium figure does while the book prices no premium.
+ * that needs a price not known outside one says nothing, as a first-fit figure does while ops offer no hair system.
  */
 export function fillPrices(sentence: string, words: PriceWords): string {
   const kept = sentence.replace(CLAUSE, (_, clause: string) => (known(clause, words) ? clause : ""));
@@ -79,7 +64,7 @@ export function holdsAPrice(text: string): boolean {
   return PRICE_HOLES.some((hole) => text.includes(`{${hole}}`));
 }
 
-/** A sentence as the page is built: any price in it filled with the build's figures, and no premium. */
+/** A sentence as the page is built: any price in it filled with the build's figures, and no first fit's. */
 export function asBuilt(text: string): string {
   return fillPrices(text, BUILT_WORDS);
 }
@@ -89,32 +74,17 @@ export function priceTemplate(text: string): string | undefined {
   return holdsAPrice(text) ? text : undefined;
 }
 
-/** The standard tier from the book's answer: each figure before GST, the main figure (src/policy/prices.ts). */
-export function standardOf(answer: PublishedPrices): TierPrices {
-  return {
-    first_fit: answer.first_fit.amount_ex_gst,
-    service: answer.service.amount_ex_gst,
-    replacement: answer.replacement.amount_ex_gst,
-  };
+/** The hair systems the book's answer offers as first fits, in the console's order. */
+export function hairSystemsIn(answer: PublishedPrices): PublishedPrices["services"] {
+  return answer.services.filter((service) => service.type === "first_fit");
 }
 
-/**
- * The premium tier from the book's answer, each figure before GST: the first fit coded premium, and the service visit
- * and replacement coded premium where the console offers them, else the kind's standard one, which is what a client
- * with a premium base then books. Null while the book prices no premium first fit, and the site shows no Premium.
- */
-export function premiumOf(answer: PublishedPrices): TierPrices | null {
-  // An answer from an mm-api that publishes no services yet has none (docs/decisions/0085-services-ops-can-edit.md).
-  const services = Array.isArray(answer.services) ? answer.services : [];
-  const premium = (kind: "first_fit" | "service" | "replacement") =>
-    services.find((service) => service.type === kind && service.tier === PREMIUM_TIER)?.price.amount_ex_gst;
-  const firstFit = premium("first_fit");
-  if (firstFit === undefined) return null;
-  const standard = standardOf(answer);
+/** The prices from the book's answer, each figure before GST, the main figure (src/policy/prices.ts). */
+export function pricesOf(answer: PublishedPrices): SitePrices {
   return {
-    first_fit: firstFit,
-    service: premium("service") ?? standard.service,
-    replacement: premium("replacement") ?? standard.replacement,
+    firstFits: hairSystemsIn(answer).map((service) => service.price.amount_ex_gst),
+    service: answer.service.amount_ex_gst,
+    replacement: answer.replacement.amount_ex_gst,
   };
 }
 
@@ -136,19 +106,15 @@ function isService(value: unknown): boolean {
   return isRecord(value) && typeof value.type === "string" && typeof value.tier === "string" && isPrice(value.price);
 }
 
-/**
- * An answer from GET /api/published-prices that reads as one. Anything else is treated as no answer at all. One
- * without its list of services is still read, as an mm-api from before it would answer; one with a list it cannot
- * read is not.
- */
+/** An answer from GET /api/published-prices that reads as one. Anything else is treated as no answer at all. */
 export function isPublishedPrices(value: unknown): value is PublishedPrices {
   return (
     isRecord(value) &&
     value.tier === "standard" &&
     typeof value.on === "string" &&
-    isPrice(value.first_fit) &&
     isPrice(value.service) &&
     isPrice(value.replacement) &&
-    (value.services === undefined || (Array.isArray(value.services) && value.services.every(isService)))
+    Array.isArray(value.services) &&
+    value.services.every(isService)
   );
 }
