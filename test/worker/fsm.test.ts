@@ -8,6 +8,7 @@ import {
   FSM_API,
   ZOHO_TOKEN_URL,
   fsmAppointmentRecord,
+  fsmCreateAnswer,
   fsmAttachmentRecord,
   fsmContactRecord,
   fsmInvoiceRecord,
@@ -278,6 +279,7 @@ describe("FSM: clients, technicians, items and files", () => {
   it.each([
     ["under the module's name", { data: { Service_And_Parts: [{ id: "item-9" }] } }],
     ["as a list", { data: [{ id: "item-9" }] }],
+    ["under details, as FSM's creates answer", fsmCreateAnswer("item-9")],
   ])("makes a service item as scripts/setup-fsm.ts made the org's, and takes its ID %s", async (_, answer) => {
     const { fsm: provider, calls } = fsm({
       [ZOHO_TOKEN_URL]: () => tokenIssued(),
@@ -375,7 +377,7 @@ describe("FSM: clients, technicians, items and files", () => {
     const { fsm: provider, calls } = fsm({
       [ZOHO_TOKEN_URL]: () => tokenIssued(),
       [`${FSM_API}/files`]: () => json({ data: { file_id: "file-new" } }, 200),
-      [`${FSM_API}/Service_Appointments/ap-1/Attachments`]: () => json({ data: [{ id: "attachment-9" }] }, 201),
+      [`${FSM_API}/Service_Appointments/ap-1/Attachments`]: () => json(fsmCreateAnswer("attachment-9")),
     });
 
     const id = await provider.attachToAppointment("ap-1", {
@@ -387,6 +389,70 @@ describe("FSM: clients, technicians, items and files", () => {
     expect(id).toBe("attachment-9");
     expect(JSON.parse(calls.at(-1)?.body ?? "null")).toEqual({
       data: [{ File_Id: "file-new", File_Name: "before-front.jpg" }],
+    });
+  });
+
+  describe("an attach answered without the new attachment's ID", () => {
+    const photo = { name: "before-front.jpg", contentType: "image/jpeg", bytes: new Uint8Array([0xff, 0xd8, 0xff]) };
+    const noId = () => json({ data: [{ code: "SUCCESS", message: "record added", status: "success" }] });
+
+    it("finds the file among the appointment's by its name and size, and attaches it once", async () => {
+      const { fsm: provider, calls } = fsm({
+        [ZOHO_TOKEN_URL]: () => tokenIssued(),
+        [`${FSM_API}/files`]: () => json({ data: { file_id: "file-new" } }),
+        [`${FSM_API}/Service_Appointments/ap-1/Attachments`]: (call) =>
+          call.method === "POST"
+            ? noId()
+            : json({
+                data: [
+                  fsmAttachmentRecord({ id: "attachment-other", File_Name: "before-left.jpg", Size: "3" }),
+                  fsmAttachmentRecord({ id: "attachment-older", File_Name: "before-front.jpg", Size: "22738" }),
+                  fsmAttachmentRecord({ id: "attachment-9", File_Name: "before-front.jpg", Size: "3" }),
+                ],
+              }),
+      });
+
+      expect(await provider.attachToAppointment("ap-1", photo)).toBe("attachment-9");
+      const attaches = calls.filter((call) => call.method === "POST" && call.url.endsWith("/Attachments"));
+      expect(attaches).toHaveLength(1);
+    });
+
+    it("fails when FSM holds no such file, so the retry looks again", async () => {
+      const { fsm: provider } = fsm({
+        [ZOHO_TOKEN_URL]: () => tokenIssued(),
+        [`${FSM_API}/files`]: () => json({ data: { file_id: "file-new" } }),
+        [`${FSM_API}/Service_Appointments/ap-1/Attachments`]: (call) => (call.method === "POST" ? noId() : empty()),
+      });
+
+      await expect(provider.attachToAppointment("ap-1", photo)).rejects.toThrow(
+        "Zoho 200 NO_ID: attach_file answered without the new ID",
+      );
+    });
+  });
+
+  it("takes a record FSM answered as an error, with a 200, as FSM's refusal of it", async () => {
+    const { fsm: provider } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${FSM_API}/files`]: () => json({ data: { file_id: "file-new" } }),
+      [`${FSM_API}/Service_Appointments/ap-1/Attachments`]: () =>
+        json({
+          data: [
+            {
+              code: "INVALID_DATA",
+              details: { api_name: "File_Id", json_path: "$.data[0].File_Id" },
+              message: "invalid data",
+              status: "error",
+            },
+          ],
+        }),
+    });
+
+    await expect(
+      provider.attachToAppointment("ap-1", { name: "a.jpg", contentType: "image/jpeg", bytes: new Uint8Array([1]) }),
+    ).rejects.toMatchObject({
+      code: "INVALID_DATA",
+      refusal: true,
+      message: "Zoho 400 INVALID_DATA: invalid data (field File_Id, at $.data[0].File_Id)",
     });
   });
 });

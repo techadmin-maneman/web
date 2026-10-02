@@ -31,6 +31,7 @@ import { streetOf } from "../domain/profile.ts";
 import { eventById, markFsmWrite, nextPending, rejectPendingAfter, unwrittenBefore } from "../domain/job-events.ts";
 import { writeEventToFsm, type JobForFsm } from "../domain/job-sheet.ts";
 import { readOpsInputs } from "../domain/ops-settings.ts";
+import { PhotoSetUnfinished } from "../domain/tech-photos.ts";
 import { exportVisitPhotos } from "../domain/visit-photos.ts";
 import { fsmText } from "../lib/fsm-text.ts";
 import { indiaDate } from "../lib/india-time.ts";
@@ -279,7 +280,8 @@ async function syncCatalogue(
  * Passes one write from a technician's outbox to FSM. A failure is retried on
  * the same schedule as everything else here, so the technician's work is never
  * lost to a refusal FSM will take a minute later; the fifth attempt alerts, and
- * the event is marked rejected for ops to enter by hand.
+ * the event is marked rejected for ops to enter by hand. An attempt that
+ * attached some of a photo set's photographs before failing is not counted.
  *
  * A job's writes reach FSM in the order they landed, as ADR 0053 has it. Each
  * is its own message and a failed one is retried minutes later, so a write
@@ -347,6 +349,10 @@ async function writeJobEvent(
   } catch (error) {
     const reason = failureReason(error);
     log.warn("job_event_write_failed", { appointment_id: job.id, kind: event.kind, attempt: message.attempts, reason });
+    if (error instanceof PhotoSetUnfinished) {
+      await tryAgainAfresh(message, env, event.id, options.requestId);
+      return;
+    }
     if (message.attempts < MAX_FSM_SYNC_ATTEMPTS) {
       retryWithBackoff(message, FIRST_RETRY_DELAY_SECONDS);
       return;
@@ -369,6 +375,16 @@ async function writeJobEvent(
   if (next !== null) {
     await env.FSM_QUEUE.send({ job_event_id: next.id, request_id: options.requestId } satisfies FsmSyncMessage);
   }
+}
+
+/**
+ * Sends a job event's write again as a new message, whose attempts count from one: an attempt that made progress is
+ * not one of the five. Each such attempt attaches at least one more photograph, so this ends.
+ */
+async function tryAgainAfresh(message: Message, env: FsmSyncEnv, jobEventId: string, requestId: string): Promise<void> {
+  const again: FsmSyncMessage = { job_event_id: jobEventId, request_id: requestId };
+  await env.FSM_QUEUE.send(again, { delaySeconds: FIRST_RETRY_DELAY_SECONDS });
+  message.ack();
 }
 
 /** The appointment a job event belongs to, with what FSM needs to write against it. */

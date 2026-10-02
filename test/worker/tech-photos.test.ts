@@ -2,8 +2,8 @@
 // NOW is Monday 21 September 2026, 12 noon in India. Every name and number is made up.
 
 import { env } from "cloudflare:workers";
-import { beforeEach, describe, expect, it } from "vitest";
-import { attachPhotosToFsm } from "../../src/domain/tech-photos.ts";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { attachPhotosToFsm, PhotoSetUnfinished } from "../../src/domain/tech-photos.ts";
 import { createStubFsm, EMPTY_FSM, type StubFsm } from "../../src/providers/fsm.ts";
 import { markDatabase, NOW } from "./helpers.ts";
 import { syntheticJpeg } from "./tryon-fixtures.ts";
@@ -50,6 +50,14 @@ const attachmentOf = (angle: string) =>
     .bind(angle)
     .first<string>("fsm_attachment_id");
 
+/** The angles whose photograph FSM holds, by our record. */
+async function attachedAngles(): Promise<string[]> {
+  const { results } = await env.DB.prepare(
+    "SELECT angle FROM photos WHERE fsm_attachment_id IS NOT NULL ORDER BY angle",
+  ).all<{ angle: string }>();
+  return results.map((row) => row.angle);
+}
+
 describe("attaching the photographs to FSM", () => {
   it("finds a file FSM took whose answer never came, by its name and size, rather than attaching it twice", async () => {
     await photo("front", syntheticJpeg(800, 800, "front"));
@@ -72,5 +80,32 @@ describe("attaching the photographs to FSM", () => {
     await attachPhotosToFsm(env.DB, env.CLIENT_PHOTOS, fsm, JOB_IN_FSM, "before");
 
     expect(fsm.made.attached.map((file) => file.bytes)).toEqual([expect.any(Number), retake.byteLength]);
+  });
+
+  it("keeps each photograph's attachment as it lands, and names a set that failed part-way as unfinished", async () => {
+    await photo("front", syntheticJpeg(800, 800, "front"));
+    await photo("left", syntheticJpeg(800, 800, "left"));
+    const attach = fsm.attachToAppointment;
+    vi.spyOn(fsm, "attachToAppointment")
+      .mockImplementationOnce(attach)
+      .mockRejectedValueOnce(new Error("Zoho 503 HTTP_ERROR: request failed"));
+
+    const failure = attachPhotosToFsm(env.DB, env.CLIENT_PHOTOS, fsm, JOB_IN_FSM, "before");
+    await expect(failure).rejects.toThrow(PhotoSetUnfinished);
+    await expect(failure).rejects.toThrow("Zoho 503 HTTP_ERROR: request failed");
+    expect(await attachedAngles()).toHaveLength(1);
+
+    expect(await attachPhotosToFsm(env.DB, env.CLIENT_PHOTOS, fsm, JOB_IN_FSM, "before")).toBe(1);
+    expect(await attachedAngles()).toEqual(["front", "left"]);
+    expect(fsm.made.attached.map((file) => file.name).sort()).toEqual(["before-front.jpg", "before-left.jpg"]);
+  });
+
+  it("fails a set whose first photograph got nowhere as the failure itself", async () => {
+    await photo("front", syntheticJpeg(800, 800, "front"));
+    fsm.failNext("attachToAppointment", "Zoho 503 HTTP_ERROR: request failed");
+
+    const failure = attachPhotosToFsm(env.DB, env.CLIENT_PHOTOS, fsm, JOB_IN_FSM, "before");
+    await expect(failure).rejects.toThrow("Zoho 503 HTTP_ERROR: request failed");
+    await expect(failure).rejects.not.toBeInstanceOf(PhotoSetUnfinished);
   });
 });

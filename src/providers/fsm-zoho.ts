@@ -25,7 +25,8 @@
 //   GET  /fsm/v1/Service_Appointments/{id}/actions/blueprint/transitions
 //   PUT  /fsm/v1/Service_Appointments/{id}/actions/blueprint     start, close or terminate, with its mandatory note
 //   POST /fsm/v1/files                                           multipart; answers { data: { file_id } }
-//   POST /fsm/v1/Service_Appointments/{id}/Attachments           attaches an uploaded file
+//   POST /fsm/v1/Service_Appointments/{id}/Attachments           attaches an uploaded file; answers
+//        { data: [{ code, details: { id }, message, status }] } (staging, 2 October 2026)
 //   GET  /fsm/v1/Work_Orders/{id}                                { data: [work order with its service lines] }
 //   POST /fsm/v1/Invoices                                        the work order, the line IDs and $finance_data;
 //        answers Books' ID under data.Invoices[0].finance_data.Invoice_Id
@@ -48,7 +49,7 @@
 // 0085-services-ops-can-edit.md; docs/open-points.md, item 25). The trial deletes an item at /Products/{id}, not at
 // /Service_And_Parts/{id}, so an item is written there; whether Name is written with its price has not been tried.
 // scripts/setup-fsm.ts made the org's first items with the POST below and read only its status, so where its answer
-// carries the new item's ID has not been read: either shape a create answers is taken. Nor has the catalogue been
+// carries the new item's ID has not been read: any shape a create answers is taken. Nor has the catalogue been
 // read past its first page of 200, which the org's dozen items have never needed: a page is asked for as the
 // appointments are, and the next one while info.more_records says there is one, up to FSM_ITEM_PAGES when it is read
 // all at once, and for as long as the run can pay for when the hourly check reads it. That check reads each write
@@ -60,8 +61,8 @@
 //
 // Nor have the two that keep ops' consumables in the catalogue as parts, which run behind the same switch
 // (docs/decisions/0087-consumables-and-stock.md). scripts/setup-fsm.ts added the catalogue's items with the same
-// create and read only its status, so the new ID is taken from whichever of the shapes FSM's creates answer in;
-// a rename is written where the price is. The next hourly check reads both back by name.
+// create and read only its status, so the new ID is taken from any shape FSM's creates answer in; a rename is
+// written where the price is. The next hourly check reads both back by name.
 //
 //   POST /fsm/v1/Service_And_Parts                               { data: [{ Name, Type: "Part", Unit_Price: 0 }] }
 //   PUT  /fsm/v1/Products/{id}                                   { data: [{ Name }] }
@@ -188,22 +189,45 @@ const Addresses = z.object({
   Billing_Address: z.object({ id: z.string() }),
 });
 
-/** What a create answers: the new records under their modules' names, or, for an appointment, a list. */
+/** One new record in a create's answer: { code, details: { id }, message, status }, or a bare { id }. */
+const NewRecord = z.object({
+  id: z.string().nullish(),
+  details: z.object({ id: z.string().nullish() }).nullish(),
+  status: z.string().nullish(),
+});
+type NewRecord = z.infer<typeof NewRecord>;
+
+/** What a create answers: a list of new records, or the new records under their modules' names. */
 const Created = z.object({
-  data: z.union([z.array(z.object({ id: z.string() })), z.record(z.string(), z.array(z.object({ id: z.string() })))]),
+  data: z.union([z.array(NewRecord), z.record(z.string(), z.array(NewRecord))]),
 });
 
 /**
- * What adding a catalogue item answers, which no call here has read yet: the
- * trial's `data[0].details.id`, a list of new records, or the records under
- * the module's name.
+ * The new records of one module in a create's answer: those under the module's name, or under the only name the
+ * answer has, as the catalogue answers under Service_And_Parts or Products.
  */
-const ItemCreated = z.object({
-  data: z.union([
-    z.array(z.object({ id: z.string().optional(), details: z.object({ id: z.string() }).optional() })),
-    z.record(z.string(), z.array(z.object({ id: z.string() }))),
-  ]),
-});
+function recordsOfModule(data: Record<string, NewRecord[]>, module: string): NewRecord[] {
+  const named = data[module];
+  if (named !== undefined) return named;
+  const lists = Object.values(data);
+  if (lists.length !== 1) return [];
+  return lists[0] ?? [];
+}
+
+/**
+ * The new record's ID in what a create answered, wherever FSM put it: data[0].details.id, data[0].id, or either
+ * under the module's name. Undefined when the answer carries none; a record FSM answered as an error is refused.
+ */
+function newRecordId(answer: ZohoAnswer, module: string): string | undefined {
+  const { data } = readAnswer(answer, Created);
+  const [first] = Array.isArray(data) ? data : recordsOfModule(data, module);
+  if (first === undefined) return undefined;
+  if (first.status === "error") throw zohoErrorFrom(400, answer.body);
+  return first.id ?? first.details?.id ?? undefined;
+}
+
+const noNewId = (answer: ZohoAnswer): ZohoError =>
+  new ZohoError(answer.status, "NO_ID", `${answer.step} answered without the new ID`);
 
 /** What FSM's catalogue says of a part a consumable is: used on jobs, and never on an invoice. */
 const PART_DESCRIPTION = "A consumable used on jobs. Never invoiced.";
@@ -332,23 +356,28 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDepe
     return { items, more };
   }
 
-  /** Adds one record to a module; returns the new IDs by module, the record's own under `module`. */
-  async function createWith(
-    step: string,
-    module: string,
-    record: Record<string, unknown>,
-  ): Promise<Record<string, string | undefined>> {
-    const response = await request(step, `/fsm/v1/${module}`, { method: "POST", body: { data: [record] } });
-    const { data } = readAnswer(await answerOf(step, response), Created);
-    const ids = Array.isArray(data)
-      ? { [module]: data[0]?.id }
-      : Object.fromEntries(Object.entries(data).map(([name, records]) => [name, records[0]?.id]));
-    if (ids[module] === undefined) throw new ZohoError(response.status, "NO_ID", `${step} answered without the new ID`);
-    return ids;
+  /** What FSM answered one new record posted to `path`. */
+  async function post(step: string, path: string, record: Record<string, unknown>): Promise<ZohoAnswer> {
+    return answerOf(step, await request(step, `/fsm/v1/${path}`, { method: "POST", body: { data: [record] } }));
   }
 
+  /** Adds one record to a module and returns its new ID. */
   async function create(step: string, module: string, record: Record<string, unknown>): Promise<string> {
-    return (await createWith(step, module, record))[module] ?? "";
+    const answer = await post(step, module, record);
+    const id = newRecordId(answer, module);
+    if (id === undefined) throw noNewId(answer);
+    return id;
+  }
+
+  async function attachmentsOf(appointmentId: string): Promise<FsmAttachment[]> {
+    const answer = await json("attachments", `/Service_Appointments/${appointmentId}/Attachments`);
+    return records(answer, "data", Attachment).map((file): FsmAttachment => ({
+      id: file.id,
+      fileId: file.$file_id,
+      name: file.File_Name,
+      size: Number(file.Size),
+      createdAt: file.Created_Time,
+    }));
   }
 
   /** An invoice FSM already holds, with Books' ID for it; null while Books has not been given it. */
@@ -457,15 +486,11 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDepe
     },
 
     async createItem(item) {
-      const response = await request("create_item", "/fsm/v1/Service_And_Parts", {
-        method: "POST",
-        body: { data: [{ Name: item.name, Type: "Service", Unit_Price: item.price / 100 }] },
+      return create("create_item", "Service_And_Parts", {
+        Name: item.name,
+        Type: "Service",
+        Unit_Price: item.price / 100,
       });
-      const { data } = readAnswer(await answerOf("create_item", response), Created);
-      // Under the module's name, as a Contact's is, or a list, as an appointment's is: the org has not said which.
-      const id = Array.isArray(data) ? data[0]?.id : Object.values(data).flat()[0]?.id;
-      if (id === undefined) throw new ZohoError(response.status, "NO_ID", "create_item answered without the new ID");
-      return id;
     },
 
     async updateItem(itemId, item) {
@@ -477,31 +502,19 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDepe
 
     // Rs. 0: a job's use stays in our records and on FSM's summary, and never reaches a work order's lines.
     async createPart(name) {
-      const response = await request("create_part", "/fsm/v1/Service_And_Parts", {
-        method: "POST",
-        body: { data: [{ Name: name, Type: "Part", Unit_Price: 0, Description: PART_DESCRIPTION }] },
+      return create("create_part", "Service_And_Parts", {
+        Name: name,
+        Type: "Part",
+        Unit_Price: 0,
+        Description: PART_DESCRIPTION,
       });
-      const { data } = readAnswer(await answerOf("create_part", response), ItemCreated);
-      const [first] = Array.isArray(data) ? data : [];
-      const id = Array.isArray(data) ? (first?.id ?? first?.details?.id) : Object.values(data)[0]?.[0]?.id;
-      if (id === undefined) throw new ZohoError(response.status, "NO_ID", "create_part answered without the new ID");
-      return id;
     },
 
     async renameItem(itemId, name) {
       await request("rename_item", `/fsm/v1/Products/${itemId}`, { method: "PUT", body: { data: [{ Name: name }] } });
     },
 
-    async attachments(appointmentId) {
-      const answer = await json("attachments", `/Service_Appointments/${appointmentId}/Attachments`);
-      return records(answer, "data", Attachment).map((file): FsmAttachment => ({
-        id: file.id,
-        fileId: file.$file_id,
-        name: file.File_Name,
-        size: Number(file.Size),
-        createdAt: file.Created_Time,
-      }));
-    },
+    attachments: attachmentsOf,
 
     async download(fileId) {
       const response = await request("download", `/fsm/v1/files?file_id=${encodeURIComponent(fileId)}`);
@@ -675,10 +688,19 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDepe
       const { data } = readAnswer(await answerOf("upload_file", uploaded), Uploaded);
       // The upload answers `file_id`, but the Attachments module wants `File_Id`;
       // `file_id` is refused with 400 INVALID_DATA (staging, 23 September 2026).
-      return create("attach_file", `Service_Appointments/${appointmentId}/Attachments`, {
+      const answer = await post("attach_file", `Service_Appointments/${appointmentId}/Attachments`, {
         File_Id: data.file_id,
         File_Name: file.name,
       });
+      const id = newRecordId(answer, "Attachments");
+      if (id !== undefined) return id;
+
+      // An answer naming no attachment: the file is looked for by its name and size, as a retry would look for it.
+      const attached = (await attachmentsOf(appointmentId)).find(
+        (held) => held.name === file.name && held.size === file.bytes.byteLength,
+      );
+      if (attached === undefined) throw noNewId(answer);
+      return attached.id;
     },
 
     // Cancelling is a transition of the work order's blueprint, offered only while the work order is open.

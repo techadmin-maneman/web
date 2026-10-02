@@ -197,6 +197,25 @@ export async function anglesHeld(db: D1Database, appointmentId: string, phase: P
 }
 
 /**
+ * A photo set that failed part-way: some of its photographs reached FSM and are kept as attached, and the rest are
+ * still to go. The message is the failure's own.
+ */
+export class PhotoSetUnfinished extends Error {
+  override readonly name = "PhotoSetUnfinished";
+
+  constructor(cause: unknown) {
+    super(cause instanceof Error ? cause.message : "unknown error", { cause });
+  }
+}
+
+interface UnattachedPhoto {
+  readonly id: string;
+  readonly angle: Angle;
+  readonly r2_key: string;
+  readonly content_type: string;
+}
+
+/**
  * Attaches to FSM every photograph of a phase that is not there yet, so FSM
  * holds the complete record. The file name carries the phase and angle, which
  * is what the mirror's own export reads back, so a photograph attached here is
@@ -205,6 +224,10 @@ export async function anglesHeld(db: D1Database, appointmentId: string, phase: P
  * An attach whose answer never reached us left the file in FSM: a retry finds
  * it by its name and size and keeps its ID, rather than attaching it twice. A
  * photograph taken again at the same angle has other bytes, and is attached.
+ *
+ * Each photograph's attachment is kept as soon as it lands. A failure after
+ * one has landed throws PhotoSetUnfinished, so the retry is not counted as one
+ * that got nowhere.
  */
 export async function attachPhotosToFsm(
   db: D1Database,
@@ -219,22 +242,32 @@ export async function attachPhotosToFsm(
        WHERE s.appointment_id = ?1 AND s.phase = ?2 AND p.fsm_attachment_id IS NULL`,
     )
     .bind(job.id, phase)
-    .all<{ id: string; angle: Angle; r2_key: string; content_type: string }>();
+    .all<UnattachedPhoto>();
 
   if (results.length === 0) return 0;
   const inFsm = await fsm.attachments(job.fsmId);
 
-  let attached = 0;
-  for (const photo of results) {
+  /** Attaches one photograph, or finds it already in FSM, and keeps its attachment's ID; false when R2 lacks it. */
+  async function attachPhoto(photo: UnattachedPhoto): Promise<boolean> {
     const object = await bucket.get(photo.r2_key);
-    if (object === null) continue;
+    if (object === null) return false;
     const bytes = new Uint8Array(await object.arrayBuffer());
     const name = `${phase}-${photo.angle}.${photo.content_type === "image/png" ? "png" : "jpg"}`;
     const found = inFsm.find((file) => file.name === name && file.size === bytes.byteLength);
     const attachmentId =
       found?.id ?? (await fsm.attachToAppointment(job.fsmId, { name, bytes, contentType: photo.content_type }));
     await db.prepare("UPDATE photos SET fsm_attachment_id = ?2 WHERE id = ?1").bind(photo.id, attachmentId).run();
-    attached += 1;
+    return true;
+  }
+
+  let attached = 0;
+  for (const photo of results) {
+    try {
+      if (await attachPhoto(photo)) attached += 1;
+    } catch (error) {
+      if (attached === 0) throw error;
+      throw new PhotoSetUnfinished(error);
+    }
   }
   return attached;
 }

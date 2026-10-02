@@ -1062,7 +1062,53 @@ describe("closing the job", () => {
     expect(await writeStateOf(eventId)).toBe("rejected");
     expect(deps.alerts).toEqual([expect.stringMatching(/did not reach FSM after 5 attempts/)]);
   });
+
+  // FLD-01: on 2 October each attempt attached one more photograph and still counted, so a set of five never landed.
+  it("does not count an attempt that attached some of the photographs, and lands the rest without duplicates", async () => {
+    await beforePhotoHeld("front");
+    await beforePhotoHeld("left");
+    await startJob();
+    await runFsmQueue();
+    await beforePhotos();
+    delivered = fsmQueue.sent.length;
+    const eventId = await eventRowId("event-photos-01");
+    const attach = fsm.attachToAppointment;
+    vi.spyOn(fsm, "attachToAppointment")
+      .mockImplementationOnce(attach)
+      .mockRejectedValueOnce(new Error("Zoho 503 HTTP_ERROR: request failed"));
+    const send = vi.spyOn(fsmQueue, "send");
+
+    const fifth = batchOf(eventId, 5);
+    await handleFsmSyncBatch(fifth as unknown as MessageBatch, queueEnv(), deps, createLogger());
+
+    expect(fifth.messages[0]?.ack).toHaveBeenCalled();
+    expect(fifth.messages[0]?.retry).not.toHaveBeenCalled();
+    expect(send).toHaveBeenCalledWith({ job_event_id: eventId, request_id: "r1" }, { delaySeconds: 30 });
+    expect(await writeStateOf(eventId)).toBe("pending");
+    expect(deps.alerts).toEqual([]);
+
+    await runFsmQueue();
+    expect(await writeStateOf(eventId)).toBe("written");
+    expect(fsm.made.attached.map((file) => file.name).sort()).toEqual(["before-front.jpg", "before-left.jpg"]);
+  });
 });
+
+/** A before photograph of today's job, in the bucket and in D1, not yet in FSM. */
+async function beforePhotoHeld(angle: string): Promise<void> {
+  const key = `visits/${TODAY_JOB}/before-${angle}.jpg`;
+  const bytes = syntheticJpeg(800, 800, angle);
+  await env.CLIENT_PHOTOS.put(key, bytes);
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO photo_sets (id, appointment_id, phase, created_at) VALUES (?1, ?2, 'before', ?3)
+       ON CONFLICT (appointment_id, phase) DO NOTHING`,
+    ).bind(crypto.randomUUID(), TODAY_JOB, NOW.toISOString()),
+    env.DB.prepare(
+      `INSERT INTO photos (id, photo_set_id, angle, r2_key, content_type, bytes, taken_at, created_at)
+       SELECT ?1, id, ?2, ?3, 'image/jpeg', ?4, ?5, ?5 FROM photo_sets WHERE appointment_id = ?6 AND phase = 'before'`,
+    ).bind(crypto.randomUUID(), angle, key, bytes.byteLength, NOW.toISOString(), TODAY_JOB),
+  ]);
+}
 
 // "A job's writes reach FSM in the order the technician made them" (ADR 0053).
 // Each write is its own message and a failed one is retried later, so the

@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { ZohoFsmSettings } from "../../src/config/settings.ts";
 import { createLogger, failureReason } from "../../src/log.ts";
 import { createFsmProvider } from "../../src/providers/fsm.ts";
-import { FSM_API, ZOHO_TOKEN_URL, fsmUserRecord } from "./fsm-fixtures.ts";
+import { FSM_API, ZOHO_TOKEN_URL, fsmCreateAnswer, fsmUserRecord } from "./fsm-fixtures.ts";
 import { NOW, captureLogs, fakeFetch, json } from "./helpers.ts";
 
 const SETTINGS: ZohoFsmSettings = {
@@ -418,33 +418,22 @@ describe("FSM: what FSM said, kept readable", () => {
     expect(call).toMatchObject({ status: 400, code: "INVALID_DATA" });
   });
 
-  it("names where FSM's attach answer of 2 October differs from what is read, and none of its values", async () => {
+  it("reads FSM's attach answer of 2 October, and names where an answer it cannot read differs", async () => {
+    let answer: unknown = fsmCreateAnswer("8229000000123001");
     const { provider } = fsm({
       [`${FSM_API}/files`]: () => json({ data: { file_id: "file-new" } }),
-      [`${FSM_API}/Service_Appointments/ap-1/Attachments`]: () =>
-        json({
-          data: [
-            {
-              code: "SUCCESS",
-              details: {
-                id: "8229000000123001",
-                Created_Time: "2026-10-02T10:11:47+05:30",
-                Created_By: { name: "Mane Man Integration", id: "8229000000012001" },
-              },
-              message: "record added",
-              status: "success",
-            },
-          ],
-        }),
+      [`${FSM_API}/Service_Appointments/ap-1/Attachments`]: () => json(answer),
     });
+    const photo = { name: "before-front.jpg", contentType: "image/jpeg", bytes: new Uint8Array([1]) };
 
-    const error: unknown = await provider
-      .attachToAppointment("ap-1", { name: "before-front.jpg", contentType: "image/jpeg", bytes: new Uint8Array([1]) })
-      .catch((caught: unknown) => caught);
+    expect(await provider.attachToAppointment("ap-1", photo)).toBe("8229000000123001");
+
+    answer = { data: [{ code: "SUCCESS", details: { id: 8229000000123001 }, status: "success" }] };
+    const error: unknown = await provider.attachToAppointment("ap-1", photo).catch((caught: unknown) => caught);
 
     const line =
-      "Zoho 200 UNEXPECTED_ANSWER: attach_file: data.0.id: Invalid input: expected string, received undefined; " +
-      "data.0 has keys code, details, message, status";
+      "Zoho 200 UNEXPECTED_ANSWER: attach_file: data.0.details.id: Invalid input: expected string, received number; " +
+      "data.0.details has keys id";
     expect(error).toMatchObject({ code: "UNEXPECTED_ANSWER", status: 200, refusal: false, message: line });
     // What job_events.fsm_error, slot_holds.fsm_refusal and the alerts keep.
     expect(failureReason(error)).toBe(line);
