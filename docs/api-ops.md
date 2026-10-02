@@ -477,7 +477,7 @@ Request body:
 }
 ```
 
-**409**: own_invite: the client is the code's own referrer; already_invited: the client came with an invite already, which the answer names; already_fitted: the client has had their first fit
+**409**: own_invite: the client is the code's own referrer; already_invited: the client came with an invite already, which the answer names
 
 ```json
 {
@@ -975,7 +975,8 @@ Referral grants held for review, oldest first
                 "shared_address",
                 "shared_upi",
                 "monthly_cap",
-                "same_mobile"
+                "same_mobile",
+                "attached_after_fit"
               ]
             }
           },
@@ -3590,9 +3591,9 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
             "unknown_invite",
             "own_invite",
             "already_invited",
-            "already_fitted",
             "already_disputed",
             "not_disputable",
+            "dispute_window_closed",
             "code_not_applicable",
             "already_discounted",
             "price_settled",
@@ -5754,9 +5755,9 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
             "unknown_invite",
             "own_invite",
             "already_invited",
-            "already_fitted",
             "already_disputed",
             "not_disputable",
+            "dispute_window_closed",
             "code_not_applicable",
             "already_discounted",
             "price_settled",
@@ -9120,6 +9121,7 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
         "piece_cycle_days",
         "payment_hold",
         "fsm_retry",
+        "dispute_window_days",
         "technician_work",
         "booking_days",
         "referral_reward"
@@ -9292,6 +9294,7 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
         "piece_cycle_days",
         "payment_hold",
         "fsm_retry",
+        "dispute_window_days",
         "technician_work",
         "booking_days",
         "referral_reward"

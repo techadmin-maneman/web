@@ -313,6 +313,8 @@ export const referrals = {
       monthly_cap: "Monthly cap exceeded",
       // PLACEHOLDER: the board draws the other three rules, not this one.
       same_mobile: "Same mobile number",
+      // PLACEHOLDER: an invite ops attached after the friend's first fit (the owner's ruling of 30 September 2026).
+      attached_after_fit: "Attached after the first fit",
     },
     approve: "Approve",
     reject: "Reject",
@@ -671,8 +673,6 @@ export const clients = {
       errors: {
         unknown_invite: "No invite has that code. Check it with the client. Nothing was attached.",
         own_invite: "That is this client's own invite. Nothing was attached.",
-        already_fitted:
-          "They have had their first fit, so no invite can be attached now. Whether one may be is the owner's to rule.",
         invalid_request: "Type the code as letters and digits, and say why. Nothing was attached.",
         not_found: "This client is no longer on our records. Nothing was attached.",
         offline: "You are offline. Connect, then try again.",

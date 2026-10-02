@@ -212,15 +212,15 @@ export function registerClientPayments(app: App): void {
   app.openapi(paymentsRoute, async (c) => {
     const session = clientOf(c);
     const [entries, credits] = await Promise.all([
-      paymentEntries(c.env.DB, session.subjectId),
-      creditLines(c.env.DB, session.subjectId),
+      paymentEntries(c.env.DB, session.subjectId, c.var.deps.now()),
+      creditLines(c.env.DB, session.subjectId, c.var.deps.now()),
     ]);
     return c.json({ entries, credits }, 200);
   });
 
   app.openapi(entryRoute, async (c) => {
     const session = clientOf(c);
-    const entry = await paymentEntry(c.env.DB, session.subjectId, c.req.valid("param").id);
+    const entry = await paymentEntry(c.env.DB, session.subjectId, c.req.valid("param").id, c.var.deps.now());
     if (entry === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     return c.json(entry, 200);
   });

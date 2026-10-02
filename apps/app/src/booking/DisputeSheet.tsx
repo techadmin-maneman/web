@@ -13,7 +13,10 @@ import styles from "./booking.module.css";
 /** The most a reason may hold, as the API takes it. */
 const MOST = 300;
 
-type Step = "writing" | "sent" | "already" | "failed";
+type Step = "writing" | "sent" | "already" | "closed" | "failed";
+
+/** The refusals the sheet answers in words of its own; any other is "failed". */
+const REFUSALS: Readonly<Record<string, Step>> = { already_disputed: "already", dispute_window_closed: "closed" };
 
 export function DisputeSheet(props: { visitId: string; onClose: (disputed: boolean) => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
@@ -32,7 +35,7 @@ export function DisputeSheet(props: { visitId: string; onClose: (disputed: boole
     const answer = await api.dispute(props.visitId, text.trim());
     setBusy(false);
     if (answer.ok) setStep("sent");
-    else setStep(answer.code === "already_disputed" ? "already" : "failed");
+    else setStep(REFUSALS[answer.code] ?? "failed");
   };
 
   return (
@@ -41,7 +44,7 @@ export function DisputeSheet(props: { visitId: string; onClose: (disputed: boole
       className={styles.dialog}
       labelledBy="dispute-title"
       onClose={() => {
-        props.onClose(step === "sent" || step === "already");
+        props.onClose(step !== "writing" && step !== "failed");
       }}
     >
       <button className={styles.close} type="button" onClick={close}>
@@ -84,10 +87,10 @@ export function DisputeSheet(props: { visitId: string; onClose: (disputed: boole
             </Button>
           </form>
         )}
-        {(step === "sent" || step === "already") && (
+        {(step === "sent" || step === "already" || step === "closed") && (
           <div role="status">
             <h2 className={styles.outcome} id="dispute-title">
-              {step === "sent" ? copy.sent : copy.already}
+              {copy[step]}
             </h2>
             <Button variant="outline" size="control" className={styles.secondary} onClick={close}>
               {booking.close}

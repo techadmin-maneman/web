@@ -517,6 +517,7 @@ export const dispute = {
   sending: "Sending",
   sent: "We have your dispute. We will look at it and tell you what we decide.",
   already: "You have disputed this charge already. We will tell you what we decide.",
+  closed: "The days to dispute this charge have passed. If something is wrong, message us.",
   failed: "That did not go through. Please try again.",
   tryAgain: "Try again",
 };

@@ -191,6 +191,20 @@ describe("POST /api/visits/:id/dispute", () => {
     expect((await dispute("I was home")).status).toBe(201);
   });
 
+  it("neither offers nor takes a dispute once the charge's days for it are past", async () => {
+    await env.DB.prepare("UPDATE no_show_cases SET dispute_until = ?1").bind("2026-09-21T06:29:59.000Z").run();
+    expect(await noShowNote()).toMatchObject({ decision: "charged", disputable: false });
+    const answer = await dispute("I was home all afternoon");
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "dispute_window_closed" } });
+  });
+
+  it("still takes one on its last day", async () => {
+    await env.DB.prepare("UPDATE no_show_cases SET dispute_until = ?1").bind("2026-09-21T06:30:01.000Z").run();
+    expect(await noShowNote()).toMatchObject({ disputable: true });
+    expect((await dispute("I was home all afternoon")).status).toBe(201);
+  });
+
   it("refuses a no-show that was waived, or not ruled on, and another client's visit", async () => {
     const otherCookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: OTHER, deviceLabel: null, now: NOW })}`;
     expect((await dispute("Not mine", client, otherCookie)).status).toBe(404);

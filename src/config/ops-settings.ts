@@ -17,7 +17,13 @@ import { FSM_RETRY, FSM_RETRY_KEYS } from "../policy/held-bookings.ts";
 import { DAY_BEFORE_REMINDER_HOUR, UNLOCK_HOUR } from "../policy/job-visibility.ts";
 import { NEXT_VISIT_DAY_BOUNDS, NEXT_VISIT_DAY_KEYS, NEXT_VISIT_DAYS } from "../policy/next-visit.ts";
 import { chargesFor, FREE_CHANGE_NOTICE_HOURS, LATE_CHANGE_CHARGES } from "../policy/moving-a-visit.ts";
-import { NO_SHOW_CHARGES, NO_SHOW_WAIT_MIN, WAIVER_GIVES_BACK, WAIVER_KEYS } from "../policy/no-show.ts";
+import {
+  DISPUTE_WINDOW_DAYS,
+  NO_SHOW_CHARGES,
+  NO_SHOW_WAIT_MIN,
+  WAIVER_GIVES_BACK,
+  WAIVER_KEYS,
+} from "../policy/no-show.ts";
 import { PHONE_CLOCK, PHONE_CLOCK_KEYS } from "../policy/phone-clock.ts";
 import { MAX_REWARD_VISITS, REFERRAL_REWARD, REFERRAL_REWARD_KEYS } from "../policy/referral-reward.ts";
 import { TECHNICIAN_WORK, TECHNICIAN_WORK_KEYS } from "../policy/technician-work.ts";
@@ -246,6 +252,18 @@ export const OPS_SETTINGS = [
     },
     fallback: FSM_RETRY,
     source: "src/policy/held-bookings.ts",
+  },
+  {
+    // The owner's ruling of 30 September 2026 (docs/open-points.md, item 60; ADR 0025, item 85).
+    name: "dispute_window_days",
+    title: "How long a no-show charge can be disputed",
+    note: "How many days after you charge a no-show the client may dispute it in the app. Each charge keeps the days it was given, so a change reaches new charges only.",
+    unit: "days",
+    min: 1,
+    max: 365,
+    keys: null,
+    fallback: DISPUTE_WINDOW_DAYS,
+    source: "src/policy/no-show.ts",
   },
   {
     // Board D3's two figures, the owner's of 27 September 2026 (docs/open-points.md, item 59).

@@ -134,6 +134,23 @@ export interface ChargeTaken {
 /** Whether a charge can be disputed: one that took something, money or a credit. One a charge, at most. */
 export const isDisputable = (taken: ChargeTaken): boolean => taken.kept > 0 || taken.creditSpent;
 
+/** The owner's ruling of 30 September 2026 (docs/open-points.md, item 60; ADR 0025, item 85). */
+export const DISPUTE_WINDOW_RULE =
+  "A client may dispute a no-show's charge for 30 days after it; ops may change the days in the console." as const;
+
+/** Days a client may dispute a charge after it, until ops set another figure (Settings · Rules). */
+export const DISPUTE_WINDOW_DAYS = 30;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** The moment a charge made at `chargedAt` can no longer be disputed. Each charge keeps the one it was given. */
+export const disputeUntil = (chargedAt: Date, days: number = DISPUTE_WINDOW_DAYS): Date =>
+  new Date(chargedAt.getTime() + days * DAY_MS);
+
+/** Whether a charge's window is still open. A charge made before windows were kept has none, and stays open. */
+export const withinDisputeWindow = (until: string | null, now: Date): boolean =>
+  until === null || now.getTime() < new Date(until).getTime();
+
 /**
  * What waiving a no-show gives the client back of what the visit took: its
  * payment refunded, its credit returned. The prompt's rule (RULES[3]) says a

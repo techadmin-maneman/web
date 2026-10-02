@@ -561,7 +561,6 @@ test.describe("says why an invite was not attached", () => {
   for (const [code, words] of [
     ["unknown_invite", "No invite has that code."],
     ["own_invite", "That is this client's own invite."],
-    ["already_fitted", "They have had their first fit, so no invite can be attached now."],
   ] as const) {
     test(code, async ({ page }) => {
       await openClient(page, `/clients/${CLIENT.id}/payments`, {

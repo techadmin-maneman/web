@@ -45,7 +45,8 @@ const disputeRoute = createRoute({
     401: errorResponse("session_required"),
     404: errorResponse("not_found: no charged no-show on a visit of this client's"),
     409: errorResponse(
-      "already_disputed: the charge was disputed before; or not_disputable: the charge took nothing to give back",
+      "already_disputed: the charge was disputed before; not_disputable: the charge took nothing to give back; or " +
+        "dispute_window_closed: the days the charge could be disputed are past",
     ),
   },
 });
@@ -70,6 +71,7 @@ export function registerClientDisputes(app: App): void {
     });
     if (raised.kind === "not_found") return c.json(errorBody("not_found", c.var.requestId), 404);
     if (raised.kind === "not_disputable") return c.json(errorBody("not_disputable", c.var.requestId), 409);
+    if (raised.kind === "window_closed") return c.json(errorBody("dispute_window_closed", c.var.requestId), 409);
     if (raised.kind === "already_disputed") return c.json(errorBody("already_disputed", c.var.requestId), 409);
     // The alert names the disputed visit, never the client or their words.
     await c.var.deps.alert(
