@@ -366,10 +366,10 @@ export function readSettings(
   const access = readAccess(read, providers, environment);
 
   const clientOn = environment !== undefined && ENABLED_SURFACES[environment].includes("client");
-  for (const variable of ["FSM_PROVIDER", "BOOKS_PROVIDER"] as const) {
-    if (clientOn && providers[variable] === "none") {
-      read.problems.push(`${variable} is "none" while the client surface is on: visits and documents come from Zoho`);
-    }
+  if (clientOn && providers.BOOKS_PROVIDER === "none") {
+    read.problems.push(
+      'BOOKS_PROVIDER is "none" while the client surface is on: invoices and receipts come from Zoho Books',
+    );
   }
   const login = readLogin(read, environment, clientOn);
 

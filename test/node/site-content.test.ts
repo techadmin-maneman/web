@@ -1,14 +1,13 @@
 // The site's content file and the publish gate that guards production.
 
 import { createHash } from "node:crypto";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { GUARANTEE } from "@maneman/web-kit/guarantee";
 import { describe, expect, it } from "vitest";
 import { booking as appBooking } from "../../apps/app/src/content.ts";
 import { DESIGN_PLACEHOLDERS, type PlaceholderBlockName } from "../../site/src/content/design-placeholders.ts";
 import { referral } from "../../site/src/content/referral.ts";
 import * as site from "../../site/src/content/site.ts";
-import { bookedHeadline } from "../../site/src/lib/dates.ts";
 import { siteEnvironment } from "../../site/src/lib/environment.ts";
 import { HOUSE_CARD, HOUSE_CARD_VERSION } from "../../site/src/lib/invite.ts";
 import { publishProblems } from "../../site/src/lib/publish-gate.ts";
@@ -44,11 +43,26 @@ function filesIn(value: unknown): string[] {
   return [];
 }
 
+/** Where a file named in the content is, as site/src/lib/images.ts finds it, or null. */
+function assetPath(file: string): string | null {
+  for (const folder of ["site/src/assets", "design/assets"]) {
+    if (existsSync(`${folder}/${file}`)) return `${folder}/${file}`;
+  }
+  return null;
+}
+
 describe("content", () => {
-  it("refers only to images and footage that exist in design/assets", () => {
+  it("refers only to images and footage that exist in site/src/assets or design/assets", () => {
     const files = filesIn(site);
     expect(files.length).toBeGreaterThan(20);
-    for (const file of files) expect(existsSync(`design/assets/${file}`), file).toBe(true);
+    for (const file of files) expect(assetPath(file), file).not.toBeNull();
+  });
+
+  // UX-20, PLAT-65: every phone downloaded the 2.3 MB film.
+  it("gives phones a film under 800 KB", () => {
+    const path = assetPath(site.heroFootage.phoneVideo);
+    expect(path).not.toBeNull();
+    expect(statSync(path ?? "").size).toBeLessThan(800 * 1024);
   });
 
   it("offers the backend's six presets in its order, split as the design labels them", () => {
@@ -293,11 +307,6 @@ describe("the publish gate", () => {
 });
 
 describe("site helpers", () => {
-  it("writes the booked headline as board C4 does, from the date and the window's hours", () => {
-    expect(bookedHeadline("2026-09-21", "9 am to 12 pm")).toBe("Monday 21 Sep, 9 am to 12 pm");
-    expect(bookedHeadline("2027-01-02", "4 to 8 pm")).toBe("Saturday 2 Jan, 4 to 8 pm");
-  });
-
   it("fills content holes and leaves unknown ones", () => {
     expect(fill("not yet in {city}.", { city: "Mumbai" })).toBe("not yet in Mumbai.");
     expect(fill("{unknown}", {})).toBe("{unknown}");

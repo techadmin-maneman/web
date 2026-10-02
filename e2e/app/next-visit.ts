@@ -4,7 +4,7 @@
 //
 //   due:          fitted, their last service done 25 days ago in the morning, so the next falls due in five days;
 //   replacement:  fitted, their last service done 25 days ago in the evening, and their piece falls due in three
-//                 days, before the next service would, so a replacement is offered, in no window;
+//                 days, before the next service would, so a replacement is offered on that day, in no window;
 //   firstFit:     their consultation done two days ago, with the first fit asked for in the afternoon on the site.
 //
 // e2e/global-setup.ts seeds them once, after the fitted client, whose technician their visits name.
@@ -82,7 +82,7 @@ export async function seedNextVisit(): Promise<void> {
   await wrangler("d1", "execute", "DB", "--local", "--command", sql.join("\n"));
   process.env[HANDOVER] = JSON.stringify({
     due: { mobile: due.mobile, date: indiaDay(5) },
-    replacement: { mobile: replacement.mobile, date: indiaDay(5) },
+    replacement: { mobile: replacement.mobile, date: indiaDay(3) },
     firstFit: { mobile: firstFit.mobile, date: indiaDay(1) },
   } satisfies NextVisitClients);
 }

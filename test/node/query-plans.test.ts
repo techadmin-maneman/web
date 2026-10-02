@@ -41,6 +41,7 @@ const CRON_PATH = [
   "src/domain/dispatch.ts",
   "src/domain/storage-meter.ts",
   "src/domain/held-bookings.ts",
+  "src/domain/maintenance.ts",
 ];
 
 /** A payment and what it pays for: the hold page polls these while the client pays. */
@@ -77,6 +78,12 @@ const ALLOWED = [
     // Once a night, at the end of the reconciliation's pass: the copies FSM did not list.
     file: "src/scheduled/reconcile-fsm.ts",
     sql: "SELECT fsm_id FROM appointments WHERE deleted_at IS NULL AND (reconciled_at IS NULL OR reconciled_at < ?1)",
+  },
+  {
+    // A visit booked without FSM, written only while its hold waits: the guard reads the hold by its key. The scan is
+    // SQLite's look for holds pointing at the new visit, which it skips while no foreign key is broken.
+    file: "src/domain/bookings.ts",
+    sql: "WHERE EXISTS (SELECT 1 FROM slot_holds WHERE id = ?12 AND state = 'held')",
   },
 ];
 

@@ -3568,7 +3568,7 @@ Request body:
 
 ### GET /api/storage
 
-What the photographs and referral cards hold in R2, against their share
+What the photographs and referral cards hold in R2, against their share, and the database against its limit
 
 **200**: The storage meter
 
@@ -3638,7 +3638,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names code when it is not one a code can be, count for a typed code made more than once, value for a percentage over 100, cap on an amount, covers named twice, expires_on before today, and max_uses for a batch whose codes are not single-use
+**400**: invalid_request: fields names code when it is not one a code can be, count for a typed code made more than once, value for a percentage over 100 or an amount not in whole rupees, cap on an amount or not in whole rupees, covers named twice, expires_on before today, and max_uses for a batch whose codes are not single-use
 
 ```json
 {
@@ -3999,7 +3999,6 @@ Request body:
             "not_bookable",
             "hold_expired",
             "address_required",
-            "already_booked",
             "not_changeable",
             "terms_changed",
             "consent_required",
@@ -6180,7 +6179,6 @@ Request body:
             "not_bookable",
             "hold_expired",
             "address_required",
-            "already_booked",
             "not_changeable",
             "terms_changed",
             "consent_required",
@@ -12166,12 +12164,22 @@ Request body:
     "ceiling_bytes": {
       "type": "integer",
       "description": "Past this the technician app's photographs are refused and wait on the phones."
+    },
+    "database_bytes": {
+      "type": "integer",
+      "description": "What this environment's D1 database holds."
+    },
+    "database_limit_bytes": {
+      "type": "integer",
+      "description": "D1's limit on one database on the free plan; past it every write fails."
     }
   },
   "required": [
     "held_bytes",
     "share_bytes",
-    "ceiling_bytes"
+    "ceiling_bytes",
+    "database_bytes",
+    "database_limit_bytes"
   ],
   "additionalProperties": false
 }
@@ -12215,12 +12223,25 @@ Request body:
             "$ref": "#/components/schemas/StaffGrant"
           },
           "description": "A person's grants; none for a service token."
+        },
+        "may_call": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The ops routes their calls go ahead on, as \"GET /api/tasks\": every one while the list is not enforced. The console shows only the sections whose pages they can read.",
+          "example": [
+            "GET /api/health",
+            "GET /api/whoami",
+            "GET /api/tasks"
+          ]
         }
       },
       "required": [
         "enforced",
         "listed",
-        "grants"
+        "grants",
+        "may_call"
       ],
       "additionalProperties": false
     }
@@ -12523,7 +12544,7 @@ Request body:
       "type": "integer",
       "minimum": 1,
       "maximum": 100000000,
-      "description": "Per cent, 1 to 100, for a percentage; paise before GST for an amount."
+      "description": "Per cent, 1 to 100, for a percentage; paise in whole rupees, before GST, for an amount."
     },
     "cap": {
       "anyOf": [
@@ -12536,7 +12557,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "A percentage's most, in paise before GST; none if left out."
+      "description": "A percentage's most, in paise in whole rupees, before GST; none if left out."
     },
     "covers": {
       "type": "array",

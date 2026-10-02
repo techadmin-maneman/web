@@ -8,13 +8,14 @@
 //   POST  /api/number-change/verify   one number's code; with both, the change waits for ops
 //   POST  /api/deletion-request
 // Each consent switch is audited in the same batch as the switch, and a switch
-// to the state a purpose already holds writes no ledger row (ADR 0058). A number
-// change or deletion request is audited as it is made; its effect comes only
-// with ops' decision, which is audited in turn (src/routes/ops-profile.ts).
+// to the state a purpose already holds writes neither a ledger row (ADR 0058)
+// nor an audit entry. A number change or deletion request is audited as it is
+// made; its effect comes only with ops' decision, which is audited in turn
+// (src/routes/ops-profile.ts).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
-import { auditStatement, type AuditEntry } from "../domain/audit.ts";
+import { auditStatementIfWritten, type AuditEntry } from "../domain/audit.ts";
 import { openDeletion, requestDeletion } from "../domain/deletion.ts";
 import {
   DECISION_SHOWN_DAYS,
@@ -480,10 +481,11 @@ export function registerClientProfile(app: App): void {
     });
     const [switched] = await db.batch<{ created_at: string }>([
       consent.statement,
-      auditStatement(
+      auditStatementIfWritten(
         db,
         audit(personId, c.var.requestId, { action: "consent.switch", detail: { purpose, granted } }),
         now,
+        { table: "consents", id: consent.id },
       ),
     ]);
     // "You can switch it off at any time, and new opens will show our house example instead."
