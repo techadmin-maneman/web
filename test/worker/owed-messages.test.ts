@@ -99,6 +99,25 @@ describe("the arrival notice (BIZ-22)", () => {
     expect((await send(await queued("arrival_notice", "appointment", VISIT))).text).not.toBeNull();
   });
 
+  // PLAT-51: a notice that waited out a bridge outage would tell of a knock at the door long gone.
+  it("is not sent once ten minutes have passed since the check-in reached us", async () => {
+    await visit();
+    await consent("whatsapp_visits", true);
+    const messageId = await queued("arrival_notice", "appointment", VISIT);
+    const { provider, sent } = recordingProvider();
+    const elevenMinutesOn = new Date(NOW.getTime() + 11 * 60_000);
+    await sendMessage(
+      env.DB,
+      LOCAL_CONFIG,
+      fakeDependencies({ messaging: provider, now: () => elevenMinutesOn }),
+      log,
+      messageId,
+    );
+    expect(sent).toEqual([]);
+    const row = await env.DB.prepare("SELECT state, last_error FROM outbound_messages").first();
+    expect(row).toEqual({ state: "skipped", last_error: "too late to tell the client the technician had arrived" });
+  });
+
   it("is not sent to a client who never agreed to WhatsApp about visits, and says so for the no-show evidence", async () => {
     await visit();
     expect(await send(await queued("arrival_notice", "appointment", VISIT))).toEqual({

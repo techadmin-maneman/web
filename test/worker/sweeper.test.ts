@@ -2,6 +2,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
+import type { Connection } from "../../src/providers/messaging.ts";
 import { MAX_SYNC_ATTEMPTS } from "../../src/queues/crm-sync.ts";
 import { sweep, type SweepEnv } from "../../src/scheduled/sweeper.ts";
 import { NOW, captureLogs, fakeDependencies, fakeQueue, markDatabase } from "./helpers.ts";
@@ -310,6 +311,54 @@ describe("sweeper: try-on", () => {
 
     expect((await sweep(bindings, fakeDependencies(), createLogger(), OPTIONS)).messagesRequeued).toBe(1);
     expect(queues.messages.sent).toEqual([{ message_id: "stale", request_id: "sweeper" }]);
+  });
+
+  /** A try-on result message, queued `minutes` ago, with what its last try said. */
+  const queuedMessage = (id: string, minutes: number, lastError: string | null = null) =>
+    env.DB.prepare(
+      `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_id, state, queued_at, last_error)
+       VALUES (?1, ?2, 'p', 'tryon_result', 'job', 'queued', ?2, ?3)`,
+    ).bind(id, minutesAgo(minutes), lastError);
+
+  // PLAT-51: while the bridge is down, a queued message waits rather than being tried and refused every five minutes.
+  it("holds queued messages while the WhatsApp bridge is down, and sends them again once it is open", async () => {
+    await insertPerson("p", "+919810000001");
+    await queuedMessage("waiting", 30, "HTTP 404 Not Found").run();
+    const { bindings, queues } = sweepEnv();
+    const open = fakeDependencies();
+    const missing: Connection = { open: false, fault: "no_instance", detail: "no instance" };
+    const down = { ...open, messaging: { ...open.messaging, connection: () => Promise.resolve(missing) } };
+
+    expect((await sweep(bindings, down, createLogger(), OPTIONS)).messagesRequeued).toBe(0);
+    expect(queues.messages.sent).toEqual([]);
+
+    expect((await sweep(bindings, open, createLogger(), OPTIONS)).messagesRequeued).toBe(1);
+    expect(queues.messages.sent).toEqual([{ message_id: "waiting", request_id: "sweeper" }]);
+  });
+
+  // PLAT-22: a message that never went was put back on the queue every five minutes for ever.
+  it("fails a message still unsent a day after it was queued, and tells ops once a day", async () => {
+    await insertPerson("p", "+919810000001");
+    await env.DB.batch([queuedMessage("day-old", 24 * 60 + 1, "HTTP 404 Not Found"), queuedMessage("hours-old", 23 * 60)]);
+    const { bindings, queues } = sweepEnv();
+    const deps = fakeDependencies();
+
+    await sweep(bindings, deps, createLogger(), OPTIONS);
+
+    const rows = await env.DB.prepare("SELECT id, state, last_error FROM outbound_messages ORDER BY id").all();
+    expect(rows.results).toEqual([
+      { id: "day-old", state: "failed", last_error: "not sent within a day: HTTP 404 Not Found" },
+      { id: "hours-old", state: "queued", last_error: null },
+    ]);
+    expect(queues.messages.sent).toEqual([{ message_id: "hours-old", request_id: "sweeper" }]);
+    expect(deps.alerts).toEqual([expect.stringContaining("1 this run, day-old (tryon_result) among them") as string]);
+
+    await queuedMessage("also-day-old", 24 * 60 + 2).run();
+    await sweep(bindings, deps, createLogger(), OPTIONS);
+    expect(await env.DB.prepare("SELECT state FROM outbound_messages WHERE id = 'also-day-old'").first()).toEqual({
+      state: "failed",
+    });
+    expect(deps.alerts).toHaveLength(1);
   });
 
   it("expires abandoned uploads after an hour and results past their date, deleting the result", async () => {

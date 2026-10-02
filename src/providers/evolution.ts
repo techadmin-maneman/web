@@ -85,10 +85,7 @@ export function createEvolutionMessaging(
       if (response.ok) {
         return { ok: true, providerMessageId: messageIdOf(reply) };
       }
-      // A 4xx other than 429 is a bad request, a bad key or a missing instance: retrying cannot help.
-      // "Connection Closed" is the bridge losing its WhatsApp socket, which it recovers from.
-      const transient = response.status === 429 || response.status >= 500 || reply.includes("Connection Closed");
-      return { ok: false, transient, detail: `HTTP ${String(response.status)} ${errorCodeOf(reply)}` };
+      return refusal(response.status, reply, settings.instance);
     },
 
     // The runbook's first check when WhatsApp is down, made by the cron instead.
@@ -100,14 +97,42 @@ export function createEvolutionMessaging(
           { method: "GET", headers: { apikey: settings.apiKey }, signal: AbortSignal.timeout(STATE_TIMEOUT_MS) },
         );
       } catch (error) {
-        return { open: false, detail: `unreachable: ${error instanceof Error ? error.name : "error"}` };
+        const name = error instanceof Error ? error.name : "error";
+        return { open: false, fault: "unreachable", detail: `unreachable: ${name}` };
       }
-      if (!response.ok) return { open: false, detail: `HTTP ${String(response.status)}` };
+      const status = String(response.status);
+      if (response.status === 404) {
+        return { open: false, fault: "no_instance", detail: noInstance(settings.instance) };
+      }
+      if (response.status === 401 || response.status === 403) {
+        return { open: false, fault: "key_refused", detail: `HTTP ${status}` };
+      }
+      if (!response.ok) return { open: false, fault: "unreachable", detail: `HTTP ${status}` };
       const state = stateOf(await response.text());
-      return state === "open" ? { open: true } : { open: false, detail: `state ${state}` };
+      if (state === "open") return { open: true };
+      return { open: false, fault: "logged_out", detail: `state ${state}` };
     },
   };
 }
+
+/**
+ * What a refused send means. A missing instance, a refused key or a closed WhatsApp session is the bridge's fault,
+ * not the message's, so the message waits for the bridge. A 429 or a 5xx is worth trying again soon. Any other 4xx,
+ * such as a number not on WhatsApp, will never go.
+ */
+function refusal(status: number, reply: string, instance: string): SendResult {
+  if (status === 404) return { ok: false, transient: false, bridgeDown: true, detail: noInstance(instance) };
+  const detail = `HTTP ${String(status)} ${errorCodeOf(reply)}`;
+  if (status === 401 || status === 403 || reply.includes("Connection Closed")) {
+    return { ok: false, transient: false, bridgeDown: true, detail };
+  }
+  const transient = status === 429 || status >= 500;
+  return { ok: false, transient, detail };
+}
+
+/** A 404 from the bridge: the instance in the path is not one it has. */
+const noInstance = (instance: string): string =>
+  `the bridge has no instance named "${instance}": wrong URL or port, or the instance was deleted`;
 
 /** Evolution 2 answers `{ instance: { state } }`; earlier versions answered `{ state }`. */
 const State = z.union([z.object({ instance: z.object({ state: z.string() }) }), z.object({ state: z.string() })]);

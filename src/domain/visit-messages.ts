@@ -160,6 +160,33 @@ export async function arrivalNotice(
   return written.meta.changes === 1 && !late ? id : null;
 }
 
+/**
+ * Why a reminder or an arrival notice is no longer worth sending, as after waiting out a bridge that was down; null
+ * while it still is. The reminder says the visit is tomorrow, and the arrival notice that the technician is at the door.
+ */
+export async function tooLateToSend(
+  db: D1Database,
+  kind: VisitMessageKind,
+  appointmentId: string,
+  writtenAt: Date,
+  now: Date,
+): Promise<string | null> {
+  if (kind === "arrival_notice") {
+    const minutesWaited = (now.getTime() - writtenAt.getTime()) / MINUTE_MS;
+    if (minutesWaited > ARRIVAL_NOTICE_WITHIN_MINUTES) return "too late to tell the client the technician had arrived";
+    return null;
+  }
+  if (kind !== "visit_reminder") return null;
+  const visit = await db
+    .prepare("SELECT window_start FROM appointments WHERE id = ?1")
+    .bind(appointmentId)
+    .first<{ window_start: string | null }>();
+  if (visit === null || visit.window_start === null) return null;
+  const visitDay = indiaDate(new Date(visit.window_start));
+  if (visitDay <= indiaDate(now)) return "too late for a day-before reminder";
+  return null;
+}
+
 /** "12 to 4 pm", as the app writes a window, by the times in force on the visit's day. */
 function windowHours(start: Date, schedule: SlotSchedule): string {
   const { date, window } = schedule.at(start);

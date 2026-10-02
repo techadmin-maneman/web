@@ -21,6 +21,8 @@ function bridge(connection: Connection) {
   return { deps: { ...deps, messaging }, asked: () => asked };
 }
 
+const LOGGED_OUT: Connection = { open: false, fault: "logged_out", detail: "state close" };
+
 const check = (deps: ReturnType<typeof bridge>["deps"], calls = Infinity) =>
   checkWhatsAppBridge(deps, createLogger(), createCallBudget(calls));
 
@@ -30,7 +32,7 @@ beforeEach(() => {
 
 describe("the WhatsApp bridge", () => {
   it("tells ops once it has been found closed twice in a row", async () => {
-    const closed = bridge({ open: false, detail: "state close" });
+    const closed = bridge(LOGGED_OUT);
     await check(closed.deps);
     expect(closed.deps.alerts).toEqual([]);
 
@@ -38,12 +40,36 @@ describe("the WhatsApp bridge", () => {
     await check(closed.deps);
     expect(closed.deps.alerts).toEqual([
       "The WhatsApp bridge is not connected (state close): no login code or message can be sent until it is. " +
-        'Reconnect it (runbook, "WhatsApp (Evolution) is down").',
+        'Reconnect it by scanning its QR code with the business phone (runbook, "WhatsApp (Evolution) is down").',
     ]);
   });
 
+  // PLAT-50: staging's bridge lost its instance for 69 hours, and the alert said to rescan a QR code.
+  it("names the settings to check, not a QR code, when the bridge has no such instance", async () => {
+    const missing = bridge({
+      open: false,
+      fault: "no_instance",
+      detail: 'the bridge has no instance named "mane man": wrong URL or port, or the instance was deleted',
+    });
+    await check(missing.deps);
+    await check(missing.deps);
+    expect(missing.deps.alerts).toEqual([
+      'The WhatsApp bridge is not connected (the bridge has no instance named "mane man": wrong URL or port, or the ' +
+        "instance was deleted): no login code or message can be sent until it is. Check EVOLUTION_API_URL and " +
+        "EVOLUTION_INSTANCE_NAME against the bridge's list of instances " +
+        '(runbook, "WhatsApp (Evolution) is down").',
+    ]);
+  });
+
+  it("names the key when the bridge refuses it", async () => {
+    const refused = bridge({ open: false, fault: "key_refused", detail: "HTTP 401" });
+    await check(refused.deps);
+    await check(refused.deps);
+    expect(refused.deps.alerts).toEqual([expect.stringContaining("Check EVOLUTION_API_KEY") as string]);
+  });
+
   it("closes the alert once it is open again, so a later drop is told afresh", async () => {
-    const closed = bridge({ open: false, detail: "state close" });
+    const closed = bridge(LOGGED_OUT);
     await check(closed.deps);
     await check(closed.deps);
 
@@ -53,7 +79,7 @@ describe("the WhatsApp bridge", () => {
   });
 
   it("is not asked when the cron run has no call left", async () => {
-    const closed = bridge({ open: false, detail: "state close" });
+    const closed = bridge(LOGGED_OUT);
     await check(closed.deps, 0);
     expect(closed.asked()).toBe(0);
   });
