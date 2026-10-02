@@ -1,8 +1,8 @@
 ---
 // The hero: muted looping footage behind the headline. The poster is the
-// largest thing painted first, so it is preloaded; the video fetches only its
-// metadata until it plays, once the page has loaded, and never plays for
-// reduced motion. Over it the opening line shows one phrase at a time, once,
+// largest thing painted first, so it is preloaded; the video fetches nothing
+// until it plays, once the page has loaded, and phones get their own cut.
+// Over it the opening line shows one phrase at a time, once,
 // and settles on the last; a screen reader hears the whole line once, and
 // reduced motion shows the last phrase alone.
 import { hero, heroFootage } from "../../content/site.ts";
@@ -23,12 +23,13 @@ const showFootage = isShown(heroFootage);
     <div class="footage">
       <video
         data-hero-video
-        src={designMedia(heroFootage.video)}
+        data-film={designMedia(heroFootage.video)}
+        data-phone-film={designMedia(heroFootage.phoneVideo)}
         poster={poster}
         muted
         loop
         playsinline
-        preload="metadata"
+        preload="none"
         aria-hidden="true"
       />
     </div>
@@ -68,21 +69,32 @@ const showFootage = isShown(heroFootage);
 </section>
 
 <script>
-  // Plays the footage unless the visitor asked for reduced motion or pressed
-  // Pause (WCAG 2.2.2). It waits for the page to load, so its download never
-  // slows the poster or the fonts. Browsers pause media in a background tab,
-  // so it is resumed when the tab returns.
+  // Plays the footage unless the visitor asked for reduced motion or less
+  // data, is on a slow connection, or pressed Pause (WCAG 2.2.2); Play starts
+  // it whatever the reason. The film's address is set only when it first
+  // plays, after the page has loaded, so until then nothing of it is fetched.
+  // Browsers pause media in a background tab, so it is resumed when the tab
+  // returns.
+  import { type Connection, PHONE_SCREEN, playsByItself } from "../../lib/hero-film.ts";
+
   const video = document.querySelector<HTMLVideoElement>("[data-hero-video]");
   const toggle = document.querySelector<HTMLButtonElement>("[data-hero-toggle]");
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
-  let stopped = reduced.matches;
+  const connection = (navigator as Navigator & { connection?: Connection }).connection;
+  let stopped = !playsByItself(reduced.matches, connection);
 
   const label = () => {
     if (toggle === null) return;
     toggle.textContent = (stopped ? toggle.dataset.play : toggle.dataset.pause) ?? "";
   };
+  const load = (film: HTMLVideoElement) => {
+    if (film.hasAttribute("src")) return;
+    const phone = window.matchMedia(PHONE_SCREEN).matches;
+    film.src = (phone ? film.dataset.phoneFilm : film.dataset.film) ?? "";
+  };
   const play = () => {
     if (video === null || stopped || document.hidden) return;
+    load(video);
     video.play().catch(() => undefined);
   };
   const stopOrStart = (stop: boolean) => {
@@ -97,7 +109,7 @@ const showFootage = isShown(heroFootage);
   else window.addEventListener("load", play, { once: true });
   document.addEventListener("visibilitychange", play);
   reduced.addEventListener("change", () => {
-    stopOrStart(reduced.matches);
+    stopOrStart(!playsByItself(reduced.matches, connection));
   });
   toggle?.addEventListener("click", () => {
     stopOrStart(!stopped);

@@ -249,12 +249,17 @@ describe("mm-site wrangler config", () => {
       ["env.production.vars", { X: "1" }],
       "site env.production: mm-site must not declare vars",
     ],
-    // mm-site runs one Worker beside its assets, for the pages that show a price and the referral landing, and
-    // nothing else (docs/decisions/0027-referral-landing.md, 0073-prices-from-the-price-book.md).
+    // mm-site runs one Worker beside its assets, for the pages that show a price, the referral landing and the films,
+    // and nothing else (docs/decisions/0027-referral-landing.md, 0073-prices-from-the-price-book.md).
     ["its entry is another file", ["main", "src/index.ts"], 'site top level: main must be "./src/worker.ts"'],
     [
       "the Worker answers paths beyond the priced pages and the landing",
       ["env.staging.assets.run_worker_first", ["/", "/book", "/r/*", "/api/*"]],
+      "site env.staging: assets.run_worker_first must be",
+    ],
+    [
+      "the Worker leaves the films to the assets, which give no byte ranges",
+      ["env.staging.assets.run_worker_first", ["/", "/book", "/r/*"]],
       "site env.staging: assets.run_worker_first must be",
     ],
     [

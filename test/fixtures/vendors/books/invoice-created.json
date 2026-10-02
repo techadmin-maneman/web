@@ -1,0 +1,35 @@
+{
+  "code": 0,
+  "message": "The invoice has been created.",
+  "invoice": {
+    "invoice_id": "4242595000000257006",
+    "invoice_number": "INV-000004",
+    "reference_number": "staging-proof-17c1cd89-b214-43f4-b154-bb8117d634f6",
+    "customer_id": "4242595000000258029",
+    "customer_name": "Staging test",
+    "date": "2026-10-02",
+    "status": "draft",
+    "total": 1850,
+    "balance": 1850,
+    "sub_total": 1850,
+    "tax_total": 0,
+    "discount_total": 150,
+    "is_inclusive_tax": true,
+    "is_discount_before_tax": true,
+    "discount_type": "item_level",
+    "line_items": [
+      {
+        "line_item_id": "4242595000000257011",
+        "item_id": "4242595000000245041",
+        "name": "Staging test: first fit",
+        "description": "Staging test visit",
+        "rate": 2000,
+        "quantity": 1,
+        "discount": 150,
+        "discount_amount": 150,
+        "tax_percentage": 0,
+        "item_total": 1850
+      }
+    ]
+  }
+}

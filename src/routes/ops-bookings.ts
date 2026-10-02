@@ -17,6 +17,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { staffOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
+import { fieldRecord } from "../config/field-record.ts";
 import { auditStatement, type AuditAction, type AuditEntry } from "../domain/audit.ts";
 import {
   bookAsVisit,
@@ -242,6 +243,7 @@ function bookingOptions(c: Context<AppEnv>): ConfirmOptions {
   const { deps, requestId, config, log } = c.var;
   return {
     labelAsTest: config.environment !== "production",
+    record: fieldRecord(config.providers),
     notify: (messageId) =>
       c.env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: requestId } satisfies MessagingMessage),
     alertOnce: deps.alertOnce,

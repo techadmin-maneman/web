@@ -1399,10 +1399,12 @@ export const technicians = {
    */
   columns: ["Technician", "Zone", "Jobs", "Avg service", "Leave"],
   /**
-   * PLACEHOLDER: the technician's name opens their phones and their leave,
+   * PLACEHOLDER: the technician's name opens his details, phones and leave,
    * which the board's rows have no room for, in a panel over the roster.
    */
-  open: (name: string) => `${name}: phones and leave`,
+  open: (name: string) => `${name}: details, phones and leave`,
+  /** A technician switched off has no phone signed in and no leave to record: his name opens his details. */
+  openSwitchedOff: (name: string) => `${name}: details`,
   close: "Close",
   /** The Leave column: away today, the first day of leave to come, or nothing. */
   away: "Away",
@@ -1493,6 +1495,64 @@ export const technicians = {
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Please try again.",
     },
+  },
+  // PLACEHOLDER: the board draws no way to add, change or switch off a technician, so every line below is ours.
+  fields: { name: "Name", mobile: "Mobile", zone: "Zone (optional)" },
+  add: {
+    open: "Add a technician",
+    title: "Add a technician",
+    effect: "His sign-in codes go to this number on WhatsApp. He can sign in as soon as he is added.",
+    save: "Add technician",
+    saving: "Adding",
+    cancel: "Cancel",
+    added: (name: string) => `${name} is added. He can sign in now.`,
+  },
+  details: {
+    title: "Details",
+    mobile: "Mobile",
+    zone: "Zone",
+    change: "Change details",
+    changeLabel: (name: string) => `Change ${name}'s details`,
+    save: "Save changes",
+    saving: "Saving",
+    cancel: "Cancel",
+    fsm: "His details come from Zoho FSM. Change them there.",
+  },
+  switchOff: {
+    open: "Switch off",
+    openLabel: (name: string) => `Switch off ${name}`,
+    warning:
+      "He is signed out at once and cannot sign in. His visits from now on go back on the dispatch board for someone else; a visit under way stays his.",
+    confirm: "Switch him off",
+    sending: "Switching off",
+    cancel: "Keep him on",
+    returned: (count: number) =>
+      count === 0
+        ? "He had no visits to come."
+        : `${String(count)} ${count === 1 ? "visit is" : "visits are"} back on the dispatch board, for someone else.`,
+    visit: (when: string, client: string) => `${when} · ${client}`,
+    noClient: "No client on our records",
+    move: "Give them out on the dispatch board",
+  },
+  switchOn: {
+    note: "Switched off. He cannot sign in, and nothing is booked on him.",
+    open: "Switch back on",
+    openLabel: (name: string) => `Switch ${name} back on`,
+    sending: "Switching on",
+    done: (name: string) => `${name} can sign in again.`,
+  },
+  switchedOff: "Switched off",
+  /** Why an add, a change or a switch was refused; nothing changed either way. */
+  errors: {
+    number_in_use: "Another active technician signs in with that number.",
+    number_in_use_now: "Another active technician signs in with his number now. Change one of the two numbers first.",
+    unreadable_mobile: "Enter a 10-digit Indian mobile.",
+    invalid_request: "Enter his name and a 10-digit Indian mobile.",
+    managed_in_fsm: "His details come from Zoho FSM. Change them there.",
+    not_found: "That technician is no longer here. Reload to see the roster as it stands.",
+    not_permitted: "Only someone with Operations · Manage can add, change or switch off technicians.",
+    offline: "You are offline. Connect, then try again.",
+    unknown: "That did not go through. Please try again.",
   },
 } as const;
 
@@ -1739,8 +1799,8 @@ export const settings = {
       not_permitted: NOT_PERMITTED,
       code: "A code is 4 to 16 letters and figures, none of them I, L, O, 0 or 1.",
       count: "A code you type is made once. Generate them to make more.",
-      value: "A percentage is 1 to 100.",
-      cap: "Only a percentage takes a cap.",
+      value: "A percentage is 1 to 100. An amount is whole rupees.",
+      cap: "Only a percentage takes a cap, in whole rupees.",
       covers: "Choose what the code covers.",
       expires_on: "The last day cannot be before today.",
       max_uses: "Generated codes are single-use: one use each.",

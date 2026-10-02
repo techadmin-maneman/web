@@ -605,5 +605,9 @@ export const typesLower = {
 export const session = {
   // PLACEHOLDER: neither file draws a revoked device.
   revoked: "This phone is no longer signed in. Ask ops, then sign in again.",
+  // PLACEHOLDER: no board draws a technician ops switched off.
+  switchedOff: "Your account is switched off. Ask ops to switch it back on, then sign in.",
+  workKept:
+    "Your account is switched off. Work not yet sent stays on this phone for 7 days, and sends once ops switch you back on and you sign in.",
   checking: "Loading",
 } as const;

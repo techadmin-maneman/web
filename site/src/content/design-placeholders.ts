@@ -9,7 +9,7 @@
 
 export const DESIGN_PLACEHOLDERS = {
   whatsapp: ["919810040200", "WhatsApp · +91 98100 40200"],
-  heroFootage: ["hero.mp4", "hero-poster.jpg"],
+  heroFootage: ["hero.mp4", "hero-phone.mp4", "hero-poster.jpg"],
   whatPlate: ["membrane-on-skin.jpg"],
   norwoodPhotos: ["nw-1.jpg", "nw-2.jpg", "nw-3.jpg", "nw-4.jpg", "nw-5.jpg", "nw-6.jpg", "nw-7.jpg"],
   teaserPair: ["ba-before.jpg", "ba-after.jpg"],
