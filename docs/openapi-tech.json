@@ -66,6 +66,8 @@
                   "out_of_order",
                   "not_today",
                   "already_started",
+                  "technician_inactive",
+                  "managed_in_fsm",
                   "clash",
                   "on_leave",
                   "does_not_fit",
@@ -308,6 +310,11 @@
       "TechnicianMe": {
         "type": "object",
         "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Whose work the phone holds: it keeps work it set aside only for him."
+          },
           "name": {
             "type": "string"
           },
@@ -350,6 +357,7 @@
           }
         },
         "required": [
+          "id",
           "name",
           "first_name",
           "initials",
@@ -2467,7 +2475,7 @@
             }
           },
           "401": {
-            "description": "session_required; device_revoked: ops revoked this phone, so drop the cached jobs",
+            "description": "session_required; device_revoked: ops revoked this phone, so drop the cached jobs; technician_inactive: ops switched him off, so drop the cards and set aside the work not yet sent",
             "content": {
               "application/json": {
                 "schema": {

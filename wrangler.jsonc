@@ -87,6 +87,8 @@
     "BOOKS_PROVIDER": "stub",
     "ZOHO_FSM_ACCOUNTS_HOST": "",
     "ZOHO_FSM_API_HOST": "",
+    "ZOHO_BOOKS_ACCOUNTS_HOST": "",
+    "ZOHO_BOOKS_API_HOST": "",
     "ZOHO_BOOKS_ORG_ID": "",
     "BOOKS_REFUND_ACCOUNT_ID": "",
     // Razorpay (docs/decisions/0044-payments-mirror.md). The stub takes no money and reaches nothing.
@@ -190,11 +192,14 @@
         "ACCESS_OPS_AUD": "c291b99aae607b12ae256176566169e7a50dcfa839ef0834ad807563353dcee4",
         "SMS_PROVIDER": "none",
         // Zoho FSM and Books, in the real org (ADR 0025, item 26; docs/decisions/0032-fsm-mirror.md).
-        // The client's ID, secret and refresh token are the secrets ZOHO_FSM_CLIENT_ID, _SECRET and _REFRESH_TOKEN.
+        // Each has a client of its own: its ID, secret and refresh token are the secrets ZOHO_FSM_CLIENT_ID, _SECRET
+        // and _REFRESH_TOKEN, and ZOHO_BOOKS_CLIENT_ID, _SECRET and _REFRESH_TOKEN.
         "FSM_PROVIDER": "zoho",
         "BOOKS_PROVIDER": "zoho",
         "ZOHO_FSM_ACCOUNTS_HOST": "accounts.zoho.in",
         "ZOHO_FSM_API_HOST": "www.zohoapis.in",
+        "ZOHO_BOOKS_ACCOUNTS_HOST": "accounts.zoho.in",
+        "ZOHO_BOOKS_API_HOST": "www.zohoapis.in",
         "ZOHO_BOOKS_ORG_ID": "60088931635",
         "BOOKS_REFUND_ACCOUNT_ID": "4242595000000038161",
         // Razorpay in test mode: no real money. The key secret and the webhook secret are secrets.
@@ -297,6 +302,8 @@
         "BOOKS_PROVIDER": "none",
         "ZOHO_FSM_ACCOUNTS_HOST": "",
         "ZOHO_FSM_API_HOST": "",
+        "ZOHO_BOOKS_ACCOUNTS_HOST": "",
+        "ZOHO_BOOKS_API_HOST": "",
         "ZOHO_BOOKS_ORG_ID": "",
         "BOOKS_REFUND_ACCOUNT_ID": "",
         // Razorpay stays off until Phase 2's release (docs/open-points.md, item 6).
