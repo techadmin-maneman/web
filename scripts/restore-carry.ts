@@ -1,5 +1,5 @@
 // Writes the carry-back file of a whole-database restore from the export taken just before it
-// (docs/runbook.md, "Restoring the whole database"; scripts/lib/restore-carry.ts):
+// (docs/runbook.md, "Restoring the whole database"):
 //
 //   node scripts/restore-carry.ts private/restore/now.sql private/restore/carry.sql --leave photos --leave photo_sets
 //
@@ -26,5 +26,5 @@ const list = (tables: readonly string[]) => (tables.length === 0 ? "none" : tabl
 console.log(`${carryFile}: ${String(carry.statements.length)} statements`);
 console.log(`  emptied and written again: ${String(carry.rewritten.length)} tables`);
 console.log(`  only added to: ${list(carry.addOnly)}`);
-console.log(`  worked out by triggers, written last: ${list(carry.keptByTriggers)}`);
+console.log(`  written to by triggers, so written last: ${list(carry.writtenByTriggers)}`);
 console.log(`  left as they were at <T>: ${list(carry.left)}`);

@@ -36,12 +36,20 @@ async function assertOwnDatabase(db: D1Database): Promise<void> {
 }
 
 /** Whether the cron stands still this run for maintenance, which ops are told of once it has gone on too long. */
-async function stoppedForMaintenance(workerEnv: Env, log: Logger): Promise<boolean> {
+async function cronHeldForMaintenance(workerEnv: Env, log: Logger): Promise<boolean> {
   const maintenance = await maintenanceUnderWay(workerEnv.DB);
   if (maintenance === null) return false;
   log.warn("cron_stopped_for_maintenance", { since: maintenance.startedAt });
   const deps = makeDependencies(workerEnv, log);
   await alertIfForgotten(maintenance, deps.alertOnce, deps.now());
+  return true;
+}
+
+/** Whether a queue batch waits out maintenance, to be delivered again a few minutes later. */
+async function batchHeldForMaintenance(batch: MessageBatch, db: D1Database, log: Logger): Promise<boolean> {
+  if ((await maintenanceUnderWay(db)) === null) return false;
+  log.warn("queue_stopped_for_maintenance", { messages: batch.messages.length });
+  batch.retryAll({ delaySeconds: MAINTENANCE_RETRY_SECONDS });
   return true;
 }
 
@@ -55,11 +63,7 @@ export default {
     // Consumer runs have stalled for minutes before their first outside call (docs/decisions/0012).
     const identityMs = Date.now() - started;
     if (identityMs > SLOW_STEP_MS) log.warn("slow_step", { step: "database_identity", duration_ms: identityMs });
-    if ((await maintenanceUnderWay(workerEnv.DB)) !== null) {
-      log.warn("queue_stopped_for_maintenance", { messages: batch.messages.length });
-      batch.retryAll({ delaySeconds: MAINTENANCE_RETRY_SECONDS });
-      return;
-    }
+    if (await batchHeldForMaintenance(batch, workerEnv.DB, log)) return;
     const deps = makeDependencies(workerEnv, log);
 
     if (batch.queue.startsWith("mm-crm-sync-")) {
@@ -90,7 +94,7 @@ export default {
   async scheduled(_controller, workerEnv) {
     const log = baseLog.child({ job: "cron" });
     await assertOwnDatabase(workerEnv.DB);
-    if (await stoppedForMaintenance(workerEnv, log)) return;
+    if (await cronHeldForMaintenance(workerEnv, log)) return;
     const deps = makeDependencies(workerEnv, log);
     await runCron(CRON_JOBS, { env: workerEnv, deps, config, log });
   },

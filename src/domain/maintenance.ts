@@ -1,6 +1,6 @@
-// The switch an operator sets while D1 is restored (docs/runbook.md, "Restoring D1"). While `maintenance` holds its
-// row, the cron and every queue consumer stop before anything else, so none of them acts on a database that is being
-// put back to an earlier minute. Still on an hour later, it is a step forgotten, and ops are told.
+// The switch set while D1 is restored. While the `maintenance` table holds its row, the cron and every queue
+// consumer stop before they read or write anything else, so none of them acts on a database being put back to an
+// earlier minute. Still on after an hour, it is a step forgotten, and ops are told.
 
 import type { AlertOnce } from "./alerts.ts";
 
@@ -9,7 +9,7 @@ export interface Maintenance {
   readonly startedAt: string;
 }
 
-/** How long a batch a consumer turns away waits before it is delivered again. */
+/** How long a queue batch turned away waits before it is delivered again. */
 export const MAINTENANCE_RETRY_SECONDS = 300;
 
 /** Longer than any restore takes. */
@@ -31,6 +31,6 @@ export async function alertIfForgotten(maintenance: Maintenance, alertOnce: Aler
     key: `maintenance:${maintenance.startedAt}`,
     message:
       `The cron and the queue consumers have stood still since ${maintenance.startedAt} for maintenance ` +
-      `(${maintenance.reason}). Once it is done, delete the row in maintenance: docs/runbook.md, "Restoring D1".`,
+      `(${maintenance.reason}). Once the restore is done, switch it off: runbook, "Restoring D1".`,
   });
 }
