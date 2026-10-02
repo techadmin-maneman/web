@@ -4,7 +4,9 @@
 // src/providers/payments.ts chooses this client.
 //
 //   POST https://api.razorpay.com/v1/orders                   { id }
-//   POST https://api.razorpay.com/v1/payments/{id}/refund     { id }
+//   POST https://api.razorpay.com/v1/payments/{id}/refund     { id }; a receipt used before on the payment is
+//        refused as "Duplicate receipt found for this refund request.", Razorpay's idempotency for refunds
+//        (https://razorpay.com/docs/api/refunds/create-normal/)
 //   POST https://api.razorpay.com/v1/payment_links            { id, short_url }
 //   GET  https://api.razorpay.com/v1/payment_links?reference_id=  { payment_links: [{ id, short_url }] }
 //
@@ -15,7 +17,7 @@ import { z } from "zod";
 import type { RazorpaySettings } from "../config/settings.ts";
 import { saltedHash, secretsMatch } from "../lib/hash.ts";
 import type { Logger } from "../log.ts";
-import type { PaymentsProvider } from "./payments.ts";
+import { PaymentUnanswered, type PaymentsProvider } from "./payments.ts";
 import { ProviderError } from "./provider-error.ts";
 
 /** Whether a webhook body is Razorpay's: X-Razorpay-Signature is the HMAC-SHA256 of the raw body under the secret. */
@@ -65,6 +67,8 @@ export const RazorpayRefundSchema = z.object({
 export type RazorpayRefund = z.infer<typeof RazorpayRefundSchema>;
 
 const API = "https://api.razorpay.com/v1";
+/** Razorpay's refusal of a refund under a receipt a refund of the payment already carries. */
+const DUPLICATE_RECEIPT = "Duplicate receipt found for this refund request.";
 const Created = z.object({ id: z.string() });
 const LinkMade = z.object({ id: z.string(), short_url: z.string() });
 const LinksFound = z.object({ payment_links: z.array(LinkMade) });
@@ -78,9 +82,12 @@ const Refused = z.object({
 
 /** Razorpay's refusal, or its failure, read as any vendor's is (src/providers/provider-error.ts). */
 export class RazorpayError extends ProviderError {
+  readonly description: string;
+
   constructor(status: number, code: string, description: string) {
     super(status, code, `Razorpay ${String(status)} ${code}: ${description}`);
     this.name = "RazorpayError";
+    this.description = description;
   }
 }
 
@@ -115,8 +122,18 @@ export function createRazorpay(
 
   return {
     createOrder: (order) => call("create_order", "/orders", { ...order, currency: "INR" }, Created),
-    refund: (paymentId, refund) =>
-      call("refund", `/payments/${encodeURIComponent(paymentId)}/refund`, { ...refund, speed: "normal" }, Created),
+    // Only a refusal Razorpay gave in words is one; a timeout, a failure of its own or an answer we cannot read
+    // leaves the refund made or not.
+    refund: async (paymentId, refund) => {
+      try {
+        const path = `/payments/${encodeURIComponent(paymentId)}/refund`;
+        return await call("refund", path, { ...refund, speed: "normal" }, Created);
+      } catch (error) {
+        if (!(error instanceof RazorpayError) || error.status >= 500) throw new PaymentUnanswered("refund", error);
+        if (error.description === DUPLICATE_RECEIPT) return { id: null };
+        throw error;
+      }
+    },
     createPaymentLink: async (link) => {
       const made = await call(
         "create_payment_link",

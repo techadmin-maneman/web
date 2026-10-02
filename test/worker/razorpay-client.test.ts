@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "vitest";
 import { createLogger } from "../../src/log.ts";
-import { createPaymentsProvider } from "../../src/providers/payments.ts";
+import { createPaymentsProvider, createStubPayments, PaymentUnanswered } from "../../src/providers/payments.ts";
 import { RazorpayError } from "../../src/providers/razorpay.ts";
 import { fakeFetch, json } from "./helpers.ts";
 
@@ -39,19 +39,43 @@ describe("Razorpay: orders and refunds", () => {
     });
   });
 
-  it("refunds a payment at normal speed, by its ID in the path, and answers the refund's ID", async () => {
+  it("refunds a payment at normal speed, by its ID in the path, under our receipt, and answers the refund's ID", async () => {
     const { payments, calls } = razorpay({
       [`${API}/payments/pay_1/refund`]: () => json({ id: "rfnd_9", entity: "refund", amount: 100000 }),
     });
 
-    expect(await payments.refund("pay_1", { amount: 100000, notes: { reason: "cancelled" } })).toEqual({
+    expect(await payments.refund("pay_1", { amount: 100000, notes: { reason: "cancelled" }, receipt: "c-1" })).toEqual({
       id: "rfnd_9",
     });
     expect(JSON.parse(calls[0]?.body ?? "")).toEqual({
       amount: 100000,
       notes: { reason: "cancelled" },
+      receipt: "c-1",
       speed: "normal",
     });
+  });
+
+  // Razorpay's idempotency for refunds (https://razorpay.com/docs/api/refunds/create-normal/, "Duplicate Receipt").
+  it("answers no refund ID, and no refusal, where the receipt's refund was made before", async () => {
+    const { payments } = razorpay({
+      [`${API}/payments/pay_1/refund`]: () =>
+        json(
+          { error: { code: "BAD_REQUEST_ERROR", description: "Duplicate receipt found for this refund request." } },
+          400,
+        ),
+    });
+    expect(await payments.refund("pay_1", { amount: 100000, notes: {}, receipt: "c-1" })).toEqual({ id: null });
+  });
+
+  it.each([
+    ["a timeout", () => Promise.reject(new DOMException("The operation timed out.", "TimeoutError"))],
+    ["a failure of Razorpay's own", () => json({ error: { code: "SERVER_ERROR", description: "down" } }, 500)],
+    ["a success it cannot read", () => json({ entity: "refund" })],
+  ])("cannot say whether a refund was made after %s", async (_case, reply) => {
+    const { payments } = razorpay({ [`${API}/payments/pay_1/refund`]: reply });
+    await expect(payments.refund("pay_1", { amount: 1, notes: {}, receipt: "c-1" })).rejects.toBeInstanceOf(
+      PaymentUnanswered,
+    );
   });
 
   it("names Razorpay's own code and description when it refuses", async () => {
@@ -60,7 +84,7 @@ describe("Razorpay: orders and refunds", () => {
         json({ error: { code: "BAD_REQUEST_ERROR", description: "The refund amount exceeds the payment" } }, 400),
     });
 
-    const refused = payments.refund("pay_1", { amount: 999999, notes: {} });
+    const refused = payments.refund("pay_1", { amount: 999999, notes: {}, receipt: "c-1" });
 
     await expect(refused).rejects.toBeInstanceOf(RazorpayError);
     await expect(refused).rejects.toMatchObject({ status: 400, code: "BAD_REQUEST_ERROR" });
@@ -150,7 +174,9 @@ describe("payments where none is connected", () => {
     const none = createPaymentsProvider("none", null, { fetch: fakeFetch({}).fetch, log: createLogger() });
 
     await expect(none.createOrder({ amount: 1, receipt: "r", notes: {} })).rejects.toThrow(/PAYMENTS_PROVIDER is none/);
-    await expect(none.refund("pay_1", { amount: 1, notes: {} })).rejects.toThrow(/PAYMENTS_PROVIDER is none/);
+    await expect(none.refund("pay_1", { amount: 1, notes: {}, receipt: "c-1" })).rejects.toThrow(
+      /PAYMENTS_PROVIDER is none/,
+    );
     await expect(
       none.createPaymentLink({
         amount: 1,
@@ -162,5 +188,18 @@ describe("payments where none is connected", () => {
     ).rejects.toThrow(/PAYMENTS_PROVIDER is none/);
     await expect(none.findPaymentLink("visit-1")).rejects.toThrow(/PAYMENTS_PROVIDER is none/);
     expect(calls).toEqual([]);
+  });
+});
+
+describe("the stub's refunds", () => {
+  it("refunds a payment once under a receipt, as Razorpay does", async () => {
+    const stub = createStubPayments();
+    expect((await stub.refund("pay_1", { amount: 100, notes: {}, receipt: "c-1" })).id).toMatch(/^rfnd_stub_/);
+    expect(await stub.refund("pay_1", { amount: 100, notes: {}, receipt: "c-1" })).toEqual({ id: null });
+    expect((await stub.refund("pay_2", { amount: 100, notes: {}, receipt: "c-1" })).id).toMatch(/^rfnd_stub_/);
+    expect(stub.made.refunds).toEqual([
+      { paymentId: "pay_1", amount: 100 },
+      { paymentId: "pay_2", amount: 100 },
+    ]);
   });
 });

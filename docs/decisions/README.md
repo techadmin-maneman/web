@@ -50,7 +50,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0042](0042-client-profile.md) | The client's profile: address, consents, number change, deletion | 2026-09-22 | accepted | [0080](0080-consents-given-by-booking.md) |
 | [0043](0043-client-app.md) | The client app: build, Worker and policy | 2026-09-22 | accepted |  |
 | [0044](0044-payments-mirror.md) | The payments mirror | 2026-09-22 | accepted | [0067](0067-alerts-and-silent-failures.md), [0068](0068-a-paid-hold-is-kept.md) |
-| [0045](0045-self-serve-booking.md) | Self-serve booking and prepayment | 2026-09-22 | accepted | [0068](0068-a-paid-hold-is-kept.md), [0079](0079-an-address-before-a-slot.md), [0086](0086-the-next-visit-is-offered.md) |
+| [0045](0045-self-serve-booking.md) | Self-serve booking and prepayment | 2026-09-22 | accepted | [0068](0068-a-paid-hold-is-kept.md), [0079](0079-an-address-before-a-slot.md), [0086](0086-the-next-visit-is-offered.md), [0100](0100-a-refund-is-made-once.md) |
 | [0046](0046-moving-and-cancelling.md) | Moving and cancelling a visit | 2026-09-22 | accepted | [0068](0068-a-paid-hold-is-kept.md), [0096](0096-a-no-shows-charge-and-its-dispute.md) |
 | [0047](0047-visit-messages.md) | Messages about a client's visits | 2026-09-22 | accepted | [0074](0074-hand-offs-and-messages.md) |
 | [0048](0048-referrals.md) | Referrals and the waitlist | 2026-09-22 | accepted | [0060](0060-an-invited-friend-reaches-ops-and-the-crm.md), [0071](0071-what-ops-see-before-a-setting-changes.md), [0074](0074-hand-offs-and-messages.md), [0080](0080-consents-given-by-booking.md), [0089](0089-an-invite-is-not-lost.md), [0107](0107-referral-rewards-in-the-console.md) |
@@ -98,11 +98,12 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0092](0092-task-owners.md) | Whose each task is, a visit ops close without a follow-up, and an address given to ops | 2026-09-28 | accepted |  |
 | [0093](0093-the-storage-meter.md) | The storage meter, the photograph upload limit, and thumbnails made on the phone | 2026-09-28 | accepted, on the owner's rulings of 27 September 2026 |  |
 | [0094](0094-where-a-consent-was-given.md) | Where a consent was given, and an erasure blanks a check-in's coordinates | 2026-09-28 | accepted, on the owner's rulings of 27 September 2026 |  |
-| [0095](0095-a-booking-fsm-refuses-is-held.md) | A booking FSM refuses is held, not refunded | 2026-09-29 | accepted, on the owner's ruling of 27 September 2026 |  |
-| [0096](0096-a-no-shows-charge-and-its-dispute.md) | A no-show's charge and its dispute, and the free change a visit ops moved keeps | 2026-09-29 | accepted, on the owner's rulings of 27 September 2026 |  |
+| [0095](0095-a-booking-fsm-refuses-is-held.md) | A booking FSM refuses is held, not refunded | 2026-09-29 | accepted, on the owner's ruling of 27 September 2026 | [0100](0100-a-refund-is-made-once.md) |
+| [0096](0096-a-no-shows-charge-and-its-dispute.md) | A no-show's charge and its dispute, and the free change a visit ops moved keeps | 2026-09-29 | accepted, on the owner's rulings of 27 September 2026 | [0100](0100-a-refund-is-made-once.md) |
 | [0097](0097-staging-logins-open-reminders-fenced.md) | Staging logins open, reminders fenced | 2026-09-30 | accepted |  |
 | [0098](0098-the-door-in-fsms-address.md) | The door in FSM's service address | 2026-10-01 | accepted, on the owner's rulings of 27 September 2026 and 1 October 2026 |  |
 | [0099](0099-the-clients-note-in-fsm.md) | The client's note in FSM | 2026-10-01 | accepted, on the owner's ruling of 27 September 2026 |  |
+| [0100](0100-a-refund-is-made-once.md) | A refund is made once, however often it is asked for | 2026-10-01 | accepted |  |
 | [0102](0102-window-times.md) | The window times in the console | 2026-10-01 | accepted, on the owner's rulings of 30 September and 1 October 2026 |  |
 | [0103](0103-the-home-pages-first-copy-round.md) | The home page's first copy round | 2026-10-01 | accepted |  |
 | [0104](0104-the-try-ons-look-on-whatsapp-only.md) | The try-on's look on WhatsApp only | 2026-10-01 | accepted, on the owner's ruling D3 of 1 October 2026 |  |

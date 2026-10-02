@@ -571,6 +571,10 @@ export const clients = {
         refund_refused: (amount: string, payment: string) =>
           `Razorpay refused to refund ${amount} (payment ${payment}), so nothing has gone back and the booking ` +
           "still waits. Try again, or refund it in Razorpay's dashboard and then press Refund it here.",
+        // Not refund it in the dashboard: the refund may have been made, and only ours cannot be made twice.
+        refund_unanswered: (amount: string, payment: string) =>
+          `Razorpay did not say whether it refunded ${amount} (payment ${payment}), so it may have, and the booking ` +
+          "still waits. Press Refund it again: Razorpay will not refund it twice.",
       },
       fsm: {
         cancelled: (workOrder: string) => `Its work order ${workOrder} is cancelled in FSM.`,

@@ -5,7 +5,8 @@
 
 import type { PaymentsProvider } from "../providers/payments.ts";
 import type { AlertOnce } from "./alerts.ts";
-import { visitPayment, type VisitPayment } from "./visit-changes.ts";
+import { askRefund, refundReceipt, type RefundOutcome } from "./refunds.ts";
+import { refundLeftToOps, visitPayment, type VisitPayment } from "./visit-changes.ts";
 import { creditOfVisit } from "./visit-messages.ts";
 
 /** Money going back to the client once a ruling is written. */
@@ -63,9 +64,9 @@ async function alertIfCreditNotBack(db: D1Database, alertOnce: AlertOnce, credit
 }
 
 /**
- * Refunds what a ruling gives back, at most what is left of the visit's payment. The ruling has committed by now, so
- * whatever fails here, Razorpay's refusal or the read of the payment before it, is left to ops, told once with the
- * visit and what is owed, as a cancel's is (src/domain/visit-changes.ts).
+ * Refunds what a ruling gives back, at most what is left of the visit's payment, under a receipt of its own. The
+ * ruling has committed by now, so whatever fails here, Razorpay's refusal, its silence or the read of the payment
+ * before it, is left to ops, told once with the visit and what is owed, as a cancel's is (src/domain/visit-changes.ts).
  */
 export async function refundNoShow(
   db: D1Database,
@@ -74,23 +75,26 @@ export async function refundNoShow(
 ): Promise<void> {
   let payment: VisitPayment | null = null;
   let amount = refund.amount;
+  let outcome: RefundOutcome["kind"] | "unread" = "unread";
   try {
     payment = await visitPayment(db, refund.appointmentId);
     if (payment === null) return;
     amount = Math.min(refund.amount, payment.paid);
     if (amount <= 0) return;
-    await deps.payments.refund(payment.razorpayPaymentId, {
-      amount,
-      notes: { appointment_id: refund.appointmentId, reason: `no-show ${refund.why}` },
-    });
+    const receipt = refundReceipt({ kind: "no_show", why: refund.why, appointmentId: refund.appointmentId });
+    const notes = { appointment_id: refund.appointmentId, reason: `no-show ${refund.why}` };
+    outcome = (await askRefund(deps.payments, payment.razorpayPaymentId, { amount, notes, receipt })).kind;
   } catch {
-    const from = payment === null ? "its payment could not be read" : `Razorpay payment ${payment.razorpayPaymentId}`;
-    await deps.alertOnce({
-      key: `no_show_refund_failed:${refund.why}:${refund.appointmentId}`,
-      message:
-        `The refund of Rs. ${String(amount / 100)} for visit ${refund.appointmentId}, a no-show ${refund.why}, ` +
-        `failed (${from}). Refund it by hand in Razorpay, once.`,
-      link: refund.personId === null ? "/no-shows" : `/clients/${refund.personId}`,
-    });
+    // The payment could not be read, so nothing was asked of Razorpay.
   }
+  if (outcome === "refunded") return;
+  const what = `Rs. ${String(amount / 100)} for visit ${refund.appointmentId}, a no-show ${refund.why}`;
+  await deps.alertOnce({
+    key: `no_show_refund_failed:${refund.why}:${refund.appointmentId}`,
+    message:
+      payment === null || outcome === "unread"
+        ? `The refund of ${what}, failed (its payment could not be read). Refund it by hand in Razorpay, once.`
+        : refundLeftToOps(outcome, what, payment.razorpayPaymentId, amount),
+    link: refund.personId === null ? "/no-shows" : `/clients/${refund.personId}`,
+  });
 }

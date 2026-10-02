@@ -44,6 +44,7 @@ import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
 import type { AlertOnce } from "./alerts.ts";
 import type { OpsInputs } from "./ops-settings.ts";
 import { priceOf, type Price } from "./price-book.ts";
+import { askRefund, refundReceipt } from "./refunds.ts";
 import { bookedMinutes } from "./scheduling.ts";
 import { windowTimesOf } from "../policy/slot-times.ts";
 import { visitMessage } from "./visit-messages.ts";
@@ -429,27 +430,47 @@ export async function cancelVisit(
   ]);
 
   if (payment !== null && cancel.refund > 0) {
-    try {
-      const refund = await deps.payments.refund(payment.razorpayPaymentId, {
-        amount: cancel.refund,
-        notes: { appointment_id: visit.id, reason: "cancelled by the client" },
-      });
+    const asked = await askRefund(deps.payments, payment.razorpayPaymentId, {
+      amount: cancel.refund,
+      notes: { appointment_id: visit.id, reason: "cancelled by the client" },
+      receipt: refundReceipt({ kind: "cancel", appointmentId: visit.id }),
+    });
+    if (asked.kind === "refunded" && asked.refundId !== null) {
       await db
         .prepare("UPDATE visit_changes SET razorpay_refund_id = ?1 WHERE id = ?2")
-        .bind(refund.id, changeId)
+        .bind(asked.refundId, changeId)
         .run();
-    } catch (error) {
-      log.error("cancel_refund_failed", { appointment_id: visit.id, error });
+    }
+    if (asked.kind !== "refunded") {
+      log.error("cancel_refund_failed", { appointment_id: visit.id, outcome: asked.kind, error: asked.error });
+      const what = `Rs. ${String(cancel.refund / 100)} for visit ${visit.id}, cancelled by the client`;
       // Keyed on the visit, so ops are told once and a second refund by hand is not asked for.
       await deps.alertOnce({
         key: `cancel_refund_failed:${visit.id}`,
-        message:
-          `The refund of Rs. ${String(cancel.refund / 100)} for visit ${visit.id}, cancelled by the client, failed ` +
-          `(Razorpay payment ${payment.razorpayPaymentId}). Refund it by hand in Razorpay, once.`,
+        message: refundLeftToOps(asked.kind, what, payment.razorpayPaymentId, cancel.refund),
         link: `/clients/${visit.personId}`,
       });
     }
   }
   await deps.notify?.(message.id);
   return { kind: "cancelled", refund: cancel.refund, kept: cancel.kept };
+}
+
+/**
+ * What ops are told to do with a refund Razorpay did not make, or would not say it made
+ * (docs/decisions/0100-a-refund-is-made-once.md). `what` is the amount and the visit, as "Rs. 500 for visit …".
+ */
+export function refundLeftToOps(
+  outcome: "refused" | "unanswered",
+  what: string,
+  paymentId: string,
+  amount: number,
+): string {
+  if (outcome === "refused") {
+    return `The refund of ${what}, failed (Razorpay payment ${paymentId}). Refund it by hand in Razorpay, once.`;
+  }
+  return (
+    `Razorpay did not answer the refund of ${what} (payment ${paymentId}), so it may have been made. Look at the ` +
+    `payment in Razorpay, and refund it by hand only if no refund of Rs. ${String(amount / 100)} is there.`
+  );
 }
