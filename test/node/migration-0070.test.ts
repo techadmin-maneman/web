@@ -1,6 +1,5 @@
-// Migration 0071: the schema a visit booked without FSM needs, and Books' own Zoho client
-// (docs/decisions/0110-field-work-without-fsm.md), applied to a database that already holds a mirrored visit and
-// the Zoho tokens in use, as staging's does. Every name and number is made up.
+// Migration 0070: the schema a visit booked without FSM needs, and Books' own Zoho client, applied to a database
+// that already holds a mirrored visit and the Zoho tokens in use, as staging's does. Every name and number is made up.
 
 import { readdirSync, readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
@@ -47,7 +46,7 @@ const running = (db: DatabaseSync, sql: string) => () => {
   db.exec(sql);
 };
 
-describe("migration 0071", () => {
+describe("migration 0070", () => {
   it("keeps what FSM said of a visit it already holds", () => {
     const db = migrated();
     expect(db.prepare("SELECT fsm_status, fsm_modified_at, status FROM appointments WHERE id = 'a1'").get()).toEqual({

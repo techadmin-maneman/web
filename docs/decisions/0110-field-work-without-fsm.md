@@ -32,6 +32,6 @@ The build follows these rules:
 
 ## Consequences
 
-- Migration 0071 adds `people.books_customer_id` (unique), `services.books_item_id`, lets `appointments.fsm_status` and `fsm_modified_at` be empty, and lets `zoho_access_tokens` hold a token for Books' own client.
+- Migration 0070 adds `people.books_customer_id` (unique), `services.books_item_id`, lets `appointments.fsm_status` and `fsm_modified_at` be empty, and lets `zoho_access_tokens` hold a token for Books' own client.
 - Until staging switches, nothing changes for its users: each changed path keeps FSM's way under `zoho` and `stub`.
 - D1 is the only record of field work once FSM goes, so a restore that is proven to work matters more.
