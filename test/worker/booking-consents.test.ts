@@ -4,6 +4,8 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import type { FieldRecord } from "../../src/config/field-record.ts";
+import { HOLD_SECONDS, PAYMENT_GRACE_SECONDS } from "../../src/config/scheduling.ts";
 import { grantCredits } from "../../src/domain/credits.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { saltedHash } from "../../src/lib/hash.ts";
@@ -11,9 +13,11 @@ import {
   appFor,
   fakeDependencies,
   fakeQueue,
+  fsmSwitchedOff,
   LOCAL_SETTINGS,
   markDatabase,
   NOW,
+  PROVIDERS_FOR,
   request,
   savedAddress,
 } from "./helpers.ts";
@@ -70,12 +74,18 @@ async function tappedToPay(consents: string[] = BOTH): Promise<Ordered> {
   return { holdId, orderId: checkout.order_id, amount: checkout.amount };
 }
 
-/** Razorpay's signed webhook: the payment for the order, made at `paidAt`, reaching us a minute later. */
-async function paid(ordered: Ordered, paidAt: Date, event = "payment.captured") {
-  const webhookApp = appFor("local", fakeDependencies({ now: () => new Date(paidAt.getTime() + 60_000) }), {
+/** The webhook's app, where FSM books a paid visit from its queue, or our own database books it in the request. */
+function webhookApp(record: FieldRecord, now: Date) {
+  const settings = {
     ...LOCAL_SETTINGS,
     razorpay: { keyId: "rzp_test_consents", keySecret: "s", webhookSecret: WEBHOOK_SECRET },
-  });
+  };
+  const fsm = record === "ours" ? { fsm: fsmSwitchedOff() } : {};
+  return appFor("local", fakeDependencies({ now: () => now, ...fsm }), settings, "public", PROVIDERS_FOR[record]);
+}
+
+/** Razorpay's signed webhook: the payment for the order, made at `paidAt`, reaching us a minute later. */
+async function paid(ordered: Ordered, paidAt: Date, event = "payment.captured", record: FieldRecord = "fsm") {
   const payment = {
     id: `pay_${ordered.holdId.slice(0, 8)}`,
     amount: ordered.amount,
@@ -88,7 +98,7 @@ async function paid(ordered: Ordered, paidAt: Date, event = "payment.captured") 
   };
   const body = JSON.stringify({ entity: "event", event, payload: { payment: { entity: payment } } });
   const answer = await request(
-    webhookApp,
+    webhookApp(record, new Date(paidAt.getTime() + 60_000)),
     "/api/hooks/razorpay",
     {
       method: "POST",
@@ -99,7 +109,7 @@ async function paid(ordered: Ordered, paidAt: Date, event = "payment.captured") 
         "X-Razorpay-Event-Id": `evt_${event}_${ordered.holdId}`,
       },
     },
-    { FSM_QUEUE: fakeQueue() },
+    { FSM_QUEUE: fakeQueue(), MESSAGE_QUEUE: fakeQueue(), CRM_QUEUE: fakeQueue() },
   );
   expect(answer.status).toBe(200);
 }
@@ -121,6 +131,9 @@ const ledger = async () =>
       .bind(PERSON)
       .all()
   ).results;
+
+const holdState = async (holdId: string) =>
+  (await env.DB.prepare("SELECT state FROM slot_holds WHERE id = ?1").bind(holdId).first<{ state: string }>())?.state;
 
 const audited = async () =>
   (
@@ -156,7 +169,6 @@ beforeEach(async () => {
 });
 
 describe("a paid visit's consents", () => {
-  // Audit finding PS-28: opening Checkout and closing it unpaid recorded consents for a visit never booked.
   it("are not recorded at the tap that opens Checkout, nor when Checkout is closed unpaid", async () => {
     await tappedToPay();
     expect(await ledger()).toEqual([]);
@@ -219,6 +231,25 @@ describe("a paid visit's consents", () => {
     await paid(ordered, minutes(3), "order.paid");
     expect(await ledger()).toHaveLength(2);
     expect(await audited()).toHaveLength(2);
+  });
+
+  it("are recorded where our own database books the visit in the webhook's request", async () => {
+    const ordered = await tappedToPay();
+    await paid(ordered, minutes(3), "payment.captured", "ours");
+    expect(await holdState(ordered.holdId)).toBe("booked");
+    expect(await ledger()).toMatchObject([
+      { purpose: "photos_own_record", granted: 1, created_at: minutes(3).toISOString() },
+      { purpose: "photos_referral_cards", granted: 1, created_at: minutes(3).toISOString() },
+    ]);
+  });
+
+  it("are not recorded for a payment made after the hold and its grace ran out, which is refunded", async () => {
+    const ordered = await tappedToPay();
+    const tooLate = new Date(NOW.getTime() + (HOLD_SECONDS + PAYMENT_GRACE_SECONDS + 5) * 1000);
+    await paid(ordered, tooLate, "payment.captured", "ours");
+    expect(await holdState(ordered.holdId)).toBe("released");
+    expect(await ledger()).toEqual([]);
+    expect(await audited()).toEqual([]);
   });
 
   it("leave a purpose the client switched between the tap and the payment as they left it", async () => {

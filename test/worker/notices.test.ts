@@ -70,7 +70,6 @@ describe("consent notices", () => {
     }
   });
 
-  // Audit finding PS-28: the reminder box's yes was recorded under the profile's line, and /book under the invite's.
   it("records the booking sheet's reminder on its own line, and every other switch on the purpose's current notice", () => {
     expect(findNotice(REMINDER_NOTICE)).toEqual({
       version: "whatsapp-visits-booking-v1",

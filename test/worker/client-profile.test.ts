@@ -440,7 +440,6 @@ describe("PATCH /api/consents/:purpose", () => {
     ]);
   });
 
-  // Audit finding PS-28: the reminder box's yes was recorded under the profile's line, which the client never saw.
   it("records the booking sheet's reminder under the box's own line, and the profile's switch under its own", async () => {
     await send(client, "PATCH", "/api/consents/whatsapp_visits", { granted: true, source: "app_booking" });
     await send(client, "PATCH", "/api/consents/whatsapp_visits", { granted: false, source: "app_profile" });

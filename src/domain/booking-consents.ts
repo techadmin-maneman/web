@@ -46,11 +46,13 @@ export async function keepShownConsents(db: D1Database, tap: BookingTap): Promis
     .run();
 }
 
+/** The hold, once confirmed, while it has not been let go: a payment made too late is refunded, and books nothing. */
 async function confirmedHold(db: D1Database, holdId: string): Promise<ConfirmedHold | null> {
   return db
     .prepare(
       `SELECT person_id, confirmed_at, consents_shown, consents_ip_hash FROM slot_holds
-       WHERE id = ?1 AND confirmed_at IS NOT NULL AND consents_shown IS NOT NULL AND moves_appointment_id IS NULL`,
+       WHERE id = ?1 AND confirmed_at IS NOT NULL AND state <> 'released'
+         AND consents_shown IS NOT NULL AND moves_appointment_id IS NULL`,
     )
     .bind(holdId)
     .first<ConfirmedHold>();
