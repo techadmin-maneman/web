@@ -20,7 +20,7 @@ import { fill } from "../../lib/text.ts";
 import { readAttribution } from "../../lib/visit.ts";
 import { AddressFieldset } from "./AddressFieldset.tsx";
 import type { Booking } from "./Done.tsx";
-import { ExtentFieldset, ForPincode, PersonFieldset, Send, type FormProps } from "./fields.tsx";
+import { ExtentFieldset, ForPincode, PersonFieldset, RememberedInvite, Send, type FormProps } from "./fields.tsx";
 import styles from "./Invite.module.css";
 import { codeInPath, hairSystemsInPage } from "./page.ts";
 import { useOpenWindows } from "./useOpenWindows.ts";
@@ -61,6 +61,8 @@ export function Consultation(props: ConsultationProps) {
   const [address, setAddress] = useState<AddressFields>(() => emptyAddress(props.answer.city));
   const [extent, setExtent] = useState<LossExtent | null>(null);
   const [code, setCode] = useState("");
+  // On /book, the invite this browser remembers: the form says who is told of the fit before it sends it.
+  const [remembered, setRemembered] = useState(() => (props.invited ? null : rememberedInvite()));
   const { pincode } = props.answer;
   const open = useOpenWindows(pincode, plan);
   const { consultation } = referral;
@@ -97,20 +99,20 @@ export function Consultation(props: ConsultationProps) {
       consent: true as const,
     };
     // The site's own page carries where this visit came from, where the hair loss is, and the invite this browser
-    // remembers; the invite's page, its own invite.
+    // remembers; the invite's page, its own invite. Each says whether the form told the friend who hears of the fit.
     const attribution = readAttribution();
-    const remembered = props.invited ? null : rememberedInvite();
+    const onInvite = { ...request, ...(props.credits ? { invite_told: true as const } : {}) };
     const onBook = {
       ...request,
       ...(extent === null ? {} : { loss_extent: extent }),
       ...(attribution === undefined ? {} : { attribution }),
-      ...(remembered === null ? {} : { invite_code: remembered }),
+      ...(remembered === null ? {} : { invite_code: remembered, invite_told: true as const }),
       ...(sentCode === null ? {} : { discount_code: sentCode }),
     };
     const invite = props.invited ? codeInPath() : remembered;
     const book = (token: string, keyFor: (request: unknown) => string) =>
       props.invited
-        ? bookConsultation(codeInPath(), { ...request, turnstile_token: token }, keyFor(request))
+        ? bookConsultation(codeInPath(), { ...onInvite, turnstile_token: token }, keyFor(onInvite))
         : bookPublicConsultation({ ...onBook, turnstile_token: token }, keyFor(onBook));
     void form.submit<ReferralConsultation | PublicConsultation>(
       event,
@@ -135,6 +137,11 @@ export function Consultation(props: ConsultationProps) {
   const choices = consultation.plan;
   const options = choices.options.filter((option) => option.id === "consultation" || oneVisitOffered);
   const nothingOpen = !anyOpen(open.days, windowIds);
+
+  function bookWithoutInvite() {
+    if (remembered !== null) forgetInvite(remembered);
+    setRemembered(null);
+  }
 
   return (
     <form class={styles.form} onSubmit={submit} noValidate>
@@ -281,6 +288,14 @@ export function Consultation(props: ConsultationProps) {
         consentNote=""
         onChange={form.setFields}
       />
+
+      {remembered !== null && (
+        <RememberedInvite
+          line={referral.remembered.consultation(props.reward)}
+          without={referral.remembered.bookWithout}
+          onWithout={bookWithoutInvite}
+        />
+      )}
 
       <div ref={form.box} class={styles.turnstile} />
       <Send

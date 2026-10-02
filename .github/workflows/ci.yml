@@ -188,8 +188,8 @@ jobs:
           done
           exit 1
 
-  # One run of the whole suite, so coverage still measures all of src/: 90% of lines and 80% of branches, with
-  # floors of their own for the vendor clients (vitest.config.ts).
+  # One run of the whole suite, so coverage still measures all of src/ and scripts/lib/: 90% of lines and 80% of
+  # branches, with floors of their own for the vendor clients and the release script (vitest.config.ts).
   # It runs whatever changed: it covers src/ and the migrations, and a config
   # change can break it.
   tests:
@@ -203,7 +203,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup
-      - name: Unit and contract tests, coverage of lines and branches on src/
+      - name: Unit and contract tests, coverage of lines and branches on src/ and scripts/lib/
         run: npm run test:coverage
 
   # Migrations run before code, so the code now deployed runs on this branch's schema until the deploy, and

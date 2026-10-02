@@ -497,12 +497,13 @@ describe("POST /api/waitlist", () => {
   });
 });
 
-// A friend who opened an invite, left, and booked later on /book: the site remembers the invite's code for 30 days
-// and sends it, and the booking is attributed as the landing's is (docs/decisions/0089-an-invite-is-not-lost.md).
+// A friend who opened an invite, left, and booked later on /book: the site remembers the invite's code for 30 days,
+// says who is told of the fit beside it, and sends it, and the booking is attributed as the landing's is
+// (docs/decisions/0089-an-invite-is-not-lost.md).
 describe("an invite the browser remembered", () => {
   const REFERRER = "11111111-1111-4111-8111-111111111111";
   const bindings = () => ({ FSM_QUEUE: fakeQueue(), CRM_QUEUE: fakeQueue(), MESSAGE_QUEUE: fakeQueue() });
-  const book = (inviteCode: string) =>
+  const book = (inviteCode: string, told: object = { invite_told: true }) =>
     request(
       site(),
       "/api/consultation",
@@ -514,10 +515,12 @@ describe("an invite the browser remembered", () => {
         consent: true,
         address: ADDRESS,
         invite_code: inviteCode,
+        ...told,
       }),
       bindings(),
     );
-  const attributions = () => env.DB.prepare("SELECT code, via, pincode, grant_state FROM referral_attributions").all();
+  const attributions = () =>
+    env.DB.prepare("SELECT code, via, pincode, grant_state, told_notice FROM referral_attributions").all();
 
   beforeEach(async () => {
     await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
@@ -547,8 +550,22 @@ describe("an invite the browser remembered", () => {
       discount_code: null,
     });
     expect((await attributions()).results).toEqual([
-      { code: "RM4K7P", via: "consultation", pincode: "122018", grant_state: "pending" },
+      {
+        code: "RM4K7P",
+        via: "consultation",
+        pincode: "122018",
+        grant_state: "pending",
+        told_notice: "invite-told-book-v1",
+      },
     ]);
+  });
+
+  // PS-24: the friend is told who hears of their fit before /book sends the invite, or the invite is not sent.
+  it("books without the invite when the form did not say who is told of the fit", async () => {
+    const answer = await book("RM4K7P", {});
+    expect(answer.status).toBe(201);
+    expect(await answer.json()).toMatchObject({ state: "booked", credits: false, invite: "unknown" });
+    expect((await attributions()).results).toEqual([]);
   });
 
   it.each([
@@ -566,13 +583,26 @@ describe("an invite the browser remembered", () => {
     const answer = await request(
       site(),
       "/api/waitlist",
-      post({ ...VISITOR, pincode: "400050", contact_consent: true, launch_alert: false, invite_code: "RM4K7P" }),
+      post({
+        ...VISITOR,
+        pincode: "400050",
+        contact_consent: true,
+        launch_alert: false,
+        invite_code: "RM4K7P",
+        invite_told: true,
+      }),
       bindings(),
     );
     expect(answer.status).toBe(201);
     expect(await answer.json()).toEqual({ area: "Bandra", credits: true, invite: "valid" });
     expect((await attributions()).results).toEqual([
-      { code: "RM4K7P", via: "waitlist", pincode: "400050", grant_state: "pending" },
+      {
+        code: "RM4K7P",
+        via: "waitlist",
+        pincode: "400050",
+        grant_state: "pending",
+        told_notice: "invite-told-book-v1",
+      },
     ]);
     const entry = await env.DB.prepare("SELECT referral_code FROM waitlist_entries").first();
     expect(entry).toEqual({ referral_code: "RM4K7P" });
@@ -591,6 +621,7 @@ describe("an invite the browser remembered", () => {
         consent: true,
         address: ADDRESS,
         invite_code: "RM4K7P",
+        invite_told: true,
       }),
       bindings(),
     );
