@@ -128,6 +128,10 @@ export const dispatch = {
     block: (job: string, date: string, window: string) => `${job}, ${date}, ${window}`,
     /** A block for a visit already done, which stays where it was worked and cannot be moved. */
     doneBlock: (job: string, date: string, window: string) => `${job}, ${date}, ${window}, done`,
+    /** How far the technician has got, from his phone's own steps: FSM's status can lag behind them. */
+    begun: { arrived: "Arrived", started: "Started", closed: "Closed" },
+    begunBlock: (job: string, date: string, window: string, begun: string) =>
+      `${job}, ${date}, ${window}, ${begun.toLowerCase()}`,
     /** PLACEHOLDER: the board draws no board without technicians. */
     empty: "No technician is on this board.",
     /** A day ops recorded leave on: no job can be dropped there, and none is offered (ADR 0062). */
@@ -188,8 +192,24 @@ export const dispatch = {
     /** PLACEHOLDER: a move the client has not heard of, which ops tell him of by phone (ADR 0069). */
     untold: (when: string, mobile: string) =>
       `Not told of the move to ${when}: no WhatsApp. Call ${mobile}, then record it here.`,
+    /** The State row once the technician has begun, from his phone's steps rather than FSM's status. */
+    begun: {
+      arrived: "Technician arrived",
+      started: "Technician started",
+      closed: "Closed by the technician",
+    },
+    /** PLACEHOLDER: a visit in progress in FSM, or closed by the technician, has no move. */
+    stays: "Under way, so it stays where it is.",
+    /** PLACEHOLDER: the warning before ops move a visit the technician has begun. */
+    setAside: {
+      arrived: (technician: string) =>
+        `${technician} has checked in. Moving this visit sets aside his check-in, and he starts again at the new time.`,
+      started: (technician: string) =>
+        `${technician} has started this visit. Moving it sets aside everything he has sent on it, and he starts again at the new time.`,
+    },
     /** The keyboard way to do what the drag does; the board draws the drag alone. */
     move: "Move this visit",
+    moveAnyway: "Move anyway",
     close: "Close",
   },
   /** Board A2: the reason a move must carry, asked for before anything is written. */
@@ -224,9 +244,12 @@ export const dispatch = {
      */
     soon: (hours: number) =>
       `This visit is inside ${String(hours)} hours. The client is not charged, because we moved it.`,
+    /** PLACEHOLDER: a move of a visit the technician has begun, which ops chose after the drawer's warning. */
+    setAside: "Everything the technician has sent on this visit is set aside.",
     send: "Move and notify",
     /** PLACEHOLDER: the same button where nothing goes to the client, so it does not promise a message. */
     sendQuietly: "Move",
+    sendSettingAside: "Set aside and move",
     sending: "Moving",
     cancel: "Cancel",
   },
@@ -290,6 +313,8 @@ export const dispatch = {
       /** PLACEHOLDER: FSM took the new technician and not the new time; the board is read again. */
       fsm_partly:
         "Our scheduling system took the new technician but not the new time. The board now shows it as it stands.",
+      /** PLACEHOLDER: the technician began the visit after the board was read. */
+      in_progress: "The technician has begun this visit. Nothing was moved. The board now shows it as it stands.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Nothing was moved.",
     },

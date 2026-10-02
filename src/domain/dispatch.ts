@@ -22,10 +22,13 @@ import { BOOKING_WINDOWS, SLOTS_PER_DAY, type BookingWindow } from "../config/sc
 import type { VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaIso, indiaTime } from "../lib/india-time.ts";
 import {
+  begunFrom,
   clientNotice,
   keepsTheClientsNotice,
+  keptInPlace,
   moveRefusal,
   slotsFor,
+  type Begun,
   type ClientNotice,
   type MoveReason,
   type MoveRefusal,
@@ -98,6 +101,8 @@ export interface Block extends Visit {
   readonly notice_hours: number;
   /** The latest move of this visit that its client has not heard of: ops call him (src/policy/dispatch.ts). */
   readonly untold: { readonly move_id: string; readonly starts_at: string } | null;
+  /** How far the technician has got, from his phone's steps rather than FSM's status. */
+  readonly begun: Begun | null;
 }
 
 export interface BoardDay {
@@ -160,10 +165,28 @@ export const UNTOLD_MOVE = `m.fsm_write_state = 'written' AND m.was_start <> m.n
     WHERE later.appointment_id = m.appointment_id AND later.fsm_write_state = 'written'
       AND later.was_start <> later.now_start AND later.created_at > m.created_at)`;
 
-/** The statuses a job can still be moved in. */
+/** The statuses of a job still to finish. One in progress is live, though only one still to start can be moved. */
 const LIVE = "('scheduled', 'dispatched', 'in_progress')";
 /** What a day on the board holds: its live jobs, and the ones already done, so a past day reads as it was worked. */
 const ON_THE_BOARD = "('scheduled', 'dispatched', 'in_progress', 'completed')";
+
+/** Whether the technician's phone has sent a check-in, a start and an outcome for job `a`, set-aside steps apart. */
+const STEPS_LANDED = `
+    EXISTS (SELECT 1 FROM job_events e
+            WHERE e.appointment_id = a.id AND e.kind = 'check_in' AND e.superseded = 0) AS checked_in,
+    EXISTS (SELECT 1 FROM job_events e
+            WHERE e.appointment_id = a.id AND e.kind = 'start' AND e.superseded = 0) AS started,
+    EXISTS (SELECT 1 FROM job_events e
+            WHERE e.appointment_id = a.id AND e.kind = 'outcome' AND e.superseded = 0) AS closed`;
+
+interface StepsLanded {
+  checked_in: number;
+  started: number;
+  closed: number;
+}
+
+const begunOf = (row: StepsLanded): Begun | null =>
+  begunFrom({ checkIn: row.checked_in === 1, start: row.started === 1, outcome: row.closed === 1 });
 
 /**
  * Each job on the board, with its client, the area its pincode is in, its
@@ -187,7 +210,8 @@ const BOARD_JOBS = `
     COALESCE((SELECT b.amount_ex_gst = 0 FROM price_book b
               WHERE b.item = a.type AND b.tier = COALESCE(a.tier, 'standard')
                 AND b.valid_from <= date(a.window_start, '+330 minutes')
-              ORDER BY b.valid_from DESC LIMIT 1), 0) AS free
+              ORDER BY b.valid_from DESC LIMIT 1), 0) AS free,
+    ${STEPS_LANDED}
   FROM appointments a
   LEFT JOIN people p ON p.id = a.person_id
   LEFT JOIN addresses d ON d.person_id = a.person_id AND d.replaced_at IS NULL
@@ -273,7 +297,7 @@ export async function dispatchBoard(
   };
 }
 
-interface BoardJobRow {
+interface BoardJobRow extends StepsLanded {
   id: string;
   type: VisitType | null;
   status: AppointmentStatus;
@@ -339,6 +363,7 @@ function blockOf(job: BoardJobRow, untold: Block["untold"], noticeInForce: numbe
     status: job.status,
     notice_hours: job.sold_notice_hours ?? noticeInForce,
     untold,
+    begun: begunOf(job),
   };
 }
 
@@ -403,6 +428,11 @@ export interface MoveInput {
   readonly actor: string;
   /** The job as the board the move was made from showed it: its technician, none in the tray, and its start. */
   readonly expected: { readonly technicianId: string | null; readonly startsAt: string };
+  /**
+   * Set when ops were warned that the technician has begun the visit and chose to move it anyway, setting aside the
+   * steps his phone sent on it: the audit log's entry for that. Null for an ordinary move.
+   */
+  readonly setAside: AuditEntry | null;
 }
 
 /**
@@ -421,6 +451,8 @@ export type MoveOutcome =
   | { readonly kind: "superseded"; readonly changed: readonly Change[] }
   /** The move names the technician, day and window the job already has. */
   | { readonly kind: "nothing_to_move" }
+  /** The technician has begun the visit, and it stays where it is (src/policy/dispatch.ts); nothing was written. */
+  | { readonly kind: "begun" }
   /** FSM would not take it: nothing moved, and the refusal is on the record. */
   | { readonly kind: "fsm_refused"; readonly moveId: string }
   /** FSM took the new technician and not the new time; the mirror now holds what FSM does. */
@@ -469,7 +501,7 @@ export interface MoveDeps {
   readonly notify?: (messageId: string) => Promise<unknown>;
 }
 
-interface LiveJob {
+interface LiveJob extends StepsLanded {
   id: string;
   fsm_id: string;
   person_id: string | null;
@@ -482,12 +514,12 @@ interface LiveJob {
   service_minutes: number | null;
 }
 
-/** A job that can still be moved; null for one done, cancelled, gone from FSM, or with no type or time. */
+/** A job still to finish; null for one done, cancelled, gone from FSM, or with no type or time. */
 function liveJob(db: D1Database, appointmentId: string): Promise<LiveJob | null> {
   return db
     .prepare(
       `SELECT a.id, a.fsm_id, a.person_id, a.type, a.status, a.window_start, a.window_end, a.start_before_move,
-         a.technician_id, s.minutes AS service_minutes
+         a.technician_id, s.minutes AS service_minutes, ${STEPS_LANDED}
        FROM appointments a LEFT JOIN services s ON s.kind = a.type AND s.tier = COALESCE(a.tier, 'standard')
        WHERE a.id = ?1 AND a.deleted_at IS NULL AND a.status IN ${LIVE} AND a.type IS NOT NULL
          AND a.window_start IS NOT NULL`,
@@ -524,6 +556,8 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
   if (job === null) return { kind: "not_found" };
   const changed = changedSince(job, input.expected);
   if (changed.length > 0) return { kind: "superseded", changed };
+  const begun = begunOf(job);
+  if (keptInPlace({ status: job.status, begun }, input.setAside !== null)) return { kind: "begun" };
 
   const wasStart = new Date(job.window_start);
   const technicianId = input.technicianId ?? job.technician_id;
@@ -614,6 +648,8 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
       ),
     // The mirror now holds the new time, so the claim on it goes in the same batch.
     releasingClaims(db, moveId),
+    settingWorkAside(db, job.id, at),
+    ...workSetAsideEntry(db, { setAside: input.setAside, moveId, begun }, now),
     // The message row is written before the move points at it.
     ...(message === null ? [] : [message.statement]),
     db
@@ -622,6 +658,25 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
   ]);
   if (message !== null) await deps.notify?.(message.id);
   return { kind: "moved", moveId, clientNotice: notice };
+}
+
+/**
+ * Sets aside every step the technician's phone sent for the job as it was. A visit he had begun moves only when ops
+ * chose this; a step that landed while the move was with FSM goes the same way. He starts again where it now is.
+ */
+const settingWorkAside = (db: D1Database, appointmentId: string, at: string): D1PreparedStatement =>
+  db
+    .prepare("UPDATE job_events SET superseded = 1, updated_at = ?2 WHERE appointment_id = ?1 AND superseded = 0")
+    .bind(appointmentId, at);
+
+/** The audit log's entry for ops setting a technician's work aside, naming the move and how far he had got. */
+function workSetAsideEntry(
+  db: D1Database,
+  move: { readonly setAside: AuditEntry | null; readonly moveId: string; readonly begun: Begun | null },
+  now: Date,
+): D1PreparedStatement[] {
+  if (move.setAside === null || move.begun === null) return [];
+  return [auditStatement(db, { ...move.setAside, detail: { move_id: move.moveId, begun: move.begun } }, now)];
 }
 
 /**
@@ -748,7 +803,8 @@ export interface Room {
  * Where a job in hand can go in the week from `from`: each technician's day
  * with a window the job would land in, by the same check a move runs, so the
  * board offers no window the move would be refused. Not where it already is.
- * Null for a job no longer live.
+ * Null for a job no longer live, or one that stays where it is however ops
+ * ask.
  */
 export async function roomFor(
   db: D1Database,
@@ -757,6 +813,7 @@ export async function roomFor(
 ): Promise<Room[] | null> {
   const job = await liveJob(db, input.appointmentId);
   if (job === null) return null;
+  if (keptInPlace({ status: job.status, begun: begunOf(job) }, true)) return null;
   const dates = weekFrom(input.from);
   const [technicians, held, schedule] = await Promise.all([
     activeTechnicians(db),

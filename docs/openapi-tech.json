@@ -72,6 +72,7 @@
                   "does_not_fit",
                   "fsm_refused",
                   "fsm_partly",
+                  "in_progress",
                   "too_early_to_close",
                   "no_service_area",
                   "service_exists",
@@ -2612,10 +2613,10 @@
             "schema": {
               "type": "string",
               "format": "date-time",
-              "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time."
+              "description": "The job's starts_at as the phone saw it at check-in, which every later step carries however often the card is read again. When ops have moved the job since, the write is superseded, field time."
             },
             "required": false,
-            "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time.",
+            "description": "The job's starts_at as the phone saw it at check-in, which every later step carries however often the card is read again. When ops have moved the job since, the write is superseded, field time.",
             "name": "x-job-starts-at",
             "in": "header"
           }
@@ -2712,10 +2713,10 @@
             "schema": {
               "type": "string",
               "format": "date-time",
-              "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time."
+              "description": "The job's starts_at as the phone saw it at check-in, which every later step carries however often the card is read again. When ops have moved the job since, the write is superseded, field time."
             },
             "required": false,
-            "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time.",
+            "description": "The job's starts_at as the phone saw it at check-in, which every later step carries however often the card is read again. When ops have moved the job since, the write is superseded, field time.",
             "name": "x-job-starts-at",
             "in": "header"
           }
@@ -3032,10 +3033,10 @@
             "schema": {
               "type": "string",
               "format": "date-time",
-              "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time."
+              "description": "The job's starts_at as the phone saw it at check-in, which every later step carries however often the card is read again. When ops have moved the job since, the write is superseded, field time."
             },
             "required": false,
-            "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time.",
+            "description": "The job's starts_at as the phone saw it at check-in, which every later step carries however often the card is read again. When ops have moved the job since, the write is superseded, field time.",
             "name": "x-job-starts-at",
             "in": "header"
           }
@@ -3132,10 +3133,10 @@
             "schema": {
               "type": "string",
               "format": "date-time",
-              "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time."
+              "description": "The job's starts_at as the phone saw it at check-in, which every later step carries however often the card is read again. When ops have moved the job since, the write is superseded, field time."
             },
             "required": false,
-            "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time.",
+            "description": "The job's starts_at as the phone saw it at check-in, which every later step carries however often the card is read again. When ops have moved the job since, the write is superseded, field time.",
             "name": "x-job-starts-at",
             "in": "header"
           }
@@ -3232,10 +3233,10 @@
             "schema": {
               "type": "string",
               "format": "date-time",
-              "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time."
+              "description": "The job's starts_at as the phone saw it at check-in, which every later step carries however often the card is read again. When ops have moved the job since, the write is superseded, field time."
             },
             "required": false,
-            "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time.",
+            "description": "The job's starts_at as the phone saw it at check-in, which every later step carries however often the card is read again. When ops have moved the job since, the write is superseded, field time.",
             "name": "x-job-starts-at",
             "in": "header"
           }
@@ -3332,10 +3333,10 @@
             "schema": {
               "type": "string",
               "format": "date-time",
-              "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time."
+              "description": "The job's starts_at as the phone saw it at check-in, which every later step carries however often the card is read again. When ops have moved the job since, the write is superseded, field time."
             },
             "required": false,
-            "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time.",
+            "description": "The job's starts_at as the phone saw it at check-in, which every later step carries however often the card is read again. When ops have moved the job since, the write is superseded, field time.",
             "name": "x-job-starts-at",
             "in": "header"
           }
@@ -3432,10 +3433,10 @@
             "schema": {
               "type": "string",
               "format": "date-time",
-              "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time."
+              "description": "The job's starts_at as the phone saw it at check-in, which every later step carries however often the card is read again. When ops have moved the job since, the write is superseded, field time."
             },
             "required": false,
-            "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time.",
+            "description": "The job's starts_at as the phone saw it at check-in, which every later step carries however often the card is read again. When ops have moved the job since, the write is superseded, field time.",
             "name": "x-job-starts-at",
             "in": "header"
           }
@@ -3532,10 +3533,10 @@
             "schema": {
               "type": "string",
               "format": "date-time",
-              "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time."
+              "description": "The job's starts_at as the phone saw it at check-in, which every later step carries however often the card is read again. When ops have moved the job since, the write is superseded, field time."
             },
             "required": false,
-            "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time.",
+            "description": "The job's starts_at as the phone saw it at check-in, which every later step carries however often the card is read again. When ops have moved the job since, the write is superseded, field time.",
             "name": "x-job-starts-at",
             "in": "header"
           }
@@ -3632,10 +3633,10 @@
             "schema": {
               "type": "string",
               "format": "date-time",
-              "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time."
+              "description": "The job's starts_at as the phone saw it at check-in, which every later step carries however often the card is read again. When ops have moved the job since, the write is superseded, field time."
             },
             "required": false,
-            "description": "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time.",
+            "description": "The job's starts_at as the phone saw it at check-in, which every later step carries however often the card is read again. When ops have moved the job since, the write is superseded, field time.",
             "name": "x-job-starts-at",
             "in": "header"
           }

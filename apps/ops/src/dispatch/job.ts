@@ -74,8 +74,18 @@ export function changesTime(job: Job, to: Target): boolean {
   return was.date !== to.date || was.window !== to.window;
 }
 
-/** A job done stays where it was worked: only one still to do, or under way, can move. */
-export const isMovable = (block: Block): boolean => block.status !== "completed";
+/** The statuses FSM moves a visit from: one still to start. In progress or done, it stays where it is. */
+const STILL_TO_START: readonly string[] = ["scheduled", "dispatched"];
+
+/** A visit still to start that the technician has not begun: the board moves it freely. */
+export const isMovable = (block: Block): boolean => STILL_TO_START.includes(block.status) && block.begun === null;
+
+/**
+ * A visit still to start in FSM that the technician has arrived at or started: it moves only once ops, warned,
+ * choose to set his work on it aside (src/policy/dispatch.ts).
+ */
+export const movesIfSetAside = (block: Block): boolean =>
+  STILL_TO_START.includes(block.status) && (block.begun === "arrived" || block.begun === "started");
 
 /** "Rohit", as the drawer's WhatsApp button names him. */
 export const firstNameOf = (person: BoardClient): string => person.name.trim().split(/\s+/)[0] ?? person.name;

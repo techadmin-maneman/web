@@ -98,7 +98,7 @@ const jobId = z.object({ id: z.uuid() });
 
 /** The header every write carries, so a replay lands once. */
 const EVENT_ID_HEADER = "X-Client-Event-Id";
-/** The job's start as the phone holds it, which a write may carry. */
+/** The job's start as the phone held it when the technician checked in, or when he acted before that. */
 const JOB_STARTS_AT_HEADER = "X-Job-Starts-At";
 const EventIdSchema = z
   .object({
@@ -111,7 +111,7 @@ const EventIdSchema = z
       }),
     "x-job-starts-at": z.iso.datetime().optional().openapi({
       description:
-        "The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time.",
+        "The job's starts_at as the phone saw it at check-in, which every later step carries however often the card is read again. When ops have moved the job since, the write is superseded, field time.",
     }),
   })
   .openapi({ description: "Every write's headers." });

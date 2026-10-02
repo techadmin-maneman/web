@@ -8,27 +8,48 @@
 // with his number, and closed here once ops have called him.
 //
 // The drawer is also the keyboard way into a move: the design moves a block by
-// dragging it, and everything the drag does can be done from here.
+// dragging it, and everything the drag does can be done from here. A visit the
+// technician has begun is moved from here alone, after a warning that his work
+// on it is set aside.
 
 import { ICONS } from "@maneman/brand/icons";
 import { Button, ButtonLink, buttonLook } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";
 import { shortDate } from "@maneman/web-kit/dates";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
+import type { Block } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { dispatch } from "../content.ts";
 import styles from "./dispatch.module.css";
 import { phoneWords } from "../lib/phone.ts";
-import { firstNameOf, isMovable, nameOf, type BlockJob } from "./job.ts";
+import { firstNameOf, isMovable, movesIfSetAside, nameOf, type BlockJob } from "./job.ts";
 
 interface Props {
   readonly job: BlockJob;
   readonly onMove: () => void;
+  /** Takes up a visit the technician has begun, to move with his work set aside. */
+  readonly onMoveAnyway: () => void;
   readonly onTold: (moveId: string) => void;
   readonly onClose: () => void;
 }
 
-export function BlockDrawer({ job, onMove, onTold, onClose }: Props) {
+/** The State row: how far the technician has got, from his phone, until FSM calls the visit done. */
+function stateOf(block: Block): string {
+  const copy = dispatch.drawer;
+  if (block.begun !== null && block.status !== "completed") return copy.begun[block.begun];
+  return copy.states[block.status] ?? block.status;
+}
+
+/** What the drawer says before a visit the technician has begun can be moved, or why it cannot be. */
+function warningOf(job: BlockJob): string | null {
+  const { block } = job;
+  const copy = dispatch.drawer;
+  if (block.status === "completed" || isMovable(block)) return null;
+  if (!movesIfSetAside(block)) return copy.stays;
+  return block.begun === "started" ? copy.setAside.started(job.technician.name) : copy.setAside.arrived(job.technician.name);
+}
+
+export function BlockDrawer({ job, onMove, onMoveAnyway, onTold, onClose }: Props) {
   const copy = dispatch.drawer;
   const { block } = job;
   const person = block.person;
@@ -40,9 +61,10 @@ export function BlockDrawer({ job, onMove, onTold, onClose }: Props) {
   const rows = [
     { key: copy.rows.type, value: copy.type(typeName, block.slots) },
     { key: copy.rows.area, value: block.sector === null ? dispatch.unknown : copy.area(block.sector, block.pincode) },
-    { key: copy.rows.state, value: copy.states[block.status] ?? block.status },
+    { key: copy.rows.state, value: stateOf(block) },
     ...(referredBy === null ? [] : [{ key: copy.rows.referred, value: referredBy }]),
   ];
+  const warning = warningOf(job);
 
   return (
     <Dialog className={styles.panel} labelledBy="drawer-title" canClose onDismiss={onClose}>
@@ -84,6 +106,7 @@ export function BlockDrawer({ job, onMove, onTold, onClose }: Props) {
             </Button>
           </div>
         )}
+        {warning !== null && <p className={styles.consequence}>{warning}</p>}
         <div className={styles.drawerActions}>
           {person !== null && (
             <>
@@ -107,6 +130,11 @@ export function BlockDrawer({ job, onMove, onTold, onClose }: Props) {
           {isMovable(block) && (
             <Button variant="outline" size="small" onClick={onMove}>
               {copy.move}
+            </Button>
+          )}
+          {movesIfSetAside(block) && (
+            <Button variant="outline" size="small" onClick={onMoveAnyway}>
+              {copy.moveAnyway}
             </Button>
           )}
           <Button variant="outline" size="small" onClick={onClose}>

@@ -218,9 +218,14 @@ export const api = {
    */
   assign: (appointmentId: string, to: Landing, shown: Shown) =>
     client.post("/api/dispatch/assign", { body: moveBody(appointmentId, to, shown) }),
-  /** A job already on the board, moved. The client is never charged for it; the answer says how he hears of it. */
-  move: (appointmentId: string, to: Landing, shown: Shown) =>
-    client.post("/api/dispatch/move", { body: moveBody(appointmentId, to, shown) }),
+  /**
+   * A job already on the board, moved. The client is never charged for it; the answer says how he hears of it. A
+   * visit the technician has begun moves only with `settingAside`, once ops have read that his work on it is set aside.
+   */
+  move: (appointmentId: string, to: Landing, shown: Shown, settingAside = false) =>
+    client.post("/api/dispatch/move", {
+      body: settingAside ? { ...moveBody(appointmentId, to, shown), set_aside_work: true } : moveBody(appointmentId, to, shown),
+    }),
   /** Ops called a client who had not heard of a move; its task leaves the Tasks board. */
   toldByPhone: (moveId: string) => client.post("/api/dispatch/moves/{id}/told", { path: { id: moveId } }),
   held: () => client.get("/api/referrals/held"),

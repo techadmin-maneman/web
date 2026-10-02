@@ -233,8 +233,8 @@
   cursor: grab;
 }
 
-/* A visit already done stays where it was worked, and opens its drawer rather than being dragged. */
-.finished {
+/* A visit done, or one the technician has begun, opens its drawer rather than being dragged. */
+.inPlace {
   cursor: pointer;
 }
 
@@ -283,6 +283,16 @@
 }
 
 .fit .what {
+  color: var(--ink-soft);
+}
+
+/* Arrived, Started or Closed, from the technician's phone: FSM's status can lag behind it. */
+.begunMark {
+  display: block;
+  line-height: var(--lh-125);
+}
+
+.fit .begunMark {
   color: var(--ink-soft);
 }
 

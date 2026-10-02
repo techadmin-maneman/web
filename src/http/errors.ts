@@ -74,6 +74,9 @@ export const ERROR_CODES = [
   "does_not_fit",
   "fsm_refused",
   "fsm_partly",
+  // The technician has begun the visit, so a dispatch move would leave his work on another day or with another
+  // technician.
+  "in_progress",
   // The no-show wait has not run out yet (src/policy/no-show.ts).
   "too_early_to_close",
   // A service-area change that would leave no pincode served at all, and every

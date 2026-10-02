@@ -1414,7 +1414,7 @@ Where a job in hand can go in the board's week, before ops pick a reason. Writes
 }
 ```
 
-**404**: not_found: no such live job
+**404**: not_found: no such live job, or one in progress or closed, which stays where it is
 
 ```json
 {
@@ -1466,7 +1466,7 @@ Request body:
 }
 ```
 
-**409**: clash: the technician already holds a job in that window on that date; on_leave: they are away that day; does_not_fit: the window is free but the visit has no room in it; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written)
+**409**: clash: the technician already holds a job in that window on that date; on_leave: they are away that day; does_not_fit: the window is free but the visit has no room in it; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit
 
 ```json
 {
@@ -1526,7 +1526,7 @@ Request body:
 }
 ```
 
-**409**: clash; on_leave; does_not_fit; superseded, with what changed in fields
+**409**: clash; on_leave; does_not_fit; superseded, with what changed in fields; in_progress: the technician has begun the visit. FSM has it in progress, or he closed it, and it stays where it is; or he has arrived or started, and it moves only with set_aside_work
 
 ```json
 {
@@ -3657,6 +3657,7 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
             "does_not_fit",
             "fsm_refused",
             "fsm_partly",
+            "in_progress",
             "too_early_to_close",
             "no_service_area",
             "service_exists",
@@ -5823,6 +5824,7 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
             "does_not_fit",
             "fsm_refused",
             "fsm_partly",
+            "in_progress",
             "too_early_to_close",
             "no_service_area",
             "service_exists",
@@ -7548,6 +7550,22 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
         }
       ],
       "description": "The latest move of this visit its client has not heard of: he has not agreed to WhatsApp, or the message was never sent. Ops call him, then POST /api/dispatch/moves/{id}/told."
+    },
+    "begun": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "arrived",
+            "started",
+            "closed"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "How far the technician has got, from the steps his phone sent rather than FSM's status: arrived (checked in), started, or closed (an outcome, a no-show among them). Null before he arrives. A visit he has arrived at or started moves only with set_aside_work; a closed one never does."
     }
   },
   "required": [
@@ -7563,7 +7581,8 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
     "window",
     "status",
     "notice_hours",
-    "untold"
+    "untold",
+    "begun"
   ],
   "additionalProperties": false
 }
@@ -7815,6 +7834,13 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
       "type": "string",
       "format": "date-time",
       "description": "The start the board showed the job with."
+    },
+    "set_aside_work": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "Ops were warned that the technician has arrived or started, and move the visit anyway: every step his phone sent on it is set aside, and the audit log names who chose it. Without it, such a visit answers 409 in_progress."
     }
   },
   "required": [

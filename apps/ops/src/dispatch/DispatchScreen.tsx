@@ -51,11 +51,15 @@ type Rooms =
   | { readonly state: "known"; readonly rooms: readonly Room[] }
   | { readonly state: "unknown" };
 
-/** A move in hand: the job, the window chosen for it, and whether it is being sent. */
+/**
+ * A move in hand: the job, the window chosen for it, whether it is being sent, and whether ops chose, after the
+ * drawer's warning, to set aside what the technician has done on it.
+ */
 interface Move {
   readonly job: Job;
   readonly to: Target | null;
   readonly sending: boolean;
+  readonly settingAside: boolean;
 }
 
 /** A line over the board: what a move did, or why it was refused. A call still to make carries its move. */
@@ -152,13 +156,14 @@ function staleWords(job: Job, code: string, now: Board | null): string {
   const copy = dispatch.landing;
   if (code === "not_found") return copy.errors.not_found;
   if (code === "fsm_partly") return copy.errors.fsm_partly;
+  if (code === "in_progress") return copy.errors.in_progress;
   const place = now === null ? null : placeOn(now, job);
   if (place?.unchanged === true) return copy.beingMoved(nameOf(job));
   return copy.superseded(nameOf(job), place?.words ?? copy.supersededGone);
 }
 
 /** Refusals that mean the job is no longer as the board had it: it is let go, and the board read again. */
-const STALE = new Set(["superseded", "not_found", "fsm_partly"]);
+const STALE = new Set(["superseded", "not_found", "fsm_partly", "in_progress"]);
 
 export function DispatchScreen() {
   const [query, setQuery] = useState<BoardQuery>({ from: null, city: null });
@@ -212,11 +217,11 @@ export function DispatchScreen() {
   }, []);
 
   const take = useCallback(
-    (job: Job, from: HTMLElement | null) => {
+    (job: Job, from: HTMLElement | null, settingAside = false) => {
       opener.current = from;
       setOpened(null);
       setNotice(null);
-      setMove({ job, to: null, sending: false });
+      setMove({ job, to: null, sending: false, settingAside });
       askRooms(job);
     },
     [askRooms],
@@ -274,7 +279,9 @@ export function DispatchScreen() {
       const landing: Landing = { technicianId: to.technician.technician_id, date: to.date, window: to.window, reason };
       const shown = shownOf(job);
       const answer: Answer<Moved> =
-        job.kind === "block" ? await api.move(idOf(job), landing, shown) : await api.assign(idOf(job), landing, shown);
+        job.kind === "block"
+          ? await api.move(idOf(job), landing, shown, move.settingAside)
+          : await api.assign(idOf(job), landing, shown);
 
       if (answer.ok) {
         setMove(null);
@@ -293,7 +300,7 @@ export function DispatchScreen() {
         return;
       }
       // Nothing was written: the job stays in hand, and the board asks again where it fits.
-      setMove({ job, to: null, sending: false });
+      setMove({ ...move, to: null, sending: false });
       setNotice({ tone: "refusal", text: refusalOf(job, to, answer.code), call: null });
       askRooms(job);
     },
@@ -367,6 +374,9 @@ export function DispatchScreen() {
           onMove={() => {
             take(opened, opener.current);
           }}
+          onMoveAnyway={() => {
+            take(opened, opener.current, true);
+          }}
           onTold={(moveId) => {
             setOpened(null);
             void told(moveId, opened.block.person?.name ?? nameOf(opened)).then(restore);
@@ -379,6 +389,7 @@ export function DispatchScreen() {
           onCancel={unpick}
           onSend={(reason) => void send(reason)}
           sending={picking.sending}
+          settingAside={picking.settingAside}
           to={picking.to}
         />
       )}

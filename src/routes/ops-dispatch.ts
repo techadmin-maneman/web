@@ -17,12 +17,13 @@ import { staffOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
+import type { AuditEntry } from "../domain/audit.ts";
 import { BOARD_DAYS, dispatchBoard, moveJob, recordToldByPhone, roomFor, type MoveInput } from "../domain/dispatch.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { json } from "../http/openapi.ts";
 import { indiaDate } from "../lib/india-time.ts";
-import { CLIENT_NOTICES, MOVE_REASONS } from "../policy/dispatch.ts";
+import { BEGUN, CLIENT_NOTICES, MOVE_REASONS } from "../policy/dispatch.ts";
 import { PAYMENT_BADGES } from "../policy/job-visibility.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 
@@ -70,6 +71,10 @@ const BlockSchema = z
     untold: z.union([z.object({ move_id: z.uuid(), starts_at: z.iso.datetime() }).strict(), z.null()]).openapi({
       description:
         "The latest move of this visit its client has not heard of: he has not agreed to WhatsApp, or the message was never sent. Ops call him, then POST /api/dispatch/moves/{id}/told.",
+    }),
+    begun: z.union([z.enum(BEGUN), z.null()]).openapi({
+      description:
+        "How far the technician has got, from the steps his phone sent rather than FSM's status: arrived (checked in), started, or closed (an outcome, a no-show among them). Null before he arrives. A visit he has arrived at or started moves only with set_aside_work; a closed one never does.",
     }),
   })
   .strict()
@@ -159,6 +164,10 @@ const MoveRequestSchema = z
     window: z.enum(BOOKING_WINDOWS).optional(),
     reason: z.enum(MOVE_REASONS),
     ...EXPECTED,
+    set_aside_work: z.literal(true).optional().openapi({
+      description:
+        "Ops were warned that the technician has arrived or started, and move the visit anyway: every step his phone sent on it is set aside, and the audit log names who chose it. Without it, such a visit answers 409 in_progress.",
+    }),
   })
   .strict()
   .openapi("DispatchMoveRequest");
@@ -196,7 +205,7 @@ const assignRoute = createRoute({
     403: errorResponse("access_required"),
     404: errorResponse("not_found: no such live job"),
     409: errorResponse(
-      "clash: the technician already holds a job in that window on that date; on_leave: they are away that day; does_not_fit: the window is free but the visit has no room in it; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written)",
+      "clash: the technician already holds a job in that window on that date; on_leave: they are away that day; does_not_fit: the window is free but the visit has no room in it; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit",
     ),
     502: errorResponse(
       "fsm_refused: FSM would not take it; nothing moved. fsm_partly: FSM took the technician and not the time; the job is read again from FSM",
@@ -214,7 +223,9 @@ const moveRoute = createRoute({
     400: errorResponse("invalid_request, including a move to the technician, day and window the job already has"),
     403: errorResponse("access_required"),
     404: errorResponse("not_found: no such live job"),
-    409: errorResponse("clash; on_leave; does_not_fit; superseded, with what changed in fields"),
+    409: errorResponse(
+      "clash; on_leave; does_not_fit; superseded, with what changed in fields; in_progress: the technician has begun the visit. FSM has it in progress, or he closed it, and it stays where it is; or he has arrived or started, and it moves only with set_aside_work",
+    ),
     502: errorResponse("fsm_refused; fsm_partly: FSM took the technician and not the time"),
   },
 });
@@ -246,7 +257,7 @@ const roomRoute = createRoute({
   responses: {
     200: { description: "Where it would land", ...json(RoomSchema) },
     403: errorResponse("access_required"),
-    404: errorResponse("not_found: no such live job"),
+    404: errorResponse("not_found: no such live job, or one in progress or closed, which stays where it is"),
   },
 });
 
@@ -307,6 +318,18 @@ export function registerOpsDispatch(app: App): void {
 
 type MoveRequest = z.infer<typeof MoveRequestSchema>;
 
+/** The audit entry of a move that sets aside what the technician has done, under whoever chose it; null otherwise. */
+function setAsideEntry(c: Context<AppEnv>, request: MoveRequest): AuditEntry | null {
+  if (request.set_aside_work !== true) return null;
+  return {
+    surface: "ops",
+    actor: staffOf(c),
+    action: "dispatch.work_set_aside",
+    subject: { kind: "appointment", id: request.appointment_id },
+    requestId: c.var.requestId,
+  };
+}
+
 /** Assigning and moving are the same write; only what ops change differs. */
 async function write(c: Context<AppEnv>, request: MoveRequest) {
   const { requestId, deps, config, log } = c.var;
@@ -320,6 +343,7 @@ async function write(c: Context<AppEnv>, request: MoveRequest) {
     reason: request.reason,
     actor: staff.id,
     expected: { technicianId: request.expected_technician_id, startsAt: request.expected_starts_at },
+    setAside: setAsideEntry(c, request),
   };
   const outcome = await moveJob(
     c.env.DB,
@@ -339,6 +363,7 @@ async function write(c: Context<AppEnv>, request: MoveRequest) {
     return c.json(errorBody("invalid_request", requestId, ["technician_id", "date", "window"]), 400);
   }
   if (outcome.kind === "no_technician") return c.json(errorBody("invalid_request", requestId, ["technician_id"]), 400);
+  if (outcome.kind === "begun") return c.json(errorBody("in_progress", requestId), 409);
   if (outcome.kind === "refused") return c.json(errorBody(outcome.reason, requestId), 409);
   if (outcome.kind === "fsm_refused" || outcome.kind === "fsm_partly") {
     log.warn("dispatch_move_refused_by_fsm", {

@@ -1672,6 +1672,7 @@ Request body:
             "does_not_fit",
             "fsm_refused",
             "fsm_partly",
+            "in_progress",
             "too_early_to_close",
             "no_service_area",
             "service_exists",
