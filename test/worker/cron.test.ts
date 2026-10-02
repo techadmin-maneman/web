@@ -3,7 +3,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CUT_SHORT_ALERT, finishRun, lastCompletedAt, startRun } from "../../src/domain/cron-runs.ts";
 import type { StaticConfig } from "../../src/guard.ts";
 import { createLogger } from "../../src/log.ts";
-import { CRON_CALLS, CRON_JOBS, runCron, runCronJobs, type CronJob } from "../../src/scheduled/cron.ts";
+import {
+  CRON_CALLS,
+  CRON_JOBS,
+  booksSyncOptions,
+  runCron,
+  runCronJobs,
+  type CronJob,
+} from "../../src/scheduled/cron.ts";
 import { LOCAL_CONFIG, NOW, captureLogs, fakeDependencies, fakeFetch } from "./helpers.ts";
 
 let logs: ReturnType<typeof captureLogs>;
@@ -406,3 +413,34 @@ function holding(db: D1Database, bytes: number): D1Database {
     },
   });
 }
+
+describe("the Books pass's options", () => {
+  const zohoBooks = {
+    clientId: "1000.BOOKSCLIENT",
+    clientSecret: "books-secret",
+    refreshToken: "1000.books-refresh",
+    accountsHost: "accounts.zoho.in",
+    apiHost: "www.zohoapis.in",
+    orgId: "60088931635",
+    refundAccountId: "bank-7",
+  };
+
+  it("takes the refund account from Books' own settings, whatever FSM is", () => {
+    for (const FSM_PROVIDER of ["zoho", "none"] as const) {
+      const config: StaticConfig = {
+        ...LOCAL_CONFIG,
+        environment: "staging",
+        providers: { ...LOCAL_CONFIG.providers, FSM_PROVIDER, BOOKS_PROVIDER: "zoho" },
+        settings: { ...LOCAL_CONFIG.settings, zohoBooks },
+      };
+      expect(booksSyncOptions(config), FSM_PROVIDER).toEqual({ refundAccountId: "bank-7", labelAsTest: true });
+    }
+  });
+
+  it("has no refund account without Books' settings, and labels nothing as a test in production", () => {
+    expect(booksSyncOptions({ ...LOCAL_CONFIG, environment: "production" })).toEqual({
+      refundAccountId: null,
+      labelAsTest: false,
+    });
+  });
+});

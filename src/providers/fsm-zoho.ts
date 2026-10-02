@@ -299,7 +299,6 @@ function contactFrom(record: z.infer<typeof Contact>): FsmContact {
 }
 
 export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDependencies): FsmProvider {
-  // FSM and Books share the FSM client's token (src/providers/zoho-http.ts).
   const request = createZohoRequester("fsm", settings, deps);
 
   /** What FSM answered a read; its body is null for FSM's empty 204. */

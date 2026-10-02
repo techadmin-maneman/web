@@ -6,7 +6,8 @@
 import { BOOKING_NOTICES } from "../config/notices.ts";
 import { agreedByBooking, GIVEN_BY_BOOKING, type GivenByBooking } from "../policy/booking.ts";
 import { auditStatementIfWritten } from "./audit.ts";
-import { consentRecordsOf, grantIfUndecided } from "./profile.ts";
+import { recordConsent } from "./consents.ts";
+import { consentRecordsOf } from "./profile.ts";
 
 export interface BookingTap {
   readonly personId: string;
@@ -36,13 +37,15 @@ export async function recordBookingConsents(db: D1Database, tap: BookingTap): Pr
   const decided = records.filter((record) => record.since !== null).map((record) => record.purpose);
 
   const statements = agreedByBooking(shown, decided).flatMap((purpose) => {
-    const grant = grantIfUndecided(db, {
-      personId: tap.personId,
+    const grant = recordConsent(db, {
+      person: { id: tap.personId },
       purpose,
-      noticeVersion: notices[purpose],
+      granted: true,
+      notice: notices[purpose],
       source: "app_booking",
+      rule: "if_undecided",
       ipHash: tap.ipHash,
-      now: tap.now,
+      givenAt: tap.now.toISOString(),
     });
     const audit = auditStatementIfWritten(
       db,

@@ -18,9 +18,7 @@ const SETTINGS: ZohoFsmSettings = {
   refreshToken: "1000.fsm-refresh",
   accountsHost: "accounts.zoho.in",
   apiHost: "www.zohoapis.in",
-  booksOrgId: "60088931635",
   webhookToken: null,
-  booksRefundAccountId: null,
 };
 
 const TOKEN = { [ZOHO_TOKEN_URL]: () => json({ access_token: "fsm-access-1", expires_in: 3600 }) };

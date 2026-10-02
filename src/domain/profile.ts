@@ -1,9 +1,8 @@
-// The client's profile: the address a visit goes to, and the five consents
-// they switch in the app (docs/decisions/0042-client-profile.md).
+// The client's profile: the address a visit goes to, and where the five consents
+// they switch in the app stand. Consents are written in src/domain/consents.ts.
 
-import { CURRENT_NOTICE } from "../config/notices.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
-import { CONSENT_PURPOSES, type AppSwitchSource, type ConsentPurpose, type ConsentSource } from "../policy/consents.ts";
+import { CONSENT_PURPOSES, type ConsentPurpose, type ConsentSource } from "../policy/consents.ts";
 import { FSM_STREET_MAX, fsmText } from "../lib/fsm-text.ts";
 
 /** Where a coordinate came from; the licence and the trust differ by source (ADR 0054). */
@@ -285,90 +284,6 @@ export async function consentRecordsOf(db: D1Database, personId: string): Promis
 export async function consentsOf(db: D1Database, personId: string): Promise<ConsentState[]> {
   const records = await consentRecordsOf(db, personId);
   return records.map(({ purpose, granted, since }) => ({ purpose, granted, since }));
-}
-
-/**
- * A switch is a new row: the consent record is append-only. The same answer again, under the same
- * notice, is not a new answer and writes nothing; a notice that has changed since makes it one,
- * because what the client agreed to has changed.
- *
- * The write settles it, rather than a read before it, so two taps on one Allow cannot both find
- * the purpose unswitched and both record it. The ledger is append-only by trigger, so a second
- * row could never be taken back afterwards (ADR 0058).
- *
- * The statement returns the row's date when it wrote one, and nothing when it did not. The row keeps which of the
- * app's screens made the switch, or none where the app did not say (docs/decisions/0094-where-a-consent-was-given.md).
- * Returns the row's ID too, for an audit entry written only with it.
- */
-export function switchConsent(
-  db: D1Database,
-  options: {
-    personId: string;
-    purpose: ConsentPurpose;
-    granted: boolean;
-    source: AppSwitchSource | null;
-    ipHash: string;
-    now: Date;
-  },
-): { readonly id: string; readonly statement: D1PreparedStatement } {
-  const id = crypto.randomUUID();
-  const statement = db
-    .prepare(
-      `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash, source)
-       SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8
-       WHERE NOT EXISTS (
-         SELECT 1 FROM (SELECT granted, notice_version FROM consents WHERE person_id = ?2 AND purpose = ?3
-                        ORDER BY created_at DESC, rowid DESC LIMIT 1)
-         WHERE granted = ?5 AND notice_version = ?4
-       )
-       RETURNING created_at`,
-    )
-    .bind(
-      id,
-      options.personId,
-      options.purpose,
-      CURRENT_NOTICE[options.purpose],
-      options.granted ? 1 : 0,
-      options.now.toISOString(),
-      options.ipHash,
-      options.source,
-    );
-  return { id, statement };
-}
-
-/**
- * A consent given, on the notice the client was shown, only while they have never decided on the purpose: a
- * purpose they have switched, either way, is left as they left it (ADR 0080). As with switchConsent, the write
- * settles it, so two taps at once record it once. Returns the row's ID, for an audit entry written only with it.
- */
-export function grantIfUndecided(
-  db: D1Database,
-  options: {
-    personId: string;
-    purpose: ConsentPurpose;
-    noticeVersion: string;
-    source: ConsentSource;
-    ipHash: string;
-    now: Date;
-  },
-): { readonly id: string; readonly statement: D1PreparedStatement } {
-  const id = crypto.randomUUID();
-  const statement = db
-    .prepare(
-      `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash, source)
-       SELECT ?1, ?2, ?3, ?4, 1, ?5, ?6, ?7
-       WHERE NOT EXISTS (SELECT 1 FROM consents WHERE person_id = ?2 AND purpose = ?3)`,
-    )
-    .bind(
-      id,
-      options.personId,
-      options.purpose,
-      options.noticeVersion,
-      options.now.toISOString(),
-      options.ipHash,
-      options.source,
-    );
-  return { id, statement };
 }
 
 /** "+91 98xxx x4417", as the design shows a number. */

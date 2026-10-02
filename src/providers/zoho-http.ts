@@ -1,5 +1,5 @@
 // One requester for every Zoho client (docs/decisions/0070-vendor-correctness.md):
-// the CRM on its own client, FSM and Books on the FSM client. Each request is
+// the CRM, FSM and Books each on a client of its own. Each request is
 // timed and logged by step, and a failed one becomes a ZohoError.
 //
 // The access token lasts an hour and is kept in D1 (`zoho_access_tokens`), so
@@ -51,8 +51,8 @@ export class ZohoError extends ProviderError {
   }
 }
 
-/** The two Zoho clients: the CRM's own, and FSM's, which Books shares. */
-export type ZohoClientName = "crm" | "fsm";
+/** The Zoho clients, each with its own access token. */
+export type ZohoClientName = "crm" | "fsm" | "books";
 
 export interface ZohoClient {
   readonly clientId: string;
