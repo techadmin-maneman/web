@@ -101,6 +101,11 @@ export const whatsapp = {
 export const heroFootage = {
   publish: false,
   video: "hero.mp4",
+  /**
+   * The same film for phones: its centre, upright, without sound, under 800 KB. Made from `video` with
+   * ffmpeg -i hero.mp4 -vf crop=406:720 -an -c:v libx264 -preset slow -crf 24 -movflags +faststart hero-phone.mp4
+   */
+  phoneVideo: "hero-phone.mp4",
   poster: "hero-poster.jpg",
   tag: "Placeholder footage",
 };

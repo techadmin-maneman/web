@@ -1,0 +1,61 @@
+{
+  "code": 0,
+  "message": "success",
+  "items": [
+    {
+      "item_id": "4242595000000034213",
+      "name": "Consultation",
+      "description": "Placeholder price: see docs/open-points.md",
+      "rate": 0,
+      "status": "active",
+      "product_type": "service",
+      "item_type": "sales",
+      "tax_percentage": 0
+    },
+    {
+      "item_id": "4242595000000034206",
+      "name": "First fit",
+      "description": "Placeholder price: see docs/open-points.md",
+      "rate": 30000,
+      "status": "active",
+      "product_type": "service",
+      "item_type": "sales",
+      "tax_percentage": 0
+    },
+    {
+      "item_id": "4242595000000034192",
+      "name": "Replacement",
+      "description": "Placeholder price: see docs/open-points.md",
+      "rate": 30000,
+      "status": "active",
+      "product_type": "service",
+      "item_type": "sales",
+      "tax_percentage": 0
+    },
+    {
+      "item_id": "4242595000000034199",
+      "name": "Service visit",
+      "description": "Placeholder price: see docs/open-points.md",
+      "rate": 2000,
+      "status": "active",
+      "product_type": "service",
+      "item_type": "sales",
+      "tax_percentage": 0
+    },
+    {
+      "item_id": "4242595000000034220",
+      "name": "Standard base",
+      "description": "Placeholder price: see docs/open-points.md",
+      "rate": 30000,
+      "status": "active",
+      "product_type": "goods",
+      "item_type": "sales",
+      "tax_percentage": 0
+    }
+  ],
+  "page_context": {
+    "page": 1,
+    "per_page": 200,
+    "has_more_page": false
+  }
+}
