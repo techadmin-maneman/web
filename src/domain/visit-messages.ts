@@ -181,8 +181,9 @@ export async function tooLateToSend(
     .prepare("SELECT window_start FROM appointments WHERE id = ?1")
     .bind(appointmentId)
     .first<{ window_start: string | null }>();
-  if (visit === null || visit.window_start === null) return null;
-  const visitDay = indiaDate(new Date(visit.window_start));
+  const windowStart = visit?.window_start ?? null;
+  if (windowStart === null) return null;
+  const visitDay = indiaDate(new Date(windowStart));
   if (visitDay <= indiaDate(now)) return "too late for a day-before reminder";
   return null;
 }

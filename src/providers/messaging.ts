@@ -35,8 +35,7 @@ export type BridgeFault = "no_instance" | "key_refused" | "logged_out" | "unreac
 
 /** Whether the provider can reach WhatsApp now; if not, why, and what it said. */
 export type Connection =
-  | { readonly open: true }
-  | { readonly open: false; readonly fault: BridgeFault; readonly detail: string };
+  { readonly open: true } | { readonly open: false; readonly fault: BridgeFault; readonly detail: string };
 
 export interface MessagingProvider {
   send(message: OutboundMessage): Promise<SendResult>;

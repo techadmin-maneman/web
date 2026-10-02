@@ -192,7 +192,9 @@ describe("messaging: sending a result", () => {
 
   it("fails a message the bridge still refuses on its last attempt, though it read as open", async () => {
     await queuedMessage();
-    await env.DB.prepare("UPDATE outbound_messages SET attempts = ?").bind(MAX_SEND_ATTEMPTS - 1).run();
+    await env.DB.prepare("UPDATE outbound_messages SET attempts = ?")
+      .bind(MAX_SEND_ATTEMPTS - 1)
+      .run();
     const { provider } = recordingProvider({ ok: false, transient: false, bridgeDown: true, detail: "HTTP 401" });
     const deps = fakeDependencies({ messaging: provider });
 
@@ -278,7 +280,12 @@ describe("messaging: the queue batch", () => {
     });
     const deliver = (each: ReturnType<typeof delivery>) =>
       handleMessagingBatch(
-        { queue: "mm-messaging-local", messages: [each], ackAll: vi.fn(), retryAll: vi.fn() } as unknown as MessageBatch,
+        {
+          queue: "mm-messaging-local",
+          messages: [each],
+          ackAll: vi.fn(),
+          retryAll: vi.fn(),
+        } as unknown as MessageBatch,
         env.DB,
         config(),
         deps,
@@ -342,7 +349,12 @@ describe("Evolution API", () => {
   });
 
   const sendImage = (evolution: MessagingProvider) =>
-    evolution.send({ to: "+919810000001", template: "tryon_result_v1", params: ["A"], mediaUrl: "https://x.test/r.png" });
+    evolution.send({
+      to: "+919810000001",
+      template: "tryon_result_v1",
+      params: ["A"],
+      mediaUrl: "https://x.test/r.png",
+    });
 
   it.each([
     [500, { error: { code: "INTERNAL_SERVER_ERROR" } }, true, "HTTP 500 INTERNAL_SERVER_ERROR"],

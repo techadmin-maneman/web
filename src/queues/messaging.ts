@@ -105,7 +105,9 @@ async function failAfterErrors(
     .first<{ kind: string }>();
   if (failed === null) return {};
   log.error("message_failed", { attempts: MAX_SEND_ATTEMPTS, detail });
-  await deps.alert(`Message ${messageId} (${failed.kind}) failed after ${String(MAX_SEND_ATTEMPTS)} attempts: ${detail}`);
+  await deps.alert(
+    `Message ${messageId} (${failed.kind}) failed after ${String(MAX_SEND_ATTEMPTS)} attempts: ${detail}`,
+  );
   return {};
 }
 
@@ -277,18 +279,12 @@ export async function sendMessage(
 
   const detail = scrubString(result.detail).slice(0, 300);
   if (result.bridgeDown === true && claim.attempts < MAX_SEND_ATTEMPTS) {
-    await db
-      .prepare("UPDATE outbound_messages SET last_error = ?2, sending_at = NULL WHERE id = ?1")
-      .bind(messageId, detail)
-      .run();
+    await keepQueued(db, messageId, detail);
     log.warn("message_waits_for_bridge", { attempts: claim.attempts, detail });
     return {};
   }
   if (result.transient && claim.attempts < MAX_SEND_ATTEMPTS) {
-    await db
-      .prepare("UPDATE outbound_messages SET last_error = ?2, sending_at = NULL WHERE id = ?1")
-      .bind(messageId, detail)
-      .run();
+    await keepQueued(db, messageId, detail);
     log.warn("message_send_retry", { attempts: claim.attempts, detail });
     return { retryAfterSeconds: RETRY_DELAY_SECONDS };
   }
@@ -300,6 +296,14 @@ export async function sendMessage(
   log.error("message_failed", { attempts: claim.attempts, detail });
   await deps.alert(`Message ${messageId} (${row.kind}) failed after ${String(claim.attempts)} attempts: ${detail}`);
   return {};
+}
+
+/** Lets the claim go, with why this try failed, for a later try to take. */
+async function keepQueued(db: D1Database, messageId: string, detail: string): Promise<void> {
+  await db
+    .prepare("UPDATE outbound_messages SET last_error = ?2, sending_at = NULL WHERE id = ?1")
+    .bind(messageId, detail)
+    .run();
 }
 
 /** The provider's answer. A throw, minting the image's link or sending, is a failure worth trying again. */

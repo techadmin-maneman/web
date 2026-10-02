@@ -336,10 +336,33 @@ describe("sweeper: try-on", () => {
     expect(queues.messages.sent).toEqual([{ message_id: "waiting", request_id: "sweeper" }]);
   });
 
+  it("asks the bridge only when a message is waiting, and not once the run has no call left", async () => {
+    const { bindings, queues } = sweepEnv();
+    const deps = fakeDependencies();
+    let asked = 0;
+    const connection = (): Promise<Connection> => {
+      asked += 1;
+      return Promise.resolve({ open: true });
+    };
+    const counting = { ...deps, messaging: { ...deps.messaging, connection } };
+
+    await sweep(bindings, counting, createLogger(), OPTIONS);
+    expect(asked).toBe(0);
+
+    await insertPerson("p", "+919810000001");
+    await queuedMessage("waiting", 30).run();
+    await sweep(bindings, counting, createLogger(), { ...OPTIONS, budget: createCallBudget(0) });
+    expect(asked).toBe(0);
+    expect(queues.messages.sent).toEqual([]);
+  });
+
   // PLAT-22: a message that never went was put back on the queue every five minutes for ever.
   it("fails a message still unsent a day after it was queued, and tells ops once a day", async () => {
     await insertPerson("p", "+919810000001");
-    await env.DB.batch([queuedMessage("day-old", 24 * 60 + 1, "HTTP 404 Not Found"), queuedMessage("hours-old", 23 * 60)]);
+    await env.DB.batch([
+      queuedMessage("day-old", 24 * 60 + 1, "HTTP 404 Not Found"),
+      queuedMessage("hours-old", 23 * 60),
+    ]);
     const { bindings, queues } = sweepEnv();
     const deps = fakeDependencies();
 
