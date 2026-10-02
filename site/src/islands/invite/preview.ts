@@ -30,5 +30,5 @@ export function sampleBooking(state: "booked" | "requested" | "expired"): Bookin
     invite: state === "expired" ? "expired" : "valid",
     one_visit: false,
   };
-  return { result, mobile: SAMPLE.mobile };
+  return { result, mobile: SAMPLE.mobile, code: null };
 }

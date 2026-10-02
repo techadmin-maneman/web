@@ -224,7 +224,7 @@ async function visitOf(db: D1Database, visitId: string): Promise<VisitRow | null
 const TAKES_A_CODE = new Set(["scheduled", "dispatched", "in_progress", "completed"]);
 
 /** A visit's code, entered on it or on the hold that booked it. */
-interface VisitCode {
+export interface VisitCode {
   readonly useId: string;
   readonly code: string;
   readonly terms: DiscountTerms;

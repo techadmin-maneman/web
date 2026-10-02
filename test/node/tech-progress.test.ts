@@ -48,6 +48,7 @@ const job = (over: Partial<Job> = {}, progress: Partial<Job["progress"]> = {}): 
   consumables: [],
   products: [],
   payment_link: null,
+  discount_code: null,
   profile: null,
   ...over,
 });
