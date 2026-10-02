@@ -143,7 +143,7 @@ Who is signed in, and the phone this session is bound to
 }
 ```
 
-**401**: session_required; device_revoked: ops revoked this phone, so drop the cached jobs
+**401**: session_required; device_revoked: ops revoked this phone, so drop the cached jobs; technician_inactive: ops switched him off, so drop the cards and set aside the work not yet sent
 
 ```json
 {
@@ -966,6 +966,8 @@ Request body:
             "out_of_order",
             "not_today",
             "already_started",
+            "technician_inactive",
+            "managed_in_fsm",
             "clash",
             "on_leave",
             "does_not_fit",
@@ -1238,6 +1240,11 @@ Request body:
 {
   "type": "object",
   "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Whose work the phone holds: it keeps work it set aside only for him."
+    },
     "name": {
       "type": "string"
     },
@@ -1280,6 +1287,7 @@ Request body:
     }
   },
   "required": [
+    "id",
     "name",
     "first_name",
     "initials",

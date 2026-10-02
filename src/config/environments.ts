@@ -104,6 +104,8 @@ export const PUBLIC_ORIGIN: Readonly<Record<EnvironmentName, string>> = {
 
 export const ZONE_NAME = "maneman.in";
 export const ZONE_ID = "d33891be281c088bf3e0e927d7ed20f9";
+/** Staging and production both run in this one account, and share its free allowances. */
+export const CLOUDFLARE_ACCOUNT_ID = "a2e185075b1b8eef3bee24b72f45ace3";
 
 /** Provider implementations selectable per environment. Production may not hold a stub. */
 export const PROVIDER_VARS = {

@@ -10,6 +10,7 @@
 // permits sending this result and nothing else (docs/decisions/0012-zoho-sync.md).
 
 import type { LossExtent } from "../config/booking.ts";
+import { recordConsent } from "./consents.ts";
 import type { Attribution } from "./leads.ts";
 import { recordEvent, type JobRow } from "./tryon.ts";
 
@@ -72,19 +73,27 @@ export async function recordClaim(db: D1Database, claim: NewClaim): Promise<stri
            ON CONFLICT (mobile_e164) DO UPDATE SET name = excluded.name`,
         )
         .bind(crypto.randomUUID(), at, mobileE164, claim.name),
-      db
-        .prepare(
-          `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash, source)
-           VALUES (?, ${personId}, 'result_delivery', ?, 1, ?, ?, 'try_on')`,
-        )
-        .bind(crypto.randomUUID(), mobileE164, claim.gateNotice, at, claim.ipHash),
+      recordConsent(db, {
+        person: { mobileE164 },
+        purpose: "result_delivery",
+        granted: true,
+        notice: claim.gateNotice,
+        source: "try_on",
+        rule: "always",
+        ipHash: claim.ipHash,
+        givenAt: at,
+      }).statement,
       // The photo consent was given before the upload; it is recorded now that we know who gave it.
-      db
-        .prepare(
-          `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash, source)
-           VALUES (?, ${personId}, 'tryon_photo', ?, 1, ?, ?, 'try_on')`,
-        )
-        .bind(crypto.randomUUID(), mobileE164, job.photo_consent_version, job.photo_consent_at, job.ip_hash),
+      recordConsent(db, {
+        person: { mobileE164 },
+        purpose: "tryon_photo",
+        granted: true,
+        notice: job.photo_consent_version,
+        source: "try_on",
+        rule: "always",
+        ipHash: job.ip_hash,
+        givenAt: job.photo_consent_at,
+      }).statement,
       db
         .prepare(
           `INSERT INTO leads (id, person_id, created_at, source, loss_extent, utm_source, utm_medium, utm_campaign,

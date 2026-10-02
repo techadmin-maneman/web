@@ -19,7 +19,7 @@ import { alertCeilingReached, takeFromCeiling } from "../domain/ceilings.ts";
 import { clientHistory } from "../domain/client-history.ts";
 import { clientTryOns, ownTryOnImage, TRY_ON_IMAGES, TRY_ON_TOKEN_PURPOSES } from "../domain/client-try-ons.ts";
 import { listVisits, ownPhotoKey, photoSets, visitDetail } from "../domain/client-visits.ts";
-import { VISIT_OUTCOMES } from "../domain/fsm-mirror.ts";
+import { VISIT_OUTCOMES } from "../domain/visit-status.ts";
 import { DISPUTE_RULINGS, NO_SHOW_DECISIONS } from "../policy/no-show.ts";
 import { ANGLES, PHASES } from "../domain/visit-photos.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
