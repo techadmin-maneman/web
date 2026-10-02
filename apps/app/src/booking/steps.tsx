@@ -191,7 +191,7 @@ export function ServiceStep(props: {
 }
 
 /** Later days, up to the last a visit may be booked on: asking for them, and whether that failed. */
-export interface LaterDays {
+interface LaterDays {
   readonly busy: boolean;
   readonly failed: boolean;
   readonly onShow: () => void;
