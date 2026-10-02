@@ -22,7 +22,7 @@ interface GrantRow {
   remaining: number;
 }
 
-/** SQL for the person's grants still in date, with what each has left. Its arguments are the statement's placeholders. */
+/** SQL for the person's grants still in date, with what each has left; its arguments are placeholders. */
 const liveGrantsSql = (personId: string, now: string) =>
   `SELECT g.id, g.expires_at,
      g.visits + COALESCE((SELECT SUM(e.visits) FROM credit_ledger e WHERE e.grant_id = g.id), 0) AS remaining
@@ -86,7 +86,7 @@ function withoutPromised(grants: readonly GrantRow[], promised: number): GrantRo
   return left;
 }
 
-/** spendableCredits as SQL, for a statement that must decide on it as it writes. Its arguments are the statement's placeholders. */
+/** spendableCredits as SQL, for a statement that decides on it as it writes; its arguments are placeholders. */
 export const spendableCreditsSql = (personId: string, now: string, exceptHoldId: string): string =>
   `((SELECT COALESCE(SUM(remaining), 0) FROM (${liveGrantsSql(personId, now)}) WHERE remaining > 0)
     - (SELECT COUNT(*) FROM slot_holds WHERE person_id = ${personId} AND ${PROMISED_CREDIT} AND id IS NOT ${exceptHoldId}))`;
@@ -124,35 +124,36 @@ export async function redeemCredit(
   appointmentId: string,
   now: Date,
 ): Promise<D1PreparedStatement | null> {
-  return redeemFor(db, { personId, now, visit: "?4", visitKey: appointmentId });
-}
-
-/**
- * redeemCredit for the visit FSM knows as `fsmId`, read from the mirror as the statement runs: for the batch that
- * writes the visit to the mirror, after the statement that does.
- */
-export async function redeemCreditForFsmVisit(
-  db: D1Database,
-  personId: string,
-  fsmId: string,
-  now: Date,
-): Promise<D1PreparedStatement | null> {
-  return redeemFor(db, { personId, now, visit: "(SELECT id FROM appointments WHERE fsm_id = ?4)", visitKey: fsmId });
-}
-
-/** The redeem for the visit `visit` names in SQL, given ?4 = `visitKey`. */
-async function redeemFor(
-  db: D1Database,
-  input: { personId: string; now: Date; visit: string; visitKey: string },
-): Promise<D1PreparedStatement | null> {
-  const [grant] = await liveGrants(db, input.personId, input.now);
+  const [grant] = await liveGrants(db, personId, now);
   if (grant === undefined) return null;
   return db
     .prepare(
       `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
-       VALUES (?1, ?2, 'redeem', -1, ?3, 'appointment', ${input.visit}, ?5) ON CONFLICT DO NOTHING`,
+       VALUES (?1, ?2, 'redeem', -1, ?3, 'appointment', ?4, ?5) ON CONFLICT DO NOTHING`,
     )
-    .bind(crypto.randomUUID(), input.personId, grant.id, input.visitKey, input.now.toISOString());
+    .bind(crypto.randomUUID(), personId, grant.id, appointmentId, now.toISOString());
+}
+
+/**
+ * redeemCredit for the visit a booking is booked as, for the batch that books it, placed after the statement that
+ * does: it writes nothing if that statement booked nothing.
+ */
+export async function redeemCreditForBooking(
+  db: D1Database,
+  booking: { readonly holdId: string; readonly personId: string },
+  now: Date,
+): Promise<D1PreparedStatement | null> {
+  const [grant] = await liveGrants(db, booking.personId, now);
+  if (grant === undefined) return null;
+  // The WHERE clause also keeps SQLite from reading ON CONFLICT as a join's ON.
+  return db
+    .prepare(
+      `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
+       SELECT ?1, ?2, 'redeem', -1, ?3, 'appointment', appointment_id, ?5
+       FROM slot_holds WHERE id = ?4 AND state = 'booked' AND appointment_id IS NOT NULL
+       ON CONFLICT DO NOTHING`,
+    )
+    .bind(crypto.randomUUID(), booking.personId, grant.id, booking.holdId, now.toISOString());
 }
 
 /** Why ops put a balance right by hand: a credit given or taken in error, or visits given to make up for something. */

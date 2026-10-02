@@ -37,7 +37,7 @@ import { TRIES_STOPPED, triesStopped } from "../policy/held-bookings.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import type { AlertOnce } from "./alerts.ts";
 import { auditStatement, auditStatementIfBooked, type AuditEntry } from "./audit.ts";
-import { redeemCreditForFsmVisit, spendableCreditsSql } from "./credits.ts";
+import { redeemCreditForBooking, spendableCreditsSql } from "./credits.ts";
 import { itemForService } from "./fsm-catalogue.ts";
 import { fsmContactOf, type Place } from "./fsm-contacts.ts";
 import { toLinkAlert, toLinkAlertKey } from "./held-bookings.ts";
@@ -390,7 +390,7 @@ async function bookNewVisit(
 ): Promise<Confirmed> {
   const workOrder = await workOrderFor(db, fsm, hold, now, options);
   const appointmentId = hold.fsm_appointment_id ?? (await appointmentFor(db, fsm, hold, workOrder, options));
-  const redeem = hold.use_credit === 1 ? await redeemCreditForFsmVisit(db, hold.person_id, appointmentId, now) : null;
+  const redeem = await creditSpentBy(db, hold, now);
 
   // FSM's webhook may have mirrored the appointment already; either way the visit is the one with its FSM ID. Its
   // tier is the hold's whatever the mirror read from its item, which may be its kind's where FSM had none of its own,
@@ -455,8 +455,14 @@ async function bookNewVisit(
   return "booked";
 }
 
+/** The redeem of the credit a credit booking spends, for the batch that books it; null when it spends none. */
+async function creditSpentBy(db: D1Database, hold: HoldRow, now: Date): Promise<D1PreparedStatement | null> {
+  if (hold.use_credit !== 1) return null;
+  return redeemCreditForBooking(db, { holdId: hold.id, personId: hold.person_id }, now);
+}
+
 /** A visit a credit was to pay for, booked when the client had none left: it stands, and ops decide what to charge. */
-async function alertNoCreditLeft(hold: HoldRow, options: ConfirmOptions): Promise<void> {
+async function alertNoCreditLeft(hold: HoldRow, options: Omit<ConfirmOptions, "alongside">): Promise<void> {
   (options.log ?? createLogger()).warn("credit_visit_without_credit", { hold_id: hold.id });
   await options.alertOnce?.({
     key: `credit_visit_without_credit:${hold.id}`,
@@ -997,13 +1003,15 @@ export async function bookAsVisit(
   if (!(await takeLease(db, hold.id, now))) return { kind: "being_booked" };
 
   const leased = (await holdOf(db, hold.id)) ?? hold;
+  let redeem: D1PreparedStatement | null;
   try {
     if (await paymentGone(db, leased)) {
       const released = auditStatement(db, releaseEntry(options.audit), now);
       await giveBack(db, payments, leased.id, now, "its payment was refunded", [released]);
       return { kind: "given_back" };
     }
-    await db.batch(linkStatements(db, leased, visit.id, now, options.audit));
+    redeem = await creditSpentBy(db, leased, now);
+    await db.batch([...linkStatements(db, leased, visit.id, now, options.audit), ...(redeem === null ? [] : [redeem])]);
   } catch (error) {
     await releaseLease(db, hold.id);
     throw error;
@@ -1015,6 +1023,7 @@ export async function bookAsVisit(
     await releaseLease(db, hold.id);
     return { kind: "not_the_visit" };
   }
+  if (booked.use_credit === 1 && redeem === null) await alertNoCreditLeft(booked, options);
   await afterBooked(db, fsm, booked, now, options);
   const note = `${options.labelAsTest ? "Staging test: " : ""}Booked by hand as another work order; not needed.`;
   return {
