@@ -12436,7 +12436,7 @@
         }
       },
       "post": {
-        "summary": "A price from the date it applies. A change is a new row, so nothing already invoiced moves",
+        "summary": "A price from the date it applies, tomorrow at the earliest. A change is a new row, so nothing sold moves",
         "requestBody": {
           "required": true,
           "content": {
@@ -12471,7 +12471,7 @@
             }
           },
           "400": {
-            "description": "invalid_request: fields names what was refused, tier where no service of the kind has it; service_retired: the service is retired by the day it would apply from",
+            "description": "invalid_request: fields names what was refused, valid_from when it is before tomorrow, tier where no service of the kind has it; service_retired: the service is retired by the day it would apply from",
             "content": {
               "application/json": {
                 "schema": {
@@ -12495,7 +12495,7 @@
     },
     "/api/prices/correct": {
       "post": {
-        "summary": "Correct a price still to come: take it back and set its replacement, from any day from today, at once",
+        "summary": "Correct a price still to come: take it back and set its replacement, from tomorrow or later, at once",
         "requestBody": {
           "required": true,
           "content": {

@@ -2026,8 +2026,8 @@ export const settings = {
   services: {
     title: "Services and prices",
     note:
-      "What clients can book, kind by kind. A price applies from the day you give it and never before, so nothing " +
-      "already sold moves. Each service reaches FSM's catalogue as its own item.",
+      "What clients can book, kind by kind. A new price applies from tomorrow at the earliest, so a price already " +
+      "quoted never moves. Each service reaches FSM's catalogue as its own item.",
     /** The four kinds, as the rest of the console names them. */
     kinds: dispatch.typeNames,
     /** Under First fit: its services are the hair systems clients choose from, and nothing stands in for them. */
@@ -2091,7 +2091,7 @@ export const settings = {
       gst: "GST",
       gstHint: (max: number) => `A whole percentage, 0 to ${String(max)}.`,
       from: "Applies from",
-      fromHint: "Today or a day after it.",
+      fromHint: "Tomorrow or later.",
       setPrice: "Set this price",
       renameTitle: (name: string) => `Rename ${name}`,
       name: "Name",
@@ -2151,7 +2151,7 @@ export const settings = {
       order: "The order has changed since the page was read. Reload to see it as it stands.",
       amount_ex_gst: "A price is in whole rupees, inside the range under the field. Nothing was changed.",
       gst_percent: "GST is a whole percentage, inside the range under the field. Nothing was changed.",
-      valid_from: "A price applies from today or a day after it. Nothing was changed.",
+      valid_from: "A new price applies from tomorrow at the earliest. Nothing was changed.",
       was_valid_from: "That price applies already, so it stays in the book.",
       service_exists: "Another service already has that name, or this kind that code. Nothing was changed.",
       last_of_kind:
