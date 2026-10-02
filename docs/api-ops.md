@@ -1685,7 +1685,7 @@ A client's pieces: code, base, fitted date, supplier lot, replacement due and an
 
 ### GET /api/technicians
 
-Active technicians, the phones they have logged in on, and the leave they are down for
+Active technicians, the phones they have logged in on and their leave, and those switched off
 
 **200**: The technicians
 
@@ -1696,6 +1696,50 @@ Active technicians, the phones they have logged in on, and the leave they are do
 ```
 
 **403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/technicians
+
+Add a technician. His number signs in to the technician app at once
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/NewTechnician"
+}
+```
+
+**201**: Added
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianId"
+}
+```
+
+**400**: invalid_request: no name, or not an Indian mobile
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required, or not_permitted: changing a technician asks Operations MANAGE
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: number_in_use: another active technician signs in with that number
 
 ```json
 {
@@ -2030,6 +2074,142 @@ A day's money: what was collected, what went back, and each charge kept or ruled
 ```
 
 **403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### PATCH /api/technicians/{id}
+
+Change a technician's name, number or zone
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianChange"
+}
+```
+
+**200**: Changed
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianId"
+}
+```
+
+**400**: invalid_request: nothing to change, no name, or not an Indian mobile
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required, or not_permitted: changing a technician asks Operations MANAGE
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such technician
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: number_in_use: another active technician signs in with that number; managed_in_fsm: FSM lists this technician, so he is changed there while FSM is the record
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/technicians/{id}/deactivate
+
+Switch a technician off: he is signed out at once, and his visits still to come are unassigned
+
+**200**: Switched off
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianDeactivated"
+}
+```
+
+**403**: access_required, or not_permitted: changing a technician asks Operations MANAGE
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such technician
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: managed_in_fsm: FSM lists this technician, so he is changed there while FSM is the record
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/technicians/{id}/reactivate
+
+Switch a technician back on, so he can sign in again
+
+**200**: Switched on
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "active": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
+    }
+  },
+  "required": [
+    "active"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required, or not_permitted: changing a technician asks Operations MANAGE
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such technician
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: number_in_use: another active technician signs in with his number now; managed_in_fsm: FSM lists this technician, so he is changed there while FSM is the record
 
 ```json
 {
@@ -3828,6 +4008,8 @@ Request body:
             "out_of_order",
             "not_today",
             "already_started",
+            "technician_inactive",
+            "managed_in_fsm",
             "clash",
             "on_leave",
             "does_not_fit",
@@ -6007,6 +6189,8 @@ Request body:
             "out_of_order",
             "not_today",
             "already_started",
+            "technician_inactive",
+            "managed_in_fsm",
             "clash",
             "on_leave",
             "does_not_fit",
@@ -7511,6 +7695,31 @@ Request body:
                 "type": "null"
               }
             ]
+          },
+          "was_technician": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The technician the job is still on, who was switched off and so has no row; null for a job nobody holds. A move of it names him as the expected technician."
           }
         },
         "required": [
@@ -7525,7 +7734,8 @@ Request body:
           "starts_at",
           "asked_window",
           "offered_window",
-          "date"
+          "date",
+          "was_technician"
         ],
         "additionalProperties": false
       }
@@ -8458,6 +8668,21 @@ Request body:
               }
             ]
           },
+          "mobile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The number he signs in with, +91 and ten digits; null where none is recorded."
+          },
+          "editable": {
+            "type": "boolean",
+            "description": "Whether ops change him here. While FSM is the record of field work, a technician FSM lists is changed in FSM; one ops added is theirs."
+          },
           "devices": {
             "type": "array",
             "items": {
@@ -8514,15 +8739,67 @@ Request body:
           "name",
           "initials",
           "zone",
+          "mobile",
+          "editable",
           "devices",
           "leave"
         ],
         "additionalProperties": false
       }
+    },
+    "switched_off": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "zone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mobile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The number he signs in with, +91 and ten digits; null where none is recorded."
+          },
+          "editable": {
+            "type": "boolean",
+            "description": "Whether ops change him here. While FSM is the record of field work, a technician FSM lists is changed in FSM; one ops added is theirs."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "zone",
+          "mobile",
+          "editable"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Technicians switched off, by name: they cannot sign in, and nothing is booked on them."
     }
   },
   "required": [
-    "technicians"
+    "technicians",
+    "switched_off"
   ],
   "additionalProperties": false
 }
@@ -9245,6 +9522,163 @@ Request body:
     "visit_started_at",
     "change",
     "technician"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianId
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    }
+  },
+  "required": [
+    "id"
+  ],
+  "additionalProperties": false
+}
+```
+
+### NewTechnician
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "description": "His whole name, as clients see it."
+    },
+    "mobile": {
+      "type": "string",
+      "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
+      "description": "The Indian mobile he signs in with; his sign-in code goes to it on WhatsApp."
+    },
+    "zone": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Where he mostly works, in ops' words; null for none."
+    }
+  },
+  "required": [
+    "name",
+    "mobile"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianChange
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "description": "His whole name, as clients see it."
+    },
+    "mobile": {
+      "type": "string",
+      "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
+      "description": "The Indian mobile he signs in with; his sign-in code goes to it on WhatsApp."
+    },
+    "zone": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Where he mostly works, in ops' words; null for none."
+    }
+  },
+  "additionalProperties": false,
+  "description": "Only what is sent changes."
+}
+```
+
+### TechnicianDeactivated
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "visits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "appointment_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "consultation",
+                  "first_fit",
+                  "service",
+                  "replacement"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "client": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "appointment_id",
+          "starts_at",
+          "type",
+          "client"
+        ],
+        "additionalProperties": false
+      },
+      "description": "His visits still to come, now unassigned: each waits in the dispatch board's tray for ops to give it to another. A visit already begun stays his. Empty when he was switched off already."
+    }
+  },
+  "required": [
+    "visits"
   ],
   "additionalProperties": false
 }

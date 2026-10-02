@@ -168,6 +168,8 @@ export const dispatch = {
     notAsked: "Asked · not recorded",
     /** The brief's "referral source": who invited the client, where someone did. */
     referred: (name: string) => `Referred by ${name}`,
+    // PLACEHOLDER: a job still on a technician who was switched off, which no board draws.
+    was: (name: string) => `Was ${name}'s · switched off`,
     /** Beneath the tray: where the asked window comes from, and why some rows have none. */
     same: "Asked is what the client picked on their booking. A visit booked without one says so.",
     // PLACEHOLDER: the board draws four waiting and no empty tray.
