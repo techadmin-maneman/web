@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/adr-index.test.ts` fails until it is run after a record is added or its status changes. The next free number is 0109.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/adr-index.test.ts` fails until it is run after a record is added or its status changes. The next free number is 0111.
 
 | ADR | Decision | Date | Status | Changed by |
 | --- | --- | --- | --- | --- |
@@ -112,6 +112,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0106](0106-a-clients-hair-profile.md) | A client's hair profile: the fit spec and their history | 2026-10-01 | accepted, on the owner's rulings of 1 October 2026 |  |
 | [0107](0107-referral-rewards-in-the-console.md) | What a referral earns, set in the console, each side apart | 2026-10-01 | accepted, on the owner's ruling of 1 October 2026 |  |
 | [0108](0108-discount-codes.md) | Discount codes | 2026-10-01 | accepted, on the owner's rulings of 1 October 2026 |  |
+| [0110](0110-field-work-without-fsm.md) | Field work without Zoho FSM | 2026-10-02 | accepted, on the owner's ruling of 2 October 2026 |  |
 
 ## Records beside them
 

@@ -74,11 +74,19 @@ const LATEST = [
      VALUES ('tl1', 't1', '2026-10-02', '2026-10-03', 'ops@example.com', '${AT}')`,
 ];
 
+/** The Zoho tokens in use, held in the one table every client's token went to. */
+const ZOHO = [
+  `INSERT INTO zoho_access_tokens (client, access_token, expires_at, refreshing_until)
+     VALUES ('crm', 'a-token', '2026-09-21T07:30:00.000Z', '${AT}')`,
+  `INSERT INTO zoho_access_tokens (client, access_token, expires_at) VALUES ('fsm', 'b-token', '2026-09-21T07:30:00.000Z')`,
+];
+
 /** Each set of rows goes in straight after the migration that creates the last of its tables. */
 const SEEDS = [
   { after: "0003", rows: PHASE_1 },
   { after: "0027", rows: PHASE_2 },
   { after: "0034", rows: LATEST },
+  { after: "0041", rows: ZOHO },
 ] as const;
 
 /** The table each seeded row is in, and how many rows it gets. */
@@ -133,6 +141,22 @@ describe("the migrations, against a database that is in use", () => {
     }
     const visit = db.prepare("SELECT outcome FROM visits WHERE appointment_id = 'ap1'").get();
     expect(visit).toEqual({ outcome: "done" });
+    expect(db.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
+    db.close();
+  });
+
+  it("takes a visit booked without FSM, under its own ID, for a client with a Books customer", () => {
+    const db = migrate();
+    db.exec(
+      `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status, synced_at)
+       VALUES ('ap2', 'ap2', 'p2', 'service', '2026-10-22T03:30:00.000Z', '2026-10-22T05:00:00.000Z', 't1',
+               'scheduled', '${AT}')`,
+    );
+    db.exec("UPDATE people SET books_customer_id = 'customer-2' WHERE id = 'p2'");
+    const booked = db.prepare("SELECT fsm_id, fsm_status, fsm_modified_at FROM appointments WHERE id = 'ap2'").get();
+    expect(booked).toEqual({ fsm_id: "ap2", fsm_status: null, fsm_modified_at: null });
+    const mirrored = db.prepare("SELECT fsm_status, fsm_modified_at FROM appointments WHERE id = 'ap1'").get();
+    expect(mirrored).toEqual({ fsm_status: "Completed", fsm_modified_at: AT });
     expect(db.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
     db.close();
   });

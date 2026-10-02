@@ -45,7 +45,7 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "Each address a client has given, in the app or to ops on the phone, who then saved it for them (`given_to_staff`). The current one has `replaced_at` empty; earlier ones stay for the visits booked to them (ADR 0042, ADR 0054, ADR 0092).",
   alerts: "One row per alert while it is open, kept once it is resolved; raising it again counts it (ADR 0067).",
   appointments:
-    "The mirror of FSM's appointments: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice (ADR 0032).",
+    "Each visit, mirrored from FSM or booked without it: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice. `fsm_id` is FSM's ID for a visit FSM holds, otherwise the row's own (ADR 0032, ADR 0110).",
   audit_log:
     "Every ops action that reads or changes a client's data, and who took it. An entry is never changed (ADR 0031).",
   checkins:
@@ -109,11 +109,11 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "The Razorpay payment link a consultation and fit in one visit is paid by once the client is fitted: one a visit, the product and its price, when Razorpay made and texted it, and the payment that paid it (ADR 0105).",
   payments: "The mirror of Razorpay's payments, and where each stands in Books (ADR 0044).",
   people:
-    "One row per person, keyed by mobile number. D1 owns the identity; the CRM's ID is only a reference (ADR 0011).",
+    "One row per person, keyed by mobile number. D1 owns the identity; the CRM's and Books' IDs are only references (ADR 0011, ADR 0110).",
   photo_sets: "A visit's set of photographs, before or after (ADR 0028).",
   photos: "One photograph of a set, by its angle, and where it and its thumbnail are kept in R2 (ADR 0028, ADR 0093).",
   pieces:
-    "The mirror of FSM's assets: each piece fitted, its base and lot, the day it was fitted and the day it falls due, and a failure with its reason (ADR 0032).",
+    "Each piece fitted, its base and lot, the day it was fitted and the day it falls due, and a failure with its reason. `fsm_id` is FSM's ID for a piece mirrored from FSM, otherwise the row's own (ADR 0032, ADR 0110).",
   price_book:
     "Every price from its date, and the only source of prices; an old row stays for what was sold under it (ADR 0045, ADR 0061).",
   razorpay_events: "Each Razorpay webhook event, once, by its event ID (ADR 0044).",
@@ -124,7 +124,7 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   serviceable_pincodes:
     "Every NCR pincode, its area and city, and whether and since when we serve it (ADR 0048, ADR 0061).",
   services:
-    "What clients may book: each kind of visit's services, their names, lengths and order, when each is retired, and its item in FSM's catalogue; the price book prices each by its kind and tier (ADR 0085).",
+    "What clients may book: each kind of visit's services, their names, lengths and order, when each is retired, and its item in FSM's catalogue and in Books; the price book prices each by its kind and tier (ADR 0085, ADR 0110).",
   sessions:
     "The client app's and the technician app's sessions: whose, from which device, and when each ends or was revoked (ADR 0029, ADR 0052).",
   slot_claims:
@@ -147,7 +147,7 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   technician_devices: "The phones technicians work from, each bound to a session and revocable by ops (ADR 0052).",
   technician_leave: "A technician's leave in whole days, which the clash check reads beside `slot_claims` (ADR 0062).",
   technicians:
-    "The mirror of FSM's technicians: name, initials, mobile number and zone; and on staging the few written by hand for a test, which the sync leaves alone (ADR 0032, ADR 0052).",
+    "The mirror of FSM's technicians: name, initials, mobile number and zone; and on staging the few written by hand for a test, which the sync leaves alone. `fsm_id` is FSM's ID for a technician FSM holds, otherwise one of ours (ADR 0032, ADR 0052, ADR 0110).",
   tryon_jobs: "One try-on render: the photograph, the look, the provider's job and the result (ADR 0014, ADR 0015).",
   tryon_sessions:
     "The try-on gate's session, which showed a visitor their result (ADR 0014); written no more since the look goes to WhatsApp only (ADR 0104).",
@@ -157,7 +157,7 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   waitlist_entries: "Someone waiting for us to reach their pincode, and whether they were told it launched (ADR 0048).",
   webhook_inbox: "FSM's webhook deliveries, each kept once (ADR 0032).",
   zoho_access_tokens:
-    "Each Zoho client's access token, and the lease one caller holds while it asks for a new one (ADR 0070).",
+    "Each Zoho client's access token, the CRM's, FSM's and Books', and the lease one caller holds while it asks for a new one (ADR 0070, ADR 0110).",
   zoho_token: "The CRM's access token before migration 0041; unread since, and dropped later (open point 90).",
   zoho_tokens: "FSM's and Books' access token before migration 0041; unread since, and dropped later (open point 90).",
 };
