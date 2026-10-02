@@ -285,7 +285,8 @@
   color: var(--ink);
 }
 
-.invoiceLine {
+.invoiceLine,
+.cancelled {
   margin: 0;
   font-size: var(--fs-16);
   line-height: var(--lh-155);

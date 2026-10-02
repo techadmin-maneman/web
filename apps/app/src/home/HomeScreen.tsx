@@ -25,7 +25,7 @@ import styles from "./home.module.css";
 export function HomeScreen() {
   const { me, offline } = useSession();
   return (
-    <Shell header={{ kind: "home" }} tab="/">
+    <Shell header={{ kind: "home" }} tab="/" kept>
       <div className={styles.home}>
         <HomeBody me={me} offline={offline} />
         {me.credits !== null && <CreditTile credits={me.credits} />}

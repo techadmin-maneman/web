@@ -6,9 +6,10 @@
 // A visit may be booked from tomorrow as far ahead as ops' horizon, 45 days to
 // begin with, and a first fit no sooner than ops' lead time after the
 // consultation (docs/decisions/0086-the-next-visit-is-offered.md). The strip
-// is 14 days from the day asked for, within those.
+// is 14 days from the day asked for, within those, and the app asks for later
+// ones up to the last.
 //
-//   GET    /api/availability?type=&tier=&from=   14 days of three windows, and who could come
+//   GET    /api/availability?type=&tier=&from=   14 days of the windows the visit can start in, and who could come
 //   POST   /api/holds                      hold a window
 //   GET    /api/holds/:id                  a hold: lapsed, paid, or booked as a visit
 //   DELETE /api/holds/:id                  let it go
@@ -117,6 +118,9 @@ const AvailabilitySchema = z
     service: ServiceSchema.openapi({ description: "The service the windows are for: a move's is its visit's." }),
     price: PriceSchema.openapi({ description: "The first day's price." }),
     regular: z.union([TechnicianSchema, z.null()]).openapi({ description: "Whoever did the client's latest visit." }),
+    last: z.iso
+      .date()
+      .openapi({ description: "The last day this visit may be booked on: later days are asked for up to it." }),
     days: z.array(
       z
         .object({
@@ -498,6 +502,7 @@ export function registerClientBooking(app: App): void {
         service: serviceBody(service),
         price,
         regular: regular === undefined ? null : { name: regular.name, initials: regular.initials },
+        last: range.last,
         days: await Promise.all(strip.map(async (day) => ({ ...day, price: await priceOn(day.date) }))),
       },
       200,
