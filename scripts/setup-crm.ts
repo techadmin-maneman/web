@@ -6,8 +6,9 @@
 //   node --env-file=.env.crm-staging scripts/setup-crm.ts --check   read-only
 //   node --env-file=.env.crm-staging scripts/setup-crm.ts           creates what is missing
 //
-// The file holds ZOHO_CLIENT_ID, ZOHO_CLIENT_SECRET, ZOHO_REFRESH_TOKEN,
-// ZOHO_ACCOUNTS_HOST and ZOHO_API_HOST. The refresh token's scope must include
+// The file holds ZOHO_CLIENT_ID, ZOHO_CLIENT_SECRET, ZOHO_SCRIPTS_REFRESH_TOKEN,
+// ZOHO_ACCOUNTS_HOST and ZOHO_API_HOST: the scripts' own refresh token, never the
+// Worker's (scripts/lib/zoho-script-token.ts). Its scope must include
 // ZohoCRM.settings.fields.ALL. No secret is printed.
 //
 // Zoho names a new field itself, from its label: "D1 Person ID" becomes
@@ -19,6 +20,7 @@ import { LOSS_EXTENT_NAMES, WINDOW_NAMES } from "../src/config/booking.ts";
 import { BOOKED_WINDOW_NAMES, REFERRAL_LEAD_SOURCE } from "../src/config/crm.ts";
 import { LEAD_STATUSES } from "../src/providers/crm.ts";
 import { LEAD_SOURCE_NAMES } from "../src/providers/zoho-crm.ts";
+import { refreshTokenForScript } from "./lib/zoho-script-token.ts";
 
 interface NewField {
   /** The label Zoho shows, chosen so that the API name it derives is `apiName`. */
@@ -72,7 +74,10 @@ interface ZohoField {
   unique?: Record<string, unknown>;
 }
 
-const { values: options } = parseArgs({ options: { check: { type: "boolean", default: false } } });
+// --use-worker-token is read by refreshTokenForScript; it is named here so the parser takes it.
+const { values: options } = parseArgs({
+  options: { check: { type: "boolean", default: false }, "use-worker-token": { type: "boolean", default: false } },
+});
 
 function required(name: string): string {
   const value = process.env[name]?.trim() ?? "";
@@ -93,7 +98,7 @@ function report(ok: boolean, check: string, detail: string): void {
 
 async function accessToken(): Promise<string> {
   const query = new URLSearchParams({
-    refresh_token: required("ZOHO_REFRESH_TOKEN"),
+    refresh_token: refreshTokenForScript("crm"),
     client_id: required("ZOHO_CLIENT_ID"),
     client_secret: required("ZOHO_CLIENT_SECRET"),
     grant_type: "refresh_token",

@@ -6,11 +6,13 @@
 //   node --env-file=.env.fsm-staging scripts/setup-fsm.ts           creates what is missing
 //
 // The file holds ZOHO_FSM_CLIENT_ID, ZOHO_FSM_CLIENT_SECRET,
-// ZOHO_FSM_REFRESH_TOKEN, ZOHO_FSM_ACCOUNTS_HOST, ZOHO_FSM_API_HOST and
-// ZOHO_BOOKS_ORG_ID. No secret is printed.
+// ZOHO_FSM_SCRIPTS_REFRESH_TOKEN (the scripts' own, never the Worker's:
+// scripts/lib/zoho-script-token.ts), ZOHO_FSM_ACCOUNTS_HOST, ZOHO_FSM_API_HOST
+// and ZOHO_BOOKS_ORG_ID. No secret is printed.
 
 import { parseArgs } from "node:util";
 import { FSM_BASE_PART_NAME, FSM_SERVICE_NAMES, type VisitType } from "../src/config/visit-types.ts";
+import { refreshTokenForScript } from "./lib/zoho-script-token.ts";
 
 /**
  * A new item's price in rupees before GST: the price book's own since 22
@@ -29,7 +31,10 @@ const NEW_ITEM_PRICES: Readonly<Record<VisitType, number>> = {
 /** The base part, which the price book does not price: a placeholder (docs/open-points.md, item 1). */
 const PLACEHOLDER_BASE_PRICE = 30_000;
 
-const { values } = parseArgs({ options: { check: { type: "boolean", default: false } } });
+// --use-worker-token is read by refreshTokenForScript; it is named here so the parser takes it.
+const { values } = parseArgs({
+  options: { check: { type: "boolean", default: false }, "use-worker-token": { type: "boolean", default: false } },
+});
 
 function required(name: string): string {
   const value = process.env[name]?.trim() ?? "";
@@ -51,7 +56,7 @@ function report(ok: boolean, check: string, detail: string): void {
 
 async function accessToken(): Promise<string> {
   const query = new URLSearchParams({
-    refresh_token: required("ZOHO_FSM_REFRESH_TOKEN"),
+    refresh_token: refreshTokenForScript("fsm"),
     client_id: required("ZOHO_FSM_CLIENT_ID"),
     client_secret: required("ZOHO_FSM_CLIENT_SECRET"),
     grant_type: "refresh_token",

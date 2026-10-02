@@ -301,6 +301,12 @@ Zoho names a new field from its label, so the script reads each one back: the sy
 
    It confirms every field, type and pick-list value the sync writes, and lists the Leads assignment rules with their IDs. Fill in `ZOHO_LAR_ID`, run it again until it passes, then `W secret bulk` the file and delete it. The next lead proves the setup end to end: it should reach Zoho within a minute, assigned and with its proposed date.
 
+7. **A refresh token for scripts.** Zoho mints at most ten access tokens in ten minutes from one refresh token, so a script run by hand must never share the Worker's: a proof that did took FSM down with it (`docs/open-points.md`, item 32). Repeat step 5.2 and 5.3 with the same Self Client to get a second refresh token, with only the scopes the scripts need (`ZohoCRM.settings.fields.ALL`, `ZohoCRM.settings.assignment_rules.READ`; for FSM and Books, the same scopes as the FSM client, step 11b). Keep it in the scripts' own git-ignored file, never in a Worker secret:
+   - the CRM's as `ZOHO_SCRIPTS_REFRESH_TOKEN`, beside `ZOHO_CLIENT_ID`, `ZOHO_CLIENT_SECRET` and the hosts;
+   - FSM and Books' as `ZOHO_FSM_SCRIPTS_REFRESH_TOKEN`, beside `ZOHO_FSM_CLIENT_ID`, `ZOHO_FSM_CLIENT_SECRET` and the hosts.
+
+   `scripts/check-zoho-setup.ts`, `scripts/setup-crm.ts` and `scripts/setup-fsm.ts` stop, naming this step, when theirs is missing (`scripts/lib/zoho-script-token.ts`). In an emergency, with the scripts' token lost, `--use-worker-token` runs one on the Worker's token on purpose; every token it mints is one the Worker cannot for ten minutes.
+
 ### 9. Triggers
 
 CI deploys code but cannot attach cron schedules, queue consumers or routes (`docs/decisions/0010-applying-triggers.md`). After the code that handles them is live, attach every Worker's:
@@ -1192,6 +1198,18 @@ The DPDP Act and its Rules require us to tell the Data Protection Board and each
 5. **Record.** Keep a note of the breach, the timeline, the decisions and the notices, for the Board and for us. Review it within two weeks, and fix what let it happen.
 
 ---
+
+## The texts file
+
+Every WhatsApp message and every line of copy still marked PLACEHOLDER go to the owner in one Word file to mark up with tracked changes (`docs/open-points.md`, items 39, 41 and 42):
+
+```sh
+npm run texts:export              # writes private/texts-<today>.docx
+```
+
+It lists each message by its template name, with the note on when it is sent and what its `{{1}}`, `{{2}}` stand for, and each line of copy by the file and line of its mark, grouped by file. The consent notices are listed at the end and are not for editing there: a notice is replaced by a new version counsel approves, never edited. `private/` is git-ignored.
+
+The owner's wording comes back by hand: find each changed item by its id (`src/config/message-templates.ts` for a message; the file and line for the rest), put the words in, and take the PLACEHOLDER mark off what they approved. A message's text must keep the same `{{n}}` it had, unless the code that fills it changes too.
 
 ## Cities and visit days
 

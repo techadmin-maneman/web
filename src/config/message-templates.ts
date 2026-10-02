@@ -9,7 +9,7 @@
 
 import { MESSAGE_KINDS, type MessageKind } from "../domain/messages.ts";
 
-const TEMPLATES: Readonly<Record<string, string>> = {
+export const TEMPLATES: Readonly<Record<string, string>> = {
   tryon_result_v1:
     "Hello {{1}}, here is your Mane Man try-on. What you see is a simulation, not a photograph of a result.",
   // The client app's login code (docs/decisions/0030-one-time-codes.md). PLACEHOLDER COPY, pending the owner's wording.
