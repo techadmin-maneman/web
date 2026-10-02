@@ -182,6 +182,11 @@ export interface Settings {
   readonly leadWebhookUrl: string | null;
   /** HEARTBEAT_URL: the outside monitor the cron pings after each run (src/providers/heartbeat.ts). Optional. */
   readonly heartbeatUrl: string | null;
+  /**
+   * CLOUDFLARE_ANALYTICS_TOKEN: a token that can only read the account's analytics, for the cron's hourly look at
+   * the daily free allowances (src/scheduled/daily-allowances.ts). Optional; without it nobody is told.
+   */
+  readonly analyticsToken: string | null;
   /** The operators' secret for POST /api/erasure (docs/decisions/0019-erasure.md). */
   readonly erasureSecret: string;
   /** Present when CRM_PROVIDER is "zoho". */
@@ -353,10 +358,7 @@ export function readSettings(
   if (leadWebhookUrl !== null && !leadWebhookUrl.startsWith("https://")) {
     read.problems.push("LEAD_WEBHOOK_URL must be an https:// URL");
   }
-  const heartbeatUrl = read.optionalText("HEARTBEAT_URL");
-  if (heartbeatUrl !== null && !heartbeatUrl.startsWith("https://")) {
-    read.problems.push("HEARTBEAT_URL must be an https:// URL");
-  }
+  const watchers = readWatchers(read);
 
   const zohoClients = readZohoClients(read, providers);
   const razorpay = readRazorpay(read, providers, environment);
@@ -392,7 +394,7 @@ export function readSettings(
     ipHashSalt,
     alertWebhookUrl: alertWebhookUrl === "" ? null : alertWebhookUrl,
     leadWebhookUrl: leadWebhookUrl ?? (alertWebhookUrl === "" ? null : alertWebhookUrl),
-    heartbeatUrl,
+    ...watchers,
     erasureSecret: read.key("ERASURE_SECRET"),
     ...zohoClients,
     razorpay,
@@ -404,6 +406,15 @@ export function readSettings(
     devRoutes: environment === "local" && devRoutes === "on",
   };
   return { settings, problems: read.problems };
+}
+
+/** What watches mm-api from outside it: the cron's heartbeat, and the token that reads the account's usage. */
+function readWatchers(read: Reader): Pick<Settings, "heartbeatUrl" | "analyticsToken"> {
+  const heartbeatUrl = read.optionalText("HEARTBEAT_URL");
+  if (heartbeatUrl !== null && !heartbeatUrl.startsWith("https://")) {
+    read.problems.push("HEARTBEAT_URL must be an https:// URL");
+  }
+  return { heartbeatUrl, analyticsToken: read.optionalText("CLOUDFLARE_ANALYTICS_TOKEN") };
 }
 
 /** Each Zoho host named, which must be a hostname without https://. */
