@@ -44,6 +44,7 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [no_show_cases](#no_show_cases): The evidence a no-show is ruled on, the ruling, and what a charge cost the client (ADR 0065, ADR 0072, ADR 0096).
 - [no_show_disputes](#no_show_disputes): A client's dispute of a no-show's charge, one a charge, and ops' ruling on it, refunded or upheld, with their reason (ADR 0096).
 - [number_change_requests](#number_change_requests): A client's change of mobile number: the codes proven on both numbers, and what ops decided (ADR 0042, ADR 0078).
+- [number_codes](#number_codes): Each WhatsApp code sent to prove a number typed into the site, with the number and the code only as hashes (ADR 0081, ADR 0104).
 - [ops_settings](#ops_settings): The business inputs ops set in the console, a row each; a row that is not there means the committed default (ADR 0061).
 - [ops_settings_snapshot](#ops_settings_snapshot): One row holding every `ops_settings` value, kept by that table's triggers: the one row a request reads (ADR 0088).
 - [otp_challenges](#otp_challenges): Each one-time code sent, as a hash, with its sends and attempts (ADR 0030, ADR 0052).
@@ -902,6 +903,27 @@ Indexes:
 - `number_change_requests_by_person`: on (`person_id`, `created_at`)
 - `number_change_requests_by_state`: on (`state`, `created_at`)
 
+## number_codes
+
+Each WhatsApp code sent to prove a number typed into the site, with the number and the code only as hashes (ADR 0081, ADR 0104).
+
+Made by `0071_number_codes.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `created_at` | TEXT | no |  |  |
+| `mobile_hash` | TEXT | no |  |  |
+| `code_hash` | TEXT | no |  |  |
+| `attempts` | INTEGER | no | `0` |  |
+| `expires_at` | TEXT | no |  |  |
+| `verified_at` | TEXT | yes |  |  |
+| `voided_at` | TEXT | yes |  |  |
+
+Indexes:
+
+- `number_codes_by_expiry`: on (`expires_at`)
+
 ## ops_settings
 
 The business inputs ops set in the console, a row each; a row that is not there means the committed default (ADR 0061).
@@ -1709,7 +1731,7 @@ Indexes:
 
 One try-on render: the photograph, the look, the provider's job and the result (ADR 0014, ADR 0015).
 
-Made by `0003_tryon.sql`; changed by `0037_cron_indexes.sql`, `0045_kept_try_ons.sql`.
+Made by `0003_tryon.sql`; changed by `0037_cron_indexes.sql`, `0045_kept_try_ons.sql`, `0071_number_codes.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1750,6 +1772,7 @@ Made by `0003_tryon.sql`; changed by `0037_cron_indexes.sql`, `0045_kept_try_ons
 | `copy_key` | TEXT | yes |  |  |
 | `kept_at` | TEXT | yes |  |  |
 | `kept_look_key` | TEXT | yes |  |  |
+| `number_proved_at` | TEXT | yes |  |  |
 
 Indexes:
 

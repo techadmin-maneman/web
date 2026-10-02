@@ -57,6 +57,94 @@ The prices the site publishes, from the price book, in force today. Cacheable fo
 }
 ```
 
+### POST /api/number-code
+
+Send a code on WhatsApp to prove a number typed into the site
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/NumberCodeRequest"
+}
+```
+
+**202**: The code is on its way
+
+```json
+{
+  "$ref": "#/components/schemas/NumberCode"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: turnstile_failed
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**429**: rate_limited: too many codes for this number today, or from this address this hour
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**503**: busy: today's ceiling on codes is reached; unavailable: Turnstile could not be reached
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/number-code/verify
+
+Check a code. The right one proves its number for 30 minutes
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/NumberCodeVerifyRequest"
+}
+```
+
+**200**: Right; or wrong, with the attempts left
+
+```json
+{
+  "$ref": "#/components/schemas/NumberCodeVerify"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**410**: code_expired: expired, already entered, or void after five wrong codes
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/consultation
 
 Book a free consultation
@@ -157,6 +245,11 @@ Request body:
       "type": "boolean",
       "description": "true: the consultation and the first fit in one visit, three hours, in the morning or the afternoon; the client chooses the product with the technician and pays once fitted, so nothing is paid here. Left out or false, the consultation alone."
     },
+    "number_code_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The WhatsApp code that proved the number (POST /api/number-code/verify) in the last 30 minutes. One visit needs it, and is refused number_not_proved without it."
+    },
     "discount_code": {
       "type": "string",
       "minLength": 1,
@@ -202,7 +295,7 @@ Request body:
 }
 ```
 
-**403**: turnstile_failed
+**403**: turnstile_failed; number_not_proved: one visit, without a WhatsApp code that proved the number in the last 30 minutes
 
 ```json
 {
@@ -492,6 +585,11 @@ Request body:
       "type": "boolean",
       "description": "true: the consultation and the first fit in one visit, three hours, in the morning or the afternoon; the client chooses the product with the technician and pays once fitted, so nothing is paid here. Left out or false, the consultation alone."
     },
+    "number_code_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The WhatsApp code that proved the number (POST /api/number-code/verify) in the last 30 minutes. One visit needs it, and is refused number_not_proved without it."
+    },
     "consent": {
       "type": "boolean",
       "enum": [
@@ -530,7 +628,7 @@ Request body:
 }
 ```
 
-**403**: turnstile_failed
+**403**: turnstile_failed; number_not_proved: one visit, without a WhatsApp code that proved the number in the last 30 minutes
 
 ```json
 {
@@ -919,7 +1017,7 @@ Request body:
 }
 ```
 
-**403**: look_limit_reached: this number had its look in the last thirty days
+**403**: look_limit_reached: this number had its look in the last thirty days; number_not_proved: no WhatsApp code proved the number in the last 30 minutes
 
 ```json
 {
@@ -1173,6 +1271,7 @@ Razorpay's webhook: payments and refunds
             "look_limit_reached",
             "claim_required",
             "whatsapp_unavailable",
+            "number_not_proved",
             "unauthorized",
             "visit_booked",
             "payment_held",
@@ -1442,6 +1541,123 @@ Razorpay's webhook: payments and refunds
     "name",
     "minutes",
     "price"
+  ],
+  "additionalProperties": false
+}
+```
+
+### NumberCode
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code_id": {
+      "type": "string",
+      "format": "uuid"
+    }
+  },
+  "required": [
+    "code_id"
+  ],
+  "additionalProperties": false,
+  "description": "The code is on its way to the number on WhatsApp."
+}
+```
+
+### NumberCodeRequest
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "mobile": {
+      "type": "string",
+      "maxLength": 20
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "description": "The name typed beside the number."
+    },
+    "turnstile_token": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
+    }
+  },
+  "required": [
+    "mobile",
+    "name",
+    "turnstile_token"
+  ],
+  "additionalProperties": false
+}
+```
+
+### NumberCodeVerify
+
+```json
+{
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "verified": {
+          "type": "boolean",
+          "enum": [
+            true
+          ]
+        }
+      },
+      "required": [
+        "verified"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "verified": {
+          "type": "boolean",
+          "enum": [
+            false
+          ]
+        },
+        "attempts_left": {
+          "type": "integer",
+          "description": "0 means the code is now void."
+        }
+      },
+      "required": [
+        "verified",
+        "attempts_left"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}
+```
+
+### NumberCodeVerifyRequest
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "code": {
+      "type": "string",
+      "pattern": "^\\d{6}$"
+    }
+  },
+  "required": [
+    "code_id",
+    "code"
   ],
   "additionalProperties": false
 }
@@ -2046,6 +2262,11 @@ Razorpay's webhook: payments and refunds
       "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
       "example": "98100 00000"
     },
+    "number_code_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The code that proved the number (POST /api/number-code/verify). It proves it for 30 minutes after it was entered."
+    },
     "stage": {
       "type": "string",
       "enum": [
@@ -2070,6 +2291,7 @@ Razorpay's webhook: payments and refunds
     "job_id",
     "name",
     "mobile",
+    "number_code_id",
     "stage"
   ],
   "additionalProperties": false

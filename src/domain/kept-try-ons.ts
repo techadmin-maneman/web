@@ -72,6 +72,8 @@ export function heldTryOn(tryOn: TryOnFacts): HeldTryOn {
 
 export interface ExpiringTryOn extends TryOnFacts {
   readonly person_id: string | null;
+  /** Null for a claim whose number no code proved, which may have been anyone's: it is never kept. */
+  readonly number_proved_at: string | null;
   readonly copy_key: string | null;
   readonly kept_look_key: string | null;
 }
@@ -105,7 +107,7 @@ export async function keepOrLetGo(env: KeepEnv, tryOns: readonly ExpiringTryOn[]
  */
 async function keepOnItsDay(env: KeepEnv, tryOn: ExpiringTryOn, now: Date): Promise<boolean> {
   const { person_id: personId, expires_at: lastDay } = tryOn;
-  if (personId === null || lastDay === null) return false;
+  if (personId === null || lastDay === null || tryOn.number_proved_at === null) return false;
   // Agreed to under a notice that does not keep it, it goes on its day, as that notice said.
   if (!KEEPING_NOTICES.includes(tryOn.photo_consent_version)) return false;
   const db = env.DB;
@@ -113,7 +115,7 @@ async function keepOnItsDay(env: KeepEnv, tryOn: ExpiringTryOn, now: Date): Prom
   const { results: theirs } = await db
     .prepare(
       `SELECT id, created_at, photo_consent_version, state, result_key, expires_at, kept_at
-       FROM tryon_jobs WHERE person_id = ?1`,
+       FROM tryon_jobs WHERE person_id = ?1 AND number_proved_at IS NOT NULL`,
     )
     .bind(personId)
     .all<TryOnFacts>();

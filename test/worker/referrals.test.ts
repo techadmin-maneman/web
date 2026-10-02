@@ -9,7 +9,16 @@ import { newReferralCode } from "../../src/domain/referrals.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
 import { createStubPayments } from "../../src/providers/payments.ts";
-import { appFor, captureLogs, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
+import {
+  appFor,
+  captureLogs,
+  fakeDependencies,
+  fakeQueue,
+  markDatabase,
+  NOW,
+  provedNumberCode,
+  request,
+} from "./helpers.ts";
 
 const REFERRER = "11111111-1111-4111-8111-111111111111";
 const DAY = 86_400_000;
@@ -484,6 +493,7 @@ describe("POST /api/r/:code/consultation", () => {
         consent: true,
         address: ADDRESS,
         one_visit: true,
+        number_code_id: await provedNumberCode("+919810000002"),
       }),
       { FSM_QUEUE: fakeQueue() },
     );

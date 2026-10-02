@@ -9,7 +9,7 @@ import { openSession } from "../../src/domain/sessions.ts";
 import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
 import { createStubPayments } from "../../src/providers/payments.ts";
 import { consultationBody, lastBookableDay } from "../../scripts/lib/test-booking.ts";
-import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
+import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, provedNumberCode, request } from "./helpers.ts";
 
 const VISITOR = {
   name: "Karan Bhatia",
@@ -729,6 +729,7 @@ describe("a number the site already knows", () => {
 // nothing paid until the client is fitted. It replaces the consultation with the first fit to follow (item 68), whose
 // request the form no longer writes, so the tests of that request went with it.
 describe("a consultation and fit in one visit", () => {
+  let proved = "";
   const book = (body: object, settings = {}, queue = fakeQueue()) =>
     request(
       site(settings),
@@ -740,6 +741,7 @@ describe("a consultation and fit in one visit", () => {
         window: "morning",
         consent: true,
         address: ADDRESS,
+        number_code_id: proved,
         ...body,
       }),
       { FSM_QUEUE: queue, CRM_QUEUE: fakeQueue() },
@@ -748,6 +750,35 @@ describe("a consultation and fit in one visit", () => {
 
   beforeEach(async () => {
     await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
+    proved = await provedNumberCode("+919810000002");
+  });
+
+  // PS-10: the one visit sends a technician with stock, and recorded a consent and a person, for any number typed.
+  it("is refused, and writes nothing, without a code that proved the number in the last 30 minutes", async () => {
+    const other = await provedNumberCode("+919810000003");
+    const stale = await provedNumberCode("+919810000002", new Date(NOW.getTime() - 31 * 60_000));
+    const queue = fakeQueue();
+    for (const numberCode of [{ number_code_id: undefined }, { number_code_id: other }, { number_code_id: stale }]) {
+      const answer = await book({ one_visit: true, ...numberCode }, {}, queue);
+      expect(answer.status).toBe(403);
+      expect(await answer.json()).toMatchObject({ error: { code: "number_not_proved" } });
+    }
+    expect(queue.sent).toEqual([]);
+    for (const table of ["people", "consents", "slot_holds", "leads", "outbound_messages"]) {
+      expect(await count(`SELECT COUNT(*) AS n FROM ${table}`)).toBe(0);
+    }
+  });
+
+  it("refuses a number we know the same way, telling its owner nothing", async () => {
+    expect((await book({ one_visit: true })).status).toBe(201);
+    const answer = await book({ date: "2026-09-24", one_visit: true, number_code_id: undefined });
+    expect(answer.status).toBe(403);
+    expect(await count("SELECT COUNT(*) AS n FROM outbound_messages")).toBe(0);
+  });
+
+  it("asks no code of the consultation alone", async () => {
+    const answer = await book({ number_code_id: undefined });
+    expect(answer.status).toBe(201);
   });
 
   it("holds the first fit's three hours with nothing paid, sold to cost nothing if missed or moved", async () => {

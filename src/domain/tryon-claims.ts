@@ -115,10 +115,13 @@ export async function recordClaim(db: D1Database, claim: NewClaim): Promise<stri
           attribution.landing_path ?? null,
           claim.requestId,
         ),
-      // The render is made for the stage the lead records (src/routes/tryon-generate.ts).
+      // The render is made for the stage the lead records (src/routes/tryon-generate.ts). Every claim comes with
+      // its number proved by a code, so the try-on may show in its client's app.
       db
-        .prepare(`UPDATE tryon_jobs SET person_id = ${personId}, lead_id = ?, stage = ? WHERE id = ?`)
-        .bind(mobileE164, leadId, claim.stage, job.id),
+        .prepare(
+          `UPDATE tryon_jobs SET person_id = ${personId}, lead_id = ?, stage = ?, number_proved_at = ? WHERE id = ?`,
+        )
+        .bind(mobileE164, leadId, claim.stage, at, job.id),
       db
         .prepare(
           `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_id, state)

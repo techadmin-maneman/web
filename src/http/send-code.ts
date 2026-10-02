@@ -70,7 +70,8 @@ export async function codeGate(c: Context<AppEnv>, ipHash: string, now: Date): P
 export async function mayAskForCode(
   c: Context<AppEnv>,
   input: {
-    readonly surface: "login" | "tech";
+    /** "form" is a code proving a number typed into the site. */
+    readonly surface: "login" | "tech" | "form";
     readonly mobileE164: string;
     readonly ipHash: string;
     readonly now: Date;

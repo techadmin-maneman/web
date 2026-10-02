@@ -24,6 +24,7 @@ import {
   fakeQueue,
   markDatabase,
   NOW,
+  provedNumberCode,
   request,
   savedAddress,
 } from "./helpers.ts";
@@ -428,8 +429,10 @@ describe("the site's form, for a consultation and fit in one visit", () => {
     pincode: "122018",
     access_notes: null,
   };
-  const book = (body: object, settings = {}) =>
-    request(
+  /** The one visit, booked with its number proved by a code. */
+  const book = async (body: { mobile?: string; [field: string]: unknown }, settings = {}) => {
+    const mobile = body.mobile ?? "9810000002";
+    return request(
       appFor("local", fakeDependencies(), settings, "public"),
       "/api/consultation",
       {
@@ -437,7 +440,7 @@ describe("the site's form, for a consultation and fit in one visit", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: "Karan Bhatia",
-          mobile: "9810000002",
+          mobile,
           loss_extent: "crown",
           turnstile_token: "token",
           pincode: "122018",
@@ -446,11 +449,13 @@ describe("the site's form, for a consultation and fit in one visit", () => {
           consent: true,
           address: ADDRESS,
           one_visit: true,
+          number_code_id: await provedNumberCode(`+91${mobile}`),
           ...body,
         }),
       },
       { FSM_QUEUE: fakeQueue(), CRM_QUEUE: fakeQueue() },
     );
+  };
 
   beforeEach(async () => {
     await technician();
