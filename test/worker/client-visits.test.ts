@@ -196,6 +196,39 @@ describe("GET /api/visits", () => {
   });
 });
 
+describe("a visit booked without FSM", () => {
+  // Our own ID stands in its FSM ID, and it has no work order, FSM status or time FSM changed it.
+  async function bookedWithoutFsm(): Promise<void> {
+    const at = NOW.toISOString();
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p1', ?1, ?2, 'Rohit Malhotra')",
+      ).bind(at, MOBILE),
+      env.DB.prepare(
+        `INSERT INTO technicians (id, fsm_id, name, initials, active, hand_written, updated_at)
+         VALUES ('t1', 't1', 'Imran Khan', 'IK', 1, 1, ?1)`,
+      ).bind(at),
+      env.DB.prepare(
+        `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, window_start, window_end,
+           technician_id, status, fsm_status, service_city, service_pincode, fsm_modified_at, synced_at, first_seen_at)
+         VALUES ('ap-ours', 'ap-ours', NULL, 'p1', 'service', '2026-09-24T04:30:00.000Z', '2026-09-24T06:00:00.000Z',
+           't1', 'scheduled', NULL, 'Gurgaon', '122018', NULL, ?1, ?1)`,
+      ).bind(at),
+    ]);
+  }
+
+  it("is the client's next visit, like one FSM holds", async () => {
+    await bookedWithoutFsm();
+    await signIn();
+    const visits = await (await get("/api/visits")).json<{ upcoming: Record<string, unknown>[] }>();
+    expect(visits.upcoming).toMatchObject([
+      { date: "2026-09-24", type: "service", status: "scheduled", technician: { name: "Imran Khan", initials: "IK" } },
+    ]);
+    const me = await (await get("/api/me")).json<Record<string, unknown>>();
+    expect(me).toMatchObject({ next_visit: { date: "2026-09-24", type: "service", stage: "booked" } });
+  });
+});
+
 // A visit stays the client's until FSM closes it. One that dropped out of both lists once its window
 // ended left Home saying nothing was booked, and offering the booking again (LIFE-03).
 describe("a visit FSM has not closed", () => {
