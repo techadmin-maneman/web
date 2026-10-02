@@ -390,10 +390,6 @@ export const booking = {
     freeUntil: (when: string) => `Free to move until ${when}. After that it is charged.`,
     // PLACEHOLDER: a booking ops set to cost nothing when changed late (docs/decisions/0088-every-policy-in-the-console.md).
     freeAnyTime: "Free to move or cancel at any time.",
-    with: "Pay with",
-    upi: "UPI · any app",
-    // PLACEHOLDER: the design draws a saved card ("Card ending 4417"); Checkout asks for the card.
-    card: "Card",
     pay: (amount: string) => `Pay ${amount}`,
     neverHandlesMoney: (name: string) => `${name} never handles money.`,
     guarantee: GUARANTEE,
@@ -415,10 +411,11 @@ export const booking = {
     remind: "Remind me on WhatsApp the day before",
     /**
      * PLACEHOLDER: no board draws them. Booking a visit also agrees to the photograph purposes the client has never
-     * decided on (ADR 0080; ADR 0025, item 61). With the referral card's lines (profile.referralCards), they are the
+     * decided on, one tap away beneath Pay. With the referral card's lines (profile.referralCards), they are the
      * notice each consent is recorded under, word for word (src/config/notices.ts; booking/consents.ts).
      */
     consents: {
+      open: "What booking agrees to",
       both: "By booking this visit, you also agree to photographs for your own record and on referral cards.",
       alone: {
         photos_own_record: "By booking this visit, you also agree to photographs for your own record.",
@@ -468,7 +465,6 @@ export const booking = {
     title: "The payment did not go through.",
     held: (time: string) => `Slot held ${time} more.`,
     retry: "Try again",
-    another: "Another method",
   },
   expired: {
     label: "Hold expired",

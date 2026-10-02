@@ -49,11 +49,13 @@ export function loadCheckout(): Promise<void> {
   return loading;
 }
 
-export type PayMethod = "upi" | "card";
 export type Paid = "paid" | "failed" | "dismissed";
 
-/** Opens Checkout on the order, with the method the client picked first. Its script must have loaded. */
-export function pay(checkout: NonNullable<Booking["checkout"]>, method: PayMethod): Promise<Paid> {
+/**
+ * Opens Checkout on the order, where the client picks how to pay. Its script must have loaded. Checkout honours a
+ * method chosen beforehand only when it is also given the client's e-mail, which the app does not have.
+ */
+export function pay(checkout: NonNullable<Booking["checkout"]>): Promise<Paid> {
   const Razorpay = window.Razorpay;
   if (Razorpay === undefined) return Promise.resolve("failed");
   return new Promise<Paid>((resolve) => {
@@ -64,7 +66,7 @@ export function pay(checkout: NonNullable<Booking["checkout"]>, method: PayMetho
       currency: checkout.currency,
       name: checkout.name,
       description: checkout.description,
-      prefill: { ...checkout.prefill, method },
+      prefill: checkout.prefill,
       // The brand's ink, for Checkout's own buttons.
       theme: { color: cssToken("--ink") },
       // A failure comes back to the app's own screen (board C6), not Checkout's retry.

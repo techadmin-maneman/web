@@ -83,7 +83,7 @@
 }
 
 /*
- * A day, a window and a way to pay are each a native radio button laid over
+ * A day, a window and a service are each a native radio button laid over
  * the whole of the design's drawing, unseen: one tab stop for the group, and
  * the arrow keys between its choices. The drawing shows which is checked,
  * which is full, and which has keyboard focus.
@@ -99,14 +99,12 @@
 }
 
 .day,
-.window,
-.method {
+.window {
   position: relative;
 }
 
 .day:has(.radio:focus-visible),
-.window:has(.radio:focus-visible),
-.method:has(.radio:focus-visible) {
+.window:has(.radio:focus-visible) {
   outline: var(--focus-width) solid var(--focus-colour);
   outline-offset: var(--focus-offset);
 }
@@ -201,34 +199,26 @@
   color: var(--text-muted);
 }
 
-.windows,
-.methods {
+.windows {
   display: flex;
   flex-direction: column;
-}
-
-.windows {
   gap: var(--sp-10);
 }
 
-.window,
-.method {
+.window {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--sp-14);
   width: 100%;
+  min-height: var(--tap-row);
+  padding: 0 var(--sp-18);
   border: var(--hairline) solid var(--paper-line);
   background: var(--white);
   font: inherit;
   color: var(--text);
   text-align: left;
   cursor: pointer;
-}
-
-.window {
-  min-height: var(--tap-row);
-  padding: 0 var(--sp-18);
 }
 
 .windowName,
@@ -252,8 +242,8 @@
 }
 
 /*
- * The visits to choose between, which no board draws (ADR 0085): each kind named as "Pay with" is, over its
- * services drawn as the window step's rows. The first kind sits under the heading, as the windows do.
+ * The visits to choose between, which no board draws: each kind named in small capitals, over its services drawn as
+ * the window step's rows. The first kind sits under the heading, as the windows do.
  */
 .heading + .kind .label {
   margin-top: 0;
@@ -397,20 +387,36 @@
 }
 
 /*
- * What booking also agrees to (ADR 0080), above the button that agrees to it: the first line in the text's own
- * ink, the card's lines after it muted, all of it shown, since it is the notice the consent is given on.
+ * What booking also agrees to, one tap away beneath Pay: quiet until it is opened, as the discount code is, then the
+ * first line in the text's own ink and the card's lines after it muted.
  */
 .consents {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-6);
-  margin-top: var(--sp-16);
+  margin-top: var(--sp-6);
   font-size: var(--fs-14);
   line-height: var(--lh-150);
   color: var(--text-muted);
 }
 
-.sheet .consents p:first-child {
+.consentsOpen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tap);
+  list-style: none;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.consentsOpen::-webkit-details-marker {
+  display: none;
+}
+
+.sheet .consents p + p {
+  margin-top: var(--sp-6);
+}
+
+.sheet .consentsOpen + p {
+  margin-top: var(--sp-4);
   color: var(--text);
 }
 
@@ -429,36 +435,6 @@
   font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-14);
   color: var(--text-muted);
-}
-
-.methods {
-  gap: var(--sp-9);
-  margin-top: var(--sp-12);
-}
-
-.method {
-  min-height: var(--btn-lg);
-  padding: 0 var(--sp-16);
-  font-size: var(--fs-16);
-}
-
-.method:has(.radio:checked) {
-  border-color: var(--ink);
-}
-
-.tick {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--sp-20);
-  height: var(--sp-20);
-  border: var(--hairline) solid var(--paper-line);
-  color: var(--paper);
-}
-
-.method:has(.radio:checked) .tick {
-  border-color: var(--ink);
-  background: var(--ink);
 }
 
 /* The sheets' buttons (packages/ui/Button.tsx), the width of the sheet: the action 56 px, any other 48. */

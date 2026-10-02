@@ -65,6 +65,15 @@ export async function checkoutOnTop(page: Page): Promise<void> {
  * page was given; only the browser resolves app.localhost, so the test cannot fetch it again itself.
  */
 export async function confirmedByRazorpay(page: Page): Promise<void> {
+  await paidAndThen(page, { state: "booked", visit_id: crypto.randomUUID() });
+}
+
+/** The hold's poll answered as a paid hold that could not be booked: let go, and its payment refunded. */
+export async function refundedAfterPaying(page: Page): Promise<void> {
+  await paidAndThen(page, { state: "released" });
+}
+
+async function paidAndThen(page: Page, outcome: Record<string, unknown>): Promise<void> {
   let hold: Record<string, unknown> = {};
   page.on("response", (response) => {
     if (response.request().method() === "POST" && response.url().endsWith("/api/holds")) {
@@ -75,7 +84,7 @@ export async function confirmedByRazorpay(page: Page): Promise<void> {
   });
   await page.route(/\/api\/holds\/[0-9a-f-]{36}$/, (route) =>
     route.request().method() === "GET"
-      ? route.fulfill({ json: { ...hold, state: "booked", paid: true, visit_id: crypto.randomUUID() } })
+      ? route.fulfill({ json: { ...hold, paid: true, ...outcome } })
       : route.fallback(),
   );
 }

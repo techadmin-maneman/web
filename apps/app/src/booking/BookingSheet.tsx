@@ -36,7 +36,7 @@ import {
 import { booking } from "../content.ts";
 import { focusIfLost } from "../lib/arrival.ts";
 import { apiNow } from "../lib/clock.ts";
-import { loadCheckout, pay, type Paid, type PayMethod } from "./checkout.ts";
+import { loadCheckout, pay, type Paid } from "./checkout.ts";
 import { undecidedOf } from "./consents.ts";
 import {
   AddressStep,
@@ -75,6 +75,9 @@ type Step =
 /** How often, and for how long, the sheet asks whether a paid hold is booked. */
 const POLL_MS = 2_000;
 const POLL_FOR_MS = 60_000;
+
+/** The steps that end the sheet with a Close of their own, where the one above the sheet would be a second. */
+const drawsItsOwnClose = (step: Step) => step.kind === "broken" || step.kind === "slow" || step.kind === "refunded";
 
 /** Whether the client has switched on WhatsApp about their visits, the purpose the day-before reminder is sent under. */
 const remindersOn = (profile: Profile) =>
@@ -146,7 +149,6 @@ export function BookingSheet({
   const [availability, setAvailability] = useState<Availability | null>(null);
   const [date, setDate] = useState<string | null>(null);
   const [chosenWindow, setChosenWindow] = useState<BookingWindow | null>(null);
-  const [method, setMethod] = useState<PayMethod>("upi");
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   /** Whether reminders are on: null when the profile could not say, and the sheet asks. */
@@ -308,7 +310,7 @@ export function BookingSheet({
    * waited for first, with the sheet still up and busy, so a script that
    * never comes ends on the sheet's own payment-failed step.
    */
-  const throughCheckout = async (checkout: NonNullable<Booking["checkout"]>, how: PayMethod): Promise<Paid> => {
+  const throughCheckout = async (checkout: NonNullable<Booking["checkout"]>): Promise<Paid> => {
     const ready = await loadCheckout().then(
       () => true,
       () => false,
@@ -316,7 +318,7 @@ export function BookingSheet({
     if (!ready) return "failed";
     paying.current = true;
     dialog.current?.close();
-    const outcome = await pay(checkout, how).catch(() => "failed" as const);
+    const outcome = await pay(checkout).catch(() => "failed" as const);
     dialog.current?.showModal();
     paying.current = false;
     return outcome;
@@ -340,7 +342,7 @@ export function BookingSheet({
     setProblem(booking.creditGone);
   };
 
-  const payFor = async (hold: Hold, how: PayMethod) => {
+  const payFor = async (hold: Hold) => {
     if (starting.current) return;
     starting.current = true;
     setBusy(true);
@@ -360,7 +362,7 @@ export function BookingSheet({
         await showPriceInstead(hold.id);
         return;
       }
-      const outcome = checkout === null ? "paid" : await throughCheckout(checkout, how);
+      const outcome = checkout === null ? "paid" : await throughCheckout(checkout);
       setBusy(false);
       if (outcome === "paid") {
         changed.current = true;
@@ -388,9 +390,11 @@ export function BookingSheet({
         onClose(changed.current);
       }}
     >
-      <button className={styles.close} type="button" onClick={close}>
-        {booking.close}
-      </button>
+      {!drawsItsOwnClose(step) && (
+        <button className={styles.close} type="button" onClick={close}>
+          {booking.close}
+        </button>
+      )}
       <div className={styles.sheet}>
         {step.kind === "loading" && <LoadingStep />}
         {step.kind === "broken" && <WaitStep text={booking.failedToStart} onClose={close} />}
@@ -451,25 +455,13 @@ export function BookingSheet({
             consents={movingId === undefined ? undecided : []}
             remind={remind}
             onRemind={setRemind}
-            onMethod={setMethod}
-            onPay={() => void payFor(step.hold, method)}
+            onPay={() => void payFor(step.hold)}
             onHold={(hold) => {
               setStep({ kind: "pay", hold });
             }}
           />
         )}
-        {step.kind === "failed" && (
-          <FailedStep
-            hold={step.hold}
-            busy={busy}
-            onRetry={() => void payFor(step.hold, method)}
-            onAnother={() => {
-              const other = method === "upi" ? "card" : "upi";
-              setMethod(other);
-              void payFor(step.hold, other);
-            }}
-          />
-        )}
+        {step.kind === "failed" && <FailedStep hold={step.hold} busy={busy} onRetry={() => void payFor(step.hold)} />}
         {step.kind === "expired" && <ExpiredStep onPickAgain={() => void load(wanted)} />}
         {step.kind === "confirming" && <WaitStep text={step.paidIn === true ? booking.paidIn : booking.confirming} />}
         {step.kind === "confirmed" && (

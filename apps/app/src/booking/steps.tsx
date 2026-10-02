@@ -14,13 +14,12 @@ import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import type { Availability, BookingConsent, BookingWindow, Hold, MoveTerms, OfferedService, Price } from "../api.ts";
 import { booking, change, messages, profile, states, VISIT_TYPES, WINDOW_HOURS, WINDOW_NAMES } from "../content.ts";
-import { CHECK, CLOCK } from "../icons.ts";
+import { CLOCK } from "../icons.ts";
 import { priceFigures } from "../lib/money.ts";
 import { useSecondsLeft } from "../lib/useSecondsLeft.ts";
 import { firstName } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { AddressForm } from "../profile/AddressForm.tsx";
-import type { PayMethod } from "./checkout.ts";
 import { CodeBox } from "./CodeBox.tsx";
 import { consentLines } from "./consents.ts";
 import styles from "./booking.module.css";
@@ -345,7 +344,6 @@ function payLabel(hold: Hold, moving: MoveTerms | undefined): string {
   return moving === undefined ? booking.pay.confirm : change.confirmMove;
 }
 
-/** Board C4, and C5's first fit: the held visit, what it costs, and how to pay. */
 /** The pay step's figure: nothing for a visit a credit covers, "Free" for one that costs nothing, else its price. */
 function amountLine(hold: Hold, covered: boolean, free: boolean): string {
   if (covered) return booking.pay.credit.zero;
@@ -382,19 +380,35 @@ function ChangeTerms({ hold, moving, covered }: { hold: Hold; moving: MoveTerms 
   );
 }
 
+/**
+ * What booking also agrees to, one tap away beneath Pay: the notice the consent is recorded on, word for word.
+ * Nothing when the client has decided both purposes.
+ */
+function AgreedByBooking({ consents }: { consents: readonly BookingConsent[] }) {
+  const lines = consentLines(consents);
+  if (lines.length === 0) return null;
+  return (
+    <details className={styles.consents}>
+      <summary className={styles.consentsOpen}>{booking.pay.consents.open}</summary>
+      {lines.map((line) => (
+        <p key={line}>{line}</p>
+      ))}
+    </details>
+  );
+}
+
+/** Board C4, and C5's first fit: the held visit, what it costs, and Pay. */
 export function PayStep(props: {
   hold: Hold;
   moving?: MoveTerms | undefined;
-  method: PayMethod;
   busy: boolean;
   problem: string | null;
   /** Whether to ask to remind the client the day before: not when they have already switched it on. */
   askToRemind: boolean;
-  /** The photograph purposes booking also agrees to, whose lines are shown above the button (ADR 0080). */
+  /** The photograph purposes booking also agrees to. */
   consents: readonly BookingConsent[];
   remind: boolean;
   onRemind: (remind: boolean) => void;
-  onMethod: (method: PayMethod) => void;
   onPay: () => void;
   /** The hold priced again, once a discount code is applied or removed. */
   onHold: (hold: Hold) => void;
@@ -442,30 +456,6 @@ export function PayStep(props: {
         <ChangeTerms hold={hold} moving={inPlace ? moving : undefined} covered={covered} />
       </div>
       {takesACode && <CodeBox hold={hold} busy={props.busy} onHold={props.onHold} onSending={setCodeSending} />}
-      {!free && (
-        <>
-          <h3 className={styles.label}>{copy.with}</h3>
-          <div className={styles.methods} role="radiogroup" aria-label={copy.with}>
-            {(["upi", "card"] as const).map((method) => (
-              <label key={method} className={styles.method}>
-                <input
-                  className={styles.radio}
-                  type="radio"
-                  name="booking-method"
-                  checked={method === props.method}
-                  onChange={() => {
-                    props.onMethod(method);
-                  }}
-                />
-                <span>{copy[method]}</span>
-                <span className={styles.tick} aria-hidden="true">
-                  {method === props.method && <Icon d={CHECK} size={13} />}
-                </span>
-              </label>
-            ))}
-          </div>
-        </>
-      )}
       {props.askToRemind && (
         <label className={styles.remind}>
           <input
@@ -477,14 +467,6 @@ export function PayStep(props: {
           />
           <span>{copy.remind}</span>
         </label>
-      )}
-      {props.consents.length > 0 && (
-        // What the tap below also agrees to, read before it, whole: it is the notice the consent is given on.
-        <div className={styles.consents}>
-          {consentLines(props.consents).map((line) => (
-            <p key={line}>{line}</p>
-          ))}
-        </div>
       )}
       {props.problem !== null && (
         <p className={styles.problem} role="alert">
@@ -505,13 +487,14 @@ export function PayStep(props: {
       {covered && hold.late_change_charge !== "nothing" && (
         <p className={styles.creditNote}>{copy.credit.note(hold.change_notice_hours)}</p>
       )}
+      <AgreedByBooking consents={props.consents} />
     </>
   );
 }
 
-/** Board C6: the payment failed, and the hold's time left. */
-export function FailedStep(props: { hold: Hold; busy: boolean; onRetry: () => void; onAnother: () => void }) {
-  const { hold, busy, onRetry, onAnother } = props;
+/** Board C6: the payment failed, and the hold's time left. Checkout offers every way to pay again. */
+export function FailedStep(props: { hold: Hold; busy: boolean; onRetry: () => void }) {
+  const { hold, busy, onRetry } = props;
   const copy = booking.failed;
   const left = useHoldLeft(hold);
   return (
@@ -528,21 +511,9 @@ export function FailedStep(props: { hold: Hold; busy: boolean; onRetry: () => vo
         <p className={styles.outcomeLine}>{copy.held(minutesAndSeconds(left))}</p>
         <LastMinute left={left} />
       </div>
-      <div className={styles.pair}>
-        <Button
-          variant="primary"
-          size="control"
-          className={styles.primary}
-          disabled={busy}
-          busy={busy}
-          onClick={onRetry}
-        >
-          {copy.retry}
-        </Button>
-        <Button variant="outline" size="control" className={styles.secondary} disabled={busy} onClick={onAnother}>
-          {copy.another}
-        </Button>
-      </div>
+      <Button variant="primary" size="action" className={styles.primary} disabled={busy} busy={busy} onClick={onRetry}>
+        {copy.retry}
+      </Button>
     </div>
   );
 }

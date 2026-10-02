@@ -137,20 +137,20 @@ describe("paying in Checkout", () => {
 
   it("counts it as failed when Checkout never arrived", async () => {
     const { pay } = await checkout();
-    expect(await pay(ORDER, "upi")).toBe("failed");
+    expect(await pay(ORDER)).toBe("failed");
   });
 
-  it("opens on our order with the method the client chose, and with Checkout's own retry off", async () => {
+  it("opens on our order, with Checkout's own retry off", async () => {
     const razorpay = standInRazorpay();
     const { pay } = await checkout();
-    const paying = pay(ORDER, "card");
+    const paying = pay(ORDER);
 
     expect(razorpay.opened[0]).toMatchObject({
       key: "rzp_test_abc",
       order_id: "order_9",
       amount: 200000,
       currency: "INR",
-      prefill: { name: "Rohit Malhotra", contact: "+919810000001", method: "card" },
+      prefill: { name: "Rohit Malhotra", contact: "+919810000001" },
       retry: { enabled: false },
       theme: { color: "#16233a" },
     });
@@ -158,15 +158,27 @@ describe("paying in Checkout", () => {
     expect(await paying).toBe("paid");
   });
 
+  // MON-44: Checkout ignores a method chosen beforehand unless it is also given an e-mail, which we never send, so
+  // the app's "UPI · any app" was a choice that did nothing. Checkout lists its own ways to pay.
+  it("chooses no way to pay for the client, leaving Checkout to list them", async () => {
+    const razorpay = standInRazorpay();
+    const { pay } = await checkout();
+    void pay(ORDER);
+
+    const prefill = razorpay.opened[0]?.["prefill"] as Record<string, unknown>;
+    expect(prefill).not.toHaveProperty("method");
+    expect(prefill).not.toHaveProperty("email");
+  });
+
   it("tells a window the client closed from a payment that failed", async () => {
     const razorpay = standInRazorpay();
     const { pay } = await checkout();
 
-    const closed = pay(ORDER, "upi");
+    const closed = pay(ORDER);
     razorpay.options().modal.ondismiss();
     expect(await closed).toBe("dismissed");
 
-    const refused = pay(ORDER, "upi");
+    const refused = pay(ORDER);
     razorpay.fail();
     expect(await refused).toBe("failed");
   });
