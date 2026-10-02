@@ -2,8 +2,7 @@
 // a published block still holds the design's placeholder material, if a
 // consent notice or a legal page's wording has not been approved, if a price
 // on the site or the landing is typed into its sentence rather than filled
-// from the price book
-// (docs/decisions/0073-prices-from-the-price-book.md), or if a count of the
+// from the price book (docs/decisions/0073-prices-from-the-price-book.md), or if a count of the
 // visits a referral earns is typed rather than built from what ops set
 // (docs/decisions/0107-referral-rewards-in-the-console.md). Staging builds never run it.
 
