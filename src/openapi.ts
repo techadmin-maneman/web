@@ -37,7 +37,14 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
     razorpay: null,
     geocode: { apiKey: null, dailyCeiling: 0 },
     access: null,
-    login: { codePepper: "", codeMobileDailyLimit: 0, codeIpHourlyLimit: 0, codeDailyCeiling: 0, fixedCode: null },
+    login: {
+      codePepper: "",
+      codeMobileDailyLimit: 0,
+      codeIpHourlyLimit: 0,
+      codeDailyCeiling: 0,
+      fixedCode: null,
+      testRecordCode: null,
+    },
     tryon: {
       uploadIpHourlyLimit: 0,
       generateIpHourlyLimit: 0,

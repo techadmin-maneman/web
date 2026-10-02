@@ -8,29 +8,31 @@ import { takeOne } from "../domain/rate-limit.ts";
 import { saltedHash } from "../lib/hash.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { toE164 } from "../lib/mobile.ts";
+import { skipsAddressLimits } from "../policy/staging-test-records.ts";
 import { queueContactSync } from "./contact-sync.ts";
 import type { AppEnv } from "./context.ts";
 import { checkTurnstile, visitorOf } from "./visitor.ts";
 
 /** The number, the Turnstile check and the daily limits, the same for both pages. */
-async function checkPerson(c: Context<AppEnv>, mobile: string, token: string): Promise<Checked> {
+async function checkPerson(c: Context<AppEnv>, mobile: string, token: string, name: string): Promise<Checked> {
   const mobileE164 = toE164(mobile);
   if (mobileE164 === null) return { ok: false, status: 400, code: "invalid_request", fields: ["mobile"] };
   const visitor = await visitorOf(c);
   const turnstile = await checkTurnstile(c, token, visitor);
   if (turnstile === "rejected") return { ok: false, status: 403, code: "turnstile_failed" };
   if (turnstile === "unavailable") return { ok: false, status: 503, code: "unavailable" };
-  const { settings } = c.var.config;
+  const { settings, environment } = c.var.config;
   const today = indiaDate(c.var.deps.now());
   const db = c.env.DB;
   // The address first: a refusal of the address costs the number nothing.
   const within =
-    (await takeOne(db, {
-      scope: "booking:ip",
-      key: visitor.ipHash,
-      window: today,
-      limit: settings.leadIpDailyLimit,
-    })) &&
+    (skipsAddressLimits(environment, name) ||
+      (await takeOne(db, {
+        scope: "booking:ip",
+        key: visitor.ipHash,
+        window: today,
+        limit: settings.leadIpDailyLimit,
+      }))) &&
     (await takeOne(db, {
       scope: "booking:mobile",
       key: await saltedHash(settings.ipHashSalt, `mobile:${mobileE164}`),
@@ -50,7 +52,7 @@ export function formRequest(c: Context<AppEnv>): FormRequest {
     requestId: c.var.requestId,
     now: c.var.deps.now(),
     selfServeBooking: c.var.config.settings.selfServeBooking,
-    checkPerson: (mobile, token) => checkPerson(c, mobile, token),
+    checkPerson: (mobile, token, name) => checkPerson(c, mobile, token, name),
     syncContact: (personId) => queueContactSync(c, personId),
   };
 }

@@ -25,7 +25,7 @@ import { deviceLabel, openSession, revokeSession } from "../domain/sessions.ts";
 import { clearClientCookie, clientSessionOf, setClientCookie } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
-import { codeGate, countCode, mayAskForCode, sendCodeAfterResponse } from "../http/send-code.ts";
+import { codeGate, countCode, knownCode, mayAskForCode, sendCodeAfterResponse } from "../http/send-code.ts";
 import { visitorOf } from "../http/visitor.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import { MAX_SENDS_PER_CHALLENGE, newLoginCode, smsOfferedAt, whatsappResendAt } from "../policy/one-time-code.ts";
@@ -164,16 +164,16 @@ const login: RouteHandler<typeof loginRoute, AppEnv> = async (c) => {
   if (mobileE164 === null) return c.json(errorBody("invalid_request", requestId, ["mobile"]), 400);
 
   const visitor = await visitorOf(c);
-  const asked = await mayAskForCode(c, { surface: "login", mobileE164, ipHash: visitor.ipHash, now });
-  if (asked === "rate_limited") return c.json(errorBody("rate_limited", requestId), 429);
-  if (asked === "busy") return c.json(errorBody("busy", requestId), 503);
-
   const person = await findEligiblePerson(db, mobileE164);
   const sendsTo = person?.mobileE164 ?? null;
   const name = person?.name ?? null;
+  const asked = await mayAskForCode(c, { surface: "login", mobileE164, ipHash: visitor.ipHash, now, name });
+  if (asked === "rate_limited") return c.json(errorBody("rate_limited", requestId), 429);
+  if (asked === "busy") return c.json(errorBody("busy", requestId), 503);
+
   if (!(await countCode(c, sendsTo, name, visitor.ipHash, now))) return c.json(errorBody("busy", requestId), 503);
 
-  const code = limits.fixedCode ?? newLoginCode();
+  const code = knownCode(limits, name) ?? newLoginCode();
   const challenge = await createChallenge(db, { personId: person?.id ?? null, code, pepper: limits.codePepper, now });
   await sendCodeAfterResponse(c, sendsTo, name, "whatsapp", code);
   return c.json(challengeBody(c, challenge, now), 202);
@@ -200,7 +200,7 @@ async function sendAgain(c: Ctx, challengeId: string, channel: CodeChannel) {
   const name = contact?.name ?? null;
   if (!(await countCode(c, sendsTo, name, ipHash, now))) return c.json(errorBody("busy", requestId), 503);
 
-  const code = config.settings.login.fixedCode ?? newLoginCode();
+  const code = knownCode(config.settings.login, name) ?? newLoginCode();
   await replaceCode(db, challenge, { channel, code, pepper: config.settings.login.codePepper, now });
   await sendCodeAfterResponse(c, sendsTo, name, channel, code);
   const sent = { ...challenge, channel, lastSentAt: now, sends: challenge.sends + 1 };

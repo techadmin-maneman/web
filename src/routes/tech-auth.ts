@@ -27,7 +27,7 @@ import {
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { firstNameOf, initialsOf } from "../lib/names.ts";
-import { countCode, mayAskForCode, sendCodeAfterResponse } from "../http/send-code.ts";
+import { countCode, knownCode, mayAskForCode, sendCodeAfterResponse } from "../http/send-code.ts";
 import {
   clearTechnicianCookie,
   setTechnicianCookie,
@@ -159,12 +159,13 @@ export function registerTechAuth(app: App): void {
     if (mobileE164 === null) return c.json(errorBody("invalid_request", requestId, ["mobile"]), 400);
 
     const visitor = await visitorOf(c);
-    const asked = await mayAskForCode(c, { surface: "tech", mobileE164, ipHash: visitor.ipHash, now });
+    let technician = await findFieldTechnician(db, mobileE164);
+    const known = technician?.name ?? null;
+    const asked = await mayAskForCode(c, { surface: "tech", mobileE164, ipHash: visitor.ipHash, now, name: known });
     if (asked === "rate_limited") return c.json(errorBody("rate_limited", requestId), 429);
     if (asked === "busy") return c.json(errorBody("busy", requestId), 503);
 
     // A technician FSM listed since the last sync is unknown to the mirror; read it, then look again.
-    let technician = await findFieldTechnician(db, mobileE164);
     if (technician === null && config.providers.FSM_PROVIDER !== "none" && (await mayReadFsm(db, now))) {
       const deactivated = await syncTechnicians(db, deps.fsm, now.toISOString()).catch((error: unknown) => {
         c.var.log.warn("technician_sync_failed", { error });
@@ -177,7 +178,7 @@ export function registerTechAuth(app: App): void {
     const name = technician?.name ?? null;
     if (!(await countCode(c, sendsTo, name, visitor.ipHash, now))) return c.json(errorBody("busy", requestId), 503);
 
-    const code = limits.fixedCode ?? newLoginCode();
+    const code = knownCode(limits, name) ?? newLoginCode();
     const challenge = await createTechnicianChallenge(db, {
       technicianId: technician?.id ?? null,
       code,

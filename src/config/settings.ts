@@ -135,6 +135,11 @@ export interface LoginSettings {
    * through the stub messaging provider. The guard refuses it anywhere else.
    */
   readonly fixedCode: string | null;
+  /**
+   * On staging only, the code our own test records ("Staging test …") sign in with, so a test can walk the real
+   * login screens without reading a WhatsApp nobody owns. The guard refuses it anywhere else.
+   */
+  readonly testRecordCode: string | null;
 }
 
 export interface Settings {
@@ -502,11 +507,17 @@ function readLogin(read: Reader, environment: EnvironmentName | undefined, clien
     codeIpHourlyLimit: read.fixedLimit("OTP_IP_HOURLY_LIMIT", isLocal),
     codeDailyCeiling: read.fixedLimit("OTP_DAILY_CEILING", isLocal),
     fixedCode: read.optionalText("OTP_FIXED_CODE"),
+    testRecordCode: read.optionalText("STAGING_TEST_RECORD_CODE"),
   };
   if (login.fixedCode !== null && !isLocal) {
     read.problems.push("OTP_FIXED_CODE is set outside local: every login code would be known");
   } else if (login.fixedCode !== null && !/^\d{6}$/.test(login.fixedCode)) {
     read.problems.push("OTP_FIXED_CODE must be six digits");
+  }
+  if (login.testRecordCode !== null && environment !== "staging") {
+    read.problems.push("STAGING_TEST_RECORD_CODE is set outside staging: test records' codes would be known");
+  } else if (login.testRecordCode !== null && !/^\d{6}$/.test(login.testRecordCode)) {
+    read.problems.push("STAGING_TEST_RECORD_CODE must be six digits");
   }
   return login;
 }

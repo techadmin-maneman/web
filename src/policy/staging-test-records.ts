@@ -7,8 +7,11 @@
 // Every one of them already names its invented record "Staging test" or "Load test", so that is the mark a test
 // record carries and a real one never does.
 
+import type { EnvironmentName } from "../config/environments.ts";
+
 export const RULES = [
   "A record one of our own scripts made is messaged only if its number is on the allowlist, whatever the message's class.",
+  "On staging, a test record signs in with the known code in STAGING_TEST_RECORD_CODE, and skips the limits per address.",
 ] as const;
 
 /** The names our own scripts and fixtures give an invented client or technician, never a real one's. */
@@ -21,4 +24,12 @@ const STAGING_TEST_NAME_PREFIXES = ["Staging test", "Load test"] as const;
  */
 export function isStagingTestRecord(name: string): boolean {
   return STAGING_TEST_NAME_PREFIXES.some((prefix) => name === prefix || name.startsWith(`${prefix} `));
+}
+
+/**
+ * Whether a test run on staging may skip the limits per address (IP) for this record: an audit books and signs in
+ * many test records from one machine, where real clients come from many. The limits per number still apply.
+ */
+export function skipsAddressLimits(environment: EnvironmentName | undefined, name: string | null): boolean {
+  return environment === "staging" && name !== null && isStagingTestRecord(name);
 }
