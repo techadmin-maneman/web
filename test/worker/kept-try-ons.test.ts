@@ -70,6 +70,7 @@ async function tryOnWithCopy(id: string, columns: Record<string, string | number
     expires_at: at(14 * DAY - 2 * HOUR),
     photo_consent_version: "photo-v2",
     copy_key: copyOf(id),
+    number_proved_at: at(-2 * HOUR),
     ...columns,
   });
   await env.UPLOADS.put(`uploads/${id}`, syntheticJpeg(1200, 1600));
@@ -223,6 +224,19 @@ describe("the sweeper, on a try-on's small copy", () => {
 });
 
 describe("the sweeper, on a client's try-on", () => {
+  // PS-10: a claim whose number no code proved may hold a stranger's photograph, so it is never kept as theirs.
+  it("lets go of a try-on whose claim no code proved, as of anyone who never booked", async () => {
+    await tryOnWithCopy("unproved", { number_proved_at: null });
+    await booksAVisit();
+    await lookDue("unproved");
+
+    await sweepNow();
+
+    expect(await jobRow("unproved")).toMatchObject({ state: "expired", copy_key: null, kept_at: null });
+    expect(await env.CLIENT_PHOTOS.head(copyOf("unproved"))).toBeNull();
+    expect(await metered()).toBe(0);
+  });
+
   it("keeps the copy for good, and moves the look where no lifecycle rule takes it, for a client who has booked", async () => {
     await tryOnWithCopy("client");
     await booksAVisit();
@@ -251,7 +265,7 @@ describe("the sweeper, on a client's try-on", () => {
     await lookDue("client");
     const due = await env.DB.prepare(
       `SELECT id, created_at, person_id, photo_consent_version, state, result_key, expires_at, kept_at, copy_key,
-         kept_look_key
+         kept_look_key, number_proved_at
        FROM tryon_jobs WHERE id = 'client'`,
     ).first<ExpiringTryOn>();
     let reads = 0;
@@ -267,7 +281,7 @@ describe("the sweeper, on a client's try-on", () => {
     // The next run finds the same try-on, still ready, now kept and with its look moved.
     const again = await env.DB.prepare(
       `SELECT id, created_at, person_id, photo_consent_version, state, result_key, expires_at, kept_at, copy_key,
-         kept_look_key
+         kept_look_key, number_proved_at
        FROM tryon_jobs WHERE id = 'client'`,
     ).first<ExpiringTryOn>();
     expect(await keepOrLetGo(keeping, again === null ? [] : [again], NOW)).toBe(1);
