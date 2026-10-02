@@ -128,6 +128,22 @@ export function visitMessage(
   return { id, statement };
 }
 
+/** visitMessage, written only if the visit change `changeId` is: for the batch whose first statement claims it. */
+export function visitMessageOnChange(
+  db: D1Database,
+  input: { personId: string; appointmentId: string; kind: VisitMessageKind; now: Date; changeId: string },
+): { id: string; statement: D1PreparedStatement } {
+  const id = crypto.randomUUID();
+  const statement = db
+    .prepare(
+      `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at)
+       SELECT ?1, ?2, ?3, ?4, 'appointment', ?5, 'queued', ?2
+       WHERE EXISTS (SELECT 1 FROM visit_changes WHERE id = ?6)`,
+    )
+    .bind(id, input.now.toISOString(), input.personId, input.kind, input.appointmentId, input.changeId);
+  return { id, statement };
+}
+
 /**
  * Writes the arrival notice for a check-in that passed, once per visit (the index outbound_messages_one_arrival).
  * A check-in heard of too late to tell the client anything is recorded as not sent, with why, so a no-show's

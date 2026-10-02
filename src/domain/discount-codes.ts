@@ -12,6 +12,7 @@ import {
   COVERABLE,
   GENERATED_LENGTH,
   normalisedCode,
+  termsRefusal,
   type Coverable,
   type DiscountKind,
   type DiscountTerms,
@@ -111,6 +112,8 @@ const GENERATION_TRIES = 3;
 
 /** Makes the codes, with their audit entry, IDs and codes only, in one batch. */
 export async function makeCodes(db: D1Database, input: NewCodes, change: Change): Promise<Made> {
+  const refused = termsRefusal(input);
+  if (refused !== null) throw new Error(`A discount code cannot be made with that ${refused}.`);
   for (let tries = 0; tries < GENERATION_TRIES; tries += 1) {
     const codes =
       input.code === null ? Array.from({ length: input.count }, generatedCode) : [normalisedCode(input.code)];

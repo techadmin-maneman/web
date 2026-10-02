@@ -3638,7 +3638,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names code when it is not one a code can be, count for a typed code made more than once, value for a percentage over 100, cap on an amount, covers named twice, expires_on before today, and max_uses for a batch whose codes are not single-use
+**400**: invalid_request: fields names code when it is not one a code can be, count for a typed code made more than once, value for a percentage over 100 or an amount not in whole rupees, cap on an amount or not in whole rupees, covers named twice, expires_on before today, and max_uses for a batch whose codes are not single-use
 
 ```json
 {
@@ -12536,7 +12536,7 @@ Request body:
       "type": "integer",
       "minimum": 1,
       "maximum": 100000000,
-      "description": "Per cent, 1 to 100, for a percentage; paise before GST for an amount."
+      "description": "Per cent, 1 to 100, for a percentage; paise in whole rupees, before GST, for an amount."
     },
     "cap": {
       "anyOf": [
@@ -12549,7 +12549,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "A percentage's most, in paise before GST; none if left out."
+      "description": "A percentage's most, in paise in whole rupees, before GST; none if left out."
     },
     "covers": {
       "type": "array",
