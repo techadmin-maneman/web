@@ -1,43 +1,54 @@
 // The console's pages, by path. Links change the path without a reload; the
 // Worker answers every path with the console, so a page can be opened directly.
 //
-// SECTIONS below is the one list of them: the navigation draws it, routeOf reads
-// it, and each page is titled from it. Two sections have pages beneath them:
+// SECTIONS below is the one list of them, in the navigation's order: by
+// department, Tasks first. The navigation draws it, routeOf reads it, and each
+// page is titled from it. Two sections have pages beneath them:
 //
-//   /clients/:id/:tab       a client's page, a tab at a time (B1 to B3, and the tabs no board draws)
-//   /settings/:tab          the rules, the price book and the service area (ADR 0061), the consumables
-//                           and the job sheet (ADR 0087), and the Staff list
+//   /clients/:id/:tab       a client's page, a tab at a time
+//   /settings/:tab          the rules, blackout days, consumables and the job sheet
 //
-// Anything else, "/" included, is the dispatch board, which is what the design opens on.
+// Anything else, "/" included, is Tasks, where the console opens.
 
 import { clients, settings, shell } from "./content.ts";
+import type { Department } from "./settings/grants.ts";
 
 /** The router the apps share (packages/ui/router.tsx): the console's pages take it from here. */
-export { followsHere, go, usePath, type Click } from "@maneman/ui/router";
+export { followsHere, go, redirect, usePath, type Click } from "@maneman/ui/router";
 
-/**
- * The console's sections, in the navigation's order: the design's eight, with
- * No-shows where it draws Payments, Stock beside the technicians whose kits it
- * counts (ADR 0087), and the three a client's rights over their data put in
- * front of ops before Settings (docs/fidelity-method.md).
- */
+export interface Section {
+  readonly page: string;
+  readonly path: string;
+  readonly department: Department;
+  /** The call its page opens with, as src/policy/console-routes.ts names it: shown to those whose calls to it go ahead. */
+  readonly reads: string;
+}
+
 export const SECTIONS = [
-  { page: "dispatch", path: "/dispatch" },
-  { page: "clients", path: "/clients" },
-  { page: "no-shows", path: "/no-shows" },
-  { page: "referrals", path: "/referrals" },
-  { page: "waitlist", path: "/waitlist" },
-  { page: "tasks", path: "/tasks" },
-  { page: "technicians", path: "/technicians" },
-  { page: "stock", path: "/stock" },
-  { page: "grievances", path: "/grievances" },
-  { page: "deletion-requests", path: "/deletion-requests" },
-  { page: "number-changes", path: "/number-changes" },
-  { page: "settings", path: "/settings" },
-] as const;
+  { page: "tasks", path: "/tasks", department: "operations", reads: "GET /api/tasks" },
+  { page: "dispatch", path: "/dispatch", department: "operations", reads: "GET /api/dispatch" },
+  { page: "technicians", path: "/technicians", department: "operations", reads: "GET /api/technicians" },
+  { page: "stock", path: "/stock", department: "operations", reads: "GET /api/stock" },
+  { page: "clients", path: "/clients", department: "customer_care", reads: "POST /api/clients/find" },
+  { page: "grievances", path: "/grievances", department: "customer_care", reads: "GET /api/grievances" },
+  { page: "number-changes", path: "/number-changes", department: "customer_care", reads: "GET /api/number-changes" },
+  {
+    page: "deletion-requests",
+    path: "/deletion-requests",
+    department: "customer_care",
+    reads: "GET /api/deletion-requests",
+  },
+  { page: "no-shows", path: "/no-shows", department: "finance", reads: "GET /api/no-shows" },
+  { page: "prices", path: "/prices", department: "finance", reads: "GET /api/services" },
+  { page: "discount-codes", path: "/discount-codes", department: "finance", reads: "GET /api/discount-codes" },
+  { page: "referrals", path: "/referrals", department: "growth", reads: "GET /api/referrals/held" },
+  { page: "waitlist", path: "/waitlist", department: "growth", reads: "GET /api/waitlist" },
+  { page: "service-area", path: "/service-area", department: "growth", reads: "GET /api/service-area" },
+  { page: "settings", path: "/settings", department: "admin", reads: "GET /api/settings" },
+  { page: "staff", path: "/staff", department: "admin", reads: "GET /api/staff" },
+] as const satisfies readonly Section[];
 
 export type Page = (typeof SECTIONS)[number]["page"];
-export type SectionPath = (typeof SECTIONS)[number]["path"];
 
 /** A section that is one page, with nothing beneath it. */
 export type PlainPage = Exclude<Page, "clients" | "settings">;
@@ -53,16 +64,7 @@ export type ClientTab = (typeof CLIENT_TABS)[number];
 const OPENING_TAB: ClientTab = "pieces";
 
 /** What Settings holds, in the order the section lists it. Rules has the section's own path. */
-export const SETTINGS_TABS = [
-  "rules",
-  "prices",
-  "discount-codes",
-  "area",
-  "blackouts",
-  "consumables",
-  "job-sheet",
-  "staff",
-] as const;
+export const SETTINGS_TABS = ["rules", "blackouts", "consumables", "job-sheet"] as const;
 export type SettingsTab = (typeof SETTINGS_TABS)[number];
 
 export type Route =
@@ -70,9 +72,23 @@ export type Route =
   | { readonly page: "settings"; readonly tab: SettingsTab }
   | { readonly page: "clients"; readonly clientId: string | null; readonly tab: ClientTab };
 
-const DISPATCH: Route = { page: "dispatch" };
+const TASKS: Route = { page: "tasks" };
 const CLIENT_PATH = /^\/clients(?:\/([0-9a-f-]{36})(?:\/(visits|pieces|payments|photos|consents|history))?)?$/;
-const SETTINGS_PATH = /^\/settings(?:\/(prices|discount-codes|area|blackouts|consumables|job-sheet|staff))?$/;
+const SETTINGS_PATH = /^\/settings(?:\/(blackouts|consumables|job-sheet))?$/;
+
+/** Settings tabs that became pages of their own departments, so a link or bookmark to one still lands. */
+const MOVED: Readonly<Record<string, string>> = {
+  "/settings/prices": "/prices",
+  "/settings/discount-codes": "/discount-codes",
+  "/settings/area": "/service-area",
+  "/settings/staff": "/staff",
+};
+
+/** Where a page that has moved is now; null for a path that has not moved. */
+export function movedTo(path: string): string | null {
+  if (!Object.hasOwn(MOVED, path)) return null;
+  return MOVED[path] ?? null;
+}
 
 /** The tab a client's path names; Pieces without one, as the board draws the page. */
 const clientTabOf = (named: string | undefined): ClientTab => CLIENT_TABS.find((tab) => tab === named) ?? OPENING_TAB;
@@ -82,17 +98,25 @@ const settingsTabOf = (named: string | undefined): SettingsTab =>
 
 const isPlain = (page: Page): page is PlainPage => page !== "clients" && page !== "settings";
 
-export function routeOf(path: string): Route {
+export function routeOf(asked: string): Route {
+  const path = movedTo(asked) ?? asked;
   const client = CLIENT_PATH.exec(path);
   if (client !== null) return { page: "clients", clientId: client[1] ?? null, tab: clientTabOf(client[2]) };
   const setting = SETTINGS_PATH.exec(path);
   if (setting !== null) return { page: "settings", tab: settingsTabOf(setting[1]) };
   const section = SECTIONS.find((each) => each.path === path);
-  if (section === undefined || !isPlain(section.page)) return DISPATCH;
+  if (section === undefined || !isPlain(section.page)) return TASKS;
   return { page: section.page };
 }
 
 export const settingsPath = (tab: SettingsTab): string => (tab === "rules" ? "/settings" : `/settings/${tab}`);
+
+/** The section a page belongs to. */
+export function sectionOf(page: Page): Section {
+  const section = SECTIONS.find((each) => each.page === page);
+  if (section === undefined) throw new Error(`no section has the page ${page}`);
+  return section;
+}
 
 /** Each section's name and each Settings tab's, from content.ts; typed here, so one left unnamed fails the build. */
 export const SECTION_NAMES: Readonly<Record<Page, string>> = shell.sections;
