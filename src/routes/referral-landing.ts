@@ -33,10 +33,12 @@ import {
   BOOKED_DESCRIPTION,
   CreditsSchema,
   InviteStateSchema,
+  OneVisitNumberCodeSchema,
   OneVisitOutcomeSchema,
   OneVisitRequestSchema,
   planOf,
   takenOrInProgress,
+  turnstileOrNotProved,
   TypedAddressSchema,
 } from "./consultations.ts";
 
@@ -66,7 +68,9 @@ const PincodeAnswerSchema = z
   .object({
     pincode: z.string(),
     served: z.boolean(),
-    area: z.union([z.string(), z.null()]).openapi({ description: "Null for a pincode we do not know." }),
+    area: z.union([z.string(), z.null()]).openapi({
+      description: "The area's name once ops have named it; null until then, and for a pincode we do not know.",
+    }),
     city: z.union([z.string(), z.null()]),
   })
   .strict()
@@ -99,6 +103,7 @@ const ConsultationRequestSchema = z
     window: z.enum(BOOKING_WINDOWS),
     address: TypedAddressSchema,
     one_visit: OneVisitRequestSchema,
+    number_code_id: OneVisitNumberCodeSchema,
     consent: z.literal(true).openapi({ description: '"You may contact me on WhatsApp about this consultation."' }),
   })
   .strict();
@@ -168,7 +173,7 @@ const consultationRoute = createRoute({
               }),
               date: z.iso.date(),
               window: z.enum(BOOKING_WINDOWS),
-              area: z.string(),
+              area: z.string().openapi({ description: "The area once ops have named it, its city until then." }),
               credits: CreditsSchema,
               invite: InviteStateSchema,
               one_visit: OneVisitOutcomeSchema,
@@ -182,7 +187,7 @@ const consultationRoute = createRoute({
       "invalid_request: fields names what was refused, address.pincode for an address in another pincode, window " +
         "for one visit in the evening",
     ),
-    403: errorResponse("turnstile_failed"),
+    403: turnstileOrNotProved,
     409: takenOrInProgress,
     422: errorResponse(
       "not_bookable: the pincode is not served, or the day is not open; no_product: one visit, on a day the console " +
@@ -208,7 +213,13 @@ const waitlistRoute = createRoute({
       content: {
         "application/json": {
           schema: z
-            .object({ area: z.union([z.string(), z.null()]), credits: CreditsSchema, invite: InviteStateSchema })
+            .object({
+              area: z
+                .union([z.string(), z.null()])
+                .openapi({ description: "Null until ops have named the area, and for a pincode we do not know." }),
+              credits: CreditsSchema,
+              invite: InviteStateSchema,
+            })
             .strict()
             .openapi("ReferralWaitlist"),
         },
@@ -291,6 +302,7 @@ export function registerReferralLanding(app: App): void {
         plan: planOf(body.one_visit),
         // An invite's page takes no discount code: the invite is its offer (docs/decisions/0108-discount-codes.md).
         discountCode: null,
+        numberCodeId: body.number_code_id ?? null,
       });
       if (!booked.ok) return booked;
       return {

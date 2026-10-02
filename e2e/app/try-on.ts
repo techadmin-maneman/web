@@ -73,10 +73,11 @@ export async function seedTryOn(): Promise<void> {
        sync_state, request_id) VALUES
        ${row(booking, person, at, "form", "Gurgaon", "weekday_pm", "receding", consultationDay, "synced", "e2e")},
        ${row(tryOnLead, person, createdAt, "tryon", null, null, "receding", null, "synced", "e2e")};`,
+    // Claimed with the number proved by its WhatsApp code, as every claim is.
     `INSERT INTO tryon_jobs (id, created_at, upload_key, uploaded_at, stage, preset, hair_color, endpoint, state,
        result_key, expires_at, person_id, lead_id, claimed_at, photo_consent_version, photo_consent_at, ip_hash,
-       request_id, copy_key) VALUES
-       ${row(job, createdAt, uploadKey, createdAt, "receding", "medium-natural-short", "black", "pro", "ready", resultKey, expiresAt, person, tryOnLead, createdAt, "photo-v2", createdAt, "e2e", "e2e", copyKey)};`,
+       request_id, copy_key, number_proved_at) VALUES
+       ${row(job, createdAt, uploadKey, createdAt, "receding", "medium-natural-short", "black", "pro", "ready", resultKey, expiresAt, person, tryOnLead, createdAt, "photo-v2", createdAt, "e2e", "e2e", copyKey, createdAt)};`,
   ];
 
   const folder = await mkdtemp(join(tmpdir(), "mm-e2e-"));

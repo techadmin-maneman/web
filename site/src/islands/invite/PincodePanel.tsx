@@ -6,6 +6,9 @@ import { Icon } from "../Drawings.tsx";
 import styles from "./Invite.module.css";
 import type { PincodeCheck } from "./usePincode.ts";
 
+/** Where we come to: the area once ops have named it, its city until then. */
+const placeOf = (answer: PincodeAnswer): string => answer.area ?? answer.city ?? answer.pincode;
+
 /** Boards C2 and C3: what the pincode answered, in the navy block's place. */
 function PincodeAnswerBlock(props: { answer: PincodeAnswer; heading: { current: HTMLHeadingElement | null } }) {
   const { answer } = props;
@@ -13,7 +16,7 @@ function PincodeAnswerBlock(props: { answer: PincodeAnswer; heading: { current: 
     return (
       <h2 ref={props.heading} tabIndex={-1} class={styles.answer}>
         <Icon path={ICONS.tick} size={21} stroke={1.7} />
-        {fill(referral.consultation.served, { area: answer.area ?? "" })}
+        {fill(referral.consultation.served, { area: placeOf(answer) })}
       </h2>
     );
   }

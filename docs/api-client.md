@@ -1644,6 +1644,7 @@ Request body:
             "look_limit_reached",
             "claim_required",
             "whatsapp_unavailable",
+            "number_not_proved",
             "unauthorized",
             "visit_booked",
             "payment_held",

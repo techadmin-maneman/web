@@ -32,6 +32,7 @@ import { readDatabaseBytes, tellOfDatabaseSize, tellOfStorage } from "../domain/
 import { queueReminders } from "../domain/visit-messages.ts";
 import type { StaticConfig } from "../guard.ts";
 import { createCallBudget, type CallBudget } from "../lib/call-budget.ts";
+import { meterDatabase, usageFields, usageSince, type MeteredDatabase } from "../lib/d1-meter.ts";
 import { scrubString, type Logger } from "../log.ts";
 import { pingHeartbeat } from "../providers/heartbeat.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
@@ -54,7 +55,13 @@ export interface CronContext {
 }
 
 /** What a run is given; the budget and the figures ops set are the run's own, shared by its jobs. */
-export type CronRun = Omit<CronContext, "budget" | "inputs">;
+export type CronRun = Omit<CronContext, "budget" | "inputs"> & {
+  /**
+   * The meter env.DB already reads through, which the run's dependencies were made with too. Without one the run
+   * meters env.DB itself, and what its dependencies read (an alert raised or closed) goes uncounted.
+   */
+  readonly meter?: MeteredDatabase;
+};
 
 /**
  * Outside calls one run may make. The free plan allows 50 fetch subrequests an
@@ -307,18 +314,21 @@ function sharedInputs({ env, deps, log }: CronRun): () => Promise<OpsInputs> {
 
 /**
  * Runs each job switched on here, in order, each under a logger named for it, on one budget of outside calls and one
- * read of the figures ops set.
+ * read of the figures ops set. The run ends with one line saying what it cost D1, and what each job read of it.
  */
-export async function runCronJobs(jobs: readonly CronJob[], run: CronRun): Promise<CronOutcome[]> {
+export async function runCronJobs(jobs: readonly CronJob[], given: CronRun): Promise<CronOutcome[]> {
+  const { run, meter } = metered(given);
   const startedAt = run.deps.now().toISOString();
   await recordStart(run, startedAt);
   const failing = await failingJobs(run);
   const budget = createCallBudget(CRON_CALLS);
   const inputs = sharedInputs(run);
   const outcomes: CronOutcome[] = [];
+  const rowsReadByJob: Record<string, number> = {};
   for (const job of jobs) {
     if (!isSwitchedOn(job.needs, run.config)) continue;
     const context = { ...run, log: run.log.child({ job: job.name }), budget, inputs };
+    const before = meter.usage();
     try {
       await job.run(context);
       outcomes.push({ job: job.name, ok: true });
@@ -328,10 +338,22 @@ export async function runCronJobs(jobs: readonly CronJob[], run: CronRun): Promi
       outcomes.push({ job: job.name, ok: false });
       await countFailure(context, job.name, error);
     }
+    rowsReadByJob[job.name] = usageSince(before, meter.usage()).rowsRead;
   }
   if (budget.ranOut()) run.log.warn("cron_calls_spent", { calls: CRON_CALLS });
   await recordFinish(run, startedAt, failedJobs(outcomes).length);
+  run.log.info("cron_run", {
+    failed_jobs: failedJobs(outcomes),
+    ...usageFields(meter.usage()),
+    d1_rows_read_by_job: rowsReadByJob,
+  });
   return outcomes;
+}
+
+function metered(run: CronRun): { run: CronRun; meter: MeteredDatabase } {
+  if (run.meter !== undefined) return { run, meter: run.meter };
+  const meter = meterDatabase(run.env.DB);
+  return { run: { ...run, env: { ...run.env, DB: meter.db }, meter }, meter };
 }
 
 /** A whole scheduled run: the jobs, then the heartbeat that tells the outside monitor the cron is still running. */
