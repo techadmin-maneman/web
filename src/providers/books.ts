@@ -148,14 +148,14 @@ export interface BooksProvider {
   updateCustomer(customerId: string, customer: NewBooksCustomer): Promise<void>;
   /**
    * Deletes the customer. Books keeps one a document or payment names, so that one is renamed "Erased client", its
-   * contact person, number, e-mail and addresses cleared, and marked inactive.
+   * contact person, number, e-mail and addresses cleared, and marked inactive. One call, or three for that one.
    */
   eraseCustomer(customerId: string): Promise<BooksErasure>;
   /** The invoice Books holds under our reference, whatever its status; null if it holds none. */
   findInvoice(reference: string): Promise<BooksInvoice | null>;
   /** Raises a draft; answers it with the total Books worked out. */
   createInvoice(invoice: NewBooksInvoice): Promise<BooksInvoice>;
-  /** Every item, active or not. */
+  /** Every item, active or not: one call a page, BOOKS_ITEM_PAGES at most. */
   items(): Promise<BooksItem[]>;
   /** Adds a service item; returns Books' ID for it. */
   createItem(item: BooksItemDetails): Promise<string>;
