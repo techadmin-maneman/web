@@ -363,6 +363,7 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
       "cron_runs",
       "counters",
       "idempotency",
+      "number_codes",
       "otp_challenges",
       "tryon_sessions",
       "events",

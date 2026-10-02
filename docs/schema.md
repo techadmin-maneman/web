@@ -35,7 +35,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Technicians, and FSM's catalogue | `technicians`, `fsm_items` | A technician added or changed since goes back | Where FSM still holds them, the cron reads them again; otherwise the rows since `<T>` |
 | Worked out from other tables | `last_visits`, `ops_settings_snapshot`, `stock_balances` | Nothing of their own: triggers keep each from the table it is worked out from | Putting back that table |
 | The storage meter | `stored_objects`, `storage_meter` | Objects stored or deleted since are counted wrongly, as R2 is not restored | The rows since `<T>` |
-| Housekeeping | `alerts`, `cron_jobs`, `cron_runs`, `counters`, `idempotency`, `otp_challenges`, `tryon_sessions`, `events`, `sync_cursors`, `webhook_inbox`, `zoho_access_tokens`, `zoho_token`, `zoho_tokens` | Nothing that lasts | Nothing |
+| Housekeeping | `alerts`, `cron_jobs`, `cron_runs`, `counters`, `idempotency`, `number_codes`, `otp_challenges`, `tryon_sessions`, `events`, `sync_cursors`, `webhook_inbox`, `zoho_access_tokens`, `zoho_token`, `zoho_tokens` | Nothing that lasts | Nothing |
 | The database's identity, and the restore's own switch | `deployment_identity`, `maintenance` | The identity is the same at every minute. Going back undoes the switch, so the steps turn it on again | Nothing |
 
 ## Tables
