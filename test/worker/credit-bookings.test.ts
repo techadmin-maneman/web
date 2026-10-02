@@ -227,8 +227,14 @@ describe("one credit pays for one visit", () => {
   it("spends one credit from each grant when two credit visits are booked at the same moment", async () => {
     const soon = new Date("2026-10-01T18:29:59.999Z");
     await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "ops", sourceId: "o1", now: NOW }).run();
-    await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "ops", sourceId: "o2", now: NOW, expiresAt: soon })
-      .run();
+    await grantCredits(env.DB, {
+      personId: PERSON,
+      visits: 1,
+      source: "ops",
+      sourceId: "o2",
+      now: NOW,
+      expiresAt: soon,
+    }).run();
     const first = await hold("2026-09-24");
     await book(first.id);
     const second = await hold("2026-09-25");
