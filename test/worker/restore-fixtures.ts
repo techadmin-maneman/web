@@ -31,7 +31,7 @@ export const ROWS_AT_T: readonly string[] = [
   `INSERT INTO otp_challenges (id, created_at, person_id, purpose, channel, last_sent_at, expires_at)
      VALUES ('o1', '${AT}', 'p1', 'login', 'whatsapp', '${AT}', '${LATER}')`,
   `INSERT INTO number_codes (id, created_at, mobile_hash, code_hash, expires_at)
-     VALUES ('nc1', '${AT}', 'm-hash', 'c-hash', '${LATER}')`,
+     VALUES ('nc-code1', '${AT}', 'a-hash', 'c-hash', '${LATER}')`,
   `INSERT INTO sessions (id, subject_kind, subject_id, created_at, last_seen_at, expires_at)
      VALUES ('s1', 'technician', 't1', '${AT}', '${AT}', '${LATER}')`,
   `INSERT INTO sessions (id, subject_kind, subject_id, created_at, last_seen_at, expires_at)
