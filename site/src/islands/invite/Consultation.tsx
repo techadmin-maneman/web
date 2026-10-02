@@ -6,7 +6,6 @@ import { track } from "../../lib/analytics.ts";
 import { addressToSend, emptyAddress, missingParts, type AddressFields } from "../../lib/address.ts";
 import { bookConsultation, bookPublicConsultation, type ReferralConsultation } from "../../lib/api.ts";
 import { dayStrip, indiaTomorrow } from "../../lib/dates.ts";
-import { mobileDigits } from "../../lib/phone.ts";
 import { forgetInvite, rememberedInvite } from "../../lib/remembered-invite.ts";
 import { fill } from "../../lib/text.ts";
 import { readAttribution } from "../../lib/visit.ts";
@@ -14,8 +13,8 @@ import { AddressFieldset } from "./AddressFieldset.tsx";
 import type { Booking } from "./Done.tsx";
 import { ExtentFieldset, ForPincode, PersonFieldset, Send, type FormProps } from "./fields.tsx";
 import styles from "./Invite.module.css";
-import { codeInPath } from "./page.ts";
-import { useTurnstileForm } from "./useTurnstileForm.ts";
+import { codeInPath, hairSystemsInPage } from "./page.ts";
+import { mobileToSend, useTurnstileForm } from "./useTurnstileForm.ts";
 
 type BookingWindow = ReferralConsultation["window"];
 type Plan = "consultation" | "one_visit";
@@ -36,6 +35,8 @@ const DAYS = 14;
 export function Consultation(props: FormProps & { onBooked: (booking: Booking) => void }) {
   const form = useTurnstileForm(props.turnstileSiteKey);
   const [plan, setPlan] = useState<Plan>("consultation");
+  // Offered while ops offer a hair system to fit. A page with no word of it offers it, and the API refuses it if not.
+  const [oneVisitOffered] = useState(() => hairSystemsInPage() !== false);
   const [date, setDate] = useState(indiaTomorrow());
   const [window, setWindow] = useState<BookingWindow>("morning");
   const [address, setAddress] = useState<AddressFields>(() => emptyAddress(props.answer.city));
@@ -50,7 +51,7 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
     const { fields } = form;
     const request = {
       name: fields.name.trim(),
-      mobile: mobileDigits(fields.mobile),
+      mobile: mobileToSend(fields),
       pincode,
       date,
       window,
@@ -90,6 +91,7 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
 
   const { consultation } = referral;
   const choices = consultation.plan;
+  const options = choices.options.filter((option) => option.id === "consultation" || oneVisitOffered);
   const windows = consultation.windows.filter(
     (option) => plan === "consultation" || oneVisitStartsIn(option.id as BookingWindow),
   );
@@ -111,7 +113,7 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
       <fieldset class={styles.group}>
         <legend class={`caps ${styles.legend}`}>{choices.legend}</legend>
         <div class={styles.windows}>
-          {choices.options.map((option) => (
+          {options.map((option) => (
             <label key={option.id} class={`${styles.window} ${plan === option.id ? styles.windowOn : ""}`}>
               <input
                 type="radio"
@@ -127,6 +129,7 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
           ))}
         </div>
         {plan === "one_visit" && <p class={styles.planNote}>{choices.note}</p>}
+        {!oneVisitOffered && <p class={styles.planNote}>{choices.notYet}</p>}
       </fieldset>
 
       {takesCode && (

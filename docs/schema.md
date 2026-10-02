@@ -17,7 +17,7 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [audit_log](#audit_log): Every ops action that reads or changes a client's data, and who took it. An entry is never changed (ADR 0031).
 - [checkins](#checkins): Each "I have arrived", passed or not, with the distance measured and the radius in force (ADR 0065); an erasure blanks where the phone was (ADR 0094).
 - [checklist_items](#checklist_items): Each kind of visit's checklist as ops set it, an item they took off kept as retired; a kind with no rows takes the committed list (ADR 0087).
-- [cities](#cities): The cities Phase 1's booking form offered. The leads it left name one, a booking's lead names its pincode's, and the dispatch board filters by them.
+- [cities](#cities): The cities Phase 1's booking form offered. The leads it left name one, a booking's lead names its pincode's, the dispatch board filters by them, and a zone groups them for staff access (ADR 0109).
 - [consents](#consents): What each person agreed to, under which notice's version, and where (ADR 0094). Rows are only ever added (ADR 0042, ADR 0049).
 - [consultation_requests](#consultation_requests): A consultation asked for while self-serve booking is off, for ops to fix the hour (ADR 0060).
 - [consumable_usage](#consumable_usage): What each service, a kind of visit at a tier of the price book, is expected to use of each consumable: where the technician's steppers start (ADR 0087).
@@ -26,6 +26,7 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [counters](#counters): Fixed-window counters for the rate limits and the daily ceilings (ADR 0011).
 - [credit_ledger](#credit_ledger): Service-visit credits, entry by entry, each drawing on the grant it spends; a balance is summed, never kept (ADR 0033).
 - [cron_jobs](#cron_jobs): Each job of the five-minute cron, and how many runs in a row it has failed (ADR 0067).
+- [cron_runs](#cron_runs): One row: when the five-minute cron's latest run started and its last finished run ended, so a run cut short is told by the next.
 - [deletion_requests](#deletion_requests): A client's request to be erased, waiting for ops, and what ops decided (ADR 0042, ADR 0078).
 - [deployment_identity](#deployment_identity): Which environment's database this is, so a Worker refuses to serve on another's (ADR 0003).
 - [discount_code_uses](#discount_code_uses): Each time a discount code was entered on a booking, its hold or its visit: by whom, and what it took off before GST once the price was known. Never deleted: one taken off is marked removed (ADR 0108).
@@ -65,6 +66,10 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [slot_claims](#slot_claims): What a hold or a visit takes of a technician's day, a row per half-slot and window, so no time is taken twice (ADR 0034, ADR 0069).
 - [slot_holds](#slot_holds): A slot held while a client pays, and what became of it (ADR 0045, ADR 0068).
 - [slot_times](#slot_times): Each change of the day's half-slot times ops set, from the day it applies; never changed (ADR 0102).
+- [staff](#staff): Each member of staff on the console's Staff list, by their Access e-mail, and whether they are let in (ADR 0109).
+- [staff_access_mode](#staff_access_mode): One row: whether the console enforces the Staff list yet, and who last switched it (ADR 0109).
+- [staff_grants](#staff_grants): What each member of staff may do: a department, at a level, over a place, national, a zone or a city (ADR 0109).
+- [staff_service_tokens](#staff_service_tokens): The Access service tokens let in as every caller was before the Staff list, such as CI's (ADR 0109).
 - [stock_balances](#stock_balances): What each place holds of each consumable, and when it last counted it: the sum of its rows in `stock_movements`, kept by triggers as each is written (ADR 0087).
 - [stock_movements](#stock_movements): Every movement of a consumable into or out of the central store or a technician's kit, never changed; what a place holds is the sum of its rows (ADR 0087).
 - [storage_meter](#storage_meter): What Phase 2's two buckets, client-photos and referral-cards, hold together: one row, the sum of `stored_objects` kept beside it, and the last mark of the share ops were told of (ADR 0093).
@@ -85,6 +90,7 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [zoho_access_tokens](#zoho_access_tokens): Each Zoho client's access token, and the lease one caller holds while it asks for a new one (ADR 0070).
 - [zoho_token](#zoho_token): The CRM's access token before migration 0041; unread since, and dropped later (open point 90).
 - [zoho_tokens](#zoho_tokens): FSM's and Books' access token before migration 0041; unread since, and dropped later (open point 90).
+- [zones](#zones): A region made of cities, as NCR is, which a grant of staff access may name (ADR 0109).
 
 ## addresses
 
@@ -265,9 +271,9 @@ Made by `0049_consumables_and_stock.sql`.
 
 ## cities
 
-The cities Phase 1's booking form offered. The leads it left name one, a booking's lead names its pincode's, and the dispatch board filters by them.
+The cities Phase 1's booking form offered. The leads it left name one, a booking's lead names its pincode's, the dispatch board filters by them, and a zone groups them for staff access (ADR 0109).
 
-Made by `0002_lead_path.sql`.
+Made by `0002_lead_path.sql`; changed by `0069_staff_and_access.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -275,6 +281,7 @@ Made by `0002_lead_path.sql`.
 | `served` | INTEGER | no |  |  |
 | `active` | INTEGER | no | `1` |  |
 | `sort` | INTEGER | no |  |  |
+| `zone` | TEXT | yes |  | → `zones.name` |
 
 ## consents
 
@@ -449,6 +456,20 @@ Made by `0038_alerts.sql`.
 | `failed_runs` | INTEGER | no | `0` |  |
 | `last_failed_at` | TEXT | yes |  |  |
 | `last_error` | TEXT | yes |  |  |
+
+## cron_runs
+
+One row: when the five-minute cron's latest run started and its last finished run ended, so a run cut short is told by the next.
+
+Made by `0068_cron_runs.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | INTEGER | no |  | primary key |
+| `started_at` | TEXT | no |  |  |
+| `completed_at` | TEXT | yes |  |  |
+| `failed_jobs` | INTEGER | yes |  |  |
+| `cut_short_at` | TEXT | yes |  |  |
 
 ## deletion_requests
 
@@ -1434,6 +1455,68 @@ Indexes:
 
 Triggers: `slot_times_no_delete`, `slot_times_no_update`.
 
+## staff
+
+Each member of staff on the console's Staff list, by their Access e-mail, and whether they are let in (ADR 0109).
+
+Made by `0069_staff_and_access.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `email` | TEXT | no |  | primary key |
+| `active` | INTEGER | no |  |  |
+| `added_by` | TEXT | no |  |  |
+| `added_at` | TEXT | no |  |  |
+| `changed_by` | TEXT | yes |  |  |
+| `changed_at` | TEXT | yes |  |  |
+
+## staff_access_mode
+
+One row: whether the console enforces the Staff list yet, and who last switched it (ADR 0109).
+
+Made by `0069_staff_and_access.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | INTEGER | no |  | primary key |
+| `enforced` | INTEGER | no |  |  |
+| `set_by` | TEXT | yes |  |  |
+| `set_at` | TEXT | yes |  |  |
+
+## staff_grants
+
+What each member of staff may do: a department, at a level, over a place, national, a zone or a city (ADR 0109).
+
+Made by `0069_staff_and_access.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | INTEGER | no |  | primary key |
+| `email` | TEXT | no |  | → `staff.email` |
+| `department` | TEXT | no |  |  |
+| `level` | TEXT | no |  |  |
+| `geography` | TEXT | no |  |  |
+| `place` | TEXT | yes |  |  |
+| `granted_by` | TEXT | no |  |  |
+| `granted_at` | TEXT | no |  |  |
+
+Indexes:
+
+- `staff_grants_by_email`: on (`email`)
+
+## staff_service_tokens
+
+The Access service tokens let in as every caller was before the Staff list, such as CI's (ADR 0109).
+
+Made by `0069_staff_and_access.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `client_id` | TEXT | no |  | primary key |
+| `label` | TEXT | no |  |  |
+| `added_by` | TEXT | no |  |  |
+| `added_at` | TEXT | no |  |  |
+
 ## stock_balances
 
 What each place holds of each consumable, and when it last counted it: the sum of its rows in `stock_movements`, kept by triggers as each is written (ADR 0087).
@@ -1842,3 +1925,14 @@ Made by `0010_zoho_tokens.sql`.
 | `client` | TEXT | no |  | primary key |
 | `access_token` | TEXT | no |  |  |
 | `expires_at` | TEXT | no |  |  |
+
+## zones
+
+A region made of cities, as NCR is, which a grant of staff access may name (ADR 0109).
+
+Made by `0069_staff_and_access.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `name` | TEXT | no |  | primary key |
+| `sort` | INTEGER | no |  |  |

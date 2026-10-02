@@ -65,7 +65,7 @@ import { tellOfLowStock } from "../domain/stock.ts";
 import { roomFor } from "../domain/storage-meter.ts";
 import { noShowReadiness, openNoShowCase } from "../domain/no-shows.ts";
 import { closeOneVisit } from "../domain/one-visit.ts";
-import { offeredServices } from "../domain/services.ts";
+import { offeredProducts } from "../domain/services.ts";
 import { jobDetail, jobsOn, lastVisitPhoto, progressOf, workableJob, type WorkableJob } from "../domain/tech-jobs.ts";
 import {
   anglesHeld,
@@ -129,6 +129,11 @@ const JobSummarySchema = z
       description:
         "A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, " +
         "at the piece step.",
+    }),
+    product: z.union([z.string(), z.null()]).openapi({
+      description:
+        "On a first fit, the hair system the client was sold, by its name in the console. Null on any other visit, " +
+        "on a one visit until the client chooses, and on a first fit that names none.",
     }),
     sector: z.union([z.string(), z.null()]).openapi({
       description:
@@ -1082,7 +1087,7 @@ async function oneVisitPiece(c: Ctx, job: WorkableJob, body: PieceBody): Promise
   if ((body.old_piece ?? null) !== null || (body.failure_reason ?? null) !== null) {
     return { invalid: ["old_piece", "failure_reason"] };
   }
-  const offered = await offeredServices(c.env.DB, indiaDate(job.windowStart), ["first_fit"]);
+  const offered = await offeredProducts(c.env.DB, indiaDate(job.windowStart));
   if (!offered.some((service) => service.tier === body.product)) return { invalid: ["product"] };
   const fitted = fittedPiece(body);
   return "invalid" in fitted ? fitted : { ...fitted, product: body.product };

@@ -975,6 +975,7 @@ Request body:
             "service_exists",
             "last_of_kind",
             "service_retired",
+            "no_product",
             "unknown_invite",
             "own_invite",
             "already_invited",
@@ -985,7 +986,9 @@ Request body:
             "already_discounted",
             "price_settled",
             "code_exists",
-            "slot_times_too_soon"
+            "slot_times_too_soon",
+            "not_permitted",
+            "last_admin"
           ]
         },
         "request_id": {
@@ -1081,6 +1084,13 @@ Request body:
         "unreachable"
       ],
       "description": "ok: reachable and marked as this environment's database. unmarked: no identity row. mismatch: marked as another environment's database."
+    },
+    "cron_completed_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "When the five-minute cron last finished a run; null before its first, or when the database is not this environment's. Information only: status does not depend on it."
     }
   },
   "required": [
@@ -1088,7 +1098,8 @@ Request body:
     "environment",
     "version_id",
     "version_tag",
-    "d1"
+    "d1",
+    "cron_completed_at"
   ],
   "additionalProperties": false
 }
@@ -1124,7 +1135,7 @@ Request body:
   "properties": {
     "mobile": {
       "type": "string",
-      "pattern": "^(?:\\+91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$"
+      "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$"
     },
     "device_id": {
       "type": "string",
@@ -1368,6 +1379,17 @@ Request body:
       "type": "boolean",
       "description": "A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, at the piece step."
     },
+    "product": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "On a first fit, the hair system the client was sold, by its name in the console. Null on any other visit, on a one visit until the client chooses, and on a first fit that names none."
+    },
     "sector": {
       "anyOf": [
         {
@@ -1429,6 +1451,7 @@ Request body:
     "window_label",
     "type",
     "one_visit",
+    "product",
     "sector",
     "status",
     "badge",
@@ -1504,6 +1527,17 @@ Request body:
     "one_visit": {
       "type": "boolean",
       "description": "A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, at the piece step."
+    },
+    "product": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "On a first fit, the hair system the client was sold, by its name in the console. Null on any other visit, on a one visit until the client chooses, and on a first fit that names none."
     },
     "sector": {
       "anyOf": [
@@ -1907,6 +1941,7 @@ Request body:
     "window_label",
     "type",
     "one_visit",
+    "product",
     "sector",
     "status",
     "badge",

@@ -3,6 +3,7 @@
 import { createScheduledController } from "cloudflare:test";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { lastCompletedAt } from "../../src/domain/cron-runs.ts";
 import worker from "../../src/index.ts";
 import { captureLogs, fakeQueue, markDatabase } from "./helpers.ts";
 import { insertJob, insertPerson, syntheticJpeg } from "./tryon-fixtures.ts";
@@ -97,7 +98,7 @@ describe("queue handler", () => {
 });
 
 describe("scheduled handler", () => {
-  it("runs the sweeper", async () => {
+  it("runs the sweeper, and notes the run as finished", async () => {
     await markDatabase();
     const logs = captureLogs();
     await worker.scheduled(createScheduledController({ cron: "*/5 * * * *" }), {
@@ -107,6 +108,7 @@ describe("scheduled handler", () => {
       MESSAGE_QUEUE: fakeQueue(),
     });
     expect(logs.lines().some((line) => line.event === "sweep")).toBe(true);
+    expect(await lastCompletedAt(env.DB)).not.toBeNull();
   });
 
   it("offers captured payments to Books", async () => {

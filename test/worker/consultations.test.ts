@@ -44,7 +44,7 @@ const BOOKED_MORNING = {
   discount_code: false,
 };
 
-const site =(settings = {}) => appFor("local", fakeDependencies(), settings, "public");
+const site = (settings = {}) => appFor("local", fakeDependencies(), settings, "public");
 const post = (body: unknown) => ({
   method: "POST",
   headers: { "Content-Type": "application/json" },
@@ -864,6 +864,51 @@ describe("a consultation and fit in one visit", () => {
     await env.DB.prepare("UPDATE technicians SET active = 0").run();
     expect((await book({ one_visit: true })).status).toBe(409);
     expect(await count("SELECT COUNT(*) AS n FROM people")).toBe(0);
+  });
+
+  // The owner's decision of 2 October 2026: only the hair systems ops offer, and no generic first fit in their place.
+  describe("while ops offer no hair system", () => {
+    beforeEach(async () => {
+      await env.DB.prepare("UPDATE services SET retired_date = '2026-09-01' WHERE kind = 'first_fit'").run();
+    });
+
+    it.each([
+      ["while self-serve booking is on", {}],
+      ["while self-serve booking is off", { selfServeBooking: false }],
+    ])("is refused as no_product %s, and writes nothing", async (_, settings) => {
+      const queue = fakeQueue();
+      const answer = await book({ one_visit: true }, settings, queue);
+
+      expect(answer.status).toBe(422);
+      expect(await answer.json()).toMatchObject({ error: { code: "no_product" } });
+      expect(queue.sent).toEqual([]);
+      expect(await count("SELECT COUNT(*) AS n FROM people")).toBe(0);
+      expect(await count("SELECT COUNT(*) AS n FROM consultation_requests")).toBe(0);
+    });
+
+    it("still books the consultation alone", async () => {
+      const answer = await book({});
+      expect(answer.status).toBe(201);
+      expect(await answer.json()).toMatchObject({ state: "booked", one_visit: false });
+    });
+  });
+
+  it("holds the first hair system ops offer for its length, the client choosing theirs at the visit", async () => {
+    await env.DB.batch([
+      env.DB.prepare("UPDATE services SET retired_date = '2026-09-01' WHERE kind = 'first_fit'"),
+      env.DB.prepare(
+        `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
+         VALUES ('first_fit', 'essential', 'Mane Man Essential', 180, 1, 'ops@localhost', ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from)
+         VALUES ('first_fit', 'essential', 3200000, 0, '2026-01-01')`,
+      ),
+    ]);
+
+    expect((await book({ one_visit: true })).status).toBe(201);
+    const held = await env.DB.prepare("SELECT type, tier, minutes, amount FROM slot_holds").first();
+    expect(held).toEqual({ type: "first_fit", tier: "essential", minutes: 180, amount: 0 });
   });
 });
 

@@ -22,7 +22,11 @@ const FULL = {
   "tests (unit, contract, coverage)": "success",
   "full suite": "success",
 };
-const QUICK = { "static checks": "success", "tests (unit, contract, coverage)": "success", "full suite": "skipped" };
+const SUITE_FAILED = {
+  "static checks": "success",
+  "tests (unit, contract, coverage)": "success",
+  "full suite": "failure",
+};
 
 /** A fake GitHub API over one merged pull request. */
 function github(repo: Repo = {}): GitHubGet {
@@ -55,15 +59,13 @@ describe("a staging deploy's merge", () => {
     expect(answer.reason).toContain("#7");
   });
 
-  // 1 October 2026: #169's head passed the quick tier after main was merged into it, and its deploy ran the unit
-  // tests a second time on the same files.
-  it("takes the quick tier's passes on their own, and runs only the full suite", async () => {
-    expect((await alreadyChecked("o/r", MERGE, github({ runs: [QUICK] }))).passed).toEqual(["static", "tests"]);
+  it("takes each check's pass on its own, and runs only the full suite that failed", async () => {
+    expect((await alreadyChecked("o/r", MERGE, github({ runs: [SUITE_FAILED] }))).passed).toEqual(["static", "tests"]);
   });
 
   it("gathers the passes from every run on the head, a failed run's passing jobs among them", async () => {
-    const failedBrowsers = { "static checks": "success", "tests (unit, contract, coverage)": "failure" };
-    const answer = await alreadyChecked("o/r", MERGE, github({ runs: [failedBrowsers, QUICK] }));
+    const failedTests = { "static checks": "success", "tests (unit, contract, coverage)": "failure" };
+    const answer = await alreadyChecked("o/r", MERGE, github({ runs: [failedTests, SUITE_FAILED] }));
     expect(answer.passed).toEqual(["static", "tests"]);
   });
 
@@ -94,7 +96,7 @@ describe("a staging deploy's merge", () => {
 
 describe("a pull request's run on its head's own files", () => {
   it("takes as passed what an earlier run on the same head passed, as when the pull request is marked ready", async () => {
-    const answer = await alreadyChecked("o/r", MERGE, github({ runs: [QUICK] }), HEAD);
+    const answer = await alreadyChecked("o/r", MERGE, github({ runs: [SUITE_FAILED] }), HEAD);
     expect(answer.passed).toEqual(["static", "tests"]);
   });
 

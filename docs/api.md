@@ -49,7 +49,7 @@ The prices the site publishes, from the price book, in force today. Cacheable fo
 }
 ```
 
-**503**: unavailable: the book lacks a standard one of them, so the site shows its own
+**503**: unavailable: the book lacks the standard service visit or replacement, so the site shows its own
 
 ```json
 {
@@ -218,7 +218,7 @@ Request body:
 }
 ```
 
-**422**: not_bookable: the pincode is not served, or the day is not open; code_not_applicable: the discount code does not apply, fields names discount_code; idempotency_key_reused: the key was used with a different body
+**422**: not_bookable: the pincode is not served, or the day is not open; code_not_applicable: the discount code does not apply, fields names discount_code; no_product: one visit, on a day the console offers no hair system; idempotency_key_reused: the key was used with a different body
 
 ```json
 {
@@ -546,7 +546,7 @@ Request body:
 }
 ```
 
-**422**: not_bookable: the pincode is not served, or the day is not open; idempotency_key_reused: the key was used with a different body
+**422**: not_bookable: the pincode is not served, or the day is not open; no_product: one visit, on a day the console offers no hair system; idempotency_key_reused: the key was used with a different body
 
 ```json
 {
@@ -991,13 +991,7 @@ Whether this browser has had its look, from its mm_look cookie
 }
 ```
 
-**404**: not_found: this browser has no look
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
+**204**: This browser has had no look yet
 
 ### GET /api/result/{token}
 
@@ -1211,6 +1205,7 @@ Razorpay's webhook: payments and refunds
             "service_exists",
             "last_of_kind",
             "service_retired",
+            "no_product",
             "unknown_invite",
             "own_invite",
             "already_invited",
@@ -1221,7 +1216,9 @@ Razorpay's webhook: payments and refunds
             "already_discounted",
             "price_settled",
             "code_exists",
-            "slot_times_too_soon"
+            "slot_times_too_soon",
+            "not_permitted",
+            "last_admin"
           ]
         },
         "request_id": {
@@ -1317,6 +1314,13 @@ Razorpay's webhook: payments and refunds
         "unreachable"
       ],
       "description": "ok: reachable and marked as this environment's database. unmarked: no identity row. mismatch: marked as another environment's database."
+    },
+    "cron_completed_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "When the five-minute cron last finished a run; null before its first, or when the database is not this environment's. Information only: status does not depend on it."
     }
   },
   "required": [
@@ -1324,7 +1328,8 @@ Razorpay's webhook: payments and refunds
     "environment",
     "version_id",
     "version_tag",
-    "d1"
+    "d1",
+    "cron_completed_at"
   ],
   "additionalProperties": false
 }
@@ -1346,10 +1351,7 @@ Razorpay's webhook: payments and refunds
       "enum": [
         "standard"
       ],
-      "description": "The tier of the three figures below: each kind's standard."
-    },
-    "first_fit": {
-      "$ref": "#/components/schemas/Price"
+      "description": "The tier of the two figures below: each kind's standard."
     },
     "service": {
       "$ref": "#/components/schemas/Price"
@@ -1362,13 +1364,12 @@ Razorpay's webhook: payments and refunds
       "items": {
         "$ref": "#/components/schemas/PublishedService"
       },
-      "description": "Every service offered and priced today, a kind at a time, in the console's order."
+      "description": "Every service offered and priced today, a kind at a time, in the console's order. A first fit's are the hair systems ops offer; none while ops offer none."
     }
   },
   "required": [
     "on",
     "tier",
-    "first_fit",
     "service",
     "replacement",
     "services"
@@ -1421,7 +1422,7 @@ Razorpay's webhook: payments and refunds
     },
     "tier": {
       "type": "string",
-      "description": "Its code within its kind: standard, premium, or another."
+      "description": "Its code within its kind."
     },
     "name": {
       "type": "string"
@@ -2040,7 +2041,7 @@ Razorpay's webhook: payments and refunds
     },
     "mobile": {
       "type": "string",
-      "pattern": "^(?:\\+91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
+      "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
       "example": "98100 00000"
     },
     "stage": {
@@ -2337,7 +2338,7 @@ Razorpay's webhook: payments and refunds
   "properties": {
     "mobile": {
       "type": "string",
-      "pattern": "^(?:\\+91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
+      "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
       "example": "98100 00000"
     },
     "override_open_bookings": {

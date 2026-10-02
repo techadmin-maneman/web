@@ -564,7 +564,10 @@ describe("what a browser is told: never the look, which goes to WhatsApp only", 
   // Its state alone: not the stage or the look asked for, which an erasure leaves on an expired job's row.
   it("tells a browser it has had its look, and nothing of what it asked, after the look is gone too", async () => {
     const browser = visitor();
-    expect((await browser.call("/api/tryon/look")).status).toBe(404);
+    const none = await browser.call("/api/tryon/look");
+    // No look yet is an answer, not an error, so a new visitor's console logs no failed request.
+    expect(none.status).toBe(204);
+    expect(await none.text()).toBe("");
     const jobId = await browser.claimed("98100 00001", "receding");
     await browser.generate(jobId, { preset: "light-natural-short" });
 
@@ -579,20 +582,20 @@ describe("what a browser is told: never the look, which goes to WhatsApp only", 
     expect((await browser.uploadLink()).status).toBe(403);
   });
 
-  it("refuses a look cookie that is made up, altered or stale", async () => {
+  it("reads a look cookie that is made up, altered or stale as no look", async () => {
     const browser = visitor();
     const jobId = await browser.claimed();
     await browser.generate(jobId);
 
     const forger = visitor();
     forger.useCookie("mm_look", jobId); // the bare job ID, as the cookie held before it was signed
-    expect((await forger.call("/api/tryon/look")).status).toBe(404);
+    expect((await forger.call("/api/tryon/look")).status).toBe(204);
     forger.useCookie("mm_look", `${browser.cookie("mm_look")}x`);
-    expect((await forger.call("/api/tryon/look")).status).toBe(404);
+    expect((await forger.call("/api/tryon/look")).status).toBe(204);
 
     const later = visitor({ deps: fakeDependencies({ now: () => new Date(NOW.getTime() + 31 * 24 * 3_600_000) }) });
     later.useCookie("mm_look", browser.cookie("mm_look"));
-    expect((await later.call("/api/tryon/look")).status).toBe(404);
+    expect((await later.call("/api/tryon/look")).status).toBe(204);
   });
 
   it("refuses a second photo from a browser that already has its look", async () => {

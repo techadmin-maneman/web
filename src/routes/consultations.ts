@@ -205,7 +205,8 @@ const consultationRoute = createRoute({
     409: takenOrInProgress,
     422: errorResponse(
       "not_bookable: the pincode is not served, or the day is not open; code_not_applicable: the discount code " +
-        "does not apply, fields names discount_code; idempotency_key_reused: the key was used with a different body",
+        "does not apply, fields names discount_code; no_product: one visit, on a day the console offers no hair " +
+        "system; idempotency_key_reused: the key was used with a different body",
     ),
     429: errorResponse("rate_limited"),
     503: errorResponse("unavailable: Turnstile could not be reached"),

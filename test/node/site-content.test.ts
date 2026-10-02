@@ -8,7 +8,6 @@ import { referral } from "../../site/src/content/referral.ts";
 import * as site from "../../site/src/content/site.ts";
 import { siteEnvironment } from "../../site/src/lib/environment.ts";
 import { HOUSE_CARD, HOUSE_CARD_VERSION } from "../../site/src/lib/invite.ts";
-import { formatMobile, isCompleteMobile, mobileDigits } from "../../site/src/lib/phone.ts";
 import { publishProblems } from "../../site/src/lib/publish-gate.ts";
 import { headersFile, robotsFile } from "../../site/src/lib/static-files.ts";
 import { fill } from "../../site/src/lib/text.ts";
@@ -239,15 +238,6 @@ describe("the publish gate", () => {
 });
 
 describe("site helpers", () => {
-  it("groups a mobile number five and five as it is typed, and keeps ten digits at most", () => {
-    expect(formatMobile("98100")).toBe("98100");
-    expect(formatMobile("981000")).toBe("98100 0");
-    expect(formatMobile("98100 00000 99")).toBe("98100 00000");
-    expect(mobileDigits("+91 98100-00000")).toBe("9198100000");
-    expect(isCompleteMobile("98100 00000")).toBe(true);
-    expect(isCompleteMobile("98100 0000")).toBe(false);
-  });
-
   it("fills content holes and leaves unknown ones", () => {
     expect(fill("not yet in {city}.", { city: "Mumbai" })).toBe("not yet in Mumbai.");
     expect(fill("{unknown}", {})).toBe("{unknown}");

@@ -5,7 +5,8 @@
 // the app into FSM, as a contact, a work order and its appointment.
 
 import type { ZohoFsmSettings } from "../config/settings.ts";
-import { FSM_BASE_PART_NAME, FSM_SERVICE_NAMES, VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
+import { LOCAL_HAIR_SYSTEMS } from "../config/local-hair-systems.ts";
+import { FSM_BASE_PART_NAME, FSM_STANDARD_ITEMS, type StandardKind } from "../config/visit-types.ts";
 import type { ZohoRequesterDependencies } from "./zoho-http.ts";
 import { createZohoFsm, FSM_ITEM_PAGES, FSM_ITEMS_A_PAGE } from "./fsm-zoho.ts";
 
@@ -337,24 +338,31 @@ export const STUB_TRANSITIONS: Readonly<Record<string, readonly AppointmentTrans
   "In Progress": ["Complete Work", "Terminate"],
 };
 
-/** The price book's own figures since 22 September 2026 (migration 0018), in paise before GST. */
-const STUB_PRICES: Readonly<Record<VisitType, number>> = {
+/** The standard services' figures in the price book since 22 September 2026 (migration 0018), in paise before GST. */
+const STUB_PRICES: Readonly<Record<StandardKind, number>> = {
   consultation: 0,
-  first_fit: 3_000_000,
   service: 200_000,
   replacement: 1_500_000,
 };
 
 /**
- * The catalogue scripts/setup-fsm.ts makes in FSM, which the local stub holds, so local bookings reach it. Its
- * prices are the local price book's, so the local catalogue check agrees with it.
+ * The catalogue scripts/setup-fsm.ts makes in FSM, and an item for each first-fit service a fresh local database
+ * holds: the "First fit" the migrations add, until ops retire it, and each local hair system. The local stub holds
+ * it, so local bookings reach it. Its prices are the local price book's, so the local catalogue check agrees with it.
  */
 const CATALOGUE: FsmItem[] = [
-  ...VISIT_TYPES.map((type, index) => ({
+  ...FSM_STANDARD_ITEMS.map(({ kind, name }, index) => ({
     id: `stub-service-${String(index + 1)}`,
-    name: FSM_SERVICE_NAMES[type],
+    name,
     type: "Service" as const,
-    price: STUB_PRICES[type],
+    price: STUB_PRICES[kind],
+  })),
+  { id: "stub-first-fit", name: "First fit", type: "Service", price: 3_000_000 },
+  ...LOCAL_HAIR_SYSTEMS.map(({ tier, name, price }) => ({
+    id: `stub-hair-system-${tier}`,
+    name,
+    type: "Service" as const,
+    price,
   })),
   { id: "stub-part-1", name: FSM_BASE_PART_NAME, type: "Part", price: null },
 ];

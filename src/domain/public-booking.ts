@@ -56,7 +56,7 @@ import { ONE_VISIT_TERMS, ONE_VISIT_WINDOWS, type Plan } from "../policy/one-vis
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import type { Price } from "./price-book.ts";
-import { bookableService } from "./services.ts";
+import { bookableService, offeredProducts } from "./services.ts";
 import type { ConsentSource } from "../policy/consents.ts";
 import { notBookedFromSite, typedAddress, type NotBookedFromSite } from "../policy/site-booking.ts";
 import { currentAddress, firstAddressStatement, type Address } from "./profile.ts";
@@ -97,7 +97,8 @@ export interface Refusal<Status extends number = 400 | 403 | 409 | 422 | 429 | 5
     | "unavailable"
     | "taken"
     | "not_bookable"
-    | "code_not_applicable";
+    | "code_not_applicable"
+    | "no_product";
   /** For invalid_request: the field refused, where the request was well formed and did not add up. */
   readonly fields?: readonly string[];
 }
@@ -302,14 +303,15 @@ const nothingPaid = (price: Price): Price => ({ amount: 0, amount_ex_gst: 0, gst
 /**
  * What the site books on a day: the consultation its kind offers, the standard one while it is
  * (docs/decisions/0085-services-ops-can-edit.md), and only while it is free, since a form with no payment cannot
- * book one the price book charges for; or, for one visit, the first fit its kind offers, three hours, with nothing
- * paid until the client is fitted (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). Null when the day
- * offers neither, and what the person asked for waits for ops.
+ * book one the price book charges for; or, for one visit, a first fit held as the first hair system the console
+ * offers, for its length, with nothing paid until the client chooses theirs and is fitted
+ * (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). Null when the day offers neither, and what the
+ * person asked for waits for ops.
  */
 async function siteVisit(db: D1Database, plan: Plan, date: string): Promise<SiteVisit | null> {
   if (plan === "one_visit") {
-    const fit = await bookableService(db, "first_fit", undefined, date);
-    if (fit === null) return null;
+    const [fit] = await offeredProducts(db, date);
+    if (fit === undefined) return null;
     return {
       service: { type: "first_fit", tier: fit.tier, minutes: fit.minutes },
       price: nothingPaid(fit.price),
@@ -389,6 +391,9 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   const oneVisit = request.plan === "one_visit";
   if (oneVisit && !(ONE_VISIT_WINDOWS as readonly BookingWindow[]).includes(request.window)) {
     return { ok: false, status: 400, code: "invalid_request", fields: ["window"] };
+  }
+  if (oneVisit && (await offeredProducts(db, request.date)).length === 0) {
+    return { ok: false, status: 422, code: "no_product" };
   }
   // The technician goes to the address, so it must be where the pincode said we come.
   if (request.address.pincode !== request.pincode) {

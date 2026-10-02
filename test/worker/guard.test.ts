@@ -205,6 +205,15 @@ describe("validateStaticConfig: settings and secrets", () => {
     ]);
   });
 
+  it("pings the cron's heartbeat only where HEARTBEAT_URL is set, and only over https", () => {
+    expect(validateStaticConfig(production).settings.heartbeatUrl).toBeNull();
+    const check = validateStaticConfig({ ...production, HEARTBEAT_URL: "https://hc-ping.com/check" });
+    expect(check.settings.heartbeatUrl).toBe("https://hc-ping.com/check");
+    expect(problemsOf({ ...production, HEARTBEAT_URL: "http://hc-ping.com/check" })).toEqual([
+      "HEARTBEAT_URL must be an https:// URL",
+    ]);
+  });
+
   it("requires every Zoho secret when the CRM is Zoho, and none when it is the stub", () => {
     const { ZOHO_REFRESH_TOKEN: _refresh, ...partialZoho } = production;
     expect(problemsOf(partialZoho)).toEqual(["ZOHO_REFRESH_TOKEN is not set"]);

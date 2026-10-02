@@ -7,7 +7,7 @@ import { shortDate } from "@maneman/web-kit/dates";
 import { firstNameOf } from "../lib/names.ts";
 import { consentGiven, type MessageKind } from "./messages.ts";
 import { currentAddress } from "./profile.ts";
-import { bookableTypes, liveVisitOf } from "./scheduling.ts";
+import { bookableTypes, liveVisitOf, type LiveVisit } from "./scheduling.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
 import { hoursOfWindow, NO_VISITS_CONSENT, type Composed } from "./visit-messages.ts";
 
@@ -39,17 +39,18 @@ async function nameOf(db: D1Database, personId: string): Promise<string | null> 
   return row?.name ?? null;
 }
 
-/** A consultation and fit in one visit is the client's first fit as well as their consultation. */
-async function visitName(db: D1Database, personId: string): Promise<string> {
-  const oneVisit = await liveVisitOf(db, personId, "first_fit");
-  return oneVisit === null ? "consultation" : "consultation and fit";
+/** A consultation and fit in one visit is the client's first fit as well as their consultation, at the same time. */
+async function visitName(db: D1Database, personId: string, consultation: LiveVisit): Promise<string> {
+  const fit = await liveVisitOf(db, personId, "first_fit");
+  const oneVisit = fit !== null && fit.date === consultation.date && fit.window === consultation.window;
+  return oneVisit ? "consultation and fit" : "consultation";
 }
 
 async function consultationExists(db: D1Database, personId: string, firstName: string): Promise<Composed> {
   const live = await liveVisitOf(db, personId, "consultation");
   if (live === null) return { skip: "no consultation still to happen" };
   const hours = hoursOfWindow(live.date, live.window, await loadSlotSchedule(db));
-  const params = [firstName, await visitName(db, personId), shortDate(live.date), hours];
+  const params = [firstName, await visitName(db, personId, live), shortDate(live.date), hours];
   return { template: "consultation_exists_v1", params };
 }
 

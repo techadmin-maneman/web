@@ -107,6 +107,15 @@ describe("a consultation still to happen", () => {
     );
   });
 
+  it("is named the consultation alone when a first fit is booked for another day", async () => {
+    await consentToVisitMessages();
+    await consultationToCome();
+    await appointment("first_fit", "scheduled", "2026-09-30T03:30:00.000Z", "2026-09-30T06:30:00.000Z");
+    expect((await send("consultation_exists")).text).toContain(
+      "Your consultation is already booked for Wed 23 Sep, 9 am to 12 pm",
+    );
+  });
+
   it("is not sent once the consultation has gone", async () => {
     await consentToVisitMessages();
     expect(await send("consultation_exists")).toEqual({ text: null, skipped: "no consultation still to happen" });

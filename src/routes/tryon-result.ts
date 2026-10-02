@@ -52,7 +52,7 @@ export const lookRoute = createRoute({
   summary: "Whether this browser has had its look, from its mm_look cookie",
   responses: {
     200: { description: "The browser's look", content: { "application/json": { schema: LookSchema } } },
-    404: errorResponse("not_found: this browser has no look"),
+    204: { description: "This browser has had no look yet" },
   },
 });
 
@@ -80,7 +80,7 @@ export function registerTryonResult(app: App): void {
   app.openapi(lookRoute, async (c) => {
     const jobId = await lookCookieJob(c);
     const job = jobId === null ? null : await loadJob(c.env.DB, jobId);
-    if (job === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (job === null) return c.body(null, 204);
     // Once the look has expired, the browser has still had it: the upload link refuses it another (ADR 0104).
     return c.json(statusOf(job), 200);
   });

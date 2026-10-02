@@ -77,9 +77,9 @@ export function fetchAvailability(): Promise<Answer<TryOnAvailability>> {
   return call<TryOnAvailability>("/api/tryon/availability");
 }
 
-/** The look this browser has had, if any: never the image. */
-export function fetchLook(): Promise<Answer<Look>> {
-  return call<Look>("/api/tryon/look");
+/** The look this browser has had, or null for none yet: never the image. */
+export function fetchLook(): Promise<Answer<Look | null>> {
+  return call<Look | null>("/api/tryon/look");
 }
 
 export function requestUploadUrl(request: UploadUrlRequest): Promise<Answer<UploadUrlResponse>> {

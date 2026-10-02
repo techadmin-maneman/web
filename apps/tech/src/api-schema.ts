@@ -1557,7 +1557,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -1584,6 +1584,8 @@ export interface components {
              * @enum {string}
              */
             d1: "ok" | "unmarked" | "mismatch" | "unreachable";
+            /** @description When the five-minute cron last finished a run; null before its first, or when the database is not this environment's. Information only: status does not depend on it. */
+            cron_completed_at: string | null;
         };
         TechnicianChallenge: {
             /** Format: uuid */
@@ -1647,6 +1649,8 @@ export interface components {
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
             /** @description A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, at the piece step. */
             one_visit: boolean;
+            /** @description On a first fit, the hair system the client was sold, by its name in the console. Null on any other visit, on a one visit until the client chooses, and on a first fit that names none. */
+            product: string | null;
             /** @description The area, never the street: the one the visit's pincode is in, from the service area; else the address's locality, or the city. */
             sector: string | null;
             /** @enum {string} */
@@ -1677,6 +1681,8 @@ export interface components {
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
             /** @description A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, at the piece step. */
             one_visit: boolean;
+            /** @description On a first fit, the hair system the client was sold, by its name in the console. Null on any other visit, on a one visit until the client chooses, and on a first fit that names none. */
+            product: string | null;
             /** @description The area, never the street: the one the visit's pincode is in, from the service area; else the address's locality, or the city. */
             sector: string | null;
             /** @enum {string} */

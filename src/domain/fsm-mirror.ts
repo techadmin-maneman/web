@@ -5,12 +5,13 @@
 //
 // The visit's service, its kind and its tier, comes from its FSM item: the
 // service whose item it is by the ID kept on it, else the one of its name,
-// else, for an item scripts/setup-fsm.ts made, its kind's standard service.
+// else, for an item named as its kind is, its kind's standard service, or for
+// a first fit, which has none, no tier at all.
 // A visit a hold booked keeps the hold's tier, since the hold is what was
 // sold, and FSM may hold it on its kind's item where it had none of its own
 // (docs/decisions/0085-services-ops-can-edit.md).
 
-import { STANDARD_TIER, visitTypeOfService, type VisitType } from "../config/visit-types.ts";
+import { hasStandardService, STANDARD_TIER, visitTypeOfService, type VisitType } from "../config/visit-types.ts";
 import { toE164 } from "../lib/mobile.ts";
 import { initialsOf } from "../lib/names.ts";
 import type { Logger } from "../log.ts";
@@ -316,7 +317,7 @@ async function serviceOfItems(
   fsm: FsmProvider,
   serviceIds: readonly string[],
   at: string,
-): Promise<{ type: VisitType; tier: string } | null> {
+): Promise<{ type: VisitType; tier: string | null } | null> {
   if (serviceIds.length === 0) return null;
   let names = await itemNames(db, serviceIds);
   if (names.size < new Set(serviceIds).size) {
@@ -342,14 +343,15 @@ async function serviceOfItems(
 }
 
 /**
- * The service an FSM item is: the one its ID is kept on, else the one of its name, else, for an item named as
- * scripts/setup-fsm.ts names a kind's, that kind's standard service. Null for an item that is no service of ours.
+ * The service an FSM item is: the one its ID is kept on, else the one of its name, else, for an item named as a kind
+ * is, that kind's standard service, or a first fit of no hair system we know. Null for an item that is no service of
+ * ours.
  */
 async function serviceByItem(
   db: D1Database,
   itemId: string,
   name: string | null,
-): Promise<{ type: VisitType; tier: string } | null> {
+): Promise<{ type: VisitType; tier: string | null } | null> {
   const service = await db
     .prepare(
       `SELECT kind AS type, tier, 0 AS rank FROM services WHERE fsm_item_id = ?1
@@ -360,7 +362,8 @@ async function serviceByItem(
     .first<{ type: VisitType; tier: string }>();
   if (service !== null) return service;
   const type = visitTypeOfService(name ?? "");
-  return type === null ? null : { type, tier: STANDARD_TIER };
+  if (type === null) return null;
+  return { type, tier: hasStandardService(type) ? STANDARD_TIER : null };
 }
 
 async function itemNames(db: D1Database, ids: readonly string[]): Promise<Map<string, string>> {

@@ -1,15 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { mobileDigits } from "@maneman/web-kit/mobile";
 import { referral } from "../../content/referral.ts";
 import type { Answer, ErrorCode } from "../../lib/api.ts";
 import { keyPerRequest } from "../../lib/idempotency.ts";
-import { isCompleteMobile } from "../../lib/phone.ts";
 import { turnstileWidget } from "../../lib/turnstile.ts";
 
 /** What both forms hold: the name, the number and the agreement. */
 export interface PersonFields {
   name: string;
+  /** As the field shows it, "98100 00000"; mobileToSend reads it. */
   mobile: string;
   consent: boolean;
+}
+
+/** The ten digits a form sends. Empty while the field holds no mobile number, when submit sends nothing anyway. */
+export function mobileToSend(fields: PersonFields): string {
+  return mobileDigits(fields.mobile) ?? "";
 }
 
 /** What a form says when the API refuses it. */
@@ -20,6 +26,7 @@ function refusal(code: ErrorCode | "network"): string {
   if (code === "taken") return errors.taken;
   if (code === "not_bookable") return errors.notBookable;
   if (code === "code_not_applicable") return errors.codeNotApplicable;
+  if (code === "no_product") return errors.noProduct;
   return errors.other;
 }
 
@@ -55,7 +62,7 @@ export function useTurnstileForm(siteKey: string) {
   ) {
     event.preventDefault();
     if (sending) return;
-    if (!complete || fields.name.trim() === "" || !isCompleteMobile(fields.mobile) || !fields.consent) {
+    if (!complete || fields.name.trim() === "" || mobileDigits(fields.mobile) === null || !fields.consent) {
       setTouched(true);
       return;
     }
