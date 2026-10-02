@@ -170,10 +170,10 @@ describe("GET /api/whoami", () => {
       expect.arrayContaining(["GET /api/health", "GET /api/whoami", "GET /api/no-shows", "GET /api/services"]),
     );
     expect(routes).not.toContain("POST /api/prices");
-    expect(routes).not.toContain("GET /api/tasks");
+    expect(routes).not.toContain("GET /api/dispatch");
     const money = opsAs(person("money@maneman.in"));
     expect((await request(money, "/api/services")).status).toBe(200);
-    expect((await request(money, "/api/tasks")).status).toBe(403);
+    expect((await request(money, "/api/dispatch")).status).toBe(403);
   });
 
   it("names the Staff list to a city's Admin, which keeps to their places, and not the national settings", async () => {

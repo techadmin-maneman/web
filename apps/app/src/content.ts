@@ -766,6 +766,12 @@ export const payments = {
     decision: { undecided: "under review", charged: "charged", waived: "not charged" },
     fact: (minutes: number, decision: string) => `We waited ${String(minutes)} minutes · ${decision}`,
   },
+  // PLACEHOLDER: the design draws no discount code on a payment (docs/decisions/0108-discount-codes.md).
+  discount: {
+    label: "Discount code",
+    /** "AUDTEST: Rs. 1,000 off", before GST; the code alone where what it took off is not known. */
+    fact: (code: string, off: string | null) => (off === null ? code : `${code}: ${off} off`),
+  },
   /**
    * The service-visit credits among the payments (LIFE-14). Board E1 draws a visit a credit covered: "Service
    * visit · 25 Jul · visit credit · Covered by credit · Rs. 0 · 1 credit used". PLACEHOLDER: every other line.

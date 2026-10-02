@@ -11,6 +11,7 @@ import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, type Consumables, type ServiceUse } from "../api.ts";
 import { dispatch, settings } from "../content.ts";
+import { useAccess } from "../lib/access.ts";
 import { CheckPanel } from "./CheckPanel.tsx";
 import { refusalOf, type Failure } from "./refusal.ts";
 import styles from "./settings.module.css";
@@ -39,6 +40,7 @@ export function ServiceUsage({ book, onSaved }: { book: Consumables; onSaved: (b
   const service = book.services.find((each) => keyOf(each) === chosen);
   const [draft, setDraft] = useState<Draft>(() => draftOf(service));
   const [step, setStep] = useState<Step>({ step: "editing" });
+  const mayChange = useAccess().mayCall("POST /api/service-usage");
 
   // Every consumable offered, and any retired one this service still expects, so a save never drops it unseen.
   const expectedCodes = new Set(service?.expected.map((each) => each.code) ?? []);
@@ -124,6 +126,7 @@ export function ServiceUsage({ book, onSaved }: { book: Consumables; onSaved: (b
                   type="text"
                   inputMode="numeric"
                   maxLength={3}
+                  readOnly={!mayChange}
                   value={draft[each.code] ?? ""}
                   aria-describedby="usage-hint"
                   onChange={(event) => {
@@ -153,7 +156,7 @@ export function ServiceUsage({ book, onSaved }: { book: Consumables; onSaved: (b
             }}
           />
         )}
-        {!checking && (
+        {!checking && mayChange && (
           <div className={styles.actions}>
             <Button
               variant="primary"

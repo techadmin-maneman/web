@@ -83,6 +83,14 @@ test.describe("upload", () => {
     await expect(page.locator('input[type="file"][capture="user"]')).toHaveCount(1);
   });
 
+  // UX-39: on a phone the caption sat across the oval's lower corner brackets.
+  test("the frame's caption sits below the oval and its brackets", async ({ page }) => {
+    await open(page, "upload");
+    const oval = await page.locator('svg:has(use[href="#oval"])').boundingBox();
+    const caption = await page.getByText("Your photograph appears here").boundingBox();
+    expect(caption?.y ?? 0).toBeGreaterThanOrEqual((oval?.y ?? 0) + (oval?.height ?? 0));
+  });
+
   test("a chosen photograph shows in the frame and the consent screen follows", async ({ page }) => {
     await open(page, "upload");
     await page
@@ -187,9 +195,22 @@ test.describe("gate", () => {
   test("the image column sits below the form under 760 px, beside it above", async ({ page }) => {
     await open(page, "gate");
     const form = await page.locator("form").boundingBox();
-    const image = await page.getByText("For your WhatsApp only").boundingBox();
+    const image = await page.getByText("Your simulation is sent to your WhatsApp", { exact: false }).boundingBox();
     if ((page.viewportSize()?.width ?? 0) <= 760) expect(image?.y).toBeGreaterThan(form?.y ?? 0);
     else expect(image?.x ?? 0).toBeLessThan(form?.x ?? 0);
+  });
+
+  // UX-39: on a phone an empty frame sat under the form, its label across the gilt divider.
+  test("hides the empty frame under 600 px, and keeps its label inside its half above", async ({ page }) => {
+    await open(page, "gate");
+    const label = page.getByText("For your WhatsApp only");
+    if ((page.viewportSize()?.width ?? 0) <= 600) {
+      await expect(label).toBeHidden();
+      return;
+    }
+    const frame = await label.locator("..").boundingBox();
+    const box = await label.boundingBox();
+    expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual((frame?.x ?? 0) + (frame?.width ?? 0) / 2);
   });
 });
 

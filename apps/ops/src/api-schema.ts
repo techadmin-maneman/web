@@ -2682,7 +2682,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description The groups with something in them */
+                /** @description The groups with something in them, of the caller's own departments once the Staff list is enforced */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -2691,7 +2691,7 @@ export interface paths {
                         "application/json": components["schemas"]["Tasks"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required, or not_permitted: no View in any department */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -2753,7 +2753,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required: no Access token, or a service token, which names no member of staff */
+                /** @description access_required: no Access token, or a service token, which names no member of staff; or not_permitted: it asks Act in the department that decides the task's group */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -6031,6 +6031,12 @@ export interface components {
             } | null;
             /** @description The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07). */
             no_show: components["schemas"]["NoShowNote"] | null;
+            /** @description The discount code the visit was paid with; null for none, and on a late fee. */
+            discount_code: {
+                code: string;
+                /** @description In paise before GST; null where the visit's price was not yet known. */
+                amount_off: number | null;
+            } | null;
         };
         NoShowNote: {
             /**

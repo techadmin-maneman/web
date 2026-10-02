@@ -147,6 +147,12 @@ export interface Moving {
 export const graceEnds = (hold: string): string =>
   `strftime('%Y-%m-%dT%H:%M:%fZ', ${hold}.expires_at, '+' || COALESCE(${hold}.grace_seconds, ${String(PAYMENT_GRACE_SECONDS)}) || ' seconds')`;
 
+/** graceEnds, for a hold already read: the last moment a payment for it counts as made in time. */
+export function graceEndOf(hold: { readonly expires_at: string; readonly grace_seconds: number | null }): Date {
+  const graceSeconds = hold.grace_seconds ?? PAYMENT_GRACE_SECONDS;
+  return new Date(Date.parse(hold.expires_at) + graceSeconds * 1000);
+}
+
 /** A dispatch move opened before this, and still open, never finished. */
 export const movesOpenSince = (now: Date): string => new Date(now.getTime() - MOVE_CLAIM_SECONDS * 1000).toISOString();
 
@@ -367,11 +373,13 @@ export interface Hold {
 
 /**
  * Holds nobody is paying for any more at ?1: unpaid, and past their countdown and their grace. With ?3 = 1, the
- * client's own other unpaid holds too: in the app a client has one hold at a time. A paid hold is never here. A hold
- * past its grace is past its countdown too, which the index on expires_at finds.
+ * client's own other unpaid holds too, since in the app a client has one hold at a time; but not one with a Razorpay
+ * order, which a payment may still land on until its grace ends. A paid hold is never here. A hold past its grace is
+ * past its countdown too, which the index on expires_at finds.
  */
 const LET_GO = `SELECT id FROM slot_holds WHERE state = 'held' AND confirmed_at IS NULL
-  AND ((expires_at <= ?1 AND ${graceEnds("slot_holds")} <= ?1) OR (?3 = 1 AND person_id = ?2))`;
+  AND ((expires_at <= ?1 AND ${graceEnds("slot_holds")} <= ?1)
+    OR (?3 = 1 AND person_id = ?2 AND razorpay_order_id IS NULL))`;
 
 /**
  * Lets go of the holds nobody is paying for, and, given a client, that client's own other unpaid holds too. For
@@ -508,6 +516,48 @@ export async function holdSlot(
     }
   }
   return null;
+}
+
+/** A hold's own time: its technician, day, window, and the half-slot its visit starts in. */
+interface HeldTime {
+  readonly id: string;
+  readonly type: VisitType;
+  readonly minutes: number | null;
+  readonly technician_id: string;
+  readonly date: string;
+  readonly window_label: BookingWindow;
+  readonly start_unit: number;
+}
+
+/**
+ * Takes a hold that was let go back to held, on its own time, where nothing has taken that time since. False while it
+ * stays let go; true once it is held again, here or by a try running alongside, or booked.
+ */
+export async function retakeSlot(db: D1Database, hold: HeldTime, now: Date): Promise<boolean> {
+  const units = unitsFor(heldMinutes(hold));
+  const day = (await occupancy(db, hold.date, hold.date, now))(hold.technician_id, hold.date);
+  if (day.onLeave || clashes(day, hold.window_label) || !fitsAt(day, hold.start_unit, units)) return false;
+  const isHeld = "EXISTS (SELECT 1 FROM slot_holds WHERE id = ?4 AND state = 'held')";
+  try {
+    await db.batch([
+      ...lettingGo(db, now),
+      db
+        .prepare("UPDATE slot_holds SET state = 'held', updated_at = ?2 WHERE id = ?1 AND state = 'released'")
+        .bind(hold.id, now.toISOString()),
+      ...claimsOf(hold.start_unit, units, hold.window_label).map((claim) =>
+        db
+          .prepare(
+            `INSERT INTO slot_claims (technician_id, date, claim, hold_id) SELECT ?1, ?2, ?3, ?4 WHERE ${isHeld}`,
+          )
+          .bind(hold.technician_id, hold.date, claim, hold.id),
+      ),
+    ]);
+  } catch (error) {
+    // The time went to another hold between the look and the write; or a try alongside took it back first.
+    if (!(error instanceof Error && error.message.includes("UNIQUE"))) throw error;
+  }
+  const after = await db.prepare("SELECT state FROM slot_holds WHERE id = ?1").bind(hold.id).first<{ state: string }>();
+  return after !== null && after.state !== "released";
 }
 
 /**

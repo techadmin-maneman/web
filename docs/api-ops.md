@@ -1955,7 +1955,7 @@ Request body:
 
 What ops still have to do, by group, the longest wait first
 
-**200**: The groups with something in them
+**200**: The groups with something in them, of the caller's own departments once the Staff list is enforced
 
 ```json
 {
@@ -1963,7 +1963,7 @@ What ops still have to do, by group, the longest wait first
 }
 ```
 
-**403**: access_required
+**403**: access_required, or not_permitted: no View in any department
 
 ```json
 {
@@ -1999,7 +1999,7 @@ Request body:
 }
 ```
 
-**403**: access_required: no Access token, or a service token, which names no member of staff
+**403**: access_required: no Access token, or a service token, which names no member of staff; or not_permitted: it asks Act in the department that decides the task's group
 
 ```json
 {
@@ -5095,6 +5095,38 @@ Request body:
         }
       ],
       "description": "The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07)."
+    },
+    "discount_code": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "amount_off": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "In paise before GST; null where the visit's price was not yet known."
+            }
+          },
+          "required": [
+            "code",
+            "amount_off"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The discount code the visit was paid with; null for none, and on a late fee."
     }
   },
   "required": [
@@ -5112,7 +5144,8 @@ Request body:
     "refunded_amount",
     "purpose",
     "charge",
-    "no_show"
+    "no_show",
+    "discount_code"
   ],
   "additionalProperties": false
 }
