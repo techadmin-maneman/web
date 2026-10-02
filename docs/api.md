@@ -57,6 +57,34 @@ The prices the site publishes, from the price book, in force today. Cacheable fo
 }
 ```
 
+### GET /api/availability/public
+
+The days and windows the booking form can book, open or full. Cacheable for a minute.
+
+**200**: Each day's three windows
+
+```json
+{
+  "$ref": "#/components/schemas/OpenWindows"
+}
+```
+
+**400**: invalid_request: fields names the pincode or the plan
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**422**: not_bookable: the pincode is not served
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/consultation
 
 Book a free consultation
@@ -136,7 +164,14 @@ Request body:
     "invite_code": {
       "type": "string",
       "maxLength": 64,
-      "description": "The code of an invite this browser opened in the last 30 days. One we do not have, or not shaped like a code, is ignored: the booking goes ahead without an invite."
+      "description": "The code of an invite this browser opened in the last 30 days. One sent without invite_told, one we do not have, or one not shaped like a code, is ignored: the booking goes ahead without an invite."
+    },
+    "invite_told": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "true: beside the invite, the form said that whoever sent it is told when the friend is fitted, and offered to go on without it. The attribution records it."
     },
     "date": {
       "type": "string",
@@ -320,7 +355,14 @@ Request body:
     "invite_code": {
       "type": "string",
       "maxLength": 64,
-      "description": "The code of an invite this browser opened in the last 30 days. One we do not have, or not shaped like a code, is ignored: the booking goes ahead without an invite."
+      "description": "The code of an invite this browser opened in the last 30 days. One sent without invite_told, one we do not have, or one not shaped like a code, is ignored: the booking goes ahead without an invite."
+    },
+    "invite_told": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "true: beside the invite, the form said that whoever sent it is told when the friend is fitted, and offered to go on without it. The attribution records it."
     },
     "contact_consent": {
       "type": "boolean",
@@ -466,6 +508,13 @@ Request body:
       "minLength": 1,
       "maxLength": 2048
     },
+    "invite_told": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "true: the form said that whoever sent the invite is told when the friend is fitted. The attribution records it; the invite applies either way."
+    },
     "pincode": {
       "type": "string",
       "pattern": "^[1-8]\\d{5}$",
@@ -591,6 +640,13 @@ Request body:
       "type": "string",
       "minLength": 1,
       "maxLength": 2048
+    },
+    "invite_told": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "true: the form said that whoever sent the invite is told when the friend is fitted. The attribution records it; the invite applies either way."
     },
     "pincode": {
       "type": "string",
@@ -1441,6 +1497,67 @@ Razorpay's webhook: payments and refunds
     "name",
     "minutes",
     "price"
+  ],
+  "additionalProperties": false
+}
+```
+
+### OpenWindows
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "plan": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "one_visit"
+      ]
+    },
+    "days": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "windows": {
+            "type": "object",
+            "properties": {
+              "morning": {
+                "type": "boolean"
+              },
+              "afternoon": {
+                "type": "boolean"
+              },
+              "evening": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "morning",
+              "afternoon",
+              "evening"
+            ],
+            "additionalProperties": false,
+            "description": "true where booking that window now would be taken; false where it is full."
+          }
+        },
+        "required": [
+          "date",
+          "windows"
+        ],
+        "additionalProperties": false
+      },
+      "description": "The days the form offers: 14, from tomorrow in India."
+    }
+  },
+  "required": [
+    "plan",
+    "days"
   ],
   "additionalProperties": false
 }

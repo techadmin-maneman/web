@@ -26,12 +26,12 @@
 // (docs/decisions/0085-services-ops-can-edit.md).
 
 import {
-  BOOKING_WINDOWS,
   MOVE_CLAIM_SECONDS,
   PAYMENT_GRACE_SECONDS,
   UNITS_PER_DAY,
   VISIT_BLOCKS,
   WINDOW_SLOT_MAP,
+  windowsFitting,
   type BookingWindow,
 } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
@@ -312,13 +312,21 @@ interface VisitToPlace {
   readonly until?: string | null;
 }
 
+/** Whose time is offered first: a move's own technician, else the client's regular one; nobody's for no client. */
+function firstChoice(db: D1Database, personId: string | null, moving: Moving | null): Promise<string | null> {
+  if (moving !== null) return Promise.resolve(moving.technicianId);
+  if (personId === null) return Promise.resolve(null);
+  return regularTechnician(db, personId);
+}
+
 /**
- * Each window of each day from `from`, for a visit this long: the technicians free to take it, the regular technician
- * first, and who the regular technician is. A day ops black out, or from `until` on, is offered to nobody.
+ * Each window of each day from `from` that a visit this long can start in: the technicians free to take it, the
+ * regular technician first, and who the regular technician is. A window the visit is too long to start in, as a first
+ * fit's evening, is left out. A day ops black out, or from `until` on, is offered to nobody.
  */
 async function windowsOf(
   db: D1Database,
-  personId: string,
+  personId: string | null,
   visit: VisitToPlace,
   range: { readonly from: string; readonly days: number },
   now: Date,
@@ -328,15 +336,16 @@ async function windowsOf(
   const to = addDays(range.from, range.days - 1);
   const [technicians, regular, held, closed] = await Promise.all([
     techniciansFor(db, moving),
-    moving === null ? regularTechnician(db, personId) : moving.technicianId,
+    firstChoice(db, personId, moving),
     occupancy(db, range.from, to, now, moving?.visitId ?? null),
     loadBlackouts(db, range.from, to),
   ]);
   const retired = (date: string) => visit.until !== undefined && visit.until !== null && date >= visit.until;
   const regularFirst = [...technicians].sort((a, b) => Number(b.id === regular) - Number(a.id === regular));
+  const startable = windowsFitting(units);
   const days = Array.from({ length: range.days }, (_, index) => {
     const date = addDays(range.from, index);
-    const windows = BOOKING_WINDOWS.map((window): WindowTechnicians => {
+    const windows = startable.map((window): WindowTechnicians => {
       if (closed.has(date) || retired(date)) return { window, technicians: [] };
       const free = regularFirst.filter((technician) => placement(held(technician.id, date), window, units) !== null);
       return { window, technicians: free };
@@ -347,12 +356,14 @@ async function windowsOf(
 }
 
 /**
- * Each window of each day from `from`, for a visit that takes this many minutes: who could take it, the regular
- * technician first. A day from `until` on, the day a service is retired from, is offered to nobody.
+ * Each window of each day from `from` that a visit of this many minutes can start in: who could take it, the regular
+ * technician first. A window the visit is too long to start in, as a first fit's evening, is left out. A day from
+ * `until` on, the day a service is retired from, is offered to nobody. With no person, as for the site's form, nobody
+ * is anyone's regular.
  */
 export async function availability(
   db: D1Database,
-  personId: string,
+  personId: string | null,
   visit: VisitToPlace,
   from: string,
   days: number,
@@ -371,8 +382,8 @@ export async function availability(
 }
 
 /**
- * Each window of each day from `from`, for a visit this long: the technicians free to take it, the client's regular
- * technician first, for ops to choose from as they book.
+ * Each window of each day from `from` that a visit this long can start in: the technicians free to take it, the
+ * client's regular technician first, for ops to choose from as they book.
  */
 export async function freeTechnicians(
   db: D1Database,

@@ -3218,6 +3218,11 @@
             ],
             "description": "Whoever did the client's latest visit."
           },
+          "last": {
+            "type": "string",
+            "format": "date",
+            "description": "The last day this visit may be booked on: later days are asked for up to it."
+          },
           "days": {
             "type": "array",
             "items": {
@@ -3298,6 +3303,7 @@
           "service",
           "price",
           "regular",
+          "last",
           "days"
         ],
         "additionalProperties": false
@@ -4741,7 +4747,7 @@
         "summary": "The client's visits, upcoming and past",
         "responses": {
           "200": {
-            "description": "Upcoming soonest first; past newest first",
+            "description": "Upcoming soonest first; past newest first, a visit cancelled among them",
             "content": {
               "application/json": {
                 "schema": {

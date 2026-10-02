@@ -10,6 +10,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { api, type ClientVisit, type VisitDiscountCode } from "../api.ts";
 import { clients } from "../content.ts";
+import { useAccess } from "../lib/access.ts";
 import styles from "./clients.module.css";
 
 const copy = clients.visits.code;
@@ -35,8 +36,11 @@ export function VisitCode({ visit }: { visit: ClientVisit }) {
   const [step, setStep] = useState<Step>("showing");
   const [typed, setTyped] = useState("");
   const [failure, setFailure] = useState<string | null>(null);
+  const access = useAccess();
   const when = fullDate(visit.date);
   const takesACode = visit.price_open && visit.type !== null && visit.type !== "consultation";
+  const mayEnter = takesACode && access.mayCall("POST /api/visits/{id}/discount-code");
+  const mayRemove = visit.price_open && access.mayCall("POST /api/visits/{id}/discount-code/remove");
 
   const apply = async () => {
     setStep("applying");
@@ -113,7 +117,7 @@ export function VisitCode({ visit }: { visit: ClientVisit }) {
   return (
     <>
       <Shown code={code} />
-      {takesACode && code === null && (
+      {mayEnter && code === null && (
         <Button
           variant="outline"
           size="small"
@@ -126,7 +130,7 @@ export function VisitCode({ visit }: { visit: ClientVisit }) {
           {copy.enter}
         </Button>
       )}
-      {visit.price_open && code !== null && (
+      {mayRemove && code !== null && (
         <Button
           variant="outline"
           size="small"

@@ -30,6 +30,8 @@ interface Props {
   readonly tab: Tab | null;
   /** Kept between the page and the tabs, as board C1's "Book your next visit". */
   readonly footer?: ReactNode;
+  /** The page draws the Home the phone kept, so offline it says it shows the last update. */
+  readonly kept?: boolean;
   readonly children: ReactNode;
 }
 
@@ -64,7 +66,7 @@ function PageHeader({ header }: { header: Header }) {
   }
 }
 
-export function Shell({ header, tab, footer, children }: Props) {
+export function Shell({ header, tab, footer, kept = false, children }: Props) {
   const { offline } = useSession();
   return (
     <div className={styles.shell}>
@@ -74,7 +76,7 @@ export function Shell({ header, tab, footer, children }: Props) {
         {offline && (
           <p className={styles.offline}>
             <Icon className={styles.offlineIcon} d={ICONS_P2.offline} size={18} />
-            <span>{states.offline}</span>
+            <span>{kept ? states.offline : states.offlineOnly}</span>
           </p>
         )}
       </div>
