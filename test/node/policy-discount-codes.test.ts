@@ -11,6 +11,7 @@ import {
   isCodeText,
   normalisedCode,
   RULES,
+  termsRefusal,
   type CodeState,
 } from "../../src/policy/discount-codes.ts";
 
@@ -44,8 +45,34 @@ describe("discount codes", () => {
     // Never below zero: a code worth more than the price takes the price off, and no more.
     expect(amountOff({ kind: "amount", value: 5_000_000, cap: null }, price.amount_ex_gst)).toBe(3_000_000);
     expect(discounted(price, 3_000_000)).toEqual({ amount_ex_gst: 0, amount: 0, gst_percent: 18 });
-    // A percentage of an odd figure comes to whole paise.
-    expect(amountOff({ kind: "percent", value: 15, cap: null }, 199_999)).toBe(30_000);
+    // A percentage comes to the nearest whole rupee: 15% of Rs. 2,547 is Rs. 382.05, so Rs. 382.
+    expect(amountOff({ kind: "percent", value: 15, cap: null }, 254_700)).toBe(38_200);
+    expect(amountOff({ kind: "percent", value: 15, cap: null }, 254_300)).toBe(38_100);
+  });
+
+  it("takes whole rupees off, so GST at 18% is two equal halves, as Books works it out", () => {
+    // Rs. 2,547 less 15% was charged Rs. 2,554.64, while Books' CGST 9% and SGST 9% came to Rs. 2,554.65.
+    const halfOfGst = (exGst: number) => Math.round((exGst * 9) / 100);
+    const mismatches: string[] = [];
+    for (let rupees = 1; rupees <= 3_100; rupees += 1) {
+      for (let percent = 1; percent <= 100; percent += 1) {
+        const price = { amount_ex_gst: rupees * 100, gst_percent: 18 };
+        const off = amountOff({ kind: "percent", value: percent, cap: null }, price.amount_ex_gst);
+        const sold = discounted(price, off);
+        const books = sold.amount_ex_gst + 2 * halfOfGst(sold.amount_ex_gst);
+        if (off % 100 !== 0 || sold.amount !== books) mismatches.push(`Rs. ${String(rupees)} less ${String(percent)}%`);
+      }
+    }
+    expect(mismatches).toEqual([]);
+  });
+
+  it("is made only in whole rupees, and with a cap only on a percentage", () => {
+    expect(termsRefusal({ kind: "percent", value: 15, cap: 50_000 })).toBeNull();
+    expect(termsRefusal({ kind: "amount", value: 150_000, cap: null })).toBeNull();
+    expect(termsRefusal({ kind: "percent", value: 101, cap: null })).toBe("value");
+    expect(termsRefusal({ kind: "amount", value: 150_050, cap: null })).toBe("value");
+    expect(termsRefusal({ kind: "percent", value: 15, cap: 50_050 })).toBe("cap");
+    expect(termsRefusal({ kind: "amount", value: 150_000, cap: 50_000 })).toBe("cap");
   });
 
   it(RULES[1], () => {
