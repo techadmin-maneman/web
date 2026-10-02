@@ -111,4 +111,13 @@ describe("deploy-staging.yml", () => {
     expect(text).toContain("if: ${{ !cancelled() && needs.checks.result == 'success' }}");
     expect(text).not.toContain("needs.checks.result == 'skipped'");
   });
+
+  it("opens every staging host's pages after the smoke, and fails the deploy on a policy refusal", () => {
+    const text = workflow("deploy-staging.yml");
+    const steps = text.split("- name: ");
+    const check = steps.find((step) => step.includes("npm run smoke:csp -- --environment staging"));
+    expect(check).toBeDefined();
+    expect(check).not.toContain("continue-on-error");
+    expect(text.indexOf("smoke:csp")).toBeGreaterThan(text.indexOf("--surfaces --version-tag"));
+  });
 });

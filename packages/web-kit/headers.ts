@@ -13,6 +13,8 @@ export interface AppPolicy {
   readonly features?: readonly string[];
   /** Keeps a popup the page opens connected to it, as a payment provider's card check may need. */
   readonly popups?: boolean;
+  /** Allows style elements and attributes a third-party script writes into the page. Inline scripts stay refused. */
+  readonly inlineStyles?: boolean;
 }
 
 /** Denied unless an app grants itself one. */
@@ -23,7 +25,7 @@ export function contentSecurityPolicy(policy: AppPolicy): string {
   return [
     "default-src 'none'",
     `script-src ${sources(policy.scripts)}`,
-    "style-src 'self'",
+    `style-src ${policy.inlineStyles === true ? "'self' 'unsafe-inline'" : "'self'"}`,
     "img-src 'self' blob:",
     "font-src 'self'",
     `connect-src ${sources(policy.connect)}`,

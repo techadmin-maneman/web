@@ -1264,14 +1264,12 @@ export interface paths {
                         "application/json": components["schemas"]["Look"];
                     };
                 };
-                /** @description not_found: this browser has no look */
-                404: {
+                /** @description This browser has had no look yet */
+                204: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
+                    content?: never;
                 };
             };
         };
