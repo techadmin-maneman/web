@@ -16,7 +16,7 @@ import type { OneVisitState } from "../policy/one-visit.ts";
 import { WAIVER_GIVES_BACK, type DisputeRuling, type NoShowDecision, type Waiver } from "../policy/no-show.ts";
 import { codeOnVisit } from "./discount-code-uses.ts";
 import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
-import type { AppointmentStatus } from "./fsm-mirror.ts";
+import type { AppointmentStatus } from "./visit-status.ts";
 import { consentGiven, type MessageKind } from "./messages.ts";
 import { windowTimesOf } from "../policy/slot-times.ts";
 import { MINUTE_MS, minutesBetween } from "../lib/durations.ts";

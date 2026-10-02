@@ -37,7 +37,8 @@ import { unitsFor } from "../policy/visit-length.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import { listCities } from "./cities.ts";
-import { syncAppointment, type AppointmentStatus } from "./fsm-mirror.ts";
+import { syncAppointment } from "./fsm-mirror.ts";
+import type { AppointmentStatus } from "./visit-status.ts";
 import { leaveBetween } from "./leave.ts";
 import {
   activeTechnicians,
