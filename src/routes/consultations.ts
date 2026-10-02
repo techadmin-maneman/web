@@ -186,7 +186,7 @@ const ConsultationSchema = z
     }),
     date: z.iso.date(),
     window: z.enum(BOOKING_WINDOWS),
-    area: z.string(),
+    area: z.string().openapi({ description: "The area once ops have named it, its city until then." }),
     credits: CreditsSchema,
     invite: InviteStateSchema,
     one_visit: OneVisitOutcomeSchema,
@@ -207,7 +207,13 @@ function standingCodeBody(standing: StandingCode | null) {
 }
 
 const WaitlistSchema = z
-  .object({ area: z.union([z.string(), z.null()]), credits: CreditsSchema, invite: InviteStateSchema })
+  .object({
+    area: z
+      .union([z.string(), z.null()])
+      .openapi({ description: "Null until ops have named the area, and for a pincode we do not know." }),
+    credits: CreditsSchema,
+    invite: InviteStateSchema,
+  })
   .strict()
   .openapi("Waitlist");
 

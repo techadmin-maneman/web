@@ -70,11 +70,13 @@ export const TEMPLATES: Readonly<Record<string, string>> = {
   // Cancelled in time, but the credit's grant has since expired or been withdrawn.
   visit_cancelled_credit_gone_v1:
     "Hello {{1}}, your {{2}} on {{3}} is cancelled. The visit credit it used has expired, so it cannot come back.",
-  // To someone on a pincode's waitlist, {{2}} the area; only one who asked for the launch alert is promised it.
+  // To someone on a pincode's waitlist, {{2}} the area ops named, else "pincode 400050"; only one who asked for the
+  // launch alert is promised it.
   waitlist_listed_v1: "Hello {{1}}, you are on our list for {{2}}. We do not come there yet.",
   waitlist_listed_alert_v1:
     "Hello {{1}}, you are on our list for {{2}}. We will message you on WhatsApp when we come there.",
-  // A pincode launched, to those on its waitlist who asked to be told: {{2}} the area, {{3}} where to book.
+  // A pincode launched, to those on its waitlist who asked to be told: {{2}} the area ops named, else its city,
+  // {{3}} where to book.
   launch_alert_v1: "Hello {{1}}, we now come to {{2}}. Your free consultation can be booked here: {{3}}",
   // To a referrer once the friend is fitted: {{2}} friend's name, {{3}} referrer's visits, {{4}} expiry, {{5}} friend's.
   friend_fitted_v2:

@@ -1622,6 +1622,7 @@ export interface paths {
                         "application/json": {
                             areas: {
                                 pincode: string;
+                                /** @description The area's name once ops have named it; null until then, and for a pincode we do not know. */
                                 area: string | null;
                                 city: string | null;
                                 served: boolean;

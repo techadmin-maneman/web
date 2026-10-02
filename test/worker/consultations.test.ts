@@ -51,11 +51,13 @@ const post = (body: unknown) => ({
   body: JSON.stringify(body),
 });
 
-async function pincode(pin: string, area: string, city: string, served: boolean) {
+/** A pincode whose area ops have named, unless `named` is false: its name is then still the post offices'. */
+async function pincode(pin: string, area: string, city: string, served: boolean, named = true) {
   await env.DB.prepare(
-    "INSERT INTO serviceable_pincodes (pincode, area, city, served, launched_at) VALUES (?1, ?2, ?3, ?4, ?5)",
+    `INSERT INTO serviceable_pincodes (pincode, area, city, served, launched_at, area_named_by)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6)`,
   )
-    .bind(pin, area, city, served ? 1 : 0, served ? "2026-09-01T18:30:00.000Z" : null)
+    .bind(pin, area, city, served ? 1 : 0, served ? "2026-09-01T18:30:00.000Z" : null, named ? "ops@localhost" : null)
     .run();
 }
 
@@ -413,6 +415,38 @@ describe("the address the consultation is at", () => {
         },
       },
     ]);
+  });
+});
+
+// BK-27 and CP-25 of the audit, 2 October 2026: an area nobody had named was called by its post office's name.
+describe("an area ops have not named yet", () => {
+  it("is booked as its city", async () => {
+    await pincode("110048", "Masjid Moth", "Delhi", true, false);
+    const answer = await request(
+      site(),
+      "/api/consultation",
+      post({
+        ...VISITOR,
+        pincode: "110048",
+        date: "2026-09-23",
+        window: "morning",
+        consent: true,
+        address: { ...ADDRESS, locality: "Greater Kailash II", city: "Delhi", pincode: "110048" },
+      }),
+      { FSM_QUEUE: fakeQueue(), CRM_QUEUE: fakeQueue() },
+    );
+    expect(await answer.json()).toMatchObject({ state: "booked", area: "Delhi" });
+  });
+
+  it("is not named to someone joining its waitlist", async () => {
+    await pincode("110048", "Masjid Moth", "Delhi", false, false);
+    const answer = await request(
+      site(),
+      "/api/waitlist",
+      post({ ...VISITOR, pincode: "110048", contact_consent: true, launch_alert: false }),
+      { CRM_QUEUE: fakeQueue() },
+    );
+    expect(await answer.json()).toEqual({ area: null, credits: false, invite: "unknown" });
   });
 });
 

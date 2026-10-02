@@ -1758,6 +1758,7 @@ export interface components {
             date: string;
             /** @enum {string} */
             window: "morning" | "afternoon" | "evening";
+            /** @description The area once ops have named it, its city until then. */
             area: string;
             /** @description Whether the invite's service visits apply. */
             credits: boolean;
@@ -1795,6 +1796,7 @@ export interface components {
             landmark?: string | null;
         };
         Waitlist: {
+            /** @description Null until ops have named the area, and for a pincode we do not know. */
             area: string | null;
             /** @description Whether the invite's service visits apply. */
             credits: boolean;
@@ -1819,7 +1821,7 @@ export interface components {
         PincodeAnswer: {
             pincode: string;
             served: boolean;
-            /** @description Null for a pincode we do not know. */
+            /** @description The area's name once ops have named it; null until then, and for a pincode we do not know. */
             area: string | null;
             city: string | null;
         };
@@ -1833,6 +1835,7 @@ export interface components {
             date: string;
             /** @enum {string} */
             window: "morning" | "afternoon" | "evening";
+            /** @description The area once ops have named it, its city until then. */
             area: string;
             /** @description Whether the invite's service visits apply. */
             credits: boolean;
@@ -1845,6 +1848,7 @@ export interface components {
             one_visit: boolean;
         };
         ReferralWaitlist: {
+            /** @description Null until ops have named the area, and for a pincode we do not know. */
             area: string | null;
             /** @description Whether the invite's service visits apply. */
             credits: boolean;
