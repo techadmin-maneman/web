@@ -218,10 +218,19 @@ describe("Books' own client, as the Worker builds its providers", () => {
     vi.spyOn(globalThis, "fetch").mockImplementation((input) => {
       const url = new URL(input instanceof Request ? input.url : String(input));
       if (url.href.startsWith(TOKEN_URL)) {
-        minted.push({ clientId: url.searchParams.get("client_id"), refreshToken: url.searchParams.get("refresh_token") });
+        minted.push({
+          clientId: url.searchParams.get("client_id"),
+          refreshToken: url.searchParams.get("refresh_token"),
+        });
         return Promise.resolve(issued("books-1"));
       }
-      const invoice = { invoice_id: "inv-1", invoice_number: "INV-000041", date: "2026-09-24", total: 1, status: "sent" };
+      const invoice = {
+        invoice_id: "inv-1",
+        invoice_number: "INV-000041",
+        date: "2026-09-24",
+        total: 1,
+        status: "sent",
+      };
       return Promise.resolve(json({ invoice }));
     });
 

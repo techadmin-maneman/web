@@ -358,9 +358,7 @@ export function readSettings(
     read.problems.push("HEARTBEAT_URL must be an https:// URL");
   }
 
-  const zoho = readZoho(read, providers);
-  const zohoFsm = readZohoFsm(read, providers);
-  const zohoBooks = readZohoBooks(read, providers);
+  const zohoClients = readZohoClients(read, providers);
   const razorpay = readRazorpay(read, providers, environment);
   const geocode = readGeocode(read, providers);
   const access = readAccess(read, providers, environment);
@@ -396,9 +394,7 @@ export function readSettings(
     leadWebhookUrl: leadWebhookUrl ?? (alertWebhookUrl === "" ? null : alertWebhookUrl),
     heartbeatUrl,
     erasureSecret: read.key("ERASURE_SECRET"),
-    zoho,
-    zohoFsm,
-    zohoBooks,
+    ...zohoClients,
     razorpay,
     access,
     geocode,
@@ -415,6 +411,15 @@ function checkZohoHosts(read: Reader, hosts: readonly (readonly [name: string, h
   for (const [name, host] of hosts) {
     if (host !== "" && !ZOHO_HOST.test(host)) read.problems.push(`${name} must be a Zoho hostname, without https://`);
   }
+}
+
+/** The CRM's, FSM's and Books' Zoho clients, each only where its provider is zoho. */
+function readZohoClients(read: Reader, providers: ProvidersRead): Pick<Settings, "zoho" | "zohoFsm" | "zohoBooks"> {
+  return {
+    zoho: readZoho(read, providers),
+    zohoFsm: readZohoFsm(read, providers),
+    zohoBooks: readZohoBooks(read, providers),
+  };
 }
 
 /** The CRM's Zoho client, when CRM_PROVIDER is zoho. */
