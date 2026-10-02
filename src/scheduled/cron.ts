@@ -27,7 +27,7 @@ import { anyHeldBooking, retryHeldBookings } from "../domain/held-bookings.ts";
 import { queueNextServiceReminders } from "../domain/next-visit.ts";
 import { sendUnsentLinks } from "../domain/payment-links.ts";
 import { readOpsInputs, type OpsInputs } from "../domain/ops-settings.ts";
-import { tellOfStorage } from "../domain/storage-meter.ts";
+import { readDatabaseBytes, tellOfDatabaseSize, tellOfStorage } from "../domain/storage-meter.ts";
 import { queueReminders } from "../domain/visit-messages.ts";
 import type { StaticConfig } from "../guard.ts";
 import { createCallBudget, type CallBudget } from "../lib/call-budget.ts";
@@ -167,11 +167,15 @@ async function deletionAlertsJob({ env, deps }: CronContext): Promise<void> {
   await alertAgedDeletions(env.DB, deps.now(), deps.alert);
 }
 
-/** Once an hour, on the half hour: the share fills over months, and the hour's other checks run on the hour. */
+/**
+ * Once an hour, on the half hour: R2's share and the database fill over months, and the hour's other checks run on
+ * the hour.
+ */
 async function storageMeterJob({ env, deps }: CronContext): Promise<void> {
   const minute = deps.now().getUTCMinutes();
   if (minute < 30 || minute >= 35) return;
   await tellOfStorage(env.DB, deps.alertOnce);
+  await tellOfDatabaseSize(env.DB, deps.alertOnce, await readDatabaseBytes(env.DB));
 }
 
 /** Once an hour, at a quarter past, where a token to read the account's analytics is set. */
@@ -254,7 +258,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   // as parts (docs/decisions/0087-consumables-and-stock.md).
   { name: "fsm_catalogue", needs: "fsm", run: catalogueJob },
   { name: "deletion_alerts", needs: "nothing", run: deletionAlertsJob },
-  // What the photographs and cards hold of R2, told at half, 80% and all of their share (docs/decisions/0093).
+  // What the photographs and cards hold of R2, told at half, 80% and all of their share (docs/decisions/0093), and
+  // the database against D1's limit, told at half, 80% and 95%.
   { name: "storage_meter", needs: "nothing", run: storageMeterJob },
   // What the account has used today of the free plan's daily allowances, told at 70%.
   { name: "daily_allowances", needs: "nothing", run: dailyAllowancesJob },

@@ -66,11 +66,12 @@ export async function recordClaim(db: D1Database, claim: NewClaim): Promise<stri
 
   try {
     await db.batch([
-      // A returning person keeps their ID and whether they are contactable.
+      // A returning person keeps their ID, their name and whether they are contactable: anyone can type a
+      // number at the gate, so the gate never renames the person it belongs to.
       db
         .prepare(
           `INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES (?, ?, ?, ?, 0)
-           ON CONFLICT (mobile_e164) DO UPDATE SET name = excluded.name`,
+           ON CONFLICT (mobile_e164) DO NOTHING`,
         )
         .bind(crypto.randomUUID(), at, mobileE164, claim.name),
       recordConsent(db, {
