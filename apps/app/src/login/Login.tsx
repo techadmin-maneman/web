@@ -1,6 +1,7 @@
 // The login (boards A1 to A3): a number, then its code. Every number gets the
 // same second screen, so the app never says whether a number has a booking
-// (docs/decisions/0030-one-time-codes.md).
+// (docs/decisions/0030-one-time-codes.md). The site's booking confirmation
+// links here with the number typed there filled in (linked-mobile.ts).
 //
 // Each step forward is an entry in the browser's history, so a phone's Back
 // steps back from the code to the number, as the screen's own back arrow does,
@@ -44,8 +45,19 @@ function rewind(): void {
   if (depth > 0) window.history.go(-depth);
 }
 
-/** `ended`: the session ended while the app was open, and the first screen says so. */
-export function Login({ ended, onSignedIn }: { ended: boolean; onSignedIn: () => void }) {
+/**
+ * `ended`: the session ended while the app was open, and the first screen says so. `linkedMobile`: the number the
+ * site's booking confirmation opened the app with, or "".
+ */
+export function Login({
+  ended,
+  linkedMobile,
+  onSignedIn,
+}: {
+  ended: boolean;
+  linkedMobile: string;
+  onSignedIn: () => void;
+}) {
   const [step, setStep] = useState<Step>({ kind: "mobile" });
   // The last code sent, which a step back and then forward again returns to.
   const lastChallenge = useRef<LoginChallenge | null>(null);
@@ -75,7 +87,7 @@ export function Login({ ended, onSignedIn }: { ended: boolean; onSignedIn: () =>
     nameInTitle(TITLES[step.kind]);
     focusIfLost(document.querySelector("h1"));
   }, [step.kind]);
-  const [mobile, setMobile] = useState("");
+  const [mobile, setMobile] = useState(linkedMobile);
   const [mobileError, setMobileError] = useState<string | null>(null);
   const [problem, setProblem] = useState<CodeProblem | null>(null);
   // One code at a time: a second send bills a second code, voids the first, and takes another

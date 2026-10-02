@@ -27,6 +27,10 @@ export const MESSAGE_KINDS = [
   "friend_credited", // to the friend: the invite's credits are theirs
   "referral_rejected", // to either side: ops refused a held grant
   "launch_alert", // the person's pincode went live
+  // The site's booking form, for a number we know (src/domain/site-notices.ts): what the page tells no one.
+  "consultation_exists",
+  "book_in_app",
+  "address_on_account",
 ] as const;
 export type MessageKind = (typeof MESSAGE_KINDS)[number];
 
