@@ -5,6 +5,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Settings } from "../../src/config/settings.ts";
 import type { App } from "../../src/http/context.ts";
+import { ceilingReached } from "../../src/domain/ceilings.ts";
 import { mobileHashOf, numberProved } from "../../src/domain/number-codes.ts";
 import {
   appFor,
@@ -93,6 +94,20 @@ describe("POST /api/number-code", () => {
     expect(refused.status).toBe(429);
     expect(refused.body.error?.code).toBe("rate_limited");
     expect(deps.sentCodes).toHaveLength(LOCAL_SETTINGS.login.codeMobileDailyLimit);
+  });
+
+  it("stops at a day's ceiling of its own, so codes sent to numbers typed here never stop a login", async () => {
+    build({ login: { ...LOCAL_SETTINGS.login, codeDailyCeiling: 1 } });
+    expect((await ask("98100 00001")).status).toBe(202);
+
+    const busy = await ask("98100 00002");
+    expect(busy.status).toBe(503);
+    expect(busy.body.error?.code).toBe("busy");
+    expect(deps.sentCodes).toHaveLength(1);
+    expect(deps.alerts).toEqual([
+      'The daily form_code ceiling (1) is reached; the site\'s WhatsApp codes for the one visit and the try-on answer "busy" until midnight IST.',
+    ]);
+    expect(await ceilingReached(env.DB, "login_code", 1, clock)).toBe(false);
   });
 
   it("proves no number where codes have no pepper", async () => {

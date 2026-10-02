@@ -4,8 +4,9 @@
 //   POST /api/number-code          a code on WhatsApp to the number
 //   POST /api/number-code/verify   the code, which proves the number for 30 minutes
 //
-// The code goes to whatever number is typed, so asking for one needs Turnstile and counts against the number's day,
-// the address's hour and the day's ceiling on codes, as a login code does.
+// The code goes to whatever number is typed, so asking for one needs Turnstile and counts against the number's day
+// and the address's hour, as a login code does, and against a day's ceiling of its own, so that codes asked for
+// here never stop clients and technicians signing in.
 
 import { createRoute, z, type RouteHandler } from "@hono/zod-openapi";
 import type { App, AppEnv } from "../http/context.ts";
@@ -99,7 +100,8 @@ const ask: RouteHandler<typeof askRoute, AppEnv> = async (c) => {
   const asked = await mayAskForCode(c, { surface: "form", mobileE164, ipHash, now, name: body.name });
   if (asked === "rate_limited") return c.json(errorBody("rate_limited", requestId), 429);
   if (asked === "busy") return c.json(errorBody("busy", requestId), 503);
-  if (!(await countCode(c, mobileE164, body.name, ipHash, now))) return c.json(errorBody("busy", requestId), 503);
+  const counted = await countCode(c, mobileE164, body.name, ipHash, now, "form_code");
+  if (!counted) return c.json(errorBody("busy", requestId), 503);
 
   const code = knownCode(login, body.name) ?? newLoginCode();
   const mobileHash = await mobileHashOf(ipHashSalt, mobileE164);
