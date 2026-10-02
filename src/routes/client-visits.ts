@@ -42,10 +42,11 @@ export const VisitSummarySchema = z
     length_minutes: z.number().int(),
     type: z.union([z.enum(VISIT_TYPES), z.null()]),
     status: z.enum(["scheduled", "dispatched", "in_progress", "completed", "cancelled", "terminated", "other"]),
-    stage: z.union([z.enum(["booked", "in_progress", "closing"]), z.null()]).openapi({
+    stage: z.union([z.enum(["booked", "in_progress", "done", "closing"]), z.null()]).openapi({
       description:
-        "For a visit FSM has not closed: still to come, under way in its window, or over and waiting for FSM to " +
-        "close it. Null once FSM has closed it.",
+        "For a visit FSM has not closed: still to come, under way (the technician has checked in, whatever FSM " +
+        "says), closed as done from the technician's phone, or otherwise over and waiting for FSM to close it. " +
+        "Null once FSM has closed it.",
     }),
     prepaid: z.boolean().openapi({ description: "Paid for ahead, or covered by a visit credit: board C1's Prepaid." }),
     technician: z.union([TechnicianSchema, z.null()]),

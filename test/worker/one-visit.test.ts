@@ -10,6 +10,7 @@ import { createAlertOnce, createResolveAlert } from "../../src/domain/alerts.ts"
 import { raiseInvoices } from "../../src/domain/fsm-invoices.ts";
 import { syncAppointment } from "../../src/domain/fsm-mirror.ts";
 import { summaryOf } from "../../src/domain/job-sheet.ts";
+import { openSession } from "../../src/domain/sessions.ts";
 import { outstandingTasks } from "../../src/domain/tasks.ts";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { saltedHash } from "../../src/lib/hash.ts";
@@ -443,6 +444,29 @@ describe("Razorpay's word that a one visit's link is paid", () => {
   it("records nothing for a link that is not ours, whose payment its own event records", async () => {
     await deliver(linkPaid({ id: "plink_other", reference_id: "someone-else" }), "evt-3");
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM payments").first()).toEqual({ n: 0 });
+  });
+
+  // The audit of 2 October 2026: F01, fitted and paid before its window, still dispatched in FSM, was offered back
+  // every rupee on cancelling, and a free move.
+  it("leaves the client nothing to cancel or move, though FSM still has the visit dispatched", async () => {
+    const linkId = await fittedAndClosed(createStubPayments());
+    await deliver(linkPaid({ id: linkId, reference_id: JOB }), "evt-1");
+    await env.DB.prepare("UPDATE appointments SET status = 'dispatched' WHERE id = ?1").bind(JOB).run();
+
+    const client = appFor("local", fakeDependencies(), {}, "client");
+    const cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: PERSON, deviceLabel: null, now: NOW })}`;
+    const ask = (change: string, body: object) =>
+      request(client, `/api/appointments/${JOB}/${change}`, {
+        method: "POST",
+        headers: { Cookie: cookie, "Content-Type": "application/json", Origin: "https://maneman.test" },
+        body: JSON.stringify(body),
+      });
+    const cancel = await ask("cancel", { confirm: false });
+    expect(cancel.status).toBe(409);
+    expect(await cancel.json()).toMatchObject({ error: { code: "not_changeable" } });
+    expect((await ask("reschedule", {})).status).toBe(409);
+    const me = await (await request(client, "/api/me", { headers: { Cookie: cookie } })).json();
+    expect(me).toMatchObject({ next_visit: { id: JOB, stage: "done" } });
   });
 });
 

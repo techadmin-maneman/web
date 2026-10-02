@@ -190,7 +190,7 @@ export const home = {
     openInvoice: "Open the invoice",
   },
   /** A visit FSM has not closed, once it has begun (LIFE-03). PLACEHOLDER: the design draws neither. */
-  stages: { in_progress: "Today · in progress", closing: "Being closed" },
+  stages: { in_progress: "Today · in progress", done: "Done · notes on the way", closing: "Wrapping up" },
   next: {
     label: "Your next visit",
     length: (what: string, minutes: number) => `${what} · ${String(minutes)} minutes`,
