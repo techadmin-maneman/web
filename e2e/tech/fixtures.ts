@@ -282,6 +282,8 @@ export interface CardOptions {
   /** The client's hair profile as it stands; none recorded unless a test gives one. */
   readonly profile?: HairProfile | null;
   readonly checklist?: Card["checklist"];
+  /** A one visit's discount code already on it; none unless a test gives one. */
+  readonly discountCode?: Card["discount_code"];
 }
 
 export function card(date: string, progress: Progress, options: CardOptions = {}): Card {
@@ -321,6 +323,7 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
     consumables: CONSUMABLES,
     products: oneVisit || type === "consultation" ? PRODUCTS : [],
     payment_link: null,
+    discount_code: options.discountCode ?? null,
     profile: options.profile ?? null,
   };
 }
@@ -343,6 +346,7 @@ export function lockedCard(date: string): Card {
     consumables: CONSUMABLES,
     products: [],
     payment_link: null,
+    discount_code: null,
     profile: null,
   };
 }
@@ -367,6 +371,8 @@ export interface Fake {
   signedIn: boolean;
   /** True once ops revoke the phone: every call is a 401 `device_revoked`. */
   revoked: boolean;
+  /** True once ops switch the technician off: every call but the sign-in's is a 401 `technician_inactive`. */
+  switchedOff: boolean;
   /** True makes the next code the phone checks one the API has closed, a `410`. */
   codeClosed: boolean;
   /** Every mobile number a code was asked for, in order. */
@@ -408,6 +414,8 @@ export interface Fake {
   type: VisitType;
   /** True makes the first job a consultation and fit in one visit. */
   oneVisit: boolean;
+  /** The discount code already on the one visit, or none. */
+  discountCode: Card["discount_code"];
   /** The client's pieces on the card. */
   pieces: Piece[];
   /** The client's hair profile on the card, or none recorded. */
@@ -477,6 +485,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     online: true,
     signedIn: true,
     revoked: false,
+    switchedOff: false,
     codeClosed: false,
     codesSent: [],
     malformed: false,
@@ -491,6 +500,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     pin: true,
     type: "service",
     oneVisit: false,
+    discountCode: null,
     pieces: [],
     profile: null,
     checklist: CHECKLIST,
@@ -516,6 +526,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       oneVisit: fake.oneVisit,
       profile: fake.profile,
       checklist: fake.checklist,
+      discountCode: fake.discountCode,
     });
 
   await on.route("**/api/tech/**", async (route: Route) => {
@@ -541,6 +552,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       return reply(route, 200, { verified: true, first_name: ME.first_name, device_id: ME.device.device_id });
     }
     if (fake.revoked) return refuse(route, 401, "device_revoked");
+    if (fake.switchedOff) return refuse(route, 401, "technician_inactive");
     if (!fake.signedIn) return refuse(route, 401, "session_required");
 
     // The photograph itself, and its thumbnail: PUT to the links the API handed out.

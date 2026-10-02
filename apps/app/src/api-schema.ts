@@ -874,7 +874,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Upcoming soonest first; past newest first */
+                /** @description Upcoming soonest first; past newest first, a visit cancelled among them */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -1781,7 +1781,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Let go, or already gone */
+                /** @description Let go, or already gone; or kept, when it has a Razorpay order and its pay_by has not passed, since a payment may still land on it. */
                 204: {
                     headers: {
                         [name: string]: unknown;
@@ -2531,7 +2531,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -2637,7 +2637,7 @@ export interface components {
             } | null;
             /** @description The credit tile: balance and earliest expiry; null with none left. */
             credits: components["schemas"]["Credits"] | null;
-            /** @description Board B1's one contextual prompt, the first that applies, in the owner's order: no address given while something is booked; the next service due and not booked; the month the piece in wear falls due, never the day (ADR 0059); an invoice issued in the last fortnight, which ops may lengthen or shorten. Null when none applies. */
+            /** @description Board B1's one prompt, the first that applies, in the owner's order: no address given while something is booked; the next service due and not booked; then, once no invoice is ready, the month the piece in wear falls due, never the day, and only once that month may be booked. Null when none applies. */
             prompt: {
                 /** @enum {string} */
                 kind: "address";
@@ -2653,22 +2653,27 @@ export interface components {
                 tier: string | null;
                 /**
                  * Format: date
-                 * @description India's day it falls due: the last visit's day and the cadence; tomorrow once passed.
+                 * @description India's day it fell or falls due: a service's from the last visit and the cadence, a replacement's the piece's own. Before `date`, it has passed.
+                 */
+                due_on: string;
+                /**
+                 * Format: date
+                 * @description India's day it is offered on: the day it falls due, or tomorrow once that has passed.
                  */
                 date: string;
                 /** @description The last visit's window, where this kind of visit can start in it. */
                 window: ("morning" | "afternoon" | "evening") | null;
+                /** @description A service offered while the piece in wear falls due within how far ahead a visit may be booked, and no replacement is booked: the replacement is offered beside it. */
+                replacement_bookable: boolean;
             } | {
                 /** @enum {string} */
                 kind: "replacement_due";
                 month: string;
                 /** @description The replacement service it offers: the client's last one while that is offered, else the first in the console's order (ADR 0085); null while none is offered. */
                 tier: string | null;
-                /** @description The month begins within how far ahead a visit may be booked, so it can be booked now. */
-                bookable: boolean;
-            } | {
-                /** @enum {string} */
-                kind: "invoice_ready";
+            } | null;
+            /** @description An invoice issued in the last fortnight, which ops may lengthen or shorten, ready to open: a line beneath the prompt, or the only one. Null when none is. */
+            invoice: {
                 /** Format: uuid */
                 visit_id: string;
                 /**
@@ -2685,7 +2690,7 @@ export interface components {
                 types: ("consultation" | "first_fit" | "service" | "replacement")[];
                 /** @description Every service of those kinds offered and priced now, a kind at a time, in the console's order. A first fit's are the hair systems ops offer; with none, a first fit cannot be booked yet. */
                 services: components["schemas"]["OfferedService"][];
-                /** @description What the app offers next, with nothing booked, for the booking sheet to open with: the first fit once the consultation is done, from the lead time and in the window the site's request asked for; or the next service on its due day, in the last visit's window, or the replacement where the piece falls due first (ADR 0086). */
+                /** @description What the app offers next, with nothing booked, for the booking sheet to open with: the first fit once the consultation is done, from the lead time and in the window the site's request asked for; or the next service on its due day, in the last visit's window, or the replacement where the piece falls due first, on the earlier of its own due day and the service's (ADR 0086). */
                 next: {
                     /** @enum {string} */
                     type: "first_fit" | "service" | "replacement";
@@ -2693,7 +2698,12 @@ export interface components {
                     tier: string | null;
                     /**
                      * Format: date
-                     * @description India's day it is offered on.
+                     * @description India's day it fell or falls due: a service's from the last visit and the cadence, a replacement's the piece's own, a first fit's from the consultation and the lead time.
+                     */
+                    due_on: string;
+                    /**
+                     * Format: date
+                     * @description India's day it is offered on: the day it falls due, or tomorrow once that has passed.
                      */
                     date: string;
                     window: ("morning" | "afternoon" | "evening") | null;
@@ -3050,12 +3060,12 @@ export interface components {
              * @description India's calendar date it was made.
              */
             date: string;
-            /** @description In paise, GST included. */
+            /** @description In paise, GST included: the main figure. */
             amount: number;
-            /** @description In paise, before GST: the main figure. */
-            amount_ex_gst: number;
-            /** @description The GST rate the amount includes. */
-            gst_percent: number;
+            /** @description In paise, before GST; null where no rate was recorded for it. */
+            amount_ex_gst: number | null;
+            /** @description The GST rate the amount includes; null where none was recorded. */
+            gst_percent: number | null;
             /** @description The visit it paid for, when known. */
             visit: {
                 /** Format: uuid */
@@ -3063,6 +3073,18 @@ export interface components {
                 /** Format: date */
                 date: string;
                 type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            } | null;
+            /** @description What it paid for while there is no visit yet: the booking its hold was making. */
+            booking: {
+                /** @enum {string} */
+                type: "consultation" | "first_fit" | "service" | "replacement";
+                /**
+                 * Format: date
+                 * @description India's day the visit was held for.
+                 */
+                date: string;
+                /** @description Still being booked; false once refunded or let go. */
+                under_way: boolean;
             } | null;
             /** @enum {string} */
             status: "authorized" | "captured" | "refunded" | "partially_refunded";
@@ -3096,6 +3118,12 @@ export interface components {
             } | null;
             /** @description The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07). */
             no_show: components["schemas"]["NoShowNote"] | null;
+            /** @description The discount code the visit was paid with; null for none, and on a late fee. */
+            discount_code: {
+                code: string;
+                /** @description In paise before GST; null where the visit's price was not yet known. */
+                amount_off: number | null;
+            } | null;
         };
         RefundEntry: {
             /**
@@ -3112,12 +3140,12 @@ export interface components {
              * @description India's calendar date it was made.
              */
             date: string;
-            /** @description In paise, GST included. */
+            /** @description In paise, GST included: the main figure. */
             amount: number;
-            /** @description In paise, before GST: the main figure. */
-            amount_ex_gst: number;
-            /** @description The GST rate the amount includes. */
-            gst_percent: number;
+            /** @description In paise, before GST; null where no rate was recorded for it. */
+            amount_ex_gst: number | null;
+            /** @description The GST rate the amount includes; null where none was recorded. */
+            gst_percent: number | null;
             /** @description The visit it paid for, when known. */
             visit: {
                 /** Format: uuid */
@@ -3125,6 +3153,18 @@ export interface components {
                 /** Format: date */
                 date: string;
                 type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            } | null;
+            /** @description What it paid for while there is no visit yet: the booking its hold was making. */
+            booking: {
+                /** @enum {string} */
+                type: "consultation" | "first_fit" | "service" | "replacement";
+                /**
+                 * Format: date
+                 * @description India's day the visit was held for.
+                 */
+                date: string;
+                /** @description Still being booked; false once refunded or let go. */
+                under_way: boolean;
             } | null;
             /** @enum {string} */
             status: "created" | "processed" | "failed";
@@ -3173,12 +3213,12 @@ export interface components {
              * @description India's calendar date it was made.
              */
             date: string;
-            /** @description In paise, GST included. */
+            /** @description In paise, GST included: the main figure. */
             amount: number;
-            /** @description In paise, before GST: the main figure. */
-            amount_ex_gst: number;
-            /** @description The GST rate the amount includes. */
-            gst_percent: number;
+            /** @description In paise, before GST; null where no rate was recorded for it. */
+            amount_ex_gst: number | null;
+            /** @description The GST rate the amount includes; null where none was recorded. */
+            gst_percent: number | null;
             /** @description The visit it paid for, when known. */
             visit: {
                 /** Format: uuid */
@@ -3186,6 +3226,18 @@ export interface components {
                 /** Format: date */
                 date: string;
                 type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            } | null;
+            /** @description What it paid for while there is no visit yet: the booking its hold was making. */
+            booking: {
+                /** @enum {string} */
+                type: "consultation" | "first_fit" | "service" | "replacement";
+                /**
+                 * Format: date
+                 * @description India's day the visit was held for.
+                 */
+                date: string;
+                /** @description Still being booked; false once refunded or let go. */
+                under_way: boolean;
             } | null;
             /** @enum {string} */
             status: "authorized" | "captured" | "refunded" | "partially_refunded";
@@ -3219,6 +3271,12 @@ export interface components {
             } | null;
             /** @description The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07). */
             no_show: components["schemas"]["NoShowNote"] | null;
+            /** @description The discount code the visit was paid with; null for none, and on a late fee. */
+            discount_code: {
+                code: string;
+                /** @description In paise before GST; null where the visit's price was not yet known. */
+                amount_off: number | null;
+            } | null;
             documents: {
                 /** @description The visit's tax invoice, for GET /api/documents/{id}, once Books has issued it. */
                 invoice: string | null;
@@ -3241,12 +3299,12 @@ export interface components {
              * @description India's calendar date it was made.
              */
             date: string;
-            /** @description In paise, GST included. */
+            /** @description In paise, GST included: the main figure. */
             amount: number;
-            /** @description In paise, before GST: the main figure. */
-            amount_ex_gst: number;
-            /** @description The GST rate the amount includes. */
-            gst_percent: number;
+            /** @description In paise, before GST; null where no rate was recorded for it. */
+            amount_ex_gst: number | null;
+            /** @description The GST rate the amount includes; null where none was recorded. */
+            gst_percent: number | null;
             /** @description The visit it paid for, when known. */
             visit: {
                 /** Format: uuid */
@@ -3254,6 +3312,18 @@ export interface components {
                 /** Format: date */
                 date: string;
                 type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            } | null;
+            /** @description What it paid for while there is no visit yet: the booking its hold was making. */
+            booking: {
+                /** @enum {string} */
+                type: "consultation" | "first_fit" | "service" | "replacement";
+                /**
+                 * Format: date
+                 * @description India's day the visit was held for.
+                 */
+                date: string;
+                /** @description Still being booked; false once refunded or let go. */
+                under_way: boolean;
             } | null;
             /** @enum {string} */
             status: "created" | "processed" | "failed";
@@ -3274,6 +3344,11 @@ export interface components {
                 name: string;
                 initials: string;
             } | null;
+            /**
+             * Format: date
+             * @description The last day this visit may be booked on: later days are asked for up to it.
+             */
+            last: string;
             days: {
                 /** Format: date */
                 date: string;
@@ -3333,6 +3408,11 @@ export interface components {
             late_change_charge: "nothing" | "late_fee" | "visit";
             /** Format: date-time */
             expires_at: string;
+            /**
+             * Format: date-time
+             * @description The last moment a payment counts as made in time: expires_at and the grace after it. Checkout closes then.
+             */
+            pay_by: string;
             /** @enum {string} */
             state: "held" | "expired" | "booked" | "released";
             /** @description Razorpay has confirmed the payment; the visit is being booked. */

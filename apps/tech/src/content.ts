@@ -496,6 +496,8 @@ export const oneVisit = {
     applying: "Checking",
     /** Said once it applies: the link carries it, and nothing else is shown. */
     applied: (code: string) => `Code ${code} applied. The payment link will take it off.`,
+    /** A code the client gave as they booked, or ops on the booking: there is no box to type another in. */
+    appliedAtBooking: (code: string) => `Code ${code} applied at booking. The payment link will take it off.`,
     errors: {
       code_not_applicable: "That code does not apply to this visit.",
       already_discounted: "This visit already has a code.",
@@ -605,5 +607,9 @@ export const typesLower = {
 export const session = {
   // PLACEHOLDER: neither file draws a revoked device.
   revoked: "This phone is no longer signed in. Ask ops, then sign in again.",
+  // PLACEHOLDER: no board draws a technician ops switched off.
+  switchedOff: "Your account is switched off. Ask ops to switch it back on, then sign in.",
+  workKept:
+    "Your account is switched off. Work not yet sent stays on this phone for 7 days, and sends once ops switch you back on and you sign in.",
   checking: "Loading",
 } as const;

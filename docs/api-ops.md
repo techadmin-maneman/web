@@ -1187,7 +1187,8 @@ Who is waiting, by pincode, the longest wait first
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The area's name once ops have named it; null until then, and for a pincode we do not know."
           },
           "city": {
             "anyOf": [
@@ -1955,7 +1956,7 @@ Request body:
 
 What ops still have to do, by group, the longest wait first
 
-**200**: The groups with something in them
+**200**: The groups with something in them, of the caller's own departments once the Staff list is enforced
 
 ```json
 {
@@ -1963,7 +1964,7 @@ What ops still have to do, by group, the longest wait first
 }
 ```
 
-**403**: access_required
+**403**: access_required, or not_permitted: no View in any department
 
 ```json
 {
@@ -1999,7 +2000,7 @@ Request body:
 }
 ```
 
-**403**: access_required: no Access token, or a service token, which names no member of staff
+**403**: access_required: no Access token, or a service token, which names no member of staff; or not_permitted: it asks Act in the department that decides the task's group
 
 ```json
 {
@@ -3568,7 +3569,7 @@ Request body:
 
 ### GET /api/storage
 
-What the photographs and referral cards hold in R2, against their share
+What the photographs and referral cards hold in R2, against their share, and the database against its limit
 
 **200**: The storage meter
 
@@ -3638,7 +3639,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names code when it is not one a code can be, count for a typed code made more than once, value for a percentage over 100, cap on an amount, covers named twice, expires_on before today, and max_uses for a batch whose codes are not single-use
+**400**: invalid_request: fields names code when it is not one a code can be, count for a typed code made more than once, value for a percentage over 100 or an amount not in whole rupees, cap on an amount or not in whole rupees, covers named twice, expires_on before today, and max_uses for a batch whose codes are not single-use
 
 ```json
 {
@@ -3999,7 +4000,6 @@ Request body:
             "not_bookable",
             "hold_expired",
             "address_required",
-            "already_booked",
             "not_changeable",
             "terms_changed",
             "consent_required",
@@ -4898,15 +4898,29 @@ Request body:
     },
     "amount": {
       "type": "integer",
-      "description": "In paise, GST included."
+      "description": "In paise, GST included: the main figure."
     },
     "amount_ex_gst": {
-      "type": "integer",
-      "description": "In paise, before GST: the main figure."
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "In paise, before GST; null where no rate was recorded for it."
     },
     "gst_percent": {
-      "type": "number",
-      "description": "The GST rate the amount includes."
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The GST rate the amount includes; null where none was recorded."
     },
     "visit": {
       "anyOf": [
@@ -4950,6 +4964,43 @@ Request body:
         }
       ],
       "description": "The visit it paid for, when known."
+    },
+    "booking": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "consultation",
+                "first_fit",
+                "service",
+                "replacement"
+              ]
+            },
+            "date": {
+              "type": "string",
+              "format": "date",
+              "description": "India's day the visit was held for."
+            },
+            "under_way": {
+              "type": "boolean",
+              "description": "Still being booked; false once refunded or let go."
+            }
+          },
+          "required": [
+            "type",
+            "date",
+            "under_way"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What it paid for while there is no visit yet: the booking its hold was making."
     },
     "status": {
       "type": "string",
@@ -5045,6 +5096,38 @@ Request body:
         }
       ],
       "description": "The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07)."
+    },
+    "discount_code": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "amount_off": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "In paise before GST; null where the visit's price was not yet known."
+            }
+          },
+          "required": [
+            "code",
+            "amount_off"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The discount code the visit was paid with; null for none, and on a late fee."
     }
   },
   "required": [
@@ -5055,13 +5138,15 @@ Request body:
     "amount_ex_gst",
     "gst_percent",
     "visit",
+    "booking",
     "status",
     "method",
     "reference",
     "refunded_amount",
     "purpose",
     "charge",
-    "no_show"
+    "no_show",
+    "discount_code"
   ],
   "additionalProperties": false
 }
@@ -5171,15 +5256,29 @@ Request body:
     },
     "amount": {
       "type": "integer",
-      "description": "In paise, GST included."
+      "description": "In paise, GST included: the main figure."
     },
     "amount_ex_gst": {
-      "type": "integer",
-      "description": "In paise, before GST: the main figure."
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "In paise, before GST; null where no rate was recorded for it."
     },
     "gst_percent": {
-      "type": "number",
-      "description": "The GST rate the amount includes."
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The GST rate the amount includes; null where none was recorded."
     },
     "visit": {
       "anyOf": [
@@ -5224,6 +5323,43 @@ Request body:
       ],
       "description": "The visit it paid for, when known."
     },
+    "booking": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "consultation",
+                "first_fit",
+                "service",
+                "replacement"
+              ]
+            },
+            "date": {
+              "type": "string",
+              "format": "date",
+              "description": "India's day the visit was held for."
+            },
+            "under_way": {
+              "type": "boolean",
+              "description": "Still being booked; false once refunded or let go."
+            }
+          },
+          "required": [
+            "type",
+            "date",
+            "under_way"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What it paid for while there is no visit yet: the booking its hold was making."
+    },
     "status": {
       "type": "string",
       "enum": [
@@ -5264,6 +5400,7 @@ Request body:
     "amount_ex_gst",
     "gst_percent",
     "visit",
+    "booking",
     "status",
     "destination",
     "speed"
@@ -6180,7 +6317,6 @@ Request body:
             "not_bookable",
             "hold_expired",
             "address_required",
-            "already_booked",
             "not_changeable",
             "terms_changed",
             "consent_required",
@@ -12166,12 +12302,22 @@ Request body:
     "ceiling_bytes": {
       "type": "integer",
       "description": "Past this the technician app's photographs are refused and wait on the phones."
+    },
+    "database_bytes": {
+      "type": "integer",
+      "description": "What this environment's D1 database holds."
+    },
+    "database_limit_bytes": {
+      "type": "integer",
+      "description": "D1's limit on one database on the free plan; past it every write fails."
     }
   },
   "required": [
     "held_bytes",
     "share_bytes",
-    "ceiling_bytes"
+    "ceiling_bytes",
+    "database_bytes",
+    "database_limit_bytes"
   ],
   "additionalProperties": false
 }
@@ -12215,12 +12361,25 @@ Request body:
             "$ref": "#/components/schemas/StaffGrant"
           },
           "description": "A person's grants; none for a service token."
+        },
+        "may_call": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The ops routes their calls go ahead on, as \"GET /api/tasks\": every one while the list is not enforced. The console shows only the sections whose pages they can read.",
+          "example": [
+            "GET /api/health",
+            "GET /api/whoami",
+            "GET /api/tasks"
+          ]
         }
       },
       "required": [
         "enforced",
         "listed",
-        "grants"
+        "grants",
+        "may_call"
       ],
       "additionalProperties": false
     }
@@ -12523,7 +12682,7 @@ Request body:
       "type": "integer",
       "minimum": 1,
       "maximum": 100000000,
-      "description": "Per cent, 1 to 100, for a percentage; paise before GST for an amount."
+      "description": "Per cent, 1 to 100, for a percentage; paise in whole rupees, before GST, for an amount."
     },
     "cap": {
       "anyOf": [
@@ -12536,7 +12695,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "A percentage's most, in paise before GST; none if left out."
+      "description": "A percentage's most, in paise in whole rupees, before GST; none if left out."
     },
     "covers": {
       "type": "array",

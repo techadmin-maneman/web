@@ -1622,6 +1622,7 @@ export interface paths {
                         "application/json": {
                             areas: {
                                 pincode: string;
+                                /** @description The area's name once ops have named it; null until then, and for a pincode we do not know. */
                                 area: string | null;
                                 city: string | null;
                                 served: boolean;
@@ -2682,7 +2683,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description The groups with something in them */
+                /** @description The groups with something in them, of the caller's own departments once the Staff list is enforced */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -2691,7 +2692,7 @@ export interface paths {
                         "application/json": components["schemas"]["Tasks"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required, or not_permitted: no View in any department */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -2753,7 +2754,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required: no Access token, or a service token, which names no member of staff */
+                /** @description access_required: no Access token, or a service token, which names no member of staff; or not_permitted: it asks Act in the department that decides the task's group */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -5143,7 +5144,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** What the photographs and referral cards hold in R2, against their share */
+        /** What the photographs and referral cards hold in R2, against their share, and the database against its limit */
         get: {
             parameters: {
                 query?: never;
@@ -5281,7 +5282,7 @@ export interface paths {
                         "application/json": components["schemas"]["DiscountCodesMade"];
                     };
                 };
-                /** @description invalid_request: fields names code when it is not one a code can be, count for a typed code made more than once, value for a percentage over 100, cap on an amount, covers named twice, expires_on before today, and max_uses for a batch whose codes are not single-use */
+                /** @description invalid_request: fields names code when it is not one a code can be, count for a typed code made more than once, value for a percentage over 100 or an amount not in whole rupees, cap on an amount or not in whole rupees, covers named twice, expires_on before today, and max_uses for a batch whose codes are not single-use */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -5779,7 +5780,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -5973,12 +5974,12 @@ export interface components {
              * @description India's calendar date it was made.
              */
             date: string;
-            /** @description In paise, GST included. */
+            /** @description In paise, GST included: the main figure. */
             amount: number;
-            /** @description In paise, before GST: the main figure. */
-            amount_ex_gst: number;
-            /** @description The GST rate the amount includes. */
-            gst_percent: number;
+            /** @description In paise, before GST; null where no rate was recorded for it. */
+            amount_ex_gst: number | null;
+            /** @description The GST rate the amount includes; null where none was recorded. */
+            gst_percent: number | null;
             /** @description The visit it paid for, when known. */
             visit: {
                 /** Format: uuid */
@@ -5986,6 +5987,18 @@ export interface components {
                 /** Format: date */
                 date: string;
                 type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            } | null;
+            /** @description What it paid for while there is no visit yet: the booking its hold was making. */
+            booking: {
+                /** @enum {string} */
+                type: "consultation" | "first_fit" | "service" | "replacement";
+                /**
+                 * Format: date
+                 * @description India's day the visit was held for.
+                 */
+                date: string;
+                /** @description Still being booked; false once refunded or let go. */
+                under_way: boolean;
             } | null;
             /** @enum {string} */
             status: "authorized" | "captured" | "refunded" | "partially_refunded";
@@ -6019,6 +6032,12 @@ export interface components {
             } | null;
             /** @description The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07). */
             no_show: components["schemas"]["NoShowNote"] | null;
+            /** @description The discount code the visit was paid with; null for none, and on a late fee. */
+            discount_code: {
+                code: string;
+                /** @description In paise before GST; null where the visit's price was not yet known. */
+                amount_off: number | null;
+            } | null;
         };
         NoShowNote: {
             /**
@@ -6055,12 +6074,12 @@ export interface components {
              * @description India's calendar date it was made.
              */
             date: string;
-            /** @description In paise, GST included. */
+            /** @description In paise, GST included: the main figure. */
             amount: number;
-            /** @description In paise, before GST: the main figure. */
-            amount_ex_gst: number;
-            /** @description The GST rate the amount includes. */
-            gst_percent: number;
+            /** @description In paise, before GST; null where no rate was recorded for it. */
+            amount_ex_gst: number | null;
+            /** @description The GST rate the amount includes; null where none was recorded. */
+            gst_percent: number | null;
             /** @description The visit it paid for, when known. */
             visit: {
                 /** Format: uuid */
@@ -6068,6 +6087,18 @@ export interface components {
                 /** Format: date */
                 date: string;
                 type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            } | null;
+            /** @description What it paid for while there is no visit yet: the booking its hold was making. */
+            booking: {
+                /** @enum {string} */
+                type: "consultation" | "first_fit" | "service" | "replacement";
+                /**
+                 * Format: date
+                 * @description India's day the visit was held for.
+                 */
+                date: string;
+                /** @description Still being booked; false once refunded or let go. */
+                under_way: boolean;
             } | null;
             /** @enum {string} */
             status: "created" | "processed" | "failed";
@@ -6291,7 +6322,7 @@ export interface components {
         AlreadyInvited: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -7608,6 +7639,10 @@ export interface components {
             share_bytes: number;
             /** @description Past this the technician app's photographs are refused and wait on the phones. */
             ceiling_bytes: number;
+            /** @description What this environment's D1 database holds. */
+            database_bytes: number;
+            /** @description D1's limit on one database on the free plan; past it every write fails. */
+            database_limit_bytes: number;
         };
         Whoami: {
             /** @description A member of staff's e-mail, or a service token's ID. */
@@ -7621,6 +7656,15 @@ export interface components {
                 listed: boolean;
                 /** @description A person's grants; none for a service token. */
                 grants: components["schemas"]["StaffGrant"][];
+                /**
+                 * @description The ops routes their calls go ahead on, as "GET /api/tasks": every one while the list is not enforced. The console shows only the sections whose pages they can read.
+                 * @example [
+                 *       "GET /api/health",
+                 *       "GET /api/whoami",
+                 *       "GET /api/tasks"
+                 *     ]
+                 */
+                may_call: string[];
             };
         };
         StaffGrant: {
@@ -7692,9 +7736,9 @@ export interface components {
             count?: number;
             /** @enum {string} */
             kind: "percent" | "amount";
-            /** @description Per cent, 1 to 100, for a percentage; paise before GST for an amount. */
+            /** @description Per cent, 1 to 100, for a percentage; paise in whole rupees, before GST, for an amount. */
             value: number;
-            /** @description A percentage's most, in paise before GST; none if left out. */
+            /** @description A percentage's most, in paise in whole rupees, before GST; none if left out. */
             cap?: number | null;
             covers: ("first_fit" | "service" | "replacement")[];
             /** @description The last day in India it may be entered, today or later; no end if left out. */

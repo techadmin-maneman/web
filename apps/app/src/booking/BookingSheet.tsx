@@ -2,8 +2,10 @@
 // (docs/decisions/0045-self-serve-booking.md). A sheet rises: the date, the
 // window, then paying through Razorpay Checkout. Paid, the sheet waits while
 // Razorpay's webhook confirms and the visit is booked in FSM, polling the hold.
-// Closed before paying, the hold is let go. Moving a visit (board C7) takes the
-// same steps, with its own technician and at what the move costs.
+// Closed before Checkout was opened on it, the hold is let go; after, a payment
+// may still land on its order, and the API lets it go once its grace ends.
+// Moving a visit (board C7) takes the same steps, with its own technician and
+// at what the move costs.
 //
 // With more than one service open to them, a client picks theirs first, from
 // every one ops offer (docs/decisions/0085-services-ops-can-edit.md). A client
@@ -13,10 +15,13 @@
 //
 // Opened with the visit the app offers next, the sheet starts its strip a week
 // before the day offered and has that day and window chosen where they are
-// free, for the client to take or change (ADR 0086).
+// free, for the client to take or change (ADR 0086). With the day offered full,
+// the next open day is chosen. Later days are added to the strip on asking, up
+// to the last a visit may be booked on.
 //
 // The hold's ten minutes are counted on the API's clock, not the phone's
-// (lib/clock.ts), and when the phone sees them run out it lets the hold go too.
+// (lib/clock.ts). When the phone sees them run out it lets the hold go too, but
+// not while Checkout is open: it waits for Checkout's answer.
 
 import { Sheet } from "@maneman/ui/Sheet";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -38,6 +43,7 @@ import { focusIfLost } from "../lib/arrival.ts";
 import { apiNow } from "../lib/clock.ts";
 import { loadCheckout, pay, type Paid } from "./checkout.ts";
 import { undecidedOf } from "./consents.ts";
+import { dayAfter, firstOpenFrom, hasLaterDays, openWindow, withDays } from "./days.ts";
 import {
   AddressStep,
   ConfirmedStep,
@@ -76,6 +82,9 @@ type Step =
 const POLL_MS = 2_000;
 const POLL_FOR_MS = 60_000;
 
+/** Whether the hold's countdown has run out, by the API's clock. */
+const hasRunOut = (hold: Hold) => apiNow() >= Date.parse(hold.expires_at);
+
 /** The steps that end the sheet with a Close of their own, where the one above the sheet would be a second. */
 const drawsItsOwnClose = (step: Step) => step.kind === "broken" || step.kind === "slow" || step.kind === "refunded";
 
@@ -105,10 +114,8 @@ const OFFER_WEEK = 7;
 const daysBefore = (date: string, days: number) =>
   new Date(Date.parse(`${date}T00:00:00Z`) - days * 86_400_000).toISOString().slice(0, 10);
 
-/** The offered window on a day, where it is open that day; null otherwise. */
-function openWindow(day: Availability["days"][number] | undefined, window: BookingWindow | null | undefined) {
-  return day?.windows.find((each) => each.window === window && each.with !== null)?.window ?? null;
-}
+/** Asking for the days after those shown: not yet, under way, or failed. */
+type LaterAsk = "idle" | "busy" | "failed";
 
 export function BookingSheet({
   type,
@@ -147,6 +154,7 @@ export function BookingSheet({
     () => services.find((service) => service.tier === tier) ?? null,
   );
   const [availability, setAvailability] = useState<Availability | null>(null);
+  const [laterAsk, setLaterAsk] = useState<LaterAsk>("idle");
   const [date, setDate] = useState<string | null>(null);
   const [chosenWindow, setChosenWindow] = useState<BookingWindow | null>(null);
   const [busy, setBusy] = useState(false);
@@ -167,6 +175,8 @@ export function BookingSheet({
   // True from the tap until Checkout has answered. `busy` disables the buttons, but only on
   // the next render, and a tap in that gap would pay for the hold a second time (ADR 0057).
   const starting = useRef(false);
+  // The hold that has a Razorpay order. The app never lets that one go: a payment may still land on it.
+  const ordered = useRef<string | null>(null);
 
   const askForAddress = (refused: boolean) => {
     setAddressFirst(true);
@@ -174,16 +184,20 @@ export function BookingSheet({
   };
 
   /**
-   * The days of the visit wanted, and the step after them: the address if there is none yet, else the date. The day
-   * offered is chosen where it has a window open, and its window where that one is.
+   * The days of the visit wanted, and the step after them: the address if there is none yet, else the date. The first
+   * open day on or after the day offered is chosen, and the window offered where it is open that day.
    */
   const showDays = (days: Availability) => {
     setAvailability(days);
-    const open = days.days.find(
-      (each) => each.date === offeredDate && each.windows.some((window) => window.with !== null),
+    setLaterAsk("idle");
+    const chosen = offeredDate === undefined ? null : firstOpenFrom(days.days, offeredDate);
+    setDate(chosen);
+    setChosenWindow(
+      openWindow(
+        days.days.find((each) => each.date === chosen),
+        offeredWindow,
+      ),
     );
-    setDate(open?.date ?? null);
-    setChosenWindow(openWindow(open, offeredWindow));
     if (addressMissing.current) askForAddress(false);
     else setStep({ kind: "date" });
   };
@@ -228,28 +242,59 @@ export function BookingSheet({
     else setStep({ kind: "broken" });
   };
 
-  // Each step's heading takes the focus the last step's button took with it.
+  /** The days after the last shown, added to the strip. */
+  const showLater = async () => {
+    const lastShown = availability?.days.at(-1)?.date;
+    if (wanted === null || lastShown === undefined) return;
+    setLaterAsk("busy");
+    const answer = await api.availability(wanted, movingId, dayAfter(lastShown));
+    if (!answer.ok) {
+      setLaterAsk("failed");
+      return;
+    }
+    setLaterAsk("idle");
+    setAvailability((now) =>
+      now === null ? answer.body : { ...answer.body, days: withDays(now.days, answer.body.days) },
+    );
+  };
+
+  // Each step's heading takes the focus the last step's button took with it, as it does when "Later dates" goes with
+  // the last of them.
+  const daysShown = availability?.days.length;
   useEffect(() => {
     focusIfLost(dialog.current?.querySelector<HTMLElement>(`#${TITLE_ID}`) ?? null);
-  }, [step.kind]);
+  }, [step.kind, daysShown]);
 
-  // The hold has lapsed while the client was paying or deciding. The phone may see it before the API
-  // does, so it lets the hold go itself, rather than leave the slot blocked for no one. A payment
-  // Razorpay took in time keeps the hold, though (ADR 0068), so the API is asked first.
+  /** Lets an unpaid hold go for someone else, unless it has an order, which the API lets go once its grace ends. */
+  const letGo = (hold: Hold) => {
+    if (ordered.current !== hold.id) void api.releaseHold(hold.id);
+  };
+
+  // A function, so TypeScript does not take the ref as unchanged across an await.
+  const isPaying = () => starting.current;
+
+  /**
+   * The hold's time has run out. A payment Razorpay took in time keeps the hold, so the API is asked first. While the
+   * client is paying, this waits: payFor runs it again with Checkout's answer.
+   */
+  const lapse = async (hold: Hold) => {
+    if (isPaying()) return;
+    const now = await api.holdById(hold.id);
+    if (now.ok && now.body.paid) {
+      changed.current = true;
+      setStep({ kind: "confirming", hold: now.body, paidIn: true });
+      return;
+    }
+    // The client tapped Pay while the API was answering.
+    if (isPaying()) return;
+    setStep({ kind: "expired" });
+    letGo(hold);
+  };
+
   const holdOf = step.kind === "pay" || step.kind === "failed" ? step.hold : null;
   useEffect(() => {
     if (holdOf === null) return;
-    const lapse = async () => {
-      const now = await api.holdById(holdOf.id);
-      if (now.ok && now.body.paid) {
-        changed.current = true;
-        setStep({ kind: "confirming", hold: now.body, paidIn: true });
-        return;
-      }
-      setStep({ kind: "expired" });
-      void api.releaseHold(holdOf.id);
-    };
-    const timer = window.setTimeout(() => void lapse(), Math.max(0, Date.parse(holdOf.expires_at) - apiNow()));
+    const timer = window.setTimeout(() => void lapse(holdOf), Math.max(0, Date.parse(holdOf.expires_at) - apiNow()));
     return () => {
       window.clearTimeout(timer);
     };
@@ -294,8 +339,13 @@ export function BookingSheet({
     if (answer.ok) setStep({ kind: "pay", hold: answer.body });
     else if (answer.code === "taken") {
       setProblem(booking.window.taken);
-      const fresh = await api.availability(wanted, movingId, firstDay);
-      if (fresh.ok) setAvailability(fresh.body);
+      // From the day chosen, which may be among the later days.
+      const fresh = await api.availability(wanted, movingId, date);
+      if (fresh.ok) {
+        setAvailability((now) =>
+          now === null ? fresh.body : { ...fresh.body, days: withDays(now.days, fresh.body.days) },
+        );
+      }
       setChosenWindow(null);
     } else if (answer.code === "address_required") askForAddress(true);
     else setProblem(booking.failedToStart);
@@ -310,7 +360,7 @@ export function BookingSheet({
    * waited for first, with the sheet still up and busy, so a script that
    * never comes ends on the sheet's own payment-failed step.
    */
-  const throughCheckout = async (checkout: NonNullable<Booking["checkout"]>): Promise<Paid> => {
+  const throughCheckout = async (checkout: NonNullable<Booking["checkout"]>, payBy: string): Promise<Paid> => {
     const ready = await loadCheckout().then(
       () => true,
       () => false,
@@ -318,7 +368,7 @@ export function BookingSheet({
     if (!ready) return "failed";
     paying.current = true;
     dialog.current?.close();
-    const outcome = await pay(checkout).catch(() => "failed" as const);
+    const outcome = await pay(checkout, payBy).catch(() => "failed" as const);
     dialog.current?.showModal();
     paying.current = false;
     return outcome;
@@ -342,35 +392,43 @@ export function BookingSheet({
     setProblem(booking.creditGone);
   };
 
+  /** The booking started, and Checkout's answer; null when the API would not start it, or the price must show first. */
+  const startPaying = async (hold: Hold): Promise<Paid | null> => {
+    if (remind && reminders !== true) await switchOnReminders();
+    const started =
+      movingId === undefined ? await api.book(hold.id, undecided) : await api.startMove(movingId, hold.id);
+    if (!started.ok) {
+      if (started.code === "hold_expired") setStep({ kind: "expired" });
+      else setProblem(booking.failedToStart);
+      return null;
+    }
+    const checkout = started.body.checkout;
+    if (checkout === null) return "paid";
+    ordered.current = hold.id;
+    if (paysNothing(hold)) {
+      await showPriceInstead(hold.id);
+      return null;
+    }
+    return throughCheckout(checkout, hold.pay_by);
+  };
+
   const payFor = async (hold: Hold) => {
     if (starting.current) return;
     starting.current = true;
     setBusy(true);
     setProblem(null);
-    try {
-      if (remind && reminders !== true) await switchOnReminders();
-      const started =
-        movingId === undefined ? await api.book(hold.id, undecided) : await api.startMove(movingId, hold.id);
-      if (!started.ok) {
-        setBusy(false);
-        if (started.code === "hold_expired") setStep({ kind: "expired" });
-        else setProblem(booking.failedToStart);
-        return;
-      }
-      const checkout = started.body.checkout;
-      if (checkout !== null && paysNothing(hold)) {
-        await showPriceInstead(hold.id);
-        return;
-      }
-      const outcome = checkout === null ? "paid" : await throughCheckout(checkout);
-      setBusy(false);
-      if (outcome === "paid") {
-        changed.current = true;
-        setStep({ kind: "confirming", hold });
-      } else if (outcome === "failed") setStep({ kind: "failed", hold });
-    } finally {
+    const outcome = await startPaying(hold).finally(() => {
       starting.current = false;
+      setBusy(false);
+    });
+    if (outcome === "paid") {
+      changed.current = true;
+      setStep({ kind: "confirming", hold });
+      return;
     }
+    // The hold's time may have run out while the client was paying, and its lapse waited for this answer.
+    if (hasRunOut(hold)) void lapse(hold);
+    else if (outcome === "failed") setStep({ kind: "failed", hold });
   };
 
   const day = availability?.days.find((each) => each.date === date);
@@ -386,7 +444,7 @@ export function BookingSheet({
         // event if it arrives after the sheet has risen again).
         if (paying.current) return;
         // Closed before it was paid for, the hold is let go for someone else.
-        if (step.kind === "pay" || step.kind === "failed") void api.releaseHold(step.hold.id);
+        if (step.kind === "pay" || step.kind === "failed") letGo(step.hold);
         onClose(changed.current);
       }}
     >
@@ -416,7 +474,13 @@ export function BookingSheet({
           <DateStep
             before={before}
             days={availability.days}
+            offered={offeredDate ?? null}
             chosen={date}
+            later={
+              hasLaterDays(availability)
+                ? { busy: laterAsk === "busy", failed: laterAsk === "failed", onShow: () => void showLater() }
+                : null
+            }
             onChoose={(chosen) => {
               setDate(chosen);
               // The window offered stays chosen on another day only where it is open there too.
@@ -448,7 +512,6 @@ export function BookingSheet({
           <PayStep
             hold={step.hold}
             moving={moving}
-            method={method}
             busy={busy}
             problem={problem}
             askToRemind={reminders !== true}

@@ -7,7 +7,17 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { answer, DAY_MONEY, DISPUTES, fails, json, NO_SHOW_UNMEASURED, NO_SHOWS, type Call } from "./fixtures.ts";
+import {
+  answer,
+  DAY_MONEY,
+  DISPUTES,
+  fails,
+  json,
+  NO_SHOW_UNMEASURED,
+  NO_SHOWS,
+  type Answer,
+  type Call,
+} from "./fixtures.ts";
 
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 const FIRST = "Visit of Sun 19 Sep";
@@ -379,4 +389,58 @@ test("meets WCAG 2.2 AA with the day's money, a disputed charge and a queue, and
   await first.getByRole("button", { name: "Charge", exact: true }).click();
   const asking = await new AxeBuilder({ page }).withTags(WCAG).analyze();
   expect(asking.violations.map((violation) => violation.id)).toEqual([]);
+});
+
+/** Who is signed in once the Staff list is enforced: Finance nationally at `level`, and the calls that opens. */
+const financeAt = (level: "view" | "act", rulings: readonly string[]) =>
+  json({
+    signed_in_as: "money@maneman.in",
+    sign_out: "/cdn-cgi/access/logout",
+    staff: {
+      enforced: true,
+      listed: true,
+      grants: [{ department: "finance", level, geography: "national", place: null }],
+      may_call: [
+        "GET /api/health",
+        "GET /api/whoami",
+        "GET /api/payments",
+        "GET /api/no-shows",
+        "GET /api/no-shows/disputes",
+        ...rulings,
+      ],
+    },
+  });
+
+async function openAs(page: Page, whoami: Answer): Promise<void> {
+  await answer(page, {
+    "GET /api/whoami": whoami,
+    "GET /api/payments": json(DAY_MONEY),
+    "GET /api/no-shows": json(NO_SHOWS),
+    "GET /api/no-shows/disputes": json(DISPUTES),
+  });
+  await page.goto("/no-shows");
+  await expect(page.getByRole("heading", { name: QUEUE })).toBeVisible();
+}
+
+// Each action asks the level it needs, in the console as in the API: a waiver and a refund give money back, so they
+// are Finance Manage's, where charging and upholding are Act's.
+test("offers Finance Act a charge and an uphold, and leaves waiving and refunding to Finance Manage", async ({
+  page,
+}) => {
+  await openAs(page, financeAt("act", ["POST /api/no-shows/{id}/decision", "POST /api/no-shows/disputes/{id}/ruling"]));
+  const first = caseOf(page, FIRST);
+  await expect(first.getByRole("button", { name: "Charge", exact: true })).toBeVisible();
+  await expect(first.getByRole("button", { name: "Waive" })).toHaveCount(0);
+  await expect(disputeCard(page).getByRole("button", { name: "Uphold" })).toBeVisible();
+  await expect(disputeCard(page).getByRole("button", { name: "Refund" })).toHaveCount(0);
+});
+
+test("shows Finance View the cases and the disputes, with nothing to rule on", async ({ page }) => {
+  await openAs(page, financeAt("view", []));
+  const first = caseOf(page, FIRST);
+  await expect(fact(page, FIRST, "Check-in")).toBeVisible();
+  await expect(first.getByRole("button")).toHaveCount(0);
+  await expect(first.getByRole("textbox")).toHaveCount(0);
+  await expect(disputeCard(page).getByRole("button")).toHaveCount(0);
+  await expect(disputeCard(page).getByRole("textbox")).toHaveCount(0);
 });

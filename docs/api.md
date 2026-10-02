@@ -57,6 +57,34 @@ The prices the site publishes, from the price book, in force today. Cacheable fo
 }
 ```
 
+### GET /api/availability/public
+
+The days and windows the booking form can book, open or full. Cacheable for a minute.
+
+**200**: Each day's three windows
+
+```json
+{
+  "$ref": "#/components/schemas/OpenWindows"
+}
+```
+
+**400**: invalid_request: fields names the pincode or the plan
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**422**: not_bookable: the pincode is not served
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/consultation
 
 Book a free consultation
@@ -88,7 +116,7 @@ Request body:
         "receding",
         "advanced"
       ],
-      "description": "Where the hair loss is, as the form's drawings show it."
+      "description": "Where the hair loss is, as the form's drawings show it. Left out when the visitor does not say."
     },
     "turnstile_token": {
       "type": "string",
@@ -136,7 +164,14 @@ Request body:
     "invite_code": {
       "type": "string",
       "maxLength": 64,
-      "description": "The code of an invite this browser opened in the last 30 days. One we do not have, or not shaped like a code, is ignored: the booking goes ahead without an invite."
+      "description": "The code of an invite this browser opened in the last 30 days. One sent without invite_told, one we do not have, or one not shaped like a code, is ignored: the booking goes ahead without an invite."
+    },
+    "invite_told": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "true: beside the invite, the form said that whoever sent it is told when the friend is fitted, and offered to go on without it. The attribution records it."
     },
     "date": {
       "type": "string",
@@ -175,7 +210,6 @@ Request body:
     "name",
     "mobile",
     "pincode",
-    "loss_extent",
     "turnstile_token",
     "date",
     "window",
@@ -186,7 +220,7 @@ Request body:
 }
 ```
 
-**201**: Booked, or asked for
+**201**: Booked, or asked for. A number with a consultation still to happen, or past consultations, gets the answer a new number would, books nothing, and is told why on WhatsApp.
 
 ```json
 {
@@ -210,22 +244,15 @@ Request body:
 }
 ```
 
-**409**: taken: that window has gone; already_booked: this number has a consultation still to happen; idempotency_in_progress: the first request with this key is still running
+**409**: taken: that window has gone; idempotency_in_progress: the first request with this key is still running
 
 ```json
 {
-  "anyOf": [
-    {
-      "$ref": "#/components/schemas/ErrorResponse"
-    },
-    {
-      "$ref": "#/components/schemas/AlreadyBooked"
-    }
-  ]
+  "$ref": "#/components/schemas/ErrorResponse"
 }
 ```
 
-**422**: not_bookable: the pincode is not served, the day is not open, or this number is past consultations and books in the app; code_not_applicable: the discount code does not apply, fields names discount_code; no_product: one visit, on a day the console offers no hair system; idempotency_key_reused: the key was used with a different body
+**422**: not_bookable: the pincode is not served, or the day is not open; code_not_applicable: the discount code does not apply, fields names discount_code; no_product: one visit, on a day the console offers no hair system; idempotency_key_reused: the key was used with a different body
 
 ```json
 {
@@ -280,7 +307,7 @@ Request body:
         "receding",
         "advanced"
       ],
-      "description": "Where the hair loss is, as the form's drawings show it."
+      "description": "Where the hair loss is, as the form's drawings show it. Left out when the visitor does not say."
     },
     "turnstile_token": {
       "type": "string",
@@ -328,7 +355,14 @@ Request body:
     "invite_code": {
       "type": "string",
       "maxLength": 64,
-      "description": "The code of an invite this browser opened in the last 30 days. One we do not have, or not shaped like a code, is ignored: the booking goes ahead without an invite."
+      "description": "The code of an invite this browser opened in the last 30 days. One sent without invite_told, one we do not have, or one not shaped like a code, is ignored: the booking goes ahead without an invite."
+    },
+    "invite_told": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "true: beside the invite, the form said that whoever sent it is told when the friend is fitted, and offered to go on without it. The attribution records it."
     },
     "contact_consent": {
       "type": "boolean",
@@ -346,7 +380,6 @@ Request body:
     "name",
     "mobile",
     "pincode",
-    "loss_extent",
     "turnstile_token",
     "contact_consent",
     "launch_alert"
@@ -475,6 +508,13 @@ Request body:
       "minLength": 1,
       "maxLength": 2048
     },
+    "invite_told": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "true: the form said that whoever sent the invite is told when the friend is fitted. The attribution records it; the invite applies either way."
+    },
     "pincode": {
       "type": "string",
       "pattern": "^[1-8]\\d{5}$",
@@ -521,7 +561,7 @@ Request body:
 }
 ```
 
-**201**: Booked, or asked for
+**201**: Booked, or asked for. A number with a consultation still to happen, or past consultations, gets the answer a new number would, books nothing, and is told why on WhatsApp.
 
 ```json
 {
@@ -545,22 +585,15 @@ Request body:
 }
 ```
 
-**409**: taken: that window has gone; already_booked: this number has a consultation still to happen; idempotency_in_progress: the first request with this key is still running
+**409**: taken: that window has gone; idempotency_in_progress: the first request with this key is still running
 
 ```json
 {
-  "anyOf": [
-    {
-      "$ref": "#/components/schemas/ErrorResponse"
-    },
-    {
-      "$ref": "#/components/schemas/AlreadyBooked"
-    }
-  ]
+  "$ref": "#/components/schemas/ErrorResponse"
 }
 ```
 
-**422**: not_bookable: the pincode is not served, the day is not open, or this number is past consultations; no_product: one visit, on a day the console offers no hair system; idempotency_key_reused: the key was used with a different body
+**422**: not_bookable: the pincode is not served, or the day is not open; no_product: one visit, on a day the console offers no hair system; idempotency_key_reused: the key was used with a different body
 
 ```json
 {
@@ -607,6 +640,13 @@ Request body:
       "type": "string",
       "minLength": 1,
       "maxLength": 2048
+    },
+    "invite_told": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "true: the form said that whoever sent the invite is told when the friend is fitted. The attribution records it; the invite applies either way."
     },
     "pincode": {
       "type": "string",
@@ -1201,7 +1241,6 @@ Razorpay's webhook: payments and refunds
             "not_bookable",
             "hold_expired",
             "address_required",
-            "already_booked",
             "not_changeable",
             "terms_changed",
             "consent_required",
@@ -1462,6 +1501,67 @@ Razorpay's webhook: payments and refunds
 }
 ```
 
+### OpenWindows
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "plan": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "one_visit"
+      ]
+    },
+    "days": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "windows": {
+            "type": "object",
+            "properties": {
+              "morning": {
+                "type": "boolean"
+              },
+              "afternoon": {
+                "type": "boolean"
+              },
+              "evening": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "morning",
+              "afternoon",
+              "evening"
+            ],
+            "additionalProperties": false,
+            "description": "true where booking that window now would be taken; false where it is full."
+          }
+        },
+        "required": [
+          "date",
+          "windows"
+        ],
+        "additionalProperties": false
+      },
+      "description": "The days the form offers: 14, from tomorrow in India."
+    }
+  },
+  "required": [
+    "plan",
+    "days"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### Consultation
 
 ```json
@@ -1489,7 +1589,8 @@ Razorpay's webhook: payments and refunds
       ]
     },
     "area": {
-      "type": "string"
+      "type": "string",
+      "description": "The area once ops have named it, its city until then."
     },
     "credits": {
       "type": "boolean",
@@ -1504,21 +1605,20 @@ Razorpay's webhook: payments and refunds
       ],
       "description": "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the invite's visits do not apply; or unknown: no invite came with it, or a code we do not have."
     },
-    "address": {
-      "type": "string",
-      "enum": [
-        "saved",
-        "on_account"
-      ],
-      "description": "saved: the address sent is now the person's; on_account: the person already had one, which the visit goes to, and the one sent was not written. The address on the account is never sent back."
-    },
     "one_visit": {
       "type": "boolean",
       "description": "true: the consultation and the first fit in one visit were booked, or asked for."
     },
     "discount_code": {
-      "type": "boolean",
-      "description": "true: the code given stands on the booking, or on the request ops book from; false when none was given, or another booking took the code's last use a moment before, and the booking stands without it."
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/StandingCode"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The code given, as it stands on the booking or on the request ops book from; null when none was given, or another booking took the code's last use a moment before, and the booking stands without it."
     }
   },
   "required": [
@@ -1528,7 +1628,6 @@ Razorpay's webhook: payments and refunds
     "area",
     "credits",
     "invite",
-    "address",
     "one_visit",
     "discount_code"
   ],
@@ -1536,158 +1635,44 @@ Razorpay's webhook: payments and refunds
 }
 ```
 
-### AlreadyBooked
+### StandingCode
 
 ```json
 {
   "type": "object",
   "properties": {
-    "error": {
-      "type": "object",
-      "properties": {
-        "code": {
-          "type": "string",
-          "enum": [
-            "not_found",
-            "invalid_request",
-            "turnstile_failed",
-            "rate_limited",
-            "idempotency_in_progress",
-            "idempotency_key_reused",
-            "environment_mismatch",
-            "unavailable",
-            "internal_error",
-            "busy",
-            "photo_invalid_file",
-            "upload_already_received",
-            "upload_missing",
-            "session_required",
-            "job_not_claimable",
-            "look_limit_reached",
-            "claim_required",
-            "whatsapp_unavailable",
-            "unauthorized",
-            "visit_booked",
-            "payment_held",
-            "forbidden_origin",
-            "access_required",
-            "code_expired",
-            "too_early",
-            "number_in_use",
-            "not_ready",
-            "ops_assisted",
-            "taken",
-            "not_bookable",
-            "hold_expired",
-            "address_required",
-            "already_booked",
-            "not_changeable",
-            "terms_changed",
-            "consent_required",
-            "device_revoked",
-            "superseded",
-            "out_of_order",
-            "not_today",
-            "already_started",
-            "technician_inactive",
-            "managed_in_fsm",
-            "clash",
-            "on_leave",
-            "does_not_fit",
-            "fsm_refused",
-            "fsm_partly",
-            "too_early_to_close",
-            "no_service_area",
-            "service_exists",
-            "last_of_kind",
-            "service_retired",
-            "no_product",
-            "unknown_invite",
-            "own_invite",
-            "already_invited",
-            "already_disputed",
-            "not_disputable",
-            "dispute_window_closed",
-            "code_not_applicable",
-            "already_discounted",
-            "price_settled",
-            "code_exists",
-            "slot_times_too_soon",
-            "not_permitted",
-            "last_admin"
-          ]
-        },
-        "request_id": {
-          "type": "string"
-        },
-        "fields": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller."
-        },
-        "moved": {
-          "type": "object",
-          "properties": {
-            "technician": {
-              "type": "string",
-              "description": "Their first name, and nothing else of theirs"
-            },
-            "at": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "When ops moved the job to them; null when it was moved in FSM itself"
-            }
-          },
-          "required": [
-            "technician",
-            "at"
-          ],
-          "additionalProperties": false,
-          "description": "superseded, to a technician's phone, for a job given to another technician: whom, and when (docs/open-points.md, item 92)."
-        }
-      },
-      "required": [
-        "code",
-        "request_id"
-      ],
-      "additionalProperties": false
+    "code": {
+      "type": "string",
+      "description": "In capitals, as it is kept."
     },
-    "booked": {
-      "type": "object",
-      "properties": {
-        "date": {
-          "type": "string",
-          "format": "date"
+    "kind": {
+      "type": "string",
+      "enum": [
+        "percent",
+        "amount"
+      ]
+    },
+    "value": {
+      "type": "integer",
+      "description": "Per cent for a percentage; paise before GST for an amount."
+    },
+    "cap": {
+      "anyOf": [
+        {
+          "type": "integer"
         },
-        "window": {
-          "type": "string",
-          "enum": [
-            "morning",
-            "afternoon",
-            "evening"
-          ]
+        {
+          "type": "null"
         }
-      },
-      "required": [
-        "date",
-        "window"
       ],
-      "additionalProperties": false,
-      "description": "The day and window of the consultation still to happen."
+      "description": "The most a percentage takes off, in paise before GST; null for none."
     }
   },
   "required": [
-    "error",
-    "booked"
+    "code",
+    "kind",
+    "value",
+    "cap"
   ],
   "additionalProperties": false
 }
@@ -1787,7 +1772,8 @@ Razorpay's webhook: payments and refunds
         {
           "type": "null"
         }
-      ]
+      ],
+      "description": "Null until ops have named the area, and for a pincode we do not know."
     },
     "credits": {
       "type": "boolean",
@@ -1888,7 +1874,7 @@ Razorpay's webhook: payments and refunds
           "type": "null"
         }
       ],
-      "description": "Null for a pincode we do not know."
+      "description": "The area's name once ops have named it; null until then, and for a pincode we do not know."
     },
     "city": {
       "anyOf": [
@@ -1938,7 +1924,8 @@ Razorpay's webhook: payments and refunds
       ]
     },
     "area": {
-      "type": "string"
+      "type": "string",
+      "description": "The area once ops have named it, its city until then."
     },
     "credits": {
       "type": "boolean",
@@ -1953,14 +1940,6 @@ Razorpay's webhook: payments and refunds
       ],
       "description": "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the invite's visits do not apply; or unknown: no invite came with it, or a code we do not have."
     },
-    "address": {
-      "type": "string",
-      "enum": [
-        "saved",
-        "on_account"
-      ],
-      "description": "saved: the address sent is now the person's; on_account: the person already had one, which the visit goes to, and the one sent was not written. The address on the account is never sent back."
-    },
     "one_visit": {
       "type": "boolean",
       "description": "true: the consultation and the first fit in one visit were booked, or asked for."
@@ -1973,7 +1952,6 @@ Razorpay's webhook: payments and refunds
     "area",
     "credits",
     "invite",
-    "address",
     "one_visit"
   ],
   "additionalProperties": false
@@ -1994,7 +1972,8 @@ Razorpay's webhook: payments and refunds
         {
           "type": "null"
         }
-      ]
+      ],
+      "description": "Null until ops have named the area, and for a pincode we do not know."
     },
     "credits": {
       "type": "boolean",

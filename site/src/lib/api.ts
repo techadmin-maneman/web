@@ -22,6 +22,7 @@ export type TryOnAvailability = Schemas["TryOnAvailability"];
 export type Look = Schemas["Look"];
 export type Invite = Schemas["Invite"];
 export type PincodeAnswer = Schemas["PincodeAnswer"];
+export type OpenWindows = Schemas["OpenWindows"];
 export type PublishedPrices = Schemas["PublishedPrices"];
 export type ReferralReward = Schemas["ReferralReward"];
 export type ReferralConsultation = Schemas["ReferralConsultation"];
@@ -40,18 +41,10 @@ export type WaitlistRequest = Body<"/api/r/{code}/waitlist">;
  */
 const POLL_TIMEOUT_MS = 10_000;
 
-/** The consultation a number already has, which a booking form's `409 already_booked` names. */
-export type AlreadyBooked = Schemas["AlreadyBooked"]["booked"];
-
-/** An answer from the API: the body, or the error code, the fields it names and, for `already_booked`, the day. */
+/** An answer from the API: the body, or the error code and the fields it names. */
 export type Answer<T> =
   | { readonly ok: true; readonly body: T }
-  | {
-      readonly ok: false;
-      readonly code: ErrorCode | "network";
-      readonly fields: readonly string[];
-      readonly booked?: AlreadyBooked;
-    };
+  | { readonly ok: false; readonly code: ErrorCode | "network"; readonly fields: readonly string[] };
 
 async function call<T>(path: string, init?: RequestInit): Promise<Answer<T>> {
   let response: Response;
@@ -63,11 +56,10 @@ async function call<T>(path: string, init?: RequestInit): Promise<Answer<T>> {
   const body: unknown = await response.json().catch(() => null);
   // Only 204 has no body. Any other answer that is not JSON came from something other than mm-api.
   if (response.ok && (body !== null || response.status === 204)) return { ok: true, body: body as T };
-  const refusal = body as Partial<Schemas["AlreadyBooked"]> | null;
+  const refusal = body as Partial<Schemas["ErrorResponse"]> | null;
   const code = refusal?.error?.code ?? "network";
   const fields = refusal?.error?.fields ?? [];
-  const booked = refusal?.booked;
-  return booked === undefined ? { ok: false, code, fields } : { ok: false, code, fields, booked };
+  return { ok: false, code, fields };
 }
 
 function post<T>(path: string, body: unknown, idempotencyKey?: string): Promise<Answer<T>> {
@@ -140,6 +132,16 @@ export function fetchReferralReward(): Promise<Answer<ReferralReward>> {
 
 export function checkPincode(pincode: string): Promise<Answer<PincodeAnswer>> {
   return call<PincodeAnswer>(`/api/pincodes/${pincode}`);
+}
+
+/** The form's days and windows, open or full. `fresh` passes over the minute the browser may keep the last answer. */
+export function fetchOpenWindows(
+  pincode: string,
+  plan: OpenWindows["plan"],
+  fresh: boolean,
+): Promise<Answer<OpenWindows>> {
+  const query = new URLSearchParams({ pincode, plan });
+  return call<OpenWindows>(`/api/availability/public?${query.toString()}`, fresh ? { cache: "no-cache" } : undefined);
 }
 
 export function bookConsultation(

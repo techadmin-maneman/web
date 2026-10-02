@@ -15,10 +15,11 @@
 // On a consultation and fit in one visit, Done says what closing it does, which
 // no board draws: the client is texted a payment link for the product they
 // chose, or the visit ends as a consultation (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md), and
-// takes a discount code the client gives, before the link goes (docs/decisions/0108-discount-codes.md).
+// takes a discount code the client gives, before the link goes, unless one is on the visit already
+// (docs/decisions/0108-discount-codes.md).
 
 import { useState } from "react";
-import type { PartialReason } from "../api.ts";
+import type { Job, PartialReason } from "../api.ts";
 import { job as jobCopy, oneVisit, steps as copy } from "../content.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import { DiscountCode } from "./DiscountCode.tsx";
@@ -33,6 +34,11 @@ function stillToChoose(choice: Choice): string {
   return choice === null ? copy.outcome.choose : copy.outcome.pickReason;
 }
 
+/** The code already on the one visit, in place of the box to type one in. */
+function codeSaid(code: NonNullable<Job["discount_code"]>): string {
+  return code.given_by === "technician" ? oneVisit.code.applied(code.code) : oneVisit.code.appliedAtBooking(code.code);
+}
+
 export function Outcome({ id }: { id: string }) {
   const { loaded, retry, refused, finish, back } = useStep(id, "outcome");
   const [choice, setChoice] = useState<Choice>(null);
@@ -44,6 +50,7 @@ export function Outcome({ id }: { id: string }) {
 
   const reasons = loaded.value.partial_reasons;
   const closesOneVisit = loaded.value.one_visit && choice === "done";
+  const standingCode = loaded.value.discount_code;
   // A code being checked would change the link closing the visit sends: Next waits for it.
   const ready = !codeChecking && (choice === "done" || (choice === "partial" && reason !== null));
 
@@ -84,7 +91,8 @@ export function Outcome({ id }: { id: string }) {
       </div>
 
       {closesOneVisit && <p className={styles.note}>{oneVisit.closeNote}</p>}
-      {closesOneVisit && <DiscountCode jobId={id} onChecking={setCodeChecking} />}
+      {closesOneVisit && standingCode === null && <DiscountCode jobId={id} onChecking={setCodeChecking} />}
+      {closesOneVisit && standingCode !== null && <p className={styles.note}>{codeSaid(standingCode)}</p>}
 
       {choice === "partial" && (
         <ul className={styles.reasons}>

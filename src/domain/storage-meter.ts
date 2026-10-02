@@ -12,7 +12,10 @@
 // deletes of one key at once can count an object twice. Every write to and
 // delete from those two buckets goes through here. When ops are told, and what
 // is refused, is src/policy/storage-share.ts.
+//
+// Beside it, the database's own size against D1's limit (src/policy/database-size.ts).
 
+import { DATABASE_LIMIT_BYTES, databaseMarkReached } from "../policy/database-size.ts";
 import {
   hasRoom,
   markReached,
@@ -156,6 +159,37 @@ export async function tellOfStorage(db: D1Database, alertOnce: AlertOnce): Promi
       `Phase 2's photographs and referral cards hold ${gigabytes(meter.bytes)} GB in R2, ${OF_THE_SHARE[mark]} their ` +
       `${String(PHASE_2_SHARE_BYTES / 1e9)} GB share (ADR 0039). Uploads go on past it, on R2's paid storage, as the ` +
       "owner ruled (open point 151).",
+    link: "/settings",
+  });
+}
+
+/** What the database holds now, which D1 gives with the answer to any statement. */
+export async function readDatabaseBytes(db: D1Database): Promise<number> {
+  const { meta } = await db.prepare("SELECT 1").run();
+  return meta.size_after;
+}
+
+const megabytes = (bytes: number) => (bytes / 1e6).toFixed(0);
+
+/**
+ * Tells ops of the highest mark the database has passed since they were last told, once, as tellOfStorage does R2's.
+ */
+export async function tellOfDatabaseSize(db: D1Database, alertOnce: AlertOnce, heldBytes: number): Promise<void> {
+  const mark = databaseMarkReached(heldBytes);
+  if (mark === null) return;
+  const claimed = await db
+    .prepare(
+      "UPDATE storage_meter SET database_told_percent = ?1 WHERE id = 1 AND database_told_percent < ?1 RETURNING id",
+    )
+    .bind(mark)
+    .first();
+  if (claimed === null) return;
+  await alertOnce({
+    key: `d1_size:${String(mark)}`,
+    message:
+      `The database holds ${megabytes(heldBytes)} MB, ${String(mark)}% of the ` +
+      `${megabytes(DATABASE_LIMIT_BYTES)} MB Cloudflare's free plan allows it. Past that every write fails, and ` +
+      'bookings, payments and the console stop with them (docs/runbook.md, "D1 growing").',
     link: "/settings",
   });
 }

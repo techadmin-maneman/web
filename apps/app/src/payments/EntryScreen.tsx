@@ -1,10 +1,10 @@
-// One payment or refund (board E2): the ex-GST amount, then the inclusive one
-// with its GST rate, the facts, and its tax documents. A payment's are the
-// visit's tax invoice, from Books, and the receipt; a charge's and a late
-// fee's, the receipt alone. A refund's is its voucher and its destination. A
-// document not yet raised says so (board E3), in words that fit how long it
-// has been, with Notify me, which asks ops on WhatsApp until the app can tell
-// the client itself. A refund past its working days says it is late.
+// One payment or refund (board E2): the amount, GST included, with its GST
+// split beneath once GST applies, the facts, and its tax documents. A payment's
+// are the visit's tax invoice, from Books, where one will come, and the
+// receipt. A refund's is its voucher and its destination. A document not yet
+// raised says so (board E3), in words that fit how long it has been, with
+// "Ask us for it", which asks ops on WhatsApp until the app can tell the
+// client itself. A refund past its working days says it is late.
 
 import { ICONS } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
@@ -17,6 +17,7 @@ import { api, documentUrl, receiptUrl, type EntryDetail } from "../api.ts";
 import { messages, payments } from "../content.ts";
 import { Shell } from "../home/Shell.tsx";
 import { apiNow } from "../lib/clock.ts";
+import { priceFigures } from "../lib/money.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { Loading } from "../states/Loading.tsx";
 import { NotFound } from "../states/NotFound.tsx";
@@ -24,6 +25,7 @@ import { PageFailed } from "../states/PageFailed.tsx";
 import {
   chargeEvidence,
   documentsOf,
+  entryAmount,
   entryNamed,
   entryStatus,
   entryTitle,
@@ -73,6 +75,13 @@ function Document(props: { name: string; href: string | null; missing: Missing; 
   );
 }
 
+type PaymentCode = NonNullable<Extract<EntryDetail, { kind: "payment" }>["discount_code"]>;
+
+/** The code a payment was made with, and what it took off before GST where that is known. */
+function discountOf(code: PaymentCode): string {
+  return payments.discount.fact(code.code, code.amount_off === null ? null : rupees(code.amount_off));
+}
+
 function Fact({ name, value, numeric = false }: { name: string; value: string; numeric?: boolean }) {
   return (
     <div className={styles.fact}>
@@ -82,7 +91,7 @@ function Fact({ name, value, numeric = false }: { name: string; value: string; n
   );
 }
 
-/** A payment's documents: its visit's invoice and its receipt, or the receipt alone for a charge or a late fee. */
+/** A payment's documents: its visit's invoice, where one will come, and its receipt. */
 function PaymentDocuments({ entry, today }: { entry: Extract<EntryDetail, { kind: "payment" }>; today: string }) {
   const named = entryNamed(entry);
   return documentsOf(entry).map((document) =>
@@ -111,12 +120,14 @@ function Detail({ entry }: { entry: EntryDetail }) {
   const method = methodName(entry.kind === "refund" ? entry.destination : entry.method, "long");
   const today = indiaDate(new Date(apiNow()).toISOString());
   const late = refundIsLate(entry, today);
+  const { split } = priceFigures(entry);
   return (
     <div className={styles.detail}>
-      <p className={styles.bigAmount}>{rupees(entry.amount_ex_gst)}</p>
-      <p className={styles.including}>{payments.including(rupees(entry.amount), entry.gst_percent)}</p>
+      <p className={styles.bigAmount}>{entryAmount(entry)}</p>
+      {split !== null && <p className={styles.including}>{split}</p>}
       <dl className={styles.facts}>
         <Fact name={rows.date} value={fullDate(entry.date)} />
+        {entry.kind === "refund" && <Fact name={rows.for} value={entryWhat(entry)} />}
         {method !== null && <Fact name={entry.kind === "refund" ? rows.destination : rows.method} value={method} />}
         <Fact name={rows.status} value={late ? payments.lateRefund : entryStatus(entry, true)} />
         {entry.kind === "payment" && entry.charge !== null && (
@@ -127,6 +138,9 @@ function Detail({ entry }: { entry: EntryDetail }) {
             name={payments.noShow.label}
             value={payments.noShow.fact(entry.no_show.waited_minutes, payments.noShow.decision[entry.no_show.decision])}
           />
+        )}
+        {entry.kind === "payment" && entry.discount_code !== null && (
+          <Fact name={payments.discount.label} value={discountOf(entry.discount_code)} />
         )}
         {entry.kind === "payment" && entry.reference !== null && (
           <Fact name={rows.reference} value={entry.reference} numeric />

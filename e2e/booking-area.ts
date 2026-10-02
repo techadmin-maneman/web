@@ -17,17 +17,18 @@ export const UNSERVED = { pincode: "400050", area: "Bandra", city: "Mumbai" };
  */
 export async function fillAddress(page: Page): Promise<void> {
   await page.getByLabel("Flat or house number").fill("Flat 402");
-  await page.getByLabel("Building, society or street").fill("Palm Grove Society");
+  await page.getByLabel("Building or society").fill("Palm Grove Society");
   await page.getByLabel("Sector or area").fill("Sector 65");
 }
 
 export async function seedBookingArea(): Promise<void> {
   const now = new Date().toISOString();
   const sql = [
-    `INSERT OR REPLACE INTO serviceable_pincodes (pincode, area, city, served, launched_at)
-       VALUES ('${SERVED.pincode}', '${SERVED.area}', '${SERVED.city}', 1, '${now}');`,
-    `INSERT OR REPLACE INTO serviceable_pincodes (pincode, area, city, served, launched_at)
-       VALUES ('${UNSERVED.pincode}', '${UNSERVED.area}', '${UNSERVED.city}', 0, NULL);`,
+    // Both areas named, as ops name every area before launch: until then the page names the city instead.
+    `INSERT OR REPLACE INTO serviceable_pincodes (pincode, area, city, served, launched_at, area_named_by)
+       VALUES ('${SERVED.pincode}', '${SERVED.area}', '${SERVED.city}', 1, '${now}', 'ops@localhost');`,
+    `INSERT OR REPLACE INTO serviceable_pincodes (pincode, area, city, served, launched_at, area_named_by)
+       VALUES ('${UNSERVED.pincode}', '${UNSERVED.area}', '${UNSERVED.city}', 0, NULL, 'ops@localhost');`,
     // A technician for the slot to be claimed against; the booking holds one of their half-slots.
     ...technicianFor("booking", now),
   ].join("\n");

@@ -8,6 +8,7 @@ import type { App } from "../../src/http/context.ts";
 import { syncAppointment } from "../../src/domain/fsm-mirror.ts";
 import { findEligiblePerson } from "../../src/domain/login.ts";
 import { openSession } from "../../src/domain/sessions.ts";
+import { RULES } from "../../src/policy/home-prompt.ts";
 import { exportVisitPhotos } from "../../src/domain/visit-photos.ts";
 import { createStubFsm, type FsmAppointment, type StubFsmWorld } from "../../src/providers/fsm.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request } from "./helpers.ts";
@@ -185,9 +186,35 @@ describe("GET /api/visits", () => {
       fsmAppointment("ap-cancelled", { status: "Cancelled" }),
     ]);
     await signIn();
-    const visits = await (await get("/api/visits")).json<{ upcoming: { date: string }[]; past: { date: string }[] }>();
+    const visits = await (
+      await get("/api/visits")
+    ).json<{ upcoming: { date: string }[]; past: { date: string; status: string }[] }>();
     expect(visits.upcoming.map((visit) => visit.date)).toEqual(["2026-09-24"]);
-    expect(visits.past.map((visit) => visit.date)).toEqual(["2026-09-10", "2026-08-01"]);
+    // A cancelled visit stays on the list, under past, so the client keeps a record of it.
+    expect(visits.past.map(({ date, status }) => ({ date, status }))).toEqual([
+      { date: "2026-09-24", status: "cancelled" },
+      { date: "2026-09-10", status: "completed" },
+      { date: "2026-08-01", status: "completed" },
+    ]);
+  });
+
+  it("leaves out a visit a charged move replaced, since the new visit stands in its place", async () => {
+    const ids = await mirror([
+      fsmAppointment("ap-replaced", { status: "Cancelled" }),
+      fsmAppointment("ap-cancelled", { status: "Cancelled", scheduledStart: "2026-09-23T10:00:00+05:30" }),
+    ]);
+    const replaced = await env.DB.prepare("SELECT person_id, window_start FROM appointments WHERE id = ?1")
+      .bind(ids["ap-replaced"])
+      .first<{ person_id: string; window_start: string }>();
+    await env.DB.prepare(
+      `INSERT INTO visit_changes (id, appointment_id, person_id, kind, notice, was_start, created_at)
+       VALUES ('change-1', ?1, ?2, 'replaced', 'late', ?3, ?4)`,
+    )
+      .bind(ids["ap-replaced"], replaced?.person_id, replaced?.window_start, NOW.toISOString())
+      .run();
+    await signIn();
+    const visits = await (await get("/api/visits")).json<{ past: { date: string }[] }>();
+    expect(visits.past.map((visit) => visit.date)).toEqual(["2026-09-23"]);
   });
 
   it("needs a session", async () => {
@@ -274,10 +301,10 @@ describe("a visit FSM has not closed", () => {
   });
 });
 
-// Board B1's one contextual prompt, in the owner's order of 27 September 2026 (src/policy/home-prompt.ts): an
-// address to give while something is booked, then the next service due and not booked, then a replacement falling
-// due, then an invoice just issued. One at a time, the first that applies (LIFE-08).
-describe("GET /api/me's one prompt", () => {
+// Board B1's one prompt, in the owner's order (src/policy/home-prompt.ts): an address to give while something is
+// booked, then the next service due and not booked, then an invoice just issued, which is also a line of its own
+// beneath whichever prompt leads, then a replacement falling due within reach (LIFE-08).
+describe("GET /api/me's prompt and invoice line", () => {
   const personId = async () =>
     (await env.DB.prepare("SELECT id FROM people WHERE mobile_e164 = ?1").bind(MOBILE).first<{ id: string }>())?.id ??
     "";
@@ -299,12 +326,13 @@ describe("GET /api/me's one prompt", () => {
     env.DB.prepare("UPDATE appointments SET fsm_invoice_id = 'stub-1', invoice_issued_at = ?1 WHERE id = ?2")
       .bind(new Date(NOW.getTime() - daysAgo * 24 * 60 * 60 * 1000).toISOString(), appointmentId)
       .run();
-  const prompt = async () => (await (await get("/api/me")).json<{ prompt: unknown }>()).prompt;
+  const home = async () => (await get("/api/me")).json<{ prompt: unknown; invoice: unknown }>();
+  const prompt = async () => (await home()).prompt;
 
   it("asks for an address first, where a visit is booked and none is given", async () => {
     await mirror([done("ap-done", "2026-09-10"), fsmAppointment("ap-next")]);
     await signIn();
-    await fitPiece("2027-03-09");
+    await fitPiece("2026-10-05");
     expect(await prompt()).toEqual({ kind: "address" });
   });
 
@@ -317,18 +345,29 @@ describe("GET /api/me's one prompt", () => {
       kind: "next_visit",
       type: "service",
       tier: "standard",
+      due_on: "2026-10-10",
       date: "2026-10-10",
       window: "morning",
+      replacement_bookable: false,
     });
   });
 
-  it("then names the month the piece in wear falls due, once the next visit is booked", async () => {
+  it("offers the replacement beside the next service only once the piece's month is within reach", async () => {
+    await mirror([done("ap-done", "2026-09-10")]);
+    await signIn();
+    await giveAddress();
+    // The service falls due on 10 October and the piece in November, inside the 45 days a visit may be booked ahead.
+    await fitPiece("2026-11-03");
+    expect(await prompt()).toMatchObject({ kind: "next_visit", type: "service", replacement_bookable: true });
+  });
+
+  it(RULES[2], async () => {
     await mirror([done("ap-done", "2026-09-10"), fsmAppointment("ap-next")]);
     await signIn();
     await giveAddress();
+    // March is past the 45 days a visit may be booked ahead: nothing to say about it yet.
     await fitPiece("2027-03-09");
-    // March is past the 45 days a visit may be booked ahead, so the replacement cannot be booked yet.
-    expect(await prompt()).toEqual({ kind: "replacement_due", month: "2027-03", tier: "standard", bookable: false });
+    expect(await home()).toMatchObject({ prompt: null, invoice: null });
   });
 
   it("offers to book the replacement once its month is within reach, and never while one is booked", async () => {
@@ -337,7 +376,7 @@ describe("GET /api/me's one prompt", () => {
     await giveAddress();
     await fitPiece("2026-10-05");
     // A service visit is booked, and October is within the 45 days a visit may be booked ahead.
-    expect(await prompt()).toEqual({ kind: "replacement_due", month: "2026-10", tier: "standard", bookable: true });
+    expect(await prompt()).toEqual({ kind: "replacement_due", month: "2026-10", tier: "standard" });
 
     // The replacement is booked: Home's card shows it, and the prompt no longer offers a second.
     await mirror([
@@ -352,19 +391,32 @@ describe("GET /api/me's one prompt", () => {
     expect(await prompt()).toBeNull();
   });
 
-  it("then says an invoice issued in the last fortnight is ready, and nothing once it is older", async () => {
+  it(RULES[0], async () => {
+    const ids = await mirror([done("ap-done", "2026-09-10")]);
+    await signIn();
+    await giveAddress();
+    await issueInvoice(ids["ap-done"] ?? "", 10);
+    const invoice = { visit_id: ids["ap-done"], date: "2026-09-10", type: "service" };
+    // Fitted, nothing booked, and the invoice 10 days old: the next visit leads and the invoice is the second line.
+    expect(await home()).toMatchObject({ prompt: { kind: "next_visit", type: "service" }, invoice });
+    await issueInvoice(ids["ap-done"] ?? "", 15);
+    expect(await home()).toMatchObject({ prompt: { kind: "next_visit" }, invoice: null });
+  });
+
+  it("holds the replacement back while an invoice is ready, then offers it", async () => {
     const ids = await mirror([done("ap-done", "2026-09-10"), fsmAppointment("ap-next")]);
     await signIn();
     await giveAddress();
+    await fitPiece("2026-10-05");
     await issueInvoice(ids["ap-done"] ?? "", 3);
-    expect(await prompt()).toEqual({
-      kind: "invoice_ready",
-      visit_id: ids["ap-done"],
-      date: "2026-09-10",
-      type: "service",
-    });
+    expect(await home()).toEqual(
+      expect.objectContaining({
+        prompt: null,
+        invoice: { visit_id: ids["ap-done"], date: "2026-09-10", type: "service" },
+      }),
+    );
     await issueInvoice(ids["ap-done"] ?? "", 15);
-    expect(await prompt()).toBeNull();
+    expect(await home()).toMatchObject({ prompt: { kind: "replacement_due", month: "2026-10" }, invoice: null });
   });
 
   it("asks nothing of someone with nothing booked", async () => {
@@ -374,7 +426,11 @@ describe("GET /api/me's one prompt", () => {
       .bind(NOW.toISOString(), MOBILE)
       .run();
     await signIn();
-    expect(await (await get("/api/me")).json()).toMatchObject({ state: "nothing_booked", prompt: null });
+    expect(await (await get("/api/me")).json()).toMatchObject({
+      state: "nothing_booked",
+      prompt: null,
+      invoice: null,
+    });
   });
 });
 

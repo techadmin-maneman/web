@@ -135,15 +135,18 @@ describe("paying in Checkout", () => {
     return { opened, options, fail: () => failed?.() };
   }
 
+  /** The hold's last moment for a payment to count, twelve minutes from now. */
+  const payBy = () => new Date(Date.now() + 12 * 60_000).toISOString();
+
   it("counts it as failed when Checkout never arrived", async () => {
     const { pay } = await checkout();
-    expect(await pay(ORDER)).toBe("failed");
+    expect(await pay(ORDER, payBy())).toBe("failed");
   });
 
   it("opens on our order, with Checkout's own retry off", async () => {
     const razorpay = standInRazorpay();
     const { pay } = await checkout();
-    const paying = pay(ORDER);
+    const paying = pay(ORDER, payBy());
 
     expect(razorpay.opened[0]).toMatchObject({
       key: "rzp_test_abc",
@@ -163,7 +166,7 @@ describe("paying in Checkout", () => {
   it("chooses no way to pay for the client, leaving Checkout to list them", async () => {
     const razorpay = standInRazorpay();
     const { pay } = await checkout();
-    void pay(ORDER);
+    void pay(ORDER, payBy());
 
     const prefill = razorpay.opened[0]?.["prefill"] as Record<string, unknown>;
     expect(prefill).not.toHaveProperty("method");
@@ -174,12 +177,40 @@ describe("paying in Checkout", () => {
     const razorpay = standInRazorpay();
     const { pay } = await checkout();
 
-    const closed = pay(ORDER);
+    const closed = pay(ORDER, payBy());
     razorpay.options().modal.ondismiss();
     expect(await closed).toBe("dismissed");
 
-    const refused = pay(ORDER);
+    const refused = pay(ORDER, payBy());
     razorpay.fail();
     expect(await refused).toBe("failed");
+  });
+
+  // A payment Checkout took after the hold's grace would be refused and refunded (MON-03).
+  it("takes no payment once it would be too late to keep the hold", async () => {
+    vi.useFakeTimers({ now: Date.parse("2026-09-21T06:30:00.000Z") });
+    windowStandIn.setTimeout = setTimeout;
+    windowStandIn.clearTimeout = clearTimeout;
+    const razorpay = standInRazorpay();
+    const { pay } = await checkout();
+    void pay(ORDER, "2026-09-21T06:42:00.000Z");
+    expect(razorpay.opened[0]).toMatchObject({ timeout: 720 });
+  });
+
+  it("counts Checkout as closed when it has not closed itself ten seconds after its time is up", async () => {
+    vi.useFakeTimers({ now: Date.parse("2026-09-21T06:30:00.000Z") });
+    windowStandIn.setTimeout = setTimeout;
+    windowStandIn.clearTimeout = clearTimeout;
+    standInRazorpay();
+    const { pay } = await checkout();
+    let outcome: string | null = null;
+    void pay(ORDER, "2026-09-21T06:31:00.000Z").then((answer) => {
+      outcome = answer;
+    });
+
+    await vi.advanceTimersByTimeAsync(69_999);
+    expect(outcome).toBeNull();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(outcome).toBe("dismissed");
   });
 });

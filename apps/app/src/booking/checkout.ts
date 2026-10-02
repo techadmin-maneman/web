@@ -5,6 +5,7 @@
 
 import { cssToken } from "@maneman/ui/cssToken";
 import type { Booking } from "../api.ts";
+import { secondsUntil } from "../lib/clock.ts";
 
 const SCRIPT = "https://checkout.razorpay.com/v1/checkout.js";
 /**
@@ -12,6 +13,8 @@ const SCRIPT = "https://checkout.razorpay.com/v1/checkout.js";
  * a script that never arrives would otherwise hold the sheet busy for ever.
  */
 const PATIENCE_MS = 15_000;
+/** How long Checkout has to close itself at its timeout before the sheet takes it as closed. */
+const CLOSING_MS = 10_000;
 
 interface RazorpayWindow {
   open(): void;
@@ -52,13 +55,23 @@ export function loadCheckout(): Promise<void> {
 export type Paid = "paid" | "failed" | "dismissed";
 
 /**
- * Opens Checkout on the order, where the client picks how to pay. Its script must have loaded. Checkout honours a
- * method chosen beforehand only when it is also given the client's e-mail, which the app does not have.
+ * Opens Checkout on the order, where the client picks how to pay, until `payBy`: the hold's last moment for a payment
+ * to count as in time, by the API's clock. Its script must have loaded. Checkout honours a method chosen beforehand only
+ * when it is also given the client's e-mail, which the app does not have, so the app chooses none.
  */
-export function pay(checkout: NonNullable<Booking["checkout"]>): Promise<Paid> {
+export function pay(checkout: NonNullable<Booking["checkout"]>, payBy: string): Promise<Paid> {
   const Razorpay = window.Razorpay;
   if (Razorpay === undefined) return Promise.resolve("failed");
+  const secondsToPay = Math.max(1, secondsUntil(Date.parse(payBy)));
+  const closedByMs = secondsToPay * 1000 + CLOSING_MS;
   return new Promise<Paid>((resolve) => {
+    const giveUp = window.setTimeout(() => {
+      resolve("dismissed");
+    }, closedByMs);
+    const answer = (outcome: Paid) => {
+      window.clearTimeout(giveUp);
+      resolve(outcome);
+    };
     const razorpay = new Razorpay({
       key: checkout.key_id,
       order_id: checkout.order_id,
@@ -71,17 +84,19 @@ export function pay(checkout: NonNullable<Booking["checkout"]>): Promise<Paid> {
       theme: { color: cssToken("--ink") },
       // A failure comes back to the app's own screen (board C6), not Checkout's retry.
       retry: { enabled: false },
+      // No payment is taken once it would be too late to keep the hold.
+      timeout: secondsToPay,
       handler: () => {
-        resolve("paid");
+        answer("paid");
       },
       modal: {
         ondismiss: () => {
-          resolve("dismissed");
+          answer("dismissed");
         },
       },
     });
     razorpay.on("payment.failed", () => {
-      resolve("failed");
+      answer("failed");
     });
     razorpay.open();
   });

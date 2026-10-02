@@ -1,4 +1,4 @@
-// Settings · Staff: who may use the console and for what, whether that is enforced yet, and the service tokens let
+// Admin · Staff: who may use the console and for what, whether that is enforced yet, and the service tokens let
 // in. No board draws it, so it is laid out as the other Settings panels are. The API narrows the list to the places
 // its viewer may see, and refuses a change beyond their own.
 
@@ -10,6 +10,7 @@ import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, type StaffBook, type StaffToken } from "../api.ts";
 import { settings } from "../content.ts";
+import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { CheckPanel } from "./CheckPanel.tsx";
 import { grantWords } from "./grants.ts";
@@ -99,6 +100,7 @@ function People({ book, onChanged }: PanelProps) {
   /** The e-mail of the person being changed, "new" while one is added, or null. */
   const [editing, setEditing] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const mayGrant = useAccess().mayCall("POST /api/staff");
   const person = book.people.find((each) => each.email === editing) ?? null;
 
   const open = (email: string) => {
@@ -140,23 +142,25 @@ function People({ book, onChanged }: PanelProps) {
               </td>
               <td>{each.active ? copy.active : copy.inactive}</td>
               <td>
-                <Button
-                  variant="outline"
-                  size="small"
-                  className={styles.quiet}
-                  aria-label={copy.changeLabel(each.email)}
-                  onClick={() => {
-                    open(each.email);
-                  }}
-                >
-                  {copy.change}
-                </Button>
+                {mayGrant && (
+                  <Button
+                    variant="outline"
+                    size="small"
+                    className={styles.quiet}
+                    aria-label={copy.changeLabel(each.email)}
+                    onClick={() => {
+                      open(each.email);
+                    }}
+                  >
+                    {copy.change}
+                  </Button>
+                )}
               </td>
             </tr>
           ))}
         </tbody>
       </Table>
-      {editing === null ? (
+      {editing === null && mayGrant && (
         <div className={styles.actions}>
           <Button
             variant="outline"
@@ -169,7 +173,8 @@ function People({ book, onChanged }: PanelProps) {
             {copy.add}
           </Button>
         </div>
-      ) : (
+      )}
+      {editing !== null && (
         <StaffForm
           key={editing}
           book={book}

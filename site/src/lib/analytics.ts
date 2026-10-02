@@ -25,7 +25,7 @@ export type AnalyticsEvent =
       readonly name: "lead_submitted";
       readonly page: BookingPage;
       readonly served: boolean;
-      /** The pincode's area, "Sector 65"; null for a pincode we do not know. */
+      /** The pincode's area, "Sector 65"; null until ops have named it, and for a pincode we do not know. */
       readonly area: string | null;
       /** Null on the waitlist, which asks for no window. */
       readonly window: BookingWindow | null;
@@ -47,7 +47,14 @@ type Command = (...args: unknown[]) => void;
 declare global {
   interface Window {
     dataLayer?: unknown[];
-    fbq?: Command & { callMethod?: Command; queue?: unknown[]; push?: Command; loaded?: boolean; version?: string };
+    fbq?: Command & {
+      callMethod?: Command;
+      queue?: unknown[];
+      push?: Command;
+      loaded?: boolean;
+      version?: string;
+      disablePushState?: boolean;
+    };
     _fbq?: Window["fbq"];
   }
 }
@@ -78,7 +85,8 @@ function startMetaPixel(pixelId: string): void {
     // eslint-disable-next-line prefer-rest-params
     else fbq.queue?.push(arguments);
   };
-  Object.assign(fbq, { push: fbq, loaded: true, version: "2.0", queue: [] });
+  // The booking page writes each of its steps into the history; the pixel would count each as a page view.
+  Object.assign(fbq, { push: fbq, loaded: true, version: "2.0", queue: [], disablePushState: true });
   window.fbq = fbq;
   window._fbq ??= fbq;
   loadScript("https://connect.facebook.net/en_US/fbevents.js");

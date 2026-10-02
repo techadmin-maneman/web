@@ -6,13 +6,14 @@
 // A visit may be booked from tomorrow as far ahead as ops' horizon, 45 days to
 // begin with, and a first fit no sooner than ops' lead time after the
 // consultation (docs/decisions/0086-the-next-visit-is-offered.md). The strip
-// is 14 days from the day asked for, within those.
+// is 14 days from the day asked for, within those, and the app asks for later
+// ones up to the last.
 //
-//   GET    /api/availability?type=&tier=&from=   14 days of three windows, and who could come
+//   GET    /api/availability?type=&tier=&from=   14 days of the windows the visit can start in, and who could come
 //   POST   /api/holds                      hold a window
 //   GET    /api/holds/:id                  a hold: lapsed, paid, or booked as a visit
 //   DELETE /api/holds/:id                  let it go
-//   POST   /api/bookings                   book a hold: Checkout's order, or, if free, straight to FSM
+//   POST   /api/bookings                   book a hold: Checkout's order, or, if free, sent to be booked
 //
 // With `moving`, availability and a hold are for moving one of the client's
 // visits (docs/decisions/0046-moving-and-cancelling.md): with its technician,
@@ -68,6 +69,7 @@ import {
 } from "../domain/visit-changes.ts";
 import { bookableDays } from "../domain/next-visit.ts";
 import type { OpsInputs } from "../domain/ops-settings.ts";
+import { bookHold } from "../http/book-hold.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
@@ -77,7 +79,6 @@ import { GIVEN_BY_BOOKING, isFullAddress } from "../policy/booking.ts";
 import { CHARGES, LATE_FEES, type SoldTerms } from "../policy/moving-a-visit.ts";
 import { stripStart } from "../policy/next-visit.ts";
 import { takesCredit } from "../policy/referral-reward.ts";
-import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 
 export const PriceSchema = z
   .object({
@@ -117,6 +118,9 @@ const AvailabilitySchema = z
     service: ServiceSchema.openapi({ description: "The service the windows are for: a move's is its visit's." }),
     price: PriceSchema.openapi({ description: "The first day's price." }),
     regular: z.union([TechnicianSchema, z.null()]).openapi({ description: "Whoever did the client's latest visit." }),
+    last: z.iso
+      .date()
+      .openapi({ description: "The last day this visit may be booked on: later days are asked for up to it." }),
     days: z.array(
       z
         .object({
@@ -172,6 +176,10 @@ export const HoldSchema = z
         "the visit itself, whose payment is kept or whose credit is spent (visit).",
     }),
     expires_at: z.iso.datetime(),
+    pay_by: z.iso.datetime().openapi({
+      description:
+        "The last moment a payment counts as made in time: expires_at and the grace after it. Checkout closes then.",
+    }),
     state: z.enum(["held", "expired", "booked", "released"]),
     paid: z.boolean().openapi({ description: "Razorpay has confirmed the payment; the visit is being booked." }),
     visit_id: z.union([z.uuid(), z.null()]).openapi({ description: "The visit it became, once booked." }),
@@ -341,7 +349,11 @@ const releaseRoute = createRoute({
   summary: "Let a hold go",
   request: { params: z.object({ id: z.uuid() }) },
   responses: {
-    204: { description: "Let go, or already gone" },
+    204: {
+      description:
+        "Let go, or already gone; or kept, when it has a Razorpay order and its pay_by has not passed, since a " +
+        "payment may still land on it.",
+    },
     401: errorResponse("session_required"),
     409: errorResponse("ops_assisted"),
   },
@@ -422,13 +434,13 @@ async function soldAs(
   };
 }
 
-/** Starts paying for a live hold: what Checkout opens with, or null for one that is free and on its way to FSM. */
+/** Starts paying for a live hold: what Checkout opens with, or null for one that is free and sent to be booked. */
 export async function startCheckout(c: Context<AppEnv>, holdId: string, personId: string) {
-  const { deps, requestId } = c.var;
+  const { deps } = c.var;
   const started = await startBooking(c.env.DB, deps.payments, holdId, personId, deps.now());
   if (started === null) return null;
   if (started.kind === "free") {
-    await c.env.FSM_QUEUE.send({ hold_id: holdId, request_id: requestId } satisfies FsmSyncMessage);
+    await bookHold(c, holdId);
     return { hold_id: holdId, checkout: null };
   }
   const row = await checkoutHold(c.env.DB, holdId);
@@ -498,6 +510,7 @@ export function registerClientBooking(app: App): void {
         service: serviceBody(service),
         price,
         regular: regular === undefined ? null : { name: regular.name, initials: regular.initials },
+        last: range.last,
         days: await Promise.all(strip.map(async (day) => ({ ...day, price: await priceOn(day.date) }))),
       },
       200,

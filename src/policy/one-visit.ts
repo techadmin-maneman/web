@@ -7,7 +7,7 @@
 // Razorpay payment link for it (src/domain/payment-links.ts). A client who decides against it ends the visit as a
 // consultation, with nothing charged.
 
-import { FIRST_FIT_WINDOWS } from "../config/scheduling.ts";
+import { FIRST_FIT_WINDOWS, type BookingWindow } from "../config/scheduling.ts";
 import { FREE_CHANGE_NOTICE_HOURS, type SoldTerms } from "./moving-a-visit.ts";
 
 export const RULES = [
@@ -26,6 +26,12 @@ export type Plan = (typeof PLANS)[number];
  * which waits for a visit's minutes to be counted against the day's times (window times, part B).
  */
 export const ONE_VISIT_WINDOWS = FIRST_FIT_WINDOWS;
+
+/** Whether a plan's visit can start in a window: the consultation in any, one visit in the morning or the afternoon. */
+export function planStartsIn(plan: Plan, window: BookingWindow): boolean {
+  if (plan === "consultation") return true;
+  return (ONE_VISIT_WINDOWS as readonly BookingWindow[]).includes(window);
+}
 
 /** What a one visit is sold under (RULES[2]): nothing is charged for missing it or for changing it late. */
 export const ONE_VISIT_TERMS: SoldTerms = {
