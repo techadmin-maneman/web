@@ -4,6 +4,8 @@
 // docs/decisions/0085-services-ops-can-edit.md). src/domain/services.ts keeps them, and the price book prices each
 // by its kind and tier (src/domain/price-book.ts).
 
+import { hasStandardService, type VisitType } from "../config/visit-types.ts";
+
 export const RULES = [
   "every service belongs to one of four kinds (consultation, first fit, service visit, replacement), and the kind decides the technician's steps, the booking rules and which fees apply; within a kind ops add, rename, price, reorder and retire services from the console, each synced to FSM; a new kind needs a release.",
   "Retiring a service stops clients seeing it from a date and changes nothing already sold; prices stay dated rows.",
@@ -44,12 +46,15 @@ export function tierCodeOf(name: string): string | null {
 }
 
 /**
- * Why a service may not be retired from a day: every kind keeps one service that is never retired and is priced by
- * then, so a kind stays bookable whatever ops retire. To replace a kind's last service, the new one is added and
- * priced first. Null when it may be retired.
+ * Why a service may not be retired from a day: a kind with a standard service keeps one service that is never retired
+ * and is priced by then, so it stays bookable whatever ops retire. To replace its last service, the new one is added
+ * and priced first. A first fit's hair systems may all be retired: no first fit is then offered until ops add one.
+ * Null when it may be retired.
  */
 export function retireRefusal(
+  kind: VisitType,
   others: readonly { readonly retiredDate: string | null; readonly pricedBy: boolean }[],
 ): "last_of_kind" | null {
+  if (!hasStandardService(kind)) return null;
   return others.some((other) => other.retiredDate === null && other.pricedBy) ? null : "last_of_kind";
 }

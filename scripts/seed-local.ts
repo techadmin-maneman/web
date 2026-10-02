@@ -21,6 +21,7 @@ import { join } from "node:path";
 import { changingClients, seedChanging } from "../e2e/app/changing.ts";
 import { fittedClient, row, seedFitted, wrangler } from "../e2e/app/fitted.ts";
 import { seedBookingArea } from "../e2e/booking-area.ts";
+import { LOCAL_HAIR_SYSTEMS } from "../src/config/local-hair-systems.ts";
 import { LOCAL_LOGIN_CODE, PORTS } from "./lib/local-stack.ts";
 
 /** The technician a developer signs in as, and his client: fixed, so a second run finds the same ones. */
@@ -90,21 +91,18 @@ function consumables(now: string): string[] {
 }
 
 /**
- * The four products a consultation and fit in one visit offers, as first-fit services, each with a made-up price, as
- * ops keep them in Settings · Services (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). Once only.
+ * The four hair systems a first fit is sold as, as first-fit services, each with a made-up price, as ops keep them in
+ * Settings · Services (src/config/local-hair-systems.ts). The generic "First fit" the migrations add is retired, as
+ * ops retire it in the console, so a first fit is only ever one of these. Once only.
  */
 function products(now: string): string[] {
-  const range = [
-    ["essential", "Mane Man Essential", 2_500_000],
-    ["active", "Mane Man Active", 3_000_000],
-    ["natural", "Mane Man Natural", 3_500_000],
-    ["natmax", "Mane Man NatMax", 4_000_000],
-  ] as const;
   return [
     `INSERT OR IGNORE INTO services (kind, tier, name, minutes, sort, updated_by, updated_at) VALUES
-       ${range.map(([tier, name], index) => row("first_fit", tier, name, 180, index + 1, "seed", now)).join(", ")};`,
+       ${LOCAL_HAIR_SYSTEMS.map(({ tier, name }, index) => row("first_fit", tier, name, 180, index + 1, "seed", now)).join(", ")};`,
     `INSERT OR IGNORE INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from) VALUES
-       ${range.map(([tier, , amount]) => row("first_fit", tier, amount, 0, "2026-01-01")).join(", ")};`,
+       ${LOCAL_HAIR_SYSTEMS.map(({ tier, price }) => row("first_fit", tier, price, 0, "2026-01-01")).join(", ")};`,
+    `UPDATE services SET retired_date = '${indiaDate(0)}', updated_by = 'seed', updated_at = '${now}'
+       WHERE kind = 'first_fit' AND tier = 'standard' AND retired_date IS NULL;`,
   ];
 }
 

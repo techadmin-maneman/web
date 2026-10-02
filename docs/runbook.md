@@ -25,6 +25,7 @@ An alert in the alert space names what went wrong with IDs only; "What each aler
 | Ops cannot get into the console                             | "Locked out of the ops console"                                     |
 | R2 storage is growing, or a usage e-mail came               | "Staying on the free tier"                                          |
 | Data is wrong or gone in D1                                 | "Restoring D1"                                                      |
+| The heartbeat or the uptime monitor says mm-api is down     | "The outside watchers", "A cron run cut short"                      |
 | A release is misbehaving                                    | "Rolling back a Worker version"                                     |
 | Personal data may have leaked                               | "A personal data breach"                                            |
 
@@ -54,6 +55,7 @@ Staging's column is as its deploy of 27 September 2026 found it: all five Worker
 | 7. Worker secrets: Evolution, allowlist        | done (poker-settle's bridge, for now)                  | Evolution done (the same bridge; messaging off)                                           |
 | 7. Worker secrets: erasure                     | done                                                   | done                                                                                      |
 | 7. Worker secrets: login code pepper           | done (22 September 2026)                               | not yet: with the client surface                                                          |
+| 7. Worker secrets: the cron's heartbeat        | not yet ("The outside watchers")                       | not yet ("The outside watchers")                                                          |
 | 8. Zoho org, fields, secrets                   | done: the real org (ADR 0050)                          | done: the real org (ADR 0050)                                                             |
 | 9. Triggers: the cron                          | done, and checked by the deploy                        | done                                                                                      |
 | 9. Triggers: the queue consumers               | done (all four); CI cannot read them, so check by hand | three; fsm-sync's once its queue exists                                                   |
@@ -67,7 +69,7 @@ Staging's column is as its deploy of 27 September 2026 found it: all five Worker
 | 12. Evolution receipts: token, bypass          | done                                                   | not yet                                                                                   |
 | 12. Evolution receipts: the webhook            | open: the shared instance's webhook                    | not yet                                                                                   |
 | 13. The address search (Google)                | `google`, and Google refuses the key (open point 54)   | not yet: `none`                                                                           |
-| 14. Cloudflare Web Analytics                   | not recorded: check it (step 14)                       | not recorded: check it (step 14)                                                          |
+| 14. Cloudflare's edge scripts                  | owed: both reach every host (step 14)                  | owed: the same zone settings (step 14)                                                    |
 
 ### 1. Resources
 
@@ -159,6 +161,7 @@ Cloudflare dashboard → Manage Account → Account API Tokens → Create Token 
 - Workers: role **Editor**, scope **Specified Workers**: every Worker in `scripts/lib/workers.ts`, for that environment: `mm-api-<env>`, `mm-site-<env>`, `mm-app-<env>`, `mm-ops-<env>` and `mm-tech-<env>`. A token can only name a Worker that exists, so a new Worker is added to its token after its bootstrap (step 11); until then its deploy step skips it, or fails with "No access to the specified service".
 - Account → **D1 → Edit**. This is account-wide, so the staging token can also read and write production's database, and production's staging's; that is accepted in `docs/decisions/0008-owner-decisions-on-platform-constraints.md`.
 - Optional, production's token: Account → **Account Analytics → Read**. With it, the canary's soak judges the new version on real visitors' errors as well as the smoke's (`docs/decisions/0006-deployment-pipeline.md`); without it the soak says so and the smoke checks stand alone.
+- Optional, staging's token: the same **Account Analytics → Read**. With it, each staging deploy reports mm-api's CPU time over the last day against the free plan's 10 ms (`scripts/cpu-report.ts`); without it the step says it could not read it.
 - No zone permissions, and nothing on R2 or Queues: a token that reads a bucket's settings can read the photographs in it.
 
 Put each environment's secrets in a file at the repository root. Git ignores `.env.*` files.
@@ -206,6 +209,7 @@ Set these on the Worker, not in GitHub. `wrangler secret put` prompts for the va
 | `IP_HASH_SALT`                                                              | 32 or more random characters: `node -e "console.log(crypto.randomBytes(32).toString('base64url'))"`. Changing it resets the rate-limit counters.                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `ALERT_WEBHOOK_URL`                                                         | An incoming-webhook URL for Slack, Google Chat or Discord. Alerts carry IDs, never names or numbers.                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `LEAD_WEBHOOK_URL`                                                          | Optional. Where the one-line notice for each new lead is posted, if not the alert space (`docs/decisions/0018-one-look-pro-only-lead-notices.md`). Notices carry city, window and date, never a name or number.                                                                                                                                                                                                                                                                                                                                                          |
+| `HEARTBEAT_URL`                                                             | Optional, and wanted before go-live. The ping URL of the environment's healthchecks.io check, `https://hc-ping.com/<uuid>`, which the cron pings after every run ("The outside watchers").                                                                                                                                                                                                                                                                                                                                                                               |
 | `ZOHO_CLIENT_ID`, `ZOHO_CLIENT_SECRET`, `ZOHO_REFRESH_TOKEN`, `ZOHO_LAR_ID` | Step 8.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `ZOHO_ACCOUNTS_HOST`, `ZOHO_API_HOST`                                       | India data centre: `accounts.zoho.in`, and for the API `www.zohoapis.in`. Both environments use the real org (ADR 0050); a Developer Edition org would answer on `developer.zohoapis.in` instead.                                                                                                                                                                                                                                                                                                                                                                        |
 | `AILAB_API_KEY`                                                             | The environment's AILabTools API key, a separate key per environment where the dashboard allows.                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
@@ -441,7 +445,7 @@ The client surface reads visits from Zoho FSM and documents from Zoho Books (doc
 
    The Books organisation ID is on Books → Settings → Organisation Profile.
 
-3. **The org.** Check it, then create what is missing: a service item for each visit type and the base part. A new visit item takes the price book's own figure of 22 September 2026; from then on the cron's hourly check compares each item with the book (step 8).
+3. **The org.** Check it, then create what is missing: a service item for the consultation, the service visit and the replacement, and the base part. A new visit item takes the price book's own figure of 22 September 2026; from then on the cron's hourly check compares each item with the book (step 8). A first fit has no item of its own: each hair system ops add in the console needs one, named exactly as the console names it, and a first fit is not booked into FSM until it has one.
 
    ```sh
    node --env-file=.env.fsm-<env> scripts/setup-fsm.ts --check
@@ -607,17 +611,20 @@ Everything below is at <https://console.cloud.google.com>, signed in as the acco
 - **To stop all spending at once.** Set `"GEOCODE_DAILY_CEILING": "0"` in `wrangler.jsonc` and deploy, or set `"GEOCODE_PROVIDER": "none"`. Either way the form keeps working, typed.
 - **A charge appears at all.** Something is wrong, because the quotas in step 4 cannot reach the free allowance. Disable the key in **Credentials**, set `GEOCODE_PROVIDER` to `none`, and find out how before re-enabling it.
 
-### 14. Cloudflare Web Analytics
+### 14. Cloudflare's edge scripts: Web Analytics and JavaScript detections
 
-The site counts its visits with Cloudflare Web Analytics, and its privacy notice says so. It needs no code: Cloudflare adds its beacon to each page at the edge, and the site's content security policy allows the beacon's two hosts (`site/src/lib/static-files.ts`). Nothing in the repository can tell whether it is switched on, so check each environment and write the answer in the table above.
+Cloudflare can add two scripts to a page at its edge, where no local run sees them. The staging deploy's last step opens every staging host's pages in Chromium and fails while any page refuses one (`npm run smoke:csp -- --environment staging`).
 
-1. Cloudflare dashboard → **Web Analytics**. The site's hostname should be listed (`maneman.in`, and `staging.maneman.in` for staging). If it is not: **Add a site**, choose the hostname, and keep the automatic setup.
-2. Open a page of the site and view its source. It should load `https://static.cloudflareinsights.com/beacon.min.js`. On staging, sign in through Access first. Production serves its placeholder page until go-live, so check it again on the site's first day there.
-3. Within a few minutes the dashboard counts the visit.
+- **Web Analytics' beacon,** from `static.cloudflareinsights.com`. The site counts its visits with it, and its privacy notice says so; the site's policy allows the beacon's two hosts (`site/src/lib/static-files.ts`). The client app, the ops console and the technician app keep it out (`docs/open-points.md`, item 144).
+- **JavaScript detections,** an inline script that loads `/cdn-cgi/challenge-platform/`. It changes with every request, so no hash can allow it, and no surface's policy does (ADR 0023, section 2). It stays off (item 111).
 
-If the page carries no beacon, the automatic setup is not reaching the pages the Worker serves. The manual snippet, a `<script defer>` from `static.cloudflareinsights.com` with the site's token, then goes in `site/src/layouts/Site.astro`; the policy already allows its host.
+On 2 October 2026 both reached every staging host: the beacon reached the app, ops and technician hosts as well as the site, through the single rule Web Analytics makes for the whole zone, and the detections script reached every host. Both are the zone's settings, so production has the same.
 
-The client app's policy does not allow the beacon (`apps/app/headers.ts`), and ADR 0043 allows none there (`docs/open-points.md`, item 144). Switch it on for `app.maneman.in` only after the policy allows it.
+1. **JavaScript detections off.** Cloudflare dashboard → `maneman.in` → **Security** → **Settings** (on the older dashboard, **Security** → **Bots**): check **Bot Fight Mode** is off, then turn **JavaScript detections** off. Cloudflare's documentation says they cannot be turned off while Bot Fight Mode is on. If the dashboard offers no such switch and the check below still fails, say so in item 111: the remaining choice is ADR 0023's option c, a nonce stamped per request.
+2. **The beacon on the site only.** Cloudflare dashboard → **Web Analytics** → the site for `maneman.in` → **Manage site** → **Advanced options** → **Add rule**. Add one rule for each of `app-staging.maneman.in`, `ops-staging.maneman.in`, `tech-staging.maneman.in`, `app.maneman.in`, `ops.maneman.in` and `tech.maneman.in`: action **Disable**, path `*`. Then **Update**. The zone's own rule keeps the beacon on `maneman.in` and `staging.maneman.in`.
+3. **Check.** Re-run the latest `deploy-staging` run, or run `npm run smoke:csp -- --environment staging` from a checkout with `.env.staging-access` beside it (step 3). Every page passes. Then rerun Lighthouse on staging's site home, `/book`, the app's Home and the technician's Today: best practices should be back at or above the 95 budget. Write the date in the table above.
+
+If the site's pages carry no beacon once the rules are in, the automatic setup is not reaching the pages the Worker serves. The manual snippet, a `<script defer>` from `static.cloudflareinsights.com` with the site's token, then goes in `site/src/layouts/Site.astro`; the policy already allows its host.
 
 ### Before the first production release of Phase 2
 
@@ -630,9 +637,9 @@ Production runs 268eaa4, of 21 September 2026. The next release carries every mi
 
 ## The CI runner
 
-Where GitHub Actions jobs run is the repository variable `CI_RUNNER`: `maneman` sends them to the owner's machine, in containers (docs/decisions/0006-deployment-pipeline.md, "The runner"), and anything else to GitHub's own runners. **Since 30 September 2026 it is `maneman`** (`gh variable list` shows it), the owner's choice of 1 October 2026: the jobs cost no GitHub minutes, and the full suite runs once a pull request rather than on every push (`docs/decisions/0006-deployment-pipeline.md`, "Two tiers"). Open a pull request as a draft while the work goes on, and mark it ready for review for its full run; add the `full-ci` label to run the full suite again on its next pushes. The rest of this section is for the machine: it must be on, with Docker Desktop running, and the containers start with Docker.
+Where GitHub Actions jobs run is the repository variable `CI_RUNNER`. **Since 2 October 2026 it is `github`** (`gh variable list` shows it): every job runs on GitHub's own runners, and the repository is public, so the minutes are free and the jobs run side by side. Every push to a pull request runs the full suite: the static checks, the unit and contract tests with coverage, the build, every browser-test project and Lighthouse, the deployed code on new migrations and the local smoke. A check that already passed on the same files is not run again (docs/decisions/0006-deployment-pipeline.md, "Checks are not repeated"), and adding a label starts no run.
 
-**There is one,** `maneman-runner` (`maneman-pc`), since 1 October 2026 (the owner's choice). Two side by side on this six-core machine ran two heavy jobs at once, which timed out tests and dropped wrangler's connections; one runner queues the jobs instead. CI still runs vitest on four workers and Playwright on three, and the worker tests allow thirty seconds each (`vitest.config.ts`). The second runner, `maneman-runner-2` (`maneman-pc-2`), can be started again as below.
+**The owner's machine is retired.** Its runner, `maneman-runner` (`maneman-pc`, built from `ops/runner/`), was shut down on 2 October 2026. Never set `CI_RUNNER` to `maneman` while the repository is public: a fork's pull request would run its own code on that machine. The rest of this section is for bringing it back on a private repository: the machine must be on, with Docker Desktop running.
 
 - **Check them:** `docker logs --tail 5 maneman-runner` (and `maneman-runner-2`) ends "Listening for Jobs", and GitHub → the repository → Settings → Actions → Runners lists `maneman-pc` and `maneman-pc-2` as Idle or Active.
 - **Set it up again** (a new machine, or after removing it). Build the image, take a registration token (it lasts an hour), and start the container once with it; the registration is kept in the `maneman-runner` volume. Then start it again without the token, so the token is not left in the container's settings:
@@ -656,8 +663,7 @@ Where GitHub Actions jobs run is the repository variable `CI_RUNNER`: `maneman` 
 
 - **One fewer runner:** `docker rm -f maneman-runner-2`, then remove it in Settings → Actions → Runners. Nothing in the workflows names a particular runner, only the `maneman` label they share.
 
-- **Move the jobs to GitHub's runners:** `gh variable set CI_RUNNER --body github`. They then spend GitHub's minutes, about twice as fast as one job did: GitHub bills each job a minute at least (docs/decisions/0006-deployment-pipeline.md, "Parallel jobs"). When the minutes run out, GitHub starts no job: staging stops deploying and production cannot release. Wherever the jobs run, a check that already passed on the same files is not run again (docs/decisions/0006-deployment-pipeline.md, "Checks are not repeated").
-- **Move them back to the machine:** check both runners are listening (above), then `gh variable set CI_RUNNER --body maneman`.
+- **Move the jobs back to the machine** (a private repository only): check the runner is listening (above), then `gh variable set CI_RUNNER --body maneman`. `gh variable set CI_RUNNER --body github` sends them to GitHub's runners again.
 - **After a new runner release,** the agent updates itself; the image's pinned version only matters for a fresh set-up.
 
 ## Staying on the free tier
@@ -740,6 +746,25 @@ The other jobs run regardless. A run shares 40 outside calls between its jobs; a
 
 Some jobs run only where what they need is switched on: FSM's jobs need `FSM_PROVIDER`, the invoices and Books need both FSM and Books, the FSM reconciliation needs the real FSM, and the visit reminders need `MESSAGING_ENABLED` (`src/scheduled/cron.ts`).
 
+### A cron run cut short
+
+Each run notes when it starts and when it finishes (`cron_runs`). A run that finds the one before it never finished alerts once (`cron_run_cut_short`), and the alert closes once runs have finished for an hour. The jobs after where the run stopped did not run that time; the next run does them, so one alert is a blip. Where it stands:
+
+```sql
+SELECT started_at, completed_at, failed_jobs, cut_short_at FROM cron_runs;
+```
+
+`GET /api/health` shows `cron_completed_at`, the last finished run, for information; its status does not depend on it.
+
+Cloudflare stops a run that uses too much CPU time, and the free plan allows 10 ms an invocation. Every staging deploy reports mm-api's CPU over the last day in its last step, and `node --env-file=.env.cf-read scripts/cpu-report.ts production` reports production's (the token needs Account Analytics: Read). Workers Logs at the run's start time show the last job that logged before it stopped. If runs are cut again and again, tell the developers: the later jobs (invoices, Books, refunds owed, erasures) are not running.
+
+### The outside watchers
+
+Every alert is sent from inside mm-api, so a cron that stops altogether, or an API that is down, tells nobody. Two free monitors outside Cloudflare watch for that:
+
+1. **The cron's heartbeat.** On healthchecks.io, a check for each environment (`mm-api-staging cron`, `mm-api-production cron`): period 5 minutes, grace 10 minutes, and its Google Chat integration on the alert space (or e-mail). Put its ping URL in the environment as `HEARTBEAT_URL` (`W secret put HEARTBEAT_URL --env <env>`). The cron pings it after every run, and pings `/fail` with the failed jobs' names when one failed. No ping for 15 minutes means the cron is not running: check the triggers (step 9), then Workers Logs for the scheduled event.
+2. **The API.** Any free uptime monitor checking `https://maneman.in/api/health` every 5 minutes for HTTP 200, telling the owner's e-mail. Production only: staging is behind Access. A 503 means the database is unreachable or not production's, and the answer's `d1` says which.
+
 ### What each alert means
 
 The chat shows the message; the `alerts` table keeps it under its key. Most alerts say what to do; this is where each leads. An alert whose "closes" is "by hand" stays open until you close it as above.
@@ -747,6 +772,7 @@ The chat shows the message; the `alerts` table keeps it under its key. Most aler
 | The alert says                                                                           | Key                                                                                                       | Closes                               | See                                                                     |
 | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------ | ----------------------------------------------------------------------- |
 | The cron's _job_ job has failed _n_ runs in a row                                        | `cron_job:<job>`                                                                                          | when a run works                     | the job's own section; `cron_jobs` above                                |
+| The cron run started at _time_ never finished                                            | `cron_run_cut_short`                                                                                      | after an hour of finished runs       | "A cron run cut short"                                                  |
 | The WhatsApp bridge is not connected                                                     | `whatsapp_bridge`                                                                                         | when it is open                      | "WhatsApp (Evolution) is down"                                          |
 | _n_ login codes failed to send in the last hour                                          | `login_codes_failing`                                                                                     | when a code goes                     | "WhatsApp (Evolution) is down"                                          |
 | Message _id_ (_kind_) failed after _n_ attempts                                          | none: told for each                                                                                       | not kept                             | "Replaying a failed message"                                            |

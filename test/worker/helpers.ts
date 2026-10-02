@@ -32,6 +32,7 @@ export const LOCAL_SETTINGS: Settings = {
   ipHashSalt: "test-salt-that-is-long-enough-000000",
   alertWebhookUrl: null,
   leadWebhookUrl: null,
+  heartbeatUrl: null,
   erasureSecret: "test-erasure-secret-that-is-long-enough",
   zoho: null,
   zohoFsm: null,

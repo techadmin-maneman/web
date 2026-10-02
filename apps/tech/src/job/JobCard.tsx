@@ -6,7 +6,8 @@
 // The piece card reads the board's tier, colour, adhesive and scalp from the
 // client's hair profile, with the base's size, where one is recorded; the
 // board's template is recorded nowhere, so it is not drawn
-// (docs/decisions/0106-a-clients-hair-profile.md).
+// (docs/decisions/0106-a-clients-hair-profile.md). On a first fit it names the
+// hair system the client was sold above them.
 //
 // The last visit's photograph is fetched each time the card is open and never
 // kept: the API answers it `no-store`, and the service worker leaves it alone.
@@ -54,9 +55,17 @@ function profileLines(profile: HairProfile | null): Line[] {
   return lines.filter((line) => line !== null);
 }
 
+/** On a first fit, the hair system the client was sold, which he brings: ahead of what the profile says. */
+function soldLine(job: Job): Line | null {
+  // A card kept on the phone before the API named the product has none.
+  const product = job.product ?? null;
+  return product === null ? null : { key: copy.piece.rows.sold, value: product };
+}
+
 function PieceCard({ job }: { job: Job }) {
   const piece = onTheHead(job.pieces ?? []);
-  const fromProfile = profileLines(job.profile);
+  const sold = soldLine(job);
+  const fromProfile = sold === null ? profileLines(job.profile) : [sold, ...profileLines(job.profile)];
   const last = job.last_visit;
   return (
     <section className={styles.piece} aria-labelledby="piece-title">

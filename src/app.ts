@@ -9,6 +9,7 @@ import { auditCall } from "./http/audit.ts";
 import { createCachedIdentityCheck, type IdentityCheck, type StaticConfig } from "./guard.ts";
 import { createCachedOpsInputs, type ReadOpsInputs } from "./domain/ops-settings.ts";
 import { requireAccess } from "./http/access.ts";
+import { requireStaffAccess } from "./http/staff-access.ts";
 import { REQUEST_ID_HEADER, type App, type AppEnv } from "./http/context.ts";
 import { ErrorResponseSchema, errorBody } from "./http/errors.ts";
 import { requireSameOrigin } from "./http/origin.ts";
@@ -45,6 +46,7 @@ import { registerOpsTechnicians } from "./routes/ops-technicians.ts";
 import { registerOpsServices } from "./routes/ops-services.ts";
 import { registerOpsSettings } from "./routes/ops-settings.ts";
 import { registerOpsSlotTimes } from "./routes/ops-slot-times.ts";
+import { registerOpsStaff } from "./routes/ops-staff.ts";
 import { registerOpsStock } from "./routes/ops-stock.ts";
 import { registerOpsWaitlist } from "./routes/ops-waitlist.ts";
 import { registerConsultations } from "./routes/consultations.ts";
@@ -150,6 +152,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsWhoami,
     // Discount codes, and a code on a client's visit (docs/decisions/0108-discount-codes.md).
     registerOpsDiscountCodes,
+    // Who may do what in the console.
+    registerOpsStaff,
   ],
   // The discount code after the jobs, which put the technician's session on every /api/tech/jobs/* route.
   tech: [registerHealth, registerTechAuth, registerTechJobs, registerTechPieces, registerTechDiscountCodes],
@@ -172,8 +176,9 @@ export function createApp(
   const dependencies = makeDependencies ?? productionDependencies(config);
   app.use("*", requestContext(config, dependencies, createCachedIdentityCheck(), createCachedOpsInputs(), surface));
   app.use("/api/*", requireOwnDatabase);
-  // The ops console is staff only: every call needs a valid Access token, and is audited (ADR 0031).
-  if (surface === "ops") app.use("/api/*", requireAccess, auditCall);
+  // The ops console is staff only: every call needs a valid Access token, and is audited (ADR 0031); then the Staff
+  // list decides what the caller may do.
+  if (surface === "ops") app.use("/api/*", requireAccess, auditCall, requireStaffAccess);
   // The public site's writes are guarded by Turnstile; the Phase 2 surfaces carry session cookies.
   if (surface !== "public") app.use("/api/*", requireSameOrigin);
 

@@ -6,11 +6,12 @@
 import { Button } from "@maneman/ui/Button";
 import { Mark } from "@maneman/ui/Mark";
 import { Link } from "@maneman/ui/router";
+import { useLoad } from "@maneman/ui/useLoad";
 import type { ReactNode } from "react";
 import { shell } from "../content.ts";
 import { useLapsed } from "../lib/session.ts";
 import { SECTION_NAMES, SECTIONS, type SectionPath } from "../route.ts";
-import { Account } from "./Account.tsx";
+import { Account, whoami } from "./Account.tsx";
 import styles from "./shell.module.css";
 
 /** A link within the console: the shared one, which leaves a click asking for a new tab to the browser. */
@@ -30,6 +31,19 @@ function Lapsed() {
       >
         {shell.reload}
       </Button>
+    </div>
+  );
+}
+
+/** Said over every screen to a person Access lets in whom the Staff list, once enforced, does not. */
+function NotListed() {
+  const [loaded] = useLoad(whoami);
+  if (loaded.state !== "loaded") return null;
+  const { enforced, listed } = loaded.value.staff;
+  if (!enforced || listed) return null;
+  return (
+    <div className={styles.lapsed} role="status">
+      <p className={styles.lapsedLine}>{shell.notListed}</p>
     </div>
   );
 }
@@ -73,6 +87,7 @@ export function Shell({ section, title, sub, flush, children }: Props) {
           <Account />
         </header>
         {lapsed && <Lapsed />}
+        <NotListed />
         <main className={flush === true ? styles.flushPage : styles.page}>{children}</main>
       </div>
     </div>

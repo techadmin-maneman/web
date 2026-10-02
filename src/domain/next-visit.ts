@@ -13,7 +13,7 @@
 
 import { shortDate } from "@maneman/web-kit/dates";
 import { windowsFor, type BookingWindow, type FirstFitWindow } from "../config/scheduling.ts";
-import { FSM_SERVICE_NAMES, type VisitType } from "../config/visit-types.ts";
+import { VISIT_TYPE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
 import { firstNameOf } from "../lib/names.ts";
 import {
@@ -48,9 +48,10 @@ export interface NextOffer {
   readonly type: NextVisitType;
   /**
    * The service of its kind it is offered as: the one the client's last visit of the kind was, while that is offered,
-   * else the kind's first in the console's order (serviceToOffer, docs/decisions/0085-services-ops-can-edit.md).
+   * else the kind's first in the console's order (serviceToOffer, docs/decisions/0085-services-ops-can-edit.md). Null
+   * while the kind offers none, as a first fit does before ops offer a hair system.
    */
-  readonly tier: string;
+  readonly tier: string | null;
   /** India's day it is offered on: the day it falls due, or tomorrow once that has passed. */
   readonly date: string;
   /** The window it is offered in, where a visit of its kind can start in it; null for none. */
@@ -257,6 +258,6 @@ export async function composeNextServiceReminder(
   const type = nextVisitType(due, row.piece_due);
   return {
     template: "next_visit_due_v1",
-    params: [firstNameOf(row.name), FSM_SERVICE_NAMES[type].toLowerCase(), shortDate(due)],
+    params: [firstNameOf(row.name), VISIT_TYPE_NAMES[type].toLowerCase(), shortDate(due)],
   };
 }

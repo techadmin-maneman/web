@@ -256,7 +256,15 @@ export const job = {
   piece: {
     title: "The piece",
     // PLACEHOLDER: the board's piece card reads tier, colour, adhesive, template and scalp, which nothing records.
-    rows: { piece: "Piece", base: "Base", lot: "Supplier lot", fitted: "Fitted", due: "Replacement due" },
+    // PLACEHOLDER: the board draws no "Hair system" row; on a first fit it is the one the client was sold.
+    rows: {
+      sold: "Hair system",
+      piece: "Piece",
+      base: "Base",
+      lot: "Supplier lot",
+      fitted: "Fitted",
+      due: "Replacement due",
+    },
     none: "No piece recorded for this client yet.",
     lastVisit: (date: string, who: string | null) =>
       who === null ? `Last visit, after. ${date}.` : `Last visit, after. ${date}, ${who}.`,
@@ -469,7 +477,9 @@ export const oneVisit = {
   checklist: "Consultation and fit checklist",
   choice: "The client's choice",
   declined: "Decided against it",
-  chooseFirst: "Choose the product, or that the client decided against it",
+  // PLACEHOLDER: ops offer no hair system for the visit's day, so there is nothing to choose from.
+  noProducts: "No hair system is offered for this visit. Speak to ops before you fit anything.",
+  chooseFirst: "Choose the hair system, or that the client decided against it",
   declinedNote: "Nothing is fitted. Closing as done ends the visit as a consultation, with nothing to pay.",
   closeNote:
     "Closing as done texts the client a payment link for the product they chose. If they decided against it, the visit ends as a consultation.",

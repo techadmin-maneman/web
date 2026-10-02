@@ -2,7 +2,10 @@
 // order. A job that throws is logged as `cron_job_failed` and the next one runs
 // anyway, so one failing job never stops the others. Each job's failed runs in
 // a row are counted in `cron_jobs`, and a job that fails three in a row alerts
-// (docs/decisions/0067-alerts-and-silent-failures.md).
+// (docs/decisions/0067-alerts-and-silent-failures.md). Each run is noted as it
+// starts and as it finishes, so a run Cloudflare stopped part-way is told by the
+// next (src/domain/cron-runs.ts), and each ends with a ping to an outside monitor
+// (src/providers/heartbeat.ts).
 //
 // The jobs share one budget of outside calls a run, so that together they stay
 // under the free plan's 50 fetch subrequests (src/lib/call-budget.ts). Their
@@ -13,6 +16,7 @@ import type { Dependencies } from "../dependencies.ts";
 import { resolveAskedWindows } from "../domain/asked-windows.ts";
 import { requeueUnbookedHolds } from "../domain/bookings.ts";
 import { syncBooks, type BooksSyncOptions } from "../domain/books-sync.ts";
+import { finishRun, startRun } from "../domain/cron-runs.ts";
 import { alertAgedDeletions } from "../domain/deletion.ts";
 import { checkCatalogue } from "../domain/fsm-catalogue.ts";
 import { recordUtilisation } from "../domain/dispatch.ts";
@@ -27,6 +31,7 @@ import { queueReminders } from "../domain/visit-messages.ts";
 import type { StaticConfig } from "../guard.ts";
 import { createCallBudget, type CallBudget } from "../lib/call-budget.ts";
 import { scrubString, type Logger } from "../log.ts";
+import { pingHeartbeat } from "../providers/heartbeat.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import { reconcileFsm } from "./reconcile-fsm.ts";
 import { referralPass } from "./referrals.ts";
@@ -51,7 +56,7 @@ export type CronRun = Omit<CronContext, "budget" | "inputs">;
 /**
  * Outside calls one run may make. The free plan allows 50 fetch subrequests an
  * invocation; the other ten are for what no job can plan: a Zoho token
- * refresh, and the alerts the run sends.
+ * refresh, the alerts the run sends, and its heartbeat (src/providers/heartbeat.ts).
  */
 export const CRON_CALLS = 40;
 
@@ -263,6 +268,9 @@ function sharedInputs({ env, deps, log }: CronRun): () => Promise<OpsInputs> {
  * read of the figures ops set.
  */
 export async function runCronJobs(jobs: readonly CronJob[], run: CronRun): Promise<CronOutcome[]> {
+  const startedAt = run.deps.now().toISOString();
+  await recordStart(run, startedAt);
+  const failing = await failingJobs(run);
   const budget = createCallBudget(CRON_CALLS);
   const inputs = sharedInputs(run);
   const outcomes: CronOutcome[] = [];
@@ -272,7 +280,7 @@ export async function runCronJobs(jobs: readonly CronJob[], run: CronRun): Promi
     try {
       await job.run(context);
       outcomes.push({ job: job.name, ok: true });
-      await countSuccess(context, job.name);
+      if (failing.has(job.name)) await countSuccess(context, job.name);
     } catch (error) {
       context.log.error("cron_job_failed", { error });
       outcomes.push({ job: job.name, ok: false });
@@ -280,7 +288,48 @@ export async function runCronJobs(jobs: readonly CronJob[], run: CronRun): Promi
     }
   }
   if (budget.ranOut()) run.log.warn("cron_calls_spent", { calls: CRON_CALLS });
+  await recordFinish(run, startedAt, failedJobs(outcomes).length);
   return outcomes;
+}
+
+/** A whole scheduled run: the jobs, then the heartbeat that tells the outside monitor the cron is still running. */
+export async function runCron(jobs: readonly CronJob[], run: CronRun): Promise<void> {
+  const outcomes = await runCronJobs(jobs, run);
+  const heartbeat = { url: run.config.settings.heartbeatUrl, fetch: run.deps.fetch, log: run.log };
+  await pingHeartbeat(heartbeat, failedJobs(outcomes));
+}
+
+function failedJobs(outcomes: readonly CronOutcome[]): string[] {
+  return outcomes.filter((outcome) => !outcome.ok).map((outcome) => outcome.job);
+}
+
+/** Keeping the run record must never stop the jobs, so a failure to is only logged. */
+async function recordStart({ env, deps, log }: CronRun, startedAt: string): Promise<void> {
+  try {
+    await startRun({ db: env.DB, alertOnce: deps.alertOnce }, startedAt);
+  } catch (error) {
+    log.error("cron_run_not_recorded", { error });
+  }
+}
+
+async function recordFinish({ env, deps, log }: CronRun, startedAt: string, failedJobCount: number): Promise<void> {
+  const run = { startedAt, completedAt: deps.now().toISOString(), failedJobs: failedJobCount };
+  try {
+    await finishRun({ db: env.DB, resolveAlert: deps.resolveAlert }, run);
+  } catch (error) {
+    log.error("cron_run_not_recorded", { error });
+  }
+}
+
+/** The jobs whose last run failed, read once a run: only these have a count for a success to reset. */
+async function failingJobs({ env, log }: CronRun): Promise<ReadonlySet<string>> {
+  try {
+    const { results } = await env.DB.prepare("SELECT job FROM cron_jobs WHERE failed_runs > 0").all<{ job: string }>();
+    return new Set(results.map((row) => row.job));
+  } catch (error) {
+    log.error("cron_outcome_not_counted", { error });
+    return new Set();
+  }
 }
 
 /** A job that works again starts its count afresh, and its alert is closed. */

@@ -45,6 +45,7 @@ Nothing here needs a release. The first two have dates.
 
 - [ ] **Production's AILabTools key** (item 153): `W secret put AILAB_API_KEY --env production`, with a key of production's own.
 - [ ] **Staging's refund account:** the owner's "Razorpay – staging test" ID as `BOOKS_REFUND_ACCOUNT_ID` in `env.staging.vars`, released through CI (item 10).
+- [ ] **Staging's cron heartbeat** (RB, "The outside watchers", point 1): a healthchecks.io check, its ping URL as staging's `HEARTBEAT_URL`; and Account Analytics: Read on `mm-ci-staging`, so each staging deploy reports mm-api's CPU time (RB 6).
 
 ## 2. Proofs on staging
 
@@ -79,6 +80,7 @@ Each is written up in `docs/verification.md` when it passes. The payment run is 
 - [ ] The analytics IDs, and the consent banner they need (item 84).
 - [ ] The dedicated WhatsApp number (item 38) and `MESSAGING_ENABLED` `"true"` in production's vars (item 164): the try-on's look goes to WhatsApp only, so while it is off the try-on does not run (ADR 0104).
 - [ ] Production's AILabTools key and resources (section 1).
+- [ ] The outside watchers (RB, "The outside watchers"): production's healthchecks.io check as its `HEARTBEAT_URL`, and an uptime monitor on `https://maneman.in/api/health`. After the release, the check shows a ping every five minutes and `GET /api/health` a `cron_completed_at` minutes old.
 
 **The code**, in one pull request through CI and staging: production's `assets.directory` in `site/wrangler.jsonc` pointed at `./dist/production`, a production site build before "Deploy mm-site" in `deploy-production.yml` (`docs/frontend.md`, steps 4 and 5), and the analytics IDs.
 
