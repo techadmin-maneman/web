@@ -26,6 +26,7 @@
     "test/node/app-route.test.ts",
     "test/node/ops-dispatch-job.test.ts",
     "test/node/ops-route.test.ts",
+    "test/node/ops-staff-grants.test.ts",
     "test/node/tech-api.test.ts",
     "test/node/tech-content.test.ts",
     "test/node/tech-kept.test.ts",
