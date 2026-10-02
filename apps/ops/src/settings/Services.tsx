@@ -387,6 +387,7 @@ function KindSection({ kind, opened }: { kind: Kind; opened: Opened }) {
       <h3 className={styles.kindTitle} id={titleId}>
         {name}
       </h3>
+      {kind === "first_fit" && <p className={styles.note}>{copy.hairSystems}</p>}
       <ul className={styles.services}>
         {services.map((service) => (
           <ServiceBlock key={service.tier} service={service} siblings={services} opened={opened} />
@@ -406,7 +407,7 @@ function KindSection({ kind, opened }: { kind: Kind; opened: Opened }) {
               opened.onAct({ kind: "add", of: kind });
             }}
           >
-            {copy.actions.add(name)}
+            {kind === "first_fit" ? copy.actions.addHairSystem : copy.actions.add(name)}
           </Button>
         </div>
       )}

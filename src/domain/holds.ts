@@ -6,7 +6,7 @@
 import { withGst } from "../config/gst.ts";
 import type { BookingWindow } from "../config/scheduling.ts";
 import { windowTimesOf } from "../policy/slot-times.ts";
-import { FSM_SERVICE_NAMES, type VisitType } from "../config/visit-types.ts";
+import { VISIT_TYPE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { indiaInstant } from "../lib/india-time.ts";
 import {
   FREE_CHANGE_NOTICE_HOURS,
@@ -17,7 +17,7 @@ import {
 } from "../policy/moving-a-visit.ts";
 import { creditBalance } from "./credits.ts";
 import { holdDiscount } from "./discount-code-holds.ts";
-import { priceOf, type Price } from "./price-book.ts";
+import { lateFeeOn, type Price } from "./price-book.ts";
 import { heldMinutes, visitTimes } from "./scheduling.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
 
@@ -67,7 +67,7 @@ const HOLD_QUERY = `SELECT h.id, h.type, h.tier, h.minutes, s.name AS service_na
 async function lateFeeOf(db: D1Database, row: HoldRow, charge: Charge): Promise<Price | null> {
   const item = LATE_FEES[row.type];
   if (item === undefined || charge !== "late_fee") return null;
-  if (row.late_fee_ex_gst === null || row.late_fee_gst_percent === null) return priceOf(db, item, row.date);
+  if (row.late_fee_ex_gst === null || row.late_fee_gst_percent === null) return lateFeeOn(db, item, row.date);
   return {
     amount_ex_gst: row.late_fee_ex_gst,
     amount: withGst(row.late_fee_ex_gst, row.late_fee_gst_percent),
@@ -90,7 +90,7 @@ async function holdOf(db: D1Database, row: HoldRow, now: Date) {
   return {
     id: row.id,
     type: row.type,
-    service: { tier: row.tier, name: row.service_name ?? FSM_SERVICE_NAMES[row.type], minutes },
+    service: { tier: row.tier, name: row.service_name ?? VISIT_TYPE_NAMES[row.type], minutes },
     date: row.date,
     window: row.window_label,
     starts_at: start.toISOString(),

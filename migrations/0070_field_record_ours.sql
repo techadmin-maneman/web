@@ -1,4 +1,4 @@
--- Migration number: 0071
+-- Migration number: 0070
 -- contract: docs/decisions/0110-field-work-without-fsm.md
 --
 -- What a visit booked without FSM needs. The code already deployed reads none

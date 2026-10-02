@@ -112,6 +112,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0106](0106-a-clients-hair-profile.md) | A client's hair profile: the fit spec and their history | 2026-10-01 | accepted, on the owner's rulings of 1 October 2026 |  |
 | [0107](0107-referral-rewards-in-the-console.md) | What a referral earns, set in the console, each side apart | 2026-10-01 | accepted, on the owner's ruling of 1 October 2026 |  |
 | [0108](0108-discount-codes.md) | Discount codes | 2026-10-01 | accepted, on the owner's rulings of 1 October 2026 |  |
+| [0109](0109-console-departments-and-access.md) | The console by departments, and who may do what in it | 2026-10-02 | accepted, on the owner's ruling of 2 October 2026 |  |
 | [0110](0110-field-work-without-fsm.md) | Field work without Zoho FSM | 2026-10-02 | accepted, on the owner's ruling of 2 October 2026 |  |
 
 ## Records beside them

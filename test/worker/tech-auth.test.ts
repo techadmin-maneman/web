@@ -403,6 +403,21 @@ describe("the technician list", () => {
     expect(challenge).toEqual({ technician_id: IMRAN });
   });
 
+  // FSM writes a user's mobile as "91-9810000007"; the mirror read that as no number, so he could never sign in.
+  it("reads a number FSM writes in its own 91- form, and his code goes to it", async () => {
+    deps = fakeDependencies({
+      fsm: createStubFsm({ ...EMPTY_FSM, technicians: [technician({ mobile: "91-9810000007" })] }),
+    });
+    tech = appFor("local", deps, {}, "tech");
+
+    await syncTechnicians(env.DB, deps.fsm, NOW.toISOString());
+    const naveen = await env.DB.prepare("SELECT mobile_e164 FROM technicians WHERE fsm_id = 'resource-9'").first();
+    expect(naveen).toEqual({ mobile_e164: "+919810000007" });
+
+    await challengeFor("+91 98100 00007");
+    expect(deps.sentCodes.map((sent) => sent.to)).toEqual(["+919810000007"]);
+  });
+
   it("stops no one when FSM lists no one, which is a failed read rather than an empty org", async () => {
     expect(await syncTechnicians(env.DB, createStubFsm(EMPTY_FSM), NOW.toISOString())).toEqual([]);
 

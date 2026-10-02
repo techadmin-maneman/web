@@ -75,7 +75,7 @@ export interface paths {
                         "application/json": components["schemas"]["PublishedPrices"];
                     };
                 };
-                /** @description unavailable: the book lacks a standard one of them, so the site shows its own */
+                /** @description unavailable: the book lacks the standard service visit or replacement, so the site shows its own */
                 503: {
                     headers: {
                         [name: string]: unknown;
@@ -192,7 +192,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"] | components["schemas"]["AlreadyBooked"];
                     };
                 };
-                /** @description not_bookable: the pincode is not served, the day is not open, or this number is past consultations and books in the app; code_not_applicable: the discount code does not apply, fields names discount_code; idempotency_key_reused: the key was used with a different body */
+                /** @description not_bookable: the pincode is not served, the day is not open, or this number is past consultations and books in the app; code_not_applicable: the discount code does not apply, fields names discount_code; no_product: one visit, on a day the console offers no hair system; idempotency_key_reused: the key was used with a different body */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -565,7 +565,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"] | components["schemas"]["AlreadyBooked"];
                     };
                 };
-                /** @description not_bookable: the pincode is not served, the day is not open, or this number is past consultations; idempotency_key_reused: the key was used with a different body */
+                /** @description not_bookable: the pincode is not served, the day is not open, or this number is past consultations; no_product: one visit, on a day the console offers no hair system; idempotency_key_reused: the key was used with a different body */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -1264,14 +1264,12 @@ export interface paths {
                         "application/json": components["schemas"]["Look"];
                     };
                 };
-                /** @description not_found: this browser has no look */
-                404: {
+                /** @description This browser has had no look yet */
+                204: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
+                    content?: never;
                 };
             };
         };
@@ -1594,7 +1592,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -1621,6 +1619,8 @@ export interface components {
              * @enum {string}
              */
             d1: "ok" | "unmarked" | "mismatch" | "unreachable";
+            /** @description When the five-minute cron last finished a run; null before its first, or when the database is not this environment's. Information only: status does not depend on it. */
+            cron_completed_at: string | null;
         };
         PublishedPrices: {
             /**
@@ -1629,14 +1629,13 @@ export interface components {
              */
             on: string;
             /**
-             * @description The tier of the three figures below: each kind's standard.
+             * @description The tier of the two figures below: each kind's standard.
              * @enum {string}
              */
             tier: "standard";
-            first_fit: components["schemas"]["Price"];
             service: components["schemas"]["Price"];
             replacement: components["schemas"]["Price"];
-            /** @description Every service offered and priced today, a kind at a time, in the console's order. */
+            /** @description Every service offered and priced today, a kind at a time, in the console's order. A first fit's are the hair systems ops offer; none while ops offer none. */
             services: components["schemas"]["PublishedService"][];
         };
         Price: {
@@ -1649,7 +1648,7 @@ export interface components {
         PublishedService: {
             /** @enum {string} */
             type: "consultation" | "first_fit" | "service" | "replacement";
-            /** @description Its code within its kind: standard, premium, or another. */
+            /** @description Its code within its kind. */
             tier: string;
             name: string;
             minutes: number;
@@ -1686,7 +1685,7 @@ export interface components {
         AlreadyBooked: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];

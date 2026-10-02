@@ -27,7 +27,7 @@
 // is what was sold (docs/decisions/0085-services-ops-can-edit.md).
 
 import { PAYMENT_GRACE_SECONDS } from "../config/scheduling.ts";
-import { FSM_SERVICE_NAMES, type VisitType } from "../config/visit-types.ts";
+import { VISIT_TYPE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { indiaIso } from "../lib/india-time.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
 import { createLogger, type Logger } from "../log.ts";
@@ -43,6 +43,7 @@ import { fsmContactOf, type Place } from "./fsm-contacts.ts";
 import { toLinkAlert, toLinkAlertKey } from "./held-bookings.ts";
 import { askRefund, refundReceipt } from "./refunds.ts";
 import { heldVisitTimes, liveVisitOf } from "./scheduling.ts";
+import { hasBegun, visitBegun } from "./visit-begun.ts";
 import { visitPayment } from "./visit-changes.ts";
 import { visitMessage, type VisitMessageKind } from "./visit-messages.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
@@ -286,6 +287,7 @@ export async function confirmBooking(
       return "refunded";
     }
     if (leased.move_kind === "move") return await moveInPlace(db, fsm, payments, leased, now, options);
+    if (await replacesBegunVisit(db, leased)) return await moveRefused(db, payments, leased, now, options);
     const bookedByHand = await visitBookedSinceHeld(db, leased);
     if (bookedByHand !== null) {
       await releaseLease(db, hold.id);
@@ -511,7 +513,7 @@ async function appointmentFor(
 }
 
 const summaryOf = (hold: HoldRow, labelAsTest: boolean) =>
-  `${labelAsTest ? "Staging test: " : ""}${hold.service_name ?? FSM_SERVICE_NAMES[hold.type]} for ${hold.person_name}`;
+  `${labelAsTest ? "Staging test: " : ""}${hold.service_name ?? VISIT_TYPE_NAMES[hold.type]} for ${hold.person_name}`;
 
 async function keepWorkOrder(db: D1Database, holdId: string, workOrderId: string): Promise<void> {
   await db.prepare("UPDATE slot_holds SET fsm_work_order_id = ?2 WHERE id = ?1").bind(holdId, workOrderId).run();
@@ -574,15 +576,12 @@ async function moveInPlace(
 ): Promise<Confirmed> {
   const visit = await db
     .prepare(
-      `SELECT id, fsm_id, window_start FROM appointments
-       WHERE id = ?1 AND status IN ('scheduled', 'dispatched') AND deleted_at IS NULL`,
+      `SELECT a.id, a.fsm_id, a.window_start FROM appointments a
+       WHERE a.id = ?1 AND a.status IN ('scheduled', 'dispatched') AND a.deleted_at IS NULL AND NOT ${visitBegun("a")}`,
     )
     .bind(hold.moves_appointment_id)
     .first<{ id: string; fsm_id: string; window_start: string }>();
-  if (visit === null) {
-    await giveBack(db, payments, hold.id, now, "the visit could no longer be moved", options.alongside);
-    return hold.amount > 0 ? "refunded" : "lapsed";
-  }
+  if (visit === null) return moveRefused(db, payments, hold, now, options);
   const { start, end } = await heldVisitTimes(db, hold);
   await fsm.rescheduleVisit(visit.fsm_id, { start: indiaIso(start), end: indiaIso(end) });
 
@@ -637,9 +636,30 @@ async function moveInPlace(
   return "booked";
 }
 
+/** A late move whose visit the technician began before FSM was given the new one: it is refunded, not booked. */
+async function replacesBegunVisit(db: D1Database, hold: HoldRow): Promise<boolean> {
+  if (hold.move_kind !== "replace" || hold.fsm_work_order_id !== null || hold.moves_appointment_id === null) {
+    return false;
+  }
+  return hasBegun(db, hold.moves_appointment_id);
+}
+
+/** Lets a move's hold go, and gives its payment back, since the visit it moves can no longer be changed. */
+async function moveRefused(
+  db: D1Database,
+  payments: PaymentsProvider,
+  hold: HoldRow,
+  now: Date,
+  options: ConfirmOptions,
+): Promise<Confirmed> {
+  await giveBack(db, payments, hold.id, now, "the visit could no longer be moved", options.alongside);
+  return hold.amount > 0 ? "refunded" : "lapsed";
+}
+
 /**
  * Cancels the visit a new one replaced, once: in FSM, then in the mirror. Its payment is kept as the charge.
- * When FSM will not cancel it, the mirror is left as FSM has it and ops are told to cancel it by hand.
+ * When FSM will not cancel it, the mirror is left as FSM has it and ops are told to cancel it by hand. A visit the
+ * technician has begun since is never cancelled: both visits stand, and ops are told.
  */
 async function retireReplaced(
   db: D1Database,
@@ -650,13 +670,23 @@ async function retireReplaced(
 ): Promise<void> {
   const old = await db
     .prepare(
-      `SELECT a.id, a.fsm_work_order_id, a.window_start FROM appointments a
+      `SELECT a.id, a.fsm_work_order_id, a.window_start, ${visitBegun("a")} AS begun FROM appointments a
        WHERE a.id = ?1 AND a.status IN ('scheduled', 'dispatched') AND a.deleted_at IS NULL
          AND NOT EXISTS (SELECT 1 FROM visit_changes c WHERE c.appointment_id = a.id AND c.kind IN ('replaced', 'cancelled'))`,
     )
     .bind(hold.moves_appointment_id)
-    .first<{ id: string; fsm_work_order_id: string | null; window_start: string }>();
+    .first<{ id: string; fsm_work_order_id: string | null; window_start: string; begun: number }>();
   if (old === null) return;
+  if (old.begun === 1) {
+    await options.alertOnce?.({
+      key: `replaced_after_begun:${old.id}`,
+      message:
+        `The client moved visit ${old.id} to a new one (booking ${hold.id}), but the technician had already begun ` +
+        `it, so it was not cancelled. Both visits stand: ask the client which to keep.`,
+      link: `/clients/${hold.person_id}`,
+    });
+    return;
+  }
   if (old.fsm_work_order_id !== null) {
     const note = `${options.labelAsTest ? "Staging test: " : ""}Moved by the client too late to move it free, to a new visit; charged.`;
     if (!(await fsm.cancelVisit(old.fsm_work_order_id, note))) {
