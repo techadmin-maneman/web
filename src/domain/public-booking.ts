@@ -54,6 +54,7 @@ import { ONE_VISIT_TERMS, ONE_VISIT_WINDOWS, type Plan } from "../policy/one-vis
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import type { Price } from "./price-book.ts";
+import { recordConsent } from "./consents.ts";
 import { bookableService, offeredProducts } from "./services.ts";
 import type { ConsentSource } from "../policy/consents.ts";
 import { typedAddress, type TypedAddress } from "../policy/site-booking.ts";
@@ -159,13 +160,17 @@ function formPerson(
           .prepare("INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES (?1, ?2, ?3, ?4, 1)")
           .bind(id, at, input.mobile, input.name)
       : db.prepare("UPDATE people SET contactable = 1 WHERE id = ?1").bind(id);
-  const consent = db
-    .prepare(
-      `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash, source)
-       VALUES (?1, ?2, ?3, ?4, 1, ?5, ?6, ?7)`,
-    )
-    .bind(crypto.randomUUID(), id, input.purpose, input.notice, at, input.ipHash, input.source);
-  return { id, statements: [person, consent] };
+  const consent = recordConsent(db, {
+    person: { id },
+    purpose: input.purpose,
+    granted: true,
+    notice: input.notice,
+    source: input.source,
+    rule: "always",
+    ipHash: input.ipHash,
+    givenAt: at,
+  });
+  return { id, statements: [person, consent.statement] };
 }
 
 /**
@@ -583,12 +588,16 @@ export async function joinTheWaitlist(
   const at = now.toISOString();
   const launchAlert = request.launchAlert
     ? [
-        db
-          .prepare(
-            `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash, source)
-             VALUES (?1, ?2, 'whatsapp_launches', ?3, 1, ?4, ?5, ?6)`,
-          )
-          .bind(crypto.randomUUID(), personId, CURRENT_NOTICE.whatsapp_launches, at, checked.ipHash, request.source),
+        recordConsent(db, {
+          person: { id: personId },
+          purpose: "whatsapp_launches",
+          granted: true,
+          notice: CURRENT_NOTICE.whatsapp_launches,
+          source: request.source,
+          rule: "always",
+          ipHash: checked.ipHash,
+          givenAt: at,
+        }).statement,
       ]
     : [];
   const written = await db.batch<{ id: string }>([
