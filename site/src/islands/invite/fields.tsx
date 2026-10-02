@@ -5,7 +5,7 @@ import { ICONS } from "@maneman/brand/icons";
 import type { LossExtent } from "../../../../src/config/booking.ts";
 import { referral } from "../../content/referral.ts";
 import { booking, stageOptions } from "../../content/site.ts";
-import type { PincodeAnswer } from "../../lib/api.ts";
+import type { PincodeAnswer, ReferralReward } from "../../lib/api.ts";
 import { formatMobile, isCompleteMobile } from "../../lib/phone.ts";
 import { Icon, StageDrawing } from "../Drawings.tsx";
 import styles from "./Invite.module.css";
@@ -17,8 +17,10 @@ export interface FormProps {
   name: string | null;
   /** The invited page carries someone's invite; the site's own does not. */
   invited: boolean;
-  /** The invite is valid, so its 3 visits apply and its referrer is told. */
+  /** The invite is valid, so its visits apply and its referrer is told. */
   credits: boolean;
+  /** What a referral earns, as ops set it; null until it is known. */
+  reward: ReferralReward | null;
   turnstileSiteKey: string;
   onChangePincode: () => void;
 }

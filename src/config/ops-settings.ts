@@ -25,6 +25,7 @@ import {
   WAIVER_KEYS,
 } from "../policy/no-show.ts";
 import { PHONE_CLOCK, PHONE_CLOCK_KEYS } from "../policy/phone-clock.ts";
+import { MAX_REWARD_VISITS, REFERRAL_REWARD, REFERRAL_REWARD_KEYS } from "../policy/referral-reward.ts";
 import { TECHNICIAN_WORK, TECHNICIAN_WORK_KEYS } from "../policy/technician-work.ts";
 import { TASK_GROUPS, TASK_SLA_HOURS } from "../policy/tasks.ts";
 import { DEFAULT_PIECE_CYCLE_DAYS, PIECE_CYCLE_DAYS } from "./pieces.ts";
@@ -292,6 +293,24 @@ export const OPS_SETTINGS = [
     bounds: NEXT_VISIT_DAY_BOUNDS,
     fallback: NEXT_VISIT_DAYS,
     source: "src/policy/next-visit.ts",
+  },
+  {
+    // The owner's ruling of 1 October 2026: each side's visits, and how long they last (ADR 0025, item 94).
+    name: "referral_reward",
+    title: "What a referral earns",
+    note: "The free service visits the client who sent an invite gets, and those their friend gets, once the friend's first fit is done, and how long the credits last from then. Either side may get 0. A change reaches every friend fitted after it, and the site, the app and the WhatsApp messages say the new figures; credits already given keep their visits and their date.",
+    unit: "service visits",
+    min: 0,
+    max: 1095,
+    keys: REFERRAL_REWARD_KEYS,
+    bounds: {
+      referrer_visits: { min: 0, max: MAX_REWARD_VISITS },
+      friend_visits: { min: 0, max: MAX_REWARD_VISITS },
+      // A month at the least, since a service visit falls due monthly; three years at the most.
+      valid_days: { min: 30, max: 1095, unit: "days" },
+    },
+    fallback: REFERRAL_REWARD,
+    source: "src/policy/referral-reward.ts",
   },
 ] as const satisfies readonly OpsSetting[];
 

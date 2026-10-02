@@ -86,7 +86,6 @@
   --lh-102: 1.02;
   --lh-103: 1.03;
   --lh-105: 1.05;
-  --lh-106: 1.06;
   --lh-108: 1.08;
   --lh-110: 1.1;
   --lh-112: 1.12;
@@ -117,12 +116,12 @@
   --fs-24: 24px;
 
   --fs-hero: clamp(42px, 7.4vw, 96px);
+  --fs-hero-title: clamp(24px, 2.8vw, 38px);
   --fs-hero-body: clamp(17px, 1.5vw, 21px);
   --fs-h2: clamp(30px, 4vw, 54px);
   --fs-lead: clamp(17px, 1.4vw, 19px);
   --fs-body: clamp(16px, 1.3vw, 18px);
   --fs-reading: clamp(17px, 1.4vw, 20px);
-  --fs-reading-serif: clamp(22px, 2.4vw, 30px);
   --fs-card-title: clamp(17px, 1.6vw, 21px);
   --fs-column-head: clamp(17px, 2vw, 28px);
   --fs-teaser-title: clamp(32px, 4.6vw, 62px);
@@ -130,16 +129,15 @@
   --fs-step-number: clamp(40px, 5vw, 72px);
   --fs-step-title: clamp(24px, 2.6vw, 36px);
   --fs-person: clamp(20px, 1.9vw, 26px);
-  --fs-base-name: clamp(26px, 2.4vw, 34px);
-  --fs-base-price: clamp(22px, 2vw, 26px);
+  --fs-range-tagline: clamp(26px, 2.4vw, 34px);
+  --fs-materials-group: clamp(20px, 2vw, 26px);
   --fs-price-head: clamp(18px, 2vw, 28px);
   --fs-price: clamp(24px, 3vw, 40px);
   --fs-quote: clamp(19px, 1.8vw, 23px);
   --fs-guarantee: clamp(26px, 3.2vw, 40px);
-  --fs-closing: clamp(28px, 3.4vw, 44px); /* also the try-on result's title */
+  --fs-closing: clamp(28px, 3.4vw, 44px);
   --fs-flow-title: clamp(30px, 4vw, 52px);
   --fs-upload-title: clamp(32px, 4.6vw, 60px);
-  --fs-countdown: clamp(44px, 6vw, 64px);
   --fs-error-title: clamp(28px, 3.6vw, 44px);
 
   /* ---- Fixed spaces ------------------------------------------------------ */
@@ -179,12 +177,12 @@
   --tap: 44px; /* the smallest touch target; also the small button's height */
   --btn-lg: 56px;
   --btn-md: 48px;
-  --btn-result: 52px;
   --field-h: 52px;
 
   /* ---- Motion: how long, and the one curve, apart ------------------------ */
   --duration-quick: 300ms; /* a state changing: a colour, a fade, a step sliding in */
   --duration-travel: 420ms; /* something crossing a distance: a sheet rising, the try-on's progress bar */
+  --duration-phrase: 1200ms; /* one phrase of the hero's opening line, faded in, held and faded out */
   --ease-house: cubic-bezier(0.22, 0.61, 0.36, 1);
 
   /* ---- The viewport: no board draws these; each lets a layout reach past its column -------------- */
@@ -272,10 +270,10 @@
 
   --technician-pad: clamp(18px, 2vw, 26px);
 
-  --base-pad-y: clamp(26px, 3vw, 40px);
-  --base-pad-x: clamp(0px, 2vw, 40px);
-  --base-photo-h: clamp(200px, 24vw, 300px);
-  --base-drawing-max: 200px;
+  --range-card-min: 260px;
+  --range-pad-y: clamp(26px, 3vw, 40px);
+
+  --materials-photo-h: clamp(200px, 24vw, 300px);
 
   --prices-pad-top: clamp(36px, 5vw, 64px);
   --price-column: clamp(96px, 16vw, 240px);
@@ -316,14 +314,8 @@
   --consent-key-w: 116px;
   --stage-min: 220px;
   --look-min: 200px;
-  --processing-pad: clamp(24px, 5vw, 64px);
-  --processing-gap: clamp(32px, 4vw, 48px);
   --gate-frame-h: clamp(300px, 44vw, 420px);
   --gate-blur: 7px;
-  --result-gap: clamp(28px, 4vw, 56px);
-  /* The result takes the photograph's own shape, up to this (site/src/lib/frame-aspect.ts). */
-  --result-frame-max-h: min(70vh, 720px);
-  --result-handle: 48px;
   --error-frame-h: clamp(200px, 28vw, 260px);
   --error-title-gap: clamp(24px, 3vw, 36px);
 

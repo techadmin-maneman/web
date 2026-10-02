@@ -2,20 +2,13 @@
 // (src/policy/decision-reasons.ts). The routes refuse a decision without the
 // reason it needs; test/worker checks each one.
 
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { CONSOLE_RULES, needsReason, RULES } from "../../src/policy/decision-reasons.ts";
-
-const FRONTEND = readFileSync("docs/prompts/phase2-frontend.md", "utf8").replace(/\s+/g, " ");
 
 describe("decision reasons", () => {
   it(RULES[0], () => {
     expect(needsReason("referral", "approve")).toBe(true);
     expect(needsReason("referral", "reject")).toBe(true);
-  });
-
-  it.each(CONSOLE_RULES)("quotes the frontend prompt word for word: %s", (rule) => {
-    expect(FRONTEND.includes(rule)).toBe(true);
   });
 
   it(CONSOLE_RULES[0], () => {

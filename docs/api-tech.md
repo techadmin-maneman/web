@@ -617,7 +617,7 @@ Request body:
 
 ### POST /api/tech/jobs/{id}/piece
 
-The piece: a replacement's and a first fit's step only
+The piece: a replacement's, a first fit's and a one visit's step only
 
 Request body:
 
@@ -636,6 +636,58 @@ Request body:
 ```
 
 **400**: invalid_request: see error.fields
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**401**: session_required; device_revoked: ops revoked this phone, so drop the cached jobs
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such job
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: superseded: FSM moved the job; out_of_order: send the step before this one first
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/tech/jobs/{id}/profile
+
+The client's hair profile, the fit spec and their history, as a new version
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianProfileRequest"
+}
+```
+
+**202**: Recorded; or, for a job with no client of ours, taken and nothing written. One taken from an older version than the latest still lands, and ops are told.
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianProfileRecorded"
+}
+```
+
+**400**: invalid_request: see error.fields; visit, for a visit that takes no profile
 
 ```json
 {
@@ -799,6 +851,66 @@ The piece a label names
 }
 ```
 
+### POST /api/tech/jobs/{id}/discount-code
+
+Enter a discount code on a one visit, before its payment link is made
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianDiscountCode"
+}
+```
+
+**200**: It comes off the product's price at the payment link
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianDiscountCodeApplied"
+}
+```
+
+**401**: session_required; device_revoked
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such job of this technician's
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: already_discounted: the visit carries a code; price_settled: its payment link is made, or it is not a one visit, whose client paid ahead
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**422**: code_not_applicable: the code does not apply to this visit
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**429**: rate_limited: too many codes tried today, or from this address this hour
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ## Schemas
 
 ### ErrorResponse
@@ -829,6 +941,8 @@ The piece a label names
             "session_required",
             "job_not_claimable",
             "look_limit_reached",
+            "claim_required",
+            "whatsapp_unavailable",
             "unauthorized",
             "visit_booked",
             "payment_held",
@@ -867,7 +981,11 @@ The piece a label names
             "already_invited",
             "already_disputed",
             "not_disputable",
-            "dispute_window_closed"
+            "dispute_window_closed",
+            "code_not_applicable",
+            "already_discounted",
+            "price_settled",
+            "code_exists"
           ]
         },
         "request_id": {
@@ -1246,6 +1364,10 @@ The piece a label names
         }
       ]
     },
+    "one_visit": {
+      "type": "boolean",
+      "description": "A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, at the piece step."
+    },
     "sector": {
       "anyOf": [
         {
@@ -1274,9 +1396,10 @@ The piece a label names
       "enum": [
         "prepaid",
         "credit",
-        "free"
+        "free",
+        "at_visit"
       ],
-      "description": "Free for a visit the price book charges nothing for. No response to a technician carries an amount."
+      "description": "Free for a visit the price book charges nothing for; at_visit for a one visit, paid for once the client is fitted. No response to a technician carries an amount."
     },
     "slots": {
       "anyOf": [
@@ -1305,6 +1428,7 @@ The piece a label names
     "ends_at",
     "window_label",
     "type",
+    "one_visit",
     "sector",
     "status",
     "badge",
@@ -1377,6 +1501,10 @@ The piece a label names
         }
       ]
     },
+    "one_visit": {
+      "type": "boolean",
+      "description": "A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, at the piece step."
+    },
     "sector": {
       "anyOf": [
         {
@@ -1405,9 +1533,10 @@ The piece a label names
       "enum": [
         "prepaid",
         "credit",
-        "free"
+        "free",
+        "at_visit"
       ],
-      "description": "Free for a visit the price book charges nothing for. No response to a technician carries an amount."
+      "description": "Free for a visit the price book charges nothing for; at_visit for a one visit, paid for once the client is fitted. No response to a technician carries an amount."
     },
     "slots": {
       "anyOf": [
@@ -1691,10 +1820,11 @@ The piece a label names
           "consumables",
           "piece",
           "after_photos",
-          "outcome"
+          "outcome",
+          "profile"
         ]
       },
-      "description": "The steps this visit type runs, in order."
+      "description": "The steps this visit type runs, in order; a consultation's and a one visit's take the profile."
     },
     "checklist": {
       "type": "array",
@@ -1716,6 +1846,56 @@ The piece a label names
         "$ref": "#/components/schemas/TechnicianConsumable"
       },
       "description": "Every consumable the technician may record, those this job's service is expected to use first, each with the count its stepper starts at."
+    },
+    "products": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/TechnicianProduct"
+      },
+      "description": "On a one visit and a consultation, the products by name and never by price: the first fit's services offered on the visit's day, in ops' order, which a one visit's client chooses from and the profile names. Empty for any other visit."
+    },
+    "payment_link": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "url": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The link Razorpay texted the client, to show them; null until Razorpay has made it."
+            },
+            "paid": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "url",
+            "paid"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "On a one visit closed as done with the client fitted, its payment link; else null."
+    },
+    "profile": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/HairProfile"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The client's hair profile as it stands, for the piece card and for the profile step to start from. Null until the day before the visit, or before one is recorded."
     }
   },
   "required": [
@@ -1726,6 +1906,7 @@ The piece a label names
     "ends_at",
     "window_label",
     "type",
+    "one_visit",
     "sector",
     "status",
     "badge",
@@ -1743,7 +1924,10 @@ The piece a label names
     "steps",
     "checklist",
     "partial_reasons",
-    "consumables"
+    "consumables",
+    "products",
+    "payment_link",
+    "profile"
   ],
   "additionalProperties": false
 }
@@ -1812,9 +1996,11 @@ The piece a label names
           "consumables",
           "piece",
           "after_photos",
-          "outcome"
+          "outcome",
+          "profile"
         ]
-      }
+      },
+      "description": "The steps that have reached us, in that order: the job's events, and the profile once recorded."
     },
     "outcome": {
       "anyOf": [
@@ -1975,6 +2161,538 @@ The piece a label names
     "expected"
   ],
   "additionalProperties": false
+}
+```
+
+### TechnicianProduct
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "tier": {
+      "type": "string",
+      "description": "What the piece step sends back as product."
+    },
+    "name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tier",
+    "name"
+  ],
+  "additionalProperties": false
+}
+```
+
+### HairProfile
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The version's own ID, which a write names as based_on."
+    },
+    "recorded_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "fit": {
+      "$ref": "#/components/schemas/HairFitSpecRead"
+    },
+    "history": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/HairHistory"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Null where none was recorded."
+    }
+  },
+  "required": [
+    "id",
+    "recorded_at",
+    "fit",
+    "history"
+  ],
+  "additionalProperties": false
+}
+```
+
+### HairFitSpecRead
+
+```json
+{
+  "description": "Every field is sent, null where it was not taken.",
+  "type": "object",
+  "properties": {
+    "norwood_stage": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "I",
+        "II",
+        "III",
+        "IV",
+        "V",
+        "VI",
+        "VII",
+        null
+      ]
+    },
+    "head_circumference_cm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 40,
+      "maximum": 70,
+      "description": "In centimetres, 40 to 70, to one decimal."
+    },
+    "front_to_nape_cm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 20,
+      "maximum": 50,
+      "description": "In centimetres, 20 to 50, to one decimal."
+    },
+    "ear_to_ear_cm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 20,
+      "maximum": 50,
+      "description": "In centimetres, over the top, 20 to 50, to one decimal."
+    },
+    "temple_to_temple_cm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 20,
+      "maximum": 50,
+      "description": "In centimetres, 20 to 50, to one decimal."
+    },
+    "base_width_in": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 2,
+      "maximum": 12,
+      "description": "In inches, 2 to 12, to one decimal."
+    },
+    "base_length_in": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 2,
+      "maximum": 14,
+      "description": "In inches, 2 to 14, to one decimal."
+    },
+    "colour": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "1B",
+        null
+      ],
+      "description": "The suppliers' colour code, #1B written 1B."
+    },
+    "grey_percent": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 100
+    },
+    "density_percent": {
+      "anyOf": [
+        {
+          "type": "number",
+          "enum": [
+            80
+          ]
+        },
+        {
+          "type": "number",
+          "enum": [
+            100
+          ]
+        },
+        {
+          "type": "number",
+          "enum": [
+            120
+          ]
+        },
+        {
+          "type": "number",
+          "enum": [
+            140
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "In per cent."
+    },
+    "wave": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "straight",
+        "slight_wave",
+        "wavy",
+        "curly",
+        null
+      ]
+    },
+    "hairline": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "natural",
+        "receded",
+        "straight",
+        "widows_peak",
+        null
+      ]
+    },
+    "product": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-z][a-z0-9_]{0,31}$",
+      "description": "The product, by the tier of its first-fit service: one the services table holds, retired or not."
+    },
+    "attachment": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "tape",
+        "glue",
+        "both",
+        null
+      ],
+      "description": "Tape, glue, or both."
+    },
+    "product_name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The product's name, never its price."
+    }
+  },
+  "required": [
+    "norwood_stage",
+    "head_circumference_cm",
+    "front_to_nape_cm",
+    "ear_to_ear_cm",
+    "temple_to_temple_cm",
+    "base_width_in",
+    "base_length_in",
+    "colour",
+    "grey_percent",
+    "density_percent",
+    "wave",
+    "hairline",
+    "product",
+    "attachment",
+    "product_name"
+  ],
+  "additionalProperties": false
+}
+```
+
+### HairFitSpec
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "norwood_stage": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "I",
+        "II",
+        "III",
+        "IV",
+        "V",
+        "VI",
+        "VII",
+        null
+      ]
+    },
+    "head_circumference_cm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 40,
+      "maximum": 70,
+      "description": "In centimetres, 40 to 70, to one decimal."
+    },
+    "front_to_nape_cm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 20,
+      "maximum": 50,
+      "description": "In centimetres, 20 to 50, to one decimal."
+    },
+    "ear_to_ear_cm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 20,
+      "maximum": 50,
+      "description": "In centimetres, over the top, 20 to 50, to one decimal."
+    },
+    "temple_to_temple_cm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 20,
+      "maximum": 50,
+      "description": "In centimetres, 20 to 50, to one decimal."
+    },
+    "base_width_in": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 2,
+      "maximum": 12,
+      "description": "In inches, 2 to 12, to one decimal."
+    },
+    "base_length_in": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 2,
+      "maximum": 14,
+      "description": "In inches, 2 to 14, to one decimal."
+    },
+    "colour": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "1B",
+        null
+      ],
+      "description": "The suppliers' colour code, #1B written 1B."
+    },
+    "grey_percent": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 100
+    },
+    "density_percent": {
+      "anyOf": [
+        {
+          "type": "number",
+          "enum": [
+            80
+          ]
+        },
+        {
+          "type": "number",
+          "enum": [
+            100
+          ]
+        },
+        {
+          "type": "number",
+          "enum": [
+            120
+          ]
+        },
+        {
+          "type": "number",
+          "enum": [
+            140
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "In per cent."
+    },
+    "wave": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "straight",
+        "slight_wave",
+        "wavy",
+        "curly",
+        null
+      ]
+    },
+    "hairline": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "natural",
+        "receded",
+        "straight",
+        "widows_peak",
+        null
+      ]
+    },
+    "product": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-z][a-z0-9_]{0,31}$",
+      "description": "The product, by the tier of its first-fit service: one the services table holds, retired or not."
+    },
+    "attachment": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "tape",
+        "glue",
+        "both",
+        null
+      ],
+      "description": "Tape, glue, or both."
+    }
+  },
+  "required": [
+    "norwood_stage",
+    "head_circumference_cm",
+    "front_to_nape_cm",
+    "ear_to_ear_cm",
+    "temple_to_temple_cm",
+    "base_width_in",
+    "base_length_in",
+    "colour",
+    "grey_percent",
+    "density_percent",
+    "wave",
+    "hairline",
+    "product",
+    "attachment"
+  ],
+  "additionalProperties": false,
+  "description": "Every field is sent, null where it was not taken."
+}
+```
+
+### HairHistory
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "remedies": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "none",
+          "minoxidil",
+          "finasteride",
+          "transplant",
+          "other_systems",
+          "other"
+        ]
+      },
+      "maxItems": 6,
+      "description": "Every remedy the client has tried, each once; none, said alone, for none. Empty: not answered."
+    },
+    "transplant_year": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1900,
+      "maximum": 2100,
+      "description": "With a transplant only, and no later than this year."
+    },
+    "skin_and_allergies": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 200
+    }
+  },
+  "required": [
+    "remedies",
+    "transplant_year",
+    "skin_and_allergies"
+  ],
+  "additionalProperties": false,
+  "description": "Health information the client told us: our records alone, never Zoho or a log."
 }
 ```
 
@@ -2304,6 +3022,21 @@ The piece a label names
 
 ```json
 {
+  "anyOf": [
+    {
+      "$ref": "#/components/schemas/PieceFitted"
+    },
+    {
+      "$ref": "#/components/schemas/PieceDeclined"
+    }
+  ]
+}
+```
+
+### PieceFitted
+
+```json
+{
   "type": "object",
   "properties": {
     "piece_code": {
@@ -2358,6 +3091,12 @@ The piece a label names
       ],
       "additionalProperties": false,
       "description": "On a replacement: the piece that came off, and why it failed."
+    },
+    "product": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 32,
+      "description": "On a one visit, and only there: the product the client chose, by its tier from the card's products."
     }
   },
   "required": [
@@ -2365,6 +3104,96 @@ The piece a label names
   ],
   "additionalProperties": false,
   "description": "The piece fitted, with its base and lot, and on a replacement the one that came off. A failure_reason on the piece itself marks it as failed and fits nothing."
+}
+```
+
+### PieceDeclined
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "declined": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
+    }
+  },
+  "required": [
+    "declined"
+  ],
+  "additionalProperties": false,
+  "description": "On a one visit, and only there: the client decided against the fit, so nothing was fitted, and closing the visit as done makes it a consultation."
+}
+```
+
+### TechnicianProfileRecorded
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "event_id": {
+      "type": "string"
+    },
+    "replayed": {
+      "type": "boolean",
+      "description": "True when this write had already landed."
+    },
+    "progress": {
+      "$ref": "#/components/schemas/TechnicianJobProgress"
+    }
+  },
+  "required": [
+    "event_id",
+    "replayed",
+    "progress"
+  ],
+  "additionalProperties": false,
+  "description": "Kept in our records alone: nothing of it goes to FSM."
+}
+```
+
+### TechnicianProfileRequest
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "fit": {
+      "$ref": "#/components/schemas/HairFitSpec"
+    },
+    "history": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/HairHistory"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "based_on": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The id of the version the form started from: the latest as it was read; null where there was none."
+    }
+  },
+  "required": [
+    "fit",
+    "history",
+    "based_on"
+  ],
+  "additionalProperties": false,
+  "description": "The client's whole profile as it stands now: the card's latest, changed where the technician changed it. Each is a new version."
 }
 ```
 
@@ -2478,5 +3307,43 @@ The piece a label names
   ],
   "additionalProperties": false,
   "description": "Whether the label is one of the job's client's pieces."
+}
+```
+
+### TechnicianDiscountCodeApplied
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "The code, as it is kept: in capitals."
+    }
+  },
+  "required": [
+    "code"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianDiscountCode
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40,
+      "description": "As the client gave it, any case."
+    }
+  },
+  "required": [
+    "code"
+  ],
+  "additionalProperties": false
 }
 ```

@@ -1,29 +1,11 @@
 ---
-import { getImage } from "astro:assets";
-import { pageDescriptions, pageTitles, teaserPair } from "../content/site.ts";
+import { pageDescriptions, pageTitles } from "../content/site.ts";
 import TryOn from "../islands/tryon/TryOn.tsx";
 import Site from "../layouts/Site.astro";
-import { ENVIRONMENT, IS_PRODUCTION, TRY_ON_PROMISE } from "../lib/build.ts";
-import { designImage } from "../lib/images.ts";
+import { ENVIRONMENT, IS_PRODUCTION } from "../lib/build.ts";
 import { TURNSTILE_SITE_KEYS } from "../lib/turnstile.ts";
-
-// ?state=result shows the teaser's pair in place of a real render, outside
-// production. Production never ships them.
-async function standIn(file: string): Promise<string> {
-  if (IS_PRODUCTION) return "";
-  return (await getImage({ src: designImage(file), format: "webp", width: 1040 })).src;
-}
-const mockBefore = await standIn(teaserPair.before.file);
-const mockAfter = await standIn(teaserPair.after.file);
 ---
 
 <Site title={pageTitles.tryOn} description={pageDescriptions.tryOn}>
-  <TryOn
-    client:load
-    turnstileSiteKey={TURNSTILE_SITE_KEYS[ENVIRONMENT]}
-    mockBefore={mockBefore}
-    mockAfter={mockAfter}
-    allowStateSwitch={!IS_PRODUCTION}
-    promise={TRY_ON_PROMISE}
-  />
+  <TryOn client:load turnstileSiteKey={TURNSTILE_SITE_KEYS[ENVIRONMENT]} allowStateSwitch={!IS_PRODUCTION} />
 </Site>

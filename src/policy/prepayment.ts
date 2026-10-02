@@ -3,9 +3,13 @@
 // src/domain/bookings.ts before anything is booked; the invoice is held or issued in src/domain/fsm-invoices.ts.
 //
 // A visit is paid for before it happens, so its tax invoice records a sale
-// already settled: it must total what the client was sold the visit for. An
-// invoice FSM raises is issued only then. Otherwise it stays a draft, which can
-// still be corrected or deleted, and ops are told (docs/decisions/0070-vendor-correctness.md).
+// already settled: it must total what the client was sold the visit for. A
+// consultation and fit in one visit is the exception the owner ruled on 1
+// October 2026: it is paid for at the visit, by a link once the client is
+// fitted (src/policy/one-visit.ts), and its invoice is held to the same total.
+// An invoice FSM raises is issued only then. Otherwise it stays a draft, which
+// can still be corrected or deleted, and ops are told
+// (docs/decisions/0070-vendor-correctness.md).
 
 export const RULES = [
   "Every visit is prepaid at booking. Technicians never handle money, and no amount to collect is ever sent to FSM.",

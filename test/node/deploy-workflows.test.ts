@@ -5,6 +5,7 @@
 
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { FULL_SUITE_JOB, REUSABLE_CHECKS, type ReusableCheck } from "../../scripts/lib/already-checked.ts";
 import { WORKERS } from "../../scripts/lib/workers.ts";
 
 const DEPLOYS = [
@@ -54,5 +55,60 @@ describe("the production release", () => {
 
   it("restores whatever a failed deploy left serving, not only what a finished deploy step did", () => {
     expect(text).not.toMatch(/steps\.\w+\.outcome }}" == "success"/);
+  });
+});
+
+// docs/decisions/0006-deployment-pipeline.md, "Two tiers": the quick tier on every push, the full suite once.
+describe("ci.yml's two tiers", () => {
+  const text = workflow("ci.yml");
+  /** One job's block, from its key to the next job's. */
+  const jobOf = (key: string) => text.split(`\n  ${key}:\n`)[1]?.split(/\n {2}[a-z-]+:\n/)[0] ?? "";
+
+  it("runs the build, the browser tests, the smoke and the old code on new migrations only in the full suite", () => {
+    for (const key of ["build", "browser", "smoke", "old-code-on-new-schema"]) {
+      expect(jobOf(key), key).toContain("needs.changes.outputs.full == 'true'");
+    }
+    for (const key of ["static", "tests"]) {
+      expect(jobOf(key), key).toContain("runs-on:");
+      expect(jobOf(key), key).not.toContain("outputs.full");
+    }
+  });
+
+  it("names the job a later run looks for before it takes the full suite as passed", () => {
+    // Only a run of every project is named so: a run of the touched apps alone is not a full suite.
+    expect(jobOf("full-suite")).toContain(`needs.changes.outputs.all-projects == 'true' && '${FULL_SUITE_JOB}'`);
+    expect(jobOf("checks")).toContain("full-suite");
+  });
+
+  // "Checks are not repeated": each check a run can take as passed is skipped when these files already passed it.
+  it("skips each check these very files already passed, under the job name a later run looks for", () => {
+    const skippedWhen: Record<ReusableCheck, string[]> = {
+      static: ["static"],
+      tests: ["tests"],
+      suite: ["build", "browser", "smoke", "old-code-on-new-schema"],
+    };
+    for (const [check, keys] of Object.entries(skippedWhen) as [ReusableCheck, string[]][]) {
+      for (const key of keys) {
+        expect(jobOf(key), key).toContain(`needs.changes.outputs.${check}-passed != 'true'`);
+      }
+      expect(text, check).toContain(`${check}-passed: \${{ steps.passed.outputs.${check} }}`);
+    }
+    expect(jobOf("static")).toContain(`name: ${REUSABLE_CHECKS.static}`);
+    expect(jobOf("tests")).toContain(`name: ${REUSABLE_CHECKS.tests}`);
+  });
+
+  it("asks a pull request's earlier runs only when this run checks the head's own files", () => {
+    const step = jobOf("changes").split("- name: The checks these files already passed")[1] ?? "";
+    expect(step).toContain(`elif [ "$(git rev-parse 'HEAD^{tree}')" = "$(git rev-parse "$HEAD_SHA^{tree}")" ]; then`);
+    expect(step).toContain('--head "$HEAD_SHA"');
+  });
+});
+
+describe("deploy-staging.yml", () => {
+  it("runs CI on what merged, which takes as passed what the merged pull request passed, and deploys only on a pass", () => {
+    const text = workflow("deploy-staging.yml");
+    expect(text).toContain("uses: ./.github/workflows/ci.yml");
+    expect(text).toContain("if: ${{ !cancelled() && needs.checks.result == 'success' }}");
+    expect(text).not.toContain("needs.checks.result == 'skipped'");
   });
 });

@@ -149,8 +149,10 @@ test("the code request carries the phone's own ID, and a wrong code is not an er
   record("the seeded technician after the unlisted number", seeded[0] ?? "not found");
   expect(seeded[0]?.active).toBe(1);
 
-  // Now the technician FSM does list. Nothing goes out here either: staging
-  // sends only to its messaging allowlist, and this test number is not on it.
+  // Now the technician FSM does list. A login code answers whoever asks for it and is no longer held to staging's
+  // messaging allowlist (ADR 0097) — except this technician's own record, named "Staging test technician", which
+  // is one of our own scripts' and so stays fenced regardless (isStagingTestRecord, src/policy/staging-test-records.ts).
+  // Nothing is sent, exactly as before that ruling.
   await page.reload();
   const sending = page.waitForResponse((response) => response.url().endsWith("/api/tech/auth/otp"));
   await page.getByLabel("Mobile number").fill(fixture.technicianMobile);

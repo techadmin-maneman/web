@@ -11,12 +11,15 @@ import {
   answer,
   CLIENT,
   CONSENTS,
+  empty,
   ERASURE_REQUESTED,
   fails,
+  HAIR_PROFILE,
   inkPhoto,
   jpeg,
   json,
   NEW_RECORD,
+  NO_HAIR_PROFILE,
   PHOTOS,
   PIECES,
   RECORD,
@@ -32,6 +35,8 @@ const READ_PIECES: Call = `GET ${RECORD_PATH}/pieces`;
 const READ_PHOTOS: Call = `GET ${RECORD_PATH}/photos`;
 const VIEW_PHOTOS: Call = `POST ${RECORD_PATH}/photos/view`;
 const READ_CONSENTS: Call = `GET ${RECORD_PATH}/consents`;
+const READ_HAIR_PROFILE: Call = `GET ${RECORD_PATH}/hair-profile`;
+const CORRECT_HAIR_PROFILE: Call = `POST ${RECORD_PATH}/hair-profile`;
 const ADD_CREDITS: Call = `POST ${RECORD_PATH}/credits`;
 const ATTACH_INVITE: Call = `POST ${RECORD_PATH}/referral`;
 const SUGGEST: Call = `POST ${RECORD_PATH}/address/suggestions`;
@@ -56,6 +61,7 @@ async function clientRoutes(page: Page, over: Answers = {}): Promise<void> {
     [READ_PHOTOS]: json(PHOTOS),
     [VIEW_PHOTOS]: json(VIEW),
     [READ_CONSENTS]: json(CONSENTS),
+    [READ_HAIR_PROFILE]: json(NO_HAIR_PROFILE),
     "GET /api/clients/{id}/photos/{photo_id}": jpeg(await inkPhoto()),
     ...over,
   });
@@ -75,6 +81,7 @@ test("finds clients by part of a name, and sends it in the body, never in the UR
     [FIND]: json({ clients: [CLIENT], more: false }),
     [READ_RECORD]: json(RECORD),
     [READ_PIECES]: json(PIECES),
+    [READ_HAIR_PROFILE]: json(NO_HAIR_PROFILE),
   });
   await page.goto("/clients");
 
@@ -171,6 +178,106 @@ test("writes a gap where FSM's asset has no supplier lot, replacement date or fa
 test("says so when the client has no piece yet", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/pieces`, { [READ_PIECES]: json({ pieces: [] }) });
   await expect(page.getByText("No piece has been fitted for this client.")).toBeVisible();
+});
+
+// The client's hair profile, which no board draws, above the pieces (docs/decisions/0106-a-clients-hair-profile.md).
+test.describe("the client's hair profile", () => {
+  const section = (page: Page) => page.getByRole("region", { name: "Hair profile" });
+
+  test("stands above the pieces: the latest, its history, and every version with who recorded it", async ({ page }) => {
+    await openClient(page, `/clients/${CLIENT.id}/pieces`, { [READ_HAIR_PROFILE]: json(HAIR_PROFILE) });
+    const profile = section(page);
+    await expect(profile.getByRole("definition").first()).toHaveText("IV");
+    await expect(profile.locator("dl").first()).toContainText("Colour#2");
+    await expect(profile.locator("dl").first()).toContainText("Skin conditions and allergiesDry at the crown");
+    await expect(profile.getByRole("listitem")).toHaveText([
+      /^22 Sep 2027 · ops@maneman\.in, a correction/,
+      /^21 Sep 2027 · Imran, at the consultation/,
+    ]);
+    await expect(page.getByRole("row").filter({ hasText: "MM-STD-4417-B" })).toBeVisible();
+    const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+    expect(results.violations.map((violation) => violation.id)).toEqual([]);
+  });
+
+  test("corrects it as a new version, the form starting from the latest", async ({ page }) => {
+    const corrected = {
+      ...HAIR_PROFILE,
+      latest: { ...HAIR_PROFILE.latest, fit: { ...HAIR_PROFILE.latest.fit, colour: "3" as const } },
+    };
+    await openClient(page, `/clients/${CLIENT.id}/pieces`, {
+      [READ_HAIR_PROFILE]: json(HAIR_PROFILE),
+      [CORRECT_HAIR_PROFILE]: json(corrected),
+    });
+    await section(page).getByRole("button", { name: "Correct the profile" }).click();
+    const colour = page.getByRole("combobox", { name: "Colour" });
+    await expect(colour).toHaveValue("2");
+    const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+    expect(results.violations.map((violation) => violation.id)).toEqual([]);
+
+    await colour.selectOption({ label: "#3" });
+    const sent = page.waitForRequest(
+      (request) => request.method() === "POST" && request.url().endsWith("/hair-profile"),
+    );
+    await page.getByRole("button", { name: "Save as a new version" }).click();
+    const body = (await sent).postDataJSON() as { fit: Record<string, unknown>; history: unknown; based_on: unknown };
+    expect(body.fit).toEqual({ ...HAIR_PROFILE.latest.fit, colour: "3", product_name: undefined });
+    expect(body.history).toEqual(HAIR_PROFILE.latest.history);
+    // The version the form was read from, so a correction never silently replaces a newer one.
+    expect(body.based_on).toBe(HAIR_PROFILE.latest.id);
+    await expect(section(page).locator("dl").first()).toContainText("Colour#3");
+  });
+
+  test("reads the profile again, saving nothing, when another version became the latest meanwhile", async ({
+    page,
+  }) => {
+    const newer = {
+      ...HAIR_PROFILE,
+      latest: {
+        ...HAIR_PROFILE.latest,
+        id: "44000000-0000-4000-8000-000000000003",
+        fit: { ...HAIR_PROFILE.latest.fit, colour: "4" as const },
+      },
+    } satisfies OpsReply<"/api/clients/{id}/hair-profile">;
+    let reads = 0;
+    await openClient(page, `/clients/${CLIENT.id}/pieces`, {
+      [READ_HAIR_PROFILE]: (route) => {
+        reads += 1;
+        return json(reads === 1 ? HAIR_PROFILE : newer)(route);
+      },
+      [CORRECT_HAIR_PROFILE]: fails(409, "superseded"),
+    });
+    await section(page).getByRole("button", { name: "Correct the profile" }).click();
+    await page.getByRole("button", { name: "Save as a new version" }).click();
+
+    await expect(section(page).getByRole("alert")).toContainText("Nothing was saved: the profile changed");
+    await expect(section(page).locator("dl").first()).toContainText("Colour#4");
+  });
+
+  test("sends nothing while a figure is no number at all, and marks it", async ({ page }) => {
+    let sent = 0;
+    page.on("request", (request) => {
+      if (request.method() === "POST" && request.url().endsWith("/hair-profile")) sent += 1;
+    });
+    await openClient(page, `/clients/${CLIENT.id}/pieces`, { [READ_HAIR_PROFILE]: json(HAIR_PROFILE) });
+    await section(page).getByRole("button", { name: "Correct the profile" }).click();
+    await page.getByRole("textbox", { name: "Grey, %" }).fill("twenty");
+    await page.getByRole("button", { name: "Save as a new version" }).click();
+    await expect(page.getByRole("textbox", { name: "Grey, %" })).toHaveAttribute("aria-invalid", "true");
+    await expect(page.getByRole("alert")).toHaveText("Some fields were not accepted. Check the fields marked.");
+    expect(sent).toBe(0);
+  });
+
+  test("marks the field the API refused", async ({ page }) => {
+    await openClient(page, `/clients/${CLIENT.id}/pieces`, {
+      [READ_HAIR_PROFILE]: json(HAIR_PROFILE),
+      [CORRECT_HAIR_PROFILE]: fails(400, "invalid_request", ["fit.base_width_in"]),
+    });
+    await section(page).getByRole("button", { name: "Correct the profile" }).click();
+    await page.getByRole("textbox", { name: "Base width, in" }).fill("80");
+    await page.getByRole("button", { name: "Save as a new version" }).click();
+    await expect(page.getByRole("alert")).toHaveText("Some fields were not accepted. Check the fields marked.");
+    await expect(page.getByRole("textbox", { name: "Base width, in" })).toHaveAttribute("aria-invalid", "true");
+  });
 });
 
 // The record carried the address, the access notes and every visit, and the page showed none of them (OPS-04).
@@ -272,6 +379,52 @@ test("asks for what an address cannot do without before it sends one", async ({ 
   await expect(page.getByRole("button", { name: "Record an address they give you" })).toBeFocused();
 });
 
+// A discount code on a visit not yet paid for or invoiced (docs/decisions/0108-discount-codes.md), which no board draws.
+test("enters a discount code on a visit not yet paid for, says when one does not apply, and takes it off", async ({
+  page,
+}) => {
+  const [coming] = RECORD.visits.upcoming;
+  if (coming === undefined) throw new Error("the record has no visit to come");
+  const open = {
+    ...RECORD,
+    visits: { ...RECORD.visits, upcoming: [{ ...coming, prepaid: false, price_open: true }] },
+  } satisfies OpsReply<"/api/clients/{id}">;
+  const entered = `POST /api/visits/${coming.id}/discount-code` as const;
+  const removed = `POST /api/visits/${coming.id}/discount-code/remove` as const;
+  let applies = false;
+  await openClient(page, `/clients/${CLIENT.id}/visits`, {
+    [READ_RECORD]: json(open),
+    [entered]: (route) =>
+      applies
+        ? json({ code: "WEDDNG25", amount_off: 50_000, given_by: "ops" })(route)
+        : fails(422, "code_not_applicable")(route),
+    [removed]: empty(),
+  });
+  const row = page.getByRole("region", { name: "To come" }).getByRole("row").nth(1);
+  await row.getByRole("button", { name: "Enter a discount code on the visit of 25 Sep 2027" }).click();
+  await row.getByLabel("Discount code").fill("wrong1");
+  await row.getByRole("button", { name: "Apply" }).click();
+  await expect(row.getByRole("alert")).toHaveText("That code does not apply to this visit.");
+
+  applies = true;
+  await row.getByLabel("Discount code").fill("weddng25");
+  await row.getByRole("button", { name: "Apply" }).click();
+  await expect(row).toContainText("WEDDNG25, Rs. 500 off");
+  await expect(row).toContainText("by ops");
+  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+
+  await row.getByRole("button", { name: "Take the discount code off the visit of 25 Sep 2027" }).click();
+  await expect(row.getByRole("button", { name: "Enter a discount code on the visit of 25 Sep 2027" })).toBeVisible();
+});
+
+test("offers no code on a visit already paid for", async ({ page }) => {
+  await openClient(page, `/clients/${CLIENT.id}/visits`, { [READ_RECORD]: json(RECORD) });
+  const row = page.getByRole("region", { name: "To come" }).getByRole("row").nth(1);
+  await expect(row).toContainText("None");
+  await expect(row.getByRole("button", { name: /discount code/ })).toHaveCount(0);
+});
+
 // A visit left partly done that ops closed without a follow-up, from the Tasks board (ADR 0092).
 test("says who closed a visit left partly done without a follow-up, when and why", async ({ page }) => {
   const [done] = RECORD.visits.past;
@@ -363,7 +516,7 @@ test("names the invite a client came with, who sent it, and where its visits sta
     "href",
     "/clients/22000000-0000-4000-8000-000000000009",
   );
-  await expect(invite).toContainText("Their 3 visitsGiven");
+  await expect(invite).toContainText("What it earnsGiven");
   await expect(invite).toContainText("Since20 Oct 2026");
   await expect(invite.getByText("Attached by")).toHaveCount(0);
   await expect(invite.getByRole("button", { name: "Attach the invite" })).toHaveCount(0);
@@ -399,7 +552,7 @@ test("attaches an invite to a client who came with none, with why, and shows it 
 
   await expect(invite.getByRole("status")).toHaveText("Attached. The CRM is sent it too.");
   await expect(invite).toContainText("CodeRM4K7P");
-  await expect(invite).toContainText("Their 3 visitsGiven to both when this client is fitted");
+  await expect(invite).toContainText("What it earnsGiven when this client is fitted");
   await expect(invite).toContainText("Attached byops@maneman.in");
   await expect(invite).toContainText("WhyTold us Rohit sent him");
 });

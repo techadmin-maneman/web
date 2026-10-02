@@ -19,9 +19,12 @@
 // person's address unless they already have one; a waitlist entry takes none
 // (docs/decisions/0081-the-site-takes-the-address.md).
 //
-// A consultation may be booked with the first fit to follow: a request for the
-// fit, written with the booking, which the client books and pays for in the app
-// once the consultation is done (docs/decisions/0086-the-next-visit-is-offered.md).
+// The form may book the consultation and the first fit in one visit instead:
+// three hours, morning or afternoon, with nothing paid here; the client chooses
+// the product with the technician and pays by a link once fitted
+// (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). That one may
+// carry a discount code, which comes off the product's price at the link
+// (docs/decisions/0108-discount-codes.md).
 //
 // Either may carry the code of an invite the visitor opened on this browser in the
 // last 30 days, and is then attributed to it exactly as the landing's would be. A
@@ -32,8 +35,9 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
 import { LOSS_EXTENTS } from "../config/booking.ts";
-import { BOOKING_WINDOWS, FIRST_FIT_WINDOWS } from "../config/scheduling.ts";
+import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { bookConsultation, joinTheWaitlist } from "../domain/public-booking.ts";
+import type { Plan } from "../policy/one-visit.ts";
 import { CODE_PATTERN, inviteOf, type Invite } from "../domain/referrals.ts";
 import { errorBody, errorResponse, ErrorResponseSchema } from "../http/errors.ts";
 import { IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
@@ -82,11 +86,11 @@ const Person = {
 export const InviteStateSchema = z.enum(["valid", "expired", "unknown"]).openapi({
   description:
     "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so " +
-    "the consultation is still free and the 3 visits do not apply; or unknown: no invite came with it, or a code " +
-    "we do not have.",
+    "the consultation is still free and the invite's visits do not apply; or unknown: no invite came with it, or a " +
+    "code we do not have.",
 });
 
-export const CreditsSchema = z.boolean().openapi({ description: "Whether the invite's 3 service visits apply." });
+export const CreditsSchema = z.boolean().openapi({ description: "Whether the invite's service visits apply." });
 
 /** What a booking did with the address it was sent (src/policy/site-booking.ts). */
 export const AddressOutcomeSchema = z.enum(["saved", "on_account"]).openapi({
@@ -103,29 +107,24 @@ export const TypedAddressSchema = AddressSchema.omit({ building: true, place_id:
   .strict()
   .openapi("TypedAddress");
 
-/** "The consultation, then my first fit": the fit asked for, in the window wanted if one was given. */
-export const FirstFitRequestSchema = z
-  .object({
-    window: z.union([z.enum(FIRST_FIT_WINDOWS), z.null()]).openapi({
-      description: "The window the fit is wanted in, or null for either. A first fit does not fit in the evening.",
-    }),
-  })
-  .strict()
+/** "Consultation and fit, in one visit": the second of the form's two choices. */
+export const OneVisitRequestSchema = z
+  .boolean()
   .optional()
-  .openapi("FirstFitRequest", {
+  .openapi({
     description:
-      "Left out, the consultation alone. Sent, the first fit is asked for too: it is booked and paid for in the app " +
-      "once the consultation is done, and nothing is paid here.",
+      "true: the consultation and the first fit in one visit, three hours, in the morning or the afternoon; the " +
+      "client chooses the product with the technician and pays once fitted, so nothing is paid here. Left out or " +
+      "false, the consultation alone.",
   });
 
-/** What a booking says of the first fit asked for with it. */
-export const FirstFitOutcomeSchema = z.boolean().openapi({
-  description: "true: the first fit was asked for too, and the app offers it once the consultation is done.",
+/** What a booking says of the plan it booked. */
+export const OneVisitOutcomeSchema = z.boolean().openapi({
+  description: "true: the consultation and the first fit in one visit were booked, or asked for.",
 });
 
-/** The first fit a booking asked for, as the domain takes it: null for the consultation alone. */
-export const firstFitOf = (asked: z.infer<typeof FirstFitRequestSchema>) =>
-  asked === undefined ? null : { window: asked.window };
+/** The plan a booking asked for, as the domain takes it. */
+export const planOf = (oneVisit: boolean | undefined): Plan => (oneVisit === true ? "one_visit" : "consultation");
 
 const ConsultationRequestSchema = z
   .object({
@@ -133,7 +132,19 @@ const ConsultationRequestSchema = z
     date: z.iso.date(),
     window: z.enum(BOOKING_WINDOWS),
     address: TypedAddressSchema,
-    first_fit: FirstFitRequestSchema,
+    one_visit: OneVisitRequestSchema,
+    discount_code: z
+      .string()
+      .trim()
+      .min(1)
+      .max(40)
+      .optional()
+      .openapi({
+        description:
+          "A discount code for the consultation and fit in one visit, as typed, any case: it comes off the product's " +
+          "price at the payment link (docs/decisions/0108-discount-codes.md). A code that does not apply refuses " +
+          "the booking, code_not_applicable, and so does any code with the consultation alone.",
+      }),
     consent: z.literal(true).openapi({ description: '"You may contact me on WhatsApp about this consultation."' }),
   })
   .strict();
@@ -157,7 +168,12 @@ const ConsultationSchema = z
     credits: CreditsSchema,
     invite: InviteStateSchema,
     address: AddressOutcomeSchema,
-    first_fit: FirstFitOutcomeSchema,
+    one_visit: OneVisitOutcomeSchema,
+    discount_code: z.boolean().openapi({
+      description:
+        "true: the code given stands on the booking, or on the request ops book from; false when none was given, " +
+        "or another booking took the code's last use a moment before, and the booking stands without it.",
+    }),
   })
   .strict()
   .openapi("Consultation");
@@ -198,13 +214,15 @@ const consultationRoute = createRoute({
   responses: {
     201: { description: "Booked, or asked for", content: { "application/json": { schema: ConsultationSchema } } },
     400: errorResponse(
-      "invalid_request: fields names what was refused, address.pincode for an address in another pincode",
+      "invalid_request: fields names what was refused, address.pincode for an address in another pincode, window " +
+        "for one visit in the evening",
     ),
     403: errorResponse("turnstile_failed"),
     409: takenOrBooked,
     422: errorResponse(
       "not_bookable: the pincode is not served, the day is not open, or this number is past consultations and " +
-        "books in the app; idempotency_key_reused: the key was used with a different body",
+        "books in the app; code_not_applicable: the discount code does not apply, fields names discount_code; " +
+        "idempotency_key_reused: the key was used with a different body",
     ),
     429: errorResponse("rate_limited"),
     503: errorResponse("unavailable: Turnstile could not be reached"),
@@ -258,11 +276,13 @@ export function registerConsultations(app: App): void {
         attribution: body.attribution ?? {},
         invite: await rememberedInvite(c, body.invite_code),
         source: "site_booking",
-        firstFit: firstFitOf(body.first_fit),
+        plan: planOf(body.one_visit),
+        discountCode: body.discount_code ?? null,
       });
       if (!booked.ok) return booked;
-      const { state, date, window, area, credits, invite, address, firstFit } = booked;
-      return { ok: true, body: { state, date, window, area, credits, invite, address, first_fit: firstFit } };
+      const { state, date, window, area, credits, invite, address, oneVisit, discountCode } = booked;
+      const answer = { state, date, window, area, credits, invite, address, one_visit: oneVisit };
+      return { ok: true, body: { ...answer, discount_code: discountCode } };
     });
     if (run.kind === "replay") return c.json(run.body, 201);
     if (run.kind === "in_progress") return c.json(errorBody("idempotency_in_progress", requestId), 409);

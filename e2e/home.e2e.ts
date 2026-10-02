@@ -14,7 +14,7 @@ test.describe("header", () => {
 
   test("hides the section links and the area tag below 760 px, with no menu button", async ({ page }) => {
     await page.goto("/");
-    const links = page.locator("header").getByRole("link", { name: "Prices" });
+    const links = page.locator("header").getByRole("link", { name: "The range" });
     if (narrow(page.viewportSize()?.width)) {
       await expect(links).toBeHidden();
       await expect(page.locator("header").getByText("Delhi NCR")).toBeHidden();
@@ -28,9 +28,9 @@ test.describe("header", () => {
   test("scrolls a section link to its section, 56 px below the top", async ({ page }) => {
     test.skip(narrow(page.viewportSize()?.width), "the links are hidden below 760 px");
     await page.goto("/");
-    await page.locator("header").getByRole("link", { name: "Prices" }).click();
+    await page.locator("header").getByRole("link", { name: "The range" }).click();
     await expect
-      .poll(() => page.evaluate(() => Math.round(document.getElementById("prices")?.getBoundingClientRect().top ?? 0)))
+      .poll(() => page.evaluate(() => Math.round(document.getElementById("range")?.getBoundingClientRect().top ?? 0)))
       .toBe(56);
   });
 
@@ -95,6 +95,7 @@ test.describe("hash routes from v2", () => {
 });
 
 test.describe("home sections", () => {
+  // v2's order, with its bases and prices given way to the range and its materials (ADR 0103).
   test("are all there, in v2's order", async ({ page }) => {
     await page.goto("/");
     const order = await page.locator("main > [data-section]").evaluateAll((all) => all.map((el) => el.dataset.section));
@@ -107,8 +108,8 @@ test.describe("home sections", () => {
       "discretion",
       "how",
       "technicians",
-      "bases",
-      "prices",
+      "range",
+      "materials",
       "testimonials",
       "guarantee",
       "faq",
@@ -119,8 +120,17 @@ test.describe("home sections", () => {
   test("hero calls to action go to /try and /book", async ({ page }) => {
     await page.goto("/");
     const hero = page.locator('[data-section="hero"]');
-    await expect(hero.getByRole("link", { name: "See yourself with hair" })).toHaveAttribute("href", "/try");
+    await expect(hero.getByRole("link", { name: "Try a new look" })).toHaveAttribute("href", "/try");
     await expect(hero.getByRole("link", { name: "Book a free consultation" })).toHaveAttribute("href", "/book");
+  });
+
+  test("the hero's opening line is read whole, once, over the footage", async ({ page }) => {
+    await page.goto("/");
+    const line = page.locator('[data-section="hero"] .sequence');
+    await expect(line).toHaveText("Undetectable. 100% Real Hair. At Home. Be the Main Man, Again.");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      "Transformation and confidence, delivered in one visit.",
+    );
   });
 
   test("the hero footage is muted, looped, inline and fetches metadata only", async ({ page }) => {
@@ -149,11 +159,17 @@ test.describe("home sections", () => {
 
   test("comparison: seven rows, ticks and crosses read as Yes and No", async ({ page }) => {
     await page.goto("/");
-    const table = page.getByRole("table", { name: "Transplant, medication, or a system" });
+    const table = page.getByRole("table", { name: "Why choose a hair system" });
     await expect(table.getByRole("row")).toHaveCount(8);
     await expect(table.getByRole("rowheader", { name: "Surgery" })).toHaveCount(1);
     const surgery = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Surgery" }) });
     await expect(surgery.getByRole("cell")).toHaveText(["Yes", "No", "No"]);
+    const effects = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Side effects" }) });
+    await expect(effects.getByRole("cell")).toHaveText([
+      "Infection, scarring, shock loss",
+      "Lower libido, scalp irritation",
+      "Nothing implanted or swallowed",
+    ]);
   });
 
   test("comparison: below 760 px each label sits above its row, in three columns", async ({ page }) => {
@@ -179,28 +195,39 @@ test.describe("home sections", () => {
     await expect(page.locator('[data-section="how"] ol > li')).toHaveCount(4);
   });
 
-  test("technicians, bases and testimonials: three, two and three cards", async ({ page }) => {
+  test("technicians, the range and testimonials: three, four and three cards", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator('[data-section="technicians"] li')).toHaveCount(3);
-    await expect(page.locator('[data-section="bases"] article')).toHaveCount(2);
+    await expect(page.locator('[data-section="technicians"] li p')).toHaveCount(0);
+    await expect(page.locator('[data-section="range"] h3')).toHaveText([
+      "Mane Man Essential",
+      "Mane Man Active",
+      "Mane Man Natural",
+      "Mane Man NatMax",
+    ]);
     await expect(page.locator('[data-section="testimonials"] li')).toHaveCount(3);
   });
 
-  test("prices: the three-row table, and both calls to action", async ({ page }) => {
+  test("materials and construction: six groups, each closed until it is opened, and opened on its own", async ({
+    page,
+  }) => {
     await page.goto("/");
-    const table = page.getByRole("table", { name: "Published prices" });
-    await expect(table.getByRole("row")).toHaveCount(4);
-    const prices = page.locator('[data-section="prices"]');
-    // FEO-22: the price book's figures, as the page is built, and the first year computed from them. Behind
-    // Cloudflare mm-site's Worker writes the book's figures of the day over these (site/src/worker.ts), and shows
-    // Premium once the book prices a first fit coded premium; a page is built without it (ADR 0085).
-    await expect(table.getByRole("row", { name: /^First fit/ }).getByRole("cell")).toHaveText(["Rs. 30,000"]);
-    await expect(table.getByRole("columnheader", { name: "Premium" })).toHaveCount(0);
-    await expect(prices.getByText("A standard base in the first year: Rs. 30,000", { exact: false })).toHaveText(
-      "A standard base in the first year: Rs. 30,000 plus twelve service visits at Rs. 2,000 — Rs. 54,000.",
-    );
-    await expect(prices.getByRole("link", { name: "Book a free consultation" })).toHaveAttribute("href", "/book");
-    await expect(prices.getByRole("link", { name: "Or see yourself with hair first" })).toHaveAttribute("href", "/try");
+    const groups = page.locator('[data-section="materials"] details');
+    await expect(groups).toHaveCount(6);
+    for (const group of await groups.all()) await expect(group).not.toHaveAttribute("open", "");
+    await groups.nth(0).locator("summary").click();
+    await groups.nth(1).locator("summary").click();
+    await expect(groups.nth(0)).toHaveAttribute("open", "");
+    await expect(groups.nth(1)).toHaveAttribute("open", "");
+    await expect(groups.nth(0).locator("li")).toHaveCount(4);
+  });
+
+  // The owner took the prices off the site on 1 October 2026 (ADR 0103).
+  test("gives no price of ours: no prices section, and nothing for the Worker to fill", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator('[data-section="prices"]')).toHaveCount(0);
+    await expect(page.locator("[data-price]")).toHaveCount(0);
+    await expect(page.locator('[data-section="comparison"]')).toContainText("Quoted at your free consultation");
   });
 
   test("FAQ: ten questions, the first open, one open at a time", async ({ page }) => {
@@ -223,6 +250,15 @@ test.describe("home sections", () => {
 
 test.describe("reduced motion", () => {
   test.use({ reducedMotion: "reduce" });
+
+  test("the hero's opening line shows its last phrase alone, still", async ({ page }) => {
+    await page.goto("/");
+    const phrases = page.locator('[data-section="hero"] .phrase');
+    await expect(phrases).toHaveCount(4);
+    await expect(phrases.first()).toHaveCSS("opacity", "0");
+    await expect(phrases.last()).toHaveCSS("opacity", "1");
+    await expect(phrases.last()).toHaveCSS("animation-name", "none");
+  });
 
   test("the hero footage stays paused and scrolling is instant", async ({ page }) => {
     await page.goto("/");
@@ -270,15 +306,14 @@ test.describe("WCAG on the home page", () => {
     }
   });
 
-  // VIS-10, A11Y-03: the prices keep their columns, and the page its width, on a 320 px phone.
-  test("the prices table fits a 320 px screen, its columns in line", async ({ page }) => {
+  // VIS-10, A11Y-03: the page keeps its width on a 320 px phone, its densest section open.
+  test("the page fits a 320 px screen with every materials group open", async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 640 });
     await page.goto("/");
+    await page.locator('[data-section="materials"] details').evaluateAll((groups) => {
+      for (const group of groups) group.setAttribute("open", "");
+    });
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
-    const lefts = await page
-      .locator('[data-section="prices"] [role="row"] > :nth-child(2)')
-      .evaluateAll((cells) => cells.map((cell) => Math.round(cell.getBoundingClientRect().left)));
-    expect(new Set(lefts).size).toBe(1);
   });
 });
 

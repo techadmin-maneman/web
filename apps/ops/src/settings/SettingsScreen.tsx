@@ -8,7 +8,8 @@
 // technician app reads with a job: the consumables with each service's
 // expected use, and the job sheet (docs/decisions/0087-consumables-and-stock.md). And
 // the days no visit is offered, which the runbook's SQL set before
-// (docs/decisions/0088-every-policy-in-the-console.md). Above them, one line says
+// (docs/decisions/0088-every-policy-in-the-console.md). The discount codes ops make for
+// clients' bookings (docs/decisions/0108-discount-codes.md). Above them, one line says
 // what the photographs and referral cards hold in R2 against their share
 // (docs/decisions/0093-the-storage-meter.md).
 
@@ -20,6 +21,7 @@ import { settings } from "../content.ts";
 import { settingsPath, SETTINGS_TAB_NAMES, SETTINGS_TABS, type SettingsTab } from "../route.ts";
 import { Blackouts } from "./Blackouts.tsx";
 import { Consumables } from "./Consumables.tsx";
+import { DiscountCodes } from "./DiscountCodes.tsx";
 import { JobSheet } from "./JobSheet.tsx";
 import { Services } from "./Services.tsx";
 import { Rules } from "./Rules.tsx";
@@ -28,6 +30,7 @@ import styles from "./settings.module.css";
 
 function Panel({ tab }: { tab: SettingsTab }) {
   if (tab === "prices") return <Services />;
+  if (tab === "discount-codes") return <DiscountCodes />;
   if (tab === "area") return <ServiceArea />;
   if (tab === "blackouts") return <Blackouts />;
   if (tab === "consumables") return <Consumables />;

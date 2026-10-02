@@ -19,12 +19,17 @@ export async function continueToPayment(page: Page): Promise<void> {
   // Three tries: the day has three windows, and a client would give up on the day too.
   for (let tries = 0; tries < 3; tries += 1) {
     await windows.getByRole("radio").and(page.locator(":enabled")).first().click();
-    await windows.getByRole("button", { name: "Continue to payment" }).click();
-    const held = await pay.waitFor({ timeout: 5_000 }).then(
-      () => true,
-      () => false,
+    // The API's answer decides, however long a busy machine takes to give it: on 1 October 2026 a hold answered
+    // after seven seconds, and a five-second wait for the pay step read it as a window gone.
+    const answered = page.waitForResponse(
+      (response) => response.request().method() === "POST" && new URL(response.url()).pathname === "/api/holds",
+      { timeout: 30_000 },
     );
-    if (held) return;
+    await windows.getByRole("button", { name: "Continue to payment" }).click();
+    if ((await answered).ok()) {
+      await expect(pay).toBeVisible();
+      return;
+    }
     // Nothing else leaves the sheet on this step, so anything else fails here rather than looping.
     await expect(windows.getByRole("alert")).toHaveText(TAKEN);
   }

@@ -55,6 +55,7 @@ const job = (id: number, date: string, time: string, minutes: number, type: stri
   ends_at: new Date(new Date(`${date}T${time}:00.000Z`).getTime() + minutes * 60_000).toISOString(),
   window_label: "morning",
   type,
+  one_visit: false,
   sector,
   status: "scheduled",
   badge,
@@ -179,6 +180,8 @@ const cardFor = (id: string, progress: Progress = NOTHING_DONE) => {
     checklist: CHECKLIST,
     partial_reasons: PARTIAL_REASONS,
     consumables: CONSUMABLES,
+    products: [],
+    payment_link: null,
   };
 };
 

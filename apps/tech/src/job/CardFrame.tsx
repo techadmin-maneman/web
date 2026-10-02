@@ -7,8 +7,9 @@ import { Icon } from "@maneman/ui/Icon";
 import { shortDate } from "@maneman/web-kit/dates";
 import type { ReactNode } from "react";
 import type { Job } from "../api.ts";
-import { badges, job as copy, types, typesLower } from "../content.ts";
+import { badges, job as copy } from "../content.ts";
 import { STROKE } from "../icons.ts";
+import { kindName, kindNameLower } from "../lib/kind.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { clock, dayAfter, todayInIndia } from "../lib/when.ts";
 import { go } from "../route.ts";
@@ -24,7 +25,7 @@ function dayOf(date: string): string | null {
 
 /** "Tomorrow · 10 am · service · 1 slot", as board A3 writes the line beneath the name. */
 function whenOf(job: Job): string {
-  const kind = job.type === null ? copy.locked.title : typesLower[job.type];
+  const kind = kindNameLower(job);
   const slots = job.slots === null ? null : copy.slots(job.slots);
   const parts = [dayOf(job.date), clock(job.starts_at), kind, slots];
   return copy.when(parts.filter((part): part is string => part !== null));
@@ -32,7 +33,7 @@ function whenOf(job: Job): string {
 
 function nameOf(job: Job): string {
   if (job.client !== null) return job.client.name;
-  return job.type === null ? copy.locked.title : types[job.type];
+  return kindName(job);
 }
 
 /** `foot` is the screen's one action, or null for a screen that has none. */

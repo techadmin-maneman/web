@@ -33,6 +33,7 @@ import {
   visitOutcomes,
 } from "../domain/client-visits.ts";
 import { creditBalance } from "../domain/credits.ts";
+import { clientVisitCodes } from "../domain/discount-code-uses.ts";
 import { heldBookingsOf, type HeldBooking } from "../domain/held-bookings.ts";
 import { clientInviteOf } from "../domain/referrals.ts";
 import { VISIT_OUTCOMES } from "../domain/fsm-mirror.ts";
@@ -119,6 +120,23 @@ const ClientVisitSchema = VisitSummarySchema.extend({
     .openapi({
       description: "For a visit left partly done, ops closing its task without a follow-up visit; null otherwise.",
     }),
+  discount_code: z
+    .union([
+      z
+        .object({
+          code: z.string(),
+          amount_off: z
+            .union([z.number().int(), z.null()])
+            .openapi({ description: "In paise before GST; null until the visit's price is known." }),
+          given_by: z.enum(["client", "technician", "ops"]),
+        })
+        .strict(),
+      z.null(),
+    ])
+    .openapi({ description: "The discount code on the visit (docs/decisions/0108-discount-codes.md); else null." }),
+  price_open: z.boolean().openapi({
+    description: "Not yet paid for, linked or invoiced, so a discount code may still be entered on it or taken off.",
+  }),
 }).openapi("ClientVisit");
 
 /**
@@ -508,12 +526,18 @@ export function registerOpsClients(app: App): void {
       heldBookingsOf(db, id, now, retry),
     ]);
     const visitIds = [...visits.upcoming, ...visits.past].map((visit) => visit.id);
-    const [outcomes, closings] = await Promise.all([visitOutcomes(db, visitIds), partialVisitsClosed(db, visitIds)]);
+    const [outcomes, closings, codes] = await Promise.all([
+      visitOutcomes(db, visitIds),
+      partialVisitsClosed(db, visitIds),
+      clientVisitCodes(db, id),
+    ]);
     const withOutcome = (list: typeof visits.upcoming) =>
       list.map((visit) => ({
         ...visit,
         outcome: outcomes.get(visit.id) ?? null,
         closed_without_follow_up: closings.get(visit.id) ?? null,
+        discount_code: codes.get(visit.id)?.code ?? null,
+        price_open: codes.get(visit.id)?.open ?? false,
       }));
 
     return c.json(

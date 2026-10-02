@@ -6,6 +6,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { confirmBooking } from "../../src/domain/bookings.ts";
 import { clawBack, creditBalance, grantCredits, redeemCredit } from "../../src/domain/credits.ts";
+import { listCodes, makeCodes } from "../../src/domain/discount-codes.ts";
 import { moveJob } from "../../src/domain/dispatch.ts";
 import { syncAppointment } from "../../src/domain/fsm-mirror.ts";
 import { openSession } from "../../src/domain/sessions.ts";
@@ -564,6 +565,40 @@ describe("moving a visit", () => {
     // Told again, nothing is cancelled twice.
     await confirmBooking(env.DB, fsm, createStubPayments(), held.id, NOW, { labelAsTest: true });
     expect(fsm.made.cancelled).toHaveLength(1);
+  });
+
+  // The owner's ruling of 1 October 2026: a visit's discount code moves with it (docs/decisions/0108-discount-codes.md).
+  it("carries the visit's discount code to the visit a late move books, the code counted once", async () => {
+    await booked("service", TUESDAY_MORNING, 180000);
+    const made = { actor: { kind: "staff", id: "ops@localhost" }, requestId: "r", now: NOW } as const;
+    const terms = { count: 1, kind: "percent", value: 10, cap: null, covers: ["service"], expiresOn: null } as const;
+    await makeCodes(env.DB, { ...terms, code: "TENPC", maxUses: 1, oncePerClient: false }, made);
+    await env.DB.prepare(
+      `INSERT INTO discount_code_uses (id, code_id, person_id, appointment_id, amount_off, given_by, given_by_id,
+         created_at)
+       SELECT 'use-1', id, ?1, ?2, 20000, 'ops', 'ops@localhost', ?3 FROM discount_codes WHERE code = 'TENPC'`,
+    )
+      .bind(PERSON, VISIT, NOW.toISOString())
+      .run();
+    const app = client();
+    const held = await hold(app, "service", "2026-09-26", "afternoon");
+    expect(held).toMatchObject({ price: { amount: 180000 }, discount: { code: "TENPC", amount_ex_gst: 20000 } });
+
+    await post(app, `/api/appointments/${VISIT}/reschedule`, { hold_id: held.id });
+    await env.DB.prepare(
+      `INSERT INTO payments (id, person_id, razorpay_order_id, razorpay_payment_id, amount, currency, method, status,
+         captured_at, created_at, updated_at)
+       SELECT 'new-1', person_id, razorpay_order_id, 'pay_new', amount, 'INR', 'upi', 'captured', ?1, ?1, ?1
+       FROM slot_holds WHERE id = ?2`,
+    )
+      .bind(NOW.toISOString(), held.id)
+      .run();
+    const fsm = createStubFsm(world());
+    expect(await confirmBooking(env.DB, fsm, createStubPayments(), held.id, NOW, { labelAsTest: true })).toBe("booked");
+    expect((await visitRow())?.status).toBe("cancelled");
+    // The visit moved is cancelled, so its use stands no more: the code counts the new visit's alone.
+    const [code] = await listCodes(env.DB, NOW, "TENPC");
+    expect(code?.uses).toBe(1);
   });
 
   it("cancels the replaced visit on a later try, when FSM failed the first time", async () => {

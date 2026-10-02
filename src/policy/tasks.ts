@@ -43,6 +43,10 @@
 // visit". Ops confirm it; the task goes when the client's address is saved, and
 // it falls due by the visit at the latest.
 //
+// So is a consultation and fit in one visit whose client was fitted and has not paid the link closing it sent
+// them, or that could not be sent (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md): the owner ruled
+// that it is paid for at the visit, so one unpaid after it is owed, and ops follow it up.
+//
 // So is a booking FSM refused five times running (docs/decisions/0095-a-booking-fsm-refuses-is-held.md): the
 // owner ruled that it is held, not refunded, and waits for ops to book it in FSM or refund it. It waits from the
 // fifth refusal, however the hourly tries go, and falls due by its visit's day at the latest.
@@ -93,6 +97,7 @@ export const TASK_GROUPS = [
   "erasure_request",
   "grievance",
   "draft_invoice",
+  "payment_owed",
   "erasure_unfinished",
 ] as const;
 export type TaskGroup = (typeof TASK_GROUPS)[number];
@@ -127,6 +132,7 @@ export const TASK_SLA_HOURS: Slas = {
   // The app promises an answer within 30 days at the latest (docs/open-points.md, item 51).
   grievance: 30 * 24,
   draft_invoice: 48,
+  payment_owed: 48,
   erasure_unfinished: 48,
 };
 

@@ -1,6 +1,6 @@
 # 0024. The browser's own look: an optional gate, and a look shown again
 
-- Status: accepted, on the owner's review of 22 September 2026. Amended 28 September 2026: the refusal answers 401, as `session_required` does everywhere (`docs/open-points.md`, item 105).
+- Status: accepted, on the owner's review of 22 September 2026. Amended 28 September 2026: the refusal answers 401, as `session_required` does everywhere (`docs/open-points.md`, item 105). Superseded in part by [ADR 0104](0104-the-try-ons-look-on-whatsapp-only.md) on 1 October 2026: the number at the gate is needed again, since the look goes to WhatsApp only, and no browser is shown it; the signed `mm_look` cookie stays, for one look per visitor, and `GET /api/tryon/look` says whether this browser has had its look, an expired one too.
 - Date: 2026-09-22
 
 ## Context

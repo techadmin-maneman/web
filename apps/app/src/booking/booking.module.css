@@ -552,6 +552,57 @@
   cursor: pointer;
 }
 
+/*
+ * A discount code at the pay step (docs/decisions/0108-discount-codes.md), which no board draws: quiet until it is
+ * asked for, as C7's way to C8 is, then a box and its button on one line.
+ */
+.code {
+  margin-top: var(--sp-12);
+}
+
+.codeLink {
+  display: flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.codeApplied {
+  margin: 0;
+  font-size: var(--fs-15);
+}
+
+.codeRow {
+  display: flex;
+  gap: var(--sp-9);
+  margin-top: var(--sp-8);
+}
+
+.codeInput {
+  flex: 1;
+  min-width: 0;
+  height: var(--btn-md);
+  padding: 0 var(--sp-15);
+  border: var(--hairline) solid var(--paper-control);
+  background: var(--white);
+  font: inherit;
+  font-size: var(--fs-16);
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.codeInput:focus {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: calc(-1 * var(--focus-width));
+}
+
 .sheet .moneyNote {
   margin-top: var(--sp-14);
   font-size: var(--fs-14);

@@ -2,7 +2,9 @@
 // The hero: muted looping footage behind the headline. The poster is the
 // largest thing painted first, so it is preloaded; the video fetches only its
 // metadata until it plays, once the page has loaded, and never plays for
-// reduced motion.
+// reduced motion. Over it the opening line shows one phrase at a time, once,
+// and settles on the last; a screen reader hears the whole line once, and
+// reduced motion shows the last phrase alone.
 import { hero, heroFootage } from "../../content/site.ts";
 import { SHOW_PLACEHOLDER_TAGS, isShown } from "../../lib/build.ts";
 import { designMedia } from "../../lib/images.ts";
@@ -47,8 +49,13 @@ const showFootage = isShown(heroFootage);
     </button>
   )}
   <div class="content">
+    <p class="sequence">
+      {hero.sequence.map((phrase) => (
+        <span class="phrase">{phrase} </span>
+      ))}
+    </p>
     <h1>{hero.title}</h1>
-    <p>{hero.body}</p>
+    <p class="body">{hero.body}</p>
     <div class="actions">
       <a class="btn btn--lg btn--paper" href="/try">
         {hero.tryOn}
@@ -151,19 +158,68 @@ const showFootage = isShown(heroFootage);
     margin: 0 auto;
     padding: 0 var(--gutter) var(--hero-pad-bottom);
   }
-  h1 {
+  /* The phrases share one cell, so the line keeps the height of its longest and nothing below it moves. */
+  .sequence {
+    display: grid;
     margin: 0;
     font-family: var(--font-serif);
-    font-weight: var(--weight-regular);
     font-size: var(--fs-hero);
     line-height: var(--lh-97);
     letter-spacing: var(--tracking-display);
     color: var(--paper);
     max-width: var(--measure-hero);
+  }
+  .phrase {
+    grid-area: 1 / 1;
+    opacity: 0;
+    text-wrap: balance;
+    animation: phrase var(--duration-phrase) var(--ease-house) both;
+  }
+  .phrase:nth-child(2) {
+    animation-delay: var(--duration-phrase);
+  }
+  .phrase:nth-child(3) {
+    animation-delay: calc(2 * var(--duration-phrase));
+  }
+  .phrase:last-child {
+    opacity: 1;
+    animation: settle var(--duration-quick) var(--ease-house) both;
+    animation-delay: calc(3 * var(--duration-phrase));
+  }
+  @keyframes phrase {
+    0%,
+    100% {
+      opacity: 0;
+    }
+    25%,
+    75% {
+      opacity: 1;
+    }
+  }
+  @keyframes settle {
+    from {
+      opacity: 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .phrase,
+    .phrase:last-child {
+      animation: none;
+    }
+  }
+  h1 {
+    margin: var(--hero-body-gap) 0 0;
+    font-family: var(--font-serif);
+    font-weight: var(--weight-regular);
+    font-size: var(--fs-hero-title);
+    line-height: var(--lh-115);
+    letter-spacing: var(--tracking-heading);
+    color: var(--paper);
+    max-width: var(--measure-hero);
     text-wrap: balance;
   }
-  p {
-    margin: var(--hero-body-gap) 0 0;
+  .body {
+    margin: var(--sp-16) 0 0;
     font-size: var(--fs-hero-body);
     line-height: var(--lh-155);
     color: var(--ink-tag);

@@ -564,6 +564,20 @@ describe("what charging a no-show costs the client", () => {
     expect(await recorded()).toEqual({ charge: "nothing", kept_amount: 0, refund_amount: 200000 });
   });
 
+  // A consultation and fit in one visit holds no payment, and is sold to cost nothing if missed, as the build took for
+  // the owner to confirm (ADR 0025, item 90; docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+  it("charges nothing for a consultation and fit in one visit, which was sold so", async () => {
+    await as("first_fit");
+    await env.DB.prepare("UPDATE appointments SET one_visit = 'booked' WHERE id = ?1").bind(VISIT).run();
+    await soldWith("nothing");
+    await opsSetNoShowCharge("visit");
+
+    const payments = await charge();
+
+    expect(payments.made.refunds).toEqual([]);
+    expect(await recorded()).toEqual({ charge: "nothing", kept_amount: 0, refund_amount: 0 });
+  });
+
   // The credit comes back only to a grant that can still take it (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
   it("tells ops once when a charge of nothing finds the credit's grant clawed back", async () => {
     await onCredit();

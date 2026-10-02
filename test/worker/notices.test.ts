@@ -1,12 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  BOOKING_NOTICES,
-  CURRENT_NOTICE,
-  NAMING_NOTICES,
-  NOTICES,
-  TRY_ON_NOTICES_AWAITING_COUNSEL,
-  findNotice,
-} from "../../src/config/notices.ts";
+import { BOOKING_NOTICES, CURRENT_NOTICE, NAMING_NOTICES, NOTICES, findNotice } from "../../src/config/notices.ts";
 import { sha256Hex } from "../../src/lib/hash.ts";
 import { KEEPING_NOTICES } from "../../src/policy/kept-try-ons.ts";
 
@@ -35,12 +28,17 @@ describe("consent notices", () => {
     }
   });
 
-  // ADR 0084: only a photo notice that says so keeps a client's try-on, and production shows the published one.
-  it("holds the try-on's pair awaiting counsel, whose photo notice alone of the two keeps a client's try-on", () => {
-    expect(findNotice(TRY_ON_NOTICES_AWAITING_COUNSEL.photo)?.purpose).toBe("tryon_photo");
-    expect(findNotice(TRY_ON_NOTICES_AWAITING_COUNSEL.gate)?.purpose).toBe("result_delivery");
-    expect(KEEPING_NOTICES).toEqual([TRY_ON_NOTICES_AWAITING_COUNSEL.photo]);
-    expect(KEEPING_NOTICES).not.toContain(CURRENT_NOTICE.tryon_photo);
+  // ADR 0104: the look goes to WhatsApp only, so the try-on shows only notices that say so, and they still keep a
+  // client's try-on (ADR 0084). No published version says it: the published v1 promised the result on screen.
+  it("shows the try-on's notices that send the look to WhatsApp, which keep a client's try-on", () => {
+    const photo = findNotice(CURRENT_NOTICE.tryon_photo);
+    const gate = findNotice(CURRENT_NOTICE.result_delivery);
+    expect([photo?.version, gate?.version]).toEqual(["photo-v3", "gate-v3"]);
+    expect(photo?.text.join(" ")).toContain("sent to your WhatsApp and never shown on this site");
+    expect(gate?.text.join(" ")).toContain("never shown on this site");
+    expect(gate?.text.join(" ")).not.toContain("next screen");
+    expect(KEEPING_NOTICES).toContain(CURRENT_NOTICE.tryon_photo);
+    expect(Object.keys(PUBLISHED)).not.toContain(CURRENT_NOTICE.tryon_photo);
   });
 
   it("records a consent given by booking on its own purpose's notice, and names a referrer on each card notice that says so", () => {

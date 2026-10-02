@@ -1,8 +1,10 @@
 // The try-on's screens and what moves between them (FEO-27): the machine the
-// island runs, walked here without a browser, an API or a timer.
+// island runs, walked here without a browser, an API or a timer. The look goes
+// to WhatsApp only (ADR 0104): the gate follows the looks, and the sent screen
+// the gate.
 
 import { describe, expect, it } from "vitest";
-import { looks, stageOptions, tryOn } from "../../site/src/content/site.ts";
+import { tryOn } from "../../site/src/content/site.ts";
 import {
   backFrom,
   lookLabel,
@@ -13,38 +15,34 @@ import {
   type TryOnState,
 } from "../../site/src/islands/tryon/machine.ts";
 
-const MOCK_AFTER = "/_astro/after.webp";
-const RENDERED = { url: "blob:result", file: null };
-
 function walk(...events: TryOnEvent[]): TryOnState {
   return events.reduce(step, START);
 }
 
 const PHOTO: TryOnEvent = { type: "photoChosen", photo: "blob:photo" };
 
-/** Through to Generate with a photograph, the agreement, the first stage and the first look. */
-const TO_GENERATE: TryOnEvent[] = [
+/** Through to the gate with a photograph, the agreement, the first stage and the first look. */
+const TO_GATE: TryOnEvent[] = [
   PHOTO,
   { type: "consentTicked", consent: true },
   { type: "agreed" },
   { type: "stageDone" },
   { type: "lookChosen", look: 0 },
-  { type: "generate" },
+  { type: "lookDone" },
 ];
 
 describe("the try-on's machine", () => {
   it("starts on the upload screen with nothing chosen", () => {
     expect(START).toMatchObject({ screen: "upload", demo: false, photo: null, consent: false, look: -1 });
-    expect(START.lookFixed).toBe(false);
+    expect(START.returning).toBe(false);
   });
 
-  it("walks from a photograph to the gate, the look fixed once Generate is pressed", () => {
+  // ADR 0104: the number is asked for before the look is made, so there is no countdown between the looks and the gate.
+  it("walks from a photograph to the gate, straight from the looks", () => {
     expect(walk(PHOTO).screen).toBe("consent");
-    expect(walk(...TO_GENERATE.slice(0, 3)).screen).toBe("stage");
-    expect(walk(...TO_GENERATE.slice(0, 4)).screen).toBe("looks");
-    const processing = walk(...TO_GENERATE);
-    expect(processing).toMatchObject({ screen: "processing", look: 0, lookFixed: true });
-    expect(step(processing, { type: "processed" }).screen).toBe("gate");
+    expect(walk(...TO_GATE.slice(0, 3)).screen).toBe("stage");
+    expect(walk(...TO_GATE.slice(0, 4)).screen).toBe("looks");
+    expect(walk(...TO_GATE)).toMatchObject({ screen: "gate", look: 0 });
   });
 
   it("does not leave the consent screen until the agreement is ticked", () => {
@@ -55,86 +53,63 @@ describe("the try-on's machine", () => {
     expect(step(unticked, { type: "agreed" }).screen).toBe("consent");
   });
 
-  it("does not generate before a look is chosen", () => {
-    const looksScreen = walk(...TO_GENERATE.slice(0, 4));
-    expect(step(looksScreen, { type: "generate" })).toBe(looksScreen);
-  });
-
-  it("ignores a countdown that ends once the visitor has left the processing screen", () => {
-    const failed = step(walk(...TO_GENERATE), { type: "failed", kind: "renderFailed" });
-    expect(step(failed, { type: "processed" }).screen).toBe("error");
+  it("does not go on to the gate before a look is chosen", () => {
+    const looksScreen = walk(...TO_GATE.slice(0, 4));
+    expect(step(looksScreen, { type: "lookDone" })).toBe(looksScreen);
   });
 
   // FEO-19: the agreement is to one photograph's use.
-  it("asks for the agreement afresh, and frees the look, when another photograph is chosen", () => {
-    const gate = step(walk(...TO_GENERATE), { type: "processed" });
-    const again = step(gate, { type: "photoChosen", photo: "blob:another" });
-    expect(again).toMatchObject({ screen: "consent", photo: "blob:another", consent: false, lookFixed: false });
-    expect(again.showing).toBeNull();
-    expect(again.rendered).toBeNull();
+  it("asks for the agreement afresh when another photograph is chosen", () => {
+    const again = step(walk(...TO_GATE), { type: "photoChosen", photo: "blob:another" });
+    expect(again).toMatchObject({ screen: "consent", photo: "blob:another", consent: false });
   });
 
-  // CLI-11: Back from the gate shows the look fixed, and Continue returns to the gate without a second render.
-  it("goes back from the gate to the looks, where Continue returns to the gate", () => {
-    const gate = step(walk(...TO_GENERATE), { type: "processed" });
-    const back = step(gate, { type: "back" });
-    expect(back).toMatchObject({ screen: "looks", lookFixed: true });
-    expect(step(back, { type: "lookChosen", look: 1 }).look).toBe(0);
-    expect(step(back, { type: "generate" }).screen).toBe("gate");
-    expect(lookLabel(back.look, back.lookFixed)).toBe(tryOn.looks.continue);
+  // Nothing is rendered before the gate, so the look may still change.
+  it("goes back from the gate to the looks, where another look may be chosen", () => {
+    const back = step(walk(...TO_GATE), { type: "back" });
+    expect(back.screen).toBe("looks");
+    expect(step(back, { type: "lookChosen", look: 1 }).look).toBe(1);
   });
 
   it("names the looks screen's button for where the visitor is", () => {
-    expect(lookLabel(-1, false)).toBe(tryOn.looks.choose);
-    expect(lookLabel(2, false)).toBe(tryOn.looks.generate);
-    expect(lookLabel(2, true)).toBe(tryOn.looks.continue);
+    expect(lookLabel(-1)).toBe(tryOn.looks.choose);
+    expect(lookLabel(2)).toBe(tryOn.looks.continue);
   });
 
-  it("goes back as v2 does: to the site from the upload, to the upload from an error", () => {
+  it("goes back as v2 does: to the site from the upload, to the upload from an error; to the site once sent", () => {
     expect(backFrom("upload")).toBe("home");
     expect(backFrom("consent")).toBe("upload");
     expect(backFrom("stage")).toBe("consent");
     expect(backFrom("looks")).toBe("stage");
-    expect(backFrom("processing")).toBe("looks");
     expect(backFrom("gate")).toBe("looks");
-    expect(backFrom("result")).toBe("gate");
+    expect(backFrom("sent")).toBe("home");
     expect(backFrom("error")).toBe("upload");
     expect(step(START, { type: "back" })).toBe(START);
   });
 
   it("shows a failure's own copy, and Choose another returns to the upload", () => {
-    const failed = step(walk(...TO_GENERATE), { type: "failed", kind: "busy" });
+    const failed = step(walk(...TO_GATE), { type: "failed", kind: "busy" });
     expect(failed).toMatchObject({ screen: "error", errorKind: "busy" });
     expect(step(failed, { type: "again" }).screen).toBe("upload");
   });
 
-  it("opens the result after the gate, and keeps a result already fetched", () => {
-    const gate = step(walk(...TO_GENERATE), { type: "processed" });
-    const showing = { jobId: "job", claim: null, returning: false };
-    const result = step(gate, { type: "shown", showing });
-    expect(result).toMatchObject({ screen: "result", showing });
-    const rendered = step(result, { type: "rendered", rendered: RENDERED });
-    expect(rendered.rendered).toBe(RENDERED);
-    const backAndAgain = step(step(rendered, { type: "back" }), { type: "shown", showing });
-    expect(backAndAgain.rendered).toBe(RENDERED);
+  it("says the look is on its way after the gate, with the number given there", () => {
+    const typed = step(step(walk(...TO_GATE), { type: "nameTyped", name: "Asha" }), {
+      type: "mobileTyped",
+      mobile: "98100 00000",
+    });
+    expect(step(typed, { type: "sent" })).toMatchObject({ screen: "sent", returning: false, mobile: "98100 00000" });
   });
 
-  it("shows a returning visitor the look they had, fixed, with its stage and look found by name", () => {
-    const own = { jobId: "own", stage: stageOptions[1]?.id ?? "", preset: looks[3]?.id ?? "" };
-    const shown = step(walk(...TO_GENERATE.slice(0, 4)), { type: "ownLook", look: own });
-    expect(shown).toMatchObject({ screen: "result", stage: 1, look: 3, lookFixed: true, rendered: null });
-    expect(shown.showing).toEqual({ jobId: "own", claim: null, returning: true });
-  });
-
-  it("leaves a returning visitor's retired look unnamed rather than misnamed", () => {
-    const shown = step(START, { type: "ownLook", look: { jobId: "own", stage: "gone", preset: "gone" } });
-    expect(shown).toMatchObject({ stage: 0, look: -1 });
+  it("tells a visitor back after their look that it was sent, from any screen", () => {
+    expect(step(START, { type: "alreadySent" })).toMatchObject({ screen: "sent", returning: true });
+    expect(step(walk(...TO_GATE.slice(0, 3)), { type: "alreadySent" }).screen).toBe("sent");
   });
 
   it("keeps the gate's name and number across screens", () => {
-    const gate = step(walk(...TO_GENERATE), { type: "processed" });
+    const gate = walk(...TO_GATE);
     const typed = step(step(gate, { type: "nameTyped", name: "Asha" }), { type: "mobileTyped", mobile: "98100 00000" });
-    const returned = step(step(typed, { type: "back" }), { type: "generate" });
+    const returned = step(step(typed, { type: "back" }), { type: "lookDone" });
     expect(returned).toMatchObject({ screen: "gate", name: "Asha", mobile: "98100 00000" });
   });
 });
@@ -143,11 +118,14 @@ describe("the try-on's previews (?state=, never in production)", () => {
   const preview = (screen: string, kind: string | null = null) => {
     const found = screenNamed(screen);
     if (found === undefined) throw new Error(`no screen ${screen}`);
-    return step(START, { type: "preview", screen: found, kind, mockAfter: MOCK_AFTER });
+    return step(START, { type: "preview", screen: found, kind });
   };
 
-  it("knows the eight screens by name, and nothing else", () => {
+  it("knows the seven screens by name, and nothing else: no result screen", () => {
     expect(screenNamed("gate")).toBe("gate");
+    expect(screenNamed("sent")).toBe("sent");
+    expect(screenNamed("result")).toBeUndefined();
+    expect(screenNamed("processing")).toBeUndefined();
     expect(screenNamed("home")).toBeUndefined();
     expect(screenNamed(null)).toBeUndefined();
   });
@@ -157,28 +135,14 @@ describe("the try-on's previews (?state=, never in production)", () => {
     expect(preview("gate")).toMatchObject({ screen: "gate", demo: true, look: 0 });
   });
 
-  it("opens the result with the stand-in image and the gate's number", () => {
-    expect(preview("result")).toMatchObject({
-      screen: "result",
-      look: 0,
-      mobile: tryOn.gate.mobilePlaceholder,
-      showing: { jobId: "demo", claim: null, returning: false },
-      rendered: { url: MOCK_AFTER, file: null },
-    });
-  });
-
-  it("opens a returning visitor's result with no number", () => {
-    expect(preview("result", "returning")).toMatchObject({ mobile: "", showing: { returning: true } });
-  });
-
-  // CLI-28: the after side while the render still runs.
-  it("opens the result while the render still runs", () => {
-    expect(preview("result", "pending")).toMatchObject({ screen: "result", rendered: null });
+  it("opens the sent screen with the gate's number, or a returning visitor's without one", () => {
+    expect(preview("sent")).toMatchObject({ screen: "sent", returning: false, mobile: tryOn.gate.mobilePlaceholder });
+    expect(preview("sent", "returning")).toMatchObject({ screen: "sent", returning: true, mobile: "" });
   });
 
   it("opens each error's copy, and the photograph's for a kind it does not know", () => {
     expect(preview("error", "busy").errorKind).toBe("busy");
-    expect(preview("error", "lookLimit").errorKind).toBe("lookLimit");
-    expect(preview("error", "other").errorKind).toBe("photo");
+    expect(preview("error", "unavailable").errorKind).toBe("unavailable");
+    expect(preview("error", "lookLimit").errorKind).toBe("photo");
   });
 });

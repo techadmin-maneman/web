@@ -3,7 +3,9 @@
 // a build through. Replace the material in site.ts instead.
 //
 // The publish gate (src/lib/publish-gate.ts) stops a production build when a
-// published block in site.ts still contains any of these values.
+// published block in site.ts still contains any of these values. A value goes
+// only when the site stops showing that material at all, as the technicians'
+// notes did on 1 October 2026 (ADR 0103).
 
 export const DESIGN_PLACEHOLDERS = {
   whatsapp: ["919810040200", "WhatsApp · +91 98100 40200"],
@@ -13,17 +15,7 @@ export const DESIGN_PLACEHOLDERS = {
   teaserPair: ["ba-before.jpg", "ba-after.jpg"],
   stepPhotos: ["step-01-call.jpg", "step-02-template.jpg", "step-03-fit.jpg", "step-04-kit.jpg"],
   basePhotos: ["base-monofilament.jpg", "base-thinskin.jpg"],
-  technicians: [
-    "Imran Qureshi",
-    "Sandeep Rawat",
-    "Vikas Chauhan",
-    "tech-1.jpg",
-    "tech-2.jpg",
-    "tech-3.jpg",
-    "Does most of our thin-skin work. Covers Gurgaon and South Delhi.",
-    "Cuts and colour-matches. Covers Noida, Ghaziabad and East Delhi.",
-    "Handles repairs and the monthly visits. Covers Gurgaon and Faridabad.",
-  ],
+  technicians: ["Imran Qureshi", "Sandeep Rawat", "Vikas Chauhan", "tech-1.jpg", "tech-2.jpg", "tech-3.jpg"],
   testimonials: [
     "Client name",
     "client-1.jpg",

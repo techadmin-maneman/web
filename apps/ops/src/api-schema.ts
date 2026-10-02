@@ -996,6 +996,124 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/clients/{id}/hair-profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The client's hair profile, and every version of it */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The profile */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ClientHairProfile"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such client, or the client has been erased */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Correct the client's hair profile: a new version, under the member of staff, audited */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["HairProfileCorrection"];
+                };
+            };
+            responses: {
+                /** @description Recorded, and the profile as it now stands */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ClientHairProfile"];
+                    };
+                };
+                /** @description invalid_request: see error.fields */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required: no Access token, or a service token, which names no member of staff */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such client, or the client has been erased */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description superseded: the latest version is no longer based_on; read the profile again */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/number-changes": {
         parameters: {
             query?: never;
@@ -2555,7 +2673,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    group: "untold_move" | "held_booking" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "erasure_unfinished";
+                    group: "untold_move" | "held_booking" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "erasure_unfinished";
                     id: string;
                 };
                 cookie?: never;
@@ -2857,7 +2975,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "fsm_retry" | "dispute_window_days" | "technician_work" | "booking_days";
+                    name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "fsm_retry" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward";
                 };
                 cookie?: never;
             };
@@ -4738,6 +4856,304 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/discount-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The latest discount codes made, each with its uses and what it has taken off */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description One code, found by its text, however old. */
+                    code?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The codes */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DiscountCodes"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Make a code, typed or generated, or a batch of single-use codes */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["DiscountCodesNew"];
+                };
+            };
+            responses: {
+                /** @description Made */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DiscountCodesMade"];
+                    };
+                };
+                /** @description invalid_request: fields names code when it is not one a code can be, count for a typed code made more than once, value for a percentage over 100, cap on an amount, covers named twice, expires_on before today, and max_uses for a batch whose codes are not single-use */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description code_exists: a code with that text exists already */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/discount-codes/{id}/off": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Switch a code off: no booking takes it from then on, and its uses stay as they are */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Off, or off already */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/visits/{id}/discount-code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Enter a discount code on a client's visit, before it is paid for, its link is made, or it is invoiced */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The client's visit. */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        code: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description The code on the visit */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VisitDiscountCode"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description already_discounted: the visit carries a code; price_settled: it is paid for, its payment link is made, it is invoiced, or FSM has cancelled it */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description code_not_applicable: the code does not apply to this visit */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/visits/{id}/discount-code/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Take the code off a client's visit, before it is paid for, its link is made, or it is invoiced */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The client's visit. */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Taken off; its use stays on record, marked removed */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such visit, or it carries no code */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description price_settled: it is paid for, its payment link is made, or it is invoiced */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4745,7 +5161,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -4882,6 +5298,16 @@ export interface components {
                 /** @description Null once the client is erased. */
                 reason: string | null;
             } | null;
+            /** @description The discount code on the visit (docs/decisions/0108-discount-codes.md); else null. */
+            discount_code: {
+                code: string;
+                /** @description In paise before GST; null until the visit's price is known. */
+                amount_off: number | null;
+                /** @enum {string} */
+                given_by: "client" | "technician" | "ops";
+            } | null;
+            /** @description Not yet paid for, linked or invoiced, so a discount code may still be entered on it or taken off. */
+            price_open: boolean;
         };
         /** @description Display name and initials only. */
         Technician: {
@@ -5058,7 +5484,7 @@ export interface components {
                 name: string;
             } | null;
             /**
-             * @description pending until the client's first fit; held for ops' review; approved or granted, the 3 visits given; rejected; expired, lapsed on a waitlist; clawed_back, the first fit refunded.
+             * @description pending until the client's first fit; held for ops' review; approved or granted, the reward given; rejected; expired, lapsed on a waitlist; clawed_back, the first fit refunded.
              * @enum {string}
              */
             grant: "pending" | "held" | "approved" | "rejected" | "granted" | "expired" | "clawed_back";
@@ -5245,7 +5671,7 @@ export interface components {
         AlreadyInvited: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -5300,6 +5726,147 @@ export interface components {
             /** @description Google's Place ID for the building, if one was chosen. */
             place_id?: string | null;
             session_token?: string | null;
+        };
+        ClientHairProfile: {
+            /** @description The latest version; null before one. */
+            latest: components["schemas"]["HairProfile"] | null;
+            /** @description Every version, newest first. */
+            versions: components["schemas"]["HairProfileVersion"][];
+            /** @description The products a correction may name: every first-fit service, retired or not. */
+            products: {
+                tier: string;
+                name: string;
+            }[];
+        };
+        HairProfile: {
+            /**
+             * Format: uuid
+             * @description The version's own ID, which a write names as based_on.
+             */
+            id: string;
+            /** Format: date-time */
+            recorded_at: string;
+            fit: components["schemas"]["HairFitSpecRead"];
+            /** @description Null where none was recorded. */
+            history: components["schemas"]["HairHistory"] | null;
+        };
+        /** @description Every field is sent, null where it was not taken. */
+        HairFitSpecRead: {
+            /** @enum {string|null} */
+            norwood_stage: "I" | "II" | "III" | "IV" | "V" | "VI" | "VII" | null;
+            /** @description In centimetres, 40 to 70, to one decimal. */
+            head_circumference_cm: number | null;
+            /** @description In centimetres, 20 to 50, to one decimal. */
+            front_to_nape_cm: number | null;
+            /** @description In centimetres, over the top, 20 to 50, to one decimal. */
+            ear_to_ear_cm: number | null;
+            /** @description In centimetres, 20 to 50, to one decimal. */
+            temple_to_temple_cm: number | null;
+            /** @description In inches, 2 to 12, to one decimal. */
+            base_width_in: number | null;
+            /** @description In inches, 2 to 14, to one decimal. */
+            base_length_in: number | null;
+            /**
+             * @description The suppliers' colour code, #1B written 1B.
+             * @enum {string|null}
+             */
+            colour: "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "1B" | null;
+            grey_percent: number | null;
+            /** @description In per cent. */
+            density_percent: 80 | 100 | 120 | 140 | null;
+            /** @enum {string|null} */
+            wave: "straight" | "slight_wave" | "wavy" | "curly" | null;
+            /** @enum {string|null} */
+            hairline: "natural" | "receded" | "straight" | "widows_peak" | null;
+            /** @description The product, by the tier of its first-fit service: one the services table holds, retired or not. */
+            product: string | null;
+            /**
+             * @description Tape, glue, or both.
+             * @enum {string|null}
+             */
+            attachment: "tape" | "glue" | "both" | null;
+            /** @description The product's name, never its price. */
+            product_name: string | null;
+        };
+        /** @description Every field is sent, null where it was not taken. */
+        HairFitSpec: {
+            /** @enum {string|null} */
+            norwood_stage: "I" | "II" | "III" | "IV" | "V" | "VI" | "VII" | null;
+            /** @description In centimetres, 40 to 70, to one decimal. */
+            head_circumference_cm: number | null;
+            /** @description In centimetres, 20 to 50, to one decimal. */
+            front_to_nape_cm: number | null;
+            /** @description In centimetres, over the top, 20 to 50, to one decimal. */
+            ear_to_ear_cm: number | null;
+            /** @description In centimetres, 20 to 50, to one decimal. */
+            temple_to_temple_cm: number | null;
+            /** @description In inches, 2 to 12, to one decimal. */
+            base_width_in: number | null;
+            /** @description In inches, 2 to 14, to one decimal. */
+            base_length_in: number | null;
+            /**
+             * @description The suppliers' colour code, #1B written 1B.
+             * @enum {string|null}
+             */
+            colour: "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "1B" | null;
+            grey_percent: number | null;
+            /** @description In per cent. */
+            density_percent: 80 | 100 | 120 | 140 | null;
+            /** @enum {string|null} */
+            wave: "straight" | "slight_wave" | "wavy" | "curly" | null;
+            /** @enum {string|null} */
+            hairline: "natural" | "receded" | "straight" | "widows_peak" | null;
+            /** @description The product, by the tier of its first-fit service: one the services table holds, retired or not. */
+            product: string | null;
+            /**
+             * @description Tape, glue, or both.
+             * @enum {string|null}
+             */
+            attachment: "tape" | "glue" | "both" | null;
+        };
+        /** @description Health information the client told us: our records alone, never Zoho or a log. */
+        HairHistory: {
+            /** @description Every remedy the client has tried, each once; none, said alone, for none. Empty: not answered. */
+            remedies: ("none" | "minoxidil" | "finasteride" | "transplant" | "other_systems" | "other")[];
+            /** @description With a transplant only, and no later than this year. */
+            transplant_year: number | null;
+            skin_and_allergies: string | null;
+        };
+        HairProfileVersion: {
+            /**
+             * Format: uuid
+             * @description The version's own ID, which a write names as based_on.
+             */
+            id: string;
+            /** Format: date-time */
+            recorded_at: string;
+            fit: components["schemas"]["HairFitSpecRead"];
+            /** @description Null where none was recorded. */
+            history: components["schemas"]["HairHistory"] | null;
+            recorded_by: {
+                /** @enum {string} */
+                kind: "technician";
+                name: string | null;
+            } | {
+                /** @enum {string} */
+                kind: "ops";
+                staff: string;
+            };
+            /** @description The visit it was taken at; null for a correction. */
+            visit: {
+                /** Format: uuid */
+                id: string;
+                /** @description Its day in India. */
+                date: string | null;
+                type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            } | null;
+        };
+        /** @description The whole profile as it now stands, sent as a new version. */
+        HairProfileCorrection: {
+            fit: components["schemas"]["HairFitSpec"];
+            history: components["schemas"]["HairHistory"] | null;
+            /** @description The id of the version the form started from: the latest as it was read; null where there was none. */
+            based_on: string | null;
         };
         NumberChangeDecision: {
             /** @enum {string} */
@@ -5388,7 +5955,7 @@ export interface components {
                  * @description Never an amount: prepaid, credit, or free.
                  * @enum {string}
                  */
-                badge: "prepaid" | "credit" | "free";
+                badge: "prepaid" | "credit" | "free" | "at_visit";
                 /** @description Consultation 1, service 1, replacement 1.5, first fit 2. */
                 slots: number;
                 /** Format: date-time */
@@ -5430,7 +5997,7 @@ export interface components {
              * @description Never an amount: prepaid, credit, or free.
              * @enum {string}
              */
-            badge: "prepaid" | "credit" | "free";
+            badge: "prepaid" | "credit" | "free" | "at_visit";
             /** @description Consultation 1, service 1, replacement 1.5, first fit 2. */
             slots: number;
             /** Format: date-time */
@@ -5716,7 +6283,7 @@ export interface components {
             staff: string[];
             groups: {
                 /** @enum {string} */
-                group: "untold_move" | "held_booking" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "erasure_unfinished";
+                group: "untold_move" | "held_booking" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "erasure_unfinished";
                 /** @description How many are waiting in the group, all of them. */
                 count: number;
                 /** @description Ops may close a task of the group without doing its thing, with a reason. */
@@ -5841,7 +6408,7 @@ export interface components {
         OpsSetting: components["schemas"]["NumberRule"] | components["schemas"]["ChoiceRule"];
         NumberRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "fsm_retry" | "dispute_window_days" | "technician_work" | "booking_days";
+            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "fsm_retry" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward";
             title: string;
             note: string;
             /** @description The module the default lives in. */
@@ -5876,7 +6443,7 @@ export interface components {
         };
         ChoiceRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "fsm_retry" | "dispute_window_days" | "technician_work" | "booking_days";
+            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "fsm_retry" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward";
             title: string;
             note: string;
             /** @description The module the default lives in. */
@@ -6315,6 +6882,80 @@ export interface components {
             signed_in_as: string;
             /** @description Access's logout path; null where no Access stands in front, as locally. */
             sign_out: string | null;
+        };
+        DiscountCodes: {
+            /**
+             * Format: date
+             * @description India's date, the first a code may expire on.
+             */
+            today: string;
+            /** @description The most codes one press generates. */
+            batch_most: number;
+            /** @description The most codes the list shows, the latest made first. */
+            listed_most: number;
+            codes: components["schemas"]["DiscountCode"][];
+        };
+        DiscountCode: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            /** @enum {string} */
+            kind: "percent" | "amount";
+            /** @description Per cent for a percentage; paise before GST for an amount. */
+            value: number;
+            /** @description The most a percentage takes off, in paise before GST; null for none. */
+            cap: number | null;
+            /** @description The kinds of visit it takes money off. */
+            covers: ("first_fit" | "service" | "replacement")[];
+            /** @description The last day in India it may be entered; null for no end. */
+            expires_on: string | null;
+            /** @description How many bookings it may be on; null for no limit. */
+            max_uses: number | null;
+            once_per_client: boolean;
+            /** @description The codes generated with it in one press; null for one made alone. */
+            batch_id: string | null;
+            created_by: string;
+            /** Format: date-time */
+            created_at: string;
+            /** @description Who switched it off and when; null while it is on. */
+            switched_off: {
+                by: string;
+                /** Format: date-time */
+                at: string;
+            } | null;
+            /** @description The bookings it stands on. */
+            uses: number;
+            /** @description What it has taken off those bookings, in paise before GST, as far as their prices are known. */
+            given: number;
+        };
+        DiscountCodesMade: {
+            /** @description The codes made, in capitals. */
+            codes: string[];
+        };
+        DiscountCodesNew: {
+            /** @description A code ops typed, 4 to 16 letters and digits, none of I, L, O, 0 or 1; left out, each code is generated. */
+            code?: string;
+            /** @description How many to generate, one if left out; more than one is a batch of single-use codes. */
+            count?: number;
+            /** @enum {string} */
+            kind: "percent" | "amount";
+            /** @description Per cent, 1 to 100, for a percentage; paise before GST for an amount. */
+            value: number;
+            /** @description A percentage's most, in paise before GST; none if left out. */
+            cap?: number | null;
+            covers: ("first_fit" | "service" | "replacement")[];
+            /** @description The last day in India it may be entered, today or later; no end if left out. */
+            expires_on?: string | null;
+            /** @description How many bookings it may be on; no limit if left out. A batch's codes are 1 each. */
+            max_uses?: number | null;
+            once_per_client: boolean;
+        };
+        VisitDiscountCode: {
+            code: string;
+            /** @description In paise before GST; null until the visit's price is known, as a one visit's is. */
+            amount_off: number | null;
+            /** @enum {string} */
+            given_by: "client" | "technician" | "ops";
         };
     };
     responses: never;

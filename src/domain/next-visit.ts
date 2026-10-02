@@ -168,23 +168,6 @@ export async function bookableDays(
 }
 
 /**
- * The first fit a person asked for with their consultation, in the window they asked for, if any: for the batch that
- * books the consultation, so a booking refused leaves no request (migration 0047). A person's latest request stands.
- */
-export function firstFitRequestStatement(
-  db: D1Database,
-  input: { readonly personId: string; readonly window: FirstFitWindow | null; readonly now: Date },
-): D1PreparedStatement {
-  return db
-    .prepare(
-      `INSERT INTO first_fit_requests (id, person_id, preferred_window, created_at) VALUES (?1, ?2, ?3, ?4)
-       ON CONFLICT (person_id) DO UPDATE SET preferred_window = excluded.preferred_window,
-         created_at = excluded.created_at`,
-    )
-    .bind(crypto.randomUUID(), input.personId, input.window, input.now.toISOString());
-}
-
-/**
  * Something booked since the done visit `a`: a later visit that is not cancelled, any visit still to happen, or one
  * paid for and on its way to FSM.
  */

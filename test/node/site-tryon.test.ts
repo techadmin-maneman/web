@@ -51,8 +51,9 @@ describe("the try-on's error screen", () => {
     expect(failureKindOf("busy")).toBe("busy");
   });
 
-  it("explains one look per visitor", () => {
-    expect(errorKindOf("look_limit_reached")).toBe("lookLimit");
+  // ADR 0104: the look goes to WhatsApp only, so while WhatsApp cannot send it the try-on is not available.
+  it("says the try-on is not available while WhatsApp cannot send its look", () => {
+    expect(errorKindOf("whatsapp_unavailable")).toBe("unavailable");
   });
 
   it("treats limits, Turnstile and the network as busy", () => {

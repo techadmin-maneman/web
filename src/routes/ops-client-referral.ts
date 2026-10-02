@@ -30,7 +30,7 @@ export const ClientInviteSchema = z
       .openapi({ description: "Who sent it; null once they have been erased." }),
     grant: z.enum(GRANT_STATES).openapi({
       description:
-        "pending until the client's first fit; held for ops' review; approved or granted, the 3 visits given; " +
+        "pending until the client's first fit; held for ops' review; approved or granted, the reward given; " +
         "rejected; expired, lapsed on a waitlist; clawed_back, the first fit refunded.",
     }),
     since: z.iso.datetime().openapi({ description: "When the client first came with it, or ops attached it." }),

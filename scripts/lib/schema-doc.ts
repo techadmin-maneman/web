@@ -69,15 +69,21 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "Service-visit credits, entry by entry, each drawing on the grant it spends; a balance is summed, never kept (ADR 0033).",
   cron_jobs: "Each job of the five-minute cron, and how many runs in a row it has failed (ADR 0067).",
   deletion_requests: "A client's request to be erased, waiting for ops, and what ops decided (ADR 0042, ADR 0078).",
+  discount_code_uses:
+    "Each time a discount code was entered on a booking, its hold or its visit: by whom, and what it took off before GST once the price was known. Never deleted: one taken off is marked removed (ADR 0108).",
+  discount_codes:
+    "The discount codes ops make: a percentage with an optional cap or an amount, the kinds of visit each covers, its last day and limits, and whether it is switched off (ADR 0108).",
   deployment_identity: "Which environment's database this is, so a Worker refuses to serve on another's (ADR 0003).",
   dispatch_moves:
     "Every move ops make on the dispatch board: from where to where, by whom, why, what FSM said, and whether the client was told (ADR 0069).",
   events: "What happened, for analysis, with no personal data in its payload.",
   first_fit_requests:
-    "A first fit asked for on the site's form with the consultation, for the app to offer once the consultation is done; a person's latest stands (ADR 0086).",
+    "A first fit asked for on the site's form with the consultation, for the app to offer once the consultation is done; a person's latest stands (ADR 0086). The form asks for none since 1 October 2026 (ADR 0105).",
   fsm_items:
     "FSM's catalogue, to read each appointment's visit type from its service item and to compare FSM's prices with the price book (ADR 0032, ADR 0073).",
   grievances: "A client's grievance, and the answer ops recorded (ADR 0049, ADR 0078).",
+  hair_profiles:
+    "Every version of a client's hair profile, the fit spec and the history: the technician's at a visit, once for each of the phone's events, and ops' corrections. Never changed, only blanked (ADR 0106).",
   idempotency: "The stored answer to each `Idempotency-Key`, so a request sent again gets its first answer (ADR 0011).",
   job_events:
     "The technician app's writes, each once by the ID the phone gave it, and whether it has reached FSM (ADR 0038, ADR 0065).",
@@ -99,6 +105,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   partial_reasons:
     "The reasons a job may be left partly done, as ops set them, one they took off kept as retired; none means the committed list (ADR 0087).",
   outbound_messages: "Each WhatsApp message, from queued to sent, delivered and read (ADR 0041).",
+  payment_links:
+    "The Razorpay payment link a consultation and fit in one visit is paid by once the client is fitted: one a visit, the product and its price, when Razorpay made and texted it, and the payment that paid it (ADR 0105).",
   payments: "The mirror of Razorpay's payments, and where each stands in Books (ADR 0044).",
   people:
     "One row per person, keyed by mobile number. D1 owns the identity; the CRM's ID is only a reference (ADR 0011).",
@@ -140,7 +148,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   technicians:
     "The mirror of FSM's technicians: name, initials, mobile number and zone; and on staging the few written by hand for a test, which the sync leaves alone (ADR 0032, ADR 0052).",
   tryon_jobs: "One try-on render: the photograph, the look, the provider's job and the result (ADR 0014, ADR 0015).",
-  tryon_sessions: "The try-on gate's session, which shows a visitor their result without the gate again (ADR 0014).",
+  tryon_sessions:
+    "The try-on gate's session, which showed a visitor their result (ADR 0014); written no more since the look goes to WhatsApp only (ADR 0104).",
   visit_blackouts: "Days on which no visit is offered.",
   visit_changes: "Each move or cancel a client made, with its notice and what it cost (ADR 0046).",
   visits: "What an appointment became once FSM closed it: the outcome, its reason and its times (ADR 0032, ADR 0074).",

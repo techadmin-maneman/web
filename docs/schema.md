@@ -28,11 +28,14 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [cron_jobs](#cron_jobs): Each job of the five-minute cron, and how many runs in a row it has failed (ADR 0067).
 - [deletion_requests](#deletion_requests): A client's request to be erased, waiting for ops, and what ops decided (ADR 0042, ADR 0078).
 - [deployment_identity](#deployment_identity): Which environment's database this is, so a Worker refuses to serve on another's (ADR 0003).
+- [discount_code_uses](#discount_code_uses): Each time a discount code was entered on a booking, its hold or its visit: by whom, and what it took off before GST once the price was known. Never deleted: one taken off is marked removed (ADR 0108).
+- [discount_codes](#discount_codes): The discount codes ops make: a percentage with an optional cap or an amount, the kinds of visit each covers, its last day and limits, and whether it is switched off (ADR 0108).
 - [dispatch_moves](#dispatch_moves): Every move ops make on the dispatch board: from where to where, by whom, why, what FSM said, and whether the client was told (ADR 0069).
 - [events](#events): What happened, for analysis, with no personal data in its payload.
-- [first_fit_requests](#first_fit_requests): A first fit asked for on the site's form with the consultation, for the app to offer once the consultation is done; a person's latest stands (ADR 0086).
+- [first_fit_requests](#first_fit_requests): A first fit asked for on the site's form with the consultation, for the app to offer once the consultation is done; a person's latest stands (ADR 0086). The form asks for none since 1 October 2026 (ADR 0105).
 - [fsm_items](#fsm_items): FSM's catalogue, to read each appointment's visit type from its service item and to compare FSM's prices with the price book (ADR 0032, ADR 0073).
 - [grievances](#grievances): A client's grievance, and the answer ops recorded (ADR 0049, ADR 0078).
+- [hair_profiles](#hair_profiles): Every version of a client's hair profile, the fit spec and the history: the technician's at a visit, once for each of the phone's events, and ops' corrections. Never changed, only blanked (ADR 0106).
 - [idempotency](#idempotency): The stored answer to each `Idempotency-Key`, so a request sent again gets its first answer (ADR 0011).
 - [job_events](#job_events): The technician app's writes, each once by the ID the phone gave it, and whether it has reached FSM (ADR 0038, ADR 0065).
 - [last_visits](#last_visits): Each client's last first fit, service or replacement done, and last consultation done, kept by triggers from the view `last_visits_now` as their visits change; the Tasks board's At-risk client and First fit to book read it (ADR 0086).
@@ -45,6 +48,7 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [otp_challenges](#otp_challenges): Each one-time code sent, as a hash, with its sends and attempts (ADR 0030, ADR 0052).
 - [outbound_messages](#outbound_messages): Each WhatsApp message, from queued to sent, delivered and read (ADR 0041).
 - [partial_reasons](#partial_reasons): The reasons a job may be left partly done, as ops set them, one they took off kept as retired; none means the committed list (ADR 0087).
+- [payment_links](#payment_links): The Razorpay payment link a consultation and fit in one visit is paid by once the client is fitted: one a visit, the product and its price, when Razorpay made and texted it, and the payment that paid it (ADR 0105).
 - [payments](#payments): The mirror of Razorpay's payments, and where each stands in Books (ADR 0044).
 - [people](#people): One row per person, keyed by mobile number. D1 owns the identity; the CRM's ID is only a reference (ADR 0011).
 - [photo_sets](#photo_sets): A visit's set of photographs, before or after (ADR 0028).
@@ -71,7 +75,7 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [technician_leave](#technician_leave): A technician's leave in whole days, which the clash check reads beside `slot_claims` (ADR 0062).
 - [technicians](#technicians): The mirror of FSM's technicians: name, initials, mobile number and zone; and on staging the few written by hand for a test, which the sync leaves alone (ADR 0032, ADR 0052).
 - [tryon_jobs](#tryon_jobs): One try-on render: the photograph, the look, the provider's job and the result (ADR 0014, ADR 0015).
-- [tryon_sessions](#tryon_sessions): The try-on gate's session, which shows a visitor their result without the gate again (ADR 0014).
+- [tryon_sessions](#tryon_sessions): The try-on gate's session, which showed a visitor their result (ADR 0014); written no more since the look goes to WhatsApp only (ADR 0104).
 - [visit_blackouts](#visit_blackouts): Days on which no visit is offered.
 - [visit_changes](#visit_changes): Each move or cancel a client made, with its notice and what it cost (ADR 0046).
 - [visits](#visits): What an appointment became once FSM closed it: the outcome, its reason and its times (ADR 0032, ADR 0074).
@@ -140,7 +144,7 @@ Indexes:
 
 The mirror of FSM's appointments: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice (ADR 0032).
 
-Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`, `0059_no_show_charges_and_disputes.sql`, `0060_flat_task_reads.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`, `0059_no_show_charges_and_disputes.sql`, `0060_flat_task_reads.sql`, `0061_one_visit.sql`, `0063_discount_codes.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -171,6 +175,8 @@ Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_i
 | `first_seen_at` | TEXT | yes |  |  |
 | `tier` | TEXT | yes |  |  |
 | `start_before_move` | TEXT | yes |  |  |
+| `one_visit` | TEXT | yes |  |  |
+| `nothing_owed_at` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -184,7 +190,7 @@ Indexes:
 - `appointments_to_invoice`: on (`window_start`), where `status = 'completed' AND invoice_issued_at IS NULL AND fsm_work_order_id IS NOT NULL AND deleted_at IS NULL`
 - A `UNIQUE` constraint: unique on (`fsm_id`)
 
-Triggers: `appointments_consultation_booked_added`, `appointments_consultation_booked_changed`, `appointments_consultation_booked_taken_out`, `appointments_followed_up_added`, `appointments_followed_up_changed`, `appointments_followed_up_taken_out`, `appointments_last_visits_added`, `appointments_last_visits_changed`, `appointments_last_visits_taken_out`, `appointments_replacement_booked_added`, `appointments_replacement_booked_changed`, `appointments_replacement_booked_taken_out`.
+Triggers: `appointments_consultation_booked_added`, `appointments_consultation_booked_changed`, `appointments_consultation_booked_taken_out`, `appointments_first_fit_books_one_visit_added`, `appointments_first_fit_books_one_visit_changed`, `appointments_followed_up_added`, `appointments_followed_up_changed`, `appointments_followed_up_taken_out`, `appointments_last_visits_added`, `appointments_last_visits_changed`, `appointments_last_visits_taken_out`, `appointments_replacement_booked_added`, `appointments_replacement_booked_changed`, `appointments_replacement_booked_taken_out`.
 
 ## audit_log
 
@@ -295,7 +301,7 @@ Triggers: `consents_no_delete`, `consents_no_update`.
 
 A consultation asked for while self-serve booking is off, for ops to fix the hour (ADR 0060).
 
-Made by `0032_consultation_requests.sql`; changed by `0056_task_owners.sql`.
+Made by `0032_consultation_requests.sql`; changed by `0056_task_owners.sql`, `0061_one_visit.sql`, `0063_discount_codes.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -307,6 +313,8 @@ Made by `0032_consultation_requests.sql`; changed by `0056_task_owners.sql`.
 | `referral_code` | TEXT | yes |  | → `referral_codes.code` |
 | `created_at` | TEXT | no |  |  |
 | `booked` | INTEGER | no | `0` |  |
+| `one_visit` | INTEGER | no | `0` |  |
+| `discount_code` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -475,6 +483,68 @@ Made by `0001_deployment_identity.sql`.
 
 Triggers: `deployment_identity_no_delete`, `deployment_identity_no_update`.
 
+## discount_code_uses
+
+Each time a discount code was entered on a booking, its hold or its visit: by whom, and what it took off before GST once the price was known. Never deleted: one taken off is marked removed (ADR 0108).
+
+Made by `0063_discount_codes.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `code_id` | TEXT | no |  | → `discount_codes.id` |
+| `person_id` | TEXT | no |  | → `people.id` |
+| `hold_id` | TEXT | yes |  | → `slot_holds.id` |
+| `appointment_id` | TEXT | yes |  | → `appointments.id` |
+| `amount_off` | INTEGER | yes |  |  |
+| `given_by` | TEXT | no |  |  |
+| `given_by_id` | TEXT | no |  |  |
+| `created_at` | TEXT | no |  |  |
+| `removed_at` | TEXT | yes |  |  |
+| `removed_by` | TEXT | yes |  |  |
+| `removed_by_id` | TEXT | yes |  |  |
+
+Indexes:
+
+- `discount_code_uses_by_code`: on (`code_id`, `person_id`)
+- `discount_code_uses_by_hold`: on (`hold_id`), where `hold_id IS NOT NULL`
+- `discount_code_uses_by_person`: on (`person_id`)
+- `discount_code_uses_by_visit`: on (`appointment_id`), where `appointment_id IS NOT NULL`
+- `discount_code_uses_one_per_hold`: unique on (`hold_id`), where `hold_id IS NOT NULL AND removed_at IS NULL`
+- `discount_code_uses_one_per_visit`: unique on (`appointment_id`), where `appointment_id IS NOT NULL AND removed_at IS NULL`
+
+Triggers: `discount_code_uses_kept`, `discount_code_uses_written_once`.
+
+## discount_codes
+
+The discount codes ops make: a percentage with an optional cap or an amount, the kinds of visit each covers, its last day and limits, and whether it is switched off (ADR 0108).
+
+Made by `0063_discount_codes.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `code` | TEXT | no |  |  |
+| `kind` | TEXT | no |  |  |
+| `value` | INTEGER | no |  |  |
+| `cap` | INTEGER | yes |  |  |
+| `covers_first_fit` | INTEGER | no |  |  |
+| `covers_service` | INTEGER | no |  |  |
+| `covers_replacement` | INTEGER | no |  |  |
+| `expires_on` | TEXT | yes |  |  |
+| `max_uses` | INTEGER | yes |  |  |
+| `once_per_client` | INTEGER | no |  |  |
+| `batch_id` | TEXT | yes |  |  |
+| `created_by` | TEXT | no |  |  |
+| `created_at` | TEXT | no |  |  |
+| `switched_off_by` | TEXT | yes |  |  |
+| `switched_off_at` | TEXT | yes |  |  |
+
+Indexes:
+
+- `discount_codes_by_batch`: on (`batch_id`), where `batch_id IS NOT NULL`
+- A `UNIQUE` constraint: unique on (`code`)
+
 ## dispatch_moves
 
 Every move ops make on the dispatch board: from where to where, by whom, why, what FSM said, and whether the client was told (ADR 0069).
@@ -526,7 +596,7 @@ Indexes:
 
 ## first_fit_requests
 
-A first fit asked for on the site's form with the consultation, for the app to offer once the consultation is done; a person's latest stands (ADR 0086).
+A first fit asked for on the site's form with the consultation, for the app to offer once the consultation is done; a person's latest stands (ADR 0086). The form asks for none since 1 October 2026 (ADR 0105).
 
 Made by `0047_first_fit_requests.sql`; changed by `0056_task_owners.sql`.
 
@@ -579,6 +649,46 @@ Indexes:
 
 - `grievances_by_person`: on (`person_id`)
 - `grievances_by_state`: on (`state`, `created_at`)
+
+## hair_profiles
+
+Every version of a client's hair profile, the fit spec and the history: the technician's at a visit, once for each of the phone's events, and ops' corrections. Never changed, only blanked (ADR 0106).
+
+Made by `0064_hair_profiles.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `person_id` | TEXT | no |  | → `people.id` |
+| `appointment_id` | TEXT | yes |  | → `appointments.id` |
+| `event_id` | TEXT | yes |  |  |
+| `technician_id` | TEXT | yes |  | → `technicians.id` |
+| `staff` | TEXT | yes |  |  |
+| `created_at` | TEXT | no |  |  |
+| `norwood_stage` | TEXT | yes |  |  |
+| `head_circumference_cm` | REAL | yes |  |  |
+| `front_to_nape_cm` | REAL | yes |  |  |
+| `ear_to_ear_cm` | REAL | yes |  |  |
+| `temple_to_temple_cm` | REAL | yes |  |  |
+| `base_width_in` | REAL | yes |  |  |
+| `base_length_in` | REAL | yes |  |  |
+| `colour` | TEXT | yes |  |  |
+| `grey_percent` | INTEGER | yes |  |  |
+| `density_percent` | INTEGER | yes |  |  |
+| `wave` | TEXT | yes |  |  |
+| `hairline` | TEXT | yes |  |  |
+| `product` | TEXT | yes |  |  |
+| `attachment` | TEXT | yes |  |  |
+| `remedies` | TEXT | yes |  |  |
+| `transplant_year` | INTEGER | yes |  |  |
+| `skin_and_allergies` | TEXT | yes |  |  |
+
+Indexes:
+
+- `hair_profiles_by_event`: unique on (`appointment_id`, `event_id`)
+- `hair_profiles_by_person`: on (`person_id`, `created_at`)
+
+Triggers: `hair_profiles_no_delete`, `hair_profiles_only_blanked`.
 
 ## idempotency
 
@@ -688,7 +798,7 @@ Indexes:
 
 The evidence a no-show is ruled on, the ruling, and what a charge cost the client (ADR 0065, ADR 0072, ADR 0096).
 
-Made by `0026_field_operations.sql`; changed by `0042_no_show_reasons.sql`, `0044_hand_offs_and_messages.sql`, `0054_policies_in_the_console.sql`, `0059_no_show_charges_and_disputes.sql`, `0061_dispute_window.sql`.
+Made by `0026_field_operations.sql`; changed by `0042_no_show_reasons.sql`, `0044_hand_offs_and_messages.sql`, `0054_policies_in_the_console.sql`, `0059_no_show_charges_and_disputes.sql`, `0065_dispute_window.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -870,6 +980,36 @@ Made by `0049_consumables_and_stock.sql`.
 | `retired_at` | TEXT | yes |  |  |
 | `set_by` | TEXT | no |  |  |
 | `set_at` | TEXT | no |  |  |
+
+## payment_links
+
+The Razorpay payment link a consultation and fit in one visit is paid by once the client is fitted: one a visit, the product and its price, when Razorpay made and texted it, and the payment that paid it (ADR 0105).
+
+Made by `0061_one_visit.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `appointment_id` | TEXT | no |  | → `appointments.id` |
+| `tier` | TEXT | no |  |  |
+| `amount` | INTEGER | no |  |  |
+| `amount_ex_gst` | INTEGER | no |  |  |
+| `gst_percent` | INTEGER | no |  |  |
+| `razorpay_link_id` | TEXT | yes |  |  |
+| `short_url` | TEXT | yes |  |  |
+| `sent_at` | TEXT | yes |  |  |
+| `refused_at` | TEXT | yes |  |  |
+| `razorpay_payment_id` | TEXT | yes |  |  |
+| `paid_at` | TEXT | yes |  |  |
+| `created_at` | TEXT | no |  |  |
+| `updated_at` | TEXT | no |  |  |
+
+Indexes:
+
+- `payment_links_unpaid`: on (`created_at`), where `paid_at IS NULL`
+- `payment_links_unsent`: on (`created_at`), where `sent_at IS NULL AND refused_at IS NULL`
+- A `UNIQUE` constraint: unique on (`appointment_id`)
+- A `UNIQUE` constraint: unique on (`razorpay_link_id`)
 
 ## payments
 
@@ -1055,7 +1195,7 @@ Made by `0014_payments.sql`.
 
 A person who came through an invite, to the first invite they used, what became of its grant, and who attached it and why where ops did (ADR 0048, ADR 0089).
 
-Made by `0021_referrals.sql`; changed by `0037_cron_indexes.sql`, `0044_hand_offs_and_messages.sql`, `0051_invites_ops_attach.sql`, `0060_flat_task_reads.sql`.
+Made by `0021_referrals.sql`; changed by `0037_cron_indexes.sql`, `0044_hand_offs_and_messages.sql`, `0051_invites_ops_attach.sql`, `0060_flat_task_reads.sql`, `0062_referral_reward_kept.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1077,6 +1217,9 @@ Made by `0021_referrals.sql`; changed by `0037_cron_indexes.sql`, `0044_hand_off
 | `friend_first_name` | TEXT | yes |  |  |
 | `attached_by` | TEXT | yes |  |  |
 | `attach_reason` | TEXT | yes |  |  |
+| `referrer_visits` | INTEGER | yes |  |  |
+| `friend_visits` | INTEGER | yes |  |  |
+| `credit_valid_days` | INTEGER | yes |  |  |
 
 Indexes:
 
@@ -1216,7 +1359,7 @@ Indexes:
 
 A slot held while a client pays, and what became of it (ADR 0045, ADR 0068).
 
-Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`, `0058_held_bookings.sql`.
+Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`, `0058_held_bookings.sql`, `0061_one_visit.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1257,6 +1400,7 @@ Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_chan
 | `no_show_charge` | TEXT | yes |  |  |
 | `fsm_held_at` | TEXT | yes |  |  |
 | `fsm_refusal` | TEXT | yes |  |  |
+| `one_visit` | INTEGER | no | `0` |  |
 
 Indexes:
 
@@ -1509,7 +1653,7 @@ Indexes:
 
 ## tryon_sessions
 
-The try-on gate's session, which shows a visitor their result without the gate again (ADR 0014).
+The try-on gate's session, which showed a visitor their result (ADR 0014); written no more since the look goes to WhatsApp only (ADR 0104).
 
 Made by `0003_tryon.sql`; changed by `0037_cron_indexes.sql`.
 

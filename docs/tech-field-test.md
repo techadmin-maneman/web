@@ -25,7 +25,7 @@ Ops do these once. Tick each before the phone leaves the office.
 | #   | Set up                                                                                                                                                                                    | Done |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
 | 1   | The technician is a user in Zoho FSM, active, **with his mobile number on his FSM user** (open point 27)                                                                                  |      |
-| 2   | That mobile number is on staging's WhatsApp allowlist, or no login code will arrive (runbook, step 7)                                                                                     |      |
+| 2   | Nothing to do here since 30 September 2026: a login code answers whoever asks for it, on any number (ADR 0097, "logins open, reminders fenced")                                           |      |
 | 3   | Three jobs are scheduled in FSM for that technician, today, at the three buildings in Part 1                                                                                              |      |
 | 4   | Each job's client address in FSM has a street address FSM could geocode (open point 54)                                                                                                   |      |
 | 5   | The phone is charged to 100%, with the battery percentage switched on in the status bar. Android or iPhone, whichever the technician owns                                                 |      |

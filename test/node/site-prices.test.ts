@@ -48,17 +48,6 @@ const ANSWER: PublishedPrices = {
   ],
 };
 
-function sentence(text: string | undefined): string {
-  if (text === undefined) throw new Error("the content has lost a sentence this test reads");
-  return text;
-}
-
-const firstYearAnswer = sentence(
-  site.faq.items.find((item) => item.q === "What does the first year cost in total?")?.a,
-);
-const ourCost = site.comparison.rows.find((row) => row.label === "Cost")?.cells[2];
-const serviceStep = sentence(site.howItWorks.steps[3]?.meta);
-
 describe("the site's prices", () => {
   // FEO-22: the site typed its figures, its first-year totals and the search engines' price range.
   it("fills every sentence that gives a price from the book's figures, and computes the totals", () => {
@@ -74,16 +63,7 @@ describe("the site's prices", () => {
     expect(fillPrices(site.prices.example, words)).toBe(
       "A standard base in the first year: Rs. 35,000 plus twelve service visits at Rs. 2,500 — Rs. 65,000.",
     );
-    expect(fillPrices(firstYearAnswer, words)).toBe(
-      "A standard base: Rs. 35,000 for the first fit plus twelve monthly service visits at Rs. 2,500, so Rs. 65,000. " +
-        "Premium: Rs. 40,000 plus twelve at Rs. 2,000, so Rs. 64,000. A replacement piece at six months is separate.",
-    );
     expect(fillPrices(site.business.priceRange, words)).toBe("Rs. 35,000–Rs. 40,000");
-    expect(site.bases.kinds.map((kind) => fillPrices(kind.price, words))).toEqual(["Rs. 35,000", "Rs. 40,000"]);
-    expect(fillPrices(serviceStep, words)).toBe("Rs. 2,500 a visit · ninety minutes");
-    expect(typeof ourCost === "string" ? fillPrices(ourCost, words) : ourCost).toBe(
-      "Rs. 35,000, then Rs. 2,500 a month",
-    );
     expect(referral.prices.rows.map((row) => fillPrices(row.amount, words))).toEqual(["Rs. 35,000", "Rs. 2,500"]);
   });
 
@@ -92,12 +72,8 @@ describe("the site's prices", () => {
     const words = priceWords(MOVED);
 
     expect(site.prices.rows.map((row) => fillPrices(row.premium, words))).toEqual(["", "", ""]);
-    expect(fillPrices(firstYearAnswer, words)).toBe(
-      "A standard base: Rs. 35,000 for the first fit plus twelve monthly service visits at Rs. 2,500, so Rs. 65,000. " +
-        "A replacement piece at six months is separate.",
-    );
+    expect(fillPrices(site.prices.example, words)).not.toContain("Premium");
     expect(fillPrices(site.business.priceRange, words)).toBe("Rs. 35,000");
-    expect(site.bases.kinds.map((kind) => fillPrices(kind.price, words))).toEqual(["Rs. 35,000", ""]);
   });
 
   it("is built with the price book's own figures, and no Premium, which has none of its own", () => {
@@ -107,7 +83,17 @@ describe("the site's prices", () => {
       "A standard base in the first year: Rs. 30,000 plus twelve service visits at Rs. 2,000 — Rs. 54,000.",
     );
     expect(BUILT_WORDS).not.toHaveProperty("premiumFirstFit");
-    expect(fillPrices(firstYearAnswer, BUILT_WORDS)).not.toContain("Premium");
+  });
+
+  // The owner took the prices off the site on 1 October 2026 (ADR 0103). The prices section, the invite's list and the
+  // price range search engines read wait on PRICES_SHOWN; nothing else gives a price.
+  it("gives a price only in what waits on PRICES_SHOWN, which is off", () => {
+    expect(site.PRICES_SHOWN).toBe(false);
+    const home = { ...site, prices: null, business: { ...site.business, priceRange: null } };
+    const landing = { ...referral, prices: null };
+    for (const text of [JSON.stringify(home), JSON.stringify(landing)]) {
+      expect(text.match(/\{(?:firstFit|service|replacement|premium\w+|firstYear|firstFitRange)\}/g)).toBeNull();
+    }
   });
 
   it("starts the range at the cheaper first fit, whichever tier that is", () => {
@@ -187,7 +173,7 @@ describe("the site's prices", () => {
     const sentences = [JSON.stringify(site), JSON.stringify(referral)]
       .flatMap((text) => text.match(/"[^"]*\{(?:firstFit|service|replacement|premium\w+|firstYear)\}[^"]*"/g) ?? [])
       .map((quoted) => JSON.parse(quoted) as string);
-    expect(sentences.length).toBeGreaterThan(10);
+    expect(sentences.length).toBeGreaterThanOrEqual(9);
     for (const text of sentences) expect(text, text).not.toMatch(/[&"'<>]/);
   });
 
@@ -199,13 +185,19 @@ describe("the site's prices", () => {
 });
 
 describe("the publish gate, on prices", () => {
+  // The try-on's notices await counsel (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md), which the gate also
+  // refuses (test/node/site-content.test.ts); here every notice is counted approved, so the prices are read alone.
+  const approved = Object.fromEntries(
+    Object.entries(site.notices).map(([name, notice]) => [name, { ...notice, approved: true }]),
+  );
+
   // FEO-22: the landing's prices were typed, and the gate never read referral.ts.
   it("stops a price typed into the landing", () => {
     const [first, second] = referral.prices.rows;
     if (first === undefined || second === undefined) throw new Error("the landing has lost a price row");
     const landing = { ...referral, prices: { rows: [{ ...first, amount: "Rs. 25,000" }, second] } };
 
-    expect(publishProblems(undefined, undefined, [site, landing])).toEqual([
+    expect(publishProblems(undefined, approved, [site, landing])).toEqual([
       'a price is typed by hand, "Rs. 25,000": every price comes from the price book (docs/decisions/0073-prices-from-the-price-book.md)',
     ]);
   });
@@ -213,11 +205,11 @@ describe("the publish gate, on prices", () => {
   it("stops a price typed into the site, with the sign the site wrote before as well", () => {
     for (const typed of ["Rs. 43,000", "₹43,000"]) {
       const home = { ...site, prices: { ...site.prices, example: `A standard base in the first year: ${typed}.` } };
-      expect(publishProblems(undefined, undefined, [home, referral]), typed).toHaveLength(1);
+      expect(publishProblems(undefined, approved, [home, referral]), typed).toHaveLength(1);
     }
   });
 
   it("lets through what a transplant and medication cost, which are not our prices", () => {
-    expect(publishProblems(undefined, undefined, [site, referral])).toEqual([]);
+    expect(publishProblems(undefined, approved, [site, referral])).toEqual([]);
   });
 });

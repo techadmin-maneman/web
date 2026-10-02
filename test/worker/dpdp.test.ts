@@ -185,6 +185,18 @@ describe("GET /api/me/export", () => {
          VALUES ('consent-a', ?1, 'photos_own_record', 'photos-own-record-booking-v1', 1, ?2, 'app_booking'),
                 ('consent-b', ?1, 'whatsapp_visits', 'whatsapp-visits-v1', 1, ?2, NULL)`,
       ).bind(PERSON, NOW.toISOString()),
+      // A discount code ops entered on one of their visits (ADR 0108); the member of staff is not theirs to see.
+      env.DB.prepare(
+        `INSERT INTO discount_codes (id, code, kind, value, covers_first_fit, covers_service, covers_replacement,
+           once_per_client, created_by, created_at)
+         VALUES ('code-a', 'TENPC', 'percent', 10, 0, 1, 0, 1, 'ops@maneman.in', ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO discount_code_uses (id, code_id, person_id, appointment_id, amount_off, given_by, given_by_id,
+           created_at)
+         VALUES ('use-a', 'code-a', ?1, (SELECT id FROM appointments WHERE person_id = ?1 LIMIT 1), 20000, 'ops',
+           'ops@maneman.in', ?2)`,
+      ).bind(PERSON, NOW.toISOString()),
     ]);
     const answer = await request(appFor("local", fakeDependencies(), {}, "client"), "/api/me/export", {
       headers: { Cookie: cookie },
@@ -200,6 +212,9 @@ describe("GET /api/me/export", () => {
       photo_views: [{ by: "ops@maneman.in", at: new Date(NOW.getTime() - 60_000).toISOString() }],
       consultation_requests: [{ pincode: "122018", requested_date: "2026-10-02", requested_window: "morning" }],
       first_fit_requests: [{ preferred_window: "afternoon" }],
+      discount_codes: [
+        { code: "TENPC", amount_off: 20_000, given_by: "ops", created_at: NOW.toISOString(), removed_at: null },
+      ],
       consents: [
         {
           purpose: "photos_own_record",
