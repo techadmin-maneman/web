@@ -82,6 +82,9 @@ const LIVE = `a.person_id = ?1 AND a.deleted_at IS NULL AND a.window_start IS NO
 const NOT_CLOSED: readonly AppointmentStatus[] = ["scheduled", "dispatched", "in_progress"];
 const UPCOMING_STATUSES = `('scheduled', 'dispatched', 'in_progress')`;
 const PAST_STATUSES = `('completed', 'terminated')`;
+/** A visit cancelled outright, not one a charged move replaced with a new visit, which stands in its place. */
+const CANCELLED = `(a.status = 'cancelled' AND NOT EXISTS (SELECT 1 FROM visit_changes c
+    WHERE c.appointment_id = a.id AND c.kind = 'replaced'))`;
 
 /** What a visit's summary reads beyond its row: where it is, and the day's times its window is read by. */
 interface SummaryContext {
@@ -174,12 +177,15 @@ export async function isFitted(db: D1Database, personId: string): Promise<boolea
   return row !== null;
 }
 
+/** `withCancelled`: past visits include those cancelled, so the client's own list keeps a record of a cancellation. */
 export async function listVisits(
   db: D1Database,
   personId: string,
   now: Date,
+  { withCancelled = false }: { readonly withCancelled?: boolean } = {},
 ): Promise<{ upcoming: VisitSummary[]; past: VisitSummary[] }> {
   const context = await contextOf(db, personId);
+  const pastStatus = withCancelled ? `(a.status IN ${PAST_STATUSES} OR ${CANCELLED})` : `a.status IN ${PAST_STATUSES}`;
   const upcoming = await db
     .prepare(
       `SELECT ${APPOINTMENT_COLUMNS} FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id
@@ -190,7 +196,7 @@ export async function listVisits(
   const past = await db
     .prepare(
       `SELECT ${APPOINTMENT_COLUMNS} FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id
-       WHERE ${LIVE} AND a.status IN ${PAST_STATUSES} ORDER BY a.window_start DESC`,
+       WHERE ${LIVE} AND ${pastStatus} ORDER BY a.window_start DESC`,
     )
     .bind(personId)
     .all<AppointmentRow>();
