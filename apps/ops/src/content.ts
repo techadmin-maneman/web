@@ -1708,8 +1708,8 @@ export const settings = {
     errors: {
       code: "A code is 4 to 16 letters and figures, none of them I, L, O, 0 or 1.",
       count: "A code you type is made once. Generate them to make more.",
-      value: "A percentage is 1 to 100.",
-      cap: "Only a percentage takes a cap.",
+      value: "A percentage is 1 to 100. An amount is whole rupees.",
+      cap: "Only a percentage takes a cap, in whole rupees.",
       covers: "Choose what the code covers.",
       expires_on: "The last day cannot be before today.",
       max_uses: "Generated codes are single-use: one use each.",
