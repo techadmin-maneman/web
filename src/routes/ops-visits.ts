@@ -40,7 +40,17 @@ import { opsInputs } from "../http/ops-inputs.ts";
 import { json } from "../http/openapi.ts";
 import { stripStart } from "../policy/next-visit.ts";
 import { windowTimesOf } from "../policy/slot-times.ts";
-import { PriceSchema, ServiceSchema } from "./client-booking.ts";
+import { ServiceSchema } from "./client-booking.ts";
+
+/** A visit's price, as the client's app gives it; the console's own "Price" is a row of the price book. */
+const PriceSchema = z
+  .object({
+    amount_ex_gst: z.number().int().openapi({ description: "In paise, before GST." }),
+    amount: z.number().int().openapi({ description: "In paise, GST included: what the client pays." }),
+    gst_percent: z.number(),
+  })
+  .strict()
+  .openapi("VisitPrice");
 
 const TechnicianSchema = z.object({ id: z.string(), name: z.string() }).strict().openapi("FreeTechnician");
 

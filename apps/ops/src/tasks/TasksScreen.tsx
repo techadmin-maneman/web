@@ -11,8 +11,9 @@
 // they pay (src/policy/tasks.ts).
 //
 // Each task leads to where it is done: the client's page, and the row in the
-// section that decides it. Each group's count is the whole queue's, and a group
-// longer than the board lists says so.
+// section that decides it. A consultation asked for, a first fit to book and a
+// replacement due are booked from the row itself (BookFromTask.tsx). Each group's
+// count is the whole queue's, and a group longer than the board lists says so.
 //
 // The board writes an owner in ops against every task, in its own column. Ops
 // take a task, give it to another member of staff or hand it back, and close a
@@ -32,6 +33,7 @@ import { daysUntil } from "../lib/due.ts";
 import { rowPath } from "../lib/target.ts";
 import type { ClientTab } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
+import { BookFromTask } from "./BookFromTask.tsx";
 import { TaskActions } from "./TaskActions.tsx";
 import styles from "./tasks.module.css";
 
@@ -44,8 +46,8 @@ const SIGNALS: Readonly<Record<string, string>> = referrals.queue.signals;
 
 /**
  * Where each group's task is decided: the section, and the kind of row the
- * task's id names there. A group missing here is done outside the console
- * (in FSM or Books), and reaches only the client's page.
+ * task's id names there. A group missing here is done from the row, or outside
+ * the console (in FSM or Books), and reaches only the client's page.
  */
 const DECIDED_IN: Partial<Record<Group, { readonly page: string; readonly row: string | null }>> = {
   // The dispatch board draws a week, not a list, so the call is recorded, and the job moved, from its own block.
@@ -226,6 +228,7 @@ function Row({ group, task, now, acting }: { group: Group; task: Task; now: Date
             </OpsLink>
           </span>
         )}
+        <BookFromTask group={group} task={task} subject={subject} onBooked={acting.onClosed} />
         <TaskActions group={group} task={task} subject={subject} {...acting} />
       </div>
       <span className={styles.owner}>

@@ -6483,10 +6483,10 @@ export interface components {
             tier: string;
             name: string;
             minutes: number;
-            price: components["schemas"]["Price"];
+            price: components["schemas"]["VisitPrice"];
         };
-        Price: {
-            /** @description In paise, before GST: the main figure. */
+        VisitPrice: {
+            /** @description In paise, before GST. */
             amount_ex_gst: number;
             /** @description In paise, GST included: what the client pays. */
             amount: number;
@@ -6520,7 +6520,7 @@ export interface components {
              */
             pays: "nothing" | "credit" | "link";
             service: components["schemas"]["VisitService"];
-            price: components["schemas"]["Price"] & unknown;
+            price: components["schemas"]["VisitPrice"] & unknown;
             /** Format: date */
             date: string;
             /** @enum {string} */
@@ -7410,6 +7410,20 @@ export interface components {
             } | {
                 [key: string]: string;
             } | null;
+        };
+        Price: {
+            /** @enum {string} */
+            item: "consultation" | "first_fit" | "service" | "replacement" | "late_fee_first_fit" | "late_fee_replacement";
+            tier: string;
+            /** @description In paise, before GST. */
+            amount_ex_gst: number;
+            gst_percent: number;
+            /**
+             * Format: date
+             * @description India's date it applies from.
+             */
+            valid_from: string;
+            in_force: boolean;
         };
         PriceChange: {
             /**

@@ -6361,7 +6361,7 @@ Request body:
       "type": "integer"
     },
     "price": {
-      "$ref": "#/components/schemas/Price"
+      "$ref": "#/components/schemas/VisitPrice"
     }
   },
   "required": [
@@ -6374,7 +6374,7 @@ Request body:
 }
 ```
 
-### Price
+### VisitPrice
 
 ```json
 {
@@ -6382,7 +6382,7 @@ Request body:
   "properties": {
     "amount_ex_gst": {
       "type": "integer",
-      "description": "In paise, before GST: the main figure."
+      "description": "In paise, before GST."
     },
     "amount": {
       "type": "integer",
@@ -6496,7 +6496,7 @@ Request body:
     "price": {
       "allOf": [
         {
-          "$ref": "#/components/schemas/Price"
+          "$ref": "#/components/schemas/VisitPrice"
         },
         {
           "description": "What the client pays: the service's price less any code."
@@ -10604,6 +10604,54 @@ Request body:
   },
   "required": [
     "value"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Price
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "item": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement",
+        "late_fee_first_fit",
+        "late_fee_replacement"
+      ]
+    },
+    "tier": {
+      "type": "string"
+    },
+    "amount_ex_gst": {
+      "type": "integer",
+      "description": "In paise, before GST."
+    },
+    "gst_percent": {
+      "type": "integer"
+    },
+    "valid_from": {
+      "type": "string",
+      "format": "date",
+      "description": "India's date it applies from."
+    },
+    "in_force": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "item",
+    "tier",
+    "amount_ex_gst",
+    "gst_percent",
+    "valid_from",
+    "in_force"
   ],
   "additionalProperties": false
 }
