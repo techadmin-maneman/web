@@ -1758,6 +1758,10 @@ export const settings = {
   storage: (held: number, share: number) =>
     `Photographs and referral cards hold ${(held / 1e9).toFixed(2)} GB in R2, ${String(Math.round((held / share) * 100))}% ` +
     `of their ${String(share / 1e9)} GB share. Past it R2 bills, as the owner accepted; ops are told at 50%, 80% and 100%.`,
+  /** PLACEHOLDER: no board draws this line either. Megabytes as Cloudflare counts them, a million bytes. */
+  database: (held: number, limit: number) =>
+    `The database holds ${(held / 1e6).toFixed(0)} MB, ${String(Math.round((held / limit) * 100))}% of the ` +
+    `${String(limit / 1e6)} MB the free plan allows. Past it every write fails; ops are told at 50%, 80% and 95%.`,
   // PLACEHOLDER: no board draws the tabs' names.
   tabs: {
     rules: "Rules",

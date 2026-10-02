@@ -587,7 +587,7 @@ async function alertIfNoCreditPaid(
   await options.alertOnce?.({
     key: `credit_visit_without_credit:${booked.id}`,
     message:
-      `Booking ${booked.id} was booked on a visit credit, but the client had none left by then,` +
+      `Booking ${booked.id} was booked on a visit credit, but the client had none left by then, ` +
       "so nothing has paid for it. Decide whether to charge for the visit.",
     link: `/clients/${booked.person_id}`,
   });

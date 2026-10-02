@@ -3,7 +3,16 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { deleteCounted, deleteUnder, putCounted, readMeter, tellOfStorage } from "../../src/domain/storage-meter.ts";
+import {
+  deleteCounted,
+  deleteUnder,
+  putCounted,
+  readDatabaseBytes,
+  readMeter,
+  tellOfDatabaseSize,
+  tellOfStorage,
+} from "../../src/domain/storage-meter.ts";
+import { DATABASE_LIMIT_BYTES } from "../../src/policy/database-size.ts";
 import { PHASE_2_SHARE_BYTES } from "../../src/policy/storage-share.ts";
 import { fakeDependencies, markDatabase, type TestDependencies } from "./helpers.ts";
 
@@ -133,5 +142,41 @@ describe("telling ops", () => {
     await setMeter(PHASE_2_SHARE_BYTES * 0.85);
     await tellOfStorage(env.DB, deps.alertOnce);
     expect(deps.alerts).toEqual([expect.stringContaining("80% of their 4 GB share")]);
+  });
+});
+
+// PLAT-16 of the audit, 2 October 2026: nothing read the database's size, and past D1's limit every write fails.
+describe("the database's size", () => {
+  it("is what D1 says the database holds", async () => {
+    expect(await readDatabaseBytes(env.DB)).toBeGreaterThan(0);
+  });
+
+  it("says nothing below half the limit", async () => {
+    await tellOfDatabaseSize(env.DB, deps.alertOnce, DATABASE_LIMIT_BYTES / 2 - 1);
+    expect(deps.alerts).toEqual([]);
+  });
+
+  it("tells once at each of half, 80% and 95% of the limit, and not again on the next run", async () => {
+    await tellOfDatabaseSize(env.DB, deps.alertOnce, 250e6);
+    await tellOfDatabaseSize(env.DB, deps.alertOnce, 260e6);
+    await tellOfDatabaseSize(env.DB, deps.alertOnce, 400e6);
+    await tellOfDatabaseSize(env.DB, deps.alertOnce, 480e6);
+    await tellOfDatabaseSize(env.DB, deps.alertOnce, 490e6);
+
+    expect(deps.alerts).toEqual([
+      expect.stringContaining("The database holds 250 MB, 50% of the 500 MB"),
+      expect.stringContaining("The database holds 400 MB, 80% of the 500 MB"),
+      expect.stringContaining("The database holds 480 MB, 95% of the 500 MB"),
+    ]);
+    const { results } = await env.DB.prepare("SELECT key FROM alerts WHERE key LIKE 'd1_size:%'").all<{
+      key: string;
+    }>();
+    expect(results.map((row) => row.key).sort()).toEqual(["d1_size:50", "d1_size:80", "d1_size:95"]);
+  });
+
+  it("tells only the highest mark passed since the last run, and leaves R2's marks alone", async () => {
+    await tellOfDatabaseSize(env.DB, deps.alertOnce, 420e6);
+    expect(deps.alerts).toEqual([expect.stringContaining("80% of the 500 MB")]);
+    expect((await readMeter(env.DB)).toldPercent).toBe(0);
   });
 });

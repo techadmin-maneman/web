@@ -49,7 +49,7 @@ export const ERROR_CODES = [
   "hold_expired",
   // No slot is held for a client who has not given their address (docs/decisions/0079-an-address-before-a-slot.md).
   "address_required",
-  // A public form for a number that already has a consultation still to happen (docs/decisions/0068-a-paid-hold-is-kept.md).
+  // Ops booking a consultation or first fit for a client who has one still to come, or a payment link open for one.
   "already_booked",
   // Moving or cancelling a visit (docs/decisions/0046-moving-and-cancelling.md): it has started, passed or gone;
   // or the 24 hours ran out between showing the terms and confirming them.

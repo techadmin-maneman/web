@@ -3,8 +3,9 @@
 //
 // What the app offers, in the booking sheet it opens pre-filled: once the consultation is done, the first fit, from
 // the lead time ops set and in the window the site's request asked for; once a first fit, a service or a replacement
-// is done, the next service on its due day and in the last visit's window, or the replacement where the piece in
-// wear falls due first. Nothing is offered while a visit is booked, or paid for and on its way to FSM.
+// is done, the next service on its due day and in the last visit's window, or the replacement on the piece's own due
+// day where the piece in wear falls due first. A visit whose due day has passed is offered for tomorrow, and the app
+// says the day it was due. Nothing is offered while a visit is booked, or paid for and on its way to FSM.
 //
 // The reminder: one WhatsApp a last visit, from `reminder_before_due` days before its next service falls due until
 // the day it does, while nothing is booked. The cron's pass writes it from the evening's reminder hour; the
@@ -17,8 +18,10 @@ import { VISIT_TYPE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
 import { firstNameOf } from "../lib/names.ts";
 import {
+  firstFitDue,
   firstFitOpens,
   lastBookableDay,
+  nextVisitAfter,
   nextVisitType,
   offeredDay,
   remindedIfDoneBetween,
@@ -52,6 +55,11 @@ export interface NextOffer {
    * while the kind offers none, as a first fit does before ops offer a hair system.
    */
   readonly tier: string | null;
+  /**
+   * India's day it fell or falls due: a service's from the last visit and the cadence, a replacement's the piece's own,
+   * a first fit's from the consultation and the lead time.
+   */
+  readonly due_on: string;
   /** India's day it is offered on: the day it falls due, or tomorrow once that has passed. */
   readonly date: string;
   /** The window it is offered in, where a visit of its kind can start in it; null for none. */
@@ -105,27 +113,27 @@ export async function nextVisitFacts(
   const tomorrow = addDays(indiaDate(now), 1);
   if (row.last_start !== null) {
     const last = new Date(row.last_start);
-    const due = serviceDue(indiaDate(last), days);
-    const type = nextVisitType(due, row.piece_due);
-    const date = offeredDay(due, tomorrow);
+    const next = nextVisitAfter(indiaDate(last), row.piece_due, tomorrow, days);
     return {
       booked,
       offer: {
-        type,
-        tier: await serviceToOffer(db, personId, type, date),
-        date,
-        window: windowFor(type, (await loadSlotSchedule(db)).at(last).window),
+        type: next.type,
+        tier: await serviceToOffer(db, personId, next.type, next.offeredOn),
+        due_on: next.dueOn,
+        date: next.offeredOn,
+        window: windowFor(next.type, (await loadSlotSchedule(db)).at(last).window),
       },
     };
   }
   if (row.consulted_start === null) return { booked, offer: null };
-  const consulted = indiaDate(new Date(row.consulted_start));
-  const date = firstFitOpens(consulted, tomorrow, days);
+  const due = firstFitDue(indiaDate(new Date(row.consulted_start)), days);
+  const date = offeredDay(due, tomorrow);
   return {
     booked,
     offer: {
       type: "first_fit",
       tier: await serviceToOffer(db, personId, "first_fit", date),
+      due_on: due,
       date,
       window: windowFor("first_fit", row.asked_window),
     },

@@ -10,10 +10,11 @@
 // same lead behind it so the CRM funnel sees every booking. Whether we come is
 // decided by the pincode, which GET /api/pincodes/{pin} answers for the form.
 //
-// A number that already has a consultation still to happen is answered
-// already_booked, with its day and window, rather than booked twice; one past
-// consultations books in the app (docs/decisions/0068-a-paid-hold-is-kept.md).
-// The same submission sent again under its Idempotency-Key gets its first answer.
+// Every number gets the same answer, so the form tells nobody whether a number
+// is a client's: one with a consultation still to happen, or past consultations,
+// books nothing, and its owner is told why on WhatsApp
+// (src/policy/site-booking.ts). The same submission sent again under its
+// Idempotency-Key gets its first answer.
 //
 // A consultation is booked with the full address it is at, which becomes the
 // person's address unless they already have one; a waitlist entry takes none
@@ -39,7 +40,7 @@ import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { bookConsultation, joinTheWaitlist } from "../domain/public-booking.ts";
 import type { Plan } from "../policy/one-visit.ts";
 import { CODE_PATTERN, inviteOf, type Invite } from "../domain/referrals.ts";
-import { errorBody, errorResponse, ErrorResponseSchema } from "../http/errors.ts";
+import { errorBody, errorResponse } from "../http/errors.ts";
 import { IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
 import { formRequest } from "../http/public-form.ts";
 import { addressOf, AddressSchema, RequiredFlatSchema } from "./client-profile.ts";
@@ -93,13 +94,6 @@ export const InviteStateSchema = z.enum(["valid", "expired", "unknown"]).openapi
 });
 
 export const CreditsSchema = z.boolean().openapi({ description: "Whether the invite's service visits apply." });
-
-/** What a booking did with the address it was sent (src/policy/site-booking.ts). */
-export const AddressOutcomeSchema = z.enum(["saved", "on_account"]).openapi({
-  description:
-    "saved: the address sent is now the person's; on_account: the person already had one, which the visit goes " +
-    "to, and the one sent was not written. The address on the account is never sent back.",
-});
 
 /**
  * The address a consultation is at: the app's, typed in full, without a building chosen from Google's
@@ -170,7 +164,6 @@ const ConsultationSchema = z
     area: z.string(),
     credits: CreditsSchema,
     invite: InviteStateSchema,
-    address: AddressOutcomeSchema,
     one_visit: OneVisitOutcomeSchema,
     discount_code: z.boolean().openapi({
       description:
@@ -186,25 +179,15 @@ const WaitlistSchema = z
   .strict()
   .openapi("Waitlist");
 
-/** The consultation a number already has, which a second booking is refused for. */
-export const AlreadyBookedSchema = z
-  .object({
-    error: ErrorResponseSchema.shape.error,
-    booked: z
-      .object({ date: z.iso.date(), window: z.enum(BOOKING_WINDOWS) })
-      .strict()
-      .openapi({ description: "The day and window of the consultation still to happen." }),
-  })
-  .strict()
-  .openapi("AlreadyBooked");
+/** 409, the same for every number: a window gone, or the same submission still running. */
+export const takenOrInProgress = errorResponse(
+  "taken: that window has gone; idempotency_in_progress: the first request with this key is still running",
+);
 
-/** 409: a window gone, or a consultation this number already has. */
-export const takenOrBooked = {
-  description:
-    "taken: that window has gone; already_booked: this number has a consultation still to happen; " +
-    "idempotency_in_progress: the first request with this key is still running",
-  content: { "application/json": { schema: z.union([ErrorResponseSchema, AlreadyBookedSchema]) } },
-} as const;
+/** Booked, or asked for, or the answer a new number would get: a number we know is told the rest on WhatsApp. */
+export const BOOKED_DESCRIPTION =
+  "Booked, or asked for. A number with a consultation still to happen, or past consultations, gets the answer a " +
+  "new number would, books nothing, and is told why on WhatsApp.";
 
 const consultationRoute = createRoute({
   method: "post",
@@ -215,18 +198,17 @@ const consultationRoute = createRoute({
     body: { content: { "application/json": { schema: ConsultationRequestSchema } } },
   },
   responses: {
-    201: { description: "Booked, or asked for", content: { "application/json": { schema: ConsultationSchema } } },
+    201: { description: BOOKED_DESCRIPTION, content: { "application/json": { schema: ConsultationSchema } } },
     400: errorResponse(
       "invalid_request: fields names what was refused, address.pincode for an address in another pincode, window " +
         "for one visit in the evening",
     ),
     403: errorResponse("turnstile_failed"),
-    409: takenOrBooked,
+    409: takenOrInProgress,
     422: errorResponse(
-      "not_bookable: the pincode is not served, the day is not open, or this number is past consultations and " +
-        "books in the app; code_not_applicable: the discount code does not apply, fields names discount_code; " +
-        "no_product: one visit, on a day the console offers no hair system; idempotency_key_reused: the key was " +
-        "used with a different body",
+      "not_bookable: the pincode is not served, or the day is not open; code_not_applicable: the discount code " +
+        "does not apply, fields names discount_code; no_product: one visit, on a day the console offers no hair " +
+        "system; idempotency_key_reused: the key was used with a different body",
     ),
     429: errorResponse("rate_limited"),
     503: errorResponse("unavailable: Turnstile could not be reached"),
@@ -284,8 +266,8 @@ export function registerConsultations(app: App): void {
         discountCode: body.discount_code ?? null,
       });
       if (!booked.ok) return booked;
-      const { state, date, window, area, credits, invite, address, oneVisit, discountCode } = booked;
-      const answer = { state, date, window, area, credits, invite, address, one_visit: oneVisit };
+      const { state, date, window, area, credits, invite, oneVisit, discountCode } = booked;
+      const answer = { state, date, window, area, credits, invite, one_visit: oneVisit };
       return { ok: true, body: { ...answer, discount_code: discountCode } };
     });
     if (run.kind === "replay") return c.json(run.body, 201);
@@ -294,9 +276,6 @@ export function registerConsultations(app: App): void {
 
     const booked = run.outcome;
     if (booked.ok) return c.json(booked.body, 201);
-    if (booked.booked !== undefined) {
-      return c.json({ ...errorBody("already_booked", requestId), booked: booked.booked }, 409);
-    }
     return c.json(errorBody(booked.code, requestId, booked.fields), booked.status);
   });
 
