@@ -689,31 +689,20 @@ export const materials: { readonly title: string; readonly intro: string; readon
  */
 export const PRICES_SHOWN = false as boolean;
 
+/**
+ * A first fit's price is the cheapest hair system ops offer in the console, and its row and the example say nothing
+ * while they offer none.
+ */
 export const prices = {
   label: "Published prices",
   intro: "No consultation fee, no deposit, no package. You pay for the piece and for the visits you take.",
-  columns: ["Standard", "Premium"],
+  column: "Price",
   rows: [
-    {
-      label: "First fit",
-      note: "The piece, the fitting and the cut",
-      standard: "{firstFit}",
-      premium: "{premiumFirstFit}",
-    },
-    {
-      label: "Monthly service visit",
-      note: "Refit, clean, trim — at your home",
-      standard: "{service}",
-      premium: "{premiumService}",
-    },
-    {
-      label: "Replacement piece",
-      note: "Every six months",
-      standard: "{replacement}",
-      premium: "{premiumReplacement}",
-    },
+    { label: "First fit", note: "Your hair system, the fitting and the cut", amount: "From {firstFit}" },
+    { label: "Monthly service visit", note: "Refit, clean, trim — at your home", amount: "{service}" },
+    { label: "Replacement piece", note: "Every six months", amount: "{replacement}" },
   ],
-  example: "A standard base in the first year: {firstFit} plus twelve service visits at {service} — {firstYear}.",
+  example: "Your first year, from {firstYear}: the first fit and twelve service visits at {service}.",
   payment: "Payment on the day of the fit. Card, UPI or bank transfer.",
   book: "Book a free consultation",
   tryOn: "Or try a new look first",
@@ -1023,8 +1012,8 @@ export const business = {
   /** The cities the FAQ says are covered. */
   areaServed: ["Gurgaon", "Delhi", "Noida", "Faridabad", "Ghaziabad"],
   /**
-   * A first fit, from the cheaper tier to the dearer; the standard alone until the book prices a premium one. Given
-   * only while the site gives prices (PRICES_SHOWN).
+   * A first fit, from the cheapest hair system ops offer to the dearest. Given only while the site gives prices
+   * (PRICES_SHOWN).
    */
   priceRange: "{firstFitRange}",
 };

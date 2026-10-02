@@ -105,6 +105,14 @@ export type StockTransfer = Sent<paths["/api/stock/transfers"]["post"]>;
 export type StockCount = Sent<paths["/api/stock/counts"]["post"]>;
 export type StockWriteOff = Sent<paths["/api/stock/write-offs"]["post"]>;
 
+/** The Staff list: who may do what, and whether it is enforced. */
+export type StaffBook = Body<paths["/api/staff"]["get"]>;
+export type StaffPerson = StaffBook["people"][number];
+export type StaffGrant = StaffPerson["grants"][number];
+export type StaffSave = Sent<paths["/api/staff"]["post"]>;
+export type StaffToken = StaffBook["service_tokens"][number];
+export type StaffTokenAdd = Sent<paths["/api/staff/service-tokens"]["post"]>;
+
 export type NoShowCase = Body<paths["/api/no-shows"]["get"]>["cases"][number];
 export type NoShowDispute = Body<paths["/api/no-shows/disputes"]["get"]>["disputes"][number];
 export type DisputeRuling = Sent<paths["/api/no-shows/disputes/{id}/ruling"]["post"]>["ruling"];
@@ -407,6 +415,14 @@ export const api = {
     client.post("/api/job-sheet/checklists/{visit_type}", { path: { visit_type: type }, body: { items: [...items] } }),
   setPartialReasons: (items: readonly JobSheetItemSent[]) =>
     client.post("/api/job-sheet/partial-reasons", { body: { items: [...items] } }),
+  /** The Staff list, narrowed to the places the caller may see. */
+  staff: () => client.get("/api/staff"),
+  /** A person added, or their grants and whether they are let in replaced whole. */
+  saveStaff: (person: StaffSave) => client.post("/api/staff", { body: person }),
+  setEnforcement: (on: boolean) => client.post("/api/staff/enforcement", { body: { on } }),
+  addServiceToken: (token: StaffTokenAdd) => client.post("/api/staff/service-tokens", { body: token }),
+  removeServiceToken: (clientId: string) =>
+    client.post("/api/staff/service-tokens/remove", { body: { client_id: clientId } }),
   /** What each place holds, what is low, and the latest movements. */
   stock: () => client.get("/api/stock"),
   recordDelivery: (delivery: StockDelivery) => client.post("/api/stock/deliveries", { body: delivery }),

@@ -102,6 +102,12 @@ export const AUDIT_ACTIONS = [
   "discount_code.switch_off",
   "discount_code.apply",
   "discount_code.remove",
+  // The Staff list: a member of staff added or changed, the list enforced or not, and a service token let in or
+  // taken off.
+  "staff.set",
+  "staff.enforce",
+  "staff.token_add",
+  "staff.token_remove",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

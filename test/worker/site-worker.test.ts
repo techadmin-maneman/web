@@ -1,8 +1,7 @@
 // The mm-site Worker (site/src/worker.ts): in front of /r/:code, what the preview says for each invite and the page
 // it serves when mm-api cannot answer (docs/decisions/0027-referral-landing.md); and on every page that shows a
 // price, the price book's figures written over the ones the page was built with
-// (docs/decisions/0073-prices-from-the-price-book.md), Premium shown only where the book prices it
-// (docs/decisions/0085-services-ops-can-edit.md).
+// (docs/decisions/0073-prices-from-the-price-book.md), a first fit's only from the hair systems ops offer.
 
 import { describe, expect, it } from "vitest";
 import { HOUSE_CARD } from "../../src/config/house-card.ts";
@@ -22,17 +21,20 @@ const PAGE = `<!doctype html><html><head>
 
 /**
  * A page as the build writes one that shows prices: each figure's sentence, with the figures it was built with, and
- * Premium's hidden and empty, since a page is built without it.
+ * a first fit's empty, since a page is built without one.
  */
 const PRICED_PAGE = `<!doctype html><html><head>
-<script type="application/ld+json" data-structured="business">{"priceRange":"Rs. 30,000"}</script>
+<script type="application/ld+json" data-structured="business">{"name":"Mane Man"}</script>
 <script type="application/ld+json" data-structured="faq">{}</script>
 </head><body>
-<div class="amount" data-price="{firstFit}">Rs. 30,000</div>
-<div class="amount" data-premium hidden data-price="{premiumFirstFit}"></div>
-<span data-price="A standard base in the first year: {firstFit} plus twelve service visits at {service} — {firstYear}.">A standard base in the first year: Rs. 30,000 plus twelve service visits at Rs. 2,000 — Rs. 54,000.</span>
+<div class="amount" data-price="From {firstFit}"></div>
+<div class="amount" data-price="{service}">Rs. 2,000</div>
+<span data-price="Your first year, from {firstYear}: the first fit and twelve service visits at {service}."></span>
 <p>Nothing to fill</p>
 </body></html>`;
+
+/** The figures of PRICED_PAGE as it was built. */
+const AS_BUILT = ["", "Rs. 2,000", ""];
 
 const VALID = { state: "valid", referrer_first_name: "Rohit", card: { state: "personal", version: 3 } };
 const UNKNOWN = { state: "unknown", referrer_first_name: null, card: { state: "house", version: 1 } };
@@ -46,25 +48,22 @@ const offered = (type: string, tier: string, name: string, amountExGst: number) 
   price: price(amountExGst),
 });
 
-/** The book, moved on from the figures the page was built with, and pricing no premium first fit. */
+/** The book, moved on from the figures the page was built with, and offering two hair systems as first fits. */
 const PRICES = {
   on: "2026-09-26",
   tier: "standard",
-  first_fit: price(3_500_000),
   service: price(250_000),
   replacement: price(1_600_000),
   services: [
-    offered("first_fit", "standard", "First fit", 3_500_000),
+    offered("first_fit", "essential", "Mane Man Essential", 3_500_000),
+    offered("first_fit", "natmax", "Mane Man NatMax", 4_500_000),
     offered("service", "standard", "Service visit", 250_000),
     offered("replacement", "standard", "Replacement", 1_600_000),
   ],
 };
 
-/** The same book, once ops have added a first fit coded premium in the console. */
-const WITH_PREMIUM = {
-  ...PRICES,
-  services: [...PRICES.services, offered("first_fit", "premium", "Premium first fit", 4_500_000)],
-};
+/** The same book while ops offer no hair system. */
+const NO_HAIR_SYSTEM = { ...PRICES, services: PRICES.services.filter((service) => service.type !== "first_fit") };
 
 type Api = (request: Request) => Response | Promise<Response>;
 
@@ -124,12 +123,9 @@ function readPriced(html: string) {
   };
   const figures = [...html.matchAll(/data-price="[^"]*">([^<]*)</g)].map(([, text]) => text);
   const written = /<body data-prices="([^"]*)"/.exec(html)?.[1]?.replaceAll("&quot;", '"');
-  // Whether Premium's figure is still hidden, as the page was built.
-  const premiumHidden = html.includes('<div class="amount" data-premium hidden');
   return {
     structured,
     figures,
-    premiumHidden,
     written: written === undefined ? null : (JSON.parse(written) as unknown),
   };
 }
@@ -250,31 +246,25 @@ describe("the site Worker on a page that shows a price", () => {
 
     expect(page.response.status).toBe(200);
     expect(page.figures).toEqual([
-      "Rs. 35,000",
-      "",
-      "A standard base in the first year: Rs. 35,000 plus twelve service visits at Rs. 2,500 — Rs. 65,000.",
+      "From Rs. 35,000",
+      "Rs. 2,500",
+      "Your first year, from Rs. 65,000: the first fit and twelve service visits at Rs. 2,500.",
     ]);
-    expect(page.premiumHidden).toBe(true);
     expect(page.html).toContain("<p>Nothing to fill</p>");
     expect(page.files.map((file) => new URL(file.url).pathname)).toEqual([path]);
   });
 
-  // The owner's ruling of 27 September 2026 (ADR 0085): premium is a service ops price in the console.
-  it("shows Premium, with the book's figure, once the book prices a first fit coded premium", async () => {
-    const page = await visit("/", withPrices(undefined, WITH_PREMIUM));
+  // The owner's decision of 2 October 2026: only the hair systems ops offer, and no generic first fit in their place.
+  it("gives no first-fit figure while ops offer no hair system, and tells the booking form so", async () => {
+    const page = await visit("/book", withPrices(undefined, NO_HAIR_SYSTEM));
 
-    expect(page.figures).toEqual([
-      "Rs. 35,000",
-      "Rs. 45,000",
-      "A standard base in the first year: Rs. 35,000 plus twelve service visits at Rs. 2,500 — Rs. 65,000.",
-    ]);
-    expect(page.premiumHidden).toBe(false);
-    expect(page.html).toContain('<div class="amount" data-premium data-price="{premiumFirstFit}">Rs. 45,000</div>');
+    expect(page.figures).toEqual(["", "Rs. 2,500", ""]);
+    expect(page.written).toEqual(NO_HAIR_SYSTEM);
   });
 
   // The owner took the prices off the site on 1 October 2026 (ADR 0103), the price range search engines read with them.
   it("builds the structured data again, with no price while the site gives none", async () => {
-    const page = await visit("/", withPrices(undefined, WITH_PREMIUM));
+    const page = await visit("/", withPrices());
 
     expect(page.structured("business")).toMatchObject({ "@type": "LocalBusiness", name: "Mane Man" });
     expect(page.structured("business")).not.toHaveProperty("priceRange");
@@ -321,17 +311,16 @@ describe("the site Worker on a page that shows a price", () => {
       },
     ],
     ["answers a shape it does not know", () => Response.json({ ...PRICES, service: null })],
+    [
+      "answers with no services, as an mm-api from before them did",
+      () => Response.json({ ...PRICES, services: undefined }),
+    ],
   ])("serves the page as built when mm-api %s and it has no answer yet", async (_, api: Api) => {
     const page = await visit("/", api);
 
     expect(page.response.status).toBe(200);
-    expect(page.figures).toEqual([
-      "Rs. 30,000",
-      "",
-      "A standard base in the first year: Rs. 30,000 plus twelve service visits at Rs. 2,000 — Rs. 54,000.",
-    ]);
-    expect(page.premiumHidden).toBe(true);
-    expect(page.structured("business")).toEqual({ priceRange: "Rs. 30,000" });
+    expect(page.figures).toEqual(AS_BUILT);
+    expect(page.structured("business")).toEqual({ name: "Mane Man" });
     expect(page.written).toBeNull();
   });
 
@@ -343,7 +332,7 @@ describe("the site Worker on a page that shows a price", () => {
     now = 120_000;
     const page = await visit("/", () => Response.json({ error: { code: "unavailable" } }, { status: 503 }), worker);
 
-    expect(page.figures[0]).toBe("Rs. 35,000");
+    expect(page.figures[0]).toBe("From Rs. 35,000");
     expect(page.written).toEqual(PRICES);
   });
 
@@ -358,6 +347,6 @@ describe("the site Worker on a page that shows a price", () => {
     const page = await visit("/try", withPrices());
 
     expect(page.asked).toEqual([]);
-    expect(page.figures[0]).toBe("Rs. 30,000");
+    expect(page.figures).toEqual(AS_BUILT);
   });
 });

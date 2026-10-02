@@ -997,7 +997,7 @@ The windows open for a service over 14 days
 }
 ```
 
-**422**: not_bookable: the client may not book this kind of visit, or the service is not offered
+**422**: not_bookable: the client may not book this kind of visit, or the service is not offered; no_product: a first fit, on a day the console offers no hair system
 
 ```json
 {
@@ -1027,7 +1027,7 @@ Request body:
     "tier": {
       "type": "string",
       "pattern": "^[a-z][a-z0-9_]{0,31}$",
-      "description": "The service's code within its kind; left out, the kind's standard service while offered."
+      "description": "The service's code within its kind; left out, the kind's standard service while offered. A first fit has none: it names the hair system."
     },
     "date": {
       "type": "string",
@@ -1080,7 +1080,7 @@ Request body:
 }
 ```
 
-**422**: not_bookable: this kind of visit, this service, or that day, is not open to the client
+**422**: not_bookable: this kind of visit, this service, or that day, is not open to the client; no_product: a first fit, on a day the console offers no hair system
 
 ```json
 {
@@ -1677,6 +1677,7 @@ Request body:
             "service_exists",
             "last_of_kind",
             "service_retired",
+            "no_product",
             "unknown_invite",
             "own_invite",
             "already_invited",
@@ -1687,7 +1688,9 @@ Request body:
             "already_discounted",
             "price_settled",
             "code_exists",
-            "slot_times_too_soon"
+            "slot_times_too_soon",
+            "not_permitted",
+            "last_admin"
           ]
         },
         "request_id": {
@@ -1783,6 +1786,13 @@ Request body:
         "unreachable"
       ],
       "description": "ok: reachable and marked as this environment's database. unmarked: no identity row. mismatch: marked as another environment's database."
+    },
+    "cron_completed_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "When the five-minute cron last finished a run; null before its first, or when the database is not this environment's. Information only: status does not depend on it."
     }
   },
   "required": [
@@ -1790,7 +1800,8 @@ Request body:
     "environment",
     "version_id",
     "version_tag",
-    "d1"
+    "d1",
+    "cron_completed_at"
   ],
   "additionalProperties": false
 }
@@ -1848,7 +1859,7 @@ Request body:
   "properties": {
     "mobile": {
       "type": "string",
-      "pattern": "^(?:\\+91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
+      "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
       "example": "98100 00000"
     }
   },
@@ -2119,7 +2130,10 @@ Request body:
               "description": "The next service, or the replacement where the piece in wear falls due first."
             },
             "tier": {
-              "type": "string",
+              "type": [
+                "string",
+                "null"
+              ],
               "description": "The service of its kind it offers, as booking.next's (ADR 0085)."
             },
             "date": {
@@ -2167,8 +2181,11 @@ Request body:
               "pattern": "^\\d{4}-\\d{2}$"
             },
             "tier": {
-              "type": "string",
-              "description": "The replacement service it offers: the client's last one while that is offered, else the first in the console's order (ADR 0085)."
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The replacement service it offers: the client's last one while that is offered, else the first in the console's order (ADR 0085); null while none is offered."
             },
             "bookable": {
               "type": "boolean",
@@ -2257,7 +2274,7 @@ Request body:
           "items": {
             "$ref": "#/components/schemas/OfferedService"
           },
-          "description": "Every service of those kinds offered and priced now, a kind at a time, in the console's order."
+          "description": "Every service of those kinds offered and priced now, a kind at a time, in the console's order. A first fit's are the hair systems ops offer; with none, a first fit cannot be booked yet."
         },
         "next": {
           "anyOf": [
@@ -2273,8 +2290,11 @@ Request body:
                   ]
                 },
                 "tier": {
-                  "type": "string",
-                  "description": "The service it is offered as: the one the client's last visit of its kind was, while that is offered, else its kind's first in the console's order (ADR 0085)."
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The service it is offered as: the one the client's last visit of its kind was, while that is offered, else its kind's first in the console's order (ADR 0085). Null while its kind offers none, as a first fit does before ops offer a hair system: it cannot be booked yet."
                 },
                 "date": {
                   "type": "string",
@@ -2410,6 +2430,7 @@ Request body:
           "enum": [
             "booked",
             "in_progress",
+            "done",
             "closing"
           ]
         },
@@ -2417,7 +2438,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "For a visit FSM has not closed: still to come, under way in its window, or over and waiting for FSM to close it. Null once FSM has closed it."
+      "description": "For a visit FSM has not closed: still to come, under way (the technician has checked in, whatever FSM says), closed as done from the technician's phone, or otherwise over and waiting for FSM to close it. Null once FSM has closed it."
     },
     "prepaid": {
       "type": "boolean",
@@ -3115,7 +3136,7 @@ Request body:
   "properties": {
     "new_mobile": {
       "type": "string",
-      "pattern": "^(?:\\+91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$"
+      "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$"
     }
   },
   "required": [
@@ -3336,6 +3357,7 @@ Request body:
           "enum": [
             "booked",
             "in_progress",
+            "done",
             "closing"
           ]
         },
@@ -3343,7 +3365,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "For a visit FSM has not closed: still to come, under way in its window, or over and waiting for FSM to close it. Null once FSM has closed it."
+      "description": "For a visit FSM has not closed: still to come, under way (the technician has checked in, whatever FSM says), closed as done from the technician's phone, or otherwise over and waiting for FSM to close it. Null once FSM has closed it."
     },
     "prepaid": {
       "type": "boolean",

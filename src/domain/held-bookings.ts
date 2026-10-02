@@ -16,7 +16,7 @@
 import { shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import type { BookingWindow } from "../config/scheduling.ts";
-import { FSM_SERVICE_NAMES, type VisitType } from "../config/visit-types.ts";
+import { VISIT_TYPE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { firstNameOf } from "../lib/names.ts";
 import type { Logger } from "../log.ts";
@@ -231,7 +231,7 @@ export async function heldBookingsOf(
     return {
       id: row.id,
       type: row.type,
-      serviceName: row.service_name ?? FSM_SERVICE_NAMES[row.type],
+      serviceName: row.service_name ?? VISIT_TYPE_NAMES[row.type],
       startsAt: start.toISOString(),
       window: row.window_label,
       paid: row.paid ?? 0,
@@ -314,7 +314,7 @@ export async function composeBookingRefunded(db: D1Database, holdId: string, per
   const start = (await heldVisitTimes(db, hold)).start;
   const params = [
     firstNameOf(hold.name),
-    FSM_SERVICE_NAMES[hold.type].toLowerCase(),
+    VISIT_TYPE_NAMES[hold.type].toLowerCase(),
     shortDate(indiaDate(start)),
     "",
     "",

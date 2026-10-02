@@ -31,6 +31,7 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
     ipHashSalt: "",
     alertWebhookUrl: null,
     leadWebhookUrl: null,
+    heartbeatUrl: null,
     erasureSecret: "",
     zoho: null,
     zohoFsm: null,

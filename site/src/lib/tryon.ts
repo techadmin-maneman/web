@@ -39,7 +39,7 @@ export type Arrival = "open" | "hadLook" | "unavailable";
  */
 export async function onArrival(): Promise<Arrival> {
   const [look, availability] = await Promise.all([fetchLook(), fetchAvailability()]);
-  if (look.ok && look.body.state !== "failed") return "hadLook";
+  if (look.ok && look.body !== null && look.body.state !== "failed") return "hadLook";
   if (availability.ok && !availability.body.available) return "unavailable";
   return "open";
 }

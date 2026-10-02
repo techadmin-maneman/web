@@ -173,7 +173,8 @@ const consultationRoute = createRoute({
     409: takenOrBooked,
     422: errorResponse(
       "not_bookable: the pincode is not served, the day is not open, or this number is past consultations; " +
-        "idempotency_key_reused: the key was used with a different body",
+        "no_product: one visit, on a day the console offers no hair system; idempotency_key_reused: the key was " +
+        "used with a different body",
     ),
     429: errorResponse("rate_limited"),
     503: errorResponse("unavailable: Turnstile could not be reached"),

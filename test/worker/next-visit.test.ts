@@ -258,10 +258,14 @@ describe("the days a visit may be booked on", () => {
   it("opens a first fit no sooner than the lead time after the consultation, in the strip and in a hold", async () => {
     await visit("consultation", "2026-09-18T04:30:00.000Z");
     await opsSet({ first_fit_lead: 10 });
-    const strip = await availability("type=first_fit");
+    const strip = await availability("type=first_fit&tier=standard");
     expect(strip.days[0]?.date).toBe("2026-09-28");
-    expect((await hold({ type: "first_fit", date: "2026-09-25", window: "morning" })).status).toBe(422);
-    expect((await hold({ type: "first_fit", date: "2026-09-28", window: "morning" })).status).toBe(201);
+    expect((await hold({ type: "first_fit", tier: "standard", date: "2026-09-25", window: "morning" })).status).toBe(
+      422,
+    );
+    expect((await hold({ type: "first_fit", tier: "standard", date: "2026-09-28", window: "morning" })).status).toBe(
+      201,
+    );
   });
 
   it("reaches 45 days from tomorrow, and a strip asked for further on ends there", async () => {

@@ -6,7 +6,8 @@
 // What these hold: a kind is code and its services are ops', each added,
 // renamed, timed, ordered, retired and restored with its audit entry in the same
 // batch; a service keeps its code, and so its prices, whatever it is called; a
-// kind always keeps something to book; a price is set only for a service that
+// kind with a standard service always keeps something to book, and a first fit
+// may be left with no hair system at all; a price is set only for a service that
 // is offered on its day; and the price in force and every spent one stay.
 
 import { env } from "cloudflare:workers";
@@ -251,19 +252,30 @@ describe("retiring a service", () => {
     expect(await answer.json()).toMatchObject({ error: { fields: ["retired_date"] } });
   });
 
-  // src/policy/services.ts: a kind always keeps one service never retired and priced, so it stays bookable.
+  // src/policy/services.ts: a kind with a standard service keeps one never retired and priced, so it stays bookable.
   it("refuses to retire a kind's last service, until another is added and priced", async () => {
-    const alone = await post("/api/services/first_fit/standard/retire", { from: "2026-10-01" });
+    const alone = await post("/api/services/replacement/standard/retire", { from: "2026-10-01" });
     expect(alone.status).toBe(409);
     expect(await alone.json()).toMatchObject({ error: { code: "last_of_kind" } });
 
-    await post("/api/services", { kind: "first_fit", name: "Premium" });
-    expect((await post("/api/services/first_fit/standard/retire", { from: "2026-10-01" })).status).toBe(409);
-    await price("first_fit", "premium", "2026-10-02");
-    expect((await post("/api/services/first_fit/standard/retire", { from: "2026-10-01" })).status).toBe(409);
-    await price("first_fit", "premium", "2026-10-01");
-    expect((await post("/api/services/first_fit/standard/retire", { from: "2026-10-01" })).status).toBe(200);
+    await post("/api/services", { kind: "replacement", name: "Lace" });
+    expect((await post("/api/services/replacement/standard/retire", { from: "2026-10-01" })).status).toBe(409);
+    await price("replacement", "lace", "2026-10-02");
+    expect((await post("/api/services/replacement/standard/retire", { from: "2026-10-01" })).status).toBe(409);
+    await price("replacement", "lace", "2026-10-01");
+    expect((await post("/api/services/replacement/standard/retire", { from: "2026-10-01" })).status).toBe(200);
     expect((await auditFor("service.retire")).results).toHaveLength(1);
+  });
+
+  // The owner's decision of 2 October 2026: only the hair systems ops offer, and no generic first fit in their place.
+  it("retires a first fit's last hair system, which leaves first fits with nothing to book", async () => {
+    const answer = await post("/api/services/first_fit/standard/retire", { from: "2026-09-21" });
+
+    expect(answer.status).toBe(200);
+    expect(await serviceNamed("First fit")).toMatchObject({ retired_date: "2026-09-21", offered: false });
+    const site = appFor("local", fakeDependencies());
+    const offered = await (await request(site, "/api/published-prices")).json<{ services: { type: string }[] }>();
+    expect(offered.services.filter((service) => service.type === "first_fit")).toEqual([]);
   });
 
   it("offers it again once restored, with the prices it had, and records it", async () => {
