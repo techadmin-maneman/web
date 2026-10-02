@@ -4,10 +4,10 @@
 // code can no longer change, so the box is shut while the sheet is busy.
 
 import { Button } from "@maneman/ui/Button";
-import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { api, type Hold } from "../api.ts";
 import { booking } from "../content.ts";
+import { amountOff } from "../lib/money.ts";
 import styles from "./booking.module.css";
 
 const copy = booking.pay.code;
@@ -68,8 +68,8 @@ export function CodeBox(props: {
   if (applied !== null) {
     return (
       <div className={styles.code}>
-        {applied.amount_ex_gst !== null && (
-          <p className={styles.codeApplied}>{copy.applied(applied.code, rupees(applied.amount_ex_gst))}</p>
+        {applied.list_price !== null && (
+          <p className={styles.codeApplied}>{copy.applied(applied.code, amountOff(applied.list_price, hold.price))}</p>
         )}
         <button className={styles.codeLink} type="button" disabled={busy || sending} onClick={() => void remove()}>
           {sending ? copy.removing : copy.remove}
