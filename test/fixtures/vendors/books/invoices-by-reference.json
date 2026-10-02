@@ -1,0 +1,30 @@
+{
+  "code": 0,
+  "message": "success",
+  "invoices": [
+    {
+      "invoice_id": "4242595000000257006",
+      "invoice_number": "INV-000004",
+      "reference_number": "staging-proof-17c1cd89-b214-43f4-b154-bb8117d634f6",
+      "customer_id": "4242595000000258029",
+      "customer_name": "Staging test",
+      "date": "2026-10-02",
+      "status": "draft",
+      "total": 1850,
+      "balance": 1850
+    }
+  ],
+  "page_context": {
+    "page": 1,
+    "per_page": 200,
+    "has_more_page": false,
+    "search_criteria": [
+      {
+        "column_name": "reference_number",
+        "search_text": "staging-proof-17c1cd89-b214-43f4-b154-bb8117d634f6",
+        "search_text_formatted": "staging-proof-17c1cd89-b214-43f4-b154-bb8117d634f6",
+        "comparator": "equal"
+      }
+    ]
+  }
+}

@@ -20,6 +20,7 @@
 // waits for ops to book it or refund it (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
 
 import { z } from "zod";
+import type { FieldRecord } from "../config/field-record.ts";
 import type { VisitType } from "../config/visit-types.ts";
 import type { Dependencies } from "../dependencies.ts";
 import { confirmBooking, unbookedAlertKey, type ConfirmOptions } from "../domain/bookings.ts";
@@ -72,6 +73,8 @@ export interface FsmSyncOptions {
   readonly labelAsTest: boolean;
   /** FSM_CATALOGUE_PUSH, read as each message is taken: a push queued before it was switched off writes nothing. */
   readonly cataloguePush: boolean;
+  /** Who holds the record of field work, FSM unless said: a hold queued for FSM is booked in our own database once FSM is off. */
+  readonly record?: FieldRecord;
 }
 
 export async function handleFsmSyncBatch(
@@ -79,7 +82,7 @@ export async function handleFsmSyncBatch(
   env: FsmSyncEnv,
   deps: Dependencies,
   log: Logger,
-  { labelAsTest, cataloguePush }: FsmSyncOptions = { labelAsTest: false, cataloguePush: false },
+  { labelAsTest, cataloguePush, record = "fsm" }: FsmSyncOptions = { labelAsTest: false, cataloguePush: false },
 ): Promise<void> {
   const db = env.DB;
   for (const message of batch.messages) {
@@ -94,6 +97,7 @@ export async function handleFsmSyncBatch(
       const bookingLog = log.child({ request_id: requestId });
       await bookHold(message, parsed.data.hold_id, db, deps, bookingLog, {
         labelAsTest,
+        record,
         notify: (messageId) =>
           env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: requestId } satisfies MessagingMessage),
         alertOnce: deps.alertOnce,

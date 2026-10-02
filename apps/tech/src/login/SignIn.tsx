@@ -17,7 +17,8 @@
 // button, so a sign-in with no way back would be a dead end.
 //
 // It also says why it is showing. A phone whose session ended simply signs in
-// again; a revoked one is told to ask ops; and a store that has never held a
+// again; a revoked one is told to ask ops, as is a technician ops switched off,
+// with how long his unsent work stays; and a store that has never held a
 // session, in an app opened from the home screen, is the iPhone case — the
 // installed app has its own cookie jar, so this is a second sign-in on a phone
 // already signed in, and saying nothing would read as a lost account.
@@ -34,9 +35,11 @@ import type { Out } from "../session.ts";
 import { deviceId, enrolled } from "../store/device.ts";
 import styles from "./login.module.css";
 
-/** What the sign-in says before the code is asked for: that ops revoked the phone, or why an installed app is out. */
+/** What the sign-in says before the code is asked for: what ops did, or why an installed app is out. */
 function noteFor(why: Out): string | null {
   if (why === "revoked") return session.revoked;
+  if (why === "switched-off") return session.switchedOff;
+  if (why === "work-kept") return session.workKept;
   return why === "fresh" && installed() ? copy.installed : null;
 }
 

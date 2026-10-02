@@ -33,6 +33,8 @@ A component holds no copy of its own. To change words, change `site.ts`.
 
 Put the file in `site/src/assets` and write its name in `site.ts`. A name there wins over the same name in `design/assets`. Astro serves it as AVIF and WebP at the widths each section asks for.
 
+The hero film comes in two files: the film, and its phone cut, the film's upright centre under 800 KB, made with the `ffmpeg` line beside `heroFootage` in `site.ts`. Phones get the cut. Neither is fetched until it plays, and it does not play by itself under reduced motion, Save-Data or a connection below 4G.
+
 ## Publishing a placeholder block
 
 A placeholder block in `site.ts` carries `publish: false` and holds v2's material, and the list of placeholder blocks is in `design-placeholders.ts`. In staging it shows with the design's "Placeholder" tag. In production an unpublished block shows nothing, and its section or image collapses.
