@@ -30,7 +30,8 @@ test("a served pincode books a real date and window, at the address given", asyn
   await page.getByRole("button", { name: "Book the consultation" }).click();
 
   await expect(page.getByText("Consultation booked")).toBeVisible();
-  await expect(page.getByText(SERVED.area, { exact: false })).toBeVisible();
+  // The place is the sector or area typed (fillAddress), not the pincode's own area.
+  await expect(page.getByText(`Sector 65, ${SERVED.city} ${SERVED.pincode} · free`)).toBeVisible();
   // The day the strip opens on is tomorrow, and the API answers with the day it booked.
   await expect(page.getByRole("heading", { level: 1 })).toContainText(
     new Date(`${tomorrow()}T00:00:00Z`).getUTCDate().toString(),

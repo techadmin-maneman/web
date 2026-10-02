@@ -41,5 +41,13 @@ export {
 export { HELD, REFERRERS } from "./fixtures/referrals.ts";
 export { BLACKOUTS, DISCOUNT_CODES, PRICE_ROWS, SERVICE_AREA, SERVICES, SETTINGS } from "./fixtures/settings.ts";
 export { CONSUMABLES, IMRAN, JOB_SHEET, SAMEER, STOCK } from "./fixtures/stock.ts";
-export { LEAVE_CANCELLED, LEAVE_RECORDED, TECHNICIANS, TECHNICIAN_WORK } from "./fixtures/technicians.ts";
+export {
+  LEAVE_CANCELLED,
+  LEAVE_RECORDED,
+  RAVI,
+  SWITCHED_OFF,
+  TECHNICIAN_ADDED,
+  TECHNICIANS,
+  TECHNICIAN_WORK,
+} from "./fixtures/technicians.ts";
 export { AREAS, LAUNCHED, PREVIEW } from "./fixtures/waitlist.ts";

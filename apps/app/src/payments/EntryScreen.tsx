@@ -3,8 +3,8 @@
 // are the visit's tax invoice, from Books, where one will come, and the
 // receipt. A refund's is its voucher and its destination. A document not yet
 // raised says so (board E3), in words that fit how long it has been, with
-// Notify me, which asks ops on WhatsApp until the app can tell the client
-// itself. A refund past its working days says it is late.
+// "Ask us for it", which asks ops on WhatsApp until the app can tell the
+// client itself. A refund past its working days says it is late.
 
 import { ICONS } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";

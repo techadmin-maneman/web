@@ -284,6 +284,8 @@ export const header = {
 };
 
 export const stickyBar = {
+  /** What a screen reader calls the bar's landmark. */
+  label: "Book or message us",
   whatsappLabel: "Message us on WhatsApp",
   book: "Book a visit",
 };
@@ -966,7 +968,7 @@ export const booking = {
   titleOneVisit: "Book a consultation and fit",
   titleWaitlist: "Not in your area yet",
   intro: `Your technician measures your scalp and matches your colour: ${visitLength.consultation}, free. Or add the fit and wear your hair system the same day.`,
-  extent: "Extent of hair loss",
+  extent: "Extent of hair loss (optional)",
 };
 
 // ---------------------------------------------------------------------------
