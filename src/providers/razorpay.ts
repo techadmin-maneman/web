@@ -31,6 +31,8 @@ export const RazorpayPaymentSchema = z.object({
   amount: z.number(),
   currency: z.string(),
   status: z.string(),
+  /** Whether the money was ever taken: a refunded payment's status no longer says. */
+  captured: z.boolean().nullish(),
   order_id: z.string().nullish(),
   method: z.string().nullish(),
   vpa: z.string().nullish(),

@@ -85,13 +85,22 @@ async function fittedPerson(id: string, mobile: string, name: string) {
   );
 }
 
-/** Razorpay's signed webhook for a payment, delivered at `now`. */
-async function webhook(event: string, eventId: string, payment: object, now: Date, queue = fakeQueue()) {
+/** Razorpay's signed webhook for a payment, or for a refund of it, delivered at `now`. */
+async function webhook(
+  event: string,
+  eventId: string,
+  payment: object,
+  now: Date,
+  queue = fakeQueue(),
+  refund: object | null = null,
+) {
   const app = appFor("local", fakeDependencies({ now: () => now }), {
     ...LOCAL_SETTINGS,
     razorpay: { keyId: "rzp_test_money", keySecret: "s", webhookSecret: SECRET },
   });
-  const body = JSON.stringify({ entity: "event", event, payload: { payment: { entity: payment } } });
+  const payload =
+    refund === null ? { payment: { entity: payment } } : { payment: { entity: payment }, refund: { entity: refund } };
+  const body = JSON.stringify({ entity: "event", event, payload });
   const answer = await request(
     app,
     "/api/hooks/razorpay",
@@ -551,6 +560,34 @@ describe("the half-hour pass over paid holds (BIZ-06)", () => {
     const queue = fakeQueue();
     expect(await pass(queue, 37 * 60)).toBe(1);
     expect(queue.sent).toEqual([{ hold_id: holdId, request_id: "unbooked-holds" }]);
+  });
+});
+
+// MON-12: after an outage the runbook has ops refund, from Razorpay's dashboard, a payment whose capture never came.
+describe("a refund of a payment whose capture never reached us", () => {
+  it("records both and books nothing: the hold is not confirmed, and the half-hour pass leaves it alone", async () => {
+    const ordered = await heldAndOrdered(PERSON);
+    const refunded = { ...payment("pay_m12", ordered, at(30)), status: "refunded", captured: true };
+    const refund = {
+      id: "rfnd_m12",
+      payment_id: "pay_m12",
+      amount: ordered.amount,
+      status: "processed",
+      created_at: Math.floor(at(3600).getTime() / SECOND),
+    };
+    const queue = fakeQueue();
+
+    const answer = await webhook("refund.processed", "evt_m12", refunded, at(3601), queue, refund);
+
+    expect(answer.status).toBe(200);
+    expect(queue.sent).toEqual([]);
+    const paid = env.DB.prepare("SELECT status FROM payments WHERE razorpay_payment_id = 'pay_m12'");
+    expect(await paid.first()).toEqual({ status: "refunded" });
+    const hold = env.DB.prepare("SELECT confirmed_at FROM slot_holds WHERE id = ?1").bind(ordered.holdId);
+    expect(await hold.first()).toEqual({ confirmed_at: null });
+    const deps = fakeDependencies();
+    const pass = { queue, alertOnce: deps.alertOnce, budget: createCallBudget(40), log: createLogger() };
+    expect(await requeueUnbookedHolds(env.DB, pass, at(3 * 3600))).toBe(0);
   });
 });
 

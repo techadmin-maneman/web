@@ -41,6 +41,39 @@ export async function recordPayment(
   hashSalt: string,
   now: Date,
 ): Promise<void> {
+  await writePayment(db, payment, status, hashSalt, now);
+  if (status !== "captured") return;
+  await giveReference(db, payment.id, now);
+  // The hold it paid for keeps its time from here until it is booked or refunded (src/domain/bookings.ts).
+  const madeAt = new Date(payment.created_at * 1000).toISOString();
+  if (typeof payment.order_id === "string") await confirmPaidHold(db, payment.order_id, madeAt, now).run();
+}
+
+/**
+ * A payment first heard of in its refund's event, as when ops refund one whose own events never reached us. It is
+ * kept as it stood before the refund, with our reference if it was captured, but its hold is not confirmed, so no
+ * visit is booked for money that has gone back. Our person for it, if we know them.
+ */
+export async function recordRefundedPayment(
+  db: D1Database,
+  payment: RazorpayPayment,
+  hashSalt: string,
+  now: Date,
+): Promise<string | null> {
+  const status = payment.captured === false ? "authorized" : "captured";
+  const personId = await writePayment(db, payment, status, hashSalt, now);
+  if (status === "captured") await giveReference(db, payment.id, now);
+  return personId;
+}
+
+/** The payment, if new, and its state, if `status` moves it forward. Our person for it, if we know them. */
+async function writePayment(
+  db: D1Database,
+  payment: RazorpayPayment,
+  status: PaymentStatus,
+  hashSalt: string,
+  now: Date,
+): Promise<string | null> {
   const at = now.toISOString();
   const notes =
     payment.notes !== null && payment.notes !== undefined && !Array.isArray(payment.notes) ? payment.notes : {};
@@ -94,10 +127,7 @@ export async function recordPayment(
       RANK[status],
     )
     .run();
-  if (status !== "captured") return;
-  await giveReference(db, payment.id, now);
-  // The hold it paid for keeps its time from here until it is booked or refunded (src/domain/bookings.ts).
-  if (typeof payment.order_id === "string") await confirmPaidHold(db, payment.order_id, madeAt, now).run();
+  return personId;
 }
 
 /**
@@ -124,14 +154,16 @@ function refundStateOf(status: string): "processed" | "failed" | "created" {
   return "created";
 }
 
-/** Writes a refund event, then the payment's refunded total and state from its processed refunds. */
+/**
+ * Writes a refund event, then the payment's refunded total and state from its processed refunds. False, with nothing
+ * written, for a refund of a payment we have not heard of.
+ */
 export async function recordRefund(db: D1Database, refund: RazorpayRefund, now: Date): Promise<boolean> {
   const at = now.toISOString();
   const payment = await db
     .prepare("SELECT id, amount FROM payments WHERE razorpay_payment_id = ?1")
     .bind(refund.payment_id)
     .first<{ id: string; amount: number }>();
-  // A refund of a payment we have not heard of yet: Razorpay sends it again, and the payment comes first.
   if (payment === null) return false;
 
   const status = refundStateOf(refund.status);
