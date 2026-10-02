@@ -1,6 +1,6 @@
 // A client's hold, as the app shows it (docs/decisions/0045-self-serve-booking.md): the window held for ten
-// minutes while they pay, the service it is for, what it costs, and what became of it. Letting one go, and what
-// Checkout is opened with. A hold is made by holdSlot (src/domain/scheduling.ts) and booked by startBooking
+// minutes while they pay, the service it is for, what it costs, with the discount code entered on it
+// (docs/decisions/0108-discount-codes.md), and what became of it. Letting one go, and what Checkout is opened with. A hold is made by holdSlot (src/domain/scheduling.ts) and booked by startBooking
 // (src/domain/bookings.ts).
 
 import { withGst } from "../config/gst.ts";
@@ -15,6 +15,7 @@ import {
   type Charge,
 } from "../policy/moving-a-visit.ts";
 import { creditBalance } from "./credits.ts";
+import { holdDiscount } from "./discount-code-holds.ts";
 import { priceOf, type Price } from "./price-book.ts";
 import { heldMinutes, visitTimes } from "./scheduling.ts";
 
@@ -82,6 +83,7 @@ async function holdOf(db: D1Database, row: HoldRow, now: Date) {
   const windowStarts = indiaInstant(row.date, WINDOW_TIMES[row.window_label].start);
   const noticeHours = row.change_notice_hours ?? FREE_CHANGE_NOTICE_HOURS;
   const lateCharge = row.late_change_charge ?? LATE_CHANGE_CHARGES[row.type];
+  const price = { amount_ex_gst: row.amount_ex_gst, amount: row.amount, gst_percent: row.gst_percent };
   return {
     id: row.id,
     type: row.type,
@@ -91,7 +93,7 @@ async function holdOf(db: D1Database, row: HoldRow, now: Date) {
     starts_at: start.toISOString(),
     ends_at: end.toISOString(),
     technician: { name: row.technician_name, initials: row.technician_initials },
-    price: { amount_ex_gst: row.amount_ex_gst, amount: row.amount, gst_percent: row.gst_percent },
+    price,
     late_fee: await lateFeeOf(db, row, lateCharge),
     free_until: freeUntil(windowStarts, noticeHours).toISOString(),
     change_notice_hours: noticeHours,
@@ -110,6 +112,7 @@ async function holdOf(db: D1Database, row: HoldRow, now: Date) {
             ),
           }
         : null,
+    discount: await holdDiscount(db, { id: row.id, price }),
   };
 }
 

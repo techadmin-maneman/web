@@ -39,6 +39,11 @@ export type PhotoView = Body<paths["/api/clients/{id}/photos/view"]["post"]>;
 export type Consents = Body<paths["/api/clients/{id}/consents"]["get"]>;
 export type Consent = Consents["consents"][number];
 export type Piece = Body<paths["/api/clients/{id}/pieces"]["get"]>["pieces"][number];
+/** The client's hair profile, and every version of it (ADR 0106). */
+export type ClientHairProfile = Body<paths["/api/clients/{id}/hair-profile"]["get"]>;
+export type HairProfileVersion = ClientHairProfile["versions"][number];
+export type HairProfileView = NonNullable<ClientHairProfile["latest"]>;
+export type HairCorrection = Sent<paths["/api/clients/{id}/hair-profile"]["post"]>;
 
 export type Tasks = Body<paths["/api/tasks"]["get"]>;
 export type TaskGroup = Tasks["groups"][number];
@@ -66,6 +71,10 @@ export type SettingValue = OpsSetting["value"];
 export type Blackout = Body<paths["/api/blackouts"]["get"]>["blackouts"][number];
 export type BlackoutAdd = Sent<paths["/api/blackouts"]["post"]>;
 export type BlackoutRemove = Sent<paths["/api/blackouts/remove"]["post"]>;
+/** Discount codes, and a code on a client's visit (docs/decisions/0108-discount-codes.md). */
+export type DiscountCode = Body<paths["/api/discount-codes"]["get"]>["codes"][number];
+export type DiscountCodesNew = Sent<paths["/api/discount-codes"]["post"]>;
+export type VisitDiscountCode = NonNullable<ClientVisit["discount_code"]>;
 export type Price = Body<paths["/api/prices"]["post"]>["prices"][number];
 export type PriceChange = Sent<paths["/api/prices"]["post"]>;
 export type PriceWithdrawal = Sent<paths["/api/prices/withdraw"]["post"]>;
@@ -266,6 +275,11 @@ export const api = {
   clientConsents: (id: string) => client.get("/api/clients/{id}/consents", { path: { id } }),
   /** The client's pieces. The route reads FSM afresh first, since FSM is the record. */
   clientPieces: (id: string) => client.get("/api/clients/{id}/pieces", { path: { id } }),
+  /** The client's hair profile as it stands, and every version of it. */
+  clientHairProfile: (id: string) => client.get("/api/clients/{id}/hair-profile", { path: { id } }),
+  /** A correction: the whole profile as it now stands, a new version under the caller's name, audited. */
+  correctHairProfile: (id: string, correction: HairCorrection) =>
+    client.post("/api/clients/{id}/hair-profile", { path: { id }, body: correction }),
   /** Every queue ops still have to work through, and whose each task is. A task leaves when its row is decided. */
   tasks: () => client.get("/api/tasks"),
   /** A task made a member of staff's, by their Access e-mail, or nobody's with null (ADR 0092). */
@@ -355,6 +369,17 @@ export const api = {
   addBlackouts: (period: BlackoutAdd) => client.post("/api/blackouts", { body: period }),
   /** The days from the first to the last are offered again. */
   removeBlackouts: (period: BlackoutRemove) => client.post("/api/blackouts/remove", { body: period }),
+  /** The latest codes made, or the one with this text, each with its uses and what it has given. */
+  discountCodes: (code: string | null = null) =>
+    client.get("/api/discount-codes", code === null ? {} : { query: { code } }),
+  /** One code typed, or one or more generated; more than one generated are single-use. */
+  makeDiscountCodes: (codes: DiscountCodesNew) => client.post("/api/discount-codes", { body: codes }),
+  /** No booking takes it from now on; the bookings that carry it keep it. */
+  switchOffDiscountCode: (id: string) => client.post("/api/discount-codes/{id}/off", { path: { id } }),
+  /** Only on a visit not yet paid for, linked or invoiced; one code a visit. */
+  enterVisitCode: (visitId: string, code: string) =>
+    client.post("/api/visits/{id}/discount-code", { path: { id: visitId }, body: { code } }),
+  removeVisitCode: (visitId: string) => client.post("/api/visits/{id}/discount-code/remove", { path: { id: visitId } }),
   /** Every pincode, with how many wait there and how many serving it would tell. */
   serviceArea: () => client.get("/api/service-area"),
   /**

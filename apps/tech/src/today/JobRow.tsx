@@ -10,8 +10,9 @@ import { GLYPHS } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
 import { Link } from "@maneman/ui/router";
 import type { JobSummary } from "../api.ts";
-import { badges, job as copy, types } from "../content.ts";
+import { badges, job as copy } from "../content.ts";
 import { STROKE } from "../icons.ts";
+import { kindName } from "../lib/kind.ts";
 import { clockShort, where } from "../lib/when.ts";
 import styles from "./today.module.css";
 
@@ -33,7 +34,7 @@ export function JobRow({
       </span>
       <span className={styles.what}>
         <span className={styles.kind}>
-          <span className={styles.type}>{job.type === null ? copy.locked.title : types[job.type]}</span>
+          <span className={styles.type}>{kindName(job)}</span>
           <span className={styles.badge}>· {badges[job.badge]}</span>
         </span>
         {client !== undefined && <span className={styles.who}>{client}</span>}

@@ -244,6 +244,17 @@
   margin-top: var(--sp-16);
 }
 
+/* A one visit's choice of product, which no board draws: the outcome's choices, inside the piece's field (ADR 0105). */
+.choiceList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-12);
+}
+
+.choiceList + .note {
+  padding: var(--sp-16) 0 0;
+}
+
 /* The label's field, drawn where the board draws "Scan the piece": 64 px, the whole of it the input, edged in paper. */
 .scan {
   display: flex;
@@ -410,6 +421,47 @@
   color: var(--paper);
 }
 
+/* ---- The hair profile, which no board draws (ADR 0106) --------------------- */
+
+/* Short choices, a stage or a colour code, sit side by side and wrap: 56 px each, the outcome's edge when chosen. */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-10);
+}
+
+.chip,
+.chipOn {
+  min-width: var(--tech-stepper);
+  min-height: var(--tech-stepper);
+  padding: 0 var(--sp-16);
+  border: var(--hairline) solid var(--ink-line);
+  background: transparent;
+  font: inherit;
+  font-size: var(--fs-17);
+  font-variant-numeric: lining-nums;
+  color: var(--paper);
+  cursor: pointer;
+}
+
+.chipOn {
+  border: var(--rule-strong) solid var(--paper);
+  background: var(--ink-raised);
+  font-weight: var(--weight-medium);
+}
+
+/* The head's four figures and the base's two, two to a row. */
+.figures {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-16);
+}
+
+.figure {
+  display: flex;
+  flex-direction: column;
+}
+
 /* ---- Board B4: the close-out ----------------------------------------------- */
 
 .close {
@@ -472,6 +524,8 @@
 .choiceOn:focus-visible,
 .reason:focus-visible,
 .reasonOn:focus-visible,
+.chip:focus-visible,
+.chipOn:focus-visible,
 .box64:focus-visible {
   outline: var(--focus-width) solid var(--paper);
   outline-offset: var(--focus-offset);

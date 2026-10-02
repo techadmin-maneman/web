@@ -14,6 +14,7 @@ export const MESSAGE_KINDS = [
   "visit_reminder", // the day before
   "waitlist_confirmation",
   "payment_receipt",
+  "nothing_to_pay", // a one visit a discount code left nothing to pay for, once the client is fitted (ADR 0108)
   "reschedule_confirmation",
   "cancel_confirmation",
   "visit_moved", // ops moved the visit: the new window

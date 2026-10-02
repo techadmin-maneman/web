@@ -38,6 +38,7 @@ import {
   type SoldTerms,
 } from "../policy/moving-a-visit.ts";
 import { NO_SHOW_CHARGES } from "../policy/no-show.ts";
+import { ONE_VISIT_TERMS } from "../policy/one-visit.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
 import type { PaymentsProvider } from "../providers/payments.ts";
 import type { AlertOnce } from "./alerts.ts";
@@ -240,10 +241,20 @@ async function soldWith(db: D1Database, visit: SoldVisit): Promise<Sold | null> 
   };
 }
 
+/** Whether the visit is a consultation and fit in one visit, as ops book one in FSM while booking is off. */
+async function isOneVisit(db: D1Database, visitId: string): Promise<boolean> {
+  const row = await db
+    .prepare("SELECT 1 FROM appointments WHERE id = ?1 AND one_visit IS NOT NULL")
+    .bind(visitId)
+    .first();
+  return row !== null;
+}
+
 /**
  * The terms the visit was sold under and its late fee, from the hold that booked it; for a visit ops booked in FSM,
- * which no hold sold, the terms in force (`inForce`) and its kind's late fee on its day. A client's change is judged
- * by them, and so is a no-show's charge (src/domain/no-shows.ts).
+ * which no hold sold, the terms in force (`inForce`) and its kind's late fee on its day, or, for a one visit, what
+ * every one visit is sold under (src/policy/one-visit.ts). A client's change is judged by them, and so is a
+ * no-show's charge (src/domain/no-shows.ts).
  */
 export async function termsOfVisit(
   db: D1Database,
@@ -251,6 +262,7 @@ export async function termsOfVisit(
   inForce: SoldTerms,
 ): Promise<{ readonly terms: SoldTerms; readonly lateFee: Price | null }> {
   const sold = await soldWith(db, visit);
+  if (sold === null && (await isOneVisit(db, visit.id))) return { terms: ONE_VISIT_TERMS, lateFee: null };
   const lateFeeItem = LATE_FEES[visit.type];
   const lateFee =
     lateFeeItem === undefined ? null : (sold?.lateFee ?? (await priceOf(db, lateFeeItem, indiaDate(visit.start))));

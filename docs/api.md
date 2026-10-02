@@ -153,8 +153,15 @@ Request body:
     "address": {
       "$ref": "#/components/schemas/TypedAddress"
     },
-    "first_fit": {
-      "$ref": "#/components/schemas/FirstFitRequest"
+    "one_visit": {
+      "type": "boolean",
+      "description": "true: the consultation and the first fit in one visit, three hours, in the morning or the afternoon; the client chooses the product with the technician and pays once fitted, so nothing is paid here. Left out or false, the consultation alone."
+    },
+    "discount_code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40,
+      "description": "A discount code for the consultation and fit in one visit, as typed, any case: it comes off the product's price at the payment link (docs/decisions/0108-discount-codes.md). A code that does not apply refuses the booking, code_not_applicable, and so does any code with the consultation alone."
     },
     "consent": {
       "type": "boolean",
@@ -187,7 +194,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names what was refused, address.pincode for an address in another pincode
+**400**: invalid_request: fields names what was refused, address.pincode for an address in another pincode, window for one visit in the evening
 
 ```json
 {
@@ -218,7 +225,7 @@ Request body:
 }
 ```
 
-**422**: not_bookable: the pincode is not served, the day is not open, or this number is past consultations and books in the app; idempotency_key_reused: the key was used with a different body
+**422**: not_bookable: the pincode is not served, the day is not open, or this number is past consultations and books in the app; code_not_applicable: the discount code does not apply, fields names discount_code; idempotency_key_reused: the key was used with a different body
 
 ```json
 {
@@ -488,8 +495,9 @@ Request body:
     "address": {
       "$ref": "#/components/schemas/TypedAddress"
     },
-    "first_fit": {
-      "$ref": "#/components/schemas/FirstFitRequest"
+    "one_visit": {
+      "type": "boolean",
+      "description": "true: the consultation and the first fit in one visit, three hours, in the morning or the afternoon; the client chooses the product with the technician and pays once fitted, so nothing is paid here. Left out or false, the consultation alone."
     },
     "consent": {
       "type": "boolean",
@@ -521,7 +529,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names what was refused, address.pincode for an address in another pincode
+**400**: invalid_request: fields names what was refused, address.pincode for an address in another pincode, window for one visit in the evening
 
 ```json
 {
@@ -685,6 +693,18 @@ Request body:
 }
 ```
 
+### GET /api/referral-reward
+
+What a referral earns now, as ops set it. Cacheable for a minute.
+
+**200**: The reward
+
+```json
+{
+  "$ref": "#/components/schemas/ReferralReward"
+}
+```
+
 ### POST /api/tryon/upload-url
 
 Record the photo consent and get a link to upload one photo
@@ -729,7 +749,7 @@ Request body:
 }
 ```
 
-**503**: busy: today's upload ceiling is reached; unavailable: Turnstile could not be reached
+**503**: busy: today's upload ceiling is reached; unavailable: Turnstile could not be reached; whatsapp_unavailable: WhatsApp cannot send the look, so the try-on does not run
 
 ```json
 {
@@ -799,7 +819,7 @@ Upload the photo's small copy, which a client keeps as their before photo: a JPE
 
 ### POST /api/tryon/generate
 
-Render the look for an uploaded photo: one look per visitor
+Render the look for an uploaded photo the gate has claimed: one look per visitor
 
 Request body:
 
@@ -841,7 +861,7 @@ Request body:
 }
 ```
 
-**409**: upload_missing: the photo has not been uploaded, or has been deleted
+**409**: claim_required: the gate has not been given a number to send the look to; upload_missing: the photo has not been uploaded, or has been deleted
 
 ```json
 {
@@ -857,7 +877,7 @@ Request body:
 }
 ```
 
-**503**: busy: today's render ceiling is reached
+**503**: busy: today's render ceiling is reached; whatsapp_unavailable: WhatsApp cannot send the look, so none is made
 
 ```json
 {
@@ -887,7 +907,7 @@ Where a job stands
 
 ### POST /api/tryon/claim
 
-The gate: save the lead and start a session, whether or not the result is ready
+The gate: where to send the look on WhatsApp, given before the look is made
 
 Request body:
 
@@ -897,7 +917,7 @@ Request body:
 }
 ```
 
-**201**: Saved. Sets the mm_tryon cookie.
+**201**: Saved
 
 ```json
 {
@@ -913,6 +933,14 @@ Request body:
 }
 ```
 
+**403**: look_limit_reached: this number had its look in the last thirty days
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 **404**: not_found
 
 ```json
@@ -921,7 +949,7 @@ Request body:
 }
 ```
 
-**409**: job_not_claimable: no render was started, it failed, or it is another number's; idempotency_in_progress
+**409**: job_not_claimable: no photo was uploaded, its render was asked for already, or it is another number's; idempotency_in_progress
 
 ```json
 {
@@ -937,7 +965,7 @@ Request body:
 }
 ```
 
-**429**: rate_limited: too many claims from this number today
+**429**: rate_limited: this number has had its claims, or its looks, for today
 
 ```json
 {
@@ -945,27 +973,7 @@ Request body:
 }
 ```
 
-### GET /api/tryon/result/{job_id}
-
-The result, for the gate's session or the browser that made the look
-
-**200**: Ready
-
-```json
-{
-  "$ref": "#/components/schemas/ResultReady"
-}
-```
-
-**202**: Still rendering
-
-```json
-{
-  "$ref": "#/components/schemas/ResultPending"
-}
-```
-
-**401**: session_required: neither the gate's session nor this browser's look is this job's
+**503**: whatsapp_unavailable: WhatsApp cannot send the look, so the try-on does not run
 
 ```json
 {
@@ -973,25 +981,21 @@ The result, for the gate's session or the browser that made the look
 }
 ```
 
-**404**: not_found: no such job, or its result has been deleted
+### GET /api/tryon/availability
+
+Whether the try-on can run: its look is sent on WhatsApp, so not while WhatsApp cannot send it
+
+**200**: Whether it runs
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-**422**: Failed
-
-```json
-{
-  "$ref": "#/components/schemas/ResultFailed"
+  "$ref": "#/components/schemas/TryOnAvailability"
 }
 ```
 
 ### GET /api/tryon/look
 
-The look this browser already has, from its mm_look cookie
+Whether this browser has had its look, from its mm_look cookie
 
 **200**: The browser's look
 
@@ -1001,7 +1005,7 @@ The look this browser already has, from its mm_look cookie
 }
 ```
 
-**404**: not_found: this browser has no look, or its result has been deleted
+**404**: not_found: this browser has no look
 
 ```json
 {
@@ -1011,7 +1015,7 @@ The look this browser already has, from its mm_look cookie
 
 ### GET /api/result/{token}
 
-A result image, behind a signed link that expires
+A result image, behind the signed link a WhatsApp message carries, which expires
 
 **200**: The image
 
@@ -1187,6 +1191,8 @@ Razorpay's webhook: payments and refunds
             "session_required",
             "job_not_claimable",
             "look_limit_reached",
+            "claim_required",
+            "whatsapp_unavailable",
             "unauthorized",
             "visit_booked",
             "payment_held",
@@ -1225,7 +1231,11 @@ Razorpay's webhook: payments and refunds
             "already_invited",
             "already_fitted",
             "already_disputed",
-            "not_disputable"
+            "not_disputable",
+            "code_not_applicable",
+            "already_discounted",
+            "price_settled",
+            "code_exists"
           ]
         },
         "request_id": {
@@ -1479,7 +1489,7 @@ Razorpay's webhook: payments and refunds
     },
     "credits": {
       "type": "boolean",
-      "description": "Whether the invite's 3 service visits apply."
+      "description": "Whether the invite's service visits apply."
     },
     "invite": {
       "type": "string",
@@ -1488,7 +1498,7 @@ Razorpay's webhook: payments and refunds
         "expired",
         "unknown"
       ],
-      "description": "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown: no invite came with it, or a code we do not have."
+      "description": "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the invite's visits do not apply; or unknown: no invite came with it, or a code we do not have."
     },
     "address": {
       "type": "string",
@@ -1498,9 +1508,13 @@ Razorpay's webhook: payments and refunds
       ],
       "description": "saved: the address sent is now the person's; on_account: the person already had one, which the visit goes to, and the one sent was not written. The address on the account is never sent back."
     },
-    "first_fit": {
+    "one_visit": {
       "type": "boolean",
-      "description": "true: the first fit was asked for too, and the app offers it once the consultation is done."
+      "description": "true: the consultation and the first fit in one visit were booked, or asked for."
+    },
+    "discount_code": {
+      "type": "boolean",
+      "description": "true: the code given stands on the booking, or on the request ops book from; false when none was given, or another booking took the code's last use a moment before, and the booking stands without it."
     }
   },
   "required": [
@@ -1511,7 +1525,8 @@ Razorpay's webhook: payments and refunds
     "credits",
     "invite",
     "address",
-    "first_fit"
+    "one_visit",
+    "discount_code"
   ],
   "additionalProperties": false
 }
@@ -1545,6 +1560,8 @@ Razorpay's webhook: payments and refunds
             "session_required",
             "job_not_claimable",
             "look_limit_reached",
+            "claim_required",
+            "whatsapp_unavailable",
             "unauthorized",
             "visit_booked",
             "payment_held",
@@ -1583,7 +1600,11 @@ Razorpay's webhook: payments and refunds
             "already_invited",
             "already_fitted",
             "already_disputed",
-            "not_disputable"
+            "not_disputable",
+            "code_not_applicable",
+            "already_discounted",
+            "price_settled",
+            "code_exists"
           ]
         },
         "request_id": {
@@ -1743,36 +1764,6 @@ Razorpay's webhook: payments and refunds
 }
 ```
 
-### FirstFitRequest
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "window": {
-      "anyOf": [
-        {
-          "type": "string",
-          "enum": [
-            "morning",
-            "afternoon"
-          ]
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "description": "The window the fit is wanted in, or null for either. A first fit does not fit in the evening."
-    }
-  },
-  "required": [
-    "window"
-  ],
-  "additionalProperties": false,
-  "description": "Left out, the consultation alone. Sent, the first fit is asked for too: it is booked and paid for in the app once the consultation is done, and nothing is paid here."
-}
-```
-
 ### Waitlist
 
 ```json
@@ -1791,7 +1782,7 @@ Razorpay's webhook: payments and refunds
     },
     "credits": {
       "type": "boolean",
-      "description": "Whether the invite's 3 service visits apply."
+      "description": "Whether the invite's service visits apply."
     },
     "invite": {
       "type": "string",
@@ -1800,7 +1791,7 @@ Razorpay's webhook: payments and refunds
         "expired",
         "unknown"
       ],
-      "description": "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown: no invite came with it, or a code we do not have."
+      "description": "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the invite's visits do not apply; or unknown: no invite came with it, or a code we do not have."
     }
   },
   "required": [
@@ -1942,7 +1933,7 @@ Razorpay's webhook: payments and refunds
     },
     "credits": {
       "type": "boolean",
-      "description": "Whether the invite's 3 service visits apply."
+      "description": "Whether the invite's service visits apply."
     },
     "invite": {
       "type": "string",
@@ -1951,7 +1942,7 @@ Razorpay's webhook: payments and refunds
         "expired",
         "unknown"
       ],
-      "description": "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown: no invite came with it, or a code we do not have."
+      "description": "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the invite's visits do not apply; or unknown: no invite came with it, or a code we do not have."
     },
     "address": {
       "type": "string",
@@ -1961,9 +1952,9 @@ Razorpay's webhook: payments and refunds
       ],
       "description": "saved: the address sent is now the person's; on_account: the person already had one, which the visit goes to, and the one sent was not written. The address on the account is never sent back."
     },
-    "first_fit": {
+    "one_visit": {
       "type": "boolean",
-      "description": "true: the first fit was asked for too, and the app offers it once the consultation is done."
+      "description": "true: the consultation and the first fit in one visit were booked, or asked for."
     }
   },
   "required": [
@@ -1974,7 +1965,7 @@ Razorpay's webhook: payments and refunds
     "credits",
     "invite",
     "address",
-    "first_fit"
+    "one_visit"
   ],
   "additionalProperties": false
 }
@@ -1998,7 +1989,7 @@ Razorpay's webhook: payments and refunds
     },
     "credits": {
       "type": "boolean",
-      "description": "Whether the invite's 3 service visits apply."
+      "description": "Whether the invite's service visits apply."
     },
     "invite": {
       "type": "string",
@@ -2007,7 +1998,7 @@ Razorpay's webhook: payments and refunds
         "expired",
         "unknown"
       ],
-      "description": "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the 3 visits do not apply; or unknown: no invite came with it, or a code we do not have."
+      "description": "valid; expired, when the invite held for them on a waitlist lapsed 12 months after their area launched, so the consultation is still free and the invite's visits do not apply; or unknown: no invite came with it, or a code we do not have."
     }
   },
   "required": [
@@ -2016,6 +2007,35 @@ Razorpay's webhook: payments and refunds
     "invite"
   ],
   "additionalProperties": false
+}
+```
+
+### ReferralReward
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "referrer_visits": {
+      "type": "integer",
+      "description": "The free service visits the client who sent the invite gets; 0 for none."
+    },
+    "friend_visits": {
+      "type": "integer",
+      "description": "The free service visits the friend they invited gets; 0 for none."
+    },
+    "valid_days": {
+      "type": "integer",
+      "description": "How many days the credits last from the grant."
+    }
+  },
+  "required": [
+    "referrer_visits",
+    "friend_visits",
+    "valid_days"
+  ],
+  "additionalProperties": false,
+  "description": "What each side is given when a friend's first fit is done, as it stands now. A grant is given what is in force when the friend is fitted, and keeps it."
 }
 ```
 
@@ -2064,8 +2084,8 @@ Razorpay's webhook: payments and refunds
       "type": "string",
       "minLength": 1,
       "maxLength": 40,
-      "example": "photo-v1",
-      "description": "The photo notice shown."
+      "example": "photo-v3",
+      "description": "The photo notice shown: the current one, the only one recorded."
     },
     "turnstile_token": {
       "type": "string",
@@ -2133,15 +2153,6 @@ Razorpay's webhook: payments and refunds
       "type": "string",
       "format": "uuid"
     },
-    "stage": {
-      "type": "string",
-      "enum": [
-        "crown",
-        "receding",
-        "advanced"
-      ],
-      "description": "The hair-loss stage the visitor picked."
-    },
     "preset": {
       "type": "string",
       "enum": [
@@ -2169,11 +2180,11 @@ Razorpay's webhook: payments and refunds
   },
   "required": [
     "job_id",
-    "stage",
     "preset",
     "hair_color"
   ],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "description": "The look, for the stage the gate's claim gave the try-on."
 }
 ```
 
@@ -2186,17 +2197,13 @@ Razorpay's webhook: payments and refunds
     "lead_id": {
       "type": "string",
       "format": "uuid"
-    },
-    "whatsapp_copy": {
-      "type": "boolean",
-      "description": "True only if messaging is on and may reach this number: the page may then say a copy is on its way."
     }
   },
   "required": [
-    "lead_id",
-    "whatsapp_copy"
+    "lead_id"
   ],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "description": "Saved: the look goes to this number on WhatsApp once it is made."
 }
 ```
 
@@ -2220,12 +2227,21 @@ Razorpay's webhook: payments and refunds
       "pattern": "^(?:\\+91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
       "example": "98100 00000"
     },
+    "stage": {
+      "type": "string",
+      "enum": [
+        "crown",
+        "receding",
+        "advanced"
+      ],
+      "description": "The hair-loss stage the visitor picked: the lead's, and the one the look is made for."
+    },
     "notice_version": {
       "type": "string",
       "minLength": 1,
       "maxLength": 40,
-      "example": "gate-v1",
-      "description": "The gate's notice the page showed; the one production shows when left out. Staging's site shows the one awaiting counsel (docs/decisions/0084-a-clients-try-on-is-kept.md)."
+      "example": "gate-v3",
+      "description": "The gate's notice the page showed: the current one, the only one a claim may record, when left out (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md)."
     },
     "attribution": {
       "$ref": "#/components/schemas/Attribution"
@@ -2234,7 +2250,8 @@ Razorpay's webhook: payments and refunds
   "required": [
     "job_id",
     "name",
-    "mobile"
+    "mobile",
+    "stage"
   ],
   "additionalProperties": false
 }
@@ -2284,80 +2301,19 @@ Razorpay's webhook: payments and refunds
 }
 ```
 
-### ResultReady
+### TryOnAvailability
 
 ```json
 {
   "type": "object",
   "properties": {
-    "url": {
-      "type": "string",
-      "description": "A path on this host that serves the image for fifteen minutes."
-    },
-    "expires_at": {
-      "type": "string",
-      "format": "date-time"
+    "available": {
+      "type": "boolean",
+      "description": "False while WhatsApp cannot send a look: the try-on does not run, and the page says so."
     }
   },
   "required": [
-    "url",
-    "expires_at"
-  ],
-  "additionalProperties": false
-}
-```
-
-### ResultPending
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "state": {
-      "type": "string",
-      "enum": [
-        "awaiting_upload",
-        "queued",
-        "rendering",
-        "downloading",
-        "ready",
-        "failed",
-        "expired"
-      ]
-    }
-  },
-  "required": [
-    "state"
-  ],
-  "additionalProperties": false
-}
-```
-
-### ResultFailed
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "state": {
-      "type": "string",
-      "enum": [
-        "failed"
-      ]
-    },
-    "failure_code": {
-      "type": "string",
-      "enum": [
-        "photo_unreadable",
-        "photo_invalid_file",
-        "render_failed",
-        "busy"
-      ]
-    }
-  },
-  "required": [
-    "state",
-    "failure_code"
+    "available"
   ],
   "additionalProperties": false
 }
@@ -2385,25 +2341,6 @@ Razorpay's webhook: payments and refunds
         "expired"
       ]
     },
-    "stage": {
-      "type": "string",
-      "enum": [
-        "crown",
-        "receding",
-        "advanced"
-      ]
-    },
-    "preset": {
-      "type": "string",
-      "enum": [
-        "full-natural-short",
-        "full-straight-medium",
-        "medium-natural-short",
-        "medium-receded-medium",
-        "light-natural-short",
-        "light-receded-cropped"
-      ]
-    },
     "failure_code": {
       "type": "string",
       "enum": [
@@ -2417,11 +2354,10 @@ Razorpay's webhook: payments and refunds
   },
   "required": [
     "job_id",
-    "state",
-    "stage",
-    "preset"
+    "state"
   ],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "description": "The look this browser has had: its state alone. The look goes to WhatsApp only."
 }
 ```
 

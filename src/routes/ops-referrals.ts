@@ -141,6 +141,7 @@ export function registerOpsReferrals(app: App): void {
         requestId,
         detail: { decision },
       },
+      rewardNow: (await opsInputs(c)).referralReward,
       now,
     });
     if (outcome === null) return c.json(errorBody("not_found", requestId), 404);

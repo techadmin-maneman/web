@@ -21,10 +21,20 @@ export const TEMPLATES: Readonly<Record<string, string>> = {
   // {{6}} the amount ("Rs. 2,000"), {{7}} the payment's reference, {{8}} where a refund goes ("UPI"), {{9}} how many
   // minutes the technician waited, for a no-show, and {{10}} what goes back of a no-show's charge.
   consultation_booked_v1: "Hello {{1}}, your free consultation is booked for {{3}}, {{4}}. We will see you then.",
+  // The consultation and fit in one visit, booked from the site with nothing paid
+  // (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+  one_visit_booked_v1:
+    "Hello {{1}}, your consultation and fit is booked for {{3}}, {{4}}. You pay only once you are fitted.",
   visit_booked_v1:
     "Hello {{1}}, your {{2}} is booked for {{3}}, {{4}}, with {{5}}. Paid {{6}}, reference {{7}}. The receipt is in the app.",
   visit_booked_credit_v1:
     "Hello {{1}}, your {{2}} is booked for {{3}}, {{4}}, with {{5}}. One of your visit credits covers it.",
+  // A visit a discount code made free (docs/decisions/0108-discount-codes.md): booked with nothing to pay.
+  visit_booked_code_v1:
+    "Hello {{1}}, your {{2}} is booked for {{3}}, {{4}}, with {{5}}. Your discount code covers it, so there is nothing to pay.",
+  // A consultation and fit in one visit a discount code made free, once the client is fitted.
+  visit_fitted_code_v1:
+    "Hello {{1}}, you are fitted. Your discount code covers your hair system, so there is nothing to pay.",
   visit_reminder_v1: "Hello {{1}}, a reminder that your {{2}} is tomorrow, {{3}}, {{4}}, with {{5}}.",
   visit_moved_v1: "Hello {{1}}, your {{2}} is now on {{3}}, {{4}}, with {{5}}.",
   // At the technician's check-in (docs/decisions/0074-hand-offs-and-messages.md), the no-show's evidence.
@@ -94,15 +104,23 @@ export const TEMPLATES: Readonly<Record<string, string>> = {
   // When a pincode launches, to those on its waitlist who asked to be told (docs/decisions/0048-referrals.md).
   // PLACEHOLDER COPY: {{1}} their first name, {{2}} the area, {{3}} where to book.
   launch_alert_v1: "Hello {{1}}, we now come to {{2}}. Your free consultation can be booked here: {{3}}",
-  // To a referrer, when their friend's first fit closes as done (docs/decisions/0048-referrals.md). PLACEHOLDER COPY:
-  // {{1}} the referrer's first name, {{2}} the friend's, {{3}} the visits each gets, {{4}} when they expire.
-  friend_fitted_v1:
-    "Hello {{1}}, {{2}} has been fitted. You each have {{3}} service visits free, until {{4}}. Thank you for the introduction.",
-  // To the friend, when the grant lands, and to both sides when ops reject a held one
+  // To a referrer, when their friend's first fit closes as done (docs/decisions/0048-referrals.md), in the words for
+  // what each side was given, which ops set apart (docs/decisions/0107-referral-rewards-in-the-console.md): the same,
+  // different, nothing for the friend, or nothing for the referrer. PLACEHOLDER COPY: {{1}} the referrer's first name,
+  // {{2}} the friend's, {{3}} the referrer's visits ("3 service visits"), {{4}} when they expire, {{5}} the friend's.
+  friend_fitted_v2:
+    "Hello {{1}}, {{2}} has been fitted. You each have {{3}} free, until {{4}}. Thank you for the introduction.",
+  friend_fitted_each_v1:
+    "Hello {{1}}, {{2}} has been fitted. You have {{3}} free, until {{4}}, and {{2}} has {{5}}. Thank you for the introduction.",
+  friend_fitted_yours_v1:
+    "Hello {{1}}, {{2}} has been fitted. You have {{3}} free, until {{4}}. Thank you for the introduction.",
+  friend_fitted_thanks_v1: "Hello {{1}}, {{2}} has been fitted. Thank you for the introduction.",
+  // To the friend, when the grant lands, and to a side that would have been given visits when ops reject a held one
   // (docs/decisions/0074-hand-offs-and-messages.md). PLACEHOLDER COPY: {{1}} the first name of the one told, and in
-  // the credits {{2}} the visits and {{3}} when they expire, in the referrer's rejection {{2}} the friend's first name.
-  friend_credited_v1:
-    "Hello {{1}}, your first fit is done, so the invite you came with gives you {{2}} service visits free, until {{3}}. They are in the app.",
+  // the credits {{2}} the visits ("3 service visits") and {{3}} when they expire, in the referrer's rejection {{2}}
+  // the friend's first name.
+  friend_credited_v2:
+    "Hello {{1}}, your first fit is done, so the invite you came with gives you {{2}} free, until {{3}}. Your balance is in the app.",
   referral_rejected_referrer_v1:
     "Hello {{1}}, we could not give the service visits for {{2}}'s first fit. Message us if you would like to know why.",
   referral_rejected_friend_v1:
@@ -134,6 +152,10 @@ export function renderMessage(name: string, params: readonly string[]): string |
 
 const PLACEHOLDER = /\{\{(\d+)\}\}/g;
 
+/** A count of service visits as the texts write it: "1 service visit", "3 service visits". */
+export const serviceVisits = (count: number): string =>
+  count === 1 ? "1 service visit" : `${String(count)} service visits`;
+
 export function isKnownTemplate(name: string): boolean {
   return name in TEMPLATES;
 }
@@ -160,6 +182,7 @@ export const MESSAGE_CLASSES: Readonly<Record<MessageKind, MessageClass>> = {
   tryon_result: "answering", // the result of the try-on the person just claimed
   consultation_confirmation: "answering", // the booking they just made
   payment_receipt: "answering",
+  nothing_to_pay: "automatic", // the technician's close of a one visit, not the client's own action
   reschedule_confirmation: "answering", // the client's own move
   cancel_confirmation: "answering", // the client's own cancel
   waitlist_confirmation: "answering", // their own place on the list, just joined

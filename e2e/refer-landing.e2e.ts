@@ -78,7 +78,9 @@ test("the invite names the referrer, and a served pincode opens the consultation
   await visit(page, `/r/${CODE}`);
 
   await expect(page.getByText("Rohit sent you this")).toBeVisible();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Hair, fitted at your home across Delhi NCR.");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Transformation and confidence, delivered in one visit.",
+  );
   await expect(page.getByText("Get fitted and you both get 3 service visits free.")).toBeVisible();
 
   await page.getByLabel("Pincode").fill(SERVED.pincode);
@@ -136,7 +138,8 @@ test("a valid invite is remembered in this browser, and forgotten once its own b
   await visit(page, `/r/${CODE}`);
   await expect(page.getByText("Rohit sent you this")).toBeVisible();
   const remembered = () => page.evaluate(() => localStorage.getItem("mm_invite"));
-  expect(JSON.parse((await remembered()) ?? "{}")).toMatchObject({ code: CODE });
+  // The island remembers it in an effect after the name is drawn, so the test waits for it rather than racing it.
+  await expect.poll(async () => JSON.parse((await remembered()) ?? "{}") as unknown).toMatchObject({ code: CODE });
 
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
@@ -155,6 +158,31 @@ test("the invited page does say who is told, and what lands when", async ({ page
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
   await expect(page.getByText("Rohit is told when you are fitted. That is when the 3 visits land.")).toBeVisible();
+});
+
+// The owner's ruling of 1 October 2026: ops set each side's visits apart
+// (docs/decisions/0107-referral-rewards-in-the-console.md), and the page says what they set.
+test("says what ops set each side gets, and promises the friend nothing ops do not give", async ({ page }) => {
+  const reward = { referrer_visits: 3, friend_visits: 2, valid_days: 180 };
+  await mockApi(page);
+  await page.route("**/api/referral-reward", (route) => route.fulfill({ json: reward }));
+  await visit(page, `/r/${CODE}`);
+  await expect(page.getByText("Get fitted and you get 2 service visits free. Your friend gets 3.")).toBeVisible();
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  await expect(page.getByText("Rohit is told when you are fitted. That is when the 2 visits land.")).toBeVisible();
+
+  reward.friend_visits = 0;
+  await page.reload();
+  await expect(page.getByText("Get fitted and your friend gets 3 service visits free.")).toBeVisible();
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  await expect(page.getByText("Rohit is told when you are fitted.", { exact: true })).toBeVisible();
+  await fillForm(page);
+  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByRole("button", { name: "Book the consultation" }).click();
+  await expect(page.getByText("Consultation booked")).toBeVisible();
+  await expect(page.getByText(/land when you are fitted/)).toHaveCount(0);
 });
 
 test("an unserved pincode takes the number instead, and the launch alert is the visitor's choice", async ({ page }) => {
@@ -238,7 +266,9 @@ test("an invite that cannot be fetched is neither refused nor promised", async (
   );
   await visit(page, `/r/${CODE}`);
 
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Hair, fitted at your home across Delhi NCR.");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Transformation and confidence, delivered in one visit.",
+  );
   await expect(page.getByText("You have an invite")).toBeVisible();
   await expect(page.getByText("We do not recognise this invite")).toBeHidden();
   await expect(page.getByText(/3 service visits/)).toHaveCount(0);
@@ -247,38 +277,19 @@ test("an invite that cannot be fetched is neither refused nor promised", async (
   await expect(page.getByText(/is told when you are fitted/)).toHaveCount(0);
 });
 
-// FEO-22: the landing typed ₹25,000 and ₹1,500 while the price book held others. Nothing writes the book into the
-// page here, so the island asks for it, as it does wherever the Worker could not
-// (docs/decisions/0073-prices-from-the-price-book.md).
-test("the prices are the price book's, asked for where no Worker wrote them", async ({ page }) => {
+// The owner took the prices off the site on 1 October 2026 (ADR 0103): the invite gives none, and asks for none.
+test("the invite gives no price, and never asks the price book", async ({ page }) => {
   await mockApi(page);
-  const moved = { amount: 0, gst_percent: 0 };
-  await page.route("**/api/published-prices", (route) =>
-    route.fulfill({
-      json: {
-        on: "2026-09-26",
-        tier: "standard",
-        first_fit: { ...moved, amount_ex_gst: 3_500_000 },
-        service: { ...moved, amount_ex_gst: 250_000 },
-        replacement: { ...moved, amount_ex_gst: 1_600_000 },
-      },
-    }),
-  );
+  let asked = 0;
+  await page.route("**/api/published-prices", (route) => {
+    asked += 1;
+    return route.fulfill({ status: 503, json: { error: { code: "unavailable", request_id: "r" } } });
+  });
   await visit(page, `/r/${CODE}`);
 
-  await expect(page.getByText("Rs. 35,000", { exact: true })).toBeVisible();
-  await expect(page.getByText("Rs. 2,500", { exact: true })).toBeVisible();
-});
-
-test("the prices stay as the page was built when the book cannot be read", async ({ page }) => {
-  await mockApi(page);
-  await page.route("**/api/published-prices", (route) =>
-    route.fulfill({ status: 503, json: { error: { code: "unavailable", request_id: "r" } } }),
-  );
-  await visit(page, `/r/${CODE}`);
-
-  await expect(page.getByText("Rs. 30,000", { exact: true })).toBeVisible();
-  await expect(page.getByText("Rs. 2,000", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.getByText(/Rs\. \d/)).toHaveCount(0);
+  expect(asked).toBe(0);
 });
 
 // With self-serve booking off, the API records the day asked for and answers
@@ -562,12 +573,13 @@ test("a booked consultation names the number, and offers the calendar and the ap
   expect(calendar).toContain("DTEND:20260925T063000Z");
 });
 
-// The owner's ruling of 27 September 2026 (ADR 0025, item 68; docs/decisions/0086-the-next-visit-is-offered.md): the
-// form offers the consultation alone or with the first fit, which is asked for here and booked and paid in the app.
-test("offers the consultation alone or with the first fit, and sends the fit asked for, in its window", async ({
+// The owner's ruling D2 of 1 October 2026 (ADR 0025, item 89; docs/decisions/0105-a-consultation-and-fit-in-one-visit.md):
+// the form offers the consultation alone, or the consultation and fit in one visit, paid for once fitted. It replaces
+// the consultation with the first fit to follow, whose test went with it.
+test("offers the consultation alone or with the fit in one visit, and asks ops for it while booking is off", async ({
   page,
 }) => {
-  const booked = {
+  const asked = {
     state: "requested",
     date: "2026-09-25",
     window: "morning",
@@ -575,25 +587,23 @@ test("offers the consultation alone or with the first fit, and sends the fit ask
     credits: true,
     invite: "valid",
     address: "saved",
-    first_fit: true,
+    one_visit: true,
   };
-  const requests = await mockApi(page, { consultation: { status: 201, body: booked } });
+  const requests = await mockApi(page, { consultation: { status: 201, body: asked } });
   await visit(page, `/r/${CODE}`);
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
 
   const plan = page.getByRole("group", { name: "What to book" });
   await expect(plan.getByRole("radio", { name: "A consultation" })).toBeChecked();
-  const fit = page.getByRole("group", { name: "The fit, if you have a time in mind" });
-  await expect(fit).toHaveCount(0);
-  await plan.getByText("The consultation, then my first fit").click();
+  await plan.getByText("Consultation and fit, in one visit").click();
   await expect(
-    plan.getByText("The fit is booked and paid for in the app once the consultation is done. Nothing is paid now."),
+    plan.getByText(/Choose your hair system with your technician and have it fitted there and then\./),
   ).toBeVisible();
-  // Either, the morning or the afternoon: a first fit cannot start in the evening.
-  await expect(fit.getByRole("radio")).toHaveCount(3);
-  await expect(fit.getByRole("radio", { name: "Either" })).toBeChecked();
-  await fit.getByText("Morning").click();
+  // The morning or the afternoon: the first fit's three hours cannot start in the evening.
+  await expect(page.getByRole("group", { name: "Window" }).getByRole("radio")).toHaveCount(2);
+  // The invite is this page's offer: no discount code here (docs/decisions/0108-discount-codes.md).
+  await expect(page.getByLabel("Discount code (optional)")).toHaveCount(0);
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();
@@ -601,18 +611,13 @@ test("offers the consultation alone or with the first fit, and sends the fit ask
 
   await fillForm(page);
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
-  await page.getByRole("button", { name: "Book the consultation" }).click();
+  await page.getByRole("button", { name: "Book the consultation and fit" }).click();
 
-  await expect(page.getByText("Consultation requested")).toBeVisible();
+  await expect(page.getByText("Consultation and fit requested")).toBeVisible();
   const sent = requests[0]?.postDataJSON() as Record<string, unknown>;
-  expect(sent.first_fit).toEqual({ window: "morning" });
+  expect(sent.one_visit).toBe(true);
   // The consent recorded is the consultation's own line, unchanged.
   expect(sent.consent).toBe(true);
-  await expect(
-    page.getByText(
-      "You asked for your first fit too. Once the consultation is done, you book the fit in the app and pay for it there.",
-    ),
-  ).toBeVisible();
 });
 
 test("a consultation asked for, not booked, offers no calendar and no app", async ({ page }) => {

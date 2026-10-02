@@ -31,10 +31,14 @@
 // their address and the slot are written in one batch: a slot that has gone
 // leaves nothing behind (docs/decisions/0068-a-paid-hold-is-kept.md).
 //
-// The form may ask for the first fit to follow the consultation. That is a
-// request, written in the same batch as the booking, so a refused booking leaves
-// none; the fit is booked and paid for in the app once the consultation is done,
-// and the site takes no money (docs/decisions/0086-the-next-visit-is-offered.md).
+// The form may book the consultation and the fit in one visit instead: a first
+// fit marked as one, three hours, with nothing paid. The client chooses the
+// product with the technician and pays by a link once fitted, so the site still
+// takes no money (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+// The site's own form may carry a discount code for it, which stands on the
+// booking and comes off the product's price at the link; while booking is off,
+// it is kept on the request, for ops to enter on the visit they book
+// (docs/decisions/0108-discount-codes.md).
 //
 // The number, the Turnstile token and the day's limits are checked by the
 // route's side (src/http/public-form.ts), which this is handed as checkPerson:
@@ -42,18 +46,21 @@
 
 import type { LossExtent } from "../config/booking.ts";
 import { CURRENT_NOTICE, LANDING_NOTICES } from "../config/notices.ts";
-import { BOOKING_DAYS, HOLD_SECONDS, type BookingWindow, type FirstFitWindow } from "../config/scheduling.ts";
+import { BOOKING_DAYS, HOLD_SECONDS, type BookingWindow } from "../config/scheduling.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
 import type { Logger } from "../log.ts";
+import type { SoldTerms } from "../policy/moving-a-visit.ts";
+import { ONE_VISIT_TERMS, ONE_VISIT_WINDOWS, type Plan } from "../policy/one-visit.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
-import { firstFitRequestStatement } from "./next-visit.ts";
+import type { Price } from "./price-book.ts";
 import { bookableService } from "./services.ts";
 import type { ConsentSource } from "../policy/consents.ts";
 import { typedAddress, type TypedAddress } from "../policy/site-booking.ts";
 import { currentAddress, firstAddressStatement, type Address } from "./profile.ts";
+import { checkForOneVisit, codeOnHold, useOnNewHold } from "./discount-code-holds.ts";
 import { attribute, type Invite, type InviteState, type Via } from "./referrals.ts";
-import { bookableTypes, holdSlot, liveVisitOf, type LiveVisit } from "./scheduling.ts";
+import { bookableTypes, holdSlot, liveVisitOf, type HeldService, type LiveVisit } from "./scheduling.ts";
 import { saveBookingLead, type Attribution } from "./leads.ts";
 import { waitlistConfirmation } from "./waitlist.ts";
 
@@ -87,7 +94,8 @@ export interface Refusal<Status extends number = 400 | 403 | 409 | 422 | 429 | 5
     | "unavailable"
     | "taken"
     | "not_bookable"
-    | "already_booked";
+    | "already_booked"
+    | "code_not_applicable";
   /** For already_booked: the consultation the number already has. */
   readonly booked?: LiveVisit;
   /** For invalid_request: the field refused, where the request was well formed and did not add up. */
@@ -245,8 +253,10 @@ async function queueMessage(form: FormRequest, messageId: string): Promise<void>
 
 /**
  * What ops have to act on while self-serve booking is off: the day and window the
- * person asked for, which no slot is held for. It leaves the console's task queue
- * when their consultation is in FSM (src/domain/tasks.ts).
+ * person asked for, which no slot is held for, and whether it is the consultation
+ * and fit in one visit. It leaves the console's task queue when their visit is in
+ * FSM (src/domain/tasks.ts). Asked again for the same day and window, the plan
+ * asked last stands.
  */
 function requestStatement(
   db: D1Database,
@@ -255,16 +265,20 @@ function requestStatement(
     pincode: string;
     date: string;
     window: BookingWindow;
+    oneVisit: boolean;
     invite: Invite | null;
+    /** The discount code given for the one visit, which ops enter on the visit they book (ADR 0108). */
+    discountCode: string | null;
     now: Date;
   },
 ): D1PreparedStatement {
   return db
     .prepare(
       `INSERT INTO consultation_requests (id, person_id, pincode, requested_date, requested_window, referral_code,
-         created_at)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
-       ON CONFLICT (person_id, requested_date, requested_window) DO NOTHING`,
+         created_at, one_visit, discount_code)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+       ON CONFLICT (person_id, requested_date, requested_window) DO UPDATE SET
+         one_visit = excluded.one_visit, discount_code = excluded.discount_code`,
     )
     .bind(
       crypto.randomUUID(),
@@ -274,7 +288,46 @@ function requestStatement(
       input.window,
       input.invite?.code ?? null,
       input.now.toISOString(),
+      input.oneVisit ? 1 : 0,
+      input.discountCode,
     );
+}
+
+/** What the site holds a slot for: the service, what is paid for it now, and the terms it is sold under. */
+interface SiteVisit {
+  readonly service: HeldService;
+  readonly price: Price;
+  /** Left out for a consultation, which is sold under the committed terms. */
+  readonly terms: SoldTerms | undefined;
+}
+
+/** Nothing paid now, at the service's own rate of GST. */
+const nothingPaid = (price: Price): Price => ({ amount: 0, amount_ex_gst: 0, gst_percent: price.gst_percent });
+
+/**
+ * What the site books on a day: the consultation its kind offers, the standard one while it is
+ * (docs/decisions/0085-services-ops-can-edit.md), and only while it is free, since a form with no payment cannot
+ * book one the price book charges for; or, for one visit, the first fit its kind offers, three hours, with nothing
+ * paid until the client is fitted (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). Null when the day
+ * offers neither, and what the person asked for waits for ops.
+ */
+async function siteVisit(db: D1Database, plan: Plan, date: string): Promise<SiteVisit | null> {
+  if (plan === "one_visit") {
+    const fit = await bookableService(db, "first_fit", undefined, date);
+    if (fit === null) return null;
+    return {
+      service: { type: "first_fit", tier: fit.tier, minutes: fit.minutes },
+      price: nothingPaid(fit.price),
+      terms: ONE_VISIT_TERMS,
+    };
+  }
+  const consultation = await bookableService(db, "consultation", undefined, date);
+  if (consultation?.price.amount !== 0) return null;
+  return {
+    service: { type: "consultation", tier: consultation.tier, minutes: consultation.minutes },
+    price: consultation.price,
+    terms: undefined,
+  };
 }
 
 export interface ConsultationRequest {
@@ -295,11 +348,13 @@ export interface ConsultationRequest {
    * (docs/decisions/0094-where-a-consent-was-given.md).
    */
   readonly source: Extract<ConsentSource, "site_booking" | "referral_landing">;
+  /** The consultation alone, or the consultation and the first fit in one visit, paid for at the visit. */
+  readonly plan: Plan;
   /**
-   * The first fit asked for with the consultation, in the window wanted, if any; null for the consultation alone.
-   * It is booked and paid for in the app once the consultation is done.
+   * A discount code for the one visit, as typed on /book; null for none. It comes off the product's price at the
+   * payment link (docs/decisions/0108-discount-codes.md).
    */
-  readonly firstFit: { readonly window: FirstFitWindow | null } | null;
+  readonly discountCode: string | null;
 }
 
 export interface Booked {
@@ -313,17 +368,22 @@ export interface Booked {
   readonly date: string;
   readonly window: BookingWindow;
   readonly area: string;
-  /** Whether the invite's three service visits apply. */
+  /** Whether the invite's service visits apply. */
   readonly credits: boolean;
   /** The invite as it stands for this person: expired when theirs lapsed while they waited (src/policy/invites.ts). */
   readonly invite: InviteState;
   /** Whether the address typed in was saved, or the one the person already had is kept and used. */
   readonly address: TypedAddress;
-  /** Whether the first fit was asked for, and recorded, with it. */
-  readonly firstFit: boolean;
+  /** Whether it is the consultation and the first fit in one visit. */
+  readonly oneVisit: boolean;
+  /** Whether the discount code given stands on the booking, or on the request ops book it from. */
+  readonly discountCode: boolean;
 }
 
-/** Books the free consultation: the slot, the lead, and the invite's credits where they apply. */
+/**
+ * Books the free consultation, or the consultation and fit in one visit: the slot, the lead, and the invite's credits
+ * where they apply.
+ */
 export async function bookConsultation(form: FormRequest, request: ConsultationRequest): Promise<Booked | Refusal> {
   const { db, log, requestId, now } = form;
 
@@ -331,6 +391,11 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   const pincode = await pincodeOf(db, request.pincode);
   if (pincode?.served !== 1 || request.date < first || request.date > addDays(first, BOOKING_DAYS - 1)) {
     return { ok: false, status: 422, code: "not_bookable" };
+  }
+  // The first fit's three hours do not fit in the evening (src/policy/one-visit.ts), which the form does not offer.
+  const oneVisit = request.plan === "one_visit";
+  if (oneVisit && !(ONE_VISIT_WINDOWS as readonly BookingWindow[]).includes(request.window)) {
+    return { ok: false, status: 400, code: "invalid_request", fields: ["window"] };
   }
   // The technician goes to the address, so it must be where the pincode said we come.
   if (request.address.pincode !== request.pincode) {
@@ -342,6 +407,8 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   const knownId = await personWithMobile(db, checked.mobile);
   const refused = knownId === null ? null : await consultationRefusal(db, knownId);
   if (refused !== null) return refused;
+  const code = request.discountCode === null ? null : await oneVisitCode(form, request.discountCode, knownId, oneVisit);
+  if (code?.ok === false) return code;
   const person = formPerson(db, {
     knownId,
     mobile: checked.mobile,
@@ -354,33 +421,32 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   });
   const saved = knownId === null ? null : await currentAddress(db, knownId);
   const address = typedAddress({ hasSavedAddress: saved !== null });
-  // What stands or falls with the booking: the person, their consent, the address where it is theirs now, and the
-  // first fit they asked for.
+  // What stands or falls with the booking: the person, their consent, and the address where it is theirs now.
   const alongside = [
     ...person.statements,
     ...(address === "saved" ? [firstAddressStatement(db, person.id, request.address, now)] : []),
-    ...(request.firstFit === null
-      ? []
-      : [firstFitRequestStatement(db, { personId: person.id, window: request.firstFit.window, now })]),
   ];
 
-  // A slot is held and FSM told only while self-serve booking is on and the consultation is free that day;
-  // otherwise booking goes through WhatsApp, and what the person asked for waits for ops. The site books the
-  // consultation its kind offers: the standard one while it is (docs/decisions/0085-services-ops-can-edit.md).
-  const consultation = await bookableService(db, "consultation", undefined, request.date);
+  // A slot is held and FSM told only while self-serve booking is on and the day offers what was asked for;
+  // otherwise booking goes through WhatsApp, and what the person asked for waits for ops.
+  const visit = form.selfServeBooking ? await siteVisit(db, request.plan, request.date) : null;
   let holdId: string | null = null;
-  if (form.selfServeBooking && consultation?.price.amount === 0) {
+  if (visit !== null) {
     const hold = await holdSlot(
       db,
       {
         personId: person.id,
-        service: { type: "consultation", tier: consultation.tier, minutes: consultation.minutes },
+        service: visit.service,
         date: request.date,
         window: request.window,
-        price: consultation.price,
+        price: visit.price,
+        terms: visit.terms,
+        oneVisit,
         pincode: request.pincode,
         from: "site",
         alongside,
+        afterHold: (newHold) =>
+          code === null ? [] : [useOnNewHold(db, { codeId: code.codeId, personId: person.id, holdId: newHold }, now)],
       },
       now,
       HOLD_SECONDS,
@@ -390,8 +456,12 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     await form.queues.fsm.send({ hold_id: hold.id, request_id: requestId } satisfies FsmSyncMessage);
   } else {
     const asked = { personId: person.id, pincode: request.pincode, date: request.date, window: request.window };
-    await db.batch([...alongside, requestStatement(db, { ...asked, invite: request.invite, now })]);
+    const kept = { oneVisit, invite: request.invite, discountCode: code?.code ?? null, now };
+    await db.batch([...alongside, requestStatement(db, { ...asked, ...kept })]);
   }
+  // The code's use is written with the hold only while the code still has a use left for it, which another booking
+  // may have taken a moment before.
+  const codeStands = code !== null && (holdId === null || (await codeOnHold(db, holdId)) !== null);
   // Someone we knew may be in FSM and the CRM already, with no address. Someone new is added to both with this
   // one, by the booking and its lead.
   if (knownId !== null && address === "saved") await form.syncContact(person.id);
@@ -421,7 +491,8 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     lead_id: leadId,
     invited: request.invite !== null,
     credits: invited.credits,
-    first_fit: request.firstFit !== null,
+    one_visit: oneVisit,
+    discount_code: codeStands,
   });
   return {
     ok: true,
@@ -432,8 +503,31 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     credits: invited.credits,
     invite: invited.invite,
     address,
-    firstFit: request.firstFit !== null,
+    oneVisit,
+    discountCode: codeStands,
   };
+}
+
+/**
+ * The code given on the form, checked: only a consultation and fit in one visit takes one, a consultation costing
+ * nothing. One that does not apply refuses the booking, so the client can take it out or put it right; the form
+ * says only that it does not apply, and the reason is logged.
+ */
+async function oneVisitCode(
+  form: FormRequest,
+  text: string,
+  knownId: string | null,
+  oneVisit: boolean,
+): Promise<{ readonly ok: true; readonly codeId: string; readonly code: string } | Refusal> {
+  const notApplicable = { ok: false, status: 422, code: "code_not_applicable", fields: ["discount_code"] } as const;
+  if (!oneVisit) {
+    form.log.info("discount_code_refused", { reason: "not_covered" });
+    return notApplicable;
+  }
+  const checked = await checkForOneVisit(form.db, text, knownId, form.now);
+  if (checked.ok) return checked;
+  form.log.info("discount_code_refused", { reason: checked.reason });
+  return notApplicable;
 }
 
 export interface WaitlistRequest {

@@ -29,7 +29,7 @@ export function sampleBooking(state: "booked" | "requested" | "expired"): Bookin
     credits: state !== "expired",
     invite: state === "expired" ? "expired" : "valid",
     address: "saved",
-    first_fit: false,
+    one_visit: false,
   };
   return { result, mobile: SAMPLE.mobile, place: placeOf(SAMPLE.served) };
 }

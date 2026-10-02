@@ -422,6 +422,29 @@ export const booking = {
       switchEither: "You can switch either off in Profile.",
       switchIt: "You can switch it off in Profile.",
     },
+    /**
+     * PLACEHOLDER, every line: no board draws a discount code (docs/decisions/0108-discount-codes.md).
+     * A code that does not apply is told only that, whatever the reason.
+     */
+    code: {
+      open: "Have a discount code?",
+      label: "Discount code",
+      apply: "Apply",
+      applying: "Applying",
+      /** "Code TENOFF: Rs. 200 off", before GST, beneath the price. */
+      applied: (code: string, off: string) => `Code ${code}: ${off} off`,
+      remove: "Remove code",
+      removing: "Removing",
+      errors: {
+        code_not_applicable: "That code does not apply to this visit.",
+        rate_limited: "Too many codes tried. Try again tomorrow.",
+        already_discounted: "This visit already has a code.",
+        price_settled: "Payment has started, so the code can no longer change.",
+        hold_expired: "Your slot hold has run out. Pick a window again.",
+        offline: "You are offline. Connect, then try again.",
+        unknown: "That did not go through. Try again.",
+      } as Readonly<Record<string, string>>,
+    },
   },
   /**
    * Board C5's late-fee line, which C7 repeats word for word: the ex-GST figure, and the inclusive one after it,
@@ -550,14 +573,38 @@ export const change = {
   destination: "UPI",
 } as const;
 
+/** What a referral earns each side, as ops set it in the console (docs/decisions/0107-referral-rewards-in-the-console.md). */
+interface Reward {
+  readonly referrer_visits: number;
+  readonly friend_visits: number;
+}
+
+/** "1 service visit", "3 service visits". */
+const serviceVisits = (count: number): string => (count === 1 ? "1 service visit" : `${String(count)} service visits`);
+
+/**
+ * Board F1's promise, from the referrer's side. With both at 3 it is the board's; the words for unequal sides, for 0
+ * and for a reward not known, which gives no count, are PLACEHOLDER, pending the owner's (docs/open-points.md, item 172).
+ */
+function promiseOf(reward: Reward | null): string {
+  const fitted = "When a friend you refer is fitted,";
+  if (reward === null) return `${fitted} we tell you.`;
+  const { referrer_visits: mine, friend_visits: theirs } = reward;
+  if (mine === 0 && theirs === 0) return `${fitted} we tell you.`;
+  if (mine === 0) return `${fitted} they get ${serviceVisits(theirs)} free.`;
+  if (theirs === mine) return `${fitted} you both get ${serviceVisits(mine)} free.`;
+  if (theirs === 0) return `${fitted} you get ${serviceVisits(mine)} free.`;
+  return `${fitted} you get ${serviceVisits(mine)} free, and your friend gets ${String(theirs)}.`;
+}
+
 /** Refer (boards F1 to F6): the invite, the card behind it, and who has been fitted. */
 export const refer = {
   title: "Refer",
-  promise: "When a friend you refer is fitted, you both get 3 service visits free.",
+  promise: promiseOf,
   credit: { label: "Your credit", expire: (date: string) => `Expire ${date}` },
   // PLACEHOLDER: the board draws no line for the credits of the invite a client came with while ops review them.
   inviteCredits: {
-    checking: "The 3 service visits from the invite you came with are being checked. We will message you.",
+    checking: "The service visits from the invite you came with are being checked. We will message you.",
     refused: "We could not give the service visits from the invite you came with. Message us to know why.",
   },
   noOther: "No other discount applies.",
@@ -578,13 +625,18 @@ export const refer = {
   /**
    * Board F4: the chat's preview, exactly as the friend receives it. Its heading and line are the landing's own
    * preview (site/src/content/referral.ts), which test/node/app-invite-preview.test.ts holds them to, so the
-   * client is named only when the invite will name them, and the area is the site's.
+   * client is named only when the invite will name them, the friend promised only the visits ops give them, and
+   * the area is the site's.
    */
   preview: {
     title: "Preview · what your friend sees",
     heading: (name: string | null) =>
       name === null ? "You have a Mane Man invite" : `${name} sent you a Mane Man invite`,
-    body: "Home-fitted hair systems across Delhi NCR. 3 service visits free when you're fitted.",
+    body: (reward: Reward | null) => {
+      const friend = reward?.friend_visits ?? 0;
+      if (friend === 0) return "Home-fitted hair systems across Delhi NCR.";
+      return `Home-fitted hair systems across Delhi NCR. ${serviceVisits(friend)} free when you're fitted.`;
+    },
     domain: "maneman.in",
     message: (link: string) => `Had my hair system fitted at home by these people. Worth a look — ${link}`,
     via: "Share via",
@@ -607,7 +659,7 @@ export const refer = {
     // PLACEHOLDER: a friend fitted before the grant kept first names, and erased since; never the erasure's word.
     unnamed: "A friend",
     when: (month: string) => `Fitted ${month}`,
-    each: (visits: number) => `${String(visits)} visits earned`,
+    each: (visits: number) => (visits === 1 ? "1 visit earned" : `${String(visits)} visits earned`),
     only: "Completed fits only. Whether an invite was opened is your friend's business.",
     none: "Nobody you have referred has been fitted yet.",
     back: "Back to refer",
@@ -796,9 +848,9 @@ export const empty = {
   },
   refer: {
     title: "Refer",
-    lines: [
+    lines: (reward: Reward | null): readonly [string, string] => [
       "Nobody you have referred has been fitted yet.",
-      "When a friend you refer is fitted, you both get 3 service visits free.",
+      promiseOf(reward),
     ],
   },
 } as const;

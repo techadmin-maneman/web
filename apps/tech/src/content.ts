@@ -4,6 +4,7 @@
 // PLACEHOLDER, pending the owner's wording.
 
 import type { Moved } from "@maneman/web-kit/api";
+import type { FitSpec, History } from "./api.ts";
 import { clock, dayMonth, todayInIndia } from "./lib/when.ts";
 
 export const signIn = {
@@ -165,6 +166,8 @@ export const stopped: Readonly<Record<string, string>> = {
   not_found: "This job is no longer on your list, so what it holds cannot reach us.",
   piece_code: "The piece's label was not accepted.",
   old_piece: "The label of the piece that came off was not accepted.",
+  // PLACEHOLDER: a one visit's product, no longer offered when the step reached us (ADR 0105).
+  product: "That product is not offered that day.",
   done: "A checklist item was not recognised.",
   reason: "That reason was not accepted.",
   invalid_request: "We could not record this.",
@@ -329,7 +332,7 @@ export const capture = {
   finish: "Done",
 } as const;
 
-/** The six in-job steps (board B), in the order the API runs them. */
+/** The six in-job steps (board B), and the hair profile no board draws, in the order the API runs them. */
 export const steps = {
   back: "Back",
   of: (done: number, total: number) => `${String(done)} of ${String(total)}`,
@@ -338,6 +341,8 @@ export const steps = {
     checklist: "Service checklist",
     consumables: "Consumables used",
     piece: "The piece",
+    // PLACEHOLDER: no board draws the hair profile (ADR 0106).
+    profile: "Hair profile",
     after_photos: "After photos",
     outcome: "Outcome",
   },
@@ -448,6 +453,128 @@ export const badges = {
   prepaid: "Prepaid",
   credit: "Credit",
   free: "Free",
+  // PLACEHOLDER: no board draws a consultation and fit in one visit, paid for once the client is fitted (ADR 0105).
+  at_visit: "Pays once fitted",
+} as const;
+
+/**
+ * PLACEHOLDER: no board draws a consultation and fit in one visit
+ * (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). The client chooses the product with the technician
+ * at the piece step, or decides against it; closing the visit as done then texts them a payment link, or ends it as
+ * a consultation. Never an amount.
+ */
+export const oneVisit = {
+  name: "Consultation and fit",
+  nameLower: "consultation and fit",
+  checklist: "Consultation and fit checklist",
+  choice: "The client's choice",
+  declined: "Decided against it",
+  chooseFirst: "Choose the product, or that the client decided against it",
+  declinedNote: "Nothing is fitted. Closing as done ends the visit as a consultation, with nothing to pay.",
+  closeNote:
+    "Closing as done texts the client a payment link for the product they chose. If they decided against it, the visit ends as a consultation.",
+  payment: "Payment",
+  linkSent: "Link texted to the client",
+  linkPaid: "Paid",
+  /**
+   * PLACEHOLDER: a discount code the client gives the technician before the link goes (docs/decisions/0108-discount-codes.md).
+   * It comes off the product's price in the link; no amount is shown here.
+   */
+  code: {
+    label: "Discount code, if the client has one",
+    apply: "Apply code",
+    applying: "Checking",
+    /** Said once it applies: the link carries it, and nothing else is shown. */
+    applied: (code: string) => `Code ${code} applied. The payment link will take it off.`,
+    errors: {
+      code_not_applicable: "That code does not apply to this visit.",
+      already_discounted: "This visit already has a code.",
+      price_settled: "The payment link has gone, so the code can no longer change.",
+      rate_limited: "Too many codes tried. Try again tomorrow.",
+      offline: "You are offline. A code needs a signal: try again once you have one.",
+      unknown: "That did not go through. Try again.",
+    } as Readonly<Record<string, string>>,
+  },
+} as const;
+
+/** Words for every code of one of the fit spec's lists, as the API names them. */
+type Words<Field extends keyof FitSpec> = Record<NonNullable<FitSpec[Field]>, string>;
+
+/**
+ * PLACEHOLDER: no board draws the client's hair profile (docs/decisions/0106-a-clients-hair-profile.md). The lists'
+ * words wait for the owner (docs/open-points.md, item 42); the codes are the API's.
+ */
+export const profile = {
+  sections: {
+    stage: "Norwood stage",
+    head: "The head, in centimetres",
+    base: "Base size, in inches",
+    colour: "Colour",
+    grey: "Grey, in per cent",
+    density: "Density",
+    wave: "Wave",
+    hairline: "Hairline",
+    product: "Product",
+    attachment: "Tape or glue",
+  },
+  measurements: {
+    head_circumference_cm: "Circumference",
+    front_to_nape_cm: "Front to nape",
+    ear_to_ear_cm: "Ear to ear, over the top",
+    temple_to_temple_cm: "Temple to temple",
+    base_width_in: "Width",
+    base_length_in: "Length",
+  },
+  // PLACEHOLDER: the owner's words for each code (item 42).
+  stages: { I: "I", II: "II", III: "III", IV: "IV", V: "V", VI: "VI", VII: "VII" } satisfies Words<"norwood_stage">,
+  colours: {
+    "1": "#1",
+    "1B": "#1B",
+    "2": "#2",
+    "3": "#3",
+    "4": "#4",
+    "5": "#5",
+    "6": "#6",
+    "7": "#7",
+    "8": "#8",
+  } satisfies Words<"colour">,
+  densities: { 80: "80%", 100: "100%", 120: "120%", 140: "140%" } satisfies Words<"density_percent">,
+  waves: { straight: "Straight", slight_wave: "Slight wave", wavy: "Wavy", curly: "Curly" } satisfies Words<"wave">,
+  hairlines: {
+    natural: "Natural",
+    receded: "Receded",
+    straight: "Straight",
+    widows_peak: "Widow's peak",
+  } satisfies Words<"hairline">,
+  attachments: { tape: "Tape", glue: "Glue", both: "Tape and glue" } satisfies Words<"attachment">,
+  remedies: {
+    none: "None",
+    minoxidil: "Minoxidil",
+    finasteride: "Finasteride",
+    transplant: "Transplant",
+    other_systems: "Other hair systems",
+    other: "Other",
+  } satisfies Record<History["remedies"][number], string>,
+  range: (min: number, max: number) => `${String(min)} to ${String(max)}, to one decimal.`,
+  greyRange: (min: number, max: number) => `${String(min)} to ${String(max)}, a whole number.`,
+  yearRange: (first: number, last: number) => `A year from ${String(first)} to ${String(last)}.`,
+  checkFigures: "Check the figures to continue",
+  history: {
+    title: "History",
+    remedies: "Remedies tried",
+    year: "The transplant's year",
+    skin: "Skin conditions and allergies",
+  },
+  // The piece card's rows from the profile: the board's Tier, Colour, Adhesive and Scalp, and the base's size.
+  card: {
+    tier: "Tier",
+    baseSize: "Base size",
+    colour: "Colour",
+    adhesive: "Adhesive",
+    scalp: "Scalp",
+    size: (width: number, length: number) => `${String(width)} × ${String(length)} in`,
+    shade: (colour: string, grey: number | null) => (grey === null ? colour : `${colour} / ${String(grey)}% grey`),
+  },
 } as const;
 
 export const types = {

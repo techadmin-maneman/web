@@ -1871,6 +1871,142 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/holds/{id}/discount-code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Take a discount code off the hold's price, before Checkout has its order */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["DiscountCodeEntry"];
+                };
+            };
+            responses: {
+                /** @description The hold, priced with the code taken off */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Hold"];
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description already_discounted: the hold carries a code; hold_expired; price_settled: Checkout has its order, or it is paid for; ops_assisted */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description code_not_applicable: the code does not apply to this booking */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description rate_limited: too many codes tried today, or from this address this hour */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        /** Take the code off the hold again, before Checkout has its order */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The hold, at its price again */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Hold"];
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such hold of the client's, or it carries no code */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description hold_expired: the hold ran out; price_settled: Checkout has its order, or it is paid for; ops_assisted */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/appointments/{id}/reschedule": {
         parameters: {
             query?: never;
@@ -2395,7 +2531,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_fitted" | "already_disputed" | "not_disputable";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_fitted" | "already_disputed" | "not_disputable" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -2561,6 +2697,7 @@ export interface components {
                     window: ("morning" | "afternoon" | "evening") | null;
                 } | null;
             };
+            referral_reward: components["schemas"]["ReferralReward"];
         };
         VisitSummary: {
             /** Format: uuid */
@@ -2616,6 +2753,15 @@ export interface components {
             /** @description In paise, GST included: what the client pays. */
             amount: number;
             gst_percent: number;
+        };
+        /** @description What a referral earns now, as ops set it: the Refer tab's promise, for a lead as for a fitted client, and the invite's preview say it (docs/decisions/0107-referral-rewards-in-the-console.md). */
+        ReferralReward: {
+            /** @description The free service visits the client who sent the invite gets; 0 for none. */
+            referrer_visits: number;
+            /** @description The free service visits the friend they invited gets; 0 for none. */
+            friend_visits: number;
+            /** @description How many days the credits last from the grant. */
+            valid_days: number;
         };
         Profile: {
             name: string;
@@ -3194,6 +3340,14 @@ export interface components {
                 /** @description Credits left once this one is used. */
                 remaining: number;
             } | null;
+            /** @description The discount code entered on it (docs/decisions/0108-discount-codes.md); else null. */
+            discount: {
+                code: string;
+                /** @description In paise: what the code takes off before GST; null until the price it comes off is known. */
+                amount_ex_gst: number | null;
+                /** @description The price before the code; price is what is left, with GST on it. */
+                list_price: components["schemas"]["Price"] | null;
+            } | null;
         };
         Booking: {
             /** Format: uuid */
@@ -3218,6 +3372,10 @@ export interface components {
             hold_id: string;
             /** @description The photograph purposes the pay step showed its lines for. Booking agrees to each the client has never decided on (ADR 0080); left out, none. */
             consents?: ("photos_own_record" | "photos_referral_cards")[];
+        };
+        DiscountCodeEntry: {
+            /** @description As the client typed it, any case. */
+            code: string;
         };
         MoveTerms: {
             /** Format: uuid */
@@ -3300,8 +3458,10 @@ export interface components {
                 first_name: string | null;
                 /** @description YYYY-MM, in India. */
                 month: string;
+                /** @description The service visits the client was given for this friend: what a referral earned when the friend was fitted, 0 where it gave the referrer none (docs/decisions/0107-referral-rewards-in-the-console.md). */
+                visits: number;
             }[];
-            /** @description For a client who came through an invite, where its credits stand when they are not simply in the balance: checking while ops review the grant, refused once ops rejected it. Null otherwise. */
+            /** @description For a client who came through an invite, where its credits stand when they are not simply in the balance: checking while ops review the grant, refused once ops rejected it. Null otherwise, and where the reward it was held under gives the friend no visits. */
             invite_credits: ("checking" | "refused") | null;
         };
         Grievance: {

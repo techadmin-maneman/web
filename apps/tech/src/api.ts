@@ -40,6 +40,11 @@ export type PieceLookup = Schema["PieceLookup"];
 export type UploadLink = Schema["TechnicianPhotoUrl"];
 export type PhotoTaken = Schema["TechnicianPhotoTaken"];
 export type Day = Schema["TechnicianJobs"];
+/** The client's hair profile, which the profile step sends and the piece card reads (ADR 0106). */
+export type HairProfile = Schema["HairProfile"];
+export type FitSpec = Schema["HairFitSpec"];
+export type History = Schema["HairHistory"];
+export type ProfileRequest = Schema["TechnicianProfileRequest"];
 
 export type VisitType = NonNullable<JobSummary["type"]>;
 /** No amount ever reaches this app: a badge only (board A1). */
@@ -167,6 +172,17 @@ export const api = {
   /** The piece a label names, and whether it is one of this job's client's. */
   piece: (code: string, jobId: string) =>
     client.get("/api/tech/pieces/lookup", { query: { code, job: jobId }, patience: PATIENCE_MS.write }),
+
+  /**
+   * A discount code on a one visit, before its payment link goes (docs/decisions/0108-discount-codes.md). Asked
+   * straight, not through the outbox: the technician must hear at once whether it applies.
+   */
+  discountCode: (jobId: string, code: string) =>
+    client.post("/api/tech/jobs/{id}/discount-code", {
+      path: { id: jobId },
+      body: { code },
+      patience: PATIENCE_MS.write,
+    }),
 
   /** A link to PUT one photograph to, good for fifteen minutes. */
   uploadLink: (jobId: string, phase: Phase, angle: Angle) =>

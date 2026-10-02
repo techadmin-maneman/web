@@ -27,7 +27,7 @@ import { STATUS_AFTER, type AppointmentTransition, type FsmProvider } from "../p
 import { allConsumables } from "./consumables.ts";
 import { statusOf } from "./fsm-mirror.ts";
 import { eventsOf, type JobEvent } from "./job-events.ts";
-import { jobSheet } from "./job-sheet-settings.ts";
+import { checklistOf, jobSheet } from "./job-sheet-settings.ts";
 import { recordFittedPiece, recordFailedPiece } from "./pieces.ts";
 import { attachPhotosToFsm } from "./tech-photos.ts";
 import { minutesBetween } from "../lib/durations.ts";
@@ -36,6 +36,8 @@ export interface JobForFsm {
   readonly id: string;
   readonly fsmId: string;
   readonly type: VisitType;
+  /** A consultation and fit in one visit, which keeps the first fit's steps however it closed. */
+  readonly oneVisit: boolean;
   readonly personId: string | null;
   readonly fsmContactId: string | null;
 }
@@ -195,12 +197,13 @@ async function writePiece(deps: FsmWriteDeps, job: JobForFsm, event: JobEvent, n
  */
 export async function summaryOf(db: D1Database, job: JobForFsm, deps: { labelAsTest: boolean }): Promise<string> {
   const events = await eventsOf(db, job.id);
-  const parts = [`${prefix(deps)}${FSM_SERVICE_NAMES[job.type]}`];
+  const name = job.oneVisit ? ONE_VISIT_NAME : FSM_SERVICE_NAMES[job.type];
+  const parts = [`${prefix(deps)}${name}`];
 
   // The words ops gave each item; one they have since taken off is still named, and not counted against the list.
   const checklist = events.findLast((event) => event.kind === "checklist");
   if (checklist !== undefined) {
-    const list = (await jobSheet(db)).checklists[job.type];
+    const list = checklistOf(await jobSheet(db), job);
     const doneIds = new Set(asStrings(checklist.body.done));
     const ticked = [...list.items, ...list.retired].filter((item) => doneIds.has(item.id));
     const inList = list.items.filter((item) => doneIds.has(item.id)).length;
@@ -231,6 +234,7 @@ export async function summaryOf(db: D1Database, job: JobForFsm, deps: { labelAsT
  * our copy, since FSM holds nothing else of it: the asset only turns Inactive.
  */
 function pieceLines(event: JobEvent): string[] {
+  if (event.body.declined === true) return ["No piece: the client decided against the fit"];
   const lines: string[] = [];
   const oldPiece = asOldPiece(event.body.old_piece);
   if (oldPiece !== null) lines.push(`Piece off: ${oldPiece.pieceCode} (${oldPiece.reason})`);
@@ -256,6 +260,12 @@ function outcomeLine(event: JobEvent): string {
   if (outcome === "no_show") return "Outcome: client not home";
   return `Outcome: partial${reason === null ? "" : ` (${reason})`}`;
 }
+
+/**
+ * What FSM's summary calls a consultation and fit in one visit, which FSM books on the first fit's item
+ * (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+ */
+const ONE_VISIT_NAME = "Consultation and fit";
 
 /** Staging shares the real FSM org, so everything it writes says so (docs/open-points.md, item 19). */
 const prefix = (deps: { labelAsTest: boolean }): string => (deps.labelAsTest ? "Staging test: " : "");

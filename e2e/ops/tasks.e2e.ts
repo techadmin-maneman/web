@@ -215,6 +215,53 @@ test("names a draft invoice's visit, and heads an unfinished erasure with the da
   await expect(erased.getByRole("link")).toHaveCount(0);
 });
 
+// A consultation and fit in one visit (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md): the request ops
+// book by hand while self-serve booking is off, and the payment its client still owes once fitted. No board draws either.
+test("names a one visit asked for, and a fitted client's payment still owed, with its product and amount", async ({
+  page,
+}) => {
+  const task = (id: string, name: string, detail: string) => ({
+    id,
+    person: { id: "22000000-0000-4000-8000-000000000020", name },
+    detail,
+    since: "2027-09-20T07:30:00.000Z",
+    due: "2027-09-22T07:30:00.000Z",
+    owner: null,
+  });
+  await open(page, {
+    overdue: 0,
+    truncated: false,
+    staff: [],
+    groups: [
+      {
+        group: "consultation_request",
+        count: 1,
+        closable: false,
+        tasks: [task("96000000-0000-4000-8000-000000000020", "Arjun Kapoor", "2027-09-24 morning one_visit")],
+      },
+      {
+        group: "payment_owed",
+        count: 2,
+        closable: false,
+        tasks: [
+          task("96000000-0000-4000-8000-000000000021", "Nikhil Suri", "sent 3500000 Mane Man Natural"),
+          task("96000000-0000-4000-8000-000000000022", "Manoj Iyer", "unsent 2500000 Mane Man Essential"),
+        ],
+      },
+    ],
+  });
+  await expect(page.getByRole("heading", { level: 3 })).toHaveText(["Consultation request", "Payment owed"]);
+  await expect(row(page, "Arjun Kapoor")).toContainText("+ consultation and fit in one visit");
+  await expect(row(page, "Nikhil Suri")).toContainText("Mane Man Natural, Rs. 35,000; link sent");
+  await expect(row(page, "Manoj Iyer")).toContainText("Mane Man Essential, Rs. 25,000; link not sent");
+  await expect(row(page, "Nikhil Suri").getByRole("link", { name: "Nikhil Suri", exact: true })).toHaveAttribute(
+    "href",
+    "/clients/22000000-0000-4000-8000-000000000020/payments",
+  );
+  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+});
+
 // A no-show once named its technician alone and led nowhere (OPS-05).
 test("names the client of a no-show, and leads to their visits and to the case", async ({ page }) => {
   await open(page);

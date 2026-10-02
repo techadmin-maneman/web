@@ -1,6 +1,7 @@
 // Board B1: every piece the client has been fitted with, in the board's own six
 // columns. FSM owns the asset, and the route reads it afresh before it answers,
-// so nothing here is edited (src/routes/ops-field.ts).
+// so nothing here is edited (src/routes/ops-field.ts). Above them, the client's
+// hair profile, which the board does not draw (./HairProfile.tsx).
 //
 // The board sets the live piece's replacement date in brass and leaves the rest
 // quiet. A piece that has failed has been replaced, so the brass falls on the
@@ -14,6 +15,7 @@ import { api, type Piece } from "../api.ts";
 import { clients } from "../content.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./clients.module.css";
+import { HairProfile } from "./HairProfile.tsx";
 
 const copy = clients.pieces;
 
@@ -40,6 +42,15 @@ function PieceRow({ piece }: { piece: Piece }) {
 }
 
 export function Pieces({ clientId }: { clientId: string }) {
+  return (
+    <>
+      <HairProfile clientId={clientId} />
+      <PieceTable clientId={clientId} />
+    </>
+  );
+}
+
+function PieceTable({ clientId }: { clientId: string }) {
   const load = useCallback(() => api.clientPieces(clientId), [clientId]);
   const [loaded, retry] = useLoad(load);
 

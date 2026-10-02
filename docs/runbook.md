@@ -477,6 +477,8 @@ The client surface reads visits from Zoho FSM and documents from Zoho Books (doc
    - **The push** writes each price ops set in the console to the catalogue, and a price from a later day on its day. `FSM_CATALOGUE_PUSH` in `src/config/environments.ts` is off in every environment. **Only the owner switches it on, and only in production,** once production's price book holds the owner's prices and production connects FSM: set its `production` to `true`, and release. Staging's stays off for as long as it shares the owner's real org; a test refuses it on.
    - **After switching it on,** set any price in the console and look for `fsm_catalogue_pushed` in the logs; the next hour's check should raise no `fsm_catalogue` alert. The write, `PUT /fsm/v1/Products/{id}`, has never been tried on the org (`docs/open-points.md`, item 25): if FSM refuses it, `fsm_catalogue_push_failed` is logged with FSM's answer, and the check tells ops an hour later.
 
+9. **Discounts at line-item level.** A discount code on a visit is written onto its draft invoice as the visit line's discount, before tax (docs/decisions/0108-discount-codes.md). In Books: Settings → Preferences → Invoices (or General, "Do you give discounts?"), choose discounts at line-item level, before tax. Until it is set, and until the first discounted visit is invoiced on staging, a draft Books will not discount is held and ops told (`docs/open-points.md`, item 181).
+
 ### 11c. Razorpay
 
 Payments and refunds are mirrored from Razorpay's webhook (docs/decisions/0044-payments-mirror.md). Staging uses test keys, which take no real money.
@@ -497,7 +499,8 @@ Payments and refunds are mirrored from Razorpay's webhook (docs/decisions/0044-p
 3. **The webhook,** in Razorpay's dashboard, in the mode that matches the keys: Account & Settings → Webhooks → Add New Webhook.
    - URL: `https://<public host>/api/hooks/razorpay`.
    - Secret: the one from point 2.
-   - Events: `order.paid`, `payment.authorized`, `payment.captured`, `payment.failed`, `refund.created`, `refund.processed`, `refund.failed`, `refund.speed_changed`.
+   - Events: `order.paid`, `payment.authorized`, `payment.captured`, `payment.failed`, `refund.created`, `refund.processed`, `refund.failed`, `refund.speed_changed`, and `payment_link.paid`, which names the payment link a consultation and fit in one visit was paid by (ADR 0105).
+   - Payment links on: the one visit's link is made through the API (`POST /v1/payment_links`), which the account must allow (open point 166).
    - On staging, the hooks path already has its Access bypass (step 12, point 3).
 
 ### 12. WhatsApp delivery receipts (Evolution)
@@ -616,9 +619,9 @@ Production runs 268eaa4, of 21 September 2026. The next release carries every mi
 
 ## The CI runner
 
-Where GitHub Actions jobs run is the repository variable `CI_RUNNER`: `maneman` sends them to the owner's machine, in containers (docs/decisions/0006-deployment-pipeline.md, "The runner"), and anything else to GitHub's own runners. **Since 23 September 2026 it is `github`** (`gh variable list` shows it), so every job runs on GitHub's runners and spends the plan's minutes; whether to move back is the owner's decision. The rest of this section is for the machine: it must be on, with Docker Desktop running, and the containers start with Docker.
+Where GitHub Actions jobs run is the repository variable `CI_RUNNER`: `maneman` sends them to the owner's machine, in containers (docs/decisions/0006-deployment-pipeline.md, "The runner"), and anything else to GitHub's own runners. **Since 30 September 2026 it is `maneman`** (`gh variable list` shows it), the owner's choice of 1 October 2026: the jobs cost no GitHub minutes, and the full suite runs once a pull request rather than on every push (`docs/decisions/0006-deployment-pipeline.md`, "Two tiers"). Open a pull request as a draft while the work goes on, and mark it ready for review for its full run; add the `full-ci` label to run the full suite again on its next pushes. The rest of this section is for the machine: it must be on, with Docker Desktop running, and the containers start with Docker.
 
-**There are two,** `maneman-runner` (`maneman-pc`) and `maneman-runner-2` (`maneman-pc-2`), each with its own volume. One runner meant a pull request, a deploy and a second pull request waited for each other, half an hour at a time; two run side by side on a twelve-core machine. They share the machine, so a job is slower when both are busy: that is why the worker tests allow thirty seconds each (`vitest.config.ts`), since they write to a real D1 and a slow one is working, not hanging. One CI run is itself six jobs now (docs/decisions/0006-deployment-pipeline.md, "Parallel jobs"), so a single pull request keeps both runners busy, and a third runner would shorten a run further.
+**There is one,** `maneman-runner` (`maneman-pc`), since 1 October 2026 (the owner's choice). Two side by side on this six-core machine ran two heavy jobs at once, which timed out tests and dropped wrangler's connections; one runner queues the jobs instead. CI still runs vitest on four workers and Playwright on three, and the worker tests allow thirty seconds each (`vitest.config.ts`). The second runner, `maneman-runner-2` (`maneman-pc-2`), can be started again as below.
 
 - **Check them:** `docker logs --tail 5 maneman-runner` (and `maneman-runner-2`) ends "Listening for Jobs", and GitHub → the repository → Settings → Actions → Runners lists `maneman-pc` and `maneman-pc-2` as Idle or Active.
 - **Set it up again** (a new machine, or after removing it). Build the image, take a registration token (it lasts an hour), and start the container once with it; the registration is kept in the `maneman-runner` volume. Then start it again without the token, so the token is not left in the container's settings:
@@ -642,7 +645,7 @@ Where GitHub Actions jobs run is the repository variable `CI_RUNNER`: `maneman` 
 
 - **One fewer runner:** `docker rm -f maneman-runner-2`, then remove it in Settings → Actions → Runners. Nothing in the workflows names a particular runner, only the `maneman` label they share.
 
-- **Move the jobs to GitHub's runners:** `gh variable set CI_RUNNER --body github`, as it is now. They then spend GitHub's minutes, about twice as fast as one job did: GitHub bills each job a minute at least (docs/decisions/0006-deployment-pipeline.md, "Parallel jobs"). When the minutes run out, GitHub starts no job: staging stops deploying and production cannot release. A merge whose files already passed CI as a pull request does not run it again before its staging deploy.
+- **Move the jobs to GitHub's runners:** `gh variable set CI_RUNNER --body github`. They then spend GitHub's minutes, about twice as fast as one job did: GitHub bills each job a minute at least (docs/decisions/0006-deployment-pipeline.md, "Parallel jobs"). When the minutes run out, GitHub starts no job: staging stops deploying and production cannot release. Wherever the jobs run, a check that already passed on the same files is not run again (docs/decisions/0006-deployment-pipeline.md, "Checks are not repeated").
 - **Move them back to the machine:** check both runners are listening (above), then `gh variable set CI_RUNNER --body maneman`.
 - **After a new runner release,** the agent updates itself; the image's pinned version only matters for a fresh set-up.
 
@@ -905,7 +908,7 @@ Read FSM's reason first. A 5xx, a timeout, `Access Denied` or `TOKEN_COOLING_DOW
 
 The cron raises each finished visit's invoice through FSM, which puts it in Books as a draft, and marks it sent once it totals what the client was sold the visit for (ADRs 0056 and 0070). Only then can the client open it. It records each payment and refund in Books and sets a visit's payment against its invoice. Nothing here ever sends a draft that already exists, so a draft ops correct is sent by ops.
 
-- **Held as a draft** (`invoice_draft`), the alert says why. The price differs: correct the draft in Books and send it there, and set FSM's catalogue price right (step 11b, point 8). Nothing says what the visit was sold for: check the draft and send it. Paid with a referral credit: leave it until the CA rules (open point 14).
+- **Held as a draft** (`invoice_draft`), the alert says why. The price differs: correct the draft in Books and send it there, and set FSM's catalogue price right (step 11b, point 8). Nothing says what the visit was sold for: check the draft and send it. Paid with a referral credit: leave it until the CA rules (open point 14). Books would not take a discount code's discount: set the discount the alert names on the visit's line, before tax, and send it there (step 11b, point 9).
 - **Still a draft an hour after the visit, or Books would not mark it sent** (`invoice_draft`, and `invoice_not_issued` in the logs): send it in Books. Within the hour the pass sees it sent, the client can open it, and the alert closes.
 - **FSM refused to invoice** (`invoice_refused`): raise it in FSM by hand, then send it in Books; the pass finds it, since FSM gives a work order one invoice however often it is asked.
 - **Books refused a payment, its application or a refund** (`books_…_refused`): the message says what; put it right in Books. It is asked again every hour, and the alert closes when it goes through. `books_…_failed` is Books failing three times in some other way, usually Books being down; nothing to do.

@@ -344,6 +344,40 @@ describe("sweeper: try-on", () => {
     expect(await env.RESULTS.head("results/new-result.png")).not.toBeNull();
   });
 
+  // ADR 0104: the gate comes before the render, so a visitor who leaves between them leaves a message waiting.
+  it("skips the look's message of a claimed try-on whose render was never asked for, once it expires", async () => {
+    await insertPerson("p", "+919810000001");
+    await insertJob({ id: "left", state: "awaiting_upload", created_at: minutesAgo(61), person_id: "p" });
+    await insertJob({ id: "still-here", state: "awaiting_upload", created_at: minutesAgo(10), person_id: "p" });
+    const message = (id: string, jobId: string) =>
+      env.DB.prepare(
+        `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_id, state)
+         VALUES (?, ?, 'p', 'tryon_result', ?, 'waiting')`,
+      ).bind(id, minutesAgo(61), jobId);
+    await env.DB.batch([message("for-left", "left"), message("for-still-here", "still-here")]);
+
+    await sweep(sweepEnv().bindings, fakeDependencies(), createLogger(), OPTIONS);
+
+    const messages = await env.DB.prepare("SELECT id, state, last_error FROM outbound_messages ORDER BY id").all();
+    expect(messages.results).toEqual([
+      { id: "for-left", state: "skipped", last_error: "no look was made" },
+      { id: "for-still-here", state: "waiting", last_error: null },
+    ]);
+  });
+
+  // Keeping a look on its day costs about eight calls to D1 and R2, of the 1,000 a run may make.
+  it("expires at most 40 looks past their day a run, and the next run the rest", async () => {
+    for (let n = 1; n <= 45; n += 1) {
+      await insertJob({ id: `look-${String(n)}`, state: "ready", expires_at: minutesAgo(n) });
+    }
+    const first = await sweep(sweepEnv().bindings, fakeDependencies(), createLogger(), OPTIONS);
+    expect(first.jobsExpired).toBe(40);
+    const second = await sweep(sweepEnv().bindings, fakeDependencies(), createLogger(), OPTIONS);
+    expect(second.jobsExpired).toBe(5);
+    const ready = await env.DB.prepare("SELECT COUNT(*) AS n FROM tryon_jobs WHERE state = 'ready'").first("n");
+    expect(ready).toBe(0);
+  });
+
   it("deletes a photo an hour after its last look, unless a look is still rendering", async () => {
     const photo = (key: string) => ({ upload_key: key, uploaded_at: minutesAgo(90) });
     await insertJob({ ...photo("uploads/done"), id: "done-1", state: "ready", created_at: minutesAgo(90) });

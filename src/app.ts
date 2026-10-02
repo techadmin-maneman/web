@@ -20,6 +20,9 @@ import { registerClientBooking } from "./routes/client-booking.ts";
 import { registerClientChanges } from "./routes/client-changes.ts";
 import { registerClientNotes } from "./routes/client-notes.ts";
 import { registerClientData } from "./routes/client-data.ts";
+import { registerClientDiscountCodes } from "./routes/client-discount-codes.ts";
+import { registerOpsDiscountCodes } from "./routes/ops-discount-codes.ts";
+import { registerTechDiscountCodes } from "./routes/tech-discount-codes.ts";
 import { registerClientDisputes } from "./routes/client-disputes.ts";
 import { registerClientRefer } from "./routes/client-refer.ts";
 import { registerOpsBlackouts } from "./routes/ops-blackouts.ts";
@@ -33,6 +36,7 @@ import { registerOpsDispatch } from "./routes/ops-dispatch.ts";
 import { registerOpsDisputes } from "./routes/ops-disputes.ts";
 import { registerOpsField } from "./routes/ops-field.ts";
 import { registerOpsGrievances } from "./routes/ops-grievances.ts";
+import { registerOpsHairProfile } from "./routes/ops-hair-profile.ts";
 import { registerOpsJobSheet } from "./routes/ops-job-sheet.ts";
 import { registerOpsPayments } from "./routes/ops-payments.ts";
 import { registerOpsReferrals } from "./routes/ops-referrals.ts";
@@ -56,6 +60,7 @@ import { registerOpsProfile } from "./routes/ops-profile.ts";
 import { registerOpsStorage } from "./routes/ops-storage.ts";
 import { registerOpsWhoami } from "./routes/ops-whoami.ts";
 import { registerPublishedPrices } from "./routes/published-prices.ts";
+import { registerReferralReward } from "./routes/referral-reward.ts";
 import { registerTechAuth } from "./routes/tech-auth.ts";
 import { registerTechJobs } from "./routes/tech-jobs.ts";
 import { registerTechPieces } from "./routes/tech-pieces.ts";
@@ -77,6 +82,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerPublishedPrices,
     registerConsultations,
     registerReferralLanding,
+    // What a referral earns, for the invite's page and /book (docs/decisions/0107-referral-rewards-in-the-console.md).
+    registerReferralReward,
     registerTryonUpload,
     registerTryonGenerate,
     registerTryonClaim,
@@ -97,6 +104,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerClientDisputes,
     registerClientPayments,
     registerClientBooking,
+    // After the booking: it puts the session and the self-serve switch on every /api/holds/* route.
+    registerClientDiscountCodes,
     registerClientChanges,
     // After the changes: they put the session and the self-serve switch on every /api/appointments/* route.
     registerClientNotes,
@@ -112,6 +121,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsClientReferral,
     // An address a client gives ops on the phone (docs/decisions/0092-task-owners.md).
     registerOpsClientAddress,
+    // A client's hair profile (docs/decisions/0106-a-clients-hair-profile.md).
+    registerOpsHairProfile,
     registerOpsProfile,
     registerOpsReferrals,
     registerOpsGrievances,
@@ -134,8 +145,11 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     // What the photographs and cards hold in R2 (docs/decisions/0093-the-storage-meter.md).
     registerOpsStorage,
     registerOpsWhoami,
+    // Discount codes, and a code on a client's visit (docs/decisions/0108-discount-codes.md).
+    registerOpsDiscountCodes,
   ],
-  tech: [registerHealth, registerTechAuth, registerTechJobs, registerTechPieces],
+  // The discount code after the jobs, which put the technician's session on every /api/tech/jobs/* route.
+  tech: [registerHealth, registerTechAuth, registerTechJobs, registerTechPieces, registerTechDiscountCodes],
 };
 
 export function createApp(

@@ -1,0 +1,38 @@
+# A ready pull request merges itself once its full CI run passes, and its merge deploys to staging (the owner's choice
+# of 1 October 2026; docs/decisions/0006-deployment-pipeline.md, "Merged when green"). GitHub's own auto-merge needs
+# branch protection, which this plan has not. A pull request labelled hold-for-review (payments, refunds, credits,
+# discounts, personal or health data) waits for its review; the decision is scripts/lib/auto-merge.ts.
+name: auto-merge
+
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+concurrency:
+  group: auto-merge
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    name: merge when green
+    if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success'
+    runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+      - name: Merge the pull request if it should merge itself, and deploy the merge to staging
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: node scripts/auto-merge.ts --repository "$GITHUB_REPOSITORY" --run "$RUN_ID"

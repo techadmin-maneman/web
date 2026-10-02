@@ -38,6 +38,7 @@ import { firstNameOf, initialsOf } from "../lib/names.ts";
 import { PriceSchema } from "./client-booking.ts";
 import { CreditsSchema } from "./client-refer.ts";
 import { VisitSummarySchema } from "./client-visits.ts";
+import { ReferralRewardSchema } from "./referral-reward.ts";
 
 export const MeSchema = z
   .object({
@@ -189,6 +190,11 @@ export const MeSchema = z
           }),
       })
       .strict(),
+    referral_reward: ReferralRewardSchema.openapi({
+      description:
+        "What a referral earns now, as ops set it: the Refer tab's promise, for a lead as for a fitted client, and " +
+        "the invite's preview say it (docs/decisions/0107-referral-rewards-in-the-console.md).",
+    }),
   })
   .strict()
   .openapi("Me");
@@ -239,7 +245,7 @@ export function registerClientMe(app: App): void {
       minutes: service.minutes,
       price: service.price,
     }));
-    const days = (await opsInputs(c)).nextVisitDays;
+    const { nextVisitDays: days, referralReward } = await opsInputs(c);
     const facts = await nextVisitFacts(db, session.subjectId, now, days);
     // A booking's consultation, not yet in FSM, is booked as much as a visit FSM has.
     const booked = facts.booked || upcoming !== null || proposal !== null;
@@ -260,6 +266,7 @@ export function registerClientMe(app: App): void {
         credits: credits.visits > 0 ? { visits: credits.visits, earliest_expiry: credits.earliestExpiry } : null,
         prompt: await homePrompt(db, session.subjectId, { booked, offer }, now, days),
         booking: { self_serve: c.var.config.settings.selfServeBooking, types, services, next: offer },
+        referral_reward: referralReward,
       },
       200,
     );

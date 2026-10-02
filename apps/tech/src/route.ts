@@ -8,6 +8,7 @@
 //   /jobs/:id/checklist      step 2 (board B2)
 //   /jobs/:id/consumables    step 3 (board B3)
 //   /jobs/:id/piece          step 4, a replacement's and a first fit's only (board B3)
+//   /jobs/:id/profile        the client's hair profile, a consultation's and a one visit's only (no board; ADR 0106)
 //   /jobs/:id/after-photos   step 5 (board B1 again)
 //   /jobs/:id/outcome        step 6 (board B4)
 //   /jobs/:id/done           the close-out (board B4)
@@ -23,6 +24,7 @@ export const STEP_PATHS = {
   checklist: "checklist",
   consumables: "consumables",
   piece: "piece",
+  profile: "profile",
   after_photos: "after-photos",
   outcome: "outcome",
 } as const satisfies Partial<Record<Step, string>>;

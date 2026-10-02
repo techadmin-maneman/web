@@ -437,6 +437,9 @@ export function BookingSheet({
             onRemind={setRemind}
             onMethod={setMethod}
             onPay={() => void payFor(step.hold, method)}
+            onHold={(hold) => {
+              setStep({ kind: "pay", hold });
+            }}
           />
         )}
         {step.kind === "failed" && (

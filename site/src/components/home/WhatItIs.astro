@@ -3,8 +3,6 @@
 import { placeholderTag, whatItIs, whatPlate } from "../../content/site.ts";
 import { SHOW_PLACEHOLDER_TAGS, isShown } from "../../lib/build.ts";
 import DesignPicture from "../DesignPicture.astro";
-
-const [first, second] = whatItIs.paragraphs;
 ---
 
 <section id="what" class="what" data-section="what">
@@ -21,9 +19,8 @@ const [first, second] = whatItIs.paragraphs;
   )}
   <div class="column">
     <h2 class="section-title">{whatItIs.title}</h2>
-    <p class="first">{first}</p>
-    <p>{second}</p>
-    <p class="closing">{whatItIs.closing}</p>
+    <p class="body">{whatItIs.body}</p>
+    <p class="statement">{whatItIs.statement}</p>
   </div>
 </section>
 
@@ -44,20 +41,20 @@ const [first, second] = whatItIs.paragraphs;
     margin: 0 auto;
     padding: var(--what-pad-top) var(--gutter) 0;
   }
-  p {
-    margin: var(--sp-20) 0 0;
+  .body {
+    margin: var(--sp-26) 0 0;
     font-size: var(--fs-reading);
     line-height: var(--lh-175);
     color: var(--text);
     text-wrap: pretty;
   }
-  .first {
-    margin-top: var(--sp-26);
-  }
-  .closing {
+  .statement {
+    margin: var(--sp-32) 0 0;
     font-family: var(--font-serif);
-    font-size: var(--fs-reading-serif);
-    line-height: var(--lh-135);
-    text-wrap: wrap;
+    font-size: var(--fs-h2);
+    line-height: var(--lh-115);
+    letter-spacing: var(--tracking-heading);
+    color: var(--text);
+    text-wrap: balance;
   }
 </style>

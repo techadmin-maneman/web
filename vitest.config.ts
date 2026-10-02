@@ -7,6 +7,13 @@ const migrations = await readD1Migrations("./migrations");
 export default defineConfig({
   test: {
     restoreMocks: true,
+    /*
+     * Two runners share the owner's twelve-core machine (docs/runbook.md, "The CI runner"), and vitest's default
+     * takes a worker a core: two jobs of tests, or tests beside the browser tests, then took every core and more,
+     * and hooks and wrangler's dev proxy timed out for want of a CPU, not a defect. Playwright is held to three
+     * workers for the same reason (playwright.config.ts).
+     */
+    maxWorkers: process.env.CI === undefined ? undefined : 4,
     // Vitest's own, and a watchdog that ends a run whose files have stopped reporting (test/stalled-files.ts).
     reporters: ["default", ...(process.env.GITHUB_ACTIONS === "true" ? ["github-actions"] : []), new StalledFiles()],
     coverage: {
@@ -69,9 +76,12 @@ export default defineConfig({
            * These tests run inside workerd and write to a real D1, so a slow one is
            * doing work, not hanging. Vitest's five seconds is enough on an idle
            * machine and not on a busy one, which failed CI repeatedly while proving
-           * nothing about the code.
+           * nothing about the code. Their setup gets the same: with both of the
+           * owner's runners on tests at once, a file's first hook, which applies the
+           * migrations, outran vitest's ten seconds on every run.
            */
           testTimeout: 30_000,
+          hookTimeout: 30_000,
         },
       },
       {
