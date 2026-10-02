@@ -224,11 +224,12 @@ export async function recordFittedPiece(db: D1Database, fsm: FsmProvider, piece:
 /**
  * Records a piece that failed: FSM's asset status first, then our copy's reason.
  * FSM's asset has no field we know of for the reason, so it reaches FSM on the
- * job's summary (src/domain/job-sheet.ts). A label that neither our copy nor
- * the client's assets in FSM know is left to ops.
+ * job's summary (src/domain/job-sheet.ts). Only the job's client's own piece is
+ * marked; a label that is not among their pieces, in our copy or in FSM, is
+ * left to ops.
  */
 export async function recordFailedPiece(db: D1Database, deps: PieceSyncDeps, failure: FailedPiece): Promise<boolean> {
-  const fsmId = (await heldPieceId(db, failure.pieceCode)) ?? (await pieceIdFromFsm(db, deps, failure));
+  const fsmId = await failedPieceId(db, deps, failure);
   if (fsmId === null) {
     await alertUnknownPiece(deps.alertOnce, failure);
     return false;
@@ -252,18 +253,26 @@ export interface FailedPiece {
   readonly now: Date;
 }
 
-async function heldPieceId(db: D1Database, pieceCode: string): Promise<string | null> {
-  return db
-    .prepare("SELECT fsm_id FROM pieces WHERE piece_code = ?1 AND deleted_at IS NULL")
-    .bind(pieceCode)
-    .first<string>("fsm_id");
+/**
+ * The FSM asset of the client's piece the label names: from our copy, else from
+ * the client's assets read afresh from FSM, in case it was added there by hand.
+ */
+async function failedPieceId(db: D1Database, deps: PieceSyncDeps, failure: FailedPiece): Promise<string | null> {
+  const { owner, pieceCode } = failure;
+  if (owner === null) return null;
+
+  const held = await ownPieceId(db, owner.personId, pieceCode);
+  if (held !== null) return held;
+
+  await syncPieces(db, deps, owner, failure.now);
+  return ownPieceId(db, owner.personId, pieceCode);
 }
 
-/** Reads the client's pieces afresh from FSM, then looks for the label in our copy again. */
-async function pieceIdFromFsm(db: D1Database, deps: PieceSyncDeps, failure: FailedPiece): Promise<string | null> {
-  if (failure.owner === null) return null;
-  await syncPieces(db, deps, failure.owner, failure.now);
-  return heldPieceId(db, failure.pieceCode);
+async function ownPieceId(db: D1Database, personId: string, pieceCode: string): Promise<string | null> {
+  return db
+    .prepare("SELECT fsm_id FROM pieces WHERE person_id = ?1 AND piece_code = ?2 AND deleted_at IS NULL")
+    .bind(personId, pieceCode)
+    .first<string>("fsm_id");
 }
 
 async function alertUnknownPiece(alertOnce: AlertOnce, failure: FailedPiece): Promise<void> {
@@ -273,7 +282,7 @@ async function alertUnknownPiece(alertOnce: AlertOnce, failure: FailedPiece): Pr
     key: `piece_unknown:${pieceCode}`,
     message:
       `A technician marked piece ${pieceCode} as failed, but it is not among ${whose} pieces here or in FSM, ` +
-      "so nothing was marked. Find it in FSM and set its status to Inactive.",
+      "so nothing was marked. Find the piece in FSM and, if it did come off, set its status to Inactive.",
     link: owner === null ? undefined : `/clients/${owner.personId}`,
   });
 }

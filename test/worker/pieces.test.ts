@@ -298,6 +298,29 @@ describe("a piece that came off whose label our copy does not know", () => {
     expect(await openAlertKeys()).toEqual(["piece_unknown:MM-STD-7001-A"]);
     expect(deps.alerts[0]).toContain(`not among client ${PERSON}'s pieces here or in FSM`);
   });
+
+  it("never marks the piece of another client our copy holds the label on", async () => {
+    await addOtherPerson();
+    await env.DB.prepare(
+      `INSERT INTO pieces (id, fsm_id, person_id, piece_code, base, fitted_at, replacement_due_at, synced_at)
+       VALUES ('piece-theirs', 'asset-2', ?1, 'MM-STD-7001-A', 'Standard base', '2026-07-01', '2026-12-28', ?2)`,
+    )
+      .bind(OTHER_PERSON, NOW.toISOString())
+      .run();
+
+    const done = await recordFailedPiece(env.DB, syncDeps(fsm), {
+      pieceCode: "MM-STD-7001-A",
+      reason: "torn",
+      owner: OWNER,
+      now: NOW,
+    });
+
+    expect(done).toBe(false);
+    expect(fsm.made.assetUpdates).toEqual([]);
+    const [theirs] = await piecesOf(env.DB, OTHER_PERSON);
+    expect(theirs).toMatchObject({ failed_at: null, failure_reason: null });
+    expect(await openAlertKeys()).toEqual(["piece_unknown:MM-STD-7001-A"]);
+  });
 });
 
 describe("the label the technician scans", () => {
