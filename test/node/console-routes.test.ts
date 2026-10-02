@@ -52,6 +52,8 @@ describe("what each ops route asks of its caller", () => {
         "POST /api/settings/{name}",
         "POST /api/deletion-requests/{id}/decision",
         "POST /api/staff",
+        "POST /api/technicians",
+        "POST /api/technicians/{id}/reactivate",
       ]),
     );
   });

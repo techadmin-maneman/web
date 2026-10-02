@@ -1,7 +1,8 @@
 // Board A1's unassigned tray: the jobs nobody holds yet, each with the client,
 // the kind of visit, the window the client asked for beside the one offered,
 // and who invited the client, where someone did (the brief's "referral
-// source"). The asked window is what the client picked; a visit whose booking
+// source"). A job still on a technician who was switched off waits here too,
+// saying whose it was. The asked window is what the client picked; a visit whose booking
 // recorded none says so rather than repeating the offered one, and the asked
 // window carries no day, since none was recorded with it (ADR 0063). An
 // offered window that is not the one asked for is lettered in oxblood, as the
@@ -75,6 +76,9 @@ export function Tray({ unassigned, onTake }: Props) {
                     {dispatch.tray.offered(offeredWord(each.date, each.offered_window))}
                   </span>
                   {referredBy !== null && <span className={styles.trayLine}>{dispatch.tray.referred(referredBy)}</span>}
+                  {each.was_technician !== null && (
+                    <span className={styles.trayWas}>{dispatch.tray.was(each.was_technician.name)}</span>
+                  )}
                 </button>
               </li>
             );

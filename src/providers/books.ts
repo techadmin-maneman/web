@@ -1,8 +1,8 @@
 // Zoho Books, for the invoices and receipts a client sees in the app
 // (docs/decisions/0032-fsm-mirror.md, 0044-payments-mirror.md). Documents are
 // read from Books when a client opens one, never copied. Payments Razorpay
-// took are recorded here, so Books issues their receipts. It shares the FSM
-// client's Zoho token.
+// took are recorded here, so Books issues their receipts. Books has a Zoho
+// client of its own.
 //
 //   GET  /books/v3/invoices/{id}?organization_id=                     { invoice: {...} }
 //   GET  /books/v3/invoices/{id}?organization_id=&accept=pdf          the PDF
@@ -28,7 +28,7 @@
 //                                                                     discount_type item_level, before tax
 
 import { z } from "zod";
-import type { ZohoFsmSettings } from "../config/settings.ts";
+import type { ZohoBooksSettings } from "../config/settings.ts";
 import { createZohoRequester, ZohoError, type ZohoRequesterDependencies } from "./zoho-http.ts";
 
 export interface BooksInvoice {
@@ -103,12 +103,10 @@ export interface BooksProvider {
 
 export function createBooksProvider(
   provider: string | undefined,
-  settings: ZohoFsmSettings | null,
+  settings: ZohoBooksSettings | null,
   deps: ZohoRequesterDependencies,
 ): BooksProvider {
-  if (provider === "zoho" && settings !== null && settings.booksOrgId !== null) {
-    return createZohoBooks(settings, settings.booksOrgId, deps);
-  }
+  if (provider === "zoho" && settings !== null) return createZohoBooks(settings, deps);
   if (provider === "stub") return createStubBooks();
   const off = () => Promise.reject(new Error("Books is not connected here (BOOKS_PROVIDER is none)"));
   return {
@@ -185,10 +183,9 @@ const booksInvoiceOf = (invoice: z.infer<typeof Invoice>): BooksInvoice => ({
   status: invoice.status,
 });
 
-function createZohoBooks(settings: ZohoFsmSettings, orgId: string, deps: ZohoRequesterDependencies): BooksProvider {
-  // Books shares the FSM client, and so its token.
-  const request = createZohoRequester("fsm", settings, deps);
-  const org = `organization_id=${encodeURIComponent(orgId)}`;
+function createZohoBooks(settings: ZohoBooksSettings, deps: ZohoRequesterDependencies): BooksProvider {
+  const request = createZohoRequester("books", settings, deps);
+  const org = `organization_id=${encodeURIComponent(settings.orgId)}`;
   const path = (id: string, extra = "") => `/books/v3/invoices/${encodeURIComponent(id)}?${org}${extra}`;
   const payments = (id?: string, tail = "") =>
     `/books/v3/customerpayments${id === undefined ? "" : `/${encodeURIComponent(id)}`}${tail}?${org}`;

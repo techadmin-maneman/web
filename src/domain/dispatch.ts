@@ -118,6 +118,8 @@ export interface UnassignedJob extends Visit {
   readonly asked_window: BookingWindow | null;
   readonly offered_window: BookingWindow | null;
   readonly date: string | null;
+  /** The technician it is still on, who was switched off and has no row; null for a job nobody holds. */
+  readonly was_technician: { readonly id: string; readonly name: string } | null;
 }
 
 export interface Board {
@@ -176,6 +178,7 @@ const BOARD_JOBS = `
   SELECT a.id, a.type, a.one_visit, a.status, a.window_start, a.window_end, a.technician_id, a.service_city,
     a.service_pincode, a.asked_window, a.person_id, d.locality, sp.area, s.minutes AS service_minutes,
     p.name AS client_name, p.mobile_e164 AS client_mobile, p.erased_at AS client_erased_at,
+    t.name AS technician_name, t.active AS technician_active,
     ${LATEST_VISITS_CONSENT} AS whatsapp_visits,
     (SELECT referrer.name FROM referral_attributions r
        JOIN referral_codes code ON code.code = r.code
@@ -190,6 +193,7 @@ const BOARD_JOBS = `
               ORDER BY b.valid_from DESC LIMIT 1), 0) AS free
   FROM appointments a
   LEFT JOIN people p ON p.id = a.person_id
+  LEFT JOIN technicians t ON t.id = a.technician_id
   LEFT JOIN addresses d ON d.person_id = a.person_id AND d.replaced_at IS NULL
   LEFT JOIN serviceable_pincodes sp ON sp.pincode = a.service_pincode
   LEFT JOIN services s ON s.kind = a.type AND s.tier = COALESCE(a.tier, 'standard')
@@ -252,7 +256,7 @@ export async function dispatchBoard(
   });
 
   const unassigned = scheduled.results
-    .filter((job) => job.technician_id === null && job.status !== "completed")
+    .filter((job) => isNobodys(job) && job.status !== "completed")
     .map((job) => unassignedOf(job, schedule));
   const leave = (await leaveBetween(db, options.from, last)).map((period) => ({
     technician_id: period.technician_id,
@@ -281,6 +285,8 @@ interface BoardJobRow {
   window_end: string | null;
   service_minutes: number | null;
   technician_id: string | null;
+  technician_name: string | null;
+  technician_active: number | null;
   service_city: string | null;
   service_pincode: string | null;
   asked_window: BookingWindow | null;
@@ -342,6 +348,18 @@ function blockOf(job: BoardJobRow, untold: Block["untold"], noticeInForce: numbe
   };
 }
 
+/**
+ * A job no technician on the board holds: none was given it, or the one it is on was switched off, as FSM's sync
+ * or ops may do with visits still on him. Either way it waits in the tray.
+ */
+const isNobodys = (job: BoardJobRow): boolean => job.technician_id === null || job.technician_active !== 1;
+
+/** The switched-off technician a tray job is still on, so the tray can say whose it was. */
+function wasTechnicianOf(job: BoardJobRow): UnassignedJob["was_technician"] {
+  if (job.technician_id === null || job.technician_name === null) return null;
+  return { id: job.technician_id, name: job.technician_name };
+}
+
 function unassignedOf(job: BoardJobRow, schedule: SlotSchedule): UnassignedJob {
   const start = new Date(job.window_start);
   return {
@@ -353,6 +371,7 @@ function unassignedOf(job: BoardJobRow, schedule: SlotSchedule): UnassignedJob {
     asked_window: job.asked_window,
     offered_window: schedule.at(start).window,
     date: indiaDate(start),
+    was_technician: wasTechnicianOf(job),
   };
 }
 

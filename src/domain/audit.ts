@@ -42,6 +42,11 @@ export const AUDIT_ACTIONS = [
   // and to the dispatch board alike (ADR 0062).
   "technician.leave",
   "technician.leave_cancelled",
+  // Ops adding a technician, changing his name, number or zone, and switching him off or back on.
+  "technician.add",
+  "technician.change",
+  "technician.deactivate",
+  "technician.reactivate",
   // The business inputs ops set for themselves (docs/decisions/0061-ops-editable-inputs.md):
   // one of the rules, a price from a date, and whether we go to a pincode. A price still to
   // come taken back, and an area's name (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
@@ -168,7 +173,8 @@ export function auditStatementIfWritten(
       | "no_show_disputes"
       | "hair_profiles"
       | "discount_code_uses"
-      | "slot_times";
+      | "slot_times"
+      | "technicians";
     readonly id: string;
   },
 ): D1PreparedStatement {

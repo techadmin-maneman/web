@@ -287,6 +287,7 @@ describe("a signed-in phone", () => {
 
     expect(answer.status).toBe(200);
     expect(await answer.json()).toEqual({
+      id: IMRAN,
       name: "Imran Qureshi",
       first_name: "Imran",
       initials: "IQ",
@@ -317,7 +318,8 @@ describe("a signed-in phone", () => {
   });
 
   // A technician who has left keeps his phone, and on it the cards of the day:
-  // clients' addresses and mobiles. Being inactive in FSM ends his session at once.
+  // clients' addresses and mobiles. Being inactive in FSM ends his session at once,
+  // and says why, so the phone sets aside what it has not sent rather than wipe it.
   it("is signed out on its next call once FSM no longer lists him as active", async () => {
     const cookie = await signIn();
     await env.DB.prepare("UPDATE technicians SET active = 0 WHERE id = ?1").bind(IMRAN).run();
@@ -325,7 +327,7 @@ describe("a signed-in phone", () => {
     for (const path of ["/api/tech/me", "/api/tech/jobs"]) {
       const answer = await withCookie(cookie, path);
       expect(answer.status).toBe(401);
-      expect(await answer.json()).toMatchObject({ error: { code: "session_required" } });
+      expect(await answer.json()).toMatchObject({ error: { code: "technician_inactive" } });
     }
     const session = await env.DB.prepare("SELECT revoked_at FROM sessions WHERE subject_id = ?1")
       .bind(IMRAN)

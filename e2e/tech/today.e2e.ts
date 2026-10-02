@@ -153,6 +153,24 @@ test("a job further out shows time, type and sector only, and cannot be started"
   await expect(page.getByRole("button", { name: "Start job" })).toHaveCount(0);
 });
 
+test("scrolls the whole day on a screen shorter than it, down to tomorrow's last job", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 480 });
+  const fake = await fakeTech(page);
+  fake.tomorrow = true;
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1, name: "3 jobs today" })).toBeVisible();
+  await page.getByRole("button", { name: "Tomorrow · 1 job" }).click();
+
+  const last = page.getByRole("listitem").last();
+  await expect(last).toContainText("Sector 50");
+  await expect(last).not.toBeInViewport({ ratio: 1 });
+
+  // A finger's scroll, not a script's: a column that hid what overflows it would leave this job out of reach.
+  await page.mouse.move(180, 240);
+  await page.mouse.wheel(0, 1000);
+  await expect(last).toBeInViewport({ ratio: 1 });
+});
+
 test("every target on every screen is at least the design's 48 px, and the primary action is 64", async ({ page }) => {
   const fake = await fakeTech(page);
   fake.type = "replacement";

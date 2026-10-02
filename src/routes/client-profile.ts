@@ -25,14 +25,9 @@ import {
   withdrawNumberChange,
   type NumberChange,
 } from "../domain/number-change.ts";
-import {
-  consentsOf,
-  currentAddress,
-  liveContact,
-  maskedMobile,
-  switchConsent,
-  type Address,
-} from "../domain/profile.ts";
+import { CURRENT_NOTICE } from "../config/notices.ts";
+import { recordConsent } from "../domain/consents.ts";
+import { consentsOf, currentAddress, liveContact, maskedMobile, type Address } from "../domain/profile.ts";
 import { takeOne } from "../domain/rate-limit.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
@@ -473,8 +468,18 @@ export function registerClientProfile(app: App): void {
     }
     const now = c.var.deps.now();
     const db = c.env.DB;
+    const consent = recordConsent(db, {
+      person: { id: personId },
+      purpose,
+      granted,
+      notice: CURRENT_NOTICE[purpose],
+      source,
+      rule: "if_changed",
+      ipHash: (await visitorOf(c)).ipHash,
+      givenAt: now.toISOString(),
+    });
     const [switched] = await db.batch<{ created_at: string }>([
-      switchConsent(db, { personId, purpose, granted, source, ipHash: (await visitorOf(c)).ipHash, now }),
+      consent.statement,
       auditStatement(
         db,
         audit(personId, c.var.requestId, { action: "consent.switch", detail: { purpose, granted } }),
