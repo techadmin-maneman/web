@@ -1,35 +1,18 @@
 // Zoho Books, for the invoices and receipts a client sees in the app
 // (docs/decisions/0032-fsm-mirror.md, 0044-payments-mirror.md). Documents are
 // read from Books when a client opens one, never copied. Payments Razorpay
-// took are recorded here, so Books issues their receipts. Books has a Zoho
-// client of its own.
-//
-//   GET  /books/v3/invoices/{id}?organization_id=                     { invoice: {...} }
-//   GET  /books/v3/invoices/{id}?organization_id=&accept=pdf          the PDF
-//   POST /books/v3/invoices/{id}/status/sent?organization_id=         marks a draft sent
-//   POST /books/v3/customerpayments?organization_id=                  { payment: { payment_id } }
-//   GET  /books/v3/customerpayments/{id}?organization_id=&accept=pdf  the receipt
-//   POST /books/v3/invoices/{id}/credits?organization_id=             a payment applied to an invoice
-//   POST /books/v3/customerpayments/{id}/refunds?organization_id=     { payment_refund: { payment_refund_id } }
-//
-// Two reads look for a record by our reference before it is made, so a try
-// whose answer was lost is not recorded twice (docs/decisions/0070-vendor-correctness.md).
-// They follow Books' API documentation and have not yet been tried on the org:
-//
-//   GET  /books/v3/customerpayments?organization_id=&customer_id=&reference_number=
-//                                                                     { customerpayments: [{ payment_id, reference_number }] }
-//   GET  /books/v3/customerpayments/{id}/refunds?organization_id=     { payment_refunds: [{ payment_refund_id, reference_number }] }
-//
-// A discount code's line discount on a draft before it is sent (docs/decisions/0108-discount-codes.md) follows the
-// same documentation and has not been tried on the org either (docs/open-points.md, item 181):
-//
-//   PUT  /books/v3/invoices/{id}?organization_id=                     { invoice: {...} }, with every line, the
-//                                                                     visit's line carrying the discount in rupees,
-//                                                                     discount_type item_level, before tax
+// took are recorded here, so Books issues their receipts. Clients become Books
+// customers, keyed by our person ID, and the invoices we raise go on Books
+// items. Callers use BooksProvider; only src/providers/books-zoho.ts knows
+// Books' API.
 
-import { z } from "zod";
 import type { ZohoBooksSettings } from "../config/settings.ts";
-import { createZohoRequester, ZohoError, type ZohoRequesterDependencies } from "./zoho-http.ts";
+import { createZohoBooks } from "./books-zoho.ts";
+import { ProviderError } from "./provider-error.ts";
+import type { ZohoRequesterDependencies } from "./zoho-http.ts";
+
+/** The most pages of 200 items one read of Books' list takes. */
+export { BOOKS_ITEM_PAGES } from "./books-zoho.ts";
 
 export interface BooksInvoice {
   readonly id: string;
@@ -71,6 +54,66 @@ export interface NewBooksRefund {
   readonly fromAccountId: string;
 }
 
+/** A client as their Books customer holds them. */
+export interface NewBooksCustomer {
+  /** Ours, kept in the customer's "MM person ID", whose values Books keeps unique: what finds the customer again. */
+  readonly personId: string;
+  readonly name: string;
+  /** E.164. */
+  readonly mobile: string;
+  readonly email: string | null;
+  /**
+   * The GST code of the client's state, e.g. HR, their place of contact. Null where the city is not one we know,
+   * and while GST is off in Books, which then refuses one.
+   */
+  readonly stateCode: string | null;
+  readonly address: {
+    readonly street1: string;
+    readonly street2: string | null;
+    readonly city: string;
+    readonly state: string | null;
+    readonly pincode: string;
+  } | null;
+}
+
+/** An invoice we raise for a visit: one line, on the visit's Books item. Amounts in paise. */
+export interface NewBooksInvoice {
+  readonly customerId: string;
+  /** The appointment's ID: what finds the invoice again. */
+  readonly reference: string;
+  /** India's calendar date, YYYY-MM-DD. */
+  readonly date: string;
+  /** The GST code of the visit's state; null while GST is off in Books, which then refuses one. */
+  readonly placeOfSupply: string | null;
+  readonly line: {
+    readonly itemId: string;
+    readonly name: string;
+    readonly description: string;
+    /** The price book's price on the day, GST included. */
+    readonly rate: number;
+    /** Taken off before tax; 0 for none. */
+    readonly discount: number;
+  };
+}
+
+/** An item in Books, which an invoice's line is on. */
+export interface BooksItem {
+  readonly id: string;
+  readonly name: string;
+  /** Its selling price, in paise. */
+  readonly rate: number;
+  readonly active: boolean;
+}
+
+/** A service item to add, or to write over one. Its rate in paise. */
+export interface BooksItemDetails {
+  readonly name: string;
+  readonly rate: number;
+}
+
+/** What erasing a customer left: nothing, or a blank, inactive customer a document or payment still names. */
+export type BooksErasure = "deleted" | "blanked";
+
 export interface BooksProvider {
   invoice(id: string): Promise<BooksInvoice | null>;
   /**
@@ -99,6 +142,24 @@ export interface BooksProvider {
   findRefund(paymentId: string, reference: string): Promise<string | null>;
   /** Records money given back from a payment; returns Books' ID for the refund. */
   recordRefund(paymentId: string, refund: NewBooksRefund): Promise<string>;
+  /** The person's customer, added, or found by their person ID and brought up to date; Books' ID for it. */
+  upsertCustomer(customer: NewBooksCustomer): Promise<string>;
+  /** Writes a client's details as they now are over their customer. */
+  updateCustomer(customerId: string, customer: NewBooksCustomer): Promise<void>;
+  /**
+   * Deletes the customer. Books keeps one a document or payment names, so that one is renamed "Erased client", its
+   * contact person, number, e-mail and addresses cleared, and marked inactive.
+   */
+  eraseCustomer(customerId: string): Promise<BooksErasure>;
+  /** The invoice Books holds under our reference, whatever its status; null if it holds none. */
+  findInvoice(reference: string): Promise<BooksInvoice | null>;
+  /** Raises a draft; answers it with the total Books worked out. */
+  createInvoice(invoice: NewBooksInvoice): Promise<BooksInvoice>;
+  /** Every item, active or not. */
+  items(): Promise<BooksItem[]>;
+  /** Adds a service item; returns Books' ID for it. */
+  createItem(item: BooksItemDetails): Promise<string>;
+  updateItem(itemId: string, item: BooksItemDetails): Promise<void>;
 }
 
 export function createBooksProvider(
@@ -120,190 +181,32 @@ export function createBooksProvider(
     applyToInvoice: off,
     findRefund: off,
     recordRefund: off,
+    upsertCustomer: off,
+    updateCustomer: off,
+    eraseCustomer: off,
+    findInvoice: off,
+    createInvoice: off,
+    items: off,
+    createItem: off,
+    updateItem: off,
   };
 }
 
-const Invoice = z.object({
-  invoice_id: z.string(),
-  invoice_number: z.string(),
-  date: z.string(),
-  total: z.number(),
-  balance: z.number().optional(),
-  status: z.string(),
-});
-
-/** A draft with its lines, as a discount is written onto it: each line is sent back, or Books removes it. */
-const InvoiceWithLines = Invoice.extend({
-  customer_id: z.string(),
-  line_items: z
-    .array(
-      z.looseObject({
-        line_item_id: z.string(),
-        rate: z.number(),
-        quantity: z.number(),
-        discount: z.union([z.number(), z.string()]).optional(),
-      }),
-    )
-    .min(1),
-});
-
-type BooksLine = z.infer<typeof InvoiceWithLines>["line_items"][number];
-
-/** The visit's line, which a discount comes off: the dearest, since a visit's work order bills its service first. */
-const visitLine = (lines: readonly BooksLine[]): BooksLine | undefined =>
-  lines.reduce<BooksLine | undefined>(
-    (dearest, line) =>
-      dearest === undefined || line.rate * line.quantity > dearest.rate * dearest.quantity ? line : dearest,
-    undefined,
-  );
-
-const Recorded = z.object({ payment: z.object({ payment_id: z.string() }) });
-const Refunded = z.object({ payment_refund: z.object({ payment_refund_id: z.string() }) });
-
-/** The payments a search found. Books may match a reference loosely, so each is compared again here. */
-const PaymentsFound = z.object({
-  customerpayments: z.array(z.object({ payment_id: z.string(), reference_number: z.string().nullish() })).default([]),
-});
-const RefundsFound = z.object({
-  payment_refunds: z
-    .array(z.object({ payment_refund_id: z.string(), reference_number: z.string().nullish() }))
-    .default([]),
-});
-
-/** Paise as Books takes an amount: rupees. */
-const rupees = (paise: number) => paise / 100;
-
-/** An invoice as Books gives it, its amounts in paise. */
-const booksInvoiceOf = (invoice: z.infer<typeof Invoice>): BooksInvoice => ({
-  id: invoice.invoice_id,
-  number: invoice.invoice_number,
-  date: invoice.date,
-  total: Math.round(invoice.total * 100),
-  balance: Math.round((invoice.balance ?? invoice.total) * 100),
-  status: invoice.status,
-});
-
-function createZohoBooks(settings: ZohoBooksSettings, deps: ZohoRequesterDependencies): BooksProvider {
-  const request = createZohoRequester("books", settings, deps);
-  const org = `organization_id=${encodeURIComponent(settings.orgId)}`;
-  const path = (id: string, extra = "") => `/books/v3/invoices/${encodeURIComponent(id)}?${org}${extra}`;
-  const payments = (id?: string, tail = "") =>
-    `/books/v3/customerpayments${id === undefined ? "" : `/${encodeURIComponent(id)}`}${tail}?${org}`;
-
-  /** Books answers 404 for an invoice it does not have; that is "unavailable", not a failure. */
-  async function orNull<T>(work: () => Promise<T>): Promise<T | null> {
-    try {
-      return await work();
-    } catch (error) {
-      if (error instanceof ZohoError && error.status === 404) return null;
-      throw error;
-    }
-  }
-
-  return {
-    invoice: (id) =>
-      orNull(async () => {
-        const answer = await (await request("invoice", path(id))).json<{ invoice?: unknown }>();
-        return booksInvoiceOf(Invoice.parse(answer.invoice));
-      }),
-
-    async issueInvoice(id) {
-      await request("issue_invoice", `/books/v3/invoices/${encodeURIComponent(id)}/status/sent?${org}`, {
-        method: "POST",
-        body: {},
-      });
-    },
-
-    async discountInvoice(id, amountOff) {
-      const read = await (await request("invoice", path(id))).json<{ invoice?: unknown }>();
-      const draft = InvoiceWithLines.parse(read.invoice);
-      const discounted = visitLine(draft.line_items);
-      const body = {
-        customer_id: draft.customer_id,
-        discount_type: "item_level",
-        is_discount_before_tax: true,
-        line_items: draft.line_items.map((line) =>
-          line === discounted ? { ...line, discount: rupees(amountOff) } : line,
-        ),
-      };
-      const written = await (
-        await request("discount_invoice", path(id), { method: "PUT", body })
-      ).json<{
-        invoice?: unknown;
-      }>();
-      return booksInvoiceOf(Invoice.parse(written.invoice));
-    },
-
-    invoicePdf: (id) =>
-      orNull(async () => {
-        const response = await request("invoice_pdf", path(id, "&accept=pdf"));
-        if (response.body === null) throw new ZohoError(response.status, "EMPTY_FILE", "the PDF came back empty");
-        return { body: response.body, contentType: "application/pdf" as const };
-      }),
-
-    async findPayment(customerId, reference) {
-      const query = `&customer_id=${encodeURIComponent(customerId)}&reference_number=${encodeURIComponent(reference)}`;
-      const response = await request("find_payment", `${payments()}${query}`);
-      const found = PaymentsFound.parse(await response.json()).customerpayments;
-      return found.find((each) => each.reference_number === reference)?.payment_id ?? null;
-    },
-
-    async recordPayment(payment) {
-      const response = await request("record_payment", payments(), {
-        method: "POST",
-        body: {
-          customer_id: payment.customerId,
-          payment_mode: "Razorpay",
-          amount: rupees(payment.amount),
-          date: payment.date,
-          reference_number: payment.reference,
-          description: payment.description,
-        },
-      });
-      return Recorded.parse(await response.json()).payment.payment_id;
-    },
-
-    receiptPdf: (paymentId) =>
-      orNull(async () => {
-        const response = await request("receipt_pdf", `${payments(paymentId)}&accept=pdf`);
-        if (response.body === null) throw new ZohoError(response.status, "EMPTY_FILE", "the PDF came back empty");
-        return { body: response.body, contentType: "application/pdf" as const };
-      }),
-
-    async applyToInvoice(paymentId, invoiceId, amount) {
-      await request("apply_payment", `/books/v3/invoices/${encodeURIComponent(invoiceId)}/credits?${org}`, {
-        method: "POST",
-        body: { invoice_payments: [{ payment_id: paymentId, amount_applied: rupees(amount) }] },
-      });
-    },
-
-    async findRefund(paymentId, reference) {
-      const response = await request("find_refund", payments(paymentId, "/refunds"));
-      const found = RefundsFound.parse(await response.json()).payment_refunds;
-      return found.find((each) => each.reference_number === reference)?.payment_refund_id ?? null;
-    },
-
-    async recordRefund(paymentId, refund) {
-      const response = await request("record_refund", payments(paymentId, "/refunds"), {
-        method: "POST",
-        body: {
-          date: refund.date,
-          refund_mode: "Razorpay",
-          amount: rupees(refund.amount),
-          from_account_id: refund.fromAccountId,
-          reference_number: refund.reference,
-          description: refund.description,
-        },
-      });
-      return Refunded.parse(await response.json()).payment_refund.payment_refund_id;
-    },
-  };
-}
+// ---------------------------------------------------------------------------
+// The stub
+// ---------------------------------------------------------------------------
 
 /** The smallest valid PDF: one blank page. The stub's every document. */
 const BLANK_PDF =
   "%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n" +
   "3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n";
+
+/** The records whose answer a test can lose: the record is made, and the call fails. */
+export type StubBooksCreate = "recordPayment" | "recordRefund" | "upsertCustomer" | "createInvoice" | "createItem";
+
+/** The calls a test can make fail, or have refused, once. */
+export type StubBooksStep =
+  StubBooksCreate | "updateCustomer" | "eraseCustomer" | "findInvoice" | "items" | "updateItem";
 
 /** The stub, and what was written to it, for tests to read. */
 export interface StubBooks extends BooksProvider {
@@ -315,17 +218,30 @@ export interface StubBooks extends BooksProvider {
     readonly issued: string[];
     /** The discounts written onto drafts, in paise before GST. */
     readonly discounts: { invoiceId: string; amountOff: number }[];
+    /** Each customer written by person ID, in order, a second write of a person's as well. */
+    readonly customers: NewBooksCustomer[];
+    readonly customerUpdates: ({ customerId: string } & NewBooksCustomer)[];
+    readonly erased: { customerId: string; outcome: BooksErasure }[];
+    readonly invoices: NewBooksInvoice[];
+    readonly itemsMade: BooksItemDetails[];
+    readonly itemUpdates: ({ itemId: string } & BooksItemDetails)[];
   };
+  /** Makes the next call of this kind fail, as an outage does. */
+  failNext(step: StubBooksStep, message?: string): void;
+  /** Makes the next call of this kind refused, as Books refuses: a 400 with its own code. */
+  refuseNext(step: StubBooksStep, code?: string): void;
   /** Makes the next record of this kind take effect and then fail, as a call does whose answer never came. */
-  loseAnswer(step: "recordPayment" | "recordRefund"): void;
+  loseAnswer(step: StubBooksCreate): void;
 }
 
 /**
- * What the stub's drafts total before a discount, in paise: the work order's figure, which the stub cannot know, as
- * FSM raised the draft. A discount then leaves that figure less the discount, as Books leaves it with GST at 0%.
+ * What the stub's drafts that FSM raised total before a discount, in paise: the work order's figure, which the stub
+ * cannot know. A discount then leaves that figure less the discount, as Books leaves it with GST at 0%. And the
+ * items Books holds before a test adds any.
  */
 interface StubBooksWorld {
   readonly draftTotal: number;
+  readonly items?: readonly BooksItem[];
 }
 
 const blankPdf = () => ({
@@ -333,10 +249,39 @@ const blankPdf = () => ({
   contentType: "application/pdf" as const,
 });
 
+/** What a test asked of the stub's next calls: a failure once, or an answer lost once. */
+function createStubControls() {
+  const failures = new Map<StubBooksStep, Error>();
+  const lostAnswers = new Set<StubBooksCreate>();
+  return {
+    failNext: (step: StubBooksStep, message = `the stub Books failed ${step}`) => {
+      failures.set(step, new Error(message));
+    },
+    refuseNext: (step: StubBooksStep, code = "8") => {
+      failures.set(step, new ProviderError(400, code, `the stub Books refused ${step}`));
+    },
+    loseAnswer: (step: StubBooksCreate) => {
+      lostAnswers.add(step);
+    },
+    /** Fails once if the test asked this step to fail; a retry then succeeds. */
+    check(step: StubBooksStep): Promise<void> {
+      const failure = failures.get(step);
+      if (failure === undefined) return Promise.resolve();
+      failures.delete(step);
+      return Promise.reject(failure);
+    },
+    /** A record that took effect answers, unless the test asked for its answer to be lost. */
+    answer<T>(step: StubBooksCreate, made: T, id: string): Promise<T> {
+      if (!lostAnswers.delete(step)) return Promise.resolve(made);
+      return Promise.reject(new Error(`the stub Books made ${id}, and its answer never came`));
+    },
+  };
+}
+
 /**
  * Local and test stand-in: every invoice ID starting "stub-" exists, as a blank page, and so does every payment
  * it records. Its IDs are unique, as a new stub answers each local request. An invoice is a draft until it is
- * issued, as Books has it.
+ * issued, as Books has it. A customer is found again by its person ID, an invoice by its reference.
  */
 export function createStubBooks(world: StubBooksWorld = { draftTotal: 0 }): StubBooks {
   const made = {
@@ -345,28 +290,46 @@ export function createStubBooks(world: StubBooksWorld = { draftTotal: 0 }): Stub
     refunds: [] as (NewBooksRefund & { paymentId: string })[],
     issued: [] as string[],
     discounts: [] as { invoiceId: string; amountOff: number }[],
+    customers: [] as NewBooksCustomer[],
+    customerUpdates: [] as ({ customerId: string } & NewBooksCustomer)[],
+    erased: [] as { customerId: string; outcome: BooksErasure }[],
+    invoices: [] as NewBooksInvoice[],
+    itemsMade: [] as BooksItemDetails[],
+    itemUpdates: [] as ({ itemId: string } & BooksItemDetails)[],
   };
+  const controls = createStubControls();
+  return {
+    made,
+    failNext: controls.failNext,
+    refuseNext: controls.refuseNext,
+    loseAnswer: controls.loseAnswer,
+    ...stubDocumentsAndPayments(made, world, controls),
+    ...stubCustomers(made, controls),
+    ...stubItems(made, world, controls),
+  };
+}
+
+type StubMade = StubBooks["made"];
+type StubControls = ReturnType<typeof createStubControls>;
+type CustomerCalls = "upsertCustomer" | "updateCustomer" | "eraseCustomer";
+type ItemCalls = "items" | "createItem" | "updateItem";
+
+function stubDocumentsAndPayments(made: StubMade, world: StubBooksWorld, controls: StubControls) {
   // What the stub recorded, by the keys a retry looks it up by.
   const paymentIds = new Map<string, string>();
   const refundIds = new Map<string, string>();
-  const lostAnswers = new Set<"recordPayment" | "recordRefund">();
-  /** A record that took effect answers with its ID, unless the test asked for its answer to be lost. */
-  const answer = (step: "recordPayment" | "recordRefund", id: string): Promise<string> =>
-    lostAnswers.delete(step)
-      ? Promise.reject(new Error(`the stub Books recorded ${id}, and its answer never came`))
-      : Promise.resolve(id);
+  const invoicesById = new Map<string, BooksInvoice>();
+  const invoicesByReference = new Map<string, BooksInvoice>();
+  const issuedOrDraft = (id: string) => (made.issued.includes(id) ? "sent" : "draft");
 
-  return {
-    made,
-    loseAnswer: (step) => {
-      lostAnswers.add(step);
-    },
+  const stub: Omit<BooksProvider, CustomerCalls | ItemCalls> = {
     findPayment: (customerId, reference) => Promise.resolve(paymentIds.get(`${customerId}:${reference}`) ?? null),
-    recordPayment: (payment) => {
+    async recordPayment(payment) {
+      await controls.check("recordPayment");
       made.payments.push(payment);
       const id = `stub-payment-${crypto.randomUUID()}`;
       paymentIds.set(`${payment.customerId}:${payment.reference}`, id);
-      return answer("recordPayment", id);
+      return controls.answer("recordPayment", id, id);
     },
     receiptPdf: (paymentId) => Promise.resolve(paymentId.startsWith("stub-") ? blankPdf() : null),
     applyToInvoice: (paymentId, invoiceId, amount) => {
@@ -374,11 +337,12 @@ export function createStubBooks(world: StubBooksWorld = { draftTotal: 0 }): Stub
       return Promise.resolve();
     },
     findRefund: (paymentId, reference) => Promise.resolve(refundIds.get(`${paymentId}:${reference}`) ?? null),
-    recordRefund: (paymentId, refund) => {
+    async recordRefund(paymentId, refund) {
+      await controls.check("recordRefund");
       made.refunds.push({ ...refund, paymentId });
       const id = `stub-refund-${crypto.randomUUID()}`;
       refundIds.set(`${paymentId}:${refund.reference}`, id);
-      return answer("recordRefund", id);
+      return controls.answer("recordRefund", id, id);
     },
     issueInvoice: (id) => {
       made.issued.push(id);
@@ -389,19 +353,94 @@ export function createStubBooks(world: StubBooksWorld = { draftTotal: 0 }): Stub
       const total = world.draftTotal - amountOff;
       return Promise.resolve({ id, number: "INV-000001", date: "2026-09-22", total, balance: total, status: "draft" });
     },
-    invoice: (id) =>
-      Promise.resolve(
-        id.startsWith("stub-")
-          ? {
-              id,
-              number: `INV-${id.slice(5).padStart(6, "0")}`,
-              date: "2026-09-22",
-              total: 0,
-              balance: 0,
-              status: made.issued.includes(id) ? "sent" : "draft",
-            }
-          : null,
-      ),
+    invoice: (id) => {
+      const raised = invoicesById.get(id);
+      if (raised !== undefined) return Promise.resolve({ ...raised, status: issuedOrDraft(id) });
+      if (!id.startsWith("stub-")) return Promise.resolve(null);
+      const number = `INV-${id.slice(5).padStart(6, "0")}`;
+      return Promise.resolve({ id, number, date: "2026-09-22", total: 0, balance: 0, status: issuedOrDraft(id) });
+    },
     invoicePdf: (id) => Promise.resolve(id.startsWith("stub-") ? blankPdf() : null),
+    async findInvoice(reference) {
+      await controls.check("findInvoice");
+      const found = invoicesByReference.get(reference);
+      return found === undefined ? null : { ...found, status: issuedOrDraft(found.id) };
+    },
+    // A draft's total is its rate less its discount, as Books works it out with GST at 0%.
+    async createInvoice(invoice) {
+      await controls.check("createInvoice");
+      made.invoices.push(invoice);
+      const id = `stub-invoice-${crypto.randomUUID()}`;
+      const total = invoice.line.rate - invoice.line.discount;
+      const number = `INV-${String(made.invoices.length).padStart(6, "0")}`;
+      const raised = { id, number, date: invoice.date, total, balance: total, status: "draft" };
+      invoicesById.set(id, raised);
+      invoicesByReference.set(invoice.reference, raised);
+      return controls.answer("createInvoice", raised, id);
+    },
   };
+  return stub;
+}
+
+function stubCustomers(made: StubMade, controls: StubControls) {
+  const customerIds = new Map<string, string>();
+  /** A customer a payment or an invoice names, which Books will not delete. */
+  const named = (customerId: string) =>
+    made.payments.some((payment) => payment.customerId === customerId) ||
+    made.invoices.some((invoice) => invoice.customerId === customerId);
+
+  const stub: Pick<BooksProvider, CustomerCalls> = {
+    async upsertCustomer(customer) {
+      await controls.check("upsertCustomer");
+      made.customers.push(customer);
+      const id = customerIds.get(customer.personId) ?? `stub-customer-${crypto.randomUUID()}`;
+      customerIds.set(customer.personId, id);
+      return controls.answer("upsertCustomer", id, id);
+    },
+    async updateCustomer(customerId, customer) {
+      await controls.check("updateCustomer");
+      made.customerUpdates.push({ customerId, ...customer });
+    },
+    async eraseCustomer(customerId) {
+      await controls.check("eraseCustomer");
+      const outcome: BooksErasure = named(customerId) ? "blanked" : "deleted";
+      made.erased.push({ customerId, outcome });
+      if (outcome === "deleted") forget(customerIds, customerId);
+      return outcome;
+    },
+  };
+  return stub;
+}
+
+/** Drops the person whose customer this is, so the next write for them adds a new one, as Books would. */
+function forget(customerIds: Map<string, string>, customerId: string): void {
+  for (const [personId, id] of customerIds) {
+    if (id === customerId) customerIds.delete(personId);
+  }
+}
+
+function stubItems(made: StubMade, world: StubBooksWorld, controls: StubControls) {
+  const held: BooksItem[] = [...(world.items ?? [])];
+
+  const stub: Pick<BooksProvider, ItemCalls> = {
+    async items() {
+      await controls.check("items");
+      return held.map((item) => ({ ...item }));
+    },
+    async createItem(item) {
+      await controls.check("createItem");
+      made.itemsMade.push({ ...item });
+      const id = `stub-item-${crypto.randomUUID()}`;
+      held.push({ id, name: item.name, rate: item.rate, active: true });
+      return controls.answer("createItem", id, id);
+    },
+    async updateItem(itemId, item) {
+      await controls.check("updateItem");
+      made.itemUpdates.push({ itemId, ...item });
+      const index = held.findIndex((each) => each.id === itemId);
+      const current = held[index];
+      if (current !== undefined) held[index] = { ...current, name: item.name, rate: item.rate };
+    },
+  };
+  return stub;
 }
