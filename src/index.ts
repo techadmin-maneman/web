@@ -2,6 +2,7 @@ import { env } from "cloudflare:workers";
 import { createApp } from "./app.ts";
 import type { App } from "./http/context.ts";
 import { ENABLED_SURFACES, type Surface } from "./config/environments.ts";
+import { fieldRecord } from "./config/field-record.ts";
 import { productionDependencies } from "./dependencies.ts";
 import { createCachedIdentityCheck, validateStaticConfig } from "./guard.ts";
 import { byHost } from "./http/surfaces.ts";
@@ -60,6 +61,7 @@ export default {
       await handleFsmSyncBatch(batch, workerEnv, deps, log, {
         labelAsTest: config.environment !== "production",
         cataloguePush: config.settings.fsmCataloguePush,
+        record: fieldRecord(config.providers),
       });
       return;
     }

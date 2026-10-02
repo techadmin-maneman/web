@@ -502,12 +502,15 @@ describe("validateStaticConfig: Zoho FSM and Books", () => {
     expect(validateStaticConfig(production).settings.zohoBooks).toBeNull();
   });
 
-  it("refuses none where the client surface is on, and allows it where the surface is off", () => {
-    expect(problemsOf({ ...stagingBase, FSM_PROVIDER: "none", BOOKS_PROVIDER: "none" })).toEqual([
-      'FSM_PROVIDER is "none" while the client surface is on: visits and documents come from Zoho',
-      'BOOKS_PROVIDER is "none" while the client surface is on: visits and documents come from Zoho',
+  it("refuses Books off where the client surface is on, and allows it where the surface is off", () => {
+    expect(problemsOf({ ...stagingBase, BOOKS_PROVIDER: "none" })).toEqual([
+      'BOOKS_PROVIDER is "none" while the client surface is on: invoices and receipts come from Zoho Books',
     ]);
     expect(problemsOf(production)).toEqual([]);
+  });
+
+  it("allows FSM off where the client surface is on, since our own database then holds the visits", () => {
+    expect(problemsOf({ ...without(stagingBase, Object.keys(ZOHO_FSM)), FSM_PROVIDER: "none" })).toEqual([]);
   });
 
   it("refuses a Zoho host given as a URL", () => {
