@@ -15,6 +15,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { api, type ClientInvite, type ClientPayment, type ClientRecord, type CreditAdjustment } from "../api.ts";
 import { clients } from "../content.ts";
+import { useAccess } from "../lib/access.ts";
 import styles from "./clients.module.css";
 import { Invite, type InviteNews } from "./Invite.tsx";
 
@@ -95,6 +96,7 @@ function CreditForm({
   const [typed, setTyped] = useState("");
   const [reason, setReason] = useState<Reason | "">("");
   const [adjusting, setAdjusting] = useState<Adjusting>({ step: "open" });
+  const mayAdjust = useAccess().mayCall("POST /api/clients/{id}/credits");
   const visits = visitsOf(typed);
   const sending = adjusting.step === "sending";
   const expiry = credits?.earliest_expiry ?? null;
@@ -126,6 +128,7 @@ function CreditForm({
           </dd>
         </div>
       </dl>
+      {mayAdjust && (
       <form
         className={styles.creditForm}
         onSubmit={(event) => {
@@ -191,6 +194,7 @@ function CreditForm({
           </p>
         )}
       </form>
+      )}
     </section>
   );
 }

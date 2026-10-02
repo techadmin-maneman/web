@@ -1,6 +1,7 @@
 // What ops still have to do, behind Access (Ops Console, board D2;
 // src/policy/tasks.ts):
-//   GET /api/tasks                        the groups, their counts, how many have run over, and whose each task is
+//   GET /api/tasks                        the groups of the caller's departments, their counts, how many have run
+//                                         over, and whose each task is
 //   PUT /api/tasks/:group/:id/owner       make a task a member of staff's, or nobody's
 //   POST /api/tasks/:group/:id/close      close a visit left partly done without a follow-up, with why
 //
@@ -37,7 +38,10 @@ import {
   STAFF_SEEN_WITHIN_DAYS,
   TASK_GROUPS,
   TASK_SLA_HOURS,
+  type TaskGroup,
 } from "../policy/tasks.ts";
+import { callerAccess, permits } from "../http/staff-access.ts";
+import { meetsNeed, taskNeed } from "../policy/console-routes.ts";
 
 /** The tasks each group lists, the longest waits; its count is the whole queue's. */
 export const TASKS_SHOWN = 50;
@@ -103,8 +107,11 @@ const tasksRoute = createRoute({
   path: "/api/tasks",
   summary: "What ops still have to do, by group, the longest wait first",
   responses: {
-    200: { description: "The groups with something in them", ...json(TasksSchema) },
-    403: errorResponse("access_required"),
+    200: {
+      description: "The groups with something in them, of the caller's own departments once the Staff list is enforced",
+      ...json(TasksSchema),
+    },
+    403: errorResponse("access_required, or not_permitted: no View in any department"),
   },
 });
 
@@ -140,7 +147,10 @@ const ownerRoute = createRoute({
       ...json(z.object({ owner: OwnerSchema }).strict().openapi("TaskOwner")),
     },
     400: errorResponse("invalid_request: nobody has used the console lately with that e-mail"),
-    403: errorResponse("access_required: no Access token, or a service token, which names no member of staff"),
+    403: errorResponse(
+      "access_required: no Access token, or a service token, which names no member of staff; or not_permitted: " +
+        "it asks Act in the department that decides the task's group",
+    ),
     404: errorResponse("not_found: no such task on the board now; its thing may be done already"),
   },
 });
@@ -193,12 +203,20 @@ async function taskOnTheBoard(c: Context<AppEnv>, key: TaskKey): Promise<Task | 
   return tasks.find((task) => task.group === key.group && task.id === key.id) ?? null;
 }
 
+/** The groups of the caller's own departments; every group while the Staff list is not enforced. */
+async function groupsSeenBy(c: Context<AppEnv>): Promise<TaskGroup[]> {
+  const access = await callerAccess(c);
+  if (!access.enforced) return [...TASK_GROUPS];
+  return TASK_GROUPS.filter((group) => meetsNeed(access.caller, taskNeed(group, "view"), access.zoneOf));
+}
+
 export function registerOpsTasks(app: App): void {
   app.openapi(tasksRoute, async (c) => {
     const now = c.var.deps.now();
-    const [{ tasks, truncated }, staff] = await Promise.all([readTheBoard(c), staffNow(c)]);
+    const [board, staff, seen] = await Promise.all([readTheBoard(c), staffNow(c), groupsSeenBy(c)]);
+    const tasks = board.tasks.filter((task) => seen.includes(task.group));
     // In the policy's order, and a group with nothing in it is left out, as the board draws none.
-    const groups = TASK_GROUPS.map((group) => {
+    const groups = seen.map((group) => {
       const waiting = tasks.filter((task) => task.group === group);
       const shown = waiting.slice(0, TASKS_SHOWN);
       return {
@@ -209,7 +227,7 @@ export function registerOpsTasks(app: App): void {
       };
     }).filter((each) => each.count > 0);
 
-    return c.json({ overdue: overdueCount(tasks, now), truncated, staff, groups }, 200);
+    return c.json({ overdue: overdueCount(tasks, now), truncated: board.truncated, staff, groups }, 200);
   });
 
   app.openapi(ownerRoute, async (c) => {
@@ -219,6 +237,7 @@ export function registerOpsTasks(app: App): void {
     const owner = asked === null ? null : asked.toLowerCase();
     const { requestId } = c.var;
     const db = c.env.DB;
+    if (!(await permits(c, taskNeed(key.group, "act")))) return c.json(errorBody("not_permitted", requestId), 403);
     const staff = memberOfStaffOf(c);
     if (staff === null) return noMemberOfStaff(c);
 

@@ -15,6 +15,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { useRef, useState, type RefObject } from "react";
 import { api, type ClientVisit, type HeldBooking, type HeldBookingRefunded } from "../api.ts";
 import { clients } from "../content.ts";
+import { useAccess } from "../lib/access.ts";
 import styles from "./clients.module.css";
 
 const copy = clients.visits.held;
@@ -171,9 +172,14 @@ function Booking({ booking, visits, now }: { booking: HeldBooking; visits: reado
   const [busy, once] = useOneAtATime();
   const linkButton = useRef<HTMLButtonElement>(null);
   const refundButton = useRef<HTMLButtonElement>(null);
+  const access = useAccess();
   const passed = Date.parse(booking.starts_at) <= now.getTime();
   const settled = said?.settled === true;
   const retrying = booking.retrying && !stopped;
+  const mayRetry = !passed && access.mayCall("POST /api/held-bookings/{id}/retry");
+  const mayStop = retrying && access.mayCall("POST /api/held-bookings/{id}/stop");
+  const mayLink = !booking.moves_visit && access.mayCall("POST /api/held-bookings/{id}/link");
+  const mayRefund = access.mayCall("POST /api/held-bookings/{id}/refund");
   const what = copy.what(
     clients.visits.types[booking.type],
     `${fullDate(indiaDate(booking.starts_at))}, ${indiaClock(booking.starts_at)}`,
@@ -244,7 +250,7 @@ function Booking({ booking, visits, now }: { booking: HeldBooking; visits: reado
       {!settled && <p className={styles.heldLine}>{triesOf(booking, retrying, now)}</p>}
       {!settled && open === "none" && (
         <div className={styles.heldActions}>
-          {!passed && (
+          {mayRetry && (
             <Button
               variant="outline"
               size="small"
@@ -256,7 +262,7 @@ function Booking({ booking, visits, now }: { booking: HeldBooking; visits: reado
               <VisuallyHidden>{` · ${what}`}</VisuallyHidden>
             </Button>
           )}
-          {retrying && (
+          {mayStop && (
             <Button
               variant="outline"
               size="small"
@@ -268,7 +274,7 @@ function Booking({ booking, visits, now }: { booking: HeldBooking; visits: reado
               <VisuallyHidden>{` · ${what}`}</VisuallyHidden>
             </Button>
           )}
-          {!booking.moves_visit && (
+          {mayLink && (
             <Button
               variant="outline"
               size="small"
@@ -282,18 +288,20 @@ function Booking({ booking, visits, now }: { booking: HeldBooking; visits: reado
               <VisuallyHidden>{` · ${what}`}</VisuallyHidden>
             </Button>
           )}
-          <Button
-            variant="outline"
-            size="small"
-            ref={refundButton}
-            disabled={busy}
-            onClick={() => {
-              setOpen("refund");
-            }}
-          >
-            {copy.refund}
-            <VisuallyHidden>{` · ${what}`}</VisuallyHidden>
-          </Button>
+          {mayRefund && (
+            <Button
+              variant="outline"
+              size="small"
+              ref={refundButton}
+              disabled={busy}
+              onClick={() => {
+                setOpen("refund");
+              }}
+            >
+              {copy.refund}
+              <VisuallyHidden>{` · ${what}`}</VisuallyHidden>
+            </Button>
+          )}
         </div>
       )}
       {open === "link" && (
