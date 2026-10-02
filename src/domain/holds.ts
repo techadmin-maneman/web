@@ -15,7 +15,7 @@ import {
   LATE_FEES,
   type Charge,
 } from "../policy/moving-a-visit.ts";
-import { creditBalance } from "./credits.ts";
+import { spendableCredits } from "./credits.ts";
 import { holdDiscount } from "./discount-code-holds.ts";
 import { lateFeeOn, type Price } from "./price-book.ts";
 import { graceEndOf, graceEnds, heldMinutes, visitTimes } from "./scheduling.ts";
@@ -109,17 +109,22 @@ async function holdOf(db: D1Database, row: HoldRow, now: Date) {
     paid: row.paid === 1,
     visit_id: row.appointment_id,
     moves_visit_id: row.moves_appointment_id,
-    credit:
-      row.use_credit === 1
-        ? {
-            remaining: Math.max(
-              0,
-              (await creditBalance(db, row.person_id, now)).visits - (row.state === "held" ? 1 : 0),
-            ),
-          }
-        : null,
+    credit: await creditOn(db, row, now),
     discount: await holdDiscount(db, { id: row.id, price }),
   };
+}
+
+/**
+ * The credit that pays for the hold, with the credits left once it is spent. Null when none does, including a hold not
+ * yet confirmed whose credit another booking has taken since: booking it asks for payment.
+ */
+async function creditOn(db: D1Database, row: HoldRow, now: Date): Promise<{ remaining: number } | null> {
+  if (row.use_credit !== 1) return null;
+  const spendable = (await spendableCredits(db, row.person_id, now, row.id)).visits;
+  if (row.state !== "held") return { remaining: spendable };
+  if (row.confirmed_at === null && spendable === 0) return null;
+  // Until the visit is booked, the credit it spends is still in the balance.
+  return { remaining: Math.max(0, spendable - 1) };
 }
 
 /** One of the client's holds as the app shows it; null when there is no such hold of theirs. */

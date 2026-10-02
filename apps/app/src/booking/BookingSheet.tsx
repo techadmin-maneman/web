@@ -353,7 +353,19 @@ export function BookingSheet({
     if (answer.ok) setReminders(true);
   };
 
-  /** The booking started, and Checkout's answer; null when the API would not start it. */
+  /** The visit credit this hold counted on went on another booking: the client sees the price before Checkout opens. */
+  const showPriceInstead = async (holdId: string) => {
+    const fresh = await api.holdById(holdId);
+    setBusy(false);
+    if (!fresh.ok) {
+      setProblem(booking.failedToStart);
+      return;
+    }
+    setStep({ kind: "pay", hold: fresh.body });
+    setProblem(booking.creditGone);
+  };
+
+  /** The booking started, and Checkout's answer; null when the API would not start it, or the price must show first. */
   const startPaying = async (hold: Hold, how: PayMethod): Promise<Paid | null> => {
     if (remind && reminders !== true) await switchOnReminders();
     const started =
@@ -366,6 +378,10 @@ export function BookingSheet({
     const checkout = started.body.checkout;
     if (checkout === null) return "paid";
     ordered.current = hold.id;
+    if (paysNothing(hold)) {
+      await showPriceInstead(hold.id);
+      return null;
+    }
     return throughCheckout(checkout, how, hold.pay_by);
   };
 

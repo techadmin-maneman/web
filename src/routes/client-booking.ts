@@ -44,7 +44,7 @@ import { VISIT_TYPE_NAMES, VISIT_TYPES, type VisitType } from "../config/visit-t
 import { recordBookingConsents } from "../domain/booking-consents.ts";
 import { startBooking } from "../domain/bookings.ts";
 import { codeToCarry } from "../domain/discount-code-uses.ts";
-import { creditBalance } from "../domain/credits.ts";
+import { spendableCredits } from "../domain/credits.ts";
 import { lateFeeOn, priceOf, type Price } from "../domain/price-book.ts";
 import { checkoutHold, clientHold, releaseHold } from "../domain/holds.ts";
 import { currentAddress } from "../domain/profile.ts";
@@ -533,7 +533,7 @@ export function registerClientBooking(app: App): void {
         ? undefined
         : { visit: move.moving, kind: move.terms.move.cost === "charged" ? ("replace" as const) : ("move" as const) };
     const useCredit =
-      takesCredit(type, moves?.kind ?? null) && (await creditBalance(c.env.DB, session.subjectId, now)).visits > 0;
+      takesCredit(type, moves?.kind ?? null) && (await spendableCredits(c.env.DB, session.subjectId, now)).visits > 0;
     const inputs = await opsInputs(c);
     const sold = await soldAs(c, { type, date, move: move?.terms ?? null, kind: moves?.kind ?? null }, inputs);
     // A visit moved late books a new one in its place, which keeps the visit's discount code, unless a credit pays it

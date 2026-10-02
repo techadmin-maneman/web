@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { DAY_VALUED_AT, migratedTables, PURPOSES, schemaDoc } from "../../scripts/lib/schema-doc.ts";
+import { DAY_VALUED_AT, migratedTables, PURPOSES, RESTORE_GROUPS, schemaDoc } from "../../scripts/lib/schema-doc.ts";
 
 const migration = (name: string, sql: string) => ({ name, sql });
 
@@ -61,6 +61,13 @@ describe("the repository's schema", () => {
     const names = tables.map((table) => table.name);
     expect(names.filter((name) => PURPOSES[name] === undefined)).toEqual([]);
     expect(Object.keys(PURPOSES).filter((name) => !names.includes(name))).toEqual([]);
+  });
+
+  it("says what a restore undoes for every table, and names no table that is gone", () => {
+    const names = tables.map((table) => table.name);
+    const grouped = new Set(RESTORE_GROUPS.flatMap((group) => group.tables));
+    expect(names.filter((name) => !grouped.has(name))).toEqual([]);
+    expect([...grouped].filter((name) => !names.includes(name))).toEqual([]);
   });
 
   it("names only columns that exist as the _at columns that hold a day", () => {

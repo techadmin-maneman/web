@@ -37,7 +37,7 @@ import { TRIES_STOPPED, triesStopped } from "../policy/held-bookings.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import type { AlertOnce } from "./alerts.ts";
 import { auditStatement, auditStatementIfBooked, type AuditEntry } from "./audit.ts";
-import { redeemCredit } from "./credits.ts";
+import { creditRedeemedFor, redeemCreditForBooking, SPENDABLE_CREDITS } from "./credits.ts";
 import { itemForService } from "./fsm-catalogue.ts";
 import { fsmContactOf, type Place } from "./fsm-contacts.ts";
 import { toLinkAlert, toLinkAlertKey } from "./held-bookings.ts";
@@ -125,7 +125,10 @@ const paidInMoney = (hold: { amount: number; use_credit: number }) => hold.amoun
 
 export type Started = { readonly kind: "free" } | { readonly kind: "pay"; readonly orderId: string };
 
-/** A hold's price may change while its order is made, by a discount code entered or taken off; then it is made again. */
+/**
+ * A hold's price may change while its order is made, by a discount code entered or taken off, or as another booking
+ * takes the credit that was to pay for it; then it is made again.
+ */
 const BOOKING_TRIES = 2;
 
 /**
@@ -149,7 +152,8 @@ export async function startBooking(
 /**
  * One try. The hold's price is read, and the order made for it, or the hold confirmed free; each is written only while
  * the hold still costs what was read, so an order is never kept for a price a discount code changed meanwhile
- * (docs/decisions/0108-discount-codes.md), and the try answers "price_changed" for the next.
+ * (docs/decisions/0108-discount-codes.md), and the try answers "price_changed" for the next. A credit hold whose
+ * credit another booking has taken is paid for in money from then on, so the next try makes its order.
  */
 async function tryStartBooking(
   db: D1Database,
@@ -163,14 +167,9 @@ async function tryStartBooking(
   const isNewVisit = hold.moves_appointment_id === null;
   if (isNewVisit && (await liveVisitOf(db, personId, hold.type, hold.id)) !== null) return null;
   if (!paidInMoney(hold)) {
-    const confirmed = await db
-      .prepare(
-        `UPDATE slot_holds SET confirmed_at = COALESCE(confirmed_at, ?2), queued_at = ?2, updated_at = ?2
-         WHERE id = ?1 AND (amount = 0 OR use_credit = 1) RETURNING id`,
-      )
-      .bind(hold.id, now.toISOString())
-      .first();
-    return confirmed === null ? "price_changed" : { kind: "free" };
+    if (await confirmFree(db, hold, now)) return { kind: "free" };
+    if (hold.use_credit === 1) await stopUsingCredit(db, hold.id, now);
+    return "price_changed";
   }
   if (hold.razorpay_order_id !== null) return { kind: "pay", orderId: hold.razorpay_order_id };
   const order = await payments.createOrder({
@@ -192,6 +191,35 @@ async function tryStartBooking(
   if (claimed !== null) return { kind: "pay", orderId: order.id };
   const won = (await holdOf(db, holdId))?.razorpay_order_id ?? null;
   return won === null ? "price_changed" : { kind: "pay", orderId: won };
+}
+
+/**
+ * Confirms a hold that costs nothing, or that a credit pays for while the client still has one to spend apart from it.
+ * A credit hold confirmed already stays so, however often its booking is replayed. False when the hold no longer
+ * qualifies: a discount code changed its price, or another booking took the client's last credit.
+ */
+async function confirmFree(db: D1Database, hold: HoldRow, now: Date): Promise<boolean> {
+  const confirmed = await db
+    .prepare(
+      `UPDATE slot_holds SET confirmed_at = COALESCE(confirmed_at, ?2), queued_at = ?2, updated_at = ?2
+       WHERE id = ?3 AND (amount = 0
+         OR (use_credit = 1 AND (confirmed_at IS NOT NULL OR ${SPENDABLE_CREDITS} > 0)))
+       RETURNING id`,
+    )
+    .bind(hold.person_id, now.toISOString(), hold.id)
+    .first();
+  return confirmed !== null;
+}
+
+/** The client's credit went on another booking, so this hold is paid for in money instead. */
+async function stopUsingCredit(db: D1Database, holdId: string, now: Date): Promise<void> {
+  await db
+    .prepare(
+      `UPDATE slot_holds SET use_credit = 0, updated_at = ?2
+       WHERE id = ?1 AND use_credit = 1 AND confirmed_at IS NULL`,
+    )
+    .bind(holdId, now.toISOString())
+    .run();
 }
 
 /**
@@ -369,7 +397,7 @@ async function visitBookedSinceHeld(db: D1Database, hold: HoldRow): Promise<stri
   return results.find((visit) => !theBookingsOwn(visit))?.id ?? null;
 }
 
-/** Books a new visit: FSM first, then, in one batch, the mirror, the hold, its claims and its payment. */
+/** Books a new visit: FSM first, then the booking written with the visit as FSM has it. */
 async function bookNewVisit(
   db: D1Database,
   fsm: FsmProvider,
@@ -379,66 +407,125 @@ async function bookNewVisit(
 ): Promise<Confirmed> {
   const workOrder = await workOrderFor(db, fsm, hold, now, options);
   const appointmentId = hold.fsm_appointment_id ?? (await appointmentFor(db, fsm, hold, workOrder, options));
+  const visit = await mirroredVisit(db, hold, { appointmentId, workOrderId: workOrder.id }, now);
+  await writeNewBooking(db, fsm, hold, { fsmId: appointmentId, row: visit }, now, options);
+  return "booked";
+}
 
-  // FSM's webhook may have mirrored the appointment already; either way the visit is the one with its FSM ID. Its
-  // tier is the hold's whatever the mirror read from its item, which may be its kind's where FSM had none of its own,
-  // and it is a one visit exactly when its hold was, whatever the mirror took it for, since FSM's item does not say.
+/**
+ * The mirror's row for the visit FSM booked. FSM's webhook may have mirrored it already; either way the visit is the
+ * one with its FSM ID. Its tier is the hold's whatever the mirror read from its item, which may be its kind's where FSM
+ * had none of its own, and it is a one visit exactly when its hold was, whatever the mirror took it for, since FSM's
+ * item does not say.
+ */
+async function mirroredVisit(
+  db: D1Database,
+  hold: HoldRow,
+  inFsm: { readonly appointmentId: string; readonly workOrderId: string },
+  now: Date,
+): Promise<D1PreparedStatement> {
   const { start, end } = await heldVisitTimes(db, hold);
+  const at = now.toISOString();
+  return db
+    .prepare(
+      `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, tier, window_start, window_end,
+         technician_id, status, fsm_status, service_city, service_pincode, fsm_modified_at, synced_at, first_seen_at,
+         one_visit)
+       VALUES (?2, ?1, ?3, ?4, ?5, ?12, ?6, ?7, ?8, 'scheduled', 'Scheduled', ?9, ?10, ?11, ?11, ?11, ?13)
+       ON CONFLICT (fsm_id) DO UPDATE SET
+         tier = excluded.tier,
+         one_visit = excluded.one_visit,
+         service_city = COALESCE(appointments.service_city, excluded.service_city),
+         service_pincode = COALESCE(appointments.service_pincode, excluded.service_pincode)`,
+    )
+    .bind(
+      inFsm.appointmentId,
+      crypto.randomUUID(),
+      inFsm.workOrderId,
+      hold.person_id,
+      hold.type,
+      start.toISOString(),
+      end.toISOString(),
+      hold.technician_id,
+      hold.city,
+      hold.pincode,
+      at,
+      hold.tier,
+      hold.one_visit === 1 ? "booked" : null,
+    );
+}
+
+/**
+ * Writes a new booking in one batch with its visit's row: the hold booked as the visit, its claims let go, its payment
+ * and referral linked to the visit, and the credit that pays for it redeemed. Then what follows a booking. The visit is
+ * found by `visit.fsmId`.
+ */
+async function writeNewBooking(
+  db: D1Database,
+  fsm: FsmProvider,
+  hold: HoldRow,
+  visit: { readonly fsmId: string; readonly row: D1PreparedStatement },
+  now: Date,
+  options: ConfirmOptions,
+): Promise<void> {
   const at = now.toISOString();
   const visitId = "(SELECT id FROM appointments WHERE fsm_id = ?1)";
   await db.batch([
-    db
-      .prepare(
-        `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, tier, window_start, window_end,
-           technician_id, status, fsm_status, service_city, service_pincode, fsm_modified_at, synced_at, first_seen_at,
-           one_visit)
-         VALUES (?2, ?1, ?3, ?4, ?5, ?12, ?6, ?7, ?8, 'scheduled', 'Scheduled', ?9, ?10, ?11, ?11, ?11, ?13)
-         ON CONFLICT (fsm_id) DO UPDATE SET
-           tier = excluded.tier,
-           one_visit = excluded.one_visit,
-           service_city = COALESCE(appointments.service_city, excluded.service_city),
-           service_pincode = COALESCE(appointments.service_pincode, excluded.service_pincode)`,
-      )
-      .bind(
-        appointmentId,
-        crypto.randomUUID(),
-        workOrder.id,
-        hold.person_id,
-        hold.type,
-        start.toISOString(),
-        end.toISOString(),
-        hold.technician_id,
-        hold.city,
-        hold.pincode,
-        at,
-        hold.tier,
-        hold.one_visit === 1 ? "booked" : null,
-      ),
+    visit.row,
     db
       .prepare(
         `UPDATE slot_holds SET state = 'booked', appointment_id = ${visitId}, updated_at = ?2
          WHERE id = ?3 AND state = 'held'`,
       )
-      .bind(appointmentId, at, hold.id),
+      .bind(visit.fsmId, at, hold.id),
     db.prepare("DELETE FROM slot_claims WHERE hold_id = ?1").bind(hold.id),
     db
       .prepare(
         `UPDATE payments SET appointment_id = ${visitId}, updated_at = ?2
          WHERE razorpay_order_id = ?3 AND appointment_id IS NULL`,
       )
-      .bind(appointmentId, at, hold.razorpay_order_id),
+      .bind(visit.fsmId, at, hold.razorpay_order_id),
     // The consultation an invited friend booked, so ops' referral record names it: a one visit is theirs too.
     db
       .prepare(
         `UPDATE referral_attributions SET consultation_appointment_id = ${visitId}, updated_at = ?2
          WHERE referred_person_id = ?3 AND consultation_appointment_id IS NULL AND (?4 = 'consultation' OR ?5 = 1)`,
       )
-      .bind(appointmentId, at, hold.person_id, hold.type, hold.one_visit),
+      .bind(visit.fsmId, at, hold.person_id, hold.type, hold.one_visit),
+    ...creditRedeem(db, hold, now),
     ...(options.alongside ?? []),
   ]);
   const booked = await holdOf(db, hold.id);
-  if (booked !== null) await afterBooked(db, fsm, booked, now, options);
-  return "booked";
+  if (booked === null) return;
+  await alertIfNoCreditPaid(db, booked, options);
+  await afterBooked(db, fsm, booked, now, options);
+}
+
+/** For the batch that books a hold: the redeem of the credit that pays for it, if one does. */
+function creditRedeem(db: D1Database, hold: HoldRow, now: Date): D1PreparedStatement[] {
+  if (hold.use_credit !== 1) return [];
+  return [redeemCreditForBooking(db, { holdId: hold.id, personId: hold.person_id }, now)];
+}
+
+/**
+ * A credit visit booked with no credit redeemed for it, because the client had none left by then: the visit stands,
+ * and ops decide what to charge.
+ */
+async function alertIfNoCreditPaid(
+  db: D1Database,
+  booked: HoldRow,
+  options: Omit<ConfirmOptions, "alongside">,
+): Promise<void> {
+  if (booked.use_credit !== 1 || booked.appointment_id === null) return;
+  if (await creditRedeemedFor(db, booked.appointment_id)) return;
+  (options.log ?? createLogger()).warn("credit_visit_without_credit", { hold_id: booked.id });
+  await options.alertOnce?.({
+    key: `credit_visit_without_credit:${booked.id}`,
+    message:
+      `Booking ${booked.id} was booked on a visit credit, but the client had none left by then,` +
+      "so nothing has paid for it. Decide whether to charge for the visit.",
+    link: `/clients/${booked.person_id}`,
+  });
 }
 
 /** Where the hold says the visit is, for the contact FSM files the client under. */
@@ -552,9 +639,9 @@ function confirmationOf(hold: HoldRow): VisitMessageKind {
 }
 
 /**
- * What follows a new booking, each step once however often this runs: the credit spent, the client told, and
- * the visit it replaces cancelled. A retry after any of them failed runs them all again, and each that has
- * already happened changes nothing. A move in place does all of this in its own batch.
+ * What follows a new booking, each step once however often this runs: the client told, and the visit it replaces
+ * cancelled. A retry after either failed runs both again, and one that has already happened changes nothing. A move
+ * in place does all of this in its own batch.
  */
 async function afterBooked(
   db: D1Database,
@@ -565,11 +652,6 @@ async function afterBooked(
 ): Promise<void> {
   const visitId = hold.appointment_id;
   if (visitId === null || hold.move_kind === "move") return;
-  if (hold.use_credit === 1) {
-    // Checked when the hold was made; a credit spent meanwhile leaves the visit booked, as ops would.
-    const redeem = await redeemCredit(db, hold.person_id, visitId, now);
-    await redeem?.run();
-  }
   const kind = confirmationOf(hold);
   const told = await db
     .prepare("SELECT 1 FROM outbound_messages WHERE subject_id = ?1 AND kind = ?2")
@@ -1010,7 +1092,7 @@ export async function bookAsVisit(
       await giveBack(db, payments, leased.id, now, "its payment was refunded", [released]);
       return { kind: "given_back" };
     }
-    await db.batch(linkStatements(db, leased, visit.id, now, options.audit));
+    await db.batch([...linkStatements(db, leased, visit.id, now, options.audit), ...creditRedeem(db, leased, now)]);
   } catch (error) {
     await releaseLease(db, hold.id);
     throw error;
@@ -1022,6 +1104,7 @@ export async function bookAsVisit(
     await releaseLease(db, hold.id);
     return { kind: "not_the_visit" };
   }
+  await alertIfNoCreditPaid(db, booked, options);
   await afterBooked(db, fsm, booked, now, options);
   const note = `${options.labelAsTest ? "Staging test: " : ""}Booked by hand as another work order; not needed.`;
   return {

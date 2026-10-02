@@ -4,6 +4,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import { ROUTE_NEEDS } from "../../src/policy/console-routes.ts";
 import type { AccessIdentity } from "../../src/providers/cloudflare-access.ts";
 import { captureLogs, markDatabase, request } from "./helpers.ts";
 import { allowToken, enforce, listStaff, opsAs, person, post, token } from "./staff-fixtures.ts";
@@ -149,5 +150,42 @@ describe("GET /api/whoami", () => {
         grants: [{ department: "operations", level: "act", geography: "zone", place: "NCR" }],
       },
     });
+  });
+
+  const mayCall = async (identity: AccessIdentity): Promise<string[]> => {
+    const res = await request(opsAs(identity), "/api/whoami");
+    return (await res.json<{ staff: { may_call: string[] } }>()).staff.may_call;
+  };
+
+  it("lets every call go ahead while the list is not enforced, whoever asks", async () => {
+    expect(await mayCall(person("stranger@maneman.in"))).toEqual(Object.keys(ROUTE_NEEDS));
+  });
+
+  it("names, once enforced, only the routes the caller's grants reach, as the calls themselves find", async () => {
+    await enforce();
+    await listStaff("money@maneman.in", ["finance:view:national"]);
+    const routes = await mayCall(person("money@maneman.in"));
+
+    expect(routes).toEqual(
+      expect.arrayContaining(["GET /api/health", "GET /api/whoami", "GET /api/no-shows", "GET /api/services"]),
+    );
+    expect(routes).not.toContain("POST /api/prices");
+    expect(routes).not.toContain("GET /api/tasks");
+    const money = opsAs(person("money@maneman.in"));
+    expect((await request(money, "/api/services")).status).toBe(200);
+    expect((await request(money, "/api/tasks")).status).toBe(403);
+  });
+
+  it("names the Staff list to a city's Admin, which keeps to their places, and not the national settings", async () => {
+    await enforce();
+    await listStaff("delhi.admin@maneman.in", ["admin:view:city:Delhi"]);
+    const routes = await mayCall(person("delhi.admin@maneman.in"));
+    expect(routes).toContain("GET /api/staff");
+    expect(routes).not.toContain("GET /api/settings");
+  });
+
+  it("names nothing but who is signed in and the health check to a person not on the enforced list", async () => {
+    await enforce();
+    expect(await mayCall(person("stranger@maneman.in"))).toEqual(["GET /api/health", "GET /api/whoami"]);
   });
 });

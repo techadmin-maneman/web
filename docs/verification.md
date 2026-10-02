@@ -779,6 +779,27 @@ The address has no coordinates deliberately. An address with none cannot be meas
 - **Every job event will fail to reach FSM.** The visits are mirror rows with no Zoho appointment behind them, so each step is retried four times and then marked `rejected`, and the fifth attempt alerts ops: "A technician's `start` did not reach FSM after 5 attempts…". About six alerts over one job, roughly seven minutes behind each step. PR #87 avoided these by tearing its fixture down before the fifth attempt; this fixture has to stand, so they will fire. `docs/technician-test-setup.md` warns the owner to tell whoever watches the alert channel. **From 25 September 2026** (ADR 0065) a job's steps wait for the one before them, so only the check-in is retried: its fifth attempt alerts and names the steps held behind it, and each later step alerts as it arrives, without retrying.
 - **An active technician is one the booking availability offers**, so anything else using staging can take a slot on him while the fixture stands, exactly as happened during the run above. `scripts/seed-technician-tester.ts --clear` takes the claims and the holds out with everything else, and it is what removes the owner's number from staging again.
 
+## FSM removal, PR 3: the Books provider on the org, 2 October 2026
+
+The provider's new calls, run through the real adapter against the owner's org with the scripts' Books token: `node --env-file=.env.books-scripts scripts/books-proof.ts`. Every record it made is "Staging test", and it removes them again. It made 19 calls of Books' 2,000 a day.
+
+| #   | Check                                                                   | Answer                                                         |
+| --- | ----------------------------------------------------------------------- | -------------------------------------------------------------- |
+| 1   | A customer is added under a new person ID (`PUT /contacts`, `X-Upsert`) | **PASS**, 201                                                  |
+| 2   | The same person ID finds the same customer, with a new street           | **PASS**, 200, the same ID                                     |
+| 3   | A new number is written over it, and reads back                         | **PASS**                                                       |
+| 4   | A place of contact is refused while GST is off in Books                 | **PASS**, 400 code 8 "Invalid Element gst_treatment"           |
+| 5   | A new rate is written over an item, and reads back from the list        | **PASS**, ₹2,000 to ₹2,500                                     |
+| 6   | No invoice is found under a new reference                               | **PASS**                                                       |
+| 7   | A draft of ₹2,000 with ₹150 off before tax totals ₹1,850                | **PASS**, 201, INV-000006, draft                               |
+| 8   | The draft is found by its reference                                     | **PASS**                                                       |
+| 9   | Erasing a customer the draft names renames, blanks and deactivates it   | **PASS**: Books refused the delete (400 code 3000), so blanked |
+| 10  | Erasing it again once the draft is deleted deletes it                   | **PASS**, then 404 on reading it                               |
+
+**What the org said, which the code now follows.** While GST is off in Books, `gst_treatment`, `place_of_contact` and `place_of_supply` are each refused, on a customer and on an invoice alike, so the provider sends them only with a state code; until GST is turned on, the caller passes none. Contact persons sent on an update replace those Books holds. An item-level discount before tax is accepted on a new invoice. The scripts' scopes cannot delete an item (401 code 57), so the proof keeps one item, "Staging test: proof item" (`4242595000000245041`), and reuses it on every run. Each run uses up one invoice number: INV-000004 to INV-000006 went to the exploratory calls and the two proof runs, and were deleted.
+
+**Not proven by these two runs:** making an item, which only a first run does (`POST /items` answered 201 on the exploratory calls, making `4242595000000245041`); and GST's treatment and places, which wait for GST to be turned on in Books.
+
 ## What the P2-M2 and P2-M5 proofs left in the owner's org
 
 Staging shares the real Zoho org (open point 19), so the records below are real and are the owner's to keep or clear. Every one of them is labelled "Staging test". Nothing was deleted, because two of them are still wanted: **WO13 carries the invoice the owner raised by hand**, INV-000001, which the invoice check still waits on for the reason in open point 114; and the first fit is the visit a move was proven on.
