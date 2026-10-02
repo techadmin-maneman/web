@@ -88,8 +88,10 @@ beforeEach(async () => {
   await env.DB.batch(ROWS.map((sql) => env.DB.prepare(sql)));
 });
 
-const citiesOf = async (kind: PlacedRecord, ids: readonly string[]) =>
-  Object.fromEntries(await Promise.all(ids.map(async (id) => [id, await cityOf(env.DB, kind, id)])));
+async function citiesOf(kind: PlacedRecord, ids: readonly string[]): Promise<Record<string, string | null>> {
+  const found = await Promise.all(ids.map(async (id) => [id, await cityOf(env.DB, kind, id)] as const));
+  return Object.fromEntries(found);
+}
 
 describe("a client's city", () => {
   it("is their current address's; before one, their latest visit's, then where they booked, asked or waited", async () => {

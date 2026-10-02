@@ -87,16 +87,20 @@ export function can(
  * by src/domain/places.ts; a record whose city cannot be found is reached only everywhere.
  */
 export type PlacesReached =
-  | { readonly kind: "everywhere" }
-  | { readonly kind: "cities"; readonly cities: ReadonlySet<string> };
+  { readonly kind: "everywhere" } | { readonly kind: "cities"; readonly cities: ReadonlySet<string> };
 
 const EVERYWHERE: PlacesReached = { kind: "everywhere" };
 const NOWHERE: PlacesReached = { kind: "cities", cities: new Set() };
 
+/** The cities a zone or city grant names. A national grant names none: it reaches everywhere. */
 function citiesIn(place: Place, zoneOf: ZoneOfCity): string[] {
-  if (place.geography === "city") return [place.name];
   if (place.geography === "national") return [];
-  return [...zoneOf].filter(([, zone]) => zone === place.name).map(([city]) => city);
+  if (place.geography === "city") return [place.name];
+  const cities: string[] = [];
+  for (const [city, zone] of zoneOf) {
+    if (zone === place.name) cities.push(city);
+  }
+  return cities;
 }
 
 /**
