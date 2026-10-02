@@ -1,0 +1,204 @@
+// Ops add a technician, change his name, number or zone, and switch him off or back on (src/routes/ops-technicians.ts).
+//
+// A technician added here gets an ID of our own, written as his FSM ID too, and is marked hand-written, so FSM's
+// sync leaves him alone (src/domain/fsm-mirror.ts). Two active technicians never share a number: the number is how
+// he signs in (src/domain/technicians.ts).
+//
+// Switching a technician off ends his sessions at once and takes his visits still to come off him, so they wait in
+// the dispatch board's tray. His phone is not revoked: it keeps the work it has not sent, should he be switched back
+// on (src/http/technician-session.ts).
+
+import type { VisitType } from "../config/visit-types.ts";
+import { initialsOf } from "../lib/names.ts";
+import { auditStatement, auditStatementIfWritten, type AuditEntry } from "./audit.ts";
+import { visitBegun } from "./visit-begun.ts";
+
+/** A technician as the console lists him. */
+export interface RosterTechnician {
+  readonly id: string;
+  readonly name: string;
+  readonly initials: string;
+  readonly zone: string | null;
+  readonly mobile: string | null;
+  readonly active: boolean;
+  /** Ops added him, or a script wrote him: FSM's sync does not own him. */
+  readonly handWritten: boolean;
+}
+
+interface RosterRow {
+  id: string;
+  name: string;
+  initials: string;
+  zone: string | null;
+  mobile_e164: string | null;
+  active: number;
+  hand_written: number;
+}
+
+const rosterTechnicianOf = (row: RosterRow): RosterTechnician => ({
+  id: row.id,
+  name: row.name,
+  initials: row.initials,
+  zone: row.zone,
+  mobile: row.mobile_e164,
+  active: row.active === 1,
+  handWritten: row.hand_written === 1,
+});
+
+const ROSTER_COLUMNS = "id, name, initials, zone, mobile_e164, active, hand_written";
+
+/** Every technician, active or switched off, by name. */
+export async function roster(db: D1Database): Promise<RosterTechnician[]> {
+  const { results } = await db.prepare(`SELECT ${ROSTER_COLUMNS} FROM technicians ORDER BY name`).all<RosterRow>();
+  return results.map(rosterTechnicianOf);
+}
+
+export async function rosterTechnician(db: D1Database, id: string): Promise<RosterTechnician | null> {
+  const row = await db.prepare(`SELECT ${ROSTER_COLUMNS} FROM technicians WHERE id = ?1`).bind(id).first<RosterRow>();
+  return row === null ? null : rosterTechnicianOf(row);
+}
+
+/** Whether another active technician signs in with this number. */
+const NUMBER_TAKEN = "EXISTS (SELECT 1 FROM technicians WHERE mobile_e164 = ?2 AND active = 1 AND id <> ?1)";
+
+export interface NewTechnician {
+  readonly id: string;
+  readonly name: string;
+  readonly mobileE164: string;
+  readonly zone: string | null;
+}
+
+/** Adds an active technician, unless another active technician has his number. */
+export async function addTechnician(
+  db: D1Database,
+  technician: NewTechnician,
+  audit: AuditEntry,
+  now: Date,
+): Promise<"added" | "number_in_use"> {
+  await db.batch([
+    db
+      .prepare(
+        `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, mobile_e164, updated_at, hand_written)
+         SELECT ?1, ?1, ?3, ?4, 1, ?5, ?2, ?6, 1 WHERE NOT ${NUMBER_TAKEN}`,
+      )
+      .bind(
+        technician.id,
+        technician.mobileE164,
+        technician.name,
+        initialsOf(technician.name),
+        technician.zone,
+        now.toISOString(),
+      ),
+    auditStatementIfWritten(db, audit, now, { table: "technicians", id: technician.id }),
+  ]);
+  const added = await db.prepare("SELECT 1 FROM technicians WHERE id = ?1").bind(technician.id).first();
+  return added === null ? "number_in_use" : "added";
+}
+
+/** What ops change of a technician; a field left out is kept. */
+export interface TechnicianChange {
+  readonly name?: string;
+  readonly mobileE164?: string;
+  readonly zone?: string | null;
+}
+
+/** Changes what was sent, unless the new number is another active technician's. */
+export async function changeTechnician(
+  db: D1Database,
+  current: RosterTechnician,
+  change: TechnicianChange,
+  audit: AuditEntry,
+  now: Date,
+): Promise<"changed" | "number_in_use"> {
+  const name = change.name ?? current.name;
+  const mobile = change.mobileE164 ?? current.mobile;
+  const zone = change.zone === undefined ? current.zone : change.zone;
+  if (mobile !== null && (await numberTaken(db, current.id, mobile))) return "number_in_use";
+  await db.batch([
+    db
+      .prepare(
+        "UPDATE technicians SET name = ?2, initials = ?3, mobile_e164 = ?4, zone = ?5, updated_at = ?6 WHERE id = ?1",
+      )
+      .bind(current.id, name, initialsOf(name), mobile, zone, now.toISOString()),
+    auditStatement(db, audit, now),
+  ]);
+  return "changed";
+}
+
+async function numberTaken(db: D1Database, technicianId: string, mobileE164: string): Promise<boolean> {
+  const taken = await db
+    .prepare(`SELECT ${NUMBER_TAKEN} AS taken`)
+    .bind(technicianId, mobileE164)
+    .first<number>("taken");
+  return taken === 1;
+}
+
+/** A visit a technician switched off no longer holds, as the console lists it. */
+export interface ReturnedVisit {
+  readonly appointment_id: string;
+  readonly starts_at: string;
+  readonly type: VisitType | null;
+  /** The client's name; null for a visit with no client on our records. */
+  readonly client: string | null;
+}
+
+/** His visits still to come: live, not begun, and starting from now. A visit already under way stays his. */
+const STILL_TO_COME = `a.technician_id = ?1 AND a.deleted_at IS NULL AND a.status IN ('scheduled', 'dispatched')
+  AND a.window_start >= ?2 AND NOT ${visitBegun("a")}`;
+
+/**
+ * Switches an active technician off: his sessions end, and his visits still to come are given back unassigned,
+ * all in one batch with the audit entry. Answers the visits given back, soonest first.
+ */
+export async function deactivateTechnician(
+  db: D1Database,
+  technicianId: string,
+  audit: AuditEntry,
+  now: Date,
+): Promise<ReturnedVisit[]> {
+  const at = now.toISOString();
+  const { results: visits } = await db
+    .prepare(
+      `SELECT a.id AS appointment_id, a.window_start AS starts_at, a.type, p.name AS client
+       FROM appointments a LEFT JOIN people p ON p.id = a.person_id AND p.erased_at IS NULL
+       WHERE ${STILL_TO_COME} ORDER BY a.window_start`,
+    )
+    .bind(technicianId, at)
+    .all<ReturnedVisit>();
+  const visitIds = JSON.stringify(visits.map((visit) => visit.appointment_id));
+
+  await db.batch([
+    db.prepare("UPDATE technicians SET active = 0, updated_at = ?2 WHERE id = ?1").bind(technicianId, at),
+    db
+      .prepare(
+        `UPDATE sessions SET revoked_at = ?2
+         WHERE subject_kind = 'technician' AND subject_id = ?1 AND revoked_at IS NULL`,
+      )
+      .bind(technicianId, at),
+    db
+      .prepare(
+        `UPDATE appointments AS a SET technician_id = NULL
+         WHERE a.id IN (SELECT value FROM json_each(?3)) AND ${STILL_TO_COME}`,
+      )
+      .bind(technicianId, at, visitIds),
+    auditStatement(db, { ...audit, detail: { visits_unassigned: visits.length } }, now),
+  ]);
+  return visits;
+}
+
+/** Switches a technician back on, unless another active technician has his number meanwhile. */
+export async function reactivateTechnician(
+  db: D1Database,
+  technician: RosterTechnician,
+  audit: AuditEntry,
+  now: Date,
+): Promise<"reactivated" | "number_in_use"> {
+  if (technician.mobile !== null && (await numberTaken(db, technician.id, technician.mobile))) return "number_in_use";
+  await db.batch([
+    db
+      .prepare("UPDATE technicians SET active = 1, updated_at = ?2 WHERE id = ?1")
+      .bind(technician.id, now.toISOString()),
+    auditStatement(db, audit, now),
+  ]);
+  return "reactivated";
+}

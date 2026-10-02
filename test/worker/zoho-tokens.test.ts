@@ -9,7 +9,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { productionDependencies } from "../../src/dependencies.ts";
 import { createLogger } from "../../src/log.ts";
 import { isRefusal } from "../../src/providers/provider-error.ts";
-import { createZohoRequester, TOKEN_COOL_DOWN_MS, ZohoError } from "../../src/providers/zoho-http.ts";
+import {
+  createZohoRequester,
+  TOKEN_COOL_DOWN_MS,
+  ZohoError,
+  type ZohoClientName,
+} from "../../src/providers/zoho-http.ts";
 import { fakeFetch, json, LOCAL_CONFIG, LOCAL_SETTINGS, NOW } from "./helpers.ts";
 
 const CLIENT = {
@@ -34,7 +39,7 @@ const accessDenied = () =>
   );
 
 let clock: Date;
-function requester(routes: Parameters<typeof fakeFetch>[0], client: "crm" | "fsm" = "crm") {
+function requester(routes: Parameters<typeof fakeFetch>[0], client: ZohoClientName = "crm") {
   const http = fakeFetch(routes);
   const request = createZohoRequester(client, CLIENT, {
     db: env.DB,
@@ -46,7 +51,7 @@ function requester(routes: Parameters<typeof fakeFetch>[0], client: "crm" | "fsm
   return { request, calls: http.calls, tokenCalls };
 }
 
-async function held(client: "crm" | "fsm", token: string, expiresAt = new Date(NOW.getTime() + 3600_000)) {
+async function held(client: ZohoClientName, token: string, expiresAt = new Date(NOW.getTime() + 3600_000)) {
   await env.DB.prepare(
     `INSERT INTO zoho_access_tokens (client, access_token, expires_at) VALUES (?1, ?2, ?3)
      ON CONFLICT (client) DO UPDATE SET access_token = excluded.access_token, expires_at = excluded.expires_at`,
@@ -60,14 +65,18 @@ beforeEach(() => {
 });
 
 describe("the access token", () => {
-  it("is kept per client in one table, CRM and FSM each their own", async () => {
-    const crm = requester({ [TOKEN_URL]: () => issued("crm-1"), [LEADS_URL]: () => json({ data: [] }) });
-    await crm.request("search", "/crm/v8/Leads");
-    const fsm = requester({ [TOKEN_URL]: () => issued("fsm-1"), [LEADS_URL]: () => json({ data: [] }) }, "fsm");
-    await fsm.request("search", "/crm/v8/Leads");
+  it("is kept per client in one table, CRM, FSM and Books each their own", async () => {
+    for (const client of ["crm", "fsm", "books"] as const) {
+      const { request } = requester(
+        { [TOKEN_URL]: () => issued(`${client}-1`), [LEADS_URL]: () => json({ data: [] }) },
+        client,
+      );
+      await request("search", "/crm/v8/Leads");
+    }
 
     const rows = await env.DB.prepare("SELECT client, access_token FROM zoho_access_tokens ORDER BY client").all();
     expect(rows.results).toEqual([
+      { client: "books", access_token: "books-1" },
       { client: "crm", access_token: "crm-1" },
       { client: "fsm", access_token: "fsm-1" },
     ]);
@@ -163,16 +172,24 @@ describe("after Zoho refuses a new token", () => {
   });
 });
 
-describe("how long a call may take, as the Worker builds its providers", () => {
-  const config = {
-    ...LOCAL_CONFIG,
-    providers: { ...LOCAL_CONFIG.providers, FSM_PROVIDER: "zoho" as const },
-    settings: {
-      ...LOCAL_SETTINGS,
-      zohoFsm: { ...CLIENT, booksOrgId: null, webhookToken: null, booksRefundAccountId: null },
+/** FSM and Books on Zoho, each on a client of its own, as the Worker builds its providers. */
+const connected = {
+  ...LOCAL_CONFIG,
+  providers: { ...LOCAL_CONFIG.providers, FSM_PROVIDER: "zoho" as const, BOOKS_PROVIDER: "zoho" as const },
+  settings: {
+    ...LOCAL_SETTINGS,
+    zohoFsm: { ...CLIENT, clientId: "1000.FSMCLIENT", refreshToken: "1000.fsm-refresh", webhookToken: null },
+    zohoBooks: {
+      ...CLIENT,
+      clientId: "1000.BOOKSCLIENT",
+      refreshToken: "1000.books-refresh",
+      orgId: "60088931635",
+      refundAccountId: null,
     },
-  };
+  },
+};
 
+describe("how long a call may take, as the Worker builds its providers", () => {
   beforeEach(() => {
     vi.spyOn(globalThis, "fetch").mockRejectedValue(
       new DOMException("The operation was aborted due to timeout", "TimeoutError"),
@@ -182,10 +199,47 @@ describe("how long a call may take, as the Worker builds its providers", () => {
     vi.restoreAllMocks();
   });
 
-  it("gives FSM 8 s inside a request someone waits on, and 20 s in a queue or the cron", async () => {
-    const make = productionDependencies(config);
+  it("gives FSM and Books 8 s inside a request someone waits on, and 20 s in a queue or the cron", async () => {
+    const make = productionDependencies(connected);
     await expect(make(env, createLogger(), "request").fsm.contact("c-1")).rejects.toThrow("within 8 s");
     await expect(make(env, createLogger()).fsm.contact("c-1")).rejects.toThrow("within 20 s");
+    await expect(make(env, createLogger(), "request").books.invoice("inv-1")).rejects.toThrow("within 8 s");
+    await expect(make(env, createLogger()).books.invoice("inv-1")).rejects.toThrow("within 20 s");
+  });
+});
+
+describe("Books' own client, as the Worker builds its providers", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("mints Books' token from Books' client, never FSM's, and keeps it as Books'", async () => {
+    const minted: { clientId: string | null; refreshToken: string | null }[] = [];
+    vi.spyOn(globalThis, "fetch").mockImplementation((input) => {
+      const url = new URL(input instanceof Request ? input.url : String(input));
+      if (url.href.startsWith(TOKEN_URL)) {
+        minted.push({
+          clientId: url.searchParams.get("client_id"),
+          refreshToken: url.searchParams.get("refresh_token"),
+        });
+        return Promise.resolve(issued("books-1"));
+      }
+      const invoice = {
+        invoice_id: "inv-1",
+        invoice_number: "INV-000041",
+        date: "2026-09-24",
+        total: 1,
+        status: "sent",
+      };
+      return Promise.resolve(json({ invoice }));
+    });
+
+    const books = productionDependencies(connected)(env, createLogger()).books;
+    expect((await books.invoice("inv-1"))?.number).toBe("INV-000041");
+
+    expect(minted).toEqual([{ clientId: "1000.BOOKSCLIENT", refreshToken: "1000.books-refresh" }]);
+    const kept = await env.DB.prepare("SELECT client FROM zoho_access_tokens WHERE access_token = 'books-1'").all();
+    expect(kept.results).toEqual([{ client: "books" }]);
   });
 });
 
