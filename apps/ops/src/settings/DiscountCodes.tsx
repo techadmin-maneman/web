@@ -1,4 +1,4 @@
-// Settings · Discount codes (docs/decisions/0108-discount-codes.md): making codes, the latest made with how far each
+// Finance · Discount codes (docs/decisions/0108-discount-codes.md): making codes, the latest made with how far each
 // is used and what it has given, one found by its text, and switching one off. No board draws it, so it is laid out
 // as Blackout days is: the form above, then a code a row.
 //
