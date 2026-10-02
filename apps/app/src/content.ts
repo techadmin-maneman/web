@@ -2,6 +2,7 @@
 // component holds no copy of its own. Lines the design does not draw are
 // marked PLACEHOLDER, pending the owner's wording.
 
+import { GUARANTEE } from "@maneman/web-kit/guarantee";
 import { WHATSAPP_NUMBER } from "@maneman/web-kit/whatsapp";
 
 export const app = {
@@ -396,7 +397,7 @@ export const booking = {
     card: "Card",
     pay: (amount: string) => `Pay ${amount}`,
     neverHandlesMoney: (name: string) => `${name} never handles money.`,
-    guarantee: (name: string) => `If the fit is not right, ${name} stops and you are refunded in full.`,
+    guarantee: GUARANTEE,
     // PLACEHOLDER: a free consultation has no payment; the design draws the credit board's button.
     free: "Free",
     confirm: "Confirm visit",
@@ -489,6 +490,7 @@ export const booking = {
   slow: `This is taking longer than usual. ${TOLD_WHEN_BOOKED}`,
   refunded: "We could not book that visit, so your payment is being refunded in full.",
   failedToStart: "That did not go through. Please try again.",
+  creditGone: "Your visit credit is already on another booking, so this visit is charged at the price below.",
   close: "Close",
 } as const;
 

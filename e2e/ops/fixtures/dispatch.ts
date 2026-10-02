@@ -117,6 +117,7 @@ const tray = (
   asked_window: asked,
   offered_window: offered,
   date: dateOf(day),
+  was_technician: null,
 });
 
 /**

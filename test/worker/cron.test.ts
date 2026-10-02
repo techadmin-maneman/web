@@ -3,7 +3,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CUT_SHORT_ALERT, finishRun, lastCompletedAt, startRun } from "../../src/domain/cron-runs.ts";
 import type { StaticConfig } from "../../src/guard.ts";
 import { createLogger } from "../../src/log.ts";
-import { CRON_CALLS, CRON_JOBS, runCron, runCronJobs, type CronJob } from "../../src/scheduled/cron.ts";
+import {
+  CRON_CALLS,
+  CRON_JOBS,
+  booksSyncOptions,
+  runCron,
+  runCronJobs,
+  type CronJob,
+} from "../../src/scheduled/cron.ts";
 import { LOCAL_CONFIG, NOW, captureLogs, fakeDependencies, fakeFetch } from "./helpers.ts";
 
 let logs: ReturnType<typeof captureLogs>;
@@ -338,6 +345,7 @@ describe("CRON_JOBS", () => {
       "fsm_catalogue",
       "deletion_alerts",
       "storage_meter",
+      "daily_allowances",
       "whatsapp_bridge",
       "dispatch_utilisation",
       "referrals",
@@ -374,5 +382,58 @@ describe("CRON_JOBS", () => {
     const onTheHalfHour = at(0);
     await runCronJobs(job, { env, deps: onTheHalfHour, config: LOCAL_CONFIG, log: createLogger() });
     expect(onTheHalfHour.alerts).toHaveLength(1);
+  });
+
+  // NOW is half past the hour in UTC, so a quarter past is 15 minutes before it.
+  it("reads the account's usage once an hour, at a quarter past, and only where the analytics token is set", async () => {
+    const job = CRON_JOBS.filter((cronJob) => cronJob.name === "daily_allowances");
+    const graphql = "https://api.cloudflare.com/client/v4/graphql";
+    const withToken: StaticConfig = {
+      ...LOCAL_CONFIG,
+      settings: { ...LOCAL_CONFIG.settings, analyticsToken: "token" },
+    };
+    const runAt = async (minutes: number, config: StaticConfig) => {
+      const { fetch, calls } = fakeFetch({ [graphql]: () => new Response("Bad Gateway", { status: 502 }) });
+      const now = new Date(NOW.getTime() + minutes * 60_000);
+      await runCronJobs(job, { env, deps: fakeDependencies({ fetch, now: () => now }), config, log: createLogger() });
+      return calls.length;
+    };
+
+    expect(await runAt(-15, LOCAL_CONFIG)).toBe(0);
+    for (const minutes of [-16, -10, 0, 25]) {
+      expect(await runAt(minutes, withToken), `${String(minutes)} minutes from half past`).toBe(0);
+    }
+    expect(await runAt(-15, withToken)).toBe(1);
+  });
+});
+
+describe("the Books pass's options", () => {
+  const zohoBooks = {
+    clientId: "1000.BOOKSCLIENT",
+    clientSecret: "books-secret",
+    refreshToken: "1000.books-refresh",
+    accountsHost: "accounts.zoho.in",
+    apiHost: "www.zohoapis.in",
+    orgId: "60088931635",
+    refundAccountId: "bank-7",
+  };
+
+  it("takes the refund account from Books' own settings, whatever FSM is", () => {
+    for (const FSM_PROVIDER of ["zoho", "none"] as const) {
+      const config: StaticConfig = {
+        ...LOCAL_CONFIG,
+        environment: "staging",
+        providers: { ...LOCAL_CONFIG.providers, FSM_PROVIDER, BOOKS_PROVIDER: "zoho" },
+        settings: { ...LOCAL_CONFIG.settings, zohoBooks },
+      };
+      expect(booksSyncOptions(config), FSM_PROVIDER).toEqual({ refundAccountId: "bank-7", labelAsTest: true });
+    }
+  });
+
+  it("has no refund account without Books' settings, and labels nothing as a test in production", () => {
+    expect(booksSyncOptions({ ...LOCAL_CONFIG, environment: "production" })).toEqual({
+      refundAccountId: null,
+      labelAsTest: false,
+    });
   });
 });

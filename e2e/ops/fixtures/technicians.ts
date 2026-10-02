@@ -13,7 +13,16 @@ const technician = (
   zone: string | null,
   devices: Technician["devices"],
   leave: Technician["leave"] = [],
-): Technician => ({ id: `88000000-0000-4000-8000-00000000000${String(n)}`, name, initials, zone, devices, leave });
+): Technician => ({
+  id: `88000000-0000-4000-8000-00000000000${String(n)}`,
+  name,
+  initials,
+  zone,
+  mobile: `+9198100000${String(n).padStart(2, "0")}`,
+  editable: true,
+  devices,
+  leave,
+});
 
 export const TECHNICIANS = {
   technicians: [
@@ -42,6 +51,7 @@ export const TECHNICIANS = {
     ),
     technician(3, "Faizan Ali", "FA", null, []),
   ],
+  switched_off: [],
 } satisfies Roster;
 
 /** Leave recorded over no booked job; `jobs` lists those it falls on (OPS-07). */

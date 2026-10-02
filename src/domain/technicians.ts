@@ -8,9 +8,8 @@
 // resources and nowhere else, and his session is bound to one phone.
 
 import { sha256Hex } from "../lib/hash.ts";
-import { CODE_TTL_MS } from "../policy/one-time-code.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
-import { checkCode, codeHashOf } from "./one-time-codes.ts";
+import { checkCode } from "./one-time-codes.ts";
 import { newSessionToken, SESSION_TTL_MS } from "./sessions.ts";
 
 export interface FieldTechnician {
@@ -32,45 +31,6 @@ export async function findFieldTechnician(db: D1Database, mobileE164: string): P
     .bind(mobileE164)
     .first<{ id: string; name: string }>();
   return row === null ? null : { id: row.id, name: row.name, mobileE164 };
-}
-
-export interface TechnicianChallenge {
-  readonly id: string;
-  readonly technicianId: string | null;
-  readonly createdAt: Date;
-  readonly lastSentAt: Date;
-  readonly expiresAt: Date;
-}
-
-/**
- * A challenge for a technician's number. With no technician (a number FSM does
- * not list) it holds no code hash, so nothing is sent and no code matches, and
- * the login screen answers the same either way.
- */
-export async function createTechnicianChallenge(
-  db: D1Database,
-  options: { technicianId: string | null; code: string; pepper: string; now: Date },
-): Promise<TechnicianChallenge> {
-  const id = crypto.randomUUID();
-  const at = options.now.toISOString();
-  const expiresAt = new Date(options.now.getTime() + CODE_TTL_MS);
-  const codeHash = options.technicianId === null ? null : await codeHashOf(options.pepper, id, options.code);
-  await db
-    .prepare(
-      `INSERT INTO otp_challenges
-         (id, created_at, person_id, technician_login, technician_id, purpose, channel, code_hash, last_sent_at,
-          expires_at)
-       VALUES (?1, ?2, NULL, 1, ?3, 'login', 'whatsapp', ?4, ?2, ?5)`,
-    )
-    .bind(id, at, options.technicianId, codeHash, expiresAt.toISOString())
-    .run();
-  return {
-    id,
-    technicianId: options.technicianId,
-    createdAt: options.now,
-    lastSentAt: options.now,
-    expiresAt,
-  };
 }
 
 export type TechnicianVerification =

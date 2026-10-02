@@ -1,6 +1,5 @@
-// Every consent keeps where it was given (docs/decisions/0094-where-a-consent-was-given.md). The functions that
-// write one take a ConsentSource, so a caller that leaves it out does not compile; this holds the statements
-// themselves to it, so a new writer that forgets the column fails here.
+// Consents are written by recordConsent alone, so a rule such as "never override a decision" lives in one place.
+// This holds the source to it: a raw insert anywhere else fails here.
 
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
@@ -27,14 +26,8 @@ function consentWrites(): { file: string; columns: string[] }[] {
 }
 
 describe("the statements that write a consent", () => {
-  it("are found, in every file that writes one", () => {
-    const files = new Set(consentWrites().map((write) => write.file));
-    expect([...files].sort()).toEqual([
-      "src/domain/erasure.ts",
-      "src/domain/profile.ts",
-      "src/domain/public-booking.ts",
-      "src/domain/tryon-claims.ts",
-    ]);
+  it("are one, in recordConsent's module", () => {
+    expect(consentWrites().map((write) => write.file)).toEqual(["src/domain/consents.ts"]);
   });
 
   it("are found however the statement is spelt", () => {
@@ -46,7 +39,7 @@ describe("the statements that write a consent", () => {
     expect(spellings.flatMap((sql) => [...sql.matchAll(CONSENT_INSERT)])).toHaveLength(3);
   });
 
-  it("each name where the consent was given", () => {
+  it("name where the consent was given", () => {
     const withoutSource = consentWrites().filter((write) => !write.columns.includes("source"));
     expect(withoutSource).toEqual([]);
   });
