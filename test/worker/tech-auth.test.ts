@@ -8,7 +8,8 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/http/context.ts";
-import { syncTechnicians } from "../../src/domain/fsm-mirror.ts";
+import { afterTechnicianSync, syncTechnicians } from "../../src/domain/fsm-mirror.ts";
+import { createLogger } from "../../src/log.ts";
 import { buildOpenApiDocument } from "../../src/openapi.ts";
 import { createStubFsm, EMPTY_FSM, type FsmTechnician } from "../../src/providers/fsm.ts";
 import {
@@ -39,6 +40,13 @@ const technician = (overrides: Partial<FsmTechnician> = {}): FsmTechnician => ({
   zone: "Gurgaon",
   ...overrides,
 });
+
+/** Imran as FSM lists him, on the number the mirror already holds for him. */
+const listedImran = technician({ id: "resource-1", userId: "user-1", name: "Imran Qureshi", mobile: "+919810000009" });
+
+const numberProblems = async () =>
+  (await env.DB.prepare("SELECT fsm_id, number_problem FROM technicians WHERE active = 1 ORDER BY fsm_id").all())
+    .results;
 
 beforeEach(async () => {
   await markDatabase();
@@ -338,7 +346,7 @@ describe("the technician list", () => {
   // ADR 0052: "A technician is recognised only if FSM lists him as an active field
   // technician." FSM's list leaves out a user whose service resource was removed.
   it("stops a technician FSM no longer lists at all, once the list is read again, and names him", async () => {
-    expect(await syncTechnicians(env.DB, deps.fsm, NOW.toISOString())).toEqual(["resource-1"]);
+    expect((await syncTechnicians(env.DB, deps.fsm, NOW.toISOString())).deactivated).toEqual(["resource-1"]);
 
     const rows = await env.DB.prepare("SELECT fsm_id, active FROM technicians ORDER BY fsm_id").all();
     expect(rows.results).toEqual([
@@ -411,15 +419,89 @@ describe("the technician list", () => {
     tech = appFor("local", deps, {}, "tech");
 
     await syncTechnicians(env.DB, deps.fsm, NOW.toISOString());
-    const naveen = await env.DB.prepare("SELECT mobile_e164 FROM technicians WHERE fsm_id = 'resource-9'").first();
-    expect(naveen).toEqual({ mobile_e164: "+919810000007" });
+    const naveen = await env.DB.prepare(
+      "SELECT mobile_e164, number_problem FROM technicians WHERE fsm_id = 'resource-9'",
+    ).first();
+    expect(naveen).toEqual({ mobile_e164: "+919810000007", number_problem: null });
 
     await challengeFor("+91 98100 00007");
     expect(deps.sentCodes.map((sent) => sent.to)).toEqual(["+919810000007"]);
   });
 
+  // FLD-12: a technician FSM listed with no number he could sign in on was still offered to clients.
+  it("keeps a technician with no number it can read out of new bookings, and tells ops by his FSM ID", async () => {
+    deps = fakeDependencies({
+      fsm: createStubFsm({ ...EMPTY_FSM, technicians: [listedImran, technician({ mobile: "98100" })] }),
+    });
+    tech = appFor("local", deps, {}, "tech");
+
+    // A number the mirror does not know reads FSM's list again.
+    await post("/api/tech/auth/otp", { mobile: "98100 00004", device_id: DEVICE });
+
+    expect(await numberProblems()).toEqual([
+      { fsm_id: "resource-1", number_problem: null },
+      { fsm_id: "resource-9", number_problem: "unreadable" },
+    ]);
+    expect(deps.alerts).toEqual([
+      expect.stringContaining("Technician resource-9 has no mobile number in FSM that we can read"),
+    ]);
+    expect(deps.alerts[0]).toContain("/technicians");
+  });
+
+  // FLD-28: two FSM users on one number were both offered to clients, though only the first could ever sign in.
+  it("keeps the second of two technicians on one number out of new bookings until FSM is corrected", async () => {
+    const listed = [listedImran, technician({ mobile: "+91 98100 00009" })];
+    const fsm = createStubFsm({ ...EMPTY_FSM, technicians: listed });
+    const readAgain = async () =>
+      afterTechnicianSync(await syncTechnicians(env.DB, fsm, NOW.toISOString()), createLogger(), deps);
+
+    await readAgain();
+    await readAgain();
+
+    expect(await numberProblems()).toEqual([
+      { fsm_id: "resource-1", number_problem: null },
+      { fsm_id: "resource-9", number_problem: "shared" },
+    ]);
+    expect(deps.alerts).toEqual([
+      expect.stringContaining("Technicians resource-1 and resource-9 have the same mobile number in FSM"),
+    ]);
+    const { code } = await challengeFor("98100 00009");
+    expect(code).toMatch(/^\d{6}$/);
+
+    listed[1] = technician({ mobile: "+91 98100 00007" });
+    await readAgain();
+
+    expect(await numberProblems()).toEqual([
+      { fsm_id: "resource-1", number_problem: null },
+      { fsm_id: "resource-9", number_problem: null },
+    ]);
+    const open = await env.DB.prepare("SELECT COUNT(*) AS n FROM alerts WHERE resolved_at IS NULL").first();
+    expect(open).toEqual({ n: 0 });
+  });
+
+  it("lets a technician FSM stops listing go from the alert his number raised", async () => {
+    const listed = [listedImran, technician({ mobile: null })];
+    const fsm = createStubFsm({ ...EMPTY_FSM, technicians: listed });
+    await afterTechnicianSync(await syncTechnicians(env.DB, fsm, NOW.toISOString()), createLogger(), deps);
+    listed.pop();
+
+    const sync = await syncTechnicians(env.DB, fsm, NOW.toISOString());
+    await afterTechnicianSync(sync, createLogger(), deps);
+
+    expect(sync).toMatchObject({ deactivated: ["resource-9"], keptOut: [] });
+    const naveen = await env.DB.prepare("SELECT active, number_problem FROM technicians WHERE fsm_id = 'resource-9'")
+      .first();
+    expect(naveen).toEqual({ active: 0, number_problem: null });
+    const open = await env.DB.prepare("SELECT COUNT(*) AS n FROM alerts WHERE resolved_at IS NULL").first();
+    expect(open).toEqual({ n: 0 });
+  });
+
   it("stops no one when FSM lists no one, which is a failed read rather than an empty org", async () => {
-    expect(await syncTechnicians(env.DB, createStubFsm(EMPTY_FSM), NOW.toISOString())).toEqual([]);
+    expect(await syncTechnicians(env.DB, createStubFsm(EMPTY_FSM), NOW.toISOString())).toEqual({
+      deactivated: [],
+      keptOut: [],
+      letBackIn: [],
+    });
 
     const active = await env.DB.prepare("SELECT COUNT(*) AS n FROM technicians WHERE active = 1").first<{
       n: number;

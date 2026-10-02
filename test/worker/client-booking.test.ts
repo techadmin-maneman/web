@@ -149,6 +149,24 @@ describe("GET /api/availability", () => {
     expect(twice.days[0]?.windows[1]).toMatchObject({ window: "afternoon", with: null });
   });
 
+  // FLD-12, FLD-28: a technician who cannot sign in was still offered, and the visit reached no phone.
+  it("offers nobody whose number keeps him from signing in, even the client's regular technician", async () => {
+    const rohit = await client();
+    await env.DB.prepare("UPDATE technicians SET number_problem = 'unreadable' WHERE id = ?1").bind(IMRAN).run();
+    const another = await (
+      await request(app, "/api/availability?type=service", { headers: { Cookie: rohit.cookie } })
+    ).json<{ days: { windows: { with: string | null }[] }[] }>();
+    expect(another.days[0]?.windows.map((window) => window.with)).toEqual(["another", "another", "another"]);
+
+    await env.DB.prepare("UPDATE technicians SET number_problem = 'shared' WHERE id = ?1").bind(SANDEEP).run();
+    const nobody = await (
+      await request(app, "/api/availability?type=service", { headers: { Cookie: rohit.cookie } })
+    ).json<{ days: { windows: { with: string | null }[] }[] }>();
+    expect(nobody.days[0]?.windows.map((window) => window.with)).toEqual([null, null, null]);
+    const held = await hold(rohit, { type: "service", date: "2026-09-22", window: "afternoon" });
+    expect(held.status).toBe(409);
+  });
+
   it("will not offer a kind of visit the client may not book, and is off where self-serve booking is", async () => {
     const lead = await client(true);
     const service = await request(app, "/api/availability?type=service", { headers: { Cookie: lead.cookie } });

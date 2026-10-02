@@ -499,6 +499,17 @@ describe("moving a visit", () => {
     ]);
   });
 
+  // A technician kept out of new bookings for his number keeps the visits he already has, and their moves.
+  it("still offers a move in place where the visit's technician is kept out of new bookings", async () => {
+    await booked("service", THURSDAY_NOON, 200000);
+    await env.DB.prepare("UPDATE technicians SET number_problem = 'unreadable'").run();
+
+    const answer = await get(client(), `/api/availability?type=service&from=2026-09-24&moving=${VISIT}`);
+
+    const body = await answer.json<{ days: { windows: { with: string | null }[] }[] }>();
+    expect(body.days[0]?.windows.map((window) => window.with)).toEqual(["regular", "regular", "regular"]);
+  });
+
   it("moves a visit for free in place: FSM reschedules it, and its payment carries over", async () => {
     await booked("service", THURSDAY_NOON, 200000);
     const app = client();

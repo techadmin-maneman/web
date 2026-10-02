@@ -108,10 +108,19 @@ export interface Technician {
   readonly initials: string;
 }
 
-/** Who can take a booking: every active technician, or, for a move, the visit's own. */
+/** Who can take a booking: every bookable technician, or, for a move, the visit's own, whatever his number. */
 async function techniciansFor(db: D1Database, moving: Moving | null): Promise<Technician[]> {
+  if (moving === null) return bookableTechnicians(db);
   const technicians = await activeTechnicians(db);
-  return moving === null ? technicians : technicians.filter((technician) => technician.id === moving.technicianId);
+  return technicians.filter((technician) => technician.id === moving.technicianId);
+}
+
+/** Active technicians who can sign in on their number, so a new booking with one reaches his phone. */
+async function bookableTechnicians(db: D1Database): Promise<Technician[]> {
+  const { results } = await db
+    .prepare("SELECT id, name, initials FROM technicians WHERE active = 1 AND number_problem IS NULL ORDER BY name")
+    .all<Technician>();
+  return results;
 }
 
 /** Technicians FSM lists as active. Whether one is away on a given day is `occupancy`'s answer, not this one's. */

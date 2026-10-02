@@ -14,8 +14,10 @@ import { STANDARD_TIER, visitTypeOfService, type VisitType } from "../config/vis
 import { toE164 } from "../lib/mobile.ts";
 import { initialsOf } from "../lib/names.ts";
 import type { Logger } from "../log.ts";
+import { numberProblems, type NumberProblem } from "../policy/technician-numbers.ts";
 import type { FsmAppointment, FsmProvider } from "../providers/fsm.ts";
 import { minutesBetween } from "../lib/durations.ts";
+import type { AlertOnce, ResolveAlert } from "./alerts.ts";
 
 export type AppointmentStatus =
   "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
@@ -40,8 +42,8 @@ export interface SyncResult {
   readonly appointmentId: string | null;
   /** The appointment's status as written; null when it is gone. */
   readonly status: AppointmentStatus | null;
-  /** FSM IDs of the technicians made inactive when the appointment named one new to us and the list was read again. */
-  readonly techniciansDeactivated: readonly string[];
+  /** What reading FSM's technician list again changed, where the appointment named a technician new to us. */
+  readonly technicianSync: TechnicianSync | null;
 }
 
 /** Reads one appointment from FSM and makes the mirror match it. */
@@ -55,7 +57,7 @@ export async function syncAppointment(db: D1Database, fsm: FsmProvider, fsmId: s
       )
       .bind(fsmId, at)
       .first<{ id: string }>();
-    return { outcome: "gone", appointmentId: existing?.id ?? null, status: null, techniciansDeactivated: [] };
+    return { outcome: "gone", appointmentId: existing?.id ?? null, status: null, technicianSync: null };
   }
 
   const personId = appointment.contactId === null ? null : await personFor(db, fsm, appointment.contactId, at);
@@ -149,7 +151,7 @@ export async function syncAppointment(db: D1Database, fsm: FsmProvider, fsmId: s
     );
   }
   await db.batch(statements);
-  return { outcome: "written", appointmentId: id, status, techniciansDeactivated: lead?.deactivated ?? [] };
+  return { outcome: "written", appointmentId: id, status, technicianSync: lead?.sync ?? null };
 }
 
 /** An instant as UTC, as every other time in D1 is kept. FSM sends India's offset. */
@@ -233,23 +235,38 @@ async function personFor(db: D1Database, fsm: FsmProvider, contactId: string, at
   return id;
 }
 
-/**
- * Our technician for an FSM service resource, refreshing the list from FSM when it is new to us, with the FSM IDs
- * that refresh made inactive.
- */
+/** Our technician for an FSM service resource, reading FSM's list again when he is new to us, with what that changed. */
 async function technicianFor(
   db: D1Database,
   fsm: FsmProvider,
   fsmId: string,
   at: string,
-): Promise<{ id: string | null; deactivated: string[] }> {
+): Promise<{ id: string | null; sync: TechnicianSync | null }> {
   const known = await db.prepare("SELECT id FROM technicians WHERE fsm_id = ?1").bind(fsmId).first<{ id: string }>();
-  if (known !== null) return { id: known.id, deactivated: [] };
+  if (known !== null) return { id: known.id, sync: null };
 
-  const deactivated = await syncTechnicians(db, fsm, at);
+  const sync = await syncTechnicians(db, fsm, at);
   const found = await db.prepare("SELECT id FROM technicians WHERE fsm_id = ?1").bind(fsmId).first<{ id: string }>();
-  return { id: found?.id ?? null, deactivated };
+  return { id: found?.id ?? null, sync };
 }
+
+/** What a read of FSM's technician list changed. */
+export interface TechnicianSync {
+  /** FSM IDs of the technicians it made inactive. */
+  readonly deactivated: string[];
+  /** Every active technician whose number keeps him out of new bookings. */
+  readonly keptOut: KeptOut[];
+  /** Our IDs of the technicians whose number kept them out of new bookings until this read. */
+  readonly letBackIn: string[];
+}
+
+export interface KeptOut {
+  readonly id: string;
+  readonly fsmId: string;
+  readonly problem: NumberProblem;
+}
+
+const NOTHING_CHANGED: TechnicianSync = { deactivated: [], keptOut: [], letBackIn: [] };
 
 /**
  * Writes FSM's service resources over our copy: name, whether FSM still lists
@@ -264,11 +281,12 @@ async function technicianFor(
  * is taken as a failed read, never as an org with nobody in it, and changes
  * nothing.
  *
- * Answers the FSM IDs of the technicians it made inactive, for the caller to log.
+ * Then each active technician whose number keeps him from signing in is kept out of new bookings
+ * (src/policy/technician-numbers.ts).
  */
-export async function syncTechnicians(db: D1Database, fsm: FsmProvider, at: string): Promise<string[]> {
+export async function syncTechnicians(db: D1Database, fsm: FsmProvider, at: string): Promise<TechnicianSync> {
   const technicians = await fsm.technicians();
-  if (technicians.length === 0) return [];
+  if (technicians.length === 0) return NOTHING_CHANGED;
   const listed = JSON.stringify(technicians.map((technician) => technician.id));
   const results = await db.batch<{ fsm_id: string }>([
     ...technicians.map((technician) =>
@@ -299,15 +317,88 @@ export async function syncTechnicians(db: D1Database, fsm: FsmProvider, at: stri
       )
       .bind(listed, at),
   ]);
-  return (results.at(-1)?.results ?? []).map((row) => row.fsm_id);
+  const deactivated = (results.at(-1)?.results ?? []).map((row) => row.fsm_id);
+  return { deactivated, ...(await markNumberProblems(db)) };
+}
+
+interface TechnicianNumber {
+  readonly id: string;
+  readonly fsm_id: string;
+  readonly mobile_e164: string | null;
+  readonly active: number;
+  readonly number_problem: NumberProblem["kind"] | null;
 }
 
 /**
- * The one line each caller of syncTechnicians writes when it made anyone inactive, so a technician who can no
- * longer sign in can be traced to the read that stopped him. FSM's IDs only: never a name or a number.
+ * Marks each active technician whose number keeps him from signing in, and clears the mark from every other. They are
+ * read in the order the sign-in prefers them (findFieldTechnician), so of two on one number the one who signs in on
+ * it stays bookable.
  */
-export function logDeactivated(log: Logger, fsmIds: readonly string[]): void {
-  if (fsmIds.length > 0) log.info("technicians_deactivated", { count: fsmIds.length, fsm_ids: fsmIds });
+async function markNumberProblems(db: D1Database): Promise<Omit<TechnicianSync, "deactivated">> {
+  const { results } = await db
+    .prepare(
+      `SELECT id, fsm_id, mobile_e164, active, number_problem FROM technicians
+       WHERE active = 1 OR number_problem IS NOT NULL ORDER BY hand_written, rowid`,
+    )
+    .all<TechnicianNumber>();
+  const active = results.filter((technician) => technician.active === 1);
+  const problems = numberProblems(
+    active.map((technician) => ({ id: technician.id, fsmId: technician.fsm_id, mobileE164: technician.mobile_e164 })),
+  );
+  const problemOf = (technician: TechnicianNumber) => problems.get(technician.id)?.kind ?? null;
+
+  const changed = results.filter((technician) => technician.number_problem !== problemOf(technician));
+  if (changed.length > 0) {
+    await db.batch(
+      changed.map((technician) =>
+        db.prepare("UPDATE technicians SET number_problem = ?2 WHERE id = ?1").bind(technician.id, problemOf(technician)),
+      ),
+    );
+  }
+
+  const keptOut = active.flatMap((technician): KeptOut[] => {
+    const problem = problems.get(technician.id);
+    return problem === undefined ? [] : [{ id: technician.id, fsmId: technician.fsm_id, problem }];
+  });
+  const letBackIn = changed.filter((technician) => problemOf(technician) === null).map((technician) => technician.id);
+  return { keptOut, letBackIn };
+}
+
+/**
+ * What each caller of syncTechnicians does with its answer. Whom it made inactive is logged, by FSM ID and never a
+ * name or a number, so a technician who can no longer sign in can be traced to the read that stopped him. Ops are told
+ * of each technician whose number keeps him out of new bookings, and his alert closes once he is let back in.
+ */
+export async function afterTechnicianSync(
+  sync: TechnicianSync,
+  log: Logger,
+  alerts: { readonly alertOnce: AlertOnce; readonly resolveAlert: ResolveAlert },
+): Promise<void> {
+  const { deactivated } = sync;
+  if (deactivated.length > 0) log.info("technicians_deactivated", { count: deactivated.length, fsm_ids: deactivated });
+  for (const technician of sync.keptOut) {
+    await alerts.alertOnce({ key: numberAlertKey(technician.id), message: keptOutMessage(technician), link: "/technicians" });
+  }
+  for (const technicianId of sync.letBackIn) await alerts.resolveAlert(numberAlertKey(technicianId));
+}
+
+const numberAlertKey = (technicianId: string) => `technician_number:${technicianId}`;
+
+const BACK_IN =
+  "He is back in bookings the next time he signs in, or overnight. Move any visit already booked with him on the " +
+  "dispatch board.";
+
+function keptOutMessage({ fsmId, problem }: KeptOut): string {
+  if (problem.kind === "unreadable") {
+    return (
+      `Technician ${fsmId} has no mobile number in FSM that we can read, so he cannot sign in to the technician app ` +
+      `and new bookings no longer go to him. Put his ten-digit mobile on his FSM user. ${BACK_IN}`
+    );
+  }
+  return (
+    `Technicians ${problem.signsIn} and ${fsmId} have the same mobile number in FSM. Only ${problem.signsIn} can sign ` +
+    `in on it, so new bookings no longer go to ${fsmId}. Correct the number on the wrong FSM user. ${BACK_IN}`
+  );
 }
 
 /** The service of the first of an appointment's service items that is one of ours: its kind and its tier. */

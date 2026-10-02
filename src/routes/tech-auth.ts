@@ -14,7 +14,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
-import { logDeactivated, syncTechnicians } from "../domain/fsm-mirror.ts";
+import { afterTechnicianSync, syncTechnicians } from "../domain/fsm-mirror.ts";
 import { takeOne } from "../domain/rate-limit.ts";
 import { revokeSession, deviceLabel } from "../domain/sessions.ts";
 import {
@@ -167,11 +167,11 @@ export function registerTechAuth(app: App): void {
 
     // A technician FSM listed since the last sync is unknown to the mirror; read it, then look again.
     if (technician === null && config.providers.FSM_PROVIDER !== "none" && (await mayReadFsm(db, now))) {
-      const deactivated = await syncTechnicians(db, deps.fsm, now.toISOString()).catch((error: unknown) => {
+      const sync = await syncTechnicians(db, deps.fsm, now.toISOString()).catch((error: unknown) => {
         c.var.log.warn("technician_sync_failed", { error });
-        return [];
+        return null;
       });
-      logDeactivated(c.var.log, deactivated);
+      if (sync !== null) await afterTechnicianSync(sync, c.var.log, deps);
       technician = await findFieldTechnician(db, mobileE164);
     }
     const sendsTo = technician?.mobileE164 ?? null;

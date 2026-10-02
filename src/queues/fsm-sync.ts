@@ -25,7 +25,7 @@ import type { Dependencies } from "../dependencies.ts";
 import { confirmBooking, unbookedAlertKey, type ConfirmOptions } from "../domain/bookings.ts";
 import { CLIENT_NOTE_MAX_CHARS, clientNoteAlertKey } from "../domain/client-notes.ts";
 import { pushCatalogue } from "../domain/fsm-catalogue.ts";
-import { logDeactivated, syncAppointment } from "../domain/fsm-mirror.ts";
+import { afterTechnicianSync, syncAppointment } from "../domain/fsm-mirror.ts";
 import { heldAlert, heldAlertKey, holdForFsm, isHeldForFsm, toLinkAlertKey } from "../domain/held-bookings.ts";
 import { streetOf } from "../domain/profile.ts";
 import { eventById, markFsmWrite, nextPending, rejectPendingAfter, unwrittenBefore } from "../domain/job-events.ts";
@@ -152,7 +152,7 @@ export async function handleFsmSyncBatch(
 
     try {
       const result = await syncAppointment(db, deps.fsm, fsmId, deps.now());
-      logDeactivated(messageLog, result.techniciansDeactivated);
+      if (result.technicianSync !== null) await afterTechnicianSync(result.technicianSync, messageLog, deps);
       const photos =
         result.appointmentId !== null && (result.status === "completed" || result.status === "terminated")
           ? await exportVisitPhotos(db, env.CLIENT_PHOTOS, deps.fsm, { id: result.appointmentId, fsmId }, deps.now())
