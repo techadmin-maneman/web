@@ -239,7 +239,8 @@ function paidTooLate(hold: HoldRow, payment: CapturedPayment): boolean {
 
 /**
  * A new visit's hold let go once its grace ended, whose payment was made in time but heard of only since: it takes its
- * time back where that is still free, so it is booked rather than refunded. Never a move, nor a hold refunded already.
+ * time back where that is still free, so it is booked rather than refunded. Never a move, a hold refunded already, or a
+ * visit whose start has passed.
  */
 async function retakenInTime(
   db: D1Database,
@@ -249,6 +250,7 @@ async function retakenInTime(
 ): Promise<boolean> {
   if (payment === null || paidTooLate(hold, payment)) return false;
   if (hold.confirmed_at === null || hold.refunded_at !== null || hold.moves_appointment_id !== null) return false;
+  if ((await heldVisitTimes(db, hold)).start <= now) return false;
   if ((await liveVisitOf(db, hold.person_id, hold.type, hold.id)) !== null) return false;
   return retakeSlot(db, hold, now);
 }

@@ -257,6 +257,20 @@ describe("a payment made in time, heard of after its hold was let go", () => {
       .first();
     expect(claims).toEqual({ n: 0 });
   });
+
+  it("is refunded when its visit has begun by the time the payment is heard of", async () => {
+    const ordered = await heldAndOrdered(PERSON);
+    expect((await otherHolds("2026-09-30", "morning")).status).toBe(201);
+    // Thursday's visit started at noon in India, 06:30 UTC.
+    const afterStart = new Date("2026-09-24T07:00:00.000Z");
+    await webhook("payment.captured", "evt_r3", payment("pay_r3", ordered, at(570)), afterStart);
+    const payments = createStubPayments();
+    const fsm = createStubFsm(world());
+    const outcome = await confirmBooking(env.DB, fsm, payments, ordered.holdId, afterStart, { labelAsTest: true });
+    expect(outcome).toBe("refunded");
+    expect(payments.made.refunds).toEqual([{ paymentId: "pay_r3", amount: 200000 }]);
+    expect(fsm.made.visits).toEqual([]);
+  });
 });
 
 // The grace is ops' to set, and a hold is judged by the one it was made with
