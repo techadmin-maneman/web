@@ -6,12 +6,11 @@ import { productionDependencies } from "./dependencies.ts";
 import { createCachedIdentityCheck, validateStaticConfig } from "./guard.ts";
 import { byHost } from "./http/surfaces.ts";
 import { createLogger } from "./log.ts";
-import { pingHeartbeat } from "./providers/heartbeat.ts";
 import { handleCrmSyncBatch } from "./queues/crm-sync.ts";
 import { handleFsmSyncBatch } from "./queues/fsm-sync.ts";
 import { handleMessagingBatch } from "./queues/messaging.ts";
 import { handleRenderBatch } from "./queues/render.ts";
-import { CRON_JOBS, failedJobs, runCronJobs } from "./scheduled/cron.ts";
+import { CRON_JOBS, runCron } from "./scheduled/cron.ts";
 
 // Runs at module load. A Worker without a valid ENVIRONMENT, missing a secret
 // its providers need, or in production with a stub provider, throws here:
@@ -76,7 +75,6 @@ export default {
     const log = baseLog.child({ job: "cron" });
     await assertOwnDatabase(workerEnv.DB);
     const deps = makeDependencies(workerEnv, log);
-    const outcomes = await runCronJobs(CRON_JOBS, { env: workerEnv, deps, config, log });
-    await pingHeartbeat({ url: config.settings.heartbeatUrl, fetch: deps.fetch, log }, failedJobs(outcomes));
+    await runCron(CRON_JOBS, { env: workerEnv, deps, config, log });
   },
 } satisfies ExportedHandler<Env>;

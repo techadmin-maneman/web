@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CUT_SHORT_ALERT, finishRun, lastCompletedAt, startRun } from "../../src/domain/cron-runs.ts";
 import type { StaticConfig } from "../../src/guard.ts";
 import { createLogger } from "../../src/log.ts";
-import { CRON_CALLS, CRON_JOBS, failedJobs, runCronJobs, type CronJob } from "../../src/scheduled/cron.ts";
-import { LOCAL_CONFIG, NOW, captureLogs, fakeDependencies } from "./helpers.ts";
+import { CRON_CALLS, CRON_JOBS, runCron, runCronJobs, type CronJob } from "../../src/scheduled/cron.ts";
+import { LOCAL_CONFIG, NOW, captureLogs, fakeDependencies, fakeFetch } from "./helpers.ts";
 
 let logs: ReturnType<typeof captureLogs>;
 beforeEach(() => {
@@ -48,7 +48,6 @@ describe("runCronJobs", () => {
       { job: "second", ok: false },
       { job: "third", ok: true },
     ]);
-    expect(failedJobs(outcomes)).toEqual(["second"]);
     const failed = logs.lines().filter((line) => line.event === "cron_job_failed");
     expect(failed).toEqual([expect.objectContaining({ level: "error", job: "second" })]);
   });
@@ -256,6 +255,40 @@ describe("the run record", () => {
 
     expect(ran).toEqual(["first", "second"]);
     expect(logs.lines().filter((line) => line.event === "cron_run_not_recorded")).toHaveLength(2);
+  });
+});
+
+// PLAT-42: every alert was sent from inside mm-api, so a cron that stopped running altogether told nobody.
+describe("the heartbeat after a run", () => {
+  const CHECK = "https://hc-ping.com/0b9f1a52-7c0b-4f5b-9a0e-2f4f6f2b1a01";
+  const WITH_CHECK: StaticConfig = { ...LOCAL_CONFIG, settings: { ...LOCAL_CONFIG.settings, heartbeatUrl: CHECK } };
+
+  it("pings the outside monitor after every run, and its /fail naming the jobs that failed", async () => {
+    const { job } = recorder();
+    const outside = fakeFetch({ [CHECK]: () => new Response("OK") });
+    const run = { env, deps: fakeDependencies({ fetch: outside.fetch }), config: WITH_CHECK, log: createLogger() };
+
+    await runCron([job("first", "nothing")], run);
+    await runCron([job("first", "nothing"), job("second", "nothing", true), job("third", "nothing", true)], run);
+
+    expect(outside.calls.map((call) => [call.url, call.body])).toEqual([
+      [CHECK, ""],
+      [`${CHECK}/fail`, "second, third"],
+    ]);
+  });
+
+  it("pings nothing where no monitor is set", async () => {
+    const { job } = recorder();
+    const outside = fakeFetch({});
+
+    await runCron([job("first", "nothing")], {
+      env,
+      deps: fakeDependencies({ fetch: outside.fetch }),
+      config: LOCAL_CONFIG,
+      log: createLogger(),
+    });
+
+    expect(outside.calls).toEqual([]);
   });
 });
 

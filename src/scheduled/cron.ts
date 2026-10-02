@@ -4,7 +4,8 @@
 // a row are counted in `cron_jobs`, and a job that fails three in a row alerts
 // (docs/decisions/0067-alerts-and-silent-failures.md). Each run is noted as it
 // starts and as it finishes, so a run Cloudflare stopped part-way is told by the
-// next (src/domain/cron-runs.ts).
+// next (src/domain/cron-runs.ts), and each ends with a ping to an outside monitor
+// (src/providers/heartbeat.ts).
 //
 // The jobs share one budget of outside calls a run, so that together they stay
 // under the free plan's 50 fetch subrequests (src/lib/call-budget.ts). Their
@@ -30,6 +31,7 @@ import { queueReminders } from "../domain/visit-messages.ts";
 import type { StaticConfig } from "../guard.ts";
 import { createCallBudget, type CallBudget } from "../lib/call-budget.ts";
 import { scrubString, type Logger } from "../log.ts";
+import { pingHeartbeat } from "../providers/heartbeat.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import { reconcileFsm } from "./reconcile-fsm.ts";
 import { referralPass } from "./referrals.ts";
@@ -286,8 +288,14 @@ export async function runCronJobs(jobs: readonly CronJob[], run: CronRun): Promi
   return outcomes;
 }
 
-/** The jobs that failed in a run. */
-export function failedJobs(outcomes: readonly CronOutcome[]): string[] {
+/** A whole scheduled run: the jobs, then the heartbeat that tells the outside monitor the cron is still running. */
+export async function runCron(jobs: readonly CronJob[], run: CronRun): Promise<void> {
+  const outcomes = await runCronJobs(jobs, run);
+  const heartbeat = { url: run.config.settings.heartbeatUrl, fetch: run.deps.fetch, log: run.log };
+  await pingHeartbeat(heartbeat, failedJobs(outcomes));
+}
+
+function failedJobs(outcomes: readonly CronOutcome[]): string[] {
   return outcomes.filter((outcome) => !outcome.ok).map((outcome) => outcome.job);
 }
 

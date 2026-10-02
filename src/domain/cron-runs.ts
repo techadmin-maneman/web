@@ -1,6 +1,6 @@
-// The five-minute cron's run record (migration 0068). Cloudflare stops a run that overruns its limits without a word,
-// and every job after the point it stopped goes unrun. So each run notes when it starts and when it finishes, and a
-// run that finds the one before it never finished tells ops once.
+// The five-minute cron's run record, the one row of cron_runs. Cloudflare stops a run that overruns its limits
+// without a word, and every job after the point it stopped goes unrun. So each run notes when it starts and when it
+// finishes, and a run that finds the one before it never finished tells ops once.
 
 import { HOUR_MS } from "../lib/durations.ts";
 import type { AlertOnce, ResolveAlert } from "./alerts.ts";
