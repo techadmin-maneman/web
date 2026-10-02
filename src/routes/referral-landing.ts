@@ -12,14 +12,15 @@
 // Posting takes a Turnstile token, and the same limits per number and address as the booking form. A consultation
 // takes the full address it is at, as the booking form's does (docs/decisions/0081-the-site-takes-the-address.md),
 // and may book the consultation and fit in one visit, as it may there
-// (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
-// An unknown code still books or waits, without an invite. The same submission sent again under its
-// Idempotency-Key gets its first answer.
+// (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). Every number gets the same answer, as there
+// (src/policy/site-booking.ts). An unknown code still books or waits, without an invite. The same submission sent
+// again under its Idempotency-Key gets its first answer.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
 import { HOUSE_CARD } from "../config/house-card.ts";
+import { TOLD_NOTICES, type ToldNotice } from "../config/notices.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { bookConsultation, joinTheWaitlist, pincodeOf } from "../domain/public-booking.ts";
 import { liveCard } from "../domain/referral-cards.ts";
@@ -29,13 +30,13 @@ import { IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
 import { formRequest } from "../http/public-form.ts";
 import { addressOf } from "./client-profile.ts";
 import {
-  AddressOutcomeSchema,
+  BOOKED_DESCRIPTION,
   CreditsSchema,
   InviteStateSchema,
   OneVisitOutcomeSchema,
   OneVisitRequestSchema,
   planOf,
-  takenOrBooked,
+  takenOrInProgress,
   TypedAddressSchema,
 } from "./consultations.ts";
 
@@ -75,7 +76,20 @@ const Person = {
   name: z.string().trim().min(1).max(80),
   mobile: z.string().max(20),
   turnstile_token: z.string().min(1).max(2048),
+  invite_told: z
+    .literal(true)
+    .optional()
+    .openapi({
+      description:
+        "true: the form said that whoever sent the invite is told when the friend is fitted. The attribution " +
+        "records it; the invite applies either way.",
+    }),
 };
+
+/** The line the landing showed beside the invite, as its form says; null where it showed none. */
+function toldOnLanding(told: true | undefined): ToldNotice | null {
+  return told === true ? TOLD_NOTICES.landing : null;
+}
 
 const ConsultationRequestSchema = z
   .object({
@@ -143,7 +157,7 @@ const consultationRoute = createRoute({
   },
   responses: {
     201: {
-      description: "Booked, or asked for",
+      description: BOOKED_DESCRIPTION,
       content: {
         "application/json": {
           schema: z
@@ -157,7 +171,6 @@ const consultationRoute = createRoute({
               area: z.string(),
               credits: CreditsSchema,
               invite: InviteStateSchema,
-              address: AddressOutcomeSchema,
               one_visit: OneVisitOutcomeSchema,
             })
             .strict()
@@ -170,11 +183,10 @@ const consultationRoute = createRoute({
         "for one visit in the evening",
     ),
     403: errorResponse("turnstile_failed"),
-    409: takenOrBooked,
+    409: takenOrInProgress,
     422: errorResponse(
-      "not_bookable: the pincode is not served, the day is not open, or this number is past consultations; " +
-        "no_product: one visit, on a day the console offers no hair system; idempotency_key_reused: the key was " +
-        "used with a different body",
+      "not_bookable: the pincode is not served, or the day is not open; no_product: one visit, on a day the console " +
+        "offers no hair system; idempotency_key_reused: the key was used with a different body",
     ),
     429: errorResponse("rate_limited"),
     503: errorResponse("unavailable: Turnstile could not be reached"),
@@ -274,6 +286,7 @@ export function registerReferralLanding(app: App): void {
         turnstileToken: body.turnstile_token,
         attribution: {},
         invite: await invite(c, code),
+        toldNotice: toldOnLanding(body.invite_told),
         source: "referral_landing",
         plan: planOf(body.one_visit),
         // An invite's page takes no discount code: the invite is its offer (docs/decisions/0108-discount-codes.md).
@@ -289,7 +302,6 @@ export function registerReferralLanding(app: App): void {
           area: booked.area,
           credits: booked.credits,
           invite: booked.invite,
-          address: booked.address,
           one_visit: booked.oneVisit,
         },
       };
@@ -300,9 +312,6 @@ export function registerReferralLanding(app: App): void {
 
     const booked = run.outcome;
     if (booked.ok) return c.json(booked.body, 201);
-    if (booked.booked !== undefined) {
-      return c.json({ ...errorBody("already_booked", requestId), booked: booked.booked }, 409);
-    }
     return c.json(errorBody(booked.code, requestId, booked.fields), booked.status);
   });
 
@@ -323,6 +332,7 @@ export function registerReferralLanding(app: App): void {
         turnstileToken: body.turnstile_token,
         attribution: {},
         invite: await invite(c, code),
+        toldNotice: toldOnLanding(body.invite_told),
         source: "referral_landing",
       });
       if (!listed.ok) return listed;

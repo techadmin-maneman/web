@@ -1,12 +1,12 @@
 // Payments (board E1): one list of payments and refunds, newest first, each
-// opening its own page (E2). The ex-GST figure leads, with the GST-inclusive
-// amount beneath. Empty, board E3's lines. Charges arrive with booking (P2-M5).
+// opening its own page (E2). The amount paid, GST included, leads, with its GST
+// split beneath once GST applies; a refund is money back, with where it goes.
+// Empty, board E3's lines.
 //
 // Among them, as the board lists a visit a credit covered, every change to the
 // service-visit credits (LIFE-14): one about a visit opens that visit's page.
 
 import { useLoad } from "@maneman/ui/useLoad";
-import { rupees } from "@maneman/web-kit/money";
 import { api, type CreditLine, type Entry } from "../api.ts";
 import { empty, payments } from "../content.ts";
 import { AppLink, Shell } from "../home/Shell.tsx";
@@ -19,27 +19,30 @@ import {
   creditMeta,
   creditStatus,
   creditWhat,
+  entryAmount,
+  entryBeneath,
   entryMeta,
   entryStatus,
-  entryWhat,
+  entryTitle,
   paymentsAndCredits,
 } from "./entry.ts";
 import styles from "./payments.module.css";
 
 function EntryRow({ entry, thisYear }: { entry: Entry; thisYear: number }) {
+  const beneath = entryBeneath(entry);
   return (
     <li>
       <AppLink className={styles.entry} to={`/payments/${entry.id}`}>
         <span className={styles.entryText}>
-          <span className={styles.what}>{entryWhat(entry)}</span>
+          <span className={styles.what}>{entryTitle(entry)}</span>
           <span className={styles.meta}>{entryMeta(entry, thisYear)}</span>
           <span className={styles.status}>{entryStatus(entry)}</span>
         </span>
         <span className={styles.money}>
           <span className={entry.kind === "refund" ? `${styles.amount} ${styles.refunded}` : styles.amount}>
-            {rupees(entry.amount_ex_gst)}
+            {entryAmount(entry)}
           </span>
-          <span className={styles.incl}>{payments.incl(rupees(entry.amount))}</span>
+          {beneath !== null && <span className={styles.incl}>{beneath}</span>}
         </span>
       </AppLink>
     </li>

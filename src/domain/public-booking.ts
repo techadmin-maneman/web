@@ -2,8 +2,10 @@
 // (docs/decisions/0051-booking-from-the-site.md). Two pages do this, and they do
 // it the same way: the public site's /book, and a friend's invite at /r/:code.
 // The only difference is the invite, which the landing passes always and the site
-// only when the visitor's browser remembers one they opened
-// (docs/decisions/0089-an-invite-is-not-lost.md).
+// only when the visitor's browser remembers one they opened, and the form said
+// who is told of the fit beside it (docs/decisions/0089-an-invite-is-not-lost.md).
+// A waitlist entry carries no invite for someone who has had, booked or asked for
+// a visit: a form anyone can fill in with a number never attributes a client.
 //
 // Each booking leaves three records:
 //
@@ -25,11 +27,13 @@
 // payment cannot book.
 //
 // These forms need no login, only a number, so they never rename the person
-// the number belongs to, never replace the address they have
-// (src/policy/site-booking.ts), never let go of a hold made in the app, and book
-// no second consultation beside one still to happen. The person, their consent,
-// their address and the slot are written in one batch: a slot that has gone
-// leaves nothing behind (docs/decisions/0068-a-paid-hold-is-kept.md).
+// the number belongs to, never replace the address they have, and never let go
+// of a hold made in the app. They give every number the same answer
+// (src/policy/site-booking.ts): a number with a consultation still to happen, or
+// past consultations, books nothing, and its owner is told why on WhatsApp
+// (src/domain/site-notices.ts). The person, their consent, their address and
+// the slot are written in one batch: a slot that has gone leaves nothing behind
+// (docs/decisions/0068-a-paid-hold-is-kept.md).
 //
 // The form may book the consultation and the fit in one visit instead: a first
 // fit marked as one, three hours, with nothing paid. The client chooses the
@@ -45,23 +49,24 @@
 // after the pincode and the day, so a form refused for those costs neither.
 
 import type { LossExtent } from "../config/booking.ts";
-import { CURRENT_NOTICE, LANDING_NOTICES } from "../config/notices.ts";
+import { CURRENT_NOTICE, LANDING_NOTICES, type ToldNotice } from "../config/notices.ts";
 import { BOOKING_DAYS, HOLD_SECONDS, type BookingWindow } from "../config/scheduling.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
 import type { Logger } from "../log.ts";
 import type { SoldTerms } from "../policy/moving-a-visit.ts";
-import { ONE_VISIT_TERMS, ONE_VISIT_WINDOWS, type Plan } from "../policy/one-visit.ts";
+import { ONE_VISIT_TERMS, planStartsIn, type Plan } from "../policy/one-visit.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import type { Price } from "./price-book.ts";
-import { recordConsent } from "./consents.ts";
+import { recordConsent, type ConsentRule } from "./consents.ts";
 import { bookableService, offeredProducts } from "./services.ts";
 import type { ConsentSource } from "../policy/consents.ts";
-import { typedAddress, type TypedAddress } from "../policy/site-booking.ts";
+import { notBookedFromSite, typedAddress, type NotBookedFromSite } from "../policy/site-booking.ts";
 import { currentAddress, firstAddressStatement, type Address } from "./profile.ts";
 import { checkForOneVisit, codeOnHold, useOnNewHold } from "./discount-code-holds.ts";
-import { attribute, type Invite, type InviteState, type Via } from "./referrals.ts";
-import { bookableTypes, holdSlot, liveVisitOf, type HeldService, type LiveVisit } from "./scheduling.ts";
+import { attribute, hasAskedForAVisit, type Invite, type InviteState, type Via } from "./referrals.ts";
+import { availability, bookableTypes, holdSlot, liveVisitOf, type HeldService } from "./scheduling.ts";
 import { saveBookingLead, type Attribution } from "./leads.ts";
+import { siteNotice, type SiteNoticeKind } from "./site-notices.ts";
 import { waitlistConfirmation } from "./waitlist.ts";
 
 /** A pincode we know, and whether a technician works there. */
@@ -94,11 +99,8 @@ export interface Refusal<Status extends number = 400 | 403 | 409 | 422 | 429 | 5
     | "unavailable"
     | "taken"
     | "not_bookable"
-    | "already_booked"
     | "code_not_applicable"
     | "no_product";
-  /** For already_booked: the consultation the number already has. */
-  readonly booked?: LiveVisit;
   /** For invalid_request: the field refused, where the request was well formed and did not add up. */
   readonly fields?: readonly string[];
 }
@@ -174,23 +176,25 @@ function formPerson(
   return { id, statements: [person, consent.statement] };
 }
 
-/**
- * Why a person we know may not book a consultation from a form: they have one still to happen, or they are
- * past consultations (consulted, or fitted), which the app books instead.
- */
-async function consultationRefusal(db: D1Database, personId: string): Promise<Refusal | null> {
-  const booked = await liveVisitOf(db, personId, "consultation");
-  if (booked !== null) return { ok: false, status: 409, code: "already_booked", booked };
-  if (!(await bookableTypes(db, personId)).includes("consultation")) {
-    return { ok: false, status: 422, code: "not_bookable" };
-  }
-  return null;
+/** Why a person we know books nothing from a form; null when they may book a consultation there. */
+async function notBookedFor(db: D1Database, personId: string): Promise<NotBookedFromSite | null> {
+  return notBookedFromSite({
+    hasConsultationToCome: (await liveVisitOf(db, personId, "consultation")) !== null,
+    mayBookConsultation: (await bookableTypes(db, personId)).includes("consultation"),
+  });
 }
 
 /** Attributes the person to the invite they came with, after what the form booked stands. */
 async function applyInvite(
   db: D1Database,
-  input: { invite: Invite | null; personId: string; via: Via; pincode: string; now: Date },
+  input: {
+    invite: Invite | null;
+    personId: string;
+    via: Via;
+    pincode: string;
+    toldNotice: ToldNotice | null;
+    now: Date;
+  },
 ): Promise<{ readonly credits: boolean; readonly invite: InviteState }> {
   if (input.invite === null) return { credits: false, invite: "unknown" };
   const attribution = await attribute(db, { ...input, invite: input.invite });
@@ -319,7 +323,7 @@ const nothingPaid = (price: Price): Price => ({ amount: 0, amount_ex_gst: 0, gst
  * (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). Null when the day offers neither, and what the
  * person asked for waits for ops.
  */
-async function siteVisit(db: D1Database, plan: Plan, date: string): Promise<SiteVisit | null> {
+export async function siteVisit(db: D1Database, plan: Plan, date: string): Promise<SiteVisit | null> {
   if (plan === "one_visit") {
     const [fit] = await offeredProducts(db, date);
     if (fit === undefined) return null;
@@ -351,6 +355,8 @@ export interface ConsultationRequest {
   readonly attribution: Attribution;
   /** The invite the friend arrived with, where there is one. */
   readonly invite: Invite | null;
+  /** The line beside the invite that told the friend their referrer hears of the fit; null where the page showed none. */
+  readonly toldNotice: ToldNotice | null;
   /**
    * Where the consent on the form is given: the site's /book, or an invite's page
    * (docs/decisions/0094-where-a-consent-was-given.md).
@@ -380,8 +386,6 @@ export interface Booked {
   readonly credits: boolean;
   /** The invite as it stands for this person: expired when theirs lapsed while they waited (src/policy/invites.ts). */
   readonly invite: InviteState;
-  /** Whether the address typed in was saved, or the one the person already had is kept and used. */
-  readonly address: TypedAddress;
   /** Whether it is the consultation and the first fit in one visit. */
   readonly oneVisit: boolean;
   /** Whether the discount code given stands on the booking, or on the request ops book it from. */
@@ -402,7 +406,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   }
   // The first fit's three hours do not fit in the evening (src/policy/one-visit.ts), which the form does not offer.
   const oneVisit = request.plan === "one_visit";
-  if (oneVisit && !(ONE_VISIT_WINDOWS as readonly BookingWindow[]).includes(request.window)) {
+  if (!planStartsIn(request.plan, request.window)) {
     return { ok: false, status: 400, code: "invalid_request", fields: ["window"] };
   }
   if (oneVisit && (await offeredProducts(db, request.date)).length === 0) {
@@ -416,8 +420,10 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   if (!checked.ok) return checked;
 
   const knownId = await personWithMobile(db, checked.mobile);
-  const refused = knownId === null ? null : await consultationRefusal(db, knownId);
-  if (refused !== null) return refused;
+  if (knownId !== null) {
+    const notBooked = await notBookedFor(db, knownId);
+    if (notBooked !== null) return answerAsForANewNumber(form, request, pincode, { personId: knownId, notBooked });
+  }
   const code = request.discountCode === null ? null : await oneVisitCode(form, request.discountCode, knownId, oneVisit);
   if (code?.ok === false) return code;
   const person = formPerson(db, {
@@ -432,10 +438,14 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   });
   const saved = knownId === null ? null : await currentAddress(db, knownId);
   const address = typedAddress({ hasSavedAddress: saved !== null });
+  // The page says nothing of an address already on the account; its owner is told on WhatsApp.
+  const addressNotice =
+    address === "on_account" ? siteNotice(db, { personId: person.id, kind: "address_on_account", now }) : null;
   // What stands or falls with the booking: the person, their consent, and the address where it is theirs now.
   const alongside = [
     ...person.statements,
     ...(address === "saved" ? [firstAddressStatement(db, person.id, request.address, now)] : []),
+    ...(addressNotice === null ? [] : [addressNotice.statement]),
   ];
 
   // A slot is held and booked only while self-serve booking is on and the day offers what was asked for;
@@ -476,11 +486,13 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   // Someone we knew may be in FSM and the CRM already, with no address. Someone new is added to both with this
   // one, by the booking and its lead.
   if (knownId !== null && address === "saved") await form.syncContact(person.id);
+  if (addressNotice !== null) await queueMessage(form, addressNotice.id);
   const invited = await applyInvite(db, {
     invite: request.invite,
     personId: person.id,
     via: "consultation",
     pincode: request.pincode,
+    toldNotice: request.toldNotice,
     now,
   });
 
@@ -513,10 +525,66 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     area: pincode.area,
     credits: invited.credits,
     invite: invited.invite,
-    address,
     oneVisit,
     discountCode: codeStands,
   };
+}
+
+/**
+ * What a new number would be told, given to a number that books nothing from a form: its code and its window are
+ * checked as a new number's would be, nothing is written of the person, and its owner is told why on WhatsApp.
+ */
+async function answerAsForANewNumber(
+  form: FormRequest,
+  request: ConsultationRequest,
+  pincode: Pincode,
+  known: { readonly personId: string; readonly notBooked: NotBookedFromSite },
+): Promise<Booked | Refusal> {
+  const oneVisit = request.plan === "one_visit";
+  const code = request.discountCode === null ? null : await oneVisitCode(form, request.discountCode, null, oneVisit);
+  if (code?.ok === false) return code;
+  const state = await newNumbersState(form, request, known.personId);
+  if (state === "taken") return { ok: false, status: 409, code: "taken" };
+
+  await tellPrivately(form, known.personId, known.notBooked);
+  form.log.info("consultation_not_booked", { reason: known.notBooked, state, one_visit: oneVisit });
+  return {
+    ok: true,
+    state,
+    date: request.date,
+    window: request.window,
+    area: pincode.area,
+    // A new number carries a valid invite's credits.
+    credits: request.invite !== null,
+    invite: request.invite === null ? "unknown" : "valid",
+    oneVisit,
+    discountCode: code !== null,
+  };
+}
+
+/**
+ * What a new number's booking of this day and window would come to: a slot held, a request for ops, or taken when
+ * nobody is free then. `personId` only puts their regular technician first, as holding a slot does.
+ */
+async function newNumbersState(
+  form: FormRequest,
+  request: ConsultationRequest,
+  personId: string,
+): Promise<"booked" | "requested" | "taken"> {
+  const visit = form.selfServeBooking ? await siteVisit(form.db, request.plan, request.date) : null;
+  if (visit === null) return "requested";
+  const length = { minutes: visit.service.minutes };
+  const [day] = await availability(form.db, personId, length, request.date, 1, form.now);
+  const whoWouldCome = day?.windows.find((window) => window.window === request.window)?.with ?? null;
+  if (whoWouldCome === null) return "taken";
+  return "booked";
+}
+
+/** A notice to a person we know, written and queued on its own. */
+async function tellPrivately(form: FormRequest, personId: string, kind: SiteNoticeKind): Promise<void> {
+  const notice = siteNotice(form.db, { personId, kind, now: form.now });
+  await notice.statement.run();
+  await queueMessage(form, notice.id);
 }
 
 /**
@@ -550,6 +618,8 @@ export interface WaitlistRequest {
   readonly turnstileToken: string;
   readonly attribution: Attribution;
   readonly invite: Invite | null;
+  /** The line beside the invite that told the friend their referrer hears of the fit; null where the page showed none. */
+  readonly toldNotice: ToldNotice | null;
   /**
    * Where the consents on the form are given: the site's waitlist, or an invite's page
    * (docs/decisions/0094-where-a-consent-was-given.md).
@@ -564,6 +634,25 @@ export interface Listed {
   readonly invite: InviteState;
 }
 
+/**
+ * The invite a waitlist entry carries: none for someone who has had a visit, or booked or asked for one. Anyone can
+ * join a list with a number, so the list never attributes a client already in the funnel; ops may attach their invite
+ * on the client's page instead.
+ */
+async function waitlistInvite(db: D1Database, knownId: string | null, invite: Invite | null): Promise<Invite | null> {
+  if (invite === null || knownId === null) return invite;
+  if (await hasAskedForAVisit(db, knownId)) return null;
+  return invite;
+}
+
+/**
+ * How the launch alert ticked on the form is recorded: as given, for someone new; for someone we know, only while
+ * they have never decided it. Anyone can fill in the form with their number, so a decision they made stands.
+ */
+function launchAlertRule(knownId: string | null): ConsentRule {
+  return knownId === null ? "always" : "if_undecided";
+}
+
 /** Takes the number for a pincode we do not serve yet, with the launch alert if it was asked for. */
 export async function joinTheWaitlist(
   form: FormRequest,
@@ -575,8 +664,10 @@ export async function joinTheWaitlist(
   const checked = await form.checkPerson(request.mobile, request.turnstileToken, request.name);
   if (!checked.ok) return checked;
 
+  const knownId = await personWithMobile(db, checked.mobile);
+  const invite = await waitlistInvite(db, knownId, request.invite);
   const person = formPerson(db, {
-    knownId: await personWithMobile(db, checked.mobile),
+    knownId,
     mobile: checked.mobile,
     name: request.name,
     purpose: "contact",
@@ -595,7 +686,7 @@ export async function joinTheWaitlist(
           granted: true,
           notice: CURRENT_NOTICE.whatsapp_launches,
           source: request.source,
-          rule: "always",
+          rule: launchAlertRule(knownId),
           ipHash: checked.ipHash,
           givenAt: at,
         }).statement,
@@ -611,23 +702,17 @@ export async function joinTheWaitlist(
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?5)
          ON CONFLICT (pincode, person_id) DO UPDATE SET launch_alert = MAX(launch_alert, excluded.launch_alert)`,
       )
-      .bind(
-        crypto.randomUUID(),
-        request.pincode,
-        personId,
-        request.invite?.code ?? null,
-        at,
-        request.launchAlert ? 1 : 0,
-      ),
+      .bind(crypto.randomUUID(), request.pincode, personId, invite?.code ?? null, at, request.launchAlert ? 1 : 0),
     waitlistConfirmation(db, { personId, pincode: request.pincode, now }),
   ]);
   const confirmation = written.at(-1)?.results[0]?.id;
   if (confirmation !== undefined) await queueMessage(form, confirmation);
   const invited = await applyInvite(db, {
-    invite: request.invite,
+    invite,
     personId,
     via: "waitlist",
     pincode: request.pincode,
+    toldNotice: request.toldNotice,
     now,
   });
 

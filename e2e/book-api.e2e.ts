@@ -27,15 +27,12 @@ test("a served pincode books a real date and window, at the address given", asyn
   await page.getByLabel("Name").fill("Test Visitor");
   await page.getByLabel("Mobile").fill(randomMobile());
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  const answered = page.waitForResponse("**/api/consultation");
   await page.getByRole("button", { name: "Book the consultation" }).click();
 
-  await expect(page.getByText("Consultation booked")).toBeVisible();
-  // The place is the sector or area typed (fillAddress), not the pincode's own area.
-  await expect(page.getByText(`Sector 65, ${SERVED.city} ${SERVED.pincode} · free`)).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Check WhatsApp" })).toBeVisible();
   // The day the strip opens on is tomorrow, and the API answers with the day it booked.
-  await expect(page.getByRole("heading", { level: 1 })).toContainText(
-    new Date(`${tomorrow()}T00:00:00Z`).getUTCDate().toString(),
-  );
+  expect(await (await answered).json()).toMatchObject({ state: "booked", date: tomorrow() });
 });
 
 test("a pincode we do not serve takes the number instead", async ({ page }) => {

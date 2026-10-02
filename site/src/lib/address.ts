@@ -61,11 +61,3 @@ export function addressToSend(address: AddressFields, pincode: string): TypedAdd
     access_notes: orNone(address.accessNotes),
   };
 }
-
-/** "Flat 402, Tower C, Palm Grove Society, Sector 65, Gurgaon 122018": what a map can find, without the notes. */
-export function addressLine(address: AddressFields, pincode: string): string {
-  const parts = [address.flat, address.tower, address.line1, address.line2, address.locality, address.city]
-    .map((part) => part.trim())
-    .filter((part) => part !== "");
-  return `${parts.join(", ")} ${pincode}`;
-}

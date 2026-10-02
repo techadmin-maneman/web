@@ -26,12 +26,12 @@
 // (docs/decisions/0085-services-ops-can-edit.md).
 
 import {
-  BOOKING_WINDOWS,
   MOVE_CLAIM_SECONDS,
   PAYMENT_GRACE_SECONDS,
   UNITS_PER_DAY,
   VISIT_BLOCKS,
   WINDOW_SLOT_MAP,
+  windowsFitting,
   type BookingWindow,
 } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
@@ -306,13 +306,22 @@ export interface WindowOffer {
   readonly with: "regular" | "another" | null;
 }
 
+/** Whose time is offered first: a move's own technician, else the client's regular one; nobody's for no client. */
+function firstChoice(db: D1Database, personId: string | null, moving: Moving | null): Promise<string | null> {
+  if (moving !== null) return Promise.resolve(moving.technicianId);
+  if (personId === null) return Promise.resolve(null);
+  return regularTechnician(db, personId);
+}
+
 /**
- * Each window of each day from `from`, for a visit that takes this many minutes: who could take it, the regular
- * technician first. A day from `until` on, the day a service is retired from, is offered to nobody.
+ * Each window of each day from `from` that a visit of this many minutes can start in: who could take it, the regular
+ * technician first. A window the visit is too long to start in, as a first fit's evening, is left out. A day from
+ * `until` on, the day a service is retired from, is offered to nobody. With no person, as for the site's form, nobody
+ * is anyone's regular.
  */
 export async function availability(
   db: D1Database,
-  personId: string,
+  personId: string | null,
   visit: { readonly minutes: number; readonly until?: string | null },
   from: string,
   days: number,
@@ -323,14 +332,15 @@ export async function availability(
   const to = addDays(from, days - 1);
   const [technicians, regular, held, closed] = await Promise.all([
     techniciansFor(db, moving),
-    moving === null ? regularTechnician(db, personId) : moving.technicianId,
+    firstChoice(db, personId, moving),
     occupancy(db, from, to, now, moving?.visitId ?? null),
     loadBlackouts(db, from, to),
   ]);
   const retired = (date: string) => visit.until !== undefined && visit.until !== null && date >= visit.until;
+  const startable = windowsFitting(units);
   return Array.from({ length: days }, (_, index) => {
     const date = addDays(from, index);
-    const windows = BOOKING_WINDOWS.map((window): WindowOffer => {
+    const windows = startable.map((window): WindowOffer => {
       if (closed.has(date) || retired(date)) return { window, with: null };
       const free = technicians.filter((technician) => placement(held(technician.id, date), window, units) !== null);
       if (free.some((technician) => technician.id === regular)) return { window, with: "regular" };

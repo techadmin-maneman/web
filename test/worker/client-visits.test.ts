@@ -186,9 +186,35 @@ describe("GET /api/visits", () => {
       fsmAppointment("ap-cancelled", { status: "Cancelled" }),
     ]);
     await signIn();
-    const visits = await (await get("/api/visits")).json<{ upcoming: { date: string }[]; past: { date: string }[] }>();
+    const visits = await (
+      await get("/api/visits")
+    ).json<{ upcoming: { date: string }[]; past: { date: string; status: string }[] }>();
     expect(visits.upcoming.map((visit) => visit.date)).toEqual(["2026-09-24"]);
-    expect(visits.past.map((visit) => visit.date)).toEqual(["2026-09-10", "2026-08-01"]);
+    // A cancelled visit stays on the list, under past, so the client keeps a record of it.
+    expect(visits.past.map(({ date, status }) => ({ date, status }))).toEqual([
+      { date: "2026-09-24", status: "cancelled" },
+      { date: "2026-09-10", status: "completed" },
+      { date: "2026-08-01", status: "completed" },
+    ]);
+  });
+
+  it("leaves out a visit a charged move replaced, since the new visit stands in its place", async () => {
+    const ids = await mirror([
+      fsmAppointment("ap-replaced", { status: "Cancelled" }),
+      fsmAppointment("ap-cancelled", { status: "Cancelled", scheduledStart: "2026-09-23T10:00:00+05:30" }),
+    ]);
+    const replaced = await env.DB.prepare("SELECT person_id, window_start FROM appointments WHERE id = ?1")
+      .bind(ids["ap-replaced"])
+      .first<{ person_id: string; window_start: string }>();
+    await env.DB.prepare(
+      `INSERT INTO visit_changes (id, appointment_id, person_id, kind, notice, was_start, created_at)
+       VALUES ('change-1', ?1, ?2, 'replaced', 'late', ?3, ?4)`,
+    )
+      .bind(ids["ap-replaced"], replaced?.person_id, replaced?.window_start, NOW.toISOString())
+      .run();
+    await signIn();
+    const visits = await (await get("/api/visits")).json<{ past: { date: string }[] }>();
+    expect(visits.past.map((visit) => visit.date)).toEqual(["2026-09-23"]);
   });
 
   it("needs a session", async () => {

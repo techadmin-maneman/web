@@ -1,6 +1,6 @@
 # 0031. Access on the ops surface, and the audit log
 
-- Status: accepted. Amended 25 September 2026: an audited action writes its entry in the same batch as its change. Amended 26 September 2026: one opening of a client's photographs is one entry, naming the client, and serves that opening's images for thirty minutes (ADR 0072).
+- Status: accepted. Amended 25 September 2026: an audited action writes its entry in the same batch as its change. Amended 26 September 2026: one opening of a client's photographs is one entry, naming the client, and serves that opening's images for thirty minutes (ADR 0072). Amended 2 October 2026: an ops call's entry names the client or visit it opened and the path called, IDs only; the health check and a path no route answers write none; a GET repeated within ten minutes writes one; and the database's size is watched.
 - Date: 2026-09-22
 
 ## Context
@@ -38,6 +38,15 @@ A refused call gets `403 access_required`, and the reason is logged; the token n
 
 - **One exception: `/api/health` on a database not yet proven to be this environment's.** It is the only route that passes that check, and it writes nothing there. It answers 503 and reads no data.
 
+**Amended 2 October 2026: whose record, and no noise.** The entry named the route pattern only, so the log could not say which clients a member of staff had opened, which a DPDP access request or a breach review needs. Nine rows in ten were GETs, many of them the health check, a path no route answers, or a board polling. Now (`src/http/audit.ts`):
+
+- a call to `/api/clients/:id…` names the client as its subject (`person`), and one to `/api/visits/:id…` the visit (`appointment`);
+- `detail` holds the method, the route pattern and the path called, with each parameter that is an ID filled in and any other left as the pattern names it, so a mobile number typed into a path is never kept;
+- `/api/health` writes nothing, since it reads no client's data, and nor does a path no route answers;
+- a GET of the same path by the same person within ten minutes of their last writes no second entry. Any other method writes one every time. The Staff list's `staff_access_would_refuse` line (ADR 0109) for such a repeat has no entry under its own request ID; the first look's entry names the person.
+
+A consent switch that changes nothing writes no `consent.switch` entry either, as it writes no ledger row.
+
 **`audit_log` is append-only in the database itself** (`migrations/0005_audit.sql`). Triggers refuse every `UPDATE` and `DELETE`, so no code path, bug or console query can rewrite history. Each entry records:
 
 - when it happened, and on which surface;
@@ -52,8 +61,8 @@ Actions are listed in code (`AUDIT_ACTIONS`), not in a CHECK constraint, so that
 ## Consequences
 
 - **No personal details in the log.** A client appears only as an opaque ID. Erasing a client (ADR 0019) blanks their details elsewhere, and their entries here still record what was done without saying who they were. The log keeps staff e-mails, which is the point of it.
-- **The log grows by one row per ops call.** At a few thousand calls a day this is well inside D1's free limits: 100,000 writes a day and 5 GB in total (ADR 0009). ADR 0039's budget will account for it.
-- **The log is kept.** Nothing deletes from it. Retention will be decided with the rest of DPDP readiness, in P2-M6.
+- **The log grows by about one row per ops call.** At a few thousand calls a day this is inside D1's free limits: 100,000 writes a day, and 500 MB a database (5 GB is the account's total across its databases; ADR 0009). ADR 0039's budget accounts for it. The hourly `storage_meter` cron job reads the database's size and tells ops at 50%, 80% and 95% of 500 MB (`src/policy/database-size.ts`), and Settings shows it beside R2's: past the limit every write fails, this log's first.
+- **The log is kept.** Nothing deletes from it yet. The owner chose two years on 2 October 2026, for counsel to confirm; once confirmed, a migration lets the delete trigger pass rows older than that, and the sweeper deletes them in batches.
 - **Switching on the ops surface** now needs `ACCESS_OPS_AUD` as well as its DNS record, Access application and route (runbook, step 11).
 - **The contract** gains the `access_required` error code. `docs/openapi.json`, `docs/api.md` and the site's types are regenerated.
 - **Tests** (`test/worker/access.test.ts`), using keys generated in the test, so no real token or key is involved:

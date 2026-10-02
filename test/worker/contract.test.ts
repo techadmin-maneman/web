@@ -117,9 +117,9 @@ function errorAnswers(): { where: string; status: string; description: string }[
 // answers with one status everywhere, so that neither can say something the other does not.
 describe("the error codes", () => {
   it("are read from the first word of each clause of an answer's description", () => {
-    expect(codesNamedIn("taken: that window has gone; already_booked: it has one; or ops_assisted")).toEqual([
+    expect(codesNamedIn("taken: that window has gone; hold_expired: it lapsed; or ops_assisted")).toEqual([
       "taken",
-      "already_booked",
+      "hold_expired",
       "ops_assisted",
     ]);
     expect(codesNamedIn("fsm_refused: nothing moved. fsm_partly: FSM took the technician")).toEqual([
