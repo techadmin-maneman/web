@@ -69,6 +69,8 @@
     "scripts/serve-ops.ts",
     "scripts/serve-tech.ts",
     "scripts/lighthouse.ts",
-    "scripts/lib/static-server.ts"
+    "scripts/lib/static-server.ts",
+    "scripts/smoke-csp.ts",
+    "scripts/lib/csp-refusals.ts"
   ]
 }

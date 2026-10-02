@@ -2,11 +2,11 @@
 // button that sends them.
 
 import { ICONS } from "@maneman/brand/icons";
+import { formatMobileField, mobileDigits } from "@maneman/web-kit/mobile";
 import type { LossExtent } from "../../../../src/config/booking.ts";
 import { referral } from "../../content/referral.ts";
 import { booking, stageOptions } from "../../content/site.ts";
 import type { PincodeAnswer, ReferralReward } from "../../lib/api.ts";
-import { formatMobile, isCompleteMobile } from "../../lib/phone.ts";
 import { Icon, StageDrawing } from "../Drawings.tsx";
 import styles from "./Invite.module.css";
 import type { PersonFields } from "./useTurnstileForm.ts";
@@ -77,7 +77,7 @@ export function PersonFieldset(props: {
 }) {
   const { fields, touched, idPrefix } = props;
   const nameBad = touched && fields.name.trim() === "";
-  const mobileBad = touched && !isCompleteMobile(fields.mobile);
+  const mobileBad = touched && mobileDigits(fields.mobile) === null;
   const consentBad = touched && !fields.consent;
   return (
     <>
@@ -125,7 +125,7 @@ export function PersonFieldset(props: {
               aria-invalid={mobileBad}
               aria-describedby={mobileBad ? `${idPrefix}-mobile-error` : undefined}
               onInput={(event) => {
-                props.onChange({ ...fields, mobile: formatMobile(event.currentTarget.value) });
+                props.onChange({ ...fields, mobile: formatMobileField(event.currentTarget.value) });
               }}
             />
           </div>

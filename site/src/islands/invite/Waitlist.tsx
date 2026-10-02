@@ -4,7 +4,6 @@ import type { LossExtent } from "../../../../src/config/booking.ts";
 import { referral } from "../../content/referral.ts";
 import { track } from "../../lib/analytics.ts";
 import { joinPublicWaitlist, joinWaitlist } from "../../lib/api.ts";
-import { mobileDigits } from "../../lib/phone.ts";
 import { forgetInvite, rememberedInvite } from "../../lib/remembered-invite.ts";
 import { fill } from "../../lib/text.ts";
 import { readAttribution } from "../../lib/visit.ts";
@@ -13,7 +12,7 @@ import type { Listing } from "./Done.tsx";
 import { ExtentFieldset, ForPincode, PersonFieldset, Send, type FormProps } from "./fields.tsx";
 import styles from "./Invite.module.css";
 import { codeInPath } from "./page.ts";
-import { useTurnstileForm } from "./useTurnstileForm.ts";
+import { mobileToSend, useTurnstileForm } from "./useTurnstileForm.ts";
 
 /** Board C3: we do not come there yet, so the page takes a number instead. */
 export function Waitlist(props: FormProps & { onListed: (listing: Listing) => void }) {
@@ -25,7 +24,7 @@ export function Waitlist(props: FormProps & { onListed: (listing: Listing) => vo
     const { fields } = form;
     const request = {
       name: fields.name.trim(),
-      mobile: mobileDigits(fields.mobile),
+      mobile: mobileToSend(fields),
       pincode: props.answer.pincode,
       contact_consent: true as const,
       launch_alert: alert,

@@ -2662,7 +2662,7 @@ Request body:
 }
 ```
 
-**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be
 
 ```json
 {
@@ -2714,7 +2714,7 @@ Request body:
 }
 ```
 
-**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be
 
 ```json
 {
@@ -2766,7 +2766,7 @@ Request body:
 }
 ```
 
-**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be
 
 ```json
 {
@@ -2818,7 +2818,7 @@ Request body:
 }
 ```
 
-**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be
 
 ```json
 {
@@ -2870,7 +2870,7 @@ Request body:
 }
 ```
 
-**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be
 
 ```json
 {
@@ -2914,7 +2914,7 @@ Offer a retired service again, or take back a retirement still to come
 }
 ```
 
-**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be
 
 ```json
 {
@@ -3838,6 +3838,7 @@ Request body:
             "service_exists",
             "last_of_kind",
             "service_retired",
+            "no_product",
             "unknown_invite",
             "own_invite",
             "already_invited",
@@ -3975,7 +3976,7 @@ Request body:
   "properties": {
     "mobile": {
       "type": "string",
-      "pattern": "^(?:\\+91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$"
+      "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$"
     }
   },
   "required": [
@@ -4404,6 +4405,7 @@ Request body:
           "enum": [
             "booked",
             "in_progress",
+            "done",
             "closing"
           ]
         },
@@ -4411,7 +4413,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "For a visit FSM has not closed: still to come, under way in its window, or over and waiting for FSM to close it. Null once FSM has closed it."
+      "description": "For a visit FSM has not closed: still to come, under way (the technician has checked in, whatever FSM says), closed as done from the technician's phone, or otherwise over and waiting for FSM to close it. Null once FSM has closed it."
     },
     "prepaid": {
       "type": "boolean",
@@ -4644,6 +4646,7 @@ Request body:
           "enum": [
             "booked",
             "in_progress",
+            "done",
             "closing"
           ]
         },
@@ -4651,7 +4654,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "For a visit FSM has not closed: still to come, under way in its window, or over and waiting for FSM to close it. Null once FSM has closed it."
+      "description": "For a visit FSM has not closed: still to come, under way (the technician has checked in, whatever FSM says), closed as done from the technician's phone, or otherwise over and waiting for FSM to close it. Null once FSM has closed it."
     },
     "prepaid": {
       "type": "boolean",
@@ -6014,6 +6017,7 @@ Request body:
             "service_exists",
             "last_of_kind",
             "service_retired",
+            "no_product",
             "unknown_invite",
             "own_invite",
             "already_invited",
@@ -6337,7 +6341,7 @@ Request body:
         ],
         "additionalProperties": false
       },
-      "description": "The products a correction may name: every first-fit service, retired or not."
+      "description": "The products a correction may name: the hair systems offered today, as the technician's card lists them."
     }
   },
   "required": [

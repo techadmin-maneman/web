@@ -5,8 +5,8 @@
 // while the head held all of main, as this run's does: both then checked the head's own files, since main only
 // moves forward. On a staging deploy, it is the merge of a pull request that was up to date with main, which has
 // exactly the tree of the pull request's head, and the passes are that head's. A pass of any one check counts on
-// its own: the quick tier's unit tests count when the pull request is marked ready, and again at its deploy.
-// Anything else, or anything GitHub cannot tell us, runs every check.
+// its own: a run whose browser tests failed still passed its unit tests. Anything else, or anything GitHub cannot
+// tell us, runs every check.
 //
 // It imports nothing from node_modules: its job installs nothing.
 
@@ -22,7 +22,7 @@ export const REUSABLE_CHECKS = {
 
 export type ReusableCheck = keyof typeof REUSABLE_CHECKS;
 
-/** The job only a run of the full suite has: its pass covers the build, the browser tests and the smoke. */
+/** The job whose pass covers the build, the browser tests, Lighthouse and the smoke. */
 export const FULL_SUITE_JOB = REUSABLE_CHECKS.suite;
 
 export interface Answer {

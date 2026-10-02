@@ -38,7 +38,7 @@ describe.each(COMMITTED)("the %s surface's API documentation", (surface, documen
     expect(renderApiMarkdown(buildOpenApiDocument(surface))).toBe(markdown.replace(/\r\n/g, "\n"));
   });
 
-  it("documents every GET response with a JSON schema, or as an image, a PDF or a redirect", () => {
+  it("documents every GET response with a JSON schema, or as an image, a PDF, a redirect or no content", () => {
     const generated = buildOpenApiDocument(surface);
     for (const [path, item] of Object.entries(generated.paths ?? {})) {
       for (const [status, response] of Object.entries(item.get?.responses ?? {}) as [string, unknown][]) {
@@ -47,7 +47,10 @@ describe.each(COMMITTED)("the %s surface's API documentation", (surface, documen
           types.length > 0 && types.every((type) => type.startsWith("image/") || type === "application/pdf");
         // A redirect has no body: the invite's preview sends the house card to the site (ADR 0048).
         const isRedirect = status.startsWith("3") && types.length === 0;
-        if (!isFile && !isRedirect) expect(readResponse(response).jsonSchema, `${path} ${status}`).toBeDefined();
+        const isNoContent = status === "204" && types.length === 0;
+        if (!isFile && !isRedirect && !isNoContent) {
+          expect(readResponse(response).jsonSchema, `${path} ${status}`).toBeDefined();
+        }
       }
     }
     expect(Object.keys(generated.components?.schemas ?? {})).toEqual(

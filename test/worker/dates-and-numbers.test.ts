@@ -3,7 +3,8 @@
 import { describe, expect, it } from "vitest";
 import { windowLabel } from "../../src/config/booking.ts";
 import { addDays, indiaDate, indiaHour, isWeekend } from "../../src/lib/india-time.ts";
-import { toE164 } from "../../src/lib/mobile.ts";
+import { mobileDigits } from "../../packages/web-kit/mobile.ts";
+import { INDIAN_MOBILE_PATTERN, toE164 } from "../../src/lib/mobile.ts";
 
 describe("India dates", () => {
   it("rolls over at midnight in India, not in UTC", () => {
@@ -35,6 +36,12 @@ describe("toE164", () => {
     ["+919810000000", "+919810000000"],
     ["098100 00000", "+919810000000"],
     ["6000000000", "+916000000000"],
+    ["+91 98765 43210", "+919876543210"],
+    ["919876543210", "+919876543210"],
+    ["09876543210", "+919876543210"],
+    ["0091 98765 43210", "+919876543210"],
+    ["91-9876543210", "+919876543210"],
+    ["9198765432", "+919198765432"],
   ])("accepts %s", (input, expected) => {
     expect(toE164(input)).toBe(expected);
   });
@@ -43,6 +50,30 @@ describe("toE164", () => {
     "rejects %s",
     (input) => {
       expect(toE164(input)).toBeNull();
+    },
+  );
+
+  // The site and the apps send what they read; the API must keep the same number, never a different one.
+  it.each([
+    "+91 98765 43210",
+    "+919876543210",
+    "919876543210",
+    "09876543210",
+    "0091 98765 43210",
+    "91-9876543210",
+    "9876543210",
+    "0124 4000000",
+    "98765 4321",
+    "58765 43210",
+  ])("reads %s as the site and the apps do", (typed) => {
+    const digits = mobileDigits(typed);
+    expect(toE164(typed)).toBe(digits === null ? null : `+91${digits}`);
+  });
+
+  it.each(["+91 98765 43210", "919876543210", "09876543210", "0091 98765 43210", "91-9876543210"])(
+    "takes %s as the API's input",
+    (typed) => {
+      expect(INDIAN_MOBILE_PATTERN.test(typed)).toBe(true);
     },
   );
 });

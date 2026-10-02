@@ -17,11 +17,11 @@
 
 import { useEffect, useMemo, useReducer, useRef, useState } from "preact/hooks";
 import { ICONS } from "@maneman/brand/icons";
+import { mobileDigits } from "@maneman/web-kit/mobile";
 import { looks, notices, stageOptions, tryOn, tryOnSendsCopy } from "../../content/site.ts";
 import { track } from "../../lib/analytics.ts";
 import { claimLook, jobStatus, type ErrorCode } from "../../lib/api.ts";
 import { keyPerRequest } from "../../lib/idempotency.ts";
-import { isCompleteMobile } from "../../lib/phone.ts";
 import { preparePhoto, type PreparedPhoto } from "../../lib/photo.ts";
 import { onArrival, startRender, startUpload, type Arrival, type Outcome, type Uploaded } from "../../lib/tryon.ts";
 import { jobProblem, type Failure } from "../../lib/tryon-errors.ts";
@@ -184,7 +184,7 @@ export default function TryOn(props: Props) {
    * The gate: the claim saves where the look goes, and then the look is asked for. Pressed again after an answer
    * was lost, the claim carries the same key, so the API answers it as the first, and the render is asked again.
    */
-  async function claimAndRender(upload: Uploaded) {
+  async function claimAndRender(upload: Uploaded, digits: string) {
     const stageId = stageOptions[state.stage]?.id;
     const preset = looks[state.look]?.id;
     if (stageId === undefined || preset === undefined) return;
@@ -192,7 +192,7 @@ export default function TryOn(props: Props) {
     const claim = {
       job_id: upload.jobId,
       name: name.trim(),
-      mobile,
+      mobile: digits,
       stage: stageId,
       notice_version: notices.gate.version,
       ...(attribution === undefined ? {} : { attribution }),
@@ -220,11 +220,12 @@ export default function TryOn(props: Props) {
   }
 
   const nameBad = gateTouched && name.trim() === "";
-  const mobileBad = gateTouched && !isCompleteMobile(mobile);
+  const mobileBad = gateTouched && mobileDigits(mobile) === null;
   async function submitGate(event: Event) {
     event.preventDefault();
     if (sending) return;
-    if (name.trim() === "" || !isCompleteMobile(mobile)) {
+    const digits = mobileDigits(mobile);
+    if (name.trim() === "" || digits === null) {
       setGateTouched(true);
       return;
     }
@@ -237,7 +238,7 @@ export default function TryOn(props: Props) {
     setGateFailure(null);
     // The gate may open before the upload has finished; the claim needs the photograph uploaded.
     const upload = (await uploading.current) ?? ({ ok: false, kind: "busy", code: "no_upload" } as const);
-    if (upload.ok) await claimAndRender(upload.value);
+    if (upload.ok) await claimAndRender(upload.value, digits);
     else refused(upload);
     setSending(false);
   }
