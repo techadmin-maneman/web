@@ -85,40 +85,47 @@ export interface NotingVisit {
   readonly technician: string | null;
 }
 
+function NoteOnWhatsApp({ message }: { message: string }) {
+  return (
+    <ButtonLink
+      variant="outlineOnInk"
+      size="control"
+      className={styles.action}
+      href={whatsappWith(message)}
+      rel="noopener"
+    >
+      {home.note}
+    </ButtonLink>
+  );
+}
+
 /**
  * Add a note: kept on the visit for the technician's card while self-serve booking is on (REQ-04), else sent to ops
- * on WhatsApp, as ADR 0043 has it. Offline, WhatsApp keeps the note until the phone is back online.
+ * on WhatsApp. Tapped offline, it opens WhatsApp, which keeps the note until the phone is back online. A sheet
+ * already open stays open when the connection drops, with what the client has written.
  */
 function AddNote(props: { what: string; date: string; noting: NotingVisit | null }) {
   const { me, offline } = useSession();
   const [open, setOpen] = useState(false);
   const message = messages.note(props.what, props.date);
-  if (!me.booking.self_serve || offline || props.noting === null) {
-    return (
-      <ButtonLink
-        variant="outlineOnInk"
-        size="control"
-        className={styles.action}
-        href={whatsappWith(message)}
-        rel="noopener"
-      >
-        {home.note}
-      </ButtonLink>
-    );
-  }
-  const noting = props.noting;
+  const noting = me.booking.self_serve ? props.noting : null;
+  if (noting === null) return <NoteOnWhatsApp message={message} />;
   return (
     <>
-      <Button
-        variant="outlineOnInk"
-        size="control"
-        className={styles.action}
-        onClick={() => {
-          setOpen(true);
-        }}
-      >
-        {home.note}
-      </Button>
+      {offline && !open ? (
+        <NoteOnWhatsApp message={message} />
+      ) : (
+        <Button
+          variant="outlineOnInk"
+          size="control"
+          className={styles.action}
+          onClick={() => {
+            setOpen(true);
+          }}
+        >
+          {home.note}
+        </Button>
+      )}
       {open && (
         <NoteSheet
           visitId={noting.visitId}
