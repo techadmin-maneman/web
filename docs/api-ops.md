@@ -3789,7 +3789,7 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
   "properties": {
     "mobile": {
       "type": "string",
-      "pattern": "^(?:\\+91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$"
+      "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$"
     }
   },
   "required": [

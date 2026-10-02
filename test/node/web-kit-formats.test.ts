@@ -13,7 +13,7 @@ import {
 } from "../../packages/web-kit/dates.ts";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { mobileDigits, typedDigits } from "../../packages/web-kit/mobile.ts";
+import { fieldDigits, formatMobileField, mobileDigits, typedDigits } from "../../packages/web-kit/mobile.ts";
 import { rupees } from "../../packages/web-kit/money.ts";
 import { WHATSAPP_NUMBER, whatsappChat, whatsappShare } from "../../packages/web-kit/whatsapp.ts";
 
@@ -135,6 +135,46 @@ describe("web-kit mobile numbers", () => {
     expect(mobileDigits("98110 0000")).toBeNull();
     expect(mobileDigits("+44 7911 123456")).toBeNull();
     expect(mobileDigits("")).toBeNull();
+  });
+});
+
+// The site's field kept the first ten digits, so "+91 98765 43210" showed as 91987 65432, passed as complete, and
+// the booking, its codes and a try-on's look went to whoever holds that number.
+describe("a mobile field on the site and in the technician app", () => {
+  /** What a controlled field holds after each key, as Preact and React redraw it. */
+  function typedKeyByKey(typed: string, field: (value: string) => string): string {
+    let value = "";
+    for (const key of typed) value = field(value + key);
+    return value;
+  }
+
+  it.each(["+91 98765 43210", "+919876543210", "919876543210", "09876543210", "0091 98765 43210", "9876543210"])(
+    "ends %s as 98765 43210, pasted, filled in by the phone or typed key by key",
+    (typed) => {
+      expect(formatMobileField(typed)).toBe("98765 43210");
+      expect(typedKeyByKey(typed, formatMobileField)).toBe("98765 43210");
+      expect(typedKeyByKey(typed, fieldDigits)).toBe("9876543210");
+      expect(mobileDigits(typedKeyByKey(typed, formatMobileField))).toBe("9876543210");
+    },
+  );
+
+  it("groups the digits five and five as they are typed", () => {
+    expect(formatMobileField("98100")).toBe("98100");
+    expect(formatMobileField("981000")).toBe("98100 0");
+  });
+
+  it("shows a digit too many, so the number reads as incomplete rather than as someone else's", () => {
+    expect(formatMobileField("98765 432101")).toBe("98765 432101");
+    expect(mobileDigits(formatMobileField("98765 432101"))).toBeNull();
+    expect(fieldDigits("1".repeat(20))).toHaveLength(14);
+  });
+
+  it.each([
+    ["a landline", "0124 4000000"],
+    ["nine digits", "98765 4321"],
+    ["a number starting with 5", "58765 43210"],
+  ])("refuses %s", (_label, typed) => {
+    expect(mobileDigits(formatMobileField(typed))).toBeNull();
   });
 });
 
