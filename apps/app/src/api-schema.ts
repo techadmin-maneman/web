@@ -1781,7 +1781,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Let go, or already gone */
+                /** @description Let go, or already gone; or kept, when it has a Razorpay order and its pay_by has not passed, since a payment may still land on it. */
                 204: {
                     headers: {
                         [name: string]: unknown;
@@ -3408,6 +3408,11 @@ export interface components {
             late_change_charge: "nothing" | "late_fee" | "visit";
             /** Format: date-time */
             expires_at: string;
+            /**
+             * Format: date-time
+             * @description The last moment a payment counts as made in time: expires_at and the grace after it. Checkout closes then.
+             */
+            pay_by: string;
             /** @enum {string} */
             state: "held" | "expired" | "booked" | "released";
             /** @description Razorpay has confirmed the payment; the visit is being booked. */

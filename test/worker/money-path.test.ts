@@ -225,6 +225,116 @@ describe.each(RECORDS)("a payment made inside the hold whose webhook lands after
   });
 });
 
+// A payment may land on a hold's order until its grace ends, so until then neither the app's lapse nor the client's
+// next hold lets that hold go (MON-03, BK-03).
+describe.each(RECORDS)("a hold with a Razorpay order, let go before its grace ends, on %s's record", (record) => {
+  const letGo = (holdId: string, now: Date) => call(PERSON, `/api/holds/${holdId}`, { method: "DELETE" }, now, record);
+
+  /** The webhook of a payment made at `madeAt`, heard of at `heardAt`, and the booking it leads to. */
+  async function paidAndBooked(ordered: Awaited<ReturnType<typeof heldAndOrdered>>, madeAt: Date, heardAt: Date) {
+    const payments = createStubPayments();
+    const queue = fakeQueue();
+    const id = `pay_${String(madeAt.getTime())}`;
+    await webhook("payment.captured", `evt_${id}`, payment(id, ordered, madeAt), heardAt, queue, { record, payments });
+    await drain(queue, new Date(heardAt.getTime() + SECOND), payments);
+    return payments;
+  }
+
+  it("is booked when the app lets it go at ten minutes and the payment is made in the grace", async () => {
+    const ordered = await heldAndOrdered(PERSON, NOW, "2026-09-24", "afternoon", record);
+    expect((await letGo(ordered.holdId, at(600))).status).toBe(204);
+    expect(await holdRow(ordered.holdId)).toEqual({ state: "held", refunded_at: null });
+    const payments = await paidAndBooked(ordered, at(630), at(635));
+    expect(await holdRow(ordered.holdId)).toEqual({ state: "booked", refunded_at: null });
+    expect(payments.made.refunds).toEqual([]);
+  });
+
+  it("is booked when the app lets it go at ten minutes before the webhook of a payment made in them", async () => {
+    const ordered = await heldAndOrdered(PERSON, NOW, "2026-09-24", "afternoon", record);
+    await letGo(ordered.holdId, at(600));
+    const payments = await paidAndBooked(ordered, at(590), at(605));
+    expect(await holdRow(ordered.holdId)).toEqual({ state: "booked", refunded_at: null });
+    expect(payments.made.refunds).toEqual([]);
+  });
+
+  it("keeps its time when its client lets it go mid-countdown, or holds another window", async () => {
+    const ordered = await heldAndOrdered(PERSON, NOW, "2026-09-24", "afternoon", record);
+    await letGo(ordered.holdId, at(300));
+    const another = await call(
+      PERSON,
+      "/api/holds",
+      { method: "POST", body: { type: "service", date: "2026-09-30", window: "morning" } },
+      at(310),
+      record,
+    );
+    expect(another.status).toBe(201);
+    expect(await holdRow(ordered.holdId)).toEqual({ state: "held", refunded_at: null });
+  });
+
+  it("is let go once its grace has ended", async () => {
+    const ordered = await heldAndOrdered(PERSON, NOW, "2026-09-24", "afternoon", record);
+    await letGo(ordered.holdId, at(719));
+    expect(await holdRow(ordered.holdId)).toEqual({ state: "held", refunded_at: null });
+    await letGo(ordered.holdId, at(720));
+    expect(await holdRow(ordered.holdId)).toEqual({ state: "released", refunded_at: null });
+  });
+});
+
+// A payment made in time whose webhook lands only after the hold was let go at the end of its grace (MON-03).
+describe.each(RECORDS)("a payment made in time, heard of after its hold was let go, on %s's record", (record) => {
+  const otherHolds = async (date: string, window: string) => {
+    await fittedPerson(OTHER, "+919810000005", "Karan Bhatia");
+    return call(OTHER, "/api/holds", { method: "POST", body: { type: "service", date, window } }, at(730), record);
+  };
+
+  /** The webhook of a payment made at nine and a half minutes, heard of at `heardAt`, and what follows it. */
+  async function heardLate(ordered: Awaited<ReturnType<typeof heldAndOrdered>>, eventId: string, heardAt: Date) {
+    const payments = createStubPayments();
+    const queue = fakeQueue();
+    const id = `pay_${eventId}`;
+    await webhook("payment.captured", eventId, payment(id, ordered, at(570)), heardAt, queue, { record, payments });
+    await drain(queue, new Date(heardAt.getTime() + SECOND), payments);
+    return { payments, id };
+  }
+
+  it("is booked on its own time, taken back, when nobody has taken that since", async () => {
+    const ordered = await heldAndOrdered(PERSON, NOW, "2026-09-24", "afternoon", record);
+    expect((await otherHolds("2026-09-30", "morning")).status).toBe(201);
+    expect(await holdRow(ordered.holdId)).toEqual({ state: "released", refunded_at: null });
+    const { payments } = await heardLate(ordered, "evt_r1", at(750));
+    expect(await holdRow(ordered.holdId)).toEqual({ state: "booked", refunded_at: null });
+    expect(payments.made.refunds).toEqual([]);
+    const booked = await env.DB.prepare(
+      "SELECT window_start FROM appointments WHERE person_id = ?1 AND type = 'service' AND status = 'scheduled'",
+    )
+      .bind(PERSON)
+      .all();
+    expect(booked.results).toEqual([{ window_start: "2026-09-24T06:30:00.000Z" }]);
+  });
+
+  it("is refunded when another client has held its time since", async () => {
+    const ordered = await heldAndOrdered(PERSON, NOW, "2026-09-24", "afternoon", record);
+    expect((await otherHolds("2026-09-24", "afternoon")).status).toBe(201);
+    const { payments, id } = await heardLate(ordered, "evt_r2", at(750));
+    expect((await holdRow(ordered.holdId))?.state).toBe("released");
+    expect(payments.made.refunds).toEqual([{ paymentId: id, amount: 200000 }]);
+    const claims = await env.DB.prepare("SELECT COUNT(*) AS n FROM slot_claims WHERE hold_id = ?1")
+      .bind(ordered.holdId)
+      .first();
+    expect(claims).toEqual({ n: 0 });
+  });
+
+  it("is refunded when its visit has begun by the time the payment is heard of", async () => {
+    const ordered = await heldAndOrdered(PERSON, NOW, "2026-09-24", "afternoon", record);
+    expect((await otherHolds("2026-09-30", "morning")).status).toBe(201);
+    // Thursday's visit started at noon in India, 06:30 UTC.
+    const { payments, id } = await heardLate(ordered, "evt_r3", new Date("2026-09-24T07:00:00.000Z"));
+    expect((await holdRow(ordered.holdId))?.state).toBe("released");
+    expect(payments.made.refunds).toEqual([{ paymentId: id, amount: 200000 }]);
+    expect((await scheduledServiceVisits(PERSON)).results).toEqual([]);
+  });
+});
+
 // The grace is ops' to set, and a hold is judged by the one it was made with
 // (docs/decisions/0088-every-policy-in-the-console.md).
 describe.each(RECORDS)("a payment made in the grace its hold was made with, on %s's record", (record) => {

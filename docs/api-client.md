@@ -1128,7 +1128,7 @@ One of the client's holds
 
 Let a hold go
 
-**204**: Let go, or already gone
+**204**: Let go, or already gone; or kept, when it has a Razorpay order and its pay_by has not passed, since a payment may still land on it.
 
 **401**: session_required
 
@@ -5305,6 +5305,11 @@ Request body:
       "type": "string",
       "format": "date-time"
     },
+    "pay_by": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The last moment a payment counts as made in time: expires_at and the grace after it. Checkout closes then."
+    },
     "state": {
       "type": "string",
       "enum": [
@@ -5423,6 +5428,7 @@ Request body:
     "change_notice_hours",
     "late_change_charge",
     "expires_at",
+    "pay_by",
     "state",
     "paid",
     "visit_id",

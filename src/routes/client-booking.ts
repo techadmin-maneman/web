@@ -176,6 +176,10 @@ export const HoldSchema = z
         "the visit itself, whose payment is kept or whose credit is spent (visit).",
     }),
     expires_at: z.iso.datetime(),
+    pay_by: z.iso.datetime().openapi({
+      description:
+        "The last moment a payment counts as made in time: expires_at and the grace after it. Checkout closes then.",
+    }),
     state: z.enum(["held", "expired", "booked", "released"]),
     paid: z.boolean().openapi({ description: "Razorpay has confirmed the payment; the visit is being booked." }),
     visit_id: z.union([z.uuid(), z.null()]).openapi({ description: "The visit it became, once booked." }),
@@ -345,7 +349,11 @@ const releaseRoute = createRoute({
   summary: "Let a hold go",
   request: { params: z.object({ id: z.uuid() }) },
   responses: {
-    204: { description: "Let go, or already gone" },
+    204: {
+      description:
+        "Let go, or already gone; or kept, when it has a Razorpay order and its pay_by has not passed, since a " +
+        "payment may still land on it.",
+    },
     401: errorResponse("session_required"),
     409: errorResponse("ops_assisted"),
   },
