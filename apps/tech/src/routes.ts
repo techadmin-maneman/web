@@ -58,6 +58,9 @@ export const OUT_OF_ORDER = "out_of_order";
 /** Ops revoked this phone. The app wipes what it holds, as it does for any 401, and says which it was. */
 export const DEVICE_REVOKED = "device_revoked";
 
+/** Ops switched the technician off. The app drops the clients' cards and keeps what it has not sent, for him alone. */
+export const TECHNICIAN_INACTIVE = "technician_inactive";
+
 /** The no-show wait has not run out. The job is untouched and the countdown goes on. */
 export const TOO_EARLY_TO_CLOSE = "too_early_to_close";
 

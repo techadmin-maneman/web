@@ -4,7 +4,7 @@
 // A route needs a national grant unless it keeps to the caller's own places itself (`ownPlaces`): until a list or a
 // record is narrowed to the caller's cities, a grant of one city or zone must not open it everywhere.
 
-import type { Department, Level } from "./access.ts";
+import { can, NATIONAL, type Caller, type Department, type Level, type ZoneOfCity } from "./access.ts";
 
 export interface RouteNeed {
   readonly department: Department;
@@ -73,7 +73,8 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/deletion-requests/{id}/decision": need("customer_care", "manage"),
 
   // Finance: payments, refunds, no-show charges and their disputes, discount codes and prices. Waiving a charge and
-  // refunding a disputed one ask MANAGE inside their routes (WAIVING_A_NO_SHOW, REFUNDING_A_DISPUTE).
+  // refunding a disputed one ask MANAGE inside their routes (WAIVING_A_NO_SHOW, REFUNDING_A_DISPUTE). The price book
+  // lists every service with its prices, so reading it is Finance's; changing a service stays Admin's.
   "GET /api/payments": need("finance", "view"),
   "GET /api/no-shows": need("finance", "view"),
   "POST /api/no-shows/{id}/decision": need("finance", "act"),
@@ -90,6 +91,7 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/prices": need("finance", "manage"),
   "POST /api/prices/correct": need("finance", "manage"),
   "POST /api/prices/withdraw": need("finance", "manage"),
+  "GET /api/services": need("finance", "view"),
 
   // Growth: referrals, the waitlist, and launching areas.
   "GET /api/referrals/held": need("growth", "view"),
@@ -109,7 +111,6 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "GET /api/blackouts": need("admin", "view"),
   "POST /api/blackouts": need("admin", "manage"),
   "POST /api/blackouts/remove": need("admin", "manage"),
-  "GET /api/services": need("admin", "view"),
   "POST /api/services": need("admin", "manage"),
   "POST /api/services/{kind}/{tier}/name": need("admin", "manage"),
   "POST /api/services/{kind}/{tier}/length": need("admin", "manage"),
@@ -137,6 +138,21 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
 export const WAIVING_A_NO_SHOW: RouteNeed = need("finance", "manage");
 /** Refunding a disputed charge, where upholding it keeps the money. */
 export const REFUNDING_A_DISPUTE: RouteNeed = need("finance", "manage");
+
+/** Whether the caller's grants reach what a route asks: over any place if it keeps to their own, nationally if not. */
+export function meetsNeed(caller: Caller, need: RouteNeed, zoneOf: ZoneOfCity): boolean {
+  const where = need.ownPlaces === true ? "anywhere" : NATIONAL;
+  return can(caller, need.department, need.level, where, zoneOf);
+}
+
+/** The routes a caller's calls go ahead on, as "GET /api/tasks": every one while the list is not enforced. */
+export function routesOpenTo(caller: Caller, enforced: boolean, zoneOf: ZoneOfCity): string[] {
+  const goesAhead = (need: RouteNeed | typeof SIGNED_IN): boolean =>
+    !enforced || need === SIGNED_IN || meetsNeed(caller, need, zoneOf);
+  return Object.entries(ROUTE_NEEDS)
+    .filter(([, need]) => goesAhead(need))
+    .map(([route]) => route);
+}
 
 /** Hono answers HEAD with the GET route, so HEAD asks what GET asks. */
 function listedMethod(method: string): string {

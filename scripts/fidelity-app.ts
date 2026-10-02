@@ -53,6 +53,7 @@ const ME = {
   next_visit: null,
   credits: null,
   prompt: null,
+  invoice: null,
   booking: { self_serve: false, types: ["consultation"] },
 };
 
@@ -571,7 +572,7 @@ async function fitted(browser: Browser, design: Page): Promise<void> {
   await entry.getByRole("heading", { name: "Tax documents" }).waitFor();
   await pair(OUT, WIDTH, "e2-entry", await frame(design, "Payments · detail"), await shot(entry));
   await entry.getByRole("button", { name: "Receipt" }).click();
-  await entry.getByText("Notify me").waitFor();
+  await entry.getByText("Ask us for it").waitFor();
   await pair(
     OUT,
     WIDTH,

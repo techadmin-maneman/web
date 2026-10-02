@@ -1,6 +1,6 @@
 # 0109. The console by departments, and who may do what in it
 
-- Status: accepted, on the owner's ruling of 2 October 2026 (audit decision 18, and its design answers)
+- Status: accepted, on the owner's ruling of 2 October 2026 (audit decision 18, and its design answers); amended the same day for the navigation
 - Date: 2026-10-02
 
 ## Context
@@ -11,13 +11,13 @@ Until now anyone Cloudflare Access let into the ops console could do everything 
 
 **Five departments.** Each section of the console, and each route behind it, belongs to one.
 
-| Department    | What it holds                                                                                                        | In the console today                                   |
+| Department    | What it holds                                                                                                        | Its sections in the console                            |
 | ------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| Operations    | Dispatch, today's tasks, visits, technicians and their leave and phones, stock, held bookings re-tried               | Dispatch, Tasks, Technicians, Stock                    |
+| Operations    | Dispatch, today's tasks, visits, technicians and their leave and phones, stock, held bookings re-tried               | Tasks, Dispatch, Technicians, Stock                    |
 | Customer Care | Clients (record, photos, consents, pieces, hair profile, a phoned-in address), grievances, number changes, deletions | Clients, Grievances, Number changes, Deletion requests |
-| Finance       | Payments, refunds, no-show charges and their disputes, credits, discount codes, prices                               | No-shows, Settings › Discount codes, the prices        |
-| Growth        | Referrals and invites, the waitlist, the service area and launching it                                               | Referrals, Waitlist, Settings › Service area           |
-| Admin         | Settings (rules, services, blackout days, day times, consumables, job sheet, storage), staff and access              | Settings, Settings › Staff                             |
+| Finance       | Payments, refunds, no-show charges and their disputes, credits, discount codes, prices                               | No-shows, Prices, Discount codes                       |
+| Growth        | Referrals and invites, the waitlist, the service area and launching it                                               | Referrals, Waitlist, Service area                      |
+| Admin         | Settings (rules, services, blackout days, day times, consumables, job sheet, storage), staff and access              | Settings, Staff                                        |
 
 **Three levels, each including the ones below it.**
 
@@ -31,7 +31,7 @@ Every route's department and lowest level is one table, `ROUTE_NEEDS` in `src/po
 
 **A grant is a department, at a level, over a place.** A person may hold several: Finance · Act · Delhi and Operations · View · NCR zone, say. The rules are `src/policy/access.ts`.
 
-**The Staff page** (Settings › Staff now, Admin › Staff once the console is grouped by department) lists each person by their Access e-mail, their grants, and whether they are let in, beside the switch that enforces the list and the service tokens let in.
+**The Staff page** (Admin › Staff) lists each person by their Access e-mail, their grants, and whether they are let in, beside the switch that enforces the list and the service tokens let in.
 
 - Admin View sees the people with a grant in their places, and those with none yet; national Admin View sees everyone and the tokens.
 - Admin Manage may give or take away a grant only within their own places, and may switch a person off only with Admin Manage over every place that person holds. A person is never deleted: switched off, they keep their grants and are let in nowhere.
@@ -69,14 +69,24 @@ Migration 0069 lists every person in the ops audit log (Access e-mails, `actor_k
 ## Rollout
 
 1. This change: the tables, the seed, the check on every call with enforcement off, the would-refuse log, and the Staff page.
-2. The owner opens Settings › Staff on `ops-staging.maneman.in`, adds everyone else who uses the console with their grants (they also need to be on the Access application's Allow policy), and checks the list. We read the would-refuse log for those days and correct the table where a rightful call would be refused.
+2. The owner opens Admin › Staff on `ops-staging.maneman.in`, adds everyone else who uses the console with their grants (they also need to be on the Access application's Allow policy), and checks the list. We read the would-refuse log for those days and correct the table where a rightful call would be refused.
 3. The owner presses "Start enforcing".
-4. Next: the navigation grouped by department, showing only what the person may open; Tasks narrowed to each department's groups; and the lists and records narrowed by place, area by area, each flipping its routes to `ownPlaces`.
+4. The navigation grouped by department, showing only what the person may open (below, amended 2 October 2026). Next: Tasks narrowed to each department's groups; and the lists and records narrowed by place, area by area, each flipping its routes to `ownPlaces`.
 5. Production, when its console is switched on: its audit log has no ops calls, so the list starts empty and off. The owner signs in, adds himself and the others, adds `mm-ci-production` to the tokens, and starts enforcing before anyone beyond the founders is given Access.
+
+## The navigation (amended 2 October 2026)
+
+- The console's sections stand under their departments, in the table's order: Operations, Customer Care, Finance, Growth, Admin. Tasks comes first, and the console opens on it.
+- Prices, Discount codes, Service area and Staff were tabs of Settings and are now sections of their own departments. Their old addresses (`/settings/prices`, `/settings/discount-codes`, `/settings/area`, `/settings/staff`) open the new ones.
+- `GET /api/whoami` names the routes the caller's calls go ahead on (`may_call`, every route while the list is not enforced). The navigation shows a section only when the call its page opens with is among them; a department with none is left out. A page opened by its address that the person may not open says so. A person who may not open Tasks lands on the first section they may.
+- Reading the price book (`GET /api/services`) is Finance View, as reading prices is; changing a service stays Admin Manage.
+- Each section shows how many tasks wait in it, from the one task board: Tasks all of them, and each other section the groups it decides (`apps/ops/src/tasks/decided.ts`). The count is filled when any of them is overdue.
+- A new page moves the keyboard to its heading, and "Skip to content" is the first stop on every page.
+- The sidebar's own title, which the boards letter "Operations", reads "Console" until the owner names it, since Operations is now one department beneath it.
 
 ## Consequences
 
 - Every ops call reads three small things more: the switch, the caller's row with their grants (or the token's), and the zoned cities.
-- `GET /api/whoami` also says whether the list is enforced, whether the caller is on it, and their grants, so the console can say "You are not on the Staff list" and, next, hide what the caller may not open.
+- `GET /api/whoami` also says whether the list is enforced, whether the caller is on it, their grants and the routes open to them, so the console can say "You are not on the Staff list" and hide what the caller may not open.
 - The contract gains the codes `not_permitted` and `last_admin`.
 - Every word of the Staff page is a placeholder until the owner gives his.

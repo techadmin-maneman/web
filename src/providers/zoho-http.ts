@@ -73,11 +73,24 @@ export interface ZohoRequesterDependencies {
   readonly timeoutMs?: number;
 }
 
-/** A write: JSON for a module call, or multipart for a file upload. */
-export type ZohoWrite = { method: "POST" | "PUT"; body: unknown } | { method: "POST"; form: FormData };
+/** A write: JSON for a module call, with any headers of the vendor's own; multipart for a file upload; or a delete. */
+export type ZohoWrite =
+  | { method: "POST" | "PUT"; body: unknown; headers?: Readonly<Record<string, string>> }
+  | { method: "POST"; form: FormData }
+  | { method: "DELETE" };
 
-/** A write's body: a multipart form as it is, which sets its own Content-Type, or JSON. */
-const bodyOf = (write: ZohoWrite): FormData | string => ("form" in write ? write.form : JSON.stringify(write.body));
+/** A write's body: a multipart form as it is, which sets its own Content-Type, JSON, or none for a delete. */
+function bodyOf(write: ZohoWrite): FormData | string | undefined {
+  if ("form" in write) return write.form;
+  if ("body" in write) return JSON.stringify(write.body);
+  return undefined;
+}
+
+/** The headers a write adds: JSON's Content-Type and the vendor's own. */
+function headersOf(write: ZohoWrite | undefined): Record<string, string> {
+  if (write === undefined || !("body" in write)) return {};
+  return { "Content-Type": "application/json", ...write.headers };
+}
 
 /** One authorised call to a path on the API host. A failed one throws a ZohoError. */
 export type ZohoRequest = (step: string, path: string, write?: ZohoWrite) => Promise<Response>;
@@ -92,11 +105,9 @@ export function createZohoRequester(
 
   async function send(step: string, path: string, token: string, write: ZohoWrite | undefined): Promise<Response> {
     // A multipart upload sets its own Content-Type, with the boundary.
-    const isJson = write !== undefined && "body" in write;
-    const body = write === undefined ? undefined : bodyOf(write);
     return zohoSend(deps, timeoutMs, step, `https://${client.apiHost}${path}`, {
-      headers: { Authorization: `Zoho-oauthtoken ${token}`, ...(isJson ? { "Content-Type": "application/json" } : {}) },
-      ...(write === undefined ? {} : { method: write.method, body }),
+      headers: { Authorization: `Zoho-oauthtoken ${token}`, ...headersOf(write) },
+      ...(write === undefined ? {} : { method: write.method, body: bodyOf(write) }),
     });
   }
 

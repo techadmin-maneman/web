@@ -1,19 +1,11 @@
-// Settings, the eighth section of the design's navigation and the one it
-// letters nothing inside (docs/decisions/0061-ops-editable-inputs.md). Three
-// panels, because the three hold their history differently: a rule applies from
-// the moment it is set, a price applies from a date and keeps every earlier
-// row, and a pincode's launch date is a promise the waitlist counts from. The
-// prices sit with the services they price, which ops keep in the same panel
-// (docs/decisions/0085-services-ops-can-edit.md). Two more hold what the
-// technician app reads with a job: the consumables with each service's
-// expected use, and the job sheet (docs/decisions/0087-consumables-and-stock.md). And
-// the days no visit is offered, which the runbook's SQL set before
-// (docs/decisions/0088-every-policy-in-the-console.md). The discount codes ops make for
-// clients' bookings (docs/decisions/0108-discount-codes.md). The Staff list: who may use
-// the console, and for what. Above them, one line says
-// what the photographs and referral cards hold in R2 against their share
-// (docs/decisions/0093-the-storage-meter.md), and another what the database
-// holds against its limit.
+// Settings, under Admin: the rules, the days no visit is offered, the
+// consumables with each service's expected use, and the job sheet the
+// technician app reads with a job. Above them, one line says what the
+// photographs and referral cards hold in R2 against their share, and another
+// what the database holds against its limit.
+//
+// The price book, the discount codes, the service area and the Staff list are
+// sections of their own departments (./PanelScreens.tsx).
 
 import { Tabs, TAB } from "@maneman/ui/Tabs";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -23,22 +15,14 @@ import { settings } from "../content.ts";
 import { settingsPath, SETTINGS_TAB_NAMES, SETTINGS_TABS, type SettingsTab } from "../route.ts";
 import { Blackouts } from "./Blackouts.tsx";
 import { Consumables } from "./Consumables.tsx";
-import { DiscountCodes } from "./DiscountCodes.tsx";
 import { JobSheet } from "./JobSheet.tsx";
-import { Services } from "./Services.tsx";
 import { Rules } from "./Rules.tsx";
-import { ServiceArea } from "./ServiceArea.tsx";
-import { Staff } from "./Staff.tsx";
 import styles from "./settings.module.css";
 
 function Panel({ tab }: { tab: SettingsTab }) {
-  if (tab === "prices") return <Services />;
-  if (tab === "discount-codes") return <DiscountCodes />;
-  if (tab === "area") return <ServiceArea />;
   if (tab === "blackouts") return <Blackouts />;
   if (tab === "consumables") return <Consumables />;
   if (tab === "job-sheet") return <JobSheet />;
-  if (tab === "staff") return <Staff />;
   return <Rules />;
 }
 

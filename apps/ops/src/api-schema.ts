@@ -7625,6 +7625,15 @@ export interface components {
                 listed: boolean;
                 /** @description A person's grants; none for a service token. */
                 grants: components["schemas"]["StaffGrant"][];
+                /**
+                 * @description The ops routes their calls go ahead on, as "GET /api/tasks": every one while the list is not enforced. The console shows only the sections whose pages they can read.
+                 * @example [
+                 *       "GET /api/health",
+                 *       "GET /api/whoami",
+                 *       "GET /api/tasks"
+                 *     ]
+                 */
+                may_call: string[];
             };
         };
         StaffGrant: {

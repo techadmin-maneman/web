@@ -455,6 +455,12 @@ The client surface reads visits from Zoho FSM and documents from Zoho Books (doc
    node --env-file=.env.fsm-<env> scripts/setup-fsm.ts
    ```
 
+   Books also needs a custom field on Customers and Vendors, **"MM person ID"**: Text, unique values, API name `cf_mm_person_id`. It is what finds a client's customer again. Then prove Books' calls on "Staging test" records the script removes again (about 20 calls; it keeps one item, "Staging test: proof item", which the scripts' scopes cannot delete):
+
+   ```sh
+   node --env-file=.env.books-scripts scripts/books-proof.ts
+   ```
+
 4. **The Worker.** Set the secrets, then set the hosts (`ZOHO_FSM_*_HOST`, `ZOHO_BOOKS_*_HOST`) and `ZOHO_BOOKS_ORG_ID` in `wrangler.jsonc`, with `FSM_PROVIDER` and `BOOKS_PROVIDER` as `zoho`.
 
    ```sh
@@ -775,6 +781,8 @@ SELECT job, failed_runs, last_failed_at, last_error FROM cron_jobs WHERE failed_
 The other jobs run regardless. A run shares 40 outside calls between its jobs; a job that finds them spent stops and leaves the rest to the next run, and the run logs `cron_calls_spent`. Seen now and then, that is a backlog clearing. Seen on every run, the passes cannot keep up within the free plan.
 
 Some jobs run only where what they need is switched on: FSM's jobs need `FSM_PROVIDER`, the invoices and Books need both FSM and Books, the FSM reconciliation needs the real FSM, and the visit reminders need `MESSAGING_ENABLED` (`src/scheduled/cron.ts`).
+
+**The cron and the queue consumers have stood still for maintenance.** The switch a restore runs under has been on for an hour ("Restoring D1"). Once the restore is done, switch it off; the next run does its jobs, and the queues deliver what they hold. Then close the alert by hand.
 
 ### A cron run cut short
 
@@ -1243,9 +1251,9 @@ node scripts/import-pincodes.ts staging --all-served-from 2026-09-22   # staging
 node scripts/import-pincodes.ts production                             # the file's own columns
 ```
 
-Run it again whenever the file changes: each pincode's row is replaced, except an area name ops gave it in the console. **The import tells nobody on a waitlist, so it refuses to serve a pincode people are waiting for.** It names each such pincode with how many wait, and writes nothing. Serve those from the console — Settings · Service area, or the waitlist's Mark live — which tells those who asked (ADR 0071), then run the import again: a pincode already served is no launch.
+Run it again whenever the file changes: each pincode's row is replaced, except an area name ops gave it in the console. **The import tells nobody on a waitlist, so it refuses to serve a pincode people are waiting for.** It names each such pincode with how many wait, and writes nothing. Serve those from the console — Growth · Service area, or the waitlist's Mark live — which tells those who asked (ADR 0071), then run the import again: a pincode already served is no launch.
 
-**Launching a pincode** is ops' own, in the console: it says how many are waiting and how many will be told, then marks the pincode served and sends the alerts, ten a minute. Nobody is told twice. Serving a pincode in Settings · Service area is a launch too, and says who it will message before it saves; a pincode already live whose waitlist was never told is told from its row on the waitlist.
+**Launching a pincode** is ops' own, in the console: it says how many are waiting and how many will be told, then marks the pincode served and sends the alerts, ten a minute. Nobody is told twice. Serving a pincode in Growth · Service area is a launch too, and says who it will message before it saves; a pincode already live whose waitlist was never told is told from its row on the waitlist.
 
 **Ops' log of referrals before January** is imported once, from a CSV in git-ignored `private/`:
 
@@ -1303,7 +1311,7 @@ The owner's wording comes back by hand: find each changed item by its id (`src/c
 
 ## Cities and visit days
 
-Where we come is decided by the pincode, which ops open from the console (Settings · Service area, ADR 0061), and serving a pincode tells its waitlist. The `cities` table is Phase 1's: its form offered them, and `POST /api/lead` and `GET /api/cities`, which read it, were removed on 28 September 2026 (`docs/open-points.md`, item 107). A booking's lead still names its pincode's city where it is one of these, and the dispatch board filters by them, so a city is a data change, not a deploy:
+Where we come is decided by the pincode, which ops open from the console (Growth · Service area, ADR 0061), and serving a pincode tells its waitlist. The `cities` table is Phase 1's: its form offered them, and `POST /api/lead` and `GET /api/cities`, which read it, were removed on 28 September 2026 (`docs/open-points.md`, item 107). A booking's lead still names its pincode's city where it is one of these, and the dispatch board filters by them, so a city is a data change, not a deploy:
 
 ```sql
 -- Add a city the dispatch board can filter by, after Bengaluru.
@@ -1318,25 +1326,34 @@ Blackout days are days no visit is offered, in the app or from the site. Ops add
 
 ## Restoring D1
 
-D1 Time Travel can put the database back to any minute in the last seven days (the Workers Free plan's window). A restore overwrites the whole database in place, cancels the queries running at the time, and undoes everything written since that minute. D1 is the only record of much of it, and the rest is in systems that will not send it again. So take the smallest repair that will do:
+D1 Time Travel can put the database back to any minute in the last seven days (the Workers Free plan's window); `time-travel info` hands out bookmarks older than that, but they are not promised. A restore overwrites the whole database in place, cancels the queries running at the time, and undoes everything written since that minute. D1 is the only record of much of it, and the rest is in systems that will not send it again. So take the smallest repair that will do:
 
 1. **Fix the rows by hand**, when you know what they should hold, from the logs, `audit_log` or the vendors' own records.
 2. **Repair from an earlier minute**, when you need what the damaged rows held before: go back, copy the damaged tables, and come straight forward again. Every other table stays as it is now.
 3. **Restore the whole database**, only when the database itself is broken: tables dropped, or damage in more places than you can name. Everything since that minute is undone, and you carry back what can be trusted.
 
-The last two need `<T>`: the last good minute, in UTC, e.g. `2026-09-27T10:04:00Z`. `W d1 time-travel info maneman-<env> --env <env> --timestamp <T>` shows its bookmark. Work in `private/restore/`, which git ignores: what goes there holds personal data, and is deleted when you are done.
+The last two need `<T>`: the last good minute, in UTC, e.g. `2026-09-27T10:04:00Z`. `W d1 time-travel info maneman-<env> --env <env> --timestamp <T>` shows its bookmark. Work in `private/restore/`, which git ignores: what goes there holds personal data and the Zoho access tokens, and is deleted when you are done. `W d1 export` prints a link that downloads the whole database for an hour, so its output goes to `/dev/null`, as below, and never into a log or a chat.
 
 Both run the Workers on the earlier database for a minute or two, so:
 
 - **Choose a quiet time**, with no technician at work and nobody likely to be paying: after 10 pm India time.
-- **Start just after a cron run, and finish within four minutes.** The cron runs at every minute that ends in 0 or 5; start at one ending in 1 or 6. On the earlier database its sweeper would send again the messages sent since `<T>`, and put back on the queue bookings FSM already has.
-- **Ask ops to stay out of the console** until you are done.
-- **Pause the queues** first, so no consumer acts on the earlier database, and resume them at the end:
+- **Switch maintenance on first, and off at the end.** While it is on, the cron runs no job and each queue consumer hands its batch back for five minutes, so nothing acts on the earlier database. Left on for an hour, it tells ops. Going back to `<T>` undoes the switch with everything else, so each step that goes back switches it on again at once:
+
+  ```sh
+  on="INSERT OR REPLACE INTO maintenance (id, reason) VALUES (1, 'restoring D1')"
+  W d1 execute maneman-<env> --env <env> --remote --command "$on"                       # on
+  W d1 execute maneman-<env> --env <env> --remote --command "DELETE FROM maintenance"   # off
+  ```
+
+- **Pause the queues** as well, and resume them at the end. Paused, a message waits; handed back, it spends one of its few retries.
 
   ```sh
   for queue in render crm-sync messaging fsm-sync; do W queues pause-delivery mm-$queue-<t>; done
   for queue in render crm-sync messaging fsm-sync; do W queues resume-delivery mm-$queue-<t>; done
   ```
+
+- **Start just after a cron run.** The cron runs at every minute that ends in 0 or 5; start at one ending in 1 or 6, so no run falls in the seconds between going back and the switch coming on again.
+- **Ask ops to stay out of the console** until you are done.
 
 Anything written while the Workers are on the earlier database is lost when you leave it. Afterwards, look in Razorpay's dashboard for any payment or refund made in those minutes ("Razorpay's webhook is not arriving").
 
@@ -1344,14 +1361,15 @@ Anything written while the Workers are on the earlier database is lost when you 
 
 ```sh
 mkdir -p private/restore
-# 1. Pause the queues (above).
-# 2. Go back. Keep the bookmark it prints after "To undo this operation": it is the database as it is now.
-W d1 time-travel restore maneman-<env> --env <env> --timestamp <T>
+# 1. Switch maintenance on, and pause the queues (above).
+# 2. Go back, and switch maintenance on again. Keep the bookmark it prints after "To undo this operation":
+#    it is the database as it is now.
+W d1 time-travel restore maneman-<env> --env <env> --timestamp <T> && W d1 execute maneman-<env> --env <env> --remote --command "$on"
 # 3. Copy the damaged tables as they were then.
-W d1 export maneman-<env> --env <env> --remote --no-schema --table <table> --table <table> --output private/restore/at-T.sql
-# 4. Come straight back.
+W d1 export maneman-<env> --env <env> --remote --no-schema --table <table> --table <table> --output private/restore/at-T.sql > /dev/null
+# 4. Come straight back. The switch is on there, as you set it in step 1.
 W d1 time-travel restore maneman-<env> --env <env> --bookmark <the bookmark from step 2>
-# 5. Resume the queues.
+# 5. Switch maintenance off, and resume the queues.
 ```
 
 If step 3 fails, go on with step 4 all the same: until step 4 has run, the Workers are on the earlier database.
@@ -1380,69 +1398,47 @@ UPDATE people SET name = (SELECT r.name FROM restore_people r WHERE r.id = peopl
 WHERE erased_at IS NULL AND id IN (SELECT id FROM restore_people);
 ```
 
-Leave alone what changed rightly since `<T>`: the second example passes over people erased since, whose name must stay "Erased". "What a restore undoes", below, is the list to think through. Then drop each `restore_` table and delete `private/restore`.
+Leave alone what changed rightly since `<T>`: the second example passes over people erased since, whose name must stay "Erased". "What a restore undoes" in `docs/schema.md` is the list to think through. Then drop each `restore_` table and delete `private/restore`.
 
 ### Restoring the whole database
 
 ```sh
 mkdir -p private/restore
-# 1. Copy everything as it is now, if it can still be read. The export holds up other queries while it runs.
-W d1 export maneman-<env> --env <env> --remote --output private/restore/now.sql
-# 2. Build the carry-back file (below), then pause the queues (above).
-# 3. Go back. Keep the bookmark it prints: restoring to it undoes this.
-W d1 time-travel restore maneman-<env> --env <env> --timestamp <T>
-# 4. Carry back what can be trusted.
+# 1. Switch maintenance on, and pause the queues (above).
+# 2. Copy everything as it is now, if it can still be read. The export holds up other queries while it runs.
+W d1 export maneman-<env> --env <env> --remote --output private/restore/now.sql > /dev/null
+# 3. Build the carry-back file. Name each table the restore is for with --leave: it stays as it was at <T>.
+node scripts/restore-carry.ts private/restore/now.sql private/restore/carry.sql --leave <table>
+# 4. Go back, and switch maintenance on again. Keep the bookmark it prints: restoring to it undoes this.
+W d1 time-travel restore maneman-<env> --env <env> --timestamp <T> && W d1 execute maneman-<env> --env <env> --remote --command "$on"
+# 5. Carry back what can be trusted.
 W d1 execute maneman-<env> --env <env> --remote --file private/restore/carry.sql
-# 5. Check the database is still this environment's; resume the queues, and run the smoke suite.
-node scripts/mark-database.ts <env>
+# 6. Check the database is still this environment's.
+node scripts/mark-database.ts <env> --check
+# 7. Switch maintenance off, resume the queues, and run the smoke suite.
 ```
 
-The carry-back file empties every table except the ones the restore is for, and fills it again as it was a moment ago. `consents`, `audit_log` and `credit_ledger` refuse a delete, as they are only ever added to, so they gain the rows they lack instead:
+`scripts/restore-carry.ts` reads the tables and their triggers from the export itself, and prints how it treats each. Its file empties each table and fills it again as it was a moment ago, except that:
 
-```sh
-skip='photos|photo_sets'   # the tables the restore is for: they stay as they were at <T>
-never='d1_migrations|deployment_identity|sqlite_sequence|_cf_[A-Za-z_]+'
-kept='consents|audit_log|credit_ledger'
-{
-  echo 'PRAGMA defer_foreign_keys = true;'
-  grep -oE '^CREATE TABLE (IF NOT EXISTS )?"?[a-z_0-9]+' private/restore/now.sql | grep -oE '[a-z_0-9]+$' \
-    | grep -vxE "$skip|$never|$kept" | sed 's/.*/DELETE FROM "&";/'
-  grep -E '^INSERT INTO "' private/restore/now.sql | grep -vE "^INSERT INTO \"($skip|$never)\" " \
-    | sed -E "s/^INSERT INTO \"($kept)\" /INSERT OR IGNORE INTO \"\1\" /"
-} > private/restore/carry.sql
-```
+- a table that refuses a delete, such as `consents`, `audit_log`, `credit_ledger` or `hair_profiles`, only gains the rows it lacks, and its rows changed since are changed to match, so a hair profile an erasure blanked is blanked again;
+- a table triggers write to, such as `last_visits` or `stock_balances`, is written last, as the export had it;
+- `d1_migrations`, `deployment_identity` and the maintenance switch are never touched.
 
-A table dropped since `<T>` is not in `now.sql`, so it stays as it was at `<T>`, named or not. The file runs whole or not at all. It fails, and changes nothing, when a migration ran after `<T>`, as its rows then name columns the restored tables lack (leave out the tables that migration changed), or when a table left at `<T>` points at a row a carried table no longer has (carry it too, or leave out the one it points at). Anything written between the restore and the carry-back is lost.
+`test/worker/restore-carry.test.ts` runs the same steps on a row in every table, so a migration the carry-back cannot pass fails its pull request.
+
+A table dropped since `<T>` is not in `now.sql`, so it stays as it was at `<T>`, named or not. The file runs whole or not at all. It fails, and changes nothing, when a migration ran after `<T>`, as its rows then name tables or columns the restored database lacks (leave out the tables that migration changed), or when a table left at `<T>` points at a row a carried table no longer has (carry it too, or leave out the one it points at). Anything written between the restore and the carry-back is lost.
 
 Then:
 
 1. **A migration that ran after `<T>`** is undone with the rest, and the code serving expects it: roll mm-api back to the release before it ("Rolling back a Worker version"), or apply the migrations again once they are right.
-2. **For each table left at `<T>`**, put back what "What a restore undoes" says for it. Its rows as they were a moment ago are in `now.sql`: load them as `restore_` tables, as "Repairing from an earlier minute" does.
+2. **For each table left at `<T>`**, put back what "What a restore undoes" in `docs/schema.md` says for it. Its rows as they were a moment ago are in `now.sql`: load them as `restore_` tables, as "Repairing from an earlier minute" does.
 3. Delete `private/restore`.
 
-If nothing is left worth carrying (the export failed, or nothing in it can be trusted), everything since `<T>` is lost, and the table below is the list of what to put back from elsewhere.
+If nothing is left worth carrying (the export failed, or nothing in it can be trusted), everything since `<T>` is lost, and "What a restore undoes" is the list of what to put back from elsewhere.
 
 ### What a restore undoes
 
-What each group of tables means if it is left as it was at `<T>`, and how it is put back:
-
-| What                                          | Tables                                                                                                                                                                         | Left at `<T>`                                                                                                             | Put back by                                                                                                                                                                    |
-| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Consents given and withdrawn                  | `consents`                                                                                                                                                                     | Someone who said stop is messaged again                                                                                   | Adding the rows since `<T>`: they are only ever added                                                                                                                          |
-| Revoked sessions and phones                   | `sessions`, `technician_devices`                                                                                                                                               | A lost phone, or a session that was ended, works again                                                                    | Revoking again: a phone in the console, a client's session with `sessions.revoked_at`                                                                                          |
-| Erasures                                      | `people`, and what an erasure deletes: `addresses`, `waitlist_entries`, `number_change_requests`, `photos`, `photo_sets`                                                       | Erased people come back in D1. Their files stay gone, since R2 is not restored                                            | Erasing again ("Erasure within the day"). List them before restoring: `SELECT id FROM people WHERE erased_at >= '<T>';`                                                        |
-| Number changes, deletion requests, grievances | `number_change_requests`, `people`, `deletion_requests`, `grievances`                                                                                                          | A client's new number stops working; a request, or its answer, is lost                                                    | Deciding each again in the console                                                                                                                                             |
-| Payments and refunds                          | `payments`, `refunds`, `razorpay_events`                                                                                                                                       | Money Razorpay took or gave back is unrecorded, and Razorpay does not send it again                                       | Adding the rows since `<T>`, checked against Razorpay's dashboard                                                                                                              |
-| Bookings and moves                            | `slot_holds`, `slot_claims`, `dispatch_moves`, `visit_changes`                                                                                                                 | The cron puts back on the queue bookings FSM has already, and FSM makes a second work order                               | The rows since `<T>`, before the cron's next run                                                                                                                               |
-| Messages                                      | `outbound_messages`                                                                                                                                                            | The sweeper sends again what was sent since                                                                               | The rows since `<T>`, before the cron's next run                                                                                                                               |
-| Technicians' steps and photographs            | `job_events`, `checkins`, `visits`, `consumables_used`, `no_show_cases`, `photos`, `photo_sets`                                                                                | The console and the phones lose what FSM has; a photograph's file is kept with no row                                     | The rows since `<T>`                                                                                                                                                           |
-| Stock                                         | `stock_movements`                                                                                                                                                              | A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each kit and the store hold is wrong | Adding the rows since `<T>`: they are only ever added                                                                                                                          |
-| Referrals and credits                         | `referral_codes`, `referral_attributions`, `credit_ledger`, `waitlist_entries`, `consultation_requests`                                                                        | A credit, a grant or a place on a waitlist disappears                                                                     | The rows since `<T>`. `credit_ledger` is only ever added to                                                                                                                    |
-| Ops' settings                                 | `ops_settings`, `price_book`, `serviceable_pincodes`, `technician_leave`, `visit_blackouts`, `cities`, `consumables`, `consumable_usage`, `checklist_items`, `partial_reasons` | A price, rule, area, day off, consumable or job-sheet list set since goes back                                            | Setting it again in the console, which audits it                                                                                                                               |
-| The audit log                                 | `audit_log`                                                                                                                                                                    | Who did what since `<T>`                                                                                                  | Adding the rows since `<T>`: they are only ever added                                                                                                                          |
-| New people, leads, addresses and try-ons      | `people`, `leads`, `addresses`, `tryon_jobs`                                                                                                                                   | Bookings and leads made since are lost here; the CRM has the leads                                                        | The rows since `<T>`                                                                                                                                                           |
-| The FSM mirror                                | `appointments`, `technicians`, `pieces`, `fsm_items`                                                                                                                           | Out of date until FSM is read again; a client's note on a visit is lost                                                   | Nothing: the cron reads FSM's 50 latest changes within five minutes, and every appointment between 1 and 5 am India time. Invoices are found again: FSM gives a work order one |
-| Housekeeping                                  | `alerts`, `cron_jobs`, `counters`, `idempotency`, `otp_challenges`, `tryon_sessions`, `sync_cursors`, `webhook_inbox`, `zoho_access_tokens`, `events`                          | Nothing that lasts                                                                                                        | Nothing                                                                                                                                                                        |
+What each group of tables means if it is left as it was at `<T>`, and how it is put back, is in `docs/schema.md`, "What a restore undoes". `npm run schema` writes it from `RESTORE_GROUPS` in `scripts/lib/schema-doc.ts`, and its test fails on a table in no group, so a new table cannot leave the list behind.
 
 ---
 

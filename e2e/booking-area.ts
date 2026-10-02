@@ -17,7 +17,7 @@ export const UNSERVED = { pincode: "400050", area: "Bandra", city: "Mumbai" };
  */
 export async function fillAddress(page: Page): Promise<void> {
   await page.getByLabel("Flat or house number").fill("Flat 402");
-  await page.getByLabel("Building, society or street").fill("Palm Grove Society");
+  await page.getByLabel("Building or society").fill("Palm Grove Society");
   await page.getByLabel("Sector or area").fill("Sector 65");
 }
 
