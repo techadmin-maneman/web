@@ -56,14 +56,15 @@ export const VISIT_BLOCKS: Readonly<Record<VisitType, { readonly units: number; 
  */
 export const BOOKING_DAYS = 14;
 
+/** The windows a visit of this many half-slots can start in: those with a half-slot it fits after, inside the day. */
+export const windowsFitting = (units: number): BookingWindow[] =>
+  BOOKING_WINDOWS.filter((window) => WINDOW_SLOT_MAP[window].some((start) => start + units <= UNITS_PER_DAY));
+
 /**
- * The windows a visit of this type can start in: those with a half-slot its block fits after, inside the day. A
- * first fit's two slots and a replacement's slot and a half do not fit in the evening.
+ * The windows a visit of this type can start in. A first fit's two slots and a replacement's slot and a half do not
+ * fit in the evening.
  */
-export const windowsFor = (type: VisitType): BookingWindow[] =>
-  BOOKING_WINDOWS.filter((window) =>
-    WINDOW_SLOT_MAP[window].some((start) => start + VISIT_BLOCKS[type].units <= UNITS_PER_DAY),
-  );
+export const windowsFor = (type: VisitType): BookingWindow[] => windowsFitting(VISIT_BLOCKS[type].units);
 
 /** The windows a first fit can start in (windowsFor), which a request for one may name. */
 export const FIRST_FIT_WINDOWS = ["morning", "afternoon"] as const;

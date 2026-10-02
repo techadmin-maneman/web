@@ -22,10 +22,11 @@ import styles from "./dispatch.module.css";
 import { phoneWords } from "../lib/phone.ts";
 import { firstNameOf, isMovable, nameOf, type BlockJob } from "./job.ts";
 
+/** Each action is null when the person's access does not let them take it. */
 interface Props {
   readonly job: BlockJob;
-  readonly onMove: () => void;
-  readonly onTold: (moveId: string) => void;
+  readonly onMove: (() => void) | null;
+  readonly onTold: ((moveId: string) => void) | null;
   readonly onClose: () => void;
 }
 
@@ -82,15 +83,17 @@ export function BlockDrawer({ job, onMove, onTold, onClose }: Props) {
         {block.untold !== null && person !== null && (
           <div className={styles.untold}>
             <p className={styles.untoldLine}>{copy.untold(movedTo, phoneWords(person.mobile))}</p>
-            <Button
-              variant="outline"
-              size="small"
-              onClick={() => {
-                if (block.untold !== null) onTold(block.untold.move_id);
-              }}
-            >
-              {dispatch.landing.told}
-            </Button>
+            {onTold !== null && (
+              <Button
+                variant="outline"
+                size="small"
+                onClick={() => {
+                  if (block.untold !== null) onTold(block.untold.move_id);
+                }}
+              >
+                {dispatch.landing.told}
+              </Button>
+            )}
           </div>
         )}
         {staysPut && <p className={styles.untoldLine}>{copy.stays}</p>}
@@ -114,7 +117,7 @@ export function BlockDrawer({ job, onMove, onTold, onClose }: Props) {
               </OpsLink>
             </>
           )}
-          {isMovable(block) && (
+          {isMovable(block) && onMove !== null && (
             <Button variant="outline" size="small" onClick={onMove}>
               {copy.move}
             </Button>

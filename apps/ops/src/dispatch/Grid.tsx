@@ -52,10 +52,13 @@ function sizeOf(block: Block): string | undefined {
 export const isAway = (leave: Board["leave"], technicianId: string, date: string) =>
   leave.some((period) => period.technician_id === technicianId && period.from <= date && date <= period.to);
 
+/** Takes a job up to move it; null when the person's access does not let them move one. */
+type Take = ((job: Job, from: HTMLElement) => void) | null;
+
 interface BlockButtonProps {
   readonly job: Job & { readonly kind: "block" };
   readonly onOpen: (job: Job, from: HTMLElement) => void;
-  readonly onTake: (job: Job, from: HTMLElement) => void;
+  readonly onTake: Take;
 }
 
 /** The block as a screen reader names it: the visit, its day and window, and done or how far it has got. */
@@ -80,9 +83,10 @@ function BlockButton({ job, onOpen, onTake }: BlockButtonProps) {
       className={`${styles.block ?? ""} ${inkOf(block) ?? ""} ${sizeOf(block) ?? ""} ${movable ? "" : (styles.finished ?? "")}`}
       type="button"
       data-appointment={block.appointment_id}
-      draggable={movable}
+      draggable={movable && onTake !== null}
       aria-label={blockLabel(job)}
       onDragStart={(event) => {
+        if (onTake === null) return;
         event.dataTransfer.effectAllowed = "move";
         event.dataTransfer.setData("text/plain", block.appointment_id);
         onTake(job, event.currentTarget);
@@ -106,7 +110,7 @@ interface CellProps {
   readonly away: boolean;
   readonly inHand: InHand | null;
   readonly onOpen: (job: Job, from: HTMLElement) => void;
-  readonly onTake: (job: Job, from: HTMLElement) => void;
+  readonly onTake: Take;
   readonly onLand: (to: Target) => void;
 }
 
@@ -188,7 +192,7 @@ interface GridProps {
   readonly rows: readonly BoardRow[];
   readonly inHand: InHand | null;
   readonly onOpen: (job: Job, from: HTMLElement) => void;
-  readonly onTake: (job: Job, from: HTMLElement) => void;
+  readonly onTake: Take;
   readonly onLand: (to: Target) => void;
 }
 

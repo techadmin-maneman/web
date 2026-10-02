@@ -10,7 +10,16 @@ import type { Locator, Page } from "@playwright/test";
 import { PORTS } from "../../scripts/lib/local-stack.ts";
 import { expect, test } from "../support.ts";
 import { bookerClient } from "./booker.ts";
-import { checkoutOnTop, confirmedByRazorpay, fakeCheckout, noRealCheckout } from "./checkout-fakes.ts";
+import {
+  checkoutLeftOpen,
+  checkoutOnTop,
+  checkoutOpened,
+  closedCheckout,
+  confirmedByRazorpay,
+  fakeCheckout,
+  noRealCheckout,
+  paidInCheckout,
+} from "./checkout-fakes.ts";
 import { fittedClient } from "./fitted.ts";
 import { continueToPayment, TAKEN } from "./picking.ts";
 import { logIn } from "./signed-in.ts";
@@ -236,6 +245,7 @@ async function holdAs(page: Page, terms: Hold): Promise<() => Hold> {
       change_notice_hours: 24,
       late_change_charge: "visit",
       expires_at: new Date(now + 10 * 60 * 1000).toISOString(),
+      pay_by: new Date(now + 12 * 60 * 1000).toISOString(),
       state: "held",
       paid: false,
       visit_id: null,
@@ -875,6 +885,51 @@ test("says the payment is in, and lets nothing go, when the time ends on a paid 
   expect(released).toEqual([]);
 });
 
+/** The last moment a payment counts as in time, on the last hold the API gave the page. */
+function lastPayBy(page: Page): () => string {
+  let payBy = "";
+  page.on("response", (response) => {
+    if (response.request().method() !== "POST" || !response.url().endsWith("/api/holds") || !response.ok()) return;
+    void response.json().then((hold: { pay_by: string }) => {
+      payBy = hold.pay_by;
+    });
+  });
+  return () => payBy;
+}
+
+// While Checkout is open the phone lets nothing go: a payment made in the grace after the countdown books (MON-03).
+test("keeps the hold while Checkout is open past the countdown, and books the payment made in it", async ({ page }) => {
+  await checkoutLeftOpen(page);
+  await confirmedByRazorpay(page);
+  await page.clock.install();
+  const payBy = lastPayBy(page);
+  await toPayment(page);
+  const released = releases(page);
+  await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
+  const opened = await checkoutOpened(page);
+  // Checkout takes a payment until the grace after the countdown ends, and no longer.
+  expect(Math.abs(opened.openedAt + opened.timeout * 1000 - Date.parse(payBy()))).toBeLessThan(5_000);
+  await page.clock.fastForward("11:00");
+  await paidInCheckout(page);
+  await expect(page.getByRole("dialog").getByRole("status").getByText("Confirmed")).toBeVisible();
+  expect(released).toEqual([]);
+});
+
+test("says the slot has gone back, and lets the API let it go, when Checkout closes after the countdown", async ({
+  page,
+}) => {
+  await checkoutLeftOpen(page);
+  await page.clock.install();
+  await toPayment(page);
+  const released = releases(page);
+  await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
+  await checkoutOpened(page);
+  await page.clock.fastForward("11:00");
+  await closedCheckout(page);
+  await expect(page.getByRole("dialog", { name: "That slot has gone back." })).toBeVisible();
+  expect(released).toEqual([]);
+});
+
 test("counts the hold on the API's clock, however far out the phone's is", async ({ page }) => {
   await fakeCheckout(page, "paid");
   // Eleven minutes fast: on the phone's own clock, the ten-minute hold would have lapsed before it began.
@@ -915,6 +970,9 @@ test("makes the days, the windows and the ways to pay one tab stop each, with ar
   await page.keyboard.press("ArrowRight");
   await expect(dates.nth(1)).toBeChecked();
   await expect(dates.nth(1)).toBeFocused();
+  await page.keyboard.press("Tab");
+  // "Later dates" sits between the days and Continue.
+  await expect(page.getByRole("button", { name: "Later dates" })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(page.getByRole("button", { name: "Continue" })).toBeFocused();
 

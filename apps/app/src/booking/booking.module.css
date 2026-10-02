@@ -414,7 +414,7 @@
   color: var(--text);
 }
 
-/* The address step (ADR 0079), which no board draws: why the address comes first, above Profile's form. */
+/* A line no board draws under a step's heading: why the address comes first, or that the day offered is full. */
 .sheet .why {
   font-size: var(--fs-15);
   line-height: var(--lh-155);

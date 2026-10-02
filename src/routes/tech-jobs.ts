@@ -290,6 +290,23 @@ const JobDetailSchema = JobSummarySchema.extend({
       z.null(),
     ])
     .openapi({ description: "On a one visit closed as done with the client fitted, its payment link; else null." }),
+  discount_code: z
+    .union([
+      z
+        .object({
+          code: z.string(),
+          given_by: z.enum(["client", "technician", "ops"]).openapi({
+            description: "client: as they booked; ops: on the booking in the console; technician: at the visit.",
+          }),
+        })
+        .strict(),
+      z.null(),
+    ])
+    .openapi({
+      description:
+        "On a one visit, the discount code already on it, so the outcome step asks for none; never what it takes " +
+        "off. Null on any other visit, and on a one visit with no code.",
+    }),
   profile: z.union([HairProfileSchema, z.null()]).openapi({
     description:
       "The client's hair profile as it stands, for the piece card and for the profile step to start from. Null until " +

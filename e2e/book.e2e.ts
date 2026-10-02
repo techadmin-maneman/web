@@ -20,19 +20,50 @@ const BOOKED = {
   credits: false,
   invite: "unknown",
   one_visit: false,
-  discount_code: false,
+  discount_code: null,
 };
 
 const CODE = "RM4K7P";
 const INVITE = { state: "valid", referrer_first_name: "Rohit", card: { state: "house", version: 1 } };
 
-/** Mocks the page's three calls; returns the requests it made. */
-async function mockApi(
-  page: Page,
-  answers: { consultation?: { status: number; body: unknown }; waitlist?: { status: number; body: unknown } } = {},
-): Promise<Request[]> {
+type Answer = { status: number; body: unknown };
+
+/** The form's question: which days and windows can be booked. */
+const OPEN_WINDOWS = /\/api\/availability\/public\?/;
+/** The page's clock for the tests that answer it: the strip opens on Saturday 3 October, as the answers do. */
+const NOON_2_OCTOBER = new Date("2026-10-02T06:30:00Z");
+const ALL_OPEN = { morning: true, afternoon: true, evening: true };
+const FULL = { morning: false, afternoon: false, evening: false };
+type Windows = typeof ALL_OPEN;
+
+/** Fourteen days from Saturday 3 October 2026: the windows given for a day, else `otherwise`. */
+function openDays(given: Record<string, Windows> = {}, otherwise: Windows = ALL_OPEN) {
+  return Array.from({ length: 14 }, (_, index) => {
+    const date = new Date(Date.UTC(2026, 9, 3 + index)).toISOString().slice(0, 10);
+    return { date, windows: given[date] ?? otherwise };
+  });
+}
+
+/** Answers the form's question with the days for the plan asked about; returns the questions asked. */
+async function answerOpen(page: Page, daysFor: (plan: string) => ReturnType<typeof openDays>): Promise<URL[]> {
+  const asked: URL[] = [];
+  await page.route(OPEN_WINDOWS, (route) => {
+    const url = new URL(route.request().url());
+    asked.push(url);
+    const plan = url.searchParams.get("plan") ?? "";
+    return route.fulfill({ json: { plan, days: daysFor(plan) } });
+  });
+  return asked;
+}
+
+/** Mocks the page's calls; returns the bookings and waitlist entries it sent. */
+async function mockApi(page: Page, answers: { consultation?: Answer; waitlist?: Answer } = {}): Promise<Request[]> {
   const requests: Request[] = [];
   await fakeTurnstile(page);
+  // Unless a test gives the days open, the API cannot say, and the form draws every window open.
+  await page.route(OPEN_WINDOWS, (route) =>
+    route.fulfill({ status: 503, json: { error: { code: "unavailable", request_id: "r" } } }),
+  );
   await page.route("**/api/pincodes/*", (route) => {
     const pincode = route.request().url().split("/").pop();
     return route.fulfill({ json: pincode === SERVED.pincode ? SERVED : UNSERVED });
@@ -62,16 +93,29 @@ async function openInvite(page: Page): Promise<void> {
 
 const remembered = (page: Page) => page.evaluate(() => localStorage.getItem("mm_invite"));
 
-async function bookHere(page: Page): Promise<void> {
+/** /book, for the served pincode, at the form. */
+async function openForm(page: Page): Promise<void> {
   await visit(page, "/book");
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
+}
+
+/** The rest of the form, filled in and sent. */
+async function fillAndBook(page: Page): Promise<void> {
   await fillAddress(page);
   await page.getByLabel("Name").fill("Test Visitor");
   await page.getByLabel("Mobile").fill("9810000000");
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
 }
+
+async function bookHere(page: Page): Promise<void> {
+  await openForm(page);
+  await fillAndBook(page);
+}
+
+/** What /book says beside the invite this browser remembers, before it sends it (PS-24). */
+const TOLD = "You have an invite. Whoever invited you is told when you are fitted. That is when the 3 visits land.";
 
 test("the page introduces itself, with no invite and no card", async ({ page }) => {
   await mockApi(page);
@@ -166,43 +210,69 @@ test("offers the consultation and fit in one visit, and says what it holds", asy
   expect(sent).not.toHaveProperty("loss_extent");
 });
 
-// A discount code for the one visit, on /book only (docs/decisions/0108-discount-codes.md), which no board draws.
-test("takes a discount code with the one visit, and says only that a wrong one does not apply", async ({ page }) => {
-  let applies = false;
-  const requests = await mockApi(page);
-  await page.route("**/api/consultation", (route) => {
-    requests.push(route.request());
-    if (applies) {
-      return route.fulfill({ status: 201, json: { ...BOOKED, one_visit: true, discount_code: true } });
-    }
-    const refused = { error: { code: "code_not_applicable", request_id: "test", fields: ["discount_code"] } };
-    return route.fulfill({ status: 422, json: refused });
-  });
+/** Books the one visit on /book with the code typed. */
+async function bookOneVisitWithCode(page: Page, code: string): Promise<void> {
   await visit(page, "/book");
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
   await expect(page.getByLabel("Discount code (optional)")).toHaveCount(0);
   await page.getByRole("group", { name: "What to book" }).getByText("Consultation and fit · three hours").click();
-  await page.getByLabel("Discount code (optional)").fill("wrong1");
+  await page.getByLabel("Discount code (optional)").fill(code);
   await fillAddress(page);
   await page.getByLabel("Name").fill("Test Visitor");
   await page.getByLabel("Mobile").fill("9810000000");
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation and fit" }).click();
-  await expect(
-    page.getByText("That discount code does not apply. Check it, or leave it out to book without it."),
-  ).toBeVisible();
+}
+
+// A discount code for the one visit, on /book only (docs/decisions/0108-discount-codes.md), which no board draws.
+// MON-22 and CP-23: a refused code was said by the button, far below its box, and one that applied was never said.
+test("says a wrong code under its box, and what a right one takes off once booked", async ({ page }) => {
+  let applies = false;
+  const requests = await mockApi(page);
+  await page.route("**/api/consultation", (route) => {
+    requests.push(route.request());
+    if (applies) {
+      const standing = { code: "WEDDNG25", kind: "amount", value: 100_000, cap: null };
+      return route.fulfill({ status: 201, json: { ...BOOKED, one_visit: true, discount_code: standing } });
+    }
+    const refused = { error: { code: "code_not_applicable", request_id: "test", fields: ["discount_code"] } };
+    return route.fulfill({ status: 422, json: refused });
+  });
+  await bookOneVisitWithCode(page, "wrong1");
+  const box = page.getByLabel("Discount code (optional)");
+  const refusal = "That discount code does not apply. Check it, or leave it out to book without it.";
+  await expect(box).toHaveAttribute("aria-invalid", "true");
+  await expect(box).toBeFocused();
+  await expect(box).toHaveAccessibleDescription(/^That discount code does not apply\./);
+  await expect(page.getByText(refusal)).toHaveCount(1);
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
 
   applies = true;
-  await page.getByLabel("Discount code (optional)").fill(" WEDDNG25 ");
+  await box.fill(" WEDDNG25 ");
   await page.getByRole("button", { name: "Book the consultation and fit" }).click();
   await expect(page.getByText("Booking received")).toBeVisible();
+  await expect(page.getByText("Code WEDDNG25: Rs. 1,000 off, taken when you pay.")).toBeVisible();
   const sent = requests.at(-1)?.postDataJSON() as Record<string, unknown>;
   expect(sent).toMatchObject({ one_visit: true, discount_code: "WEDDNG25" });
+});
+
+// CP-23: another booking may take a code's last use between its check and the hold, and the booking stands without it.
+test("says when the code sent could not be applied, and that the booking stands without it", async ({ page }) => {
+  await mockApi(page, { consultation: { status: 201, body: { ...BOOKED, one_visit: true, discount_code: null } } });
+  await bookOneVisitWithCode(page, "weddng25");
+  await expect(page.getByText("Booking received")).toBeVisible();
+  await expect(page.getByText("We could not apply code WEDDNG25. Your booking stands without it.")).toBeVisible();
+});
+
+test("says what a percentage code takes off, up to its cap", async ({ page }) => {
+  const standing = { code: "TENPC", kind: "percent", value: 10, cap: 200_000 };
+  await mockApi(page, { consultation: { status: 201, body: { ...BOOKED, one_visit: true, discount_code: standing } } });
+  await bookOneVisitWithCode(page, "tenpc");
+  await expect(page.getByText("Code TENPC: 10% off, up to Rs. 2,000, taken when you pay.")).toBeVisible();
 });
 
 test("offers the one visit the morning and the afternoon, never the evening, and the consultation all three", async ({
@@ -394,10 +464,14 @@ test("a friend who opened an invite books here with it, and is told the invite's
   // The page itself still shows no card and no invite.
   await expect(page.getByText("sent you this")).toBeHidden();
   await expect(page.locator("img[width='1200']")).toHaveCount(0);
-  await bookHere(page);
+  await openForm(page);
+  // The form says who is told of the fit before it sends the invite.
+  await expect(page.getByText(TOLD)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Book without the invite" })).toBeVisible();
+  await fillAndBook(page);
 
   await expect(page.getByText("Booking received")).toBeVisible();
-  expect(requests[0]?.postDataJSON()).toMatchObject({ invite_code: CODE });
+  expect(requests[0]?.postDataJSON()).toMatchObject({ invite_code: CODE, invite_told: true });
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeVisible();
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
@@ -405,6 +479,21 @@ test("a friend who opened an invite books here with it, and is told the invite's
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
   // Used, it is forgotten: a second booking from this browser carries nothing.
   expect(await remembered(page)).toBeNull();
+});
+
+// PS-24: a friend who would rather their referrer were not told books without the invite.
+test("a friend who opened an invite may book here without it, and the browser forgets it", async ({ page }) => {
+  const requests = await mockApi(page);
+  await openInvite(page);
+  await openForm(page);
+  await page.getByRole("button", { name: "Book without the invite" }).click();
+
+  await expect(page.getByText(TOLD)).toBeHidden();
+  expect(await remembered(page)).toBeNull();
+  await fillAndBook(page);
+  await expect(page.getByText("Booking received")).toBeVisible();
+  expect(requests[0]?.postDataJSON()).not.toHaveProperty("invite_code");
+  expect(requests[0]?.postDataJSON()).not.toHaveProperty("invite_told");
 });
 
 test("a friend who opened an invite joins a waitlist here with it, and is told the invite holds", async ({ page }) => {
@@ -415,13 +504,19 @@ test("a friend who opened an invite joins a waitlist here with it, and is told t
   await visit(page, "/book");
   await page.getByLabel("Pincode").fill(UNSERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
+  await expect(
+    page.getByText(
+      "You have an invite. It stays valid for 12 months after we launch there. Whoever invited you is told when you are fitted.",
+    ),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Join without the invite" })).toBeVisible();
   await page.getByLabel("Name").fill("Test Visitor");
   await page.getByLabel("Mobile").fill("9810000000");
   await page.getByText("You may contact me about this request.").click();
   await page.getByRole("button", { name: "Add me to the list" }).click();
 
   await expect(page.getByRole("heading", { name: "You are on the Bandra list" })).toBeVisible();
-  expect(requests[0]?.postDataJSON()).toMatchObject({ invite_code: CODE });
+  expect(requests[0]?.postDataJSON()).toMatchObject({ invite_code: CODE, invite_told: true });
   await expect(page.getByText(/The invite holds for 12 months after that\./)).toBeVisible();
   expect(await remembered(page)).toBeNull();
 });
@@ -522,13 +617,86 @@ test("an empty submit shows each error, announced, and sends nothing", async ({ 
   expect(requests).toHaveLength(0);
 });
 
-async function bookWith(page: Page): Promise<void> {
-  await fillAddress(page);
-  await page.getByLabel("Name").fill("Test Visitor");
-  await page.getByLabel("Mobile").fill("9810000000");
-  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
-  await page.getByRole("button", { name: "Book the consultation" }).click();
-}
+// BK-26: every day and window was drawn open, so a full one failed only after the whole form was filled in. The
+// strip's first two days are Saturday 3 and Sunday 4 October.
+test("draws full days and windows closed, and starts on the first open one", async ({ page }) => {
+  await page.clock.setFixedTime(NOON_2_OCTOBER);
+  const requests = await mockApi(page);
+  const asked = await answerOpen(page, () =>
+    openDays({ "2026-10-03": FULL, "2026-10-04": { morning: false, afternoon: true, evening: true } }),
+  );
+  await openForm(page);
+
+  const days = page.getByRole("group", { name: "Pick a date" }).getByRole("radio");
+  await expect(days.nth(0)).toBeDisabled();
+  await expect(days.nth(1)).toBeChecked();
+  const windows = page.getByRole("group", { name: "Window" });
+  await expect(windows.getByRole("radio", { name: /^Morning/ })).toBeDisabled();
+  await expect(windows.getByText("Full", { exact: true })).toBeVisible();
+  await expect(windows.getByRole("radio", { name: /^Afternoon/ })).toBeChecked();
+  expect(asked[0]?.searchParams.toString()).toBe("pincode=122018&plan=consultation");
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(results.violations).toEqual([]);
+
+  await fillAndBook(page);
+  await expect(page.getByText("Booking received")).toBeVisible();
+  expect(requests[0]?.postDataJSON()).toMatchObject({ date: "2026-10-04", window: "afternoon" });
+});
+
+test("asks again for one visit, whose three hours may not fit where a consultation does", async ({ page }) => {
+  await page.clock.setFixedTime(NOON_2_OCTOBER);
+  await mockApi(page);
+  const asked = await answerOpen(page, (plan) =>
+    plan === "one_visit" ? openDays({ "2026-10-03": FULL }) : openDays(),
+  );
+  await openForm(page);
+  const days = page.getByRole("group", { name: "Pick a date" }).getByRole("radio");
+  await expect(days.nth(0)).toBeChecked();
+
+  await page.getByRole("group", { name: "What to book" }).getByText("Consultation and fit · three hours").click();
+
+  await expect(days.nth(0)).toBeDisabled();
+  await expect(days.nth(1)).toBeChecked();
+  expect(asked.map((url) => url.searchParams.get("plan"))).toEqual(["consultation", "one_visit"]);
+});
+
+test("a window found full on booking says so, and the strip is drawn afresh", async ({ page }) => {
+  await page.clock.setFixedTime(NOON_2_OCTOBER);
+  await mockApi(page, { consultation: { status: 409, body: { error: { code: "taken", request_id: "r" } } } });
+  let calls = 0;
+  await answerOpen(page, () => {
+    calls += 1;
+    return calls === 1 ? openDays() : openDays({ "2026-10-03": { morning: false, afternoon: true, evening: true } });
+  });
+  await openForm(page);
+  const windows = page.getByRole("group", { name: "Window" });
+  await expect(windows.getByRole("radio", { name: /^Morning/ })).toBeChecked();
+
+  await fillAndBook(page);
+
+  await expect(page.getByText("That window is full. Please pick another.")).toBeVisible();
+  await expect(windows.getByRole("radio", { name: /^Morning/ })).toBeDisabled();
+  await expect(windows.getByRole("radio", { name: /^Afternoon/ })).toBeChecked();
+  expect(calls).toBe(2);
+});
+
+test("a fortnight with nothing open says so, and offers WhatsApp", async ({ page }) => {
+  await page.clock.setFixedTime(NOON_2_OCTOBER);
+  await mockApi(page);
+  await answerOpen(page, () => openDays({}, FULL));
+  await openForm(page);
+
+  await expect(page.getByText("Fully booked for the next two weeks.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Message us on WhatsApp for the next opening" })).toHaveAttribute(
+    "href",
+    /^https:\/\/wa\.me\/91\d{10}$/,
+  );
+  const days = page.getByRole("group", { name: "Pick a date" }).getByRole("radio");
+  await expect(days).toHaveCount(14);
+  await expect(page.getByRole("group", { name: "Pick a date" }).getByRole("radio", { disabled: false })).toHaveCount(0);
+});
 
 // BK-60, UX-38: Back after the pincode's answer, or after the confirmation, left /book and lost everything typed.
 test("Back steps back through the page, and Forward returns to the confirmation", async ({ page }) => {
@@ -545,7 +713,7 @@ test("Back steps back through the page, and Forward returns to the confirmation"
   await page.goForward();
   await expect(page.getByRole("heading", { name: "We come to Sector 65" })).toBeFocused();
 
-  await bookWith(page);
+  await fillAndBook(page);
   await expect(page.getByText("Booking received")).toBeVisible();
   await page.goBack();
   await expect(page.getByRole("heading", { name: "We come to Sector 65" })).toBeVisible();
@@ -589,7 +757,7 @@ test("the address asks for the street once, and folds the floor, tower and landm
   await expect(address.getByRole("button", { name: "Add floor, tower or landmark" })).toHaveCount(0);
   await address.getByLabel("Tower or block (optional)").fill("Tower C");
 
-  await bookWith(page);
+  await fillAndBook(page);
   await expect(page.getByText("Booking received")).toBeVisible();
   expect((requests[0]?.postDataJSON() as { address: Record<string, unknown> }).address).toMatchObject({
     tower: "Tower C",

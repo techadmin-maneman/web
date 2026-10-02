@@ -64,6 +64,10 @@ The site shows five consent notices, each the backend's, in `src/config/notices.
 - **Once counsel approves a notice,** add its version to `APPROVED_NOTICES` in `site.ts`.
 - **To change the wording,** add a new version in `src/config/notices.ts`, point `CURRENT_NOTICE` at it, and approve that version. A published version is never edited.
 
+The privacy and terms pages (`legalPages` in `site.ts`) carry `approved` too. Their Phase 2 wording is a draft, so production's build refuses until counsel approves it.
+
+- **Once counsel approves a page,** set its `approved` to `true`. A paragraph writes the business number as `{whatsapp}`, which the page shows as a WhatsApp link.
+
 ## Changing a preset label
 
 The six looks are the backend's presets, in `src/config/presets.ts`, in its order. The page shows each label split at its first " · ": "Full density · Natural hairline · short" becomes "Full density" over "Natural hairline · short". Change the label there. The API works on the preset's `id`, so a label change is safe.

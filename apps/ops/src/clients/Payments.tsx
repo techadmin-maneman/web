@@ -15,6 +15,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { api, type ClientInvite, type ClientPayment, type ClientRecord, type CreditAdjustment } from "../api.ts";
 import { clients } from "../content.ts";
+import { useAccess } from "../lib/access.ts";
 import styles from "./clients.module.css";
 import { Invite, type InviteNews } from "./Invite.tsx";
 
@@ -36,10 +37,22 @@ function whatOf(entry: ClientPayment): string {
   return copy.visit(type, fullDate(entry.visit.date));
 }
 
+/** The discount code a visit's payment was made with, and what it took off before GST; null for none. */
+function codeOf(entry: ClientPayment): string | null {
+  if (entry.kind === "refund" || entry.discount_code === null) return null;
+  const { code, amount_off: off } = entry.discount_code;
+  return copy.code(clients.visits.code.applied(code, off === null ? null : rupees(off)));
+}
+
 function stateOf(entry: ClientPayment): string {
   const state = entry.kind === "refund" ? copy.refundStates[entry.status] : copy.paymentStates[entry.status];
   const reference = entry.kind === "payment" && entry.reference !== null ? ` · ${copy.reference(entry.reference)}` : "";
   return `${state ?? clients.unknown}${reference}`;
+}
+
+function CodeLine({ entry }: { entry: ClientPayment }) {
+  const code = codeOf(entry);
+  return code === null ? null : <span className={styles.closedLine}>{code}</span>;
 }
 
 function PaymentTable({ payments }: { payments: readonly ClientPayment[] }) {
@@ -59,7 +72,10 @@ function PaymentTable({ payments }: { payments: readonly ClientPayment[] }) {
         {payments.map((entry) => (
           <tr key={entry.id}>
             <td className={styles.cell}>{fullDate(entry.date)}</td>
-            <td className={styles.cell}>{whatOf(entry)}</td>
+            <td className={styles.cell}>
+              {whatOf(entry)}
+              <CodeLine entry={entry} />
+            </td>
             <td className={styles.figureCell}>{rupees(entry.amount)}</td>
             <td className={styles.quietCell}>{stateOf(entry)}</td>
           </tr>
@@ -95,6 +111,7 @@ function CreditForm({
   const [typed, setTyped] = useState("");
   const [reason, setReason] = useState<Reason | "">("");
   const [adjusting, setAdjusting] = useState<Adjusting>({ step: "open" });
+  const mayAdjust = useAccess().mayCall("POST /api/clients/{id}/credits");
   const visits = visitsOf(typed);
   const sending = adjusting.step === "sending";
   const expiry = credits?.earliest_expiry ?? null;
@@ -126,71 +143,73 @@ function CreditForm({
           </dd>
         </div>
       </dl>
-      <form
-        className={styles.creditForm}
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (visits !== null && reason !== "") void send({ visits, reason });
-        }}
-      >
-        <label className={styles.fieldLabel} htmlFor="credit-visits">
-          {creditCopy.change}
-        </label>
-        <input
-          id="credit-visits"
-          className={styles.numberField}
-          type="text"
-          inputMode="numeric"
-          autoComplete="off"
-          aria-describedby="credit-visits-hint"
-          value={typed}
-          disabled={sending}
-          onChange={(event) => {
-            setTyped(event.target.value);
+      {mayAdjust && (
+        <form
+          className={styles.creditForm}
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (visits !== null && reason !== "") void send({ visits, reason });
           }}
-        />
-        <p className={styles.findHint} id="credit-visits-hint">
-          {creditCopy.changeHint}
-        </p>
-        <fieldset className={styles.reasons} disabled={sending}>
-          <legend className={styles.fieldLabel}>{creditCopy.reason}</legend>
-          {creditCopy.reasons.map((each) => (
-            <label className={styles.reasonOption} key={each.reason}>
-              <input
-                className={styles.radio}
-                type="radio"
-                name="credit-reason"
-                value={each.reason}
-                checked={reason === each.reason}
-                onChange={() => {
-                  setReason(each.reason);
-                }}
-              />
-              <span>{each.label}</span>
-            </label>
-          ))}
-        </fieldset>
-        <p className={styles.note}>{creditCopy.note}</p>
-        <Button
-          variant="primary"
-          size="small"
-          className={styles.primary}
-          type="submit"
-          disabled={sending || visits === null || reason === ""}
         >
-          {sending ? creditCopy.saving : creditCopy.save}
-        </Button>
-        {adjusting.step === "done" && (
-          <p className={styles.done} role="status">
-            {creditCopy.saved(adjusting.visits)}
+          <label className={styles.fieldLabel} htmlFor="credit-visits">
+            {creditCopy.change}
+          </label>
+          <input
+            id="credit-visits"
+            className={styles.numberField}
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            aria-describedby="credit-visits-hint"
+            value={typed}
+            disabled={sending}
+            onChange={(event) => {
+              setTyped(event.target.value);
+            }}
+          />
+          <p className={styles.findHint} id="credit-visits-hint">
+            {creditCopy.changeHint}
           </p>
-        )}
-        {adjusting.step === "failed" && (
-          <p className={styles.error} role="alert">
-            {creditCopy.errors[adjusting.code] ?? creditCopy.errors.unknown}
-          </p>
-        )}
-      </form>
+          <fieldset className={styles.reasons} disabled={sending}>
+            <legend className={styles.fieldLabel}>{creditCopy.reason}</legend>
+            {creditCopy.reasons.map((each) => (
+              <label className={styles.reasonOption} key={each.reason}>
+                <input
+                  className={styles.radio}
+                  type="radio"
+                  name="credit-reason"
+                  value={each.reason}
+                  checked={reason === each.reason}
+                  onChange={() => {
+                    setReason(each.reason);
+                  }}
+                />
+                <span>{each.label}</span>
+              </label>
+            ))}
+          </fieldset>
+          <p className={styles.note}>{creditCopy.note}</p>
+          <Button
+            variant="primary"
+            size="small"
+            className={styles.primary}
+            type="submit"
+            disabled={sending || visits === null || reason === ""}
+          >
+            {sending ? creditCopy.saving : creditCopy.save}
+          </Button>
+          {adjusting.step === "done" && (
+            <p className={styles.done} role="status">
+              {creditCopy.saved(adjusting.visits)}
+            </p>
+          )}
+          {adjusting.step === "failed" && (
+            <p className={styles.error} role="alert">
+              {creditCopy.errors[adjusting.code] ?? creditCopy.errors.unknown}
+            </p>
+          )}
+        </form>
+      )}
     </section>
   );
 }

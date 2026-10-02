@@ -134,6 +134,25 @@ describe("GET /api/availability", () => {
     });
   });
 
+  it("leaves the evening off a first fit, which cannot start that late, and names the last day to ask for", async () => {
+    const lead = await client(true);
+    const ask = async (from: string) =>
+      (
+        await request(app, `/api/availability?type=first_fit&tier=standard&from=${from}`, {
+          headers: { Cookie: lead.cookie },
+        })
+      ).json<{ last: string; days: { date: string; windows: { window: string }[] }[] }>();
+    const first = await ask("2026-09-22");
+    expect(first.days[0]?.windows.map((each) => each.window)).toEqual(["morning", "afternoon"]);
+    // Forty-five days from tomorrow.
+    expect(first.last).toBe("2026-11-05");
+
+    // "Later dates" asks from the day after the last shown; the strip still ends on the last day.
+    const later = await ask("2026-11-01");
+    expect(later.days[0]?.date).toBe("2026-10-23");
+    expect(later.days.at(-1)?.date).toBe("2026-11-05");
+  });
+
   it("offers another technician where the regular one is busy, and marks a window full where both are", async () => {
     const rohit = await client();
     await visit(null, "service", "scheduled", "2026-09-23T06:30:00.000Z", IMRAN); // Wednesday, 12 noon
@@ -186,6 +205,8 @@ describe("POST /api/holds", () => {
       change_notice_hours: 24,
       late_change_charge: "visit",
       expires_at: "2026-09-21T06:40:00.000Z",
+      // A payment still counts for the two minutes' grace after the ten.
+      pay_by: "2026-09-21T06:42:00.000Z",
       state: "held",
     });
   });
@@ -226,7 +247,10 @@ describe("POST /api/holds", () => {
     await paymentHold({ countdown: 15, grace: 5 });
     const [first, second] = [await client(), await client()];
     const held = await hold(first, TUESDAY_AFTERNOON);
-    expect(await held.json()).toMatchObject({ expires_at: "2026-09-21T06:45:00.000Z" });
+    expect(await held.json()).toMatchObject({
+      expires_at: "2026-09-21T06:45:00.000Z",
+      pay_by: "2026-09-21T06:50:00.000Z",
+    });
     await hold(second, TUESDAY_AFTERNOON);
     const third = await client();
     expect((await hold(third, TUESDAY_AFTERNOON, later(19))).status).toBe(409);
@@ -477,7 +501,10 @@ describe("choosing a service", () => {
     const offered = await availabilityOf(lead, "type=first_fit&tier=premium");
     expect(offered.service).toEqual({ tier: "premium", name: "Premium first fit", minutes: 300 });
     expect(offered.price.amount_ex_gst).toBe(4_000_000);
-    expect(offered.days[0]?.windows.map((window) => window.with)).toEqual(["regular", null, null]);
+    // A window it cannot start in is left out, rather than offered as full.
+    expect(offered.days[0]?.windows.map(({ window, with: who }) => ({ window, with: who }))).toEqual([
+      { window: "morning", with: "regular" },
+    ]);
 
     const held = await hold(lead, { type: "first_fit", tier: "premium", date: "2026-09-22", window: "morning" });
     expect(held.status).toBe(201);
