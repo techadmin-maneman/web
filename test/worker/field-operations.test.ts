@@ -1063,7 +1063,6 @@ describe("closing the job", () => {
     expect(deps.alerts).toEqual([expect.stringMatching(/did not reach FSM after 5 attempts/)]);
   });
 
-  // FLD-01: on 2 October each attempt attached one more photograph and still counted, so a set of five never landed.
   it("does not count an attempt that attached some of the photographs, and lands the rest without duplicates", async () => {
     await beforePhotoHeld("front");
     await beforePhotoHeld("left");

@@ -247,8 +247,12 @@ describe("FSM: a consumable added as a part", () => {
     expect(await provider.createPart("Solvent")).toBe("part-7");
   });
 
-  it("fails a part FSM answered without its ID, so the next hour looks for it by name", async () => {
-    const { provider } = fsm({ [`${FSM_API}/Service_And_Parts`]: () => json({ data: [{ code: "SUCCESS" }] }, 201) });
+  it.each([
+    ["no ID in its record", { data: [{ code: "SUCCESS" }] }],
+    ["no records at all", { data: {} }],
+    ["records under two other names", { data: { Products: [{ id: "part-7" }], Assets: [{ id: "asset-7" }] } }],
+  ])("fails a part FSM answered with %s, so the next hour looks for it by name", async (_, answer) => {
+    const { provider } = fsm({ [`${FSM_API}/Service_And_Parts`]: () => json(answer, 201) });
     await expect(provider.createPart("Solvent")).rejects.toThrow(/NO_ID: create_part answered without the new ID/);
   });
 

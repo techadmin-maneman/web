@@ -136,10 +136,7 @@ export function fsmAttachmentRecord(overrides: Record<string, unknown> = {}) {
   };
 }
 
-/**
- * What FSM answers a create, with HTTP 200: the new record's ID under details, and no `id` beside it. An attach on
- * staging answered so on 2 October 2026; the trial found "a create answers data[0].details.id".
- */
+/** What FSM answers a create, with HTTP 200: the new record's ID under `details`, and no `id` beside it. */
 export function fsmCreateAnswer(id = "8229000000123001") {
   return {
     data: [

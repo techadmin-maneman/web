@@ -26,7 +26,7 @@
 //   PUT  /fsm/v1/Service_Appointments/{id}/actions/blueprint     start, close or terminate, with its mandatory note
 //   POST /fsm/v1/files                                           multipart; answers { data: { file_id } }
 //   POST /fsm/v1/Service_Appointments/{id}/Attachments           attaches an uploaded file; answers
-//        { data: [{ code, details: { id }, message, status }] } (staging, 2 October 2026)
+//        { data: [{ code, details: { id }, message, status }] }, with no data[0].id
 //   GET  /fsm/v1/Work_Orders/{id}                                { data: [work order with its service lines] }
 //   POST /fsm/v1/Invoices                                        the work order, the line IDs and $finance_data;
 //        answers Books' ID under data.Invoices[0].finance_data.Invoice_Id
@@ -209,9 +209,9 @@ const Created = z.object({
 function recordsOfModule(data: Record<string, NewRecord[]>, module: string): NewRecord[] {
   const named = data[module];
   if (named !== undefined) return named;
-  const lists = Object.values(data);
-  if (lists.length !== 1) return [];
-  return lists[0] ?? [];
+  const [only, ...others] = Object.values(data);
+  if (only === undefined || others.length > 0) return [];
+  return only;
 }
 
 /**
