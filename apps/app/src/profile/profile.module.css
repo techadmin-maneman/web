@@ -237,6 +237,13 @@ textarea.input {
   color: var(--text-muted);
 }
 
+.consequence {
+  margin: var(--sp-10) 0 0;
+  font-size: var(--fs-15);
+  line-height: var(--lh-155);
+  color: var(--text-soft);
+}
+
 /*
  * The switch, square as the design draws it: ink with a paper knob when on, white with a line knob when off,
  * edged in --paper-control (WCAG 1.4.11). Drawn 26 px tall, it answers a tap 44 px tall, the brief's smallest target.
