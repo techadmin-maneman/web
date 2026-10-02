@@ -137,10 +137,8 @@ test.describe("home sections", () => {
   test("the hero's opening line is read whole, once, over the footage", async ({ page }) => {
     await page.goto("/");
     const line = page.locator('[data-section="hero"] .sequence');
-    await expect(line).toHaveText("Undetectable. 100% Real Hair. At Home. Be the Main Man, Again.");
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-      "Transformation and confidence, delivered in one visit.",
-    );
+    await expect(line).toHaveText("Natural up close. 100% real human hair. Fitted at home. Be the Main Man again.");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("A full head of hair, fitted at home.");
   });
 
   // UX-20, PLAT-65: every phone downloaded the 2.3 MB film.
@@ -203,9 +201,12 @@ test.describe("home sections", () => {
     await expect(page.getByRole("link", { name: "Start the try-on" })).toHaveAttribute("href", "/try");
   });
 
-  test("how it works: four numbered steps", async ({ page }) => {
+  // CP-45: nothing books a phone call, so no step promises one.
+  test("how it works: three numbered steps, from the consultation at home", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator('[data-section="how"] ol > li')).toHaveCount(4);
+    const steps = page.locator('[data-section="how"] ol > li');
+    await expect(steps).toHaveCount(3);
+    await expect(steps.locator("h3")).toHaveText(["Consultation at home", "The fit", "Monthly service"]);
   });
 
   test("technicians, the range and testimonials: three, four and three cards", async ({ page }) => {

@@ -13,7 +13,7 @@ export const DESIGN_PLACEHOLDERS = {
   whatPlate: ["membrane-on-skin.jpg"],
   norwoodPhotos: ["nw-1.jpg", "nw-2.jpg", "nw-3.jpg", "nw-4.jpg", "nw-5.jpg", "nw-6.jpg", "nw-7.jpg"],
   teaserPair: ["ba-before.jpg", "ba-after.jpg"],
-  stepPhotos: ["step-01-call.jpg", "step-02-template.jpg", "step-03-fit.jpg", "step-04-kit.jpg"],
+  stepPhotos: ["step-02-template.jpg", "step-03-fit.jpg", "step-04-kit.jpg"],
   basePhotos: ["base-monofilament.jpg", "base-thinskin.jpg"],
   technicians: ["Imran Qureshi", "Sandeep Rawat", "Vikas Chauhan", "tech-1.jpg", "tech-2.jpg", "tech-3.jpg"],
   testimonials: [

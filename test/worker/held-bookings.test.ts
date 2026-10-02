@@ -697,6 +697,26 @@ describe("ops linking the visit they booked in FSM by hand", () => {
     expect(claims).toEqual({ left: 0 });
   });
 
+  it("spends the credit of a booking a credit covers on the visit ops booked for it, once", async () => {
+    await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "ops", sourceId: "o1", now: NOW }).run();
+    const held = await (
+      await asClient(PERSON, "/api/holds", {
+        method: "POST",
+        body: { type: "service", date: "2026-09-24", window: "afternoon" },
+      })
+    ).json<{ id: string }>();
+    await asClient(PERSON, "/api/bookings", { method: "POST", body: { hold_id: held.id } });
+    await refusedFiveTimes(held.id);
+    await mirrored();
+
+    const deps = fakeDependencies({ now: () => afterHeld(2 * HOUR) });
+    expect((await link(deps, held.id).answer).status).toBe(200);
+    expect((await link(deps, held.id).answer).status).toBe(404);
+    const redeems = await env.DB.prepare("SELECT source_id FROM credit_ledger WHERE kind = 'redeem'").all();
+    expect(redeems.results).toEqual([{ source_id: HAND_MADE }]);
+    expect(deps.alerts.filter((alert) => alert.includes("had none left"))).toEqual([]);
+  });
+
   it("waits while a try is writing the booking to FSM, so nothing is booked twice", async () => {
     const { holdId } = await paidHold();
     await refusedFiveTimes(holdId);

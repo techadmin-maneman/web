@@ -37,7 +37,7 @@ import { paidAtTheVisit, type OneVisitState } from "../policy/one-visit.ts";
 import { unitsFor } from "../policy/visit-length.ts";
 import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
 import { latestArrival } from "./check-ins.ts";
-import type { AppointmentStatus } from "./fsm-mirror.ts";
+import type { AppointmentStatus } from "./visit-status.ts";
 import { latestProfile, profileTakenAt, type HairProfile } from "./hair-profiles.ts";
 import { EVIDENCE_MESSAGE } from "./no-shows.ts";
 import { piecesOf, type Piece } from "./pieces.ts";

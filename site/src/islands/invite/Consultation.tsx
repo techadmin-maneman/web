@@ -17,7 +17,14 @@ import { codeInPath, hairSystemsInPage } from "./page.ts";
 import { mobileToSend, useTurnstileForm } from "./useTurnstileForm.ts";
 
 type BookingWindow = ReferralConsultation["window"];
-type Plan = "consultation" | "one_visit";
+export type Plan = "consultation" | "one_visit";
+
+interface ConsultationProps extends FormProps {
+  /** What the form books, which the page's heading follows. */
+  plan: Plan;
+  onPlanChange: (plan: Plan) => void;
+  onBooked: (booking: Booking) => void;
+}
 
 /** Whether a consultation and fit in one visit can start in a window: the morning or the afternoon. */
 const oneVisitStartsIn = (window: BookingWindow): boolean => (ONE_VISIT_WINDOWS as readonly string[]).includes(window);
@@ -32,9 +39,9 @@ const DAYS = 14;
  * afternoon, paid for once the client is fitted (ADR 0105), and, on the site's own page, with a discount code that
  * comes off the hair system's price when they pay (ADR 0108).
  */
-export function Consultation(props: FormProps & { onBooked: (booking: Booking) => void }) {
+export function Consultation(props: ConsultationProps) {
   const form = useTurnstileForm(props.turnstileSiteKey);
-  const [plan, setPlan] = useState<Plan>("consultation");
+  const { plan } = props;
   // Offered while ops offer a hair system to fit. A page with no word of it offers it, and the API refuses it if not.
   const [oneVisitOffered] = useState(() => hairSystemsInPage() !== false);
   const [date, setDate] = useState(indiaTomorrow());
@@ -97,16 +104,20 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
   );
 
   function choosePlan(chosen: Plan) {
-    setPlan(chosen);
+    props.onPlanChange(chosen);
     // The one visit does not start in the evening: a window it cannot take is not kept for it.
     if (chosen === "one_visit" && !oneVisitStartsIn(window)) setWindow("morning");
   }
   return (
     <form class={styles.form} onSubmit={submit} noValidate>
       <div>
-        {/* The site's own page is already headed with this; the invite's is not. */}
-        {props.invited && <h2 class={styles.formTitle}>{consultation.title}</h2>}
-        <p class={styles.formBody}>{consultation.body}</p>
+        {/* The site's own page is already headed and introduced; the invite's is not. */}
+        {props.invited && (
+          <>
+            <h2 class={styles.formTitle}>{plan === "one_visit" ? consultation.titleOneVisit : consultation.title}</h2>
+            <p class={styles.formBody}>{consultation.body}</p>
+          </>
+        )}
         <ForPincode text={fill(consultation.forPincode, { pincode })} onChange={props.onChangePincode} />
       </div>
 
