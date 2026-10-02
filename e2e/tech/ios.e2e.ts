@@ -16,7 +16,7 @@
 // camera's fake device is Chromium's alone.
 
 import { expect, test } from "../support.ts";
-import { fakeTech, JOB_ID } from "./fixtures.ts";
+import { fakeTech, JOB_ID, ONE_VISIT_CHECKLIST, pageScrolls } from "./fixtures.ts";
 
 /** A 401 with no session: what an installed iOS app's own cookie jar produces on its first call. */
 const noSession = { status: 401, json: { error: { code: "session_required", request_id: "test" } } };
@@ -97,6 +97,27 @@ test("draws its screens without one refusal from its own security policy", async
   await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
 
   expect(refused).toEqual([]);
+});
+
+test("keeps a long checklist's action at the foot of the screen, with its head in view", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.type = "first_fit";
+  fake.oneVisit = true;
+  fake.checklist = ONE_VISIT_CHECKLIST;
+  const halfAnHourAgo = new Date(Date.now() - 30 * 60_000).toISOString();
+  fake.progress = {
+    ...fake.progress,
+    checked_in_at: halfAnHourAgo,
+    started_at: halfAnHourAgo,
+    steps_done: ["before_photos"],
+  };
+  await page.goto(`/jobs/${JOB_ID}/checklist`);
+
+  await expect(page.getByRole("heading", { level: 1, name: "Consultation and fit checklist" })).toBeInViewport({
+    ratio: 1,
+  });
+  await expect(page.getByRole("button", { name: "Finish the list to continue" })).toBeInViewport({ ratio: 1 });
+  expect(await pageScrolls(page)).toBe(false);
 });
 
 test("opens on an engine that offers no StorageManager at all", async ({ page }) => {

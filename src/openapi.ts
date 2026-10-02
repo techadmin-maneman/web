@@ -36,6 +36,7 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
     erasureSecret: "",
     zoho: null,
     zohoFsm: null,
+    zohoBooks: null,
     razorpay: null,
     geocode: { apiKey: null, dailyCeiling: 0 },
     access: null,

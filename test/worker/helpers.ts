@@ -37,6 +37,7 @@ export const LOCAL_SETTINGS: Settings = {
   erasureSecret: "test-erasure-secret-that-is-long-enough",
   zoho: null,
   zohoFsm: null,
+  zohoBooks: null,
   razorpay: null,
   geocode: { apiKey: null, dailyCeiling: 200 },
   access: null,
