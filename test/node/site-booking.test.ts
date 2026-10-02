@@ -42,7 +42,7 @@ describe("attribution", () => {
   });
 });
 
-// The owner's decision of 2 October 2026: the confirmation opens the app with the number typed filled in.
+// The confirmation opens the app with the number typed filled in.
 describe("the link into the client app", () => {
   const APP = "https://app-staging.maneman.in";
 

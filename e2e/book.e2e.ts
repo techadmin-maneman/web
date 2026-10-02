@@ -273,8 +273,8 @@ test("a booking without the address is stopped at the form, each part it needs m
   });
 });
 
-// PS-06 and the owner's decision of 2 October 2026: whoever typed the number may not be its owner, so every number
-// is answered alike. The details go to the number on WhatsApp, and the app opens with the number filled in.
+// PS-06: whoever typed the number may not be its owner, so every number is answered alike. The details go to the
+// number on WhatsApp, and the app opens with the number filled in.
 test("every number is sent to WhatsApp, and offered the app with the number filled in", async ({ page }) => {
   await mockApi(page);
   await visit(page, "/book");

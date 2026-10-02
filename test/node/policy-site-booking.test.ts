@@ -11,9 +11,7 @@ describe("booking from the site", () => {
 
   it(RULES[1], () => {
     expect(notBookedFromSite({ hasConsultationToCome: false, mayBookConsultation: true })).toBeNull();
-    expect(notBookedFromSite({ hasConsultationToCome: true, mayBookConsultation: false })).toBe(
-      "consultation_exists",
-    );
+    expect(notBookedFromSite({ hasConsultationToCome: true, mayBookConsultation: false })).toBe("consultation_exists");
     expect(notBookedFromSite({ hasConsultationToCome: false, mayBookConsultation: false })).toBe("book_in_app");
   });
 });

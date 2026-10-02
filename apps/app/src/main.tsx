@@ -1,9 +1,17 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App.tsx";
-import { takeLinkedMobile } from "./login/linked-mobile.ts";
+import { carriesMobile, mobileInLink } from "./login/linked-mobile.ts";
 import { ErrorBoundary } from "./states/ErrorBoundary.tsx";
 import "./styles/global.css";
+
+/** The number the app was opened with, taken off the address at once so it is not left in the browser's history. */
+function takeLinkedMobile(): string {
+  const { hash, pathname, search } = window.location;
+  if (!carriesMobile(hash)) return "";
+  window.history.replaceState(window.history.state, "", `${pathname}${search}`);
+  return mobileInLink(hash);
+}
 
 const root = document.getElementById("root");
 if (root === null) throw new Error("index.html has no #root");

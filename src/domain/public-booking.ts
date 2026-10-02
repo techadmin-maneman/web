@@ -557,8 +557,8 @@ async function newNumbersState(
   if (visit === null) return "requested";
   const length = { minutes: visit.service.minutes };
   const [day] = await availability(form.db, personId, length, request.date, 1, form.now);
-  const offer = day?.windows.find((window) => window.window === request.window);
-  if (offer === undefined || offer.with === null) return "taken";
+  const whoWouldCome = day?.windows.find((window) => window.window === request.window)?.with ?? null;
+  if (whoWouldCome === null) return "taken";
   return "booked";
 }
 

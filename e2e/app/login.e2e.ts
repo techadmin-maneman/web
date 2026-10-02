@@ -167,7 +167,7 @@ test("a number with no booking sees the same screen, and no code opens it", asyn
   await expect(page.getByRole("alert")).toHaveText("That code did not match. Four attempts left.");
 });
 
-// The site's booking confirmation opens the app with the number typed there (the owner's decision of 2 October 2026).
+// The site's booking confirmation opens the app with the number typed there.
 test("a link from the site's booking fills in its number, and the code is still asked for", async ({ page }) => {
   const mobile = randomMobile();
   await page.goto(`/#mobile=${mobile}`);

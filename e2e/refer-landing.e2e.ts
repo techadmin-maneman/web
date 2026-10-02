@@ -533,8 +533,8 @@ test("an invite that has expired for this friend says so once the booking is mad
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeHidden();
 });
 
-// PS-06 and the owner's decision of 2 October 2026: the booking ends the same for every number, sending its details to
-// the number on WhatsApp, and opening the client app with the number filled in; the code is still asked for there.
+// PS-06: the booking ends the same for every number, sending its details to the number on WhatsApp, and opening the
+// client app with the number filled in; the code is still asked for there.
 test("a booking sends the details to WhatsApp, and opens the app with the number filled in", async ({ page }) => {
   await mockApi(page);
   await visit(page, `/r/${CODE}`);
