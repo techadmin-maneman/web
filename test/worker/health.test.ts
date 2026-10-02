@@ -1,8 +1,10 @@
 import { env, exports } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
 import { REQUEST_ID_HEADER } from "../../src/http/context.ts";
+import { createLogger } from "../../src/log.ts";
 import { HealthSchema } from "../../src/routes/health.ts";
-import { appFor, captureLogs, markDatabase, request } from "./helpers.ts";
+import { runCronJobs } from "../../src/scheduled/cron.ts";
+import { LOCAL_CONFIG, NOW, appFor, captureLogs, fakeDependencies, markDatabase, request } from "./helpers.ts";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
@@ -57,6 +59,29 @@ describe("GET /api/health", () => {
     expect(res.status).toBe(503);
     expect(HealthSchema.parse(await res.json())).toMatchObject({ d1: "unreachable" });
     expect(logs.lines().some((line) => line.event === "health_unavailable")).toBe(true);
+  });
+
+  // PLAT-42: a cron that never ran looked the same as one that never failed.
+  it("says when the cron last finished a run, which the status does not depend on", async () => {
+    await markDatabase();
+    const before = HealthSchema.parse(await (await request(appFor(), "/api/health")).json());
+    expect(before).toMatchObject({ status: "ok", cron_completed_at: null });
+
+    await runCronJobs([], { env, deps: fakeDependencies(), config: LOCAL_CONFIG, log: createLogger() });
+
+    const after = HealthSchema.parse(await (await request(appFor(), "/api/health")).json());
+    expect(after).toMatchObject({ status: "ok", cron_completed_at: NOW.toISOString() });
+  });
+
+  it("stays healthy when the cron's record cannot be read", async () => {
+    captureLogs();
+    await markDatabase();
+    await env.DB.exec("DROP TABLE cron_runs");
+
+    const res = await request(appFor(), "/api/health");
+
+    expect(res.status).toBe(200);
+    expect(HealthSchema.parse(await res.json())).toMatchObject({ status: "ok", cron_completed_at: null });
   });
 
   it("reports the upload tag when the version has one", async () => {
