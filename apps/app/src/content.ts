@@ -262,6 +262,10 @@ export const visits = {
   prepaid: "Prepaid",
   // PLACEHOLDER: a visit that is not this client's, or no longer exists.
   notFound: "We could not find this visit.",
+  // PLACEHOLDER: offline, the visits are not kept on the phone.
+  offline: "Your visits will load when you are back online.",
+  // PLACEHOLDER
+  cancelled: "Cancelled",
   /*
    * PLACEHOLDER: the client's own record, derived from their visits and
    * payments (src/domain/client-history.ts). No board draws it. Board B1 writes
@@ -286,6 +290,8 @@ export const visits = {
   },
   detail: {
     back: "Back to visits",
+    // PLACEHOLDER
+    cancelled: "This visit was cancelled.",
     photographs: "Photographs from this visit",
     technician: "Technician",
     duration: "Duration",
@@ -372,11 +378,16 @@ export const booking = {
     available: "Available",
     full: "Full",
     continue: "Continue",
+    // PLACEHOLDER: no board draws the day offered being full, nor the days past the first fortnight.
+    offeredFull: (day: string) => `${day} is full. We have picked the next open day.`,
+    offeredFullPickAnother: (day: string) => `${day} is full. Pick another day.`,
+    later: "Later dates",
+    laterFailed: "Those dates did not load. Please try again.",
   },
   window: {
     title: "Pick a window",
     full: "Full",
-    regularFree: (name: string) => `${name} free`,
+    withRegular: (name: string) => `With ${name}`,
     another: "Another technician",
     regularLine: (name: string) => `${name}, your regular technician, is free.`,
     // PLACEHOLDER: the design draws the window step with the regular technician free.
@@ -924,6 +935,8 @@ export const profile = {
   },
   given: (date: string) => `Given ${date}`,
   notGiven: "Not given",
+  // PLACEHOLDER: what switching off visit messages means, since ops then call instead.
+  visitsOff: "No visit updates on WhatsApp. We will call you about any change.",
   // PLACEHOLDER: a switch the API did not answer stays as it was.
   switchFailed: "That did not go through, so nothing has changed. Please try again.",
   /**
@@ -1003,7 +1016,11 @@ export const profile = {
 /** Board B3: loading, offline and error. */
 export const states = {
   loading: "Loading",
+  /** On Home, which the phone keeps. */
   offline: "No connection. Showing your last update.",
+  // PLACEHOLDER: on a page the phone does not keep.
+  offlineOnly: "No connection.",
+  waiting: "This page will load when you are back online.",
   error: {
     title: "We could not load your visit.",
     /** Said only when the phone has kept a Home with a visit on it. */

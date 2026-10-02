@@ -918,6 +918,9 @@ test("makes the days, the windows and the ways to pay one tab stop each, with ar
   await expect(dates.nth(1)).toBeChecked();
   await expect(dates.nth(1)).toBeFocused();
   await page.keyboard.press("Tab");
+  // "Later dates" sits between the days and Continue.
+  await expect(page.getByRole("button", { name: "Later dates" })).toBeFocused();
+  await page.keyboard.press("Tab");
   await expect(page.getByRole("button", { name: "Continue" })).toBeFocused();
 
   await page.keyboard.press("Enter");

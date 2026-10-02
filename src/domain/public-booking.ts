@@ -2,8 +2,10 @@
 // (docs/decisions/0051-booking-from-the-site.md). Two pages do this, and they do
 // it the same way: the public site's /book, and a friend's invite at /r/:code.
 // The only difference is the invite, which the landing passes always and the site
-// only when the visitor's browser remembers one they opened
-// (docs/decisions/0089-an-invite-is-not-lost.md).
+// only when the visitor's browser remembers one they opened, and the form said
+// who is told of the fit beside it (docs/decisions/0089-an-invite-is-not-lost.md).
+// A waitlist entry carries no invite for someone who has had, booked or asked for
+// a visit: a form anyone can fill in with a number never attributes a client.
 //
 // Each booking leaves three records:
 //
@@ -47,7 +49,7 @@
 // after the pincode and the day, so a form refused for those costs neither.
 
 import type { LossExtent } from "../config/booking.ts";
-import { CONSULTATION_NOTICES, CURRENT_NOTICE, LANDING_NOTICES } from "../config/notices.ts";
+import { CONSULTATION_NOTICES, CURRENT_NOTICE, LANDING_NOTICES, type ToldNotice } from "../config/notices.ts";
 import { BOOKING_DAYS, HOLD_SECONDS, type BookingWindow } from "../config/scheduling.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
 import type { Logger } from "../log.ts";
@@ -55,13 +57,13 @@ import type { SoldTerms } from "../policy/moving-a-visit.ts";
 import { ONE_VISIT_TERMS, planStartsIn, type Plan } from "../policy/one-visit.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import type { Price } from "./price-book.ts";
-import { recordConsent } from "./consents.ts";
+import { recordConsent, type ConsentRule } from "./consents.ts";
 import { bookableService, offeredProducts } from "./services.ts";
 import type { ConsentSource } from "../policy/consents.ts";
 import { notBookedFromSite, typedAddress, type NotBookedFromSite } from "../policy/site-booking.ts";
 import { currentAddress, firstAddressStatement, type Address } from "./profile.ts";
 import { checkForOneVisit, codeOnHold, useOnNewHold } from "./discount-code-holds.ts";
-import { attribute, type Invite, type InviteState, type Via } from "./referrals.ts";
+import { attribute, hasAskedForAVisit, type Invite, type InviteState, type Via } from "./referrals.ts";
 import { availability, bookableTypes, holdSlot, liveVisitOf, type HeldService } from "./scheduling.ts";
 import { saveBookingLead, type Attribution } from "./leads.ts";
 import { siteNotice, type SiteNoticeKind } from "./site-notices.ts";
@@ -185,7 +187,14 @@ async function notBookedFor(db: D1Database, personId: string): Promise<NotBooked
 /** Attributes the person to the invite they came with, after what the form booked stands. */
 async function applyInvite(
   db: D1Database,
-  input: { invite: Invite | null; personId: string; via: Via; pincode: string; now: Date },
+  input: {
+    invite: Invite | null;
+    personId: string;
+    via: Via;
+    pincode: string;
+    toldNotice: ToldNotice | null;
+    now: Date;
+  },
 ): Promise<{ readonly credits: boolean; readonly invite: InviteState }> {
   if (input.invite === null) return { credits: false, invite: "unknown" };
   const attribution = await attribute(db, { ...input, invite: input.invite });
@@ -346,6 +355,8 @@ export interface ConsultationRequest {
   readonly attribution: Attribution;
   /** The invite the friend arrived with, where there is one. */
   readonly invite: Invite | null;
+  /** The line beside the invite that told the friend their referrer hears of the fit; null where the page showed none. */
+  readonly toldNotice: ToldNotice | null;
   /**
    * Where the consent on the form is given: the site's /book, or an invite's page
    * (docs/decisions/0094-where-a-consent-was-given.md).
@@ -481,6 +492,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     personId: person.id,
     via: "consultation",
     pincode: request.pincode,
+    toldNotice: request.toldNotice,
     now,
   });
 
@@ -606,6 +618,8 @@ export interface WaitlistRequest {
   readonly turnstileToken: string;
   readonly attribution: Attribution;
   readonly invite: Invite | null;
+  /** The line beside the invite that told the friend their referrer hears of the fit; null where the page showed none. */
+  readonly toldNotice: ToldNotice | null;
   /**
    * Where the consents on the form are given: the site's waitlist, or an invite's page
    * (docs/decisions/0094-where-a-consent-was-given.md).
@@ -620,6 +634,25 @@ export interface Listed {
   readonly invite: InviteState;
 }
 
+/**
+ * The invite a waitlist entry carries: none for someone who has had a visit, or booked or asked for one. Anyone can
+ * join a list with a number, so the list never attributes a client already in the funnel; ops may attach their invite
+ * on the client's page instead.
+ */
+async function waitlistInvite(db: D1Database, knownId: string | null, invite: Invite | null): Promise<Invite | null> {
+  if (invite === null || knownId === null) return invite;
+  if (await hasAskedForAVisit(db, knownId)) return null;
+  return invite;
+}
+
+/**
+ * How the launch alert ticked on the form is recorded: as given, for someone new; for someone we know, only while
+ * they have never decided it. Anyone can fill in the form with their number, so a decision they made stands.
+ */
+function launchAlertRule(knownId: string | null): ConsentRule {
+  return knownId === null ? "always" : "if_undecided";
+}
+
 /** Takes the number for a pincode we do not serve yet, with the launch alert if it was asked for. */
 export async function joinTheWaitlist(
   form: FormRequest,
@@ -631,8 +664,10 @@ export async function joinTheWaitlist(
   const checked = await form.checkPerson(request.mobile, request.turnstileToken, request.name);
   if (!checked.ok) return checked;
 
+  const knownId = await personWithMobile(db, checked.mobile);
+  const invite = await waitlistInvite(db, knownId, request.invite);
   const person = formPerson(db, {
-    knownId: await personWithMobile(db, checked.mobile),
+    knownId,
     mobile: checked.mobile,
     name: request.name,
     purpose: "contact",
@@ -651,7 +686,7 @@ export async function joinTheWaitlist(
           granted: true,
           notice: CURRENT_NOTICE.whatsapp_launches,
           source: request.source,
-          rule: "always",
+          rule: launchAlertRule(knownId),
           ipHash: checked.ipHash,
           givenAt: at,
         }).statement,
@@ -667,23 +702,17 @@ export async function joinTheWaitlist(
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?5)
          ON CONFLICT (pincode, person_id) DO UPDATE SET launch_alert = MAX(launch_alert, excluded.launch_alert)`,
       )
-      .bind(
-        crypto.randomUUID(),
-        request.pincode,
-        personId,
-        request.invite?.code ?? null,
-        at,
-        request.launchAlert ? 1 : 0,
-      ),
+      .bind(crypto.randomUUID(), request.pincode, personId, invite?.code ?? null, at, request.launchAlert ? 1 : 0),
     waitlistConfirmation(db, { personId, pincode: request.pincode, now }),
   ]);
   const confirmation = written.at(-1)?.results[0]?.id;
   if (confirmation !== undefined) await queueMessage(form, confirmation);
   const invited = await applyInvite(db, {
-    invite: request.invite,
+    invite,
     personId,
     via: "waitlist",
     pincode: request.pincode,
+    toldNotice: request.toldNotice,
     now,
   });
 

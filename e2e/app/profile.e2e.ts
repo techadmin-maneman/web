@@ -257,11 +257,15 @@ test("lists the five consents off, and switches one on with its date and off aga
   ]) {
     await expect(page.getByRole("switch", { name })).toHaveAttribute("aria-checked", "false");
   }
+  // Visit messages off, the client is told what that means.
+  const visitsOff = page.getByText("No visit updates on WhatsApp. We will call you about any change.");
+  await expect(visitsOff).toBeVisible();
 
   const visits = page.getByRole("switch", { name: "WhatsApp about your visits" });
   const switched = page.waitForRequest("**/api/consents/whatsapp_visits");
   await visits.click();
   await expect(visits).toHaveAttribute("aria-checked", "true");
+  await expect(visitsOff).toHaveCount(0);
   // Kept as given in the profile (docs/decisions/0094-where-a-consent-was-given.md).
   expect((await switched).postDataJSON()).toEqual({ granted: true, source: "app_profile" });
   await expect(page.getByText(/^Given \d{1,2} [A-Z][a-z]{2} \d{4}$/)).toBeVisible();
@@ -275,6 +279,7 @@ test("lists the five consents off, and switches one on with its date and off aga
     "aria-checked",
     "false",
   );
+  await expect(visitsOff).toBeVisible();
 });
 
 test("shows the referral card's lines, and the naming line, before that consent can be switched on", async ({

@@ -26,12 +26,12 @@
 // (docs/decisions/0085-services-ops-can-edit.md).
 
 import {
-  BOOKING_WINDOWS,
   MOVE_CLAIM_SECONDS,
   PAYMENT_GRACE_SECONDS,
   UNITS_PER_DAY,
   VISIT_BLOCKS,
   WINDOW_SLOT_MAP,
+  windowsFitting,
   type BookingWindow,
 } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
@@ -308,9 +308,10 @@ function firstChoice(db: D1Database, personId: string | null, moving: Moving | n
 }
 
 /**
- * Each window of each day from `from`, for a visit that takes this many minutes: who could take it, the regular
- * technician first. A day from `until` on, the day a service is retired from, is offered to nobody. With no
- * person, as for the site's form, nobody is anyone's regular.
+ * Each window of each day from `from` that a visit of this many minutes can start in: who could take it, the regular
+ * technician first. A window the visit is too long to start in, as a first fit's evening, is left out. A day from
+ * `until` on, the day a service is retired from, is offered to nobody. With no person, as for the site's form, nobody
+ * is anyone's regular.
  */
 export async function availability(
   db: D1Database,
@@ -330,9 +331,10 @@ export async function availability(
     loadBlackouts(db, from, to),
   ]);
   const retired = (date: string) => visit.until !== undefined && visit.until !== null && date >= visit.until;
+  const startable = windowsFitting(units);
   return Array.from({ length: days }, (_, index) => {
     const date = addDays(from, index);
-    const windows = BOOKING_WINDOWS.map((window): WindowOffer => {
+    const windows = startable.map((window): WindowOffer => {
       if (closed.has(date) || retired(date)) return { window, with: null };
       const free = technicians.filter((technician) => placement(held(technician.id, date), window, units) !== null);
       if (free.some((technician) => technician.id === regular)) return { window, with: "regular" };
