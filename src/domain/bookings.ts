@@ -5,6 +5,11 @@
 // and, once FSM has it, to the mirror. A free visit, a consultation, goes
 // straight to the queue.
 //
+// Where our own database holds the record of field work (src/config/field-record.ts),
+// nothing goes to FSM: the webhook, or the request that confirms a free visit,
+// books it in one batch, and so do a move and a replaced visit's cancel. A visit
+// FSM never held, whose FSM ID is its own, is never written to FSM.
+//
 // A hold the client has paid for, or booked free, is confirmed: it keeps its
 // time until it is booked or refunded, however long FSM takes. A payment is in
 // time if Razorpay made it before the hold ran out, give or take the grace; one
@@ -26,16 +31,17 @@
 // was made with, and the mirror's copy carries the hold's tier, since the hold
 // is what was sold (docs/decisions/0085-services-ops-can-edit.md).
 
+import type { FieldRecord } from "../config/field-record.ts";
 import { PAYMENT_GRACE_SECONDS } from "../config/scheduling.ts";
 import { VISIT_TYPE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { indiaIso } from "../lib/india-time.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
-import { createLogger, type Logger } from "../log.ts";
+import { createLogger, failureReason, type Logger } from "../log.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
 import type { PaymentsProvider } from "../providers/payments.ts";
 import { TRIES_STOPPED, triesStopped } from "../policy/held-bookings.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
-import type { AlertOnce } from "./alerts.ts";
+import type { AlertOnce, ResolveAlert } from "./alerts.ts";
 import { auditStatement, auditStatementIfBooked, type AuditEntry } from "./audit.ts";
 import { creditRedeemedFor, redeemCreditForBooking, SPENDABLE_CREDITS } from "./credits.ts";
 import { itemForService } from "./fsm-catalogue.ts";
@@ -46,10 +52,13 @@ import { heldVisitTimes, liveVisitOf } from "./scheduling.ts";
 import { hasBegun, visitBegun } from "./visit-begun.ts";
 import { visitPayment } from "./visit-changes.ts";
 import { visitMessage, type VisitMessageKind } from "./visit-messages.ts";
+import { moveVisit } from "./visit-status.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
 
 export interface ConfirmOptions {
   readonly labelAsTest: boolean;
+  /** Who holds the record of the visit: FSM, the default while its path stands, or our own database. */
+  readonly record?: FieldRecord;
   /** Queues a message about the visit once its row is written (src/domain/visit-messages.ts). */
   readonly notify?: (messageId: string) => Promise<unknown>;
   /** Tells ops, once, of something in FSM they must put right by hand (src/domain/alerts.ts). */
@@ -326,6 +335,7 @@ export async function confirmBooking(
     }
     if (leased.move_kind === "move") return await moveInPlace(db, fsm, payments, leased, now, options);
     if (await replacesBegunVisit(db, leased)) return await moveRefused(db, payments, leased, now, options);
+    if (recordOf(options) === "ours") return await bookOurVisit(db, fsm, leased, now, options);
     const bookedByHand = await visitBookedSinceHeld(db, leased);
     if (bookedByHand !== null) {
       await releaseLease(db, hold.id);
@@ -445,6 +455,62 @@ async function mirroredVisit(
       hold.tier,
       hold.one_visit === 1 ? "booked" : null,
     );
+}
+
+/** Books a new visit without FSM: its row is written in the booking's own batch, with its own ID as its FSM ID. */
+async function bookOurVisit(
+  db: D1Database,
+  fsm: FsmProvider,
+  hold: HoldRow,
+  now: Date,
+  options: ConfirmOptions,
+): Promise<Confirmed> {
+  const visitId = crypto.randomUUID();
+  const row = await ourVisit(db, hold, visitId, now);
+  await writeNewBooking(db, fsm, hold, { fsmId: visitId, row }, now, options);
+  return "booked";
+}
+
+/**
+ * The row of a visit booked without FSM, written only while its hold still waits to be booked, so a booking written
+ * twice makes one visit. It has no work order and no FSM status. It is booked into the window the client picked, so
+ * the asked-window pass has nothing to look up for it.
+ */
+async function ourVisit(db: D1Database, hold: HoldRow, visitId: string, now: Date): Promise<D1PreparedStatement> {
+  const { start, end } = await heldVisitTimes(db, hold);
+  const at = now.toISOString();
+  return db
+    .prepare(
+      `INSERT INTO appointments (id, fsm_id, person_id, type, tier, window_start, window_end, technician_id, status,
+         service_city, service_pincode, synced_at, first_seen_at, one_visit, asked_checked_at)
+       SELECT ?1, ?1, ?2, ?3, ?4, ?5, ?6, ?7, 'scheduled', ?8, ?9, ?10, ?10, ?11, ?10
+       WHERE EXISTS (SELECT 1 FROM slot_holds WHERE id = ?12 AND state = 'held')`,
+    )
+    .bind(
+      visitId,
+      hold.person_id,
+      hold.type,
+      hold.tier,
+      start.toISOString(),
+      end.toISOString(),
+      hold.technician_id,
+      hold.city,
+      hold.pincode,
+      at,
+      hold.one_visit === 1 ? "booked" : null,
+      hold.id,
+    );
+}
+
+/** Who holds the record of field work for this try: FSM, unless the caller says our own database does. */
+const recordOf = (options: Pick<ConfirmOptions, "record">): FieldRecord => options.record ?? "fsm";
+
+/** Whether FSM is written for a change to the visit: only on FSM's path, and only for a visit FSM holds. */
+function writesFsmFor(
+  options: Pick<ConfirmOptions, "record">,
+  visit: { readonly id: string; readonly fsm_id: string },
+) {
+  return recordOf(options) === "fsm" && visit.fsm_id !== visit.id;
 }
 
 /**
@@ -675,7 +741,9 @@ async function moveInPlace(
     .first<{ id: string; fsm_id: string; window_start: string }>();
   if (visit === null) return moveRefused(db, payments, hold, now, options);
   const { start, end } = await heldVisitTimes(db, hold);
-  await fsm.rescheduleVisit(visit.fsm_id, { start: indiaIso(start), end: indiaIso(end) });
+  if (writesFsmFor(options, visit)) {
+    await fsm.rescheduleVisit(visit.fsm_id, { start: indiaIso(start), end: indiaIso(end) });
+  }
 
   const at = now.toISOString();
   const lateFee = "(SELECT id FROM payments WHERE razorpay_order_id = ?1)";
@@ -749,9 +817,9 @@ async function moveRefused(
 }
 
 /**
- * Cancels the visit a new one replaced, once: in FSM, then in the mirror. Its payment is kept as the charge.
- * When FSM will not cancel it, the mirror is left as FSM has it and ops are told to cancel it by hand. A visit the
- * technician has begun since is never cancelled: both visits stand, and ops are told.
+ * Cancels the visit a new one replaced, once: in FSM where FSM holds it, then in the mirror. Its payment is kept as the
+ * charge. When FSM will not cancel it, the mirror is left as FSM has it and ops are told to cancel it by hand. A visit
+ * the technician has begun since is never cancelled: both visits stand, and ops are told.
  */
 async function retireReplaced(
   db: D1Database,
@@ -762,12 +830,12 @@ async function retireReplaced(
 ): Promise<void> {
   const old = await db
     .prepare(
-      `SELECT a.id, a.fsm_work_order_id, a.window_start, ${visitBegun("a")} AS begun FROM appointments a
+      `SELECT a.id, a.fsm_id, a.fsm_work_order_id, a.window_start, ${visitBegun("a")} AS begun FROM appointments a
        WHERE a.id = ?1 AND a.status IN ('scheduled', 'dispatched') AND a.deleted_at IS NULL
          AND NOT EXISTS (SELECT 1 FROM visit_changes c WHERE c.appointment_id = a.id AND c.kind IN ('replaced', 'cancelled'))`,
     )
     .bind(hold.moves_appointment_id)
-    .first<{ id: string; fsm_work_order_id: string | null; window_start: string; begun: number }>();
+    .first<{ id: string; fsm_id: string; fsm_work_order_id: string | null; window_start: string; begun: number }>();
   if (old === null) return;
   if (old.begun === 1) {
     await options.alertOnce?.({
@@ -779,26 +847,21 @@ async function retireReplaced(
     });
     return;
   }
-  if (old.fsm_work_order_id !== null) {
-    const note = `${options.labelAsTest ? "Staging test: " : ""}Moved by the client too late to move it free, to a new visit; charged.`;
-    if (!(await fsm.cancelVisit(old.fsm_work_order_id, note))) {
-      await options.alertOnce?.({
-        key: `replaced_not_cancelled:${old.id}`,
-        message:
-          `The client moved visit ${old.id} to a new one (booking ${hold.id}), and FSM would not cancel its work ` +
-          `order ${old.fsm_work_order_id}. Cancel it in FSM by hand; its payment is kept as the charge.`,
-        link: `/clients/${hold.person_id}`,
-      });
-      return;
-    }
-  }
+  const workOrderId = writesFsmFor(options, old) ? old.fsm_work_order_id : null;
+  if (workOrderId !== null && !(await cancelledInFsm(fsm, workOrderId, old.id, hold, options))) return;
   const payment = await visitPayment(db, old.id);
   const at = now.toISOString();
   const nowStart = (await heldVisitTimes(db, hold)).start.toISOString();
+  const cancelled =
+    workOrderId === null
+      ? moveVisit(db, old.id, "cancel", at)
+      : db
+          .prepare(
+            "UPDATE appointments SET status = 'cancelled', fsm_status = 'Cancelled', synced_at = ?1 WHERE id = ?2",
+          )
+          .bind(at, old.id);
   await db.batch([
-    db
-      .prepare("UPDATE appointments SET status = 'cancelled', fsm_status = 'Cancelled', synced_at = ?1 WHERE id = ?2")
-      .bind(at, old.id),
+    cancelled,
     db
       .prepare(
         `INSERT INTO visit_changes (id, appointment_id, person_id, kind, notice, was_start, now_start, kept_amount,
@@ -817,6 +880,26 @@ async function retireReplaced(
         at,
       ),
   ]);
+}
+
+/** Cancels a replaced visit's work order in FSM; false, with ops told to cancel it by hand, when FSM will not. */
+async function cancelledInFsm(
+  fsm: FsmProvider,
+  workOrderId: string,
+  visitId: string,
+  hold: HoldRow,
+  options: ConfirmOptions,
+): Promise<boolean> {
+  const note = `${options.labelAsTest ? "Staging test: " : ""}Moved by the client too late to move it free, to a new visit; charged.`;
+  if (await fsm.cancelVisit(workOrderId, note)) return true;
+  await options.alertOnce?.({
+    key: `replaced_not_cancelled:${visitId}`,
+    message:
+      `The client moved visit ${visitId} to a new one (booking ${hold.id}), and FSM would not cancel its work ` +
+      `order ${workOrderId}. Cancel it in FSM by hand; its payment is kept as the charge.`,
+    link: `/clients/${hold.person_id}`,
+  });
+  return false;
 }
 
 /** What giving a hold back did with the money. */
@@ -1231,16 +1314,8 @@ export async function requeueUnbookedHolds(
   input: { queue: Queue; alertOnce: AlertOnce; budget: CallBudget; log: Logger },
   now: Date,
 ): Promise<number> {
-  const { results } = await db
-    .prepare(
-      `SELECT id, person_id FROM slot_holds
-       WHERE state = 'held' AND confirmed_at IS NOT NULL AND queued_at <= ?1 AND fsm_held_at IS NULL
-       ORDER BY queued_at LIMIT ?2`,
-    )
-    .bind(new Date(now.getTime() - UNBOOKED_AFTER_MS).toISOString(), REQUEUE_PER_PASS)
-    .all<{ id: string; person_id: string }>();
   let requeued = 0;
-  for (const hold of results) {
+  for (const hold of await unbookedHolds(db, now)) {
     if (!input.budget.spend(1)) break;
     try {
       await input.queue.send({ hold_id: hold.id, request_id: "unbooked-holds" } satisfies FsmSyncMessage);
@@ -1259,4 +1334,82 @@ export async function requeueUnbookedHolds(
     requeued += 1;
   }
   return requeued;
+}
+
+interface UnbookedHold {
+  readonly id: string;
+  readonly person_id: string;
+}
+
+/** Confirmed holds neither booked nor refunded half an hour after they last went to be booked, oldest first. */
+async function unbookedHolds(db: D1Database, now: Date): Promise<UnbookedHold[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT id, person_id FROM slot_holds
+       WHERE state = 'held' AND confirmed_at IS NOT NULL AND queued_at <= ?1 AND fsm_held_at IS NULL
+       ORDER BY queued_at LIMIT ?2`,
+    )
+    .bind(new Date(now.getTime() - UNBOOKED_AFTER_MS).toISOString(), REQUEUE_PER_PASS)
+    .all<UnbookedHold>();
+  return results;
+}
+
+export interface UnbookedPass {
+  readonly fsm: FsmProvider;
+  readonly payments: PaymentsProvider;
+  readonly alertOnce: AlertOnce;
+  readonly resolveAlert: ResolveAlert;
+  /** Queues a message about the visit once its row is written. */
+  readonly notify: (messageId: string) => Promise<unknown>;
+  readonly labelAsTest: boolean;
+  readonly budget: CallBudget;
+  readonly log: Logger;
+}
+
+/**
+ * Where our own database holds the record of field work: holds paid for, or booked free, that are neither booked nor
+ * refunded half an hour after they were confirmed, because the request that confirmed them failed part-way. Each is
+ * booked here, one call from the run's budget, since giving one back asks Razorpay for its refund. One that still
+ * cannot be is tried again half an hour on, and ops are told once. Returns how many were booked.
+ */
+export async function bookUnbookedHolds(db: D1Database, pass: UnbookedPass, now: Date): Promise<number> {
+  let booked = 0;
+  for (const hold of await unbookedHolds(db, now)) {
+    if (!pass.budget.spend(1)) break;
+    await db.prepare("UPDATE slot_holds SET queued_at = ?2 WHERE id = ?1").bind(hold.id, now.toISOString()).run();
+    if ((await bookUnbookedHold(db, pass, hold, now)) === "booked") booked += 1;
+  }
+  return booked;
+}
+
+async function bookUnbookedHold(
+  db: D1Database,
+  pass: UnbookedPass,
+  hold: UnbookedHold,
+  now: Date,
+): Promise<Confirmed | null> {
+  const options: ConfirmOptions = {
+    record: "ours",
+    labelAsTest: pass.labelAsTest,
+    notify: pass.notify,
+    alertOnce: pass.alertOnce,
+    log: pass.log,
+  };
+  try {
+    const outcome = await confirmBooking(db, pass.fsm, pass.payments, hold.id, now, options);
+    pass.log.info("unbooked_hold_booked", { hold_id: hold.id, outcome });
+    if (outcome !== "being_booked") await pass.resolveAlert(unbookedAlertKey(hold.id));
+    return outcome;
+  } catch (error) {
+    const reason = failureReason(error);
+    pass.log.warn("unbooked_hold_failed", { hold_id: hold.id, reason });
+    await pass.alertOnce({
+      key: unbookedAlertKey(hold.id),
+      message:
+        `Booking ${hold.id} was paid for, or booked free, and is neither booked nor refunded half an hour on: ` +
+        `${reason}. It is tried again every half hour.`,
+      link: `/clients/${hold.person_id}`,
+    });
+    return null;
+  }
 }
