@@ -70,7 +70,9 @@ const Person = {
   name: z.string().trim().min(1).max(80),
   mobile: z.string().max(20),
   pincode: PincodeSchema,
-  loss_extent: z.enum(LOSS_EXTENTS).openapi({ description: "Where the hair loss is, as the form's drawings show it." }),
+  loss_extent: z.enum(LOSS_EXTENTS).optional().openapi({
+    description: "Where the hair loss is, as the form's drawings show it. Left out when the visitor does not say.",
+  }),
   turnstile_token: z.string().min(1).max(2048),
   attribution: AttributionSchema,
   invite_code: z
@@ -290,7 +292,7 @@ export function registerConsultations(app: App): void {
         address: addressOf(body.address),
         date: body.date,
         window: body.window,
-        lossExtent: body.loss_extent,
+        lossExtent: body.loss_extent ?? null,
         turnstileToken: body.turnstile_token,
         attribution: body.attribution ?? {},
         invite: await rememberedInvite(c, body),
@@ -326,7 +328,7 @@ export function registerConsultations(app: App): void {
         name: body.name,
         mobile: body.mobile,
         pincode: body.pincode,
-        lossExtent: body.loss_extent,
+        lossExtent: body.loss_extent ?? null,
         launchAlert: body.launch_alert,
         turnstileToken: body.turnstile_token,
         attribution: body.attribution ?? {},

@@ -19,7 +19,7 @@ import type { App } from "../http/context.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { indiaDate } from "../lib/india-time.ts";
-import { CODE_LENGTH, COVERABLE, DISCOUNT_KINDS, isCodeText } from "../policy/discount-codes.ts";
+import { CODE_LENGTH, COVERABLE, DISCOUNT_KINDS, isCodeText, termsRefusal } from "../policy/discount-codes.ts";
 
 const GivenBySchema = z.enum(["client", "technician", "ops"]);
 
@@ -86,16 +86,13 @@ const NewCodesSchema = z
       .optional()
       .openapi({ description: "How many to generate, one if left out; more than one is a batch of single-use codes." }),
     kind: z.enum(DISCOUNT_KINDS),
-    value: z
-      .number()
-      .int()
-      .min(1)
-      .max(PRICE_BOUNDS.maxPaise)
-      .openapi({ description: "Per cent, 1 to 100, for a percentage; paise before GST for an amount." }),
+    value: z.number().int().min(1).max(PRICE_BOUNDS.maxPaise).openapi({
+      description: "Per cent, 1 to 100, for a percentage; paise in whole rupees, before GST, for an amount.",
+    }),
     cap: z
       .union([z.number().int().min(1).max(PRICE_BOUNDS.maxPaise), z.null()])
       .optional()
-      .openapi({ description: "A percentage's most, in paise before GST; none if left out." }),
+      .openapi({ description: "A percentage's most, in paise in whole rupees, before GST; none if left out." }),
     covers: z.array(z.enum(COVERABLE)).min(1).max(COVERABLE.length),
     expires_on: z
       .union([z.iso.date(), z.null()])
@@ -149,7 +146,8 @@ const makeRoute = createRoute({
     201: { description: "Made", ...json(MadeSchema) },
     400: errorResponse(
       "invalid_request: fields names code when it is not one a code can be, count for a typed code made more than " +
-        "once, value for a percentage over 100, cap on an amount, covers named twice, expires_on before today, and " +
+        "once, value for a percentage over 100 or an amount not in whole rupees, cap on an amount or not in whole " +
+        "rupees, covers named twice, expires_on before today, and " +
         "max_uses for a batch whose codes are not single-use",
     ),
     403: errorResponse("access_required"),
@@ -209,8 +207,8 @@ function makeRefusal(body: NewCodesBody, today: string): string | null {
   const count = body.count ?? 1;
   if (body.code !== undefined && !isCodeText(body.code)) return "code";
   if (body.code !== undefined && count > 1) return "count";
-  if (body.kind === "percent" && body.value > 100) return "value";
-  if (body.kind === "amount" && (body.cap ?? null) !== null) return "cap";
+  const terms = termsRefusal({ kind: body.kind, value: body.value, cap: body.cap ?? null });
+  if (terms !== null) return terms;
   if (new Set(body.covers).size !== body.covers.length) return "covers";
   if ((body.expires_on ?? null) !== null && (body.expires_on ?? "") < today) return "expires_on";
   // A batch is of single-use codes (RULES[3]: "total uses (one, many or unlimited)", one each for a batch's).

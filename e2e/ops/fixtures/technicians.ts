@@ -54,6 +54,39 @@ export const TECHNICIANS = {
   switched_off: [],
 } satisfies Roster;
 
+/** A technician ops switched off, who cannot sign in and is booked for nothing. */
+export const RAVI = {
+  id: "88000000-0000-4000-8000-000000000004",
+  name: "Ravi Kumar",
+  zone: "Sec 66–80",
+  mobile: "+919810000004",
+  editable: true,
+} satisfies Roster["switched_off"][number];
+
+export const TECHNICIAN_ADDED = { id: "88000000-0000-4000-8000-000000000005" } satisfies OpsReply<
+  "/api/technicians",
+  "post",
+  201
+>;
+
+/** The visits a technician switched off no longer holds: one with a client, and one with none on our records. */
+export const SWITCHED_OFF = {
+  visits: [
+    {
+      appointment_id: "78000000-0000-4000-8000-000000000101",
+      starts_at: "2027-09-24T04:30:00.000Z",
+      type: "service",
+      client: "Rohit Malhotra",
+    },
+    {
+      appointment_id: "78000000-0000-4000-8000-000000000102",
+      starts_at: "2027-09-27T09:30:00.000Z",
+      type: "consultation",
+      client: null,
+    },
+  ],
+} satisfies OpsReply<"/api/technicians/{id}/deactivate", "post">;
+
 /** Leave recorded over no booked job; `jobs` lists those it falls on (OPS-07). */
 export const LEAVE_RECORDED = { id: "89000000-0000-4000-8000-000000000002", jobs: [] } satisfies OpsReply<
   "/api/technicians/{id}/leave",

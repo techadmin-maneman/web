@@ -349,7 +349,7 @@ test("counts a group whole when it lists only its longest waits, and says when i
     truncated: true,
     groups: [{ ...first, count: 73 }],
   });
-  await expect(page.getByText("73", { exact: true })).toBeVisible();
+  await expect(list(page).getByText("73", { exact: true })).toBeVisible();
   await expect(page.getByText("The 2 longest waits of 73.")).toBeVisible();
   await expect(page.getByText("More are waiting than one look reads, so a count here may be short.")).toBeVisible();
 });

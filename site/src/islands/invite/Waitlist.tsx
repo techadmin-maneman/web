@@ -18,7 +18,7 @@ import { mobileToSend, useTurnstileForm } from "./useTurnstileForm.ts";
 export function Waitlist(props: FormProps & { onListed: (listing: Listing) => void }) {
   const form = useTurnstileForm(props.turnstileSiteKey);
   const [alert, setAlert] = useState(false);
-  const [extent, setExtent] = useState<LossExtent>("crown");
+  const [extent, setExtent] = useState<LossExtent | null>(null);
   // On /book, the invite this browser remembers: the form says who is told of the fit before it sends it.
   const [remembered, setRemembered] = useState(() => (props.invited ? null : rememberedInvite()));
 
@@ -40,7 +40,7 @@ export function Waitlist(props: FormProps & { onListed: (listing: Listing) => vo
     const onInvite = { ...request, ...(props.credits ? { invite_told: true as const } : {}) };
     const onBook = {
       ...request,
-      loss_extent: extent,
+      ...(extent === null ? {} : { loss_extent: extent }),
       ...(attribution === undefined ? {} : { attribution }),
       ...(remembered === null ? {} : { invite_code: remembered, invite_told: true as const }),
     };

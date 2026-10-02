@@ -24,6 +24,7 @@ An alert in the alert space names what went wrong with IDs only; "What each aler
 | A technician lost a phone, or his work is stuck on it       | "A technician's lost phone", "Work stuck on a technician's phone"   |
 | Ops cannot get into the console                             | "Locked out of the ops console"                                     |
 | R2 storage is growing, or a usage e-mail came               | "Staying on the free tier"                                          |
+| A daily allowance is 70% used                               | "The daily allowances"                                              |
 | Data is wrong or gone in D1                                 | "Restoring D1"                                                      |
 | The heartbeat or the uptime monitor says mm-api is down     | "The outside watchers", "A cron run cut short"                      |
 | A release is misbehaving                                    | "Rolling back a Worker version"                                     |
@@ -56,6 +57,7 @@ Staging's column is as its deploy of 27 September 2026 found it: all five Worker
 | 7. Worker secrets: erasure                     | done                                                   | done                                                                                      |
 | 7. Worker secrets: login code pepper           | done (22 September 2026)                               | not yet: with the client surface                                                          |
 | 7. Worker secrets: the cron's heartbeat        | not yet ("The outside watchers")                       | not yet ("The outside watchers")                                                          |
+| 7. Worker secrets: the analytics token         | not yet ("The daily allowances")                       | not yet: moves here from staging at go-live                                               |
 | 8. Zoho org, fields, secrets                   | done: the real org (ADR 0050)                          | done: the real org (ADR 0050)                                                             |
 | 9. Triggers: the cron                          | done, and checked by the deploy                        | done                                                                                      |
 | 9. Triggers: the queue consumers               | done (all four); CI cannot read them, so check by hand | three; fsm-sync's once its queue exists                                                   |
@@ -210,6 +212,7 @@ Set these on the Worker, not in GitHub. `wrangler secret put` prompts for the va
 | `ALERT_WEBHOOK_URL`                                                         | An incoming-webhook URL for Slack, Google Chat or Discord. Alerts carry IDs, never names or numbers.                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `LEAD_WEBHOOK_URL`                                                          | Optional. Where the one-line notice for each new lead is posted, if not the alert space (`docs/decisions/0018-one-look-pro-only-lead-notices.md`). Notices carry city, window and date, never a name or number.                                                                                                                                                                                                                                                                                                                                                          |
 | `HEARTBEAT_URL`                                                             | Optional, and wanted before go-live. The ping URL of the environment's healthchecks.io check, `https://hc-ping.com/<uuid>`, which the cron pings after every run ("The outside watchers").                                                                                                                                                                                                                                                                                                                                                                               |
+| `CLOUDFLARE_ANALYTICS_TOKEN`                                                | Optional, and in one environment only. An Account API Token with Account → **Account Analytics → Read** and nothing else, with which the cron reads once an hour what the account has used of its daily allowances ("The daily allowances"). Both environments would read the same account and post to the same space, so it is staging's until go-live, then production's, and deleted from staging.                                                                                                                                                                    |
 | `ZOHO_CLIENT_ID`, `ZOHO_CLIENT_SECRET`, `ZOHO_REFRESH_TOKEN`, `ZOHO_LAR_ID` | Step 8.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `ZOHO_ACCOUNTS_HOST`, `ZOHO_API_HOST`                                       | India data centre: `accounts.zoho.in`, and for the API `www.zohoapis.in`. Both environments use the real org (ADR 0050); a Developer Edition org would answer on `developer.zohoapis.in` instead.                                                                                                                                                                                                                                                                                                                                                                        |
 | `AILAB_API_KEY`                                                             | The environment's AILabTools API key, a separate key per environment where the dashboard allows.                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
@@ -452,6 +455,12 @@ The client surface reads visits from Zoho FSM and documents from Zoho Books (doc
    node --env-file=.env.fsm-<env> scripts/setup-fsm.ts
    ```
 
+   Books also needs a custom field on Customers and Vendors, **"MM person ID"**: Text, unique values, API name `cf_mm_person_id`. It is what finds a client's customer again. Then prove Books' calls on "Staging test" records the script removes again (about 20 calls; it keeps one item, "Staging test: proof item", which the scripts' scopes cannot delete):
+
+   ```sh
+   node --env-file=.env.books-scripts scripts/books-proof.ts
+   ```
+
 4. **The Worker.** Set the secrets, then set the hosts (`ZOHO_FSM_*_HOST`, `ZOHO_BOOKS_*_HOST`) and `ZOHO_BOOKS_ORG_ID` in `wrangler.jsonc`, with `FSM_PROVIDER` and `BOOKS_PROVIDER` as `zoho`.
 
    ```sh
@@ -680,6 +689,18 @@ Cloudflare is not the only card now. The owner's own card is on Google Maps Plat
 
 If an R2 alert fires: set `UPLOAD_DAILY_CEILING`, `RENDER_DAILY_CEILING` and `RESULT_READ_DAILY_CEILING` to `"0"` in `wrangler.jsonc` and deploy. New uploads, renders and result reads then answer `busy`. Find the cause before raising them again. `test/node/free-tier-budget.test.ts` refuses any ceiling that could take R2 or Queues past 80% of the free allowance, counting the share set aside for Phase 2 (`docs/decisions/0015-render-pipeline.md`, `docs/decisions/0039-phase-2-budget.md`).
 
+### The daily allowances
+
+Queue operations (10,000 a day), D1 rows read (5 million a day) and D1 rows written (100,000 a day) are the account's, staging and production together, and each starts again at midnight UTC, 05:30 IST. Past one, Cloudflare refuses that work for the rest of the day: past the queue operations every queue send fails, so bookings, payment confirmations, CRM updates and messages stall; past D1's, every query, or every write, fails.
+
+Once an hour, at a quarter past, the cron reads the day's figures from Cloudflare's analytics (`src/scheduled/daily-allowances.ts`). At 70% of one it tells ops once (`daily_allowance:queueOperations`, `daily_allowance:d1RowsRead` or `daily_allowance:d1RowsWritten`), and the alert closes on its own when the next day starts the figures again. It reads them with `CLOUDFLARE_ANALYTICS_TOKEN` (step 7), set in one environment only: `W secret put CLOUDFLARE_ANALYTICS_TOKEN --env staging` until go-live. If the figures cannot be read three hours running it says so (`daily_allowances_unreadable`): the token was deleted, expired or lost its permission. Make a new one as step 7 says and put it in the same way.
+
+When one is told:
+
+1. See what is spending it: the dashboard's D1 and Queues pages, each database's and each queue's Metrics. Staging's names carry `staging`, production's `prod`.
+2. A test run on staging (a load test, a soak, browser tests in a loop) is the usual cause: stop it. A job retrying the same thing again and again shows in Workers Logs as one event repeating; tell the developers.
+3. If it is production's own traffic, tell the developers the same day. More of these allowances means Workers Paid, which needs the owner's decision and a new ADR (step 3 above).
+
 ### R2 storage growing
 
 R2's 10 GB a month is the account's, both environments together, and past it R2 bills. What fills it:
@@ -775,6 +796,8 @@ The chat shows the message; the `alerts` table keeps it under its key. Most aler
 | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------ | ----------------------------------------------------------------------- |
 | The cron's _job_ job has failed _n_ runs in a row                                        | `cron_job:<job>`                                                                                          | when a run works                     | the job's own section; `cron_jobs` above                                |
 | The cron run started at _time_ never finished                                            | `cron_run_cut_short`                                                                                      | after an hour of finished runs       | "A cron run cut short"                                                  |
+| Cloudflare's free _allowance_ are _n_% used today                                        | `daily_allowance:<allowance>`                                                                             | when a new day starts the figures    | "The daily allowances"                                                  |
+| Cloudflare's usage figures could not be read three hours running                         | `daily_allowances_unreadable`                                                                             | when they are read                   | "The daily allowances"                                                  |
 | The WhatsApp bridge is not connected                                                     | `whatsapp_bridge`                                                                                         | when it is open                      | "WhatsApp (Evolution) is down"                                          |
 | _n_ login codes failed to send in the last hour                                          | `login_codes_failing`                                                                                     | when a code goes                     | "WhatsApp (Evolution) is down"                                          |
 | Message _id_ (_kind_) failed after _n_ attempts                                          | none: told for each                                                                                       | not kept                             | "Replaying a failed message"                                            |
@@ -1212,9 +1235,9 @@ node scripts/import-pincodes.ts staging --all-served-from 2026-09-22   # staging
 node scripts/import-pincodes.ts production                             # the file's own columns
 ```
 
-Run it again whenever the file changes: each pincode's row is replaced, except an area name ops gave it in the console. **The import tells nobody on a waitlist, so it refuses to serve a pincode people are waiting for.** It names each such pincode with how many wait, and writes nothing. Serve those from the console — Settings · Service area, or the waitlist's Mark live — which tells those who asked (ADR 0071), then run the import again: a pincode already served is no launch.
+Run it again whenever the file changes: each pincode's row is replaced, except an area name ops gave it in the console. **The import tells nobody on a waitlist, so it refuses to serve a pincode people are waiting for.** It names each such pincode with how many wait, and writes nothing. Serve those from the console — Growth · Service area, or the waitlist's Mark live — which tells those who asked (ADR 0071), then run the import again: a pincode already served is no launch.
 
-**Launching a pincode** is ops' own, in the console: it says how many are waiting and how many will be told, then marks the pincode served and sends the alerts, ten a minute. Nobody is told twice. Serving a pincode in Settings · Service area is a launch too, and says who it will message before it saves; a pincode already live whose waitlist was never told is told from its row on the waitlist.
+**Launching a pincode** is ops' own, in the console: it says how many are waiting and how many will be told, then marks the pincode served and sends the alerts, ten a minute. Nobody is told twice. Serving a pincode in Growth · Service area is a launch too, and says who it will message before it saves; a pincode already live whose waitlist was never told is told from its row on the waitlist.
 
 **Ops' log of referrals before January** is imported once, from a CSV in git-ignored `private/`:
 
@@ -1272,7 +1295,7 @@ The owner's wording comes back by hand: find each changed item by its id (`src/c
 
 ## Cities and visit days
 
-Where we come is decided by the pincode, which ops open from the console (Settings · Service area, ADR 0061), and serving a pincode tells its waitlist. The `cities` table is Phase 1's: its form offered them, and `POST /api/lead` and `GET /api/cities`, which read it, were removed on 28 September 2026 (`docs/open-points.md`, item 107). A booking's lead still names its pincode's city where it is one of these, and the dispatch board filters by them, so a city is a data change, not a deploy:
+Where we come is decided by the pincode, which ops open from the console (Growth · Service area, ADR 0061), and serving a pincode tells its waitlist. The `cities` table is Phase 1's: its form offered them, and `POST /api/lead` and `GET /api/cities`, which read it, were removed on 28 September 2026 (`docs/open-points.md`, item 107). A booking's lead still names its pincode's city where it is one of these, and the dispatch board filters by them, so a city is a data change, not a deploy:
 
 ```sql
 -- Add a city the dispatch board can filter by, after Bengaluru.

@@ -9,36 +9,49 @@ export const BOOKING_URL: Readonly<Record<string, string>> = {
   production: "https://maneman.in/book",
 };
 
+/** The five departments, as the navigation heads its sections and the Staff page names a grant. */
+const DEPARTMENT_NAMES = {
+  operations: "Operations",
+  customer_care: "Customer Care",
+  finance: "Finance",
+  growth: "Growth",
+  admin: "Admin",
+} as const;
+
 export const shell = {
-  /** The sidebar's own title, as boards A1 and B1 letter it. */
-  title: "Operations",
   /**
-   * Each section's name in the navigation, in apps/ops/src/route.ts's order;
-   * the design draws eight. Its third is drawn as "Payments" and built as
-   * "No-shows": the day's money is there, over the queue, but the dispute the
-   * board rules on has no record behind it (docs/open-points.md, item 60).
-   * Settings is the eighth, built from ADR 0061.
-   *
-   * Grievances, Deletion requests and Number changes are drawn on no board at
-   * all. They are what a client asks of us about their own data
-   * (docs/decisions/0049-dpdp.md, docs/fidelity-method.md).
+   * PLACEHOLDER: the sidebar's own title. Boards A1 and B1 letter it "Operations", which is now the name of one of the
+   * departments beneath it.
    */
+  title: "Console",
+  departments: DEPARTMENT_NAMES,
+  /** PLACEHOLDER where no board draws it: each section's name in the navigation, which the design draws flat. */
   sections: {
+    tasks: "Tasks",
     dispatch: "Dispatch",
+    technicians: "Technicians",
+    stock: "Stock",
     clients: "Clients",
+    grievances: "Grievances",
+    "number-changes": "Number changes",
+    "deletion-requests": "Deletion requests",
     "no-shows": "No-shows",
+    prices: "Prices",
+    "discount-codes": "Discount codes",
     referrals: "Referrals",
     waitlist: "Waitlist",
-    tasks: "Tasks",
-    technicians: "Technicians",
-    // PLACEHOLDER: no board draws stock; the owner ruled it is kept here (docs/decisions/0087-consumables-and-stock.md).
-    stock: "Stock",
-    grievances: "Grievances",
-    "deletion-requests": "Deletion requests",
-    "number-changes": "Number changes",
+    "service-area": "Service area",
     settings: "Settings",
+    staff: "Staff",
   },
-  /** The browser tab's title: "Services and prices · Settings · Mane Man operations". */
+  /** PLACEHOLDER: a section's name in the navigation, read out with the count of tasks waiting in it. */
+  waiting: (section: string, count: number, overdue: boolean) =>
+    overdue ? `${section}, ${String(count)} waiting, some overdue` : `${section}, ${String(count)} waiting`,
+  /** PLACEHOLDER: the first thing the keyboard reaches, which jumps past the navigation. */
+  skip: "Skip to content",
+  /** PLACEHOLDER: a page opened by its address that the person's access does not reach. */
+  closed: "Your access does not reach this page. An Admin can add it on the Staff page.",
+  /** The browser tab's title: "Blackout days · Settings · Mane Man operations". */
   documentTitle: (parts: readonly string[]) => [...parts, "Mane Man operations"].join(" · "),
   /**
    * PLACEHOLDER: who is signed in, where board A1 draws "AK" in a box at the
@@ -915,7 +928,7 @@ export const waitlist = {
     date: "Launch date",
     dateHint: "The day a technician starts coming. A held referral invite lapses twelve months from it.",
     /** PLACEHOLDER: where the area's name in the message comes from, and where it is changed (OPS-13). */
-    named: "The message names the area as Settings has it.",
+    named: "The message uses the area's name as Service area sets it.",
     rename: "Change the name",
     /**
      * What each of them gets. The words are launch_alert_v1's in
@@ -1368,10 +1381,12 @@ export const technicians = {
    */
   columns: ["Technician", "Zone", "Jobs", "Avg service", "Leave"],
   /**
-   * PLACEHOLDER: the technician's name opens their phones and their leave,
+   * PLACEHOLDER: the technician's name opens his details, phones and leave,
    * which the board's rows have no room for, in a panel over the roster.
    */
-  open: (name: string) => `${name}: phones and leave`,
+  open: (name: string) => `${name}: details, phones and leave`,
+  /** A technician switched off has no phone signed in and no leave to record: his name opens his details. */
+  openSwitchedOff: (name: string) => `${name}: details`,
   close: "Close",
   /** The Leave column: away today, the first day of leave to come, or nothing. */
   away: "Away",
@@ -1460,6 +1475,64 @@ export const technicians = {
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Please try again.",
     },
+  },
+  // PLACEHOLDER: the board draws no way to add, change or switch off a technician, so every line below is ours.
+  fields: { name: "Name", mobile: "Mobile", zone: "Zone (optional)" },
+  add: {
+    open: "Add a technician",
+    title: "Add a technician",
+    effect: "His sign-in codes go to this number on WhatsApp. He can sign in as soon as he is added.",
+    save: "Add technician",
+    saving: "Adding",
+    cancel: "Cancel",
+    added: (name: string) => `${name} is added. He can sign in now.`,
+  },
+  details: {
+    title: "Details",
+    mobile: "Mobile",
+    zone: "Zone",
+    change: "Change details",
+    changeLabel: (name: string) => `Change ${name}'s details`,
+    save: "Save changes",
+    saving: "Saving",
+    cancel: "Cancel",
+    fsm: "His details come from Zoho FSM. Change them there.",
+  },
+  switchOff: {
+    open: "Switch off",
+    openLabel: (name: string) => `Switch off ${name}`,
+    warning:
+      "He is signed out at once and cannot sign in. His visits from now on go back on the dispatch board for someone else; a visit under way stays his.",
+    confirm: "Switch him off",
+    sending: "Switching off",
+    cancel: "Keep him on",
+    returned: (count: number) =>
+      count === 0
+        ? "He had no visits to come."
+        : `${String(count)} ${count === 1 ? "visit is" : "visits are"} back on the dispatch board, for someone else.`,
+    visit: (when: string, client: string) => `${when} · ${client}`,
+    noClient: "No client on our records",
+    move: "Give them out on the dispatch board",
+  },
+  switchOn: {
+    note: "Switched off. He cannot sign in, and nothing is booked on him.",
+    open: "Switch back on",
+    openLabel: (name: string) => `Switch ${name} back on`,
+    sending: "Switching on",
+    done: (name: string) => `${name} can sign in again.`,
+  },
+  switchedOff: "Switched off",
+  /** Why an add, a change or a switch was refused; nothing changed either way. */
+  errors: {
+    number_in_use: "Another active technician signs in with that number.",
+    number_in_use_now: "Another active technician signs in with his number now. Change one of the two numbers first.",
+    unreadable_mobile: "Enter a 10-digit Indian mobile.",
+    invalid_request: "Enter his name and a 10-digit Indian mobile.",
+    managed_in_fsm: "His details come from Zoho FSM. Change them there.",
+    not_found: "That technician is no longer here. Reload to see the roster as it stands.",
+    not_permitted: "Only someone with Operations · Manage can add, change or switch off technicians.",
+    offline: "You are offline. Connect, then try again.",
+    unknown: "That did not go through. Please try again.",
   },
 } as const;
 
@@ -1621,18 +1694,12 @@ export const settings = {
   storage: (held: number, share: number) =>
     `Photographs and referral cards hold ${(held / 1e9).toFixed(2)} GB in R2, ${String(Math.round((held / share) * 100))}% ` +
     `of their ${String(share / 1e9)} GB share. Past it R2 bills, as the owner accepted; ops are told at 50%, 80% and 100%.`,
-  // PLACEHOLDER: the prices tab holds the services too (docs/decisions/0085-services-ops-can-edit.md), and no board
-  // draws the last three tabs' names (docs/decisions/0087-consumables-and-stock.md,
-  // docs/decisions/0088-every-policy-in-the-console.md).
+  // PLACEHOLDER: no board draws the tabs' names.
   tabs: {
     rules: "Rules",
-    prices: "Services and prices",
-    "discount-codes": "Discount codes",
-    area: "Service area",
     blackouts: "Blackout days",
     consumables: "Consumables",
     "job-sheet": "Job sheet",
-    staff: "Staff",
   },
   /**
    * PLACEHOLDER, every line of it: no board draws discount codes (docs/decisions/0108-discount-codes.md).
@@ -1708,8 +1775,8 @@ export const settings = {
     errors: {
       code: "A code is 4 to 16 letters and figures, none of them I, L, O, 0 or 1.",
       count: "A code you type is made once. Generate them to make more.",
-      value: "A percentage is 1 to 100.",
-      cap: "Only a percentage takes a cap.",
+      value: "A percentage is 1 to 100. An amount is whole rupees.",
+      cap: "Only a percentage takes a cap, in whole rupees.",
       covers: "Choose what the code covers.",
       expires_on: "The last day cannot be before today.",
       max_uses: "Generated codes are single-use: one use each.",
@@ -2267,13 +2334,7 @@ export const settings = {
       "Who may use the console, and for what. Each grant gives one department at one level, nationally, across a " +
       "zone or in one city. View sees; Act does the day's work; Manage also refunds, waives, sets prices, codes and " +
       "settings, deletes accounts and grants access.",
-    departments: {
-      operations: "Operations",
-      customer_care: "Customer Care",
-      finance: "Finance",
-      growth: "Growth",
-      admin: "Admin",
-    },
+    departments: DEPARTMENT_NAMES,
     levels: { view: "View", act: "Act", manage: "Manage" },
     national: "National",
     zone: (name: string) => `${name} zone`,

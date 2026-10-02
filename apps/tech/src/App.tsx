@@ -7,7 +7,8 @@
 // A 401 from any call means it has ended, whether it ran out or ops revoked the
 // device: whatever screen is showing, everything the phone holds is wiped
 // before the sign-in is shown again, and a `device_revoked` code only changes
-// what it says.
+// what it says. A technician ops switched off keeps the work he has not sent
+// (./store/set-aside.ts), which goes on once he signs in again.
 //
 // A store that has never held a session is a third case, and the one an iPhone
 // makes: an app installed to the home screen has its own cookie jar, so the
@@ -15,7 +16,7 @@
 // sign-in is told which of the three it is, so it can say so (ADR 0053).
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, DEVICE_REVOKED, onSessionEnded, type Me } from "./api.ts";
+import { api, DEVICE_REVOKED, onSessionEnded, TECHNICIAN_INACTIVE, type Me } from "./api.ts";
 import { CaptureScreen } from "./camera/CaptureScreen.tsx";
 import { Stopped } from "./components/Banners.tsx";
 import { storage } from "./content.ts";
@@ -31,9 +32,10 @@ import { Outcome } from "./steps/Outcome.tsx";
 import { Piece } from "./steps/Piece.tsx";
 import { Profile } from "./steps/Profile.tsx";
 import { enrolled, enrolledAt, keepMe, keptMe } from "./store/device.ts";
-import { onStorageFull, wipe } from "./store/db.ts";
+import { onStorageFull } from "./store/db.ts";
 import { replay } from "./store/outbox.ts";
 import { askToKeep, type Keeping } from "./store/persist.ts";
+import { leaveSignedOut, settleSetAside } from "./store/set-aside.ts";
 import { TodayScreen } from "./today/TodayScreen.tsx";
 import { WaitingScreen } from "./waiting/WaitingScreen.tsx";
 import styles from "./app.module.css";
@@ -73,9 +75,11 @@ function pageFor(route: Route) {
   }
 }
 
-/** Why the sign-in is showing once a session ends: ops revoked the phone, it had a session, or it never did. */
-function whyOut(code: string | null, hadSession: boolean): Out {
+/** Why the sign-in is showing once a session ends: what ops did, work kept, a session it had, or none. */
+function whyOut(code: string | null, hadSession: boolean, workKept: boolean): Out {
   if (code === DEVICE_REVOKED) return "revoked";
+  if (workKept) return "work-kept";
+  if (code === TECHNICIAN_INACTIVE) return "switched-off";
   return hadSession ? "ended" : "fresh";
 }
 
@@ -94,9 +98,10 @@ export function App() {
   const full = useStorageFull();
 
   /*
-   * The session has ended: nothing of ours stays on this phone. The screens go
-   * first, so nothing of a client's shows while the wipe runs. Several calls
-   * can meet the same 401 at once, and they share the one ending.
+   * The session has ended: nothing of ours stays on this phone, but for a
+   * switched-off technician's unsent work. The screens go first, so nothing of a
+   * client's shows while the wipe runs. Several calls can meet the same 401 at
+   * once, and they share the one ending.
    */
   const ending = useRef<Promise<void> | null>(null);
   const end = useCallback((code: string | null): Promise<void> => {
@@ -104,10 +109,10 @@ export function App() {
       setState({ kind: "checking" });
       // Read before the wipe, since the wipe takes the answer with it.
       const had = (await enrolledAt().catch(() => null)) !== null;
-      await wipe();
+      const workKept = await leaveSignedOut(code);
       setKeeping("asking");
       go("/");
-      setState({ kind: "out", why: whyOut(code, had) });
+      setState({ kind: "out", why: whyOut(code, had, workKept) });
     })().finally(() => {
       ending.current = null;
     });
@@ -123,6 +128,8 @@ export function App() {
   const check = useCallback(async () => {
     const answer = await api.me();
     if (answer.ok) {
+      // Work kept while he was switched off goes on only if it is his.
+      await settleSetAside(answer.body.id).catch(() => undefined);
       // Kept so the next basement opens signed in; a phone with no room to keep it opens all the same.
       await keepMe(answer.body).catch(() => undefined);
       await enrolled().catch(() => undefined);
