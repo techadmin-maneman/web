@@ -7,6 +7,7 @@ import { productionDependencies } from "./dependencies.ts";
 import { alertIfForgotten, MAINTENANCE_RETRY_SECONDS, maintenanceUnderWay } from "./domain/maintenance.ts";
 import { createCachedIdentityCheck, validateStaticConfig } from "./guard.ts";
 import { byHost } from "./http/surfaces.ts";
+import { meterDatabase, usageFields } from "./lib/d1-meter.ts";
 import { createLogger, type Logger } from "./log.ts";
 import { handleCrmSyncBatch } from "./queues/crm-sync.ts";
 import { handleFsmSyncBatch } from "./queues/fsm-sync.ts";
@@ -54,50 +55,68 @@ async function batchHeldForMaintenance(batch: MessageBatch, db: D1Database, log:
   return true;
 }
 
+/** Hands a batch to its queue's consumer, once the database is this environment's and no maintenance is under way. */
+async function consumeBatch(batch: MessageBatch, workerEnv: Env, log: Logger): Promise<void> {
+  const started = Date.now();
+  await assertOwnDatabase(workerEnv.DB); // throwing leaves the messages for a retry
+  // Consumer runs have stalled for minutes before their first outside call (docs/decisions/0012).
+  const identityMs = Date.now() - started;
+  if (identityMs > SLOW_STEP_MS) log.warn("slow_step", { step: "database_identity", duration_ms: identityMs });
+  if (await batchHeldForMaintenance(batch, workerEnv.DB, log)) return;
+  const deps = makeDependencies(workerEnv, log);
+
+  if (batch.queue.startsWith("mm-crm-sync-")) {
+    await handleCrmSyncBatch(batch, workerEnv.DB, deps, log);
+    return;
+  }
+  if (batch.queue.startsWith("mm-render-")) {
+    await handleRenderBatch(batch, workerEnv, deps, log, {
+      resultRetentionDays: config.settings.tryon.resultRetentionDays,
+    });
+    return;
+  }
+  if (batch.queue.startsWith("mm-fsm-sync-")) {
+    await handleFsmSyncBatch(batch, workerEnv, deps, log, {
+      labelAsTest: config.environment !== "production",
+      cataloguePush: config.settings.fsmCataloguePush,
+      record: fieldRecord(config.providers),
+    });
+    return;
+  }
+  if (batch.queue.startsWith("mm-messaging-")) {
+    await handleMessagingBatch(batch, workerEnv.DB, config, deps, log);
+    return;
+  }
+  log.error("unknown_queue", { queue: batch.queue });
+  batch.retryAll();
+}
+
 export default {
   fetch: byHost(apps, config.environment),
 
+  /** Each batch ends with one line saying what it cost D1, whether it was consumed or threw. */
   async queue(batch, workerEnv) {
     const log = baseLog.child({ queue: batch.queue });
     const started = Date.now();
-    await assertOwnDatabase(workerEnv.DB); // throwing leaves the messages for a retry
-    // Consumer runs have stalled for minutes before their first outside call (docs/decisions/0012).
-    const identityMs = Date.now() - started;
-    if (identityMs > SLOW_STEP_MS) log.warn("slow_step", { step: "database_identity", duration_ms: identityMs });
-    if (await batchHeldForMaintenance(batch, workerEnv.DB, log)) return;
-    const deps = makeDependencies(workerEnv, log);
-
-    if (batch.queue.startsWith("mm-crm-sync-")) {
-      await handleCrmSyncBatch(batch, workerEnv.DB, deps, log);
-      return;
-    }
-    if (batch.queue.startsWith("mm-render-")) {
-      await handleRenderBatch(batch, workerEnv, deps, log, {
-        resultRetentionDays: config.settings.tryon.resultRetentionDays,
+    const meter = meterDatabase(workerEnv.DB);
+    try {
+      await consumeBatch(batch, { ...workerEnv, DB: meter.db }, log);
+    } finally {
+      log.info("queue_batch", {
+        messages: batch.messages.length,
+        duration_ms: Date.now() - started,
+        ...usageFields(meter.usage()),
       });
-      return;
     }
-    if (batch.queue.startsWith("mm-fsm-sync-")) {
-      await handleFsmSyncBatch(batch, workerEnv, deps, log, {
-        labelAsTest: config.environment !== "production",
-        cataloguePush: config.settings.fsmCataloguePush,
-        record: fieldRecord(config.providers),
-      });
-      return;
-    }
-    if (batch.queue.startsWith("mm-messaging-")) {
-      await handleMessagingBatch(batch, workerEnv.DB, config, deps, log);
-      return;
-    }
-    log.error("unknown_queue", { queue: batch.queue });
-    batch.retryAll();
   },
 
   async scheduled(_controller, workerEnv) {
     const log = baseLog.child({ job: "cron" });
-    await assertOwnDatabase(workerEnv.DB);
-    if (await cronHeldForMaintenance(workerEnv, log)) return;
-    const deps = makeDependencies(workerEnv, log);
-    await runCron(CRON_JOBS, { env: workerEnv, deps, config, log });
+    const meter = meterDatabase(workerEnv.DB);
+    const meteredEnv = { ...workerEnv, DB: meter.db };
+    await assertOwnDatabase(meteredEnv.DB);
+    if (await cronHeldForMaintenance(meteredEnv, log)) return;
+    const deps = makeDependencies(meteredEnv, log);
+    await runCron(CRON_JOBS, { env: meteredEnv, deps, config, log, meter });
   },
 } satisfies ExportedHandler<Env>;
