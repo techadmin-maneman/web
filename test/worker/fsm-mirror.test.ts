@@ -430,9 +430,7 @@ describe("FSM's webhook", () => {
       refreshToken: "r",
       accountsHost: "accounts.zoho.in",
       apiHost: "www.zohoapis.in",
-      booksOrgId: null,
       webhookToken: TOKEN,
-      booksRefundAccountId: null,
     },
   };
 

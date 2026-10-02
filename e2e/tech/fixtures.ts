@@ -165,6 +165,19 @@ const CHECKLIST: Card["checklist"] = [
   { id: "piece_cleaned", label: "PLACEHOLDER Piece cleaned" },
 ];
 
+/** A consultation and fit in one visit: the consultation's three items, then the first fit's six (src/config/job-sheet.ts). */
+export const ONE_VISIT_CHECKLIST: Card["checklist"] = [
+  { id: "scalp_checked", label: "PLACEHOLDER Scalp and hairline checked" },
+  { id: "measurements_taken", label: "PLACEHOLDER Measurements taken" },
+  { id: "options_shown", label: "PLACEHOLDER Options and prices shown" },
+  { id: "template_checked", label: "PLACEHOLDER Template checked against the head" },
+  { id: "base_trimmed", label: "PLACEHOLDER Base trimmed and shaped" },
+  { id: "adhesive_applied", label: "PLACEHOLDER Adhesive applied" },
+  { id: "piece_set", label: "PLACEHOLDER Piece set and pressed" },
+  { id: "cut_and_styled", label: "PLACEHOLDER Cut and styled" },
+  { id: "aftercare_explained", label: "PLACEHOLDER Aftercare explained" },
+];
+
 /** The reasons as the console set them: the committed four, in src/config/job-sheet.ts's words. */
 const PARTIAL_REASONS: Card["partial_reasons"] = [
   { id: "client_stopped_it", label: "Client stopped it partway" },
@@ -268,6 +281,7 @@ export interface CardOptions {
   readonly oneVisit?: boolean;
   /** The client's hair profile as it stands; none recorded unless a test gives one. */
   readonly profile?: HairProfile | null;
+  readonly checklist?: Card["checklist"];
 }
 
 export function card(date: string, progress: Progress, options: CardOptions = {}): Card {
@@ -302,7 +316,7 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
         : null,
     reminder: options.reminderDelivered === undefined ? null : { delivered_at: options.reminderDelivered },
     steps: stepsFor(oneVisit ? "first_fit" : type, oneVisit),
-    checklist: CHECKLIST,
+    checklist: options.checklist ?? CHECKLIST,
     partial_reasons: PARTIAL_REASONS,
     consumables: CONSUMABLES,
     products: oneVisit || type === "consultation" ? PRODUCTS : [],
@@ -400,6 +414,8 @@ export interface Fake {
   pieces: Piece[];
   /** The client's hair profile on the card, or none recorded. */
   profile: HairProfile | null;
+  /** The checklist on the card: three items unless a test gives a longer one. */
+  checklist: Card["checklist"];
   /** Parts of the address beyond the fixture's two lines. */
   address: AddressParts;
   /** Whether the client has a last visit with an after photograph. */
@@ -480,6 +496,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     oneVisit: false,
     pieces: [],
     profile: null,
+    checklist: CHECKLIST,
     address: {},
     lastVisit: false,
     reminderDelivered: undefined,
@@ -501,6 +518,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       address: fake.address,
       oneVisit: fake.oneVisit,
       profile: fake.profile,
+      checklist: fake.checklist,
     });
 
   await on.route("**/api/tech/**", async (route: Route) => {
@@ -661,6 +679,15 @@ function stepOf(path: string, body: { phase?: string } | null): Step | null {
     if (path.endsWith(`/${step}`)) return step;
   }
   return null;
+}
+
+/** Whether anything scrolls but a screen's own body: the page, or the column the screens sit in. */
+export function pageScrolls(page: Page): Promise<boolean> {
+  return page.evaluate(() => {
+    const column = document.getElementById("root");
+    const pageHeight = document.scrollingElement?.scrollHeight ?? 0;
+    return pageHeight > window.innerHeight || (column !== null && column.scrollHeight > column.clientHeight);
+  });
 }
 
 /** Everything the phone is holding in its own store, read from the page. */

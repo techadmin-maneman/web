@@ -8,7 +8,7 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  height: 100dvh;
+  min-height: 0;
   background: var(--ink-deep);
 }
 
@@ -247,10 +247,10 @@
   color: var(--paper);
 }
 
-/* Gloved use: the one action, same place on every screen, 64 px and full width. */
+/* Gloved use: the one action, same place on every screen, 64 px and full width, clear of an iPhone's home indicator. */
 .foot {
   flex-shrink: 0;
-  padding: var(--sp-16) var(--sp-20) var(--sp-22);
+  padding: var(--sp-16) var(--sp-20) calc(var(--sp-22) + env(safe-area-inset-bottom));
   border-top: var(--hairline) solid var(--ink-rule);
 }
 

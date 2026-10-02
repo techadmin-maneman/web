@@ -12,14 +12,8 @@
 import { createRoute, z, type RouteHandler } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
-import {
-  createChallenge,
-  findEligiblePerson,
-  openChallenge,
-  replaceCode,
-  verifyCode,
-  type Challenge,
-} from "../domain/login.ts";
+import { findEligiblePerson, openChallenge, replaceCode, verifyCode } from "../domain/login.ts";
+import { createChallenge, type Challenge } from "../domain/one-time-codes.ts";
 import { liveContact } from "../domain/profile.ts";
 import { deviceLabel, openSession, revokeSession } from "../domain/sessions.ts";
 import { clearClientCookie, clientSessionOf, setClientCookie } from "../http/client-session.ts";
@@ -174,7 +168,13 @@ const login: RouteHandler<typeof loginRoute, AppEnv> = async (c) => {
   if (!(await countCode(c, sendsTo, name, visitor.ipHash, now))) return c.json(errorBody("busy", requestId), 503);
 
   const code = knownCode(limits, name) ?? newLoginCode();
-  const challenge = await createChallenge(db, { personId: person?.id ?? null, code, pepper: limits.codePepper, now });
+  const challenge = await createChallenge(db, {
+    holder: "person",
+    holderId: person?.id ?? null,
+    code,
+    pepper: limits.codePepper,
+    now,
+  });
   await sendCodeAfterResponse(c, sendsTo, name, "whatsapp", code);
   return c.json(challengeBody(c, challenge, now), 202);
 };
@@ -195,7 +195,7 @@ async function sendAgain(c: Ctx, challengeId: string, channel: CodeChannel) {
   if (gate === "rate_limited") return c.json(errorBody("rate_limited", requestId), 429);
   if (gate === "busy") return c.json(errorBody("busy", requestId), 503);
 
-  const contact = await contactOf(db, challenge.personId);
+  const contact = await contactOf(db, challenge.holderId);
   const sendsTo = contact?.mobileE164 ?? null;
   const name = contact?.name ?? null;
   if (!(await countCode(c, sendsTo, name, ipHash, now))) return c.json(errorBody("busy", requestId), 503);

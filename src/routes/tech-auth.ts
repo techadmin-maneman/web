@@ -15,10 +15,10 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
 import { logDeactivated, syncTechnicians } from "../domain/fsm-mirror.ts";
+import { createChallenge } from "../domain/one-time-codes.ts";
 import { takeOne } from "../domain/rate-limit.ts";
 import { revokeSession, deviceLabel } from "../domain/sessions.ts";
 import {
-  createTechnicianChallenge,
   findFieldTechnician,
   openTechnicianSession,
   signedInTechnician,
@@ -183,8 +183,9 @@ export function registerTechAuth(app: App): void {
     if (!(await countCode(c, sendsTo, name, visitor.ipHash, now))) return c.json(errorBody("busy", requestId), 503);
 
     const code = knownCode(limits, name) ?? newLoginCode();
-    const challenge = await createTechnicianChallenge(db, {
-      technicianId: technician?.id ?? null,
+    const challenge = await createChallenge(db, {
+      holder: "technician",
+      holderId: technician?.id ?? null,
       code,
       pepper: limits.codePepper,
       now,
