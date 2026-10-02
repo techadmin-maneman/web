@@ -13,6 +13,7 @@ import { requireStaffAccess } from "./http/staff-access.ts";
 import { REQUEST_ID_HEADER, type App, type AppEnv } from "./http/context.ts";
 import { ErrorResponseSchema, errorBody } from "./http/errors.ts";
 import { requireSameOrigin } from "./http/origin.ts";
+import { meterDatabase, usageFields } from "./lib/d1-meter.ts";
 import { createLogger } from "./log.ts";
 import { registerClientAuth } from "./routes/client-auth.ts";
 import { registerClientMe } from "./routes/client-me.ts";
@@ -200,7 +201,10 @@ export function createApp(
   return app;
 }
 
-/** Gives each request an ID, a logger and its dependencies; sets common headers; logs the request. */
+/**
+ * Gives each request an ID, a logger, its dependencies and a metered database; sets common headers; logs the request
+ * with what it cost D1.
+ */
 function requestContext(
   config: StaticConfig,
   makeDependencies: DependencyFactory,
@@ -214,6 +218,8 @@ function requestContext(
     const started = Date.now();
     const requestId = crypto.randomUUID();
     const log = baseLog.child({ request_id: requestId });
+    const meter = meterDatabase(c.env.DB);
+    c.env = { ...c.env, DB: meter.db };
     c.set("requestId", requestId);
     c.set("log", log);
     c.set("config", config);
@@ -234,6 +240,7 @@ function requestContext(
       route: routePath(c, -1), // the pattern, e.g. /api/result/:token; never the path, which can hold a token
       status: c.res.status,
       duration_ms: Date.now() - started,
+      ...usageFields(meter.usage()),
     });
   });
 }
