@@ -1,12 +1,12 @@
 // What things cost, from the price book (migrations/0016_booking.sql): the only
 // source of prices for the app. Amounts are in paise.
 //
-// Ops set every price from the console, each from the date it applies
-// (docs/decisions/0061-ops-editable-inputs.md). A change from a new date is a
-// new row; a second change for the same date corrects that date's row. What a
-// client was sold never moves with either: a hold keeps its price and its late
-// fee, and a payment the split before GST it was taken at
-// (docs/decisions/0068-a-paid-hold-is-kept.md).
+// Ops set every price from the console, each from the date it applies, tomorrow
+// at the earliest (docs/decisions/0061-ops-editable-inputs.md). A change from a
+// new date is a new row; a second change for the same date corrects that date's
+// row while it is still to come. What a client was sold never moves with either:
+// a hold keeps its price and its late fee, and a payment the split before GST it
+// was taken at (docs/decisions/0068-a-paid-hold-is-kept.md).
 //
 // A visit's price is its service's: the row's item is the service's kind and
 // its tier the service's code, so a price is set only for a service the
@@ -17,6 +17,7 @@ import { withGst } from "../config/gst.ts";
 import { PRICE_BOUNDS } from "../config/ops-settings.ts";
 import { STANDARD_TIER, VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
 import { indiaDate } from "../lib/india-time.ts";
+import { firstPriceDay } from "../policy/prices.ts";
 import { isOffered } from "../policy/services.ts";
 import { auditStatement, type AuditActor, type AuditEntry } from "./audit.ts";
 import { serviceOf } from "./services.ts";
@@ -143,8 +144,9 @@ function checkPrice(
       says: `GST is a whole percentage from ${String(minGstPercent)} to ${String(maxGstPercent)}.`,
     };
   }
-  // A past date would change what a visit already invoiced was charged.
-  if (price.valid_from < today) return { field: "valid_from", says: "A price applies from today or a day after it." };
+  if (price.valid_from < firstPriceDay(today)) {
+    return { field: "valid_from", says: "A new price applies from tomorrow at the earliest." };
+  }
   return null;
 }
 
@@ -212,8 +214,7 @@ async function setting(db: D1Database, price: PriceChange, write: PriceWrite): P
     subject: { kind: "price", id: `${price.item}/${price.tier}` },
     requestId: write.requestId,
     detail: {
-      // -1 where the book had no price for it at all, which no amount can be.
-      from: was?.amount_ex_gst ?? -1,
+      from: was?.amount_ex_gst ?? null,
       to: price.amount_ex_gst,
       gst_percent: price.gst_percent,
       valid_from: price.valid_from,

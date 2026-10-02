@@ -2360,7 +2360,7 @@ The price book: every price, past, present and scheduled
 
 ### POST /api/prices
 
-A price from the date it applies. A change is a new row, so nothing already invoiced moves
+A price from the date it applies, tomorrow at the earliest. A change is a new row, so nothing sold moves
 
 Request body:
 
@@ -2390,7 +2390,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names what was refused, tier where no service of the kind has it; service_retired: the service is retired by the day it would apply from
+**400**: invalid_request: fields names what was refused, valid_from when it is before tomorrow, tier where no service of the kind has it; service_retired: the service is retired by the day it would apply from
 
 ```json
 {
@@ -2408,7 +2408,7 @@ Request body:
 
 ### POST /api/prices/correct
 
-Correct a price still to come: take it back and set its replacement, from any day from today, at once
+Correct a price still to come: take it back and set its replacement, from tomorrow or later, at once
 
 Request body:
 
