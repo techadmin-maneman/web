@@ -24,6 +24,13 @@ function queueBatch(queue: string, bodies: unknown[]) {
   return { queue, messages, ackAll: vi.fn(), retryAll: vi.fn() };
 }
 
+/** What the runbook's first step of a restore writes. */
+async function switchMaintenanceOn(startedAt: string): Promise<void> {
+  await env.DB.prepare("INSERT INTO maintenance (id, reason, started_at) VALUES (1, 'restoring D1', ?1)")
+    .bind(startedAt)
+    .run();
+}
+
 describe("queue handler", () => {
   it("routes crm-sync messages to the sync, which marks the lead synced", async () => {
     await markDatabase();
@@ -94,6 +101,51 @@ describe("queue handler", () => {
     const batch = queueBatch("mm-mystery-local", [{}]);
     await worker.queue(batch as unknown as MessageBatch, env);
     expect(batch.retryAll).toHaveBeenCalledOnce();
+  });
+
+  it("turns a batch away while D1 is being restored, to be delivered again in five minutes", async () => {
+    await markDatabase();
+    await switchMaintenanceOn(new Date().toISOString());
+    const batch = queueBatch("mm-crm-sync-local", [{ lead_id: "lead-1", request_id: "r" }]);
+
+    await worker.queue(batch as unknown as MessageBatch, env);
+
+    expect(batch.retryAll).toHaveBeenCalledWith({ delaySeconds: 300 });
+    expect(batch.messages[0]?.ack).not.toHaveBeenCalled();
+  });
+});
+
+describe("scheduled handler while D1 is being restored", () => {
+  const queues = {
+    CRM_QUEUE: fakeQueue(),
+    RENDER_QUEUE: fakeQueue(),
+    MESSAGE_QUEUE: fakeQueue(),
+    FSM_QUEUE: fakeQueue(),
+  };
+
+  it("runs no job and notes no run", async () => {
+    await markDatabase();
+    await switchMaintenanceOn(new Date().toISOString());
+    const logs = captureLogs();
+
+    await worker.scheduled(createScheduledController({ cron: "*/5 * * * *" }), { ...env, ...queues });
+
+    expect(logs.lines().some((line) => line.event === "sweep")).toBe(false);
+    expect(logs.lines().some((line) => line.event === "cron_stopped_for_maintenance")).toBe(true);
+    expect(await lastCompletedAt(env.DB)).toBeNull();
+    expect(await env.DB.prepare("SELECT COUNT(*) AS alerts FROM alerts").first()).toEqual({ alerts: 0 });
+  });
+
+  it("tells ops once the switch has been on for an hour", async () => {
+    await markDatabase();
+    const startedAt = new Date(Date.now() - 61 * 60_000).toISOString();
+    await switchMaintenanceOn(startedAt);
+
+    await worker.scheduled(createScheduledController({ cron: "*/5 * * * *" }), { ...env, ...queues });
+
+    const alert = await env.DB.prepare("SELECT key, message FROM alerts").first<{ key: string; message: string }>();
+    expect(alert?.key).toBe(`maintenance:${startedAt}`);
+    expect(alert?.message).toContain('switch it off: runbook, "Restoring D1"');
   });
 });
 

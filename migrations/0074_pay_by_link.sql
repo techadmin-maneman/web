@@ -1,4 +1,4 @@
--- Migration number: 0071
+-- Migration number: 0074
 -- A visit ops book from the console that the client pays for: the slot is held, and a Razorpay payment link goes to
 -- the client; the visit is booked once the link is paid.
 --
