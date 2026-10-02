@@ -29,7 +29,7 @@ export const TEMPLATES: Readonly<Record<string, string>> = {
   visit_moved_v1: "Hello {{1}}, your {{2}} is now on {{3}}, {{4}}, with {{5}}.",
   // At the technician's check-in, which is also the no-show's evidence.
   technician_arrived_v1: "Hello {{1}}, {{5}} has arrived for your {{2}}.",
-  // Ops' no-show ruling: {{6}} what is kept, {{10}} what goes back. Never ops' reason or the notice period.
+  // Ops' ruling on a visit the client was not home for: {{6}} what is kept, {{10}} what goes back. Never ops' reason.
   no_show_missed_v1:
     "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. You can book again in the Mane Man app.",
   no_show_charged_paid_v1:
