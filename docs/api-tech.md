@@ -958,6 +958,7 @@ Request body:
             "not_bookable",
             "hold_expired",
             "address_required",
+            "already_booked",
             "not_changeable",
             "terms_changed",
             "consent_required",

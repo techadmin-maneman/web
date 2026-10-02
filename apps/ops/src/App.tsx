@@ -2,8 +2,11 @@
 // reaches the host, and mm-api checks its token on every call and records the
 // identity (docs/decisions/0031-access-and-audit.md). The console therefore
 // opens straight on a section: Tasks, or the first the person may open.
+//
+// The settings sections load the first time they open, so the console's first
+// load stays within its 150 KB budget (scripts/lib/spa-build.ts).
 
-import { Fragment, useEffect, type ComponentType } from "react";
+import { Fragment, lazy, Suspense, useEffect, type ComponentType } from "react";
 import { ClientScreen } from "./clients/ClientScreen.tsx";
 import { FindClientScreen } from "./clients/FindClientScreen.tsx";
 import { ClosedScreen } from "./components/ClosedScreen.tsx";
@@ -26,12 +29,30 @@ import {
   type PlainPage,
   type Route,
 } from "./route.ts";
-import { DiscountCodesScreen, PricesScreen, ServiceAreaScreen, StaffScreen } from "./settings/PanelScreens.tsx";
-import { SettingsScreen } from "./settings/SettingsScreen.tsx";
 import { StockScreen } from "./stock/StockScreen.tsx";
 import { TasksScreen } from "./tasks/TasksScreen.tsx";
 import { TechniciansScreen } from "./technicians/TechniciansScreen.tsx";
 import { WaitlistScreen } from "./waitlist/WaitlistScreen.tsx";
+
+/**
+ * Fetches a section's code. A console left open across a release asks for a file that release removed, so the page
+ * loads again, on the new release.
+ */
+function loadOrReload<Module>(load: () => Promise<Module>): Promise<Module> {
+  return load().catch((error: unknown) => {
+    window.location.reload();
+    throw error;
+  });
+}
+
+const settingsPanels = () => loadOrReload(() => import("./settings/PanelScreens.tsx"));
+const SettingsScreen = lazy(() =>
+  loadOrReload(() => import("./settings/SettingsScreen.tsx")).then((module) => ({ default: module.SettingsScreen })),
+);
+const PricesScreen = lazy(() => settingsPanels().then((module) => ({ default: module.PricesScreen })));
+const DiscountCodesScreen = lazy(() => settingsPanels().then((module) => ({ default: module.DiscountCodesScreen })));
+const ServiceAreaScreen = lazy(() => settingsPanels().then((module) => ({ default: module.ServiceAreaScreen })));
+const StaffScreen = lazy(() => settingsPanels().then((module) => ({ default: module.StaffScreen })));
 
 /** The screen each section of one page opens on. */
 const SCREENS: Readonly<Record<PlainPage, ComponentType>> = {
@@ -77,7 +98,9 @@ export function App() {
   // Keyed by the path, so each section opens at its top with its own data.
   return (
     <Fragment key={keyOf(route)}>
-      <Page route={route} mayCall={mayCall} />
+      <Suspense fallback={null}>
+        <Page route={route} mayCall={mayCall} />
+      </Suspense>
     </Fragment>
   );
 }

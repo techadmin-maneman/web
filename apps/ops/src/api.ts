@@ -29,6 +29,11 @@ export type ClientPayment = ClientRecord["payments"][number];
 /** A booking FSM refused five times running, held for ops (docs/decisions/0095-a-booking-fsm-refuses-is-held.md). */
 export type HeldBooking = ClientRecord["held_bookings"][number];
 export type HeldBookingRefunded = Body<paths["/api/held-bookings/{id}/refund"]["post"]>;
+/** A visit ops book for a client: the windows free for it, what is sent, and what came of it. */
+export type VisitAvailability = Body<paths["/api/visits/availability"]["get"]>;
+export type AvailabilityQuery = NonNullable<paths["/api/visits/availability"]["get"]["parameters"]["query"]>;
+export type VisitToBook = Sent<paths["/api/visits"]["post"]>;
+export type VisitBooked = Body<paths["/api/visits"]["post"]>;
 export type CreditBalance = Body<paths["/api/clients/{id}/credits"]["post"]>;
 export type CreditAdjustment = Sent<paths["/api/clients/{id}/credits"]["post"]>;
 export type ClientInvite = NonNullable<ClientRecord["invite"]>;
@@ -266,6 +271,10 @@ export const api = {
     client.post("/api/held-bookings/{id}/link", { path: { id }, body: { visit_id: visitId } }),
   /** What FSM holds for it cancelled, its payment refunded, and the client told. */
   refundHeldBooking: (id: string) => client.post("/api/held-bookings/{id}/refund", { path: { id } }),
+  /** A client's 14 days of windows for a kind of visit, who is free in each, and how it would be paid. */
+  visitAvailability: (query: AvailabilityQuery) => client.get("/api/visits/availability", { query }),
+  /** A visit booked for a client: at once when nothing is paid at booking, else a payment link goes to them. */
+  bookVisit: (visit: VisitToBook) => client.post("/api/visits", { body: visit }),
   /** Visits added or taken away by hand, with the reason; the answer is the balance after it. */
   adjustCredits: (id: string, adjustment: CreditAdjustment) =>
     client.post("/api/clients/{id}/credits", { path: { id }, body: adjustment }),
