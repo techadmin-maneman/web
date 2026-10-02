@@ -1,4 +1,4 @@
--- Migration number: 0073
+-- Migration number: 0075
 -- Without FSM, the Books pass makes each client's Books customer itself, and the
 -- invoice pass bills a finished visit that has no FSM work order. Only a new
 -- column and new indexes, so the code already deployed is unaffected.
