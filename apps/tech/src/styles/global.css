@@ -32,10 +32,10 @@ body {
 }
 
 /*
- * The column is exactly the screen's height and scrolls itself, so a screen
- * with one action keeps its head and foot in view and scrolls only its body,
- * and a list such as Today scrolls whole. A step sliding in never scrolls it
- * sideways. Centred, not stretched, on a wider screen.
+ * The column is exactly the screen's height. A screen with one action scrolls
+ * only its body, so its head and foot stay in view; Today and Waiting scroll
+ * the column. Not hidden: that would strand the bottom of a long list.
+ * Centred, not stretched, on a wider screen.
  */
 #root {
   display: flex;

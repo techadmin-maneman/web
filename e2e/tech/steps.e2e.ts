@@ -251,7 +251,7 @@ test.describe("on a 360 × 640 phone", () => {
     await expect(footAction(page)).toBeInViewport({ ratio: 1 });
     expect(await pageScrolls(page)).toBe(false);
 
-    // Each tap scrolls the list to the next item; the head and the foot stay where they are.
+    // Reaching each item scrolls the list alone; the head and the foot stay where they are.
     const items = page.getByRole("button", { name: /PLACEHOLDER/ });
     await expect(items).toHaveCount(9);
     for (const item of await items.all()) await item.click();
@@ -273,9 +273,12 @@ test.describe("on a 360 × 640 phone", () => {
     await expect(footAction(page)).toBeInViewport({ ratio: 1 });
     expect(await pageScrolls(page)).toBe(false);
 
-    await page.locator("main > div").first().locator(":scope > *").last().scrollIntoViewIfNeeded();
+    const lastField = page.locator("main > div").first().locator(":scope > *").last();
+    await lastField.scrollIntoViewIfNeeded();
+    await expect(lastField).toBeInViewport();
     await expect(heading).toBeInViewport({ ratio: 1 });
     await expect(footAction(page)).toBeInViewport({ ratio: 1 });
+    expect(await pageScrolls(page)).toBe(false);
   });
 });
 
