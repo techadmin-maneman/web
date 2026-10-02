@@ -5239,7 +5239,7 @@ Request body:
         ]
       },
       "maxItems": 2,
-      "description": "The photograph purposes the pay step showed its lines for. Booking agrees to each the client has never decided on (ADR 0080); left out, none."
+      "description": "The photograph purposes the pay step showed its lines for. Booking agrees to each the client has never decided on, recorded once the booking is paid for, or at once for a free visit (ADR 0080); left out, none."
     }
   },
   "required": [

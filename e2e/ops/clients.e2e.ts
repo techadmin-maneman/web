@@ -694,7 +694,7 @@ test("lists every consent with its state, date and where it was given, and says 
   await openClient(page, `/clients/${CLIENT.id}/consents`);
   const row = (purpose: string) => page.getByRole("row").filter({ hasText: purpose });
   await expect(page.getByRole("columnheader", { name: "Source" })).toBeVisible();
-  await expect(row("Photographs for the client record")).toHaveText(/Given\s*14 Nov 2026\s*Profile$/);
+  await expect(row("Photographs taken for the visit record")).toHaveText(/Given\s*14 Nov 2026\s*Profile$/);
   await expect(row("Photographs on referral cards")).toContainText("Refer");
   await expect(row("Photographs in marketing")).toHaveText(/Not given\s*—\s*—$/);
   await expect(row("WhatsApp about visits")).toContainText("Site");
@@ -718,7 +718,7 @@ test("names a consent given by booking, and says where a place was not recorded"
   );
   await openClient(page, `/clients/${CLIENT.id}/consents`, { [READ_CONSENTS]: json({ ...CONSENTS, consents }) });
   const row = (purpose: string) => page.getByRole("row").filter({ hasText: purpose });
-  await expect(row("Photographs for the client record")).toContainText("Booking");
+  await expect(row("Photographs taken for the visit record")).toContainText("Booking");
   await expect(row("Photographs on referral cards")).toContainText("Not recorded");
   await expect(row("WhatsApp about visits")).toContainText("Invite");
   const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();

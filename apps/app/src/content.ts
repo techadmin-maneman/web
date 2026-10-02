@@ -410,7 +410,7 @@ export const booking = {
     },
     /**
      * PLACEHOLDER: the design never asks. Ticked, it records the client's yes to WhatsApp about their
-     * visits (the purpose the day-before reminder is sent under), on that purpose's own notice.
+     * visits (the purpose the day-before reminder is sent under), on a notice of this line alone.
      */
     remind: "Remind me on WhatsApp the day before",
     /**
@@ -419,9 +419,9 @@ export const booking = {
      * notice each consent is recorded under, word for word (src/config/notices.ts; booking/consents.ts).
      */
     consents: {
-      both: "By booking this visit, you also agree to photographs for your own record and on referral cards.",
+      both: "By booking this visit, you also agree to photographs taken for your visit record and used on referral cards.",
       alone: {
-        photos_own_record: "By booking this visit, you also agree to photographs for your own record.",
+        photos_own_record: "By booking this visit, you also agree to photographs taken for your visit record.",
         photos_referral_cards: "By booking this visit, you also agree to photographs on referral cards.",
       },
       switchEither: "You can switch either off in Profile.",
@@ -905,7 +905,7 @@ export const profile = {
   },
   agreed: "What you have agreed to",
   purposes: {
-    photos_own_record: "Photographs for your own record",
+    photos_own_record: "Photographs taken for your visit record",
     photos_referral_cards: "Photographs on referral cards",
     photos_marketing: "Photographs in our marketing",
     whatsapp_visits: "WhatsApp about your visits",

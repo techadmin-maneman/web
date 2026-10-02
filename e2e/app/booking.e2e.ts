@@ -493,7 +493,9 @@ test("says on the pay step what booking also agrees to, while neither is decided
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: "Pay and confirm" });
   await expect(
-    pay.getByText("By booking this visit, you also agree to photographs for your own record and on referral cards."),
+    pay.getByText(
+      "By booking this visit, you also agree to photographs taken for your visit record and used on referral cards.",
+    ),
   ).toBeVisible();
   await expect(pay.getByText("Anyone you send this card to can see your photographs.")).toBeVisible();
   await expect(pay.getByText("Your first name appears on your invite.")).toBeVisible();
@@ -512,7 +514,7 @@ test("shows only the line of a purpose still undecided, and sends only that one"
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: "Pay and confirm" });
   await expect(
-    pay.getByText("By booking this visit, you also agree to photographs for your own record."),
+    pay.getByText("By booking this visit, you also agree to photographs taken for your visit record."),
   ).toBeVisible();
   await expect(pay.getByText("You can switch it off in Profile.")).toBeVisible();
   await expect(pay.getByText("Your first name appears on your invite.")).toHaveCount(0);

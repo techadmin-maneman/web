@@ -13,6 +13,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
+import { recordBookingConsents } from "../domain/booking-consents.ts";
 import { paymentStatusOf, recordPayment, recordRefund } from "../domain/payments.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
@@ -133,6 +134,8 @@ export function registerRazorpayHook(app: App): void {
       if (event === "payment.captured" && holdId !== null) {
         await c.env.FSM_QUEUE.send({ hold_id: holdId, request_id: requestId } satisfies FsmSyncMessage);
       }
+      // Paid for, the booking gives the photograph consents its pay step showed.
+      if (status === "captured" && holdId !== null) await recordBookingConsents(db, { holdId, requestId, now });
     } else if (payload?.refund !== undefined) {
       const recorded = await recordRefund(db, RazorpayRefundSchema.parse(payload.refund.entity), now);
       // Its payment's event has not arrived yet. Not kept as seen, so Razorpay's retry is applied.
