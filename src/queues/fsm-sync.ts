@@ -333,6 +333,7 @@ async function writeJobEvent(
         db,
         bucket: env.CLIENT_PHOTOS,
         fsm: deps.fsm,
+        alertOnce: deps.alertOnce,
         labelAsTest: options.labelAsTest,
         cycles: (await readOpsInputs(db, deps.now())).pieceCycleDays,
       },

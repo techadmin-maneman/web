@@ -748,6 +748,8 @@ The chat shows the message; the `alerts` table keeps it under its key. Most aler
 | Lead _id_ did not reach FSM                                                              | none                                                                                                      | not kept                             | "FSM is down"                                                           |
 | A technician's _step_ … has waited over an hour to reach FSM                             | `job_event_pending:<job event>`                                                                           | when it is written or given up       | "FSM is down"                                                           |
 | A technician's _step_ did not reach FSM after _n_ attempts                               | none                                                                                                      | not kept                             | "FSM is down"                                                           |
+| FSM lists piece _code_ under client _id_, but our records have it on another client      | `piece_owner_mismatch:<asset>`                                                                            | by hand                              | "A piece on two clients"                                                |
+| A technician marked piece _code_ as failed, but it is not among the client's pieces      | `piece_unknown:<code>`                                                                                    | by hand                              | set the piece Inactive in FSM, as it says                               |
 | Booking _id_ was paid for … and is neither booked in FSM nor refunded                    | `unbooked_hold:<hold>`                                                                                    | when booked or given back            | "A booking FSM would not take"                                          |
 | Booking _id_ could not be written to FSM after _n_ attempts. Nothing is refunded …       | `booking_held:<hold>`                                                                                     | when booked or refunded              | "A booking FSM would not take"                                          |
 | Booking _id_ was not written to FSM: visit _id_ … reached FSM after the booking was held | `booking_to_link:<hold>`                                                                                  | when booked or refunded              | "A booking FSM would not take"                                          |
@@ -937,6 +939,15 @@ Staging writes to the owner's real FSM and Books (open point 19), and production
 FSM's API deletes no invoice, so the list names FSM's invoices of staging's work orders apart: delete them in FSM's Invoices screen, if it still shows them, once the run has deleted their work orders and Books' invoices. On 1 October 2026 it showed none: FSM's API went on listing the three invoices as links of no work order, which neither FSM's screens nor anything of ours reads. Nothing of production reads them, since its invoice pass reads each of its own work orders' invoice.
 
 FSM keeps a deleted record in its recycle bin, out of every list the API gives, so production's reconciliation never sees it.
+
+### A piece on two clients
+
+`piece_owner_mismatch`: FSM holds the asset on one client's contact while our records have the piece on another client. Our records never move a piece on their own, so neither client's Pieces tab changes until the two agree. Ask the technician who fitted it which client wears it.
+
+- **FSM is wrong:** open the asset in FSM and set its contact to that client.
+- **Our records are wrong:** `UPDATE pieces SET person_id = '<client id>' WHERE fsm_id = '<asset id>';`
+
+Then close the alert.
 
 ---
 

@@ -1,18 +1,19 @@
-// A client's pieces (docs/prompts/phase2-backend.md, "Pieces tab"), mirrored
-// from FSM's assets (ADR 0032).
-//
-// "For each piece: code, base, fitted date, supplier lot, replacement due date,
-// and failure with reason, all from FSM assets." FSM holds the asset; the
+// A client's pieces, mirrored from FSM's assets. FSM holds the asset; the
 // replacement due date is ours, computed from the base's cycle
 // (src/config/pieces.ts), because FSM has no field for it.
 //
-// The technician's label lookup reads this copy, so scanning a label works with
-// no signal. A code the copy does not know is looked up in FSM once, in case
+// A piece is only ever the client's whose FSM contact holds the asset, and our
+// copy never moves a piece from one client to another: when FSM disagrees, ops
+// are told and decide.
+//
+// The technician's label lookup reads this copy. A piece write naming a code
+// the copy does not know reads the client's own assets in FSM for it, in case
 // the piece was added there after the last sync.
 
 import { cycleDaysFor, type Cycles } from "../config/pieces.ts";
 import { addDays } from "../lib/india-time.ts";
 import type { FsmAsset, FsmProvider } from "../providers/fsm.ts";
+import type { AlertOnce } from "./alerts.ts";
 
 export interface Piece {
   readonly id: string;
@@ -65,23 +66,61 @@ export async function pieceWithOwner(
   return { piece, personId };
 }
 
+/** A client, and the FSM contact whose assets are their pieces. */
+export interface PieceOwner {
+  readonly personId: string;
+  readonly fsmContactId: string;
+}
+
+/** What reading a client's pieces from FSM needs. */
+export interface PieceSyncDeps {
+  readonly fsm: FsmProvider;
+  readonly alertOnce: AlertOnce;
+  /** The replacement cycles in force, which ops set. */
+  readonly cycles: Cycles;
+}
+
 /**
- * Writes FSM's assets for one contact over our copy. FSM's Installation_Date is
- * the fitted date; the replacement due date follows the base's cycle, since FSM
- * holds none.
+ * Writes the client's FSM assets over our copy; how many were written. FSM's
+ * Installation_Date is the fitted date; the replacement due date follows the
+ * base's cycle, since FSM holds none. An asset our copy has on another client
+ * stays there, and ops are told.
  */
-export async function syncPieces(
-  db: D1Database,
-  fsm: FsmProvider,
-  client: { personId: string; fsmContactId: string },
-  now: Date,
-  cycles: Cycles,
-): Promise<number> {
-  const assets = await fsm.assets(client.fsmContactId);
+export async function syncPieces(db: D1Database, deps: PieceSyncDeps, owner: PieceOwner, now: Date): Promise<number> {
+  const assets = await assetsOf(deps.fsm, owner.fsmContactId);
   if (assets.length === 0) return 0;
   const at = now.toISOString();
-  await db.batch(assets.map((asset) => upsertStatement(db, client.personId, asset, at, cycles)));
-  return assets.length;
+  const results = await db.batch(assets.map((asset) => upsertStatement(db, owner.personId, asset, at, deps.cycles)));
+  // The upsert changes no row for an asset another client holds.
+  const heldByOthers = assets.filter((_asset, index) => results[index]?.meta.changes === 0);
+  for (const asset of heldByOthers) await alertOwnerMismatch(db, deps.alertOnce, owner, asset);
+  return assets.length - heldByOthers.length;
+}
+
+/** The assets FSM holds against this contact, and no other's, newest first. */
+async function assetsOf(fsm: FsmProvider, fsmContactId: string): Promise<FsmAsset[]> {
+  const assets = await fsm.assets(fsmContactId);
+  return assets.filter((asset) => asset.contactId === fsmContactId);
+}
+
+async function alertOwnerMismatch(
+  db: D1Database,
+  alertOnce: AlertOnce,
+  owner: PieceOwner,
+  asset: FsmAsset,
+): Promise<void> {
+  const holder = await db
+    .prepare("SELECT person_id FROM pieces WHERE fsm_id = ?1")
+    .bind(asset.id)
+    .first<string | null>("person_id");
+  const ours = holder === null ? "no client" : `client ${holder}`;
+  await alertOnce({
+    key: `piece_owner_mismatch:${asset.id}`,
+    message:
+      `FSM lists piece ${asset.assetNumber} (asset ${asset.id}) under client ${owner.personId}, but our records ` +
+      `have it on ${ours}, so it was not moved. Check in FSM which client wears it and correct the asset's contact.`,
+    link: `/clients/${owner.personId}`,
+  });
 }
 
 function upsertStatement(
@@ -102,11 +141,12 @@ function upsertStatement(
          failed_at, synced_at, deleted_at)
        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, NULL)
        ON CONFLICT (fsm_id) DO UPDATE SET
-         person_id = excluded.person_id, piece_code = excluded.piece_code, base = excluded.base,
+         piece_code = excluded.piece_code, base = excluded.base,
          supplier_lot = excluded.supplier_lot, fitted_at = excluded.fitted_at,
          replacement_due_at = excluded.replacement_due_at,
          failed_at = COALESCE(pieces.failed_at, excluded.failed_at),
-         synced_at = excluded.synced_at, deleted_at = NULL`,
+         synced_at = excluded.synced_at, deleted_at = NULL
+       WHERE pieces.person_id = excluded.person_id`,
     )
     .bind(
       crypto.randomUUID(),
@@ -148,7 +188,7 @@ export async function recordFittedPiece(db: D1Database, fsm: FsmProvider, piece:
     .first<{ fsm_id: string }>();
   if (held !== null) return held.fsm_id;
 
-  const inFsm = (await fsm.assets(piece.fsmContactId)).find((asset) => asset.assetNumber === piece.pieceCode);
+  const inFsm = (await assetsOf(fsm, piece.fsmContactId)).find((asset) => asset.assetNumber === piece.pieceCode);
   const fsmId =
     inFsm?.id ??
     (await fsm.createAsset({
@@ -184,27 +224,58 @@ export async function recordFittedPiece(db: D1Database, fsm: FsmProvider, piece:
 /**
  * Records a piece that failed: FSM's asset status first, then our copy's reason.
  * FSM's asset has no field we know of for the reason, so it reaches FSM on the
- * job's summary (src/domain/job-sheet.ts).
+ * job's summary (src/domain/job-sheet.ts). A label that neither our copy nor
+ * the client's assets in FSM know is left to ops.
  */
-export async function recordFailedPiece(
-  db: D1Database,
-  fsm: FsmProvider,
-  failure: { pieceCode: string; reason: string; now: Date },
-): Promise<boolean> {
-  const held = await db
-    .prepare("SELECT fsm_id FROM pieces WHERE piece_code = ?1 AND deleted_at IS NULL")
-    .bind(failure.pieceCode)
-    .first<{ fsm_id: string }>();
-  if (held === null) return false;
-  await fsm.updateAsset(held.fsm_id, { status: "Inactive" });
+export async function recordFailedPiece(db: D1Database, deps: PieceSyncDeps, failure: FailedPiece): Promise<boolean> {
+  const fsmId = (await heldPieceId(db, failure.pieceCode)) ?? (await pieceIdFromFsm(db, deps, failure));
+  if (fsmId === null) {
+    await alertUnknownPiece(deps.alertOnce, failure);
+    return false;
+  }
+  await deps.fsm.updateAsset(fsmId, { status: "Inactive" });
   await db
     .prepare(
       `UPDATE pieces SET failed_at = COALESCE(failed_at, ?2), failure_reason = COALESCE(failure_reason, ?3),
          synced_at = ?2 WHERE fsm_id = ?1`,
     )
-    .bind(held.fsm_id, failure.now.toISOString(), failure.reason)
+    .bind(fsmId, failure.now.toISOString(), failure.reason)
     .run();
   return true;
+}
+
+export interface FailedPiece {
+  readonly pieceCode: string;
+  readonly reason: string;
+  /** The job's client; null when the job has no client in FSM. */
+  readonly owner: PieceOwner | null;
+  readonly now: Date;
+}
+
+async function heldPieceId(db: D1Database, pieceCode: string): Promise<string | null> {
+  return db
+    .prepare("SELECT fsm_id FROM pieces WHERE piece_code = ?1 AND deleted_at IS NULL")
+    .bind(pieceCode)
+    .first<string>("fsm_id");
+}
+
+/** Reads the client's pieces afresh from FSM, then looks for the label in our copy again. */
+async function pieceIdFromFsm(db: D1Database, deps: PieceSyncDeps, failure: FailedPiece): Promise<string | null> {
+  if (failure.owner === null) return null;
+  await syncPieces(db, deps, failure.owner, failure.now);
+  return heldPieceId(db, failure.pieceCode);
+}
+
+async function alertUnknownPiece(alertOnce: AlertOnce, failure: FailedPiece): Promise<void> {
+  const { owner, pieceCode } = failure;
+  const whose = owner === null ? "the client's" : `client ${owner.personId}'s`;
+  await alertOnce({
+    key: `piece_unknown:${pieceCode}`,
+    message:
+      `A technician marked piece ${pieceCode} as failed, but it is not among ${whose} pieces here or in FSM, ` +
+      "so nothing was marked. Find it in FSM and set its status to Inactive.",
+    link: owner === null ? undefined : `/clients/${owner.personId}`,
+  });
 }
 
 /**

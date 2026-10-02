@@ -8,7 +8,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { ZohoFsmSettings } from "../../src/config/settings.ts";
 import { createLogger } from "../../src/log.ts";
-import { createFsmProvider } from "../../src/providers/fsm.ts";
+import { createFsmProvider, FSM_ASSET_PAGES } from "../../src/providers/fsm.ts";
 import { FSM_API, ZOHO_TOKEN_URL, fsmUserRecord } from "./fsm-fixtures.ts";
 import { NOW, fakeFetch, json } from "./helpers.ts";
 
@@ -44,42 +44,61 @@ beforeEach(async () => {
 });
 
 describe("FSM: a client's pieces, as assets", () => {
-  it("lists a contact's assets, the latest fitted first, with what FSM left empty as nothing", async () => {
+  // FSM's list of assets takes no filter by contact: it drops ?contact= and answers every client's.
+  const EVERY_CLIENTS_ASSETS = [
+    {
+      data: [
+        {
+          id: "asset-old",
+          Asset_Number: "MM-STD-4417-A",
+          Contact: { id: "contact-1" },
+          Product: { id: "part-standard", name: "Standard base" },
+          Serial_Number: "LOT-1",
+          Installation_Date: "2026-03-25",
+          Status: "Inactive",
+          Modified_Time: "2026-06-01T10:00:00+05:30",
+        },
+        {
+          id: "asset-another-client",
+          Asset_Number: "MM-STD-7001-A",
+          Contact: { id: "contact-2" },
+          Installation_Date: "2026-09-01",
+        },
+        // Made in FSM's own screen with a name and nothing else, not even a contact.
+        { id: "asset-bare", Asset_Name: "Made by hand" },
+      ],
+      info: { more_records: true },
+    },
+    {
+      data: [
+        {
+          id: "asset-new",
+          Asset_Number: "MM-STD-4417-B",
+          Contact: { id: "contact-1" },
+          Product: { id: "part-standard" },
+          Installation_Date: "2026-09-21",
+          Modified_Time: "2026-09-21T10:00:00+05:30",
+        },
+        { id: "asset-sparse", Asset_Name: "Added by hand", Contact: { id: "contact-1" } },
+      ],
+      info: { more_records: false },
+    },
+  ];
+
+  const pageOf = (url: string) => Number(new URL(url).searchParams.get("page"));
+
+  it("keeps only the contact's own assets from every page, the latest fitted first", async () => {
     const { provider, calls } = fsm({
-      [`${FSM_API}/Assets`]: () =>
-        json({
-          data: [
-            {
-              id: "asset-old",
-              Asset_Number: "MM-STD-4417-A",
-              Contact: { id: "contact-1" },
-              Product: { id: "part-standard", name: "Standard base" },
-              Serial_Number: "LOT-1",
-              Installation_Date: "2026-03-25",
-              Status: "Inactive",
-              Modified_Time: "2026-06-01T10:00:00+05:30",
-            },
-            // An asset made in FSM's own screen, with only a name and nothing else filled.
-            { id: "asset-bare", Asset_Name: "Made by hand" },
-            {
-              id: "asset-new",
-              Asset_Number: "MM-STD-4417-B",
-              Contact: { id: "contact-1" },
-              Product: { id: "part-standard" },
-              Installation_Date: "2026-09-21",
-              Modified_Time: "2026-09-21T10:00:00+05:30",
-            },
-          ],
-        }),
+      [`${FSM_API}/Assets`]: (call) => json(EVERY_CLIENTS_ASSETS[pageOf(call.url) - 1]),
     });
 
     const assets = await provider.assets("contact-1");
 
-    expect(assets.map((asset) => asset.id)).toEqual(["asset-new", "asset-old", "asset-bare"]);
+    expect(assets.map((asset) => asset.id)).toEqual(["asset-new", "asset-old", "asset-sparse"]);
     expect(assets[2]).toEqual({
-      id: "asset-bare",
-      assetNumber: "Made by hand",
-      contactId: null,
+      id: "asset-sparse",
+      assetNumber: "Added by hand",
+      contactId: "contact-1",
       productId: null,
       productName: null,
       serialNumber: null,
@@ -88,7 +107,19 @@ describe("FSM: a client's pieces, as assets", () => {
       modifiedAt: "",
     });
     expect(assets[0]).toMatchObject({ productName: null, serialNumber: null, status: null });
-    expect(calls.at(-1)?.url).toBe(`${FSM_API}/Assets?contact=contact-1&per_page=200`);
+    expect(calls.filter((call) => call.url.startsWith(`${FSM_API}/Assets`)).map((call) => call.url)).toEqual([
+      `${FSM_API}/Assets?page=1&per_page=200`,
+      `${FSM_API}/Assets?page=2&per_page=200`,
+    ]);
+  });
+
+  it("reads no more than its last page however many assets the org holds", async () => {
+    const { provider, calls } = fsm({
+      [`${FSM_API}/Assets`]: () => json(EVERY_CLIENTS_ASSETS[0]),
+    });
+
+    expect(await provider.assets("contact-1")).toHaveLength(FSM_ASSET_PAGES);
+    expect(calls.filter((call) => call.url.startsWith(`${FSM_API}/Assets`))).toHaveLength(FSM_ASSET_PAGES);
   });
 
   it("reads a contact with no assets as none", async () => {

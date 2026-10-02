@@ -18,7 +18,8 @@
 //   PUT  /fsm/v1/Work_Orders/{id}/actions/blueprint              a transition, with its mandatory note;
 //        cancelling a work order cancels its appointments
 //   PUT  /fsm/v1/Contacts/{id}                                   fields to change, the service address by its ID
-//   GET  /fsm/v1/Assets?contact=                                 { data: [asset] }, or 204: the client's pieces
+//   GET  /fsm/v1/Assets?page=&per_page=200                       { data: [asset], info: { more_records } }, or 204;
+//        it takes no filter by contact, so a client's pieces are the assets whose Contact is theirs
 //   POST /fsm/v1/Assets                                          an asset needs a Product; our label is Asset_Number
 //   PUT  /fsm/v1/Assets/{id}                                     the piece's status, when one fails
 //   PUT  /fsm/v1/Service_Appointments/{id}                       the technician, read back after; the job's own fields
@@ -98,6 +99,12 @@ export const FSM_ITEMS_A_PAGE = 200;
  * and the push read it a page at a time instead (src/domain/fsm-catalogue.ts).
  */
 export const FSM_ITEM_PAGES = 5;
+
+/** How many assets FSM answers a page with. */
+const FSM_ASSETS_A_PAGE = 200;
+
+/** How many pages one read of a client's pieces costs at most: two thousand assets, every client's together. */
+export const FSM_ASSET_PAGES = 10;
 
 const Reference = z.object({ id: z.string() }).nullish();
 
@@ -257,6 +264,10 @@ function assetFrom(record: z.infer<typeof Asset>): FsmAsset {
   };
 }
 
+/** The latest fitted first. */
+const newestFirst = (assets: FsmAsset[]): FsmAsset[] =>
+  assets.sort((one, other) => (other.installedAt ?? "").localeCompare(one.installedAt ?? ""));
+
 function appointmentFrom(record: z.infer<typeof Appointment>): FsmAppointment {
   return {
     id: record.id,
@@ -320,6 +331,14 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDepe
     }));
     const more = (answer as { info?: { more_records?: unknown } } | null)?.info?.more_records === true;
     return { items, more };
+  }
+
+  /** One page of every asset in the org, and whether FSM holds more after it. */
+  async function assetsPage(page: number): Promise<{ assets: FsmAsset[]; more: boolean }> {
+    const query = new URLSearchParams({ page: String(page), per_page: String(FSM_ASSETS_A_PAGE) });
+    const answer = await json("assets", `/Assets?${query.toString()}`);
+    const more = (answer as { info?: { more_records?: unknown } } | null)?.info?.more_records === true;
+    return { assets: records(answer, "data", Asset).map(assetFrom), more };
   }
 
   /** Adds one record to a module; returns the new IDs by module, the record's own under `module`. */
@@ -587,11 +606,14 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDepe
     },
 
     async assets(contactId) {
-      const query = new URLSearchParams({ contact: contactId, per_page: "200" });
-      const answer = await json("assets", `/Assets?${query.toString()}`);
-      return records(answer, "data", Asset)
-        .map(assetFrom)
-        .sort((a, b) => (b.installedAt ?? "").localeCompare(a.installedAt ?? ""));
+      const theirs: FsmAsset[] = [];
+      for (let page = 1; page <= FSM_ASSET_PAGES; page += 1) {
+        const read = await assetsPage(page);
+        theirs.push(...read.assets.filter((asset) => asset.contactId === contactId));
+        if (!read.more) return newestFirst(theirs);
+      }
+      deps.log.warn("fsm_assets_cut_short", { pages_read: FSM_ASSET_PAGES });
+      return newestFirst(theirs);
     },
 
     // "An asset needs a Product (a part item) and keeps our label in Asset_Number" (the trial).

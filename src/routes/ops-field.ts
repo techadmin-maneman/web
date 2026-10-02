@@ -321,12 +321,13 @@ export function registerOpsField(app: App): void {
 
     // FSM is the record, so the copy is read afresh before it is shown.
     if (client.fsm_contact_id !== null && c.var.config.providers.FSM_PROVIDER !== "none") {
+      const { fsm, alertOnce, now } = c.var.deps;
+      const cycles = (await opsInputs(c)).pieceCycleDays;
       await syncPieces(
         c.env.DB,
-        c.var.deps.fsm,
+        { fsm, alertOnce, cycles },
         { personId: id, fsmContactId: client.fsm_contact_id },
-        c.var.deps.now(),
-        (await opsInputs(c)).pieceCycleDays,
+        now(),
       ).catch((error: unknown) => {
         c.var.log.warn("pieces_sync_failed", { person_id: id, error });
         return 0;

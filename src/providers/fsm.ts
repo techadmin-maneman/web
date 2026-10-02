@@ -9,8 +9,8 @@ import { FSM_BASE_PART_NAME, FSM_SERVICE_NAMES, VISIT_TYPES, type VisitType } fr
 import type { ZohoRequesterDependencies } from "./zoho-http.ts";
 import { createZohoFsm, FSM_ITEM_PAGES, FSM_ITEMS_A_PAGE } from "./fsm-zoho.ts";
 
-/** How many items a page of FSM's catalogue holds, and the most pages one read of all of it takes. */
-export { FSM_ITEM_PAGES, FSM_ITEMS_A_PAGE } from "./fsm-zoho.ts";
+/** How many items a page of FSM's catalogue holds, and the most pages one read of the catalogue or the assets takes. */
+export { FSM_ASSET_PAGES, FSM_ITEM_PAGES, FSM_ITEMS_A_PAGE } from "./fsm-zoho.ts";
 import { ProviderError } from "./provider-error.ts";
 
 /** An appointment as FSM holds it, in our words. Times are ISO 8601 with India's offset. */

@@ -20,15 +20,15 @@
 // start or close FSM never took must never be counted as written
 // (docs/decisions/0065-a-technicians-writes-reach-fsm.md).
 
-import { cycleDaysFor, type Cycles } from "../config/pieces.ts";
+import { cycleDaysFor } from "../config/pieces.ts";
 import { FSM_SERVICE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaIso } from "../lib/india-time.ts";
-import { STATUS_AFTER, type AppointmentTransition, type FsmProvider } from "../providers/fsm.ts";
+import { STATUS_AFTER, type AppointmentTransition } from "../providers/fsm.ts";
 import { allConsumables } from "./consumables.ts";
 import { statusOf } from "./fsm-mirror.ts";
 import { eventsOf, type JobEvent } from "./job-events.ts";
 import { checklistOf, jobSheet } from "./job-sheet-settings.ts";
-import { recordFittedPiece, recordFailedPiece } from "./pieces.ts";
+import { recordFittedPiece, recordFailedPiece, type PieceOwner, type PieceSyncDeps } from "./pieces.ts";
 import { attachPhotosToFsm } from "./tech-photos.ts";
 import { minutesBetween } from "../lib/durations.ts";
 
@@ -42,13 +42,10 @@ export interface JobForFsm {
   readonly fsmContactId: string | null;
 }
 
-export interface FsmWriteDeps {
+export interface FsmWriteDeps extends PieceSyncDeps {
   readonly db: D1Database;
   readonly bucket: R2Bucket;
-  readonly fsm: FsmProvider;
   readonly labelAsTest: boolean;
-  /** The replacement cycles in force, which ops set (ADR 0061). */
-  readonly cycles: Cycles;
 }
 
 /** What the write did, for the log: never the event's contents. */
@@ -161,16 +158,17 @@ async function mirrorStatus(db: D1Database, appointmentId: string, fsmStatus: st
  * piece itself marks that piece failed and fits nothing.
  */
 async function writePiece(deps: FsmWriteDeps, job: JobForFsm, event: JobEvent, now: Date): Promise<void> {
+  const owner = ownerOf(job);
   const oldPiece = asOldPiece(event.body.old_piece);
   if (oldPiece !== null) {
-    await recordFailedPiece(deps.db, deps.fsm, { pieceCode: oldPiece.pieceCode, reason: oldPiece.reason, now });
+    await recordFailedPiece(deps.db, deps, { pieceCode: oldPiece.pieceCode, reason: oldPiece.reason, owner, now });
   }
 
   const code = asText(event.body.piece_code);
   if (code === null) return;
   const failure = asText(event.body.failure_reason);
   if (failure !== null) {
-    await recordFailedPiece(deps.db, deps.fsm, { pieceCode: code, reason: failure, now });
+    await recordFailedPiece(deps.db, deps, { pieceCode: code, reason: failure, owner, now });
     return;
   }
   if (job.personId === null || job.fsmContactId === null) return;
@@ -189,6 +187,11 @@ async function writePiece(deps: FsmWriteDeps, job: JobForFsm, event: JobEvent, n
     replacementDue: addDays(fittedOn, cycleDaysFor(base, deps.cycles)),
     now,
   });
+}
+
+function ownerOf(job: JobForFsm): PieceOwner | null {
+  if (job.personId === null || job.fsmContactId === null) return null;
+  return { personId: job.personId, fsmContactId: job.fsmContactId };
 }
 
 /**

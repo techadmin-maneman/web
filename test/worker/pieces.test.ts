@@ -9,12 +9,14 @@ import { recordUtilisation } from "../../src/domain/dispatch.ts";
 import { COMMITTED } from "../../src/domain/ops-settings.ts";
 import { piecesOf, recordFailedPiece, recordFittedPiece, syncPieces } from "../../src/domain/pieces.ts";
 import { openTechnicianSession } from "../../src/domain/technicians.ts";
-import { createStubFsm, EMPTY_FSM, type FsmAsset, type StubFsm } from "../../src/providers/fsm.ts";
-import { appFor, fakeDependencies, markDatabase, NOW, request } from "./helpers.ts";
+import { createStubFsm, EMPTY_FSM, type FsmAsset, type FsmProvider, type StubFsm } from "../../src/providers/fsm.ts";
+import { appFor, fakeDependencies, markDatabase, NOW, request, type TestDependencies } from "./helpers.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
+const OTHER_PERSON = "11111111-1111-4111-8111-111111111112";
 const IMRAN = "33333333-3333-4333-8333-333333333331";
 const JOB = "22222222-2222-4222-8222-222222222221";
+const OWNER = { personId: PERSON, fsmContactId: "contact-1" };
 
 const asset = (overrides: Partial<FsmAsset> = {}): FsmAsset => ({
   id: "asset-1",
@@ -30,8 +32,32 @@ const asset = (overrides: Partial<FsmAsset> = {}): FsmAsset => ({
 });
 
 let fsm: StubFsm;
+let deps: TestDependencies;
 let tech: App;
 let ops: App;
+
+const syncDeps = (provider: FsmProvider) => ({
+  fsm: provider,
+  alertOnce: deps.alertOnce,
+  cycles: COMMITTED.pieceCycleDays,
+});
+
+/** Another client, with an FSM contact of their own. */
+async function addOtherPerson(): Promise<void> {
+  await env.DB.prepare(
+    `INSERT INTO people (id, created_at, mobile_e164, name, fsm_contact_id)
+     VALUES (?1, ?2, '+919810000002', 'Kabir Sethi', 'contact-2')`,
+  )
+    .bind(OTHER_PERSON, NOW.toISOString())
+    .run();
+}
+
+async function openAlertKeys(): Promise<string[]> {
+  const { results } = await env.DB.prepare("SELECT key FROM alerts WHERE resolved_at IS NULL ORDER BY key").all<{
+    key: string;
+  }>();
+  return results.map((row) => row.key);
+}
 
 beforeEach(async () => {
   await markDatabase();
@@ -40,7 +66,7 @@ beforeEach(async () => {
     items: [{ id: "part-standard", name: "Standard base", type: "Part", price: null }],
     assets: { "contact-1": [asset()] },
   });
-  const deps = fakeDependencies({ fsm });
+  deps = fakeDependencies({ fsm });
   tech = appFor("local", deps, {}, "tech");
   ops = appFor("local", deps, {}, "ops");
 
@@ -68,9 +94,7 @@ beforeEach(async () => {
 
 describe("the mirror of FSM's assets", () => {
   it("computes the replacement due date from the base's cycle, which FSM has no field for", async () => {
-    expect(
-      await syncPieces(env.DB, fsm, { personId: PERSON, fsmContactId: "contact-1" }, NOW, COMMITTED.pieceCycleDays),
-    ).toBe(1);
+    expect(await syncPieces(env.DB, syncDeps(fsm), OWNER, NOW)).toBe(1);
 
     const [piece] = await piecesOf(env.DB, PERSON);
     expect(piece).toMatchObject({
@@ -89,17 +113,52 @@ describe("the mirror of FSM's assets", () => {
       ...EMPTY_FSM,
       assets: { "contact-1": [asset({ status: "Inactive" })] },
     });
-    await syncPieces(env.DB, inactive, { personId: PERSON, fsmContactId: "contact-1" }, NOW, COMMITTED.pieceCycleDays);
+    await syncPieces(env.DB, syncDeps(inactive), OWNER, NOW);
 
     const [piece] = await piecesOf(env.DB, PERSON);
     expect(piece?.failed_at).toBe(NOW.toISOString());
   });
 
   it("writes FSM's answer over the copy, and never doubles a piece", async () => {
-    await syncPieces(env.DB, fsm, { personId: PERSON, fsmContactId: "contact-1" }, NOW, COMMITTED.pieceCycleDays);
-    await syncPieces(env.DB, fsm, { personId: PERSON, fsmContactId: "contact-1" }, NOW, COMMITTED.pieceCycleDays);
+    await syncPieces(env.DB, syncDeps(fsm), OWNER, NOW);
+    await syncPieces(env.DB, syncDeps(fsm), OWNER, NOW);
 
     expect(await piecesOf(env.DB, PERSON)).toHaveLength(1);
+  });
+
+  it("takes none of another client's assets when FSM answers with them", async () => {
+    await addOtherPerson();
+    const everyAsset = createStubFsm({
+      ...EMPTY_FSM,
+      assets: {
+        "contact-1": [asset(), asset({ id: "asset-2", assetNumber: "MM-STD-7001-A", contactId: "contact-2" })],
+      },
+    });
+
+    expect(await syncPieces(env.DB, syncDeps(everyAsset), OWNER, NOW)).toBe(1);
+
+    expect((await piecesOf(env.DB, PERSON)).map((piece) => piece.piece_code)).toEqual(["MM-STD-4417-B"]);
+    const strays = await env.DB.prepare("SELECT COUNT(*) AS count FROM pieces WHERE fsm_id = 'asset-2'").first("count");
+    expect(strays).toBe(0);
+  });
+
+  it("never moves a piece our copy has on another client, and tells ops once", async () => {
+    await addOtherPerson();
+    await env.DB.prepare(
+      `INSERT INTO pieces (id, fsm_id, person_id, piece_code, base, fitted_at, replacement_due_at, synced_at)
+       VALUES ('piece-theirs', 'asset-1', ?1, 'MM-STD-4417-B', 'Standard base', '2026-07-01', '2026-12-28', ?2)`,
+    )
+      .bind(OTHER_PERSON, NOW.toISOString())
+      .run();
+
+    expect(await syncPieces(env.DB, syncDeps(fsm), OWNER, NOW)).toBe(0);
+    await syncPieces(env.DB, syncDeps(fsm), OWNER, NOW);
+
+    expect(await piecesOf(env.DB, PERSON)).toEqual([]);
+    expect((await piecesOf(env.DB, OTHER_PERSON)).map((piece) => piece.piece_code)).toEqual(["MM-STD-4417-B"]);
+    expect(await openAlertKeys()).toEqual(["piece_owner_mismatch:asset-1"]);
+    expect(deps.alerts).toHaveLength(1);
+    expect(deps.alerts[0]).toContain(`our records have it on client ${OTHER_PERSON}`);
   });
 });
 
@@ -187,11 +246,12 @@ describe("a piece the technician fitted", () => {
   });
 
   it("marks a failed piece in FSM and keeps the reason on our side", async () => {
-    await syncPieces(env.DB, fsm, { personId: PERSON, fsmContactId: "contact-1" }, NOW, COMMITTED.pieceCycleDays);
+    await syncPieces(env.DB, syncDeps(fsm), OWNER, NOW);
 
-    const done = await recordFailedPiece(env.DB, fsm, {
+    const done = await recordFailedPiece(env.DB, syncDeps(fsm), {
       pieceCode: "MM-STD-4417-B",
       reason: "base torn at the hairline",
+      owner: OWNER,
       now: NOW,
     });
 
@@ -202,9 +262,47 @@ describe("a piece the technician fitted", () => {
   });
 });
 
+describe("a piece that came off whose label our copy does not know", () => {
+  it("is found among the client's own assets in FSM and marked failed", async () => {
+    const done = await recordFailedPiece(env.DB, syncDeps(fsm), {
+      pieceCode: "MM-STD-4417-B",
+      reason: "lifted at the front",
+      owner: OWNER,
+      now: NOW,
+    });
+
+    expect(done).toBe(true);
+    expect(fsm.made.assetUpdates).toEqual([{ assetId: "asset-1", status: "Inactive" }]);
+    const [piece] = await piecesOf(env.DB, PERSON);
+    expect(piece).toMatchObject({ piece_code: "MM-STD-4417-B", failure_reason: "lifted at the front" });
+    expect(await openAlertKeys()).toEqual([]);
+  });
+
+  it("is never taken from another client's assets, and ops are told it is unknown", async () => {
+    await addOtherPerson();
+    const everyAsset = createStubFsm({
+      ...EMPTY_FSM,
+      assets: { "contact-1": [asset({ id: "asset-2", assetNumber: "MM-STD-7001-A", contactId: "contact-2" })] },
+    });
+
+    const done = await recordFailedPiece(env.DB, syncDeps(everyAsset), {
+      pieceCode: "MM-STD-7001-A",
+      reason: "torn",
+      owner: OWNER,
+      now: NOW,
+    });
+
+    expect(done).toBe(false);
+    expect(everyAsset.made.assetUpdates).toEqual([]);
+    expect(await piecesOf(env.DB, OTHER_PERSON)).toEqual([]);
+    expect(await openAlertKeys()).toEqual(["piece_unknown:MM-STD-7001-A"]);
+    expect(deps.alerts[0]).toContain(`not among client ${PERSON}'s pieces here or in FSM`);
+  });
+});
+
 describe("the label the technician scans", () => {
   it("is found in the mirror, and says whether it is this job's client's", async () => {
-    await syncPieces(env.DB, fsm, { personId: PERSON, fsmContactId: "contact-1" }, NOW, COMMITTED.pieceCycleDays);
+    await syncPieces(env.DB, syncDeps(fsm), OWNER, NOW);
     const cookie = `mm_tech=${await openTechnicianSession(env.DB, {
       technicianId: IMRAN,
       deviceId: "phone-abc-123",
@@ -254,6 +352,23 @@ describe("GET /api/clients/:id/pieces", () => {
         },
       ],
     });
+  });
+
+  it("shows each of two clients only their own pieces when FSM answers every client's assets", async () => {
+    await addOtherPerson();
+    const everyAsset = [asset(), asset({ id: "asset-2", assetNumber: "MM-STD-7001-A", contactId: "contact-2" })];
+    const unfiltered = createStubFsm({ ...EMPTY_FSM, assets: { "contact-1": everyAsset, "contact-2": everyAsset } });
+    const opsApp = appFor("local", fakeDependencies({ fsm: unfiltered }), {}, "ops");
+
+    const codesOf = async (personId: string) => {
+      const answer = await request(opsApp, `/api/clients/${personId}/pieces`);
+      const { pieces } = await answer.json<{ pieces: { piece_code: string }[] }>();
+      return pieces.map((piece) => piece.piece_code);
+    };
+
+    expect(await codesOf(PERSON)).toEqual(["MM-STD-4417-B"]);
+    expect(await codesOf(OTHER_PERSON)).toEqual(["MM-STD-7001-A"]);
+    expect(await codesOf(PERSON)).toEqual(["MM-STD-4417-B"]);
   });
 });
 
