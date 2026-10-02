@@ -5,8 +5,11 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { onReach, type Me } from "./api.ts";
 
-/** Why the sign-in is showing: this store never held a session, its session ended, or ops revoked the phone. */
-export type Out = "fresh" | "ended" | "revoked";
+/**
+ * Why the sign-in is showing: this store never held a session, its session ended, ops revoked the phone, or ops
+ * switched the technician off, with or without work of his kept on the phone.
+ */
+export type Out = "fresh" | "ended" | "revoked" | "switched-off" | "work-kept";
 
 /**
  * How a sign-out went. Only the API can end the session, so with no signal it

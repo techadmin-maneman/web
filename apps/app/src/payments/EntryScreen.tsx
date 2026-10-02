@@ -3,7 +3,7 @@
 // visit's tax invoice, from Books, and the receipt; a charge's and a late
 // fee's, the receipt alone. A refund's is its voucher and its destination. A
 // document not yet raised says so (board E3), in words that fit how long it
-// has been, with Notify me, which asks ops on WhatsApp until the app can tell
+// has been, with "Ask us for it", which asks ops on WhatsApp until the app can tell
 // the client itself. A refund past its working days says it is late.
 
 import { ICONS } from "@maneman/brand/icons";

@@ -1,11 +1,14 @@
 // The booking form's helpers.
 
 import { describe, expect, it } from "vitest";
-import { addressToSend, emptyAddress, missingParts } from "../../site/src/lib/address.ts";
+import { stepOf } from "../../site/src/islands/invite/step.ts";
+import { addressLine, addressToSend, emptyAddress, missingParts } from "../../site/src/lib/address.ts";
 import { attributionFrom } from "../../site/src/lib/attribution.ts";
 import { consultationCalendar } from "../../site/src/lib/calendar.ts";
+import { dayStrip, stripMonths } from "../../site/src/lib/dates.ts";
 import { keyPerRequest } from "../../site/src/lib/idempotency.ts";
 import { anyOpen, chosenSlot, dayOpen, isOpen, type OpenDays } from "../../site/src/lib/open-windows.ts";
+import { placeOf } from "../../site/src/lib/place.ts";
 
 // FEO-21: a key that changed on every press protected nothing.
 describe("idempotency keys", () => {
@@ -46,9 +49,10 @@ describe("attribution", () => {
 // CLI-13, REQ-05: the calendar file follows the windows the booking offers (src/config/scheduling.ts).
 describe("the calendar file", () => {
   const now = new Date("2026-09-22T06:00:00Z");
+  const DETAILS = { location: null, description: "Your technician comes to you." };
 
   it("covers the morning window, 09:00 to 12:00 in India, in UTC", () => {
-    const text = consultationCalendar("2026-09-24", "morning", "Mane Man consultation", now);
+    const text = consultationCalendar("2026-09-24", "morning", "Mane Man consultation", now, DETAILS);
     expect(text).toContain("DTSTART:20260924T033000Z\r\n");
     expect(text).toContain("DTEND:20260924T063000Z\r\n");
     expect(text).toContain("UID:consultation-2026-09-24-morning@maneman.in\r\n");
@@ -58,12 +62,55 @@ describe("the calendar file", () => {
   });
 
   it("covers the afternoon, 12:00 to 16:00, and the evening, 16:00 to 20:00, in India", () => {
-    const afternoon = consultationCalendar("2026-09-24", "afternoon", "Mane Man consultation", now);
+    const afternoon = consultationCalendar("2026-09-24", "afternoon", "Mane Man consultation", now, DETAILS);
     expect(afternoon).toContain("DTSTART:20260924T063000Z");
     expect(afternoon).toContain("DTEND:20260924T103000Z");
-    const evening = consultationCalendar("2026-09-24", "evening", "Mane Man consultation", now);
+    const evening = consultationCalendar("2026-09-24", "evening", "Mane Man consultation", now, DETAILS);
     expect(evening).toContain("DTSTART:20260924T103000Z");
     expect(evening).toContain("DTEND:20260924T143000Z");
+  });
+
+  // CP-21: the event had no place and no word of what it is.
+  it("says where the visit is and what it is, escaped as a calendar file needs", () => {
+    const text = consultationCalendar("2026-09-24", "morning", "Mane Man consultation", now, {
+      location: "Flat 402, Palm Grove Society; Gate 2, Sector 65, Gurgaon 122018",
+      description: "Your technician comes to you. Manage it in the Mane Man app: https://app.maneman.in",
+    });
+    const unfolded = text.replaceAll("\r\n ", "");
+    expect(unfolded).toContain("LOCATION:Flat 402\\, Palm Grove Society\\; Gate 2\\, Sector 65\\, Gurgaon 122018\r\n");
+    expect(unfolded).toContain(
+      "DESCRIPTION:Your technician comes to you. Manage it in the Mane Man app: https://app.maneman.in\r\n",
+    );
+    for (const line of text.split("\r\n")) expect(new TextEncoder().encode(line).length).toBeLessThanOrEqual(75);
+  });
+
+  it("gives no place for a visit that goes to the address on the account", () => {
+    const text = consultationCalendar("2026-09-24", "morning", "Mane Man consultation", now, DETAILS);
+    expect(text).not.toContain("LOCATION:");
+    expect(text).toContain("DESCRIPTION:Your technician comes to you.\r\n");
+  });
+});
+
+// CP-21: the confirmation read "Noida, Noida 201301", and the pincode's area where the visitor had typed their own.
+describe("the place a confirmation names", () => {
+  const answer = { pincode: "201301", served: true, area: "Noida", city: "Noida" };
+
+  it("never says the city twice", () => {
+    expect(placeOf(answer)).toBe("Noida 201301");
+    expect(placeOf({ ...answer, area: "noida" })).toBe("noida 201301");
+  });
+
+  it("names the sector or area typed, and the city typed, before the pincode's", () => {
+    expect(placeOf(answer, { locality: " Sector 62 ", city: "Noida" })).toBe("Sector 62, Noida 201301");
+    expect(placeOf({ ...answer, area: "Sector 65", city: "Gurgaon" }, { locality: "", city: "Gurugram" })).toBe(
+      "Sector 65, Gurugram 201301",
+    );
+  });
+
+  it("falls back to whatever the pincode's answer knows", () => {
+    expect(placeOf({ ...answer, area: "Sector 65", city: null })).toBe("Sector 65 201301");
+    expect(placeOf({ ...answer, area: null, city: "Noida" })).toBe("Noida 201301");
+    expect(placeOf({ ...answer, area: null, city: null })).toBe("201301");
   });
 });
 
@@ -99,6 +146,51 @@ describe("the address a consultation is at", () => {
       pincode: "122018",
       access_notes: null,
     });
+  });
+
+  it("is one line for the calendar: what a map can find, without the floor, landmark or notes", () => {
+    const typed = {
+      ...emptyAddress("Gurgaon"),
+      flat: "Flat 402",
+      floor: "4",
+      tower: " Tower C ",
+      line1: "Palm Grove Society",
+      landmark: "Opposite the park",
+      locality: "Sector 65",
+      accessNotes: "Gate 2",
+    };
+    expect(addressLine(typed, "122018")).toBe("Flat 402, Tower C, Palm Grove Society, Sector 65, Gurgaon 122018");
+  });
+});
+
+// BK-60, UX-33: the strip read "Sat 3 … Fri 16" with no month, to the eye and to a screen reader.
+describe("the date strip", () => {
+  it("reads each day out in full, with its month", () => {
+    const [first] = dayStrip("2026-10-03", 14);
+    expect(first).toMatchObject({ weekday: "Sat", number: "3", month: "October", label: "Saturday 3 October" });
+  });
+
+  it("names the month above it, or both months where it crosses a month's end", () => {
+    expect(stripMonths(dayStrip("2026-10-03", 14))).toBe("October");
+    const crossing = dayStrip("2026-10-24", 14);
+    expect(crossing.map((day) => day.label).slice(7, 9)).toEqual(["Saturday 31 October", "Sunday 1 November"]);
+    expect(stripMonths(crossing)).toBe("October – November");
+  });
+});
+
+// BK-60, UX-38: Back left the page and lost the form; each step is now an entry in the history.
+describe("the page's steps in the browser's history", () => {
+  const answer = { pincode: "122018", served: true, area: "Sector 65", city: "Gurgaon" };
+
+  it("reads back the step and the pincode's answer the page wrote", () => {
+    expect(stepOf({ step: "form", answer })).toEqual({ step: "form", answer });
+    expect(stepOf({ step: "done", answer })).toEqual({ step: "done", answer });
+  });
+
+  it("reads anything else as the pincode field", () => {
+    for (const state of [null, undefined, "form", { step: "form" }, { step: "elsewhere", answer }, { answer }]) {
+      expect(stepOf(state)).toEqual({ step: "pincode", answer: null });
+    }
   });
 });
 
