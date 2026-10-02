@@ -9,7 +9,17 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page, Request } from "@playwright/test";
 import { fillAddress } from "./booking-area.ts";
-import { analyticsCommands, analyticsEvents, expect, fakeTurnstile, test, visit } from "./support.ts";
+import {
+  analyticsCommands,
+  analyticsEvents,
+  enterNumberCode,
+  expect,
+  fakeTurnstile,
+  mockNumberCode,
+  NUMBER_CODE_ID,
+  test,
+  visit,
+} from "./support.ts";
 
 const CODE = "RM4K7P";
 
@@ -32,6 +42,7 @@ interface Answers {
 async function mockApi(page: Page, answers: Answers = {}): Promise<Request[]> {
   const requests: Request[] = [];
   await fakeTurnstile(page);
+  await mockNumberCode(page);
   // The days and windows open: the API cannot say, so the form draws every window open (e2e/book.e2e.ts answers).
   await page.route(/\/api\/availability\/public\?/, (route) =>
     route.fulfill({ status: 503, json: { error: { code: "unavailable", request_id: "r" } } }),
@@ -607,10 +618,13 @@ test("offers the consultation alone or with the fit in one visit, and asks ops f
   await fillForm(page);
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation and fit" }).click();
+  // Asked for only once the WhatsApp code sent to the number is entered.
+  await enterNumberCode(page, "Confirm and book");
 
   await expect(page.getByText("Request received")).toBeVisible();
   const sent = requests[0]?.postDataJSON() as Record<string, unknown>;
   expect(sent.one_visit).toBe(true);
+  expect(sent.number_code_id).toBe(NUMBER_CODE_ID);
   // The consent recorded is the consultation's own line, unchanged.
   expect(sent.consent).toBe(true);
 });

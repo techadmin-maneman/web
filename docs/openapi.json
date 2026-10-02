@@ -44,6 +44,7 @@
                   "look_limit_reached",
                   "claim_required",
                   "whatsapp_unavailable",
+                  "number_not_proved",
                   "unauthorized",
                   "visit_booked",
                   "payment_held",
@@ -293,6 +294,103 @@
           "name",
           "minutes",
           "price"
+        ],
+        "additionalProperties": false
+      },
+      "NumberCode": {
+        "type": "object",
+        "properties": {
+          "code_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "code_id"
+        ],
+        "additionalProperties": false,
+        "description": "The code is on its way to the number on WhatsApp."
+      },
+      "NumberCodeRequest": {
+        "type": "object",
+        "properties": {
+          "mobile": {
+            "type": "string",
+            "maxLength": 20
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "description": "The name typed beside the number."
+          },
+          "turnstile_token": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          }
+        },
+        "required": [
+          "mobile",
+          "name",
+          "turnstile_token"
+        ],
+        "additionalProperties": false
+      },
+      "NumberCodeVerify": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "verified": {
+                "type": "boolean",
+                "enum": [
+                  true
+                ]
+              }
+            },
+            "required": [
+              "verified"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "verified": {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              },
+              "attempts_left": {
+                "type": "integer",
+                "description": "0 means the code is now void."
+              }
+            },
+            "required": [
+              "verified",
+              "attempts_left"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "NumberCodeVerifyRequest": {
+        "type": "object",
+        "properties": {
+          "code_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^\\d{6}$"
+          }
+        },
+        "required": [
+          "code_id",
+          "code"
         ],
         "additionalProperties": false
       },
@@ -932,6 +1030,11 @@
             "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
             "example": "98100 00000"
           },
+          "number_code_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The code that proved the number (POST /api/number-code/verify). It proves it for 30 minutes after it was entered."
+          },
           "stage": {
             "type": "string",
             "enum": [
@@ -956,6 +1059,7 @@
           "job_id",
           "name",
           "mobile",
+          "number_code_id",
           "stage"
         ],
         "additionalProperties": false
@@ -1267,6 +1371,120 @@
         }
       }
     },
+    "/api/number-code": {
+      "post": {
+        "summary": "Send a code on WhatsApp to prove a number typed into the site",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NumberCodeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "The code is on its way",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NumberCode"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "turnstile_failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited: too many codes for this number today, or from this address this hour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "busy: today's ceiling on codes is reached; unavailable: Turnstile could not be reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/number-code/verify": {
+      "post": {
+        "summary": "Check a code. The right one proves its number for 30 minutes",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NumberCodeVerifyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Right; or wrong, with the attempts left",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NumberCodeVerify"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "code_expired: expired, already entered, or void after five wrong codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/availability/public": {
       "get": {
         "summary": "The days and windows the booking form can book, open or full. Cacheable for a minute.",
@@ -1449,6 +1667,11 @@
                     "type": "boolean",
                     "description": "true: the consultation and the first fit in one visit, three hours, in the morning or the afternoon; the client chooses the product with the technician and pays once fitted, so nothing is paid here. Left out or false, the consultation alone."
                   },
+                  "number_code_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "The WhatsApp code that proved the number (POST /api/number-code/verify) in the last 30 minutes. One visit needs it, and is refused number_not_proved without it."
+                  },
                   "discount_code": {
                     "type": "string",
                     "minLength": 1,
@@ -1500,7 +1723,7 @@
             }
           },
           "403": {
-            "description": "turnstile_failed",
+            "description": "turnstile_failed; number_not_proved: one visit, without a WhatsApp code that proved the number in the last 30 minutes",
             "content": {
               "application/json": {
                 "schema": {
@@ -1924,6 +2147,11 @@
                     "type": "boolean",
                     "description": "true: the consultation and the first fit in one visit, three hours, in the morning or the afternoon; the client chooses the product with the technician and pays once fitted, so nothing is paid here. Left out or false, the consultation alone."
                   },
+                  "number_code_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "The WhatsApp code that proved the number (POST /api/number-code/verify) in the last 30 minutes. One visit needs it, and is refused number_not_proved without it."
+                  },
                   "consent": {
                     "type": "boolean",
                     "enum": [
@@ -1969,7 +2197,7 @@
             }
           },
           "403": {
-            "description": "turnstile_failed",
+            "description": "turnstile_failed; number_not_proved: one visit, without a WhatsApp code that proved the number in the last 30 minutes",
             "content": {
               "application/json": {
                 "schema": {
@@ -2555,7 +2783,7 @@
             }
           },
           "403": {
-            "description": "look_limit_reached: this number had its look in the last thirty days",
+            "description": "look_limit_reached: this number had its look in the last thirty days; number_not_proved: no WhatsApp code proved the number in the last 30 minutes",
             "content": {
               "application/json": {
                 "schema": {

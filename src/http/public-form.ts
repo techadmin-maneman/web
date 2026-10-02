@@ -12,6 +12,7 @@ import { skipsAddressLimits } from "../policy/staging-test-records.ts";
 import { bookHold } from "./book-hold.ts";
 import { queueContactSync } from "./contact-sync.ts";
 import type { AppEnv } from "./context.ts";
+import { provedNumber } from "./number-proof.ts";
 import { checkTurnstile, visitorOf } from "./visitor.ts";
 
 /** The number, the Turnstile check and the daily limits, the same for both pages. */
@@ -54,6 +55,7 @@ export function formRequest(c: Context<AppEnv>): FormRequest {
     now: c.var.deps.now(),
     selfServeBooking: c.var.config.settings.selfServeBooking,
     checkPerson: (mobile, token, name) => checkPerson(c, mobile, token, name),
+    provedNumber: (codeId, mobileE164) => provedNumber(c, codeId, mobileE164),
     syncContact: (personId) => queueContactSync(c, personId),
     bookHold: (holdId) => bookHold(c, holdId),
   };

@@ -9,7 +9,7 @@ import type { Alert } from "../providers/alerts.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { isSpent, takeOne } from "./rate-limit.ts";
 
-export type Ceiling = "upload" | "render" | "result_read" | "login_code" | "geocode";
+export type Ceiling = "upload" | "render" | "result_read" | "login_code" | "form_code" | "geocode";
 
 /** What stops while a ceiling is reached, for its alert. */
 const STOPPED: Readonly<Record<Ceiling, string>> = {
@@ -18,6 +18,8 @@ const STOPPED: Readonly<Record<Ceiling, string>> = {
   result_read: "try-ons",
   // One ceiling for every code sent: the client's login and change of number, and the technician's login.
   login_code: "the client and technician apps' login codes",
+  // The site's codes go to whatever number is typed, so they have a ceiling of their own and never stop a login.
+  form_code: "the site's WhatsApp codes for the one visit and the try-on",
   geocode: "address suggestions",
 };
 

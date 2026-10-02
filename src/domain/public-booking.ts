@@ -35,7 +35,8 @@
 // the slot are written in one batch: a slot that has gone leaves nothing behind
 // (docs/decisions/0068-a-paid-hold-is-kept.md).
 //
-// The form may book the consultation and the fit in one visit instead: a first
+// The form may book the consultation and the fit in one visit instead, for a
+// number proved with its WhatsApp code (src/policy/number-proof.ts): a first
 // fit marked as one, three hours, with nothing paid. The client chooses the
 // product with the technician and pays by a link once fitted, so the site still
 // takes no money (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
@@ -54,6 +55,7 @@ import { BOOKING_DAYS, HOLD_SECONDS, type BookingWindow } from "../config/schedu
 import { addDays, indiaDate } from "../lib/india-time.ts";
 import type { Logger } from "../log.ts";
 import type { SoldTerms } from "../policy/moving-a-visit.ts";
+import { bookingNeedsProof } from "../policy/number-proof.ts";
 import { ONE_VISIT_TERMS, planStartsIn, type Plan } from "../policy/one-visit.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import type { Price } from "./price-book.ts";
@@ -105,7 +107,8 @@ export interface Refusal<Status extends number = 400 | 403 | 409 | 422 | 429 | 5
     | "taken"
     | "not_bookable"
     | "code_not_applicable"
-    | "no_product";
+    | "no_product"
+    | "number_not_proved";
   /** For invalid_request: the field refused, where the request was well formed and did not add up. */
   readonly fields?: readonly string[];
 }
@@ -125,6 +128,8 @@ export interface FormRequest {
   readonly selfServeBooking: boolean;
   /** The number, the Turnstile token and the day's limits per number and address, the same for both pages. */
   readonly checkPerson: (mobile: string, turnstileToken: string, name: string) => Promise<Checked>;
+  /** Whether the WhatsApp code `codeId` proved this number (src/policy/number-proof.ts). */
+  readonly provedNumber: (codeId: string | null, mobileE164: string) => Promise<boolean>;
   /** Sends a person's first address on to their FSM contact and CRM lead, as saving it in the app does. */
   readonly syncContact: (personId: string) => Promise<void>;
   /** Sends a hold the form booked free to be booked (src/http/book-hold.ts). */
@@ -374,6 +379,8 @@ export interface ConsultationRequest {
    * payment link (docs/decisions/0108-discount-codes.md).
    */
   readonly discountCode: string | null;
+  /** The WhatsApp code that proved the number, which the one visit needs; null for none. */
+  readonly numberCodeId: string | null;
 }
 
 export interface Booked {
@@ -430,6 +437,10 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   }
   const checked = await form.checkPerson(request.mobile, request.turnstileToken, request.name);
   if (!checked.ok) return checked;
+  // Nothing is looked up or written for a number the plan needs proved until its code was entered.
+  if (bookingNeedsProof(request.plan) && !(await form.provedNumber(request.numberCodeId, checked.mobile))) {
+    return { ok: false, status: 403, code: "number_not_proved" };
+  }
 
   const knownId = await personWithMobile(db, checked.mobile);
   if (knownId !== null) {

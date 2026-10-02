@@ -50,6 +50,7 @@ import { registerOpsStaff } from "./routes/ops-staff.ts";
 import { registerOpsStock } from "./routes/ops-stock.ts";
 import { registerOpsWaitlist } from "./routes/ops-waitlist.ts";
 import { registerConsultations } from "./routes/consultations.ts";
+import { registerNumberCodes } from "./routes/number-codes.ts";
 import { registerReferralLanding } from "./routes/referral-landing.ts";
 import { registerClientPayments } from "./routes/client-payments.ts";
 import { registerClientVisits } from "./routes/client-visits.ts";
@@ -83,6 +84,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
   public: [
     registerHealth,
     registerPublishedPrices,
+    // A WhatsApp code that proves a number before /book's one visit or /try's gate acts on it.
+    registerNumberCodes,
     registerConsultations,
     registerReferralLanding,
     // What a referral earns, for the invite's page and /book (docs/decisions/0107-referral-rewards-in-the-console.md).

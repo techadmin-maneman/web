@@ -94,6 +94,140 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/number-code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send a code on WhatsApp to prove a number typed into the site */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["NumberCodeRequest"];
+                };
+            };
+            responses: {
+                /** @description The code is on its way */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["NumberCode"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description turnstile_failed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description rate_limited: too many codes for this number today, or from this address this hour */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description busy: today's ceiling on codes is reached; unavailable: Turnstile could not be reached */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/number-code/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Check a code. The right one proves its number for 30 minutes */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["NumberCodeVerifyRequest"];
+                };
+            };
+            responses: {
+                /** @description Right; or wrong, with the attempts left */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["NumberCodeVerify"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description code_expired: expired, already entered, or void after five wrong codes */
+                410: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/availability/public": {
         parameters: {
             query?: never;
@@ -209,6 +343,11 @@ export interface paths {
                         address: components["schemas"]["TypedAddress"];
                         /** @description true: the consultation and the first fit in one visit, three hours, in the morning or the afternoon; the client chooses the product with the technician and pays once fitted, so nothing is paid here. Left out or false, the consultation alone. */
                         one_visit?: boolean;
+                        /**
+                         * Format: uuid
+                         * @description The WhatsApp code that proved the number (POST /api/number-code/verify) in the last 30 minutes. One visit needs it, and is refused number_not_proved without it.
+                         */
+                        number_code_id?: string;
                         /** @description A discount code for the consultation and fit in one visit, as typed, any case: it comes off the product's price at the payment link (docs/decisions/0108-discount-codes.md). A code that does not apply refuses the booking, code_not_applicable, and so does any code with the consultation alone. */
                         discount_code?: string;
                         /**
@@ -238,7 +377,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description turnstile_failed */
+                /** @description turnstile_failed; number_not_proved: one visit, without a WhatsApp code that proved the number in the last 30 minutes */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -595,6 +734,11 @@ export interface paths {
                         /** @description true: the consultation and the first fit in one visit, three hours, in the morning or the afternoon; the client chooses the product with the technician and pays once fitted, so nothing is paid here. Left out or false, the consultation alone. */
                         one_visit?: boolean;
                         /**
+                         * Format: uuid
+                         * @description The WhatsApp code that proved the number (POST /api/number-code/verify) in the last 30 minutes. One visit needs it, and is refused number_not_proved without it.
+                         */
+                        number_code_id?: string;
+                        /**
                          * @description "You may contact me on WhatsApp about this consultation."
                          * @enum {boolean}
                          */
@@ -621,7 +765,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description turnstile_failed */
+                /** @description turnstile_failed; number_not_proved: one visit, without a WhatsApp code that proved the number in the last 30 minutes */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -1219,7 +1363,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description look_limit_reached: this number had its look in the last thirty days */
+                /** @description look_limit_reached: this number had its look in the last thirty days; number_not_proved: no WhatsApp code proved the number in the last 30 minutes */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -1671,7 +1815,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -1732,6 +1876,31 @@ export interface components {
             name: string;
             minutes: number;
             price: components["schemas"]["Price"];
+        };
+        /** @description The code is on its way to the number on WhatsApp. */
+        NumberCode: {
+            /** Format: uuid */
+            code_id: string;
+        };
+        NumberCodeRequest: {
+            mobile: string;
+            /** @description The name typed beside the number. */
+            name: string;
+            turnstile_token: string;
+        };
+        NumberCodeVerify: {
+            /** @enum {boolean} */
+            verified: true;
+        } | {
+            /** @enum {boolean} */
+            verified: false;
+            /** @description 0 means the code is now void. */
+            attempts_left: number;
+        };
+        NumberCodeVerifyRequest: {
+            /** Format: uuid */
+            code_id: string;
+            code: string;
         };
         OpenWindows: {
             /** @enum {string} */
@@ -1922,6 +2091,11 @@ export interface components {
             name: string;
             /** @example 98100 00000 */
             mobile: string;
+            /**
+             * Format: uuid
+             * @description The code that proved the number (POST /api/number-code/verify). It proves it for 30 minutes after it was entered.
+             */
+            number_code_id: string;
             /**
              * @description The hair-loss stage the visitor picked: the lead's, and the one the look is made for.
              * @enum {string}
