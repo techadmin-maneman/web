@@ -628,6 +628,33 @@ describe("a payment link for a visit ops booked, paid", () => {
     expect(booked).toEqual({ status: "scheduled", type: "service", razorpay_payment_id: "pay_link_1" });
     expect(queue.sent).toEqual([]);
   });
+
+  // Razorpay sends payment.captured for a link's payment too, often before payment_link.paid.
+  it("books once and refunds nothing when the payment's capture arrives before the link's paid event", async () => {
+    const { holdId, linkId } = await sentLink("ours");
+    const paidAt = new Date(NOW.getTime() + 60 * 60_000);
+    const paid = linkPaid({ id: linkId, reference_id: holdId }, paidAt);
+    const captured = { entity: "event", event: "payment.captured", payload: { payment: paid.payload.payment } };
+
+    expect((await deliver(captured, "evt-5", "ours")).status).toBe(200);
+    expect(await holdOf(holdId)).toMatchObject({ state: "held", confirmed_at: null });
+
+    expect((await deliver(paid, "evt-6", "ours")).status).toBe(200);
+    const visits = await env.DB.prepare(
+      `SELECT a.id FROM slot_holds h JOIN appointments a ON a.id = h.appointment_id
+       JOIN payments p ON p.appointment_id = a.id WHERE h.id = ?1 AND h.state = 'booked'`,
+    )
+      .bind(holdId)
+      .all();
+    expect(visits.results).toHaveLength(1);
+    const service = await env.DB.prepare(
+      "SELECT COUNT(*) AS n FROM appointments WHERE person_id = ?1 AND type = 'service'",
+    )
+      .bind(ROHIT)
+      .first<{ n: number }>();
+    expect(service?.n).toBe(1);
+    expect(payments.made.refunds).toEqual([]);
+  });
 });
 
 describe("POST /api/visits, where our own database holds the record of field work", () => {

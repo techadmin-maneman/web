@@ -174,6 +174,8 @@ function VisitTable({ title, visits, empty }: { title: string; visits: readonly 
 function BookOne({ clientId, record, onBooked }: { clientId: string; record: ClientRecord; onBooked: () => void }) {
   const [open, setOpen] = useState(false);
   const opener = useRef<HTMLButtonElement>(null);
+  const mayBook = useAccess().mayCall("POST /api/visits");
+  if (!mayBook) return null;
   return (
     <>
       <Button
