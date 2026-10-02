@@ -14,6 +14,7 @@ import { fullDate, indiaClock, longDate } from "@maneman/web-kit/dates";
 import { useRef, useState } from "react";
 import type { ClientRecord, ClientVisit } from "../api.ts";
 import { clients } from "../content.ts";
+import { useAccess } from "../lib/access.ts";
 import styles from "./clients.module.css";
 import { GivenAddressForm } from "./GivenAddress.tsx";
 import { HeldBookings } from "./HeldBookings.tsx";
@@ -71,6 +72,7 @@ function Address({
   const [recording, setRecording] = useState(false);
   const [saved, setSaved] = useState(false);
   const opener = useRef<HTMLButtonElement>(null);
+  const mayRecord = useAccess().mayCall("POST /api/clients/{id}/address");
 
   if (recording) {
     return (
@@ -97,18 +99,20 @@ function Address({
           {copy.given.saved}
         </p>
       )}
-      <Button
-        variant="outline"
-        size="small"
-        ref={opener}
-        className={styles.secondary}
-        onClick={() => {
-          setSaved(false);
-          setRecording(true);
-        }}
-      >
-        {address === null ? copy.given.open : copy.given.change}
-      </Button>
+      {mayRecord && (
+        <Button
+          variant="outline"
+          size="small"
+          ref={opener}
+          className={styles.secondary}
+          onClick={() => {
+            setSaved(false);
+            setRecording(true);
+          }}
+        >
+          {address === null ? copy.given.open : copy.given.change}
+        </Button>
+      )}
     </div>
   );
 }

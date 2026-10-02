@@ -126,6 +126,26 @@ function Item({
   );
 }
 
+const setLineOf = (list: JobSheetList): string =>
+  list.set_by === null || list.set_at === null ? copy.committed : copy.setBy(list.set_by, longDate(list.set_at));
+
+/** The list as a person whose access does not let them change it reads it: its items, in their order. */
+export function ListRead({ title, list }: { title: string; list: JobSheetList }) {
+  return (
+    <div className={styles.group}>
+      <h3 className={styles.ruleTitle}>{title}</h3>
+      <p className={styles.set}>{setLineOf(list)}</p>
+      <ol className={own.items}>
+        {list.items.map((item) => (
+          <li className={own.item} key={item.code}>
+            {item.label}
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
 export function ListEditor(props: Props) {
   const { id, title, list, most, longest } = props;
   const [lines, setLines] = useState<Line[]>(() => linesOf(list));
@@ -165,9 +185,7 @@ export function ListEditor(props: Props) {
   return (
     <fieldset className={styles.group}>
       <legend className={styles.ruleTitle}>{title}</legend>
-      <p className={styles.set}>
-        {list.set_by === null || list.set_at === null ? copy.committed : copy.setBy(list.set_by, longDate(list.set_at))}
-      </p>
+      <p className={styles.set}>{setLineOf(list)}</p>
       <ol className={own.items}>
         {lines.map((line, index) => (
           <Item
