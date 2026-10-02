@@ -2,8 +2,10 @@
 // (docs/decisions/0045-self-serve-booking.md). A sheet rises: the date, the
 // window, then paying through Razorpay Checkout. Paid, the sheet waits while
 // Razorpay's webhook confirms and the visit is booked in FSM, polling the hold.
-// Closed before paying, the hold is let go. Moving a visit (board C7) takes the
-// same steps, with its own technician and at what the move costs.
+// Closed before Checkout was opened on it, the hold is let go; after, a payment
+// may still land on its order, and the API lets it go once its grace ends.
+// Moving a visit (board C7) takes the same steps, with its own technician and
+// at what the move costs.
 //
 // With more than one service open to them, a client picks theirs first, from
 // every one ops offer (docs/decisions/0085-services-ops-can-edit.md). A client
@@ -16,7 +18,8 @@
 // free, for the client to take or change (ADR 0086).
 //
 // The hold's ten minutes are counted on the API's clock, not the phone's
-// (lib/clock.ts), and when the phone sees them run out it lets the hold go too.
+// (lib/clock.ts). When the phone sees them run out it lets the hold go too, but
+// not while Checkout is open: it waits for Checkout's answer.
 
 import { Sheet } from "@maneman/ui/Sheet";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -75,6 +78,9 @@ type Step =
 /** How often, and for how long, the sheet asks whether a paid hold is booked. */
 const POLL_MS = 2_000;
 const POLL_FOR_MS = 60_000;
+
+/** Whether the hold's countdown has run out, by the API's clock. */
+const hasRunOut = (hold: Hold) => apiNow() >= Date.parse(hold.expires_at);
 
 /** Whether the client has switched on WhatsApp about their visits, the purpose the day-before reminder is sent under. */
 const remindersOn = (profile: Profile) =>
@@ -165,6 +171,8 @@ export function BookingSheet({
   // True from the tap until Checkout has answered. `busy` disables the buttons, but only on
   // the next render, and a tap in that gap would pay for the hold a second time (ADR 0057).
   const starting = useRef(false);
+  // The hold that has a Razorpay order. The app never lets that one go: a payment may still land on it.
+  const ordered = useRef<string | null>(null);
 
   const askForAddress = (refused: boolean) => {
     setAddressFirst(true);
@@ -231,23 +239,33 @@ export function BookingSheet({
     focusIfLost(dialog.current?.querySelector<HTMLElement>(`#${TITLE_ID}`) ?? null);
   }, [step.kind]);
 
-  // The hold has lapsed while the client was paying or deciding. The phone may see it before the API
-  // does, so it lets the hold go itself, rather than leave the slot blocked for no one. A payment
-  // Razorpay took in time keeps the hold, though (ADR 0068), so the API is asked first.
+  /** Lets an unpaid hold go for someone else, unless it has an order, which the API lets go once its grace ends. */
+  const letGo = (hold: Hold) => {
+    if (ordered.current !== hold.id) void api.releaseHold(hold.id);
+  };
+
+  /**
+   * The hold's time has run out. A payment Razorpay took in time keeps the hold, so the API is asked first. While the
+   * client is paying, this waits: payFor runs it again with Checkout's answer.
+   */
+  const lapse = async (hold: Hold) => {
+    if (starting.current) return;
+    const now = await api.holdById(hold.id);
+    if (now.ok && now.body.paid) {
+      changed.current = true;
+      setStep({ kind: "confirming", hold: now.body, paidIn: true });
+      return;
+    }
+    // The client tapped Pay while the API was answering.
+    if (starting.current) return;
+    setStep({ kind: "expired" });
+    letGo(hold);
+  };
+
   const holdOf = step.kind === "pay" || step.kind === "failed" ? step.hold : null;
   useEffect(() => {
     if (holdOf === null) return;
-    const lapse = async () => {
-      const now = await api.holdById(holdOf.id);
-      if (now.ok && now.body.paid) {
-        changed.current = true;
-        setStep({ kind: "confirming", hold: now.body, paidIn: true });
-        return;
-      }
-      setStep({ kind: "expired" });
-      void api.releaseHold(holdOf.id);
-    };
-    const timer = window.setTimeout(() => void lapse(), Math.max(0, Date.parse(holdOf.expires_at) - apiNow()));
+    const timer = window.setTimeout(() => void lapse(holdOf), Math.max(0, Date.parse(holdOf.expires_at) - apiNow()));
     return () => {
       window.clearTimeout(timer);
     };
@@ -308,7 +326,11 @@ export function BookingSheet({
    * waited for first, with the sheet still up and busy, so a script that
    * never comes ends on the sheet's own payment-failed step.
    */
-  const throughCheckout = async (checkout: NonNullable<Booking["checkout"]>, how: PayMethod): Promise<Paid> => {
+  const throughCheckout = async (
+    checkout: NonNullable<Booking["checkout"]>,
+    how: PayMethod,
+    payBy: string,
+  ): Promise<Paid> => {
     const ready = await loadCheckout().then(
       () => true,
       () => false,
@@ -316,7 +338,7 @@ export function BookingSheet({
     if (!ready) return "failed";
     paying.current = true;
     dialog.current?.close();
-    const outcome = await pay(checkout, how).catch(() => "failed" as const);
+    const outcome = await pay(checkout, how, payBy).catch(() => "failed" as const);
     dialog.current?.showModal();
     paying.current = false;
     return outcome;
@@ -328,31 +350,42 @@ export function BookingSheet({
     if (answer.ok) setReminders(true);
   };
 
+  /** The booking started, and Checkout's answer; null when the API would not start it. */
+  const startPaying = async (hold: Hold, how: PayMethod): Promise<Paid | null> => {
+    if (remind && reminders !== true) await switchOnReminders();
+    const started =
+      movingId === undefined ? await api.book(hold.id, undecided) : await api.startMove(movingId, hold.id);
+    if (!started.ok) {
+      if (started.code === "hold_expired") setStep({ kind: "expired" });
+      else setProblem(booking.failedToStart);
+      return null;
+    }
+    const checkout = started.body.checkout;
+    if (checkout === null) return "paid";
+    ordered.current = hold.id;
+    return throughCheckout(checkout, how, hold.pay_by);
+  };
+
   const payFor = async (hold: Hold, how: PayMethod) => {
     if (starting.current) return;
     starting.current = true;
     setBusy(true);
     setProblem(null);
+    let outcome: Paid | null = null;
     try {
-      if (remind && reminders !== true) await switchOnReminders();
-      const started =
-        movingId === undefined ? await api.book(hold.id, undecided) : await api.startMove(movingId, hold.id);
-      if (!started.ok) {
-        setBusy(false);
-        if (started.code === "hold_expired") setStep({ kind: "expired" });
-        else setProblem(booking.failedToStart);
-        return;
-      }
-      const checkout = started.body.checkout;
-      const outcome = checkout === null ? "paid" : await throughCheckout(checkout, how);
-      setBusy(false);
-      if (outcome === "paid") {
-        changed.current = true;
-        setStep({ kind: "confirming", hold });
-      } else if (outcome === "failed") setStep({ kind: "failed", hold });
+      outcome = await startPaying(hold, how);
     } finally {
       starting.current = false;
+      setBusy(false);
     }
+    if (outcome === "paid") {
+      changed.current = true;
+      setStep({ kind: "confirming", hold });
+      return;
+    }
+    if (outcome === "failed") setStep({ kind: "failed", hold });
+    // The hold's time may have run out while the client was paying, and its lapse waited for this answer.
+    if (hasRunOut(hold)) void lapse(hold);
   };
 
   const day = availability?.days.find((each) => each.date === date);
@@ -368,7 +401,7 @@ export function BookingSheet({
         // event if it arrives after the sheet has risen again).
         if (paying.current) return;
         // Closed before it was paid for, the hold is let go for someone else.
-        if (step.kind === "pay" || step.kind === "failed") void api.releaseHold(step.hold.id);
+        if (step.kind === "pay" || step.kind === "failed") letGo(step.hold);
         onClose(changed.current);
       }}
     >

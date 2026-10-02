@@ -26,7 +26,6 @@
 // was made with, and the mirror's copy carries the hold's tier, since the hold
 // is what was sold (docs/decisions/0085-services-ops-can-edit.md).
 
-import { PAYMENT_GRACE_SECONDS } from "../config/scheduling.ts";
 import { FSM_SERVICE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { indiaIso } from "../lib/india-time.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
@@ -42,7 +41,7 @@ import { itemForService } from "./fsm-catalogue.ts";
 import { fsmContactOf, type Place } from "./fsm-contacts.ts";
 import { toLinkAlert, toLinkAlertKey } from "./held-bookings.ts";
 import { askRefund, refundReceipt } from "./refunds.ts";
-import { heldVisitTimes, liveVisitOf } from "./scheduling.ts";
+import { graceEndOf, heldVisitTimes, liveVisitOf } from "./scheduling.ts";
 import { visitPayment } from "./visit-changes.ts";
 import { visitMessage, type VisitMessageKind } from "./visit-messages.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
@@ -232,9 +231,7 @@ async function capturedFor(db: D1Database, orderId: string | null): Promise<Capt
 
 /** Whether Razorpay made the payment after the hold ran out and the grace it was made with. */
 function paidTooLate(hold: HoldRow, payment: CapturedPayment): boolean {
-  const grace = hold.grace_seconds ?? PAYMENT_GRACE_SECONDS;
-  const lastMoment = new Date(Date.parse(hold.expires_at) + grace * 1000);
-  return Date.parse(payment.paid_at) > lastMoment.getTime();
+  return Date.parse(payment.paid_at) > graceEndOf(hold).getTime();
 }
 
 /**

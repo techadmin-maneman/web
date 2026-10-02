@@ -147,6 +147,12 @@ export interface Moving {
 export const graceEnds = (hold: string): string =>
   `strftime('%Y-%m-%dT%H:%M:%fZ', ${hold}.expires_at, '+' || COALESCE(${hold}.grace_seconds, ${String(PAYMENT_GRACE_SECONDS)}) || ' seconds')`;
 
+/** graceEnds, for a hold already read: the last moment a payment for it counts as made in time. */
+export function graceEndOf(hold: { readonly expires_at: string; readonly grace_seconds: number | null }): Date {
+  const graceSeconds = hold.grace_seconds ?? PAYMENT_GRACE_SECONDS;
+  return new Date(Date.parse(hold.expires_at) + graceSeconds * 1000);
+}
+
 /** A dispatch move opened before this, and still open, never finished. */
 export const movesOpenSince = (now: Date): string => new Date(now.getTime() - MOVE_CLAIM_SECONDS * 1000).toISOString();
 
@@ -357,11 +363,13 @@ export interface Hold {
 
 /**
  * Holds nobody is paying for any more at ?1: unpaid, and past their countdown and their grace. With ?3 = 1, the
- * client's own other unpaid holds too: in the app a client has one hold at a time. A paid hold is never here. A hold
- * past its grace is past its countdown too, which the index on expires_at finds.
+ * client's own other unpaid holds too, since in the app a client has one hold at a time; but not one with a Razorpay
+ * order, which a payment may still land on until its grace ends. A paid hold is never here. A hold past its grace is
+ * past its countdown too, which the index on expires_at finds.
  */
 const LET_GO = `SELECT id FROM slot_holds WHERE state = 'held' AND confirmed_at IS NULL
-  AND ((expires_at <= ?1 AND ${graceEnds("slot_holds")} <= ?1) OR (?3 = 1 AND person_id = ?2))`;
+  AND ((expires_at <= ?1 AND ${graceEnds("slot_holds")} <= ?1)
+    OR (?3 = 1 AND person_id = ?2 AND razorpay_order_id IS NULL))`;
 
 /**
  * Lets go of the holds nobody is paying for, and, given a client, that client's own other unpaid holds too. For

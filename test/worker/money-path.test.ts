@@ -170,6 +170,58 @@ describe("a payment made inside the hold whose webhook lands after it (W1)", () 
   });
 });
 
+// A payment may land on a hold's order until its grace ends, so until then neither the app's lapse nor the client's
+// next hold lets that hold go (MON-03, BK-03).
+describe("a hold with a Razorpay order, let go before its grace ends", () => {
+  const letGo = (holdId: string, now: Date) => call(PERSON, `/api/holds/${holdId}`, { method: "DELETE" }, now);
+
+  it("is booked when the app lets it go at ten minutes and the payment is made in the grace", async () => {
+    const ordered = await heldAndOrdered(PERSON);
+    expect((await letGo(ordered.holdId, at(600))).status).toBe(204);
+    expect(await holdRow(ordered.holdId)).toEqual({ state: "held", refunded_at: null });
+    await webhook("payment.captured", "evt_m3a", payment("pay_m3a", ordered, at(630)), at(635));
+    const payments = createStubPayments();
+    const outcome = await confirmBooking(env.DB, createStubFsm(world()), payments, ordered.holdId, at(640), {
+      labelAsTest: true,
+    });
+    expect(outcome).toBe("booked");
+    expect(payments.made.refunds).toEqual([]);
+  });
+
+  it("is booked when the app lets it go at ten minutes before the webhook of a payment made in them", async () => {
+    const ordered = await heldAndOrdered(PERSON);
+    await letGo(ordered.holdId, at(600));
+    await webhook("payment.captured", "evt_m3b", payment("pay_m3b", ordered, at(590)), at(605));
+    const payments = createStubPayments();
+    const outcome = await confirmBooking(env.DB, createStubFsm(world()), payments, ordered.holdId, at(606), {
+      labelAsTest: true,
+    });
+    expect(outcome).toBe("booked");
+    expect(payments.made.refunds).toEqual([]);
+  });
+
+  it("keeps its time when its client lets it go mid-countdown, or holds another window", async () => {
+    const ordered = await heldAndOrdered(PERSON);
+    await letGo(ordered.holdId, at(300));
+    const another = await call(
+      PERSON,
+      "/api/holds",
+      { method: "POST", body: { type: "service", date: "2026-09-30", window: "morning" } },
+      at(310),
+    );
+    expect(another.status).toBe(201);
+    expect(await holdRow(ordered.holdId)).toEqual({ state: "held", refunded_at: null });
+  });
+
+  it("is let go once its grace has ended", async () => {
+    const ordered = await heldAndOrdered(PERSON);
+    await letGo(ordered.holdId, at(719));
+    expect(await holdRow(ordered.holdId)).toEqual({ state: "held", refunded_at: null });
+    await letGo(ordered.holdId, at(720));
+    expect(await holdRow(ordered.holdId)).toEqual({ state: "released", refunded_at: null });
+  });
+});
+
 // The grace is ops' to set, and a hold is judged by the one it was made with
 // (docs/decisions/0088-every-policy-in-the-console.md).
 describe("a payment made in the grace its hold was made with", () => {

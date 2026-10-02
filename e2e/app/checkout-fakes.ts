@@ -31,6 +31,55 @@ export async function fakeCheckout(page: Page, outcome: "paid" | "failed"): Prom
   );
 }
 
+interface LeftOpen {
+  /** The timeout Checkout was opened with, in seconds, and when, on the page's clock. */
+  readonly timeout: number;
+  readonly openedAt: number;
+  pay(): void;
+  close(): void;
+}
+
+/** Checkout that stays open until the test pays in it (paidInCheckout) or closes it (closedCheckout). */
+export async function checkoutLeftOpen(page: Page): Promise<void> {
+  await page.route("https://checkout.razorpay.com/v1/checkout.js", (route) =>
+    route.fulfill({
+      contentType: "text/javascript",
+      body: `window.Razorpay = function (options) {
+        this.on = () => {};
+        this.open = () => {
+          window.__checkout = {
+            timeout: options.timeout,
+            openedAt: Date.now(),
+            pay: () => options.handler({ razorpay_payment_id: "pay_fake" }),
+            close: () => options.modal.ondismiss(),
+          };
+        };
+      };`,
+    }),
+  );
+}
+
+/** Waits for Checkout to open; its timeout, and when it opened. */
+export async function checkoutOpened(page: Page): Promise<{ timeout: number; openedAt: number }> {
+  await page.waitForFunction(() => (window as unknown as { __checkout?: LeftOpen }).__checkout !== undefined);
+  return page.evaluate(() => {
+    const checkout = (window as unknown as { __checkout: LeftOpen }).__checkout;
+    return { timeout: checkout.timeout, openedAt: checkout.openedAt };
+  });
+}
+
+export async function paidInCheckout(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    (window as unknown as { __checkout: LeftOpen }).__checkout.pay();
+  });
+}
+
+export async function closedCheckout(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    (window as unknown as { __checkout: LeftOpen }).__checkout.close();
+  });
+}
+
 /**
  * Checkout that paints a window of its own across the page, as Razorpay's iframe does, and records whether the page
  * let it through: `window.__checkoutOnTop`. A sheet left open with showModal() sits in the browser's top layer, above
