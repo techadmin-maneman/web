@@ -1,0 +1,14 @@
+{
+  "code": 0,
+  "message": "The item has been added.",
+  "item": {
+    "item_id": "4242595000000245041",
+    "name": "Staging test: proof item 82af00",
+    "description": "",
+    "rate": 1234.5,
+    "status": "active",
+    "product_type": "service",
+    "item_type": "sales",
+    "tax_percentage": 0
+  }
+}
