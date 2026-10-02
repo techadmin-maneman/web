@@ -4,7 +4,8 @@
 // (src/domain/bookings.ts).
 
 import { withGst } from "../config/gst.ts";
-import { WINDOW_TIMES, type BookingWindow } from "../config/scheduling.ts";
+import type { BookingWindow } from "../config/scheduling.ts";
+import { windowTimesOf } from "../policy/slot-times.ts";
 import { FSM_SERVICE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { indiaInstant } from "../lib/india-time.ts";
 import {
@@ -18,6 +19,7 @@ import { creditBalance } from "./credits.ts";
 import { holdDiscount } from "./discount-code-holds.ts";
 import { priceOf, type Price } from "./price-book.ts";
 import { heldMinutes, visitTimes } from "./scheduling.ts";
+import { loadSlotSchedule } from "./slot-times.ts";
 
 interface HoldRow {
   id: string;
@@ -79,8 +81,9 @@ const hasLapsed = (row: HoldRow, now: Date) =>
 
 async function holdOf(db: D1Database, row: HoldRow, now: Date) {
   const minutes = heldMinutes(row);
-  const { start, end } = visitTimes(row.date, row.start_unit, minutes);
-  const windowStarts = indiaInstant(row.date, WINDOW_TIMES[row.window_label].start);
+  const schedule = await loadSlotSchedule(db);
+  const { start, end } = visitTimes(row.date, row.start_unit, minutes, schedule);
+  const windowStarts = indiaInstant(row.date, windowTimesOf(schedule.on(row.date))[row.window_label].start);
   const noticeHours = row.change_notice_hours ?? FREE_CHANGE_NOTICE_HOURS;
   const lateCharge = row.late_change_charge ?? LATE_CHANGE_CHARGES[row.type];
   const price = { amount_ex_gst: row.amount_ex_gst, amount: row.amount, gst_percent: row.gst_percent };

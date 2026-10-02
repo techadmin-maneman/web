@@ -450,7 +450,7 @@ describe("moving a visit", () => {
     }>();
     expect(body.regular.name).toBe("Imran Qureshi");
     expect(body.price.amount).toBe(0);
-    expect(body.days[0]?.windows).toEqual([
+    expect(body.days[0]?.windows.map(({ window, with: who }) => ({ window, with: who }))).toEqual([
       { window: "morning", with: "regular" },
       { window: "afternoon", with: "regular" },
       { window: "evening", with: "regular" },

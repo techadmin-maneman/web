@@ -8,7 +8,6 @@
 
 import { shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
-import { WINDOW_TIMES } from "../config/scheduling.ts";
 import { FSM_SERVICE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
 import { DAY_BEFORE_REMINDER_HOUR } from "../policy/job-visibility.ts";
@@ -16,9 +15,10 @@ import type { Charge } from "../policy/moving-a-visit.ts";
 import type { OneVisitState } from "../policy/one-visit.ts";
 import { WAIVER_GIVES_BACK, type DisputeRuling, type NoShowDecision, type Waiver } from "../policy/no-show.ts";
 import { codeOnVisit } from "./discount-code-uses.ts";
+import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
 import type { AppointmentStatus } from "./fsm-mirror.ts";
 import { consentGiven, type MessageKind } from "./messages.ts";
-import { windowAt } from "../policy/windows.ts";
+import { windowTimesOf } from "../policy/slot-times.ts";
 import { MINUTE_MS, minutesBetween } from "../lib/durations.ts";
 import { firstNameOf } from "../lib/names.ts";
 
@@ -160,9 +160,10 @@ export async function arrivalNotice(
   return written.meta.changes === 1 && !late ? id : null;
 }
 
-/** "12 to 4 pm", as the app writes a window. */
-function windowHours(start: Date): string {
-  const { start: from, end: to } = WINDOW_TIMES[windowAt(indiaTime(start))];
+/** "12 to 4 pm", as the app writes a window, by the times in force on the visit's day. */
+function windowHours(start: Date, schedule: SlotSchedule): string {
+  const { date, window } = schedule.at(start);
+  const { start: from, end: to } = windowTimesOf(schedule.on(date))[window];
   const hour = (time: string) => {
     const hours = Number(time.slice(0, 2));
     return { number: String(hours % 12 === 0 ? 12 : hours % 12), half: hours < 12 ? "am" : "pm" };
@@ -217,7 +218,7 @@ export async function composeVisitMessage(
     firstNameOf(visit.name),
     visit.one_visit === "booked" ? ONE_VISIT_NAME : FSM_SERVICE_NAMES[visit.type].toLowerCase(),
     shortDate(indiaDate(start)),
-    windowHours(start),
+    windowHours(start, await loadSlotSchedule(db)),
     visit.technician === null ? "our technician" : firstNameOf(visit.technician),
     "",
     "",

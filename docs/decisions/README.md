@@ -40,7 +40,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0032](0032-fsm-mirror.md) | The FSM mirror, and Books documents | 2026-09-22 | accepted | [0070](0070-vendor-correctness.md), [0075](0075-tests-held-to-the-contract-and-the-local-stack.md) |
 | [0033](0033-credit-ledger.md) | The credit ledger | 2026-09-22 | accepted | [0068](0068-a-paid-hold-is-kept.md), [0107](0107-referral-rewards-in-the-console.md) |
 | [0034](0034-clash-check.md) | The clash check | 2026-09-22 | accepted | [0069](0069-dispatch-under-concurrency.md) |
-| [0035](0035-window-slot-map.md) | The window-to-slot map | 2026-09-22 | accepted, with placeholder times |  |
+| [0035](0035-window-slot-map.md) | The window-to-slot map | 2026-09-22 | accepted, with placeholder times | [0102](0102-window-times.md) |
 | [0036](0036-geocoding.md) | Geocoding, for the check-in's geofence | 2026-09-23 | accepted | [0054](0054-address-capture.md) |
 | [0037](0037-shared-packages.md) | Shared packages: the brand first | 2026-09-22 | accepted | [0076](0076-one-ui-layer-and-one-api-client.md), [0077](0077-a-token-scale-written-once.md) |
 | [0038](0038-offline-writes.md) | The technician app's offline writes, and what they write to FSM | 2026-09-23 | accepted |  |
@@ -103,6 +103,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0097](0097-staging-logins-open-reminders-fenced.md) | Staging logins open, reminders fenced | 2026-09-30 | accepted |  |
 | [0098](0098-the-door-in-fsms-address.md) | The door in FSM's service address | 2026-10-01 | accepted, on the owner's rulings of 27 September 2026 and 1 October 2026 |  |
 | [0099](0099-the-clients-note-in-fsm.md) | The client's note in FSM | 2026-10-01 | accepted, on the owner's ruling of 27 September 2026 |  |
+| [0102](0102-window-times.md) | The window times in the console | 2026-10-01 | accepted, on the owner's rulings of 30 September and 1 October 2026 |  |
 | [0103](0103-the-home-pages-first-copy-round.md) | The home page's first copy round | 2026-10-01 | accepted |  |
 | [0104](0104-the-try-ons-look-on-whatsapp-only.md) | The try-on's look on WhatsApp only | 2026-10-01 | accepted, on the owner's ruling D3 of 1 October 2026 |  |
 | [0105](0105-a-consultation-and-fit-in-one-visit.md) | A consultation and fit in one visit | 2026-10-01 | accepted, on the owner's ruling D2 of 1 October 2026 and the rulings of the same day on the piece, the payment and the length |  |

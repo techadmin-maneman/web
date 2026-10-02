@@ -1686,7 +1686,8 @@ Request body:
             "code_not_applicable",
             "already_discounted",
             "price_settled",
-            "code_exists"
+            "code_exists",
+            "slot_times_too_soon"
           ]
         },
         "request_id": {
@@ -4803,6 +4804,14 @@ Request body:
                     "evening"
                   ]
                 },
+                "start": {
+                  "type": "string",
+                  "description": "When the window starts that day, in India's time, as 12:00."
+                },
+                "end": {
+                  "type": "string",
+                  "description": "When it ends that day: ops set the day's times from a date."
+                },
                 "with": {
                   "anyOf": [
                     {
@@ -4821,6 +4830,8 @@ Request body:
               },
               "required": [
                 "window",
+                "start",
+                "end",
                 "with"
               ],
               "additionalProperties": false
