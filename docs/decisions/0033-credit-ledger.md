@@ -27,7 +27,8 @@ A referral earns each side 3 service-visit credits, which expire 365 days after 
 
 - The hold says so (`credit: { remaining }`), and booking skips payment.
 - Once the visit is booked, one credit is redeemed for it, from the grant that expires soonest.
-- If a credit was spent elsewhere in the minutes between, the visit stands, as ops would let it.
+- A credit booking confirmed and on its way to FSM has its credit spoken for (`spendableCredits`): no other booking counts on it, and a booking whose credit another took before it was confirmed is paid for in money instead.
+- If a credit was spent elsewhere in the minutes between, the visit stands, as ops would let it, and ops are told.
 - First fits, replacements and consultations are never covered: the credits are service visits.
 
 **Changing a visit paid with a credit** (ADR 0046):

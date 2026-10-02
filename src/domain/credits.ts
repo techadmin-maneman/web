@@ -22,28 +22,74 @@ interface GrantRow {
   remaining: number;
 }
 
+/** SQL for the person's grants still in date, with what each has left. Its arguments are the statement's placeholders. */
+const liveGrantsSql = (personId: string, now: string) =>
+  `SELECT g.id, g.expires_at,
+     g.visits + COALESCE((SELECT SUM(e.visits) FROM credit_ledger e WHERE e.grant_id = g.id), 0) AS remaining
+   FROM credit_ledger g
+   WHERE g.person_id = ${personId} AND g.kind = 'grant' AND (g.expires_at IS NULL OR g.expires_at > ${now})`;
+
+/**
+ * A credit hold confirmed and on its way to FSM: its credit is redeemed once FSM books the visit, so until then no
+ * other booking may count on it.
+ */
+const PROMISED_CREDIT = "use_credit = 1 AND state = 'held' AND confirmed_at IS NOT NULL";
+
 /** The person's grants still in date, with what each has left, soonest to expire first. */
 async function liveGrants(db: D1Database, personId: string, now: Date): Promise<GrantRow[]> {
   const { results } = await db
-    .prepare(
-      `SELECT g.id, g.expires_at,
-         g.visits + COALESCE((SELECT SUM(e.visits) FROM credit_ledger e WHERE e.grant_id = g.id), 0) AS remaining
-       FROM credit_ledger g
-       WHERE g.person_id = ?1 AND g.kind = 'grant' AND (g.expires_at IS NULL OR g.expires_at > ?2)
-       ORDER BY g.expires_at IS NULL, g.expires_at, g.created_at`,
-    )
+    .prepare(`${liveGrantsSql("?1", "?2")} ORDER BY g.expires_at IS NULL, g.expires_at, g.created_at`)
     .bind(personId, now.toISOString())
     .all<GrantRow>();
   return results.filter((grant) => grant.remaining > 0);
 }
 
+const balanceOf = (grants: readonly GrantRow[]): Balance => ({
+  visits: grants.reduce((sum, grant) => sum + grant.remaining, 0),
+  earliestExpiry: grants[0]?.expires_at ?? null,
+});
+
+/** What the ledger holds for the person. Ops see this; a booking counts on spendableCredits. */
 export async function creditBalance(db: D1Database, personId: string, now: Date): Promise<Balance> {
-  const grants = await liveGrants(db, personId, now);
-  return {
-    visits: grants.reduce((sum, grant) => sum + grant.remaining, 0),
-    earliestExpiry: grants[0]?.expires_at ?? null,
-  };
+  return balanceOf(await liveGrants(db, personId, now));
 }
+
+/**
+ * What the person may still spend: their balance, less the credits their confirmed bookings on the way to FSM will
+ * redeem, other than `exceptHoldId`'s. Those are taken from the grants that expire soonest, as a redeem takes them.
+ */
+export async function spendableCredits(
+  db: D1Database,
+  personId: string,
+  now: Date,
+  exceptHoldId: string | null = null,
+): Promise<Balance> {
+  const [grants, promised] = await Promise.all([
+    liveGrants(db, personId, now),
+    db
+      .prepare(`SELECT COUNT(*) AS holds FROM slot_holds WHERE person_id = ?1 AND ${PROMISED_CREDIT} AND id IS NOT ?2`)
+      .bind(personId, exceptHoldId)
+      .first<{ holds: number }>(),
+  ]);
+  return balanceOf(withoutPromised(grants, promised?.holds ?? 0));
+}
+
+/** The grants with `promised` visits taken from them, soonest to expire first, leaving out any with nothing left. */
+function withoutPromised(grants: readonly GrantRow[], promised: number): GrantRow[] {
+  let toTake = promised;
+  const left: GrantRow[] = [];
+  for (const grant of grants) {
+    const taken = Math.min(toTake, grant.remaining);
+    toTake -= taken;
+    if (grant.remaining > taken) left.push({ ...grant, remaining: grant.remaining - taken });
+  }
+  return left;
+}
+
+/** spendableCredits as SQL, for a statement that must decide on it as it writes. Its arguments are the statement's placeholders. */
+export const spendableCreditsSql = (personId: string, now: string, exceptHoldId: string): string =>
+  `((SELECT COALESCE(SUM(remaining), 0) FROM (${liveGrantsSql(personId, now)}) WHERE remaining > 0)
+    - (SELECT COUNT(*) FROM slot_holds WHERE person_id = ${personId} AND ${PROMISED_CREDIT} AND id IS NOT ${exceptHoldId}))`;
 
 /** A grant of visits from a source, which a repeat of the same source cannot grant again. */
 export function grantCredits(
@@ -78,14 +124,35 @@ export async function redeemCredit(
   appointmentId: string,
   now: Date,
 ): Promise<D1PreparedStatement | null> {
-  const [grant] = await liveGrants(db, personId, now);
+  return redeemFor(db, { personId, now, visit: "?4", visitKey: appointmentId });
+}
+
+/**
+ * redeemCredit for the visit FSM knows as `fsmId`, read from the mirror as the statement runs: for the batch that
+ * writes the visit to the mirror, after the statement that does.
+ */
+export async function redeemCreditForFsmVisit(
+  db: D1Database,
+  personId: string,
+  fsmId: string,
+  now: Date,
+): Promise<D1PreparedStatement | null> {
+  return redeemFor(db, { personId, now, visit: "(SELECT id FROM appointments WHERE fsm_id = ?4)", visitKey: fsmId });
+}
+
+/** The redeem for the visit `visit` names in SQL, given ?4 = `visitKey`. */
+async function redeemFor(
+  db: D1Database,
+  input: { personId: string; now: Date; visit: string; visitKey: string },
+): Promise<D1PreparedStatement | null> {
+  const [grant] = await liveGrants(db, input.personId, input.now);
   if (grant === undefined) return null;
   return db
     .prepare(
       `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
-       VALUES (?1, ?2, 'redeem', -1, ?3, 'appointment', ?4, ?5) ON CONFLICT DO NOTHING`,
+       VALUES (?1, ?2, 'redeem', -1, ?3, 'appointment', ${input.visit}, ?5) ON CONFLICT DO NOTHING`,
     )
-    .bind(crypto.randomUUID(), personId, grant.id, appointmentId, now.toISOString());
+    .bind(crypto.randomUUID(), input.personId, grant.id, input.visitKey, input.now.toISOString());
 }
 
 /** Why ops put a balance right by hand: a credit given or taken in error, or visits given to make up for something. */

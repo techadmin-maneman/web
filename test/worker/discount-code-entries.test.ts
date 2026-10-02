@@ -253,6 +253,17 @@ describe("the client, at the app's pay step", () => {
     expect(await answer.json()).toMatchObject({ error: { code: "code_not_applicable" } });
   });
 
+  it("takes a code on the next service visit once the client's last credit is on its way to FSM on another", async () => {
+    await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "ops", sourceId: "o1", now: NOW }).run();
+    await make();
+    const onCredit = await heldService(PERSON);
+    const booked = await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: onCredit.id } });
+    expect(await booked.json()).toEqual({ hold_id: onCredit.id, checkout: null });
+    const next = await heldService(PERSON, NOW, "morning");
+    const answer = await enter(PERSON, next.id, "TENPC");
+    expect(answer.status).toBe(200);
+  });
+
   // The owner's ruling of 1 October 2026: "send whatsapp message even when the code makes the visit free".
   it("books a visit a code makes free without Checkout, and tells the client on WhatsApp as a paid one is told", async () => {
     await make({ code: "ALLFREE", kind: "amount", value: 200_000 });
