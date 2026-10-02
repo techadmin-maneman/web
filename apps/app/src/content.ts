@@ -484,6 +484,7 @@ export const booking = {
   slow: `This is taking longer than usual. ${TOLD_WHEN_BOOKED}`,
   refunded: "We could not book that visit, so your payment is being refunded in full.",
   failedToStart: "That did not go through. Please try again.",
+  creditGone: "Your visit credit is already on another booking, so this visit is paid. The price is below.",
   close: "Close",
 } as const;
 

@@ -714,7 +714,7 @@ describe("ops linking the visit they booked in FSM by hand", () => {
     expect((await link(deps, held.id).answer).status).toBe(404);
     const redeems = await env.DB.prepare("SELECT source_id FROM credit_ledger WHERE kind = 'redeem'").all();
     expect(redeems.results).toEqual([{ source_id: HAND_MADE }]);
-    expect(deps.alerts.filter((alert) => alert.includes("no credit left"))).toEqual([]);
+    expect(deps.alerts.filter((alert) => alert.includes("had none left"))).toEqual([]);
   });
 
   it("waits while a try is writing the booking to FSM, so nothing is booked twice", async () => {

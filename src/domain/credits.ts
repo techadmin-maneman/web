@@ -23,10 +23,16 @@ interface GrantRow {
 }
 
 /** The grants of person ?1 still in date at ?2, with what each has left. */
-const LIVE_GRANTS = `SELECT g.id, g.expires_at,
+const LIVE_GRANTS = `SELECT g.id, g.expires_at, g.created_at,
     g.visits + COALESCE((SELECT SUM(e.visits) FROM credit_ledger e WHERE e.grant_id = g.id), 0) AS remaining
   FROM credit_ledger g
   WHERE g.person_id = ?1 AND g.kind = 'grant' AND (g.expires_at IS NULL OR g.expires_at > ?2)`;
+
+/** Credits are spent from the grant that expires soonest. */
+const SOONEST_FIRST = "ORDER BY expires_at IS NULL, expires_at, created_at";
+
+/** The grant person ?1's next credit is spent from at ?2. */
+const NEXT_GRANT = `SELECT id FROM (${LIVE_GRANTS}) WHERE remaining > 0 ${SOONEST_FIRST} LIMIT 1`;
 
 /**
  * A credit hold confirmed but not yet booked: its credit is redeemed as its visit is booked, so until then no other
@@ -44,7 +50,7 @@ export const SPENDABLE_CREDITS = `((SELECT COALESCE(SUM(remaining), 0) FROM (${L
 /** The person's grants still in date, with what each has left, soonest to expire first. */
 async function liveGrants(db: D1Database, personId: string, now: Date): Promise<GrantRow[]> {
   const { results } = await db
-    .prepare(`${LIVE_GRANTS} ORDER BY g.expires_at IS NULL, g.expires_at, g.created_at`)
+    .prepare(`${LIVE_GRANTS} ${SOONEST_FIRST}`)
     .bind(personId, now.toISOString())
     .all<GrantRow>();
   return results.filter((grant) => grant.remaining > 0);
@@ -116,45 +122,48 @@ export function grantCredits(
 }
 
 /**
- * One credit, from the grant that expires soonest, for a visit; null if the person has none left. A visit
- * redeems once: asked again, it writes nothing (credit_ledger_one_use).
+ * One credit for a visit, from the grant that expires soonest; nothing is written if the person has none left. The
+ * grant is chosen as the statement writes, so two redeems at once never draw on the same credit. A visit redeems
+ * once: asked again, it writes nothing (credit_ledger_one_use).
  */
-export async function redeemCredit(
-  db: D1Database,
-  personId: string,
-  appointmentId: string,
-  now: Date,
-): Promise<D1PreparedStatement | null> {
-  const [grant] = await liveGrants(db, personId, now);
-  if (grant === undefined) return null;
+export function redeemCredit(db: D1Database, personId: string, appointmentId: string, now: Date): D1PreparedStatement {
+  // The WHERE clause keeps SQLite from reading ON CONFLICT as a join's ON.
   return db
     .prepare(
       `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
-       VALUES (?1, ?2, 'redeem', -1, ?3, 'appointment', ?4, ?5) ON CONFLICT DO NOTHING`,
+       SELECT ?3, ?1, 'redeem', -1, soonest.id, 'appointment', ?4, ?2 FROM (${NEXT_GRANT}) soonest WHERE true
+       ON CONFLICT DO NOTHING`,
     )
-    .bind(crypto.randomUUID(), personId, grant.id, appointmentId, now.toISOString());
+    .bind(personId, now.toISOString(), crypto.randomUUID(), appointmentId);
 }
 
 /**
  * redeemCredit for the visit a booking is booked as, for the batch that books it, placed after the statement that
  * does: it writes nothing if that statement booked nothing.
  */
-export async function redeemCreditForBooking(
+export function redeemCreditForBooking(
   db: D1Database,
   booking: { readonly holdId: string; readonly personId: string },
   now: Date,
-): Promise<D1PreparedStatement | null> {
-  const [grant] = await liveGrants(db, booking.personId, now);
-  if (grant === undefined) return null;
-  // The WHERE clause also keeps SQLite from reading ON CONFLICT as a join's ON.
+): D1PreparedStatement {
   return db
     .prepare(
       `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
-       SELECT ?1, ?2, 'redeem', -1, ?3, 'appointment', appointment_id, ?5
-       FROM slot_holds WHERE id = ?4 AND state = 'booked' AND appointment_id IS NOT NULL
+       SELECT ?3, ?1, 'redeem', -1, soonest.id, 'appointment', h.appointment_id, ?2
+       FROM slot_holds h, (${NEXT_GRANT}) soonest
+       WHERE h.id = ?4 AND h.state = 'booked' AND h.appointment_id IS NOT NULL
        ON CONFLICT DO NOTHING`,
     )
-    .bind(crypto.randomUUID(), booking.personId, grant.id, booking.holdId, now.toISOString());
+    .bind(booking.personId, now.toISOString(), crypto.randomUUID(), booking.holdId);
+}
+
+/** Whether a credit was redeemed for the visit. */
+export async function creditRedeemedFor(db: D1Database, appointmentId: string): Promise<boolean> {
+  const redeem = await db
+    .prepare("SELECT 1 FROM credit_ledger WHERE source_id = ?1 AND kind = 'redeem'")
+    .bind(appointmentId)
+    .first();
+  return redeem !== null;
 }
 
 /** Why ops put a balance right by hand: a credit given or taken in error, or visits given to make up for something. */

@@ -224,6 +224,24 @@ describe("one credit pays for one visit", () => {
     expect(await redeems()).toHaveLength(1);
   });
 
+  it("spends one credit from each grant when two credit visits are booked at the same moment", async () => {
+    const soon = new Date("2026-10-01T18:29:59.999Z");
+    await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "ops", sourceId: "o1", now: NOW }).run();
+    await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "ops", sourceId: "o2", now: NOW, expiresAt: soon })
+      .run();
+    const first = await hold("2026-09-24");
+    await book(first.id);
+    const second = await hold("2026-09-25");
+    expect(await book(second.id)).toEqual({ hold_id: second.id, checkout: null });
+
+    expect(await Promise.all([confirm(first.id), confirm(second.id)])).toEqual(["booked", "booked"]);
+    const drawn = await env.DB.prepare(
+      "SELECT g.source_id FROM credit_ledger r JOIN credit_ledger g ON g.id = r.grant_id WHERE r.kind = 'redeem'",
+    ).all();
+    expect(drawn.results.map((grant) => grant.source_id).sort()).toEqual(["o1", "o2"]);
+    expect((await creditBalance(env.DB, PERSON, NOW)).visits).toBe(0);
+  });
+
   it("redeems the credit as the visit is booked, under the visit FSM's webhook mirrored first", async () => {
     await credits(1);
     const first = await hold("2026-09-24");
@@ -256,7 +274,7 @@ describe("one credit pays for one visit", () => {
 
     expect(await confirm(first.id, NOW, { alertOnce: deps.alertOnce })).toBe("booked");
     expect(await redeems()).toEqual([]);
-    expect(deps.alerts).toEqual([expect.stringContaining("no credit left")]);
+    expect(deps.alerts).toEqual([expect.stringContaining("had none left")]);
   });
 });
 

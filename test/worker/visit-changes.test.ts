@@ -262,7 +262,7 @@ describe("POST /api/appointments/:id/cancel", () => {
     await booked("service", THURSDAY_NOON, 0);
     await env.DB.prepare("DELETE FROM payments").run();
     await grantCredits(env.DB, { personId: PERSON, visits: 3, source: "referral", sourceId: "attr-1", now: NOW }).run();
-    await (await redeemCredit(env.DB, PERSON, VISIT, NOW))?.run();
+    await redeemCredit(env.DB, PERSON, VISIT, NOW).run();
     await clawBack(env.DB, "referral", "attr-1", NOW);
     const app = client({ fsm: createStubFsm(world()) });
 
@@ -411,7 +411,7 @@ describe("the terms a visit was booked under", () => {
     await booked("service", TUESDAY_MORNING, 0);
     await bookedHold({ notice: 24, charge: "nothing" });
     await grantCredits(env.DB, { personId: PERSON, visits: 3, source: "referral", sourceId: "attr-1", now: NOW }).run();
-    await (await redeemCredit(env.DB, PERSON, VISIT, NOW))?.run();
+    await redeemCredit(env.DB, PERSON, VISIT, NOW).run();
     expect(await cancelTerms()).toMatchObject({ notice: "late", credit: "restored" });
   });
 
