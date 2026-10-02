@@ -177,7 +177,6 @@ describe("messaging: sending a result", () => {
     expect(deps.alerts).toHaveLength(1);
   });
 
-  // PLAT-51: a visit reminder of 29 September failed for good on its first try while the bridge had lost its instance.
   it("keeps a message queued, with no alert, while the bridge is down, for the sweeper to send once it is back", async () => {
     await queuedMessage();
     const detail = 'the bridge has no instance named "mane man": wrong URL or port, or the instance was deleted';
@@ -204,7 +203,6 @@ describe("messaging: sending a result", () => {
     expect(deps.alerts).toHaveLength(1);
   });
 
-  // PLAT-22: a send that threw climbed its attempts without ever failing.
   it("takes a send that throws as a transient failure, so it fails in the end", async () => {
     await queuedMessage();
     const throwing: MessagingProvider = {
@@ -250,7 +248,6 @@ describe("messaging: the queue batch", () => {
     expect(messages[1]?.ack).toHaveBeenCalledOnce();
   });
 
-  // PLAT-22: a message that could not be composed was put back every five minutes for ever, and nobody was told.
   it("fails a message that throws on its fourth delivery, and tells ops", async () => {
     const id = "00000000-0000-4000-8000-00000000000b";
     await insertPerson("p", "+919810000001", "Arjun Mehta");
@@ -366,7 +363,6 @@ describe("Evolution API", () => {
     expect(await sendImage(evolution)).toEqual({ ok: false, transient, detail });
   });
 
-  // PLAT-50 and PLAT-51: staging's bridge answered 404 for 69 hours, and each message failed for good on its first try.
   it.each([
     [
       404,

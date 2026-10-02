@@ -238,7 +238,6 @@ describe("sending a visit message", () => {
     expect((await messages()).results).toEqual([{ kind: "payment_receipt", subject_id: VISIT, state: "sent" }]);
   });
 
-  // PLAT-51: a reminder that waited out a bridge outage would say "tomorrow" of a visit already under way.
   it("does not send a day-before reminder once the visit's day has come", async () => {
     await consent(true);
     await visit("service", "2026-09-21T09:30:00.000Z");

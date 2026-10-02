@@ -1,9 +1,8 @@
 // Every five minutes: whether the WhatsApp bridge is connected. Every login
-// code goes through it, as SMS is off (docs/decisions/0030-one-time-codes.md),
-// so a dropped session locks every client and technician out, and nothing else
-// would say so. Ops are told when two runs in a row find it closed, with the fix
-// for what is wrong, and the alert closes once it is open again
-// (docs/decisions/0067-alerts-and-silent-failures.md).
+// code goes through it, as SMS is off, so a dropped session locks every client
+// and technician out, and nothing else would say so. Ops are told when two runs
+// in a row find it closed, with the fix for what is wrong, and the alert closes
+// once it is open again.
 
 import type { Dependencies } from "../dependencies.ts";
 import type { CallBudget } from "../lib/call-budget.ts";

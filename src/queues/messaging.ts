@@ -17,7 +17,7 @@
 // alert names it. So does a message that throws on each of four deliveries,
 // such as one that cannot be composed. A bridge that cannot send at all leaves
 // the message queued: the sweeper sends it again once the bridge is open, and
-// fails it if it is still unsent a day on (src/scheduled/sweeper.ts).
+// fails it if it is still unsent a day on (src/scheduled/unsent-messages.ts).
 
 import { z } from "zod";
 import { PUBLIC_ORIGIN } from "../config/environments.ts";

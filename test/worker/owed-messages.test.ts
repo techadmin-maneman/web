@@ -99,7 +99,6 @@ describe("the arrival notice (BIZ-22)", () => {
     expect((await send(await queued("arrival_notice", "appointment", VISIT))).text).not.toBeNull();
   });
 
-  // PLAT-51: a notice that waited out a bridge outage would tell of a knock at the door long gone.
   it("is not sent once ten minutes have passed since the check-in reached us", async () => {
     await visit();
     await consent("whatsapp_visits", true);

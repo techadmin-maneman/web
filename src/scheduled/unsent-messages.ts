@@ -1,7 +1,7 @@
 // The sweeper's pass over messages queued and not sent: their queue message was lost, or they are waiting for the
 // WhatsApp bridge (src/queues/messaging.ts). They go back on the queue only while the bridge is open, so an outage
 // does not have each one tried and refused every five minutes. One still unsent a day after it was queued has missed
-// its moment: it is failed, and ops are told once a day however many there are.
+// its moment: it is failed, and ops are told under one alert a day however many there are.
 
 import type { Dependencies } from "../dependencies.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
@@ -74,9 +74,9 @@ async function failDayOldMessages(run: UnsentMessagesRun): Promise<void> {
   await run.deps.alertOnce({
     key: `messages_unsent:${indiaDate(run.now)}`,
     message:
-      `Messages queued over a day ago were never sent, and are now failed: ${String(results.length)} this run, ` +
-      `${example.id} (${example.kind}) among them. Any more today are counted under this alert. Replay those still ` +
-      'worth sending once the bridge is back (runbook, "Replaying a failed message").',
+      `Messages queued over a day ago were never sent, and are now failed: ${String(results.length)} on this run, ` +
+      `${example.id} (${example.kind}) among them. Replay those still worth sending once the bridge is back ` +
+      '(runbook, "Replaying a failed message").',
   });
 }
 

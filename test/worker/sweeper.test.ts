@@ -320,7 +320,6 @@ describe("sweeper: try-on", () => {
        VALUES (?1, ?2, 'p', 'tryon_result', 'job', 'queued', ?2, ?3)`,
     ).bind(id, minutesAgo(minutes), lastError);
 
-  // PLAT-51: while the bridge is down, a queued message waits rather than being tried and refused every five minutes.
   it("holds queued messages while the WhatsApp bridge is down, and sends them again once it is open", async () => {
     await insertPerson("p", "+919810000001");
     await queuedMessage("waiting", 30, "HTTP 404 Not Found").run();
@@ -356,7 +355,6 @@ describe("sweeper: try-on", () => {
     expect(queues.messages.sent).toEqual([]);
   });
 
-  // PLAT-22: a message that never went was put back on the queue every five minutes for ever.
   it("fails a message still unsent a day after it was queued, and tells ops once a day", async () => {
     await insertPerson("p", "+919810000001");
     await env.DB.batch([
@@ -374,7 +372,9 @@ describe("sweeper: try-on", () => {
       { id: "hours-old", state: "queued", last_error: null },
     ]);
     expect(queues.messages.sent).toEqual([{ message_id: "hours-old", request_id: "sweeper" }]);
-    expect(deps.alerts).toEqual([expect.stringContaining("1 this run, day-old (tryon_result) among them") as string]);
+    expect(deps.alerts).toEqual([
+      expect.stringContaining("1 on this run, day-old (tryon_result) among them") as string,
+    ]);
 
     await queuedMessage("also-day-old", 24 * 60 + 2).run();
     await sweep(bindings, deps, createLogger(), OPTIONS);

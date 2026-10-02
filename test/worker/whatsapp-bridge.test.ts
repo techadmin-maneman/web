@@ -44,7 +44,6 @@ describe("the WhatsApp bridge", () => {
     ]);
   });
 
-  // PLAT-50: staging's bridge lost its instance for 69 hours, and the alert said to rescan a QR code.
   it("names the settings to check, not a QR code, when the bridge has no such instance", async () => {
     const missing = bridge({
       open: false,
