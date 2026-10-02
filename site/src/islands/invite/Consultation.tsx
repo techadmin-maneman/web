@@ -11,7 +11,7 @@ import { fill } from "../../lib/text.ts";
 import { readAttribution } from "../../lib/visit.ts";
 import { AddressFieldset } from "./AddressFieldset.tsx";
 import { placeOf, type Booking } from "./Done.tsx";
-import { ExtentFieldset, ForPincode, PersonFieldset, Send, type FormProps } from "./fields.tsx";
+import { ExtentFieldset, ForPincode, PersonFieldset, RememberedInvite, Send, type FormProps } from "./fields.tsx";
 import styles from "./Invite.module.css";
 import { codeInPath, hairSystemsInPage } from "./page.ts";
 import { mobileToSend, useTurnstileForm } from "./useTurnstileForm.ts";
@@ -42,6 +42,8 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
   const [address, setAddress] = useState<AddressFields>(() => emptyAddress(props.answer.city));
   const [extent, setExtent] = useState<LossExtent>("crown");
   const [code, setCode] = useState("");
+  // On /book, the invite this browser remembers: the form says who is told of the fit before it sends it.
+  const [remembered, setRemembered] = useState(() => (props.invited ? null : rememberedInvite()));
   const days = dayStrip(indiaTomorrow(), DAYS);
   const { pincode } = props.answer;
   // The site's own page takes a discount code for the one visit; an invite's page is the invite's offer (ADR 0108).
@@ -60,14 +62,14 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
       consent: true as const,
     };
     // The site's own page carries where this visit came from, where the hair loss is, and the invite this browser
-    // remembers; the invite's page, its own invite.
+    // remembers; the invite's page, its own invite. Each says whether the form told the friend who hears of the fit.
     const attribution = readAttribution();
-    const remembered = props.invited ? null : rememberedInvite();
+    const onInvite = { ...request, ...(props.credits ? { invite_told: true as const } : {}) };
     const onBook = {
       ...request,
       loss_extent: extent,
       ...(attribution === undefined ? {} : { attribution }),
-      ...(remembered === null ? {} : { invite_code: remembered }),
+      ...(remembered === null ? {} : { invite_code: remembered, invite_told: true as const }),
       ...(takesCode && code.trim() !== "" ? { discount_code: code.trim() } : {}),
     };
     const invite = props.invited ? codeInPath() : remembered;
@@ -75,7 +77,7 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
       event,
       (token, keyFor) =>
         props.invited
-          ? bookConsultation(codeInPath(), { ...request, turnstile_token: token }, keyFor(request))
+          ? bookConsultation(codeInPath(), { ...onInvite, turnstile_token: token }, keyFor(onInvite))
           : bookPublicConsultation({ ...onBook, turnstile_token: token }, keyFor(onBook)),
       (booked) => {
         const page = props.invited ? "invite" : "book";
@@ -100,6 +102,11 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
     setPlan(chosen);
     // The one visit does not start in the evening: a window it cannot take is not kept for it.
     if (chosen === "one_visit" && !oneVisitStartsIn(window)) setWindow("morning");
+  }
+
+  function bookWithoutInvite() {
+    if (remembered !== null) forgetInvite(remembered);
+    setRemembered(null);
   }
   return (
     <form class={styles.form} onSubmit={submit} noValidate>
@@ -215,6 +222,14 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
         consentNote=""
         onChange={form.setFields}
       />
+
+      {remembered !== null && (
+        <RememberedInvite
+          line={referral.remembered.consultation(props.reward)}
+          without={referral.remembered.bookWithout}
+          onWithout={bookWithoutInvite}
+        />
+      )}
 
       <div ref={form.box} class={styles.turnstile} />
       <Send

@@ -627,6 +627,21 @@
   color: var(--text-muted);
 }
 
+/* /book's line for the invite this browser remembers, and the way to go on without it. */
+.remembered {
+  display: grid;
+  justify-items: start;
+  gap: var(--sp-6);
+}
+
+.remembered .told {
+  margin: 0;
+}
+
+.remembered .change {
+  font-size: var(--fs-15);
+}
+
 /* ---- The confirmations (C4) ------------------------------------------------ */
 
 .done {

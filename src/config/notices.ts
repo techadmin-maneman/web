@@ -205,6 +205,13 @@ export const NOTICES: readonly Notice[] = [
 export const LANDING_NOTICES = { consultation: "referral-consultation-v1", waitlist: "waitlist-v1" } as const;
 
 /**
+ * The line beside an invite that tells the friend their referrer hears of their fit, by the page that shows it: the
+ * invite's own page, or /book with the invite this browser remembers. An attribution records the one the friend saw.
+ */
+export const TOLD_NOTICES = { landing: "invite-told-landing-v1", book: "invite-told-book-v1" } as const;
+export type ToldNotice = (typeof TOLD_NOTICES)[keyof typeof TOLD_NOTICES];
+
+/**
  * The version shown today for each purpose. The try-on's two are the only ones it records: every earlier version
  * promised the result on screen, which the site no longer shows (ADR 0104).
  */

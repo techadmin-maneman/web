@@ -27,14 +27,16 @@
 // (docs/decisions/0108-discount-codes.md).
 //
 // Either may carry the code of an invite the visitor opened on this browser in the
-// last 30 days, and is then attributed to it exactly as the landing's would be. A
-// code we do not have, or one not shaped like a code, is ignored, and the booking
-// goes ahead without an invite (docs/decisions/0089-an-invite-is-not-lost.md).
+// last 30 days, and is then attributed to it exactly as the landing's would be,
+// once the form has said beside it who is told of the fit. A code sent without
+// that, a code we do not have, or one not shaped like a code, is ignored, and the
+// booking goes ahead without an invite (docs/decisions/0089-an-invite-is-not-lost.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
 import { LOSS_EXTENTS } from "../config/booking.ts";
+import { TOLD_NOTICES } from "../config/notices.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { bookConsultation, joinTheWaitlist } from "../domain/public-booking.ts";
 import type { Plan } from "../policy/one-visit.ts";
@@ -77,8 +79,16 @@ const Person = {
     .optional()
     .openapi({
       description:
-        "The code of an invite this browser opened in the last 30 days. One we do not have, or not shaped like a " +
-        "code, is ignored: the booking goes ahead without an invite.",
+        "The code of an invite this browser opened in the last 30 days. One sent without invite_told, one we do " +
+        "not have, or one not shaped like a code, is ignored: the booking goes ahead without an invite.",
+    }),
+  invite_told: z
+    .literal(true)
+    .optional()
+    .openapi({
+      description:
+        "true: beside the invite, the form said that whoever sent it is told when the friend is fitted, and offered " +
+        "to go on without it. The attribution records it.",
     }),
 };
 
@@ -253,9 +263,16 @@ const waitlistRoute = createRoute({
   },
 });
 
-/** The invite a remembered code names; null for none, one we do not have, or one not shaped like a code. */
-function rememberedInvite(c: Context<AppEnv>, code: string | undefined): Promise<Invite | null> {
-  if (code === undefined || !CODE_PATTERN.test(code)) return Promise.resolve(null);
+/**
+ * The invite a remembered code names, once the form has said who is told of the fit beside it; null for none, one
+ * sent without that, one we do not have, or one not shaped like a code.
+ */
+function rememberedInvite(
+  c: Context<AppEnv>,
+  sent: { invite_code?: string | undefined; invite_told?: true | undefined },
+): Promise<Invite | null> {
+  const code = sent.invite_code;
+  if (sent.invite_told !== true || code === undefined || !CODE_PATTERN.test(code)) return Promise.resolve(null);
   return inviteOf(c.env.DB, code, c.var.config.settings.referrerNameOnInvite);
 }
 
@@ -276,7 +293,8 @@ export function registerConsultations(app: App): void {
         lossExtent: body.loss_extent,
         turnstileToken: body.turnstile_token,
         attribution: body.attribution ?? {},
-        invite: await rememberedInvite(c, body.invite_code),
+        invite: await rememberedInvite(c, body),
+        toldNotice: TOLD_NOTICES.book,
         source: "site_booking",
         plan: planOf(body.one_visit),
         discountCode: body.discount_code ?? null,
@@ -312,7 +330,8 @@ export function registerConsultations(app: App): void {
         launchAlert: body.launch_alert,
         turnstileToken: body.turnstile_token,
         attribution: body.attribution ?? {},
-        invite: await rememberedInvite(c, body.invite_code),
+        invite: await rememberedInvite(c, body),
+        toldNotice: TOLD_NOTICES.book,
         source: "site_waitlist",
       });
       if (!listed.ok) return listed;

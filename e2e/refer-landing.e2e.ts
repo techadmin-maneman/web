@@ -100,6 +100,8 @@ test("the invite names the referrer, and a served pincode opens the consultation
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeVisible();
   const sent = requests[0]?.postDataJSON() as Record<string, unknown>;
   expect(sent).toMatchObject({ pincode: SERVED.pincode, window: "afternoon", consent: true, mobile: "9810000000" });
+  // The form said who is told of the fit, and says so.
+  expect(sent.invite_told).toBe(true);
   expect(sent.address).toMatchObject({ line1: "Palm Grove Society", city: SERVED.city, pincode: SERVED.pincode });
   expect(sent.turnstile_token).toBeTruthy();
 });
@@ -198,6 +200,12 @@ test("an unserved pincode takes the number instead, and the launch alert is the 
   // Nothing is booked, so nothing asks where (ADR 0081).
   await expect(page.getByLabel("Building, society or street")).toHaveCount(0);
 
+  await expect(
+    page.getByText(
+      "Rohit’s invite stays valid for 12 months after we launch there. Rohit is told when you are fitted.",
+    ),
+  ).toBeVisible();
+
   await fillPerson(page);
   await page.getByText("You may contact me about this request.").click();
   await page.getByText("Tell me when you launch in my area.").click();
@@ -209,6 +217,7 @@ test("an unserved pincode takes the number instead, and the launch alert is the 
     pincode: UNSERVED.pincode,
     contact_consent: true,
     launch_alert: true,
+    invite_told: true,
   });
 });
 

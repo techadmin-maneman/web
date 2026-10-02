@@ -28,6 +28,24 @@ function sentences(given: ReferralReward | null, name: string | null = "Rohit"):
   ].filter((sentence): sentence is string => sentence !== null);
 }
 
+// PS-24: /book says who is told of the fit before it sends the invite this browser remembers.
+describe("what /book says of the invite this browser remembers", () => {
+  it("says who is told of the fit, with the friend's visits as ops set them", () => {
+    expect(referral.remembered.consultation(reward(3, 3))).toBe(
+      "You have an invite. Whoever invited you is told when you are fitted. That is when the 3 visits land.",
+    );
+    expect(referral.remembered.consultation(reward(3, 0))).toBe(
+      "You have an invite. Whoever invited you is told when you are fitted.",
+    );
+    expect(referral.remembered.waitlist).toMatch(/ Whoever invited you is told when you are fitted\.$/);
+  });
+
+  it("is said on the landing's waitlist too, by the referrer's name where it has one", () => {
+    expect(referral.waitlist.holds).toMatch(/ \{name\} is told when you are fitted\.$/);
+    expect(referral.waitlist.holdsUnnamed).toMatch(/ Whoever invited you is told when you are fitted\.$/);
+  });
+});
+
 describe("what the landing says an invite earns", () => {
   it("says the design's words while each side gets 3", () => {
     expect(sentences(reward(3, 3))).toEqual([

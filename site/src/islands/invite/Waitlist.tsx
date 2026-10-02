@@ -9,7 +9,7 @@ import { fill } from "../../lib/text.ts";
 import { readAttribution } from "../../lib/visit.ts";
 import { Icon } from "../Drawings.tsx";
 import type { Listing } from "./Done.tsx";
-import { ExtentFieldset, ForPincode, PersonFieldset, Send, type FormProps } from "./fields.tsx";
+import { ExtentFieldset, ForPincode, PersonFieldset, RememberedInvite, Send, type FormProps } from "./fields.tsx";
 import styles from "./Invite.module.css";
 import { codeInPath } from "./page.ts";
 import { mobileToSend, useTurnstileForm } from "./useTurnstileForm.ts";
@@ -19,6 +19,13 @@ export function Waitlist(props: FormProps & { onListed: (listing: Listing) => vo
   const form = useTurnstileForm(props.turnstileSiteKey);
   const [alert, setAlert] = useState(false);
   const [extent, setExtent] = useState<LossExtent>("crown");
+  // On /book, the invite this browser remembers: the form says who is told of the fit before it sends it.
+  const [remembered, setRemembered] = useState(() => (props.invited ? null : rememberedInvite()));
+
+  function joinWithoutInvite() {
+    if (remembered !== null) forgetInvite(remembered);
+    setRemembered(null);
+  }
 
   function submit(event: Event) {
     const { fields } = form;
@@ -30,19 +37,19 @@ export function Waitlist(props: FormProps & { onListed: (listing: Listing) => vo
       launch_alert: alert,
     };
     const attribution = readAttribution();
-    const remembered = props.invited ? null : rememberedInvite();
+    const onInvite = { ...request, ...(props.credits ? { invite_told: true as const } : {}) };
     const onBook = {
       ...request,
       loss_extent: extent,
       ...(attribution === undefined ? {} : { attribution }),
-      ...(remembered === null ? {} : { invite_code: remembered }),
+      ...(remembered === null ? {} : { invite_code: remembered, invite_told: true as const }),
     };
     const invite = props.invited ? codeInPath() : remembered;
     void form.submit(
       event,
       (token, keyFor) =>
         props.invited
-          ? joinWaitlist(codeInPath(), { ...request, turnstile_token: token }, keyFor(request))
+          ? joinWaitlist(codeInPath(), { ...onInvite, turnstile_token: token }, keyFor(onInvite))
           : joinPublicWaitlist({ ...onBook, turnstile_token: token }, keyFor(onBook)),
       (listed) => {
         const page = props.invited ? "invite" : "book";
@@ -96,6 +103,14 @@ export function Waitlist(props: FormProps & { onListed: (listing: Listing) => vo
           <span class={styles.consentNote}>{` ${waitlist.optional}`}</span>
         </span>
       </label>
+
+      {remembered !== null && (
+        <RememberedInvite
+          line={referral.remembered.waitlist}
+          without={referral.remembered.joinWithout}
+          onWithout={joinWithoutInvite}
+        />
+      )}
 
       <div ref={form.box} class={styles.turnstile} />
       <Send failure={form.failure} sending={form.sending} label={waitlist.submit} sendingLabel={waitlist.sending} />

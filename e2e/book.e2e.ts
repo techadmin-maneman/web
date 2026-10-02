@@ -63,16 +63,27 @@ async function openInvite(page: Page): Promise<void> {
 
 const remembered = (page: Page) => page.evaluate(() => localStorage.getItem("mm_invite"));
 
-async function bookHere(page: Page): Promise<void> {
+async function openTheForm(page: Page): Promise<void> {
   await visit(page, "/book");
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
+}
+
+async function fillAndBook(page: Page): Promise<void> {
   await fillAddress(page);
   await page.getByLabel("Name").fill("Test Visitor");
   await page.getByLabel("Mobile").fill("9810000000");
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
 }
+
+async function bookHere(page: Page): Promise<void> {
+  await openTheForm(page);
+  await fillAndBook(page);
+}
+
+/** What /book says beside the invite this browser remembers, before it sends it (PS-24). */
+const TOLD = "You have an invite. Whoever invited you is told when you are fitted. That is when the 3 visits land.";
 
 test("the page introduces itself, with no invite and no card", async ({ page }) => {
   await mockApi(page);
@@ -423,10 +434,14 @@ test("a friend who opened an invite books here with it, and is told the invite's
   // The page itself still shows no card and no invite.
   await expect(page.getByText("sent you this")).toBeHidden();
   await expect(page.locator("img[width='1200']")).toHaveCount(0);
-  await bookHere(page);
+  await openTheForm(page);
+  // The form says who is told of the fit before it sends the invite.
+  await expect(page.getByText(TOLD)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Book without the invite" })).toBeVisible();
+  await fillAndBook(page);
 
   await expect(page.getByText("Consultation booked")).toBeVisible();
-  expect(requests[0]?.postDataJSON()).toMatchObject({ invite_code: CODE, loss_extent: "crown" });
+  expect(requests[0]?.postDataJSON()).toMatchObject({ invite_code: CODE, invite_told: true, loss_extent: "crown" });
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeVisible();
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
@@ -434,6 +449,21 @@ test("a friend who opened an invite books here with it, and is told the invite's
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
   // Used, it is forgotten: a second booking from this browser carries nothing.
   expect(await remembered(page)).toBeNull();
+});
+
+// PS-24: a friend who would rather their referrer were not told books without the invite.
+test("a friend who opened an invite may book here without it, and the browser forgets it", async ({ page }) => {
+  const requests = await mockApi(page);
+  await openInvite(page);
+  await openTheForm(page);
+  await page.getByRole("button", { name: "Book without the invite" }).click();
+
+  await expect(page.getByText(TOLD)).toBeHidden();
+  expect(await remembered(page)).toBeNull();
+  await fillAndBook(page);
+  await expect(page.getByText("Consultation booked")).toBeVisible();
+  expect(requests[0]?.postDataJSON()).not.toHaveProperty("invite_code");
+  expect(requests[0]?.postDataJSON()).not.toHaveProperty("invite_told");
 });
 
 test("a friend who opened an invite joins a waitlist here with it, and is told the invite holds", async ({ page }) => {
@@ -444,13 +474,19 @@ test("a friend who opened an invite joins a waitlist here with it, and is told t
   await visit(page, "/book");
   await page.getByLabel("Pincode").fill(UNSERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
+  await expect(
+    page.getByText(
+      "You have an invite. It stays valid for 12 months after we launch there. Whoever invited you is told when you are fitted.",
+    ),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Join without the invite" })).toBeVisible();
   await page.getByLabel("Name").fill("Test Visitor");
   await page.getByLabel("Mobile").fill("9810000000");
   await page.getByText("You may contact me about this request.").click();
   await page.getByRole("button", { name: "Add me to the list" }).click();
 
   await expect(page.getByRole("heading", { name: "You are on the Bandra list" })).toBeVisible();
-  expect(requests[0]?.postDataJSON()).toMatchObject({ invite_code: CODE });
+  expect(requests[0]?.postDataJSON()).toMatchObject({ invite_code: CODE, invite_told: true });
   await expect(page.getByText(/The invite holds for 12 months after that\./)).toBeVisible();
   expect(await remembered(page)).toBeNull();
 });

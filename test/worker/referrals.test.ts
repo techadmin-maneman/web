@@ -533,6 +533,104 @@ describe("POST /api/r/:code/waitlist", () => {
     const body = { ...FRIEND, pincode: "122018", contact_consent: true, launch_alert: false };
     expect((await request(site(), "/api/r/ZZ9999/waitlist", post(body))).status).toBe(422);
   });
+
+  it("records that the landing told the friend who hears of the fit, and that it did not where it could not", async () => {
+    await pincode("400050", "Bandra", false);
+    const code = await codeOf();
+    const told = { ...FRIEND, pincode: "400050", contact_consent: true, launch_alert: false, invite_told: true };
+    expect((await request(site(), `/api/r/${code}/waitlist`, post(told))).status).toBe(201);
+    const silent = { ...FRIEND, mobile: "98100 00003", pincode: "400050", contact_consent: true, launch_alert: false };
+    expect((await request(site(), `/api/r/${code}/waitlist`, post(silent))).status).toBe(201);
+
+    const attributions = await env.DB.prepare(
+      `SELECT p.mobile_e164, r.told_notice FROM referral_attributions r JOIN people p ON p.id = r.referred_person_id
+       ORDER BY p.mobile_e164`,
+    ).all();
+    expect(attributions.results).toEqual([
+      { mobile_e164: "+919810000002", told_notice: "invite-told-landing-v1" },
+      { mobile_e164: "+919810000003", told_notice: null },
+    ]);
+  });
+
+  // PS-23: anyone can join a list with a number, and once could attribute a client who came on their own, and switch
+  // their launch alert back on.
+  describe("for a number already in the funnel", () => {
+    const KNOWN = "77777777-7777-4777-8777-777777777777";
+    const join = (code: string) =>
+      request(
+        site(),
+        `/api/r/${code}/waitlist`,
+        post({ ...FRIEND, pincode: "400050", contact_consent: true, launch_alert: true, invite_told: true }),
+        { CRM_QUEUE: fakeQueue(), MESSAGE_QUEUE: fakeQueue() },
+      );
+    const latestLaunchConsent = () =>
+      env.DB.prepare(
+        `SELECT granted, source FROM consents WHERE person_id = ?1 AND purpose = 'whatsapp_launches'
+         ORDER BY created_at DESC, rowid DESC LIMIT 1`,
+      )
+        .bind(KNOWN)
+        .first();
+
+    beforeEach(async () => {
+      await pincode("400050", "Bandra", false);
+      await person(KNOWN, "Karan Bhatia", "+919810000002");
+    });
+
+    it("carries no invite for someone who has had a consultation, and keeps the launch alert they switched off", async () => {
+      await env.DB.prepare(
+        `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end,
+           fsm_modified_at, synced_at)
+         VALUES ('consulted', 'fsm-consulted', ?1, 'consultation', 'completed', 'Completed',
+           '2026-09-10T04:30:00.000Z', '2026-09-10T05:30:00.000Z', ?2, ?2)`,
+      )
+        .bind(KNOWN, NOW.toISOString())
+        .run();
+      await env.DB.prepare(
+        `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, source)
+         VALUES ('launches-off', ?1, 'whatsapp_launches', 'whatsapp-launches-v1', 0, '2026-09-15T00:00:00.000Z',
+           'app_profile')`,
+      )
+        .bind(KNOWN)
+        .run();
+      const code = await codeOf();
+
+      const answer = await join(code);
+      expect(answer.status).toBe(201);
+      expect(await answer.json()).toEqual({ area: "Bandra", credits: false, invite: "unknown" });
+      expect((await env.DB.prepare("SELECT COUNT(*) AS n FROM referral_attributions").first())?.n).toBe(0);
+      const entry = await env.DB.prepare("SELECT referral_code FROM waitlist_entries WHERE person_id = ?1")
+        .bind(KNOWN)
+        .first();
+      expect(entry).toEqual({ referral_code: null });
+      expect(await latestLaunchConsent()).toEqual({ granted: 0, source: "app_profile" });
+    });
+
+    it("carries no invite for someone who asked for a consultation on /book without one", async () => {
+      await env.DB.prepare(
+        `INSERT INTO consultation_requests (id, person_id, pincode, requested_date, requested_window, created_at)
+         VALUES ('asked', ?1, '122018', '2026-09-23', 'morning', ?2)`,
+      )
+        .bind(KNOWN, NOW.toISOString())
+        .run();
+      const code = await codeOf();
+
+      expect(await (await join(code)).json()).toEqual({ area: "Bandra", credits: false, invite: "unknown" });
+      expect((await env.DB.prepare("SELECT COUNT(*) AS n FROM referral_attributions").first())?.n).toBe(0);
+    });
+
+    it("still carries the invite, and the launch alert, for someone we know who has asked for nothing", async () => {
+      const code = await codeOf();
+
+      expect(await (await join(code)).json()).toEqual({ area: "Bandra", credits: true, invite: "valid" });
+      const attribution = await env.DB.prepare(
+        "SELECT code, via, told_notice FROM referral_attributions WHERE referred_person_id = ?1",
+      )
+        .bind(KNOWN)
+        .first();
+      expect(attribution).toEqual({ code, via: "waitlist", told_notice: "invite-told-landing-v1" });
+      expect(await latestLaunchConsent()).toEqual({ granted: 1, source: "referral_landing" });
+    });
+  });
 });
 
 // The landing sends one Idempotency-Key per submission (FEO-21): pressing again after the answer was lost on the way
