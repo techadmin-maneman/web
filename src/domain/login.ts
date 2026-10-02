@@ -1,9 +1,16 @@
 // Who may log in to the client app, and the one-time-code challenges that let
 // them (docs/decisions/0030-one-time-codes.md).
 
-import { CODE_TTL_MS } from "../policy/one-time-code.ts";
 import type { CodeChannel } from "../providers/codes.ts";
-import { checkCode, codeHashOf, type ChallengePurpose } from "./one-time-codes.ts";
+import {
+  CHALLENGE_COLUMNS,
+  challengeOf,
+  checkCode,
+  codeHashOf,
+  type Challenge,
+  type ChallengePurpose,
+  type ChallengeRow,
+} from "./one-time-codes.ts";
 
 export interface EligiblePerson {
   readonly id: string;
@@ -30,80 +37,6 @@ export async function findEligiblePerson(db: D1Database, mobileE164: string): Pr
   return row === null ? null : { id: row.id, mobileE164, name: row.name };
 }
 
-export interface Challenge {
-  readonly id: string;
-  readonly personId: string | null;
-  readonly channel: CodeChannel;
-  readonly createdAt: Date;
-  readonly lastSentAt: Date;
-  readonly sends: number;
-  readonly attempts: number;
-  readonly expiresAt: Date;
-}
-
-interface ChallengeRow {
-  id: string;
-  person_id: string | null;
-  channel: CodeChannel;
-  created_at: string;
-  last_sent_at: string;
-  sends: number;
-  attempts: number;
-  expires_at: string;
-}
-
-function challengeOf(row: ChallengeRow): Challenge {
-  return {
-    id: row.id,
-    personId: row.person_id,
-    channel: row.channel,
-    createdAt: new Date(row.created_at),
-    lastSentAt: new Date(row.last_sent_at),
-    sends: row.sends,
-    attempts: row.attempts,
-    expiresAt: new Date(row.expires_at),
-  };
-}
-
-/**
- * A new challenge. With a person, it holds the hash of `code`; without one (a
- * login for a number with no booking) it holds nothing, so no code ever matches.
- */
-export async function createChallenge(
-  db: D1Database,
-  options: {
-    personId: string | null;
-    code: string;
-    pepper: string;
-    now: Date;
-    purpose?: ChallengePurpose;
-    numberChangeId?: string;
-  },
-): Promise<Challenge> {
-  const id = crypto.randomUUID();
-  const at = options.now.toISOString();
-  const codeHash = options.personId === null ? null : await codeHashOf(options.pepper, id, options.code);
-  const row = await db
-    .prepare(
-      `INSERT INTO otp_challenges
-         (id, created_at, person_id, purpose, channel, code_hash, last_sent_at, expires_at, number_change_id)
-       VALUES (?1, ?2, ?3, ?4, 'whatsapp', ?5, ?2, ?6, ?7)
-       RETURNING id, person_id, channel, created_at, last_sent_at, sends, attempts, expires_at`,
-    )
-    .bind(
-      id,
-      at,
-      options.personId,
-      options.purpose ?? "login",
-      codeHash,
-      new Date(options.now.getTime() + CODE_TTL_MS).toISOString(),
-      options.numberChangeId ?? null,
-    )
-    .first<ChallengeRow>();
-  if (row === null) throw new Error("challenge not written");
-  return challengeOf(row);
-}
-
 /** A challenge that can still be answered: not expired, verified or void. */
 export async function openChallenge(
   db: D1Database,
@@ -113,7 +46,7 @@ export async function openChallenge(
 ): Promise<Challenge | null> {
   const row = await db
     .prepare(
-      `SELECT id, person_id, channel, created_at, last_sent_at, sends, attempts, expires_at FROM otp_challenges
+      `SELECT ${CHALLENGE_COLUMNS} FROM otp_challenges
        WHERE id = ?1 AND purpose = ?3 AND technician_login = 0
          AND verified_at IS NULL AND voided_at IS NULL AND expires_at > ?2`,
     )
@@ -128,7 +61,7 @@ export async function replaceCode(
   challenge: Challenge,
   options: { channel: CodeChannel; code: string; pepper: string; now: Date },
 ): Promise<void> {
-  const codeHash = challenge.personId === null ? null : await codeHashOf(options.pepper, challenge.id, options.code);
+  const codeHash = challenge.holderId === null ? null : await codeHashOf(options.pepper, challenge.id, options.code);
   await db
     .prepare(
       "UPDATE otp_challenges SET code_hash = ?2, channel = ?3, last_sent_at = ?4, sends = sends + 1 WHERE id = ?1",

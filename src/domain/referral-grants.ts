@@ -183,6 +183,7 @@ export function grantStatements(
   return { statements, messageIds };
 }
 
+// Each referral with its friend's first fit done; a one visit counts once it is paid or owes nothing.
 // CROSS JOIN keeps the referrals as the outer loop. Left to itself, SQLite walks every visit ever made to
 // save sorting the few pending referrals, and the five-minute cron would read them all on each run.
 const ATTRIBUTION = `SELECT r.id, r.code, rc.person_id AS referrer_id, rp.erased_at AS referrer_erased,
@@ -197,6 +198,13 @@ const ATTRIBUTION = `SELECT r.id, r.code, rc.person_id AS referrer_id, rp.erased
       WHERE p.appointment_id = a.id AND p.kind = 'visit' AND p.status IN ('captured', 'partially_refunded')))
   JOIN visits v ON v.appointment_id = a.id AND v.outcome = 'done'
   LEFT JOIN serviceable_pincodes pin ON pin.pincode = r.pincode`;
+
+/** The pending referrals one pass settles, the earliest first fit first. */
+const PENDING_SETTLEMENTS = `${ATTRIBUTION}
+  WHERE r.grant_state = 'pending' AND fp.erased_at IS NULL ORDER BY a.window_start LIMIT ?1`;
+
+/** One held referral, for ops to approve or reject. */
+const HELD_FOR_REVIEW = `${ATTRIBUTION} WHERE r.id = ?1 AND r.grant_state = 'held'`;
 
 interface AttributionRow {
   id: string;
@@ -247,7 +255,7 @@ export async function settleReferrals(
   reward: ReferralReward,
 ): Promise<{ granted: number; held: number; expired: number; messageIds: string[] }> {
   const { results } = await db
-    .prepare(`${ATTRIBUTION} WHERE r.grant_state = 'pending' AND fp.erased_at IS NULL ORDER BY a.window_start LIMIT ?1`)
+    .prepare(PENDING_SETTLEMENTS)
     .bind(PER_PASS)
     .all<AttributionRow>();
   const outcome = { granted: 0, held: 0, expired: 0, messageIds: [] as string[] };
@@ -323,7 +331,7 @@ export async function decideHeldReferral(
   },
 ): Promise<{ state: "approved" | "rejected"; messageIds: string[] } | null> {
   const row = await db
-    .prepare(`${ATTRIBUTION} WHERE r.id = ?1 AND r.grant_state = 'held'`)
+    .prepare(HELD_FOR_REVIEW)
     .bind(input.id)
     .first<AttributionRow>();
   if (row === null) return null;
