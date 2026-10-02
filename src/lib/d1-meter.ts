@@ -28,23 +28,41 @@ export function usageFields(usage: D1Usage): { d1_rows_read: number; d1_rows_wri
   return { d1_rows_read: usage.rowsRead, d1_rows_written: usage.rowsWritten, d1_queries: usage.queries };
 }
 
+/** What changed between two readings of the same meter. */
+export function usageSince(before: D1Usage, after: D1Usage): D1Usage {
+  return {
+    rowsRead: after.rowsRead - before.rowsRead,
+    rowsWritten: after.rowsWritten - before.rowsWritten,
+    queries: after.queries - before.queries,
+  };
+}
+
+/** What D1 says of one statement it ran. A stand-in database may say nothing, which counts as nothing read. */
+interface Reported {
+  readonly meta?: { readonly rows_read?: number; readonly rows_written?: number };
+}
+
 class Tally {
   rowsRead = 0;
   rowsWritten = 0;
   queries = 0;
 
-  add(result: D1Result<unknown>): void {
+  add(result: Reported): void {
     this.queries += 1;
-    this.rowsRead += result.meta.rows_read;
-    this.rowsWritten += result.meta.rows_written;
+    this.rowsRead += result.meta?.rows_read ?? 0;
+    this.rowsWritten += result.meta?.rows_written ?? 0;
   }
 }
 
 class MeteredStatement implements D1PreparedStatement {
-  constructor(
-    readonly real: D1PreparedStatement,
-    private readonly tally: Tally,
-  ) {}
+  /** The statement D1 itself made, which a batch must be given. */
+  readonly real: D1PreparedStatement;
+  private readonly tally: Tally;
+
+  constructor(real: D1PreparedStatement, tally: Tally) {
+    this.real = real;
+    this.tally = tally;
+  }
 
   bind(...values: unknown[]): D1PreparedStatement {
     return new MeteredStatement(this.real.bind(...values), this.tally);
@@ -62,10 +80,8 @@ class MeteredStatement implements D1PreparedStatement {
     return result;
   }
 
-  first<T = unknown>(column: string): Promise<T | null>;
-  first<T = Record<string, unknown>>(): Promise<T | null>;
   // D1 reports nothing of what first() read, so it is answered from all(), which runs the same query.
-  async first<T>(column?: string): Promise<T | null> {
+  async first<T = Record<string, unknown>>(column?: string): Promise<T | null> {
     const [row] = (await this.all()).results;
     if (row === undefined) return null;
     if (column === undefined) return row as T;
@@ -75,7 +91,7 @@ class MeteredStatement implements D1PreparedStatement {
 
   raw<T = unknown[]>(options: { columnNames: true }): Promise<[string[], ...T[]]>;
   raw<T = unknown[]>(options?: { columnNames?: false }): Promise<T[]>;
-  // D1 reports nothing of what raw() read either, so it counts as a query alone.
+  // D1 reports nothing of what raw() read either, so it counts as a statement alone.
   raw<T = unknown[]>(options?: { columnNames?: boolean }): Promise<[string[], ...T[]] | T[]> {
     this.tally.queries += 1;
     if (options?.columnNames === true) return this.real.raw<T>({ columnNames: true });
@@ -83,7 +99,6 @@ class MeteredStatement implements D1PreparedStatement {
   }
 }
 
-/** The statement D1 itself made, which a batch must be given. */
 function unmetered(statement: D1PreparedStatement): D1PreparedStatement {
   return statement instanceof MeteredStatement ? statement.real : statement;
 }
@@ -99,10 +114,13 @@ async function meteredBatch<T>(
 }
 
 class MeteredD1 implements D1Database {
-  constructor(
-    private readonly real: D1Database,
-    private readonly tally: Tally,
-  ) {}
+  private readonly real: D1Database;
+  private readonly tally: Tally;
+
+  constructor(real: D1Database, tally: Tally) {
+    this.real = real;
+    this.tally = tally;
+  }
 
   prepare(query: string): D1PreparedStatement {
     return new MeteredStatement(this.real.prepare(query), this.tally);
@@ -118,21 +136,24 @@ class MeteredD1 implements D1Database {
     return result;
   }
 
-  withSession(constraintOrBookmark?: D1SessionBookmark | D1SessionConstraint): D1DatabaseSession {
+  withSession(constraintOrBookmark?: Parameters<D1Database["withSession"]>[0]): D1DatabaseSession {
     return new MeteredSession(this.real.withSession(constraintOrBookmark), this.tally);
   }
 
-  /** Only for D1's retired alpha databases. */
+  /** Only D1's retired alpha databases had this. */
   dump(): Promise<ArrayBuffer> {
     return Promise.reject(new Error("dump() is not supported"));
   }
 }
 
 class MeteredSession implements D1DatabaseSession {
-  constructor(
-    private readonly real: D1DatabaseSession,
-    private readonly tally: Tally,
-  ) {}
+  private readonly real: D1DatabaseSession;
+  private readonly tally: Tally;
+
+  constructor(real: D1DatabaseSession, tally: Tally) {
+    this.real = real;
+    this.tally = tally;
+  }
 
   prepare(query: string): D1PreparedStatement {
     return new MeteredStatement(this.real.prepare(query), this.tally);

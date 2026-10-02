@@ -1,8 +1,8 @@
 import { env } from "cloudflare:workers";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { REQUEST_ID_HEADER } from "../../src/http/context.ts";
 import { ErrorResponseSchema } from "../../src/http/errors.ts";
-import { appFor, captureLogs, markDatabase, request } from "./helpers.ts";
+import { appFor, captureLogs, countRowsRead, markDatabase, request } from "./helpers.ts";
 
 describe("errors", () => {
   it("answers an unknown API route with a stable code and the request ID", async () => {
@@ -131,5 +131,27 @@ describe("access log", () => {
     expect(access).toMatchObject({ method: "GET", route: "/api/result/:token", status: 404 });
     expect(typeof access?.request_id).toBe("string");
     expect(JSON.stringify(logs.lines())).not.toContain("tok_supersecret");
+  });
+
+  it("says what the request cost D1: the rows it read and wrote, and its statements", async () => {
+    await markDatabase();
+    const app = appFor();
+    app.get("/api/costly", async (c) => {
+      await c.env.DB.prepare("INSERT INTO cities (name, served, sort) VALUES ('Pune', 0, 90), ('Jaipur', 0, 91)").run();
+      const { results } = await c.env.DB.prepare("SELECT name FROM cities").all();
+      return c.json({ cities: results.length });
+    });
+    const logs = captureLogs();
+    const rowsRead = countRowsRead();
+
+    await request(app, "/api/costly");
+    const access = logs.lines().find((line) => line.event === "request");
+    const read = rowsRead();
+    vi.restoreAllMocks();
+
+    expect(access).toMatchObject({ route: "/api/costly", d1_rows_read: read });
+    expect(access?.d1_rows_read).toBeGreaterThanOrEqual(2);
+    expect(access?.d1_rows_written).toBeGreaterThanOrEqual(2);
+    expect(access?.d1_queries).toBeGreaterThanOrEqual(2);
   });
 });
