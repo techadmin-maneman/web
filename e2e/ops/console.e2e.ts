@@ -55,13 +55,29 @@ test("says who is signed in, as board A1 draws them at the header's right", asyn
 
 test("signs out through Access, where Access stands in front", async ({ page }) => {
   await answer(page, {
-    "GET /api/whoami": json({ signed_in_as: "aditya.kumar@maneman.in", sign_out: "/cdn-cgi/access/logout" }),
+    "GET /api/whoami": json({
+      signed_in_as: "aditya.kumar@maneman.in",
+      sign_out: "/cdn-cgi/access/logout",
+      staff: { enforced: true, listed: true, grants: [] },
+    }),
   });
   await page.goto("/");
   const header = page.getByRole("banner");
   await expect(header).toContainText("Signed in as aditya.kumar@maneman.in");
   await expect(header).toContainText("AK");
   await expect(header.getByRole("link", { name: "Sign out" })).toHaveAttribute("href", "/cdn-cgi/access/logout");
+});
+
+test("tells a person the enforced Staff list does not name that the console is closed to them", async ({ page }) => {
+  await answer(page, {
+    "GET /api/whoami": json({
+      signed_in_as: "new.joiner@maneman.in",
+      sign_out: "/cdn-cgi/access/logout",
+      staff: { enforced: true, listed: false, grants: [] },
+    }),
+  });
+  await page.goto("/waitlist");
+  await expect(page.getByRole("status").filter({ hasText: "You are not on the Staff list" })).toBeVisible();
 });
 
 // OPS-18 and VIS-20: the title sat on the header's baseline, high in its 56 px.

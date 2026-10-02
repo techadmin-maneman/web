@@ -2181,7 +2181,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required, or not_permitted: waiving asks Finance MANAGE */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -2588,7 +2588,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required, or not_permitted: refunding asks Finance MANAGE */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -5253,6 +5253,263 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/staff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The Staff list, narrowed to the caller's own places */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The Staff page as it now stands */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffBook"];
+                    };
+                };
+                /** @description access_required, or not_permitted */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Add a member of staff, or replace their grants and whether they are let in */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["StaffSave"];
+                };
+            };
+            responses: {
+                /** @description The Staff page as it now stands */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffBook"];
+                    };
+                };
+                /** @description invalid_request: a grant names no place it may, or the same place twice */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required, or not_permitted: the change reaches beyond the caller's Admin MANAGE */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description last_admin: nobody would be left with Admin MANAGE nationally */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/enforcement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Enforce the Staff list, or stop */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        on: boolean;
+                    };
+                };
+            };
+            responses: {
+                /** @description The Staff page as it now stands */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffBook"];
+                    };
+                };
+                /** @description access_required, or not_permitted: only a person with Admin MANAGE nationally */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/service-tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Let a service token in, as every caller was before the Staff list */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["StaffServiceToken"];
+                };
+            };
+            responses: {
+                /** @description The Staff page as it now stands */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffBook"];
+                    };
+                };
+                /** @description access_required, or not_permitted */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/service-tokens/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Take a service token off */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @description The service token's client ID, as Access names it. */
+                        client_id: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description The Staff page as it now stands */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffBook"];
+                    };
+                };
+                /** @description access_required, or not_permitted */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such token is listed */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -5260,7 +5517,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -5770,7 +6027,7 @@ export interface components {
         AlreadyInvited: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -7040,6 +7297,27 @@ export interface components {
             signed_in_as: string;
             /** @description Access's logout path; null where no Access stands in front, as locally. */
             sign_out: string | null;
+            staff: {
+                /** @description Whether the Staff list decides what they may open. */
+                enforced: boolean;
+                /** @description An active person on the Staff list, or a service token on its list of tokens. */
+                listed: boolean;
+                /** @description A person's grants; none for a service token. */
+                grants: components["schemas"]["StaffGrant"][];
+            };
+        };
+        StaffGrant: {
+            /** @enum {string} */
+            department: "operations" | "customer_care" | "finance" | "growth" | "admin";
+            /**
+             * @description view < act < manage: each level can do what the ones before it can.
+             * @enum {string}
+             */
+            level: "view" | "act" | "manage";
+            /** @enum {string} */
+            geography: "national" | "zone" | "city";
+            /** @description The zone's or the city's name; null for national. */
+            place: string | null;
         };
         DiscountCodes: {
             /**
@@ -7114,6 +7392,55 @@ export interface components {
             amount_off: number | null;
             /** @enum {string} */
             given_by: "client" | "technician" | "ops";
+        };
+        StaffBook: {
+            enforced: {
+                /** @description Off: nothing is refused, and what would have been is logged. */
+                on: boolean;
+                set_by: string | null;
+                set_at: string | null;
+            };
+            /** @description Whether the caller may switch enforcement: an active person with Admin MANAGE nationally. */
+            may_switch: boolean;
+            people: {
+                email: string;
+                active: boolean;
+                grants: components["schemas"]["StaffGrant"][];
+                added_by: string;
+                /** Format: date-time */
+                added_at: string;
+                changed_by: string | null;
+                changed_at: string | null;
+            }[];
+            service_tokens: {
+                client_id: string;
+                label: string;
+                added_by: string;
+                /** Format: date-time */
+                added_at: string;
+            }[];
+            zones: {
+                name: string;
+                cities: string[];
+            }[];
+            /** @description Every city a grant may name. */
+            cities: string[];
+        };
+        StaffSave: {
+            /**
+             * Format: email
+             * @description Their Cloudflare Access e-mail.
+             */
+            email: string;
+            /** @description False keeps them listed, with their grants, but lets them in nowhere. */
+            active: boolean;
+            /** @description Every grant they are to hold; this replaces them all. */
+            grants: components["schemas"]["StaffGrant"][];
+        };
+        StaffServiceToken: {
+            /** @description The service token's client ID, as Access names it. */
+            client_id: string;
+            label: string;
         };
     };
     responses: never;

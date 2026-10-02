@@ -1639,7 +1639,7 @@ Request body:
 }
 ```
 
-**403**: access_required
+**403**: access_required, or not_permitted: waiving asks Finance MANAGE
 
 ```json
 {
@@ -1891,7 +1891,7 @@ Request body:
 }
 ```
 
-**403**: access_required
+**403**: access_required, or not_permitted: refunding asks Finance MANAGE
 
 ```json
 {
@@ -3597,6 +3597,182 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
 }
 ```
 
+### GET /api/staff
+
+The Staff list, narrowed to the caller's own places
+
+**200**: The Staff page as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/StaffBook"
+}
+```
+
+**403**: access_required, or not_permitted
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/staff
+
+Add a member of staff, or replace their grants and whether they are let in
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/StaffSave"
+}
+```
+
+**200**: The Staff page as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/StaffBook"
+}
+```
+
+**400**: invalid_request: a grant names no place it may, or the same place twice
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required, or not_permitted: the change reaches beyond the caller's Admin MANAGE
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: last_admin: nobody would be left with Admin MANAGE nationally
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/staff/enforcement
+
+Enforce the Staff list, or stop
+
+Request body:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "on": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "on"
+  ],
+  "additionalProperties": false
+}
+```
+
+**200**: The Staff page as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/StaffBook"
+}
+```
+
+**403**: access_required, or not_permitted: only a person with Admin MANAGE nationally
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/staff/service-tokens
+
+Let a service token in, as every caller was before the Staff list
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/StaffServiceToken"
+}
+```
+
+**200**: The Staff page as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/StaffBook"
+}
+```
+
+**403**: access_required, or not_permitted
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/staff/service-tokens/remove
+
+Take a service token off
+
+Request body:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "client_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]{1,100}$",
+      "description": "The service token's client ID, as Access names it."
+    }
+  },
+  "required": [
+    "client_id"
+  ],
+  "additionalProperties": false
+}
+```
+
+**200**: The Staff page as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/StaffBook"
+}
+```
+
+**403**: access_required, or not_permitted
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such token is listed
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ## Schemas
 
 ### ErrorResponse
@@ -3672,7 +3848,9 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
             "already_discounted",
             "price_settled",
             "code_exists",
-            "slot_times_too_soon"
+            "slot_times_too_soon",
+            "not_permitted",
+            "last_admin"
           ]
         },
         "request_id": {
@@ -5838,7 +6016,9 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
             "already_discounted",
             "price_settled",
             "code_exists",
-            "slot_times_too_soon"
+            "slot_times_too_soon",
+            "not_permitted",
+            "last_admin"
           ]
         },
         "request_id": {
@@ -11571,11 +11751,95 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
         }
       ],
       "description": "Access's logout path; null where no Access stands in front, as locally."
+    },
+    "staff": {
+      "type": "object",
+      "properties": {
+        "enforced": {
+          "type": "boolean",
+          "description": "Whether the Staff list decides what they may open."
+        },
+        "listed": {
+          "type": "boolean",
+          "description": "An active person on the Staff list, or a service token on its list of tokens."
+        },
+        "grants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/StaffGrant"
+          },
+          "description": "A person's grants; none for a service token."
+        }
+      },
+      "required": [
+        "enforced",
+        "listed",
+        "grants"
+      ],
+      "additionalProperties": false
     }
   },
   "required": [
     "signed_in_as",
-    "sign_out"
+    "sign_out",
+    "staff"
+  ],
+  "additionalProperties": false
+}
+```
+
+### StaffGrant
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "department": {
+      "type": "string",
+      "enum": [
+        "operations",
+        "customer_care",
+        "finance",
+        "growth",
+        "admin"
+      ]
+    },
+    "level": {
+      "type": "string",
+      "enum": [
+        "view",
+        "act",
+        "manage"
+      ],
+      "description": "view < act < manage: each level can do what the ones before it can."
+    },
+    "geography": {
+      "type": "string",
+      "enum": [
+        "national",
+        "zone",
+        "city"
+      ]
+    },
+    "place": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The zone's or the city's name; null for national."
+    }
+  },
+  "required": [
+    "department",
+    "level",
+    "geography",
+    "place"
   ],
   "additionalProperties": false
 }
@@ -11913,6 +12177,239 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
     "code",
     "amount_off",
     "given_by"
+  ],
+  "additionalProperties": false
+}
+```
+
+### StaffBook
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "enforced": {
+      "type": "object",
+      "properties": {
+        "on": {
+          "type": "boolean",
+          "description": "Off: nothing is refused, and what would have been is logged."
+        },
+        "set_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "set_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "on",
+        "set_by",
+        "set_at"
+      ],
+      "additionalProperties": false
+    },
+    "may_switch": {
+      "type": "boolean",
+      "description": "Whether the caller may switch enforcement: an active person with Admin MANAGE nationally."
+    },
+    "people": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "grants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StaffGrant"
+            }
+          },
+          "added_by": {
+            "type": "string"
+          },
+          "added_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "changed_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "changed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "email",
+          "active",
+          "grants",
+          "added_by",
+          "added_at",
+          "changed_by",
+          "changed_at"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "service_tokens": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "client_id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "added_by": {
+            "type": "string"
+          },
+          "added_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "client_id",
+          "label",
+          "added_by",
+          "added_at"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "zones": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "cities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "cities"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "cities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Every city a grant may name."
+    }
+  },
+  "required": [
+    "enforced",
+    "may_switch",
+    "people",
+    "service_tokens",
+    "zones",
+    "cities"
+  ],
+  "additionalProperties": false
+}
+```
+
+### StaffSave
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string",
+      "maxLength": 254,
+      "format": "email",
+      "description": "Their Cloudflare Access e-mail."
+    },
+    "active": {
+      "type": "boolean",
+      "description": "False keeps them listed, with their grants, but lets them in nowhere."
+    },
+    "grants": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/StaffGrant"
+      },
+      "maxItems": 40,
+      "description": "Every grant they are to hold; this replaces them all."
+    }
+  },
+  "required": [
+    "email",
+    "active",
+    "grants"
+  ],
+  "additionalProperties": false
+}
+```
+
+### StaffServiceToken
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "client_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]{1,100}$",
+      "description": "The service token's client ID, as Access names it."
+    },
+    "label": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60
+    }
+  },
+  "required": [
+    "client_id",
+    "label"
   ],
   "additionalProperties": false
 }

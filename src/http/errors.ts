@@ -104,6 +104,9 @@ export const ERROR_CODES = [
   // A change of the day's times from a day a client can still book, or a visit is booked on or after
   // (docs/decisions/0102-window-times.md).
   "slot_times_too_soon",
+  // The Staff list: the caller's grants do not reach this, or a change would leave nobody with Admin MANAGE nationally.
+  "not_permitted",
+  "last_admin",
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 

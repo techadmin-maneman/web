@@ -1236,7 +1236,9 @@ Razorpay's webhook: payments and refunds
             "already_discounted",
             "price_settled",
             "code_exists",
-            "slot_times_too_soon"
+            "slot_times_too_soon",
+            "not_permitted",
+            "last_admin"
           ]
         },
         "request_id": {
@@ -1606,7 +1608,9 @@ Razorpay's webhook: payments and refunds
             "already_discounted",
             "price_settled",
             "code_exists",
-            "slot_times_too_soon"
+            "slot_times_too_soon",
+            "not_permitted",
+            "last_admin"
           ]
         },
         "request_id": {

@@ -56,6 +56,8 @@ export const shell = {
    */
   lapsed: "Your sign-in to the console has run out, so nothing more can be read or saved. Reload to sign in again.",
   reload: "Reload",
+  /** PLACEHOLDER: a person Access lets in whom the enforced Staff list does not name. */
+  notListed: "You are not on the Staff list, so the console is closed to you. Ask the owner to add you.",
 } as const;
 
 export const states = {
@@ -1623,6 +1625,7 @@ export const settings = {
     blackouts: "Blackout days",
     consumables: "Consumables",
     "job-sheet": "Job sheet",
+    staff: "Staff",
   },
   /**
    * PLACEHOLDER, every line of it: no board draws discount codes (docs/decisions/0108-discount-codes.md).
@@ -2242,6 +2245,123 @@ export const settings = {
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Nothing was changed.",
     } as Readonly<Record<string, string>>,
+  },
+  /**
+   * PLACEHOLDER, every line of it: no board draws the Staff page. A change is shown before it is saved.
+   */
+  staff: {
+    title: "Staff",
+    note:
+      "Who may use the console, and for what. Each grant gives one department at one level, nationally, across a " +
+      "zone or in one city. View sees; Act does the day's work; Manage also refunds, waives, sets prices, codes and " +
+      "settings, deletes accounts and grants access.",
+    departments: {
+      operations: "Operations",
+      customer_care: "Customer Care",
+      finance: "Finance",
+      growth: "Growth",
+      admin: "Admin",
+    },
+    levels: { view: "View", act: "Act", manage: "Manage" },
+    national: "National",
+    zone: (name: string) => `${name} zone`,
+    zones: "Zones",
+    cities: "Cities",
+    grant: (department: string, level: string, place: string) => `${department} · ${level} · ${place}`,
+    columns: { person: "Person", access: "Access", state: "Status" },
+    noAccess: "No access yet",
+    active: "Let in",
+    inactive: "Switched off",
+    add: "Add a person",
+    change: "Change",
+    changeLabel: (email: string) => `Change ${email}`,
+    form: {
+      addTitle: "Add a person",
+      changeTitle: (email: string) => `Change ${email}`,
+      email: "Sign-in e-mail",
+      emailHint: "The address they sign in to the console with.",
+      letIn: "Let them in",
+      access: "Access",
+      department: "Department",
+      level: "Level",
+      place: "Where",
+      addGrant: "Add a department",
+      removeGrant: "Remove",
+      removeGrantLabel: (grant: string) => `Remove ${grant}`,
+      review: "Review",
+      cancel: "Cancel",
+    },
+    confirm: {
+      title: "Check the change",
+      adds: (email: string) => `Adds ${email}.`,
+      letsIn: "Lets them in again.",
+      switchesOff: "Switches them off: the console closes to them.",
+      gives: (grant: string) => `Gives ${grant}`,
+      takes: (grant: string) => `Takes away ${grant}`,
+      nothing: "Nothing has changed.",
+      send: "Save it",
+      sending: "Saving",
+      back: "Change it",
+    },
+    saved: "Saved.",
+    errors: {
+      email: "Enter the e-mail they sign in with.",
+      place: "Choose where this access applies.",
+      grants: "Give each department once for each place.",
+      not_permitted: "You can grant access only within your own area, and only with Admin · Manage.",
+      last_admin: "Someone must keep Admin · Manage nationally. Give it to another person first.",
+      offline: "You are offline. Connect, then try again.",
+      unknown: "That did not go through. Nothing was changed.",
+    } as Readonly<Record<string, string>>,
+    enforcement: {
+      title: "Access control",
+      off:
+        "Not enforced yet. Everyone Access lets in can open every section, and each call this list would refuse is " +
+        "logged. Check the list, then start enforcing.",
+      on: "Enforced. People open only the departments and places granted here; anyone not listed sees nothing.",
+      setBy: (who: string, when: string) => `Switched by ${who} on ${when}`,
+      start: "Start enforcing",
+      stop: "Stop enforcing",
+      startTitle: "Start enforcing access?",
+      startLine: "From now on, only the people listed here can use the console, and only as granted.",
+      stopTitle: "Stop enforcing access?",
+      stopLine: "Everyone Access lets in will open every section again.",
+      sending: "Saving",
+      back: "Go back",
+      onlyNational: "Only someone with Admin · Manage nationally can switch this.",
+      errors: {
+        not_permitted: "Only someone with Admin · Manage nationally can switch this.",
+        offline: "You are offline. Connect, then try again.",
+        unknown: "That did not go through. Nothing was changed.",
+      } as Readonly<Record<string, string>>,
+    },
+    tokens: {
+      title: "Service tokens",
+      note:
+        "Automated access, such as the test runner's. A token listed here can do everything except grant access; " +
+        "one not listed is refused once access is enforced.",
+      none: "No service token is listed.",
+      addedBy: (who: string, when: string) => `Added by ${who} on ${when}`,
+      clientId: "Client ID",
+      clientIdHint: "From Cloudflare Access, under Service credentials.",
+      label: "Name",
+      add: "Add the token",
+      adding: "Adding",
+      remove: "Remove",
+      removeLabel: (label: string) => `Remove ${label}`,
+      removeTitle: (label: string) => `Remove ${label}?`,
+      removeLine: "Whatever uses it is refused once access is enforced.",
+      removing: "Removing",
+      back: "Keep it",
+      errors: {
+        client_id: "Paste the client ID exactly as Cloudflare Access shows it.",
+        label: "Give it a short name.",
+        not_found: "That token is no longer listed. Reload to see the list as it stands.",
+        not_permitted: "Only someone with Admin · Manage nationally can change service tokens.",
+        offline: "You are offline. Connect, then try again.",
+        unknown: "That did not go through. Nothing was changed.",
+      } as Readonly<Record<string, string>>,
+    },
   },
 } as const;
 
