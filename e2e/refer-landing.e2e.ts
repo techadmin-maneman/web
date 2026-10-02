@@ -28,10 +28,14 @@ interface Answers {
   waitlist?: { status: number; body: unknown };
 }
 
-/** Mocks the landing's four calls; returns the requests the page made. */
+/** Mocks the landing's calls; returns the bookings and waitlist entries it sent. */
 async function mockApi(page: Page, answers: Answers = {}): Promise<Request[]> {
   const requests: Request[] = [];
   await fakeTurnstile(page);
+  // The days and windows open: the API cannot say, so the form draws every window open (e2e/book.e2e.ts answers).
+  await page.route(/\/api\/availability\/public\?/, (route) =>
+    route.fulfill({ status: 503, json: { error: { code: "unavailable", request_id: "r" } } }),
+  );
   await page.route(`**/api/r/${CODE}`, (route) => route.fulfill({ json: answers.invite ?? INVITE }));
   await page.route("**/api/pincodes/*", (route) => {
     const pincode = route.request().url().split("/").pop();
@@ -349,7 +353,7 @@ test("a pincode that is not six digits is refused before the API is asked", asyn
   expect(asked).toBe(false);
 });
 
-test("a window that has just gone says so, and the form stays", async ({ page }) => {
+test("a window found full says so, and the form stays", async ({ page }) => {
   await mockApi(page, {
     consultation: { status: 409, body: { error: { code: "taken", request_id: "r" } } },
   });
@@ -361,7 +365,7 @@ test("a window that has just gone says so, and the form stays", async ({ page })
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
 
-  await expect(page.getByText("That window has just gone. Please pick another.")).toBeVisible();
+  await expect(page.getByText("That window is full. Please pick another.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Book the consultation" })).toBeVisible();
 });
 

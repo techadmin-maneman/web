@@ -57,6 +57,34 @@ The prices the site publishes, from the price book, in force today. Cacheable fo
 }
 ```
 
+### GET /api/availability/public
+
+The days and windows the booking form can book, open or full. Cacheable for a minute.
+
+**200**: Each day's three windows
+
+```json
+{
+  "$ref": "#/components/schemas/OpenWindows"
+}
+```
+
+**400**: invalid_request: fields names the pincode or the plan
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**422**: not_bookable: the pincode is not served
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/consultation
 
 Book a free consultation
@@ -1468,6 +1496,67 @@ Razorpay's webhook: payments and refunds
     "name",
     "minutes",
     "price"
+  ],
+  "additionalProperties": false
+}
+```
+
+### OpenWindows
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "plan": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "one_visit"
+      ]
+    },
+    "days": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "windows": {
+            "type": "object",
+            "properties": {
+              "morning": {
+                "type": "boolean"
+              },
+              "afternoon": {
+                "type": "boolean"
+              },
+              "evening": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "morning",
+              "afternoon",
+              "evening"
+            ],
+            "additionalProperties": false,
+            "description": "true where booking that window now would be taken; false where it is full."
+          }
+        },
+        "required": [
+          "date",
+          "windows"
+        ],
+        "additionalProperties": false
+      },
+      "description": "The days the form offers: 14, from tomorrow in India."
+    }
+  },
+  "required": [
+    "plan",
+    "days"
   ],
   "additionalProperties": false
 }

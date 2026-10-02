@@ -365,6 +365,22 @@ describe("POST /api/tryon/claim, before the look is made", () => {
     expect(await env.DB.prepare("SELECT contactable FROM people").first()).toEqual({ contactable: 1 });
   });
 
+  it("is never renamed by the gate (PS-11)", async () => {
+    await insertPerson("p-known", "+919810000001", "Karan Bhatia");
+    const browser = visitor();
+    const jobId = await browser.uploaded();
+
+    const response = await browser.claim(jobId, "98100 00001", {}, { name: "Somebody Else" });
+    expect(response.status).toBe(201);
+    const { lead_id: leadId } = await response.json<{ lead_id: string }>();
+    expect(await env.DB.prepare("SELECT id, name FROM people").all()).toMatchObject({
+      results: [{ id: "p-known", name: "Karan Bhatia" }],
+    });
+    expect(await env.DB.prepare("SELECT person_id FROM leads WHERE id = ?").bind(leadId).first()).toEqual({
+      person_id: "p-known",
+    });
+  });
+
   it("replays an idempotent claim with the same lead", async () => {
     const browser = visitor();
     const jobId = await browser.uploaded();

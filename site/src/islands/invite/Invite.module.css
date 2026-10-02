@@ -475,6 +475,23 @@
   color: var(--ink-soft);
 }
 
+/* A day or window nobody can be booked in: drawn, but not to be chosen. */
+.day:has(input:disabled),
+.window:has(input:disabled) {
+  border-style: dashed;
+  color: var(--paper-hint);
+  cursor: not-allowed;
+}
+
+.day:has(input:disabled) .dayName,
+.window:has(input:disabled) .windowHours {
+  color: var(--paper-hint);
+}
+
+.day:has(input:disabled) .dayNumber {
+  text-decoration: line-through;
+}
+
 /* Beneath what to book: how the first fit asked for is booked and paid (ADR 0086). */
 .planNote {
   margin: var(--sp-12) 0 0;
