@@ -2353,6 +2353,7 @@ export const settings = {
       removeLine: "Whatever uses it is refused once access is enforced.",
       removing: "Removing",
       back: "Keep it",
+      onlyNational: "Only someone with Admin · Manage nationally can change service tokens.",
       errors: {
         client_id: "Paste the client ID exactly as Cloudflare Access shows it.",
         label: "Give it a short name.",

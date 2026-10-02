@@ -3645,7 +3645,7 @@ Request body:
 }
 ```
 
-**403**: access_required, or not_permitted: the change reaches beyond the caller's Admin MANAGE
+**403**: access_required, or not_permitted: the change reaches beyond the caller's Admin MANAGE, or comes from a service token
 
 ```json
 {
@@ -3718,7 +3718,7 @@ Request body:
 }
 ```
 
-**403**: access_required, or not_permitted
+**403**: access_required, or not_permitted: only a person with Admin MANAGE nationally
 
 ```json
 {
@@ -3757,7 +3757,7 @@ Request body:
 }
 ```
 
-**403**: access_required, or not_permitted
+**403**: access_required, or not_permitted: only a person with Admin MANAGE nationally
 
 ```json
 {
@@ -12224,9 +12224,9 @@ Request body:
       ],
       "additionalProperties": false
     },
-    "may_switch": {
+    "may_run_access": {
       "type": "boolean",
-      "description": "Whether the caller may switch enforcement: an active person with Admin MANAGE nationally."
+      "description": "Whether the caller may switch enforcement and change the service tokens: a person with Admin MANAGE nationally."
     },
     "people": {
       "type": "array",
@@ -12346,7 +12346,7 @@ Request body:
   },
   "required": [
     "enforced",
-    "may_switch",
+    "may_run_access",
     "people",
     "service_tokens",
     "zones",

@@ -90,15 +90,14 @@ export function grantsChanged(before: readonly Grant[], after: readonly Grant[])
   return [...taken, ...given];
 }
 
-/** Admin MANAGE over all of a grant's place, as a person: a service token never gives access. */
 function mayGive(editor: Caller, grant: Grant, zoneOf: ZoneOfCity): boolean {
-  return editor.kind === "person" && can(editor, "admin", "manage", grant.place, zoneOf);
+  return can(editor, "admin", "manage", grant.place, zoneOf);
 }
 
 /**
- * Whether an editor may make this change to a member of staff, or add them when `before` is null. They need Admin
- * MANAGE, and over the place of every grant given or taken away. Switching a person on or off reaches all they hold,
- * so it needs Admin MANAGE over every one of their places.
+ * Whether an editor may make this change to a member of staff, or add them when `before` is null. They need to be a
+ * person with Admin MANAGE over the place of every grant given or taken away. Switching a person on or off reaches all
+ * they hold, so it needs Admin MANAGE over every one of their places.
  */
 export function mayEdit(editor: Caller, before: StaffEntry | null, after: StaffEntry, zoneOf: ZoneOfCity): boolean {
   if (editor.kind !== "person" || !can(editor, "admin", "manage", "anywhere", zoneOf)) return false;
@@ -114,7 +113,7 @@ export function maySee(viewer: Caller, entry: StaffEntry, zoneOf: ZoneOfCity): b
   return entry.grants.some((grant) => can(viewer, "admin", "view", grant.place, zoneOf));
 }
 
-/** Admin MANAGE nationally, while active: who may switch enforcement, and of whom there must always be one. */
+/** Admin MANAGE nationally, while active: of whom there must always be one. */
 export function isNationalAdmin(entry: StaffEntry): boolean {
   return (
     entry.active &&
@@ -122,6 +121,14 @@ export function isNationalAdmin(entry: StaffEntry): boolean {
       (grant) => grant.department === "admin" && grant.level === "manage" && grant.place.geography === "national",
     )
   );
+}
+
+/**
+ * Who may switch enforcement and change the service tokens: a person with Admin MANAGE nationally. Asked even while
+ * the list is not enforced, so nobody locks themselves out and no token lets another in.
+ */
+export function mayRunAccess(caller: Caller): boolean {
+  return caller.kind === "person" && isNationalAdmin(caller);
 }
 
 /**

@@ -12,7 +12,7 @@ const NCR_ADMIN = "ncr.admin@maneman.in";
 
 interface Book {
   enforced: { on: boolean; set_by: string | null };
-  may_switch: boolean;
+  may_run_access: boolean;
   people: { email: string; active: boolean; grants: { department: string; place: string | null }[] }[];
   service_tokens: { client_id: string }[];
   zones: { name: string; cities: string[] }[];
@@ -54,7 +54,7 @@ describe("GET /api/staff", () => {
     const book = await (await request(owner(), "/api/staff")).json<Book>();
 
     expect(book.enforced.on).toBe(false);
-    expect(book.may_switch).toBe(true);
+    expect(book.may_run_access).toBe(true);
     expect(book.people.map((each) => each.email)).toEqual(["mumbai@maneman.in", NCR_ADMIN, OWNER]);
     expect(book.people[1]?.grants).toEqual([grant("admin", "manage", "zone", "NCR")]);
     expect(book.service_tokens.map((each) => each.client_id)).toEqual(["ci-token.access"]);
@@ -68,7 +68,7 @@ describe("GET /api/staff", () => {
 
     expect(book.people.map((each) => each.email)).toEqual([NCR_ADMIN]);
     expect(book.service_tokens).toEqual([]);
-    expect(book.may_switch).toBe(false);
+    expect(book.may_run_access).toBe(false);
   });
 });
 
@@ -151,6 +151,17 @@ describe("POST /api/staff", () => {
     });
   });
 
+  it("refuses a service token, even before the list is enforced: a grant is given by a person", async () => {
+    const res = await post(opsAs(token("ci-token.access")), "/api/staff", {
+      email: "planted@maneman.in",
+      active: true,
+      grants: [grant("admin", "manage", "national")],
+    });
+    expect(res.status).toBe(403);
+    expect((await refusal(res)).code).toBe("not_permitted");
+    expect(await audited("staff.set")).toEqual([]);
+  });
+
   it("only logs a change beyond the editor's places while the list is not enforced", async () => {
     const res = await post(ncrAdmin(), "/api/staff", {
       email: "noida@maneman.in",
@@ -205,6 +216,19 @@ describe("service tokens", () => {
     expect((await removed.json<Book>()).service_tokens.map((each) => each.client_id)).toEqual(["audit-tool.access"]);
     expect((await audited("staff.token_add")).map((entry) => entry.subject_id)).toEqual(["audit-tool.access"]);
     expect((await audited("staff.token_remove")).map((entry) => entry.subject_id)).toEqual(["ci-token.access"]);
+  });
+
+  it("are changed only by a person with Admin MANAGE nationally, even before the list is enforced", async () => {
+    const byToken = await post(opsAs(token("ci-token.access")), "/api/staff/service-tokens", {
+      client_id: "second-ci.access",
+      label: "Planted",
+    });
+    expect(byToken.status).toBe(403);
+    const byZoneAdmin = await post(ncrAdmin(), "/api/staff/service-tokens/remove", { client_id: "ci-token.access" });
+    expect(byZoneAdmin.status).toBe(403);
+    const tokens = await env.DB.prepare("SELECT client_id FROM staff_service_tokens").all();
+    expect(tokens.results).toEqual([{ client_id: "ci-token.access" }]);
+    expect(await audited("staff.token_add")).toEqual([]);
   });
 
   it("answers 404 for a token not listed", async () => {

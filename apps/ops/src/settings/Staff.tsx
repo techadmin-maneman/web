@@ -55,8 +55,8 @@ function Enforcement({ book, onChanged }: PanelProps) {
       </div>
       <p className={styles.note}>{on ? words.on : words.off}</p>
       {setBy !== null && setAt !== null && <p className={styles.note}>{words.setBy(setBy, longDate(setAt))}</p>}
-      {!book.may_switch && <p className={styles.note}>{words.onlyNational}</p>}
-      {book.may_switch && isChecking(step) && (
+      {!book.may_run_access && <p className={styles.note}>{words.onlyNational}</p>}
+      {book.may_run_access && isChecking(step) && (
         <div className={styles.group}>
           <CheckPanel
             title={on ? words.stopTitle : words.startTitle}
@@ -72,7 +72,7 @@ function Enforcement({ book, onChanged }: PanelProps) {
           />
         </div>
       )}
-      {book.may_switch && !isChecking(step) && (
+      {book.may_run_access && !isChecking(step) && (
         <div className={styles.actions}>
           <Button
             variant={on ? "outline" : "primary"}
@@ -193,7 +193,14 @@ function People({ book, onChanged }: PanelProps) {
   );
 }
 
-function TokenRow({ token, onChanged }: { token: StaffToken; onChanged: (book: StaffBook) => void }) {
+interface TokenRowProps {
+  readonly token: StaffToken;
+  /** Whether the viewer may take it off: only a person with Admin · Manage nationally. */
+  readonly removable: boolean;
+  readonly onChanged: (book: StaffBook) => void;
+}
+
+function TokenRow({ token, removable, onChanged }: TokenRowProps) {
   const words = copy.tokens;
   const [step, setStep] = useState<Confirming>("idle");
 
@@ -212,7 +219,7 @@ function TokenRow({ token, onChanged }: { token: StaffToken; onChanged: (book: S
       <p className={styles.period}>{token.label}</p>
       <p className={styles.set}>{token.client_id}</p>
       <p className={styles.set}>{words.addedBy(token.added_by, longDate(token.added_at))}</p>
-      {isChecking(step) ? (
+      {removable && isChecking(step) && (
         <CheckPanel
           title={words.removeTitle(token.label)}
           lines={[words.removeLine]}
@@ -225,7 +232,8 @@ function TokenRow({ token, onChanged }: { token: StaffToken; onChanged: (book: S
             setStep("idle");
           }}
         />
-      ) : (
+      )}
+      {removable && !isChecking(step) && (
         <div className={styles.actions}>
           <Button
             variant="outline"
@@ -345,11 +353,11 @@ function ServiceTokens({ book, onChanged }: PanelProps) {
       ) : (
         <ul className={styles.rules}>
           {book.service_tokens.map((token) => (
-            <TokenRow key={token.client_id} token={token} onChanged={onChanged} />
+            <TokenRow key={token.client_id} token={token} removable={book.may_run_access} onChanged={onChanged} />
           ))}
         </ul>
       )}
-      <TokenForm onChanged={onChanged} />
+      {book.may_run_access ? <TokenForm onChanged={onChanged} /> : <p className={styles.note}>{words.onlyNational}</p>}
     </section>
   );
 }

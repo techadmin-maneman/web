@@ -36,7 +36,7 @@ Every route's department and lowest level is one table, `ROUTE_NEEDS` in `src/po
 - Admin View sees the people with a grant in their places, and those with none yet; national Admin View sees everyone and the tokens.
 - Admin Manage may give or take away a grant only within their own places, and may switch a person off only with Admin Manage over every place that person holds. A person is never deleted: switched off, they keep their grants and are let in nowhere.
 - Somebody must always hold Admin · Manage nationally: a change that would leave nobody with it is refused (`last_admin`). A list with nobody yet, as a new environment's, may be built from nothing.
-- Only a person with Admin · Manage nationally may start or stop enforcing, even while it is off, so nobody can lock themselves out.
+- Only a person with Admin · Manage nationally may start or stop enforcing, or change the service tokens, even while it is off: nobody can lock themselves out, and no token lets another in.
 
 **Deny by default.** Once enforced:
 
@@ -46,7 +46,7 @@ Every route's department and lowest level is one table, `ROUTE_NEEDS` in `src/po
 
 **The owner is the national super-admin:** every department at Manage, nationally.
 
-**Service tokens** (CI, the audit tooling) are not people. An explicit list, `staff_service_tokens`, lets a token in as every caller was before; a token not on it is refused once the list is enforced. A token cannot grant access, since a grant is given by a person.
+**Service tokens** (CI, the audit tooling) are not people. An explicit list, `staff_service_tokens`, lets a token in as every caller was before; a token not on it is refused once the list is enforced. Access is given by a person: a token cannot change the Staff list or the tokens, even while the list is not enforced.
 
 **How geography will narrow every list and record.** Each record's place is a city, found through a pincode (`serviceable_pincodes.city`), then that city's zone:
 
@@ -60,7 +60,7 @@ Every route's department and lowest level is one table, `ROUTE_NEEDS` in `src/po
 
 A record whose city cannot be found is shown only to national grants. Each route that narrows its reads and writes this way changes its line in `ROUTE_NEEDS` to `ownPlaces`, with a test that a city grant sees its own city's records and not another's.
 
-**Enforcement is a switch.** `staff_access_mode` holds it, off to begin with. Off, nothing is refused, and each call the list would have refused is logged (`staff_access_would_refuse`, with the route and what it asked; the call's `ops.call` audit entry, under the same request ID, names the person). On, it is refused (`staff_access_refused`) after its audit entry is written. Every change to the list, the switch or the tokens is audited under the person who made it (`staff.set`, `staff.enforce`, `staff.token_add`, `staff.token_remove`).
+**Enforcement is a switch.** `staff_access_mode` holds it, off to begin with. Off, nothing is refused but the switch, the tokens and a token's change to the list (above), and each call the list would have refused is logged (`staff_access_would_refuse`, with the route and what it asked; the call's `ops.call` audit entry, under the same request ID, names the person). On, it is refused (`staff_access_refused`) after its audit entry is written. Every change to the list, the switch or the tokens is audited under the person who made it (`staff.set`, `staff.enforce`, `staff.token_add`, `staff.token_remove`).
 
 ## Seeded so that nobody is locked out
 

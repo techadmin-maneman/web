@@ -5323,7 +5323,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required, or not_permitted: the change reaches beyond the caller's Admin MANAGE */
+                /** @description access_required, or not_permitted: the change reaches beyond the caller's Admin MANAGE, or comes from a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -5432,7 +5432,7 @@ export interface paths {
                         "application/json": components["schemas"]["StaffBook"];
                     };
                 };
-                /** @description access_required, or not_permitted */
+                /** @description access_required, or not_permitted: only a person with Admin MANAGE nationally */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -5484,7 +5484,7 @@ export interface paths {
                         "application/json": components["schemas"]["StaffBook"];
                     };
                 };
-                /** @description access_required, or not_permitted */
+                /** @description access_required, or not_permitted: only a person with Admin MANAGE nationally */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -7400,8 +7400,8 @@ export interface components {
                 set_by: string | null;
                 set_at: string | null;
             };
-            /** @description Whether the caller may switch enforcement: an active person with Admin MANAGE nationally. */
-            may_switch: boolean;
+            /** @description Whether the caller may switch enforcement and change the service tokens: a person with Admin MANAGE nationally. */
+            may_run_access: boolean;
             people: {
                 email: string;
                 active: boolean;

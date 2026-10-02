@@ -8,6 +8,7 @@ import {
   isNationalAdmin,
   leavesNoNationalAdmin,
   mayEdit,
+  mayRunAccess,
   maySee,
   NATIONAL,
   takesIn,
@@ -146,6 +147,13 @@ describe("Admin MANAGE nationally", () => {
     expect(isNationalAdmin(owner)).toBe(true);
     expect(isNationalAdmin({ ...owner, active: false })).toBe(false);
     expect(isNationalAdmin({ active: true, grants: [grant("admin", "manage", NCR)] })).toBe(false);
+  });
+
+  it("alone runs the switch and the service tokens, and only as a person", () => {
+    expect(mayRunAccess(person(grant("admin", "manage", NATIONAL)))).toBe(true);
+    expect(mayRunAccess(person(grant("admin", "manage", NCR)))).toBe(false);
+    expect(mayRunAccess({ kind: "person", active: false, grants: [grant("admin", "manage", NATIONAL)] })).toBe(false);
+    expect(mayRunAccess({ kind: "service", allowed: true })).toBe(false);
   });
 
   it("is always held by somebody once anybody holds it", () => {

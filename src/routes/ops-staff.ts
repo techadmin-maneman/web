@@ -10,6 +10,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
+import { routePath } from "hono/route";
 import { staffOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
@@ -28,10 +29,10 @@ import {
   can,
   DEPARTMENTS,
   GEOGRAPHIES,
-  isNationalAdmin,
   leavesNoNationalAdmin,
   LEVELS,
   mayEdit,
+  mayRunAccess,
   maySee,
   NATIONAL,
   samePlace,
@@ -69,8 +70,9 @@ const StaffBookSchema = z
         set_at: z.union([z.iso.datetime(), z.null()]),
       })
       .strict(),
-    may_switch: z.boolean().openapi({
-      description: "Whether the caller may switch enforcement: an active person with Admin MANAGE nationally.",
+    may_run_access: z.boolean().openapi({
+      description:
+        "Whether the caller may switch enforcement and change the service tokens: a person with Admin MANAGE nationally.",
     }),
     people: z.array(
       z
@@ -137,7 +139,9 @@ const saveRoute = createRoute({
   responses: {
     ...book,
     400: errorResponse("invalid_request: a grant names no place it may, or the same place twice"),
-    403: errorResponse("access_required, or not_permitted: the change reaches beyond the caller's Admin MANAGE"),
+    403: errorResponse(
+      "access_required, or not_permitted: the change reaches beyond the caller's Admin MANAGE, or comes from a service token",
+    ),
     409: errorResponse("last_admin: nobody would be left with Admin MANAGE nationally"),
   },
 });
@@ -158,7 +162,10 @@ const addTokenRoute = createRoute({
   path: "/api/staff/service-tokens",
   summary: "Let a service token in, as every caller was before the Staff list",
   request: { body: { required: true, ...json(TokenSchema) } },
-  responses: { ...book, 403: errorResponse("access_required, or not_permitted") },
+  responses: {
+    ...book,
+    403: errorResponse("access_required, or not_permitted: only a person with Admin MANAGE nationally"),
+  },
 });
 
 const removeTokenRoute = createRoute({
@@ -168,7 +175,7 @@ const removeTokenRoute = createRoute({
   request: { body: { required: true, ...json(TokenSchema.pick({ client_id: true })) } },
   responses: {
     ...book,
-    403: errorResponse("access_required, or not_permitted"),
+    403: errorResponse("access_required, or not_permitted: only a person with Admin MANAGE nationally"),
     404: errorResponse("not_found: no such token is listed"),
   },
 });
@@ -180,7 +187,7 @@ function bookFor(staff: StaffBook, access: CallerAccess) {
   const people = seesAll ? staff.people : staff.people.filter((person) => maySee(caller, person, zoneOf));
   return {
     enforced: { on: staff.mode.enforced, set_by: staff.mode.setBy, set_at: staff.mode.setAt },
-    may_switch: caller.kind === "person" && isNationalAdmin(caller),
+    may_run_access: mayRunAccess(caller),
     people: people.map((person) => ({
       email: person.email,
       active: person.active,
@@ -229,6 +236,19 @@ function grantsOf(sent: readonly GrantJson[], staff: StaffBook): { grants: Grant
   return { grants };
 }
 
+/** Whether the caller may switch enforcement or change the tokens, asked even while the list is not enforced. */
+function runsAccess(c: Context<AppEnv>, access: CallerAccess): boolean {
+  if (mayRunAccess(access.caller)) return true;
+  const asked = "admin:manage:national";
+  c.var.log.warn("staff_access_refused", {
+    route: routePath(c, -1),
+    method: c.req.method,
+    asked,
+    caller: access.caller.kind,
+  });
+  return false;
+}
+
 export function registerOpsStaff(app: App): void {
   app.openapi(readRoute, async (c) => c.json(await currentBook(c, await callerAccess(c)), 200));
 
@@ -239,9 +259,11 @@ export function registerOpsStaff(app: App): void {
     const checked = grantsOf(sent.grants, staff);
     if ("field" in checked) return c.json(errorBody("invalid_request", c.var.requestId, [checked.field]), 400);
 
+    const access = await callerAccess(c);
+    // A grant is given by a person: a service token is refused even while the list is not enforced.
+    if (access.caller.kind === "service") return c.json(errorBody("not_permitted", c.var.requestId), 403);
     const entry = { active: sent.active, grants: checked.grants };
     const before = staff.people.find((person) => person.email === email) ?? null;
-    const access = await callerAccess(c);
     const allowed = mayEdit(access.caller, before, entry, staff.zoneOf);
     if (!goesAhead(c, access, allowed, "admin:manage:places")) {
       return c.json(errorBody("not_permitted", c.var.requestId), 403);
@@ -261,14 +283,9 @@ export function registerOpsStaff(app: App): void {
     return c.json(await currentBook(c, access), 200);
   });
 
-  // Switching it on must not lock its switcher out, so this is asked of the caller even while it is off.
   app.openapi(enforcementRoute, async (c) => {
     const access = await callerAccess(c);
-    const { caller } = access;
-    if (caller.kind !== "person" || !isNationalAdmin(caller)) {
-      c.var.log.warn("staff_access_refused", { route: "/api/staff/enforcement", asked: "admin:manage:national" });
-      return c.json(errorBody("not_permitted", c.var.requestId), 403);
-    }
+    if (!runsAccess(c, access)) return c.json(errorBody("not_permitted", c.var.requestId), 403);
     await setEnforced(c.env.DB, {
       enforced: c.req.valid("json").on,
       actor: staffOf(c),
@@ -279,6 +296,8 @@ export function registerOpsStaff(app: App): void {
   });
 
   app.openapi(addTokenRoute, async (c) => {
+    const access = await callerAccess(c);
+    if (!runsAccess(c, access)) return c.json(errorBody("not_permitted", c.var.requestId), 403);
     const { client_id: clientId, label } = c.req.valid("json");
     await addServiceToken(c.env.DB, {
       clientId,
@@ -287,18 +306,19 @@ export function registerOpsStaff(app: App): void {
       requestId: c.var.requestId,
       now: c.var.deps.now(),
     });
-    return c.json(await currentBook(c, await callerAccess(c)), 200);
+    return c.json(await currentBook(c, access), 200);
   });
 
   app.openapi(removeTokenRoute, async (c) => {
-    const { client_id: clientId } = c.req.valid("json");
+    const access = await callerAccess(c);
+    if (!runsAccess(c, access)) return c.json(errorBody("not_permitted", c.var.requestId), 403);
     const removed = await removeServiceToken(c.env.DB, {
-      clientId,
+      clientId: c.req.valid("json").client_id,
       actor: staffOf(c),
       requestId: c.var.requestId,
       now: c.var.deps.now(),
     });
     if (!removed) return c.json(errorBody("not_found", c.var.requestId), 404);
-    return c.json(await currentBook(c, await callerAccess(c)), 200);
+    return c.json(await currentBook(c, access), 200);
   });
 }

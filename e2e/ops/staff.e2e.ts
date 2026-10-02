@@ -11,7 +11,7 @@ const AT = "2026-09-24T07:03:54.415Z";
 
 const BOOK: OpsReply<"/api/staff"> = {
   enforced: { on: false, set_by: null, set_at: null },
-  may_switch: true,
+  may_run_access: true,
   people: [
     {
       email: "owner@maneman.in",
@@ -114,10 +114,13 @@ test("starts enforcing only after the check, for someone who may switch it", asy
   await expect(page.getByRole("button", { name: "Stop enforcing" })).toBeVisible();
 });
 
-test("offers the switch to nobody without Admin · Manage nationally", async ({ page }) => {
-  await open(page, { "GET /api/staff": json({ ...BOOK, may_switch: false }) });
+test("offers the switch and the service tokens to nobody without Admin · Manage nationally", async ({ page }) => {
+  await open(page, { "GET /api/staff": json({ ...BOOK, may_run_access: false }) });
   await expect(page.getByRole("button", { name: "Start enforcing" })).toHaveCount(0);
   await expect(page.getByText("Only someone with Admin · Manage nationally can switch this.")).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Remove / })).toHaveCount(0);
+  await expect(page.getByRole("form", { name: "Add the token" })).toHaveCount(0);
+  await expect(page.getByText("Only someone with Admin · Manage nationally can change service tokens.")).toBeVisible();
 });
 
 test("meets WCAG 2.2 AA", async ({ page }) => {
