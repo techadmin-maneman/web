@@ -127,11 +127,12 @@ export function grantCredits(
  * once: asked again, it writes nothing (credit_ledger_one_use).
  */
 export function redeemCredit(db: D1Database, personId: string, appointmentId: string, now: Date): D1PreparedStatement {
-  // The WHERE clause keeps SQLite from reading ON CONFLICT as a join's ON.
   return db
     .prepare(
       `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
-       SELECT ?3, ?1, 'redeem', -1, soonest.id, 'appointment', ?4, ?2 FROM (${NEXT_GRANT}) soonest WHERE true
+       SELECT ?3, ?1, 'redeem', -1, soonest.id, 'appointment', ?4, ?2
+       FROM credit_ledger soonest
+       WHERE soonest.id = (${NEXT_GRANT})
        ON CONFLICT DO NOTHING`,
     )
     .bind(personId, now.toISOString(), crypto.randomUUID(), appointmentId);
@@ -150,8 +151,8 @@ export function redeemCreditForBooking(
     .prepare(
       `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
        SELECT ?3, ?1, 'redeem', -1, soonest.id, 'appointment', h.appointment_id, ?2
-       FROM slot_holds h, (${NEXT_GRANT}) soonest
-       WHERE h.id = ?4 AND h.state = 'booked' AND h.appointment_id IS NOT NULL
+       FROM slot_holds h, credit_ledger soonest
+       WHERE h.id = ?4 AND h.state = 'booked' AND h.appointment_id IS NOT NULL AND soonest.id = (${NEXT_GRANT})
        ON CONFLICT DO NOTHING`,
     )
     .bind(booking.personId, now.toISOString(), crypto.randomUUID(), booking.holdId);
