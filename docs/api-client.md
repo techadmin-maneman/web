@@ -2410,6 +2410,7 @@ Request body:
           "enum": [
             "booked",
             "in_progress",
+            "done",
             "closing"
           ]
         },
@@ -2417,7 +2418,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "For a visit FSM has not closed: still to come, under way in its window, or over and waiting for FSM to close it. Null once FSM has closed it."
+      "description": "For a visit FSM has not closed: still to come, under way (the technician has checked in, whatever FSM says), closed as done from the technician's phone, or otherwise over and waiting for FSM to close it. Null once FSM has closed it."
     },
     "prepaid": {
       "type": "boolean",
@@ -3336,6 +3337,7 @@ Request body:
           "enum": [
             "booked",
             "in_progress",
+            "done",
             "closing"
           ]
         },
@@ -3343,7 +3345,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "For a visit FSM has not closed: still to come, under way in its window, or over and waiting for FSM to close it. Null once FSM has closed it."
+      "description": "For a visit FSM has not closed: still to come, under way (the technician has checked in, whatever FSM says), closed as done from the technician's phone, or otherwise over and waiting for FSM to close it. Null once FSM has closed it."
     },
     "prepaid": {
       "type": "boolean",

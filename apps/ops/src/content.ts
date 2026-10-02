@@ -504,7 +504,12 @@ export const clients = {
       replacement: "Replacement",
     },
     /** A visit to come, by where it stands, and one done, by how FSM closed it. */
-    stages: { booked: "Booked", in_progress: "Under way", closing: "Being closed" },
+    stages: {
+      booked: "Booked",
+      in_progress: "Under way",
+      done: "Done, not yet closed in FSM",
+      closing: "Being closed",
+    },
     // PLACEHOLDER: "Not home" is ours; the board draws Done and Partial.
     outcomes: { done: "Done", partial: "Partial", no_show: "Not home" },
     statuses: { cancelled: "Cancelled", terminated: "Not done", other: "—" } as Readonly<Record<string, string>>,
