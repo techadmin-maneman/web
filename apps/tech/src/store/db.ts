@@ -175,6 +175,11 @@ export async function remove(name: StoreName, key: IDBValidKey): Promise<void> {
   await write(name, (target) => target.delete(key));
 }
 
+/** Everything one store holds, gone; the other stores keep theirs. */
+export async function clear(name: StoreName): Promise<void> {
+  await write(name, (target) => target.clear());
+}
+
 /**
  * How long a wipe waits on a connection that will not let go. Every connection
  * this app opens lets go when asked (see `open`), so only an older build's, in
