@@ -798,7 +798,7 @@ The provider's new calls, run through the real adapter against the owner's org w
 
 **What the org said, which the code now follows.** While GST is off in Books, `gst_treatment`, `place_of_contact` and `place_of_supply` are each refused, on a customer and on an invoice alike, so the provider sends them only with a state code; until GST is turned on, the caller passes none. Contact persons sent on an update replace those Books holds. An item-level discount before tax is accepted on a new invoice. The scripts' scopes cannot delete an item (401 code 57), so the proof keeps one item, "Staging test: proof item" (`4242595000000245041`), and reuses it on every run. Each run uses up one invoice number: INV-000004 to INV-000006 went to the exploratory calls and the two proof runs, and were deleted.
 
-**Not proven here:** the item is made by the first run only (`POST /items` answered 201 on the exploratory run, `4242595000000245041`); GST's treatment and places, which wait for GST to be turned on in Books.
+**Not proven by these two runs:** making an item, which only a first run does (`POST /items` answered 201 on the exploratory calls, making `4242595000000245041`); and GST's treatment and places, which wait for GST to be turned on in Books.
 
 ## What the P2-M2 and P2-M5 proofs left in the owner's org
 
