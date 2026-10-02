@@ -459,9 +459,31 @@ describe("validateStaticConfig: Zoho FSM and Books", () => {
       apiHost: "www.zohoapis.in",
       orgId: "60088931635",
       refundAccountId: null,
+      gst: { gstin: null, stateCode: null, sac: null },
     });
     const withAccount = validateStaticConfig({ ...stagingBase, BOOKS_REFUND_ACCOUNT_ID: "bank-7" });
     expect(withAccount.settings.zohoBooks?.refundAccountId).toBe("bank-7");
+  });
+
+  it("reads the GST registration Books' invoices and items carry, once the CA has given it", () => {
+    const registered = { BOOKS_GSTIN: "06AAACM1234A1Z5", BOOKS_GST_STATE: "HR", BOOKS_SAC: "999721" };
+    expect(validateStaticConfig({ ...stagingBase, ...registered }).settings.zohoBooks?.gst).toEqual({
+      gstin: "06AAACM1234A1Z5",
+      stateCode: "HR",
+      sac: "999721",
+    });
+  });
+
+  it("refuses a GST registration that is malformed, or a GSTIN without the state it is registered in", () => {
+    const malformed = { BOOKS_GSTIN: "06AAACM1234A1", BOOKS_GST_STATE: "Haryana", BOOKS_SAC: "9997" };
+    expect(problemsOf({ ...stagingBase, ...malformed })).toEqual([
+      "BOOKS_GSTIN is not a GSTIN: 15 characters, such as 06AAACM1234A1Z5",
+      "BOOKS_GST_STATE must be the two-letter GST code of the state registered in, such as HR",
+      "BOOKS_SAC must be a SAC code of six digits, such as 999721",
+    ]);
+    expect(problemsOf({ ...stagingBase, BOOKS_GSTIN: "06AAACM1234A1Z5" })).toEqual([
+      "BOOKS_GST_STATE must be set with BOOKS_GSTIN: it is the place of supply of a client whose city is not known",
+    ]);
   });
 
   it("requires every Books setting while Books is Zoho", () => {

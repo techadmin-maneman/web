@@ -4,6 +4,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import { NO_GST } from "../../src/config/gst.ts";
 import type { ZohoBooksSettings } from "../../src/config/settings.ts";
 import { createLogger } from "../../src/log.ts";
 import {
@@ -36,6 +37,7 @@ const SETTINGS: ZohoBooksSettings = {
   apiHost: "www.zohoapis.in",
   orgId: "60088931635",
   refundAccountId: null,
+  gst: NO_GST,
 };
 
 const ZOHO_TOKEN_URL = "https://accounts.zoho.in/oauth/v2/token";
@@ -289,6 +291,7 @@ describe("Books: the invoices we raise", () => {
       total: 185_000,
       balance: 185_000,
       status: "draft",
+      reference: REFERENCE,
     });
     const [written] = booksCalls(calls);
     expect(written?.method).toBe("POST");
@@ -311,7 +314,11 @@ describe("Books: the invoices we raise", () => {
       [ZOHO_TOKEN_URL]: () => tokenIssued(),
       [`${BOOKS_API}/invoices`]: () => json({ ...invoicesByReference, invoices: [nearMiss, found] }),
     });
-    expect(await books.findInvoice(REFERENCE)).toMatchObject({ id: "4242595000000257006", total: 185_000 });
+    expect(await books.findInvoice(REFERENCE)).toMatchObject({
+      id: "4242595000000257006",
+      total: 185_000,
+      reference: REFERENCE,
+    });
     expect(new URL(booksCalls(calls)[0]?.url ?? "").searchParams.get("reference_number")).toBe(REFERENCE);
     expect(await books.findInvoice("staging-proof-none")).toBeNull();
   });
@@ -333,12 +340,19 @@ describe("Books: items", () => {
     });
     const items = await books.items();
     expect(items).toHaveLength(6);
-    expect(items[1]).toEqual({ id: "4242595000000034206", name: "First fit", rate: 3_000_000, active: true });
+    expect(items[1]).toEqual({
+      id: "4242595000000034206",
+      name: "First fit",
+      rate: 3_000_000,
+      active: true,
+      sac: null,
+    });
     expect(items[5]).toEqual({
       id: "4242595000000245041",
       name: "Staging test: proof item 82af00 b",
       rate: 200_000,
       active: true,
+      sac: null,
     });
     expect(booksCalls(calls).map((call) => new URL(call.url).searchParams.get("per_page"))).toEqual(["200", "200"]);
   });
@@ -357,7 +371,7 @@ describe("Books: items", () => {
       [ZOHO_TOKEN_URL]: () => tokenIssued(),
       [`${BOOKS_API}/items`]: () => json(itemAdded, 201),
     });
-    expect(await books.createItem({ name: "Staging test: proof item 82af00", rate: 123_450 })).toBe(
+    expect(await books.createItem({ name: "Staging test: proof item 82af00", rate: 123_450, sac: null })).toBe(
       "4242595000000245041",
     );
     expect(sent(booksCalls(calls)[0])).toEqual({
@@ -372,10 +386,29 @@ describe("Books: items", () => {
       [ZOHO_TOKEN_URL]: () => tokenIssued(),
       [`${BOOKS_API}/items/4242595000000245041`]: () => json(itemSaved),
     });
-    await books.updateItem("4242595000000245041", { name: "Staging test: proof item 82af00 b", rate: 200_000 });
+    await books.updateItem("4242595000000245041", {
+      name: "Staging test: proof item 82af00 b",
+      rate: 200_000,
+      sac: null,
+    });
     const [written] = booksCalls(calls);
     expect(written?.method).toBe("PUT");
     expect(sent(written)).toEqual({ name: "Staging test: proof item 82af00 b", rate: 2000 });
+  });
+
+  it("writes the SAC code once there is one, and reads it back", async () => {
+    const withSac = { ...lastPage, items: [{ ...itemSaved.item, hsn_or_sac: "999721" }] };
+    const { books, calls } = zohoBooks({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${BOOKS_API}/items/4242595000000245041`]: () => json(itemSaved),
+      [`${BOOKS_API}/items`]: (call) => (call.method === "POST" ? json(itemAdded, 201) : json(withSac)),
+    });
+    await books.createItem({ name: "Service visit", rate: 200_000, sac: "999721" });
+    await books.updateItem("4242595000000245041", { name: "Service visit", rate: 200_000, sac: "999721" });
+    const [made, written] = booksCalls(calls);
+    expect(sent(made)).toEqual({ name: "Service visit", rate: 2000, hsn_or_sac: "999721", product_type: "service" });
+    expect(sent(written)).toEqual({ name: "Service visit", rate: 2000, hsn_or_sac: "999721" });
+    expect((await books.items())[0]?.sac).toBe("999721");
   });
 });
 
@@ -402,6 +435,7 @@ describe("Books: invoices", () => {
       total: 236050,
       balance: 100000,
       status: "sent",
+      reference: null,
     });
     expect(new URL(calls[1]?.url ?? "").searchParams.get("organization_id")).toBe("60088931635");
   });
@@ -663,16 +697,16 @@ describe("the stand-ins", () => {
   });
 
   it("the stub Books lists the items it was given and made, and fails or refuses a step once when asked", async () => {
-    const given = { id: "stub-item-first-fit", name: "First fit", rate: 3_000_000, active: true };
+    const given = { id: "stub-item-first-fit", name: "First fit", rate: 3_000_000, active: true, sac: null };
     const books = createStubBooks({ draftTotal: 0, items: [given] });
-    const made = await books.createItem({ name: "Service visit", rate: 200_000 });
-    await books.updateItem(given.id, { name: "First fit", rate: 2_500_000 });
+    const made = await books.createItem({ name: "Service visit", rate: 200_000, sac: null });
+    await books.updateItem(given.id, { name: "First fit", rate: 2_500_000, sac: "999721" });
     expect(await books.items()).toEqual([
-      { ...given, rate: 2_500_000 },
-      { id: made, name: "Service visit", rate: 200_000, active: true },
+      { ...given, rate: 2_500_000, sac: "999721" },
+      { id: made, name: "Service visit", rate: 200_000, active: true, sac: null },
     ]);
-    expect(books.made.itemsMade).toEqual([{ name: "Service visit", rate: 200_000 }]);
-    expect(books.made.itemUpdates).toEqual([{ itemId: given.id, name: "First fit", rate: 2_500_000 }]);
+    expect(books.made.itemsMade).toEqual([{ name: "Service visit", rate: 200_000, sac: null }]);
+    expect(books.made.itemUpdates).toEqual([{ itemId: given.id, name: "First fit", rate: 2_500_000, sac: "999721" }]);
 
     books.failNext("items");
     await expect(books.items()).rejects.toThrow("the stub Books failed items");
@@ -680,7 +714,9 @@ describe("the stand-ins", () => {
     books.refuseNext("upsertCustomer", "120303");
     await expect(books.upsertCustomer(CUSTOMER)).rejects.toMatchObject({ status: 400, code: "120303", refusal: true });
     books.loseAnswer("createItem");
-    await expect(books.createItem({ name: "Replacement", rate: 1 })).rejects.toThrow(/its answer never came/);
+    await expect(books.createItem({ name: "Replacement", rate: 1, sac: null })).rejects.toThrow(
+      /its answer never came/,
+    );
     expect((await books.items()).map((item) => item.name)).toContain("Replacement");
   });
 
