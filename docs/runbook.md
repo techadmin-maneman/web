@@ -309,10 +309,10 @@ Zoho names a new field from its label, so the script reads each one back: the sy
 
    It confirms every field, type and pick-list value the sync writes, and lists the Leads assignment rules with their IDs. Fill in `ZOHO_LAR_ID`, run it again until it passes, then `W secret bulk` the file and delete it. The next lead proves the setup end to end: it should reach Zoho within a minute, assigned and with its proposed date.
 
-7. **A refresh token for scripts.** Zoho mints at most ten access tokens in ten minutes from one refresh token, so a script run by hand must never share the Worker's: a proof that did took FSM down with it (`docs/open-points.md`, item 32). Repeat step 5.2 and 5.3 with the same Self Client to get a second refresh token, with only the scopes the scripts need (`ZohoCRM.settings.fields.ALL`, `ZohoCRM.settings.assignment_rules.READ`; for FSM and for Books, the same scopes as their own clients, step 11b). Keep it in the scripts' own git-ignored file, never in a Worker secret:
+7. **A refresh token for scripts.** Zoho mints at most ten access tokens in ten minutes from one refresh token, so a script run by hand must never share the Worker's: a proof that did took FSM down with it (`docs/open-points.md`, item 32). Repeat step 5.2 and 5.3 with the same Self Client to get a second refresh token, with only the scopes the scripts need (`ZohoCRM.settings.fields.ALL`, `ZohoCRM.settings.assignment_rules.READ`; for FSM and for Books, the same scopes as the Worker's FSM and Books tokens, step 11b). Keep it in the scripts' own git-ignored file, never in a Worker secret:
    - the CRM's as `ZOHO_SCRIPTS_REFRESH_TOKEN`, beside `ZOHO_CLIENT_ID`, `ZOHO_CLIENT_SECRET` and the hosts;
    - FSM's as `ZOHO_FSM_SCRIPTS_REFRESH_TOKEN`, beside `ZOHO_FSM_CLIENT_ID`, `ZOHO_FSM_CLIENT_SECRET` and the hosts;
-   - Books' as `ZOHO_BOOKS_SCRIPTS_REFRESH_TOKEN`, beside `ZOHO_BOOKS_CLIENT_ID`, `ZOHO_BOOKS_CLIENT_SECRET`, the hosts and `ZOHO_BOOKS_ORG_ID`, in `.env.books-scripts`. Until Books has its own Self Client, these hold the FSM scripts' values.
+   - Books' as `ZOHO_BOOKS_SCRIPTS_REFRESH_TOKEN`, beside `ZOHO_BOOKS_CLIENT_ID`, `ZOHO_BOOKS_CLIENT_SECRET`, the hosts and `ZOHO_BOOKS_ORG_ID`, in `.env.books-scripts`.
 
    `scripts/check-zoho-setup.ts`, `scripts/setup-crm.ts` and `scripts/setup-fsm.ts` stop, naming this step, when theirs is missing (`scripts/lib/zoho-script-token.ts`). In an emergency, with the scripts' token lost, `--use-worker-token` runs one on the Worker's token on purpose; every token it mints is one the Worker cannot for ten minutes.
 
@@ -419,15 +419,15 @@ Changing it later voids every code in flight; sessions are unaffected. SMS stays
 
 ### 11b. Zoho FSM and Books
 
-The client surface reads visits from Zoho FSM and documents from Zoho Books (docs/decisions/0032-fsm-mirror.md). Both are in the real org (ADR 0025, item 26), each on an API client of its own, separate from the CRM's.
+The client surface reads visits from Zoho FSM and documents from Zoho Books (docs/decisions/0032-fsm-mirror.md). Both are in the real org (ADR 0025, item 26), each on a refresh token of its own.
 
-1. **The clients.** In `https://api-console.zoho.in`, as an administrator of the org: Add Client → Self Client, once for FSM and once for Books. On **Generate Code**, use FSM's scopes in `docs/phase2-inputs.md`, section 3, and for Books `ZohoBooks.contacts.ALL`, `ZohoBooks.invoices.ALL`, `ZohoBooks.customerpayments.ALL`, `ZohoBooks.creditnotes.ALL`, `ZohoBooks.settings.READ`, `ZohoBooks.settings.CREATE` and `ZohoBooks.settings.UPDATE`. Exchange each code for a refresh token within its 10 minutes:
+1. **The refresh tokens.** Zoho allows one Self Client per account, so FSM and Books use the CRM's (step 8.5): the same client ID and secret, and a new code for each. In `https://api-console.zoho.in`, as an administrator of the org, open that Self Client. On **Generate Code**, use FSM's scopes in `docs/phase2-inputs.md`, section 3, and for Books `ZohoBooks.contacts.ALL`, `ZohoBooks.invoices.ALL`, `ZohoBooks.customerpayments.ALL`, `ZohoBooks.creditnotes.ALL`, `ZohoBooks.settings.READ`, `ZohoBooks.settings.CREATE` and `ZohoBooks.settings.UPDATE`. Exchange each code for a refresh token within its 10 minutes:
 
    ```sh
    curl -X POST "https://accounts.zoho.in/oauth/v2/token?grant_type=authorization_code&client_id=<id>&client_secret=<secret>&code=<code>"
    ```
 
-   Until Books has its own Self Client, Books' secrets hold the FSM client's ID, secret and refresh token, whose scopes already cover Books' customers, invoices and payments. Each still keeps its own access token.
+   FSM's and Books' secrets hold the same client ID and secret, and a refresh token each. Each keeps its own access token.
 
 2. **The files.** Put FSM's values in `.env.fsm-<env>` and Books' in `.env.books-<env>`. Git ignores both.
 
@@ -862,7 +862,7 @@ Nothing to do at first. A lead's first failure is retried by the queue 30 second
 Symptoms: every sync fails with `invalid_code` or `INVALID_TOKEN`.
 
 1. Make a new refresh token (Zoho, step 5 of "Provisioning an environment").
-2. `W secret put ZOHO_REFRESH_TOKEN --env <env>`
+2. `W secret put ZOHO_REFRESH_TOKEN --env <env>` (`ZOHO_FSM_REFRESH_TOKEN` for FSM, `ZOHO_BOOKS_REFRESH_TOKEN` for Books).
 3. Drop the cached access token: `DELETE FROM zoho_access_tokens WHERE client = 'crm';` (`'fsm'` for FSM, `'books'` for Books).
 4. The sweeper delivers the waiting leads within five minutes. Replay any that already gave up.
 
