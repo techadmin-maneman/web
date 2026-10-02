@@ -51,6 +51,7 @@
     "test/node/tech-piece-label.test.ts",
     "test/node/tech-profile-form.test.ts",
     "test/node/tech-progress.test.ts",
+    "test/node/tech-set-aside.test.ts",
     "test/node/tech-store.test.ts",
     "test/node/ui-*.test.ts",
     "test/node/web-kit-api.test.ts",

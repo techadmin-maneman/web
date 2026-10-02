@@ -5,7 +5,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { atTheDoor, fakeTech, heldOnPhone, JOB_ID, todayInIndia, type Fake } from "./fixtures.ts";
+import { atTheDoor, fakeTech, heldOnPhone, JOB_ID, keptOnPhone, todayInIndia, type Fake } from "./fixtures.ts";
 
 /**
  * Opens the day, checks in at the door, then takes the signal away. The app
@@ -95,6 +95,40 @@ test("replays a whole job worked with no signal, in the order it was done, once 
   expect(new Set(fake.writes.map((write) => write.eventId)).size).toBe(fake.writes.length);
   await expect.poll(() => fake.photos.length, { timeout: 30_000 }).toBe(10);
   expect(fake.progress.outcome).toBe("done");
+});
+
+// FLD-25: a technician ops switch off keeps the work his phone has not sent, for him alone, and the clients' cards go.
+test("keeps a switched-off technician's unsent step, and sends it once he is back on and signs in", async ({
+  page,
+  context,
+}) => {
+  const fake = await fakeTech(page);
+  await intoTheBasement(page, context, fake);
+  const already = fake.writes.length;
+  await page.getByRole("button", { name: "Start job" }).click();
+  await expect(page.getByText("Before photos")).toBeVisible();
+  expect(await heldOnPhone(page)).toMatchObject({ outbox: 1 });
+
+  // Ops switch him off while he is underground, and the phone hears it as the signal returns.
+  fake.switchedOff = true;
+  fake.online = true;
+  await context.setOffline(false);
+
+  await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
+  await expect(page.getByText(/Work not yet sent stays on this phone for 7 days/)).toBeVisible();
+  expect(await heldOnPhone(page)).toMatchObject({ outbox: 1 });
+  expect((await keptOnPhone(page)).filter((key) => !key.startsWith("arrival:"))).toEqual([]);
+
+  fake.switchedOff = false;
+  fake.signedIn = false;
+  await page.getByRole("textbox", { name: "Mobile number" }).fill("9811000000");
+  await page.getByRole("button", { name: "Send the code" }).click();
+  await page.getByRole("textbox", { name: "Code" }).fill("246810");
+  await page.getByRole("button", { name: "Sign in" }).click();
+
+  await expect.poll(() => fake.writes.length, { timeout: 15_000 }).toBe(already + 1);
+  expect(fake.writes.at(-1)?.path).toBe(`/api/tech/jobs/${JOB_ID}/start`);
+  await expect.poll(async () => (await heldOnPhone(page)).outbox).toBe(0);
 });
 
 test("warns when the phone will not promise to keep the queue, and says how long it has waited", async ({
