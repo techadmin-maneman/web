@@ -8,8 +8,8 @@ type Group = TaskGroup["group"];
 
 /**
  * Where each group's task is decided: the section, and the kind of row the
- * task's id names there. A group missing here is done outside the console
- * (in FSM or Books), and reaches only the client's page.
+ * task's id names there. A group missing here is done from the row, or outside
+ * the console (in FSM or Books), and reaches only the client's page.
  */
 export const DECIDED_IN: Partial<Record<Group, { readonly page: SectionPath; readonly row: string | null }>> = {
   // The dispatch board draws a week, not a list, so the call is recorded, and the job moved, from its own block.
