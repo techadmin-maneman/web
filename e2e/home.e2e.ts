@@ -1,8 +1,18 @@
 // The home page and the chrome every page shares (docs/feature-inventory.md, items 1–21).
 
+import type { Page } from "@playwright/test";
 import { expect, test } from "./support.ts";
 
 const narrow = (width: number | undefined) => (width ?? 0) <= 760;
+
+/** Every film the page asks for from here on, filled in as it asks. */
+function filmsFetched(page: Page): string[] {
+  const films: string[] = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname.endsWith(".mp4")) films.push(request.url());
+  });
+  return films;
+}
 
 test.describe("header", () => {
   test("shows the mark and wordmark, and Book a visit, at every width", async ({ page }) => {
@@ -141,13 +151,16 @@ test.describe("home sections", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("A full head of hair, fitted at home.");
   });
 
-  test("the hero footage is muted, looped, inline and fetches metadata only", async ({ page }) => {
+  // UX-20, PLAT-65: every phone downloaded the 2.3 MB film.
+  test("the hero footage is muted, looped, inline, and the screen's own cut once it plays", async ({ page }) => {
     await page.goto("/");
     const video = page.locator("[data-hero-video]");
-    await expect(video).toHaveAttribute("preload", "metadata");
+    await expect(video).toHaveAttribute("preload", "none");
     await expect(video).toHaveAttribute("playsinline", "");
     await expect(video).toHaveAttribute("loop", "");
     expect(await video.evaluate((element: HTMLVideoElement) => element.muted)).toBe(true);
+    const phone = (page.viewportSize()?.width ?? 0) <= 600;
+    await expect(video).toHaveAttribute("src", phone ? /\/hero-phone\.[^/]+\.mp4$/ : /\/hero\.[^/]+\.mp4$/);
   });
 
   test("shows the design's Placeholder tags outside production", async ({ page }) => {
@@ -271,14 +284,41 @@ test.describe("reduced motion", () => {
     await expect(phrases.last()).toHaveCSS("animation-name", "none");
   });
 
-  test("the hero footage stays paused and scrolling is instant", async ({ page }) => {
+  // UX-20, PLAT-65: a phone that never played the film still downloaded 1.4 MB of it.
+  test("the hero footage stays paused, none of it is fetched, and scrolling is instant", async ({ page }) => {
+    const films = filmsFetched(page);
     await page.goto("/");
     // The footage is started, if at all, by the page's load event: a frame after it, that has happened.
     await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
     expect(await page.locator("[data-hero-video]").evaluate((video: HTMLVideoElement) => video.paused)).toBe(true);
+    expect(films).toEqual([]);
     expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior)).toBe("auto");
     // Paused already, so the control offers to play it.
     await expect(page.getByRole("button", { name: "Play the film" })).toBeVisible();
+  });
+});
+
+test.describe("a visitor saving data", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(Navigator.prototype, "connection", {
+        get: () => ({ saveData: true, effectiveType: "4g" }),
+      });
+    });
+  });
+
+  // UX-20, PLAT-65: the film cost a phone on prepaid data 2.3 MB before the visitor chose anything.
+  test("the hero footage waits for Play, and fetches nothing until then", async ({ page }) => {
+    const films = filmsFetched(page);
+    await page.goto("/");
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+    const video = page.locator("[data-hero-video]");
+    expect(await video.evaluate((element: HTMLVideoElement) => element.paused)).toBe(true);
+    expect(films).toEqual([]);
+
+    await page.getByRole("button", { name: "Play the film" }).click();
+    await expect(page.getByRole("button", { name: "Pause the film" })).toBeVisible();
+    await expect(video).toHaveAttribute("src", /\.mp4$/);
   });
 });
 
