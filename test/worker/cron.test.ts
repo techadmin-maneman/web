@@ -345,6 +345,7 @@ describe("CRON_JOBS", () => {
       "fsm_catalogue",
       "deletion_alerts",
       "storage_meter",
+      "daily_allowances",
       "whatsapp_bridge",
       "dispatch_utilisation",
       "referrals",
@@ -392,6 +393,28 @@ describe("CRON_JOBS", () => {
       await runCronJobs(job, { env: halfFull, deps, config: LOCAL_CONFIG, log: createLogger() });
     }
     expect(deps.alerts).toEqual([expect.stringContaining("The database holds 260 MB, 50% of the 500 MB")]);
+  });
+
+  // NOW is half past the hour in UTC, so a quarter past is 15 minutes before it.
+  it("reads the account's usage once an hour, at a quarter past, and only where the analytics token is set", async () => {
+    const job = CRON_JOBS.filter((cronJob) => cronJob.name === "daily_allowances");
+    const graphql = "https://api.cloudflare.com/client/v4/graphql";
+    const withToken: StaticConfig = {
+      ...LOCAL_CONFIG,
+      settings: { ...LOCAL_CONFIG.settings, analyticsToken: "token" },
+    };
+    const runAt = async (minutes: number, config: StaticConfig) => {
+      const { fetch, calls } = fakeFetch({ [graphql]: () => new Response("Bad Gateway", { status: 502 }) });
+      const now = new Date(NOW.getTime() + minutes * 60_000);
+      await runCronJobs(job, { env, deps: fakeDependencies({ fetch, now: () => now }), config, log: createLogger() });
+      return calls.length;
+    };
+
+    expect(await runAt(-15, LOCAL_CONFIG)).toBe(0);
+    for (const minutes of [-16, -10, 0, 25]) {
+      expect(await runAt(minutes, withToken), `${String(minutes)} minutes from half past`).toBe(0);
+    }
+    expect(await runAt(-15, withToken)).toBe(1);
   });
 });
 

@@ -33,6 +33,7 @@ import { createCallBudget, type CallBudget } from "../lib/call-budget.ts";
 import { scrubString, type Logger } from "../log.ts";
 import { pingHeartbeat } from "../providers/heartbeat.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
+import { checkDailyAllowances } from "./daily-allowances.ts";
 import { reconcileFsm } from "./reconcile-fsm.ts";
 import { referralPass } from "./referrals.ts";
 import { sweep } from "./sweeper.ts";
@@ -162,6 +163,15 @@ async function storageMeterJob({ env, deps }: CronContext): Promise<void> {
   await tellOfDatabaseSize(env.DB, deps.alertOnce, await readDatabaseBytes(env.DB));
 }
 
+/** Once an hour, at a quarter past, where a token to read the account's analytics is set. */
+async function dailyAllowancesJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
+  const token = config.settings.analyticsToken;
+  if (token === null) return;
+  const minute = deps.now().getUTCMinutes();
+  if (minute < 15 || minute >= 20) return;
+  await checkDailyAllowances({ db: env.DB, deps, token, log, budget });
+}
+
 async function whatsAppBridgeJob({ deps, log, budget }: CronContext): Promise<void> {
   await checkWhatsAppBridge(deps, log, budget);
 }
@@ -236,6 +246,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   // What the photographs and cards hold of R2, told at half, 80% and all of their share (docs/decisions/0093), and
   // the database against D1's limit, told at half, 80% and 95%.
   { name: "storage_meter", needs: "nothing", run: storageMeterJob },
+  // What the account has used today of the free plan's daily allowances, told at 70%.
+  { name: "daily_allowances", needs: "nothing", run: dailyAllowancesJob },
   // Every login code goes through the WhatsApp bridge (src/scheduled/whatsapp-bridge.ts).
   { name: "whatsapp_bridge", needs: "nothing", run: whatsAppBridgeJob },
   // Once a day: the operating figure behind the weekend-share assumption (src/policy/dispatch.ts).
