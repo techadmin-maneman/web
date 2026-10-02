@@ -455,6 +455,12 @@ The client surface reads visits from Zoho FSM and documents from Zoho Books (doc
    node --env-file=.env.fsm-<env> scripts/setup-fsm.ts
    ```
 
+   Books also needs a custom field on Customers and Vendors, **"MM person ID"**: Text, unique values, API name `cf_mm_person_id`. It is what finds a client's customer again. Then prove Books' calls on "Staging test" records the script removes again (about 20 calls; it keeps one item, "Staging test: proof item", which the scripts' scopes cannot delete):
+
+   ```sh
+   node --env-file=.env.books-scripts scripts/books-proof.ts
+   ```
+
 4. **The Worker.** Set the secrets, then set the hosts (`ZOHO_FSM_*_HOST`, `ZOHO_BOOKS_*_HOST`) and `ZOHO_BOOKS_ORG_ID` in `wrangler.jsonc`, with `FSM_PROVIDER` and `BOOKS_PROVIDER` as `zoho`.
 
    ```sh
