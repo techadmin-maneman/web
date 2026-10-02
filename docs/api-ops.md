@@ -433,6 +433,110 @@ Give back a booking FSM would not take: its work order cancelled, its payment re
 }
 ```
 
+### GET /api/visits/availability
+
+A client's windows for a kind of visit over 14 days, and who is free in each
+
+**200**: Each day's windows
+
+```json
+{
+  "$ref": "#/components/schemas/OpsAvailability"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such client, or one who has been erased
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**422**: not_bookable: the kind offers no such service; no_product: a first fit, with no hair system on sale
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/visits
+
+Book a visit for a client: at once when nothing is paid at booking, else by a payment link
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/VisitToBook"
+}
+```
+
+**201**: Booked, on its way, or waiting for the link to be paid
+
+```json
+{
+  "$ref": "#/components/schemas/OpsBooking"
+}
+```
+
+**400**: invalid_request: a one visit that is not a first fit, or in the evening
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such client, or one who has been erased
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: taken: nobody chosen is free in that window now; already_booked: a consultation or first fit is still to come; terms_changed: the client's last credit went on another booking a moment before
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**422**: not_bookable: the day, the kind or the service cannot be booked; no_product: a first fit, with no hair system on sale that day; code_not_applicable: the code does not apply to this booking
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**503**: unavailable: Razorpay could not make the payment link, so nothing is held
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/clients/{id}/referral
 
 Attach an invite to a client who booked away from its page, with the reason
@@ -6136,6 +6240,389 @@ Request body:
 }
 ```
 
+### OpsAvailability
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement"
+      ]
+    },
+    "services": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/ServiceOffer"
+      },
+      "description": "The kind's services offered on the first day."
+    },
+    "service": {
+      "$ref": "#/components/schemas/VisitService"
+    },
+    "pays": {
+      "type": "string",
+      "enum": [
+        "nothing",
+        "credit",
+        "link"
+      ],
+      "description": "How the visit is paid for: nothing at booking (free, or a consultation and fit in one visit, paid by a link once fitted), a service-visit credit, or a payment link Razorpay texts the client."
+    },
+    "credits": {
+      "type": "integer",
+      "description": "The service-visit credits the client has to spend."
+    },
+    "days": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "windows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "window": {
+                  "type": "string",
+                  "enum": [
+                    "morning",
+                    "afternoon",
+                    "evening"
+                  ]
+                },
+                "start": {
+                  "type": "string",
+                  "description": "When the window starts that day, in India's time."
+                },
+                "end": {
+                  "type": "string"
+                },
+                "technicians": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FreeTechnician"
+                  },
+                  "description": "Who is free for the visit, the client's regular technician first."
+                }
+              },
+              "required": [
+                "window",
+                "start",
+                "end",
+                "technicians"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "date",
+          "windows"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "kind",
+    "services",
+    "service",
+    "pays",
+    "credits",
+    "days"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ServiceOffer
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "tier": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "minutes": {
+      "type": "integer"
+    },
+    "price": {
+      "$ref": "#/components/schemas/Price"
+    }
+  },
+  "required": [
+    "tier",
+    "name",
+    "minutes",
+    "price"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Price
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "amount_ex_gst": {
+      "type": "integer",
+      "description": "In paise, before GST: the main figure."
+    },
+    "amount": {
+      "type": "integer",
+      "description": "In paise, GST included: what the client pays."
+    },
+    "gst_percent": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "amount_ex_gst",
+    "amount",
+    "gst_percent"
+  ],
+  "additionalProperties": false
+}
+```
+
+### VisitService
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "tier": {
+      "type": "string",
+      "description": "Its code within its kind, which never changes."
+    },
+    "name": {
+      "type": "string"
+    },
+    "minutes": {
+      "type": "integer",
+      "description": "How long the visit is booked for."
+    }
+  },
+  "required": [
+    "tier",
+    "name",
+    "minutes"
+  ],
+  "additionalProperties": false,
+  "description": "The service the windows are for: the one asked, else the first."
+}
+```
+
+### FreeTechnician
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "name"
+  ],
+  "additionalProperties": false
+}
+```
+
+### OpsBooking
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "hold_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "booked",
+        "being_booked",
+        "awaiting_payment"
+      ],
+      "description": "booked: the visit is written. being_booked: it is on its way to the field record, within a minute. awaiting_payment: the slot is held and the link sent; the visit is booked once the client pays."
+    },
+    "visit_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The visit, once booked."
+    },
+    "pays": {
+      "type": "string",
+      "enum": [
+        "nothing",
+        "credit",
+        "link"
+      ],
+      "description": "How the visit is paid for: nothing at booking (free, or a consultation and fit in one visit, paid by a link once fitted), a service-visit credit, or a payment link Razorpay texts the client."
+    },
+    "service": {
+      "$ref": "#/components/schemas/VisitService"
+    },
+    "price": {
+      "allOf": [
+        {
+          "$ref": "#/components/schemas/Price"
+        },
+        {
+          "description": "What the client pays: the service's price less any code."
+        }
+      ]
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "window": {
+      "type": "string",
+      "enum": [
+        "morning",
+        "afternoon",
+        "evening"
+      ]
+    },
+    "technician": {
+      "$ref": "#/components/schemas/FreeTechnician"
+    },
+    "link": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "url": {
+              "type": "string"
+            },
+            "open_until": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          "required": [
+            "url",
+            "open_until"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The payment link Razorpay texted the client, and when it closes and the slot goes."
+    }
+  },
+  "required": [
+    "hold_id",
+    "outcome",
+    "visit_id",
+    "pays",
+    "service",
+    "price",
+    "date",
+    "window",
+    "technician",
+    "link"
+  ],
+  "additionalProperties": false
+}
+```
+
+### VisitToBook
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "client": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement"
+      ]
+    },
+    "tier": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,31}$",
+      "description": "The service; left out, the kind's standard one. A first fit names the hair system."
+    },
+    "technician": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "description": "The technician ops chose; left out, whoever is free, the client's regular one first."
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "window": {
+      "type": "string",
+      "enum": [
+        "morning",
+        "afternoon",
+        "evening"
+      ]
+    },
+    "one_visit": {
+      "type": "boolean",
+      "description": "A consultation and fit in one visit: a first fit, morning or afternoon."
+    },
+    "code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40,
+      "description": "A discount code the client gave."
+    }
+  },
+  "required": [
+    "client",
+    "kind",
+    "date",
+    "window"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### AlreadyInvited
 
 ```json
@@ -10117,54 +10604,6 @@ Request body:
   },
   "required": [
     "value"
-  ],
-  "additionalProperties": false
-}
-```
-
-### Price
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "item": {
-      "type": "string",
-      "enum": [
-        "consultation",
-        "first_fit",
-        "service",
-        "replacement",
-        "late_fee_first_fit",
-        "late_fee_replacement"
-      ]
-    },
-    "tier": {
-      "type": "string"
-    },
-    "amount_ex_gst": {
-      "type": "integer",
-      "description": "In paise, before GST."
-    },
-    "gst_percent": {
-      "type": "integer"
-    },
-    "valid_from": {
-      "type": "string",
-      "format": "date",
-      "description": "India's date it applies from."
-    },
-    "in_force": {
-      "type": "boolean"
-    }
-  },
-  "required": [
-    "item",
-    "tier",
-    "amount_ex_gst",
-    "gst_percent",
-    "valid_from",
-    "in_force"
   ],
   "additionalProperties": false
 }

@@ -8,16 +8,19 @@
 // payment.captured, payment.failed, refund.created, refund.processed,
 // refund.failed, refund.speed_changed, and payment_link.paid, which names the
 // payment link a one visit's client paid by and so the visit it is for
-// (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). Any other is
-// acknowledged and ignored.
+// (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md), or the link a
+// client paid for a visit ops booked, and so the hold it waits on
+// (src/domain/visit-booking.ts). Any other is acknowledged and ignored.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../http/context.ts";
+import type { Context } from "hono";
+import type { App, AppEnv } from "../http/context.ts";
 import { paymentStatusOf, recordPayment, recordRefund } from "../domain/payments.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { sha256Hex } from "../lib/hash.ts";
 import { markLinkPaid, visitOfLink } from "../domain/payment-links.ts";
+import { holdOfLink, recordHoldLinkPaid, type LinkHold } from "../domain/visit-booking.ts";
 import {
   RazorpayPaymentLinkSchema,
   RazorpayPaymentSchema,
@@ -74,6 +77,38 @@ async function linkPaid(
   return true;
 }
 
+/**
+ * The link a client paid for a visit ops booked: the payment is recorded on the hold the link was for, which confirms
+ * it, and the hold goes to be booked, as a payment at Checkout does. A payment Razorpay names no order for is recorded
+ * as the client's, and ops are told once to book or refund it.
+ */
+async function holdLinkPaid(
+  c: Context<AppEnv>,
+  paid: { readonly hold: LinkHold; readonly link: RazorpayPaymentLink; readonly payment: RazorpayPayment },
+): Promise<void> {
+  const { hold, link, payment } = paid;
+  const { deps, config, log, requestId } = c.var;
+  const db = c.env.DB;
+  const now = deps.now();
+  const orderId = payment.order_id ?? link.order_id ?? null;
+  if (orderId === null) {
+    const notes = { hold_id: hold.id, person_id: hold.personId };
+    await recordPayment(db, { ...payment, notes }, "captured", config.settings.ipHashSalt, now);
+    log.warn("razorpay_hook_hold_link_without_order", { hold_id: hold.id });
+    await deps.alertOnce({
+      key: `hold_link_without_order:${hold.id}`,
+      message:
+        `The client paid the payment link for booking ${hold.id} (payment ${payment.id}), but Razorpay named no ` +
+        "order for it, so the visit was not booked. Book it for them, or refund the payment in Razorpay's dashboard.",
+      link: `/clients/${hold.personId}`,
+    });
+    return;
+  }
+  await recordHoldLinkPaid(db, { hold, payment, orderId }, config.settings.ipHashSalt, now);
+  await c.env.FSM_QUEUE.send({ hold_id: hold.id, request_id: requestId } satisfies FsmSyncMessage);
+  log.info("razorpay_hook_hold_link_paid", { hold_id: hold.id });
+}
+
 /** The hold a payment was for, from the notes our order gave it. */
 function holdOfNotes(notes: RazorpayPayment["notes"]): string | null {
   if (notes === null || notes === undefined || Array.isArray(notes)) return null;
@@ -120,8 +155,13 @@ export function registerRazorpayHook(app: App): void {
     if (event === "payment_link.paid" && payload?.payment_link !== undefined && payload.payment !== undefined) {
       const link = RazorpayPaymentLinkSchema.parse(payload.payment_link.entity);
       const payment = RazorpayPaymentSchema.parse(payload.payment.entity);
-      const paid = await linkPaid(db, { link, payment }, config.settings.ipHashSalt, now);
-      log.info("razorpay_hook_link_paid", { ours: paid });
+      const hold = await holdOfLink(db, { razorpayLinkId: link.id, reference: link.reference_id ?? null });
+      if (hold === null) {
+        const paid = await linkPaid(db, { link, payment }, config.settings.ipHashSalt, now);
+        log.info("razorpay_hook_link_paid", { ours: paid });
+      } else {
+        await holdLinkPaid(c, { hold, link, payment });
+      }
     } else if (payload?.payment !== undefined && !event.startsWith("refund.")) {
       const payment = RazorpayPaymentSchema.parse(payload.payment.entity);
       const status = paymentStatusOf(event, payment);

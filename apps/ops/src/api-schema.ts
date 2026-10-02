@@ -762,6 +762,170 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/visits/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A client's windows for a kind of visit over 14 days, and who is free in each */
+        get: {
+            parameters: {
+                query: {
+                    client: string;
+                    kind: "consultation" | "first_fit" | "service" | "replacement";
+                    /** @description The service; left out, the first offered. */
+                    tier?: string;
+                    /** @description The first day; tomorrow if left out, or if earlier. */
+                    from?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Each day's windows */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OpsAvailability"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such client, or one who has been erased */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_bookable: the kind offers no such service; no_product: a first fit, with no hair system on sale */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/visits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Book a visit for a client: at once when nothing is paid at booking, else by a payment link */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["VisitToBook"];
+                };
+            };
+            responses: {
+                /** @description Booked, on its way, or waiting for the link to be paid */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OpsBooking"];
+                    };
+                };
+                /** @description invalid_request: a one visit that is not a first fit, or in the evening */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such client, or one who has been erased */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description taken: nobody chosen is free in that window now; already_booked: a consultation or first fit is still to come; terms_changed: the client's last credit went on another booking a moment before */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_bookable: the day, the kind or the service cannot be booked; no_product: a first fit, with no hair system on sale that day; code_not_applicable: the code does not apply to this booking */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description unavailable: Razorpay could not make the payment link, so nothing is held */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/clients/{id}/referral": {
         parameters: {
             query?: never;
@@ -6288,6 +6452,105 @@ export interface components {
             /** @description In paise, where one was refunded. */
             amount: number | null;
         };
+        OpsAvailability: {
+            /** @enum {string} */
+            kind: "consultation" | "first_fit" | "service" | "replacement";
+            /** @description The kind's services offered on the first day. */
+            services: components["schemas"]["ServiceOffer"][];
+            service: components["schemas"]["VisitService"];
+            /**
+             * @description How the visit is paid for: nothing at booking (free, or a consultation and fit in one visit, paid by a link once fitted), a service-visit credit, or a payment link Razorpay texts the client.
+             * @enum {string}
+             */
+            pays: "nothing" | "credit" | "link";
+            /** @description The service-visit credits the client has to spend. */
+            credits: number;
+            days: {
+                /** Format: date */
+                date: string;
+                windows: {
+                    /** @enum {string} */
+                    window: "morning" | "afternoon" | "evening";
+                    /** @description When the window starts that day, in India's time. */
+                    start: string;
+                    end: string;
+                    /** @description Who is free for the visit, the client's regular technician first. */
+                    technicians: components["schemas"]["FreeTechnician"][];
+                }[];
+            }[];
+        };
+        ServiceOffer: {
+            tier: string;
+            name: string;
+            minutes: number;
+            price: components["schemas"]["Price"];
+        };
+        Price: {
+            /** @description In paise, before GST: the main figure. */
+            amount_ex_gst: number;
+            /** @description In paise, GST included: what the client pays. */
+            amount: number;
+            gst_percent: number;
+        };
+        /** @description The service the windows are for: the one asked, else the first. */
+        VisitService: {
+            /** @description Its code within its kind, which never changes. */
+            tier: string;
+            name: string;
+            /** @description How long the visit is booked for. */
+            minutes: number;
+        };
+        FreeTechnician: {
+            id: string;
+            name: string;
+        };
+        OpsBooking: {
+            /** Format: uuid */
+            hold_id: string;
+            /**
+             * @description booked: the visit is written. being_booked: it is on its way to the field record, within a minute. awaiting_payment: the slot is held and the link sent; the visit is booked once the client pays.
+             * @enum {string}
+             */
+            outcome: "booked" | "being_booked" | "awaiting_payment";
+            /** @description The visit, once booked. */
+            visit_id: string | null;
+            /**
+             * @description How the visit is paid for: nothing at booking (free, or a consultation and fit in one visit, paid by a link once fitted), a service-visit credit, or a payment link Razorpay texts the client.
+             * @enum {string}
+             */
+            pays: "nothing" | "credit" | "link";
+            service: components["schemas"]["VisitService"];
+            price: components["schemas"]["Price"] & unknown;
+            /** Format: date */
+            date: string;
+            /** @enum {string} */
+            window: "morning" | "afternoon" | "evening";
+            technician: components["schemas"]["FreeTechnician"];
+            /** @description The payment link Razorpay texted the client, and when it closes and the slot goes. */
+            link: {
+                url: string;
+                /** Format: date-time */
+                open_until: string;
+            } | null;
+        };
+        VisitToBook: {
+            /** Format: uuid */
+            client: string;
+            /** @enum {string} */
+            kind: "consultation" | "first_fit" | "service" | "replacement";
+            /** @description The service; left out, the kind's standard one. A first fit names the hair system. */
+            tier?: string;
+            /** @description The technician ops chose; left out, whoever is free, the client's regular one first. */
+            technician?: string;
+            /** Format: date */
+            date: string;
+            /** @enum {string} */
+            window: "morning" | "afternoon" | "evening";
+            /** @description A consultation and fit in one visit: a first fit, morning or afternoon. */
+            one_visit?: boolean;
+            /** @description A discount code the client gave. */
+            code?: string;
+        };
         AlreadyInvited: {
             error: {
                 /** @enum {string} */
@@ -7147,20 +7410,6 @@ export interface components {
             } | {
                 [key: string]: string;
             } | null;
-        };
-        Price: {
-            /** @enum {string} */
-            item: "consultation" | "first_fit" | "service" | "replacement" | "late_fee_first_fit" | "late_fee_replacement";
-            tier: string;
-            /** @description In paise, before GST. */
-            amount_ex_gst: number;
-            gst_percent: number;
-            /**
-             * Format: date
-             * @description India's date it applies from.
-             */
-            valid_from: string;
-            in_force: boolean;
         };
         PriceChange: {
             /**

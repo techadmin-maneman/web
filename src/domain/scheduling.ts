@@ -300,6 +300,52 @@ export interface WindowOffer {
   readonly with: "regular" | "another" | null;
 }
 
+/** A window of a day, and the technicians free to take the visit in it, the client's regular technician first. */
+export interface WindowTechnicians {
+  readonly window: BookingWindow;
+  readonly technicians: Technician[];
+}
+
+/** A visit to place: how long it takes, and the day its service is retired from, if it is. */
+interface VisitToPlace {
+  readonly minutes: number;
+  readonly until?: string | null;
+}
+
+/**
+ * Each window of each day from `from`, for a visit this long: the technicians free to take it, the regular technician
+ * first, and who the regular technician is. A day ops black out, or from `until` on, is offered to nobody.
+ */
+async function windowsOf(
+  db: D1Database,
+  personId: string,
+  visit: VisitToPlace,
+  range: { readonly from: string; readonly days: number },
+  now: Date,
+  moving: Moving | null,
+): Promise<{ regular: string | null; days: { date: string; windows: WindowTechnicians[] }[] }> {
+  const units = unitsFor(visit.minutes);
+  const to = addDays(range.from, range.days - 1);
+  const [technicians, regular, held, closed] = await Promise.all([
+    techniciansFor(db, moving),
+    moving === null ? regularTechnician(db, personId) : moving.technicianId,
+    occupancy(db, range.from, to, now, moving?.visitId ?? null),
+    loadBlackouts(db, range.from, to),
+  ]);
+  const retired = (date: string) => visit.until !== undefined && visit.until !== null && date >= visit.until;
+  const regularFirst = [...technicians].sort((a, b) => Number(b.id === regular) - Number(a.id === regular));
+  const days = Array.from({ length: range.days }, (_, index) => {
+    const date = addDays(range.from, index);
+    const windows = BOOKING_WINDOWS.map((window): WindowTechnicians => {
+      if (closed.has(date) || retired(date)) return { window, technicians: [] };
+      const free = regularFirst.filter((technician) => placement(held(technician.id, date), window, units) !== null);
+      return { window, technicians: free };
+    });
+    return { date, windows };
+  });
+  return { regular, days };
+}
+
 /**
  * Each window of each day from `from`, for a visit that takes this many minutes: who could take it, the regular
  * technician first. A day from `until` on, the day a service is retired from, is offered to nobody.
@@ -307,31 +353,36 @@ export interface WindowOffer {
 export async function availability(
   db: D1Database,
   personId: string,
-  visit: { readonly minutes: number; readonly until?: string | null },
+  visit: VisitToPlace,
   from: string,
   days: number,
   now: Date,
   moving: Moving | null = null,
 ): Promise<{ date: string; windows: WindowOffer[] }[]> {
-  const units = unitsFor(visit.minutes);
-  const to = addDays(from, days - 1);
-  const [technicians, regular, held, closed] = await Promise.all([
-    techniciansFor(db, moving),
-    moving === null ? regularTechnician(db, personId) : moving.technicianId,
-    occupancy(db, from, to, now, moving?.visitId ?? null),
-    loadBlackouts(db, from, to),
-  ]);
-  const retired = (date: string) => visit.until !== undefined && visit.until !== null && date >= visit.until;
-  return Array.from({ length: days }, (_, index) => {
-    const date = addDays(from, index);
-    const windows = BOOKING_WINDOWS.map((window): WindowOffer => {
-      if (closed.has(date) || retired(date)) return { window, with: null };
-      const free = technicians.filter((technician) => placement(held(technician.id, date), window, units) !== null);
-      if (free.some((technician) => technician.id === regular)) return { window, with: "regular" };
-      return { window, with: free.length > 0 ? "another" : null };
-    });
-    return { date, windows };
-  });
+  const offered = await windowsOf(db, personId, visit, { from, days }, now, moving);
+  const whoComes = (free: readonly Technician[]): WindowOffer["with"] => {
+    if (free.some((technician) => technician.id === offered.regular)) return "regular";
+    return free.length > 0 ? "another" : null;
+  };
+  return offered.days.map(({ date, windows }) => ({
+    date,
+    windows: windows.map(({ window, technicians }) => ({ window, with: whoComes(technicians) })),
+  }));
+}
+
+/**
+ * Each window of each day from `from`, for a visit this long: the technicians free to take it, the client's regular
+ * technician first, for ops to choose from as they book.
+ */
+export async function freeTechnicians(
+  db: D1Database,
+  personId: string,
+  visit: VisitToPlace,
+  from: string,
+  days: number,
+  now: Date,
+): Promise<{ date: string; windows: WindowTechnicians[] }[]> {
+  return (await windowsOf(db, personId, visit, { from, days }, now, null)).days;
 }
 
 /**
@@ -357,11 +408,12 @@ export interface Hold {
 
 /**
  * Holds nobody is paying for any more at ?1: unpaid, and past their countdown and their grace. With ?3 = 1, the
- * client's own other unpaid holds too: in the app a client has one hold at a time. A paid hold is never here. A hold
- * past its grace is past its countdown too, which the index on expires_at finds.
+ * client's own other unpaid holds too: in the app a client has one hold at a time, though not one ops sent a payment
+ * link for, which stays open until the link closes. A paid hold is never here. A hold past its grace is past its
+ * countdown too, which the index on expires_at finds.
  */
 const LET_GO = `SELECT id FROM slot_holds WHERE state = 'held' AND confirmed_at IS NULL
-  AND ((expires_at <= ?1 AND ${graceEnds("slot_holds")} <= ?1) OR (?3 = 1 AND person_id = ?2))`;
+  AND ((expires_at <= ?1 AND ${graceEnds("slot_holds")} <= ?1) OR (?3 = 1 AND person_id = ?2 AND pay_by_link = 0))`;
 
 /**
  * Lets go of the holds nobody is paying for, and, given a client, that client's own other unpaid holds too. For
@@ -408,9 +460,14 @@ export async function holdSlot(
     moves?: { readonly visit: Moving; readonly kind: "move" | "replace" };
     /**
      * Where it is held. In the app the client's other unpaid holds are let go. The site lets none of theirs go,
-     * and books its free consultation at once, so its hold is confirmed as it is made.
+     * and books its free consultation at once, so its hold is confirmed as it is made. Ops let none go either, and
+     * confirm a hold nothing is paid for as they book it.
      */
-    from?: "app" | "site";
+    from?: "app" | "site" | "ops";
+    /** Only this technician may take it: the one ops chose. */
+    technicianId?: string;
+    /** Paid for by a payment link ops send, rather than at the app's Checkout. */
+    payByLink?: boolean;
     /** Written in the same batch, so they stand or fall with the hold: the person and their consent, from the site. */
     alongside?: readonly D1PreparedStatement[];
     /** Written after the hold, in its batch, given its ID: the site's discount code (docs/decisions/0108-discount-codes.md). */
@@ -429,7 +486,11 @@ export async function holdSlot(
     moving === null ? regularTechnician(db, personId) : moving.technicianId,
     occupancy(db, date, date, now, moving?.visitId ?? null),
   ]);
-  const candidates = technicians
+  const chosen =
+    input.technicianId === undefined
+      ? technicians
+      : technicians.filter((technician) => technician.id === input.technicianId);
+  const candidates = chosen
     .map((technician) => ({ technician, start: placement(held(technician.id, date), window, units) }))
     .filter((candidate): candidate is { technician: Technician; start: number } => candidate.start !== null)
     .sort(
@@ -452,9 +513,9 @@ export async function holdSlot(
             `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
                amount_ex_gst, gst_percent, state, expires_at, created_at, updated_at, moves_appointment_id, move_kind,
                use_credit, pincode, late_fee_ex_gst, late_fee_gst_percent, confirmed_at, queued_at, tier, minutes,
-               grace_seconds, change_notice_hours, late_change_charge, no_show_charge, one_visit)
+               grace_seconds, change_notice_hours, late_change_charge, no_show_charge, one_visit, pay_by_link)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, 'held', ?11, ?12, ?12, ?13, ?14, ?15, ?16, ?17, ?18,
-               ?19, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26)`,
+               ?19, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27)`,
           )
           .bind(
             id,
@@ -483,6 +544,7 @@ export async function holdSlot(
             input.terms?.lateCharge ?? null,
             input.terms?.noShowCharge ?? null,
             oneVisit ? 1 : 0,
+            input.payByLink === true ? 1 : 0,
           ),
         ...claimsOf(start, units, window).map((claim) =>
           db

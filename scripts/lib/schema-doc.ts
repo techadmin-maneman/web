@@ -131,7 +131,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "The client app's and the technician app's sessions: whose, from which device, and when each ends or was revoked (ADR 0029, ADR 0052).",
   slot_claims:
     "What a hold or a visit takes of a technician's day, a row per half-slot and window, so no time is taken twice (ADR 0034, ADR 0069).",
-  slot_holds: "A slot held while a client pays, and what became of it (ADR 0045, ADR 0068).",
+  slot_holds:
+    "A slot held while a client pays, at Checkout or by a payment link ops sent, and what became of it (ADR 0045, ADR 0068).",
   slot_times: "Each change of the day's half-slot times ops set, from the day it applies; never changed (ADR 0102).",
   staff:
     "Each member of staff on the console's Staff list, by their Access e-mail, and whether they are let in (ADR 0109).",

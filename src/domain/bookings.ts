@@ -210,6 +210,16 @@ async function confirmFree(db: D1Database, hold: HoldRow, now: Date): Promise<bo
   return confirmed !== null;
 }
 
+/**
+ * Confirms a hold ops book that nothing is paid for at booking: free, or paid by a credit the client still has to
+ * spend. False when it no longer qualifies, as when another booking took the client's last credit meanwhile.
+ */
+export async function confirmUnpaid(db: D1Database, holdId: string, now: Date): Promise<boolean> {
+  const hold = await holdOf(db, holdId);
+  if (hold?.state !== "held") return false;
+  return confirmFree(db, hold, now);
+}
+
 /** The client's credit went on another booking, so this hold is paid for in money instead. */
 async function stopUsingCredit(db: D1Database, holdId: string, now: Date): Promise<void> {
   await db

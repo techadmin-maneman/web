@@ -36,6 +36,8 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/held-bookings/{id}/retry": need("operations", "act"),
   "POST /api/held-bookings/{id}/stop": need("operations", "act"),
   "POST /api/held-bookings/{id}/link": need("operations", "act"),
+  "GET /api/visits/availability": need("operations", "view"),
+  "POST /api/visits": need("operations", "act"),
   "GET /api/technicians": need("operations", "view"),
   "GET /api/technicians/work": need("operations", "view"),
   // Who signs in to the technician app, and so sees clients' addresses: access, so MANAGE.

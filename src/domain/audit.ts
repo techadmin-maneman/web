@@ -98,6 +98,8 @@ export const AUDIT_ACTIONS = [
   "booking.refund",
   "booking.stop",
   "booking.give_back",
+  // A visit ops booked for a client from the console: its slot held, and booked at once or sent a payment link.
+  "visit.book",
   // Ops correcting a client's hair profile, which keeps every version (docs/decisions/0106-a-clients-hair-profile.md).
   // The entry names the client and the version, never a word of the profile.
   "hair_profile.correct",

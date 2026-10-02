@@ -61,6 +61,7 @@ import { registerRazorpayHook } from "./routes/razorpay-hook.ts";
 import { registerHealth } from "./routes/health.ts";
 import { registerOpsProfile } from "./routes/ops-profile.ts";
 import { registerOpsStorage } from "./routes/ops-storage.ts";
+import { registerOpsVisits } from "./routes/ops-visits.ts";
 import { registerOpsWhoami } from "./routes/ops-whoami.ts";
 import { registerPublishedPrices } from "./routes/published-prices.ts";
 import { registerReferralReward } from "./routes/referral-reward.ts";
@@ -121,6 +122,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsCredits,
     // A booking FSM refused, held for ops to book or refund (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
     registerOpsBookings,
+    // A visit ops book for a client: at once, or by a payment link.
+    registerOpsVisits,
     registerOpsClientReferral,
     // An address a client gives ops on the phone (docs/decisions/0092-task-owners.md).
     registerOpsClientAddress,
