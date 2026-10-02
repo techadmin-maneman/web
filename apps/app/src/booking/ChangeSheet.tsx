@@ -48,6 +48,9 @@ function moveLine(terms: MoveTerms): ReactNode {
   return terms.paid > 0 ? change.move.free(rupees(terms.paid)) : change.move.freeNothingPaid;
 }
 
+/** What going on to the new date says: a free move only picks one, whatever the notice; any other accepts its cost. */
+const moveButton = (terms: MoveTerms): string => (terms.cost === "free" ? change.move.pick : change.move.accept);
+
 /** What confirming a cancellation says: that a credit is lost, that a fee is kept, or only that it cancels. */
 function cancelButton(terms: CancelTerms): string {
   if (terms.credit === "lost") return change.cancel.acceptCredit;
@@ -173,7 +176,7 @@ export function ChangeSheet(props: {
                   setStep({ kind: "picking", terms: step.terms });
                 }}
               >
-                {step.terms.notice === "free" ? change.move.pick : change.move.accept}
+                {moveButton(step.terms)}
               </Button>
               <Button variant="outline" size="control" className={styles.secondary} onClick={close}>
                 {change.move.keep}

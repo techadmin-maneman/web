@@ -72,7 +72,8 @@ import { opsInputs } from "../http/ops-inputs.ts";
 import { requireSelfServe } from "../http/self-serve.ts";
 import { visitorOf } from "../http/visitor.ts";
 import { GIVEN_BY_BOOKING, isFullAddress } from "../policy/booking.ts";
-import { CHARGES, LATE_FEES, type SoldTerms } from "../policy/moving-a-visit.ts";
+import { indiaInstant } from "../lib/india-time.ts";
+import { changeChargedOnBooking, CHARGES, LATE_FEES, type SoldTerms } from "../policy/moving-a-visit.ts";
 import { stripStart } from "../policy/next-visit.ts";
 import { takesCredit } from "../policy/referral-reward.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
@@ -111,6 +112,9 @@ const AvailabilitySchema = z
     service: ServiceSchema.openapi({ description: "The service the windows are for: a move's is its visit's." }),
     price: PriceSchema.openapi({ description: "The first day's price." }),
     regular: z.union([TechnicianSchema, z.null()]).openapi({ description: "Whoever did the client's latest visit." }),
+    change_notice_hours: z.number().int().openapi({
+      description: "The notice a visit booked here is sold under: a move keeps its visit's own, else as ops set it.",
+    }),
     days: z.array(
       z
         .object({
@@ -127,6 +131,11 @@ const AvailabilitySchema = z
                 with: z
                   .union([z.enum(["regular", "another"]), z.null()])
                   .openapi({ description: "Who would come: the regular technician, another, or nobody (full)." }),
+                change_charged: z.boolean().openapi({
+                  description:
+                    "Booked now, moving or cancelling it would already cost the client: it starts inside the notice, " +
+                    "and its kind is charged there.",
+                }),
               })
               .strict(),
           ),
@@ -455,6 +464,8 @@ export function registerClientBooking(app: App): void {
     const db = c.env.DB;
     // A move in place keeps the visit's technician; a charged move books a new visit with anyone.
     const moving = move === null || move.terms.move.cost === "charged" ? null : move.moving;
+    // A move in place keeps its visit's terms, as its hold will (soldAs); anything else is sold under those in force.
+    const terms = move !== null && moving !== null ? move.terms.sold : termsInForce(await opsInputs(c), type);
     const until = offered?.retired_date ?? null;
     const [days, regularId, technicians, schedule] = await Promise.all([
       availability(db, session.subjectId, { minutes: service.minutes, until }, start, BOOKING_DAYS, now, moving),
@@ -468,11 +479,16 @@ export function registerClientBooking(app: App): void {
       return (await priceOf(db, type, date, service.tier)) ?? price;
     };
     const regular = technicians.find((technician) => technician.id === regularId);
-    // A day before the bookable days open, or past the last, is offered to nobody. Each window says its hours that day.
+    // A day before the bookable days open, or past the last, is offered to nobody. Each window says its hours that day,
+    // and whether a visit booked in it now would already cost the client to change.
     const strip = days.map((day) => {
       const hours = windowTimesOf(schedule.on(day.date));
       const shut = day.date < range.opens || day.date > range.last;
-      const windows = day.windows.map((each) => ({ ...each, ...hours[each.window], with: shut ? null : each.with }));
+      const windows = day.windows.map((each) => {
+        const times = hours[each.window];
+        const changeCharged = changeChargedOnBooking(indiaInstant(day.date, times.start), now, terms);
+        return { ...each, ...times, with: shut ? null : each.with, change_charged: changeCharged };
+      });
       return { ...day, windows };
     });
     return c.json(
@@ -481,6 +497,7 @@ export function registerClientBooking(app: App): void {
         service: serviceBody(service),
         price,
         regular: regular === undefined ? null : { name: regular.name, initials: regular.initials },
+        change_notice_hours: terms.noticeHours,
         days: await Promise.all(strip.map(async (day) => ({ ...day, price: await priceOn(day.date) }))),
       },
       200,

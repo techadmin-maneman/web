@@ -125,13 +125,42 @@ describe("GET /api/availability", () => {
     expect(body.days[0]).toEqual({
       date: "2026-09-22",
       price: { amount_ex_gst: 200000, amount: 200000, gst_percent: 0 },
-      // Each window with its hours that day (docs/decisions/0102-window-times.md).
+      // Each window with its hours that day (docs/decisions/0102-window-times.md). At noon on Monday, Tuesday's
+      // morning and noon windows are already inside the 24 hours, so a service visit booked in them is charged to change.
       windows: [
-        { window: "morning", start: "09:00", end: "12:00", with: "regular" },
-        { window: "afternoon", start: "12:00", end: "16:00", with: "regular" },
-        { window: "evening", start: "16:00", end: "20:00", with: "regular" },
+        { window: "morning", start: "09:00", end: "12:00", with: "regular", change_charged: true },
+        { window: "afternoon", start: "12:00", end: "16:00", with: "regular", change_charged: true },
+        { window: "evening", start: "16:00", end: "20:00", with: "regular", change_charged: false },
       ],
     });
+  });
+
+  // The owner's ruling of 2 October 2026: a window inside the notice is still sold, and marked.
+  it("marks only the windows inside the notice ops set, and none where the kind costs nothing to change late", async () => {
+    type Marks = { change_notice_hours: number; days: { windows: { change_charged: boolean }[] }[] };
+    const opsSet = (name: string, value: unknown) =>
+      env.DB.prepare("INSERT OR REPLACE INTO ops_settings (name, value, set_by, set_at) VALUES (?1, ?2, 'ops', ?3)")
+        .bind(name, JSON.stringify(value), NOW.toISOString())
+        .run();
+    const rohit = await client();
+    // A new isolate each time, so the settings are read afresh rather than from the minute's cache.
+    const marks = async () => {
+      const answer = await request(later(0), "/api/availability?type=service", { headers: { Cookie: rohit.cookie } });
+      const body = await answer.json<Marks>();
+      return { hours: body.change_notice_hours, firstTwoDays: body.days.slice(0, 2).map((day) => day.windows) };
+    };
+
+    await opsSet("change_notice_hours", 48);
+    const inside48 = await marks();
+    expect(inside48.hours).toBe(48);
+    expect(inside48.firstTwoDays.map((windows) => windows.map((each) => each.change_charged))).toEqual([
+      [true, true, true],
+      [true, true, false],
+    ]);
+
+    await opsSet("late_change_charge", { consultation: "nothing", first_fit: "late_fee", service: "nothing", replacement: "visit" });
+    const neverCharged = await marks();
+    expect(neverCharged.firstTwoDays.flat().map((each) => each.change_charged)).not.toContain(true);
   });
 
   it("offers another technician where the regular one is busy, and marks a window full where both are", async () => {

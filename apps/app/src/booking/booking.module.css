@@ -164,9 +164,25 @@
   color: var(--paper-placeholder);
 }
 
+/* A day with a window inside the notice: a short rule beneath its number, as the legend shows it. */
+.dayLate {
+  position: absolute;
+  bottom: var(--sp-6);
+  left: 50%;
+  width: var(--sp-13);
+  height: var(--rule-strong);
+  background: var(--error-on-paper);
+  transform: translateX(-50%);
+}
+
+.day:has(.radio:checked) .dayLate {
+  background: var(--paper);
+}
+
 .legend {
   display: flex;
-  gap: var(--sp-20);
+  flex-wrap: wrap;
+  gap: var(--sp-8) var(--sp-20);
   margin-top: var(--sp-18);
   font-size: var(--fs-14);
   color: var(--text-muted);
@@ -188,6 +204,12 @@
 .swatchFull {
   border-color: var(--paper-shade);
   background: var(--paper-shade);
+}
+
+.swatchLate {
+  width: var(--sp-13);
+  height: var(--rule-strong);
+  background: var(--error-on-paper);
 }
 
 /* Board C3. */
@@ -249,6 +271,11 @@
 .windowNote {
   font-size: var(--fs-14);
   color: var(--text-muted);
+}
+
+/* A window inside the notice: still sold, and its line in the colour of a charge. */
+.windowLate {
+  color: var(--error-on-paper);
 }
 
 /*

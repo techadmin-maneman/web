@@ -15,6 +15,7 @@ import { useState } from "react";
 import type { Availability, BookingConsent, BookingWindow, Hold, MoveTerms, OfferedService, Price } from "../api.ts";
 import { booking, change, messages, profile, states, VISIT_TYPES, WINDOW_HOURS, WINDOW_NAMES } from "../content.ts";
 import { CHECK, CLOCK } from "../icons.ts";
+import { apiNow } from "../lib/clock.ts";
 import { priceFigures } from "../lib/money.ts";
 import { useSecondsLeft } from "../lib/useSecondsLeft.ts";
 import { firstName } from "../lib/visit.ts";
@@ -23,6 +24,7 @@ import { AddressForm } from "../profile/AddressForm.tsx";
 import type { PayMethod } from "./checkout.ts";
 import { CodeBox } from "./CodeBox.tsx";
 import { consentLines } from "./consents.ts";
+import { atStake, dayInsideNotice, insideNotice, type AtStake } from "./late-change.ts";
 import styles from "./booking.module.css";
 
 type Day = Availability["days"][number];
@@ -191,25 +193,34 @@ export function ServiceStep(props: {
   );
 }
 
+/** A day as a screen reader names it: its date, and whether it is full or inside the notice. */
+function dayLabel(day: Day, noticeHours: number): string {
+  const copy = booking.date;
+  if (isFull(day)) return `${weekdayDate(day.date)}, ${copy.full}`;
+  if (dayInsideNotice(day)) return `${weekdayDate(day.date)}, ${copy.within(noticeHours)}`;
+  return weekdayDate(day.date);
+}
+
 /**
- * Board C2: fourteen days, full ones shown but not chosen. The days are one group of native radio
- * buttons, drawn as the design's squares: one tab stop, and the arrow keys move between the days.
- * `before`: the steps the sheet took before the date.
+ * Board C2: fourteen days, full ones shown but not chosen, and those with a window inside the notice marked. The days
+ * are one group of native radio buttons, drawn as the design's squares: one tab stop, and the arrow keys move between
+ * the days. `before`: the steps the sheet took before the date.
  */
 export function DateStep(props: {
   before: number;
   days: Day[];
+  noticeHours: number;
   chosen: string | null;
   onChoose: (date: string) => void;
   onNext: () => void;
 }) {
   const copy = booking.date;
+  const anyInsideNotice = props.days.some(dayInsideNotice);
   return (
     <>
       <Heading title={copy.title} step={stepOf(1, props.before)} />
       <div className={styles.strip} role="radiogroup" aria-labelledby={TITLE_ID}>
         {props.days.map((day) => {
-          const full = isFull(day);
           const weekday = DAY_NAMES[new Date(`${day.date}T00:00:00Z`).getUTCDay()] ?? "";
           return (
             <label key={day.date} className={styles.day}>
@@ -218,8 +229,8 @@ export function DateStep(props: {
                 type="radio"
                 name="booking-date"
                 checked={day.date === props.chosen}
-                disabled={full}
-                aria-label={`${weekdayDate(day.date)}${full ? `, ${copy.full}` : ""}`}
+                disabled={isFull(day)}
+                aria-label={dayLabel(day, props.noticeHours)}
                 onChange={() => {
                   props.onChoose(day.date);
                 }}
@@ -230,6 +241,7 @@ export function DateStep(props: {
               <span className={styles.number} aria-hidden="true">
                 {String(Number(day.date.slice(8)))}
               </span>
+              {dayInsideNotice(day) && <span className={styles.dayLate} aria-hidden="true" />}
             </label>
           );
         })}
@@ -243,6 +255,12 @@ export function DateStep(props: {
           <span className={`${styles.swatch} ${styles.swatchFull}`} />
           {copy.full}
         </span>
+        {anyInsideNotice && (
+          <span>
+            <span className={styles.swatchLate} />
+            {copy.within(props.noticeHours)}
+          </span>
+        )}
       </div>
       <Button
         variant="primary"
@@ -257,10 +275,14 @@ export function DateStep(props: {
   );
 }
 
-/** Board C3: the day's three windows, and whether the regular technician is free. */
+/**
+ * Board C3: the day's three windows, whether the regular technician is free, and which are inside the notice. A day
+ * that costs nothing goes on to a confirmation, not a payment.
+ */
 export function WindowStep(props: {
   before: number;
   day: Day;
+  noticeHours: number;
   regular: Availability["regular"];
   chosen: BookingWindow | null;
   busy: boolean;
@@ -283,7 +305,7 @@ export function WindowStep(props: {
       <Heading title={copy.title} step={stepOf(2, props.before)} />
       <p className={styles.dayLine}>{weekdayDate(props.day.date)}</p>
       <div className={styles.windows} role="radiogroup" aria-labelledby={TITLE_ID}>
-        {props.day.windows.map(({ window, with: who }) => (
+        {props.day.windows.map(({ window, with: who, change_charged: changeCharged }) => (
           <label key={window} className={styles.window}>
             <input
               className={styles.radio}
@@ -298,6 +320,11 @@ export function WindowStep(props: {
             <span>
               <span className={styles.windowName}>{WINDOW_NAMES[window]}</span>
               <span className={styles.windowTime}>{WINDOW_HOURS[window]}</span>
+              {who !== null && changeCharged && (
+                <span className={`${styles.windowTime ?? ""} ${styles.windowLate ?? ""}`}>
+                  {copy.within(props.noticeHours)}
+                </span>
+              )}
             </span>
             <span className={styles.windowNote}>{noteFor(who)}</span>
           </label>
@@ -324,7 +351,7 @@ export function WindowStep(props: {
         busy={props.busy}
         onClick={props.onNext}
       >
-        {copy.continue}
+        {props.day.price.amount === 0 ? copy.continueFree : copy.continue}
       </Button>
     </>
   );
@@ -344,43 +371,82 @@ function payLabel(hold: Hold, moving: MoveTerms | undefined): string {
   return moving === undefined ? booking.pay.confirm : change.confirmMove;
 }
 
-/** Board C4, and C5's first fit: the held visit, what it costs, and how to pay. */
 /** The pay step's figure: nothing for a visit a credit covers, "Free" for one that costs nothing, else its price. */
 function amountLine(hold: Hold, covered: boolean, free: boolean): string {
   if (covered) return booking.pay.credit.zero;
   return free ? booking.pay.free : rupees(hold.price.amount_ex_gst);
 }
 
+/** What a visit moved in place keeps: its payment or its credit. Nothing to say for one that held neither. */
+function carriedOver(moving: MoveTerms): string | null {
+  if (moving.credit !== null) return change.move.creditCarriesOver;
+  return moving.paid > 0 ? change.move.carriesOver(rupees(moving.paid)) : null;
+}
+
+/** What a change inside the notice takes, where it takes anything. */
+type Charged = Exclude<AtStake, { readonly kind: "nothing" }>;
+
+/** "This visit is within 24 hours, so moving or cancelling it costs Rs. 4,000 (Rs. 4,720 incl. GST)." */
+function InsideNotice({ stake, hours }: { stake: Charged; hours: number }) {
+  const copy = booking.pay.insideNotice;
+  if (stake.kind === "credit") return copy.credit(hours);
+  if (stake.kind === "late_fee") {
+    const { exGst, inclusive } = priceFigures(stake.fee);
+    return (
+      <>
+        {copy.costs(hours, exGst)}
+        {inclusive !== null && <span className={styles.inclusive}>{booking.lateFee.inclusive(inclusive)}</span>}.
+      </>
+    );
+  }
+  return `${copy.costs(hours, rupees(stake.paid))}.`;
+}
+
+/** "Free to move or cancel until 9 am, Fri 2 Oct.", and what a change costs after that. */
+function FreeUntil({ hold, stake }: { hold: Hold; stake: Charged }) {
+  const copy = booking.pay;
+  const when = copy.freeUntil(`${indiaClock(hold.free_until)}, ${shortDate(indiaDate(hold.free_until))}`);
+  if (stake.kind === "late_fee") {
+    return (
+      <>
+        {`${when} `}
+        <LateFee fee={stake.fee} noticeHours={hold.change_notice_hours} />
+      </>
+    );
+  }
+  // A credit's own note, beneath the button, says what a late cancel costs.
+  if (stake.kind === "credit") return when;
+  return `${when}${copy.afterThat}`;
+}
+
 /**
- * What changing the visit later costs, beneath the pay step's lines, as the booking is sold
- * (docs/decisions/0088-every-policy-in-the-console.md): for a visit moved in place, that its payment carries over;
- * for one sold to charge a late fee, the fee; for one sold to cost nothing late, that it is free at any time; for any
- * other, the hour it may be changed free until. A credit's own note, below, says what cancelling late costs, so a
- * covered visit that costs its credit late says nothing here.
+ * What changing the visit later costs, as the booking is sold: free at any time; free until a time, and its cost
+ * after; or, for a visit already inside the notice, what a change costs from now.
  */
-function ChangeTerms({ hold, moving, covered }: { hold: Hold; moving: MoveTerms | undefined; covered: boolean }) {
+function LaterChanges({ hold, stake, late }: { hold: Hold; stake: AtStake; late: boolean }) {
+  if (stake.kind === "nothing") return booking.pay.freeAnyTime;
+  if (late) return <InsideNotice stake={stake} hours={hold.change_notice_hours} />;
+  return <FreeUntil hold={hold} stake={stake} />;
+}
+
+/**
+ * Beneath the pay step's lines: what a visit moved in place keeps, then what changing it later costs. `late`: the
+ * visit is already inside its notice.
+ */
+function ChangeTerms(props: { hold: Hold; moving: MoveTerms | undefined; stake: AtStake; late: boolean }) {
   const line = `${styles.line ?? ""} ${styles.soft ?? ""}`;
-  if (moving !== undefined) {
-    return (
-      <p className={line}>{moving.paid > 0 ? change.move.free(rupees(moving.paid)) : change.move.freeNothingPaid}</p>
-    );
-  }
-  if (hold.late_change_charge === "late_fee" && hold.late_fee !== null) {
-    return (
-      <p className={line}>
-        <LateFee fee={hold.late_fee} noticeHours={hold.change_notice_hours} />
-      </p>
-    );
-  }
-  if (hold.late_change_charge === "nothing") return <p className={line}>{booking.pay.freeAnyTime}</p>;
-  if (covered) return null;
+  const kept = props.moving === undefined ? null : carriedOver(props.moving);
   return (
-    <p className={line}>
-      {booking.pay.freeUntil(`${indiaClock(hold.free_until)}, ${shortDate(indiaDate(hold.free_until))}`)}
-    </p>
+    <>
+      {kept !== null && <p className={line}>{kept}</p>}
+      <p className={line}>
+        <LaterChanges hold={props.hold} stake={props.stake} late={props.late} />
+      </p>
+    </>
   );
 }
 
+/** Board C4, and C5's first fit: the held visit, what it costs, and how to pay. */
 export function PayStep(props: {
   hold: Hold;
   moving?: MoveTerms | undefined;
@@ -406,6 +472,9 @@ export function PayStep(props: {
   const free = paysNothing(hold);
   // A move in place keeps the visit as it was booked: only its new time, and what the move costs, are shown.
   const inPlace = moving !== undefined && moving.cost !== "charged";
+  const stake = atStake(hold, inPlace ? moving : undefined);
+  // Read on every tick of the hold's count, so a visit that passes into its notice while the client decides says so.
+  const late = insideNotice(hold, apiNow());
   const isFirstFit = hold.type === "first_fit" && !inPlace;
   // A code is for a visit sold, never a move, nor one a credit pays for, nor a consultation, which costs nothing.
   const takesACode = moving === undefined && !covered && hold.type !== "consultation";
@@ -414,7 +483,7 @@ export function PayStep(props: {
   const [codeSending, setCodeSending] = useState(false);
   return (
     <>
-      <Heading title={copy.title} aside={copy.held(minutesAndSeconds(left))} />
+      <Heading title={free ? copy.titleFree : copy.title} aside={copy.held(minutesAndSeconds(left))} />
       <LastMinute left={left} />
       <div className={styles.summary}>
         <div className={styles.item}>
@@ -438,7 +507,7 @@ export function PayStep(props: {
           </p>
         )}
         {isFirstFit && <p className={styles.line}>{copy.guarantee(technician)}</p>}
-        <ChangeTerms hold={hold} moving={inPlace ? moving : undefined} covered={covered} />
+        <ChangeTerms hold={hold} moving={inPlace ? moving : undefined} stake={stake} late={late} />
       </div>
       {takesACode && <CodeBox hold={hold} busy={props.busy} onHold={props.onHold} onSending={setCodeSending} />}
       {!free && (
@@ -501,7 +570,7 @@ export function PayStep(props: {
         {payLabel(hold, moving)}
       </Button>
       {!free && <p className={styles.moneyNote}>{copy.neverHandlesMoney(technician)}</p>}
-      {covered && hold.late_change_charge !== "nothing" && (
+      {stake.kind === "credit" && !late && (
         <p className={styles.creditNote}>{copy.credit.note(hold.change_notice_hours)}</p>
       )}
     </>
