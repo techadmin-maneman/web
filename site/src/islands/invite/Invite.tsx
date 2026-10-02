@@ -32,7 +32,7 @@ import {
   type ReferralReward,
 } from "../../lib/api.ts";
 import { cardPath, HOUSE_CARD, isInvite } from "../../lib/invite.ts";
-import { BUILT_WORDS, isPublishedPrices, priceWords, standardOf, type PriceWords } from "../../lib/prices.ts";
+import { BUILT_WORDS, isPublishedPrices, pricesOf, priceWords, type PriceWords } from "../../lib/prices.ts";
 import { rememberInvite } from "../../lib/remembered-invite.ts";
 import { isReferralReward } from "../../lib/reward.ts";
 import { fill } from "../../lib/text.ts";
@@ -107,7 +107,7 @@ export default function Invite(props: Props) {
   useEffect(() => {
     if (!PRICES_SHOWN || pricesInPage() !== null) return;
     void fetchPublishedPrices().then((found) => {
-      if (found.ok && isPublishedPrices(found.body)) setPrices(priceWords(standardOf(found.body)));
+      if (found.ok && isPublishedPrices(found.body)) setPrices(priceWords(pricesOf(found.body)));
     });
   }, []);
 

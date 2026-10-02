@@ -96,7 +96,9 @@ test("a visit or a payment that is not the client's says it could not be found",
 // Home as the API gives it: a visit FSM has not closed stays, saying where it stands, and nothing is booked in its
 // place (LIFE-03); the credit tile, and each prompt in its own words (LIFE-08). The API's answers are altered on
 // their way, since the shared client has none of these.
-test("Home keeps a visit being closed, and shows the credit tile and the prompt the API gives", async ({ page }) => {
+test("Home keeps a visit done but not yet closed, and shows the credit tile and the prompt the API gives", async ({
+  page,
+}) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
   await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
@@ -109,18 +111,18 @@ test("Home keeps a visit being closed, and shows the credit tile and the prompt 
     route.fulfill({
       json: {
         ...me,
-        next_visit: { ...(me.next_visit as object), stage: "closing" },
+        next_visit: { ...(me.next_visit as object), stage: "done" },
         credits: { visits: 2, earliest_expiry: "2028-01-03T00:00:00.000Z" },
         prompt,
       },
     }),
   );
-  const upcoming = (visits.upcoming as object[]).map((visit) => ({ ...visit, stage: "closing" }));
+  const upcoming = (visits.upcoming as object[]).map((visit) => ({ ...visit, stage: "done" }));
   await page.route("**/api/visits", (route) => route.fulfill({ json: { ...visits, upcoming } }));
   await page.reload();
-  await expect(page.getByText("Being closed")).toBeVisible();
+  await expect(page.getByText("Done · notes on the way")).toBeVisible();
   await expect(page.getByRole("button", { name: "Reschedule" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Add a note" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add a note" })).toHaveCount(0);
   await expect(page.getByText("2 visit credits")).toBeVisible();
   await expect(page.getByText("Expire 3 Jan 2028")).toBeVisible();
   const month = listMonth(client.piece.due.slice(0, 7), new Date().getFullYear());
@@ -135,7 +137,7 @@ test("Home keeps a visit being closed, and shows the credit tile and the prompt 
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
 
   await tab(page, "Visits").click();
-  await expect(page.getByText("Service visit · Being closed · Imran")).toBeVisible();
+  await expect(page.getByText("Service visit · Done · notes on the way · Imran")).toBeVisible();
   await expect(page.getByRole("button", { name: "Book your next visit" })).toHaveCount(0);
 
   prompt = { kind: "invoice_ready", visit_id: client.service.id, date: client.service.date, type: "service" };

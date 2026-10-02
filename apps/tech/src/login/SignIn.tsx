@@ -24,7 +24,7 @@
 
 import { Button } from "@maneman/ui/Button";
 import { Mark } from "@maneman/ui/Mark";
-import { typedDigits } from "@maneman/web-kit/mobile";
+import { fieldDigits, mobileDigits } from "@maneman/web-kit/mobile";
 import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { api, type Challenge } from "../api.ts";
@@ -108,16 +108,16 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
   const resendIn = useCountdown(challenge === null ? 0 : RESEND_AFTER_S, challenge);
   const number = useRef<HTMLInputElement | null>(null);
 
-  const tenDigits = /^\d{10}$/.test(mobile);
+  const digits = mobileDigits(mobile);
 
   async function send(): Promise<void> {
-    if (!tenDigits) {
+    if (digits === null) {
       setError(copy.mobileError);
       return;
     }
     setWorking(true);
     try {
-      const answer = await api.sendCode(mobile, await deviceId());
+      const answer = await api.sendCode(digits, await deviceId());
       if (answer.ok) {
         setChallenge(answer.body);
         setCode("");
@@ -164,7 +164,7 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
     onSignedIn();
   }
 
-  const ready = challenge === null ? tenDigits : code.length === 6;
+  const ready = challenge === null ? digits !== null : code.length === 6;
   // Only worth saying before the code has been asked for, and only in the app
   // that caused it: a first sign-in in a browser needs no explanation.
   const quiet = challenge === null && error === null;
@@ -182,8 +182,7 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
           className={styles.number}
           value={mobile}
           onChange={(event) => {
-            // A number pasted as "+91 98110 00000" or "098110 00000" loses the prefix, not its last digits.
-            setMobile(typedDigits(event.target.value).slice(0, 10));
+            setMobile(fieldDigits(event.target.value));
             setError(null);
           }}
           inputMode="numeric"

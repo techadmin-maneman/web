@@ -2,9 +2,9 @@
 // any JavaScript ran (site/src/worker.ts), the invite on #invite, and the price book's figures and what a referral
 // earns on <body>.
 
-import type { Invite, ReferralReward } from "../../lib/api.ts";
+import type { Invite, PublishedPrices, ReferralReward } from "../../lib/api.ts";
 import { isInvite } from "../../lib/invite.ts";
-import { isPublishedPrices, priceWords, standardOf, type PriceWords } from "../../lib/prices.ts";
+import { hairSystemsIn, isPublishedPrices, pricesOf, priceWords, type PriceWords } from "../../lib/prices.ts";
 import { isReferralReward } from "../../lib/reward.ts";
 
 /**
@@ -28,20 +28,35 @@ export function inviteInPage(): Invite | null {
   }
 }
 
-/**
- * The price book's figures the Worker wrote onto the page, as words, if it did and they read as its answer. Null
- * where it did not, and while the page is built, which draws the build's own figures.
- */
-export function pricesInPage(): PriceWords | null {
+/** The price book's answer the Worker wrote onto the page, if it did and it reads as one. Null while it is built. */
+function answerInPage(): PublishedPrices | null {
   if (typeof document === "undefined") return null;
   const written = document.body.dataset.prices;
   if (written === undefined || written === "") return null;
   try {
     const parsed: unknown = JSON.parse(written);
-    return isPublishedPrices(parsed) ? priceWords(standardOf(parsed)) : null;
+    return isPublishedPrices(parsed) ? parsed : null;
   } catch {
     return null;
   }
+}
+
+/**
+ * The price book's figures the Worker wrote onto the page, as words, if it did and they read as its answer. Null
+ * where it did not, and while the page is built, which draws the build's own figures.
+ */
+export function pricesInPage(): PriceWords | null {
+  const answer = answerInPage();
+  return answer === null ? null : priceWords(pricesOf(answer));
+}
+
+/**
+ * Whether ops offer a hair system to fit, by the book's answer on the page: null where the page has none, and the
+ * booking then learns it from the API's answer.
+ */
+export function hairSystemsInPage(): boolean | null {
+  const answer = answerInPage();
+  return answer === null ? null : hairSystemsIn(answer).length > 0;
 }
 
 /** What a referral earns, as the Worker wrote it onto the page, if it did and it reads as one. Null while it is built. */

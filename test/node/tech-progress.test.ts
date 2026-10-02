@@ -19,6 +19,7 @@ const job = (over: Partial<Job> = {}, progress: Partial<Job["progress"]> = {}): 
   window_label: "morning",
   type: "service",
   one_visit: false,
+  product: null,
   sector: "Sector 65",
   status: "scheduled",
   badge: "prepaid",
