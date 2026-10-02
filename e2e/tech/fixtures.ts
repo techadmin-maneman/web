@@ -31,6 +31,7 @@ export type Piece = TechReply<"/api/tech/pieces/lookup">["piece"];
 export type HairProfile = NonNullable<Card["profile"]>;
 
 export const ME = {
+  id: "88000000-0000-4000-8000-000000000001",
   name: "Imran Qureshi",
   first_name: "Imran",
   initials: "IQ",

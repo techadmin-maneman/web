@@ -121,6 +121,7 @@ const logoutRoute = createRoute({
  */
 const TechMeSchema = z
   .object({
+    id: z.uuid().openapi({ description: "Whose work the phone holds: it keeps work it set aside only for him." }),
     name: z.string(),
     first_name: z.string(),
     initials: z.string().openapi({ description: "For the chip at the head of Today: the first and last initials." }),
@@ -141,7 +142,10 @@ const meRoute = createRoute({
   summary: "Who is signed in, and the phone this session is bound to",
   responses: {
     200: { description: "The signed-in technician", ...json(TechMeSchema) },
-    401: errorResponse("session_required; device_revoked: ops revoked this phone, so drop the cached jobs"),
+    401: errorResponse(
+      "session_required; device_revoked: ops revoked this phone, so drop the cached jobs; technician_inactive: ops " +
+        "switched him off, so drop the cards and set aside the work not yet sent",
+    ),
   },
 });
 
@@ -240,6 +244,7 @@ export function registerTechAuth(app: App): void {
     if (signedIn === null) return c.json(errorBody("session_required", c.var.requestId), 401);
     return c.json(
       {
+        id: technicianId,
         name: signedIn.name,
         first_name: firstNameOf(signedIn.name),
         initials: initialsOf(signedIn.name),
