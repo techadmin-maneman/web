@@ -11196,7 +11196,7 @@
         "summary": "What ops still have to do, by group, the longest wait first",
         "responses": {
           "200": {
-            "description": "The groups with something in them",
+            "description": "The groups with something in them, of the caller's own departments once the Staff list is enforced",
             "content": {
               "application/json": {
                 "schema": {
@@ -11206,7 +11206,7 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required, or not_permitted: no View in any department",
             "content": {
               "application/json": {
                 "schema": {
@@ -11291,7 +11291,7 @@
             }
           },
           "403": {
-            "description": "access_required: no Access token, or a service token, which names no member of staff",
+            "description": "access_required: no Access token, or a service token, which names no member of staff; or not_permitted: it asks Act in the department that decides the task's group",
             "content": {
               "application/json": {
                 "schema": {

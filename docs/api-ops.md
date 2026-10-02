@@ -1955,7 +1955,7 @@ Request body:
 
 What ops still have to do, by group, the longest wait first
 
-**200**: The groups with something in them
+**200**: The groups with something in them, of the caller's own departments once the Staff list is enforced
 
 ```json
 {
@@ -1963,7 +1963,7 @@ What ops still have to do, by group, the longest wait first
 }
 ```
 
-**403**: access_required
+**403**: access_required, or not_permitted: no View in any department
 
 ```json
 {
@@ -1999,7 +1999,7 @@ Request body:
 }
 ```
 
-**403**: access_required: no Access token, or a service token, which names no member of staff
+**403**: access_required: no Access token, or a service token, which names no member of staff; or not_permitted: it asks Act in the department that decides the task's group
 
 ```json
 {
