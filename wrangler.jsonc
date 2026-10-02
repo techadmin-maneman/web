@@ -192,8 +192,8 @@
         "ACCESS_OPS_AUD": "c291b99aae607b12ae256176566169e7a50dcfa839ef0834ad807563353dcee4",
         "SMS_PROVIDER": "none",
         // Zoho FSM and Books, in the real org (ADR 0025, item 26; docs/decisions/0032-fsm-mirror.md).
-        // Each has a client of its own: its ID, secret and refresh token are the secrets ZOHO_FSM_CLIENT_ID, _SECRET
-        // and _REFRESH_TOKEN, and ZOHO_BOOKS_CLIENT_ID, _SECRET and _REFRESH_TOKEN.
+        // Secrets ZOHO_FSM_CLIENT_ID, _SECRET and _REFRESH_TOKEN, and ZOHO_BOOKS_CLIENT_ID, _SECRET and _REFRESH_TOKEN:
+        // the org's one Self Client, so the IDs and secrets match, and a refresh token each.
         "FSM_PROVIDER": "zoho",
         "BOOKS_PROVIDER": "zoho",
         "ZOHO_FSM_ACCOUNTS_HOST": "accounts.zoho.in",

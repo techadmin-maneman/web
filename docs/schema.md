@@ -949,7 +949,7 @@ Indexes:
 
 Each WhatsApp code sent to prove a number typed into the site, with the number and the code only as hashes (ADR 0081, ADR 0104).
 
-Made by `0071_number_codes.sql`.
+Made by `0072_number_codes.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1773,7 +1773,7 @@ Indexes:
 
 One try-on render: the photograph, the look, the provider's job and the result (ADR 0014, ADR 0015).
 
-Made by `0003_tryon.sql`; changed by `0037_cron_indexes.sql`, `0045_kept_try_ons.sql`, `0071_number_codes.sql`.
+Made by `0003_tryon.sql`; changed by `0037_cron_indexes.sql`, `0045_kept_try_ons.sql`, `0072_number_codes.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
