@@ -31,6 +31,9 @@ const whoamiRoute = createRoute({
                 .openapi({ description: "Access's logout path; null where no Access stands in front, as locally." }),
               staff: z
                 .object({
+                  kind: z
+                    .enum(["person", "service"])
+                    .openapi({ description: "A member of staff, or a service token, which holds no grants of its own." }),
                   enforced: z.boolean().openapi({ description: "Whether the Staff list decides what they may open." }),
                   listed: z.boolean().openapi({
                     description: "An active person on the Staff list, or a service token on its list of tokens.",
@@ -56,8 +59,8 @@ export function registerOpsWhoami(app: App): void {
     const { enforced, caller } = await callerAccess(c);
     const staff =
       caller.kind === "person"
-        ? { enforced, listed: caller.active, grants: caller.grants.map(grantJson) }
-        : { enforced, listed: caller.allowed, grants: [] };
+        ? { kind: caller.kind, enforced, listed: caller.active, grants: caller.grants.map(grantJson) }
+        : { kind: caller.kind, enforced, listed: caller.allowed, grants: [] };
     return c.json({ signed_in_as: signedInAs, sign_out: signOut, staff }, 200);
   });
 }
