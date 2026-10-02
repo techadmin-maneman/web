@@ -776,6 +776,7 @@ The chat shows the message; the `alerts` table keeps it under its key. Most aler
 | The WhatsApp bridge is not connected                                                     | `whatsapp_bridge`                                                                                         | when it is open                      | "WhatsApp (Evolution) is down"                                          |
 | _n_ login codes failed to send in the last hour                                          | `login_codes_failing`                                                                                     | when a code goes                     | "WhatsApp (Evolution) is down"                                          |
 | Message _id_ (_kind_) failed after _n_ attempts                                          | none: told for each                                                                                       | not kept                             | "Replaying a failed message"                                            |
+| Messages queued over a day ago were never sent, and are now failed                       | `messages_unsent:<date>`                                                                                  | by hand                              | "WhatsApp (Evolution) is down", then "Replaying a failed message"       |
 | Lead _id_ did not reach the CRM                                                          | none                                                                                                      | not kept                             | "Replaying failed leads"                                                |
 | Erasing person _id_ in the CRM failed                                                    | none                                                                                                      | not kept                             | "Erasure within the day", step 3                                        |
 | FSM would not anonymise contact _id_                                                     | `fsm_erasure:<person>`                                                                                    | by hand                              | "Erasure within the day"                                                |
@@ -1046,13 +1047,17 @@ Alert: "its result was billed but never downloaded, and its URL has expired". Th
 
 ### WhatsApp (Evolution) is down
 
-Symptoms: messages fail with `HTTP 5xx`, `unreachable` or `Connection Closed`, and an alert names each after four attempts. Every login code goes through the bridge too, so clients and technicians cannot sign in. Two alerts say so: the cron reads the bridge's connection state every five minutes and alerts when two readings in a row find it closed, and login codes alert when three fail to send in an hour. Both close once it works again. A message that failed with `delivery unconfirmed` is different: the bridge did not answer in time (20 s for a text, 60 s for an image), and the message may have arrived. It is never retried automatically.
+Symptoms: every login code goes through the bridge, so clients and technicians cannot sign in. Two alerts say so: the cron reads the bridge's connection state every five minutes and alerts when two readings in a row find it closed, naming what to check, and login codes alert when three fail to send in an hour. Both close once it works again.
+
+Messages wait out the bridge. While it has no instance by our name (`HTTP 404`), refuses our key (`HTTP 401` or `403`) or has lost its WhatsApp session (`Connection Closed`), a message stays `queued` with the reason in `last_error`, and the sweeper sends it within five minutes of the bridge reading open again. One still unsent a day after it was queued is failed, and one alert a day counts them. A day-before reminder whose visit day has come, or an arrival notice more than ten minutes old, is skipped rather than sent late. An unreachable bridge or an `HTTP 5xx` is tried four times, then the message fails and an alert names it. A message that failed with `delivery unconfirmed` is different: the bridge did not answer in time (20 s for a text, 60 s for an image), and the message may have arrived. It is never retried automatically.
 
 Whoever is signed in stays signed in: a client's or a technician's session lasts 90 days from its last use, and only a new sign-in needs a code. There is no other way in. SMS is off until a DLT-registered provider exists (open point 37), and the fixed code `dev:all` uses is refused anywhere but a laptop. So ask technicians not to sign out while it lasts.
 
-1. Check the bridge. `GET {EVOLUTION_API_URL}/instance/connectionState/{instance}` with the `apikey` header should say `"state": "open"`.
-2. If the WhatsApp session dropped, reconnect it in the bridge (scan the QR code again). If WhatsApp will not take the number back, see the next section.
-3. Replay the messages that failed (below).
+1. Check the bridge. `GET {EVOLUTION_API_URL}/instance/connectionState/{EVOLUTION_INSTANCE_NAME}` with the `apikey` header should say `"state": "open"`.
+2. **`HTTP 404`: the bridge has no instance by that name.** List the ones it has: `GET {EVOLUTION_API_URL}/instance/fetchInstances` with the same header. If ours is there under another name, set `EVOLUTION_INSTANCE_NAME` to it. If the list is another app's, `EVOLUTION_API_URL` reaches the wrong bridge: check its host and port (staging's ends in `:8443`). Set either with `W secret put … --env <env>`; a secret change is live at once. **Never create an instance on the shared bridge** to clear the alert: the bridge serves another app too, and an instance made through the wrong URL lands among that app's. If ours is really gone, the owner, who runs the bridge, restores it.
+3. **`HTTP 401` or `403`: the bridge refuses the key.** Set `EVOLUTION_API_KEY` to the bridge's key for our instance.
+4. **`state close` or `connecting`: the WhatsApp session dropped.** Reconnect it in the bridge (scan the QR code again). If WhatsApp will not take the number back, see the next section.
+5. Messages that waited go by themselves once it is open. Replay only those that failed (below).
 
 **`MESSAGING_ENABLED`.** Set to `"false"` in `wrangler.jsonc` and deployed, it stops every message except login codes:
 
@@ -1076,12 +1081,14 @@ The lasting answers are a number of Mane Man's own (open point 38) and SMS (open
 ### Replaying a failed message
 
 ```sql
-UPDATE outbound_messages SET state = 'queued', attempts = 0, queued_at = '2000-01-01T00:00:00Z'
+UPDATE outbound_messages
+SET state = 'queued', attempts = 0, sending_at = NULL,
+  queued_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-10 minutes')
 WHERE state = 'failed' AND created_at > '<since, e.g. 2026-09-21>'
   AND last_error NOT LIKE '%delivery unconfirmed%';
 ```
 
-The sweeper sends them within five minutes. Every attempt mints a fresh link, so an old failure is not a problem, as long as the result has not been deleted. Replay a `delivery unconfirmed` message only once you know it did not arrive; otherwise the person gets it twice.
+The sweeper sends them within five minutes, once the bridge reads open. `queued_at` is set ten minutes back so the next run takes them; set it further back than a day and the sweeper fails them again unsent. Every attempt mints a fresh link, so an old failure is not a problem, as long as the result has not been deleted. A reminder whose visit day has come, or an arrival notice past its ten minutes, is skipped rather than sent. Replay a `delivery unconfirmed` message only once you know it did not arrive; otherwise the person gets it twice.
 
 ### Stuck jobs
 
