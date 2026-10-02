@@ -1550,7 +1550,7 @@ export const technicians = {
     invalid_request: "Enter his name and a 10-digit Indian mobile.",
     managed_in_fsm: "His details come from Zoho FSM. Change them there.",
     not_found: "That technician is no longer here. Reload to see the roster as it stands.",
-    not_permitted: "Only someone with Operations · Manage can add, change or switch off technicians.",
+    not_permitted: NOT_PERMITTED,
     offline: "You are offline. Connect, then try again.",
     unknown: "That did not go through. Please try again.",
   },

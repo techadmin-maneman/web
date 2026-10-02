@@ -61,32 +61,32 @@ function Open({ each, now, mayAnswer, onAnswered }: OpenProps) {
       {/* The client's own words, kept apart from ours so nobody answers a paraphrase. */}
       <blockquote className={styles.words}>{each.text}</blockquote>
       {mayAnswer && (
-      <div className={styles.answer}>
-        <Field label={copy.label} hint={copy.hint}>
-          {(control) => (
-            <TextArea
-              {...control}
-              className={styles.answerField}
-              maxLength={2000}
-              value={response}
-              onChange={(event) => {
-                setResponse(event.target.value);
-              }}
-            />
-          )}
-        </Field>
-        <div className={styles.actions}>
-          <Button
-            variant="primary"
-            size="small"
-            className={styles.send}
-            disabled={sending || response.trim() === ""}
-            onClick={() => void send()}
-          >
-            {sending ? copy.sending : copy.send}
-          </Button>
+        <div className={styles.answer}>
+          <Field label={copy.label} hint={copy.hint}>
+            {(control) => (
+              <TextArea
+                {...control}
+                className={styles.answerField}
+                maxLength={2000}
+                value={response}
+                onChange={(event) => {
+                  setResponse(event.target.value);
+                }}
+              />
+            )}
+          </Field>
+          <div className={styles.actions}>
+            <Button
+              variant="primary"
+              size="small"
+              className={styles.send}
+              disabled={sending || response.trim() === ""}
+              onClick={() => void send()}
+            >
+              {sending ? copy.sending : copy.send}
+            </Button>
+          </div>
         </div>
-      </div>
       )}
       {answering.step === "failed" && (
         <p className={styles.error} role="alert">

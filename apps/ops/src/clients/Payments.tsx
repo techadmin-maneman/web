@@ -129,71 +129,71 @@ function CreditForm({
         </div>
       </dl>
       {mayAdjust && (
-      <form
-        className={styles.creditForm}
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (visits !== null && reason !== "") void send({ visits, reason });
-        }}
-      >
-        <label className={styles.fieldLabel} htmlFor="credit-visits">
-          {creditCopy.change}
-        </label>
-        <input
-          id="credit-visits"
-          className={styles.numberField}
-          type="text"
-          inputMode="numeric"
-          autoComplete="off"
-          aria-describedby="credit-visits-hint"
-          value={typed}
-          disabled={sending}
-          onChange={(event) => {
-            setTyped(event.target.value);
+        <form
+          className={styles.creditForm}
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (visits !== null && reason !== "") void send({ visits, reason });
           }}
-        />
-        <p className={styles.findHint} id="credit-visits-hint">
-          {creditCopy.changeHint}
-        </p>
-        <fieldset className={styles.reasons} disabled={sending}>
-          <legend className={styles.fieldLabel}>{creditCopy.reason}</legend>
-          {creditCopy.reasons.map((each) => (
-            <label className={styles.reasonOption} key={each.reason}>
-              <input
-                className={styles.radio}
-                type="radio"
-                name="credit-reason"
-                value={each.reason}
-                checked={reason === each.reason}
-                onChange={() => {
-                  setReason(each.reason);
-                }}
-              />
-              <span>{each.label}</span>
-            </label>
-          ))}
-        </fieldset>
-        <p className={styles.note}>{creditCopy.note}</p>
-        <Button
-          variant="primary"
-          size="small"
-          className={styles.primary}
-          type="submit"
-          disabled={sending || visits === null || reason === ""}
         >
-          {sending ? creditCopy.saving : creditCopy.save}
-        </Button>
-        {adjusting.step === "done" && (
-          <p className={styles.done} role="status">
-            {creditCopy.saved(adjusting.visits)}
+          <label className={styles.fieldLabel} htmlFor="credit-visits">
+            {creditCopy.change}
+          </label>
+          <input
+            id="credit-visits"
+            className={styles.numberField}
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            aria-describedby="credit-visits-hint"
+            value={typed}
+            disabled={sending}
+            onChange={(event) => {
+              setTyped(event.target.value);
+            }}
+          />
+          <p className={styles.findHint} id="credit-visits-hint">
+            {creditCopy.changeHint}
           </p>
-        )}
-        {adjusting.step === "failed" && (
-          <p className={styles.error} role="alert">
-            {creditCopy.errors[adjusting.code] ?? creditCopy.errors.unknown}
-          </p>
-        )}
-      </form>
+          <fieldset className={styles.reasons} disabled={sending}>
+            <legend className={styles.fieldLabel}>{creditCopy.reason}</legend>
+            {creditCopy.reasons.map((each) => (
+              <label className={styles.reasonOption} key={each.reason}>
+                <input
+                  className={styles.radio}
+                  type="radio"
+                  name="credit-reason"
+                  value={each.reason}
+                  checked={reason === each.reason}
+                  onChange={() => {
+                    setReason(each.reason);
+                  }}
+                />
+                <span>{each.label}</span>
+              </label>
+            ))}
+          </fieldset>
+          <p className={styles.note}>{creditCopy.note}</p>
+          <Button
+            variant="primary"
+            size="small"
+            className={styles.primary}
+            type="submit"
+            disabled={sending || visits === null || reason === ""}
+          >
+            {sending ? creditCopy.saving : creditCopy.save}
+          </Button>
+          {adjusting.step === "done" && (
+            <p className={styles.done} role="status">
+              {creditCopy.saved(adjusting.visits)}
+            </p>
+          )}
+          {adjusting.step === "failed" && (
+            <p className={styles.error} role="alert">
+              {creditCopy.errors[adjusting.code] ?? creditCopy.errors.unknown}
+            </p>
+          )}
+        </form>
       )}
     </section>
   );

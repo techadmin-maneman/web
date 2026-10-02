@@ -69,7 +69,8 @@ const grantOf = (grant: StaffGrant): Grant => ({
   place: placeOf(grant),
 });
 
-function accessOf(staff: Whoami["staff"]): Access {
+/** What whoami's answer lets them do: everything while the Staff list is not enforced, as the API lets it. */
+export function accessOf(staff: Whoami["staff"]): Access {
   if (!staff.enforced) return EVERYTHING;
   const open = new Set<string>(staff.may_call);
   const caller: Caller = { kind: "person", active: staff.listed, grants: staff.grants.map(grantOf) };

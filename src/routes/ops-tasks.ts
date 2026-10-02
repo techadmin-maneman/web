@@ -216,16 +216,18 @@ export function registerOpsTasks(app: App): void {
     const [board, staff, seen] = await Promise.all([readTheBoard(c), staffNow(c), groupsSeenBy(c)]);
     const tasks = board.tasks.filter((task) => seen.includes(task.group));
     // In the policy's order, and a group with nothing in it is left out, as the board draws none.
-    const groups = seen.map((group) => {
-      const waiting = tasks.filter((task) => task.group === group);
-      const shown = waiting.slice(0, TASKS_SHOWN);
-      return {
-        group,
-        count: waiting.length,
-        closable: isClosable(group),
-        tasks: shown.map(({ id, person, detail, since, due, owner }) => ({ id, person, detail, since, due, owner })),
-      };
-    }).filter((each) => each.count > 0);
+    const groups = seen
+      .map((group) => {
+        const waiting = tasks.filter((task) => task.group === group);
+        const shown = waiting.slice(0, TASKS_SHOWN);
+        return {
+          group,
+          count: waiting.length,
+          closable: isClosable(group),
+          tasks: shown.map(({ id, person, detail, since, due, owner }) => ({ id, person, detail, since, due, owner })),
+        };
+      })
+      .filter((each) => each.count > 0);
 
     return c.json({ overdue: overdueCount(tasks, now), truncated: board.truncated, staff, groups }, 200);
   });
