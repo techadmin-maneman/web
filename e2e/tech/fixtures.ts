@@ -367,6 +367,8 @@ export interface Fake {
   signedIn: boolean;
   /** True once ops revoke the phone: every call is a 401 `device_revoked`. */
   revoked: boolean;
+  /** True once ops switch the technician off: every call but the sign-in's is a 401 `technician_inactive`. */
+  switchedOff: boolean;
   /** True makes the next code the phone checks one the API has closed, a `410`. */
   codeClosed: boolean;
   /** Every mobile number a code was asked for, in order. */
@@ -477,6 +479,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     online: true,
     signedIn: true,
     revoked: false,
+    switchedOff: false,
     codeClosed: false,
     codesSent: [],
     malformed: false,
@@ -541,6 +544,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       return reply(route, 200, { verified: true, first_name: ME.first_name, device_id: ME.device.device_id });
     }
     if (fake.revoked) return refuse(route, 401, "device_revoked");
+    if (fake.switchedOff) return refuse(route, 401, "technician_inactive");
     if (!fake.signedIn) return refuse(route, 401, "session_required");
 
     // The photograph itself, and its thumbnail: PUT to the links the API handed out.

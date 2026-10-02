@@ -384,6 +384,17 @@ describe("CRON_JOBS", () => {
     expect(onTheHalfHour.alerts).toHaveLength(1);
   });
 
+  // PLAT-16 of the audit, 2 October 2026: nothing read the database's size before D1's limit stopped every write.
+  it("tells ops once when the database reaches half of D1's limit, in the same hourly look", async () => {
+    const deps = fakeDependencies();
+    const job = CRON_JOBS.filter((cronJob) => cronJob.name === "storage_meter");
+    const halfFull = { ...env, DB: holding(env.DB, 260e6) };
+    for (let run = 0; run < 2; run += 1) {
+      await runCronJobs(job, { env: halfFull, deps, config: LOCAL_CONFIG, log: createLogger() });
+    }
+    expect(deps.alerts).toEqual([expect.stringContaining("The database holds 260 MB, 50% of the 500 MB")]);
+  });
+
   // NOW is half past the hour in UTC, so a quarter past is 15 minutes before it.
   it("reads the account's usage once an hour, at a quarter past, and only where the analytics token is set", async () => {
     const job = CRON_JOBS.filter((cronJob) => cronJob.name === "daily_allowances");
@@ -406,6 +417,25 @@ describe("CRON_JOBS", () => {
     expect(await runAt(-15, withToken)).toBe(1);
   });
 });
+
+/** The database, saying it holds `bytes` whenever its size is read. */
+function holding(db: D1Database, bytes: number): D1Database {
+  return new Proxy(db, {
+    get(target, property, receiver) {
+      if (property !== "prepare") return Reflect.get(target, property, receiver) as unknown;
+      return (sql: string) => {
+        const statement = target.prepare(sql);
+        if (sql !== "SELECT 1") return statement;
+        return {
+          run: async () => {
+            const result = await statement.run();
+            return { ...result, meta: { ...result.meta, size_after: bytes } };
+          },
+        };
+      };
+    },
+  });
+}
 
 describe("the Books pass's options", () => {
   const zohoBooks = {

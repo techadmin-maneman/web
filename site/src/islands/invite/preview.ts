@@ -3,7 +3,7 @@
 
 import type { PincodeAnswer, ReferralConsultation } from "../../lib/api.ts";
 import { indiaTomorrow } from "../../lib/dates.ts";
-import { placeOf, type Booking } from "./Done.tsx";
+import type { Booking } from "./Done.tsx";
 
 const PREVIEW_STATES = ["arrival", "served", "unserved", "booked", "requested", "expired", "listed"] as const;
 export type PreviewState = (typeof PREVIEW_STATES)[number];
@@ -28,8 +28,7 @@ export function sampleBooking(state: "booked" | "requested" | "expired"): Bookin
     area: SAMPLE.served.area,
     credits: state !== "expired",
     invite: state === "expired" ? "expired" : "valid",
-    address: "saved",
     one_visit: false,
   };
-  return { result, mobile: SAMPLE.mobile, place: placeOf(SAMPLE.served) };
+  return { result, mobile: SAMPLE.mobile };
 }

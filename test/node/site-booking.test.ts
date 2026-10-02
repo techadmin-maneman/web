@@ -1,9 +1,11 @@
 // The booking form's helpers.
 
 import { describe, expect, it } from "vitest";
+import { stepOf } from "../../site/src/islands/invite/step.ts";
 import { addressToSend, emptyAddress, missingParts } from "../../site/src/lib/address.ts";
+import { signInLink } from "../../site/src/lib/app-link.ts";
 import { attributionFrom } from "../../site/src/lib/attribution.ts";
-import { consultationCalendar } from "../../site/src/lib/calendar.ts";
+import { dayStrip, stripMonths } from "../../site/src/lib/dates.ts";
 import { keyPerRequest } from "../../site/src/lib/idempotency.ts";
 
 // FEO-21: a key that changed on every press protected nothing.
@@ -42,27 +44,17 @@ describe("attribution", () => {
   });
 });
 
-// CLI-13, REQ-05: the calendar file follows the windows the booking offers (src/config/scheduling.ts).
-describe("the calendar file", () => {
-  const now = new Date("2026-09-22T06:00:00Z");
+// The confirmation opens the app with the number typed filled in.
+describe("the link into the client app", () => {
+  const APP = "https://app-staging.maneman.in";
 
-  it("covers the morning window, 09:00 to 12:00 in India, in UTC", () => {
-    const text = consultationCalendar("2026-09-24", "morning", "Mane Man consultation", now);
-    expect(text).toContain("DTSTART:20260924T033000Z\r\n");
-    expect(text).toContain("DTEND:20260924T063000Z\r\n");
-    expect(text).toContain("UID:consultation-2026-09-24-morning@maneman.in\r\n");
-    expect(text).toContain("DTSTAMP:20260922T060000Z\r\n");
-    expect(text).toContain("SUMMARY:Mane Man consultation\r\n");
-    expect(text.startsWith("BEGIN:VCALENDAR\r\n")).toBe(true);
+  it("puts the number typed after the #, as ten digits however it was typed", () => {
+    expect(signInLink(APP, "98100 00000")).toBe(`${APP}/#mobile=9810000000`);
+    expect(signInLink(APP, "+91 98100-00000")).toBe(`${APP}/#mobile=9810000000`);
   });
 
-  it("covers the afternoon, 12:00 to 16:00, and the evening, 16:00 to 20:00, in India", () => {
-    const afternoon = consultationCalendar("2026-09-24", "afternoon", "Mane Man consultation", now);
-    expect(afternoon).toContain("DTSTART:20260924T063000Z");
-    expect(afternoon).toContain("DTEND:20260924T103000Z");
-    const evening = consultationCalendar("2026-09-24", "evening", "Mane Man consultation", now);
-    expect(evening).toContain("DTSTART:20260924T103000Z");
-    expect(evening).toContain("DTEND:20260924T143000Z");
+  it("opens the plain sign-in for anything that is not a mobile number", () => {
+    expect(signInLink(APP, "12345")).toBe(APP);
   });
 });
 
@@ -98,5 +90,36 @@ describe("the address a consultation is at", () => {
       pincode: "122018",
       access_notes: null,
     });
+  });
+});
+
+// BK-60, UX-33: the strip read "Sat 3 … Fri 16" with no month, to the eye and to a screen reader.
+describe("the date strip", () => {
+  it("reads each day out in full, with its month", () => {
+    const [first] = dayStrip("2026-10-03", 14);
+    expect(first).toMatchObject({ weekday: "Sat", number: "3", month: "October", label: "Saturday 3 October" });
+  });
+
+  it("names the month above it, or both months where it crosses a month's end", () => {
+    expect(stripMonths(dayStrip("2026-10-03", 14))).toBe("October");
+    const crossing = dayStrip("2026-10-24", 14);
+    expect(crossing.map((day) => day.label).slice(7, 9)).toEqual(["Saturday 31 October", "Sunday 1 November"]);
+    expect(stripMonths(crossing)).toBe("October – November");
+  });
+});
+
+// BK-60, UX-38: Back left the page and lost the form; each step is now an entry in the history.
+describe("the page's steps in the browser's history", () => {
+  const answer = { pincode: "122018", served: true, area: "Sector 65", city: "Gurgaon" };
+
+  it("reads back the step and the pincode's answer the page wrote", () => {
+    expect(stepOf({ step: "form", answer })).toEqual({ step: "form", answer });
+    expect(stepOf({ step: "done", answer })).toEqual({ step: "done", answer });
+  });
+
+  it("reads anything else as the pincode field", () => {
+    for (const state of [null, undefined, "form", { step: "form" }, { step: "elsewhere", answer }, { answer }]) {
+      expect(stepOf(state)).toEqual({ step: "pincode", answer: null });
+    }
   });
 });
