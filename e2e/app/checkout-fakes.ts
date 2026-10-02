@@ -5,9 +5,9 @@
 import type { Page } from "@playwright/test";
 
 /**
- * No real Razorpay in a browser test. The pay step loads Checkout as it opens, and the real script pulls in more of
- * Razorpay's than the app's policy allows (its risk-detection bundle, inline styles), which failed whichever test
- * happened to let it arrive before it ended. Registered before a test's own fake, which therefore answers first.
+ * No real Razorpay in a booking test: the pay step loads Checkout as it opens, and a test should not wait on
+ * Razorpay's servers. Only checkout-policy.e2e.ts lets the real script in. Registered before a test's own fake, which
+ * therefore answers first.
  */
 export async function noRealCheckout(page: Page): Promise<void> {
   await page.route(/^https:\/\/(checkout|cdn)\.razorpay\.com\//, (route) => route.abort());

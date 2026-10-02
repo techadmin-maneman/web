@@ -43,10 +43,11 @@ import type { PaymentsProvider } from "../providers/payments.ts";
 import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
 import type { AlertOnce } from "./alerts.ts";
 import type { OpsInputs } from "./ops-settings.ts";
-import { priceOf, type Price } from "./price-book.ts";
+import { lateFeeOn, priceOf, type Price } from "./price-book.ts";
 import { askRefund, refundReceipt } from "./refunds.ts";
 import { bookedMinutes } from "./scheduling.ts";
 import { windowTimesOf } from "../policy/slot-times.ts";
+import { visitBegun } from "./visit-begun.ts";
 import { visitMessage } from "./visit-messages.ts";
 
 export interface ChangeableVisit {
@@ -65,7 +66,10 @@ export interface ChangeableVisit {
   readonly fsmWorkOrderId: string;
 }
 
-/** The client's visit, if they may still change it: ahead, not started, of one of our types, with its work order. */
+/**
+ * The client's visit, if they may still change it: ahead, not begun by FSM's status or by our own records, of one of
+ * our types, with its work order.
+ */
 export async function changeableVisit(
   db: D1Database,
   personId: string,
@@ -78,7 +82,7 @@ export async function changeableVisit(
          a.fsm_id, a.fsm_work_order_id, s.minutes AS service_minutes
        FROM appointments a LEFT JOIN services s ON s.kind = a.type AND s.tier = COALESCE(a.tier, 'standard')
        WHERE a.id = ?1 AND a.person_id = ?2 AND a.deleted_at IS NULL AND a.status IN ('scheduled', 'dispatched')
-         AND a.type IS NOT NULL AND a.window_start > ?3 AND a.fsm_work_order_id IS NOT NULL`,
+         AND a.type IS NOT NULL AND a.window_start > ?3 AND a.fsm_work_order_id IS NOT NULL AND NOT ${visitBegun("a")}`,
     )
     .bind(visitId, personId, now.toISOString())
     .first<{
@@ -267,7 +271,7 @@ export async function termsOfVisit(
   if (sold === null && (await isOneVisit(db, visit.id))) return { terms: ONE_VISIT_TERMS, lateFee: null };
   const lateFeeItem = LATE_FEES[visit.type];
   const lateFee =
-    lateFeeItem === undefined ? null : (sold?.lateFee ?? (await priceOf(db, lateFeeItem, indiaDate(visit.start))));
+    lateFeeItem === undefined ? null : (sold?.lateFee ?? (await lateFeeOn(db, lateFeeItem, indiaDate(visit.start))));
   return { terms: sold?.terms ?? inForce, lateFee };
 }
 
@@ -350,8 +354,8 @@ function noticeWords(terms: ChangeTerms): string {
 
 /**
  * Cancels the visit on the terms given: in FSM (its work order, and so its appointment), then in the mirror,
- * then refunds what the terms give back. The change is claimed first, so it happens once. A refund Razorpay
- * refuses is left to ops, who are alerted; the visit stays cancelled.
+ * then refunds what the terms give back. The change is claimed first, so it happens once, and never once the
+ * visit has begun. A refund Razorpay refuses is left to ops, who are alerted; the visit stays cancelled.
  */
 export async function cancelVisit(
   db: D1Database,
@@ -373,7 +377,7 @@ export async function cancelVisit(
     .prepare(
       `INSERT INTO visit_changes (id, appointment_id, person_id, kind, notice, was_start, refund_amount, kept_amount,
          payment_id, created_at)
-       VALUES (?1, ?2, ?3, 'cancelled', ?4, ?5, ?6, ?7, ?8, ?9)
+       SELECT ?1, ?2, ?3, 'cancelled', ?4, ?5, ?6, ?7, ?8, ?9 FROM appointments a WHERE a.id = ?2 AND NOT ${visitBegun("a")}
        ON CONFLICT DO NOTHING RETURNING id`,
     )
     .bind(

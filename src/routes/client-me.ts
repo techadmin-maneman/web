@@ -104,6 +104,7 @@ export const MeSchema = z
             }),
             tier: z
               .string()
+              .nullable()
               .openapi({ description: "The service of its kind it offers, as booking.next's (ADR 0085)." }),
             date: z.iso.date().openapi({
               description: "India's day it falls due: the last visit's day and the cadence; tomorrow once passed.",
@@ -117,11 +118,14 @@ export const MeSchema = z
           .object({
             kind: z.literal("replacement_due"),
             month: z.string().regex(/^\d{4}-\d{2}$/),
-            tier: z.string().openapi({
-              description:
-                "The replacement service it offers: the client's last one while that is offered, else the first " +
-                "in the console's order (ADR 0085).",
-            }),
+            tier: z
+              .string()
+              .nullable()
+              .openapi({
+                description:
+                  "The replacement service it offers: the client's last one while that is offered, else the first " +
+                  "in the console's order (ADR 0085); null while none is offered.",
+              }),
             bookable: z.boolean().openapi({
               description: "The month begins within how far ahead a visit may be booked, so it can be booked now.",
             }),
@@ -163,18 +167,23 @@ export const MeSchema = z
           )
           .openapi({
             description:
-              "Every service of those kinds offered and priced now, a kind at a time, in the console's order.",
+              "Every service of those kinds offered and priced now, a kind at a time, in the console's order. A " +
+              "first fit's are the hair systems ops offer; with none, a first fit cannot be booked yet.",
           }),
         next: z
           .union([
             z
               .object({
                 type: z.enum(["first_fit", "service", "replacement"]),
-                tier: z.string().openapi({
-                  description:
-                    "The service it is offered as: the one the client's last visit of its kind was, while that is " +
-                    "offered, else its kind's first in the console's order (ADR 0085).",
-                }),
+                tier: z
+                  .string()
+                  .nullable()
+                  .openapi({
+                    description:
+                      "The service it is offered as: the one the client's last visit of its kind was, while that is " +
+                      "offered, else its kind's first in the console's order (ADR 0085). Null while its kind offers " +
+                      "none, as a first fit does before ops offer a hair system: it cannot be booked yet.",
+                  }),
                 date: z.iso.date().openapi({ description: "India's day it is offered on." }),
                 window: z.union([z.enum(BOOKING_WINDOWS), z.null()]),
               })

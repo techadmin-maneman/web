@@ -32,8 +32,8 @@ export interface Price {
   readonly gst_percent: number;
 }
 
-/** The price of an item on a day (India's date, YYYY-MM-DD); null when the book has none. */
-export async function priceOf(db: D1Database, item: PriceItem, on: string, tier = "standard"): Promise<Price | null> {
+/** The price of an item's tier on a day (India's date, YYYY-MM-DD); null when the book has none. */
+export async function priceOf(db: D1Database, item: PriceItem, on: string, tier: string): Promise<Price | null> {
   const row = await db
     .prepare(
       `SELECT amount_ex_gst, gst_percent FROM price_book
@@ -47,6 +47,15 @@ export async function priceOf(db: D1Database, item: PriceItem, on: string, tier 
     amount: withGst(row.amount_ex_gst, row.gst_percent),
     gst_percent: row.gst_percent,
   };
+}
+
+/** A late fee on a day: one figure a kind, kept under the standard tier. */
+export function lateFeeOn(
+  db: D1Database,
+  item: "late_fee_first_fit" | "late_fee_replacement",
+  on: string,
+): Promise<Price | null> {
+  return priceOf(db, item, on, STANDARD_TIER);
 }
 
 /** One row of the book, as the console lists it. */

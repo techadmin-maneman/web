@@ -29,6 +29,8 @@ import { afterRuling } from "../domain/after-a-ruling.ts";
 import { decideNoShow, listNoShowCases, MESSAGE_STATES } from "../domain/no-shows.ts";
 import { piecesOf, syncPieces } from "../domain/pieces.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
+import { permits } from "../http/staff-access.ts";
+import { WAIVING_A_NO_SHOW } from "../policy/console-routes.ts";
 import { devicesByTechnician, revokeDevice } from "../domain/technicians.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
@@ -202,7 +204,7 @@ const decisionRoute = createRoute({
   responses: {
     200: { description: "Recorded", ...json(z.object({ decided: z.boolean() }).strict()) },
     400: errorResponse("invalid_request: a ruling needs a reason"),
-    403: errorResponse("access_required"),
+    403: errorResponse("access_required, or not_permitted: waiving asks Finance MANAGE"),
     404: errorResponse("not_found: no such case, or it was ruled on already"),
   },
 });
@@ -283,6 +285,9 @@ export function registerOpsField(app: App): void {
     const { decision, reason } = c.req.valid("json");
     if (needsReason("no_show", decision) && (reason ?? "") === "") {
       return c.json(errorBody("invalid_request", c.var.requestId, ["reason"]), 400);
+    }
+    if (decision === "waived" && !(await permits(c, WAIVING_A_NO_SHOW))) {
+      return c.json(errorBody("not_permitted", c.var.requestId), 403);
     }
     const now = c.var.deps.now();
     const inputs = await opsInputs(c);
