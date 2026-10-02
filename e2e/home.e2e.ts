@@ -69,6 +69,16 @@ test.describe("sticky bar and footer: the home page only", () => {
       .evaluate((hero) => getComputedStyle(hero).paddingBottom);
     expect(padding).toBe("72px");
   });
+
+  // UX-33: the bar sat outside every landmark, and at 1440 its button ran 1,350 px across the screen.
+  test("the bar is a landmark, and its button keeps to a phone's width", async ({ page }) => {
+    await page.goto("/");
+    const book = page
+      .getByRole("navigation", { name: "Book or message us" })
+      .getByRole("link", { name: "Book a visit" });
+    await expect(book).toBeVisible();
+    expect((await book.boundingBox())?.width ?? 0).toBeLessThanOrEqual(480);
+  });
 });
 
 test.describe("WhatsApp", () => {

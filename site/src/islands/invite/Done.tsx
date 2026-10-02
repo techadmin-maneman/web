@@ -6,7 +6,7 @@
 
 import { ICONS } from "@maneman/brand/icons";
 import { referral } from "../../content/referral.ts";
-import type { PincodeAnswer, ReferralConsultation, ReferralReward, ReferralWaitlist } from "../../lib/api.ts";
+import type { ReferralConsultation, ReferralReward, ReferralWaitlist } from "../../lib/api.ts";
 import { clientAppOrigin } from "../../lib/app-link.ts";
 import { ENVIRONMENT } from "../../lib/build.ts";
 import { consultationCalendar } from "../../lib/calendar.ts";
@@ -24,11 +24,14 @@ export interface Booking {
   readonly mobile: string;
   /** "Sector 65, Gurgaon 122018", as C4 writes it. */
   readonly place: string;
+  /** The address typed, in one line, for the calendar file. */
+  readonly address: string;
 }
 
-export function placeOf(answer: PincodeAnswer): string {
-  const area = answer.area ?? answer.pincode;
-  return answer.city === null ? `${area} ${answer.pincode}` : `${area}, ${answer.city} ${answer.pincode}`;
+/** Where the confirmation says the visit is: the place typed, unless the account's own address was kept. */
+function placeShown(booking: Booking): string {
+  if (booking.result.address === "on_account") return referral.booked.placeOnAccount;
+  return booking.place;
 }
 
 /** The waitlist's answer, the landing's or /book's: /book's carries the invite this browser remembered, if any. */
@@ -50,9 +53,21 @@ function Expired(props: { reward: ReferralReward | null }) {
   );
 }
 
-function saveCalendar(result: ReferralConsultation) {
+/** The calendar entry's note: who comes, and where to manage the visit when there is an app to name. */
+function calendarNote(app: string | null): string {
+  const { calendarNote: note, calendarApp } = referral.booked;
+  if (app === null) return note;
+  return `${note} ${fill(calendarApp, { url: app })}`;
+}
+
+function saveCalendar(booking: Booking, app: string | null) {
+  const { result } = booking;
   const title = result.one_visit ? referral.booked.calendarTitleOneVisit : referral.booked.calendarTitle;
-  const file = consultationCalendar(result.date, result.window, title, new Date());
+  const location = result.address === "on_account" ? null : booking.address;
+  const file = consultationCalendar(result.date, result.window, title, new Date(), {
+    location,
+    description: calendarNote(app),
+  });
   downloadFile(referral.booked.calendarFile, "text/calendar", file);
 }
 
@@ -69,7 +84,7 @@ function labelOf(result: ReferralConsultation): string {
 }
 
 export function Booked(props: { booking: Booking; reward: ReferralReward | null; heading: HeadingRef }) {
-  const { result, mobile, place } = props.booking;
+  const { result, mobile } = props.booking;
   const asked = result.state === "requested";
   const credits = result.credits ? referral.booked.credits(props.reward) : null;
   const headline = bookedHeadline(result.date, windowHours(result.window));
@@ -83,7 +98,7 @@ export function Booked(props: { booking: Booking; reward: ReferralReward | null;
           {asked ? `${referral.requested.asked} ${headline}` : headline}
         </h1>
         <p class={styles.doneBlockBody}>{asked ? referral.requested.body : referral.booked.body}</p>
-        <p class={styles.doneBlockWhere}>{`${place} · ${costOf(result)}`}</p>
+        <p class={styles.doneBlockWhere}>{`${placeShown(props.booking)} · ${costOf(result)}`}</p>
       </div>
       <div class={styles.doneAfter}>
         <p class={styles.doneNumber}>{fill(referral.booked.number, { mobile })}</p>
@@ -97,7 +112,7 @@ export function Booked(props: { booking: Booking; reward: ReferralReward | null;
               type="button"
               class="btn btn--lg btn--ink"
               onClick={() => {
-                saveCalendar(result);
+                saveCalendar(props.booking, app);
               }}
             >
               {referral.booked.calendar}
