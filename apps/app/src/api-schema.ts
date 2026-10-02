@@ -2637,7 +2637,7 @@ export interface components {
             } | null;
             /** @description The credit tile: balance and earliest expiry; null with none left. */
             credits: components["schemas"]["Credits"] | null;
-            /** @description Board B1's one contextual prompt, the first that applies, in the owner's order: no address given while something is booked; the next service due and not booked; the month the piece in wear falls due, never the day (ADR 0059). Null when none applies. */
+            /** @description Board B1's one prompt, the first that applies, in the owner's order: no address given while something is booked; the next service due and not booked; then, once no invoice is ready, the month the piece in wear falls due, never the day, and only once that month may be booked. Null when none applies. */
             prompt: {
                 /** @enum {string} */
                 kind: "address";
@@ -2658,17 +2658,17 @@ export interface components {
                 date: string;
                 /** @description The last visit's window, where this kind of visit can start in it. */
                 window: ("morning" | "afternoon" | "evening") | null;
+                /** @description A service offered while the piece in wear falls due within how far ahead a visit may be booked, and no replacement is booked: the replacement is offered beside it. */
+                replacement_bookable: boolean;
             } | {
                 /** @enum {string} */
                 kind: "replacement_due";
                 month: string;
                 /** @description The replacement service it offers: the client's last one while that is offered, else the first in the console's order (ADR 0085); null while none is offered. */
                 tier: string | null;
-                /** @description The month begins within how far ahead a visit may be booked, so it can be booked now. */
-                bookable: boolean;
             } | null;
-            /** @description An invoice issued in the last fortnight, which ops may lengthen or shorten: a second line beneath the prompt, whatever the prompt. Null when none was. */
-            invoice_ready: {
+            /** @description An invoice issued in the last fortnight, which ops may lengthen or shorten, ready to open: a line beneath the prompt, or the only one. Null when none is. */
+            invoice: {
                 /** Format: uuid */
                 visit_id: string;
                 /**

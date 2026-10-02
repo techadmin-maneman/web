@@ -39,6 +39,7 @@ import { isReferralReward } from "../../lib/reward.ts";
 import { fill } from "../../lib/text.ts";
 import { Consultation, type Plan } from "./Consultation.tsx";
 import { Booked, Listed, type Booking, type Listing } from "./Done.tsx";
+import { onStepChange, pushStep, startAtPincode } from "./history.ts";
 import { HowItWorks } from "./HowItWorks.tsx";
 import styles from "./Invite.module.css";
 import { codeInPath, inviteInPage, pricesInPage, rewardInPage } from "./page.ts";
@@ -146,6 +147,28 @@ export default function Invite(props: Props) {
   }, [props.allowStateSwitch]);
 
   useEffect(() => {
+    startAtPincode();
+  }, []);
+
+  // Back and Forward move between the page's steps; a confirmation shows again only while this page holds it.
+  useEffect(
+    () =>
+      onStepChange((entry) => {
+        if (entry.step === "done" && booked !== null) {
+          setState("booked");
+          return;
+        }
+        if (entry.step === "done" && listed !== null) {
+          setState("listed");
+          return;
+        }
+        setState("arrival");
+        pincode.show(entry.answer);
+      }),
+    [booked, listed],
+  );
+
+  useEffect(() => {
     if (state !== "arrival") {
       globalThis.scrollTo(0, 0);
       heading.current?.focus();
@@ -200,7 +223,9 @@ export default function Invite(props: Props) {
               onPlanChange={setPlan}
               onBooked={(result) => {
                 setBooked(result);
+                setListed(null);
                 setState("booked");
+                pushStep("done", answer);
               }}
             />
           )}
@@ -210,7 +235,9 @@ export default function Invite(props: Props) {
               answer={answer}
               onListed={(result) => {
                 setListed(result);
+                setBooked(null);
                 setState("listed");
+                pushStep("done", answer);
               }}
             />
           )}

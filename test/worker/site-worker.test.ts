@@ -1,7 +1,8 @@
 // The mm-site Worker (site/src/worker.ts): in front of /r/:code, what the preview says for each invite and the page
 // it serves when mm-api cannot answer (docs/decisions/0027-referral-landing.md); and on every page that shows a
 // price, the price book's figures written over the ones the page was built with
-// (docs/decisions/0073-prices-from-the-price-book.md), a first fit's only from the hair systems ops offer.
+// (docs/decisions/0073-prices-from-the-price-book.md), a first fit's only from the hair systems ops offer; and the
+// built films, given a byte range at a time.
 
 import { describe, expect, it } from "vitest";
 import { HOUSE_CARD } from "../../src/config/house-card.ts";
@@ -348,5 +349,86 @@ describe("the site Worker on a page that shows a price", () => {
 
     expect(page.asked).toEqual([]);
     expect(page.figures).toEqual(AS_BUILT);
+  });
+});
+
+describe("the site Worker on a built film", () => {
+  const PATH = "/_astro/hero.bJkdvSLL.mp4";
+
+  /** 1,000 bytes, each its own position: the part a range gives can be read back. */
+  const FILM = Uint8Array.from({ length: 1000 }, (_, position) => position % 256);
+
+  /** The assets as Cloudflare runs them: the whole film whatever is asked, or `status` with no body. */
+  function filmEnv(status: number) {
+    const asked: Request[] = [];
+    const fetcher = (answer: (request: Request) => Response) =>
+      ({
+        fetch: (input: RequestInfo | URL, init?: RequestInit) => answer(new Request(input, init)),
+      }) as unknown as Fetcher;
+    const headers = {
+      "Content-Type": "video/mp4",
+      ETag: '"film"',
+      "Cache-Control": "public, max-age=31536000, immutable",
+    };
+    const env: SiteEnv = {
+      ASSETS: fetcher(() => new Response(status === 200 ? FILM : null, { status, headers })),
+      API: fetcher((request) => {
+        asked.push(request);
+        return new Response(null, { status: 500 });
+      }),
+    };
+    return { env, asked };
+  }
+
+  async function fetchFilm(headers: HeadersInit = {}, status = 200) {
+    const { env, asked } = filmEnv(status);
+    const response = await createSiteWorker().fetch(new Request(`https://maneman.in${PATH}`, { headers }), env);
+    const body = new Uint8Array(await response.arrayBuffer());
+    return { response, body, asked };
+  }
+
+  // UX-20, PLAT-65: a Range of bytes=0-1023 got 200 and all 2,343,106 bytes, so iOS Safari never played the film.
+  it("gives the part a range asks for, as iOS Safari needs", async () => {
+    const { response, body, asked } = await fetchFilm({ Range: "bytes=0-1" });
+
+    expect(response.status).toBe(206);
+    expect(response.headers.get("Content-Range")).toBe("bytes 0-1/1000");
+    expect(response.headers.get("Accept-Ranges")).toBe("bytes");
+    expect(response.headers.get("Content-Type")).toBe("video/mp4");
+    expect(response.headers.get("Cache-Control")).toBe("public, max-age=31536000, immutable");
+    expect([...body]).toEqual([0, 1]);
+    expect(asked).toEqual([]);
+  });
+
+  it("gives the rest of the film from where a range starts", async () => {
+    const { response, body } = await fetchFilm({ Range: "bytes=600-" });
+
+    expect(response.status).toBe(206);
+    expect(response.headers.get("Content-Range")).toBe("bytes 600-999/1000");
+    expect(body.length).toBe(400);
+    expect(body[0]).toBe(600 % 256);
+  });
+
+  it("gives the whole film, saying parts may be asked for, when no range is asked", async () => {
+    const { response, body } = await fetchFilm();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Accept-Ranges")).toBe("bytes");
+    expect(response.headers.get("Content-Range")).toBeNull();
+    expect(body.length).toBe(1000);
+  });
+
+  it("answers 416 for a range past the end", async () => {
+    const { response, body } = await fetchFilm({ Range: "bytes=1000-" });
+
+    expect(response.status).toBe(416);
+    expect(response.headers.get("Content-Range")).toBe("bytes */1000");
+    expect(body.length).toBe(0);
+  });
+
+  it("passes on what the assets say of a film the browser already has", async () => {
+    const { response } = await fetchFilm({ Range: "bytes=0-1", "If-None-Match": '"film"' }, 304);
+
+    expect(response.status).toBe(304);
   });
 });
