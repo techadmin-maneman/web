@@ -1610,8 +1610,15 @@ Razorpay's webhook: payments and refunds
       "description": "true: the consultation and the first fit in one visit were booked, or asked for."
     },
     "discount_code": {
-      "type": "boolean",
-      "description": "true: the code given stands on the booking, or on the request ops book from; false when none was given, or another booking took the code's last use a moment before, and the booking stands without it."
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/StandingCode"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The code given, as it stands on the booking or on the request ops book from; null when none was given, or another booking took the code's last use a moment before, and the booking stands without it."
     }
   },
   "required": [
@@ -1623,6 +1630,49 @@ Razorpay's webhook: payments and refunds
     "invite",
     "one_visit",
     "discount_code"
+  ],
+  "additionalProperties": false
+}
+```
+
+### StandingCode
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "In capitals, as it is kept."
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "percent",
+        "amount"
+      ]
+    },
+    "value": {
+      "type": "integer",
+      "description": "Per cent for a percentage; paise before GST for an amount."
+    },
+    "cap": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The most a percentage takes off, in paise before GST; null for none."
+    }
+  },
+  "required": [
+    "code",
+    "kind",
+    "value",
+    "cap"
   ],
   "additionalProperties": false
 }

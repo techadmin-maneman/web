@@ -32,7 +32,7 @@
 // is what was sold (docs/decisions/0085-services-ops-can-edit.md).
 
 import type { FieldRecord } from "../config/field-record.ts";
-import { PAYMENT_GRACE_SECONDS } from "../config/scheduling.ts";
+import type { BookingWindow } from "../config/scheduling.ts";
 import { VISIT_TYPE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { indiaIso } from "../lib/india-time.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
@@ -48,7 +48,7 @@ import { itemForService } from "./fsm-catalogue.ts";
 import { fsmContactOf, type Place } from "./fsm-contacts.ts";
 import { toLinkAlert, toLinkAlertKey } from "./held-bookings.ts";
 import { askRefund, refundReceipt } from "./refunds.ts";
-import { heldVisitTimes, liveVisitOf } from "./scheduling.ts";
+import { graceEndOf, heldVisitTimes, liveVisitOf, retakeSlot } from "./scheduling.ts";
 import { hasBegun, visitBegun } from "./visit-begun.ts";
 import { visitPayment } from "./visit-changes.ts";
 import { visitMessage, type VisitMessageKind } from "./visit-messages.ts";
@@ -81,6 +81,7 @@ interface HoldRow {
   /** Its service's name as it is now; null only where no service is its kind and tier. */
   service_name: string | null;
   date: string;
+  window_label: BookingWindow;
   start_unit: number;
   technician_id: string;
   technician_fsm_id: string;
@@ -117,7 +118,7 @@ async function holdOf(db: D1Database, holdId: string): Promise<HoldRow | null> {
   return db
     .prepare(
       `SELECT h.id, h.person_id, p.name AS person_name, h.type, h.tier, h.minutes, s.name AS service_name, h.date,
-              h.start_unit, h.technician_id, t.fsm_id AS technician_fsm_id, h.amount, h.state, h.expires_at,
+              h.window_label, h.start_unit, h.technician_id, t.fsm_id AS technician_fsm_id, h.amount, h.state, h.expires_at,
               h.grace_seconds, h.confirmed_at, h.razorpay_order_id, h.appointment_id, h.moves_appointment_id, h.move_kind,
               h.use_credit, h.one_visit, h.pay_by_link, h.fsm_tried_at, h.fsm_work_order_id, h.fsm_appointment_id, h.fsm_held_at, h.queued_at,
               h.refunded_at, h.pincode, sp.city
@@ -284,9 +285,25 @@ async function capturedFor(db: D1Database, orderId: string | null): Promise<Capt
 
 /** Whether Razorpay made the payment after the hold ran out and the grace it was made with. */
 function paidTooLate(hold: HoldRow, payment: CapturedPayment): boolean {
-  const grace = hold.grace_seconds ?? PAYMENT_GRACE_SECONDS;
-  const lastMoment = new Date(Date.parse(hold.expires_at) + grace * 1000);
-  return Date.parse(payment.paid_at) > lastMoment.getTime();
+  return Date.parse(payment.paid_at) > graceEndOf(hold).getTime();
+}
+
+/**
+ * A new visit's hold let go once its grace ended, whose payment was made in time but heard of only since: it takes its
+ * time back where that is still free, so it is booked rather than refunded. Never a move, a hold refunded already, or a
+ * visit whose start has passed.
+ */
+async function retakenInTime(
+  db: D1Database,
+  hold: HoldRow,
+  payment: CapturedPayment | null,
+  now: Date,
+): Promise<boolean> {
+  if (payment === null || paidTooLate(hold, payment)) return false;
+  if (hold.confirmed_at === null || hold.refunded_at !== null || hold.moves_appointment_id !== null) return false;
+  if ((await heldVisitTimes(db, hold)).start <= now) return false;
+  if ((await liveVisitOf(db, hold.person_id, hold.type, hold.id)) !== null) return false;
+  return retakeSlot(db, hold, now);
 }
 
 /**
@@ -321,7 +338,8 @@ export async function confirmBooking(
     await giveBack(db, payments, hold.id, now, "its payment was refunded", options.alongside);
     return "refunded";
   }
-  if (hold.state === "released" || (payment !== null && paidTooLate(hold, payment))) {
+  const stillLetGo = hold.state === "released" && !(await retakenInTime(db, hold, payment, now));
+  if (stillLetGo || (payment !== null && paidTooLate(hold, payment))) {
     await giveBack(db, payments, hold.id, now, "the hold had lapsed", options.alongside);
     return payment === null ? "lapsed" : "refunded";
   }

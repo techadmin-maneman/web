@@ -205,6 +205,8 @@ describe("POST /api/holds", () => {
       change_notice_hours: 24,
       late_change_charge: "visit",
       expires_at: "2026-09-21T06:40:00.000Z",
+      // A payment still counts for the two minutes' grace after the ten.
+      pay_by: "2026-09-21T06:42:00.000Z",
       state: "held",
     });
   });
@@ -245,7 +247,10 @@ describe("POST /api/holds", () => {
     await paymentHold({ countdown: 15, grace: 5 });
     const [first, second] = [await client(), await client()];
     const held = await hold(first, TUESDAY_AFTERNOON);
-    expect(await held.json()).toMatchObject({ expires_at: "2026-09-21T06:45:00.000Z" });
+    expect(await held.json()).toMatchObject({
+      expires_at: "2026-09-21T06:45:00.000Z",
+      pay_by: "2026-09-21T06:50:00.000Z",
+    });
     await hold(second, TUESDAY_AFTERNOON);
     const third = await client();
     expect((await hold(third, TUESDAY_AFTERNOON, later(19))).status).toBe(409);

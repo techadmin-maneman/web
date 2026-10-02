@@ -11,6 +11,7 @@ import { Icon } from "@maneman/ui/Icon";
 import { useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { fullDate, indiaDate } from "@maneman/web-kit/dates";
+import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useState } from "react";
 import { api, documentUrl, receiptUrl, type EntryDetail } from "../api.ts";
 import { messages, payments } from "../content.ts";
@@ -74,6 +75,13 @@ function Document(props: { name: string; href: string | null; missing: Missing; 
   );
 }
 
+type PaymentCode = NonNullable<Extract<EntryDetail, { kind: "payment" }>["discount_code"]>;
+
+/** The code a payment was made with, and what it took off before GST where that is known. */
+function discountOf(code: PaymentCode): string {
+  return payments.discount.fact(code.code, code.amount_off === null ? null : rupees(code.amount_off));
+}
+
 function Fact({ name, value, numeric = false }: { name: string; value: string; numeric?: boolean }) {
   return (
     <div className={styles.fact}>
@@ -130,6 +138,9 @@ function Detail({ entry }: { entry: EntryDetail }) {
             name={payments.noShow.label}
             value={payments.noShow.fact(entry.no_show.waited_minutes, payments.noShow.decision[entry.no_show.decision])}
           />
+        )}
+        {entry.kind === "payment" && entry.discount_code !== null && (
+          <Fact name={payments.discount.label} value={discountOf(entry.discount_code)} />
         )}
         {entry.kind === "payment" && entry.reference !== null && (
           <Fact name={rows.reference} value={entry.reference} numeric />
