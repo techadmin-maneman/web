@@ -1,5 +1,5 @@
-// A ready pull request merges itself once a full CI run passes on its current head, unless it waits for a review
-// (scripts/lib/auto-merge.ts).
+// A ready pull request from a branch of this repository merges itself once a full CI run passes on its current head,
+// unless it waits for a review (scripts/lib/auto-merge.ts).
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -19,8 +19,10 @@ const PULL: PullRequest = {
   state: "open",
   draft: false,
   headSha: "b",
+  headRepository: "o/r",
+  baseRepository: "o/r",
   labels: [],
-  files: ["scripts/lib/ci-tier.ts", "test/node/ci-tier.test.ts"],
+  files: ["scripts/lib/already-checked.ts", "test/node/already-checked.test.ts"],
 };
 const FULL: Run = {
   conclusion: "success",
@@ -36,14 +38,17 @@ describe("a pull request merging itself", () => {
     expect(mergeVerdict(PULL, FULL)).toEqual({ merge: true });
   });
 
-  it("merges on a run of the touched apps alone, which is the full tier for that pull request", () => {
-    const touched = { ...FULL, jobs: [{ name: "suite of the touched apps", conclusion: "success" }] };
-    expect(mergeVerdict(PULL, touched)).toEqual({ merge: true });
+  // The repository is public: anyone can open a pull request from a fork.
+  it("never merges a fork's pull request, even one whose run passed and that carries the reviewed label", () => {
+    const fork = { merge: false, reason: "its branch is in a fork, not this repository" };
+    expect(mergeVerdict({ ...PULL, headRepository: "someone/r" }, FULL)).toEqual(fork);
+    expect(mergeVerdict({ ...PULL, headRepository: "someone/r", labels: [REVIEWED_LABEL] }, FULL)).toEqual(fork);
+    expect(mergeVerdict({ ...PULL, headRepository: null }, FULL)).toEqual(fork);
   });
 
-  it("waits on a quick run, a failed run, a draft, an older head, a closed pull request, or the hold label", () => {
-    const quick = { ...FULL, jobs: [{ name: "full suite", conclusion: "skipped" }] };
-    expect(mergeVerdict(PULL, quick)).toEqual({ merge: false, reason: "the run was the quick tier" });
+  it("waits on a run without the full suite, a failed run, a draft, an older head, a closed pull request, or the hold label", () => {
+    const withoutSuite = { ...FULL, jobs: [{ name: "full suite", conclusion: "skipped" }] };
+    expect(mergeVerdict(PULL, withoutSuite)).toEqual({ merge: false, reason: "the run did not pass the full suite" });
     expect(mergeVerdict(PULL, { ...FULL, conclusion: "failure" }).merge).toBe(false);
     expect(mergeVerdict({ ...PULL, draft: true }, FULL).merge).toBe(false);
     expect(mergeVerdict({ ...PULL, headSha: "c" }, FULL)).toEqual({

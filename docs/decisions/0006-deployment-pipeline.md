@@ -1,6 +1,6 @@
 # 0006. Deployment pipeline
 
-- Status: accepted (required checks and reviewers wait for the GitHub plan; see 0008). Amended 25 September 2026: "Deploys that prove what they shipped"; 27 September 2026: the coverage gate ([0075](0075-tests-held-to-the-contract-and-the-local-stack.md)); 1 October 2026: "Two tiers", and the jobs back on the owner's machine; the same day, "Checks are not repeated"; 2 October 2026: "Merged when green" holds by the paths a pull request changes.
+- Status: accepted (required checks and reviewers wait for the GitHub plan; see 0008). Amended 25 September 2026: "Deploys that prove what they shipped"; 27 September 2026: the coverage gate ([0075](0075-tests-held-to-the-contract-and-the-local-stack.md)); 1 October 2026: "Two tiers", and the jobs back on the owner's machine; the same day, "Checks are not repeated"; 2 October 2026: "Merged when green" holds by the paths a pull request changes; the same day, the full suite on every push, on GitHub's runners, the repository public.
 - Date: 2026-09-21
 
 ## Decision
@@ -48,6 +48,8 @@ GitHub gives a private repository 2,000 minutes of its runners a month. Ten jobs
 
 **Back on the machine (1 October 2026).** GitHub's minutes ran out on 30 September 2026 and `CI_RUNNER` went back to `maneman` that evening. On 1 October 2026 the owner chose to keep it there, with the runs thinned ("Two tiers", below).
 
+**GitHub's runners again (2 October 2026).** The repository is public, so GitHub's runners cost nothing and run every job side by side. `CI_RUNNER` is `github`, and the machine's runner is shut down. It must not come back while the repository is public: a fork's pull request would run its own code on the owner's machine.
+
 ## Parallel jobs (23 September 2026)
 
 One job ran every check in turn, about thirteen minutes, of which the browser tests were four. A second runner (docs/runbook.md, "The CI runner") means independent checks can run at the same time, so `ci.yml` is six jobs again, grouped so each is worth an install of its own, and a `checks` job that needs them all.
@@ -61,6 +63,8 @@ One job ran every check in turn, about thirteen minutes, of which the browser te
 - **Nothing about what runs changed:** every check the one job ran still runs, in the same order within its job, on every pull request that can affect it and on every staging deploy.
 
 ## Two tiers (1 October 2026)
+
+**Retired 2 October 2026.** Every push to a pull request runs the full suite again, and adding a label starts no run: `scripts/lib/ci-tier.ts` and the `full-ci` label are gone. "Checks are not repeated" stays.
 
 The week to 1 October 2026 ran `ci.yml` 211 times for 30 merged pull requests, 62 of them cancelled part-way by a newer push: every push to a pull request ran all seven jobs, about 46 minutes of jobs, and two runs at once on the owner's machine took every core and timed out on load. The owner chose two tiers:
 
@@ -81,11 +85,13 @@ The two runners share one six-core machine. Alone, the unit and contract tests t
 
 ## Only the touched app (1 October 2026)
 
+**Retired 2 October 2026:** every run tests every browser-test project and runs Lighthouse. The longer waits in CI stay.
+
 The owner's choice, after a run failed on load again: a pull request's browser tests run only the projects its files reach (`scripts/lib/e2e-projects.ts`): the site's two widths for `site/` and the top-level specs, one app's project for that app and its specs, every project for anything shared (the API, the packages, the config, the test support). Lighthouse runs when the site or the client app is tested. Such a run's suite job is named "suite of the touched apps", not "full suite", so a staging deploy still runs the browser tests on everything. In CI a step now waits up to fifteen seconds and a test up to a minute (`playwright.config.ts`), since the other runner shares the machine.
 
 ## Merged when green (1 October 2026)
 
-The owner's choice, to put the effort into features: a ready pull request merges itself once a full CI run passes on its current head (`.github/workflows/auto-merge.yml`, deciding in `scripts/lib/auto-merge.ts`), and the workflow then starts the staging deploy, since a merge made with its own token starts no workflow by its push. GitHub's own auto-merge needs branch protection, which this plan has not. A pull request that changes a path where money or personal data is decided (payments, refunds, credits, discounts, prices, consent, erasure, health data, any migration; `SENSITIVE_PATHS` in `scripts/lib/auto-merge.ts`) merges only once it carries the `reviewed` label, which any later push takes off (`.github/workflows/review-label.yml`), so a review covers exactly the head it saw; labelling a ready pull request `reviewed` runs the full tier, which merges it on a pass. The `hold-for-review` label still holds any pull request by hand (2 October 2026; this replaced a hold that relied on the author remembering the label). CI warns, without failing, when a pull request changes more than 800 lines outside generated files (`scripts/lib/pr-size.ts`). Production deploys stay manual. The same day the checks that policed paperwork rather than the product were retired: rules quoting their source word for word, the ADR index, and the open points' numbering and citations (`npm run check:open-points` is still there to run by hand).
+The owner's choice, to put the effort into features: a ready pull request merges itself once a full CI run passes on its current head (`.github/workflows/auto-merge.yml`, deciding in `scripts/lib/auto-merge.ts`), and the workflow then starts the staging deploy, since a merge made with its own token starts no workflow by its push. GitHub's own auto-merge needs branch protection, which this plan has not. A pull request that changes a path where money or personal data is decided (payments, refunds, credits, discounts, prices, consent, erasure, health data, any migration; `SENSITIVE_PATHS` in `scripts/lib/auto-merge.ts`) merges only once it carries the `reviewed` label, which any later push takes off (`.github/workflows/review-label.yml`), so a review covers exactly the head it saw. A label starts no CI run, so add `reviewed` before marking the pull request ready, or re-run its last ci run afterwards (`gh run rerun <id>`). The `hold-for-review` label still holds any pull request by hand (2 October 2026; this replaced a hold that relied on the author remembering the label). Since the repository went public (2 October 2026), only a pull request whose branch is in this repository merges itself, never a fork's: the workflow's condition and `mergeVerdict` both check. CI warns, without failing, when a pull request changes more than 800 lines outside generated files (`scripts/lib/pr-size.ts`). Production deploys stay manual. The same day the checks that policed paperwork rather than the product were retired: rules quoting their source word for word, the ADR index, and the open points' numbering and citations (`npm run check:open-points` is still there to run by hand).
 
 ## Deploys that prove what they shipped (25 September 2026)
 

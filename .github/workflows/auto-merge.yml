@@ -1,7 +1,9 @@
-# A ready pull request merges itself once its full CI run passes, and its merge deploys to staging
-# (docs/decisions/0006-deployment-pipeline.md, "Merged when green"). One that touches money or personal data waits for
-# the reviewed label, and one labelled hold-for-review waits whatever it touches; the decision is
+# A ready pull request from a branch of this repository merges itself once its CI run passes, and its merge deploys to
+# staging (docs/decisions/0006-deployment-pipeline.md, "Merged when green"). One that touches money or personal data
+# waits for the reviewed label, and one labelled hold-for-review waits whatever it touches; the decision is
 # scripts/lib/auto-merge.ts.
+#
+# It runs main's own scripts with a write token, never the pull request's code.
 name: auto-merge
 
 on:
@@ -21,7 +23,11 @@ concurrency:
 jobs:
   merge:
     name: merge when green
-    if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success'
+    # The repository is public: a fork's pull request is never merged by this job.
+    if: >-
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
     timeout-minutes: 5
     steps:

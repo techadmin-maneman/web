@@ -1,19 +1,17 @@
-// Whether a pull request merges itself once a CI run passes. GitHub's own auto-merge needs branch protection, which
-// this plan has not, so a workflow asks this after every run of ci. A pull request merges when the run that passed was
-// a full one on its current head and it is ready for review. One that touches money or personal data also waits for
-// the reviewed label, which a push takes off (.github/workflows/review-label.yml), and any pull request can be held
-// by hand with the hold label.
+// Whether a pull request merges itself once a CI run passes. A workflow asks this after every run of ci. A pull
+// request merges when its branch is in this repository, the run that passed ran the full suite on its current head,
+// and it is ready for review. One that touches money or personal data also waits for the reviewed label, which a push
+// takes off (.github/workflows/review-label.yml), and any pull request can be held by hand with the hold label.
 //
 // It imports nothing from node_modules: its job installs nothing.
+
+import { FULL_SUITE_JOB } from "./already-checked.ts";
 
 /** The label that keeps any pull request from merging itself, whatever it touches. */
 export const HOLD_LABEL = "hold-for-review";
 
 /** The label that says the pull request's current head has been reviewed. */
 export const REVIEWED_LABEL = "reviewed";
-
-/** The jobs only a run of the full tier has (.github/workflows/ci.yml), the whole suite or the touched apps'. */
-export const SUITE_JOBS = ["full suite", "suite of the touched apps"] as const;
 
 /** Where money or personal data is decided. Each entry is the start of a path: a file, a family of files, or a folder. */
 export const SENSITIVE_PATHS = [
@@ -66,6 +64,10 @@ export interface PullRequest {
   readonly state: string;
   readonly draft: boolean;
   readonly headSha: string;
+  /** The repository the pull request's branch is in, "owner/name"; null when that fork has been deleted. */
+  readonly headRepository: string | null;
+  /** The repository the pull request asks to merge into. */
+  readonly baseRepository: string;
   readonly labels: readonly string[];
   /** Every path the pull request changes, with a renamed file's old path as well as its new one. */
   readonly files: readonly string[];
@@ -88,6 +90,9 @@ export function sensitiveFiles(files: readonly string[]): string[] {
 }
 
 export function mergeVerdict(pull: PullRequest, run: Run): Verdict {
+  if (pull.headRepository !== pull.baseRepository) {
+    return { merge: false, reason: "its branch is in a fork, not this repository" };
+  }
   if (run.conclusion !== "success") return { merge: false, reason: "the run did not pass" };
   if (pull.state !== "open") return { merge: false, reason: "the pull request is not open" };
   if (pull.draft) return { merge: false, reason: "the pull request is a draft" };
@@ -100,7 +105,7 @@ export function mergeVerdict(pull: PullRequest, run: Run): Verdict {
   }
 
   if (run.headSha !== pull.headSha) return { merge: false, reason: "the run was on an older head" };
-  const suite = run.jobs.find((job) => (SUITE_JOBS as readonly string[]).includes(job.name));
-  if (suite?.conclusion !== "success") return { merge: false, reason: "the run was the quick tier" };
+  const suite = run.jobs.find((job) => job.name === FULL_SUITE_JOB);
+  if (suite?.conclusion !== "success") return { merge: false, reason: "the run did not pass the full suite" };
   return { merge: true };
 }
