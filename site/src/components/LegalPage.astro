@@ -1,25 +1,37 @@
 ---
-// A long-form text page in the site layout. The text is supplied later; until
-// then staging shows the placeholder with the design's tag.
-import { placeholderTag } from "../content/site.ts";
+// A long-form text page in the site layout, a heading per topic.
+import { whatsappChat } from "@maneman/web-kit/whatsapp";
+import { placeholderTag, whatsapp, type LegalPage } from "../content/site.ts";
 import Site from "../layouts/Site.astro";
 import { SHOW_PLACEHOLDER_TAGS } from "../lib/build.ts";
 
 interface Props {
   pageTitle: string;
   description: string;
-  page: { publish: boolean; title: string; paragraphs: readonly string[] };
+  page: LegalPage;
 }
 
 const { pageTitle, description, page } = Astro.props;
+
+const WHATSAPP_HOLE = "{whatsapp}";
+const chat = whatsappChat(whatsapp.number);
 ---
 
 <Site title={pageTitle} description={description}>
   <article class="page">
     {SHOW_PLACEHOLDER_TAGS && !page.publish && <div class="label tag">{placeholderTag}</div>}
     <h1 class="section-title">{page.title}</h1>
-    {page.paragraphs.map((paragraph) => (
-      <p>{paragraph}</p>
+    {page.sections.map((section) => (
+      <section>
+        <h2>{section.heading}</h2>
+        {section.paragraphs.map((paragraph) => (
+          <p>
+            {paragraph
+              .split(WHATSAPP_HOLE)
+              .map((text, index) => [index > 0 && <a href={chat}>{whatsapp.display}</a>, text])}
+          </p>
+        ))}
+      </section>
     ))}
   </article>
 </Site>
@@ -35,10 +47,24 @@ const { pageTitle, description, page } = Astro.props;
     display: inline-block;
     margin-bottom: var(--sp-24);
   }
+  h2 {
+    margin: var(--sp-48) 0 0;
+    font-family: var(--font-serif);
+    font-size: var(--fs-24);
+    font-weight: var(--weight-regular);
+    line-height: var(--lh-125);
+  }
   p {
-    margin: var(--sp-20) 0 0;
+    margin: var(--sp-16) 0 0;
     font-size: var(--fs-reading);
     line-height: var(--lh-175);
     text-wrap: pretty;
+  }
+  /* In the sentence's own colour, so underlined to be seen as a link. */
+  a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: var(--sp-3);
+    white-space: nowrap;
   }
 </style>
