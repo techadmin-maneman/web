@@ -6,7 +6,6 @@
 // island fetches it — the same fallback that runs if the Worker cannot reach
 // mm-api.
 
-import { readFileSync } from "node:fs";
 import AxeBuilder from "@axe-core/playwright";
 import type { Page, Request } from "@playwright/test";
 import { fillAddress } from "./booking-area.ts";
@@ -100,7 +99,7 @@ test("the invite names the referrer, and a served pincode opens the consultation
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
 
-  await expect(page.getByText("Consultation booked")).toBeVisible();
+  await expect(page.getByText("Booking received")).toBeVisible();
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeVisible();
   const sent = requests[0]?.postDataJSON() as Record<string, unknown>;
   expect(sent).toMatchObject({ pincode: SERVED.pincode, window: "afternoon", consent: true, mobile: "9810000000" });
@@ -119,7 +118,7 @@ test("a booking through the invite is counted, with nothing personal and no code
   await page.getByText("Afternoon", { exact: true }).click();
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
-  await expect(page.getByText("Consultation booked")).toBeVisible();
+  await expect(page.getByText("Booking received")).toBeVisible();
 
   expect(await analyticsEvents(page)).toEqual([
     ["lead_submitted", { page: "invite", served: true, area: "Sector 65", window: "afternoon", loss_extent: null }],
@@ -150,7 +149,7 @@ test("a valid invite is remembered in this browser, and forgotten once its own b
   await fillForm(page);
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
-  await expect(page.getByText("Consultation booked")).toBeVisible();
+  await expect(page.getByText("Booking received")).toBeVisible();
   // The landing books with its own invite, and sends no other.
   expect(requests[0]?.postDataJSON()).not.toHaveProperty("invite_code");
   expect(await remembered()).toBeNull();
@@ -185,7 +184,7 @@ test("says what ops set each side gets, and promises the friend nothing ops do n
   await fillForm(page);
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
-  await expect(page.getByText("Consultation booked")).toBeVisible();
+  await expect(page.getByText("Booking received")).toBeVisible();
   await expect(page.getByText(/land when you are fitted/)).toHaveCount(0);
 });
 
@@ -246,7 +245,7 @@ test("a code we do not know still books, without the invite's visits", async ({ 
   await fillForm(page);
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
-  await expect(page.getByText("Consultation booked")).toBeVisible();
+  await expect(page.getByText("Booking received")).toBeVisible();
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeHidden();
 });
 
@@ -322,12 +321,12 @@ test("a consultation nobody can book outright is confirmed as a request", async 
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
 
-  await expect(page.getByText("Consultation requested")).toBeVisible();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(/^You asked for /);
-  await expect(page.getByText("We message you on WhatsApp to fix the hour.")).toBeVisible();
+  await expect(page.getByText("Request received")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("We will message you");
+  await expect(page.getByText("On WhatsApp, at +91 98100 00000, to fix the hour.")).toBeVisible();
   // The invite still stands, and nothing says the visit is booked.
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeVisible();
-  await expect(page.getByText("Consultation booked")).toBeHidden();
+  await expect(page.getByText("Booking received")).toBeHidden();
 });
 
 test("a pincode that is not six digits is refused before the API is asked", async ({ page }) => {
@@ -496,7 +495,7 @@ test("pressing again after a lost answer sends the same request key", async ({ p
   await page.getByRole("button", { name: "Book the consultation" }).click();
   await expect(page.getByText("Something went wrong at our end. Please try again.")).toBeVisible();
   await page.getByRole("button", { name: "Book the consultation" }).click();
-  await expect(page.getByText("Consultation booked")).toBeVisible();
+  await expect(page.getByText("Booking received")).toBeVisible();
 
   expect(keys).toHaveLength(2);
   expect(keys[0]).toBeTruthy();
@@ -514,7 +513,7 @@ test("Turnstile that failed to load is tried again when the form is sent", async
   });
   await visit(page, `/r/${CODE}`);
   await bookThrough(page);
-  await expect(page.getByText("Consultation booked")).toBeVisible();
+  await expect(page.getByText("Booking received")).toBeVisible();
   expect(failed).toBe(true);
   expect(requests).toHaveLength(1);
 });
@@ -527,59 +526,36 @@ async function bookThrough(page: Page): Promise<void> {
   await page.getByRole("button", { name: "Book the consultation" }).click();
 }
 
-// CLI-02: the API answers 409 already_booked, with the day, for a number with a consultation to come.
-test("a number that already has a consultation is told which day it is", async ({ page }) => {
-  await mockApi(page, {
-    consultation: {
-      status: 409,
-      body: { error: { code: "already_booked", request_id: "r" }, booked: { date: "2026-09-26", window: "evening" } },
-    },
-  });
-  await visit(page, `/r/${CODE}`);
-  await bookThrough(page);
-  await expect(
-    page.getByText(
-      "This number already has a consultation, Saturday 26 Sep, 4 to 8 pm. To change it, message us on WhatsApp.",
-    ),
-  ).toBeVisible();
-  await expect(page.getByText("Consultation booked")).toBeHidden();
-});
-
 // REQ-06: the invite had lapsed for this friend, which only the booking's answer can say (ADR 0025, item 40).
 test("an invite that has expired for this friend says so once the booking is made", async ({ page }) => {
   const expired = { state: "booked", date: "2026-09-25", window: "morning", area: SERVED.area, credits: false };
   await mockApi(page, { consultation: { status: 201, body: { ...expired, invite: "expired" } } });
   await visit(page, `/r/${CODE}`);
   await bookThrough(page);
-  await expect(page.getByText("Consultation booked")).toBeVisible();
+  await expect(page.getByText("Booking received")).toBeVisible();
   await expect(page.getByText("Code expired")).toBeVisible();
   await expect(page.getByRole("heading", { name: "This invite has expired" })).toBeVisible();
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeHidden();
 });
 
-// CLI-13, REQ-05: the booking ends with the number we message, the window in a calendar file, and the client app.
-test("a booked consultation names the number, and offers the calendar and the app", async ({ page }) => {
+// PS-06: the booking ends the same for every number, sending its details to the number on WhatsApp, and opening the
+// client app with the number filled in; the code is still asked for there.
+test("a booking sends the details to WhatsApp, and opens the app with the number filled in", async ({ page }) => {
   await mockApi(page);
   await visit(page, `/r/${CODE}`);
   await bookThrough(page);
-  await expect(page.getByText("Consultation booked")).toBeVisible();
-  await expect(page.getByText("We’ll send the details to +91 98100 00000 on WhatsApp.")).toBeVisible();
-  await expect(page.getByText("Sector 65, Gurgaon 122018 · free")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Open the app" })).toHaveAttribute("href", "http://app.localhost:4322");
+  await expect(page.getByRole("heading", { level: 1, name: "Check WhatsApp" })).toBeVisible();
+  await expect(page.getByText("Your booking details are on their way to +91 98100 00000.")).toBeVisible();
+  await expect(page.getByText("See it in the app too: sign in with this number.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add to calendar" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Back to the site" })).toHaveAttribute("href", "/");
-
-  const download = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Add to calendar" }).click();
-  const file = await download;
-  expect(file.suggestedFilename()).toBe("mane-man-consultation.ics");
-  const calendar = readFileSync(await file.path(), "utf8").replaceAll("\r\n ", "");
-  expect(calendar).toContain("DTSTART:20260925T033000Z");
-  expect(calendar).toContain("DTEND:20260925T063000Z");
-  // CP-21: the event had no place and no word of what it is.
-  expect(calendar).toContain("LOCATION:Flat 402\\, Palm Grove Society\\, Sector 65\\, Gurgaon 122018\r\n");
-  expect(calendar).toContain(
-    "DESCRIPTION:Your technician comes to you. Manage it in the Mane Man app: http://app.localhost:4322\r\n",
+  const app = page.getByRole("link", { name: "Open the app" });
+  await expect(app).toHaveAttribute("href", "http://app.localhost:4322");
+  await page.route(/^http:\/\/app\.localhost:4322\//, (route) =>
+    route.fulfill({ contentType: "text/html", body: "<!doctype html><title>App</title>" }),
   );
+  await app.click();
+  await expect(page).toHaveURL("http://app.localhost:4322/#mobile=9810000000");
 });
 
 // The owner's ruling D2 of 1 October 2026 (ADR 0025, item 89; docs/decisions/0105-a-consultation-and-fit-in-one-visit.md):
@@ -595,7 +571,6 @@ test("offers the consultation alone or with the fit in one visit, and asks ops f
     area: SERVED.area,
     credits: true,
     invite: "valid",
-    address: "saved",
     one_visit: true,
   };
   const requests = await mockApi(page, { consultation: { status: 201, body: asked } });
@@ -624,21 +599,21 @@ test("offers the consultation alone or with the fit in one visit, and asks ops f
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation and fit" }).click();
 
-  await expect(page.getByText("Consultation and fit requested")).toBeVisible();
+  await expect(page.getByText("Request received")).toBeVisible();
   const sent = requests[0]?.postDataJSON() as Record<string, unknown>;
   expect(sent.one_visit).toBe(true);
   // The consent recorded is the consultation's own line, unchanged.
   expect(sent.consent).toBe(true);
 });
 
-test("a consultation asked for, not booked, offers no calendar and no app", async ({ page }) => {
+test("a consultation asked for, not booked, still offers the app, where the request shows", async ({ page }) => {
   const requested = { state: "requested", date: "2026-09-25", window: "morning", area: SERVED.area, credits: true };
   await mockApi(page, { consultation: { status: 201, body: { ...requested, invite: "valid" } } });
   await visit(page, `/r/${CODE}`);
   await bookThrough(page);
-  await expect(page.getByText("Consultation requested")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Add to calendar" })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Open the app" })).toHaveCount(0);
+  await expect(page.getByText("Request received")).toBeVisible();
+  await expect(page.getByText("Booking received")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Open the app" })).toBeVisible();
 });
 
 // CLI-21, VIS-11: at 1440 the card sits beside the headline (board C5), and no field runs the width of the page.
