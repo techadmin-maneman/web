@@ -4,8 +4,8 @@
 // security policy refuses, or a page that does not load (scripts/lib/smoke-csp.ts). Runs after every staging deploy.
 //
 // Environment:
-//   CF_ACCESS_CLIENT_ID / CF_ACCESS_CLIENT_SECRET   Access service token, sent to our own hosts only. By hand, it is
-//                                                   read from .env.staging-access when the environment has none.
+//   CF_ACCESS_CLIENT_ID / CF_ACCESS_CLIENT_SECRET   Access service token, sent to our own hosts only. By hand on
+//                                                   staging, it is read from .env.staging-access when unset.
 
 import { existsSync } from "node:fs";
 import { parseArgs } from "node:util";
@@ -16,7 +16,7 @@ import { isOwnHost, pagesToCheck } from "./lib/smoke-csp.ts";
 
 /** Long enough for the scripts a page adds after it loads, and for an app's first screen to draw. */
 const SETTLE_MS = 2_000;
-const ACCESS_ENV_FILE = ".env.staging-access";
+const STAGING_ACCESS_ENV_FILE = ".env.staging-access";
 
 const { values } = parseArgs({ options: { environment: { type: "string" } } });
 const environment = values.environment;
@@ -25,9 +25,11 @@ if (environment !== "staging" && environment !== "production") {
   process.exit(2);
 }
 
-function accessHeaders(): Record<string, string> {
-  if (process.env.CF_ACCESS_CLIENT_ID === undefined && existsSync(ACCESS_ENV_FILE)) {
-    process.loadEnvFile(ACCESS_ENV_FILE);
+/** Staging's token never goes to production's hosts. */
+function accessHeaders(environment: RemoteEnvironmentName): Record<string, string> {
+  const needsStagingFile = environment === "staging" && process.env.CF_ACCESS_CLIENT_ID === undefined;
+  if (needsStagingFile && existsSync(STAGING_ACCESS_ENV_FILE)) {
+    process.loadEnvFile(STAGING_ACCESS_ENV_FILE);
   }
   const id = process.env.CF_ACCESS_CLIENT_ID ?? "";
   const secret = process.env.CF_ACCESS_CLIENT_SECRET ?? "";
@@ -61,7 +63,7 @@ async function problemsOn(
   }
 }
 
-const access = accessHeaders();
+const access = accessHeaders(environment);
 const browser = await chromium.launch();
 let failed = 0;
 try {
