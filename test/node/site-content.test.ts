@@ -228,9 +228,9 @@ describe("the second copy round", () => {
     expect(site.stepPhotos.images).toHaveLength(site.howItWorks.steps.length);
   });
 
-  // CP-46: "Two of these are not ours." confused, and "for just" sneered.
-  it("introduces the comparison plainly and gives a transplant's cost without a sneer", () => {
-    expect(site.comparison.intro).toBe("Three ways to treat hair loss, side by side.");
+  // CP-46: "for just" sneered. The owner kept "Two of these are not ours." on 2 October 2026.
+  it("keeps the owner's comparison line and gives a transplant's cost without a sneer", () => {
+    expect(site.comparison.intro).toBe("Two of these are not ours.");
     expect(JSON.stringify(site.comparison)).not.toMatch(/\bjust\b/);
   });
 

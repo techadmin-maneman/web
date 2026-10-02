@@ -127,7 +127,7 @@ test.describe("home sections", () => {
   test("the hero's opening line is read whole, once, over the footage", async ({ page }) => {
     await page.goto("/");
     const line = page.locator('[data-section="hero"] .sequence');
-    await expect(line).toHaveText("Natural up close. 100% real human hair. Fitted at home. Be the main man again.");
+    await expect(line).toHaveText("Natural up close. 100% real human hair. Fitted at home. Be the Main Man again.");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("A full head of hair, fitted at home.");
   });
 

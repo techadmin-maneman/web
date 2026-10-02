@@ -319,7 +319,7 @@ export const placeholderTag = "Placeholder";
 
 export const hero = {
   /** Shown one at a time over the footage, once, settling on the last. */
-  sequence: ["Natural up close.", "100% real human hair.", "Fitted at home.", "Be the main man again."],
+  sequence: ["Natural up close.", "100% real human hair.", "Fitted at home.", "Be the Main Man again."],
   title: "A full head of hair, fitted at home.",
   body: "Your technician comes when it suits you, matches a hair system to your own hair and fits it.",
   tryOn: "Try a new look",
@@ -428,7 +428,7 @@ export type ComparisonCell = string | boolean;
 
 export const comparison = {
   title: "Why choose a hair system",
-  intro: "Three ways to treat hair loss, side by side.",
+  intro: "Two of these are not ours.",
   columns: ["Transplant", "Medication", "Hair system"],
   yes: "Yes",
   no: "No",
