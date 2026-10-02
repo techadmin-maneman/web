@@ -1,10 +1,13 @@
 // Which tier of CI an event runs (docs/decisions/0006-deployment-pipeline.md, "Two tiers"). The quick tier, the
 // static checks and the unit and contract tests, runs on every push to a pull request. The full suite adds the
 // build, the browser tests and Lighthouse, the deployed code on new migrations and the local smoke, and runs once a
-// pull request is ready for review, again whenever it carries the full-ci label, and on every staging deploy. Either
-// tier skips a check the same files already passed (scripts/lib/already-checked.ts).
+// pull request is ready for review, again whenever it carries the full-ci label, when a ready pull request is
+// labelled reviewed (so it merges once the full suite passes), and on every staging deploy. Either tier skips a check
+// the same files already passed (scripts/lib/already-checked.ts).
 //
 // It imports nothing from node_modules: its job installs nothing.
+
+import { REVIEWED_LABEL } from "./auto-merge.ts";
 
 export type CiTier = "full" | "quick";
 
@@ -27,6 +30,11 @@ export function ciTier(event: CiEvent): CiTier {
   if (event.event !== "pull_request") return "full";
   if (event.action === "ready_for_review") return "full";
   if ((event.action === "opened" || event.action === "reopened") && !event.draft) return "full";
-  if (event.action === "labeled") return event.label === FULL_CI_LABEL ? "full" : "quick";
+  if (event.action === "labeled") return labelStartsFullTier(event) ? "full" : "quick";
   return event.labels.includes(FULL_CI_LABEL) ? "full" : "quick";
+}
+
+function labelStartsFullTier(event: CiEvent): boolean {
+  if (event.label === FULL_CI_LABEL) return true;
+  return event.label === REVIEWED_LABEL && !event.draft;
 }

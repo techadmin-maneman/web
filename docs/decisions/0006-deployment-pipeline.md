@@ -1,6 +1,6 @@
 # 0006. Deployment pipeline
 
-- Status: accepted (required checks and reviewers wait for the GitHub plan; see 0008). Amended 25 September 2026: "Deploys that prove what they shipped"; 27 September 2026: the coverage gate ([0075](0075-tests-held-to-the-contract-and-the-local-stack.md)); 1 October 2026: "Two tiers", and the jobs back on the owner's machine; the same day, "Checks are not repeated".
+- Status: accepted (required checks and reviewers wait for the GitHub plan; see 0008). Amended 25 September 2026: "Deploys that prove what they shipped"; 27 September 2026: the coverage gate ([0075](0075-tests-held-to-the-contract-and-the-local-stack.md)); 1 October 2026: "Two tiers", and the jobs back on the owner's machine; the same day, "Checks are not repeated"; 2 October 2026: "Merged when green" holds by the paths a pull request changes.
 - Date: 2026-09-21
 
 ## Decision
@@ -85,7 +85,7 @@ The owner's choice, after a run failed on load again: a pull request's browser t
 
 ## Merged when green (1 October 2026)
 
-The owner's choice, to put the effort into features: a ready pull request merges itself once a full CI run passes on its current head (`.github/workflows/auto-merge.yml`, deciding in `scripts/lib/auto-merge.ts`), and the workflow then starts the staging deploy, since a merge made with its own token starts no workflow by its push. GitHub's own auto-merge needs branch protection, which this plan has not. A pull request that touches payments, refunds, credits, discounts or personal or health data carries the `hold-for-review` label until its review is done. Production deploys stay manual. The same day the checks that policed paperwork rather than the product were retired: rules quoting their source word for word, the ADR index, and the open points' numbering and citations (`npm run check:open-points` is still there to run by hand).
+The owner's choice, to put the effort into features: a ready pull request merges itself once a full CI run passes on its current head (`.github/workflows/auto-merge.yml`, deciding in `scripts/lib/auto-merge.ts`), and the workflow then starts the staging deploy, since a merge made with its own token starts no workflow by its push. GitHub's own auto-merge needs branch protection, which this plan has not. A pull request that changes a path where money or personal data is decided (payments, refunds, credits, discounts, prices, consent, erasure, health data, any migration; `SENSITIVE_PATHS` in `scripts/lib/auto-merge.ts`) merges only once it carries the `reviewed` label, which any later push takes off (`.github/workflows/review-label.yml`), so a review covers exactly the head it saw; labelling a ready pull request `reviewed` runs the full tier, which merges it on a pass. The `hold-for-review` label still holds any pull request by hand (2 October 2026; this replaced a hold that relied on the author remembering the label). CI warns, without failing, when a pull request changes more than 800 lines outside generated files (`scripts/lib/pr-size.ts`). Production deploys stay manual. The same day the checks that policed paperwork rather than the product were retired: rules quoting their source word for word, the ADR index, and the open points' numbering and citations (`npm run check:open-points` is still there to run by hand).
 
 ## Deploys that prove what they shipped (25 September 2026)
 

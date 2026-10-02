@@ -37,6 +37,28 @@ interface PullAnswer {
   head: { sha: string };
   labels: { name: string }[];
 }
+interface FileAnswer {
+  filename: string;
+  previous_filename?: string;
+}
+
+const FILES_PER_PAGE = 100;
+
+/** Every path the pull request changes, a page at a time; a renamed file counts under its old path too. */
+async function changedFiles(number: number): Promise<string[]> {
+  const files: string[] = [];
+  for (let page = 1; ; page += 1) {
+    const answer = (await github(
+      "GET",
+      `/pulls/${String(number)}/files?per_page=${String(FILES_PER_PAGE)}&page=${String(page)}`,
+    )) as FileAnswer[];
+    for (const file of answer) {
+      files.push(file.filename);
+      if (file.previous_filename !== undefined) files.push(file.previous_filename);
+    }
+    if (answer.length < FILES_PER_PAGE) return files;
+  }
+}
 
 const run = (await github("GET", `/actions/runs/${runId}`)) as RunAnswer;
 const [first] = run.pull_requests;
@@ -46,6 +68,7 @@ if (first === undefined) {
 }
 const jobs = (await github("GET", `/actions/runs/${runId}/jobs?per_page=100`)) as JobsAnswer;
 const pull = (await github("GET", `/pulls/${String(first.number)}`)) as PullAnswer;
+const files = await changedFiles(pull.number);
 
 const verdict = mergeVerdict(
   {
@@ -54,6 +77,7 @@ const verdict = mergeVerdict(
     draft: pull.draft,
     headSha: pull.head.sha,
     labels: pull.labels.map((label) => label.name),
+    files,
   },
   { conclusion: run.conclusion, headSha: run.head_sha, jobs: jobs.jobs },
 );

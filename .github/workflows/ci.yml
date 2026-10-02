@@ -141,6 +141,13 @@ jobs:
             echo "dependencies=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # A warning, never a failure.
+      - name: Lines changed by hand, against the review budget
+        if: github.event_name == 'pull_request'
+        env:
+          BASE: origin/${{ github.base_ref }}
+        run: git diff --numstat "$BASE...HEAD" | node scripts/pr-size.ts
+
   static:
     name: static checks
     needs: changes
