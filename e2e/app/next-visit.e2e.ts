@@ -50,7 +50,8 @@ async function everyWindowOpen(page: Page): Promise<URL[]> {
           { window: "evening", start: "16:00", end: "20:00", with: "another" },
         ],
       }));
-      return route.fulfill({ json: { type: url.searchParams.get("type"), price, regular: null, days } });
+      const last = daysAfter(tomorrow(), 44);
+      return route.fulfill({ json: { type: url.searchParams.get("type"), price, regular: null, last, days } });
     },
   );
   return asked;

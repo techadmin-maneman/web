@@ -23,7 +23,7 @@ import { AddressForm } from "../profile/AddressForm.tsx";
 import type { PayMethod } from "./checkout.ts";
 import { CodeBox } from "./CodeBox.tsx";
 import { consentLines } from "./consents.ts";
-import { firstOpenFrom, isFull, type Day } from "./days.ts";
+import { isFull, offeredFullLine, windowNote, type Day } from "./days.ts";
 import styles from "./booking.module.css";
 
 /** The id every step's heading carries, which names the sheet (BookingSheet.tsx). */
@@ -190,19 +190,6 @@ export function ServiceStep(props: {
   );
 }
 
-/**
- * Where the day a visit is offered on is full: that it is, and that the next open day is chosen, or, with none open
- * after it, to pick another. Nothing once the client has chosen some other day.
- */
-function offeredFullLine(days: readonly Day[], offered: string | null, chosen: string | null): string | null {
-  const day = days.find((each) => each.date === offered);
-  if (offered === null || day === undefined || !isFull(day)) return null;
-  const copy = booking.date;
-  if (chosen === null) return copy.offeredFullPickAnother(weekdayDate(offered));
-  if (chosen === firstOpenFrom(days, offered)) return copy.offeredFull(weekdayDate(offered));
-  return null;
-}
-
 /** Later days, up to the last a visit may be booked on: asking for them, and whether that failed. */
 export interface LaterDays {
   readonly busy: boolean;
@@ -316,19 +303,13 @@ export function WindowStep(props: {
   const regularName = props.regular === null ? null : firstName(props.regular.name);
   const chosen = props.day.windows.find((each) => each.window === props.chosen);
 
-  const noteFor = (who: Day["windows"][number]["with"]): string | null => {
-    if (who === null) return copy.full;
-    if (regularName === null) return null;
-    return who === "regular" ? copy.withRegular(regularName) : copy.another;
-  };
-
   return (
     <>
       <Heading title={copy.title} step={stepOf(2, props.before)} />
       <p className={styles.dayLine}>{weekdayDate(props.day.date)}</p>
       <div className={styles.windows} role="radiogroup" aria-labelledby={TITLE_ID}>
         {props.day.windows.map(({ window, with: who }) => {
-          const note = noteFor(who);
+          const note = windowNote(who, regularName);
           return (
             <label key={window} className={styles.window}>
               <input
