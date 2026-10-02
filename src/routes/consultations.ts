@@ -21,7 +21,8 @@
 // person's address unless they already have one; a waitlist entry takes none
 // (docs/decisions/0081-the-site-takes-the-address.md).
 //
-// The form may book the consultation and the first fit in one visit instead:
+// The form may book the consultation and the first fit in one visit instead,
+// once a WhatsApp code has proved the number (src/routes/number-codes.ts):
 // three hours, morning or afternoon, with nothing paid here; the client chooses
 // the product with the technician and pays by a link once fitted
 // (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). That one may
@@ -128,6 +129,22 @@ export const OneVisitRequestSchema = z
       "false, the consultation alone.",
   });
 
+/** The code that proved the number, which the one visit needs. */
+export const OneVisitNumberCodeSchema = z
+  .uuid()
+  .optional()
+  .openapi({
+    description:
+      "The WhatsApp code that proved the number (POST /api/number-code/verify) in the last 30 minutes. One visit " +
+      "needs it, and is refused number_not_proved without it.",
+  });
+
+/** 403, for a booking from either page. */
+export const turnstileOrNotProved = errorResponse(
+  "turnstile_failed; number_not_proved: one visit, without a WhatsApp code that proved the number in the last 30 " +
+    "minutes",
+);
+
 /** What a booking says of the plan it booked. */
 export const OneVisitOutcomeSchema = z.boolean().openapi({
   description: "true: the consultation and the first fit in one visit were booked, or asked for.",
@@ -143,6 +160,7 @@ const ConsultationRequestSchema = z
     window: z.enum(BOOKING_WINDOWS),
     address: TypedAddressSchema,
     one_visit: OneVisitRequestSchema,
+    number_code_id: OneVisitNumberCodeSchema,
     discount_code: z
       .string()
       .trim()
@@ -186,7 +204,7 @@ const ConsultationSchema = z
     }),
     date: z.iso.date(),
     window: z.enum(BOOKING_WINDOWS),
-    area: z.string(),
+    area: z.string().openapi({ description: "The area once ops have named it, its city until then." }),
     credits: CreditsSchema,
     invite: InviteStateSchema,
     one_visit: OneVisitOutcomeSchema,
@@ -207,7 +225,13 @@ function standingCodeBody(standing: StandingCode | null) {
 }
 
 const WaitlistSchema = z
-  .object({ area: z.union([z.string(), z.null()]), credits: CreditsSchema, invite: InviteStateSchema })
+  .object({
+    area: z
+      .union([z.string(), z.null()])
+      .openapi({ description: "Null until ops have named the area, and for a pincode we do not know." }),
+    credits: CreditsSchema,
+    invite: InviteStateSchema,
+  })
   .strict()
   .openapi("Waitlist");
 
@@ -272,7 +296,7 @@ const consultationRoute = createRoute({
       "invalid_request: fields names what was refused, address.pincode for an address in another pincode, window " +
         "for one visit in the evening",
     ),
-    403: errorResponse("turnstile_failed"),
+    403: turnstileOrNotProved,
     409: takenOrInProgress,
     422: errorResponse(
       "not_bookable: the pincode is not served, or the day is not open; code_not_applicable: the discount code " +
@@ -350,6 +374,7 @@ export function registerConsultations(app: App): void {
         source: "site_booking",
         plan: planOf(body.one_visit),
         discountCode: body.discount_code ?? null,
+        numberCodeId: body.number_code_id ?? null,
       });
       if (!booked.ok) return booked;
       const { state, date, window, area, credits, invite, oneVisit, discountCode } = booked;

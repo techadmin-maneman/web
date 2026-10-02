@@ -509,6 +509,23 @@
   margin-top: var(--sp-20);
   max-width: var(--measure-form);
 }
+.codeHint {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-165);
+  color: var(--ink-muted);
+}
+.codeAgain {
+  margin-top: var(--sp-12);
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: var(--fs-14);
+  color: var(--paper);
+  text-decoration: underline;
+  text-underline-offset: var(--sp-3);
+  cursor: pointer;
+}
 .gateSubmit {
   width: 100%;
   max-width: var(--measure-form);

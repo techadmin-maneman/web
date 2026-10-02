@@ -2,7 +2,9 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Settings } from "../../src/config/settings.ts";
 import { MAX_UPLOAD_BYTES, RESULT_LINK_MESSAGE_TTL_MS } from "../../src/config/tryon.ts";
+import { mobileHashOf } from "../../src/domain/number-codes.ts";
 import { signToken } from "../../src/lib/signed-token.ts";
+import { toE164 } from "../../src/lib/mobile.ts";
 import {
   LOCAL_SETTINGS,
   NOW,
@@ -15,6 +17,7 @@ import {
   fakeQueue,
   json,
   markDatabase,
+  provedNumberCode,
   request,
   type TestDependencies,
 } from "./helpers.ts";
@@ -33,6 +36,15 @@ function visitor(
   });
   const queues = { RENDER_QUEUE: fakeQueue(), CRM_QUEUE: fakeQueue(), MESSAGE_QUEUE: fakeQueue() };
   const cookies = new Map<string, string>();
+  // One code a number, so a claim sent again is the same request.
+  const proofs = new Map<string, string>();
+  const proofOf = async (mobile: string): Promise<{ number_code_id?: string }> => {
+    const mobileE164 = toE164(mobile);
+    if (mobileE164 === null) return {};
+    const known = proofs.get(mobileE164) ?? (await provedNumberCode(mobileE164));
+    proofs.set(mobileE164, known);
+    return { number_code_id: known };
+  };
 
   const call = async (path: string, init: RequestInit = {}): Promise<Response> => {
     const headers = new Headers(init.headers);
@@ -69,8 +81,14 @@ function visitor(
       expect((await this.put(link.upload_url, bytes)).status).toBe(204);
       return link.job_id;
     },
-    claim: (jobId: string, mobile = "98100 00001", headers: Record<string, string> = {}, body = {}) =>
-      post("/api/tryon/claim", { job_id: jobId, name: "Arjun Mehta", mobile, stage: "crown", ...body }, headers),
+    /** The gate, with the number proved by a code unless `body` says otherwise. */
+    claim: async (jobId: string, mobile = "98100 00001", headers: Record<string, string> = {}, body = {}) =>
+      post(
+        "/api/tryon/claim",
+        { job_id: jobId, name: "Arjun Mehta", mobile, stage: "crown", ...(await proofOf(mobile)), ...body },
+        headers,
+      ),
+    proofOf,
     /** Uploaded, and claimed at the gate for a stage: ready for its render. */
     async claimed(mobile = "98100 00001", stage = "crown"): Promise<string> {
       const jobId = await this.uploaded();
@@ -266,6 +284,7 @@ describe("POST /api/tryon/claim, before the look is made", () => {
       lead_id: body.lead_id,
       claimed_at: NOW.toISOString(),
       session_id: null,
+      number_proved_at: NOW.toISOString(),
     });
     // The look's message waits for the render the claim comes before.
     const message = await env.DB.prepare("SELECT kind, state, subject_id FROM outbound_messages").first();
@@ -307,6 +326,44 @@ describe("POST /api/tryon/claim, before the look is made", () => {
     ]);
   });
 
+  // PS-10: the gate wrote a person, their consents and a lead for any number typed, and sent its look there.
+  it("refuses a number no code proved in the last 30 minutes, writing nothing", async () => {
+    const browser = visitor();
+    const jobId = await browser.uploaded();
+    const notProved = async (body: Record<string, unknown>) => {
+      const refused = await browser.claim(jobId, "98100 00001", {}, body);
+      expect(refused.status).toBe(403);
+      expect(await refused.json()).toMatchObject({ error: { code: "number_not_proved" } });
+    };
+
+    await notProved({ number_code_id: crypto.randomUUID() });
+    await notProved({ number_code_id: await provedNumberCode("+919810000002") });
+    await notProved({ number_code_id: await provedNumberCode("+919810000001", new Date(NOW.getTime() - 31 * 60_000)) });
+    // Sent to the number, and never entered.
+    const notEntered = crypto.randomUUID();
+    await env.DB.prepare(
+      "INSERT INTO number_codes (id, created_at, mobile_hash, code_hash, expires_at) VALUES (?1, ?2, ?3, 'sent', ?4)",
+    )
+      .bind(
+        notEntered,
+        NOW.toISOString(),
+        await mobileHashOf(LOCAL_SETTINGS.ipHashSalt, "+919810000001"),
+        new Date(NOW.getTime() + 10 * 60_000).toISOString(),
+      )
+      .run();
+    await notProved({ number_code_id: notEntered });
+    const missing = await browser.post("/api/tryon/claim", {
+      job_id: jobId,
+      name: "Arjun Mehta",
+      mobile: "98100 00001",
+      stage: "crown",
+    });
+    expect(missing.status).toBe(400);
+
+    for (const table of ["people", "consents", "leads", "outbound_messages"]) expect(await count(table)).toBe(0);
+    expect((await jobRow(jobId))?.claimed_at).toBeNull();
+  });
+
   it("asks for the stage the visitor chose", async () => {
     const browser = visitor();
     const jobId = await browser.uploaded();
@@ -341,8 +398,14 @@ describe("POST /api/tryon/claim, before the look is made", () => {
   it("refuses a 'Staging test' claim off the allowlist, and takes one on it", async () => {
     const browser = visitor({ messaging: { allowlist: ["+919810000002"] } });
     const jobId = await browser.uploaded();
-    const asStagingTest = (mobile: string) =>
-      browser.post("/api/tryon/claim", { job_id: jobId, name: "Staging test", mobile, stage: "crown" });
+    const asStagingTest = async (mobile: string) =>
+      browser.post("/api/tryon/claim", {
+        job_id: jobId,
+        name: "Staging test",
+        mobile,
+        stage: "crown",
+        ...(await browser.proofOf(mobile)),
+      });
     expect(await (await asStagingTest("98100 00001")).json()).toMatchObject({
       error: { code: "whatsapp_unavailable" },
     });

@@ -4,7 +4,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { api, type Answer, type Tasks } from "../api.ts";
 
-const FRESH_MS = 60_000;
+export const FRESH_MS = 60_000;
 
 let board: Tasks | null = null;
 let readAt = 0;

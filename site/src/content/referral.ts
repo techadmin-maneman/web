@@ -203,6 +203,8 @@ export const referral = {
     consent: lineOf(notices.consultation),
     submit: "Book the consultation",
     submitOneVisit: "Book the consultation and fit",
+    // Not drawn: once the WhatsApp code is on its way, the button confirms it and books. The owner approves the words.
+    confirmOneVisit: "Confirm and book",
     sending: "Booking",
     told: toldWhenFitted,
   },
@@ -336,6 +338,8 @@ export const referral = {
     codeNotApplicable: "That discount code does not apply. Check it, or leave it out to book without it.",
     // Not drawn: the one visit was asked for while no hair system is offered in the console.
     noProduct: "Consultation and fit in one visit is not available to book yet. Book the consultation instead.",
+    // Not drawn: the WhatsApp code was entered more than 30 minutes before the booking was sent.
+    notProved: "Your WhatsApp code has expired. Book again for a new one.",
   },
   /**
    * What a shared invite's preview says (boards B1 and B2), which the mm-site Worker writes into the page. Only a

@@ -314,7 +314,7 @@ async function requeueTryons(
   return { renders, abandoned, downloads, lost };
 }
 
-/** Deletes what has outlived its use: idempotency keys, counters, sessions, spent login codes and stale claims. */
+/** Deletes what has outlived its use: idempotency keys, counters, sessions, spent codes and stale claims. */
 async function housekeep(run: SweepRun): Promise<void> {
   const { db, now, before } = run;
   const sessionsEnded = before(SESSION_RETENTION_MS);
@@ -323,6 +323,7 @@ async function housekeep(run: SweepRun): Promise<void> {
     db.prepare("DELETE FROM counters WHERE window_start < ?1").bind(addDays(indiaDate(now), -COUNTER_RETENTION_DAYS)),
     db.prepare("DELETE FROM tryon_sessions WHERE expires_at < ?1").bind(now.toISOString()),
     db.prepare("DELETE FROM otp_challenges WHERE expires_at < ?1").bind(before(CHALLENGE_RETENTION_MS)),
+    db.prepare("DELETE FROM number_codes WHERE expires_at < ?1").bind(before(CHALLENGE_RETENTION_MS)),
     // A technician's phone keeps pointing at the last session it logged in with,
     // so it lets go of that session before the session is deleted.
     db
@@ -402,7 +403,8 @@ async function expireJobs(env: SweepEnv, now: Date): Promise<{ expired: number; 
   const db = env.DB;
   const { results: pastExpiry } = await db
     .prepare(
-      `SELECT id, created_at, person_id, photo_consent_version, state, result_key, expires_at, kept_at, copy_key, kept_look_key
+      `SELECT id, created_at, person_id, photo_consent_version, state, result_key, expires_at, kept_at, copy_key,
+         kept_look_key, number_proved_at
        FROM tryon_jobs WHERE state = 'ready' AND expires_at < ?1 ORDER BY created_at LIMIT ?2`,
     )
     .bind(now.toISOString(), EXPIRY_BATCH)

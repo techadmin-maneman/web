@@ -14,6 +14,8 @@ import type { Settings } from "../../src/config/settings.ts";
 import type { Dependencies } from "../../src/dependencies.ts";
 import { createAlertOnce, createResolveAlert } from "../../src/domain/alerts.ts";
 import { erasePerson, personWithMobile, type ErasureSummary } from "../../src/domain/erasure.ts";
+import { mobileHashOf } from "../../src/domain/number-codes.ts";
+import { CODE_TTL_MS } from "../../src/policy/one-time-code.ts";
 import type { StaticConfig } from "../../src/guard.ts";
 import { createAccessVerifier } from "../../src/providers/cloudflare-access.ts";
 import { createLogger } from "../../src/log.ts";
@@ -163,6 +165,20 @@ export function countRowsRead(): () => number {
     return results;
   });
   return () => read;
+}
+
+/** A WhatsApp code entered for this number at `now`, as POST /api/number-code/verify leaves it. Its ID proves it. */
+export async function provedNumberCode(mobileE164: string, now: Date = NOW): Promise<string> {
+  const id = crypto.randomUUID();
+  const at = now.toISOString();
+  const expiresAt = new Date(now.getTime() + CODE_TTL_MS).toISOString();
+  await env.DB.prepare(
+    `INSERT INTO number_codes (id, created_at, mobile_hash, code_hash, attempts, expires_at, verified_at)
+     VALUES (?1, ?2, ?3, 'entered', 1, ?4, ?2)`,
+  )
+    .bind(id, at, await mobileHashOf(LOCAL_SETTINGS.ipHashSalt, mobileE164), expiresAt)
+    .run();
+  return id;
 }
 
 /** The address a client saved in the app, which they must have before any slot is held (ADR 0079). */
