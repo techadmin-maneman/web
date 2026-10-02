@@ -40,6 +40,13 @@ rmSync(join(deployed, "migrations"), { recursive: true });
 cpSync("migrations", join(deployed, "migrations"), { recursive: true });
 console.log(`${base}'s code, with this branch's migrations, in ${deployed}`);
 
+// The restore test's check that its fixtures give every table a row: the deployed code's fixtures cannot know a
+// table these migrations add. The branch's own run keeps the check; the restore's other tests run here too.
+const FIXTURES_FOR_EVERY_TABLE = "starts from a row in every table";
+
+/** A test name pattern for every test but the one whose name holds `skipped`. */
+const allTestsBut = (skipped: string) => `^(?!.*${skipped})`;
+
 function mustPass(run: SpawnSyncReturns<Buffer>): void {
   if (run.status !== 0) process.exit(run.status ?? 1);
 }
@@ -47,9 +54,17 @@ function mustPass(run: SpawnSyncReturns<Buffer>): void {
 // npm is npm.cmd on Windows, which Node starts only through a shell.
 mustPass(spawnSync("npm", ["ci", "--no-audit", "--no-fund"], { cwd: deployed, stdio: "inherit", shell: isWindows }));
 mustPass(
-  spawnSync(process.execPath, ["node_modules/vitest/vitest.mjs", "run", "--project", "worker"], {
-    cwd: deployed,
-    stdio: "inherit",
-  }),
+  spawnSync(
+    process.execPath,
+    [
+      "node_modules/vitest/vitest.mjs",
+      "run",
+      "--project",
+      "worker",
+      "--testNamePattern",
+      allTestsBut(FIXTURES_FOR_EVERY_TABLE),
+    ],
+    { cwd: deployed, stdio: "inherit" },
+  ),
 );
 console.log(`${base}'s Worker tests pass on this branch's migrations.`);
