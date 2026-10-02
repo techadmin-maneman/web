@@ -166,7 +166,13 @@ describe("a mobile field on the site and in the technician app", () => {
   it("shows a digit too many, so the number reads as incomplete rather than as someone else's", () => {
     expect(formatMobileField("98765 432101")).toBe("98765 432101");
     expect(mobileDigits(formatMobileField("98765 432101"))).toBeNull();
-    expect(fieldDigits("1".repeat(20))).toHaveLength(14);
+    expect(fieldDigits("1".repeat(20))).toHaveLength(15);
+  });
+
+  it("never cuts a number with a digit too many back to a valid one, even behind 0091", () => {
+    const tooMany = "0091 98765 432105";
+    expect(mobileDigits(formatMobileField(tooMany))).toBeNull();
+    expect(mobileDigits(typedKeyByKey(tooMany, formatMobileField))).toBeNull();
   });
 
   it.each([

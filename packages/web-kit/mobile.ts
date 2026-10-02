@@ -4,8 +4,11 @@
 /** +91, 91, 091, 0091 or 0 in front of ten digits, as a number copied from a contact or a message often is. */
 const PREFIX = /^(?:0{0,2}91|0)(?=\d{10}$)/;
 
-/** The most digits a number is typed with: ten behind "0091". */
-const MOST_TYPED_DIGITS = 14;
+/**
+ * One more than the longest number typed (ten digits behind "0091"), so a field never cuts a number back to a
+ * valid one: a digit too many stays, and the number reads as wrong.
+ */
+const MOST_FIELD_DIGITS = 15;
 
 /** The digits typed, with a country code or trunk prefix taken off the front of ten of them. */
 export function typedDigits(typed: string): string {
@@ -23,7 +26,7 @@ export function mobileDigits(typed: string): string | null {
  * passes through "91981100000" before its last digit takes the prefix off.
  */
 export function fieldDigits(typed: string): string {
-  return typedDigits(typed).slice(0, MOST_TYPED_DIGITS);
+  return typedDigits(typed).slice(0, MOST_FIELD_DIGITS);
 }
 
 /** The field's digits as the site shows them: five, a space, then the rest ("98110 00000"). */
