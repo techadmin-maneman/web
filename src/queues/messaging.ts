@@ -4,8 +4,9 @@
 // the result they asked for at the gate, as the result template with a signed
 // result link that expires an hour after sending; a client's messages about
 // their visits (src/domain/visit-messages.ts) and the reminder of their next one
-// (src/domain/next-visit.ts); and the referral, waitlist and launch messages,
-// each composed where its subject lives.
+// (src/domain/next-visit.ts); the referral, waitlist and launch messages; and
+// the booking form's notices to a number we know, each composed where its
+// subject lives.
 //
 // Skipped, never sent: messaging off, a person erased, an automatic kind to a
 // number outside the staging allowlist (a kind that answers the person who
@@ -30,6 +31,7 @@ import { composeBookingRefunded } from "../domain/held-bookings.ts";
 import { composeNextServiceReminder } from "../domain/next-visit.ts";
 import { readOpsInputs } from "../domain/ops-settings.ts";
 import { composeFriendCredited, composeFriendFitted, composeReferralRejected } from "../domain/referral-grants.ts";
+import { composeSiteNotice, isSiteNoticeKind } from "../domain/site-notices.ts";
 import { composeLaunchAlert, composeWaitlistConfirmation } from "../domain/waitlist.ts";
 import { composeVisitMessage, VISIT_MESSAGE_KINDS, type VisitMessageKind } from "../domain/visit-messages.ts";
 import { isStagingTestRecord } from "../policy/staging-test-records.ts";
@@ -160,6 +162,7 @@ async function contentOf(db: D1Database, config: StaticConfig, row: MessageRow, 
   if (row.kind === "referral_rejected") return composeReferralRejected(db, row.subject_id, row.person_id);
   if (row.kind === "launch_alert") return composeLaunchAlert(db, row.subject_id, row.person_id, config.environment);
   if (row.kind === "waitlist_confirmation") return composeWaitlistConfirmation(db, row.subject_id, row.person_id);
+  if (isSiteNoticeKind(row.kind)) return composeSiteNotice(db, row.kind, row.person_id);
   return { skip: "unknown kind" };
 }
 

@@ -11,7 +11,7 @@ import { forgetInvite, rememberedInvite } from "../../lib/remembered-invite.ts";
 import { fill } from "../../lib/text.ts";
 import { readAttribution } from "../../lib/visit.ts";
 import { AddressFieldset } from "./AddressFieldset.tsx";
-import { placeOf, type Booking } from "./Done.tsx";
+import type { Booking } from "./Done.tsx";
 import { ExtentFieldset, ForPincode, PersonFieldset, Send, type FormProps } from "./fields.tsx";
 import styles from "./Invite.module.css";
 import { codeInPath } from "./page.ts";
@@ -82,7 +82,7 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
         track({ name: "lead_submitted", page, served: true, area: props.answer.area, window, loss_extent });
         track({ name: "booking_confirmed", page, area: booked.area, window: booked.window, state: booked.state });
         if (invite !== null) forgetInvite(invite);
-        props.onBooked({ result: booked, mobile: fields.mobile, place: placeOf(props.answer) });
+        props.onBooked({ result: booked, mobile: fields.mobile });
       },
       missingParts(address).length === 0,
     );

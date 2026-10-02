@@ -1,14 +1,4 @@
-// The booked state's headline, as board C4 writes it: "Saturday 21 Sep, 9 am to 12 pm".
-
-const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-/** From "2026-09-21" and "9 am to 12 pm". The date is a calendar day, so no time zone applies. */
-export function bookedHeadline(date: string, windowHours: string): string {
-  const [year = 0, month = 1, day = 1] = date.split("-").map(Number);
-  const weekday = WEEKDAYS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()] ?? "";
-  return `${weekday} ${String(day)} ${MONTHS[month - 1] ?? ""}, ${windowHours}`;
-}
+// The booking form's days, in India's calendar.
 
 /** Today in India, as a calendar date. The visitor's own clock may be anywhere. */
 export function indiaToday(now: Date = new Date()): string {
