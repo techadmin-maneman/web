@@ -4,7 +4,8 @@
 
 import { describe, expect, it } from "vitest";
 import opsDocument from "../../docs/openapi-ops.json";
-import { needOf, ROUTE_NEEDS, SIGNED_IN } from "../../src/policy/console-routes.ts";
+import type { Caller } from "../../src/policy/access.ts";
+import { needOf, ROUTE_NEEDS, routesOpenTo, SIGNED_IN } from "../../src/policy/console-routes.ts";
 
 const METHODS = ["get", "post", "put", "patch", "delete"];
 
@@ -56,5 +57,45 @@ describe("what each ops route asks of its caller", () => {
         "POST /api/technicians/{id}/reactivate",
       ]),
     );
+  });
+
+  it("gives the price book to Finance, while changing a service stays Admin's", () => {
+    expect(ROUTE_NEEDS["GET /api/services"]).toEqual({ department: "finance", level: "view" });
+    expect(ROUTE_NEEDS["POST /api/services"]).toEqual({ department: "admin", level: "manage" });
+  });
+});
+
+describe("the routes a caller's calls go ahead on", () => {
+  const NO_ZONES = new Map<string, string>();
+  const financeInDelhi: Caller = {
+    kind: "person",
+    active: true,
+    grants: [{ department: "finance", level: "manage", place: { geography: "city", name: "Delhi" } }],
+  };
+  const adminInDelhi: Caller = {
+    kind: "person",
+    active: true,
+    grants: [{ department: "admin", level: "view", place: { geography: "city", name: "Delhi" } }],
+  };
+
+  it("are every route while the list is not enforced", () => {
+    expect(routesOpenTo(financeInDelhi, false, NO_ZONES)).toEqual(Object.keys(ROUTE_NEEDS));
+  });
+
+  it("are, once enforced, only those a city's grant reaches: the ones that keep to the caller's places", () => {
+    expect(routesOpenTo(financeInDelhi, true, NO_ZONES)).toEqual(["GET /api/health", "GET /api/whoami"]);
+    expect(routesOpenTo(adminInDelhi, true, NO_ZONES)).toEqual([
+      "GET /api/health",
+      "GET /api/whoami",
+      "GET /api/staff",
+    ]);
+  });
+
+  it("are every route for a service token on the list, and none but the signed-in ones for one not on it", () => {
+    expect(routesOpenTo({ kind: "service", allowed: true }, true, NO_ZONES)).toEqual(Object.keys(ROUTE_NEEDS));
+    expect(routesOpenTo({ kind: "service", allowed: false }, true, NO_ZONES)).toEqual([
+      "GET /api/health",
+      "GET /api/whoami",
+    ]);
   });
 });

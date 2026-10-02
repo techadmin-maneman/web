@@ -402,6 +402,14 @@ describe("PATCH /api/consents/:purpose", () => {
     expect(await Promise.all(both.map((answer) => answer.json()))).toEqual([given, given]);
   });
 
+  // PS-36 of the audit, 2 October 2026: the log said a client switched a consent they had not.
+  it("writes no audit entry for a switch to the state the purpose already holds", async () => {
+    await send(client, "PATCH", "/api/consents/whatsapp_visits", { granted: true });
+    const again = await send(client, "PATCH", "/api/consents/whatsapp_visits", { granted: true });
+    expect(again.status).toBe(200);
+    expect(await auditActions()).toEqual(["consent.switch"]);
+  });
+
   it("records the same answer again when the notice behind it has changed", async () => {
     // The referral-card notice gained a line and became v2 (src/config/notices.ts), so a client
     // who agreed under v1 is agreeing to something new, and the ledger says so.

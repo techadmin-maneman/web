@@ -337,8 +337,11 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* "Change": a way back to the pincode, in the sentence it belongs to. */
-.change {
+/* "Change": a way back to the pincode, in the sentence it belongs to, as large a target as any button. */
+.change,
+.more {
+  min-width: var(--tap);
+  min-height: var(--tap);
   padding: 0;
   border: 0;
   background: none;
@@ -346,6 +349,14 @@
   text-decoration: underline;
   text-underline-offset: var(--sp-3);
   cursor: pointer;
+}
+
+/* "Add floor, tower or landmark": the address's folded parts, asked for beneath the flat. */
+.more {
+  justify-self: start;
+  margin-top: calc(-1 * var(--sp-8));
+  font-size: var(--fs-15);
+  text-align: left;
 }
 
 /* A fieldset's margin is the form's spacing (.form > * + *). */
@@ -368,6 +379,13 @@
   margin-bottom: var(--sp-8);
   font-size: var(--fs-14);
   color: var(--text-muted);
+}
+
+/* The month or months the dates fall in, above them: the tiles name only the weekday and the day. */
+.months {
+  margin: 0 0 var(--sp-10);
+  font-size: var(--fs-15);
+  color: var(--text-soft);
 }
 
 /* The dates: two weeks from tomorrow, a week to a row (C2). */
@@ -455,6 +473,23 @@
 
 .windowOn .windowHours {
   color: var(--ink-soft);
+}
+
+/* A day or window nobody can be booked in: drawn, but not to be chosen. */
+.day:has(input:disabled),
+.window:has(input:disabled) {
+  border-style: dashed;
+  color: var(--paper-hint);
+  cursor: not-allowed;
+}
+
+.day:has(input:disabled) .dayName,
+.window:has(input:disabled) .windowHours {
+  color: var(--paper-hint);
+}
+
+.day:has(input:disabled) .dayNumber {
+  text-decoration: line-through;
 }
 
 /* Beneath what to book: how the first fit asked for is booked and paid (ADR 0086). */
@@ -667,14 +702,6 @@
   color: var(--ink-soft);
 }
 
-.doneBlockWhere {
-  margin: var(--sp-20) 0 0;
-  padding-top: var(--sp-18);
-  border-top: var(--hairline) solid var(--ink-rule);
-  font-size: var(--fs-15);
-  color: var(--ink-soft);
-}
-
 /* On the list, and the invite that has expired: the paper frames. */
 .doneFrame {
   padding: var(--sp-22) var(--sp-20);
@@ -707,15 +734,10 @@
   gap: var(--sp-20);
 }
 
-.doneNumber,
 .doneNote {
   margin: 0;
   font-size: var(--fs-15);
   color: var(--text-muted);
-}
-
-.doneNumber {
-  font-variant-numeric: tabular-nums;
 }
 
 .doneActions {

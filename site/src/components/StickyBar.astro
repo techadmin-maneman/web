@@ -1,21 +1,24 @@
 ---
-// The bar fixed to the bottom of the home page, at every width, as v2 shows it.
+// The bar fixed to the bottom of the home page, at every width, as v2 shows it. Its buttons keep to a phone's
+// width, so on a wide screen "Book a visit" is a button rather than a band across the page.
 import { stickyBar, whatsapp } from "../content/site.ts";
 import { isShown } from "../lib/build.ts";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import Icon from "./Icon.astro";
 ---
 
-<div class="bar on-ink">
-  {isShown(whatsapp) && (
-    <a class="whatsapp" href={whatsappChat(whatsapp.number)} aria-label={stickyBar.whatsappLabel}>
-      <Icon name="whatsapp" size={22} />
+<nav class="bar on-ink" aria-label={stickyBar.label}>
+  <div class="row">
+    {isShown(whatsapp) && (
+      <a class="whatsapp" href={whatsappChat(whatsapp.number)} aria-label={stickyBar.whatsappLabel}>
+        <Icon name="whatsapp" size={22} />
+      </a>
+    )}
+    <a class="btn book" href="/book">
+      {stickyBar.book}
     </a>
-  )}
-  <a class="btn book" href="/book">
-    {stickyBar.book}
-  </a>
-</div>
+  </div>
+</nav>
 
 <style>
   /* Only the home page has the bar, and nothing the keyboard reaches may sit under it. */
@@ -33,8 +36,15 @@ import Icon from "./Icon.astro";
     border-top: var(--hairline) solid var(--ink-rule);
     display: flex;
     align-items: center;
-    gap: var(--sp-12);
     padding: 0 var(--sp-16);
+  }
+  .row {
+    width: 100%;
+    max-width: var(--measure-short);
+    margin-inline: auto;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-12);
   }
   .whatsapp,
   .whatsapp:hover {

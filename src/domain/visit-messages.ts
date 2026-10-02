@@ -8,6 +8,7 @@
 
 import { shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
+import type { BookingWindow } from "../config/scheduling.ts";
 import { VISIT_TYPE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
 import { DAY_BEFORE_REMINDER_HOUR } from "../policy/job-visibility.ts";
@@ -128,6 +129,22 @@ export function visitMessage(
   return { id, statement };
 }
 
+/** visitMessage, written only if the visit change `changeId` is: for the batch whose first statement claims it. */
+export function visitMessageOnChange(
+  db: D1Database,
+  input: { personId: string; appointmentId: string; kind: VisitMessageKind; now: Date; changeId: string },
+): { id: string; statement: D1PreparedStatement } {
+  const id = crypto.randomUUID();
+  const statement = db
+    .prepare(
+      `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at)
+       SELECT ?1, ?2, ?3, ?4, 'appointment', ?5, 'queued', ?2
+       WHERE EXISTS (SELECT 1 FROM visit_changes WHERE id = ?6)`,
+    )
+    .bind(id, input.now.toISOString(), input.personId, input.kind, input.appointmentId, input.changeId);
+  return { id, statement };
+}
+
 /**
  * Writes the arrival notice for a check-in that passed, once per visit (the index outbound_messages_one_arrival).
  * A check-in heard of too late to tell the client anything is recorded as not sent, with why, so a no-show's
@@ -191,6 +208,11 @@ export async function tooLateToSend(
 /** "12 to 4 pm", as the app writes a window, by the times in force on the visit's day. */
 function windowHours(start: Date, schedule: SlotSchedule): string {
   const { date, window } = schedule.at(start);
+  return hoursOfWindow(date, window, schedule);
+}
+
+/** "12 to 4 pm" for a day's window, by the times in force that day. */
+export function hoursOfWindow(date: string, window: BookingWindow, schedule: SlotSchedule): string {
   const { start: from, end: to } = windowTimesOf(schedule.on(date))[window];
   const hour = (time: string) => {
     const hours = Number(time.slice(0, 2));

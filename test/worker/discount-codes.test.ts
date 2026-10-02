@@ -127,7 +127,9 @@ describe("Settings · Discount codes", () => {
       [{ ...TEN_OFF, code: "WEDDING25" }, "code"],
       [{ ...TEN_OFF, count: 2 }, "count"],
       [{ ...TEN_OFF, value: 101 }, "value"],
+      [{ ...TEN_OFF, kind: "amount", value: 50_050 }, "value"],
       [{ ...TEN_OFF, kind: "amount", value: 50_000, cap: 10_000 }, "cap"],
+      [{ ...TEN_OFF, cap: 10_050 }, "cap"],
       [{ ...TEN_OFF, covers: ["service", "service"] }, "covers"],
       [{ ...TEN_OFF, expires_on: "2026-09-20" }, "expires_on"],
       [{ ...TEN_OFF, code: undefined, count: 3, max_uses: 2 }, "max_uses"],
@@ -136,6 +138,12 @@ describe("Settings · Discount codes", () => {
       expect(answer.status, field).toBe(400);
       expect((await answer.json<{ error: { fields: string[] } }>()).error.fields).toEqual([field]);
     }
+    expect(await listed()).toEqual([]);
+  });
+
+  it("makes no code in rupees and paise, whoever asks", async () => {
+    await expect(make({ kind: "amount", value: 50_050 })).rejects.toThrow();
+    await expect(make({ cap: 10_050 })).rejects.toThrow();
     expect(await listed()).toEqual([]);
   });
 

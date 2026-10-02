@@ -1,7 +1,8 @@
 // Booking from the public site (docs/decisions/0051-booking-from-the-site.md):
 //
-//   POST /api/consultation   a free consultation on a real date and window
-//   POST /api/waitlist       the number, for a pincode we do not serve yet
+//   GET  /api/availability/public   the form's days and windows, open or not, naming nobody
+//   POST /api/consultation          a free consultation on a real date and window
+//   POST /api/waitlist              the number, for a pincode we do not serve yet
 //
 // These are the referral landing's two routes without the invite, and they share
 // their whole path (src/domain/public-booking.ts, and src/http/public-form.ts for
@@ -10,10 +11,11 @@
 // same lead behind it so the CRM funnel sees every booking. Whether we come is
 // decided by the pincode, which GET /api/pincodes/{pin} answers for the form.
 //
-// A number that already has a consultation still to happen is answered
-// already_booked, with its day and window, rather than booked twice; one past
-// consultations books in the app (docs/decisions/0068-a-paid-hold-is-kept.md).
-// The same submission sent again under its Idempotency-Key gets its first answer.
+// Every number gets the same answer, so the form tells nobody whether a number
+// is a client's: one with a consultation still to happen, or past consultations,
+// books nothing, and its owner is told why on WhatsApp
+// (src/policy/site-booking.ts). The same submission sent again under its
+// Idempotency-Key gets its first answer.
 //
 // A consultation is booked with the full address it is at, which becomes the
 // person's address unless they already have one; a waitlist entry takes none
@@ -36,10 +38,11 @@ import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
 import { LOSS_EXTENTS } from "../config/booking.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
-import { bookConsultation, joinTheWaitlist } from "../domain/public-booking.ts";
-import type { Plan } from "../policy/one-visit.ts";
+import { openDays } from "../domain/open-windows.ts";
+import { bookConsultation, joinTheWaitlist, pincodeOf } from "../domain/public-booking.ts";
+import { PLANS, type Plan } from "../policy/one-visit.ts";
 import { CODE_PATTERN, inviteOf, type Invite } from "../domain/referrals.ts";
-import { errorBody, errorResponse, ErrorResponseSchema } from "../http/errors.ts";
+import { errorBody, errorResponse } from "../http/errors.ts";
 import { IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
 import { formRequest } from "../http/public-form.ts";
 import { addressOf, AddressSchema, RequiredFlatSchema } from "./client-profile.ts";
@@ -68,7 +71,9 @@ const Person = {
   name: z.string().trim().min(1).max(80),
   mobile: z.string().max(20),
   pincode: PincodeSchema,
-  loss_extent: z.enum(LOSS_EXTENTS).openapi({ description: "Where the hair loss is, as the form's drawings show it." }),
+  loss_extent: z.enum(LOSS_EXTENTS).optional().openapi({
+    description: "Where the hair loss is, as the form's drawings show it. Left out when the visitor does not say.",
+  }),
   turnstile_token: z.string().min(1).max(2048),
   attribution: AttributionSchema,
   invite_code: z
@@ -91,13 +96,6 @@ export const InviteStateSchema = z.enum(["valid", "expired", "unknown"]).openapi
 });
 
 export const CreditsSchema = z.boolean().openapi({ description: "Whether the invite's service visits apply." });
-
-/** What a booking did with the address it was sent (src/policy/site-booking.ts). */
-export const AddressOutcomeSchema = z.enum(["saved", "on_account"]).openapi({
-  description:
-    "saved: the address sent is now the person's; on_account: the person already had one, which the visit goes " +
-    "to, and the one sent was not written. The address on the account is never sent back.",
-});
 
 /**
  * The address a consultation is at: the app's, typed in full, without a building chosen from Google's
@@ -168,7 +166,6 @@ const ConsultationSchema = z
     area: z.string(),
     credits: CreditsSchema,
     invite: InviteStateSchema,
-    address: AddressOutcomeSchema,
     one_visit: OneVisitOutcomeSchema,
     discount_code: z.boolean().openapi({
       description:
@@ -184,25 +181,52 @@ const WaitlistSchema = z
   .strict()
   .openapi("Waitlist");
 
-/** The consultation a number already has, which a second booking is refused for. */
-export const AlreadyBookedSchema = z
+/** 409, the same for every number: a window gone, or the same submission still running. */
+export const takenOrInProgress = errorResponse(
+  "taken: that window has gone; idempotency_in_progress: the first request with this key is still running",
+);
+
+/** Booked, or asked for, or the answer a new number would get: a number we know is told the rest on WhatsApp. */
+export const BOOKED_DESCRIPTION =
+  "Booked, or asked for. A number with a consultation still to happen, or past consultations, gets the answer a " +
+  "new number would, books nothing, and is told why on WhatsApp.";
+
+const OpenWindowsSchema = z
   .object({
-    error: ErrorResponseSchema.shape.error,
-    booked: z
-      .object({ date: z.iso.date(), window: z.enum(BOOKING_WINDOWS) })
-      .strict()
-      .openapi({ description: "The day and window of the consultation still to happen." }),
+    plan: z.enum(PLANS),
+    days: z
+      .array(
+        z
+          .object({
+            date: z.iso.date(),
+            windows: z
+              .object({ morning: z.boolean(), afternoon: z.boolean(), evening: z.boolean() })
+              .strict()
+              .openapi({ description: "true where booking that window now would be taken; false where it is full." }),
+          })
+          .strict(),
+      )
+      .openapi({ description: "The days the form offers: 14, from tomorrow in India." }),
   })
   .strict()
-  .openapi("AlreadyBooked");
+  .openapi("OpenWindows");
 
-/** 409: a window gone, or a consultation this number already has. */
-export const takenOrBooked = {
-  description:
-    "taken: that window has gone; already_booked: this number has a consultation still to happen; " +
-    "idempotency_in_progress: the first request with this key is still running",
-  content: { "application/json": { schema: z.union([ErrorResponseSchema, AlreadyBookedSchema]) } },
-} as const;
+const openWindowsRoute = createRoute({
+  method: "get",
+  path: "/api/availability/public",
+  summary: "The days and windows the booking form can book, open or full. Cacheable for a minute.",
+  request: {
+    query: z.object({
+      pincode: PincodeSchema,
+      plan: z.enum(PLANS).openapi({ description: "The consultation alone, or the consultation and fit in one visit." }),
+    }),
+  },
+  responses: {
+    200: { description: "Each day's three windows", content: { "application/json": { schema: OpenWindowsSchema } } },
+    400: errorResponse("invalid_request: fields names the pincode or the plan"),
+    422: errorResponse("not_bookable: the pincode is not served"),
+  },
+});
 
 const consultationRoute = createRoute({
   method: "post",
@@ -213,18 +237,17 @@ const consultationRoute = createRoute({
     body: { content: { "application/json": { schema: ConsultationRequestSchema } } },
   },
   responses: {
-    201: { description: "Booked, or asked for", content: { "application/json": { schema: ConsultationSchema } } },
+    201: { description: BOOKED_DESCRIPTION, content: { "application/json": { schema: ConsultationSchema } } },
     400: errorResponse(
       "invalid_request: fields names what was refused, address.pincode for an address in another pincode, window " +
         "for one visit in the evening",
     ),
     403: errorResponse("turnstile_failed"),
-    409: takenOrBooked,
+    409: takenOrInProgress,
     422: errorResponse(
-      "not_bookable: the pincode is not served, the day is not open, or this number is past consultations and " +
-        "books in the app; code_not_applicable: the discount code does not apply, fields names discount_code; " +
-        "no_product: one visit, on a day the console offers no hair system; idempotency_key_reused: the key was " +
-        "used with a different body",
+      "not_bookable: the pincode is not served, or the day is not open; code_not_applicable: the discount code " +
+        "does not apply, fields names discount_code; no_product: one visit, on a day the console offers no hair " +
+        "system; idempotency_key_reused: the key was used with a different body",
     ),
     429: errorResponse("rate_limited"),
     503: errorResponse("unavailable: Turnstile could not be reached"),
@@ -260,6 +283,15 @@ function rememberedInvite(c: Context<AppEnv>, code: string | undefined): Promise
 }
 
 export function registerConsultations(app: App): void {
+  app.openapi(openWindowsRoute, async (c) => {
+    const { pincode, plan } = c.req.valid("query");
+    const served = (await pincodeOf(c.env.DB, pincode))?.served === 1;
+    if (!served) return c.json(errorBody("not_bookable", c.var.requestId), 422);
+    const { settings } = c.var.config;
+    const days = await openDays(c.env.DB, plan, settings.selfServeBooking, c.var.deps.now());
+    return c.json({ plan, days }, 200, { "Cache-Control": "public, max-age=60" });
+  });
+
   app.openapi(consultationRoute, async (c) => {
     const body = c.req.valid("json");
     const { requestId } = c.var;
@@ -273,7 +305,7 @@ export function registerConsultations(app: App): void {
         address: addressOf(body.address),
         date: body.date,
         window: body.window,
-        lossExtent: body.loss_extent,
+        lossExtent: body.loss_extent ?? null,
         turnstileToken: body.turnstile_token,
         attribution: body.attribution ?? {},
         invite: await rememberedInvite(c, body.invite_code),
@@ -282,8 +314,8 @@ export function registerConsultations(app: App): void {
         discountCode: body.discount_code ?? null,
       });
       if (!booked.ok) return booked;
-      const { state, date, window, area, credits, invite, address, oneVisit, discountCode } = booked;
-      const answer = { state, date, window, area, credits, invite, address, one_visit: oneVisit };
+      const { state, date, window, area, credits, invite, oneVisit, discountCode } = booked;
+      const answer = { state, date, window, area, credits, invite, one_visit: oneVisit };
       return { ok: true, body: { ...answer, discount_code: discountCode } };
     });
     if (run.kind === "replay") return c.json(run.body, 201);
@@ -292,9 +324,6 @@ export function registerConsultations(app: App): void {
 
     const booked = run.outcome;
     if (booked.ok) return c.json(booked.body, 201);
-    if (booked.booked !== undefined) {
-      return c.json({ ...errorBody("already_booked", requestId), booked: booked.booked }, 409);
-    }
     return c.json(errorBody(booked.code, requestId, booked.fields), booked.status);
   });
 
@@ -308,7 +337,7 @@ export function registerConsultations(app: App): void {
         name: body.name,
         mobile: body.mobile,
         pincode: body.pincode,
-        lossExtent: body.loss_extent,
+        lossExtent: body.loss_extent ?? null,
         launchAlert: body.launch_alert,
         turnstileToken: body.turnstile_token,
         attribution: body.attribution ?? {},

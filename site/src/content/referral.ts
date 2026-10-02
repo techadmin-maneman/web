@@ -146,6 +146,7 @@ export const referral = {
     placeholder: "122018",
     check: "Check",
     checking: "Checking",
+    empty: "Enter your pincode.",
     invalid: "That is not a six-digit Indian pincode.",
     failed: "We could not check that just now. Try again.",
     // Not drawn: a pincode typed wrong could only be put right by reloading the page. The owner approves the words (open point 45).
@@ -163,11 +164,16 @@ export const referral = {
     forPincode: "For {pincode}",
     date: "Pick a date",
     window: "Window",
+    // A no-break space keeps "am" and "pm" on the line of their hour.
     windows: [
-      { id: "morning", label: "Morning", hours: "9 am to 12 pm" },
-      { id: "afternoon", label: "Afternoon", hours: "12 to 4 pm" },
-      { id: "evening", label: "Evening", hours: "4 to 8 pm" },
+      { id: "morning", label: "Morning", hours: "9 am to 12 pm" },
+      { id: "afternoon", label: "Afternoon", hours: "12 to 4 pm" },
+      { id: "evening", label: "Evening", hours: "4 to 8 pm" },
     ],
+    // Not drawn: a window nobody is free in, and a fortnight with none open. The owner approves the words.
+    full: "Full",
+    noneOpen: "Fully booked for the next two weeks.",
+    noneOpenAction: "Message us on WhatsApp for the next opening",
     /** Not drawn: what to book, the consultation alone or the consultation and fit in one visit. */
     plan: {
       legend: "What to book",
@@ -197,17 +203,16 @@ export const referral = {
   },
   /**
    * Not drawn: no board puts an address on the consultation form. The owner ruled on 27 September 2026 that the
-   * site takes the full address before a consultation is booked (ADR 0025, item 62; ADR 0081), so the fields and
-   * their words are the client app's own (apps/app/src/content.ts, `profile.form`). The owner approves the words
-   * (open point 45).
+   * site takes the full address before a consultation is booked (ADR 0025, item 62; ADR 0081), so the fields are
+   * the client app's own (apps/app/src/content.ts, `profile.form`). The owner approves the words (open point 45).
    */
   address: {
-    legend: "Where we come",
+    legend: "Your address",
     labels: {
       flat: "Flat or house number",
       floor: "Floor (optional)",
       tower: "Tower or block (optional)",
-      line1: "Building, society or street",
+      line1: "Building or society",
       line2: "Street (optional)",
       landmark: "Landmark (optional)",
       locality: "Sector or area",
@@ -216,10 +221,11 @@ export const referral = {
     },
     errors: {
       flat: "Please give the flat or house number.",
-      line1: "Please give the building, society or street.",
+      line1: "Please give the building or society.",
       locality: "Please give the sector or area.",
       city: "Please give the city.",
     },
+    more: "Add floor, tower or landmark",
     pincode: "Pincode",
     accessHint: "A gate code, or where to park. Your technician sees it the day before the visit.",
   },
@@ -249,33 +255,19 @@ export const referral = {
     mobileError: "Please enter a ten-digit mobile number.",
     consentError: "We need this to contact you.",
   },
-  /** What each answer says (C4). */
+  /**
+   * What a booking answers (C4), the same for every number, since whoever typed it may not be its owner: the details
+   * go to the number on WhatsApp, and the app shows them once its owner signs in with a code. Not drawn as worded
+   * here; the owner approves the words.
+   */
   booked: {
-    label: "Consultation booked",
-    body: "A technician messages you the day before.",
-    free: "free",
-    // Not drawn: the consultation and fit in one visit costs nothing until the fit (ADR 0105). The owner approves the
-    // words (open point 165).
-    payOnceFitted: "pay once fitted",
+    label: "Booking received",
+    title: "Check WhatsApp",
+    body: "Your booking details are on their way to +91 {mobile}.",
     credits: visitsLand,
-    back: "See the site",
-    // Not drawn on C4 (docs/fidelity-method.md, "The referral landing"). The owner approves the words (open point 45).
-    number: "On WhatsApp to +91 {mobile}",
-    // Not drawn: the number already had an address, which the booking kept rather than the one typed (ADR 0081). It
-    // names no part of that address, since whoever typed the number may not be its owner. The owner approves the
-    // words (open point 45).
-    addressOnAccount:
-      "We come to the address already on your account, not the one given here. To change it, message us on WhatsApp.",
-    // Not drawn: the consultation and fit in one visit (ADR 0105). The owner approves the words (open points 45 and
-    // 162).
-    labelOneVisit: "Consultation and fit booked",
-    oneVisit:
-      "Your technician brings the range for you to choose from. Once you are fitted, you pay by a link sent to your phone.",
-    calendar: "Add to calendar",
-    calendarFile: "mane-man-consultation.ics",
-    calendarTitle: "Mane Man consultation",
-    calendarTitleOneVisit: "Mane Man consultation and fit",
-    app: "See it in the app",
+    appHint: "See it in the app too: sign in with this number.",
+    app: "Open the app",
+    back: "Back to the site",
   },
   /**
    * C4's "Code expired" frame. The invite has lapsed for this friend only, which the API can tell once they have
@@ -292,11 +284,9 @@ export const referral = {
    * (docs/decisions/0060-an-invited-friend-reaches-ops-and-the-crm.md).
    */
   requested: {
-    label: "Consultation requested",
-    // Not drawn: the consultation and fit in one visit, asked for while self-serve booking is off (ADR 0105).
-    labelOneVisit: "Consultation and fit requested",
-    body: "We message you on WhatsApp to fix the hour.",
-    asked: "You asked for",
+    label: "Request received",
+    title: "We will message you",
+    body: "On WhatsApp, at +91 {mobile}, to fix the hour.",
   },
   listed: {
     label: "On the list",
@@ -306,16 +296,14 @@ export const referral = {
     creditsFrom: "{name}’s invite holds for 12 months after that.",
     credits: "The invite holds for 12 months after that.",
     tryOn: "Try a new look",
-    back: "See the site",
+    back: "Back to the site",
   },
   errors: {
     rateLimited: "That is a few too many tries. Please try again tomorrow.",
     turnstile: "We could not confirm you are a person. Please try again.",
-    taken: "That window has just gone. Please pick another.",
+    taken: "That window is full. Please pick another.",
     notBookable: "That day is no longer open. Please pick another.",
     other: "Something went wrong at our end. Please try again.",
-    // Not drawn: the number already has a consultation to come (ADR 0025, item 41). The owner approves the words (open point 45).
-    alreadyBooked: "This number already has a consultation, {when}. To change it, message us on WhatsApp.",
     // Not drawn: the discount code given does not apply, whatever the reason (ADR 0108). The owner approves the words.
     codeNotApplicable: "That discount code does not apply. Check it, or leave it out to book without it.",
     // Not drawn: the one visit was asked for while no hair system is offered in the console.

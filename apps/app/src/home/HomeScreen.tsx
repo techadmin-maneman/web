@@ -4,32 +4,35 @@
 // never says nothing is booked, nor offers the booking again, while one is under way. Nor while a visit paid for, or
 // booked free, waits for FSM to take it: Home says it is being booked, and that the payment is in (ADR 0095).
 //
-// Beneath the card, B1's credit tile while there is a balance, and its one contextual prompt, in the owner's order:
-// an address to give, the next service due and not booked, the replacement falling due, an invoice just issued
-// (src/domain/home-prompt.ts). The next visit opens the booking sheet with its day and window chosen, and a
-// replacement is booked here like any other visit, with a page on what it involves (ADR 0086).
+// Beneath the card, B1's credit tile while there is a balance, its one prompt, and an invoice just issued as a line
+// beneath that (src/domain/home-prompt.ts). Where the prompt offers the next visit, it is Home's one way to book it,
+// with the sheet opened on its day and window; a replacement is booked here like any other visit.
 
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { fullDate, indiaDate, listMonth, shortDate } from "@maneman/web-kit/dates";
+import { fullDate, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { documentUrl, type Me } from "../api.ts";
-import { BOOKING_URL, home, messages, VISIT_TYPES, visits, WINDOW_NAMES, windowText } from "../content.ts";
+import { BOOKING_URL, home, messages, VISIT_TYPES, visits, windowText } from "../content.ts";
 import { BookButton } from "../booking/BookButton.tsx";
 import { BookNext } from "../booking/BookNext.tsx";
 import type { ChangingVisit } from "../booking/ChangeSheet.tsx";
 import { visitName } from "../lib/visit.ts";
 import { useSession } from "../session.ts";
 import { AppLink, Shell } from "./Shell.tsx";
+import { monthNow, nextVisitWords, replacementLine } from "./next-visit-words.ts";
 import { Actions, changingOf, hasBegun, notingOf, VisitCard, whenText, type NotingVisit } from "./VisitCard.tsx";
 import styles from "./home.module.css";
 
 export function HomeScreen() {
   const { me, offline } = useSession();
+  // A Home the phone kept from an earlier release has no invoice line at all.
+  const invoice = me.invoice ?? null;
   return (
     <Shell header={{ kind: "home" }} tab="/">
       <div className={styles.home}>
         <HomeBody me={me} offline={offline} />
         {me.credits !== null && <CreditTile credits={me.credits} />}
         {me.prompt !== null && <Prompt prompt={me.prompt} />}
+        {invoice !== null && <InvoiceLine invoice={invoice} />}
       </div>
     </Shell>
   );
@@ -66,7 +69,9 @@ function HomeBody({ me, offline }: { me: Me; offline: boolean }) {
     );
   }
   if (me.being_booked !== null) return <BeingBooked booking={me.being_booked} />;
-  if (me.state === "fitted" || me.booking.types.includes("first_fit")) return <NothingNext />;
+  if (me.state === "fitted" || me.booking.types.includes("first_fit")) {
+    return <NothingNext promptBooks={me.prompt?.kind === "next_visit"} />;
+  }
   return <NothingBooked me={me} offline={offline} />;
 }
 
@@ -160,82 +165,93 @@ function CreditTile({ credits }: { credits: NonNullable<Me["credits"]> }) {
   );
 }
 
+type PromptOf<Kind extends NonNullable<Me["prompt"]>["kind"]> = Extract<NonNullable<Me["prompt"]>, { kind: Kind }>;
+
 /** Board B1's one prompt: a line, and the way to act on it. */
 function Prompt({ prompt }: { prompt: NonNullable<Me["prompt"]> }) {
-  const copy = home.prompt;
   switch (prompt.kind) {
     case "address":
       return (
         <div className={styles.prompt}>
-          <p className={styles.promptLine}>{copy.address}</p>
+          <p className={styles.promptLine}>{home.prompt.address}</p>
           <AppLink className={styles.promptLink} to="/profile">
-            <span>{copy.addAddress}</span>
+            <span>{home.prompt.addAddress}</span>
           </AppLink>
         </div>
       );
     case "next_visit":
-      return (
-        <div className={styles.prompt}>
-          <p className={styles.promptLine}>
-            {copy.nextVisit(
-              VISIT_TYPES[prompt.type],
-              shortDate(prompt.date),
-              prompt.window === null ? null : WINDOW_NAMES[prompt.window],
-            )}
-          </p>
-          <div className={styles.promptActions}>
-            <BookButton
-              quiet
-              className={styles.promptLink}
-              type={prompt.type}
-              tier={prompt.tier}
-              offer={{ date: prompt.date, window: prompt.window }}
-              label={copy.bookNext}
-              message={prompt.type === "replacement" ? messages.bookReplacement : messages.book}
-            />
-            {prompt.type === "replacement" && <Involves />}
-          </div>
-        </div>
-      );
-    case "replacement_due": {
-      const now = new Date();
-      const thisMonth = `${String(now.getFullYear())}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-      const month = listMonth(prompt.month, now.getFullYear());
-      const firstDay = `${prompt.month}-01`;
-      return (
-        <div className={styles.prompt}>
-          <p className={styles.promptLine}>
-            {prompt.month < thisMonth ? visits.record.overdue(month) : visits.record.due(month)}
-          </p>
-          <div className={styles.promptActions}>
-            {prompt.bookable && (
-              <BookButton
-                quiet
-                className={styles.promptLink}
-                type="replacement"
-                tier={prompt.tier}
-                // The strip starts with the month the piece falls due, never on a day of it (ADR 0059).
-                {...(prompt.month > thisMonth ? { from: firstDay } : {})}
-                label={copy.bookReplacement}
-                message={messages.bookReplacement}
-              />
-            )}
-            <Involves />
-          </div>
-        </div>
-      );
-    }
-    case "invoice_ready":
-      return (
-        <div className={styles.prompt}>
-          <p className={styles.promptLine}>{copy.invoice(visitName(prompt.type), shortDate(prompt.date))}</p>
-          <a className={styles.promptLink} href={documentUrl(prompt.visit_id)} target="_blank" rel="noopener">
-            <span>{copy.openInvoice}</span>
-            <VisuallyHidden>{visits.detail.invoice.newTab}</VisuallyHidden>
-          </a>
-        </div>
-      );
+      return <NextVisitPrompt prompt={prompt} />;
+    case "replacement_due":
+      return <ReplacementPrompt prompt={prompt} />;
   }
+}
+
+/** The next visit, booked on its day and window; beside a service, the replacement once that may be booked. */
+function NextVisitPrompt({ prompt }: { prompt: PromptOf<"next_visit"> }) {
+  const words = nextVisitWords(prompt, monthNow(new Date()));
+  return (
+    <div className={styles.prompt}>
+      <p className={styles.promptLine}>{words.line}</p>
+      <div className={styles.promptActions}>
+        <BookButton
+          quiet
+          className={styles.promptLink}
+          type={prompt.type}
+          tier={prompt.tier}
+          offer={{ date: prompt.date, window: prompt.window }}
+          label={words.book}
+          message={prompt.type === "replacement" ? messages.bookReplacement : messages.book}
+        />
+        {prompt.type === "replacement" && <Involves />}
+        {prompt.replacement_bookable && (
+          <BookButton
+            quiet
+            className={styles.promptLink}
+            type="replacement"
+            label={home.next.orReplacement}
+            message={messages.bookReplacement}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** The month the piece in wear falls due, never a day of it, once that month may be booked. */
+function ReplacementPrompt({ prompt }: { prompt: PromptOf<"replacement_due"> }) {
+  const thisMonth = monthNow(new Date());
+  return (
+    <div className={styles.prompt}>
+      <p className={styles.promptLine}>{replacementLine(prompt.month, thisMonth)}</p>
+      <div className={styles.promptActions}>
+        <BookButton
+          quiet
+          className={styles.promptLink}
+          type="replacement"
+          tier={prompt.tier}
+          // The strip starts with the month the piece falls due, never on a day of it.
+          {...(prompt.month > thisMonth ? { from: `${prompt.month}-01` } : {})}
+          label={home.prompt.bookReplacement}
+          message={messages.bookReplacement}
+        />
+        <Involves />
+      </div>
+    </div>
+  );
+}
+
+/** An invoice just issued: a line beneath the prompt, or the only one. */
+function InvoiceLine({ invoice }: { invoice: NonNullable<Me["invoice"]> }) {
+  const copy = home.prompt;
+  return (
+    <div className={styles.prompt}>
+      <p className={styles.promptLine}>{copy.invoice(visitName(invoice.type), shortDate(invoice.date))}</p>
+      <a className={styles.promptLink} href={documentUrl(invoice.visit_id)} target="_blank" rel="noopener">
+        <span>{copy.openInvoice}</span>
+        <VisuallyHidden>{visits.detail.invoice.newTab}</VisuallyHidden>
+      </a>
+    </div>
+  );
 }
 
 /** "See what that involves": the app's own page on a replacement, in place of a WhatsApp message to us. */
@@ -248,17 +264,17 @@ function Involves() {
 }
 
 /**
- * A client with no visit booked who may book the next: a first fit after the consultation, or a service visit or a
- * replacement, in the sheet with the day and window the app offers chosen (ADR 0086).
+ * A client with no visit booked who may book the next. Where the prompt beneath offers the next visit, it is the one
+ * way to book it; else the first fit, or the visit the app offers, is booked from here.
  */
-function NothingNext() {
+function NothingNext({ promptBooks }: { promptBooks: boolean }) {
   return (
     <section className={styles.nothing} aria-labelledby="next">
       <h1 className={styles.label} id="next">
         {home.next.label}
       </h1>
       <p>{home.next.none}</p>
-      <BookNext className={styles.book} otherClassName={styles.promptLink} />
+      {!promptBooks && <BookNext className={styles.book} offerOther={false} />}
     </section>
   );
 }
@@ -268,7 +284,6 @@ function NothingBooked({ me, offline }: { me: Me; offline: boolean }) {
   return (
     <section className={styles.nothing}>
       <h1 className={styles.nothingTitle}>{home.nothing.title}</h1>
-      <p>{home.nothing.body}</p>
       {me.booking.self_serve || offline ? (
         <BookButton className={styles.book} label={home.nothing.book} message={messages.book} />
       ) : (

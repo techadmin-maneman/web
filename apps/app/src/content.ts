@@ -132,6 +132,9 @@ export const VISIT_TYPES = {
 // PLACEHOLDER: a visit whose FSM service item is none of the four.
 export const OTHER_VISIT = "Visit";
 
+/** A price's GST, beneath the amount charged once GST applies: "Rs. 30,000 + Rs. 5,400 GST". */
+export const gstSplit = (exGst: string, gst: string) => `${exGst} + ${gst} GST`;
+
 /**
  * While self-serve booking is off, booking, rescheduling and notes open WhatsApp to ops with a message ready
  * (docs/prompts/phase2-backend.md, "Booking"). PLACEHOLDER wording, all of it.
@@ -161,7 +164,7 @@ export const home = {
   note: "Add a note",
   consultation: {
     label: "Your consultation",
-    free: "Free · nothing to pay",
+    free: "Free",
   },
   /** Board B1's credit tile: "2 visit credits", with when the soonest expire. */
   credits: {
@@ -169,10 +172,9 @@ export const home = {
     expire: (date: string) => `Expire ${date}`,
   },
   /**
-   * Board B1's one prompt, the first that applies, in the owner's order (src/domain/home-prompt.ts). The
-   * replacement's line and "See what that involves" are the board's own, and Visits' record words the line the same
-   * way; the link now opens the app's own page on what a replacement involves (ADR 0086). PLACEHOLDER: everything
-   * else here.
+   * Board B1's one prompt, and the invoice line beneath it (src/domain/home-prompt.ts). The replacement's line and
+   * "See what that involves" are the board's own, and Visits' record words the line the same way. PLACEHOLDER:
+   * everything else here.
    */
   prompt: {
     address: "Add your address, so your technician can find the door.",
@@ -182,8 +184,12 @@ export const home = {
       window === null
         ? `Your next ${what.toLowerCase()} is due on ${date}.`
         : `Your next ${what.toLowerCase()} is due on ${date}, in the ${window.toLowerCase()}.`,
+    /** Once its due day has passed: "Your service visit was due on Thu 24 Sep." */
+    wasDue: (what: string, date: string) => `Your ${what.toLowerCase()} was due on ${date}.`,
     /** PLACEHOLDER: the booking sheet, with the day and window chosen. */
     bookNext: "Book it for then",
+    /** The booking sheet at the day offered, once the due day has passed: "Book it for Sat 3 Oct". */
+    bookOn: (date: string) => `Book it for ${date}`,
     /** PLACEHOLDER: the booking sheet, at the replacement. */
     bookReplacement: "Book the replacement",
     involves: "See what that involves",
@@ -196,14 +202,14 @@ export const home = {
     label: "Your next visit",
     length: (what: string, minutes: number) => `${what} · ${String(minutes)} minutes`,
     // PLACEHOLDER: the design draws no Home for a fitted client with nothing booked.
-    none: "No visit booked.",
+    none: "Nothing booked yet.",
     /** Board C1's button, which Home's card and Visits both show. */
     book: "Book your next visit",
     // PLACEHOLDER: a lead whose consultation is done.
     bookFirstFit: "Book your first fit",
     // PLACEHOLDER: a fitted client whose piece falls due before their next service would.
     bookReplacement: "Book your replacement piece",
-    // PLACEHOLDER: the other kind of visit a fitted client may book, beside the one the app offers (ADR 0086).
+    // PLACEHOLDER: the other kind of visit a fitted client may book, beside the one the app offers.
     orReplacement: "Or book a replacement piece",
     orService: "Or book a service visit",
   },
@@ -227,7 +233,6 @@ export const home = {
   // PLACEHOLDER: the design draws no Home for a client with nothing booked.
   nothing: {
     title: "Nothing booked",
-    body: "Book a free consultation, and the app will show it here.",
     book: "Book a free consultation",
   },
 } as const;
@@ -252,7 +257,7 @@ export const visits = {
   upcoming: "Upcoming",
   past: "Past",
   // PLACEHOLDER
-  none: "No visits booked.",
+  none: "Nothing booked yet.",
   /** Board C1: a visit paid for ahead, or covered by a credit. */
   prepaid: "Prepaid",
   // PLACEHOLDER: a visit that is not this client's, or no longer exists.
@@ -273,7 +278,6 @@ export const visits = {
     due: (month: string) => `Your replacement piece is due in ${month}.`,
     /** Past its month, the same fact in the tense it is now true in. */
     overdue: (month: string) => `Your replacement piece was due in ${month}.`,
-    approximate: "We give the month rather than a day, because the date can still change.",
     rows: { firstFit: "First fit", services: "Service visits", replacements: "Replacements", spend: "Total paid" },
     /** A client fitted before FSM held their visits has no first fit to name, which is not the same as none. */
     noFirstFit: "Not on record",
@@ -299,10 +303,9 @@ export const visits = {
       message: "Message us",
       // The owner's own words on 23 September 2026: a free visit says "No charge", and never promises a document.
       free: "No charge for this visit, so there is no invoice.",
-      // PLACEHOLDER: an invoice held back on purpose (ADR 0070): a credit visit's waits on the accountant's ruling
-      // (open point 14), and a draft whose total is not what the visit was sold for is checked before it is sent.
-      credit:
-        "A visit credit paid for this visit. We send its invoice once our accountant has settled how it is written.",
+      // PLACEHOLDER: an invoice held back on purpose: a credit visit's, and a draft whose total is not what the visit
+      // was sold for, which is checked before it is sent.
+      credit: "Paid with a free service visit. Your invoice will follow.",
       checking: "We are checking this invoice before we send it. Message us if you need it sooner.",
     },
     // PLACEHOLDER: the design draws no visit the client missed (LIFE-07), nor the dispute of its charge (ADR 0096).
@@ -351,7 +354,6 @@ export const booking = {
     /** A first fit's choice, which is only ever one of the hair systems ops offer. */
     titleFirstFit: "Choose your hair system",
     free: "Free",
-    incl: (amount: string) => `${amount} incl. GST`,
     continue: "Continue",
   },
   /** PLACEHOLDER: no board draws it. A first fit while ops offer no hair system in the console. */
@@ -386,7 +388,6 @@ export const booking = {
   pay: {
     title: "Pay and confirm",
     held: (time: string) => `Slot held ${time}`,
-    incl: (amount: string) => `${amount} incl. GST`,
     freeUntil: (when: string) => `Free to move until ${when}. After that it is charged.`,
     // PLACEHOLDER: a booking ops set to cost nothing when changed late (docs/decisions/0088-every-policy-in-the-console.md).
     freeAnyTime: "Free to move or cancel at any time.",
@@ -436,7 +437,7 @@ export const booking = {
       label: "Discount code",
       apply: "Apply",
       applying: "Applying",
-      /** "Code TENOFF: Rs. 200 off", before GST, beneath the price. */
+      /** "Code TENOFF: Rs. 236 off", beneath the price: what it takes off the price shown, GST included. */
       applied: (code: string, off: string) => `Code ${code}: ${off} off`,
       remove: "Remove code",
       removing: "Removing",
@@ -452,13 +453,13 @@ export const booking = {
     },
   },
   /**
-   * Board C5's late-fee line, which C7 repeats word for word: the ex-GST figure, and the inclusive one after it,
+   * Board C5's late-fee line, which C7 repeats word for word: the amount charged, and its GST split after it,
    * muted, once GST applies.
    */
   lateFee: {
     /** The notice is the one the visit is sold under, which ops set: 24 hours to begin with. */
     costs: (amount: string, hours: number) => `Moving inside ${String(hours)} hours costs ${amount}`,
-    inclusive: (amount: string) => ` (${amount} incl. GST)`,
+    split: (split: string) => ` (${split})`,
     rest: ". The balance carries over.",
   },
   // PLACEHOLDER: said to a screen reader, once, a minute before the hold lapses.
@@ -667,7 +668,7 @@ export const refer = {
     unnamed: "A friend",
     when: (month: string) => `Fitted ${month}`,
     each: (visits: number) => (visits === 1 ? "1 visit earned" : `${String(visits)} visits earned`),
-    only: "Completed fits only. Whether an invite was opened is your friend's business.",
+    only: "Friends show here once they're fitted.",
     none: "Nobody you have referred has been fitted yet.",
     back: "Back to refer",
   },
@@ -735,7 +736,12 @@ export const payments = {
   back: "Back to payments",
   // PLACEHOLDER: an entry that paid for no visit we know of.
   payment: "Payment",
-  refundOf: (what: string) => `${what} · refund`,
+  refund: "Refund",
+  /** A refund as a WhatsApp asking for its voucher names it: "service visit refund on 2 Sep 2030". */
+  refundOf: (what: string) => `${what} refund`,
+  /** A refund's figure: money coming back, never another charge. */
+  moneyBack: (amount: string) => `+ ${amount}`,
+  backTo: (method: string) => `back to your ${method}`,
   // PLACEHOLDER: a late fee's name, and a charge's row; the evidence is the design's ("cancelled 9:14 am, visit
   // was 10 am"), with the dates when the two fall on different days.
   lateFeeOf: (what: string) => `${what} · late fee`,
@@ -782,7 +788,6 @@ export const payments = {
       return credits;
     },
   },
-  refundTo: (method: string) => `refund to ${method}`,
   /** A payment's status, and a refund's. */
   status: {
     captured: "Paid",
@@ -813,10 +818,15 @@ export const payments = {
     emi: ["EMI", "EMI"],
     paylater: ["pay later", "Pay later"],
   } as Readonly<Record<string, readonly [string, string]>>,
-  incl: (amount: string) => `${amount} incl.`,
-  including: (amount: string, percent: number) => `${amount} including GST at ${String(percent)}%`,
-  // PLACEHOLDER: the design draws a payment's rows; a refund's "Refunded to" is ours.
-  rows: { date: "Date", method: "Method", destination: "Refunded to", status: "Status", reference: "Reference" },
+  // PLACEHOLDER: the design draws a payment's rows; a refund's "Refunded to" and "For" are ours.
+  rows: {
+    date: "Date",
+    method: "Method",
+    destination: "Refunded to",
+    status: "Status",
+    reference: "Reference",
+    for: "For",
+  },
   documents: "Tax documents",
   invoice: "Tax invoice",
   /** Said to a screen reader only, since a document opens outside the app. */
@@ -835,7 +845,7 @@ export const payments = {
     // PLACEHOLDER: receipts and vouchers wait for the invoicing route (docs/open-points.md, item 3).
     receipt: "The receipt is not ready yet.",
     voucher: "The refund voucher is not ready yet.",
-    notify: "Notify me",
+    notify: "Ask us for it",
   },
 } as const;
 
@@ -867,7 +877,7 @@ export const profile = {
   where: "Where we come",
   editAddress: "Edit address and access notes",
   // PLACEHOLDER: the design draws the profile with an address already given, and no form.
-  noAddress: "No address yet. We confirm it with you before your visit.",
+  noAddress: "No address yet. Add it before you book.",
   addAddress: "Add your address and access notes",
   // PLACEHOLDER: the design draws no landmark line (ADR 0054).
   near: (landmark: string) => `Near ${landmark}`,

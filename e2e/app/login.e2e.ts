@@ -32,7 +32,7 @@ test("a booked number logs in with its code and lands on its consultation", asyn
   await expect(page.getByRole("heading", { level: 1, name: "Your consultation" })).toBeVisible();
   await expect(page.getByText("Morning, 9 am to 12 pm")).toBeVisible();
   await expect(page.getByText("Gurgaon", { exact: true })).toBeVisible();
-  await expect(page.getByText("Free · nothing to pay")).toBeVisible();
+  await expect(page.getByText("Free", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Your profile" })).toHaveText("RM");
   await expect(page.getByRole("link", { name: "Reschedule" })).toHaveAttribute(
     "href",
@@ -165,6 +165,17 @@ test("a number with no booking sees the same screen, and no code opens it", asyn
   await expect(page.getByText("has a booking with us, a code is on its way on WhatsApp.")).toBeVisible();
   await enter(page, CODE);
   await expect(page.getByRole("alert")).toHaveText("That code did not match. Four attempts left.");
+});
+
+// The site's booking confirmation opens the app with the number typed there.
+test("a link from the site's booking fills in its number, and the code is still asked for", async ({ page }) => {
+  const mobile = randomMobile();
+  await page.goto(`/#mobile=${mobile}`);
+  await expect(page.getByRole("textbox", { name: "Mobile number" })).toHaveValue(mobile);
+  // The number is taken off the address at once, so it is not left in the browser's history.
+  await expect(page).not.toHaveURL(/mobile=/);
+  await page.getByRole("button", { name: "Send code on WhatsApp" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Enter the code" })).toBeVisible();
 });
 
 test("A3 is reached by choice, and points to booking and WhatsApp", async ({ page }) => {
