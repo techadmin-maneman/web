@@ -79,15 +79,15 @@ function LastMinute({ left }: { left: number }) {
 
 /**
  * The late fee's line, the same on the pay step (boards C4 and C5) and on moving a visit (C7): the
- * ex-GST figure in the sentence, and the inclusive one muted after it once GST applies.
+ * amount charged in the sentence, and its GST split muted after it once GST applies.
  */
 export function LateFee({ fee, noticeHours }: { fee: Price; noticeHours: number }) {
-  const { exGst, inclusive } = priceFigures(fee);
+  const { amount, split } = priceFigures(fee);
   const copy = booking.lateFee;
   return (
     <>
-      {copy.costs(exGst, noticeHours)}
-      {inclusive !== null && <span className={styles.inclusive}>{copy.inclusive(inclusive)}</span>}
+      {copy.costs(amount, noticeHours)}
+      {split !== null && <span className={styles.inclusive}>{copy.split(split)}</span>}
       {copy.rest}
     </>
   );
@@ -151,7 +151,7 @@ export function ServiceStep(props: {
             {props.services
               .filter((service) => service.type === kind)
               .map((service) => {
-                const { exGst, inclusive } = priceFigures(service.price);
+                const { amount, split } = priceFigures(service.price);
                 return (
                   <label key={service.tier} className={styles.window}>
                     <input
@@ -168,8 +168,8 @@ export function ServiceStep(props: {
                       <span className={styles.windowTime}>{booking.length(service.minutes)}</span>
                     </span>
                     <span className={styles.serviceMoney}>
-                      <span className={styles.windowName}>{service.price.amount === 0 ? copy.free : exGst}</span>
-                      {inclusive !== null && <span className={styles.windowTime}>{copy.incl(inclusive)}</span>}
+                      <span className={styles.windowName}>{service.price.amount === 0 ? copy.free : amount}</span>
+                      {split !== null && <span className={styles.windowTime}>{split}</span>}
                     </span>
                   </label>
                 );
@@ -376,7 +376,7 @@ function payLabel(hold: Hold, moving: MoveTerms | undefined): string {
 /** The pay step's figure: nothing for a visit a credit covers, "Free" for one that costs nothing, else its price. */
 function amountLine(hold: Hold, covered: boolean, free: boolean): string {
   if (covered) return booking.pay.credit.zero;
-  return free ? booking.pay.free : rupees(hold.price.amount_ex_gst);
+  return free ? booking.pay.free : rupees(hold.price.amount);
 }
 
 /**
@@ -438,6 +438,7 @@ export function PayStep(props: {
   // A code is for a visit sold, never a move, nor one a credit pays for, nor a consultation, which costs nothing.
   const takesACode = moving === undefined && !covered && hold.type !== "consultation";
   const listPrice = hold.discount?.list_price ?? null;
+  const { split } = priceFigures(hold.price);
   // A code being applied or taken off may change the price: Pay waits for it, so the order is for the price shown.
   const [codeSending, setCodeSending] = useState(false);
   return (
@@ -453,10 +454,10 @@ export function PayStep(props: {
             {isFirstFit && <p className={styles.itemWhen}>{booking.length(hold.service.minutes)}</p>}
           </div>
           <div className={styles.money}>
-            {covered && <p className={styles.was}>{rupees(hold.price.amount_ex_gst)}</p>}
-            {listPrice !== null && <p className={styles.was}>{rupees(listPrice.amount_ex_gst)}</p>}
+            {covered && <p className={styles.was}>{rupees(hold.price.amount)}</p>}
+            {listPrice !== null && <p className={styles.was}>{rupees(listPrice.amount)}</p>}
             <p className={styles.amount}>{amountLine(hold, covered, free)}</p>
-            {!free && <p className={styles.incl}>{copy.incl(rupees(hold.price.amount))}</p>}
+            {!free && split !== null && <p className={styles.incl}>{split}</p>}
           </div>
         </div>
         {hold.credit !== null && (
