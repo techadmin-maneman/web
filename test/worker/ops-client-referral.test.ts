@@ -205,22 +205,45 @@ describe("POST /api/clients/:id/referral", () => {
       expect(await held.json()).toMatchObject({ held: [{ signals: ["attached_after_fit"] }] });
     });
 
-    it("grants both sides their credits once ops approve it", async () => {
-      await fitted();
-      await attach({ code: "RM4K7P", reason: REASON });
+    async function approve() {
       const id = (await env.DB.prepare("SELECT id FROM referral_attributions").first<{ id: string }>())?.id ?? "";
-      const decided = await request(ops, `/api/referrals/${id}/decision`, {
+      return request(ops, `/api/referrals/${id}/decision`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Origin: "https://maneman.test" },
         body: JSON.stringify({ decision: "approve", reason: "Confirmed with Rohit on the phone" }),
       });
-      expect(decided.status).toBe(200);
-      const credits = await env.DB.prepare(
-        "SELECT person_id, SUM(visits) AS visits FROM credit_ledger WHERE kind = 'grant' GROUP BY person_id ORDER BY person_id",
-      ).all();
-      expect(credits.results).toEqual([
+    }
+
+    const credits = async () =>
+      (
+        await env.DB.prepare(
+          "SELECT person_id, SUM(visits) AS visits FROM credit_ledger WHERE kind = 'grant' GROUP BY person_id ORDER BY person_id",
+        ).all()
+      ).results;
+
+    it("grants both sides their credits once ops approve it", async () => {
+      await fitted();
+      await attach({ code: "RM4K7P", reason: REASON });
+      expect((await approve()).status).toBe(200);
+      expect(await credits()).toEqual([
         { person_id: REFERRER, visits: 3 },
         { person_id: FRIEND, visits: 3 },
+      ]);
+    });
+
+    // It keeps no reward as it is attached, so it takes the one in force when ops approve it (ADR 0107).
+    it("grants the reward ops have set by the time they approve it", async () => {
+      await fitted();
+      await attach({ code: "RM4K7P", reason: REASON });
+      await env.DB.prepare(
+        "INSERT OR REPLACE INTO ops_settings (name, value, set_by, set_at) VALUES ('referral_reward', ?1, 'ops@localhost', ?2)",
+      )
+        .bind(JSON.stringify({ referrer_visits: 2, friend_visits: 4, valid_days: 60 }), NOW.toISOString())
+        .run();
+      expect((await approve()).status).toBe(200);
+      expect(await credits()).toEqual([
+        { person_id: REFERRER, visits: 2 },
+        { person_id: FRIEND, visits: 4 },
       ]);
     });
   });
