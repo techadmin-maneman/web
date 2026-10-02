@@ -3,7 +3,7 @@
 //   GET  /api/no-shows                                   the cases, with their evidence
 //   POST /api/no-shows/:id/decision                      charge or waive, from the evidence
 //   GET  /api/clients/:id/pieces                         the pieces tab
-//   GET  /api/technicians                                who works, the phones they work from, and their leave
+//   GET  /api/technicians                                who works, their phones and leave, and who is switched off
 //   POST /api/technicians/:id/devices/:device/revoke     revoke a phone; it drops its cached jobs
 //   POST /api/technicians/:id/leave                      record leave; the board and booking both refuse those days
 //   POST /api/technicians/:id/leave/:leave/cancel        take it back
@@ -32,6 +32,9 @@ import { opsInputs } from "../http/ops-inputs.ts";
 import { permits } from "../http/staff-access.ts";
 import { WAIVING_A_NO_SHOW } from "../policy/console-routes.ts";
 import { devicesByTechnician, revokeDevice } from "../domain/technicians.ts";
+import { roster, type RosterTechnician } from "../domain/technician-roster.ts";
+import { fieldRecord } from "../config/field-record.ts";
+import { isOursToChange } from "../policy/technician-roster.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { indiaDate } from "../lib/india-time.ts";
@@ -127,6 +130,15 @@ const LeaveSchema = z
   .strict()
   .openapi("TechnicianLeave");
 
+const MOBILE = z
+  .union([z.string(), z.null()])
+  .openapi({ description: "The number he signs in with, +91 and ten digits; null where none is recorded." });
+const EDITABLE = z.boolean().openapi({
+  description:
+    "Whether ops change him here. While FSM is the record of field work, a technician FSM lists is changed in FSM; " +
+    "one ops added is theirs.",
+});
+
 const TechniciansSchema = z
   .object({
     technicians: z.array(
@@ -136,6 +148,8 @@ const TechniciansSchema = z
           name: z.string(),
           initials: z.string(),
           zone: z.union([z.string(), z.null()]),
+          mobile: MOBILE,
+          editable: EDITABLE,
           devices: z.array(
             z
               .object({
@@ -152,6 +166,13 @@ const TechniciansSchema = z
         })
         .strict(),
     ),
+    switched_off: z
+      .array(
+        z
+          .object({ id: z.uuid(), name: z.string(), zone: z.union([z.string(), z.null()]), mobile: MOBILE, editable: EDITABLE })
+          .strict(),
+      )
+      .openapi({ description: "Technicians switched off, by name: they cannot sign in, and nothing is booked on them." }),
   })
   .strict()
   .openapi("Technicians");
@@ -224,7 +245,7 @@ const piecesRoute = createRoute({
 const techniciansRoute = createRoute({
   method: "get",
   path: "/api/technicians",
-  summary: "Active technicians, the phones they have logged in on, and the leave they are down for",
+  summary: "Active technicians, the phones they have logged in on and their leave, and those switched off",
   responses: {
     200: { description: "The technicians", ...json(TechniciansSchema) },
     403: errorResponse("access_required"),
@@ -355,22 +376,32 @@ export function registerOpsField(app: App): void {
   });
 
   app.openapi(techniciansRoute, async (c) => {
-    const { results } = await c.env.DB.prepare(
-      "SELECT id, name, initials, zone FROM technicians WHERE active = 1 ORDER BY name",
-    ).all<{ id: string; name: string; initials: string; zone: string | null }>();
     // The phones and the leave are one read each for the whole roster, not one per technician.
-    const [devices, leave] = await Promise.all([
+    const [everyone, devices, leave] = await Promise.all([
+      roster(c.env.DB),
       devicesByTechnician(c.env.DB),
       leaveFrom(c.env.DB, indiaDate(c.var.deps.now())),
     ]);
-    const technicians = results.map((technician) => ({
-      ...technician,
-      devices: devices.get(technician.id) ?? [],
-      leave: leave
-        .filter((period) => period.technician_id === technician.id)
-        .map(({ id, from, to, note }) => ({ id, from, to, note })),
-    }));
-    return c.json({ technicians }, 200);
+    const record = fieldRecord(c.var.config.providers);
+    const summaryOf = (technician: RosterTechnician) => ({
+      id: technician.id,
+      name: technician.name,
+      zone: technician.zone,
+      mobile: technician.mobile,
+      editable: isOursToChange(record, technician.handWritten),
+    });
+    const technicians = everyone
+      .filter((technician) => technician.active)
+      .map((technician) => ({
+        ...summaryOf(technician),
+        initials: technician.initials,
+        devices: devices.get(technician.id) ?? [],
+        leave: leave
+          .filter((period) => period.technician_id === technician.id)
+          .map(({ id, from, to, note }) => ({ id, from, to, note })),
+      }));
+    const switchedOff = everyone.filter((technician) => !technician.active).map(summaryOf);
+    return c.json({ technicians, switched_off: switchedOff }, 200);
   });
 
   app.openapi(leaveRoute, async (c) => {
