@@ -19,9 +19,13 @@
 // What a referral earns, as ops set it (docs/decisions/0107-referral-rewards-in-the-console.md), is asked for and kept
 // as the prices are, on the landing and on /book, which confirms a booking made with an invite. It goes onto <body>
 // for the island, and the preview promises the friend's visits from it, only where there are any.
+//
+// The built films are given a byte range at a time, which the assets cannot do: iOS Safari plays a video only from a
+// server that can.
 
 import { inviteDescription, inviteTitle } from "./content/referral.ts";
 import type { Invite, PublishedPrices, ReferralReward } from "./lib/api.ts";
+import { partOf } from "./lib/byte-range.ts";
 import { cardPath, HOUSE_CARD, isInvite } from "./lib/invite.ts";
 import { fillPrices, isPublishedPrices, pricesOf, priceWords, type PriceWords } from "./lib/prices.ts";
 import { isReferralReward } from "./lib/reward.ts";
@@ -34,6 +38,9 @@ export interface SiteEnv {
 }
 
 const CODE = /^\/r\/([A-Za-z0-9]{4,12})\/?$/;
+
+/** A built film, /_astro/hero.<hash>.mp4. */
+const FILM = /^\/_astro\/[^/]+\.mp4$/;
 
 /** The pages besides the landing that show a price. */
 const PRICED_PAGES = new Set(["/", "/book"]);
@@ -205,6 +212,8 @@ export function createSiteWorker(clock: () => number = Date.now) {
   return {
     async fetch(request: Request, env: SiteEnv): Promise<Response> {
       const url = new URL(request.url);
+      if (FILM.test(url.pathname)) return partOf(request, await env.ASSETS.fetch(request));
+
       const code = CODE.exec(url.pathname)?.[1]?.toUpperCase();
       if (code === undefined && !PRICED_PAGES.has(url.pathname)) return env.ASSETS.fetch(request);
 

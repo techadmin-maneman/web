@@ -1,12 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { mobileDigits } from "@maneman/web-kit/mobile";
 import { referral } from "../../content/referral.ts";
-import type { AlreadyBooked, Answer, ErrorCode } from "../../lib/api.ts";
-import { bookedHeadline } from "../../lib/dates.ts";
+import type { Answer, ErrorCode } from "../../lib/api.ts";
 import { keyPerRequest } from "../../lib/idempotency.ts";
-import { fill } from "../../lib/text.ts";
 import { turnstileWidget } from "../../lib/turnstile.ts";
-import { windowHours } from "./Done.tsx";
 
 /** What both forms hold: the name, the number and the agreement. */
 export interface PersonFields {
@@ -22,11 +19,8 @@ export function mobileToSend(fields: PersonFields): string {
 }
 
 /** What a form says when the API refuses it. */
-function refusal(code: ErrorCode | "network", booked: AlreadyBooked | undefined): string {
+function refusal(code: ErrorCode | "network"): string {
   const { errors } = referral;
-  if (booked !== undefined) {
-    return fill(errors.alreadyBooked, { when: bookedHeadline(booked.date, windowHours(booked.window)) });
-  }
   if (code === "rate_limited") return errors.rateLimited;
   if (code === "turnstile_failed") return errors.turnstile;
   if (code === "taken") return errors.taken;
@@ -85,7 +79,7 @@ export function useTurnstileForm(siteKey: string) {
     setSending(false);
     if (!result.ok) {
       if (result.code === "invalid_request") setTouched(true);
-      setFailure(refusal(result.code, result.booked));
+      setFailure(refusal(result.code));
       return;
     }
     sent(result.body);

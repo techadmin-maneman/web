@@ -78,7 +78,6 @@ function Record({ history }: { history: Visits["history"] }) {
       {due !== null && (
         <div className={styles.due}>
           <p className={styles.dueLine}>{due.month < thisMonth ? copy.overdue(month) : copy.due(month)}</p>
-          <p className={styles.dueNote}>{copy.approximate}</p>
         </div>
       )}
       <dl className={styles.facts}>

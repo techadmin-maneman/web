@@ -26,10 +26,26 @@ export type Coverable = (typeof COVERABLE)[number];
 /** What a code takes off: a whole percentage with an optional cap, or an amount; each in paise before GST. */
 export interface DiscountTerms {
   readonly kind: DiscountKind;
-  /** Per cent, 1 to 100, for a percentage; paise for an amount. */
+  /** Per cent, 1 to 100, for a percentage; paise, in whole rupees, for an amount. */
   readonly value: number;
-  /** The most a percentage takes off, in paise; null for none. */
+  /** The most a percentage takes off, in paise, in whole rupees; null for none. */
   readonly cap: number | null;
+}
+
+const PAISE_PER_RUPEE = 100;
+
+const isWholeRupees = (paise: number): boolean => paise % PAISE_PER_RUPEE === 0;
+
+/**
+ * The term a code may not be made with, if any. Rupees are whole so that a whole-rupee price stays whole once the
+ * code is taken off, and its GST splits into two equal halves, as Books works it out.
+ */
+export function termsRefusal(terms: DiscountTerms): "value" | "cap" | null {
+  if (terms.kind === "percent" && terms.value > 100) return "value";
+  if (terms.kind === "amount" && !isWholeRupees(terms.value)) return "value";
+  if (terms.cap === null) return null;
+  if (terms.kind === "amount" || !isWholeRupees(terms.cap)) return "cap";
+  return null;
 }
 
 /** The letters and digits a code is made of: none that reads as another, so no I, L, O, 0 or 1. */
@@ -55,8 +71,10 @@ export function amountOff(terms: DiscountTerms, priceExGst: number): number {
   return Math.min(off, priceExGst);
 }
 
+/** A percentage of the price, to the nearest whole rupee. */
 function percentOff(terms: DiscountTerms, priceExGst: number): number {
-  const off = Math.round((priceExGst * terms.value) / 100);
+  const rupees = Math.round((priceExGst * terms.value) / (100 * PAISE_PER_RUPEE));
+  const off = rupees * PAISE_PER_RUPEE;
   return terms.cap === null ? off : Math.min(off, terms.cap);
 }
 

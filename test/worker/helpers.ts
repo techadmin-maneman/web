@@ -3,7 +3,13 @@ import { env } from "cloudflare:workers";
 import { vi, type MockInstance } from "vitest";
 import { createApp } from "../../src/app.ts";
 import type { App } from "../../src/http/context.ts";
-import { EXPECTED_DATABASE_NAME, type EnvironmentName, type Surface } from "../../src/config/environments.ts";
+import {
+  EXPECTED_DATABASE_NAME,
+  type EnvironmentName,
+  type Providers,
+  type Surface,
+} from "../../src/config/environments.ts";
+import type { FieldRecord } from "../../src/config/field-record.ts";
 import type { Settings } from "../../src/config/settings.ts";
 import type { Dependencies } from "../../src/dependencies.ts";
 import { createAlertOnce, createResolveAlert } from "../../src/domain/alerts.ts";
@@ -16,7 +22,7 @@ import { createImageProvider } from "../../src/providers/image.ts";
 import type { CodeChannel } from "../../src/providers/codes.ts";
 import { createStubBooks } from "../../src/providers/books.ts";
 import { createGeocodeProvider } from "../../src/providers/geocode.ts";
-import { createStubFsm } from "../../src/providers/fsm.ts";
+import { createFsmProvider, createStubFsm, type FsmProvider } from "../../src/providers/fsm.ts";
 import { createStubMessaging } from "../../src/providers/messaging.ts";
 
 export const TURNSTILE_TEST_SECRET = "1x0000000000000000000000000000000AA";
@@ -281,9 +287,27 @@ export function appFor(
   deps: Dependencies = fakeDependencies(),
   settings: Partial<Settings> = {},
   surface: Surface = "public",
+  providers: Partial<Providers> = {},
 ): App {
-  return createApp({ ...LOCAL_CONFIG, environment, settings: { ...LOCAL_SETTINGS, ...settings } }, () => deps, surface);
+  const config = {
+    ...LOCAL_CONFIG,
+    environment,
+    settings: { ...LOCAL_SETTINGS, ...settings },
+    providers: { ...LOCAL_CONFIG.providers, ...providers },
+  };
+  return createApp(config, () => deps, surface);
 }
+
+/** FSM as FSM_PROVIDER "none" leaves it: every call fails, so whatever reaches it fails the test. */
+export function fsmSwitchedOff(): FsmProvider {
+  return createFsmProvider("none", null, { db: env.DB, fetch, now: () => NOW, log: createLogger() });
+}
+
+/** The providers for each holder of the record of field work: FSM, or our own database with FSM switched off. */
+export const PROVIDERS_FOR: Readonly<Record<FieldRecord, Partial<Providers>>> = {
+  fsm: {},
+  ours: { FSM_PROVIDER: "none" },
+};
 
 export function request(app: App, path: string, init?: RequestInit, bindings: Partial<Env> = {}): Promise<Response> {
   return Promise.resolve(app.request(`https://maneman.test${path}`, init, { ...env, ...bindings }));

@@ -1,4 +1,4 @@
-// Settings · Staff: who may use the console and for what, the switch that enforces it, and the service tokens let
+// Admin · Staff: who may use the console and for what, the switch that enforces it, and the service tokens let
 // in. As every panel of Settings does, it shows a change before it is sent, and says why one was refused.
 
 import AxeBuilder from "@axe-core/playwright";
@@ -44,7 +44,7 @@ const BOOK: OpsReply<"/api/staff"> = {
 
 async function open(page: Page, extra: Answers = {}): Promise<void> {
   await answer(page, { "GET /api/staff": json(BOOK), ...extra });
-  await page.goto("/settings/staff");
+  await page.goto("/staff");
   await expect(page.getByRole("heading", { level: 2, name: "Staff" })).toBeVisible();
 }
 
@@ -55,7 +55,7 @@ const row = (page: Page, name: string) => page.getByRole("row").filter({ has: pa
 
 test("lists each person with their access and whether they are let in", async ({ page }) => {
   await open(page);
-  await expect(page).toHaveTitle("Staff · Settings · Mane Man operations");
+  await expect(page).toHaveTitle("Staff · Mane Man operations");
 
   const owner = row(page, "owner@maneman.in");
   await expect(owner).toContainText("Admin · Manage · National");

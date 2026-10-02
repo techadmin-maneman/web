@@ -25,11 +25,13 @@
 // payment cannot book.
 //
 // These forms need no login, only a number, so they never rename the person
-// the number belongs to, never replace the address they have
-// (src/policy/site-booking.ts), never let go of a hold made in the app, and book
-// no second consultation beside one still to happen. The person, their consent,
-// their address and the slot are written in one batch: a slot that has gone
-// leaves nothing behind (docs/decisions/0068-a-paid-hold-is-kept.md).
+// the number belongs to, never replace the address they have, and never let go
+// of a hold made in the app. They give every number the same answer
+// (src/policy/site-booking.ts): a number with a consultation still to happen, or
+// past consultations, books nothing, and its owner is told why on WhatsApp
+// (src/domain/site-notices.ts). The person, their consent, their address and
+// the slot are written in one batch: a slot that has gone leaves nothing behind
+// (docs/decisions/0068-a-paid-hold-is-kept.md).
 //
 // The form may book the consultation and the fit in one visit instead: a first
 // fit marked as one, three hours, with nothing paid. The client chooses the
@@ -51,18 +53,18 @@ import { addDays, indiaDate } from "../lib/india-time.ts";
 import type { Logger } from "../log.ts";
 import type { SoldTerms } from "../policy/moving-a-visit.ts";
 import { ONE_VISIT_TERMS, ONE_VISIT_WINDOWS, type Plan } from "../policy/one-visit.ts";
-import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import type { Price } from "./price-book.ts";
 import { recordConsent } from "./consents.ts";
 import { bookableService, offeredProducts } from "./services.ts";
 import type { ConsentSource } from "../policy/consents.ts";
-import { typedAddress, type TypedAddress } from "../policy/site-booking.ts";
+import { notBookedFromSite, typedAddress, type NotBookedFromSite } from "../policy/site-booking.ts";
 import { currentAddress, firstAddressStatement, type Address } from "./profile.ts";
 import { checkForOneVisit, codeOnHold, useOnNewHold } from "./discount-code-holds.ts";
 import { attribute, type Invite, type InviteState, type Via } from "./referrals.ts";
-import { bookableTypes, holdSlot, liveVisitOf, type HeldService, type LiveVisit } from "./scheduling.ts";
+import { availability, bookableTypes, holdSlot, liveVisitOf, type HeldService } from "./scheduling.ts";
 import { saveBookingLead, type Attribution } from "./leads.ts";
+import { siteNotice, type SiteNoticeKind } from "./site-notices.ts";
 import { waitlistConfirmation } from "./waitlist.ts";
 
 /** A pincode we know, and whether a technician works there. */
@@ -95,11 +97,8 @@ export interface Refusal<Status extends number = 400 | 403 | 409 | 422 | 429 | 5
     | "unavailable"
     | "taken"
     | "not_bookable"
-    | "already_booked"
     | "code_not_applicable"
     | "no_product";
-  /** For already_booked: the consultation the number already has. */
-  readonly booked?: LiveVisit;
   /** For invalid_request: the field refused, where the request was well formed and did not add up. */
   readonly fields?: readonly string[];
 }
@@ -111,7 +110,7 @@ export type Checked =
 /** What booking from a form needs of the request it arrived in. */
 export interface FormRequest {
   readonly db: D1Database;
-  readonly queues: { readonly crm: Queue; readonly fsm: Queue; readonly messages: Queue };
+  readonly queues: { readonly crm: Queue; readonly messages: Queue };
   readonly log: Logger;
   readonly requestId: string;
   readonly now: Date;
@@ -121,6 +120,8 @@ export interface FormRequest {
   readonly checkPerson: (mobile: string, turnstileToken: string, name: string) => Promise<Checked>;
   /** Sends a person's first address on to their FSM contact and CRM lead, as saving it in the app does. */
   readonly syncContact: (personId: string) => Promise<void>;
+  /** Sends a hold the form booked free to be booked (src/http/book-hold.ts). */
+  readonly bookHold: (holdId: string) => Promise<void>;
 }
 
 /** The person a form is from, and the writes that record them and the consent they gave on the page. */
@@ -173,17 +174,12 @@ function formPerson(
   return { id, statements: [person, consent.statement] };
 }
 
-/**
- * Why a person we know may not book a consultation from a form: they have one still to happen, or they are
- * past consultations (consulted, or fitted), which the app books instead.
- */
-async function consultationRefusal(db: D1Database, personId: string): Promise<Refusal | null> {
-  const booked = await liveVisitOf(db, personId, "consultation");
-  if (booked !== null) return { ok: false, status: 409, code: "already_booked", booked };
-  if (!(await bookableTypes(db, personId)).includes("consultation")) {
-    return { ok: false, status: 422, code: "not_bookable" };
-  }
-  return null;
+/** Why a person we know books nothing from a form; null when they may book a consultation there. */
+async function notBookedFor(db: D1Database, personId: string): Promise<NotBookedFromSite | null> {
+  return notBookedFromSite({
+    hasConsultationToCome: (await liveVisitOf(db, personId, "consultation")) !== null,
+    mayBookConsultation: (await bookableTypes(db, personId)).includes("consultation"),
+  });
 }
 
 /** Attributes the person to the invite they came with, after what the form booked stands. */
@@ -379,8 +375,6 @@ export interface Booked {
   readonly credits: boolean;
   /** The invite as it stands for this person: expired when theirs lapsed while they waited (src/policy/invites.ts). */
   readonly invite: InviteState;
-  /** Whether the address typed in was saved, or the one the person already had is kept and used. */
-  readonly address: TypedAddress;
   /** Whether it is the consultation and the first fit in one visit. */
   readonly oneVisit: boolean;
   /** Whether the discount code given stands on the booking, or on the request ops book it from. */
@@ -392,7 +386,7 @@ export interface Booked {
  * where they apply.
  */
 export async function bookConsultation(form: FormRequest, request: ConsultationRequest): Promise<Booked | Refusal> {
-  const { db, log, requestId, now } = form;
+  const { db, log, now } = form;
 
   const first = addDays(indiaDate(now), 1);
   const pincode = await pincodeOf(db, request.pincode);
@@ -415,8 +409,10 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   if (!checked.ok) return checked;
 
   const knownId = await personWithMobile(db, checked.mobile);
-  const refused = knownId === null ? null : await consultationRefusal(db, knownId);
-  if (refused !== null) return refused;
+  if (knownId !== null) {
+    const notBooked = await notBookedFor(db, knownId);
+    if (notBooked !== null) return answerAsForANewNumber(form, request, pincode, { personId: knownId, notBooked });
+  }
   const code = request.discountCode === null ? null : await oneVisitCode(form, request.discountCode, knownId, oneVisit);
   if (code?.ok === false) return code;
   const person = formPerson(db, {
@@ -431,13 +427,17 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   });
   const saved = knownId === null ? null : await currentAddress(db, knownId);
   const address = typedAddress({ hasSavedAddress: saved !== null });
+  // The page says nothing of an address already on the account; its owner is told on WhatsApp.
+  const addressNotice =
+    address === "on_account" ? siteNotice(db, { personId: person.id, kind: "address_on_account", now }) : null;
   // What stands or falls with the booking: the person, their consent, and the address where it is theirs now.
   const alongside = [
     ...person.statements,
     ...(address === "saved" ? [firstAddressStatement(db, person.id, request.address, now)] : []),
+    ...(addressNotice === null ? [] : [addressNotice.statement]),
   ];
 
-  // A slot is held and FSM told only while self-serve booking is on and the day offers what was asked for;
+  // A slot is held and booked only while self-serve booking is on and the day offers what was asked for;
   // otherwise booking goes through WhatsApp, and what the person asked for waits for ops.
   const visit = form.selfServeBooking ? await siteVisit(db, request.plan, request.date) : null;
   let holdId: string | null = null;
@@ -463,7 +463,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     );
     if (hold === null) return { ok: false, status: 409, code: "taken" };
     holdId = hold.id;
-    await form.queues.fsm.send({ hold_id: hold.id, request_id: requestId } satisfies FsmSyncMessage);
+    await form.bookHold(hold.id);
   } else {
     const asked = { personId: person.id, pincode: request.pincode, date: request.date, window: request.window };
     const kept = { oneVisit, invite: request.invite, discountCode: code?.code ?? null, now };
@@ -475,6 +475,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   // Someone we knew may be in FSM and the CRM already, with no address. Someone new is added to both with this
   // one, by the booking and its lead.
   if (knownId !== null && address === "saved") await form.syncContact(person.id);
+  if (addressNotice !== null) await queueMessage(form, addressNotice.id);
   const invited = await applyInvite(db, {
     invite: request.invite,
     personId: person.id,
@@ -512,10 +513,66 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     area: pincode.area,
     credits: invited.credits,
     invite: invited.invite,
-    address,
     oneVisit,
     discountCode: codeStands,
   };
+}
+
+/**
+ * What a new number would be told, given to a number that books nothing from a form: its code and its window are
+ * checked as a new number's would be, nothing is written of the person, and its owner is told why on WhatsApp.
+ */
+async function answerAsForANewNumber(
+  form: FormRequest,
+  request: ConsultationRequest,
+  pincode: Pincode,
+  known: { readonly personId: string; readonly notBooked: NotBookedFromSite },
+): Promise<Booked | Refusal> {
+  const oneVisit = request.plan === "one_visit";
+  const code = request.discountCode === null ? null : await oneVisitCode(form, request.discountCode, null, oneVisit);
+  if (code?.ok === false) return code;
+  const state = await newNumbersState(form, request, known.personId);
+  if (state === "taken") return { ok: false, status: 409, code: "taken" };
+
+  await tellPrivately(form, known.personId, known.notBooked);
+  form.log.info("consultation_not_booked", { reason: known.notBooked, state, one_visit: oneVisit });
+  return {
+    ok: true,
+    state,
+    date: request.date,
+    window: request.window,
+    area: pincode.area,
+    // A new number carries a valid invite's credits.
+    credits: request.invite !== null,
+    invite: request.invite === null ? "unknown" : "valid",
+    oneVisit,
+    discountCode: code !== null,
+  };
+}
+
+/**
+ * What a new number's booking of this day and window would come to: a slot held, a request for ops, or taken when
+ * nobody is free then. `personId` only puts their regular technician first, as holding a slot does.
+ */
+async function newNumbersState(
+  form: FormRequest,
+  request: ConsultationRequest,
+  personId: string,
+): Promise<"booked" | "requested" | "taken"> {
+  const visit = form.selfServeBooking ? await siteVisit(form.db, request.plan, request.date) : null;
+  if (visit === null) return "requested";
+  const length = { minutes: visit.service.minutes };
+  const [day] = await availability(form.db, personId, length, request.date, 1, form.now);
+  const whoWouldCome = day?.windows.find((window) => window.window === request.window)?.with ?? null;
+  if (whoWouldCome === null) return "taken";
+  return "booked";
+}
+
+/** A notice to a person we know, written and queued on its own. */
+async function tellPrivately(form: FormRequest, personId: string, kind: SiteNoticeKind): Promise<void> {
+  const notice = siteNotice(form.db, { personId, kind, now: form.now });
+  await notice.statement.run();
+  await queueMessage(form, notice.id);
 }
 
 /**

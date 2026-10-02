@@ -1,0 +1,14 @@
+{
+  "code": 0,
+  "message": "Item details have been saved.",
+  "item": {
+    "item_id": "4242595000000245041",
+    "name": "Staging test: proof item 82af00 b",
+    "description": "",
+    "rate": 2000,
+    "status": "active",
+    "product_type": "service",
+    "item_type": "sales",
+    "tax_percentage": 0
+  }
+}

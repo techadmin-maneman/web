@@ -1,0 +1,4 @@
+{
+  "code": 3000,
+  "message": "These contacts cannot be deleted as they are associated either with some documents or transactions."
+}

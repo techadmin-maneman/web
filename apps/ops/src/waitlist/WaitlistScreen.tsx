@@ -16,7 +16,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type Area, type Launch } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { BOOKING_URL, waitlist } from "../content.ts";
-import { settingsPath } from "../route.ts";
+import { sectionOf } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./waitlist.module.css";
 
@@ -85,7 +85,7 @@ function LaunchPanel({
       </dl>
       <p className={styles.message}>{copy.message(areaName(area), bookingUrl)}</p>
       <p className={styles.named}>
-        {copy.named} <OpsLink to={settingsPath("area")}>{copy.rename}</OpsLink>
+        {copy.named} <OpsLink to={sectionOf("service-area").path}>{copy.rename}</OpsLink>
       </p>
       {!area.served && step !== "done" && (
         <div className={styles.field}>
