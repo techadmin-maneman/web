@@ -2849,7 +2849,7 @@ export interface components {
             access_notes: string | null;
             /** @description The building as chosen from the suggestions; null if typed. */
             building?: string | null;
-            flat?: string | null;
+            flat: string;
             floor?: string | null;
             tower?: string | null;
             landmark?: string | null;

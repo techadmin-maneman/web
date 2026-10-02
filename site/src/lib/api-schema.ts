@@ -1714,7 +1714,7 @@ export interface components {
             pincode: string;
             /** @description For the technician, from the day before the visit: gate code, parking. */
             access_notes: string | null;
-            flat?: string | null;
+            flat: string;
             floor?: string | null;
             tower?: string | null;
             landmark?: string | null;

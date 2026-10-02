@@ -453,7 +453,7 @@ export const clients = {
       pincode: "Pincode",
       accessNotes: "Access notes (optional)",
       accessHint: "A gate code, or where to park. The technician sees it the day before the visit.",
-      invalid: "Fill in the building or street, the area, the city and a six-digit pincode.",
+      invalid: "Fill in the flat or house number, the building or street, the area, the city and a six-digit pincode.",
       save: "Save their address",
       saving: "Saving…",
       cancel: "Cancel",

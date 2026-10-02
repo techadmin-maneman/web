@@ -1724,10 +1724,8 @@ Razorpay's webhook: payments and refunds
       "description": "For the technician, from the day before the visit: gate code, parking."
     },
     "flat": {
-      "type": [
-        "string",
-        "null"
-      ],
+      "type": "string",
+      "minLength": 1,
       "maxLength": 40
     },
     "floor": {
@@ -1758,7 +1756,8 @@ Razorpay's webhook: payments and refunds
     "locality",
     "city",
     "pincode",
-    "access_notes"
+    "access_notes",
+    "flat"
   ],
   "additionalProperties": false
 }

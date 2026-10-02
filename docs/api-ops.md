@@ -5976,10 +5976,8 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
       "description": "The building as chosen from the suggestions; null if typed."
     },
     "flat": {
-      "type": [
-        "string",
-        "null"
-      ],
+      "type": "string",
+      "minLength": 1,
       "maxLength": 40
     },
     "floor": {
@@ -6025,7 +6023,8 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
     "locality",
     "city",
     "pincode",
-    "access_notes"
+    "access_notes",
+    "flat"
   ],
   "additionalProperties": false
 }

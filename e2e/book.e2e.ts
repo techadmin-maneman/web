@@ -231,11 +231,13 @@ test("a booking without the address is stopped at the form, each part it needs m
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
 
+  await expect(page.getByText("Please give the flat or house number.")).toBeVisible();
   await expect(page.getByText("Please give the building, society or street.")).toBeVisible();
   await expect(page.getByText("Please give the sector or area.")).toBeVisible();
   await expect(page.getByText("Please give the city.")).toBeVisible();
+  await expect(page.getByLabel("Flat or house number")).toHaveAttribute("aria-invalid", "true");
   await expect(page.getByLabel("Building, society or street")).toHaveAttribute("aria-invalid", "true");
-  await expect(page.getByLabel("Flat or house number")).toHaveAttribute("aria-invalid", "false");
+  await expect(page.getByLabel("Floor (optional)")).toHaveAttribute("aria-invalid", "false");
   expect(requests).toHaveLength(0);
 
   await fillAddress(page);

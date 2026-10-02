@@ -68,14 +68,14 @@ describe("the calendar file", () => {
 
 // The owner's ruling of 27 September 2026: the full address before a slot is confirmed, on the site too (ADR 0081).
 describe("the address a consultation is at", () => {
-  it("starts in the city of the pincode checked, and asks for the building or street and the area", () => {
-    expect(missingParts(emptyAddress("Gurgaon"))).toEqual(["line1", "locality"]);
-    expect(missingParts(emptyAddress(null))).toEqual(["line1", "locality", "city"]);
+  it("starts in the city of the pincode checked, and asks for the flat, the building or street and the area", () => {
+    expect(missingParts(emptyAddress("Gurgaon"))).toEqual(["flat", "line1", "locality"]);
+    expect(missingParts(emptyAddress(null))).toEqual(["flat", "line1", "locality", "city"]);
   });
 
   it("counts a part filled with spaces as left out", () => {
-    const typed = { ...emptyAddress("Gurgaon"), line1: "  ", locality: "Sector 65", city: " " };
-    expect(missingParts(typed)).toEqual(["line1", "city"]);
+    const typed = { ...emptyAddress("Gurgaon"), flat: " ", line1: "  ", locality: "Sector 65", city: " " };
+    expect(missingParts(typed)).toEqual(["flat", "line1", "city"]);
   });
 
   it("is sent trimmed, in the pincode checked, with a part left blank as none", () => {

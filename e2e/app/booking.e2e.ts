@@ -415,7 +415,8 @@ test("asks a client with no address for it first, then books", async ({ page }) 
   await expect(where.getByText("Step 1 of 4")).toBeVisible();
   await expect(where.getByText("Your address first, so we know where to come. Then pick a date.")).toBeVisible();
   await scanOf(page);
-  await where.getByLabel("Building, society or street").fill("House 4417, Tower C");
+  await where.getByLabel("Flat or house number").fill("House 4417");
+  await where.getByLabel("Building, society or street").fill("Tower C");
   await where.getByLabel("Sector or area").fill("Sector 65");
   await where.getByLabel("City").fill("Gurgaon");
   await where.getByLabel("Pincode").fill("122018");

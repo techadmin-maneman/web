@@ -895,7 +895,7 @@ export const profile = {
     accessHint: "A gate code, or where to park. Your technician sees it the day before the visit.",
     save: "Save",
     cancel: "Cancel",
-    invalid: "Fill in the building or street, the area, the city and a six-digit pincode.",
+    invalid: "Fill in the flat or house number, the building or street, the area, the city and a six-digit pincode.",
   },
   agreed: "What you have agreed to",
   purposes: {

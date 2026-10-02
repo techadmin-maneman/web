@@ -54,6 +54,32 @@ describe("a client's contact in FSM", () => {
     expect(message.ack).toHaveBeenCalled();
   });
 
+  // docs/decisions/0098-the-door-in-fsms-address.md
+  it("takes the flat, floor, tower and landmark, so the work order names the door", async () => {
+    await env.DB.prepare(
+      `INSERT INTO addresses (id, person_id, created_at, flat, floor, tower, line1, line2, landmark, locality, city,
+                              pincode)
+       VALUES (?1, ?2, ?3, 'Flat 402', '4', 'C', 'Palm Grove Society', NULL, 'Opposite the park', 'Sector 65',
+               'Gurgaon', '122018')`,
+    )
+      .bind(crypto.randomUUID(), PERSON, NOW.toISOString())
+      .run();
+    const fsm = createStubFsm(EMPTY_FSM);
+    await update(fsm).done;
+    expect(fsm.made.contactUpdates).toEqual([
+      {
+        contactId: "contact-1",
+        mobile: "+919810000003",
+        address: {
+          street1: "Flat 402, Floor 4, Tower C, Palm Grove Society",
+          street2: "Sector 65, Landmark: Opposite the park",
+          city: "Gurgaon",
+          pincode: "122018",
+        },
+      },
+    ]);
+  });
+
   it("takes the number alone from a client who has given no address", async () => {
     const fsm = createStubFsm(EMPTY_FSM);
     await update(fsm).done;

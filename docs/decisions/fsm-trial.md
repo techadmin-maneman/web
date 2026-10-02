@@ -177,3 +177,31 @@ Request, and the Request moved itself to "Work In Progress" with that work order
 in its `Work_Orders`, with no blueprint call. Every record made for it was
 labelled "Staging test" and deleted the same session
 (`docs/decisions/0064-converting-a-request.md`).
+
+## Text FSM keeps: tried 30 September 2026
+
+Tried with the scripts' own token (`docs/runbook.md`, step 8.7) on records
+already labelled "Staging test": contact `8229000000309607`, whose street was
+put back as it was, and appointment AP-22, `8229000000306647`.
+
+- **A service address's `Street_1` and `Street_2` take 255 characters each.**
+  256 is refused: `400 INVALID_DATA` with `"maximum_length": 255`,
+  `"api_name": "Street_1"` and `"parent_api_name": "Service_Address"`.
+- **FSM keeps text only up to its first character past U+FFFF.** An emoji such
+  as 🙏 or 🇮🇳, or 𝐁, in a street or a note is answered `200 SUCCESS`, and
+  everything from it on is gone when read back: "ring 🙏 twice" is kept as
+  "ring ". ✅, ❤️ and ★, which come before U+FFFF, are kept, as are Hindi, the
+  rupee sign, curly quotes, newlines, and `<b>` and `&amp;` as typed.
+- **An appointment takes notes.** `POST /fsm/v1/Service_Appointments/{id}/Notes`
+  with `{ data: [{ Note_Content }] }` answers 201 with the note's ID under
+  `data[0].details.id`; `GET` on the same path lists them, and
+  `PUT /fsm/v1/Service_Appointments/{id}/Notes/{note id}` changes one. The
+  appointment's note is listed under its work order's Notes too. 500
+  characters are kept whole.
+- **A note cannot be deleted by the API.** `DELETE` on the note's path, on
+  `/Notes/{id}` and with `?ids=` each answer `400 INVALID_MODULE`. What the
+  erasure cannot delete it overwrites, as it does the contact's name.
+
+The one note made is left on AP-22, reading "Staging test: a client's note,
+tried 30 September 2026", for the staging clean-up (`docs/open-points.md`,
+item 19).

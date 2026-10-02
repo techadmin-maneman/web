@@ -265,6 +265,7 @@ describe("the public form, with a client's number, while that client's hold is p
           window: "evening",
           consent: true,
           address: {
+            flat: "Flat 402",
             line1: "Palm Grove Society",
             line2: null,
             locality: "Sector 65",
@@ -597,6 +598,7 @@ describe("where a visit booked from the site is (LIFE-04, CLI-14)", () => {
           window: "morning",
           consent: true,
           address: {
+            flat: "Flat 402",
             line1: "Palm Grove Society",
             line2: null,
             locality: "Sector 65",
