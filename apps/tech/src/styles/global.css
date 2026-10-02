@@ -31,13 +31,20 @@ body {
   color: var(--paper);
 }
 
-/* On a wider screen the design's column is centred, not stretched. */
+/*
+ * The column is exactly the screen's height and scrolls itself, so a screen
+ * with one action keeps its head and foot in view and scrolls only its body,
+ * and a list such as Today scrolls whole. A step sliding in never scrolls it
+ * sideways. Centred, not stretched, on a wider screen.
+ */
 #root {
   display: flex;
   flex-direction: column;
   max-width: var(--app-column);
-  min-height: 100dvh;
+  height: 100dvh;
   margin: 0 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 /* Gloved use: nothing responds to a drag or a pinch that is not meant to. */

@@ -6,7 +6,7 @@
 
 .sheet {
   min-height: 0;
-  padding: var(--sp-22) var(--sp-20);
+  padding: var(--sp-22) var(--sp-20) calc(var(--sp-22) + env(safe-area-inset-bottom));
   overflow-y: auto;
   border-top: var(--hairline) solid var(--ink-line);
   background: var(--ink-deep);

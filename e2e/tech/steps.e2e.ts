@@ -10,6 +10,8 @@ import {
   fakeTech,
   heldOnPhone,
   JOB_ID,
+  ONE_VISIT_CHECKLIST,
+  pageScrolls,
   ROHITS_PIECE,
   ROHITS_PROFILE,
   type HairProfile,
@@ -225,6 +227,56 @@ test("a focused checklist line shows its whole focus ring, not one cut by the sc
     return null;
   });
   expect(clipped).toBeNull();
+});
+
+/** A step's one action, in the foot below its body. */
+const footAction = (page: Page) => page.locator("main > div").last().getByRole("button");
+
+test.describe("on a 360 × 640 phone", () => {
+  test.use({ viewport: { width: 360, height: 640 } });
+
+  test("keeps a long checklist's action at the foot and its head in view, scrolling only the list", async ({
+    page,
+  }) => {
+    const fake = await fakeTech(page);
+    fake.type = "first_fit";
+    fake.oneVisit = true;
+    fake.checklist = ONE_VISIT_CHECKLIST;
+    startedThrough(fake, "before_photos");
+    await page.goto(`/jobs/${JOB_ID}/checklist`);
+
+    const heading = page.getByRole("heading", { level: 1, name: "Consultation and fit checklist" });
+    await expect(heading).toBeInViewport({ ratio: 1 });
+    await expect(footAction(page)).toHaveText("Finish the list to continue");
+    await expect(footAction(page)).toBeInViewport({ ratio: 1 });
+    expect(await pageScrolls(page)).toBe(false);
+
+    // Each tap scrolls the list to the next item; the head and the foot stay where they are.
+    const items = page.getByRole("button", { name: /PLACEHOLDER/ });
+    await expect(items).toHaveCount(9);
+    for (const item of await items.all()) await item.click();
+
+    await expect(footAction(page)).toHaveText("Next");
+    await expect(footAction(page)).toBeInViewport({ ratio: 1 });
+    await expect(heading).toBeInViewport({ ratio: 1 });
+    expect(await pageScrolls(page)).toBe(false);
+  });
+
+  test("keeps the hair profile's action at the foot and its head in view, down to its last field", async ({ page }) => {
+    const fake = await fakeTech(page);
+    fake.type = "consultation";
+    startedThrough(fake, "before_photos", "checklist", "consumables");
+    await page.goto(`/jobs/${JOB_ID}/profile`);
+
+    const heading = page.getByRole("heading", { level: 1, name: "Hair profile" });
+    await expect(heading).toBeInViewport({ ratio: 1 });
+    await expect(footAction(page)).toBeInViewport({ ratio: 1 });
+    expect(await pageScrolls(page)).toBe(false);
+
+    await page.locator("main > div").first().locator(":scope > *").last().scrollIntoViewIfNeeded();
+    await expect(heading).toBeInViewport({ ratio: 1 });
+    await expect(footAction(page)).toBeInViewport({ ratio: 1 });
+  });
 });
 
 test.describe("with motion", () => {
