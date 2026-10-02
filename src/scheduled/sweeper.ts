@@ -36,8 +36,6 @@ import { DAY_MS, HOUR_MS, MINUTE_MS } from "../lib/durations.ts";
 
 /** A pending lead, or a queued job, older than this has lost its queue message. */
 const PENDING_GRACE_MS = 2 * MINUTE_MS;
-/** A booking not sent to FSM within a day is left to ops. */
-const BOOKING_TO_FSM_WITHIN_MS = 24 * 60 * MINUTE_MS;
 const MESSAGE_GRACE_MS = 5 * MINUTE_MS;
 /** Past the fsm-sync consumer's whole retry chain: 30 s, 1, 2 and 4 minutes. */
 const JOB_EVENT_GRACE_MS = 15 * MINUTE_MS;
@@ -119,7 +117,7 @@ export async function sweep(
 
   const leads = await requeueLeads(run);
   const erasures = await requeueCrmErasures(run);
-  if (options.fsmConnected === true) await requeueFsmWork(run);
+  if (options.fsmConnected === true) await requeueFsmErasures(run);
   const jobEvents = await requeueJobEvents(run);
   const messages = await requeueMessages(run);
   const { renders, abandoned, downloads, lost } = await requeueTryons(run);
@@ -197,32 +195,10 @@ async function requeueCrmErasures(run: SweepRun): Promise<string[]> {
   return erasures;
 }
 
-/** Bookings and erasures FSM has not heard of, sent to fsm-sync: only where FSM is connected. */
-async function requeueFsmWork(run: SweepRun): Promise<void> {
-  const { db, env, now, before, log } = run;
-  // Phase 1 bookings whose message to the fsm-sync queue never went, sent now, once. Only POST /api/lead wrote
-  // them, and it is gone (docs/open-points.md, items 107 and 159). One over a day old is left: past that, sending it
-  // would surprise ops, who have it from the CRM.
-  const bookings = await ids(
-    db
-      .prepare(
-        `UPDATE leads SET fsm_queued_at = ?1
-         WHERE id IN (
-           SELECT id FROM leads
-           WHERE fsm_queued_at IS NULL AND fsm_request_id IS NULL AND source = 'form'
-             AND first_choice_window IS NOT NULL AND created_at > ?2 AND created_at < ?3
-           ORDER BY created_at LIMIT ?4)
-         RETURNING id`,
-      )
-      .bind(now.toISOString(), before(BOOKING_TO_FSM_WITHIN_MS), before(PENDING_GRACE_MS), BATCH_LIMIT),
-  );
-  await sendAll(
-    env.FSM_QUEUE,
-    bookings.map((id) => ({ lead_id: id, request_id: "sweeper" }) satisfies FsmSyncMessage),
-  );
-  if (bookings.length > 0) log.warn("bookings_sent_to_fsm_late", { lead_ids: bookings });
-
-  // Erased people whose FSM contact is still to be anonymised (docs/decisions/0049-dpdp.md).
+/** Erased people whose FSM contact is still to be anonymised, sent to fsm-sync: only where FSM is connected. */
+async function requeueFsmErasures(run: SweepRun): Promise<void> {
+  const { db, env, before } = run;
+  // docs/decisions/0049-dpdp.md
   const fsmErasures = await ids(
     db
       .prepare(

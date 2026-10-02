@@ -1,6 +1,6 @@
 # 0064. Converting a Request by API
 
-- Status: accepted
+- Status: accepted. Amended by ADR 0101 (1 October 2026): no booking has a Request since Phase 1's lead route was removed, so the owner's ruling to link one (the plan's C4) is closed and nothing of ours converts a Request.
 - Date: 2026-09-24
 
 ## Context

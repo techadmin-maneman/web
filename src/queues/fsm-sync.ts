@@ -1,8 +1,7 @@
 // The fsm-sync consumer. Most messages name an FSM appointment to read afresh
 // and write over its mirror copy (docs/decisions/0032-fsm-mirror.md). FSM's
 // webhooks and the reconciliation put them here; neither is trusted for the
-// appointment's contents, only for which one changed. Others name a Phase 1
-// booked lead to send to FSM as a Request (src/domain/fsm-leads.ts), a hold paid
+// appointment's contents, only for which one changed. Others name a hold paid
 // for in the app to book as a visit (src/domain/bookings.ts), an erased
 // person whose FSM contact is to be anonymised (docs/decisions/0049-dpdp.md),
 // a client whose new number or address their contact is to take
@@ -26,7 +25,6 @@ import type { Dependencies } from "../dependencies.ts";
 import { confirmBooking, unbookedAlertKey, type ConfirmOptions } from "../domain/bookings.ts";
 import { CLIENT_NOTE_MAX_CHARS, clientNoteAlertKey } from "../domain/client-notes.ts";
 import { pushCatalogue } from "../domain/fsm-catalogue.ts";
-import { sendLeadToFsm } from "../domain/fsm-leads.ts";
 import { logDeactivated, syncAppointment } from "../domain/fsm-mirror.ts";
 import { heldAlert, heldAlertKey, holdForFsm, isHeldForFsm, toLinkAlertKey } from "../domain/held-bookings.ts";
 import { streetOf } from "../domain/profile.ts";
@@ -53,7 +51,6 @@ export const FsmSyncMessageSchema = z.union([
     inbox_id: z.uuid().optional(),
     request_id: z.string(),
   }),
-  z.object({ lead_id: z.uuid(), request_id: z.string() }),
   /** A hold paid for, or free, to book in FSM (src/domain/bookings.ts). */
   z.object({ hold_id: z.uuid(), request_id: z.string() }),
   /** An erased person, whose FSM contact is anonymised; the sweeper sends it. */
@@ -148,12 +145,6 @@ export async function handleFsmSyncBatch(
         log.child({ request_id: parsed.data.request_id }),
         { labelAsTest, requestId: parsed.data.request_id },
       );
-      continue;
-    }
-    if ("lead_id" in parsed.data) {
-      await sendLead(message, parsed.data.lead_id, db, deps, log.child({ request_id: parsed.data.request_id }), {
-        labelAsTest,
-      });
       continue;
     }
     const { fsm_id: fsmId, inbox_id: inboxId, request_id: requestId } = parsed.data;
@@ -600,32 +591,6 @@ function addressOf(row: ContactRow): FsmContactUpdate["address"] {
     city,
     pincode,
   };
-}
-
-async function sendLead(
-  message: Message,
-  leadId: string,
-  db: D1Database,
-  deps: Dependencies,
-  log: Logger,
-  options: { labelAsTest: boolean },
-): Promise<void> {
-  try {
-    const outcome = await sendLeadToFsm(db, deps.fsm, leadId, { ...options, log, now: deps.now() });
-    log.info("fsm_lead", { lead_id: leadId, outcome });
-    message.ack();
-  } catch (error) {
-    const reason = failureReason(error);
-    log.warn("fsm_lead_failed", { lead_id: leadId, attempt: message.attempts, reason });
-    if (message.attempts >= MAX_FSM_SYNC_ATTEMPTS) {
-      await deps.alert(
-        `Lead ${leadId} did not reach FSM after ${String(message.attempts)} attempts: ${reason}. Enter it in FSM by hand.`,
-      );
-      message.ack();
-    } else {
-      retryWithBackoff(message, FIRST_RETRY_DELAY_SECONDS);
-    }
-  }
 }
 
 /** Counts an attempt on a webhook delivery: processed when it succeeded, else the reason it failed. */

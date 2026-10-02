@@ -192,8 +192,8 @@ async function invoicesJob({ env, deps, log, budget }: CronContext): Promise<voi
   if (done.raised + done.issued > 0) log.info("invoices_raised", done);
 }
 
-async function askedWindowsJob({ env, deps, log, budget }: CronContext): Promise<void> {
-  const done = await resolveAskedWindows(env.DB, deps.fsm, deps.now(), log, budget);
+async function askedWindowsJob({ env, deps, log }: CronContext): Promise<void> {
+  const done = await resolveAskedWindows(env.DB, deps.now());
   if (done.resolved > 0) log.info("asked_windows_resolved", done);
 }
 

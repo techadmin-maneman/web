@@ -26,8 +26,6 @@ const SETTINGS: ZohoFsmSettings = {
 const TOKEN = { [ZOHO_TOKEN_URL]: () => json({ access_token: "fsm-access-1", expires_in: 3600 }) };
 const empty = () => new Response(null, { status: 204 });
 const territories = () => json({ data: [{ id: "territory-1", Name: "Gurgaon" }] });
-const addresses = () =>
-  json({ data: [{ id: "contact-1", Service_Address: { id: "sa-1" }, Billing_Address: { id: "ba-1" } }] });
 
 function fsm(routes: Parameters<typeof fakeFetch>[0]) {
   const http = fakeFetch({ ...TOKEN, ...routes });
@@ -235,26 +233,6 @@ describe("FSM: records with fields nobody filled", () => {
       ],
     });
   });
-
-  it("writes the day a client asked for on the Request, as its preference and its due date", async () => {
-    const { provider, calls } = fsm({
-      [`${FSM_API}/Contacts/contact-1`]: addresses,
-      [`${FSM_API}/Requests`]: () => json({ data: { Requests: [{ id: "req-9" }] } }, 201),
-    });
-
-    await provider.createRequest({
-      contactId: "contact-1",
-      summary: "Consultation for Neha Kapoor",
-      serviceId: "item-consult",
-      preferredDate: "2026-09-24",
-      preferenceNote: "Afternoon",
-      reference: "lead-9",
-    });
-
-    expect(writes(calls)[0]).toMatchObject({
-      data: [{ Preference: { Preferred_Date_1: "2026-09-24" }, Due_Date: "2026-09-24" }],
-    });
-  });
 });
 
 // A part's create has not been read on the org (docs/decisions/0087-consumables-and-stock.md), so the ID is taken from
@@ -321,19 +299,9 @@ describe("FSM: refusals the client names instead of passing on", () => {
     expect(await provider.createContact(contact)).toBe("contact-9");
   });
 
-  it("fails a Request, a visit and a change of number for a contact FSM no longer has", async () => {
+  it("fails a visit and a change of number for a contact FSM no longer has", async () => {
     const { provider } = fsm({ [`${FSM_API}/Contacts/gone`]: empty });
 
-    await expect(
-      provider.createRequest({
-        contactId: "gone",
-        summary: "Consultation",
-        serviceId: "item-consult",
-        preferredDate: null,
-        preferenceNote: "",
-        reference: "lead-1",
-      }),
-    ).rejects.toThrow(/NO_CONTACT: the Request's contact is not in FSM/);
     await expect(
       provider.createWorkOrder({
         contactId: "gone",
@@ -379,17 +347,14 @@ describe("FSM: refusals the client names instead of passing on", () => {
     await expect(provider.invoiceWorkOrder("wo-1")).rejects.toThrow(/NO_ID: the invoice answered without its ID/);
   });
 
-  it("answers no invoice yet for a line invoiced by hand that Books has not been given, nor for a Request gone", async () => {
+  it("answers no invoice yet for a line invoiced by hand that Books has not been given", async () => {
     const { provider } = fsm({
       [`${FSM_API}/Work_Orders/wo-2`]: () =>
         json({ data: [{ Grand_Total: 2000, Service_Line_Items: [{ id: "line-1", Invoice_Id: "inv-1" }] }] }),
       [`${FSM_API}/Invoices/inv-1`]: () => json({ data: [{ id: "inv-1", ZBilling_InvoiceId: null }] }),
-      [`${FSM_API}/Work_Orders/wo-3`]: () => json({ data: [{ Request: { id: "req-gone" } }] }),
-      [`${FSM_API}/Requests/req-gone`]: empty,
     });
 
     expect(await provider.invoiceWorkOrder("wo-2")).toBeNull();
-    expect(await provider.requestPreference("wo-3")).toBeNull();
   });
 
   it("fails a download FSM answered with no file, and takes a file with no type as bytes", async () => {
