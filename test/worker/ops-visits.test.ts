@@ -5,11 +5,14 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import type { FieldRecord } from "../../src/config/field-record.ts";
 import { confirmBooking } from "../../src/domain/bookings.ts";
-import { grantCredits } from "../../src/domain/credits.ts";
+import { creditBalance, grantCredits } from "../../src/domain/credits.ts";
 import { makeCodes, type NewCodes } from "../../src/domain/discount-codes.ts";
 import { holdSlot } from "../../src/domain/scheduling.ts";
+import { outstandingTasks } from "../../src/domain/tasks.ts";
 import { saltedHash } from "../../src/lib/hash.ts";
+import { TASK_SLA_HOURS } from "../../src/policy/tasks.ts";
 import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
 import { createStubPayments, type PaymentsProvider, type StubPayments } from "../../src/providers/payments.ts";
 import { ProviderError } from "../../src/providers/provider-error.ts";
@@ -18,9 +21,11 @@ import {
   captureLogs,
   fakeDependencies,
   fakeQueue,
+  fsmSwitchedOff,
   LOCAL_SETTINGS,
   markDatabase,
   NOW,
+  PROVIDERS_FOR,
   request,
   savedAddress,
 } from "./helpers.ts";
@@ -39,15 +44,20 @@ const fsm = () =>
 let payments: StubPayments;
 let queue: ReturnType<typeof fakeQueue>;
 
-const opsApp = (vendors: { payments?: PaymentsProvider; now?: Date } = {}) =>
-  appFor(
-    "local",
-    fakeDependencies({ payments: vendors.payments ?? payments, now: () => vendors.now ?? NOW }),
-    {},
-    "ops",
-  );
+/** The queues a booking writes to, kept rather than delivered. */
+const bindings = () => ({ FSM_QUEUE: queue, MESSAGE_QUEUE: fakeQueue() });
 
-const book = (body: object, vendors: { payments?: PaymentsProvider } = {}) =>
+/** The ops console, on FSM's path unless it is our own database that holds the record of field work. */
+const opsApp = (vendors: { payments?: PaymentsProvider; record?: FieldRecord } = {}) => {
+  const record = vendors.record ?? "fsm";
+  const deps = fakeDependencies({
+    payments: vendors.payments ?? payments,
+    ...(record === "ours" ? { fsm: fsmSwitchedOff() } : {}),
+  });
+  return appFor("local", deps, {}, "ops", PROVIDERS_FOR[record]);
+};
+
+const book = (body: object, vendors: { payments?: PaymentsProvider; record?: FieldRecord } = {}) =>
   request(
     opsApp(vendors),
     "/api/visits",
@@ -56,7 +66,7 @@ const book = (body: object, vendors: { payments?: PaymentsProvider } = {}) =>
       headers: { "Content-Type": "application/json", Origin: "https://maneman.test" },
       body: JSON.stringify(body),
     },
-    { FSM_QUEUE: queue },
+    bindings(),
   );
 
 async function technician(id: string, name: string, initials: string) {
@@ -397,10 +407,11 @@ describe("POST /api/visits: what is refused", () => {
 describe("a payment link for a visit ops booked, paid", () => {
   const SECRET = "a-razorpay-webhook-secret-for-tests";
 
-  async function deliver(event: object, eventId: string) {
+  async function deliver(event: object, eventId: string, record: FieldRecord = "fsm") {
     const body = JSON.stringify(event);
     const settings = { razorpay: { keyId: "rzp_test_abc", keySecret: "key-secret", webhookSecret: SECRET } };
-    const app = appFor("local", fakeDependencies(), { ...LOCAL_SETTINGS, ...settings });
+    const deps = fakeDependencies({ payments, ...(record === "ours" ? { fsm: fsmSwitchedOff() } : {}) });
+    const app = appFor("local", deps, { ...LOCAL_SETTINGS, ...settings }, "public", PROVIDERS_FOR[record]);
     return request(
       app,
       "/api/hooks/razorpay",
@@ -413,7 +424,7 @@ describe("a payment link for a visit ops booked, paid", () => {
           "X-Razorpay-Event-Id": eventId,
         },
       },
-      { FSM_QUEUE: queue },
+      bindings(),
     );
   }
 
@@ -442,9 +453,9 @@ describe("a payment link for a visit ops booked, paid", () => {
     };
   }
 
-  async function sentLink(): Promise<{ holdId: string; linkId: string }> {
+  async function sentLink(record: FieldRecord = "fsm"): Promise<{ holdId: string; linkId: string }> {
     await rohit("fitted");
-    const answer = await book({ client: ROHIT, kind: "service", date: WEDNESDAY, window: "evening" });
+    const answer = await book({ client: ROHIT, kind: "service", date: WEDNESDAY, window: "evening" }, { record });
     const { hold_id: holdId } = await answer.json<{ hold_id: string }>();
     return { holdId, linkId: (await holdOf(holdId))?.payment_link_id ?? "" };
   }
@@ -475,6 +486,89 @@ describe("a payment link for a visit ops booked, paid", () => {
     const given = await confirmBooking(env.DB, fsm(), payments, holdId, lapsed, { labelAsTest: false });
     expect(given).toBe("refunded");
     expect(payments.made.refunds).toEqual([{ paymentId: "pay_link_1", amount: SERVICE_PRICE }]);
+  });
+
+  it("books the visit in the webhook's own request where our own database holds the record", async () => {
+    const { holdId, linkId } = await sentLink("ours");
+    const paidAt = new Date(NOW.getTime() + 60 * 60_000);
+    await deliver(linkPaid({ id: linkId, reference_id: holdId }, paidAt), "evt-3", "ours");
+
+    const booked = await env.DB.prepare(
+      `SELECT a.status, a.type, p.razorpay_payment_id FROM slot_holds h JOIN appointments a ON a.id = h.appointment_id
+       JOIN payments p ON p.appointment_id = a.id WHERE h.id = ?1 AND h.state = 'booked'`,
+    )
+      .bind(holdId)
+      .first();
+    expect(booked).toEqual({ status: "scheduled", type: "service", razorpay_payment_id: "pay_link_1" });
+    expect(queue.sent).toEqual([]);
+  });
+});
+
+describe("POST /api/visits, where our own database holds the record of field work", () => {
+  const ours = { record: "ours" as const };
+
+  it("writes a free consultation in the request, with the window the client asked for, and its task goes", async () => {
+    await rohit();
+    await env.DB.prepare(
+      `INSERT INTO consultation_requests (id, person_id, pincode, requested_date, requested_window, created_at)
+       VALUES ('request-1', ?1, '122018', ?2, 'afternoon', ?3)`,
+    )
+      .bind(ROHIT, WEDNESDAY, NOW.toISOString())
+      .run();
+    const waiting = await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS);
+    expect(waiting.tasks.map((task) => task.group)).toContain("consultation_request");
+
+    const answer = await book({ client: ROHIT, kind: "consultation", date: WEDNESDAY, window: "morning" }, ours);
+    expect(answer.status).toBe(201);
+    const body = await answer.json<{ visit_id: string; outcome: string }>();
+    expect(body.outcome).toBe("booked");
+    const booked = await env.DB.prepare(
+      "SELECT fsm_id, fsm_work_order_id, status, type, asked_window, asked_checked_at FROM appointments WHERE id = ?1",
+    )
+      .bind(body.visit_id)
+      .first();
+    expect(booked).toEqual({
+      fsm_id: body.visit_id,
+      fsm_work_order_id: null,
+      status: "scheduled",
+      type: "consultation",
+      asked_window: "afternoon",
+      asked_checked_at: NOW.toISOString(),
+    });
+    expect(queue.sent).toEqual([]);
+    const after = await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS);
+    expect(after.tasks.map((task) => task.group)).not.toContain("consultation_request");
+  });
+
+  it("writes a consultation and fit in one visit in the request, marked as one", async () => {
+    await rohit();
+    const answer = await book(
+      { client: ROHIT, kind: "first_fit", tier: NATURAL.tier, one_visit: true, date: WEDNESDAY, window: "morning" },
+      ours,
+    );
+    const body = await answer.json<{ visit_id: string; outcome: string }>();
+    expect(body.outcome).toBe("booked");
+    const booked = await env.DB.prepare("SELECT type, tier, one_visit FROM appointments WHERE id = ?1")
+      .bind(body.visit_id)
+      .first();
+    expect(booked).toEqual({ type: "first_fit", tier: NATURAL.tier, one_visit: "booked" });
+  });
+
+  it("writes a service visit on a credit in the request, the credit spent on it", async () => {
+    await rohit("fitted");
+    await grantCredits(env.DB, { personId: ROHIT, visits: 1, source: "ops", sourceId: "goodwill", now: NOW }).run();
+    const answer = await book({ client: ROHIT, kind: "service", date: WEDNESDAY, window: "evening" }, ours);
+    const body = await answer.json<{ visit_id: string; outcome: string; pays: string }>();
+    expect(body).toMatchObject({ outcome: "booked", pays: "credit" });
+    expect((await creditBalance(env.DB, ROHIT, NOW)).visits).toBe(0);
+  });
+
+  it("books nothing for a paid visit until its link is paid", async () => {
+    await rohit("fitted");
+    const answer = await book({ client: ROHIT, kind: "service", date: WEDNESDAY, window: "evening" }, ours);
+    const body = await answer.json<{ hold_id: string; outcome: string }>();
+    expect(body.outcome).toBe("awaiting_payment");
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM appointments WHERE person_id = ?1 AND status = 'scheduled'").bind(ROHIT).first()).toEqual({ n: 0 });
   });
 });
 

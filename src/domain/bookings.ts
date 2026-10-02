@@ -473,8 +473,9 @@ async function bookOurVisit(
 
 /**
  * The row of a visit booked without FSM, written only while its hold still waits to be booked, so a booking written
- * twice makes one visit. It has no work order and no FSM status. It is booked into the window the client picked, so
- * the asked-window pass has nothing to look up for it.
+ * twice makes one visit. It has no work order and no FSM status. It is booked into the window the client picked, and a
+ * consultation keeps the window of the client's latest request as the one they asked for, as the asked-window pass
+ * would have (src/domain/asked-windows.ts), so the pass has nothing to look up for it.
  */
 async function ourVisit(db: D1Database, hold: HoldRow, visitId: string, now: Date): Promise<D1PreparedStatement> {
   const { start, end } = await heldVisitTimes(db, hold);
@@ -482,8 +483,10 @@ async function ourVisit(db: D1Database, hold: HoldRow, visitId: string, now: Dat
   return db
     .prepare(
       `INSERT INTO appointments (id, fsm_id, person_id, type, tier, window_start, window_end, technician_id, status,
-         service_city, service_pincode, synced_at, first_seen_at, one_visit, asked_checked_at)
-       SELECT ?1, ?1, ?2, ?3, ?4, ?5, ?6, ?7, 'scheduled', ?8, ?9, ?10, ?10, ?11, ?10
+         service_city, service_pincode, synced_at, first_seen_at, one_visit, asked_checked_at, asked_window)
+       SELECT ?1, ?1, ?2, ?3, ?4, ?5, ?6, ?7, 'scheduled', ?8, ?9, ?10, ?10, ?11, ?10,
+         (SELECT r.requested_window FROM consultation_requests r
+           WHERE r.person_id = ?2 AND ?3 = 'consultation' ORDER BY r.created_at DESC LIMIT 1)
        WHERE EXISTS (SELECT 1 FROM slot_holds WHERE id = ?12 AND state = 'held')`,
     )
     .bind(

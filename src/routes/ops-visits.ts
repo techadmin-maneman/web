@@ -33,13 +33,13 @@ import {
   type VisitAsked,
 } from "../domain/visit-booking.ts";
 import { staffOf } from "../http/audit.ts";
+import { bookHold } from "../http/book-hold.ts";
 import type { App, AppEnv } from "../http/context.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { json } from "../http/openapi.ts";
 import { stripStart } from "../policy/next-visit.ts";
 import { windowTimesOf } from "../policy/slot-times.ts";
-import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import { PriceSchema, ServiceSchema } from "./client-booking.ts";
 
 const TechnicianSchema = z.object({ id: z.string(), name: z.string() }).strict().openapi("FreeTechnician");
@@ -206,11 +206,6 @@ async function letGo(c: Context<AppEnv>, holdId: string, reason: string): Promis
   await giveBack(c.env.DB, c.var.deps.payments, holdId, now, reason, [auditStatement(c.env.DB, entry, now)]);
 }
 
-/** The visit a confirmed hold becomes, on its way to the field record. */
-async function bookConfirmed(c: Context<AppEnv>, holdId: string): Promise<void> {
-  await c.env.FSM_QUEUE.send({ hold_id: holdId, request_id: c.var.requestId } satisfies FsmSyncMessage);
-}
-
 interface Answer {
   readonly hold: Hold;
   readonly sale: Sale;
@@ -328,7 +323,7 @@ export function registerOpsVisits(app: App): void {
       await letGo(c, hold.id, "credit_spent");
       return c.json(errorBody("terms_changed", c.var.requestId), 409);
     }
-    await bookConfirmed(c, hold.id);
+    await bookHold(c, hold.id);
     const visitId = await visitOfHold(db, hold.id);
     const outcome = visitId === null ? "being_booked" : "booked";
     return c.json(bookingBody({ hold, sale, outcome, visitId, link: null }), 201);

@@ -87,7 +87,7 @@ async function holdLinkPaid(
   paid: { readonly hold: LinkHold; readonly link: RazorpayPaymentLink; readonly payment: RazorpayPayment },
 ): Promise<void> {
   const { hold, link, payment } = paid;
-  const { deps, config, log, requestId } = c.var;
+  const { deps, config, log } = c.var;
   const db = c.env.DB;
   const now = deps.now();
   const orderId = payment.order_id ?? link.order_id ?? null;
@@ -105,7 +105,7 @@ async function holdLinkPaid(
     return;
   }
   await recordHoldLinkPaid(db, { hold, payment, orderId }, config.settings.ipHashSalt, now);
-  await c.env.FSM_QUEUE.send({ hold_id: hold.id, request_id: requestId } satisfies FsmSyncMessage);
+  await bookHold(c, hold.id);
   log.info("razorpay_hook_hold_link_paid", { hold_id: hold.id });
 }
 
