@@ -109,6 +109,25 @@ test("shows the banner when the connection drops while the app is open", async (
   await expect(page.getByText(OFFLINE)).toBeHidden();
 });
 
+test("offline on Visits, which the phone does not keep, says the visits load once back online, and loads them", async ({
+  page,
+}) => {
+  await signIn(page);
+  await page.context().setOffline(true);
+  await expect(page.getByRole("status").filter({ hasText: OFFLINE })).toBeVisible();
+  await page.getByRole("navigation").getByRole("link", { name: "Visits" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "No connection." })).toBeVisible();
+  await expect(page.getByText(OFFLINE)).toHaveCount(0);
+  const waiting = page.getByText("Your visits will load when you are back online.");
+  await expect(waiting).toBeVisible();
+  await expect(page.getByText("We could not load this. Please try again.")).toHaveCount(0);
+
+  await page.context().setOffline(false);
+  await expect(page.getByText("Consultation · 9 am to 12 pm")).toBeVisible();
+  await expect(waiting).toBeHidden();
+  await expect(page.getByText("No connection.")).toBeHidden();
+});
+
 test("keeps no API answer but Home, and forgets Home at logout", async ({ page }) => {
   await signIn(page);
   await keepHome(page);

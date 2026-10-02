@@ -1,5 +1,5 @@
-// The parts both forms are made of: the pincode they are for, where the hair loss is, the person's fields and the
-// button that sends them.
+// The parts both forms are made of: the pincode they are for, where the hair loss is, the person's fields, the
+// invite /book remembers, and the button that sends them.
 
 import { ICONS } from "@maneman/brand/icons";
 import { formatMobileField, mobileDigits } from "@maneman/web-kit/mobile";
@@ -181,5 +181,20 @@ export function Send(props: { failure: string | null; sending: boolean; label: s
         {props.sending ? props.sendingLabel : props.label}
       </button>
     </>
+  );
+}
+
+/**
+ * On /book, the invite this browser remembers, said before the form sends it: who is told of the fit, and the choice
+ * to go on without it.
+ */
+export function RememberedInvite(props: { line: string; without: string; onWithout: () => void }) {
+  return (
+    <div class={styles.remembered}>
+      <p class={styles.told}>{props.line}</p>
+      <button type="button" class={styles.change} onClick={props.onWithout}>
+        {props.without}
+      </button>
+    </div>
   );
 }

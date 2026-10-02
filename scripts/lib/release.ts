@@ -112,7 +112,10 @@ export function currentVersion(target: Target): string {
 
 /** The newest version carrying this tag, or null where the upload really did not land. */
 function versionTagged(target: Target, tag: string): string | null {
-  const versions = VersionList.parse(JSON.parse(target.wrangler(["versions", "list", "--json"])));
+  const output = retryingLostReplies(`${deployedName(target)} versions`, () =>
+    target.wrangler(["versions", "list", "--json"]),
+  );
+  const versions = VersionList.parse(JSON.parse(output));
   const tagged = versions.filter((version) => version.annotations?.["workers/tag"] === tag);
   return tagged.at(-1)?.id ?? null;
 }

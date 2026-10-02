@@ -172,6 +172,7 @@ export function TaskActions({
   owner,
   me,
   staff,
+  mayOwn,
   closable,
   onOwner,
   onClosed,
@@ -184,6 +185,7 @@ export function TaskActions({
   /** Who is signed in; null while it is not known, when a task cannot be taken. */
   me: string | null;
   staff: readonly string[];
+  mayOwn: boolean;
   closable: boolean;
   onOwner: (owner: string | null) => void;
   onClosed: () => void;
@@ -195,10 +197,10 @@ export function TaskActions({
   const giveButton = useRef<HTMLButtonElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
   const closing = closable ? closableAs(group) : null;
-  const mine = owner !== null && owner === me;
-  const canTake = me !== null && staff.includes(me);
+  const mine = mayOwn && owner !== null && owner === me;
+  const canTake = mayOwn && me !== null && staff.includes(me);
   // Someone to give it to, or, for a task that is someone's, nobody.
-  const canGive = owner !== null || staff.length > 0;
+  const canGive = mayOwn && (owner !== null || staff.length > 0);
 
   /** Back to the button that opened a form, rather than to the top of the page. */
   const backTo = (button: RefObject<HTMLButtonElement | null>) => {

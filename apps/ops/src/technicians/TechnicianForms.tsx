@@ -12,6 +12,7 @@ import { useState } from "react";
 import { api, type ReturnedVisit, type TechnicianChange, type TechnicianSummary } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { technicians } from "../content.ts";
+import { useAccess } from "../lib/access.ts";
 import { phoneWords } from "../lib/phone.ts";
 import styles from "./technicians.module.css";
 
@@ -369,6 +370,10 @@ export function Details({
 }) {
   const copy = technicians.details;
   const [changing, setChanging] = useState(false);
+  const access = useAccess();
+  const mayChange = access.mayCall("PATCH /api/technicians/{id}");
+  const maySwitchOff = active && access.mayCall("POST /api/technicians/{id}/deactivate");
+  const maySwitchOn = !active && access.mayCall("POST /api/technicians/{id}/reactivate");
   const stopChanging = () => {
     setChanging(false);
   };
@@ -394,24 +399,23 @@ export function Details({
       {!technician.editable && <p className={styles.none}>{copy.fsm}</p>}
       {technician.editable && !changing && (
         <>
-          <div className={styles.actions}>
-            <Button
-              variant="outline"
-              size="small"
-              className={styles.quiet}
-              aria-label={copy.changeLabel(technician.name)}
-              onClick={() => {
-                setChanging(true);
-              }}
-            >
-              {copy.change}
-            </Button>
-          </div>
-          {active ? (
-            <SwitchOff technician={technician} onSwitchedOff={onSwitchedOff} />
-          ) : (
-            <SwitchOn technician={technician} onSwitchedOn={onSwitchedOn} />
+          {mayChange && (
+            <div className={styles.actions}>
+              <Button
+                variant="outline"
+                size="small"
+                className={styles.quiet}
+                aria-label={copy.changeLabel(technician.name)}
+                onClick={() => {
+                  setChanging(true);
+                }}
+              >
+                {copy.change}
+              </Button>
+            </div>
           )}
+          {maySwitchOff && <SwitchOff technician={technician} onSwitchedOff={onSwitchedOff} />}
+          {maySwitchOn && <SwitchOn technician={technician} onSwitchedOn={onSwitchedOn} />}
         </>
       )}
     </section>
