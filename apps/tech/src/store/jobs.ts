@@ -118,6 +118,13 @@ export async function keptNames(): Promise<Map<string, string>> {
   return names;
 }
 
+/** The days and the clients' cards, gone; each job's arrival and close-out stay with the work not yet sent. */
+export async function dropCards(): Promise<void> {
+  for (const kept of await all<Kept>("jobs")) {
+    if (kept.kind === "day" || kept.kind === "job") await remove("jobs", kept.id);
+  }
+}
+
 /** Whether a kept record is still needed: its day is today or tomorrow, or its job is one the phone still needs. */
 function stillNeeded(kept: Kept, days: ReadonlySet<string>, jobs: ReadonlySet<string>): boolean {
   switch (kept.kind) {

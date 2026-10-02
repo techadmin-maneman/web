@@ -30,6 +30,13 @@ export function go(path: string): void {
   window.dispatchEvent(new PopStateEvent("popstate"));
 }
 
+/** Puts `path` in place of the one shown, as a page that has moved does: no new entry in the history, and no reload. */
+export function redirect(path: string): void {
+  if (window.location.pathname === path) return;
+  window.history.replaceState(null, "", path);
+  window.dispatchEvent(new PopStateEvent("popstate"));
+}
+
 /** The parts of a click that say where the person wants the link opened. */
 export interface Click {
   readonly button: number;

@@ -3,19 +3,20 @@ import type { LossExtent } from "../../../../src/config/booking.ts";
 import { ONE_VISIT_WINDOWS } from "../../../../src/policy/one-visit.ts";
 import { referral } from "../../content/referral.ts";
 import { track } from "../../lib/analytics.ts";
-import { addressToSend, emptyAddress, missingParts, type AddressFields } from "../../lib/address.ts";
+import { addressLine, addressToSend, emptyAddress, missingParts, type AddressFields } from "../../lib/address.ts";
 import {
   bookConsultation,
   bookPublicConsultation,
   type Consultation as PublicConsultation,
   type ReferralConsultation,
 } from "../../lib/api.ts";
-import { dayStrip, indiaTomorrow } from "../../lib/dates.ts";
+import { dayStrip, indiaTomorrow, stripMonths } from "../../lib/dates.ts";
+import { placeOf } from "../../lib/place.ts";
 import { forgetInvite, rememberedInvite } from "../../lib/remembered-invite.ts";
 import { fill } from "../../lib/text.ts";
 import { readAttribution } from "../../lib/visit.ts";
 import { AddressFieldset } from "./AddressFieldset.tsx";
-import { placeOf, type Booking } from "./Done.tsx";
+import type { Booking } from "./Done.tsx";
 import { ExtentFieldset, ForPincode, PersonFieldset, Send, type FormProps } from "./fields.tsx";
 import styles from "./Invite.module.css";
 import { codeInPath, hairSystemsInPage } from "./page.ts";
@@ -52,7 +53,7 @@ export function Consultation(props: ConsultationProps) {
   const [date, setDate] = useState(indiaTomorrow());
   const [window, setWindow] = useState<BookingWindow>("morning");
   const [address, setAddress] = useState<AddressFields>(() => emptyAddress(props.answer.city));
-  const [extent, setExtent] = useState<LossExtent>("crown");
+  const [extent, setExtent] = useState<LossExtent | null>(null);
   const [code, setCode] = useState("");
   const days = dayStrip(indiaTomorrow(), DAYS);
   const { pincode } = props.answer;
@@ -87,7 +88,7 @@ export function Consultation(props: ConsultationProps) {
     const remembered = props.invited ? null : rememberedInvite();
     const onBook = {
       ...request,
-      loss_extent: extent,
+      ...(extent === null ? {} : { loss_extent: extent }),
       ...(attribution === undefined ? {} : { attribution }),
       ...(remembered === null ? {} : { invite_code: remembered }),
       ...(sentCode === null ? {} : { discount_code: sentCode }),
@@ -105,7 +106,13 @@ export function Consultation(props: ConsultationProps) {
         track({ name: "lead_submitted", page, served: true, area: props.answer.area, window, loss_extent });
         track({ name: "booking_confirmed", page, area: booked.area, window: booked.window, state: booked.state });
         if (invite !== null) forgetInvite(invite);
-        props.onBooked({ result: booked, mobile: fields.mobile, place: placeOf(props.answer), code: sentCode });
+        props.onBooked({
+          result: booked,
+          mobile: fields.mobile,
+          place: placeOf(props.answer, address),
+          address: addressLine(address, pincode),
+          code: sentCode,
+        });
       },
       missingParts(address).length === 0,
     );
@@ -194,6 +201,7 @@ export function Consultation(props: ConsultationProps) {
 
       <fieldset class={styles.group}>
         <legend class={`caps ${styles.legend}`}>{consultation.date}</legend>
+        <p class={styles.months}>{stripMonths(days)}</p>
         <div class={styles.dates}>
           {days.map((day) => (
             <label key={day.date} class={`${styles.day} ${date === day.date ? styles.dayOn : ""}`}>
@@ -201,6 +209,7 @@ export function Consultation(props: ConsultationProps) {
                 type="radio"
                 name="date"
                 class="visually-hidden"
+                aria-label={day.label}
                 checked={date === day.date}
                 onChange={() => {
                   setDate(day.date);

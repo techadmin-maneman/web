@@ -196,7 +196,7 @@ test("an unserved pincode takes the number instead, and the launch alert is the 
   await expect(page.getByLabel("Pincode", { exact: true })).toBeHidden();
   await expect(page.getByText("For 400050, Bandra")).toBeVisible();
   // Nothing is booked, so nothing asks where (ADR 0081).
-  await expect(page.getByLabel("Building, society or street")).toHaveCount(0);
+  await expect(page.getByLabel("Building or society")).toHaveCount(0);
 
   await fillPerson(page);
   await page.getByText("You may contact me about this request.").click();
@@ -382,7 +382,7 @@ test("the form will not send without the address, a name, a number and the agree
   await expect(page.getByText("Please tell us your name.")).toBeVisible();
   await expect(page.getByText("Please enter a ten-digit mobile number.")).toBeVisible();
   await expect(page.getByText("We need this to contact you.")).toBeVisible();
-  await expect(page.getByText("Please give the building, society or street.")).toBeVisible();
+  await expect(page.getByText("Please give the building or society.")).toBeVisible();
   await expect(page.getByText("Please give the sector or area.")).toBeVisible();
   expect(requests).toHaveLength(0);
 });
@@ -416,10 +416,10 @@ test("the fields the form needs are marked as required", async ({ page }) => {
   await expect(page.getByLabel("Name")).toHaveAttribute("aria-required", "true");
   await expect(page.getByLabel("Mobile")).toHaveAttribute("aria-required", "true");
   await expect(page.getByRole("checkbox")).toHaveAttribute("aria-required", "true");
-  for (const part of ["Flat or house number", "Building, society or street", "Sector or area", "City"]) {
+  for (const part of ["Flat or house number", "Building or society", "Sector or area", "City"]) {
     await expect(page.getByLabel(part)).toHaveAttribute("aria-required", "true");
   }
-  for (const part of ["Floor (optional)", "Access notes (optional)"]) {
+  for (const part of ["Street (optional)", "Access notes (optional)"]) {
     await expect(page.getByLabel(part)).not.toHaveAttribute("aria-required");
   }
 });
@@ -456,8 +456,9 @@ test("a keyboard user sees which day, window and agreement has focus", async ({ 
   await page.keyboard.press("Tab"); // the windows
   await expect(page.getByRole("radio", { name: /Morning/ })).toBeFocused();
   expect(await outlineOf(page, "label")).toBe("solid 2px");
-  // The address: flat, floor, tower, building or street, street, landmark, area, city and access notes.
-  for (let field = 0; field < 9; field += 1) await page.keyboard.press("Tab");
+  // The address: flat, the button that unfolds the floor, tower and landmark, building, street, area, city and
+  // access notes.
+  for (let field = 0; field < 7; field += 1) await page.keyboard.press("Tab");
   await expect(page.getByLabel("Access notes (optional)")).toBeFocused();
   await page.keyboard.press("Tab"); // name
   await page.keyboard.press("Tab"); // mobile
@@ -558,19 +559,23 @@ test("a booked consultation names the number, and offers the calendar and the ap
   await visit(page, `/r/${CODE}`);
   await bookThrough(page);
   await expect(page.getByText("Consultation booked")).toBeVisible();
-  await expect(page.getByText("On WhatsApp to +91 98100 00000")).toBeVisible();
-  await expect(page.getByRole("link", { name: "See it in the app" })).toHaveAttribute(
-    "href",
-    "http://app.localhost:4322",
-  );
+  await expect(page.getByText("We’ll send the details to +91 98100 00000 on WhatsApp.")).toBeVisible();
+  await expect(page.getByText("Sector 65, Gurgaon 122018 · free")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Open the app" })).toHaveAttribute("href", "http://app.localhost:4322");
+  await expect(page.getByRole("link", { name: "Back to the site" })).toHaveAttribute("href", "/");
 
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Add to calendar" }).click();
   const file = await download;
   expect(file.suggestedFilename()).toBe("mane-man-consultation.ics");
-  const calendar = readFileSync(await file.path(), "utf8");
+  const calendar = readFileSync(await file.path(), "utf8").replaceAll("\r\n ", "");
   expect(calendar).toContain("DTSTART:20260925T033000Z");
   expect(calendar).toContain("DTEND:20260925T063000Z");
+  // CP-21: the event had no place and no word of what it is.
+  expect(calendar).toContain("LOCATION:Flat 402\\, Palm Grove Society\\, Sector 65\\, Gurgaon 122018\r\n");
+  expect(calendar).toContain(
+    "DESCRIPTION:Your technician comes to you. Manage it in the Mane Man app: http://app.localhost:4322\r\n",
+  );
 });
 
 // The owner's ruling D2 of 1 October 2026 (ADR 0025, item 89; docs/decisions/0105-a-consultation-and-fit-in-one-visit.md):
@@ -629,7 +634,7 @@ test("a consultation asked for, not booked, offers no calendar and no app", asyn
   await bookThrough(page);
   await expect(page.getByText("Consultation requested")).toBeVisible();
   await expect(page.getByRole("button", { name: "Add to calendar" })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "See it in the app" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Open the app" })).toHaveCount(0);
 });
 
 // CLI-21, VIS-11: at 1440 the card sits beside the headline (board C5), and no field runs the width of the page.
@@ -645,7 +650,7 @@ test("the desktop page is board C5's two columns, and its fields keep to their c
 
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
-  for (const field of ["Building, society or street", "Name"]) {
+  for (const field of ["Building or society", "Name"]) {
     const box = await page.getByLabel(field).boundingBox();
     expect(box?.width ?? 0, field).toBeLessThanOrEqual(width / 2);
   }
@@ -660,7 +665,7 @@ test("the form fits a 320 px screen", async ({ page }) => {
   await page.getByRole("button", { name: "Check" }).click();
   await expect(page.getByRole("button", { name: "Book the consultation" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
-  for (const field of ["Building, society or street", "Access notes (optional)", "Name", "Mobile"]) {
+  for (const field of ["Building or society", "Access notes (optional)", "Name", "Mobile"]) {
     const box = await page.getByLabel(field).boundingBox();
     expect((box?.x ?? 0) + (box?.width ?? 0), field).toBeLessThanOrEqual(320);
   }
