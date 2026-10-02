@@ -116,7 +116,7 @@ export interface FormRequest {
   /** Clients book, and the slot is held, only while self-serve booking is on (ADR 0045). */
   readonly selfServeBooking: boolean;
   /** The number, the Turnstile token and the day's limits per number and address, the same for both pages. */
-  readonly checkPerson: (mobile: string, turnstileToken: string) => Promise<Checked>;
+  readonly checkPerson: (mobile: string, turnstileToken: string, name: string) => Promise<Checked>;
   /** Sends a person's first address on to their FSM contact and CRM lead, as saving it in the app does. */
   readonly syncContact: (personId: string) => Promise<void>;
 }
@@ -401,7 +401,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   if (request.address.pincode !== request.pincode) {
     return { ok: false, status: 400, code: "invalid_request", fields: ["address.pincode"] };
   }
-  const checked = await form.checkPerson(request.mobile, request.turnstileToken);
+  const checked = await form.checkPerson(request.mobile, request.turnstileToken, request.name);
   if (!checked.ok) return checked;
 
   const knownId = await personWithMobile(db, checked.mobile);
@@ -561,7 +561,7 @@ export async function joinTheWaitlist(
   const { db, now } = form;
   const pincode = await pincodeOf(db, request.pincode);
   if (pincode?.served === 1) return { ok: false, status: 422, code: "not_bookable" };
-  const checked = await form.checkPerson(request.mobile, request.turnstileToken);
+  const checked = await form.checkPerson(request.mobile, request.turnstileToken, request.name);
   if (!checked.ok) return checked;
 
   const person = formPerson(db, {

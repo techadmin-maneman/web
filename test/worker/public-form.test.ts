@@ -208,6 +208,15 @@ describe("the site's forms: the day's limits", () => {
     expect(statuses).toEqual([201, 201, 429]);
   });
 
+  it("holds staging's test records to the address's limit everywhere but staging", async () => {
+    const app = appFor("local", fakeDependencies(), { leadIpDailyLimit: 1 });
+    const statuses: number[] = [];
+    for (const mobile of ["9810000021", "9810000022"]) {
+      statuses.push((await join(app, { ...JOINING, name: "Staging test Arjun Mehta", mobile })).status);
+    }
+    expect(statuses).toEqual([201, 429]);
+  });
+
   it("counts nothing against a number for a pincode the form may not take", async () => {
     await env.DB.prepare(
       "INSERT INTO serviceable_pincodes (pincode, area, city, served) VALUES ('122018', 'Gurgaon South City II', 'Gurgaon', 1)",

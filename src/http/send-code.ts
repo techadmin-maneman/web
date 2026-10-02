@@ -18,13 +18,13 @@
 
 import type { Context } from "hono";
 import type { AppEnv } from "./context.ts";
-import { onAllowlist } from "../config/settings.ts";
+import { onAllowlist, type LoginSettings } from "../config/settings.ts";
 import { alertCeilingReached, ceilingReached, takeFromCeiling } from "../domain/ceilings.ts";
 import { countOne, isSpent, takeOne } from "../domain/rate-limit.ts";
 import { saltedHash } from "../lib/hash.ts";
 import { indiaDate, indiaHour } from "../lib/india-time.ts";
 import { scrubString } from "../log.ts";
-import { isStagingTestRecord } from "../policy/staging-test-records.ts";
+import { isStagingTestRecord, skipsAddressLimits } from "../policy/staging-test-records.ts";
 import type { CodeChannel } from "../providers/codes.ts";
 import { afterResponse } from "./after-response.ts";
 
@@ -62,9 +62,10 @@ export async function codeGate(c: Context<AppEnv>, ipHash: string, now: Date): P
 }
 
 /**
- * Whether a new login code may be asked for this number, before anyone is looked up: the gate above, then the
- * address's codes this hour and the number's today, each counted under its surface's own scope
- * (docs/decisions/0030-one-time-codes.md). A code resent on its challenge answers to the gate alone.
+ * Whether a new login code may be asked for this number: the gate above, then the address's codes this hour and the
+ * number's today, each counted under its surface's own scope (docs/decisions/0030-one-time-codes.md). The answer is
+ * the same whoever holds the number, except a staging test record, which skips the address's limit. A code resent
+ * on its challenge answers to the gate alone.
  */
 export async function mayAskForCode(
   c: Context<AppEnv>,
@@ -73,18 +74,22 @@ export async function mayAskForCode(
     readonly mobileE164: string;
     readonly ipHash: string;
     readonly now: Date;
+    /** The name of whoever holds the number, where the mirror already knows them. */
+    readonly name: string | null;
   },
 ): Promise<CodeGate> {
   const gate = await codeGate(c, input.ipHash, input.now);
   if (gate !== "open") return gate;
   const { login: limits, ipHashSalt } = c.var.config.settings;
   const db = c.env.DB;
-  const withinAddress = await takeOne(db, {
-    scope: `${input.surface}:code:ip`,
-    key: input.ipHash,
-    window: indiaHour(input.now),
-    limit: limits.codeIpHourlyLimit,
-  });
+  const withinAddress =
+    skipsAddressLimits(c.var.config.environment, input.name) ||
+    (await takeOne(db, {
+      scope: `${input.surface}:code:ip`,
+      key: input.ipHash,
+      window: indiaHour(input.now),
+      limit: limits.codeIpHourlyLimit,
+    }));
   const withinNumber =
     withinAddress &&
     (await takeOne(db, {
@@ -94,6 +99,15 @@ export async function mayAskForCode(
       limit: limits.codeMobileDailyLimit,
     }));
   return withinNumber ? "open" : "rate_limited";
+}
+
+/**
+ * The code a new challenge is made with when it is not a random one: staging's known code for one of our own test
+ * records, or locally the fixed code for everyone. Null means a fresh random code.
+ */
+export function knownCode(login: LoginSettings, name: string | null): string | null {
+  if (login.testRecordCode !== null && name !== null && isStagingTestRecord(name)) return login.testRecordCode;
+  return login.fixedCode;
 }
 
 /**

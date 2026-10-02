@@ -38,7 +38,7 @@ import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { saveClientAddress, suggestBuildings } from "../http/address-save.ts";
-import { sendCodeAfterResponse, withinCodeCeiling } from "../http/send-code.ts";
+import { knownCode, sendCodeAfterResponse, withinCodeCeiling } from "../http/send-code.ts";
 import { visitorOf } from "../http/visitor.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
@@ -520,7 +520,7 @@ export function registerClientProfile(app: App): void {
       pepper: config.settings.login.codePepper,
       audit: audit(personId, requestId, { action: "number_change.request" }),
       now,
-      fixedCode: config.settings.login.fixedCode,
+      fixedCode: knownCode(config.settings.login, contact?.name ?? null),
     });
     const name = contact?.name ?? null;
     await sendCodeAfterResponse(c, current, name, "whatsapp", started.codes.old.code);

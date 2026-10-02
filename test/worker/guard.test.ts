@@ -358,6 +358,25 @@ describe("validateStaticConfig: the local fixed login code", () => {
   });
 });
 
+describe("validateStaticConfig: staging's code for its test records", () => {
+  const OUTSIDE = "STAGING_TEST_RECORD_CODE is set outside staging: test records' codes would be known";
+
+  it("is taken on staging", () => {
+    const staging = { ...stagingBase, STAGING_TEST_RECORD_CODE: "424242" };
+    expect(validateStaticConfig(staging).settings.login.testRecordCode).toBe("424242");
+  });
+
+  it("is refused in production and locally, and must be six digits", () => {
+    expect(problemsOf({ ...production, STAGING_TEST_RECORD_CODE: "424242" })).toContain(OUTSIDE);
+    expect(problemsOf({ ENVIRONMENT: "local", ...STUBS, ...SETTINGS, STAGING_TEST_RECORD_CODE: "424242" })).toEqual([
+      OUTSIDE,
+    ]);
+    expect(problemsOf({ ...stagingBase, STAGING_TEST_RECORD_CODE: "4242" })).toContain(
+      "STAGING_TEST_RECORD_CODE must be six digits",
+    );
+  });
+});
+
 describe("validateStaticConfig: Cloudflare Access", () => {
   it("reads the team domain, and needs no ops audience where the ops surface is switched off", () => {
     const { ACCESS_OPS_AUD: _omitted, ...withoutAudience } = production;
