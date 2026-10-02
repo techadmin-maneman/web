@@ -255,10 +255,10 @@ export interface paths {
                         /** @description A six-digit Indian pincode. */
                         pincode: string;
                         /**
-                         * @description Where the hair loss is, as the form's drawings show it.
+                         * @description Where the hair loss is, as the form's drawings show it. Left out when the visitor does not say.
                          * @enum {string}
                          */
-                        loss_extent: "crown" | "receding" | "advanced";
+                        loss_extent?: "crown" | "receding" | "advanced";
                         turnstile_token: string;
                         attribution?: {
                             utm_source?: string;
@@ -393,10 +393,10 @@ export interface paths {
                         /** @description A six-digit Indian pincode. */
                         pincode: string;
                         /**
-                         * @description Where the hair loss is, as the form's drawings show it.
+                         * @description Where the hair loss is, as the form's drawings show it. Left out when the visitor does not say.
                          * @enum {string}
                          */
-                        loss_extent: "crown" | "receding" | "advanced";
+                        loss_extent?: "crown" | "receding" | "advanced";
                         turnstile_token: string;
                         attribution?: {
                             utm_source?: string;

@@ -1,7 +1,7 @@
 // The site's content file and the publish gate that guards production.
 
 import { createHash } from "node:crypto";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { GUARANTEE } from "@maneman/web-kit/guarantee";
 import { describe, expect, it } from "vitest";
 import { booking as appBooking } from "../../apps/app/src/content.ts";
@@ -43,11 +43,26 @@ function filesIn(value: unknown): string[] {
   return [];
 }
 
+/** Where a file named in the content is, as site/src/lib/images.ts finds it, or null. */
+function assetPath(file: string): string | null {
+  for (const folder of ["site/src/assets", "design/assets"]) {
+    if (existsSync(`${folder}/${file}`)) return `${folder}/${file}`;
+  }
+  return null;
+}
+
 describe("content", () => {
-  it("refers only to images and footage that exist in design/assets", () => {
+  it("refers only to images and footage that exist in site/src/assets or design/assets", () => {
     const files = filesIn(site);
     expect(files.length).toBeGreaterThan(20);
-    for (const file of files) expect(existsSync(`design/assets/${file}`), file).toBe(true);
+    for (const file of files) expect(assetPath(file), file).not.toBeNull();
+  });
+
+  // UX-20, PLAT-65: every phone downloaded the 2.3 MB film.
+  it("gives phones a film under 800 KB", () => {
+    const path = assetPath(site.heroFootage.phoneVideo);
+    expect(path).not.toBeNull();
+    expect(statSync(path ?? "").size).toBeLessThan(800 * 1024);
   });
 
   it("offers the backend's six presets in its order, split as the design labels them", () => {

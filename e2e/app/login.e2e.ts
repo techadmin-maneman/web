@@ -32,7 +32,7 @@ test("a booked number logs in with its code and lands on its consultation", asyn
   await expect(page.getByRole("heading", { level: 1, name: "Your consultation" })).toBeVisible();
   await expect(page.getByText("Morning, 9 am to 12 pm")).toBeVisible();
   await expect(page.getByText("Gurgaon", { exact: true })).toBeVisible();
-  await expect(page.getByText("Free · nothing to pay")).toBeVisible();
+  await expect(page.getByText("Free", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Your profile" })).toHaveText("RM");
   await expect(page.getByRole("link", { name: "Reschedule" })).toHaveAttribute(
     "href",

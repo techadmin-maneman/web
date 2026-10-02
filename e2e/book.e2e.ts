@@ -183,13 +183,9 @@ test("offers the consultation and fit in one visit, and says what it holds", asy
 
   await expect(page.getByText("Booking received")).toBeVisible();
   const sent = requests[0]?.postDataJSON() as Record<string, unknown>;
-  expect(sent).toMatchObject({
-    one_visit: true,
-    window: "morning",
-    consent: true,
-    loss_extent: "crown",
-    number_code_id: NUMBER_CODE_ID,
-  });
+  expect(sent).toMatchObject({ one_visit: true, window: "morning", consent: true, number_code_id: NUMBER_CODE_ID });
+  // Where the hair loss is was skipped, so nothing is said of it (BK-60).
+  expect(sent).not.toHaveProperty("loss_extent");
 });
 
 test("books the one visit only with the right WhatsApp code, and a new number needs its own", async ({ page }) => {
@@ -317,12 +313,12 @@ test("a booking without the address is stopped at the form, each part it needs m
   await page.getByRole("button", { name: "Book the consultation" }).click();
 
   await expect(page.getByText("Please give the flat or house number.")).toBeVisible();
-  await expect(page.getByText("Please give the building, society or street.")).toBeVisible();
+  await expect(page.getByText("Please give the building or society.")).toBeVisible();
   await expect(page.getByText("Please give the sector or area.")).toBeVisible();
   await expect(page.getByText("Please give the city.")).toBeVisible();
   await expect(page.getByLabel("Flat or house number")).toHaveAttribute("aria-invalid", "true");
-  await expect(page.getByLabel("Building, society or street")).toHaveAttribute("aria-invalid", "true");
-  await expect(page.getByLabel("Floor (optional)")).toHaveAttribute("aria-invalid", "false");
+  await expect(page.getByLabel("Building or society")).toHaveAttribute("aria-invalid", "true");
+  await expect(page.getByLabel("Street (optional)")).toHaveAttribute("aria-invalid", "false");
   expect(requests).toHaveLength(0);
 
   await fillAddress(page);
@@ -439,7 +435,7 @@ test("a booking and a waitlist are both counted, with nothing personal", async (
   await page.getByRole("button", { name: "Add me to the list" }).click();
   await expect(page.getByRole("heading", { name: "You are on the Bandra list" })).toBeVisible();
   expect(await analyticsEvents(page)).toEqual([
-    ["lead_submitted", { page: "book", served: false, area: "Bandra", window: null, loss_extent: "crown" }],
+    ["lead_submitted", { page: "book", served: false, area: "Bandra", window: null, loss_extent: null }],
     ["waitlist_submitted", { page: "book", area: "Bandra" }],
   ]);
   await expectNoPersonalData(page, ["Test Visitor", "9810000000", "98100 00000"]);
@@ -463,7 +459,7 @@ test("a friend who opened an invite books here with it, and is told the invite's
   await bookHere(page);
 
   await expect(page.getByText("Booking received")).toBeVisible();
-  expect(requests[0]?.postDataJSON()).toMatchObject({ invite_code: CODE, loss_extent: "crown" });
+  expect(requests[0]?.postDataJSON()).toMatchObject({ invite_code: CODE });
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeVisible();
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
@@ -583,7 +579,111 @@ test("an empty submit shows each error, announced, and sends nothing", async ({ 
   await expect(page.getByText("Please tell us your name.")).toBeVisible();
   await expect(page.getByText("Please enter a ten-digit mobile number.")).toBeVisible();
   await expect(page.getByText("We need this to contact you.")).toBeVisible();
-  await expect(page.getByText("Please give the building, society or street.")).toBeVisible();
+  await expect(page.getByText("Please give the building or society.")).toBeVisible();
   await expect(page.getByText("Please give the sector or area.")).toBeVisible();
   expect(requests).toHaveLength(0);
+});
+
+async function bookWith(page: Page): Promise<void> {
+  await fillAddress(page);
+  await page.getByLabel("Name").fill("Test Visitor");
+  await page.getByLabel("Mobile").fill("9810000000");
+  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByRole("button", { name: "Book the consultation" }).click();
+}
+
+// BK-60, UX-38: Back after the pincode's answer, or after the confirmation, left /book and lost everything typed.
+test("Back steps back through the page, and Forward returns to the confirmation", async ({ page }) => {
+  await mockApi(page);
+  await visit(page, "/book");
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  await expect(page.getByRole("heading", { name: "We come to Sector 65" })).toBeVisible();
+
+  await page.goBack();
+  expect(new URL(page.url()).pathname).toMatch(/^\/book\/?$/);
+  await expect(page.getByLabel("Pincode")).toHaveValue(SERVED.pincode);
+  await expect(page.getByLabel("Pincode")).toBeFocused();
+  await page.goForward();
+  await expect(page.getByRole("heading", { name: "We come to Sector 65" })).toBeFocused();
+
+  await bookWith(page);
+  await expect(page.getByText("Booking received")).toBeVisible();
+  await page.goBack();
+  await expect(page.getByRole("heading", { name: "We come to Sector 65" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Book the consultation" })).toBeVisible();
+  await page.goForward();
+  await expect(page.getByText("Booking received")).toBeVisible();
+});
+
+// BK-60, UX-33: fourteen tiles read "Sat 31 … Fri 6" with no month, and a screen reader heard "Sat 31".
+test("the date strip names its months, and each day in full to a screen reader", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-10-23T06:00:00Z"));
+  await mockApi(page);
+  await visit(page, "/book");
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+
+  const dates = page.getByRole("group", { name: "Pick a date" });
+  await expect(dates.getByText("October – November")).toBeVisible();
+  const days = dates.getByRole("radio");
+  await expect(days.first()).toHaveAccessibleName("Saturday 24 October");
+  await expect(days.nth(7)).toHaveAccessibleName("Saturday 31 October");
+  await expect(days.nth(8)).toHaveAccessibleName("Sunday 1 November");
+});
+
+// BK-60, UX-38, CP-21: "Building, society or street" was followed by "Street (optional)", and every optional part
+// stood open.
+test("the address asks for the street once, and folds the floor, tower and landmark until asked", async ({ page }) => {
+  const requests = await mockApi(page);
+  await visit(page, "/book");
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+
+  const address = page.getByRole("group", { name: "Your address" });
+  await expect(address.getByLabel("Building or society")).toBeVisible();
+  await expect(address.getByLabel("Street (optional)")).toBeVisible();
+  for (const folded of ["Floor (optional)", "Tower or block (optional)", "Landmark (optional)"]) {
+    await expect(address.getByLabel(folded)).toHaveCount(0);
+  }
+  await address.getByRole("button", { name: "Add floor, tower or landmark" }).click();
+  await expect(address.getByLabel("Floor (optional)")).toBeFocused();
+  await expect(address.getByRole("button", { name: "Add floor, tower or landmark" })).toHaveCount(0);
+  await address.getByLabel("Tower or block (optional)").fill("Tower C");
+
+  await bookWith(page);
+  await expect(page.getByText("Booking received")).toBeVisible();
+  expect((requests[0]?.postDataJSON() as { address: Record<string, unknown> }).address).toMatchObject({
+    tower: "Tower C",
+    line1: "Palm Grove Society",
+  });
+});
+
+// BK-60: everyone who skipped the question was recorded as crown thinning.
+test("chooses nothing for the visitor where the hair loss is", async ({ page }) => {
+  await mockApi(page);
+  await visit(page, "/book");
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  const extent = page.getByRole("group", { name: "Extent of hair loss (optional)" });
+  await expect(extent.getByRole("radio")).toHaveCount(3);
+  for (const choice of await extent.getByRole("radio").all()) await expect(choice).not.toBeChecked();
+});
+
+// BK-60, UX-33: an empty check blamed the input, and "Change the pincode" was a 58 x 20 px target.
+test("an empty pincode is asked for, and Change is a full-size target", async ({ page }) => {
+  await mockApi(page);
+  await visit(page, "/book");
+  await page.getByRole("button", { name: "Check" }).click();
+  await expect(page.getByText("Enter your pincode.")).toBeVisible();
+
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  const change = page.getByRole("button", { name: "Change the pincode" });
+  const box = await change.boundingBox();
+  expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+  expect(box?.width ?? 0).toBeGreaterThanOrEqual(44);
+  await change.click();
+  await expect(page.getByLabel("Pincode")).toBeFocused();
+  await expect(page.getByLabel("Pincode")).toHaveValue(SERVED.pincode);
 });
