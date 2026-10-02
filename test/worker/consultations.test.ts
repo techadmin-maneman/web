@@ -77,7 +77,8 @@ describe("POST /api/consultation", () => {
       credits: false,
       invite: "unknown",
       address: "saved",
-      first_fit: false,
+      one_visit: false,
+      discount_code: false,
     });
     expect(fsm.sent).toEqual([{ hold_id: expect.any(String) as string, request_id: expect.any(String) as string }]);
     expect(crm.sent).toEqual([{ lead_id: expect.any(String) as string, request_id: expect.any(String) as string }]);
@@ -168,7 +169,8 @@ describe("POST /api/consultation", () => {
       credits: false,
       invite: "unknown",
       address: "saved",
-      first_fit: false,
+      one_visit: false,
+      discount_code: false,
     });
     expect(fsm.sent).toEqual([]);
     expect(crm.sent).toHaveLength(1);
@@ -182,6 +184,10 @@ describe("POST /api/consultation", () => {
       requested_window: "morning",
       referral_code: null,
     });
+    // No slot, no confirmation: the load test (scripts/load-test-leads.ts) runs with self-serve booking off
+    // precisely so its random test numbers are never messaged (docs/decisions/0025-phase-2-conflicts-register.md,
+    // item 84's refinement).
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM outbound_messages").first()).toEqual({ n: 0 });
   });
 });
 
@@ -500,7 +506,8 @@ describe("an invite the browser remembered", () => {
       credits: true,
       invite: "valid",
       address: "saved",
-      first_fit: false,
+      one_visit: false,
+      discount_code: false,
     });
     expect((await attributions()).results).toEqual([
       { code: "RM4K7P", via: "consultation", pincode: "122018", grant_state: "pending" },
@@ -645,9 +652,11 @@ describe("a number the site already knows", () => {
   });
 });
 
-// The owner's ruling of 27 September 2026 (ADR 0025, item 68; docs/decisions/0086-the-next-visit-is-offered.md): the
-// form offers the consultation alone, or with the first fit to follow, which is a request written with the booking.
-describe("the consultation, then the first fit", () => {
+// The owner's ruling D2 of 1 October 2026 (ADR 0025, item 89; docs/decisions/0105-a-consultation-and-fit-in-one-visit.md):
+// the form books the consultation alone, or the consultation and the first fit in one visit, three hours, with
+// nothing paid until the client is fitted. It replaces the consultation with the first fit to follow (item 68), whose
+// request the form no longer writes, so the tests of that request went with it.
+describe("a consultation and fit in one visit", () => {
   const book = (body: object, settings = {}, queue = fakeQueue()) =>
     request(
       site(settings),
@@ -663,19 +672,15 @@ describe("the consultation, then the first fit", () => {
       }),
       { FSM_QUEUE: queue, CRM_QUEUE: fakeQueue() },
     );
-  const requests = () =>
-    env.DB.prepare(
-      "SELECT r.preferred_window, p.mobile_e164 FROM first_fit_requests r JOIN people p ON p.id = r.person_id",
-    ).all();
   const count = async (sql: string) => (await env.DB.prepare(sql).first<{ n: number }>())?.n;
 
   beforeEach(async () => {
     await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
   });
 
-  it("books the consultation as ever, and records the fit asked for, in its window, with it", async () => {
+  it("holds the first fit's three hours with nothing paid, sold to cost nothing if missed or moved", async () => {
     const fsm = fakeQueue();
-    const answer = await book({ first_fit: { window: "afternoon" } }, {}, fsm);
+    const answer = await book({ one_visit: true }, {}, fsm);
     expect(answer.status).toBe(201);
     expect(await answer.json()).toEqual({
       state: "booked",
@@ -685,62 +690,110 @@ describe("the consultation, then the first fit", () => {
       credits: false,
       invite: "unknown",
       address: "saved",
-      first_fit: true,
+      one_visit: true,
+      discount_code: false,
     });
-    // Nothing more is held or paid for: the consultation's slot is the one held, and it is free.
     expect(fsm.sent).toHaveLength(1);
-    const held = await env.DB.prepare("SELECT type, amount FROM slot_holds").all();
-    expect(held.results).toEqual([{ type: "consultation", amount: 0 }]);
+    const held = await env.DB.prepare(
+      `SELECT type, tier, minutes, amount, one_visit, late_fee_ex_gst, late_change_charge, no_show_charge,
+         confirmed_at IS NOT NULL AS confirmed FROM slot_holds`,
+    ).all();
+    expect(held.results).toEqual([
+      {
+        type: "first_fit",
+        tier: "standard",
+        minutes: 180,
+        amount: 0,
+        one_visit: 1,
+        late_fee_ex_gst: null,
+        late_change_charge: "nothing",
+        no_show_charge: "nothing",
+        confirmed: 1,
+      },
+    ]);
     expect(await count("SELECT COUNT(*) AS n FROM payments")).toBe(0);
-    expect((await requests()).results).toEqual([{ preferred_window: "afternoon", mobile_e164: "+919810000002" }]);
-    // The consent recorded is the consultation's own, which counsel is asked to confirm covers the fit.
+    expect(await count("SELECT COUNT(*) AS n FROM first_fit_requests")).toBe(0);
+    // The consent recorded is the consultation's own; whether it covers the fit is counsel's to confirm.
     const consent = await env.DB.prepare("SELECT purpose, notice_version, source FROM consents").all();
     expect(consent.results).toEqual([
       { purpose: "whatsapp_visits", notice_version: "referral-consultation-v1", source: "site_booking" },
     ]);
   });
 
-  it("takes either window for the fit", async () => {
-    await book({ first_fit: { window: null } });
-    expect((await requests()).results).toEqual([{ preferred_window: null, mobile_e164: "+919810000002" }]);
+  it("is booked in FSM on the first fit's item for three hours, marked as one visit, and its client told so", async () => {
+    const queue = fakeQueue();
+    await book({ one_visit: true }, {}, queue);
+    const [queued] = queue.sent as { hold_id: string }[];
+    const fsm = createStubFsm({
+      ...EMPTY_FSM,
+      items: [{ id: "item-fit", name: "First fit", type: "Service", price: null }],
+    });
+    const messages = fakeQueue();
+    const booked = await confirmBooking(env.DB, fsm, createStubPayments(), queued?.hold_id ?? "", NOW, {
+      labelAsTest: false,
+      notify: (messageId) => messages.send({ message_id: messageId, request_id: "r" }),
+    });
+
+    expect(booked).toBe("booked");
+    expect(fsm.made.visits).toMatchObject([
+      { serviceId: "item-fit", start: "2026-09-23T09:00:00+05:30", end: "2026-09-23T12:00:00+05:30" },
+    ]);
+    const visit = await env.DB.prepare("SELECT type, one_visit, window_start, window_end FROM appointments").first();
+    expect(visit).toEqual({
+      type: "first_fit",
+      one_visit: "booked",
+      window_start: "2026-09-23T03:30:00.000Z",
+      window_end: "2026-09-23T06:30:00.000Z",
+    });
+    const told = await env.DB.prepare("SELECT kind FROM outbound_messages").all();
+    expect(told.results).toEqual([{ kind: "consultation_confirmation" }]);
+    expect(messages.sent).toHaveLength(1);
   });
 
-  it("records nothing of a fit for the consultation alone", async () => {
+  it("books the consultation alone when the one visit is not asked for", async () => {
     const answer = await book({});
-    expect(await answer.json()).toMatchObject({ state: "booked", first_fit: false });
-    expect((await requests()).results).toEqual([]);
+    expect(await answer.json()).toMatchObject({ state: "booked", one_visit: false });
+    const held = await env.DB.prepare("SELECT type, one_visit FROM slot_holds").all();
+    expect(held.results).toEqual([{ type: "consultation", one_visit: 0 }]);
   });
 
-  it("refuses an evening for the fit, which a first fit cannot start in", async () => {
-    const answer = await book({ first_fit: { window: "evening" } });
+  it("refuses the evening, which the first fit's three hours do not fit in, and writes nothing", async () => {
+    const answer = await book({ one_visit: true, window: "evening" });
     expect(answer.status).toBe(400);
+    expect((await answer.json<{ error: { fields: string[] } }>()).error.fields).toEqual(["window"]);
     expect(await count("SELECT COUNT(*) AS n FROM people")).toBe(0);
   });
 
-  it("records the fit with the request for ops, in the same write, while self-serve booking is off", async () => {
-    const answer = await book({ first_fit: { window: "morning" } }, { selfServeBooking: false });
-    expect(await answer.json()).toMatchObject({ state: "requested", first_fit: true });
-    expect(await count("SELECT COUNT(*) AS n FROM consultation_requests")).toBe(1);
-    expect((await requests()).results).toEqual([{ preferred_window: "morning", mobile_e164: "+919810000002" }]);
+  it("asks ops for it while self-serve booking is off, holding nothing", async () => {
+    const queue = fakeQueue();
+    const answer = await book({ one_visit: true }, { selfServeBooking: false }, queue);
+    expect(await answer.json()).toMatchObject({ state: "requested", one_visit: true });
+    expect(queue.sent).toEqual([]);
+    const asked = await env.DB.prepare("SELECT requested_window, one_visit FROM consultation_requests").all();
+    expect(asked.results).toEqual([{ requested_window: "morning", one_visit: 1 }]);
+    // Asked again for the same day and window as the consultation alone, the plan asked last stands.
+    await book({}, { selfServeBooking: false });
+    const again = await env.DB.prepare("SELECT one_visit FROM consultation_requests").all();
+    expect(again.results).toEqual([{ one_visit: 0 }]);
   });
 
-  it("leaves no request behind when the booking is refused: the window gone, or a consultation already booked", async () => {
+  it("is the number's consultation still to happen, so neither can be booked again beside it", async () => {
+    expect((await book({ one_visit: true })).status).toBe(201);
+    for (const second of [{}, { one_visit: true }]) {
+      const answer = await book({ date: "2026-09-24", ...second });
+      expect(answer.status).toBe(409);
+      expect(await answer.json()).toMatchObject({
+        error: { code: "already_booked" },
+        booked: { date: "2026-09-23", window: "morning" },
+      });
+    }
+    expect(await count("SELECT COUNT(*) AS n FROM slot_holds")).toBe(1);
+  });
+
+  it("leaves nothing behind when its three hours are not free", async () => {
     await env.DB.prepare("UPDATE technicians SET active = 0").run();
-    expect((await book({ first_fit: { window: "morning" } })).status).toBe(409);
-    expect((await requests()).results).toEqual([]);
+    expect((await book({ one_visit: true })).status).toBe(409);
     expect(await count("SELECT COUNT(*) AS n FROM people")).toBe(0);
-
-    await env.DB.prepare("UPDATE technicians SET active = 1").run();
-    expect((await book({})).status).toBe(201);
-    const again = await book({ date: "2026-09-24", first_fit: { window: "afternoon" } });
-    expect(again.status).toBe(409);
-    expect((await requests()).results).toEqual([]);
-  });
-
-  it("keeps the latest request a person made", async () => {
-    await book({ first_fit: { window: "morning" } }, { selfServeBooking: false });
-    await book({ date: "2026-09-24", first_fit: { window: "afternoon" } }, { selfServeBooking: false });
-    expect((await requests()).results).toEqual([{ preferred_window: "afternoon", mobile_e164: "+919810000002" }]);
   });
 });
 

@@ -28,7 +28,7 @@ import { IN_A_SET, photoSets, sentOf, type PhotoSet } from "./sets.ts";
 import styles from "./waiting.module.css";
 
 /** The steps a refused write can be put right on: the ones with a screen of their own to put it right in. */
-const CORRECTABLE: ReadonlySet<EventKind> = new Set(["checklist", "consumables", "piece", "outcome"]);
+const CORRECTABLE: ReadonlySet<EventKind> = new Set(["checklist", "consumables", "piece", "profile", "outcome"]);
 
 const isInJobStep = (kind: EventKind): kind is InJobStep => kind in STEP_PATHS;
 

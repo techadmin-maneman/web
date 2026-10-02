@@ -89,6 +89,7 @@ const OPS_FIXTURES: readonly [method: string, path: string, name: string, body: 
   ["GET", "/api/services", "SERVICES", ops.SERVICES],
   ["POST", "/api/prices/withdraw", "PRICE_ROWS", { prices: ops.PRICE_ROWS }],
   ["GET", "/api/service-area", "SERVICE_AREA", ops.SERVICE_AREA],
+  ["GET", "/api/discount-codes", "DISCOUNT_CODES", ops.DISCOUNT_CODES],
   ["GET", "/api/consumables", "CONSUMABLES", ops.CONSUMABLES],
   ["POST", "/api/service-usage", "CONSUMABLES", ops.CONSUMABLES],
   ["GET", "/api/job-sheet", "JOB_SHEET", ops.JOB_SHEET],

@@ -21,6 +21,10 @@ export const ERROR_CODES = [
   "session_required",
   "job_not_claimable",
   "look_limit_reached",
+  // The look goes to WhatsApp only (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md): a render waits for the
+  // gate's claim, and no try-on runs while WhatsApp cannot send its look.
+  "claim_required",
+  "whatsapp_unavailable",
   // Erasure (docs/decisions/0019-erasure.md), and what it waits for: a visit still booked, or a payment
   // held with no visit behind it (docs/decisions/0066-erasure-all-or-nothing.md).
   "unauthorized",
@@ -90,6 +94,13 @@ export const ERROR_CODES = [
   // was disputed already, or took nothing to give back.
   "already_disputed",
   "not_disputable",
+  // Discount codes (docs/decisions/0108-discount-codes.md): the code entered does not apply, which is all its enterer
+  // is told; the booking carries a code already; the booking's price is settled, so no code goes on or comes off; or
+  // ops typed a code that already exists.
+  "code_not_applicable",
+  "already_discounted",
+  "price_settled",
+  "code_exists",
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 

@@ -21,6 +21,7 @@
 import type { VisitType } from "../config/visit-types.ts";
 import type { Logger } from "../log.ts";
 import { LIVE_VISIT_STATUSES } from "../policy/account-deletion.ts";
+import { blankProfiles } from "./hair-profiles.ts";
 import { copyKey, keptLookKey } from "./kept-try-ons.ts";
 import { deleteCounted, deleteUnder } from "./storage-meter.ts";
 import { recordEvent } from "./tryon.ts";
@@ -217,6 +218,9 @@ async function personalDataStatements(db: D1Database, personId: string, at: stri
     // no-show's charge (src/domain/no-show-disputes.ts).
     db.prepare("UPDATE appointments SET client_note = NULL, client_note_at = NULL WHERE person_id = ?1").bind(personId),
     db.prepare("UPDATE no_show_disputes SET reason = NULL WHERE person_id = ?1").bind(personId),
+    // Their hair profile, its fit spec and their health history, in every version; who took each, and when, stay
+    // (docs/decisions/0106-a-clients-hair-profile.md).
+    blankProfiles(db, personId),
     // Where the technician's phone was at their door (ADR 0025, ruling 34). The check-in's time, the distance
     // measured, the radius and whether it passed stay: they place nobody, and a no-show is ruled on them
     // (docs/decisions/0094-where-a-consent-was-given.md).

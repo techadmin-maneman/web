@@ -172,9 +172,35 @@ describe("POST /api/auth/otp", () => {
     expect(deps.sentCodes).toEqual([]);
   });
 
-  it("on staging, sends codes only to the allowlisted handsets, and answers the same for the rest", async () => {
+  // Owner ruling, 30 September 2026 ("logins open, reminders fenced", ADR 0025 item 84; ADR 0097): a login code
+  // answers the phone that just asked for it, so it is never held to staging's allowlist, unlike a reminder or
+  // another automatic message.
+  it("sends a code to a number off staging's allowlist, since a login code answers whoever asked for it", async () => {
     build({ messaging: { ...LOCAL_SETTINGS.messaging, allowlist: ["+919810000099"] } });
     const { res } = await start("98100 00001");
+    expect(res.status).toBe(202);
+    expect(deps.sentCodes).toEqual([
+      { channel: "whatsapp", to: BOOKED, code: expect.stringMatching(/^\d{6}$/) as string },
+    ]);
+  });
+
+  // A record one of our own scripts made stays fenced, whatever the ruling above frees (isStagingTestRecord,
+  // src/policy/staging-test-records.ts).
+  it("holds back a code to a 'Staging test' record off the allowlist, unlike an ordinary person's", async () => {
+    const TEST_RECORD = "+919810000050";
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES ('p-script', ?1, ?2, 'Staging test', 1)",
+      ).bind(NOW.toISOString(), TEST_RECORD),
+      env.DB.prepare(
+        `INSERT INTO leads (id, person_id, created_at, source, city, first_choice_window, loss_extent, proposed_visit_date, request_id)
+         VALUES ('l-script', 'p-script', ?1, 'form', 'Gurgaon', 'weekday_pm', 'crown', '2026-09-24', 'r')`,
+      ).bind(NOW.toISOString()),
+    ]);
+    build({ messaging: { ...LOCAL_SETTINGS.messaging, allowlist: ["+919810000099"] } });
+
+    const { res } = await start("98100 00050");
+
     expect(res.status).toBe(202);
     expect(deps.sentCodes).toEqual([]);
     expect(logs.lines()).toContainEqual(
@@ -409,6 +435,8 @@ describe("the session", () => {
         ],
         next: null,
       },
+      // What a referral earns, which ops set, for the Refer tab (docs/decisions/0107-referral-rewards-in-the-console.md).
+      referral_reward: { referrer_visits: 3, friend_visits: 3, valid_days: 365 },
     });
   });
 

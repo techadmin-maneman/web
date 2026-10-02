@@ -24,7 +24,10 @@ const SITE = "http://127.0.0.1:4311";
 const DESIGN = "http://127.0.0.1:4312/Mane%20Man%20Site%20v2.dc.html";
 const OUT = resolve("docs/fidelity");
 
-/** The home page's sections, in order: v2's top-level blocks pair with these. */
+/**
+ * The home page's sections, in order: v2's top-level blocks pair with these. v2's two bases pair with Materials and
+ * construction, which took their place, and its prices with nothing while the site gives none (ADR 0103).
+ */
 const HOME_SECTIONS = [
   "hero",
   "what",
@@ -34,8 +37,8 @@ const HOME_SECTIONS = [
   "discretion",
   "how",
   "technicians",
-  "bases",
-  "prices",
+  "materials",
+  null,
   "testimonials",
   "guarantee",
   "faq",
@@ -133,7 +136,8 @@ function pair(width: number, name: string, design: Buffer, built: Buffer): Promi
 
 // ---- The screens ------------------------------------------------------------
 
-type Step = { name: string; design: (page: Page) => Promise<void>; site: string };
+/** A design screen to click through to, and the build's screen it pairs with; null where the build has none. */
+type Step = { name: string; design: (page: Page) => Promise<void>; site: string | null };
 
 const click = (text: string) => async (page: Page) => {
   await page.getByText(text, { exact: true }).first().click();
@@ -151,13 +155,14 @@ const TRY_ON_STEPS: Step[] = [
     site: "/try?state=stage",
   },
   { name: "try-4-looks", design: click("Continue"), site: "/try?state=looks" },
+  // The look goes to WhatsApp only (ADR 0104): the build has no countdown before the gate, and no result after it.
   {
     name: "try-5-processing",
     design: async (page) => {
       await page.getByText("Full density", { exact: true }).first().click();
       await click("Generate the simulation")(page);
     },
-    site: "/try?state=processing",
+    site: null,
   },
   {
     name: "try-6-gate",
@@ -165,15 +170,6 @@ const TRY_ON_STEPS: Step[] = [
       await page.getByText("Where should we send it?").waitFor({ timeout: 30_000 });
     },
     site: "/try?state=gate",
-  },
-  {
-    name: "try-7-result",
-    design: async (page) => {
-      await page.getByPlaceholder("Your name").fill("Arjun Mehta");
-      await page.getByPlaceholder("98100 00000").fill("9810000000");
-      await click("Show me the result")(page);
-    },
-    site: "/try?state=result",
   },
 ];
 
@@ -188,6 +184,7 @@ async function run(browser: Browser, width: number): Promise<void> {
   await fixedBars(design, false);
   await fixedBars(site, false);
   for (const [index, name] of HOME_SECTIONS.entries()) {
+    if (name === null) continue;
     await pair(
       width,
       `home-${String(index + 1).padStart(2, "0")}-${name}`,
@@ -216,6 +213,7 @@ async function run(browser: Browser, width: number): Promise<void> {
   await openDesign(design);
   for (const step of TRY_ON_STEPS) {
     await step.design(design);
+    if (step.site === null) continue;
     await settle(design);
     await openSite(site, step.site);
     await pair(width, step.name, await shoot(design, null), await shoot(site, null));

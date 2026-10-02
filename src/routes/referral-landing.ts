@@ -11,7 +11,8 @@
 //
 // Posting takes a Turnstile token, and the same limits per number and address as the booking form. A consultation
 // takes the full address it is at, as the booking form's does (docs/decisions/0081-the-site-takes-the-address.md),
-// and may ask for the first fit to follow, as it may there (docs/decisions/0086-the-next-visit-is-offered.md).
+// and may book the consultation and fit in one visit, as it may there
+// (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
 // An unknown code still books or waits, without an invite. The same submission sent again under its
 // Idempotency-Key gets its first answer.
 
@@ -30,10 +31,10 @@ import { addressOf } from "./client-profile.ts";
 import {
   AddressOutcomeSchema,
   CreditsSchema,
-  FirstFitOutcomeSchema,
-  firstFitOf,
-  FirstFitRequestSchema,
   InviteStateSchema,
+  OneVisitOutcomeSchema,
+  OneVisitRequestSchema,
+  planOf,
   takenOrBooked,
   TypedAddressSchema,
 } from "./consultations.ts";
@@ -83,7 +84,7 @@ const ConsultationRequestSchema = z
     date: z.iso.date(),
     window: z.enum(BOOKING_WINDOWS),
     address: TypedAddressSchema,
-    first_fit: FirstFitRequestSchema,
+    one_visit: OneVisitRequestSchema,
     consent: z.literal(true).openapi({ description: '"You may contact me on WhatsApp about this consultation."' }),
   })
   .strict();
@@ -157,7 +158,7 @@ const consultationRoute = createRoute({
               credits: CreditsSchema,
               invite: InviteStateSchema,
               address: AddressOutcomeSchema,
-              first_fit: FirstFitOutcomeSchema,
+              one_visit: OneVisitOutcomeSchema,
             })
             .strict()
             .openapi("ReferralConsultation"),
@@ -165,7 +166,8 @@ const consultationRoute = createRoute({
       },
     },
     400: errorResponse(
-      "invalid_request: fields names what was refused, address.pincode for an address in another pincode",
+      "invalid_request: fields names what was refused, address.pincode for an address in another pincode, window " +
+        "for one visit in the evening",
     ),
     403: errorResponse("turnstile_failed"),
     409: takenOrBooked,
@@ -272,7 +274,9 @@ export function registerReferralLanding(app: App): void {
         attribution: {},
         invite: await invite(c, code),
         source: "referral_landing",
-        firstFit: firstFitOf(body.first_fit),
+        plan: planOf(body.one_visit),
+        // An invite's page takes no discount code: the invite is its offer (docs/decisions/0108-discount-codes.md).
+        discountCode: null,
       });
       if (!booked.ok) return booked;
       return {
@@ -285,7 +289,7 @@ export function registerReferralLanding(app: App): void {
           credits: booked.credits,
           invite: booked.invite,
           address: booked.address,
-          first_fit: booked.firstFit,
+          one_visit: booked.oneVisit,
         },
       };
     });

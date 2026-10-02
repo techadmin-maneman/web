@@ -5,7 +5,17 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { atTheDoor, fakeTech, heldOnPhone, JOB_ID, ROHITS_PIECE, type Fake, type Step } from "./fixtures.ts";
+import {
+  atTheDoor,
+  fakeTech,
+  heldOnPhone,
+  JOB_ID,
+  ROHITS_PIECE,
+  ROHITS_PROFILE,
+  type HairProfile,
+  type Fake,
+  type Step,
+} from "./fixtures.ts";
 
 const wcag = (page: Page) =>
   new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
@@ -381,4 +391,189 @@ test("a step the API refused can be corrected where it stands in the queue, not 
   await expect.poll(() => fake.writes.map((write) => write.path.split("/").at(-1))).toEqual(["piece", "outcome"]);
   await page.goto("/waiting");
   await expect(page.getByText("Everything has reached us.")).toBeVisible();
+});
+
+// A consultation and fit in one visit, which no board draws: the client chooses the product with the technician at
+// the piece step, or decides against the fit (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+test.describe("the piece of a consultation and fit in one visit", () => {
+  async function onTheChoice(page: Page): Promise<Fake> {
+    const fake = await fakeTech(page);
+    fake.type = "first_fit";
+    fake.oneVisit = true;
+    startedThrough(fake, "before_photos", "checklist", "consumables");
+    await page.goto(`/jobs/${JOB_ID}/piece`);
+    await expect(page.getByRole("heading", { level: 1, name: "The piece" })).toBeVisible();
+    return fake;
+  }
+
+  test("asks the client's choice first, by name, and sends the product with the piece fitted", async ({ page }) => {
+    const fake = await onTheChoice(page);
+    await expect(
+      page.getByRole("button", { name: "Choose the product, or that the client decided against it" }),
+    ).toBeDisabled();
+    expect((await wcag(page)).violations).toEqual([]);
+
+    await page.getByRole("button", { name: "Mane Man Natural" }).click();
+    await expect(page.getByRole("button", { name: "Mane Man Natural" })).toHaveAttribute("aria-pressed", "true");
+    await page.getByRole("textbox", { name: "The new piece's label" }).fill("MM-NAT-5120-A");
+    await page.getByRole("button", { name: "Next" }).click();
+
+    await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
+    expect(writesTo(fake, "piece")[0]?.body).toEqual({ piece_code: "MM-NAT-5120-A", product: "natural" });
+  });
+
+  test("records that the client decided against it, and asks for no label", async ({ page }) => {
+    const fake = await onTheChoice(page);
+    await page.getByRole("button", { name: "Decided against it", exact: true }).click();
+    await expect(
+      page.getByText("Nothing is fitted. Closing as done ends the visit as a consultation, with nothing to pay."),
+    ).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "The new piece's label" })).toHaveCount(0);
+    expect((await wcag(page)).violations).toEqual([]);
+    await page.getByRole("button", { name: "Next" }).click();
+
+    await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
+    expect(writesTo(fake, "piece")[0]?.body).toEqual({ declined: true });
+  });
+
+  // A discount code the client gives, before the link goes (docs/decisions/0108-discount-codes.md).
+  test("takes a discount code before the link goes, asked at once, and says only that a wrong one does not apply", async ({
+    page,
+  }) => {
+    const fake = await fakeTech(page);
+    fake.type = "first_fit";
+    fake.oneVisit = true;
+    startedThrough(fake, "before_photos", "checklist", "consumables", "piece", "after_photos");
+    const asked: unknown[] = [];
+    await page.route(`**/api/tech/jobs/${JOB_ID}/discount-code`, (route) => {
+      const body = route.request().postDataJSON() as { code: string };
+      asked.push(body);
+      if (body.code === "WEDDNG25") return route.fulfill({ json: { code: "WEDDNG25" } });
+      return route.fulfill({ status: 422, json: { error: { code: "code_not_applicable", request_id: "test" } } });
+    });
+    await page.goto(`/jobs/${JOB_ID}/outcome`);
+    const box = page.getByLabel("Discount code, if the client has one");
+    await expect(box).toHaveCount(0);
+    await page.getByRole("button", { name: "Done", exact: true }).click();
+    await box.fill("wrong1");
+    await page.getByRole("button", { name: "Apply code" }).click();
+    await expect(page.getByRole("alert")).toHaveText("That code does not apply to this visit.");
+
+    await box.fill("WEDDNG25");
+    await page.getByRole("button", { name: "Apply code" }).click();
+    await expect(page.getByText("Code WEDDNG25 applied. The payment link will take it off.")).toBeVisible();
+    expect((await wcag(page)).violations).toEqual([]);
+    expect(asked).toEqual([{ code: "wrong1" }, { code: "WEDDNG25" }]);
+    // Asked straight, never queued in the outbox.
+    expect(writesTo(fake, "discount-code")).toHaveLength(0);
+  });
+
+  test("names the job a consultation and fit, paid for once fitted", async ({ page }) => {
+    const fake = await fakeTech(page);
+    fake.type = "first_fit";
+    fake.oneVisit = true;
+    await page.goto(`/jobs/${JOB_ID}`);
+    await expect(page.getByText(/consultation and fit/)).toBeVisible();
+    await expect(page.getByText("Pays once fitted")).toBeVisible();
+  });
+});
+
+// The client's hair profile, which no board draws: the fit spec, then the history, sent as one write, on no consent
+// of its own (docs/decisions/0106-a-clients-hair-profile.md).
+test.describe("the client's hair profile", () => {
+  async function atTheProfile(page: Page, profile: HairProfile | null = null): Promise<Fake> {
+    const fake = await fakeTech(page);
+    fake.type = "consultation";
+    fake.profile = profile;
+    startedThrough(fake, "before_photos", "checklist", "consumables");
+    await page.goto(`/jobs/${JOB_ID}/profile`);
+    await expect(page.getByRole("heading", { level: 1, name: "Hair profile" })).toBeVisible();
+    return fake;
+  }
+
+  const next = (page: Page) => page.getByRole("button", { name: "Next" });
+
+  test("takes the fit spec, then the history, and sends them as one", async ({ page }) => {
+    const fake = await atTheProfile(page);
+    expect((await wcag(page)).violations).toEqual([]);
+    await page.getByRole("button", { name: "IV", exact: true }).click();
+    await page.getByRole("textbox", { name: "Circumference" }).fill("57.5");
+    await page.getByRole("textbox", { name: "Width" }).fill("8");
+    await page.getByRole("textbox", { name: "Length" }).fill("10");
+    await page.getByRole("button", { name: "#1B" }).click();
+    await page.getByRole("button", { name: "120%" }).click();
+    await page.getByRole("button", { name: "Mane Man Natural" }).click();
+    await page.getByRole("button", { name: "Tape", exact: true }).click();
+    expect(await gilded(page)).toEqual(["Next"]);
+    await next(page).click();
+
+    await expect(page.getByRole("heading", { level: 1, name: "History" })).toBeVisible();
+    await page.getByRole("button", { name: "Minoxidil" }).click();
+    await page.getByRole("button", { name: "Transplant" }).click();
+    await page.getByRole("textbox", { name: "The transplant's year" }).fill("2019");
+    await page.getByRole("textbox", { name: "Skin conditions and allergies" }).fill("Dry at the crown");
+    expect((await wcag(page)).violations).toEqual([]);
+    await next(page).click();
+
+    await expect(page.getByRole("heading", { level: 1, name: "After photos" })).toBeVisible();
+    await expect.poll(() => writesTo(fake, "profile").length).toBe(1);
+    expect(writesTo(fake, "profile")[0]?.body).toEqual({
+      fit: {
+        norwood_stage: "IV",
+        head_circumference_cm: 57.5,
+        front_to_nape_cm: null,
+        ear_to_ear_cm: null,
+        temple_to_temple_cm: null,
+        base_width_in: 8,
+        base_length_in: 10,
+        colour: "1B",
+        grey_percent: null,
+        density_percent: 120,
+        wave: null,
+        hairline: null,
+        product: "natural",
+        attachment: "tape",
+      },
+      history: { remedies: ["minoxidil", "transplant"], transplant_year: 2019, skin_and_allergies: "Dry at the crown" },
+      // No version stood before this one.
+      based_on: null,
+    });
+  });
+
+  test("keeps Next dim on a figure out of its range, and says the range", async ({ page }) => {
+    await atTheProfile(page);
+    const circumference = page.getByRole("textbox", { name: "Circumference" });
+    await circumference.fill("90");
+    await expect(circumference).toHaveAccessibleDescription("40 to 70, to one decimal.");
+    await expect(page.getByRole("button", { name: "Check the figures to continue" })).toBeDisabled();
+    await circumference.fill("57.5");
+    await expect(next(page)).toBeEnabled();
+  });
+
+  test("starts from the profile as it stands, names it, and sends no history where none was said", async ({ page }) => {
+    const fake = await atTheProfile(page, { ...ROHITS_PROFILE, history: null });
+    await expect(page.getByRole("button", { name: "IV", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("textbox", { name: "Circumference" })).toHaveValue("57.5");
+    await next(page).click();
+    await next(page).click();
+
+    await expect.poll(() => writesTo(fake, "profile").length).toBe(1);
+    expect(writesTo(fake, "profile")[0]?.body).toMatchObject({
+      fit: { colour: "1B", product: "essential" },
+      history: null,
+      based_on: ROHITS_PROFILE.id,
+    });
+  });
+
+  test("puts the profile's tier, colour, adhesive and scalp on the piece card", async ({ page }) => {
+    const fake = await fakeTech(page);
+    fake.profile = ROHITS_PROFILE;
+    await page.goto(`/jobs/${JOB_ID}`);
+    const card = page.getByRole("region", { name: "The piece" });
+    await expect(card.getByText("Mane Man Essential")).toBeVisible();
+    await expect(card.getByText("8 × 10 in")).toBeVisible();
+    await expect(card.getByText("#1B / 20% grey")).toBeVisible();
+    await expect(card.getByText("Tape", { exact: true })).toBeVisible();
+    await expect(card.getByText("Dry at the crown")).toBeVisible();
+  });
 });

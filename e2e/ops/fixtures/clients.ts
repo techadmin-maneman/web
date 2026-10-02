@@ -49,6 +49,8 @@ export const RECORD = {
         place: "Sector 65, Gurgaon 122018",
         outcome: null,
         closed_without_follow_up: null,
+        discount_code: null,
+        price_open: false,
       },
     ],
     past: [
@@ -67,6 +69,8 @@ export const RECORD = {
         place: "Sector 65, Gurgaon 122018",
         outcome: "done",
         closed_without_follow_up: null,
+        discount_code: null,
+        price_open: false,
       },
     ],
   },
@@ -255,6 +259,70 @@ export const PIECES = {
     },
   ],
 } satisfies OpsReply<"/api/clients/{id}/pieces">;
+
+type HairProfilePage = OpsReply<"/api/clients/{id}/hair-profile">;
+
+/** The products a correction may name: made up, as every name here is. */
+const PRODUCTS = [
+  { tier: "standard", name: "First fit" },
+  { tier: "essential", name: "Mane Man Essential" },
+];
+
+/** A client whose profile nobody has recorded. */
+export const NO_HAIR_PROFILE = {
+  latest: null,
+  versions: [],
+  products: PRODUCTS,
+} satisfies HairProfilePage;
+
+/** Rohit's fit spec as Imran took it at his consultation, and his history. */
+const AT_CONSULTATION = {
+  id: "44000000-0000-4000-8000-000000000001",
+  recorded_at: "2027-09-21T05:30:00.000Z",
+  fit: {
+    norwood_stage: "IV",
+    head_circumference_cm: 57.5,
+    front_to_nape_cm: 36,
+    ear_to_ear_cm: 33.5,
+    temple_to_temple_cm: 34,
+    base_width_in: 8,
+    base_length_in: 10,
+    colour: "1B",
+    grey_percent: 20,
+    density_percent: 120,
+    wave: "slight_wave",
+    hairline: "natural",
+    product: "essential",
+    product_name: "Mane Man Essential",
+    attachment: "tape",
+  },
+  history: { remedies: ["minoxidil"], transplant_year: null, skin_and_allergies: "Dry at the crown" },
+} satisfies NonNullable<HairProfilePage["latest"]>;
+
+/** And ops' correction the next day: the colour, a shade lighter. */
+const CORRECTED = {
+  ...AT_CONSULTATION,
+  id: "44000000-0000-4000-8000-000000000002",
+  recorded_at: "2027-09-22T05:30:00.000Z",
+  fit: { ...AT_CONSULTATION.fit, colour: "2" as const },
+};
+
+export const HAIR_PROFILE = {
+  latest: CORRECTED,
+  versions: [
+    {
+      ...CORRECTED,
+      recorded_by: { kind: "ops", staff: "ops@maneman.in" },
+      visit: null,
+    },
+    {
+      ...AT_CONSULTATION,
+      recorded_by: { kind: "technician", name: "Imran" },
+      visit: { id: VISIT_ID, date: "2027-09-21", type: "consultation" },
+    },
+  ],
+  products: PRODUCTS,
+} satisfies HairProfilePage;
 
 /** A photograph that is a block of ink, so no test holds a picture of anyone. */
 export const inkPhoto = () =>

@@ -1078,7 +1078,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** The piece: a replacement's and a first fit's step only */
+        /** The piece: a replacement's, a first fit's and a one visit's step only */
         post: {
             parameters: {
                 query?: never;
@@ -1109,6 +1109,89 @@ export interface paths {
                     };
                 };
                 /** @description invalid_request: see error.fields */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description session_required; device_revoked: ops revoked this phone, so drop the cached jobs */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such job */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tech/jobs/{id}/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** The client's hair profile, the fit spec and their history, as a new version */
+        post: {
+            parameters: {
+                query?: never;
+                header: {
+                    /** @description The phone's own ID for this write; a replay of it changes nothing. A UUIDv7 carries the moment it was queued. */
+                    "x-client-event-id": string;
+                    /** @description The job's starts_at as the phone holds it. When ops have moved the job since, the write is superseded, field time. */
+                    "x-job-starts-at"?: string;
+                };
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TechnicianProfileRequest"];
+                };
+            };
+            responses: {
+                /** @description Recorded; or, for a job with no client of ours, taken and nothing written. One taken from an older version than the latest still lands, and ops are told. */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TechnicianProfileRecorded"];
+                    };
+                };
+                /** @description invalid_request: see error.fields; visit, for a visit that takes no profile */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -1380,6 +1463,93 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tech/jobs/{id}/discount-code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Enter a discount code on a one visit, before its payment link is made */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TechnicianDiscountCode"];
+                };
+            };
+            responses: {
+                /** @description It comes off the product's price at the payment link */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TechnicianDiscountCodeApplied"];
+                    };
+                };
+                /** @description session_required; device_revoked */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such job of this technician's */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description already_discounted: the visit carries a code; price_settled: its payment link is made, or it is not a one visit, whose client paid ahead */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description code_not_applicable: the code does not apply to this visit */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description rate_limited: too many codes tried today, or from this address this hour */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1387,7 +1557,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_fitted" | "already_disputed" | "not_disputable";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_fitted" | "already_disputed" | "not_disputable" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -1475,15 +1645,17 @@ export interface components {
             /** @enum {string} */
             window_label: "morning" | "afternoon" | "evening";
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            /** @description A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, at the piece step. */
+            one_visit: boolean;
             /** @description The area, never the street: the one the visit's pincode is in, from the service area; else the address's locality, or the city. */
             sector: string | null;
             /** @enum {string} */
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
             /**
-             * @description Free for a visit the price book charges nothing for. No response to a technician carries an amount.
+             * @description Free for a visit the price book charges nothing for; at_visit for a one visit, paid for once the client is fitted. No response to a technician carries an amount.
              * @enum {string}
              */
-            badge: "prepaid" | "credit" | "free";
+            badge: "prepaid" | "credit" | "free" | "at_visit";
             /** @description How much of the day the visit takes: 1, 1.5 or 2 slots. Null for an unknown type. */
             slots: number | null;
             unlocked: boolean;
@@ -1503,15 +1675,17 @@ export interface components {
             /** @enum {string} */
             window_label: "morning" | "afternoon" | "evening";
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            /** @description A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, at the piece step. */
+            one_visit: boolean;
             /** @description The area, never the street: the one the visit's pincode is in, from the service area; else the address's locality, or the city. */
             sector: string | null;
             /** @enum {string} */
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
             /**
-             * @description Free for a visit the price book charges nothing for. No response to a technician carries an amount.
+             * @description Free for a visit the price book charges nothing for; at_visit for a one visit, paid for once the client is fitted. No response to a technician carries an amount.
              * @enum {string}
              */
-            badge: "prepaid" | "credit" | "free";
+            badge: "prepaid" | "credit" | "free" | "at_visit";
             /** @description How much of the day the visit takes: 1, 1.5 or 2 slots. Null for an unknown type. */
             slots: number | null;
             unlocked: boolean;
@@ -1557,14 +1731,24 @@ export interface components {
             reminder: {
                 delivered_at: string | null;
             } | null;
-            /** @description The steps this visit type runs, in order. */
-            steps: ("check_in" | "start" | "before_photos" | "checklist" | "consumables" | "piece" | "after_photos" | "outcome")[];
+            /** @description The steps this visit type runs, in order; a consultation's and a one visit's take the profile. */
+            steps: ("check_in" | "start" | "before_photos" | "checklist" | "consumables" | "piece" | "after_photos" | "outcome" | "profile")[];
             /** @description This kind of visit's checklist, as ops set it in the console, in its order. */
             checklist: components["schemas"]["JobSheetItem"][];
             /** @description The reasons a job may be left partly done, as ops set them, in their order. */
             partial_reasons: components["schemas"]["JobSheetItem"][];
             /** @description Every consumable the technician may record, those this job's service is expected to use first, each with the count its stepper starts at. */
             consumables: components["schemas"]["TechnicianConsumable"][];
+            /** @description On a one visit and a consultation, the products by name and never by price: the first fit's services offered on the visit's day, in ops' order, which a one visit's client chooses from and the profile names. Empty for any other visit. */
+            products: components["schemas"]["TechnicianProduct"][];
+            /** @description On a one visit closed as done with the client fitted, its payment link; else null. */
+            payment_link: {
+                /** @description The link Razorpay texted the client, to show them; null until Razorpay has made it. */
+                url: string | null;
+                paid: boolean;
+            } | null;
+            /** @description The client's hair profile as it stands, for the piece card and for the profile step to start from. Null until the day before the visit, or before one is recorded. */
+            profile: components["schemas"]["HairProfile"] | null;
         };
         TechnicianJobProgress: {
             checked_in_at: string | null;
@@ -1573,7 +1757,8 @@ export interface components {
             /** @description How far from the address that check-in was; null when nothing could be measured. */
             distance_m: number | null;
             started_at: string | null;
-            steps_done: ("check_in" | "start" | "before_photos" | "checklist" | "consumables" | "piece" | "after_photos" | "outcome")[];
+            /** @description The steps that have reached us, in that order: the job's events, and the profile once recorded. */
+            steps_done: ("check_in" | "start" | "before_photos" | "checklist" | "consumables" | "piece" | "after_photos" | "outcome" | "profile")[];
             outcome: string | null;
         };
         Piece: {
@@ -1597,6 +1782,105 @@ export interface components {
             unit: string;
             /** @description How many this job's service is expected to use; 0 for one it lists no use for. */
             expected: number;
+        };
+        TechnicianProduct: {
+            /** @description What the piece step sends back as product. */
+            tier: string;
+            name: string;
+        };
+        HairProfile: {
+            /**
+             * Format: uuid
+             * @description The version's own ID, which a write names as based_on.
+             */
+            id: string;
+            /** Format: date-time */
+            recorded_at: string;
+            fit: components["schemas"]["HairFitSpecRead"];
+            /** @description Null where none was recorded. */
+            history: components["schemas"]["HairHistory"] | null;
+        };
+        /** @description Every field is sent, null where it was not taken. */
+        HairFitSpecRead: {
+            /** @enum {string|null} */
+            norwood_stage: "I" | "II" | "III" | "IV" | "V" | "VI" | "VII" | null;
+            /** @description In centimetres, 40 to 70, to one decimal. */
+            head_circumference_cm: number | null;
+            /** @description In centimetres, 20 to 50, to one decimal. */
+            front_to_nape_cm: number | null;
+            /** @description In centimetres, over the top, 20 to 50, to one decimal. */
+            ear_to_ear_cm: number | null;
+            /** @description In centimetres, 20 to 50, to one decimal. */
+            temple_to_temple_cm: number | null;
+            /** @description In inches, 2 to 12, to one decimal. */
+            base_width_in: number | null;
+            /** @description In inches, 2 to 14, to one decimal. */
+            base_length_in: number | null;
+            /**
+             * @description The suppliers' colour code, #1B written 1B.
+             * @enum {string|null}
+             */
+            colour: "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "1B" | null;
+            grey_percent: number | null;
+            /** @description In per cent. */
+            density_percent: 80 | 100 | 120 | 140 | null;
+            /** @enum {string|null} */
+            wave: "straight" | "slight_wave" | "wavy" | "curly" | null;
+            /** @enum {string|null} */
+            hairline: "natural" | "receded" | "straight" | "widows_peak" | null;
+            /** @description The product, by the tier of its first-fit service: one the services table holds, retired or not. */
+            product: string | null;
+            /**
+             * @description Tape, glue, or both.
+             * @enum {string|null}
+             */
+            attachment: "tape" | "glue" | "both" | null;
+            /** @description The product's name, never its price. */
+            product_name: string | null;
+        };
+        /** @description Every field is sent, null where it was not taken. */
+        HairFitSpec: {
+            /** @enum {string|null} */
+            norwood_stage: "I" | "II" | "III" | "IV" | "V" | "VI" | "VII" | null;
+            /** @description In centimetres, 40 to 70, to one decimal. */
+            head_circumference_cm: number | null;
+            /** @description In centimetres, 20 to 50, to one decimal. */
+            front_to_nape_cm: number | null;
+            /** @description In centimetres, over the top, 20 to 50, to one decimal. */
+            ear_to_ear_cm: number | null;
+            /** @description In centimetres, 20 to 50, to one decimal. */
+            temple_to_temple_cm: number | null;
+            /** @description In inches, 2 to 12, to one decimal. */
+            base_width_in: number | null;
+            /** @description In inches, 2 to 14, to one decimal. */
+            base_length_in: number | null;
+            /**
+             * @description The suppliers' colour code, #1B written 1B.
+             * @enum {string|null}
+             */
+            colour: "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "1B" | null;
+            grey_percent: number | null;
+            /** @description In per cent. */
+            density_percent: 80 | 100 | 120 | 140 | null;
+            /** @enum {string|null} */
+            wave: "straight" | "slight_wave" | "wavy" | "curly" | null;
+            /** @enum {string|null} */
+            hairline: "natural" | "receded" | "straight" | "widows_peak" | null;
+            /** @description The product, by the tier of its first-fit service: one the services table holds, retired or not. */
+            product: string | null;
+            /**
+             * @description Tape, glue, or both.
+             * @enum {string|null}
+             */
+            attachment: "tape" | "glue" | "both" | null;
+        };
+        /** @description Health information the client told us: our records alone, never Zoho or a log. */
+        HairHistory: {
+            /** @description Every remedy the client has tried, each once; none, said alone, for none. Empty: not answered. */
+            remedies: ("none" | "minoxidil" | "finasteride" | "transplant" | "other_systems" | "other")[];
+            /** @description With a transplant only, and no later than this year. */
+            transplant_year: number | null;
+            skin_and_allergies: string | null;
         };
         CheckIn: {
             passed: boolean;
@@ -1665,8 +1949,9 @@ export interface components {
                 quantity: number;
             })[];
         };
+        PieceRequest: components["schemas"]["PieceFitted"] | components["schemas"]["PieceDeclined"];
         /** @description The piece fitted, with its base and lot, and on a replacement the one that came off. A failure_reason on the piece itself marks it as failed and fits nothing. */
-        PieceRequest: {
+        PieceFitted: {
             piece_code: string;
             base?: string | null;
             supplier_lot?: string | null;
@@ -1676,6 +1961,27 @@ export interface components {
                 piece_code: string;
                 failure_reason: string;
             } | null;
+            /** @description On a one visit, and only there: the product the client chose, by its tier from the card's products. */
+            product?: string;
+        };
+        /** @description On a one visit, and only there: the client decided against the fit, so nothing was fitted, and closing the visit as done makes it a consultation. */
+        PieceDeclined: {
+            /** @enum {boolean} */
+            declined: true;
+        };
+        /** @description Kept in our records alone: nothing of it goes to FSM. */
+        TechnicianProfileRecorded: {
+            event_id: string;
+            /** @description True when this write had already landed. */
+            replayed: boolean;
+            progress: components["schemas"]["TechnicianJobProgress"];
+        };
+        /** @description The client's whole profile as it stands now: the card's latest, changed where the technician changed it. Each is a new version. */
+        TechnicianProfileRequest: {
+            fit: components["schemas"]["HairFitSpec"];
+            history: components["schemas"]["HairHistory"] | null;
+            /** @description The id of the version the form started from: the latest as it was read; null where there was none. */
+            based_on: string | null;
         };
         OutcomeRequest: {
             /** @enum {string} */
@@ -1697,6 +2003,14 @@ export interface components {
         PieceLookup: {
             piece: components["schemas"]["Piece"];
             belongs_to_this_job: boolean;
+        };
+        TechnicianDiscountCodeApplied: {
+            /** @description The code, as it is kept: in capitals. */
+            code: string;
+        };
+        TechnicianDiscountCode: {
+            /** @description As the client gave it, any case. */
+            code: string;
         };
     };
     responses: never;

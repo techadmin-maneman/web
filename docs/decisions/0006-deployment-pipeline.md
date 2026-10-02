@@ -1,6 +1,6 @@
 # 0006. Deployment pipeline
 
-- Status: accepted (required checks and reviewers wait for the GitHub plan; see 0008). Amended 25 September 2026: "Deploys that prove what they shipped"; 27 September 2026: the coverage gate ([0075](0075-tests-held-to-the-contract-and-the-local-stack.md)).
+- Status: accepted (required checks and reviewers wait for the GitHub plan; see 0008). Amended 25 September 2026: "Deploys that prove what they shipped"; 27 September 2026: the coverage gate ([0075](0075-tests-held-to-the-contract-and-the-local-stack.md)); 1 October 2026: "Two tiers", and the jobs back on the owner's machine; the same day, "Checks are not repeated".
 - Date: 2026-09-21
 
 ## Decision
@@ -46,6 +46,8 @@ GitHub gives a private repository 2,000 minutes of its runners a month. Ten jobs
 
 **Where the jobs run today (27 September 2026).** `CI_RUNNER` has been `github` since 23 September 2026, 09:21 in India, so every job runs on GitHub's runners and is billed, at seven jobs a pull request and again on each staging deploy that is not skipped ("Deploys that prove what they shipped", below). The machine above is still set up and takes the jobs back when the variable is `maneman`. Whether to go back to it, pay for GitHub's minutes, or thin the runs is the owner's decision (`docs/open-points.md`, item 88).
 
+**Back on the machine (1 October 2026).** GitHub's minutes ran out on 30 September 2026 and `CI_RUNNER` went back to `maneman` that evening. On 1 October 2026 the owner chose to keep it there, with the runs thinned ("Two tiers", below).
+
 ## Parallel jobs (23 September 2026)
 
 One job ran every check in turn, about thirteen minutes, of which the browser tests were four. A second runner (docs/runbook.md, "The CI runner") means independent checks can run at the same time, so `ci.yml` is six jobs again, grouped so each is worth an install of its own, and a `checks` job that needs them all.
@@ -58,6 +60,33 @@ One job ran every check in turn, about thirteen minutes, of which the browser te
 - **On GitHub's runners a run bills seven jobs,** each a minute at least, where it used to bill one. The escape hatch in the runbook is that much dearer; on the machine the minutes are free.
 - **Nothing about what runs changed:** every check the one job ran still runs, in the same order within its job, on every pull request that can affect it and on every staging deploy.
 
+## Two tiers (1 October 2026)
+
+The week to 1 October 2026 ran `ci.yml` 211 times for 30 merged pull requests, 62 of them cancelled part-way by a newer push: every push to a pull request ran all seven jobs, about 46 minutes of jobs, and two runs at once on the owner's machine took every core and timed out on load. The owner chose two tiers:
+
+- **The quick tier, on every push:** the static checks and the unit and contract tests, about eleven minutes. They catch most of what is wrong, and they are what a push while the work goes on needs.
+- **The full suite, once:** the build, the browser tests and Lighthouse, the deployed code on new migrations and the local smoke, when a pull request is opened ready or marked ready for review, on every push while it carries the `full-ci` label, and on every staging deploy (`scripts/lib/ci-tier.ts`). Work in progress is opened as a draft, so its pushes run the quick tier until it is ready.
+- **Nothing untested reaches staging.** A staging deploy runs every check on what merged that the merged pull request's head did not pass on the same files ("Checks are not repeated", below); a quick pass covers the static checks and the unit tests, never the browser. A push after the full run, such as a fix from review or main merged in, is checked by the full suite at the deploy instead, which then stops before deploying if it fails.
+- **About half the minutes.** One or two full runs a pull request, against about seven before. A labelled run is grouped apart from the pushes, so adding a label never cancels a run.
+
+## Checks are not repeated (1 October 2026)
+
+The two runners share one six-core machine. Alone, the unit and contract tests take about eight minutes and the browser tests about eight; side by side, as one run puts them, fifteen to seventeen and nine to eleven. So the second runner makes a run no shorter, and the load it adds fails the tests that count time: on 1 October 2026 #169's staging deploy failed on a hold that answered after seven seconds where a test waited five. The owner was offered more CPU for Docker (it already had all twelve threads and no limit), Windows tweaks, a faster processor, GitHub's runners for the browser tests, and not repeating checks, and chose the last:
+
+- **A check passed on the same files is taken as passed.** The static checks, the unit and contract tests and the full suite each skip when an earlier run passed them on exactly these files (`scripts/lib/already-checked.ts`, the `changes` job's "The checks these files already passed"). Marking a pull request ready no longer runs its unit tests again, and a staging deploy no longer runs again what its pull request passed: eight to seventeen minutes of the machine saved on each.
+- **"The same files" is exact.** In a pull request, the run must check its head's own files, which it does when the head holds all of main (its merge with main then has the head's tree), and the earlier pass must be on the same head; since main only moves forward, that run checked the head's files too. On a staging deploy, the merge must have exactly the tree of the merged pull request's head, as a squash merge of an up-to-date pull request does, and the passes are that head's. A new push, main merged in, or anything GitHub cannot answer runs every check.
+- **A pass counts on its own.** A run whose browser tests failed still passed its unit tests, and they count. A check skipped, failed or cancelled does not.
+- **The deploy has one way in.** `deploy-staging.yml` calls `ci.yml` on every merge, and `ci.yml` decides what is left to run; the deploy's own "merged tree already passed CI" job is gone. A merge whose pull request passed everything runs three short jobs and deploys.
+- **The tests that counted on a quiet machine** now wait for what they wait for: the booking tests' helper waits for the API's answer to a hold rather than five seconds for the pay step, and for the booking sheet to finish loading (`e2e/app/picking.ts`, `e2e/app/booking.e2e.ts`).
+
+## Only the touched app (1 October 2026)
+
+The owner's choice, after a run failed on load again: a pull request's browser tests run only the projects its files reach (`scripts/lib/e2e-projects.ts`): the site's two widths for `site/` and the top-level specs, one app's project for that app and its specs, every project for anything shared (the API, the packages, the config, the test support). Lighthouse runs when the site or the client app is tested. Such a run's suite job is named "suite of the touched apps", not "full suite", so a staging deploy still runs the browser tests on everything. In CI a step now waits up to fifteen seconds and a test up to a minute (`playwright.config.ts`), since the other runner shares the machine.
+
+## Merged when green (1 October 2026)
+
+The owner's choice, to put the effort into features: a ready pull request merges itself once a full CI run passes on its current head (`.github/workflows/auto-merge.yml`, deciding in `scripts/lib/auto-merge.ts`), and the workflow then starts the staging deploy, since a merge made with its own token starts no workflow by its push. GitHub's own auto-merge needs branch protection, which this plan has not. A pull request that touches payments, refunds, credits, discounts or personal or health data carries the `hold-for-review` label until its review is done. Production deploys stay manual. The same day the checks that policed paperwork rather than the product were retired: rules quoting their source word for word, the ADR index, and the open points' numbering and citations (`npm run check:open-points` is still there to run by hand).
+
 ## Deploys that prove what they shipped (25 September 2026)
 
 An audit on 24 September 2026 found a green deploy could leave three of the five Workers undeployed or stale, and nothing would say so. What changed:
@@ -69,7 +98,7 @@ An audit on 24 September 2026 found a green deploy could leave three of the five
 - **The soak watches real traffic.** Where the token can read Workers analytics (Account Analytics: Read, optional), the soak compares the new version's invocation error rate with the old one's and fails the release on a new version that errors far more (`scripts/lib/soak.ts`). Without the permission it says so, and the smoke checks stand alone as before.
 - **Old code runs on new migrations.** The migrations check reads SQL; `scripts/old-code-on-new-schema.ts` runs the base branch's Worker tests on the branch's migrations, which catches, for example, a unique index the deployed code's inserts break. The live-database migration test now seeds Phase 2 rows too.
 - **What is live is compared with the configs.** After each deploy, read-only, the live cron schedules and queue consumers are compared with every Worker's config (0010), and the buckets with their retention: the try-on buckets must expire every object within 30 days, and no other bucket may expire anything (`scripts/check-buckets.ts`). CI's tokens may not read queues or R2, by design, so those checks say so in CI and an operator runs them with their own token.
-- **A merge already checked is not checked again.** When the pushed tree is exactly the head of the pull request it merged, and that head passed `ci.yml`, the staging deploy skips the re-run (`scripts/already-checked.ts`): about nine of the deploy's eleven minutes. Anything else, or anything GitHub cannot answer, runs every check. On GitHub's runners Playwright's browsers are cached by version.
+- **A merge already checked is not checked again.** When the pushed tree is exactly the head of the pull request it merged, and that head passed `ci.yml`, the staging deploy skips the re-run (`scripts/already-checked.ts`): about nine of the deploy's eleven minutes. Anything else, or anything GitHub cannot answer, runs every check. Since 1 October 2026 it is decided check by check ("Checks are not repeated"). On GitHub's runners Playwright's browsers are cached by version.
 - **A production build refuses unfinished copy.** A production build of an app refuses copy still marked PLACEHOLDER, and the site's production build does the same for the referral landing (`scripts/lib/content-gate.ts`). `npm run build`, which only proves production bundles, lets it through.
 
 ## Open items

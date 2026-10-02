@@ -4,6 +4,7 @@
 // name and number is made up.
 
 import { env } from "cloudflare:workers";
+import type { Dependencies } from "../../src/dependencies.ts";
 import type { App } from "../../src/http/context.ts";
 import { openTechnicianSession } from "../../src/domain/technicians.ts";
 import { createStubFsm, EMPTY_FSM, type FsmAppointment, type StubFsm } from "../../src/providers/fsm.ts";
@@ -51,11 +52,11 @@ export interface Working {
   readonly workTo: (step: "checklist" | "consumables" | "outcome") => Promise<void>;
 }
 
-/** Imran, his phone signed in, and today's service visit to Rohit, ready to work. */
-export async function working(type = "service"): Promise<Working> {
+/** Imran, his phone signed in, and today's service visit to Rohit, ready to work, with any vendor a test gives. */
+export async function working(type = "service", vendors: Partial<Dependencies> = {}): Promise<Working> {
   const fsm = createStubFsm({ ...EMPTY_FSM, appointments: [appointment("ap-today")] });
   const fsmQueue = fakeQueue();
-  const deps = fakeDependencies({ fsm });
+  const deps = fakeDependencies({ fsm, ...vendors });
   const tech = appFor("local", deps, {}, "tech");
   const ops = appFor("local", deps, {}, "ops");
   const at = NOW.toISOString();

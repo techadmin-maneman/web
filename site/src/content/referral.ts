@@ -6,11 +6,18 @@
 // because the design's open question rules that a referred friend sees the
 // same figures. The referrer's name is filled in where {name} appears; without
 // a name the page says "You have an invite" instead.
+//
+// What the invite earns is what ops set in the console, each side apart
+// (docs/decisions/0107-referral-rewards-in-the-console.md), so no sentence types
+// a count: each is built from the reward below. Where one side gets nothing, the
+// page promises it nothing; where the reward is not known, no count is given.
+// The words for unequal sides and for nothing are ours until the owner's (open
+// point 172); with both sides at 3 they are the design's.
 
-import type { Invite } from "../lib/api.ts";
+import type { Invite, ReferralReward } from "../lib/api.ts";
 import { fill } from "../lib/text.ts";
 import { capitalised, serviceArea, visitLength } from "./service.ts";
-import { notices, type Notice } from "./site.ts";
+import { hero, notices, type Notice } from "./site.ts";
 
 /** A one-line notice's words, as the backend records them with the consent (src/config/notices.ts). */
 function lineOf(notice: Notice): string {
@@ -18,13 +25,74 @@ function lineOf(notice: Notice): string {
   return line;
 }
 
+/** "1 service visit", "3 service visits". */
+function serviceVisits(count: number): string {
+  return count === 1 ? "1 service visit" : `${String(count)} service visits`;
+}
+
+/** "1 visit", "3 visits": the design's shorter count, once the page has said what they are. */
+function visits(count: number): string {
+  return count === 1 ? "1 visit" : `${String(count)} visits`;
+}
+
+/** The verb that agrees with a count: "lands" for one, "land" for any other. */
+function agreeing(count: number, one: string, many: string): string {
+  return count === 1 ? one : many;
+}
+
+/** The friend's visits, or none where the reward is not known. */
+const friendVisits = (reward: ReferralReward | null): number => reward?.friend_visits ?? 0;
+
+/** The navy block's offer (C1): what the invite earns each side. Null where it earns nobody anything. */
+function inviteOffer(reward: ReferralReward): string | null {
+  const { referrer_visits: referrer, friend_visits: friend } = reward;
+  if (friend === 0 && referrer === 0) return null;
+  if (friend === 0) return `Get fitted and your friend gets ${serviceVisits(referrer)} free.`;
+  if (referrer === friend) return `Get fitted and you both get ${serviceVisits(friend)} free.`;
+  if (referrer === 0) return `Get fitted and you get ${serviceVisits(friend)} free.`;
+  return `Get fitted and you get ${serviceVisits(friend)} free. Your friend gets ${String(referrer)}.`;
+}
+
+/** A code we do not know, whose visits the friend does not get. */
+function unknownBody(reward: ReferralReward | null): string {
+  const friend = friendVisits(reward);
+  if (friend === 0) return "The consultation is still free.";
+  return `The consultation is still free; the ${serviceVisits(friend)} ${agreeing(friend, "does", "do")} not apply.`;
+}
+
+/** Beneath the form: who is told of the fit, and when the friend's visits land. */
+function toldWhenFitted(name: string | null, reward: ReferralReward | null): string {
+  const told =
+    name === null ? "Whoever invited you is told when you are fitted." : `${name} is told when you are fitted.`;
+  const friend = friendVisits(reward);
+  if (friend === 0) return told;
+  return `${told} That is when the ${visits(friend)} ${agreeing(friend, "lands", "land")}.`;
+}
+
+/** The booked confirmation's line of the friend's visits (C4); null where they get none, or it is not known. */
+function visitsLand(reward: ReferralReward | null): string | null {
+  const friend = friendVisits(reward);
+  if (friend === 0) return null;
+  return `The ${serviceVisits(friend)} ${agreeing(friend, "lands", "land")} when you are fitted.`;
+}
+
+/** C4's "Code expired" frame's line. */
+function expiredBody(reward: ReferralReward | null): string {
+  const friend = friendVisits(reward);
+  if (friend === 0) return "More than 12 months old. The consultation is still free.";
+  return `More than 12 months old. The consultation is still free; the ${visits(friend)} ${agreeing(friend, "does", "do")} not apply.`;
+}
+
 export const referral = {
-  /** The navy block at the top, before the pincode is known (C1). The design's "in Gurgaon" is the site's area. */
+  /**
+   * The navy block at the top, before the pincode is known (C1). Its title is the home page's, as the design's was
+   * until the owner rewrote the home page on 1 October 2026 (ADR 0103).
+   */
   arrival: {
     invited: "{name} sent you this",
     unnamed: "You have an invite",
-    title: `Hair, fitted at your home across ${serviceArea}.`,
-    offer: "Get fitted and you both get 3 service visits free.",
+    title: hero.title,
+    offer: inviteOffer,
     /**
      * A code we do not know: a typo, a revoked code, or one more than 12 months
      * old (board C4, "Code expired"). The API does not say which, so the page
@@ -32,7 +100,7 @@ export const referral = {
      */
     unknown: {
       title: "We do not recognise this invite",
-      body: "The consultation is still free; the 3 service visits do not apply.",
+      body: unknownBody,
     },
   },
   prices: {
@@ -91,7 +159,9 @@ export const referral = {
   consultation: {
     served: "We come to {area}",
     title: "Book a free consultation",
-    body: `${capitalised(visitLength.consultation)}. Nothing fitted, nothing to pay.`,
+    // The consultation alone fits nothing; the one visit, its second choice, fits the client then (ADR 0105). The
+    // owner reviews these words with the home page's second round (open point 162).
+    body: `${capitalised(visitLength.consultation)}, and free. Or have your fit in the same visit.`,
     forPincode: "For {pincode}",
     date: "Pick a date",
     window: "Window",
@@ -101,32 +171,36 @@ export const referral = {
       { id: "evening", label: "Evening", hours: "4 to 8 pm" },
     ],
     /**
-     * Not drawn: what to book, the consultation alone or with the first fit to follow (ADR 0025, item 68;
-     * docs/decisions/0086-the-next-visit-is-offered.md). The two choices are the owner's own words; the rest are
-     * placeholder words for the owner to approve (open point 45), not marked as the apps' are, since the mark
-     * refuses the site's production build (ADR 0081). The consent line recorded is the consultation's, unchanged,
-     * and whether it covers the fit is counsel's (open point 41).
+     * Not drawn: what to book, the consultation alone or the consultation and fit in one visit, as the owner ruled
+     * on 1 October 2026 (ADR 0025, item 89; docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). "A
+     * consultation" is the owner's; the rest are placeholder words for the owner to approve (open points 45 and
+     * 162), not marked as the apps' are, since the mark refuses the site's production build (ADR 0081). The consent
+     * line recorded is the consultation's, unchanged, and whether it covers the fit is counsel's (open point 41).
      */
     plan: {
       legend: "What to book",
       options: [
         { id: "consultation", label: "A consultation" },
-        { id: "first_fit", label: "The consultation, then my first fit" },
+        { id: "one_visit", label: "Consultation and fit, in one visit" },
       ],
-      note: "The fit is booked and paid for in the app once the consultation is done. Nothing is paid now.",
-      // A first fit takes two slots, which do not fit in the evening's (docs/decisions/0035-window-slot-map.md).
-      fitLegend: "The fit, if you have a time in mind",
-      fitWindows: [
-        { id: "any", label: "Either", hours: "" },
-        { id: "morning", label: "Morning", hours: "9 am to 12 pm" },
-        { id: "afternoon", label: "Afternoon", hours: "12 to 4 pm" },
-      ],
+      // The first fit's three hours do not fit in the evening's half-slots (docs/decisions/0035-window-slot-map.md),
+      // so the form offers the one visit the morning and the afternoon.
+      note: `${capitalised(visitLength.firstFit)}, at home, in the morning or the afternoon. Choose your hair system with your technician and have it fitted there and then. Pay once fitted, by a link to your phone; decide against it and you pay nothing.`,
+    },
+    /**
+     * Not drawn: a discount code for the consultation and fit in one visit, on /book only, as the owner ruled on
+     * 1 October 2026 (docs/decisions/0108-discount-codes.md). Placeholder words for the owner to approve, not marked,
+     * since the mark refuses the site's production build (ADR 0081). A code that does not apply is told only that.
+     */
+    code: {
+      label: "Discount code (optional)",
+      hint: "It comes off the price of your hair system when you pay.",
     },
     consent: lineOf(notices.consultation),
     submit: "Book the consultation",
+    submitOneVisit: "Book the consultation and fit",
     sending: "Booking",
-    told: "{name} is told when you are fitted. That is when the 3 visits land.",
-    toldUnnamed: "Whoever invited you is told when you are fitted. That is when the 3 visits land.",
+    told: toldWhenFitted,
   },
   /**
    * Not drawn: no board puts an address on the consultation form. The owner ruled on 27 September 2026 that the
@@ -186,7 +260,10 @@ export const referral = {
     label: "Consultation booked",
     body: "A technician messages you the day before.",
     free: "free",
-    credits: "The 3 service visits land when you are fitted.",
+    // Not drawn: the consultation and fit in one visit costs nothing until the fit (ADR 0105). The owner approves the
+    // words (open point 165).
+    payOnceFitted: "pay once fitted",
+    credits: visitsLand,
     back: "See the site",
     // Not drawn on C4 (docs/fidelity-method.md, "The referral landing"). The owner approves the words (open point 45).
     number: "On WhatsApp to +91 {mobile}",
@@ -195,13 +272,15 @@ export const referral = {
     // words (open point 45).
     addressOnAccount:
       "We come to the address already on your account, not the one given here. To change it, message us on WhatsApp.",
-    // Not drawn: the first fit was asked for with the consultation (ADR 0086). The owner approves the words (open
-    // point 45).
-    firstFit:
-      "You asked for your first fit too. Once the consultation is done, you book the fit in the app and pay for it there.",
+    // Not drawn: the consultation and fit in one visit (ADR 0105). The owner approves the words (open points 45 and
+    // 162).
+    labelOneVisit: "Consultation and fit booked",
+    oneVisit:
+      "Your technician brings the range for you to choose from. Once you are fitted, you pay by a link sent to your phone.",
     calendar: "Add to calendar",
     calendarFile: "mane-man-consultation.ics",
     calendarTitle: "Mane Man consultation",
+    calendarTitleOneVisit: "Mane Man consultation and fit",
     app: "See it in the app",
   },
   /**
@@ -211,7 +290,7 @@ export const referral = {
   expired: {
     label: "Code expired",
     title: "This invite has expired",
-    body: "More than 12 months old. The consultation is still free; the 3 visits do not apply.",
+    body: expiredBody,
   },
   /**
    * C4's frame again, for a consultation nobody could book outright: self-serve
@@ -220,6 +299,8 @@ export const referral = {
    */
   requested: {
     label: "Consultation requested",
+    // Not drawn: the consultation and fit in one visit, asked for while self-serve booking is off (ADR 0105).
+    labelOneVisit: "Consultation and fit requested",
     body: "We message you on WhatsApp to fix the hour.",
     asked: "You asked for",
   },
@@ -230,7 +311,7 @@ export const referral = {
     body: "We message you when a technician starts working there.",
     creditsFrom: "{name}’s invite holds for 12 months after that.",
     credits: "The invite holds for 12 months after that.",
-    tryOn: "See yourself with hair",
+    tryOn: "Try a new look",
     back: "See the site",
   },
   errors: {
@@ -241,15 +322,18 @@ export const referral = {
     other: "Something went wrong at our end. Please try again.",
     // Not drawn: the number already has a consultation to come (ADR 0025, item 41). The owner approves the words (open point 45).
     alreadyBooked: "This number already has a consultation, {when}. To change it, message us on WhatsApp.",
+    // Not drawn: the discount code given does not apply, whatever the reason (ADR 0108). The owner approves the words.
+    codeNotApplicable: "That discount code does not apply. Check it, or leave it out to book without it.",
   },
   /**
    * What a shared invite's preview says (boards B1 and B2), which the mm-site Worker writes into the page. Only a
-   * valid invite promises the visits: any other books without them.
+   * valid invite promises the friend's visits, and only where there are any: any other books without them.
    */
   preview: {
     title: "{name} sent you a Mane Man invite",
     titleUnnamed: "You have a Mane Man invite",
-    description: `Home-fitted hair systems across ${serviceArea}. 3 service visits free when you're fitted.`,
+    description: (friend: number) =>
+      `Home-fitted hair systems across ${serviceArea}. ${serviceVisits(friend)} free when you're fitted.`,
     descriptionWithout: `Home-fitted hair systems across ${serviceArea}.`,
   },
 };
@@ -259,7 +343,12 @@ export function inviteTitle(name: string | null): string {
   return name === null ? referral.preview.titleUnnamed : fill(referral.preview.title, { name });
 }
 
-/** The preview's description: the visits only for an invite that carries them, never for one we could not read. */
-export function inviteDescription(invite: Invite | null): string {
-  return invite?.state === "valid" ? referral.preview.description : referral.preview.descriptionWithout;
+/**
+ * The preview's description: the friend's visits only for an invite that carries them, never for one we could not
+ * read, and never a count the reward does not give or that is not known.
+ */
+export function inviteDescription(invite: Invite | null, reward: ReferralReward | null): string {
+  const friend = friendVisits(reward);
+  if (invite?.state !== "valid" || friend === 0) return referral.preview.descriptionWithout;
+  return referral.preview.description(friend);
 }

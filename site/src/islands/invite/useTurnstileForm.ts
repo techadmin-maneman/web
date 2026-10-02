@@ -25,6 +25,7 @@ function refusal(code: ErrorCode | "network", booked: AlreadyBooked | undefined)
   if (code === "turnstile_failed") return errors.turnstile;
   if (code === "taken") return errors.taken;
   if (code === "not_bookable") return errors.notBookable;
+  if (code === "code_not_applicable") return errors.codeNotApplicable;
   return errors.other;
 }
 

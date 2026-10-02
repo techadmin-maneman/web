@@ -11,11 +11,17 @@
 // The duration runs from Start job to here, and the technician never types a
 // time: the phone records the instant this screen's action was taken
 // (apps/tech/src/store/jobs.ts).
+//
+// On a consultation and fit in one visit, Done says what closing it does, which
+// no board draws: the client is texted a payment link for the product they
+// chose, or the visit ends as a consultation (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md), and
+// takes a discount code the client gives, before the link goes (docs/decisions/0108-discount-codes.md).
 
 import { useState } from "react";
 import type { PartialReason } from "../api.ts";
-import { job as jobCopy, steps as copy } from "../content.ts";
+import { job as jobCopy, oneVisit, steps as copy } from "../content.ts";
 import { Failed, Loading } from "../states/States.tsx";
+import { DiscountCode } from "./DiscountCode.tsx";
 import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
 import styles from "./steps.module.css";
@@ -31,12 +37,15 @@ export function Outcome({ id }: { id: string }) {
   const { loaded, retry, refused, finish, back } = useStep(id, "outcome");
   const [choice, setChoice] = useState<Choice>(null);
   const [reason, setReason] = useState<PartialReason["id"] | null>(null);
+  const [codeChecking, setCodeChecking] = useState(false);
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} />;
 
   const reasons = loaded.value.partial_reasons;
-  const ready = choice === "done" || (choice === "partial" && reason !== null);
+  const closesOneVisit = loaded.value.one_visit && choice === "done";
+  // A code being checked would change the link closing the visit sends: Next waits for it.
+  const ready = !codeChecking && (choice === "done" || (choice === "partial" && reason !== null));
 
   return (
     <StepFrame
@@ -73,6 +82,9 @@ export function Outcome({ id }: { id: string }) {
           {copy.outcome.partial}
         </button>
       </div>
+
+      {closesOneVisit && <p className={styles.note}>{oneVisit.closeNote}</p>}
+      {closesOneVisit && <DiscountCode jobId={id} onChecking={setCodeChecking} />}
 
       {choice === "partial" && (
         <ul className={styles.reasons}>

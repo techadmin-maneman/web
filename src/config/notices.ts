@@ -105,6 +105,32 @@ export const NOTICES: readonly Notice[] = [
       "No password, no account, no marketing. Your photograph is deleted after thirty days, unless you book a visit: then a small copy stays in your Mane Man account as your before photo, and the simulation until your first fit is photographed.",
     ],
   },
+  // The look goes to WhatsApp only, by the owner's ruling of 1 October 2026 (ADR 0104): v2's words with the
+  // promise of a result on screen taken out. Every build of the site shows these.
+  // PLACEHOLDER: the words await counsel (docs/open-points.md, item 146); words counsel changes become v4.
+  {
+    version: "photo-v3",
+    purpose: "tryon_photo",
+    text: [
+      "What happens to your photograph.",
+      "Used for: Generating your simulation, which is sent to your WhatsApp and never shown on this site. If you book a visit, a small copy is also kept in your Mane Man account as your before photo.",
+      "Kept for: Thirty days at most, then deleted automatically. If you book a visit while your simulation is kept, we keep the small copy until you ask us to delete it, and the simulation until the photographs of your first fit are taken.",
+      "Training: Never used to train any model.",
+      "Shared with: Nobody outside Mane Man.",
+      "To withdraw: Message us and it is deleted the same day.",
+      "I understand, and I agree to my photograph being used this way.",
+    ],
+  },
+  {
+    version: "gate-v3",
+    purpose: "result_delivery",
+    text: [
+      "Your simulation is sent to your WhatsApp, and only there: for your privacy, it is never shown on this site.",
+      "Where should we send it?",
+      "We make your simulation once we have your number, and send it there on WhatsApp.",
+      "No password, no account, no marketing. Your photograph is deleted after thirty days, unless you book a visit: then a small copy stays in your Mane Man account as your before photo, and the simulation until your first fit is photographed.",
+    ],
+  },
   // Phase 2's five consents (docs/prompts/phase2-backend.md, "Consents"), as the client app's profile names
   // them (design/phase2/Client App, G1). Counsel's sign-off is outstanding (plan input 6).
   {
@@ -179,17 +205,13 @@ export const NOTICES: readonly Notice[] = [
 export const LANDING_NOTICES = { consultation: "referral-consultation-v1", waitlist: "waitlist-v1" } as const;
 
 /**
- * The try-on's notices that keep a client's try-on (ADR 0084). Every build of the site shows them but production's,
- * which shows CURRENT_NOTICE's approved pair until counsel approves these (docs/open-points.md, item 146): then they
- * become current, and this goes.
+ * The version shown today for each purpose. The try-on's two are the only ones it records: every earlier version
+ * promised the result on screen, which the site no longer shows (ADR 0104).
  */
-export const TRY_ON_NOTICES_AWAITING_COUNSEL = { photo: "photo-v2", gate: "gate-v2" } as const;
-
-/** The version shown today for each purpose; of the try-on's two, the one production shows. */
 export const CURRENT_NOTICE: Readonly<Record<NoticePurpose, string>> = {
   contact: "booking-v1",
-  tryon_photo: "photo-v1",
-  result_delivery: "gate-v1",
+  tryon_photo: "photo-v3",
+  result_delivery: "gate-v3",
   photos_own_record: "photos-own-record-v1",
   photos_referral_cards: "photos-referral-cards-v2",
   photos_marketing: "photos-marketing-v1",

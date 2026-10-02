@@ -490,7 +490,8 @@ export function registerClientProfile(app: App): void {
 
     const newMobile = toE164(c.req.valid("json").new_mobile);
     // A live session's person is never erased: the erasure ends their sessions.
-    const current = (await liveContact(db, personId))?.mobileE164 ?? null;
+    const contact = await liveContact(db, personId);
+    const current = contact?.mobileE164 ?? null;
     if (newMobile === null || newMobile === current)
       return c.json(errorBody("invalid_request", requestId, ["new_mobile"]), 400);
 
@@ -513,8 +514,9 @@ export function registerClientProfile(app: App): void {
       now,
       fixedCode: config.settings.login.fixedCode,
     });
-    await sendCodeAfterResponse(c, current, "whatsapp", started.codes.old.code);
-    await sendCodeAfterResponse(c, newMobile, "whatsapp", started.codes.new.code);
+    const name = contact?.name ?? null;
+    await sendCodeAfterResponse(c, current, name, "whatsapp", started.codes.old.code);
+    await sendCodeAfterResponse(c, newMobile, name, "whatsapp", started.codes.new.code);
     const expiresIn = Math.round((started.codes.new.challenge.expiresAt.getTime() - now.getTime()) / 1000);
     return c.json({ request_id: started.change.id, expires_in_s: expiresIn }, 202);
   });

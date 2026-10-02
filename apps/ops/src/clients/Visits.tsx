@@ -4,7 +4,9 @@
 // API for nothing (docs/fidelity-method.md), but to save an address the client
 // gives ops on the phone (GivenAddress.tsx; docs/decisions/0092-task-owners.md)
 // and to act on a booking FSM refused, which heads the tab while it waits
-// (HeldBookings.tsx; docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
+// (HeldBookings.tsx; docs/decisions/0095-a-booking-fsm-refuses-is-held.md),
+// and to enter a discount code on a visit or take it off (VisitCode.tsx;
+// docs/decisions/0108-discount-codes.md).
 
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
@@ -15,6 +17,7 @@ import { clients } from "../content.ts";
 import styles from "./clients.module.css";
 import { GivenAddressForm } from "./GivenAddress.tsx";
 import { HeldBookings } from "./HeldBookings.tsx";
+import { VisitCode } from "./VisitCode.tsx";
 
 type SavedAddress = NonNullable<ClientRecord["address"]>;
 
@@ -149,6 +152,9 @@ function VisitTable({ title, visits, empty }: { title: string; visits: readonly 
                 <td className={styles.cell}>
                   {stateOf(visit)}
                   <ClosedWithoutFollowUp visit={visit} />
+                </td>
+                <td className={styles.cell}>
+                  <VisitCode visit={visit} />
                 </td>
               </tr>
             ))}

@@ -1,6 +1,8 @@
 // The try-on's screens, opened directly with ?state= (docs/feature-inventory.md,
 // items 22–30). These make no API calls; try-flow.e2e.ts runs the flow on a
-// mocked API, and try-api.e2e.ts on the local one.
+// mocked API, and try-api.e2e.ts on the local one. The look goes to WhatsApp
+// only (ADR 0104): there is no processing or result screen, and the gate comes
+// before the look is made.
 
 import type { Page } from "@playwright/test";
 import { drawnHeadPhoto, expect, fakeTurnstile, test, TINY_JPEG } from "./support.ts";
@@ -10,13 +12,12 @@ test.beforeEach(async ({ page }) => {
 });
 
 const SCREENS = {
-  upload: { label: "Step one of five", progress: 14 },
+  upload: { label: "Step one of four", progress: 14 },
   consent: { label: "Before we begin", progress: 28 },
-  stage: { label: "Step two of five", progress: 44 },
-  looks: { label: "Step three of five", progress: 60 },
-  processing: { label: "Step four of five", progress: 78 },
-  gate: { label: "Step five of five", progress: 90 },
-  result: { label: "Your result", progress: 100 },
+  stage: { label: "Step two of four", progress: 44 },
+  looks: { label: "Step three of four", progress: 60 },
+  gate: { label: "Step four of four", progress: 90 },
+  sent: { label: "Sent to WhatsApp", progress: 100 },
   error: { label: "Cannot use this photograph", progress: 28 },
 } as const;
 type Screen = keyof typeof SCREENS;
@@ -52,9 +53,7 @@ test.describe("chrome", () => {
     ["consent", "upload"],
     ["stage", "consent"],
     ["looks", "stage"],
-    ["processing", "looks"],
     ["gate", "looks"],
-    ["result", "gate"],
     ["error", "upload"],
   ];
   for (const [from, to] of BACK) {
@@ -65,11 +64,13 @@ test.describe("chrome", () => {
     });
   }
 
-  test("back from the upload screen returns to the site", async ({ page }) => {
-    await open(page, "upload");
-    await page.getByRole("button", { name: "Back to the site" }).click();
-    await expect(page).toHaveURL(/\/$/);
-  });
+  for (const screen of ["upload", "sent"] as const) {
+    test(`back from the ${screen} screen returns to the site`, async ({ page }) => {
+      await open(page, screen);
+      await page.getByRole("button", { name: "Back to the site" }).click();
+      await expect(page).toHaveURL(/\/$/);
+    });
+  }
 });
 
 test.describe("upload", () => {
@@ -96,9 +97,10 @@ test.describe("upload", () => {
   test("a photograph too small for the API is refused before anything is sent", async ({ page }) => {
     const calls: string[] = [];
     page.on("request", (request) => {
-      // On arrival the page asks whether this browser has had its look (CLI-29); the photograph never leaves.
-      if (request.url().includes("/api/tryon/") && !request.url().endsWith("/api/tryon/look"))
-        calls.push(request.url());
+      // On arrival the page asks whether this browser has had its look, and whether the try-on runs (CLI-29); the
+      // photograph never leaves.
+      const arrival = ["/api/tryon/look", "/api/tryon/availability"].some((path) => request.url().endsWith(path));
+      if (request.url().includes("/api/tryon/") && !arrival) calls.push(request.url());
     });
     await open(page, "upload");
     await page.locator('input[type="file"]').first().setInputFiles(TINY_JPEG);
@@ -137,110 +139,77 @@ test.describe("stage and looks", () => {
     await expect(stages.first()).toBeChecked();
   });
 
-  test("six looks; the button changes once one is picked", async ({ page }) => {
+  test("six looks; the button changes once one is picked, and goes on to the gate", async ({ page }) => {
     await open(page, "looks");
     await expect(page.getByRole("radio")).toHaveCount(6);
     const next = page.getByRole("button", { name: "Choose one to continue" });
     await expect(next).toHaveAttribute("aria-disabled", "true");
     await page.getByText("Light density").first().click();
-    await expect(page.getByRole("button", { name: "Generate the simulation" })).toHaveAttribute(
-      "aria-disabled",
-      "false",
-    );
-  });
-});
-
-test.describe("processing", () => {
-  test("ticks at 2, 6, 11 and 16 s, then opens the gate at 20 s", async ({ page }) => {
-    await page.clock.install();
-    await open(page, "processing");
-    const status = page.getByRole("status");
-    await expect(page.getByText("20s")).toHaveAttribute("aria-hidden", "true");
-    await page.clock.runFor(2_000);
-    await expect(status).toHaveText("Reading the photograph");
-    await page.clock.runFor(4_000);
-    await expect(status).toHaveText("Finding the hairline");
-    await page.clock.runFor(5_000);
-    await expect(status).toHaveText("Placing the hair");
-    await page.clock.runFor(5_000);
-    await expect(status).toHaveText("Matching the light");
-    await page.clock.runFor(4_000);
+    const onward = page.getByRole("button", { name: "Continue" });
+    await expect(onward).toHaveAttribute("aria-disabled", "false");
+    await onward.click();
     await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "gate");
   });
 });
 
 test.describe("gate", () => {
-  test("the number is optional, as its copy says: left empty, the result opens", async ({ page }) => {
+  // ADR 0104: the look is sent to the number, so the gate needs it, and says so.
+  test("asks where to send the look before it is made, and needs both fields", async ({ page }) => {
     await open(page, "gate");
-    await expect(page.getByText("The result opens on the next screen either way.", { exact: false })).toBeVisible();
-    await page.getByRole("button", { name: "Show me the result" }).click();
-    await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "result");
+    await expect(page.getByText("We make your simulation once we have your number", { exact: false })).toBeVisible();
+    await expect(page.getByText("never shown on this site", { exact: false })).toBeVisible();
+    await expect(page.getByLabel("Name")).toHaveAttribute("aria-required", "true");
+    await expect(page.getByLabel("Mobile")).toHaveAttribute("aria-required", "true");
+    await page.getByRole("button", { name: "Send my look" }).click();
+    await expect(page.getByText("Tell us what to call you.")).toBeVisible();
+    await expect(page.getByText("Enter all ten digits so we can send your look.")).toBeVisible();
+    await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "gate");
   });
 
-  test("a gate half filled in says what is missing, then shows the result", async ({ page }) => {
+  test("a gate half filled in says what is missing, then sends the look", async ({ page }) => {
     await open(page, "gate");
     await page.getByLabel("Mobile").fill("98100");
-    await page.getByRole("button", { name: "Show me the result" }).click();
+    await page.getByRole("button", { name: "Send my look" }).click();
     await expect(page.getByText("Tell us what to call you.")).toBeVisible();
-    await expect(page.getByText("Enter all ten digits so we can send the result.")).toBeVisible();
     await expect(page.getByLabel("Name")).toHaveAttribute("aria-invalid", "true");
     await page.getByLabel("Name").fill("Test Visitor");
     await page.getByLabel("Mobile").fill("9810000000");
     await expect(page.getByLabel("Mobile")).toHaveValue("98100 00000");
-    await page.getByRole("button", { name: "Show me the result" }).click();
-    await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "result");
+    await page.getByRole("button", { name: "Send my look" }).click();
+    await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "sent");
   });
 
   test("the image column sits below the form under 760 px, beside it above", async ({ page }) => {
     await open(page, "gate");
     const form = await page.locator("form").boundingBox();
-    const image = await page.getByText("Your result · ready").boundingBox();
+    const image = await page.getByText("For your WhatsApp only").boundingBox();
     if ((page.viewportSize()?.width ?? 0) <= 760) expect(image?.y).toBeGreaterThan(form?.y ?? 0);
     else expect(image?.x ?? 0).toBeLessThan(form?.x ?? 0);
   });
 });
 
-test.describe("result", () => {
-  test("a slider from 50%, the look, the disclaimer and three actions: one look per visitor", async ({ page }) => {
-    await open(page, "result");
-    await expect(page.getByRole("slider")).toHaveValue("50");
-    await expect(page.getByText("Full density · Natural hairline · short")).toBeVisible();
+test.describe("sent", () => {
+  // ADR 0104: the look is on its way to WhatsApp, and never on the site.
+  test("says the look is on its way to the number given, shows no look, and offers two ways on", async ({ page }) => {
+    await open(page, "sent");
+    await expect(page.getByRole("heading", { name: "Your new look is on its way." })).toBeVisible();
     await expect(
-      page.getByText("This is an illustrative simulation, not a photograph of a result.", { exact: false }),
+      page.getByText("Watch WhatsApp on +91 98100 00000: it arrives within minutes.", { exact: false }),
     ).toBeVisible();
+    await expect(page.getByText("it is never shown on this site", { exact: false })).toBeVisible();
     await expect(page.getByRole("link", { name: "Book a free consultation" })).toHaveAttribute("href", "/book");
-    await expect(page.getByRole("button", { name: "Download" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "WhatsApp" })).toBeVisible();
-    await expect(page.getByText("A copy is on its way to +91 98100 00000. Deleted after fourteen days.")).toBeVisible();
-    await expect(page.getByText("Try another look")).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Back to the site" })).toHaveAttribute("href", "/");
+    await expect(page.locator("[data-screen] img")).toHaveCount(0);
+    await expect(page.getByRole("slider")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Download" })).toHaveCount(0);
   });
 
-  // CLI-28: the words were centred on the whole frame, so the photograph beside them and the handle hid half.
-  test("while the render runs, the after side's words show whole, clear of the handle", async ({ page }) => {
-    await page.goto("/try?state=result&kind=pending");
-    await page.waitForFunction(() => document.querySelectorAll("astro-island[ssr]").length === 0);
-    const slider = page.getByRole("slider");
-    await expect(page.getByText("Still working on it", { exact: true }).first()).toBeVisible();
-    // Where the slider starts, and dragged towards the photograph: the words follow the handle.
-    for (const position of ["50", "30"]) {
-      await slider.fill(position);
-      // The frame takes the handle's place once the island has drawn it.
-      await expect
-        .poll(() => slider.evaluate((input) => input.parentElement?.style.getPropertyValue("--position")))
-        .toBe(`${position}%`);
-      // All measured at once. The handle is drawn just before the input that works it (BeforeAfter.tsx).
-      const drawn = await slider.evaluate((input) => {
-        const words = input.parentElement?.querySelector("[data-after-note] span")?.getBoundingClientRect();
-        return {
-          handleRight: input.previousElementSibling?.getBoundingClientRect().right ?? 0,
-          frameRight: input.getBoundingClientRect().right,
-          wordsLeft: words?.left ?? 0,
-          wordsRight: words?.right ?? 0,
-        };
-      });
-      expect(drawn.wordsLeft, `handle at ${position}%`).toBeGreaterThan(drawn.handleRight);
-      expect(drawn.wordsRight).toBeLessThanOrEqual(drawn.frameRight);
-    }
+  test("tells a returning visitor their look was sent, without a number or the look", async ({ page }) => {
+    await page.goto("/try?state=sent&kind=returning");
+    await expect(page.getByRole("heading", { name: "Your look has already been sent." })).toBeVisible();
+    await expect(page.getByText("It went to the WhatsApp number you gave.", { exact: false })).toBeVisible();
+    await expect(page.getByText("+91", { exact: false })).toHaveCount(0);
+    await expect(page.locator("[data-screen] img")).toHaveCount(0);
   });
 });
 
@@ -269,10 +238,10 @@ test.describe("error", () => {
       another: true,
     },
     {
-      kind: "lookLimit",
-      step: "One look per visitor",
-      frame: "Your look is no longer kept",
-      heading: "You have had your look.",
+      kind: "unavailable",
+      step: "Not available right now",
+      frame: "The try-on is paused",
+      heading: "The try-on is not available right now.",
       another: false,
     },
   ];
@@ -287,13 +256,4 @@ test.describe("error", () => {
       await expect(page.getByRole("button", { name: "Choose another" })).toHaveCount(another ? 1 : 0);
     });
   }
-
-  test("a returning visitor's look: the result alone, with no slider and no copy line", async ({ page }) => {
-    await page.goto("/try?state=result&kind=returning");
-    await expect(page.getByRole("heading", { name: "The look you had." })).toBeVisible();
-    await expect(page.getByText("Each visitor gets one simulation, and this is yours.")).toBeVisible();
-    await expect(page.getByRole("img", { name: "Simulated result" })).toBeVisible();
-    await expect(page.getByRole("slider")).toHaveCount(0);
-    await expect(page.getByText("A copy is on its way", { exact: false })).toHaveCount(0);
-  });
 });

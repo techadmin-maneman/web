@@ -143,7 +143,9 @@ async function openSheet(page: Page): Promise<void> {
 async function toWindows(page: Page): Promise<void> {
   await openSheet(page);
   const sheet = page.getByRole("dialog", { name: "Pick a date" });
-  await expect(sheet.getByText("Step 1 of 3")).toBeVisible();
+  // The sheet asks the API for the services and the free days first; on 1 October 2026 a busy machine left it
+  // "Loading" past the five seconds an expectation waits by default.
+  await expect(sheet.getByText("Step 1 of 3")).toBeVisible({ timeout: 30_000 });
   await sheet.getByRole("radio").and(page.locator(":enabled")).first().click();
   await sheet.getByRole("button", { name: "Continue" }).click();
 }
@@ -239,6 +241,7 @@ async function holdAs(page: Page, terms: Hold): Promise<() => Hold> {
       visit_id: null,
       moves_visit_id: null,
       credit: null,
+      discount: null,
       ...terms,
     };
     return route.fulfill({ status: 201, json: last });
@@ -327,6 +330,42 @@ test("confirms a visit a credit covers as a credit used, never as a payment", as
   await expect(confirmed.getByText("2 remaining")).toBeVisible();
   await expect(confirmed.getByText("Paid", { exact: true })).toHaveCount(0);
   await expect(confirmed.getByText("Rs. 2,000")).toHaveCount(0);
+});
+
+// A discount code at the pay step (docs/decisions/0108-discount-codes.md), which no board draws. The API prices the
+// hold again; it is answered here, as the local database holds no code.
+test("takes a discount code off the price at the pay step, says only that a wrong one does not apply, and takes it off", async ({
+  page,
+}) => {
+  const hold = await holdAs(page, {});
+  let applies = false;
+  await page.route(/\/api\/holds\/[0-9a-f-]{36}\/discount-code$/, (route) => {
+    if (route.request().method() === "DELETE") return route.fulfill({ json: hold() });
+    if (!applies) {
+      return route.fulfill({ status: 422, json: { error: { code: "code_not_applicable", request_id: "test" } } });
+    }
+    const list = { amount_ex_gst: 200_000, amount: 200_000, gst_percent: 0 };
+    const discount = { code: "WEDDNG25", amount_ex_gst: 20_000, list_price: list };
+    return route.fulfill({
+      json: { ...hold(), price: { ...list, amount_ex_gst: 180_000, amount: 180_000 }, discount },
+    });
+  });
+  await toPayment(page);
+  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
+  await pay.getByRole("button", { name: "Have a discount code?" }).click();
+  await pay.getByLabel("Discount code").fill("wrong1");
+  await pay.getByRole("button", { name: "Apply" }).click();
+  await expect(pay.getByRole("alert")).toHaveText("That code does not apply to this visit.");
+
+  applies = true;
+  await pay.getByLabel("Discount code").fill("weddng25");
+  await pay.getByRole("button", { name: "Apply" }).click();
+  await expect(pay.getByText("Code WEDDNG25: Rs. 200 off")).toBeVisible();
+  await expect(pay.getByRole("button", { name: "Pay Rs. 1,800" })).toBeVisible();
+  await scanOf(page);
+
+  await pay.getByRole("button", { name: "Remove code" }).click();
+  await expect(pay.getByRole("button", { name: "Pay Rs. 2,000" })).toBeVisible();
 });
 
 test("asks whether to remind the client on WhatsApp, and records it when they say yes", async ({ page }) => {
@@ -669,8 +708,14 @@ test("says the payment failed when Checkout never loads, and keeps the sheet up 
   await ordered;
   await expect(pay).toBeVisible();
   await expect(pay.getByRole("button", { name: "Pay Rs. 2,000" })).toBeDisabled();
-  await page.clock.fastForward("00:20");
   const failed = page.getByRole("dialog", { name: "The payment did not go through." });
+  // Checkout is given up on twenty seconds after it was last asked for. On a busy machine the pay step's own ask can
+  // lapse before the tap, which asks again only once the order is in, after a single jump of the clock (1 October
+  // 2026): so the clock moves on until the sheet has given up.
+  await expect(async () => {
+    await page.clock.fastForward("00:20");
+    await expect(failed).toBeVisible({ timeout: 1_000 });
+  }).toPass({ timeout: 15_000 });
   await expect(failed.getByText(/^Slot held \d:\d\d more\.$/)).toBeVisible();
 });
 

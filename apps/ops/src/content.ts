@@ -163,7 +163,10 @@ export const dispatch = {
     /** Beneath the name: "Fri 19 Sep · 12 to 4 pm · Imran Qureshi". */
     when: (date: string, hours: string, technician: string) => `${date} · ${hours} · ${technician}`,
     /** The badge at the drawer's head: never an amount (ADR 0025, item 33). */
-    badges: { prepaid: "Prepaid", credit: "Credit", free: "Free" } as Readonly<Record<string, string>>,
+    // PLACEHOLDER: at_visit, a consultation and fit in one visit, paid for once the client is fitted (ADR 0105).
+    badges: { prepaid: "Prepaid", credit: "Credit", free: "Free", at_visit: "Pays once fitted" } as Readonly<
+      Record<string, string>
+    >,
     rows: { type: "Type", area: "Area", state: "State", referred: "Referred by" },
     /** "Service visit · 1 slot", as the board writes it; a first fit takes 2. */
     type: (name: string, slots: number) => `${name} · ${String(slots)} ${slots === 1 ? "slot" : "slots"}`,
@@ -457,7 +460,37 @@ export const clients = {
     },
     upcoming: "To come",
     past: "Done",
-    columns: ["Date", "Time", "Visit", "Technician", "State"],
+    columns: ["Date", "Time", "Visit", "Technician", "State", "Discount code"],
+    /**
+     * PLACEHOLDER: a discount code on a visit, which no board draws (docs/decisions/0108-discount-codes.md).
+     * Entered or taken off only while the visit is not paid for or invoiced.
+     */
+    code: {
+      none: "None",
+      /** "TENOFF, Rs. 200 off": what it takes off before GST, once the visit's price is known. */
+      applied: (code: string, off: string | null) => (off === null ? code : `${code}, ${off} off`),
+      givenBy: { client: "by the client", technician: "by the technician", ops: "by ops" } as Readonly<
+        Record<string, string>
+      >,
+      enter: "Enter a code",
+      /** The button's whole name, since every row's says the same. */
+      enterLabel: (visit: string) => `Enter a discount code on the visit of ${visit}`,
+      label: "Discount code",
+      apply: "Apply",
+      applying: "Applying",
+      cancel: "Cancel",
+      remove: "Take it off",
+      removeLabel: (visit: string) => `Take the discount code off the visit of ${visit}`,
+      removing: "Taking it off",
+      errors: {
+        code_not_applicable: "That code does not apply to this visit.",
+        already_discounted: "This visit has a code already.",
+        price_settled: "This visit is paid for or invoiced, so its code stays as it is.",
+        not_found: "The code is already off this visit.",
+        offline: "You are offline. Connect, then try again.",
+        unknown: "That did not go through. Nothing was changed.",
+      } as Readonly<Record<string, string>>,
+    },
     noUpcoming: "Nothing booked.",
     noPast: "No visit done yet.",
     /** "9 am to 12", as the dispatch drawer writes a window. */
@@ -617,9 +650,9 @@ export const clients = {
     code: "Code",
     from: "Sent by",
     erased: "A client since erased",
-    grant: "Their 3 visits",
+    grant: "What it earns",
     grants: {
-      pending: "Given to both when this client is fitted",
+      pending: "Given when this client is fitted",
       held: "Held for review",
       approved: "Given",
       granted: "Given",
@@ -664,6 +697,70 @@ export const clients = {
     failed: (date: string, reason: string | null) => (reason === null ? date : `${date} · ${reason}`),
     // PLACEHOLDER: the board draws no client without a piece, and every client has none until they are fitted.
     empty: "No piece has been fitted for this client.",
+  },
+  /*
+   * PLACEHOLDER, all of it: no board draws the client's hair profile (docs/decisions/0106-a-clients-hair-profile.md).
+   * The lists' words wait for the owner (docs/open-points.md, item 42); the codes are the API's.
+   */
+  profile: {
+    title: "Hair profile",
+    none: "No profile has been recorded for this client.",
+    /** "21 Sep 2026 · Imran, at the consultation", as each version is headed. */
+    version: (date: string, by: string) => `${date} · ${by}`,
+    atVisit: (name: string, visit: string) => `${name}, at the ${visit.toLowerCase()}`,
+    byOps: (staff: string) => `${staff}, a correction`,
+    unnamed: "A technician",
+    aVisit: "visit",
+    fit: "Fit spec",
+    history: "Health history",
+    versions: "Every version",
+    rows: {
+      norwood_stage: "Norwood stage",
+      head_circumference_cm: "Circumference, cm",
+      front_to_nape_cm: "Front to nape, cm",
+      ear_to_ear_cm: "Ear to ear, cm",
+      temple_to_temple_cm: "Temple to temple, cm",
+      base_width_in: "Base width, in",
+      base_length_in: "Base length, in",
+      colour: "Colour",
+      grey_percent: "Grey, %",
+      density_percent: "Density",
+      wave: "Wave",
+      hairline: "Hairline",
+      product: "Product",
+      attachment: "Tape or glue",
+      remedies: "Remedies tried",
+      transplant_year: "Transplant's year",
+      skin_and_allergies: "Skin conditions and allergies",
+    },
+    stages: { I: "I", II: "II", III: "III", IV: "IV", V: "V", VI: "VI", VII: "VII" },
+    colours: { "1": "#1", "1B": "#1B", "2": "#2", "3": "#3", "4": "#4", "5": "#5", "6": "#6", "7": "#7", "8": "#8" },
+    densities: { 80: "80%", 100: "100%", 120: "120%", 140: "140%" },
+    waves: { straight: "Straight", slight_wave: "Slight wave", wavy: "Wavy", curly: "Curly" },
+    hairlines: { natural: "Natural", receded: "Receded", straight: "Straight", widows_peak: "Widow's peak" },
+    attachments: { tape: "Tape", glue: "Glue", both: "Tape and glue" },
+    remedies: {
+      none: "None",
+      minoxidil: "Minoxidil",
+      finasteride: "Finasteride",
+      transplant: "Transplant",
+      other_systems: "Other hair systems",
+      other: "Other",
+    },
+    correct: "Correct the profile",
+    record: "Record a profile",
+    formTitle: "Correct the hair profile",
+    formNote: "Saved as a new version under your name. Every version before it is kept.",
+    notRecorded: "Not recorded",
+    product: "The first fit's tier",
+    invalid: "Check this field.",
+    refused: "Some fields were not accepted. Check the fields marked.",
+    failed: "That did not go through. Nothing was saved.",
+    moved:
+      "Nothing was saved: the profile changed while you were correcting it. It is shown as it now stands; correct that.",
+    save: "Save as a new version",
+    saving: "Saving",
+    cancel: "Cancel",
   },
   photos: {
     locked: "Locked",
@@ -1090,6 +1187,8 @@ export const tasks = {
     grievance: "Grievance",
     // PLACEHOLDER: two groups the board does not draw (docs/decisions/0067-alerts-and-silent-failures.md).
     draft_invoice: "Draft invoice",
+    // PLACEHOLDER: a group the board does not draw (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+    payment_owed: "Payment owed",
     erasure_unfinished: "Erasure left in FSM",
   } as Readonly<Record<string, string>>,
   /** The first line of a no-show whose client has since been erased: the visit, which is all that is left. */
@@ -1137,6 +1236,16 @@ export const tasks = {
     /** "Asked for 23 Sep 2026, morning": the day nobody could book for them, self-serve booking being off. */
     consultation_request: (day: string, when: string) => `Asked for ${day}, ${when}`,
     /**
+     * PLACEHOLDER: "+ consultation and fit in one visit", after the day and window asked for: book the client's first
+     * fit in FSM for three hours, paid for at the visit (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+     */
+    withOneVisit: "+ consultation and fit in one visit",
+    /**
+     * PLACEHOLDER: ", code WEDDNG25", after the one visit: the discount code the client gave on the form, which ops
+     * enter on the visit once they have booked it (docs/decisions/0108-discount-codes.md).
+     */
+    withCode: (code: string) => `, code ${code}`,
+    /**
      * PLACEHOLDER: "+ first fit, afternoon", after the consultation asked for: the site's form asked for the fit
      * too, which the client books and pays for in the app once the consultation is done (ADR 0086).
      */
@@ -1171,6 +1280,12 @@ export const tasks = {
     grievance: "Raised in the client's own app",
     // PLACEHOLDER: the client cannot open the invoice until somebody sends it in Books.
     draft_invoice: (visit: string) => `Visit of ${visit}, still a draft in Books`,
+    /**
+     * PLACEHOLDER: "Mane Man Natural, Rs. 45,000; link sent": a one visit's client was fitted and has not paid. A
+     * link not sent waits for ops to send one from Razorpay's dashboard (ADR 0105).
+     */
+    payment_owed: (product: string, amount: string, sent: boolean) =>
+      `${product}, ${amount}; ${sent ? "link sent" : "link not sent"}`,
     // PLACEHOLDER: the sweeper has stopped asking FSM; the contact is anonymised by hand.
     erasure_unfinished: (contact: string) => `FSM contact ${contact} still holds their details`,
     // PLACEHOLDER: a held grant whose fraud signals were not recorded.
@@ -1503,10 +1618,96 @@ export const settings = {
   tabs: {
     rules: "Rules",
     prices: "Services and prices",
+    "discount-codes": "Discount codes",
     area: "Service area",
     blackouts: "Blackout days",
     consumables: "Consumables",
     "job-sheet": "Job sheet",
+  },
+  /**
+   * PLACEHOLDER, every line of it: no board draws discount codes (docs/decisions/0108-discount-codes.md).
+   * What a code takes off is shown before it is made, as a price is set
+   * (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
+   */
+  discountCodes: {
+    title: "Discount codes",
+    note:
+      "A code takes money off a first fit, a service visit or a replacement, before GST. The client enters it where " +
+      "they pay or book, the technician before sending a payment link, ops on a visit. It is never taken on a visit " +
+      "a referral credit pays for, and once a visit is paid for or invoiced its code stays as it is.",
+    make: "Make codes",
+    how: "The code",
+    typed: "Type one",
+    generated: "Generate them",
+    code: "Code",
+    codeHint: "4 to 16 letters and figures. Not I, L, O, 0 or 1, which read as each other.",
+    count: "How many",
+    countHint: (most: number) => `1 to ${String(most)}. More than one makes each a single-use code.`,
+    takesOff: "Takes off",
+    percent: "A percentage",
+    amount: "An amount",
+    value: "Per cent",
+    rupeesOff: "Rupees",
+    cap: "At most, in rupees",
+    capHint: "Optional. Leave empty for no cap.",
+    covers: "Covers",
+    coverNames: {
+      first_fit: "First fit, and the consultation and fit in one visit",
+      service: "Service visits",
+      replacement: "Replacements",
+    } as Readonly<Record<string, string>>,
+    expires: "Last day it may be used",
+    expiresHint: "Optional. Leave empty for no end.",
+    maxUses: "Total uses",
+    maxUsesHint: "Optional. Leave empty for no limit.",
+    oncePerClient: "Once per client",
+    check: "Check",
+    checkTitle: "Make these codes?",
+    send: "Make them",
+    sending: "Making",
+    back: "Back",
+    /** One line of the check: what each code takes off. */
+    off: (what: string) => `Takes off ${what} before GST`,
+    percentOff: (percent: number, cap: string | null) =>
+      cap === null ? `${String(percent)}%` : `${String(percent)}%, at most ${cap}`,
+    covering: (kinds: string) => `On ${kinds}`,
+    until: (day: string | null) => (day === null ? "No end" : `Until ${day}, the last day`),
+    usesLine: (uses: number | null, once: boolean) =>
+      `${uses === null ? "Any number of uses" : `${String(uses)} ${uses === 1 ? "use" : "uses"} in all`}${once ? ", once per client" : ""}`,
+    oneTyped: (code: string) => `The code ${code}`,
+    manyGenerated: (count: number) => `${String(count)} codes, generated, each used once`,
+    oneGenerated: "One code, generated",
+    made: (codes: readonly string[]) => `Made: ${codes.join(", ")}`,
+    find: "Find a code",
+    findButton: "Find",
+    showAll: "Show the latest",
+    none: "No code yet.",
+    noneFound: "No code has that text.",
+    /** How far a code is used: "3 of 10 uses", or "3 uses" with no limit. */
+    usesOf: (uses: number, most: number | null) =>
+      most === null ? `${String(uses)} ${uses === 1 ? "use" : "uses"}` : `${String(uses)} of ${String(most)} uses`,
+    given: (amount: string) => `${amount} given`,
+    madeBy: (who: string, when: string) => `Made by ${who} on ${when}`,
+    switchedOffBy: (who: string, when: string) => `Switched off by ${who} on ${when}`,
+    switchOff: "Switch off",
+    switchOffLabel: (code: string) => `Switch off ${code}`,
+    switchTitle: (code: string) => `Switch off ${code}?`,
+    switchLine: (uses: number) =>
+      `No booking takes it from now on. ${String(uses)} ${uses === 1 ? "booking keeps" : "bookings keep"} it, as sold.`,
+    switching: "Switching off",
+    errors: {
+      code: "A code is 4 to 16 letters and figures, none of them I, L, O, 0 or 1.",
+      count: "A code you type is made once. Generate them to make more.",
+      value: "A percentage is 1 to 100.",
+      cap: "Only a percentage takes a cap.",
+      covers: "Choose what the code covers.",
+      expires_on: "The last day cannot be before today.",
+      max_uses: "Generated codes are single-use: one use each.",
+      code_exists: "A code with that text exists already.",
+      not_found: "That code is gone. Reload to see the list as it stands.",
+      offline: "You are offline. Connect, then try again.",
+      unknown: "That did not go through. Nothing was changed.",
+    } as Readonly<Record<string, string>>,
   },
   rules: {
     title: "Rules",
@@ -1563,6 +1764,12 @@ export const settings = {
         first_fit_to_book: "First fit to book, after the consultation",
         horizon: "How far ahead a visit may be booked",
         invoice_prompt: "A new invoice on Home",
+      },
+      // PLACEHOLDER: what a referral earns, each side apart (docs/decisions/0107-referral-rewards-in-the-console.md).
+      referral_reward: {
+        referrer_visits: "The client who sent the invite",
+        friend_visits: "The friend they invited",
+        valid_days: "The credits last",
       },
     } as Readonly<Record<string, Readonly<Record<string, string>>>>,
     /**

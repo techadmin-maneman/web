@@ -596,6 +596,86 @@ Request body:
 }
 ```
 
+### GET /api/clients/{id}/hair-profile
+
+The client's hair profile, and every version of it
+
+**200**: The profile
+
+```json
+{
+  "$ref": "#/components/schemas/ClientHairProfile"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such client, or the client has been erased
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/clients/{id}/hair-profile
+
+Correct the client's hair profile: a new version, under the member of staff, audited
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/HairProfileCorrection"
+}
+```
+
+**200**: Recorded, and the profile as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/ClientHairProfile"
+}
+```
+
+**400**: invalid_request: see error.fields
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required: no Access token, or a service token, which names no member of staff
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such client, or the client has been erased
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: superseded: the latest version is no longer based_on; read the profile again
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/number-changes
 
 Number changes waiting for ops: both numbers proven by code
@@ -3263,6 +3343,185 @@ Who Access let through, and where signing out goes
 }
 ```
 
+### GET /api/discount-codes
+
+The latest discount codes made, each with its uses and what it has taken off
+
+**200**: The codes
+
+```json
+{
+  "$ref": "#/components/schemas/DiscountCodes"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/discount-codes
+
+Make a code, typed or generated, or a batch of single-use codes
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/DiscountCodesNew"
+}
+```
+
+**201**: Made
+
+```json
+{
+  "$ref": "#/components/schemas/DiscountCodesMade"
+}
+```
+
+**400**: invalid_request: fields names code when it is not one a code can be, count for a typed code made more than once, value for a percentage over 100, cap on an amount, covers named twice, expires_on before today, and max_uses for a batch whose codes are not single-use
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: code_exists: a code with that text exists already
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/discount-codes/{id}/off
+
+Switch a code off: no booking takes it from then on, and its uses stay as they are
+
+**204**: Off, or off already
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/visits/{id}/discount-code
+
+Enter a discount code on a client's visit, before it is paid for, its link is made, or it is invoiced
+
+Request body:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40
+    }
+  },
+  "required": [
+    "code"
+  ],
+  "additionalProperties": false
+}
+```
+
+**200**: The code on the visit
+
+```json
+{
+  "$ref": "#/components/schemas/VisitDiscountCode"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: already_discounted: the visit carries a code; price_settled: it is paid for, its payment link is made, it is invoiced, or FSM has cancelled it
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**422**: code_not_applicable: the code does not apply to this visit
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/visits/{id}/discount-code/remove
+
+Take the code off a client's visit, before it is paid for, its link is made, or it is invoiced
+
+**204**: Taken off; its use stays on record, marked removed
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such visit, or it carries no code
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: price_settled: it is paid for, its payment link is made, or it is invoiced
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ## Schemas
 
 ### ErrorResponse
@@ -3293,6 +3552,8 @@ Who Access let through, and where signing out goes
             "session_required",
             "job_not_claimable",
             "look_limit_reached",
+            "claim_required",
+            "whatsapp_unavailable",
             "unauthorized",
             "visit_booked",
             "payment_held",
@@ -3331,7 +3592,11 @@ Who Access let through, and where signing out goes
             "already_invited",
             "already_fitted",
             "already_disputed",
-            "not_disputable"
+            "not_disputable",
+            "code_not_applicable",
+            "already_discounted",
+            "price_settled",
+            "code_exists"
           ]
         },
         "request_id": {
@@ -3957,6 +4222,51 @@ Who Access let through, and where signing out goes
         }
       ],
       "description": "For a visit left partly done, ops closing its task without a follow-up visit; null otherwise."
+    },
+    "discount_code": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "amount_off": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "In paise before GST; null until the visit's price is known."
+            },
+            "given_by": {
+              "type": "string",
+              "enum": [
+                "client",
+                "technician",
+                "ops"
+              ]
+            }
+          },
+          "required": [
+            "code",
+            "amount_off",
+            "given_by"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The discount code on the visit (docs/decisions/0108-discount-codes.md); else null."
+    },
+    "price_open": {
+      "type": "boolean",
+      "description": "Not yet paid for, linked or invoiced, so a discount code may still be entered on it or taken off."
     }
   },
   "required": [
@@ -3973,7 +4283,9 @@ Who Access let through, and where signing out goes
     "technician",
     "place",
     "outcome",
-    "closed_without_follow_up"
+    "closed_without_follow_up",
+    "discount_code",
+    "price_open"
   ],
   "additionalProperties": false
 }
@@ -4645,7 +4957,7 @@ Who Access let through, and where signing out goes
         "expired",
         "clawed_back"
       ],
-      "description": "pending until the client's first fit; held for ops' review; approved or granted, the 3 visits given; rejected; expired, lapsed on a waitlist; clawed_back, the first fit refunded."
+      "description": "pending until the client's first fit; held for ops' review; approved or granted, the reward given; rejected; expired, lapsed on a waitlist; clawed_back, the first fit refunded."
     },
     "since": {
       "type": "string",
@@ -5405,6 +5717,8 @@ Who Access let through, and where signing out goes
             "session_required",
             "job_not_claimable",
             "look_limit_reached",
+            "claim_required",
+            "whatsapp_unavailable",
             "unauthorized",
             "visit_booked",
             "payment_held",
@@ -5443,7 +5757,11 @@ Who Access let through, and where signing out goes
             "already_invited",
             "already_fitted",
             "already_disputed",
-            "not_disputable"
+            "not_disputable",
+            "code_not_applicable",
+            "already_discounted",
+            "price_settled",
+            "code_exists"
           ]
         },
         "request_id": {
@@ -5710,6 +6028,756 @@ Who Access let through, and where signing out goes
     "access_notes"
   ],
   "additionalProperties": false
+}
+```
+
+### ClientHairProfile
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "latest": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/HairProfile"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The latest version; null before one."
+    },
+    "versions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/HairProfileVersion"
+      },
+      "description": "Every version, newest first."
+    },
+    "products": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "tier": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "tier",
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "description": "The products a correction may name: every first-fit service, retired or not."
+    }
+  },
+  "required": [
+    "latest",
+    "versions",
+    "products"
+  ],
+  "additionalProperties": false
+}
+```
+
+### HairProfile
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The version's own ID, which a write names as based_on."
+    },
+    "recorded_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "fit": {
+      "$ref": "#/components/schemas/HairFitSpecRead"
+    },
+    "history": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/HairHistory"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Null where none was recorded."
+    }
+  },
+  "required": [
+    "id",
+    "recorded_at",
+    "fit",
+    "history"
+  ],
+  "additionalProperties": false
+}
+```
+
+### HairFitSpecRead
+
+```json
+{
+  "description": "Every field is sent, null where it was not taken.",
+  "type": "object",
+  "properties": {
+    "norwood_stage": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "I",
+        "II",
+        "III",
+        "IV",
+        "V",
+        "VI",
+        "VII",
+        null
+      ]
+    },
+    "head_circumference_cm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 40,
+      "maximum": 70,
+      "description": "In centimetres, 40 to 70, to one decimal."
+    },
+    "front_to_nape_cm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 20,
+      "maximum": 50,
+      "description": "In centimetres, 20 to 50, to one decimal."
+    },
+    "ear_to_ear_cm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 20,
+      "maximum": 50,
+      "description": "In centimetres, over the top, 20 to 50, to one decimal."
+    },
+    "temple_to_temple_cm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 20,
+      "maximum": 50,
+      "description": "In centimetres, 20 to 50, to one decimal."
+    },
+    "base_width_in": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 2,
+      "maximum": 12,
+      "description": "In inches, 2 to 12, to one decimal."
+    },
+    "base_length_in": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 2,
+      "maximum": 14,
+      "description": "In inches, 2 to 14, to one decimal."
+    },
+    "colour": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "1B",
+        null
+      ],
+      "description": "The suppliers' colour code, #1B written 1B."
+    },
+    "grey_percent": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 100
+    },
+    "density_percent": {
+      "anyOf": [
+        {
+          "type": "number",
+          "enum": [
+            80
+          ]
+        },
+        {
+          "type": "number",
+          "enum": [
+            100
+          ]
+        },
+        {
+          "type": "number",
+          "enum": [
+            120
+          ]
+        },
+        {
+          "type": "number",
+          "enum": [
+            140
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "In per cent."
+    },
+    "wave": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "straight",
+        "slight_wave",
+        "wavy",
+        "curly",
+        null
+      ]
+    },
+    "hairline": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "natural",
+        "receded",
+        "straight",
+        "widows_peak",
+        null
+      ]
+    },
+    "product": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-z][a-z0-9_]{0,31}$",
+      "description": "The product, by the tier of its first-fit service: one the services table holds, retired or not."
+    },
+    "attachment": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "tape",
+        "glue",
+        "both",
+        null
+      ],
+      "description": "Tape, glue, or both."
+    },
+    "product_name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The product's name, never its price."
+    }
+  },
+  "required": [
+    "norwood_stage",
+    "head_circumference_cm",
+    "front_to_nape_cm",
+    "ear_to_ear_cm",
+    "temple_to_temple_cm",
+    "base_width_in",
+    "base_length_in",
+    "colour",
+    "grey_percent",
+    "density_percent",
+    "wave",
+    "hairline",
+    "product",
+    "attachment",
+    "product_name"
+  ],
+  "additionalProperties": false
+}
+```
+
+### HairFitSpec
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "norwood_stage": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "I",
+        "II",
+        "III",
+        "IV",
+        "V",
+        "VI",
+        "VII",
+        null
+      ]
+    },
+    "head_circumference_cm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 40,
+      "maximum": 70,
+      "description": "In centimetres, 40 to 70, to one decimal."
+    },
+    "front_to_nape_cm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 20,
+      "maximum": 50,
+      "description": "In centimetres, 20 to 50, to one decimal."
+    },
+    "ear_to_ear_cm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 20,
+      "maximum": 50,
+      "description": "In centimetres, over the top, 20 to 50, to one decimal."
+    },
+    "temple_to_temple_cm": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 20,
+      "maximum": 50,
+      "description": "In centimetres, 20 to 50, to one decimal."
+    },
+    "base_width_in": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 2,
+      "maximum": 12,
+      "description": "In inches, 2 to 12, to one decimal."
+    },
+    "base_length_in": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 2,
+      "maximum": 14,
+      "description": "In inches, 2 to 14, to one decimal."
+    },
+    "colour": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "1B",
+        null
+      ],
+      "description": "The suppliers' colour code, #1B written 1B."
+    },
+    "grey_percent": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 100
+    },
+    "density_percent": {
+      "anyOf": [
+        {
+          "type": "number",
+          "enum": [
+            80
+          ]
+        },
+        {
+          "type": "number",
+          "enum": [
+            100
+          ]
+        },
+        {
+          "type": "number",
+          "enum": [
+            120
+          ]
+        },
+        {
+          "type": "number",
+          "enum": [
+            140
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "In per cent."
+    },
+    "wave": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "straight",
+        "slight_wave",
+        "wavy",
+        "curly",
+        null
+      ]
+    },
+    "hairline": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "natural",
+        "receded",
+        "straight",
+        "widows_peak",
+        null
+      ]
+    },
+    "product": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-z][a-z0-9_]{0,31}$",
+      "description": "The product, by the tier of its first-fit service: one the services table holds, retired or not."
+    },
+    "attachment": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "tape",
+        "glue",
+        "both",
+        null
+      ],
+      "description": "Tape, glue, or both."
+    }
+  },
+  "required": [
+    "norwood_stage",
+    "head_circumference_cm",
+    "front_to_nape_cm",
+    "ear_to_ear_cm",
+    "temple_to_temple_cm",
+    "base_width_in",
+    "base_length_in",
+    "colour",
+    "grey_percent",
+    "density_percent",
+    "wave",
+    "hairline",
+    "product",
+    "attachment"
+  ],
+  "additionalProperties": false,
+  "description": "Every field is sent, null where it was not taken."
+}
+```
+
+### HairHistory
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "remedies": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "none",
+          "minoxidil",
+          "finasteride",
+          "transplant",
+          "other_systems",
+          "other"
+        ]
+      },
+      "maxItems": 6,
+      "description": "Every remedy the client has tried, each once; none, said alone, for none. Empty: not answered."
+    },
+    "transplant_year": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1900,
+      "maximum": 2100,
+      "description": "With a transplant only, and no later than this year."
+    },
+    "skin_and_allergies": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 200
+    }
+  },
+  "required": [
+    "remedies",
+    "transplant_year",
+    "skin_and_allergies"
+  ],
+  "additionalProperties": false,
+  "description": "Health information the client told us: our records alone, never Zoho or a log."
+}
+```
+
+### HairProfileVersion
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The version's own ID, which a write names as based_on."
+    },
+    "recorded_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "fit": {
+      "$ref": "#/components/schemas/HairFitSpecRead"
+    },
+    "history": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/HairHistory"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Null where none was recorded."
+    },
+    "recorded_by": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "technician"
+              ]
+            },
+            "name": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "name"
+          ],
+          "additionalProperties": false,
+          "description": "The technician, by first name."
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "ops"
+              ]
+            },
+            "staff": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "staff"
+          ],
+          "additionalProperties": false,
+          "description": "The Access e-mail of the member of staff who corrected it."
+        }
+      ]
+    },
+    "visit": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "date": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Its day in India."
+            },
+            "type": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "consultation",
+                    "first_fit",
+                    "service",
+                    "replacement"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "date",
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The visit it was taken at; null for a correction."
+    }
+  },
+  "required": [
+    "id",
+    "recorded_at",
+    "fit",
+    "history",
+    "recorded_by",
+    "visit"
+  ],
+  "additionalProperties": false
+}
+```
+
+### HairProfileCorrection
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "fit": {
+      "$ref": "#/components/schemas/HairFitSpec"
+    },
+    "history": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/HairHistory"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "based_on": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The id of the version the form started from: the latest as it was read; null where there was none."
+    }
+  },
+  "required": [
+    "fit",
+    "history",
+    "based_on"
+  ],
+  "additionalProperties": false,
+  "description": "The whole profile as it now stands, sent as a new version."
 }
 ```
 
@@ -6121,7 +7189,8 @@ Who Access let through, and where signing out goes
             "enum": [
               "prepaid",
               "credit",
-              "free"
+              "free",
+              "at_visit"
             ],
             "description": "Never an amount: prepaid, credit, or free."
           },
@@ -6341,7 +7410,8 @@ Who Access let through, and where signing out goes
       "enum": [
         "prepaid",
         "credit",
-        "free"
+        "free",
+        "at_visit"
       ],
       "description": "Never an amount: prepaid, credit, or free."
     },
@@ -7553,6 +8623,7 @@ Who Access let through, and where signing out goes
               "erasure_request",
               "grievance",
               "draft_invoice",
+              "payment_owed",
               "erasure_unfinished"
             ]
           },
@@ -8051,7 +9122,8 @@ Who Access let through, and where signing out goes
         "payment_hold",
         "fsm_retry",
         "technician_work",
-        "booking_days"
+        "booking_days",
+        "referral_reward"
       ]
     },
     "title": {
@@ -8222,7 +9294,8 @@ Who Access let through, and where signing out goes
         "payment_hold",
         "fsm_retry",
         "technician_work",
-        "booking_days"
+        "booking_days",
+        "referral_reward"
       ]
     },
     "title": {
@@ -10201,6 +11274,343 @@ Who Access let through, and where signing out goes
   "required": [
     "signed_in_as",
     "sign_out"
+  ],
+  "additionalProperties": false
+}
+```
+
+### DiscountCodes
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "today": {
+      "type": "string",
+      "format": "date",
+      "description": "India's date, the first a code may expire on."
+    },
+    "batch_most": {
+      "type": "integer",
+      "description": "The most codes one press generates."
+    },
+    "listed_most": {
+      "type": "integer",
+      "description": "The most codes the list shows, the latest made first."
+    },
+    "codes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/DiscountCode"
+      }
+    }
+  },
+  "required": [
+    "today",
+    "batch_most",
+    "listed_most",
+    "codes"
+  ],
+  "additionalProperties": false
+}
+```
+
+### DiscountCode
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "code": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "percent",
+        "amount"
+      ]
+    },
+    "value": {
+      "type": "integer",
+      "description": "Per cent for a percentage; paise before GST for an amount."
+    },
+    "cap": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The most a percentage takes off, in paise before GST; null for none."
+    },
+    "covers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "first_fit",
+          "service",
+          "replacement"
+        ]
+      },
+      "description": "The kinds of visit it takes money off."
+    },
+    "expires_on": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The last day in India it may be entered; null for no end."
+    },
+    "max_uses": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "How many bookings it may be on; null for no limit."
+    },
+    "once_per_client": {
+      "type": "boolean"
+    },
+    "batch_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The codes generated with it in one press; null for one made alone."
+    },
+    "created_by": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "switched_off": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "by": {
+              "type": "string"
+            },
+            "at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          "required": [
+            "by",
+            "at"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Who switched it off and when; null while it is on."
+    },
+    "uses": {
+      "type": "integer",
+      "description": "The bookings it stands on."
+    },
+    "given": {
+      "type": "integer",
+      "description": "What it has taken off those bookings, in paise before GST, as far as their prices are known."
+    }
+  },
+  "required": [
+    "id",
+    "code",
+    "kind",
+    "value",
+    "cap",
+    "covers",
+    "expires_on",
+    "max_uses",
+    "once_per_client",
+    "batch_id",
+    "created_by",
+    "created_at",
+    "switched_off",
+    "uses",
+    "given"
+  ],
+  "additionalProperties": false
+}
+```
+
+### DiscountCodesMade
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "codes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "The codes made, in capitals."
+    }
+  },
+  "required": [
+    "codes"
+  ],
+  "additionalProperties": false
+}
+```
+
+### DiscountCodesNew
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "maxLength": 40,
+      "description": "A code ops typed, 4 to 16 letters and digits, none of I, L, O, 0 or 1; left out, each code is generated."
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100,
+      "description": "How many to generate, one if left out; more than one is a batch of single-use codes."
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "percent",
+        "amount"
+      ]
+    },
+    "value": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100000000,
+      "description": "Per cent, 1 to 100, for a percentage; paise before GST for an amount."
+    },
+    "cap": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000000
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A percentage's most, in paise before GST; none if left out."
+    },
+    "covers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "first_fit",
+          "service",
+          "replacement"
+        ]
+      },
+      "minItems": 1,
+      "maxItems": 3
+    },
+    "expires_on": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The last day in India it may be entered, today or later; no end if left out."
+    },
+    "max_uses": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "How many bookings it may be on; no limit if left out. A batch's codes are 1 each."
+    },
+    "once_per_client": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "kind",
+    "value",
+    "covers",
+    "once_per_client"
+  ],
+  "additionalProperties": false
+}
+```
+
+### VisitDiscountCode
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "amount_off": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "In paise before GST; null until the visit's price is known, as a one visit's is."
+    },
+    "given_by": {
+      "type": "string",
+      "enum": [
+        "client",
+        "technician",
+        "ops"
+      ]
+    }
+  },
+  "required": [
+    "code",
+    "amount_off",
+    "given_by"
   ],
   "additionalProperties": false
 }

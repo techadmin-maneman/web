@@ -7,18 +7,22 @@
 // (src/domain/next-visit.ts); and the referral, waitlist and launch messages,
 // each composed where its subject lives.
 //
-// Skipped, never sent: messaging off, a person erased, a number outside the
-// staging allowlist, or the daily cap reached. A transient failure is retried
-// three times; then the message fails and an alert names it.
+// Skipped, never sent: messaging off, a person erased, an automatic kind to a
+// number outside the staging allowlist (a kind that answers the person who
+// just acted reaches any number there, ADR 0097) or a test record one of our
+// own scripts made off the allowlist regardless of kind, or the daily cap
+// reached. A transient failure is retried three times; then the message
+// fails and an alert names it.
 
 import { z } from "zod";
 import { PUBLIC_ORIGIN } from "../config/environments.ts";
+import { messageClass } from "../config/message-templates.ts";
 import { MAX_SEND_ATTEMPTS } from "../config/pipeline.ts";
-import { onAllowlist } from "../config/settings.ts";
+import { onAllowlist, type MessagingSettings } from "../config/settings.ts";
 import { RESULT_LINK_MESSAGE_TTL_MS } from "../config/tryon.ts";
 import type { Dependencies } from "../dependencies.ts";
 import type { StaticConfig } from "../guard.ts";
-import { takeOne } from "../domain/rate-limit.ts";
+import { takeOne, type Limit } from "../domain/rate-limit.ts";
 import { saltedHash } from "../lib/hash.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { signToken } from "../lib/signed-token.ts";
@@ -28,6 +32,7 @@ import { readOpsInputs } from "../domain/ops-settings.ts";
 import { composeFriendCredited, composeFriendFitted, composeReferralRejected } from "../domain/referral-grants.ts";
 import { composeLaunchAlert, composeWaitlistConfirmation } from "../domain/waitlist.ts";
 import { composeVisitMessage, VISIT_MESSAGE_KINDS, type VisitMessageKind } from "../domain/visit-messages.ts";
+import { isStagingTestRecord } from "../policy/staging-test-records.ts";
 import { scrubString, type Logger } from "../log.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
 
@@ -87,21 +92,41 @@ type Content =
 const isVisitKind = (kind: string): kind is VisitMessageKind =>
   (VISIT_MESSAGE_KINDS as readonly string[]).includes(kind);
 
+/**
+ * Whether staging's allowlist should hold this message back: an automatic kind (ADR 0097), or one about a record
+ * our own scripts made, whatever its kind (isStagingTestRecord, src/policy/staging-test-records.ts). The try-on's
+ * gate asks it too, since a try-on whose look would be held back does not run (ADR 0104).
+ */
+export const heldBackByAllowlist = (
+  messaging: MessagingSettings,
+  row: Pick<MessageRow, "mobile_e164" | "name" | "kind">,
+): boolean =>
+  (messageClass(row.kind) === "automatic" || isStagingTestRecord(row.name)) && !onAllowlist(messaging, row.mobile_e164);
+
+/** The daily cap on try-on results sent to one number, which the gate checks before a look is made (ADR 0104). */
+export async function resultMessageCap(
+  settings: Pick<StaticConfig["settings"], "ipHashSalt" | "tryon">,
+  mobileE164: string,
+  now: Date,
+): Promise<Limit> {
+  return {
+    scope: "message:result:mobile",
+    key: await saltedHash(settings.ipHashSalt, `mobile:${mobileE164}`),
+    window: indiaDate(now),
+    limit: settings.tryon.resultMessageMobileDailyLimit,
+  };
+}
+
 /** The try-on result: the person's result image, within the daily cap on result messages to one number. */
 async function resultContent(db: D1Database, config: StaticConfig, row: MessageRow, now: Date): Promise<Content> {
-  const { messaging, tryon, ipHashSalt } = config.settings;
+  const { messaging, tryon } = config.settings;
   const job = await db
     .prepare("SELECT result_key, state FROM tryon_jobs WHERE id = ?1")
     .bind(row.subject_id)
     .first<{ result_key: string | null; state: string }>();
   if (job?.state !== "ready" || job.result_key === null) return { skip: "no result to send" };
   if (row.attempts === 0) {
-    const withinCap = await takeOne(db, {
-      scope: "message:result:mobile",
-      key: await saltedHash(ipHashSalt, `mobile:${row.mobile_e164}`),
-      window: indiaDate(now),
-      limit: tryon.resultMessageMobileDailyLimit,
-    });
+    const withinCap = await takeOne(db, await resultMessageCap(config.settings, row.mobile_e164, now));
     if (!withinCap) return { skip: "daily message limit reached" };
   }
   const resultKey = job.result_key;
@@ -173,7 +198,7 @@ export async function sendMessage(
 
   if (row.erased_at !== null) return skip("person erased");
   if (!messaging.enabled) return skip("messaging is off");
-  if (!onAllowlist(messaging, row.mobile_e164)) return skip("number not on the allowlist");
+  if (heldBackByAllowlist(messaging, row)) return skip("number not on the allowlist");
   const content = await contentOf(db, config, row, now);
   if ("skip" in content) return skip(content.skip);
 

@@ -164,6 +164,34 @@ describe("GET /api/r/:code", () => {
   });
 });
 
+// The owner's ruling of 1 October 2026 (docs/decisions/0107-referral-rewards-in-the-console.md): the site's words
+// and the app's read what ops set, never a figure of their own.
+describe("what a referral earns, for the pages that say it", () => {
+  const unequal = { referrer_visits: 2, friend_visits: 0, valid_days: 90 };
+  const setReward = () =>
+    env.DB.prepare(
+      "INSERT INTO ops_settings (name, value, set_by, set_at) VALUES ('referral_reward', ?1, 'ops@localhost', ?2)",
+    )
+      .bind(JSON.stringify(unequal), NOW.toISOString())
+      .run();
+
+  it("is answered on the site's host as ops set it, the committed figures until they do, kept a minute", async () => {
+    const answer = await request(site(), "/api/referral-reward");
+    expect(answer.headers.get("Cache-Control")).toBe("public, max-age=60");
+    expect(await answer.json()).toEqual({ referrer_visits: 3, friend_visits: 3, valid_days: 365 });
+    await setReward();
+    expect(await (await request(site(), "/api/referral-reward")).json()).toEqual(unequal);
+    expect((await request(client(), "/api/referral-reward")).status).toBe(404);
+  });
+
+  it("reaches the app with the Home card, for a lead's Refer tab as for a fitted client's", async () => {
+    await setReward();
+    const cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: REFERRER, deviceLabel: null, now: NOW })}`;
+    const me = await (await request(client(), "/api/me", { headers: { Cookie: cookie } })).json();
+    expect(me).toMatchObject({ state: "nothing_booked", referral_reward: unequal });
+  });
+});
+
 describe("GET /api/pincodes/:pin", () => {
   it("says whether we come there, and refuses what is not an Indian pincode", async () => {
     await pincode("122018", "Gurgaon South City II", true);
@@ -204,7 +232,7 @@ describe("POST /api/r/:code/consultation", () => {
       credits: true,
       invite: "valid",
       address: "saved",
-      first_fit: false,
+      one_visit: false,
     });
     expect(queue.sent).toEqual([{ hold_id: expect.any(String) as string, request_id: expect.any(String) as string }]);
     const friend = await env.DB.prepare(
@@ -417,7 +445,7 @@ describe("POST /api/r/:code/consultation", () => {
       credits: true,
       invite: "valid",
       address: "saved",
-      first_fit: false,
+      one_visit: false,
     });
     // Nothing is held and FSM is not told; the lead and the invite still stand.
     expect(fsm.sent).toEqual([]);
@@ -438,8 +466,9 @@ describe("POST /api/r/:code/consultation", () => {
     });
   });
 
-  // An invited friend may ask for the first fit to follow as well, as the site's own form may (ADR 0086).
-  it("books the consultation with the first fit asked for, which the app offers once the consultation is done", async () => {
+  // An invited friend may book the consultation and fit in one visit, as the site's own form may (ADR 0105); the
+  // first fit to follow, which the form asked for until the owner's ruling of 1 October 2026, is gone with it.
+  it("books the consultation and fit in one visit, with the invite's credits, and nothing paid", async () => {
     await pincode("122018", "Gurgaon South City II", true);
     const code = await codeOf();
     const answer = await request(
@@ -452,17 +481,18 @@ describe("POST /api/r/:code/consultation", () => {
         window: "morning",
         consent: true,
         address: ADDRESS,
-        first_fit: { window: "morning" },
+        one_visit: true,
       }),
       { FSM_QUEUE: fakeQueue() },
     );
     expect(answer.status).toBe(201);
-    expect(await answer.json()).toMatchObject({ state: "booked", credits: true, first_fit: true });
-    const asked = await env.DB.prepare(
-      `SELECT r.preferred_window FROM first_fit_requests r JOIN people p ON p.id = r.person_id
+    expect(await answer.json()).toMatchObject({ state: "booked", credits: true, one_visit: true });
+    const held = await env.DB.prepare(
+      `SELECT h.type, h.amount, h.one_visit FROM slot_holds h JOIN people p ON p.id = h.person_id
        WHERE p.mobile_e164 = '+919810000002'`,
     ).first();
-    expect(asked).toEqual({ preferred_window: "morning" });
+    expect(held).toEqual({ type: "first_fit", amount: 0, one_visit: 1 });
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM first_fit_requests").first()).toEqual({ n: 0 });
   });
 });
 

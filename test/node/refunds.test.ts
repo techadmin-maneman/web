@@ -9,8 +9,11 @@ const ASKED = { amount: 50_000, notes: { appointment_id: "visit-1" }, receipt: "
 /** Razorpay answering each ask in turn: a refund's ID, a refusal, or no answer. */
 function razorpay(...answers: ("made" | "made before" | "refused" | "silent")[]) {
   const asked: string[] = [];
+  const notAsked = () => Promise.reject(new Error("not asked"));
   const payments: PaymentsProvider = {
-    createOrder: () => Promise.reject(new Error("not asked")),
+    createOrder: notAsked,
+    createPaymentLink: notAsked,
+    findPaymentLink: notAsked,
     refund: (_paymentId, refund) => {
       asked.push(refund.receipt);
       const answer = answers[asked.length - 1];

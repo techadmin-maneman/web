@@ -93,20 +93,6 @@ export async function failJob(
   return (changed?.results.length ?? 0) > 0;
 }
 
-export interface SessionRow {
-  id: string;
-  person_id: string;
-  expires_at: string;
-}
-
-/** A session that exists and has not expired, or null. */
-export function loadSession(db: D1Database, sessionId: string, now: Date): Promise<SessionRow | null> {
-  return db
-    .prepare("SELECT id, person_id, expires_at FROM tryon_sessions WHERE id = ?1 AND expires_at > ?2")
-    .bind(sessionId, now.toISOString())
-    .first<SessionRow>();
-}
-
 export function recordEvent(
   db: D1Database,
   name: string,

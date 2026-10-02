@@ -29,6 +29,7 @@ import { CloseOut } from "./steps/CloseOut.tsx";
 import { Consumables } from "./steps/Consumables.tsx";
 import { Outcome } from "./steps/Outcome.tsx";
 import { Piece } from "./steps/Piece.tsx";
+import { Profile } from "./steps/Profile.tsx";
 import { enrolled, enrolledAt, keepMe, keptMe } from "./store/device.ts";
 import { onStorageFull, wipe } from "./store/db.ts";
 import { replay } from "./store/outbox.ts";
@@ -64,6 +65,8 @@ function pageFor(route: Route) {
           return <Consumables id={route.id} />;
         case "piece":
           return <Piece id={route.id} />;
+        case "profile":
+          return <Profile id={route.id} />;
         case "outcome":
           return <Outcome id={route.id} />;
       }

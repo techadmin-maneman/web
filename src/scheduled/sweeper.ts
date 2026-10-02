@@ -51,6 +51,12 @@ const DOWNLOAD_RETRY_LATE_MS = HOUR_MS;
 const DOWNLOAD_EARLY_ATTEMPTS = DOWNLOAD_QUEUE_RETRIES + 3;
 /** Most rows handled per kind per run; the next run takes the rest. */
 const BATCH_LIMIT = 100;
+/**
+ * Most looks past their day expired a run. Keeping a client's on its day costs about eight calls to D1 and R2
+ * (src/domain/kept-try-ons.ts), and a run may make 1,000 such calls in all (src/lib/call-budget.ts): 40 of them take
+ * about 320, and the next run, five minutes on, takes the rest.
+ */
+const EXPIRY_BATCH = 40;
 const IDEMPOTENCY_TTL_MS = DAY_MS;
 /** Rate-limit windows are at most a day; keep two more for inspection. */
 const COUNTER_RETENTION_DAYS = 3;
@@ -435,13 +441,23 @@ async function expireJobs(env: SweepEnv, now: Date): Promise<{ expired: number; 
       `SELECT id, created_at, person_id, photo_consent_version, state, result_key, expires_at, kept_at, copy_key, kept_look_key
        FROM tryon_jobs WHERE state = 'ready' AND expires_at < ?1 ORDER BY created_at LIMIT ?2`,
     )
-    .bind(now.toISOString(), BATCH_LIMIT)
+    .bind(now.toISOString(), EXPIRY_BATCH)
     .all<ExpiringTryOn>();
   const kept = await keepOrLetGo(env, pastExpiry, now);
   const results = pastExpiry.flatMap((row) => (row.result_key === null ? [] : [row.result_key]));
   if (results.length > 0) await env.RESULTS.delete(results);
 
-  const [expiredResults, abandonedUploads] = await db.batch([
+  const abandonedBefore = new Date(now.getTime() - PHOTO_RETENTION_MS).toISOString();
+  const [, expiredResults, abandonedUploads] = await db.batch([
+    // The gate is claimed before the render (ADR 0104), so a visitor who leaves between the two leaves a message
+    // waiting for a look never made. It is skipped with its job, in the same batch, before the job's state changes.
+    db
+      .prepare(
+        `UPDATE outbound_messages SET state = 'skipped', last_error = 'no look was made'
+         WHERE state = 'waiting' AND kind = 'tryon_result' AND subject_id IN (
+           SELECT id FROM tryon_jobs WHERE state = 'awaiting_upload' AND created_at < ?1)`,
+      )
+      .bind(abandonedBefore),
     db
       .prepare(
         "UPDATE tryon_jobs SET state = 'expired' WHERE id IN (SELECT value FROM json_each(?1)) AND state = 'ready' RETURNING id",
@@ -451,7 +467,7 @@ async function expireJobs(env: SweepEnv, now: Date): Promise<{ expired: number; 
       .prepare(
         "UPDATE tryon_jobs SET state = 'expired' WHERE state = 'awaiting_upload' AND created_at < ?1 RETURNING id",
       )
-      .bind(new Date(now.getTime() - PHOTO_RETENTION_MS).toISOString()),
+      .bind(abandonedBefore),
   ]);
   return {
     expired: (expiredResults?.results.length ?? 0) + (abandonedUploads?.results.length ?? 0),

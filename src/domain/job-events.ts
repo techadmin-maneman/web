@@ -96,7 +96,7 @@ export async function landJobEvent(db: D1Database, input: EventInput): Promise<L
 
   const done = await kindsLanded(db, input.job.id);
   if (isNoShow(input.kind, input.body) && done.has("start")) return { kind: "already_started" };
-  const needs = stepBefore(input.kind, input.job.type, done, input.body);
+  const needs = stepBefore(input.kind, input.job.type, done, input.body, input.job.oneVisit !== null);
   if (needs !== null) return { kind: "out_of_order", needs };
 
   const written = await record(db, input, { superseded: false });
@@ -172,7 +172,8 @@ async function movedTo(db: D1Database, job: WorkableJob): Promise<MovedTo | null
   return technician === "" ? null : { technician, at: row.moved_at };
 }
 
-async function kindsLanded(db: D1Database, appointmentId: string): Promise<Set<string>> {
+/** The kinds of event a job holds, superseded ones aside. */
+export async function kindsLanded(db: D1Database, appointmentId: string): Promise<Set<string>> {
   const { results } = await db
     .prepare("SELECT kind FROM job_events WHERE appointment_id = ?1 AND superseded = 0")
     .bind(appointmentId)

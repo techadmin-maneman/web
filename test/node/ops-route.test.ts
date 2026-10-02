@@ -37,6 +37,7 @@ describe("the ops console's routes", () => {
     expect(routeOf(settingsPath("area"))).toEqual({ page: "settings", tab: "area" });
     expect(routeOf("/settings/consumables")).toEqual({ page: "settings", tab: "consumables" });
     expect(routeOf("/settings/job-sheet")).toEqual({ page: "settings", tab: "job-sheet" });
+    expect(routeOf(settingsPath("discount-codes"))).toEqual({ page: "settings", tab: "discount-codes" });
     expect(routeOf("/stock")).toEqual({ page: "stock" });
     expect(routeOf("/clients")).toEqual({ page: "clients", clientId: null, tab: "pieces" });
     expect(routeOf(`/clients/${CLIENT}/photos`)).toEqual({ page: "clients", clientId: CLIENT, tab: "photos" });

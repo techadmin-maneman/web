@@ -145,6 +145,26 @@ export const SETTINGS = {
       set_by: null,
       set_at: null,
     },
+    {
+      name: "referral_reward",
+      kind: "number",
+      title: "What a referral earns",
+      note: "The free service visits the client who sent an invite gets, and those their friend gets.",
+      unit: "service visits",
+      min: 0,
+      max: 1095,
+      keys: ["referrer_visits", "friend_visits", "valid_days"],
+      bounds: {
+        referrer_visits: { min: 0, max: 12, unit: "service visits" },
+        friend_visits: { min: 0, max: 12, unit: "service visits" },
+        valid_days: { min: 30, max: 1095, unit: "days" },
+      },
+      value: { referrer_visits: 3, friend_visits: 3, valid_days: 365 },
+      default: { referrer_visits: 3, friend_visits: 3, valid_days: 365 },
+      source: "src/policy/referral-reward.ts",
+      set_by: null,
+      set_at: null,
+    },
   ],
 } satisfies OpsReply<"/api/settings">;
 
@@ -161,6 +181,52 @@ export const BLACKOUTS = {
     { date: "2027-11-15", reason: "Staff training", set_by: null, set_at: null, booked: 0 },
   ],
 } satisfies OpsReply<"/api/blackouts">;
+
+/**
+ * Discount codes (docs/decisions/0108-discount-codes.md): a percentage with a cap, on first fits and service visits,
+ * used three times; and an amount off replacements, switched off, its one use kept.
+ */
+export const DISCOUNT_CODES = {
+  today: "2027-09-21",
+  batch_most: 100,
+  listed_most: 200,
+  codes: [
+    {
+      id: "51000000-0000-4000-8000-000000000001",
+      code: "WEDDNG25",
+      kind: "percent",
+      value: 25,
+      cap: 500_000,
+      covers: ["first_fit", "service"],
+      expires_on: "2027-12-31",
+      max_uses: 50,
+      once_per_client: true,
+      batch_id: null,
+      created_by: "ops@maneman.in",
+      created_at: "2027-09-01T06:00:00.000Z",
+      switched_off: null,
+      uses: 3,
+      given: 1_200_000,
+    },
+    {
+      id: "51000000-0000-4000-8000-000000000002",
+      code: "RPLC2K",
+      kind: "amount",
+      value: 200_000,
+      cap: null,
+      covers: ["replacement"],
+      expires_on: null,
+      max_uses: null,
+      once_per_client: false,
+      batch_id: null,
+      created_by: "ops@maneman.in",
+      created_at: "2027-08-01T06:00:00.000Z",
+      switched_off: { by: "owner@maneman.in", at: "2027-09-10T06:00:00.000Z" },
+      uses: 1,
+      given: 200_000,
+    },
+  ],
+} satisfies OpsReply<"/api/discount-codes">;
 
 /**
  * The services, kind by kind (docs/decisions/0085-services-ops-can-edit.md): each kind's standard service, a

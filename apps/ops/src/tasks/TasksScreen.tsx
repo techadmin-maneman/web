@@ -6,8 +6,9 @@
 // a moved visit whose client has not heard of it, a booking FSM refused, a visit left partly done, a
 // visit to come with no address, a job on its technician's day off, a client
 // past their next service with nothing booked, a first fit asked for and not
-// booked — so it leaves the list when that row is decided, on the section that
-// decides it, or when the client books (src/policy/tasks.ts).
+// booked, a one visit's payment still owed — so it leaves the list when that row
+// is decided, on the section that decides it, when the client books, or when
+// they pay (src/policy/tasks.ts).
 //
 // Each task leads to where it is done: the client's page, and the row in the
 // section that decides it. Each group's count is the whole queue's, and a group
@@ -21,6 +22,7 @@
 import { useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
+import { rupees } from "@maneman/web-kit/money";
 import { useRef, useState } from "react";
 import { api, type Task, type TaskGroup, type Tasks } from "../api.ts";
 import { whoami } from "../components/Account.tsx";
@@ -70,6 +72,7 @@ const CLIENT_TAB: Partial<Record<Group, ClientTab>> = {
   partial_visit: "visits",
   no_show_decision: "visits",
   draft_invoice: "payments",
+  payment_owed: "payments",
 };
 
 function decidedAt(group: Group, task: Task): string | null {
@@ -119,10 +122,13 @@ function subOf(group: Group, task: Task, now: Date): string {
   }
   if (group === "consultation_request") {
     // The day and the window, as the request recorded them: both are always there. Then the first fit, where the
-    // site's form asked for it too, and the window it was wanted in.
-    const [day = "", when = "", fit, fitIn] = task.detail?.split(" ") ?? [];
+    // site's form asked for it too, and the window it was wanted in; or the one visit, and its discount code.
+    const [day = "", when = "", plan, fitInOrCode] = task.detail?.split(" ") ?? [];
     const asked = copy.consultation_request(fullDate(indiaDate(day)), dispatch.windows[when] ?? when);
-    return fit === "first_fit" ? `${asked} ${copy.withFirstFit(fitWindow(fitIn))}` : asked;
+    if (plan === "one_visit") {
+      return `${asked} ${copy.withOneVisit}${fitInOrCode === undefined ? "" : copy.withCode(fitInOrCode)}`;
+    }
+    return plan === "first_fit" ? `${asked} ${copy.withFirstFit(fitWindow(fitInOrCode))}` : asked;
   }
   if (group === "first_fit_to_book") {
     // The consultation's start, and the window the fit was asked for in.
@@ -147,6 +153,12 @@ function subOf(group: Group, task: Task, now: Date): string {
   if (group === "referral_review") return SIGNALS[task.detail ?? ""] ?? copy.unknown;
   if (group === "no_show_decision") return task.detail === null ? copy.unknown : copy.no_show_decision(task.detail);
   if (group === "draft_invoice") return copy.draft_invoice(shortDate(indiaDate(task.since)));
+  if (group === "payment_owed") {
+    // Whether Razorpay sent the link, what it asks for in paise, and the product, by name.
+    const [sent = "", amount = "", ...product] = task.detail?.split(" ") ?? [];
+    if (amount === "") return tasks.unknown;
+    return copy.payment_owed(product.join(" "), rupees(Number(amount)), sent === "sent");
+  }
   if (group === "erasure_unfinished") return copy.erasure_unfinished(task.detail ?? tasks.unknown);
   if (group === "grievance") return copy.grievance;
   return group === "number_change" ? copy.number_change : copy.erasure_request;

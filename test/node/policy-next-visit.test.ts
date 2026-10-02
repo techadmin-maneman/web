@@ -19,7 +19,6 @@ import {
   RULES,
   serviceDue,
 } from "../../src/policy/next-visit.ts";
-import { RULES as SITE_RULES } from "../../src/policy/site-booking.ts";
 import { TASK_GROUPS, TASK_SLA_HOURS } from "../../src/policy/tasks.ts";
 
 /** Monday 21 September 2026, and the Tuesday after it. */
@@ -119,9 +118,10 @@ describe("the figures ops set", () => {
   });
 });
 
-describe("the first fit asked for on the site's form", () => {
-  it(SITE_RULES[1], () => {
-    // A request, in a window a first fit can start in: its two slots do not fit in the evening's.
+// The site's form no longer asks for a first fit to follow the consultation: the owner's ruling of 1 October 2026
+// put the consultation and fit in one visit in its place (src/policy/one-visit.ts). What a first fit can start in stands.
+describe("the first fit's windows", () => {
+  it("start in the morning or the afternoon, since its two slots do not fit in the evening's", () => {
     expect([...FIRST_FIT_WINDOWS]).toEqual(windowsFor("first_fit"));
     expect(windowsFor("first_fit")).not.toContain("evening");
     expect(windowsFor("replacement")).not.toContain("evening");

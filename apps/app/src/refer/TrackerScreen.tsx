@@ -1,6 +1,8 @@
 // Who has been fitted (boards F5 and F6): completed fits only, each a friend's first name and the month, with
-// what the client has earned and what is left. Whether an invite was opened is the friend's business, so it is
-// never shown here. Empty, it offers the invite (F6); the revoke of the client's own card sits at the foot.
+// what the client has earned and what is left. Each friend earned what a referral earned when they were fitted,
+// as ops had set it (docs/decisions/0107-referral-rewards-in-the-console.md), so the API gives each one's visits.
+// Whether an invite was opened is the friend's business, so it is never shown here. Empty, it offers the invite
+// (F6); the revoke of the client's own card sits at the foot.
 
 import { Button } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -10,11 +12,11 @@ import { api, type Refer } from "../api.ts";
 import { empty, refer } from "../content.ts";
 import { Shell } from "../home/Shell.tsx";
 import { EmptyState } from "../home/TabScreens.tsx";
-import { CREDITS_PER_REFERRAL } from "../lib/referral.ts";
 import { useSession } from "../session.ts";
 import { Loading } from "../states/Loading.tsx";
 import { PageFailed } from "../states/PageFailed.tsx";
 import { ShareButton } from "./ReferScreen.tsx";
+import { rewardOf, visitsFor } from "./reward.ts";
 import styles from "./refer.module.css";
 
 /** "Fitted Aug 2027", from the month the API gives as YYYY-MM. */
@@ -95,11 +97,12 @@ function RevokeCard({ onRevoked }: { onRevoked: () => void }) {
 /** Board F5: what the fits have earned, what is left, and each friend fitted. */
 function Friends({ state }: { state: Refer }) {
   const copy = refer.fitted;
+  const earned = state.fitted.reduce((sum, friend) => sum + visitsFor(friend), 0);
   return (
     <>
       <div className={styles.figures}>
         <p className={styles.figure}>
-          <span className={styles.figureCount}>{state.fitted.length * CREDITS_PER_REFERRAL}</span>
+          <span className={styles.figureCount}>{earned}</span>
           <span className={styles.figureWord}>{copy.earned}</span>
         </p>
         <p className={styles.figure}>
@@ -108,15 +111,18 @@ function Friends({ state }: { state: Refer }) {
         </p>
       </div>
       <ul className={styles.friends}>
-        {state.fitted.map((friend, index) => (
-          <li key={`${friend.first_name ?? ""}-${friend.month}-${String(index)}`} className={styles.friend}>
-            <div>
-              <p className={styles.friendName}>{friend.first_name ?? copy.unnamed}</p>
-              <p className={styles.friendWhen}>{copy.when(monthName(friend.month))}</p>
-            </div>
-            <p className={styles.friendEarned}>{copy.each(CREDITS_PER_REFERRAL)}</p>
-          </li>
-        ))}
+        {state.fitted.map((friend, index) => {
+          const visits = visitsFor(friend);
+          return (
+            <li key={`${friend.first_name ?? ""}-${friend.month}-${String(index)}`} className={styles.friend}>
+              <div>
+                <p className={styles.friendName}>{friend.first_name ?? copy.unnamed}</p>
+                <p className={styles.friendWhen}>{copy.when(monthName(friend.month))}</p>
+              </div>
+              {visits > 0 && <p className={styles.friendEarned}>{copy.each(visits)}</p>}
+            </li>
+          );
+        })}
       </ul>
       <p className={styles.only}>{copy.only}</p>
     </>
@@ -125,10 +131,11 @@ function Friends({ state }: { state: Refer }) {
 
 /** Board F6: nobody fitted yet, and the invite that would change that. */
 function Nobody({ state, onChanged }: { state: Refer; onChanged: () => void }) {
+  const { me } = useSession();
   return (
     <div className={styles.nobody}>
       <p className={styles.nobodyTitle}>{refer.fitted.none}</p>
-      <p className={styles.nobodyLine}>{refer.promise}</p>
+      <p className={styles.nobodyLine}>{refer.promise(rewardOf(me))}</p>
       <ShareButton state={state} onChanged={onChanged} small />
     </div>
   );
@@ -151,7 +158,7 @@ export function TrackerScreen() {
   const { me } = useSession();
   return (
     <Shell header={{ kind: "back", title: refer.fitted.title, to: "/refer", label: refer.fitted.back }} tab="/refer">
-      {me.state === "fitted" ? <Tracker /> : <EmptyState lines={empty.refer.lines} />}
+      {me.state === "fitted" ? <Tracker /> : <EmptyState lines={empty.refer.lines(rewardOf(me))} />}
     </Shell>
   );
 }

@@ -369,7 +369,7 @@ async function writeJobEvent(
 async function jobForFsm(db: D1Database, appointmentId: string): Promise<JobForFsm | null> {
   const row = await db
     .prepare(
-      `SELECT a.id, a.fsm_id, a.type, a.person_id, p.fsm_contact_id FROM appointments a
+      `SELECT a.id, a.fsm_id, a.type, a.one_visit, a.person_id, p.fsm_contact_id FROM appointments a
        LEFT JOIN people p ON p.id = a.person_id
        WHERE a.id = ?1 AND a.deleted_at IS NULL AND a.type IS NOT NULL`,
     )
@@ -378,6 +378,7 @@ async function jobForFsm(db: D1Database, appointmentId: string): Promise<JobForF
       id: string;
       fsm_id: string;
       type: VisitType;
+      one_visit: string | null;
       person_id: string | null;
       fsm_contact_id: string | null;
     }>();
@@ -387,6 +388,7 @@ async function jobForFsm(db: D1Database, appointmentId: string): Promise<JobForF
         id: row.id,
         fsmId: row.fsm_id,
         type: row.type,
+        oneVisit: row.one_visit !== null,
         personId: row.person_id,
         fsmContactId: row.fsm_contact_id,
       };

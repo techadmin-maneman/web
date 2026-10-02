@@ -107,6 +107,37 @@ describe("POST /api/tech/auth/otp", () => {
     expect(JSON.stringify(logs.lines())).not.toContain("9810000004");
   });
 
+  // Owner ruling, 30 September 2026 ("logins open, reminders fenced", ADR 0025 item 84; ADR 0097): a technician's
+  // code answers the phone that just asked for it, so it is never held to staging's allowlist.
+  it("sends a code to a technician's number off staging's allowlist", async () => {
+    tech = appFor("local", deps, { messaging: { ...LOCAL_SETTINGS.messaging, allowlist: ["+919810000099"] } }, "tech");
+    const { code } = await challengeFor("98100 00009");
+
+    expect(deps.sentCodes).toHaveLength(1);
+    expect(code).toMatch(/^\d{6}$/);
+  });
+
+  // A record one of our own scripts made stays fenced, whatever the ruling above frees (isStagingTestRecord,
+  // src/policy/staging-test-records.ts): e2e/tech-staging/seed.ts's invented technician is one of these.
+  it("holds back a code to a 'Staging test technician' record off the allowlist", async () => {
+    await env.DB.prepare(
+      `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, mobile_e164, updated_at, hand_written)
+       VALUES ('t-script', 'tech-proof-1', 'Staging test technician', 'ST', 1, 'Gurgaon', '+919810000050', ?1, 1)`,
+    )
+      .bind(NOW.toISOString())
+      .run();
+    tech = appFor("local", deps, { messaging: { ...LOCAL_SETTINGS.messaging, allowlist: ["+919810000099"] } }, "tech");
+    const logs = captureLogs();
+
+    const answer = await post("/api/tech/auth/otp", { mobile: "98100 00050", device_id: DEVICE });
+
+    expect(answer.status).toBe(202);
+    expect(deps.sentCodes).toEqual([]);
+    expect(logs.lines()).toContainEqual(
+      expect.objectContaining({ event: "login_code_not_sent", reason: "number not on the allowlist" }),
+    );
+  });
+
   it("reads FSM again for a number the mirror does not know, so a new technician need not wait", async () => {
     await challengeFor("98100 00007");
 

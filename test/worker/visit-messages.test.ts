@@ -248,6 +248,125 @@ describe("sending a visit message", () => {
     const row = await env.DB.prepare("SELECT state, last_error FROM outbound_messages").first();
     expect(row).toEqual({ state: "skipped", last_error: "no consent to WhatsApp about visits" });
   });
+
+  // Owner ruling, 30 September 2026 ("logins open, reminders fenced", ADR 0025 item 84; ADR 0097): a message that
+  // answers the client's own booking, move or cancel reaches any number on staging; a reminder, which nobody just
+  // asked for, still checks the allowlist.
+  describe("staging's allowlist, since ADR 0097", () => {
+    it("sends a booking confirmation off the allowlist, since it answers the client who booked", async () => {
+      await consent(true);
+      await visit();
+      await paid();
+      const message = visitMessage(env.DB, {
+        personId: PERSON,
+        appointmentId: VISIT,
+        kind: "payment_receipt",
+        now: NOW,
+      });
+      await message.statement.run();
+      const { provider, sent } = recordingProvider();
+      await sendMessage(
+        env.DB,
+        config({ allowlist: ["+919810000099"] }),
+        fakeDependencies({ messaging: provider }),
+        log,
+        message.id,
+      );
+      expect(sent).toHaveLength(1);
+    });
+
+    // A record one of our own scripts made stays fenced, whatever kind reaches everyone else (isStagingTestRecord,
+    // src/policy/staging-test-records.ts).
+    it("holds back a booking confirmation for a 'Staging test' record off the allowlist", async () => {
+      await consent(true);
+      await visit();
+      await paid();
+      await env.DB.prepare("UPDATE people SET name = 'Staging test' WHERE id = ?1").bind(PERSON).run();
+      const message = visitMessage(env.DB, {
+        personId: PERSON,
+        appointmentId: VISIT,
+        kind: "payment_receipt",
+        now: NOW,
+      });
+      await message.statement.run();
+      const { provider, sent } = recordingProvider();
+      await sendMessage(
+        env.DB,
+        config({ allowlist: ["+919810000099"] }),
+        fakeDependencies({ messaging: provider }),
+        log,
+        message.id,
+      );
+      expect(sent).toEqual([]);
+      const row = await env.DB.prepare("SELECT state, last_error FROM outbound_messages").first();
+      expect(row).toEqual({ state: "skipped", last_error: "number not on the allowlist" });
+    });
+
+    it("holds back a reminder off the allowlist, since nobody there just asked for it", async () => {
+      await consent(true);
+      await visit();
+      const message = visitMessage(env.DB, {
+        personId: PERSON,
+        appointmentId: VISIT,
+        kind: "visit_reminder",
+        now: NOW,
+      });
+      await message.statement.run();
+      const { provider, sent } = recordingProvider();
+      await sendMessage(
+        env.DB,
+        config({ allowlist: ["+919810000099"] }),
+        fakeDependencies({ messaging: provider }),
+        log,
+        message.id,
+      );
+      expect(sent).toEqual([]);
+      const row = await env.DB.prepare("SELECT state, last_error FROM outbound_messages").first();
+      expect(row).toEqual({ state: "skipped", last_error: "number not on the allowlist" });
+    });
+
+    it("sends both kinds everywhere once there is no allowlist, as in production", async () => {
+      await consent(true);
+      await visit();
+      await paid();
+      const receipt = visitMessage(env.DB, {
+        personId: PERSON,
+        appointmentId: VISIT,
+        kind: "payment_receipt",
+        now: NOW,
+      });
+      await receipt.statement.run();
+      const reminder = visitMessage(env.DB, {
+        personId: PERSON,
+        appointmentId: VISIT,
+        kind: "visit_reminder",
+        now: NOW,
+      });
+      await reminder.statement.run();
+      const { provider, sent } = recordingProvider();
+      const deps = fakeDependencies({ messaging: provider });
+      await sendMessage(env.DB, config(), deps, log, receipt.id);
+      await sendMessage(env.DB, config(), deps, log, reminder.id);
+      expect(sent).toHaveLength(2);
+    });
+
+    it("sends a 'Staging test' record's message too, once there is no allowlist, as in production", async () => {
+      await consent(true);
+      await visit();
+      await paid();
+      await env.DB.prepare("UPDATE people SET name = 'Staging test' WHERE id = ?1").bind(PERSON).run();
+      const message = visitMessage(env.DB, {
+        personId: PERSON,
+        appointmentId: VISIT,
+        kind: "payment_receipt",
+        now: NOW,
+      });
+      await message.statement.run();
+      const { provider, sent } = recordingProvider();
+      await sendMessage(env.DB, config(), fakeDependencies({ messaging: provider }), log, message.id);
+      expect(sent).toHaveLength(1);
+    });
+  });
 });
 
 describe("the day-before reminders", () => {
