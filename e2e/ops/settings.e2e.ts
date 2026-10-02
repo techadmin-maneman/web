@@ -54,13 +54,22 @@ const posted = (page: Page, path: string) =>
   page.waitForRequest((request) => request.url().endsWith(path) && request.method() === "POST");
 
 // The storage meter (docs/decisions/0093-the-storage-meter.md): one line above the tabs, which no board draws.
-test("says what the photographs and referral cards hold in R2, against their share", async ({ page }) => {
+test("says what the photographs and referral cards hold in R2, and the database against its limit", async ({
+  page,
+}) => {
   await open(page, "/settings", {
-    "GET /api/storage": json({ held_bytes: 1_240_000_000, share_bytes: 4e9, ceiling_bytes: 20e9 }),
+    "GET /api/storage": json({
+      held_bytes: 1_240_000_000,
+      share_bytes: 4e9,
+      ceiling_bytes: 20e9,
+      database_bytes: 212_000_000,
+      database_limit_bytes: 500e6,
+    }),
   });
   await expect(
     page.getByText("Photographs and referral cards hold 1.24 GB in R2, 31% of their 4 GB share."),
   ).toBeVisible();
+  await expect(page.getByText("The database holds 212 MB, 42% of the 500 MB the free plan allows.")).toBeVisible();
 });
 
 test.describe("the rules", () => {
