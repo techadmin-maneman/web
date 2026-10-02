@@ -22,6 +22,7 @@ export type TryOnAvailability = Schemas["TryOnAvailability"];
 export type Look = Schemas["Look"];
 export type Invite = Schemas["Invite"];
 export type PincodeAnswer = Schemas["PincodeAnswer"];
+export type OpenWindows = Schemas["OpenWindows"];
 export type PublishedPrices = Schemas["PublishedPrices"];
 export type ReferralReward = Schemas["ReferralReward"];
 export type ReferralConsultation = Schemas["ReferralConsultation"];
@@ -140,6 +141,16 @@ export function fetchReferralReward(): Promise<Answer<ReferralReward>> {
 
 export function checkPincode(pincode: string): Promise<Answer<PincodeAnswer>> {
   return call<PincodeAnswer>(`/api/pincodes/${pincode}`);
+}
+
+/** The form's days and windows, open or full. `fresh` passes over the minute the browser may keep the last answer. */
+export function fetchOpenWindows(
+  pincode: string,
+  plan: OpenWindows["plan"],
+  fresh: boolean,
+): Promise<Answer<OpenWindows>> {
+  const query = new URLSearchParams({ pincode, plan });
+  return call<OpenWindows>(`/api/availability/public?${query.toString()}`, fresh ? { cache: "no-cache" } : undefined);
 }
 
 export function bookConsultation(

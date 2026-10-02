@@ -94,6 +94,65 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/availability/public": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The days and windows the booking form can book, open or full. Cacheable for a minute. */
+        get: {
+            parameters: {
+                query: {
+                    /** @description A six-digit Indian pincode. */
+                    pincode: string;
+                    /** @description The consultation alone, or the consultation and fit in one visit. */
+                    plan: "consultation" | "one_visit";
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Each day's three windows */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OpenWindows"];
+                    };
+                };
+                /** @description invalid_request: fields names the pincode or the plan */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_bookable: the pincode is not served */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/consultation": {
         parameters: {
             query?: never;
@@ -1653,6 +1712,21 @@ export interface components {
             name: string;
             minutes: number;
             price: components["schemas"]["Price"];
+        };
+        OpenWindows: {
+            /** @enum {string} */
+            plan: "consultation" | "one_visit";
+            /** @description The days the form offers: 14, from tomorrow in India. */
+            days: {
+                /** Format: date */
+                date: string;
+                /** @description true where booking that window now would be taken; false where it is full. */
+                windows: {
+                    morning: boolean;
+                    afternoon: boolean;
+                    evening: boolean;
+                };
+            }[];
         };
         Consultation: {
             /**

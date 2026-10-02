@@ -5,6 +5,7 @@ import { addressToSend, emptyAddress, missingParts } from "../../site/src/lib/ad
 import { attributionFrom } from "../../site/src/lib/attribution.ts";
 import { consultationCalendar } from "../../site/src/lib/calendar.ts";
 import { keyPerRequest } from "../../site/src/lib/idempotency.ts";
+import { anyOpen, chosenSlot, dayOpen, isOpen, type OpenDays } from "../../site/src/lib/open-windows.ts";
 
 // FEO-21: a key that changed on every press protected nothing.
 describe("idempotency keys", () => {
@@ -97,6 +98,74 @@ describe("the address a consultation is at", () => {
       city: "Gurgaon",
       pincode: "122018",
       access_notes: null,
+    });
+  });
+});
+
+// BK-26: every day and window was drawn open, so a full one failed only after the whole form was filled in.
+describe("the days and windows open", () => {
+  const OPEN = { morning: true, afternoon: true, evening: true };
+  const SHUT = { morning: false, afternoon: false, evening: false };
+  const days: OpenDays = [
+    { date: "2026-10-03", windows: SHUT },
+    { date: "2026-10-04", windows: { morning: false, afternoon: true, evening: true } },
+    { date: "2026-10-05", windows: OPEN },
+  ];
+  const ALL = ["morning", "afternoon", "evening"] as const;
+  const ONE_VISIT = ["morning", "afternoon"] as const;
+
+  it("draws everything open until the answer comes, and nothing on a day it does not list", () => {
+    expect(isOpen(null, "2026-10-03", "morning")).toBe(true);
+    expect(anyOpen(null, ALL)).toBe(true);
+    expect(isOpen(days, "2026-10-04", "morning")).toBe(false);
+    expect(isOpen(days, "2026-10-04", "evening")).toBe(true);
+    expect(isOpen(days, "2026-10-20", "evening")).toBe(false);
+  });
+
+  it("closes a day with none of the plan's windows open", () => {
+    expect(dayOpen(days, "2026-10-03", ALL)).toBe(false);
+    expect(dayOpen(days, "2026-10-04", ALL)).toBe(true);
+    const eveningsOnly: OpenDays = [
+      { date: "2026-10-04", windows: { morning: false, afternoon: false, evening: true } },
+    ];
+    expect(dayOpen(eveningsOnly, "2026-10-04", ONE_VISIT)).toBe(false);
+    expect(anyOpen(eveningsOnly, ONE_VISIT)).toBe(false);
+  });
+
+  it("keeps the visitor's pick while it is open", () => {
+    const picked = { date: "2026-10-04", window: "evening" } as const;
+    expect(chosenSlot(days, ALL, picked)).toEqual(picked);
+    expect(chosenSlot(null, ALL, picked)).toEqual(picked);
+  });
+
+  it("moves a full pick to the day's first open window, else to the first day with one", () => {
+    expect(chosenSlot(days, ALL, { date: "2026-10-04", window: "morning" })).toEqual({
+      date: "2026-10-04",
+      window: "afternoon",
+    });
+    // The form's first pick, tomorrow morning, on a day booked full.
+    expect(chosenSlot(days, ALL, { date: "2026-10-03", window: "morning" })).toEqual({
+      date: "2026-10-04",
+      window: "afternoon",
+    });
+  });
+
+  it("moves an evening pick to a window one visit can start in, before the answer and after it", () => {
+    expect(chosenSlot(null, ONE_VISIT, { date: "2026-10-05", window: "evening" })).toEqual({
+      date: "2026-10-05",
+      window: "morning",
+    });
+    expect(chosenSlot(days, ONE_VISIT, { date: "2026-10-04", window: "evening" })).toEqual({
+      date: "2026-10-04",
+      window: "afternoon",
+    });
+  });
+
+  it("leaves the pick where nothing is open at all", () => {
+    const full: OpenDays = [{ date: "2026-10-03", windows: SHUT }];
+    expect(chosenSlot(full, ALL, { date: "2026-10-03", window: "morning" })).toEqual({
+      date: "2026-10-03",
+      window: "morning",
     });
   });
 });
