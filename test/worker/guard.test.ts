@@ -330,13 +330,15 @@ describe("validateStaticConfig: try-on and messaging", () => {
 // docs/decisions/0073-prices-from-the-price-book.md: staging's FSM is the owner's real org and its price book holds
 // placeholders, so a price typed into staging's console must never reprice the real catalogue.
 describe("the catalogue push", () => {
-  it("is never on in staging, which shares the owner's real FSM org", () => {
-    expect(FSM_CATALOGUE_PUSH.staging).toBe(false);
+  // One Zoho org serves staging and production, so only one console may write its catalogue at a time: staging
+  // until go-live, then production (docs/go-live.md).
+  it("is on in exactly one environment that shares the org", () => {
+    expect(FSM_CATALOGUE_PUSH.staging && FSM_CATALOGUE_PUSH.production).toBe(false);
   });
 
   it("is each environment's own, as the settings read it", () => {
     expect(validateStaticConfig(production).settings.fsmCataloguePush).toBe(FSM_CATALOGUE_PUSH.production);
-    expect(validateStaticConfig(stagingBase).settings.fsmCataloguePush).toBe(false);
+    expect(validateStaticConfig(stagingBase).settings.fsmCataloguePush).toBe(FSM_CATALOGUE_PUSH.staging);
   });
 });
 

@@ -12,9 +12,7 @@
 // and both figures.
 //
 // The push makes an item FSM does not have and writes the console's name and the book's price over each that
-// differs, and only while the owner has FSM_CATALOGUE_PUSH switched on. Staging's FSM is the owner's real org and
-// its book holds placeholders (ADR 0025, "The Zoho org"), so the push is off everywhere until the owner switches it
-// on in production. A change in the console that FSM should follow today queues it at once; a price from a later
+// differs, and only where FSM_CATALOGUE_PUSH is on (one environment at a time, as they share one Zoho org). A change in the console that FSM should follow today queues it at once; a price from a later
 // day is found by the check on its day, which queues it then. It is tried once: the next hour's check is its retry,
 // and tells ops if FSM still differs.
 //
