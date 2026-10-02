@@ -25,7 +25,7 @@ import { VISIT_TYPE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaIso } from "../lib/india-time.ts";
 import { STATUS_AFTER, type AppointmentTransition, type FsmProvider } from "../providers/fsm.ts";
 import { allConsumables } from "./consumables.ts";
-import { statusOf } from "./fsm-mirror.ts";
+import { statusOf } from "./visit-status.ts";
 import { eventsOf, type JobEvent } from "./job-events.ts";
 import { checklistOf, jobSheet } from "./job-sheet-settings.ts";
 import { recordFittedPiece, recordFailedPiece } from "./pieces.ts";

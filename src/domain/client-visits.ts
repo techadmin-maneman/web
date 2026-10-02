@@ -6,7 +6,7 @@
 import { STANDARD_TIER, type VisitType } from "../config/visit-types.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { signToken } from "../lib/signed-token.ts";
-import type { AppointmentStatus, VisitOutcome } from "./fsm-mirror.ts";
+import type { AppointmentStatus, VisitOutcome } from "./visit-status.ts";
 import { jobSheet } from "./job-sheet-settings.ts";
 import { noShowNotes, type NoShowNote } from "./no-shows.ts";
 import { priceOf } from "./price-book.ts";

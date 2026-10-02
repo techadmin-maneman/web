@@ -37,7 +37,7 @@ import { creditBalance } from "../domain/credits.ts";
 import { clientVisitCodes } from "../domain/discount-code-uses.ts";
 import { heldBookingsOf, type HeldBooking } from "../domain/held-bookings.ts";
 import { clientInviteOf } from "../domain/referrals.ts";
-import { VISIT_OUTCOMES } from "../domain/fsm-mirror.ts";
+import { VISIT_OUTCOMES } from "../domain/visit-status.ts";
 import { consentRecordsOf, currentAddress, type ConsentState, type SavedAddress } from "../domain/profile.ts";
 import { partialVisitsClosed } from "../domain/task-closures.ts";
 import { ANGLES, PHASES } from "../domain/visit-photos.ts";

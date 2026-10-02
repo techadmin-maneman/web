@@ -24,7 +24,7 @@ import {
 } from "../policy/discount-codes.ts";
 import type { OneVisitState } from "../policy/one-visit.ts";
 import { auditStatementIfStamped, auditStatementIfWritten, type AuditActor, type AuditEntry } from "./audit.ts";
-import { creditBalance } from "./credits.ts";
+import { spendableCredits } from "./credits.ts";
 import { CODE_COLUMNS, coversOf, standing, termsOf, type CodeRow } from "./discount-codes.ts";
 import { priceOf, type Price } from "./price-book.ts";
 
@@ -103,7 +103,7 @@ export async function checkCode(
     oncePerClient: code.once_per_client === 1,
     usedByClient: (counted?.theirs ?? 0) > 0,
   };
-  const credits = booking.onCredit ? 0 : (await creditBalance(db, personId, now)).visits;
+  const credits = booking.onCredit ? 0 : (await spendableCredits(db, personId, now)).visits;
   const onCredit = booking.onCredit || creditComesFirst(booking.type, credits);
   const refusal = codeRefusal(state, { ...booking, onCredit }, indiaDate(now));
   return refusal === null ? { ok: true, code } : { ok: false, reason: refusal };
