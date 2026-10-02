@@ -1731,7 +1731,7 @@ Request body:
 }
 ```
 
-**403**: access_required
+**403**: access_required, or not_permitted: changing a technician asks Operations MANAGE
 
 ```json
 {
@@ -2109,7 +2109,7 @@ Request body:
 }
 ```
 
-**403**: access_required
+**403**: access_required, or not_permitted: changing a technician asks Operations MANAGE
 
 ```json
 {
@@ -2145,7 +2145,7 @@ Switch a technician off: he is signed out at once, and his visits still to come 
 }
 ```
 
-**403**: access_required
+**403**: access_required, or not_permitted: changing a technician asks Operations MANAGE
 
 ```json
 {
@@ -2193,7 +2193,7 @@ Switch a technician back on, so he can sign in again
 }
 ```
 
-**403**: access_required
+**403**: access_required, or not_permitted: changing a technician asks Operations MANAGE
 
 ```json
 {

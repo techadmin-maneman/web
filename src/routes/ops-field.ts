@@ -169,10 +169,18 @@ const TechniciansSchema = z
     switched_off: z
       .array(
         z
-          .object({ id: z.uuid(), name: z.string(), zone: z.union([z.string(), z.null()]), mobile: MOBILE, editable: EDITABLE })
+          .object({
+            id: z.uuid(),
+            name: z.string(),
+            zone: z.union([z.string(), z.null()]),
+            mobile: MOBILE,
+            editable: EDITABLE,
+          })
           .strict(),
       )
-      .openapi({ description: "Technicians switched off, by name: they cannot sign in, and nothing is booked on them." }),
+      .openapi({
+        description: "Technicians switched off, by name: they cannot sign in, and nothing is booked on them.",
+      }),
   })
   .strict()
   .openapi("Technicians");

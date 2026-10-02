@@ -49,9 +49,7 @@ const ROSTER_COLUMNS = "id, name, initials, zone, mobile_e164, active, hand_writ
 
 /** Every technician, active or switched off, by name. */
 export async function roster(db: D1Database): Promise<RosterTechnician[]> {
-  const { results } = await db
-    .prepare(`SELECT ${ROSTER_COLUMNS} FROM technicians ORDER BY name`)
-    .all<RosterRow>();
+  const { results } = await db.prepare(`SELECT ${ROSTER_COLUMNS} FROM technicians ORDER BY name`).all<RosterRow>();
   return results.map(rosterTechnicianOf);
 }
 
@@ -128,7 +126,10 @@ export async function changeTechnician(
 }
 
 async function numberTaken(db: D1Database, technicianId: string, mobileE164: string): Promise<boolean> {
-  const taken = await db.prepare(`SELECT ${NUMBER_TAKEN} AS taken`).bind(technicianId, mobileE164).first<number>("taken");
+  const taken = await db
+    .prepare(`SELECT ${NUMBER_TAKEN} AS taken`)
+    .bind(technicianId, mobileE164)
+    .first<number>("taken");
   return taken === 1;
 }
 

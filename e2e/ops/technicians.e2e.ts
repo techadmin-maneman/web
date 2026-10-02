@@ -237,7 +237,7 @@ test("says so when the figures cannot be loaded, and loads them on Try again", a
 
 test("says so when no technician is active", async ({ page }) => {
   await answer(page, {
-    [READ_ROSTER]: json({ technicians: [] }),
+    [READ_ROSTER]: json({ technicians: [], switched_off: [] }),
     [READ_WORK]: json({ ...TECHNICIAN_WORK, technicians: [] }),
   });
   await page.goto("/technicians");

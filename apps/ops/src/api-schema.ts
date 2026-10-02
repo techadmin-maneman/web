@@ -2333,7 +2333,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required, or not_permitted: changing a technician asks Operations MANAGE */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -2952,7 +2952,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required, or not_permitted: changing a technician asks Operations MANAGE */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -3013,7 +3013,7 @@ export interface paths {
                         "application/json": components["schemas"]["TechnicianDeactivated"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required, or not_permitted: changing a technician asks Operations MANAGE */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -3081,7 +3081,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description access_required */
+                /** @description access_required, or not_permitted: changing a technician asks Operations MANAGE */
                 403: {
                     headers: {
                         [name: string]: unknown;

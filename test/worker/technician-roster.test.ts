@@ -283,7 +283,12 @@ describe("switching a technician off", () => {
 
     expect(await answer.json()).toEqual({
       visits: [
-        { appointment_id: THIS_AFTERNOON, starts_at: "2026-09-21T09:30:00.000Z", type: "service", client: "Rohit Malhotra" },
+        {
+          appointment_id: THIS_AFTERNOON,
+          starts_at: "2026-09-21T09:30:00.000Z",
+          type: "service",
+          client: "Rohit Malhotra",
+        },
         { appointment_id: NEXT_WEEK, starts_at: "2026-09-28T04:30:00.000Z", type: "service", client: "Rohit Malhotra" },
       ],
     });
@@ -305,7 +310,9 @@ describe("switching a technician off", () => {
     const ops = appIn("ours", "ops");
     await send(ops, "POST", `/api/technicians/${IMRAN}/deactivate`);
 
-    const board = await (await send(ops, "GET", "/api/dispatch?from=2026-09-21")).json<{
+    const board = await (
+      await send(ops, "GET", "/api/dispatch?from=2026-09-21")
+    ).json<{
       technicians: { technician_id: string }[];
       unassigned: { appointment_id: string; was_technician: unknown }[];
     }>();
@@ -386,9 +393,7 @@ describe("the roster", () => {
 
     const body = await roster("ours");
 
-    expect(body.technicians).toEqual([
-      expect.objectContaining({ id: IMRAN, mobile: "+919810000009", editable: true }),
-    ]);
+    expect(body.technicians).toEqual([expect.objectContaining({ id: IMRAN, mobile: "+919810000009", editable: true })]);
     expect(body.switched_off).toEqual([
       { id: SAMEER, name: "Sameer Bhatt", zone: "Sec 1–39", mobile: "+919810000008", editable: true },
     ]);
@@ -417,7 +422,9 @@ describe("the dispatch board", () => {
     await env.DB.prepare("UPDATE technicians SET active = 0 WHERE id = ?1").bind(IMRAN).run();
     const ops = appIn("fsm", "ops");
 
-    const board = await (await send(ops, "GET", "/api/dispatch?from=2026-09-21")).json<{
+    const board = await (
+      await send(ops, "GET", "/api/dispatch?from=2026-09-21")
+    ).json<{
       unassigned: { appointment_id: string; was_technician: unknown }[];
     }>();
     expect(board.unassigned).toEqual([

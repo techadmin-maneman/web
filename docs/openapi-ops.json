@@ -10726,7 +10726,7 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required, or not_permitted: changing a technician asks Operations MANAGE",
             "content": {
               "application/json": {
                 "schema": {
@@ -11356,7 +11356,7 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required, or not_permitted: changing a technician asks Operations MANAGE",
             "content": {
               "application/json": {
                 "schema": {
@@ -11414,7 +11414,7 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required, or not_permitted: changing a technician asks Operations MANAGE",
             "content": {
               "application/json": {
                 "schema": {
@@ -11484,7 +11484,7 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required, or not_permitted: changing a technician asks Operations MANAGE",
             "content": {
               "application/json": {
                 "schema": {

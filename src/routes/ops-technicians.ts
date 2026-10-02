@@ -148,6 +148,8 @@ const technicianPath = { params: z.object({ id: z.uuid() }) };
 
 const notOurs = "managed_in_fsm: FSM lists this technician, so he is changed there while FSM is the record";
 
+const MANAGE_ONLY = "access_required, or not_permitted: changing a technician asks Operations MANAGE";
+
 const addRoute = createRoute({
   method: "post",
   path: "/api/technicians",
@@ -156,7 +158,7 @@ const addRoute = createRoute({
   responses: {
     201: { description: "Added", ...json(TechnicianIdSchema) },
     400: errorResponse("invalid_request: no name, or not an Indian mobile"),
-    403: errorResponse("access_required"),
+    403: errorResponse(MANAGE_ONLY),
     409: errorResponse("number_in_use: another active technician signs in with that number"),
   },
 });
@@ -169,7 +171,7 @@ const changeRoute = createRoute({
   responses: {
     200: { description: "Changed", ...json(TechnicianIdSchema) },
     400: errorResponse("invalid_request: nothing to change, no name, or not an Indian mobile"),
-    403: errorResponse("access_required"),
+    403: errorResponse(MANAGE_ONLY),
     404: errorResponse("not_found: no such technician"),
     409: errorResponse(`number_in_use: another active technician signs in with that number; ${notOurs}`),
   },
@@ -182,7 +184,7 @@ const deactivateRoute = createRoute({
   request: technicianPath,
   responses: {
     200: { description: "Switched off", ...json(ReturnedVisitsSchema) },
-    403: errorResponse("access_required"),
+    403: errorResponse(MANAGE_ONLY),
     404: errorResponse("not_found: no such technician"),
     409: errorResponse(notOurs),
   },
@@ -195,7 +197,7 @@ const reactivateRoute = createRoute({
   request: technicianPath,
   responses: {
     200: { description: "Switched on", ...json(z.object({ active: z.literal(true) }).strict()) },
-    403: errorResponse("access_required"),
+    403: errorResponse(MANAGE_ONLY),
     404: errorResponse("not_found: no such technician"),
     409: errorResponse(`number_in_use: another active technician signs in with his number now; ${notOurs}`),
   },

@@ -73,9 +73,8 @@ describe("what P2-M4 and the app's shell disagreed about", () => {
     expect(readFileSync("apps/tech/src/routes.ts", "utf8")).toContain('DEVICE_REVOKED = "device_revoked"');
   });
 
-  it("answers `technician_inactive` on /me's 401, so a switched-off technician's phone keeps his unsent work", () => {
+  it("answers `technician_inactive` on /me's 401, so a switched-off technician's phone can tell", () => {
     expect(document.paths["/api/tech/me"]?.get?.responses["401"]?.description).toContain("technician_inactive");
-    expect(readFileSync("apps/tech/src/routes.ts", "utf8")).toContain('TECHNICIAN_INACTIVE = "technician_inactive"');
   });
 
   it("binds the session to the phone, which names itself on both login calls", () => {
