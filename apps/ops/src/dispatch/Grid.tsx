@@ -15,7 +15,7 @@ import type { Block, Board, BoardRow, BookingWindow } from "../api.ts";
 import { dispatch } from "../content.ts";
 import label from "../components/label.module.css";
 import styles from "./dispatch.module.css";
-import { isMovable, nameOf, type Job, type Target } from "./job.ts";
+import { begunWord, isMovable, nameOf, type Job, type Target } from "./job.ts";
 
 /** A job in hand, and the windows each technician's day would take it in; null while the board is asking. */
 export interface InHand {
@@ -58,18 +58,30 @@ interface BlockButtonProps {
   readonly onTake: (job: Job, from: HTMLElement) => void;
 }
 
-/** One visit on a technician's day. A visit already done opens its drawer and cannot be dragged. */
+/** The block as a screen reader names it: the visit, its day and window, and done or how far it has got. */
+function blockLabel(job: Job & { readonly kind: "block" }): string {
+  const { block } = job;
+  const where = [nameOf(job), shortDate(job.date), windowWord(block.window)] as const;
+  if (block.status === "completed") return dispatch.board.doneBlock(...where);
+  const begun = begunWord(block);
+  return begun === null ? dispatch.board.block(...where) : dispatch.board.begunBlock(...where, begun);
+}
+
+/**
+ * One visit on a technician's day. A visit done, or one the technician has begun, opens its drawer and cannot be
+ * dragged.
+ */
 function BlockButton({ job, onOpen, onTake }: BlockButtonProps) {
   const { block } = job;
   const movable = isMovable(block);
-  const label = movable ? dispatch.board.block : dispatch.board.doneBlock;
+  const begun = begunWord(block);
   return (
     <button
       className={`${styles.block ?? ""} ${inkOf(block) ?? ""} ${sizeOf(block) ?? ""} ${movable ? "" : (styles.finished ?? "")}`}
       type="button"
       data-appointment={block.appointment_id}
       draggable={movable}
-      aria-label={label(nameOf(job), shortDate(job.date), windowWord(block.window))}
+      aria-label={blockLabel(job)}
       onDragStart={(event) => {
         event.dataTransfer.effectAllowed = "move";
         event.dataTransfer.setData("text/plain", block.appointment_id);
@@ -81,6 +93,7 @@ function BlockButton({ job, onOpen, onTake }: BlockButtonProps) {
     >
       <span className={styles.who}>{block.client ?? dispatch.unknown}</span>
       <span className={styles.what}>{whatOf(block)}</span>
+      {begun !== null && <span className={styles.what}>{begun}</span>}
     </button>
   );
 }

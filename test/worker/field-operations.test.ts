@@ -8,10 +8,14 @@
 //   - a clash refused
 //   - a no-show closed with its evidence
 //   - an FSM write that fails and is retried
+//
+// What does not depend on FSM runs on both records of field work: FSM's, and our own with FSM switched off
+// (src/config/field-record.ts).
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { uuidv7 } from "../../apps/tech/src/store/uuidv7.ts";
+import type { FieldRecord } from "../../src/config/field-record.ts";
 import type { App } from "../../src/http/context.ts";
 import { occupancy, placement } from "../../src/domain/scheduling.ts";
 import { readMeter } from "../../src/domain/storage-meter.ts";
@@ -27,7 +31,17 @@ import {
   type StubFsm,
 } from "../../src/providers/fsm.ts";
 import { handleFsmSyncBatch } from "../../src/queues/fsm-sync.ts";
-import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request, type TestDependencies } from "./helpers.ts";
+import {
+  appFor,
+  fakeDependencies,
+  fakeQueue,
+  fsmSwitchedOff,
+  markDatabase,
+  NOW,
+  PROVIDERS_FOR,
+  request,
+  type TestDependencies,
+} from "./helpers.ts";
 import { syntheticJpeg, syntheticPng } from "./tryon-fixtures.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
@@ -46,10 +60,14 @@ const AT_THE_DOOR = { lat: 28.3988, lng: 77.07 };
 /** About 2.2 km east: outside it. */
 const DOWN_THE_ROAD = { lat: 28.398, lng: 77.0925 };
 
+const RECORDS: readonly FieldRecord[] = ["fsm", "ours"];
+
 let tech: App;
 let ops: App;
 let deps: TestDependencies;
 let fsm: StubFsm;
+/** Who holds the record of field work in this test: FSM, or our own database with FSM switched off. */
+let recordInUse: FieldRecord;
 let fsmQueue: ReturnType<typeof fakeQueue>;
 let messageQueue: ReturnType<typeof fakeQueue>;
 let cookie: string;
@@ -109,9 +127,7 @@ beforeEach(async () => {
   fsmQueue = fakeQueue();
   delivered = 0;
   messageQueue = fakeQueue();
-  deps = fakeDependencies({ fsm });
-  tech = appFor("local", deps, {}, "tech");
-  ops = appFor("local", deps, {}, "ops");
+  onRecord("fsm");
 
   await env.DB.prepare(
     `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, mobile_e164, updated_at)
@@ -146,6 +162,21 @@ beforeEach(async () => {
     now: NOW,
   })}`;
 });
+
+/** The dependencies a request runs with on this test's record, at `now`: FSM's stub, or FSM switched off. */
+const depsAt = (now: Date): TestDependencies =>
+  fakeDependencies({ fsm: recordInUse === "ours" ? fsmSwitchedOff() : fsm, now: () => now });
+
+/** The technician app's API on this test's record, answering at `now`. */
+const techAt = (now: Date): App => appFor("local", depsAt(now), {}, "tech", PROVIDERS_FOR[recordInUse]);
+
+/** Runs the rest of the test on this record: its dependencies and both apps are made again for it. */
+function onRecord(next: FieldRecord): void {
+  recordInUse = next;
+  deps = depsAt(NOW);
+  tech = appFor("local", deps, {}, "tech", PROVIDERS_FOR[recordInUse]);
+  ops = appFor("local", deps, {}, "ops", PROVIDERS_FOR[recordInUse]);
+}
 
 const bindings = () => ({ FSM_QUEUE: fsmQueue, MESSAGE_QUEUE: messageQueue }) as unknown as Partial<Env>;
 
@@ -183,7 +214,7 @@ const opsPost = (path: string, body: unknown) =>
 /** A write that reaches the API at `at`, as a phone replaying its outbox from a basement does. */
 const postAt = (at: Date, path: string, body: unknown, eventId: string, headers: Record<string, string> = {}) =>
   request(
-    appFor("local", fakeDependencies({ fsm, now: () => at }), {}, "tech"),
+    techAt(at),
     path,
     {
       method: "POST",
@@ -218,7 +249,11 @@ async function beforePhotos(): Promise<void> {
   await post(`/api/tech/jobs/${TODAY_JOB}/photos`, { phase: "before" }, "event-photos-01");
 }
 
-describe("the day's jobs", () => {
+describe.each(RECORDS)("the day's jobs, on %s's record", (record) => {
+  beforeEach(() => {
+    onRecord(record);
+  });
+
   it("hides the address, access notes and client card until the day before", async () => {
     const answer = await get(`/api/tech/jobs/${LATER_JOB}`);
     const job = await answer.json<Record<string, unknown>>();
@@ -332,7 +367,11 @@ describe("the day's jobs", () => {
   });
 });
 
-describe("checking in", () => {
+describe.each(RECORDS)("checking in, on %s's record", (record) => {
+  beforeEach(() => {
+    onRecord(record);
+  });
+
   it("fails outside the radius, records the distance it measured, and starts no wait", async () => {
     const answer = await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, DOWN_THE_ROAD, "event-far-01");
     const body = await answer.json<{ passed: boolean; distance_m: number; radius_m: number; wait_ends_at: null }>();
@@ -390,7 +429,11 @@ describe("checking in", () => {
 // ADR 0047 promised the arrival WhatsApp, and the no-show evidence reads its receipt; nothing ever wrote one, so the
 // only evidence was the day-before reminder (BIZ-22). The consumer sends it only with the client's consent to
 // WhatsApp about visits, and records why when it does not.
-describe("the arrival WhatsApp", () => {
+describe.each(RECORDS)("the arrival WhatsApp, on %s's record", (record) => {
+  beforeEach(() => {
+    onRecord(record);
+  });
+
   const arrivals = () =>
     env.DB.prepare(
       "SELECT id, subject_id, state, last_error FROM outbound_messages WHERE kind = 'arrival_notice' ORDER BY rowid",
@@ -530,7 +573,11 @@ describe("the phone's clock", () => {
   });
 });
 
-describe("the outbox", () => {
+describe.each(RECORDS)("the outbox, on %s's record", (record) => {
+  beforeEach(() => {
+    onRecord(record);
+  });
+
   it("lands a replayed event once", async () => {
     await startJob();
     await beforePhotos();
@@ -550,28 +597,31 @@ describe("the outbox", () => {
       .bind(TODAY_JOB)
       .first<{ n: number }>();
     expect(landed?.n).toBe(1);
-    // And only the first put an FSM write on the queue: check-in, start, photos, checklist.
-    expect(fsmQueue.sent).toHaveLength(4);
+    // And only the first put an FSM write on the queue: check-in, start, photos, checklist. Our own record queues none.
+    expect(fsmQueue.sent).toHaveLength(record === "fsm" ? 4 : 0);
   });
 
-  it("lands a step whose FSM write the queue refused, and leaves it pending for the sweeper to send", async () => {
-    await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
-    fsmQueue = { ...fakeQueue(), send: () => Promise.reject(new Error("queue unavailable")) };
+  it.runIf(record === "fsm")(
+    "lands a step whose FSM write the queue refused, and leaves it pending for the sweeper to send",
+    async () => {
+      await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
+      fsmQueue = { ...fakeQueue(), send: () => Promise.reject(new Error("queue unavailable")) };
 
-    const answer = await post(`/api/tech/jobs/${TODAY_JOB}/start`, undefined, "event-start-01");
+      const answer = await post(`/api/tech/jobs/${TODAY_JOB}/start`, undefined, "event-start-01");
 
-    expect(answer.status).toBe(202);
-    expect(await answer.json()).toMatchObject({
-      event_id: "event-start-01",
-      replayed: false,
-      fsm_write_state: "pending",
-    });
-    const row = await env.DB.prepare(
-      "SELECT fsm_write_state, superseded FROM job_events WHERE event_id = 'event-start-01'",
-    ).first<{ fsm_write_state: string; superseded: number }>();
-    // What src/scheduled/sweeper.ts sends on once its grace has passed.
-    expect(row).toEqual({ fsm_write_state: "pending", superseded: 0 });
-  });
+      expect(answer.status).toBe(202);
+      expect(await answer.json()).toMatchObject({
+        event_id: "event-start-01",
+        replayed: false,
+        fsm_write_state: "pending",
+      });
+      const row = await env.DB.prepare(
+        "SELECT fsm_write_state, superseded FROM job_events WHERE event_id = 'event-start-01'",
+      ).first<{ fsm_write_state: string; superseded: number }>();
+      // What src/scheduled/sweeper.ts sends on once its grace has passed.
+      expect(row).toEqual({ fsm_write_state: "pending", superseded: 0 });
+    },
+  );
 
   it("refuses a step sent before the one ahead of it", async () => {
     const answer = await post(`/api/tech/jobs/${TODAY_JOB}/outcome`, { outcome: "done" }, "event-early-01");
@@ -601,7 +651,6 @@ describe("the outbox", () => {
   // Open point 92, ruled by the owner on 27 September 2026: "the other technician's first name may reach the phone.
   // Name the technician the job went to, and when."
   it("names the technician ops gave the job to, by first name alone, and when they moved it", async () => {
-    await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
     const moved = await opsPost("/api/dispatch/move", {
       appointment_id: TODAY_JOB,
       ...AS_THE_BOARD_SHOWS_IT,
@@ -610,7 +659,7 @@ describe("the outbox", () => {
     });
     expect(moved.status).toBe(200);
 
-    const answer = await post(`/api/tech/jobs/${TODAY_JOB}/start`, undefined, "event-start-01");
+    const answer = await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
 
     expect(answer.status).toBe(409);
     const { error } = await answer.json<{ error: Record<string, unknown> }>();
@@ -855,8 +904,8 @@ describe("the photographs", () => {
   });
 
   // Open point 92: a job given away while its photographs wait names whom it went to, as a refused write does.
+  // A job he has begun stays his, so this one was given away before he reached it, from a phone still holding it.
   it("answers an upload link for a job ops gave away as superseded, naming whom, by first name, and when", async () => {
-    await startJob();
     await opsPost("/api/dispatch/move", {
       appointment_id: TODAY_JOB,
       ...AS_THE_BOARD_SHOWS_IT,
@@ -1217,7 +1266,11 @@ describe("the piece", () => {
   });
 });
 
-describe("the no-show", () => {
+describe.each(RECORDS)("the no-show, on %s's record", (record) => {
+  beforeEach(() => {
+    onRecord(record);
+  });
+
   it("is refused before the wait ends, then closes with its three facts", async () => {
     await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
 
@@ -1236,10 +1289,8 @@ describe("the no-show", () => {
 
     // Sixteen minutes later the wait has run.
     const later = new Date(NOW.getTime() + 16 * 60_000);
-    const lateDeps = fakeDependencies({ fsm, now: () => later });
-    const lateTech = appFor("local", lateDeps, {}, "tech");
     const closed = await request(
-      lateTech,
+      techAt(later),
       `/api/tech/jobs/${TODAY_JOB}/no-show`,
       {
         method: "POST",
@@ -1301,7 +1352,7 @@ describe("the no-show", () => {
     // Sixteen minutes later the wait has run, and the technician closes the job.
     const later = new Date(NOW.getTime() + 16 * 60_000);
     const closed = await request(
-      appFor("local", fakeDependencies({ fsm, now: () => later }), {}, "tech"),
+      techAt(later),
       `/api/tech/jobs/${TODAY_JOB}/no-show`,
       {
         method: "POST",
@@ -1354,7 +1405,11 @@ describe("dispatch, when FSM keeps its own technician", () => {
   });
 });
 
-describe("dispatch", () => {
+describe.each(RECORDS)("dispatch, on %s's record", (record) => {
+  beforeEach(() => {
+    onRecord(record);
+  });
+
   it("refuses a move that would give one technician two jobs in one window", async () => {
     // Sameer already has a job in Monday's afternoon window.
     await insertJob(OTHER_JOB, { fsmId: "ap-other", start: "2026-09-21T07:30:00.000Z", technician: SAMEER });
@@ -1379,48 +1434,51 @@ describe("dispatch", () => {
     expect(moved?.technician_id).toBe(IMRAN);
   });
 
-  it("moves the job in FSM, records who moved it and why, and messages the client", async () => {
-    // The message goes only to a client who agreed to WhatsApp about his visits (ADR 0069).
-    await env.DB.prepare(
-      `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at)
+  it.runIf(record === "fsm")(
+    "moves the job in FSM, records who moved it and why, and messages the client",
+    async () => {
+      // The message goes only to a client who agreed to WhatsApp about his visits (ADR 0069).
+      await env.DB.prepare(
+        `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at)
        VALUES ('consent-visits', ?1, 'whatsapp_visits', 'whatsapp-visits-v1', 1, ?2)`,
-    )
-      .bind(PERSON, NOW.toISOString())
-      .run();
-    const answer = await opsPost("/api/dispatch/move", {
-      appointment_id: TODAY_JOB,
-      ...AS_THE_BOARD_SHOWS_IT,
-      technician_id: SAMEER,
-      date: "2026-09-22",
-      window: "morning",
-      reason: "technician_unavailable",
-    });
+      )
+        .bind(PERSON, NOW.toISOString())
+        .run();
+      const answer = await opsPost("/api/dispatch/move", {
+        appointment_id: TODAY_JOB,
+        ...AS_THE_BOARD_SHOWS_IT,
+        technician_id: SAMEER,
+        date: "2026-09-22",
+        window: "morning",
+        reason: "technician_unavailable",
+      });
 
-    expect(answer.status).toBe(200);
-    expect(await answer.json()).toMatchObject({ client_notice: "messaged" });
-    expect(fsm.made.assigned).toEqual([{ appointmentId: "ap-today", technicianId: "resource-2" }]);
-    expect(fsm.made.rescheduled).toEqual([
-      { appointmentId: "ap-today", start: "2026-09-22T09:00:00+05:30", end: "2026-09-22T10:30:00+05:30" },
-    ]);
+      expect(answer.status).toBe(200);
+      expect(await answer.json()).toMatchObject({ client_notice: "messaged" });
+      expect(fsm.made.assigned).toEqual([{ appointmentId: "ap-today", technicianId: "resource-2" }]);
+      expect(fsm.made.rescheduled).toEqual([
+        { appointmentId: "ap-today", start: "2026-09-22T09:00:00+05:30", end: "2026-09-22T10:30:00+05:30" },
+      ]);
 
-    const move = await env.DB.prepare(
-      "SELECT was_technician_id, now_technician_id, reason, actor, fsm_write_state, message_id FROM dispatch_moves",
-    ).first<Record<string, string>>();
-    expect(move).toMatchObject({
-      was_technician_id: IMRAN,
-      now_technician_id: SAMEER,
-      reason: "technician_unavailable",
-      fsm_write_state: "written",
-    });
-    expect(move?.actor).not.toBe("");
-    expect(move?.message_id).not.toBeNull();
+      const move = await env.DB.prepare(
+        "SELECT was_technician_id, now_technician_id, reason, actor, fsm_write_state, message_id FROM dispatch_moves",
+      ).first<Record<string, string>>();
+      expect(move).toMatchObject({
+        was_technician_id: IMRAN,
+        now_technician_id: SAMEER,
+        reason: "technician_unavailable",
+        fsm_write_state: "written",
+      });
+      expect(move?.actor).not.toBe("");
+      expect(move?.message_id).not.toBeNull();
 
-    const message = await env.DB.prepare("SELECT kind FROM outbound_messages WHERE subject_id = ?1")
-      .bind(TODAY_JOB)
-      .first<{ kind: string }>();
-    expect(message?.kind).toBe("visit_moved");
-    expect(messageQueue.sent).toHaveLength(1);
-  });
+      const message = await env.DB.prepare("SELECT kind FROM outbound_messages WHERE subject_id = ?1")
+        .bind(TODAY_JOB)
+        .first<{ kind: string }>();
+      expect(message?.kind).toBe("visit_moved");
+      expect(messageQueue.sent).toHaveLength(1);
+    },
+  );
 
   it("carries no amount on the board, and no leave where none is recorded", async () => {
     const answer = await request(ops, "/api/dispatch?from=2026-09-21", {}, bindings());
@@ -1440,7 +1498,7 @@ describe("dispatch", () => {
     expect(body).not.toMatch(/amount|"paise"/i);
   });
 
-  it("refuses a move FSM will not take, and moves nothing", async () => {
+  it.runIf(record === "fsm")("refuses a move FSM will not take, and moves nothing", async () => {
     fsm.failNext("rescheduleVisit", "FSM said 400");
 
     const answer = await opsPost("/api/dispatch/move", {
@@ -1465,28 +1523,187 @@ describe("dispatch", () => {
     expect(unmoved?.window_start).toBe("2026-09-21T07:30:00.000Z");
   });
 
-  it("keeps FSM's reason for a refused move without the number or e-mail it echoed", async () => {
-    fsm.failNext("rescheduleVisit", "FSM said 400: contact +919810000001 (rohit@example.com) is locked");
+  it.runIf(record === "fsm")(
+    "keeps FSM's reason for a refused move without the number or e-mail it echoed",
+    async () => {
+      fsm.failNext("rescheduleVisit", "FSM said 400: contact +919810000001 (rohit@example.com) is locked");
 
-    await opsPost("/api/dispatch/move", {
+      await opsPost("/api/dispatch/move", {
+        appointment_id: TODAY_JOB,
+        ...AS_THE_BOARD_SHOWS_IT,
+        date: "2026-09-22",
+        window: "morning",
+        reason: "running_over",
+      });
+
+      const move = await env.DB.prepare("SELECT fsm_error FROM dispatch_moves").first<{ fsm_error: string }>();
+      expect(move?.fsm_error).toContain("FSM said 400");
+      expect(move?.fsm_error).not.toContain("9810000001");
+      expect(move?.fsm_error).not.toContain("rohit@example.com");
+    },
+  );
+});
+
+// A visit the technician has begun stays where he is working it: moved, his phone would carry on with a visit now
+// booked for another day or another technician (BK-05, FLD-08).
+describe.each(RECORDS)("dispatch, once the technician has begun, on %s's record", (record) => {
+  beforeEach(() => {
+    onRecord(record);
+  });
+
+  const moveToSameerTomorrow = () =>
+    opsPost("/api/dispatch/move", {
       appointment_id: TODAY_JOB,
       ...AS_THE_BOARD_SHOWS_IT,
+      technician_id: SAMEER,
       date: "2026-09-22",
       window: "morning",
       reason: "running_over",
     });
 
-    const move = await env.DB.prepare("SELECT fsm_error FROM dispatch_moves").first<{ fsm_error: string }>();
-    expect(move?.fsm_error).toContain("FSM said 400");
-    expect(move?.fsm_error).not.toContain("9810000001");
-    expect(move?.fsm_error).not.toContain("rohit@example.com");
+  const visitNow = () =>
+    env.DB.prepare("SELECT technician_id, window_start FROM appointments WHERE id = ?1").bind(TODAY_JOB).first();
+
+  /** Today's job as the board draws it on Imran's row. */
+  async function blockOnTheBoard(): Promise<Record<string, unknown> | undefined> {
+    const board = await (
+      await request(ops, "/api/dispatch?from=2026-09-21", {}, bindings())
+    ).json<{ technicians: { technician_id: string; days: { blocks: Record<string, unknown>[] }[] }[] }>();
+    const row = board.technicians.find((each) => each.technician_id === IMRAN);
+    return row?.days[0]?.blocks.find((block) => block.appointment_id === TODAY_JOB);
+  }
+
+  it("refuses to move a visit he has checked in at, and writes nothing", async () => {
+    await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
+
+    const answer = await moveToSameerTomorrow();
+
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "in_progress" } });
+    expect(await visitNow()).toEqual({ technician_id: IMRAN, window_start: TODAY_START.toISOString() });
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM dispatch_moves").first()).toEqual({ n: 0 });
+    expect(fsm.made.assigned).toEqual([]);
+    expect(fsm.made.rescheduled).toEqual([]);
+  });
+
+  it("refuses to move a visit he has started, before FSM has heard of it", async () => {
+    await startJob();
+
+    const answer = await moveToSameerTomorrow();
+
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "in_progress" } });
+    expect(await visitNow()).toEqual({ technician_id: IMRAN, window_start: TODAY_START.toISOString() });
+  });
+
+  it("offers it no room, and the board says how far he has got", async () => {
+    expect(await blockOnTheBoard()).toMatchObject({ begun: null });
+    await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
+
+    const room = await request(ops, `/api/dispatch/room?appointment_id=${TODAY_JOB}&from=2026-09-21`, {}, bindings());
+
+    expect(room.status).toBe(404);
+    expect(await blockOnTheBoard()).toMatchObject({ begun: "arrived" });
+    await post(`/api/tech/jobs/${TODAY_JOB}/start`, undefined, "event-start-01");
+    expect(await blockOnTheBoard()).toMatchObject({ begun: "started" });
+  });
+});
+
+// A label is one piece's: typed again for another client, or this client's old piece typed as the new one, it would
+// record nothing for this client, or two clients' pieces as one (FLD-21). The technician corrects it on the phone.
+describe.each(RECORDS)("a piece label already on record, on %s's record", (record) => {
+  const REPLACEMENT = OTHER_JOB;
+  const NEIGHBOUR = "11111111-1111-4111-8111-111111111112";
+
+  beforeEach(async () => {
+    onRecord(record);
+    await insertJob(REPLACEMENT, { fsmId: "ap-other", start: TODAY_START.toISOString(), type: "replacement" });
+    await env.DB.prepare(
+      "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, '+919810000002', 'Vikram Sethi')",
+    )
+      .bind(NEIGHBOUR, NOW.toISOString())
+      .run();
+    await env.DB.prepare(
+      `INSERT INTO pieces (id, fsm_id, person_id, piece_code, base, fitted_at, replacement_due_at, synced_at)
+       VALUES ('piece-old', 'asset-old', ?1, 'MM-STD-4417-B', 'Standard base', '2026-03-25', '2026-09-21', ?2),
+              ('piece-theirs', 'asset-theirs', ?3, 'MM-STD-9999-A', 'Standard base', '2026-05-02', '2026-10-29', ?2)`,
+    )
+      .bind(PERSON, NOW.toISOString(), NEIGHBOUR)
+      .run();
+    const sentAt = minutesAfterStart(60);
+    const steps: [string, unknown, number][] = [
+      ["checkin", AT_THE_DOOR, 2],
+      ["start", undefined, 5],
+      ["photos", { phase: "before" }, 10],
+      ["checklist", { done: [] }, 30],
+      ["consumables", { items: [] }, 40],
+    ];
+    for (const [step, body, minute] of steps) {
+      const answer = await postAt(sentAt, `/api/tech/jobs/${REPLACEMENT}/${step}`, body, uuidv7At(minute));
+      expect(answer.status).toBeLessThan(300);
+    }
+  });
+
+  const piece = (body: object) =>
+    postAt(minutesAfterStart(60), `/api/tech/jobs/${REPLACEMENT}/piece`, body, uuidv7At(50));
+
+  const pieceSteps = () =>
+    env.DB.prepare("SELECT COUNT(*) AS n FROM job_events WHERE appointment_id = ?1 AND kind = 'piece'")
+      .bind(REPLACEMENT)
+      .first();
+
+  it("is refused when another client's piece carries it, and nothing lands", async () => {
+    const answer = await piece({ piece_code: "MM-STD-9999-A", base: "Standard base" });
+
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "piece_code", fields: ["piece_code"] } });
+    expect(await pieceSteps()).toEqual({ n: 0 });
+  });
+
+  it("is refused when it is the client's own piece from an earlier visit", async () => {
+    const answer = await piece({
+      piece_code: "MM-STD-4417-B",
+      old_piece: { piece_code: "MM-STD-4417-B", failure_reason: "Torn" },
+    });
+
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "piece_code", fields: ["piece_code"] } });
+  });
+
+  it("is refused as the piece that came off when it is another client's", async () => {
+    const answer = await piece({
+      piece_code: "MM-STD-5520-A",
+      old_piece: { piece_code: "MM-STD-9999-A", failure_reason: "Torn" },
+    });
+
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "piece_code", fields: ["old_piece"] } });
+    expect(await pieceSteps()).toEqual({ n: 0 });
+  });
+
+  it("lands once corrected", async () => {
+    await piece({ piece_code: "MM-STD-9999-A" });
+
+    const corrected = await postAt(
+      minutesAfterStart(60),
+      `/api/tech/jobs/${REPLACEMENT}/piece`,
+      { piece_code: "MM-STD-5520-A", old_piece: { piece_code: "MM-STD-4417-B", failure_reason: "Torn" } },
+      uuidv7At(51),
+    );
+
+    expect(corrected.status).toBe(202);
+    expect(await pieceSteps()).toEqual({ n: 1 });
   });
 });
 
 // Leave is ours because FSM has nowhere to keep it (ADR 0062). The point of
 // putting it through the same clash check is that nothing has to remember to
 // ask: the board refuses it, and so does the client's own booking.
-describe("leave", () => {
+describe.each(RECORDS)("leave, on %s's record", (record) => {
+  beforeEach(() => {
+    onRecord(record);
+  });
+
   const recordLeave = (technicianId: string, from: string, to: string, note?: string) =>
     opsPost(`/api/technicians/${technicianId}/leave`, { from, to, ...(note === undefined ? {} : { note }) });
 
@@ -1583,7 +1800,11 @@ describe("leave", () => {
   });
 });
 
-describe("the roster", () => {
+describe.each(RECORDS)("the roster, on %s's record", (record) => {
+  beforeEach(() => {
+    onRecord(record);
+  });
+
   // Read in one query for the whole roster, where it was once a query a technician (OPS-11).
   it("lists each technician's phones, the latest used first, beside their leave", async () => {
     await openTechnicianSession(env.DB, {
@@ -1605,7 +1826,11 @@ describe("the roster", () => {
   });
 });
 
-describe("a revoked phone", () => {
+describe.each(RECORDS)("a revoked phone, on %s's record", (record) => {
+  beforeEach(() => {
+    onRecord(record);
+  });
+
   it("is told to drop its cached jobs on its next call, and the wipe is recorded", async () => {
     expect((await get("/api/tech/jobs")).status).toBe(200);
 

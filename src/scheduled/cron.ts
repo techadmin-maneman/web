@@ -16,6 +16,7 @@ import { fieldRecord } from "../config/field-record.ts";
 import type { Dependencies } from "../dependencies.ts";
 import { resolveAskedWindows } from "../domain/asked-windows.ts";
 import { bookUnbookedHolds, requeueUnbookedHolds } from "../domain/bookings.ts";
+import { eraseBooksCustomers } from "../domain/books-erasure.ts";
 import { syncBooks, type BooksSyncOptions } from "../domain/books-sync.ts";
 import { finishRun, startRun } from "../domain/cron-runs.ts";
 import { alertAgedDeletions } from "../domain/deletion.ts";
@@ -69,7 +70,7 @@ const ALERT_AFTER_FAILED_RUNS = 3;
  * What a job needs switched on in this environment before it runs. "fsm_record" is the real FSM: the stub remembers
  * no appointment, so a job that trusts FSM's word on what exists would take it that every visit had been deleted.
  */
-type Needs = "nothing" | "fsm" | "fsm_record" | "fsm_and_books" | "messaging";
+type Needs = "nothing" | "fsm" | "fsm_record" | "fsm_and_books" | "books" | "messaging";
 
 export interface CronJob {
   readonly name: string;
@@ -94,6 +95,8 @@ function isSwitchedOn(needs: Needs, config: StaticConfig): boolean {
       return config.providers.FSM_PROVIDER === "zoho";
     case "fsm_and_books":
       return fsm && books;
+    case "books":
+      return books;
     case "messaging":
       return config.settings.messaging.enabled;
   }
@@ -148,6 +151,11 @@ async function bookUnbookedHoldsJob({ env, deps, config, log, budget }: CronCont
 async function erasedFilesJob({ env, deps, log }: CronContext): Promise<void> {
   const finished = await deleteLeftFiles(env, deps.now(), log);
   if (finished > 0) log.info("erased_files_deleted", { people: finished });
+}
+
+async function booksErasuresJob({ env, deps, log, budget }: CronContext): Promise<void> {
+  const erased = await eraseBooksCustomers(env.DB, { ...deps, log, budget }, deps.now());
+  if (erased > 0) log.info("books_customers_erased", { count: erased });
 }
 
 async function reconcileJob({ env, deps, log, budget }: CronContext): Promise<void> {
@@ -251,6 +259,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "unbooked_holds", needs: "nothing", run: unbookedHoldsJob },
   // What an erasure could not delete from R2 at the time (docs/decisions/0066-erasure-all-or-nothing.md).
   { name: "erased_files", needs: "nothing", run: erasedFilesJob },
+  // An erased client's customer in Books, deleted, or blanked where an invoice names it.
+  { name: "books_erasures", needs: "books", run: booksErasuresJob },
   // The FSM mirror's repair (docs/decisions/0032-fsm-mirror.md).
   { name: "fsm_reconcile", needs: "fsm_record", run: reconcileJob },
   // Once an hour: FSM's catalogue against the price book, which it prices invoices by

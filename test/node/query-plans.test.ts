@@ -27,6 +27,7 @@ const CRON_PATH = [
   "src/domain/fsm-invoices.ts",
   "src/domain/asked-windows.ts",
   "src/domain/books-sync.ts",
+  "src/domain/books-erasure.ts",
   "src/domain/referral-grants.ts",
   "src/domain/payment-links.ts",
   // A visit's discount code, read by the payment link and the invoice pass (docs/decisions/0108-discount-codes.md).

@@ -9,7 +9,7 @@
 //   POST /api/tech/jobs/:id/photos/upload-url    a link to PUT one photograph to
 //   PUT  /api/tech/photos/:token                 the photograph itself
 //   PUT  /api/tech/photos/:token/small           its small copy, for the client app's rows
-//   POST /api/tech/jobs/:id/photos               the set is complete: attach it to FSM
+//   POST /api/tech/jobs/:id/photos               the set is complete: attach it to FSM, where FSM holds the record
 //   POST /api/tech/jobs/:id/checklist            the service checklist
 //   POST /api/tech/jobs/:id/consumables          what was used, with quantities
 //   POST /api/tech/jobs/:id/piece                the piece fitted, or the one that failed; on a one visit, the
@@ -44,6 +44,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
 import { CONSUMABLE_BOUNDS } from "../config/consumables.ts";
+import { fieldRecord, recordOfVisit } from "../config/field-record.ts";
 import { isPieceCode } from "../config/pieces.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
@@ -57,8 +58,11 @@ import {
   whatChanged,
   type Landing,
   type MovedTo,
+  type StepRecord,
   type Superseding,
 } from "../domain/job-events.ts";
+import { jobRecordOf, type LandingStep } from "../domain/job-record.ts";
+import { pieceLabelTaken, pieceStepOf, type PieceField } from "../domain/pieces.ts";
 import { checklistOf, jobSheet, knownCodes } from "../domain/job-sheet-settings.ts";
 import { recordJobUse } from "../domain/job-use.ts";
 import { tellOfLowStock } from "../domain/stock.ts";
@@ -639,6 +643,11 @@ const pieceRoute = createRoute({
   responses: {
     202: RECORDED,
     ...STEP_REFUSALS,
+    409: errorResponse(
+      "superseded: FSM moved the job; out_of_order: send the step before this one first; piece_code: a label already " +
+        "on record, as another client's piece or this client's from an earlier visit, or a piece that came off that " +
+        "is another client's. error.fields names piece_code or old_piece, to correct and send again",
+    ),
   },
 });
 
@@ -900,10 +909,10 @@ export function registerTechJobs(app: App): void {
   app.openapi(pieceRoute, (c) => {
     const body = c.req.valid("json");
     return step(c, "piece", async (job) => {
-      if (job.oneVisit !== null) return oneVisitPiece(c, job, body);
-      if ("declined" in body || body.product !== undefined) return { invalid: ["product"] };
-      if (!(stepsFor(job.type) as string[]).includes("piece")) return { invalid: ["piece_code"] };
-      return fittedPiece(body);
+      const built = await pieceBody(c, job, body);
+      if ("invalid" in built) return built;
+      const taken = await pieceLabelTaken(c.env.DB, job, pieceStepOf(built));
+      return taken === null ? built : { labelTaken: taken };
     });
   });
 
@@ -1035,11 +1044,14 @@ async function uploadSlot(c: Ctx, token: string): Promise<PhotoSlot | null> {
  */
 const namedJob = (c: Ctx, id: string): Promise<WorkableJob | null> => workableJob(c.env.DB, id);
 
-/** What a step's handler returns: the event's body, or the fields that were wrong. */
-type StepBody = Record<string, unknown> | { invalid: string[] };
+/**
+ * What a step's handler returns: the event's body, the fields that were wrong, or the piece label already on record,
+ * by its field.
+ */
+type StepBody = Record<string, unknown> | { invalid: string[] } | { labelTaken: PieceField };
 
 /**
- * One in-job step: check it, land it once, and put its FSM write on the queue.
+ * One in-job step: check it, land it once, and record it: in FSM by its queue, or in our own database with the event.
  * What a step keeps of its own, `landed` does once it has landed, first time
  * or replayed, and must do the same however often it is called.
  */
@@ -1055,6 +1067,9 @@ async function step(
   if ("invalid" in built && Array.isArray(built.invalid)) {
     return c.json(errorBody("invalid_request", c.var.requestId, built.invalid), 400);
   }
+  if ("labelTaken" in built && typeof built.labelTaken === "string") {
+    return c.json(errorBody("piece_code", c.var.requestId, [built.labelTaken]), 409);
+  }
   const landing = await land(c, job, kind, built);
   if (!landing.ok) return c.json(refusalOf(c, landing), 409);
   if (landed !== undefined) await landed(job);
@@ -1062,6 +1077,14 @@ async function step(
 }
 
 type PieceBody = z.infer<typeof PieceRequestSchema>;
+
+/** The piece step's body for this job: a one visit's choice, or a piece fitted or failed where the job takes one. */
+async function pieceBody(c: Ctx, job: WorkableJob, body: PieceBody): Promise<StepBody> {
+  if (job.oneVisit !== null) return oneVisitPiece(c, job, body);
+  if ("declined" in body || body.product !== undefined) return { invalid: ["product"] };
+  if (!(stepsFor(job.type) as string[]).includes("piece")) return { invalid: ["piece_code"] };
+  return fittedPiece(body);
+}
 
 /** A piece fitted, or the one that failed, as any job's piece step records it. */
 function fittedPiece(body: z.infer<typeof PieceFittedSchema>): StepBody {
@@ -1157,6 +1180,12 @@ async function tellOfArrival(c: Ctx, input: { personId: string; appointmentId: s
   }
 }
 
+/** Where the step is recorded: by FSM's queue for a visit FSM holds, else in our own database, with the event. */
+async function recordedIn(c: Ctx, job: WorkableJob, step: LandingStep): Promise<StepRecord> {
+  if (recordOfVisit(fieldRecord(c.var.config.providers), job) === "fsm") return { holder: "fsm" };
+  return { holder: "ours", statements: await jobRecordOf(c.env.DB, step) };
+}
+
 /**
  * A landed event's FSM write. One the queue refuses stays pending, and the sweeper sends it on once its grace has
  * passed (src/scheduled/sweeper.ts); the event has landed either way.
@@ -1170,9 +1199,8 @@ async function queueFsmWrite(c: Ctx, jobEventId: string): Promise<void> {
 }
 
 /**
- * Records one event and queues its FSM write. Its time is the phone's, within
- * bounds: the check-in passes its own, and any other write's comes from its
- * event ID.
+ * Records one event, and the step's work: on FSM's queue, or in our own database with the event. Its time is the
+ * phone's, within bounds: the check-in passes its own, and any other write's comes from its event ID.
  */
 async function land(
   c: Ctx,
@@ -1185,8 +1213,10 @@ async function land(
   const now = c.var.deps.now();
   const eventId = c.req.header(EVENT_ID_HEADER) ?? "";
   const heldStart = c.req.header(JOB_STARTS_AT_HEADER);
-  const { noShowWaitMin, phoneClock } = await opsInputs(c);
+  const { noShowWaitMin, phoneClock, pieceCycleDays } = await opsInputs(c);
   const bounds = { visitStart: job.windowStart, receivedAt: now };
+  const occurredAt = phoneTime ?? boundedPhoneTime(timeOfUuidV7(eventId), bounds, phoneClock);
+  const step = { visit: job, kind, body, occurredAt, cycles: pieceCycleDays, now };
 
   const landing: Landing = await landJobEvent(c.env.DB, {
     job,
@@ -1195,9 +1225,10 @@ async function land(
     eventId,
     kind,
     body,
-    occurredAt: phoneTime ?? boundedPhoneTime(timeOfUuidV7(eventId), bounds, phoneClock),
+    occurredAt,
     expectedStart: heldStart === undefined ? null : new Date(heldStart),
     now,
+    recordedIn: await recordedIn(c, job, step),
   });
   if (landing.kind === "superseded") {
     c.var.log.info("job_event_superseded", { appointment_id: job.id, kind, changed: landing.changed });
@@ -1206,8 +1237,8 @@ async function land(
   if (landing.kind === "out_of_order") return { ok: false, code: "out_of_order", fields: [landing.needs] };
   if (landing.kind === "not_today" || landing.kind === "already_started") return { ok: false, code: landing.kind };
 
-  // A replay landed nothing new, so nothing new goes to FSM either.
-  if (!landing.replayed) await queueFsmWrite(c, landing.event.id);
+  // A replay landed nothing new, so nothing new goes to FSM either; nor does a step our own database recorded.
+  if (!landing.replayed && landing.event.fsmWriteState === "pending") await queueFsmWrite(c, landing.event.id);
   return {
     ok: true,
     accepted: {

@@ -8,7 +8,8 @@
 // with his number, and closed here once ops have called him.
 //
 // The drawer is also the keyboard way into a move: the design moves a block by
-// dragging it, and everything the drag does can be done from here.
+// dragging it, and everything the drag does can be done from here. A visit the
+// technician has begun has no move, and the drawer says why.
 
 import { ICONS } from "@maneman/brand/icons";
 import { Button, ButtonLink, buttonLook } from "@maneman/ui/Button";
@@ -28,6 +29,13 @@ interface Props {
   readonly onClose: () => void;
 }
 
+/** The State row: how far the technician has got, from his phone, until the visit is done. */
+function stateOf(block: BlockJob["block"]): string {
+  const copy = dispatch.drawer;
+  if (block.begun !== null && block.status !== "completed") return copy.begun[block.begun] ?? block.begun;
+  return copy.states[block.status] ?? block.status;
+}
+
 export function BlockDrawer({ job, onMove, onTold, onClose }: Props) {
   const copy = dispatch.drawer;
   const { block } = job;
@@ -40,9 +48,10 @@ export function BlockDrawer({ job, onMove, onTold, onClose }: Props) {
   const rows = [
     { key: copy.rows.type, value: copy.type(typeName, block.slots) },
     { key: copy.rows.area, value: block.sector === null ? dispatch.unknown : copy.area(block.sector, block.pincode) },
-    { key: copy.rows.state, value: copy.states[block.status] ?? block.status },
+    { key: copy.rows.state, value: stateOf(block) },
     ...(referredBy === null ? [] : [{ key: copy.rows.referred, value: referredBy }]),
   ];
+  const staysPut = !isMovable(block) && block.status !== "completed";
 
   return (
     <Dialog className={styles.panel} labelledBy="drawer-title" canClose onDismiss={onClose}>
@@ -84,6 +93,7 @@ export function BlockDrawer({ job, onMove, onTold, onClose }: Props) {
             </Button>
           </div>
         )}
+        {staysPut && <p className={styles.untoldLine}>{copy.stays}</p>}
         <div className={styles.drawerActions}>
           {person !== null && (
             <>

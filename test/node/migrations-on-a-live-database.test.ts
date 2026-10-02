@@ -161,6 +161,17 @@ describe("the migrations, against a database that is in use", () => {
     db.close();
   });
 
+  it("counts an erased client's Books erasure from no tries, and keeps it once done", () => {
+    const db = migrate();
+    db.exec(`UPDATE people SET books_customer_id = 'customer-2', erased_at = '${AT}' WHERE id = 'p2'`);
+    const due = db.prepare("SELECT books_erased_at, books_erasure_attempts FROM people WHERE id = 'p2'").get();
+    expect(due).toEqual({ books_erased_at: null, books_erasure_attempts: 0 });
+    db.exec(`UPDATE people SET books_erased_at = '${AT}' WHERE id = 'p2'`);
+    const done = db.prepare("SELECT books_erased_at FROM people WHERE id = 'p2'").get();
+    expect(done).toEqual({ books_erased_at: AT });
+    db.close();
+  });
+
   // A booking made on the site has a date and a window of its own, and no rough
   // preference; it does say where the hair loss is, because its form asks.
   it("takes a booking's lead, which names a loss extent and no rough window", () => {
