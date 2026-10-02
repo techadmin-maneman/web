@@ -3494,6 +3494,11 @@
             "type": "string",
             "format": "date-time"
           },
+          "pay_by": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The last moment a payment counts as made in time: expires_at and the grace after it. Checkout closes then."
+          },
           "state": {
             "type": "string",
             "enum": [
@@ -3612,6 +3617,7 @@
           "change_notice_hours",
           "late_change_charge",
           "expires_at",
+          "pay_by",
           "state",
           "paid",
           "visit_id",
@@ -5756,7 +5762,7 @@
         ],
         "responses": {
           "204": {
-            "description": "Let go, or already gone"
+            "description": "Let go, or already gone; or kept, when it has a Razorpay order and its pay_by has not passed, since a payment may still land on it."
           },
           "401": {
             "description": "session_required",
