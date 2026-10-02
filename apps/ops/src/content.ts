@@ -624,6 +624,9 @@ export const clients = {
     } as Readonly<Record<string, string>>,
     refundStates: { created: "Processing", processed: "Back", failed: "Failed" } as Readonly<Record<string, string>>,
     reference: (reference: string) => `Ref ${reference}`,
+    // PLACEHOLDER: a discount code on a payment, which no board draws (docs/decisions/0108-discount-codes.md).
+    /** "Code AUDTEST, Rs. 1,000 off", beneath what the payment was for. */
+    code: (applied: string) => `Code ${applied}`,
   },
   /** Putting a client's service-visit credits right by hand (POST /api/clients/{id}/credits). */
   credits: {

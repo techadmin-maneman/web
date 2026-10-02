@@ -1,10 +1,15 @@
-import { useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import type { LossExtent } from "../../../../src/config/booking.ts";
 import { ONE_VISIT_WINDOWS } from "../../../../src/policy/one-visit.ts";
 import { referral } from "../../content/referral.ts";
 import { track } from "../../lib/analytics.ts";
 import { addressToSend, emptyAddress, missingParts, type AddressFields } from "../../lib/address.ts";
-import { bookConsultation, bookPublicConsultation, type ReferralConsultation } from "../../lib/api.ts";
+import {
+  bookConsultation,
+  bookPublicConsultation,
+  type Consultation as PublicConsultation,
+  type ReferralConsultation,
+} from "../../lib/api.ts";
 import { dayStrip, indiaTomorrow } from "../../lib/dates.ts";
 import { forgetInvite, rememberedInvite } from "../../lib/remembered-invite.ts";
 import { fill } from "../../lib/text.ts";
@@ -46,6 +51,16 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
   const { pincode } = props.answer;
   // The site's own page takes a discount code for the one visit; an invite's page is the invite's offer (ADR 0108).
   const takesCode = plan === "one_visit" && !props.invited;
+  const sentCode = takesCode && code.trim() !== "" ? code.trim() : null;
+  const codeRefused = takesCode && form.refusedFields.includes("discount_code");
+  const codeBox = useRef<HTMLInputElement>(null);
+
+  // A refused code is said under its box, which is brought into view and focused, so the form need not be searched.
+  useEffect(() => {
+    if (!codeRefused) return;
+    codeBox.current?.scrollIntoView({ block: "center" });
+    codeBox.current?.focus({ preventScroll: true });
+  }, [codeRefused, form.refusedFields]);
 
   function submit(event: Event) {
     const { fields } = form;
@@ -68,10 +83,10 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
       loss_extent: extent,
       ...(attribution === undefined ? {} : { attribution }),
       ...(remembered === null ? {} : { invite_code: remembered }),
-      ...(takesCode && code.trim() !== "" ? { discount_code: code.trim() } : {}),
+      ...(sentCode === null ? {} : { discount_code: sentCode }),
     };
     const invite = props.invited ? codeInPath() : remembered;
-    void form.submit(
+    void form.submit<ReferralConsultation | PublicConsultation>(
       event,
       (token, keyFor) =>
         props.invited
@@ -83,7 +98,7 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
         track({ name: "lead_submitted", page, served: true, area: props.answer.area, window, loss_extent });
         track({ name: "booking_confirmed", page, area: booked.area, window: booked.window, state: booked.state });
         if (invite !== null) forgetInvite(invite);
-        props.onBooked({ result: booked, mobile: fields.mobile, place: placeOf(props.answer) });
+        props.onBooked({ result: booked, mobile: fields.mobile, place: placeOf(props.answer), code: sentCode });
       },
       missingParts(address).length === 0,
     );
@@ -138,17 +153,28 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
             {consultation.code.label}
           </label>
           <input
+            ref={codeBox}
             id="invite-consultation-code"
-            class={styles.input}
+            class={`${styles.input} ${codeRefused ? styles.bad : ""}`}
             value={code}
             autocomplete="off"
             autocapitalize="characters"
             spellcheck={false}
-            aria-describedby="invite-consultation-code-hint"
+            aria-invalid={codeRefused}
+            aria-describedby={
+              codeRefused
+                ? "invite-consultation-code-error invite-consultation-code-hint"
+                : "invite-consultation-code-hint"
+            }
             onInput={(event) => {
               setCode(event.currentTarget.value);
             }}
           />
+          {codeRefused && (
+            <div id="invite-consultation-code-error" class={styles.error}>
+              {form.failure}
+            </div>
+          )}
           <p id="invite-consultation-code-hint" class={styles.hint}>
             {consultation.code.hint}
           </p>
@@ -218,7 +244,7 @@ export function Consultation(props: FormProps & { onBooked: (booking: Booking) =
 
       <div ref={form.box} class={styles.turnstile} />
       <Send
-        failure={form.failure}
+        failure={codeRefused ? null : form.failure}
         sending={form.sending}
         label={plan === "one_visit" ? consultation.submitOneVisit : consultation.submit}
         sendingLabel={consultation.sending}

@@ -36,7 +36,8 @@ import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
 import { LOSS_EXTENTS } from "../config/booking.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
-import { bookConsultation, joinTheWaitlist } from "../domain/public-booking.ts";
+import { bookConsultation, joinTheWaitlist, type StandingCode } from "../domain/public-booking.ts";
+import { DISCOUNT_KINDS } from "../policy/discount-codes.ts";
 import type { Plan } from "../policy/one-visit.ts";
 import { CODE_PATTERN, inviteOf, type Invite } from "../domain/referrals.ts";
 import { errorBody, errorResponse, ErrorResponseSchema } from "../http/errors.ts";
@@ -158,6 +159,18 @@ const WaitlistRequestSchema = z
   })
   .strict();
 
+const StandingCodeSchema = z
+  .object({
+    code: z.string().openapi({ description: "In capitals, as it is kept." }),
+    kind: z.enum(DISCOUNT_KINDS),
+    value: z.number().int().openapi({ description: "Per cent for a percentage; paise before GST for an amount." }),
+    cap: z
+      .union([z.number().int(), z.null()])
+      .openapi({ description: "The most a percentage takes off, in paise before GST; null for none." }),
+  })
+  .strict()
+  .openapi("StandingCode");
+
 const ConsultationSchema = z
   .object({
     state: z.enum(["booked", "requested"]).openapi({
@@ -170,14 +183,21 @@ const ConsultationSchema = z
     invite: InviteStateSchema,
     address: AddressOutcomeSchema,
     one_visit: OneVisitOutcomeSchema,
-    discount_code: z.boolean().openapi({
+    discount_code: z.union([StandingCodeSchema, z.null()]).openapi({
       description:
-        "true: the code given stands on the booking, or on the request ops book from; false when none was given, " +
+        "The code given, as it stands on the booking or on the request ops book from; null when none was given, " +
         "or another booking took the code's last use a moment before, and the booking stands without it.",
     }),
   })
   .strict()
   .openapi("Consultation");
+
+/** A code as it stands on a site booking: what it takes off comes off the hair system's price when they pay. */
+function standingCodeBody(standing: StandingCode | null) {
+  if (standing === null) return null;
+  const { kind, value, cap } = standing.terms;
+  return { code: standing.code, kind, value, cap };
+}
 
 const WaitlistSchema = z
   .object({ area: z.union([z.string(), z.null()]), credits: CreditsSchema, invite: InviteStateSchema })
@@ -284,7 +304,7 @@ export function registerConsultations(app: App): void {
       if (!booked.ok) return booked;
       const { state, date, window, area, credits, invite, address, oneVisit, discountCode } = booked;
       const answer = { state, date, window, area, credits, invite, address, one_visit: oneVisit };
-      return { ok: true, body: { ...answer, discount_code: discountCode } };
+      return { ok: true, body: { ...answer, discount_code: standingCodeBody(discountCode) } };
     });
     if (run.kind === "replay") return c.json(run.body, 201);
     if (run.kind === "in_progress") return c.json(errorBody("idempotency_in_progress", requestId), 409);

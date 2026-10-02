@@ -47,13 +47,15 @@ export async function keptJob(id: string): Promise<Job | null> {
  * today's shape, so a job opened with no signal after an update still closes:
  * each reason worded from its id, and the step with nothing to start from. One
  * kept before the hair profile carries none, and lists no step for it
- * (docs/decisions/0106-a-clients-hair-profile.md).
+ * (docs/decisions/0106-a-clients-hair-profile.md). One kept before a one
+ * visit's discount code was on the card carries none, and the outcome step asks.
  */
 function inTodaysShape(job: Job): Job {
-  const kept = job as Omit<Job, "partial_reasons" | "consumables" | "profile"> & {
+  const kept = job as Omit<Job, "partial_reasons" | "consumables" | "profile" | "discount_code"> & {
     readonly partial_reasons: readonly (Job["partial_reasons"][number] | string)[];
     readonly consumables?: Job["consumables"];
     readonly profile?: Job["profile"];
+    readonly discount_code?: Job["discount_code"];
   };
   return {
     ...kept,
@@ -62,6 +64,7 @@ function inTodaysShape(job: Job): Job {
     ),
     consumables: kept.consumables ?? [],
     profile: kept.profile ?? null,
+    discount_code: kept.discount_code ?? null,
   };
 }
 

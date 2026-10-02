@@ -270,6 +270,16 @@ export const referral = {
     back: "See the site",
     // Not drawn on C4 (docs/fidelity-method.md, "The referral landing"). The owner approves the words (open point 45).
     number: "On WhatsApp to +91 {mobile}",
+    // Not drawn: the discount code given with the one visit, as it stands on the booking, or not, when another
+    // booking took its last use a moment before (ADR 0108). What it takes off is before GST. The owner approves the
+    // words.
+    code: {
+      applied: (code: string, off: string) => `Code ${code}: ${off}, taken when you pay.`,
+      notApplied: (code: string) => `We could not apply code ${code}. Your booking stands without it.`,
+      amountOff: (amount: string) => `${amount} off`,
+      percentOff: (percent: number, cap: string | null) =>
+        cap === null ? `${String(percent)}% off` : `${String(percent)}% off, up to ${cap}`,
+    },
     // Not drawn: the number already had an address, which the booking kept rather than the one typed (ADR 0081). It
     // names no part of that address, since whoever typed the number may not be its owner. The owner approves the
     // words (open point 45).

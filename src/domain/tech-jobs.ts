@@ -37,6 +37,7 @@ import { paidAtTheVisit, type OneVisitState } from "../policy/one-visit.ts";
 import { unitsFor } from "../policy/visit-length.ts";
 import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
 import { latestArrival } from "./check-ins.ts";
+import { codeOnVisit, type VisitCode } from "./discount-code-uses.ts";
 import type { AppointmentStatus } from "./fsm-mirror.ts";
 import { latestProfile, profileTakenAt, type HairProfile } from "./hair-profiles.ts";
 import { EVIDENCE_MESSAGE } from "./no-shows.ts";
@@ -149,10 +150,18 @@ export interface JobDetail extends JobSummary {
   readonly products: Product[];
   /** On a one visit closed as done, the link the client pays by, and whether they have. */
   readonly payment_link: JobPaymentLink | null;
+  /** On a one visit, the discount code already on it; never what it takes off. */
+  readonly discount_code: JobCode | null;
   /** The client's hair profile as it stands; null while the job is locked, or before one is recorded. */
   readonly profile: HairProfile | null;
   /** The screens this job runs, in order: its type's steps, and the profile where it takes one and has a client. */
   readonly steps: CardStep[];
+}
+
+/** A one visit's discount code, and who gave it: the client as they booked, ops, or the technician. */
+export interface JobCode {
+  readonly code: string;
+  readonly given_by: VisitCode["givenBy"];
 }
 
 /** A product the client may choose at a one visit: a first fit's service, by its tier and its name. */
@@ -268,6 +277,7 @@ export async function jobDetail(
     reminder: null,
     products: takesProfile(type, row.one_visit !== null) ? await productsOn(db, summary.date) : [],
     payment_link: row.one_visit === null ? null : await paymentLinkOf(db, row.id),
+    discount_code: row.one_visit === null ? null : await jobCodeOf(db, row.id),
     profile: null,
     steps: cardStepsFor(type, row.one_visit !== null, row.person_id !== null),
   };
@@ -301,6 +311,11 @@ async function paymentLinkOf(db: D1Database, appointmentId: string): Promise<Job
     .bind(appointmentId)
     .first<{ short_url: string | null; paid_at: string | null }>();
   return link === null ? null : { url: link.short_url, paid: link.paid_at !== null };
+}
+
+async function jobCodeOf(db: D1Database, appointmentId: string): Promise<JobCode | null> {
+  const code = await codeOnVisit(db, appointmentId);
+  return code === null ? null : { code: code.code, given_by: code.givenBy };
 }
 
 /** Dates as the piece lookup names them: the fitted and due dates are days, the failure an instant. */

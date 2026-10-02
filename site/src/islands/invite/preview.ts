@@ -31,5 +31,5 @@ export function sampleBooking(state: "booked" | "requested" | "expired"): Bookin
     address: "saved",
     one_visit: false,
   };
-  return { result, mobile: SAMPLE.mobile, place: placeOf(SAMPLE.served) };
+  return { result, mobile: SAMPLE.mobile, place: placeOf(SAMPLE.served), code: null };
 }

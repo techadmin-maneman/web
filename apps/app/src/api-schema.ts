@@ -3096,6 +3096,12 @@ export interface components {
             } | null;
             /** @description The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07). */
             no_show: components["schemas"]["NoShowNote"] | null;
+            /** @description The discount code the visit was paid with; null for none, and on a late fee. */
+            discount_code: {
+                code: string;
+                /** @description In paise before GST; null where the visit's price was not yet known. */
+                amount_off: number | null;
+            } | null;
         };
         RefundEntry: {
             /**
@@ -3219,6 +3225,12 @@ export interface components {
             } | null;
             /** @description The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07). */
             no_show: components["schemas"]["NoShowNote"] | null;
+            /** @description The discount code the visit was paid with; null for none, and on a late fee. */
+            discount_code: {
+                code: string;
+                /** @description In paise before GST; null where the visit's price was not yet known. */
+                amount_off: number | null;
+            } | null;
             documents: {
                 /** @description The visit's tax invoice, for GET /api/documents/{id}, once Books has issued it. */
                 invoice: string | null;

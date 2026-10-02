@@ -66,6 +66,48 @@ const REFUND_QUERY = `SELECT r.id, r.payment_id, r.created_at, r.amount, r.statu
   FROM refunds r JOIN payments p ON p.id = r.payment_id ${VISIT_JOIN}
   WHERE p.person_id = ?1`;
 
+// The code a visit's payment was made with: one entered on the visit, or on the hold that booked it or that
+// Checkout's order was made for. A late fee takes none.
+const CODE_QUERY = `SELECT p.id AS payment_id, d.code, u.amount_off
+  FROM payments p
+  JOIN discount_code_uses u ON u.person_id = p.person_id AND u.removed_at IS NULL
+  JOIN discount_codes d ON d.id = u.code_id
+  LEFT JOIN slot_holds h ON h.id = u.hold_id
+  WHERE p.person_id = ?1 AND p.kind = 'visit' AND p.status != 'failed'
+    AND (u.appointment_id = p.appointment_id
+      OR (h.state = 'booked' AND h.appointment_id = p.appointment_id)
+      OR h.razorpay_order_id = p.razorpay_order_id)`;
+
+/** A payment's discount code, and what it took off in paise before GST; null where the price was not known. */
+interface PaymentCode {
+  readonly code: string;
+  readonly amount_off: number | null;
+}
+
+interface CodeRow {
+  payment_id: string;
+  code: string;
+  amount_off: number | null;
+}
+
+/** What a payment's own row does not hold: the no-show note of its visit, and the code it was made with. */
+interface PaymentNotes {
+  readonly noShows: ReadonlyMap<string, NoShowNote>;
+  readonly codes: ReadonlyMap<string, PaymentCode>;
+}
+
+/** The codes the person's visit payments were made with, by payment; only the one payment's, given its ID. */
+async function codesOf(db: D1Database, personId: string, paymentId: string | null = null) {
+  const statement =
+    paymentId === null
+      ? db.prepare(CODE_QUERY).bind(personId)
+      : db.prepare(`${CODE_QUERY} AND p.id = ?2`).bind(personId, paymentId);
+  const { results } = await statement.all<CodeRow>();
+  return new Map<string, PaymentCode>(
+    results.map((row) => [row.payment_id, { code: row.code, amount_off: row.amount_off }]),
+  );
+}
+
 /** The visit an entry was for, when we know it. */
 const visitRefOf = (row: VisitColumns) =>
   row.appointment_id === null || row.window_start === null
@@ -85,7 +127,7 @@ function moneyOf(
   };
 }
 
-const paymentOf = (row: PaymentRow, noShows: ReadonlyMap<string, NoShowNote>) => ({
+const paymentOf = (row: PaymentRow, notes: PaymentNotes) => ({
   kind: "payment" as const,
   id: row.id,
   ...moneyOf(row),
@@ -103,7 +145,8 @@ const paymentOf = (row: PaymentRow, noShows: ReadonlyMap<string, NoShowNote>) =>
           visit_started_at: row.charged_visit_start,
           amount: row.charged_amount ?? 0,
         },
-  no_show: row.kind === "visit" && row.appointment_id !== null ? (noShows.get(row.appointment_id) ?? null) : null,
+  no_show: row.kind === "visit" && row.appointment_id !== null ? (notes.noShows.get(row.appointment_id) ?? null) : null,
+  discount_code: notes.codes.get(row.id) ?? null,
 });
 
 const refundOf = (row: RefundRow) => ({
@@ -126,13 +169,14 @@ const noShowsOf = (db: D1Database, rows: readonly PaymentRow[], now: Date) =>
 
 /** A person's payments and refunds as one list, newest first. Ops read the same list on the client's page. */
 export async function paymentEntries(db: D1Database, personId: string, now: Date) {
-  const [payments, refunds] = await Promise.all([
+  const [payments, refunds, codes] = await Promise.all([
     db.prepare(PAYMENT_QUERY).bind(personId).all<PaymentRow>(),
     db.prepare(REFUND_QUERY).bind(personId).all<RefundRow>(),
+    codesOf(db, personId),
   ]);
-  const noShows = await noShowsOf(db, payments.results, now);
+  const notes = { noShows: await noShowsOf(db, payments.results, now), codes };
   return [
-    ...payments.results.map((row) => ({ at: row.created_at, entry: paymentOf(row, noShows) })),
+    ...payments.results.map((row) => ({ at: row.created_at, entry: paymentOf(row, notes) })),
     ...refunds.results.map((row) => ({ at: row.created_at, entry: refundOf(row) })),
   ]
     .sort((a, b) => b.at.localeCompare(a.at))
@@ -206,8 +250,8 @@ export async function paymentEntry(db: D1Database, personId: string, id: string,
   if (payment !== null) {
     const invoice = payment.invoice_issued_at === null ? null : payment.appointment_id;
     const receipt = payment.books_payment_id === null ? null : payment.id;
-    const noShows = await noShowsOf(db, [payment], now);
-    return { ...paymentOf(payment, noShows), documents: { invoice, receipt } };
+    const notes = { noShows: await noShowsOf(db, [payment], now), codes: await codesOf(db, personId, payment.id) };
+    return { ...paymentOf(payment, notes), documents: { invoice, receipt } };
   }
   const refund = await db.prepare(`${REFUND_QUERY} AND r.id = ?2`).bind(personId, id).first<RefundRow>();
   return refund === null ? null : { ...refundOf(refund), voucher: null };

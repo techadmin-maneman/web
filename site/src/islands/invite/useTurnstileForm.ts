@@ -46,6 +46,8 @@ export function useTurnstileForm(siteKey: string) {
   const [touched, setTouched] = useState(false);
   const [sending, setSending] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
+  // The fields the last refusal named, so a form can say it beside the one at fault.
+  const [refusedFields, setRefusedFields] = useState<readonly string[]>([]);
   const box = useRef<HTMLDivElement>(null);
   const widget = useRef<ReturnType<typeof turnstileWidget> | null>(null);
   const keyFor = useMemo(keyPerRequest, []);
@@ -74,6 +76,7 @@ export function useTurnstileForm(siteKey: string) {
     }
     setSending(true);
     setFailure(null);
+    setRefusedFields([]);
     const token = (await widget.current?.token()) ?? null;
     if (token === null) {
       setFailure(referral.errors.turnstile);
@@ -86,10 +89,11 @@ export function useTurnstileForm(siteKey: string) {
     if (!result.ok) {
       if (result.code === "invalid_request") setTouched(true);
       setFailure(refusal(result.code, result.booked));
+      setRefusedFields(result.fields);
       return;
     }
     sent(result.body);
   }
 
-  return { fields, setFields, touched, sending, failure, box, submit };
+  return { fields, setFields, touched, sending, failure, refusedFields, box, submit };
 }

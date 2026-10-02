@@ -523,6 +523,19 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     expect(writesTo(fake, "discount-code")).toHaveLength(0);
   });
 
+  test("says the code the client booked with, and asks for none", async ({ page }) => {
+    const fake = await fakeTech(page);
+    fake.type = "first_fit";
+    fake.oneVisit = true;
+    fake.discountCode = { code: "AUDTEST", given_by: "client" };
+    startedThrough(fake, "before_photos", "checklist", "consumables", "piece", "after_photos");
+    await page.goto(`/jobs/${JOB_ID}/outcome`);
+    await page.getByRole("button", { name: "Done", exact: true }).click();
+    await expect(page.getByText("Code AUDTEST applied at booking. The payment link will take it off.")).toBeVisible();
+    await expect(page.getByLabel("Discount code, if the client has one")).toHaveCount(0);
+    expect((await wcag(page)).violations).toEqual([]);
+  });
+
   test("names the job a consultation and fit, paid for once fitted", async ({ page }) => {
     const fake = await fakeTech(page);
     fake.type = "first_fit";

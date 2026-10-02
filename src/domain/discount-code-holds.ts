@@ -4,7 +4,7 @@
 // takes off waits for the payment link (src/domain/payment-links.ts). Uses are src/domain/discount-code-uses.ts.
 
 import type { VisitType } from "../config/visit-types.ts";
-import { amountOff, discounted } from "../policy/discount-codes.ts";
+import { amountOff, discounted, type DiscountTerms } from "../policy/discount-codes.ts";
 import { termsOf } from "./discount-codes.ts";
 import {
   checkCode,
@@ -166,20 +166,26 @@ export async function holdDiscount(
   };
 }
 
-/** A code the site's form was given, checked for a consultation and fit in one visit: its ID, or why not. */
+/** A code that applies to a consultation and fit in one visit: its ID, its text and what it takes off. */
+export interface OneVisitCode {
+  readonly ok: true;
+  readonly codeId: string;
+  readonly code: string;
+  readonly terms: DiscountTerms;
+}
+
+/** A code the site's form was given, checked for a consultation and fit in one visit: the code, or why not. */
 export async function checkForOneVisit(
   db: D1Database,
   text: string,
   personId: string | null,
   now: Date,
-): Promise<
-  | { readonly ok: true; readonly codeId: string; readonly code: string }
-  | { readonly ok: false; readonly reason: Refused }
-> {
+): Promise<OneVisitCode | { readonly ok: false; readonly reason: Refused }> {
   const booking = { type: "first_fit", onCredit: false, moves: false } as const;
   // Someone new has used nothing, which no person's ID matches.
   const checked = await checkCode(db, text, booking, personId ?? "", now);
-  return checked.ok ? { ok: true, codeId: checked.code.id, code: checked.code.code } : checked;
+  if (!checked.ok) return checked;
+  return { ok: true, codeId: checked.code.id, code: checked.code.code, terms: termsOf(checked.code) };
 }
 
 /**

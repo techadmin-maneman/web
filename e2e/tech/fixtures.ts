@@ -282,6 +282,8 @@ export interface CardOptions {
   /** The client's hair profile as it stands; none recorded unless a test gives one. */
   readonly profile?: HairProfile | null;
   readonly checklist?: Card["checklist"];
+  /** A one visit's discount code already on it; none unless a test gives one. */
+  readonly discountCode?: Card["discount_code"];
 }
 
 export function card(date: string, progress: Progress, options: CardOptions = {}): Card {
@@ -321,6 +323,7 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
     consumables: CONSUMABLES,
     products: oneVisit || type === "consultation" ? PRODUCTS : [],
     payment_link: null,
+    discount_code: options.discountCode ?? null,
     profile: options.profile ?? null,
   };
 }
@@ -343,6 +346,7 @@ export function lockedCard(date: string): Card {
     consumables: CONSUMABLES,
     products: [],
     payment_link: null,
+    discount_code: null,
     profile: null,
   };
 }
@@ -408,6 +412,8 @@ export interface Fake {
   type: VisitType;
   /** True makes the first job a consultation and fit in one visit. */
   oneVisit: boolean;
+  /** The discount code already on the one visit, or none. */
+  discountCode: Card["discount_code"];
   /** The client's pieces on the card. */
   pieces: Piece[];
   /** The client's hair profile on the card, or none recorded. */
@@ -491,6 +497,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     pin: true,
     type: "service",
     oneVisit: false,
+    discountCode: null,
     pieces: [],
     profile: null,
     checklist: CHECKLIST,
@@ -516,6 +523,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       oneVisit: fake.oneVisit,
       profile: fake.profile,
       checklist: fake.checklist,
+      discountCode: fake.discountCode,
     });
 
   await on.route("**/api/tech/**", async (route: Route) => {

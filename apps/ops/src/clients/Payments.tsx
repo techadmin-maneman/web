@@ -36,10 +36,22 @@ function whatOf(entry: ClientPayment): string {
   return copy.visit(type, fullDate(entry.visit.date));
 }
 
+/** The discount code a visit's payment was made with, and what it took off before GST; null for none. */
+function codeOf(entry: ClientPayment): string | null {
+  if (entry.kind === "refund" || entry.discount_code === null) return null;
+  const { code, amount_off: off } = entry.discount_code;
+  return copy.code(clients.visits.code.applied(code, off === null ? null : rupees(off)));
+}
+
 function stateOf(entry: ClientPayment): string {
   const state = entry.kind === "refund" ? copy.refundStates[entry.status] : copy.paymentStates[entry.status];
   const reference = entry.kind === "payment" && entry.reference !== null ? ` · ${copy.reference(entry.reference)}` : "";
   return `${state ?? clients.unknown}${reference}`;
+}
+
+function CodeLine({ entry }: { entry: ClientPayment }) {
+  const code = codeOf(entry);
+  return code === null ? null : <span className={styles.closedLine}>{code}</span>;
 }
 
 function PaymentTable({ payments }: { payments: readonly ClientPayment[] }) {
@@ -59,7 +71,10 @@ function PaymentTable({ payments }: { payments: readonly ClientPayment[] }) {
         {payments.map((entry) => (
           <tr key={entry.id}>
             <td className={styles.cell}>{fullDate(entry.date)}</td>
-            <td className={styles.cell}>{whatOf(entry)}</td>
+            <td className={styles.cell}>
+              {whatOf(entry)}
+              <CodeLine entry={entry} />
+            </td>
             <td className={styles.figureCell}>{rupees(entry.amount)}</td>
             <td className={styles.quietCell}>{stateOf(entry)}</td>
           </tr>
