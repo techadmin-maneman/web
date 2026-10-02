@@ -3,7 +3,8 @@
 // (board F3), so the consent recorded is one the client has read. A switch
 // moves only once the API has recorded it; one that did not go through says so
 // and stays as it was, since a switch that looks off while the consent stands
-// would tell the client something untrue about their data.
+// would tell the client something untrue about their data. Visit messages off,
+// a line says what that means.
 
 import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
@@ -73,6 +74,10 @@ export function ConsentList({ consents }: { consents: readonly Consent[] }) {
                   <span className={styles.knob} />
                 </button>
               </div>
+              {consent.purpose === "whatsapp_visits" && (
+                // Always in the page, so a screen reader hears the line come and go with the switch.
+                <div role="status">{!consent.granted && <p className={styles.consequence}>{copy.visitsOff}</p>}</div>
+              )}
               {failed === consent.purpose && (
                 <p className={styles.error} role="alert">
                   {copy.switchFailed}

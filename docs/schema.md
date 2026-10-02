@@ -949,7 +949,7 @@ Indexes:
 
 Each WhatsApp code sent to prove a number typed into the site, with the number and the code only as hashes (ADR 0081, ADR 0104).
 
-Made by `0073_number_codes.sql`.
+Made by `0074_number_codes.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1284,7 +1284,7 @@ Made by `0014_payments.sql`.
 
 A person who came through an invite, to the first invite they used, what became of its grant, and who attached it and why where ops did (ADR 0048, ADR 0089).
 
-Made by `0021_referrals.sql`; changed by `0037_cron_indexes.sql`, `0044_hand_offs_and_messages.sql`, `0051_invites_ops_attach.sql`, `0060_flat_task_reads.sql`, `0062_referral_reward_kept.sql`.
+Made by `0021_referrals.sql`; changed by `0037_cron_indexes.sql`, `0044_hand_offs_and_messages.sql`, `0051_invites_ops_attach.sql`, `0060_flat_task_reads.sql`, `0062_referral_reward_kept.sql`, `0073_invite_told_notice.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1309,6 +1309,7 @@ Made by `0021_referrals.sql`; changed by `0037_cron_indexes.sql`, `0044_hand_off
 | `referrer_visits` | INTEGER | yes |  |  |
 | `friend_visits` | INTEGER | yes |  |  |
 | `credit_valid_days` | INTEGER | yes |  |  |
+| `told_notice` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -1774,7 +1775,7 @@ Indexes:
 
 One try-on render: the photograph, the look, the provider's job and the result (ADR 0014, ADR 0015).
 
-Made by `0003_tryon.sql`; changed by `0037_cron_indexes.sql`, `0045_kept_try_ons.sql`, `0073_number_codes.sql`.
+Made by `0003_tryon.sql`; changed by `0037_cron_indexes.sql`, `0045_kept_try_ons.sql`, `0074_number_codes.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |

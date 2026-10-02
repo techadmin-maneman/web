@@ -1,10 +1,10 @@
-// Visits (board C1): what is coming on ink, what has been done below, each
-// opening its own page (C9 for one done). A booking's consultation, not yet in
-// FSM, shows as the one upcoming. A visit FSM has not closed stays under
-// upcoming, saying where it stands, and "Book your next visit"
-// waits while it is. That opens WhatsApp to ops while self-serve booking is
-// off, and waits for the connection offline. "Prepaid" marks a visit paid for
-// ahead, or covered by a credit.
+// Visits (board C1): what is coming on ink, what has been done or cancelled
+// below, each opening its own page (C9 for one done). A booking's
+// consultation, not yet in FSM, shows as the one upcoming. A visit FSM has not
+// closed stays under upcoming, saying where it stands, and "Book your next
+// visit" waits while it is. That opens WhatsApp to ops while self-serve
+// booking is off, and waits for the connection offline. "Prepaid" marks a
+// visit paid for ahead, or covered by a credit.
 //
 // Beneath them, the client's own record, which the board draws nowhere: how
 // often they have been served, what they have bought, what they have paid, and
@@ -93,6 +93,12 @@ function Record({ history }: { history: Visits["history"] }) {
   );
 }
 
+/** A past visit's line: what it was and who did it, or that it was cancelled. */
+function pastLine(visit: VisitSummary): string {
+  const after = visit.status === "cancelled" ? [visits.cancelled] : technicianOf(visit);
+  return [visitName(visit.type), ...after].join(" · ");
+}
+
 function Fact({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
     <div className={styles.fact}>
@@ -138,9 +144,7 @@ function VisitList({ list, consultation }: { list: Visits; consultation: Me["con
                 <AppLink className={styles.row} to={`/visits/${visit.id}`}>
                   <span>
                     <span className={styles.rowDate}>{fullDate(visit.date)}</span>
-                    <span className={styles.rowWhat}>
-                      {[visitName(visit.type), ...technicianOf(visit)].join(" · ")}
-                    </span>
+                    <span className={styles.rowWhat}>{pastLine(visit)}</span>
                   </span>
                   <Icon className={styles.chevron} d={CHEVRON} size={17} />
                 </AppLink>
@@ -170,7 +174,7 @@ export function VisitsScreen() {
     >
       {whenLoaded(loaded, {
         loading: <Loading />,
-        failed: <PageFailed onRetry={retry} />,
+        failed: <PageFailed onRetry={retry} offlineLine={visits.offline} />,
         loaded: (list) => <VisitList list={list} consultation={me.consultation} />,
       })}
     </Shell>

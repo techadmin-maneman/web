@@ -27,7 +27,7 @@ export function HomeScreen() {
   // A Home the phone kept from an earlier release has no invoice line at all.
   const invoice = me.invoice ?? null;
   return (
-    <Shell header={{ kind: "home" }} tab="/">
+    <Shell header={{ kind: "home" }} tab="/" kept>
       <div className={styles.home}>
         <HomeBody me={me} offline={offline} />
         {me.credits !== null && <CreditTile credits={me.credits} />}

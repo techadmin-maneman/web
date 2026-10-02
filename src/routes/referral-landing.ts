@@ -20,6 +20,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
 import { HOUSE_CARD } from "../config/house-card.ts";
+import { TOLD_NOTICES, type ToldNotice } from "../config/notices.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { bookConsultation, joinTheWaitlist, pincodeOf } from "../domain/public-booking.ts";
 import { liveCard } from "../domain/referral-cards.ts";
@@ -77,7 +78,20 @@ const Person = {
   name: z.string().trim().min(1).max(80),
   mobile: z.string().max(20),
   turnstile_token: z.string().min(1).max(2048),
+  invite_told: z
+    .literal(true)
+    .optional()
+    .openapi({
+      description:
+        "true: the form said that whoever sent the invite is told when the friend is fitted. The attribution " +
+        "records it; the invite applies either way.",
+    }),
 };
+
+/** The line the landing showed beside the invite, as its form says; null where it showed none. */
+function toldOnLanding(told: true | undefined): ToldNotice | null {
+  return told === true ? TOLD_NOTICES.landing : null;
+}
 
 const ConsultationRequestSchema = z
   .object({
@@ -275,6 +289,7 @@ export function registerReferralLanding(app: App): void {
         turnstileToken: body.turnstile_token,
         attribution: {},
         invite: await invite(c, code),
+        toldNotice: toldOnLanding(body.invite_told),
         source: "referral_landing",
         plan: planOf(body.one_visit),
         // An invite's page takes no discount code: the invite is its offer (docs/decisions/0108-discount-codes.md).
@@ -321,6 +336,7 @@ export function registerReferralLanding(app: App): void {
         turnstileToken: body.turnstile_token,
         attribution: {},
         invite: await invite(c, code),
+        toldNotice: toldOnLanding(body.invite_told),
         source: "referral_landing",
       });
       if (!listed.ok) return listed;

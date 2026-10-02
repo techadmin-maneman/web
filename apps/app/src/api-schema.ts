@@ -874,7 +874,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Upcoming soonest first; past newest first */
+                /** @description Upcoming soonest first; past newest first, a visit cancelled among them */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -3332,6 +3332,11 @@ export interface components {
                 name: string;
                 initials: string;
             } | null;
+            /**
+             * Format: date
+             * @description The last day this visit may be booked on: later days are asked for up to it.
+             */
+            last: string;
             days: {
                 /** Format: date */
                 date: string;

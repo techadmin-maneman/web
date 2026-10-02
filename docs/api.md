@@ -252,7 +252,14 @@ Request body:
     "invite_code": {
       "type": "string",
       "maxLength": 64,
-      "description": "The code of an invite this browser opened in the last 30 days. One we do not have, or not shaped like a code, is ignored: the booking goes ahead without an invite."
+      "description": "The code of an invite this browser opened in the last 30 days. One sent without invite_told, one we do not have, or one not shaped like a code, is ignored: the booking goes ahead without an invite."
+    },
+    "invite_told": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "true: beside the invite, the form said that whoever sent it is told when the friend is fitted, and offered to go on without it. The attribution records it."
     },
     "date": {
       "type": "string",
@@ -441,7 +448,14 @@ Request body:
     "invite_code": {
       "type": "string",
       "maxLength": 64,
-      "description": "The code of an invite this browser opened in the last 30 days. One we do not have, or not shaped like a code, is ignored: the booking goes ahead without an invite."
+      "description": "The code of an invite this browser opened in the last 30 days. One sent without invite_told, one we do not have, or one not shaped like a code, is ignored: the booking goes ahead without an invite."
+    },
+    "invite_told": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "true: beside the invite, the form said that whoever sent it is told when the friend is fitted, and offered to go on without it. The attribution records it."
     },
     "contact_consent": {
       "type": "boolean",
@@ -587,6 +601,13 @@ Request body:
       "minLength": 1,
       "maxLength": 2048
     },
+    "invite_told": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "true: the form said that whoever sent the invite is told when the friend is fitted. The attribution records it; the invite applies either way."
+    },
     "pincode": {
       "type": "string",
       "pattern": "^[1-8]\\d{5}$",
@@ -717,6 +738,13 @@ Request body:
       "type": "string",
       "minLength": 1,
       "maxLength": 2048
+    },
+    "invite_told": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "true: the form said that whoever sent the invite is told when the friend is fitted. The attribution records it; the invite applies either way."
     },
     "pincode": {
       "type": "string",
