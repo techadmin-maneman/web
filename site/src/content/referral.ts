@@ -170,6 +170,10 @@ export const referral = {
       { id: "afternoon", label: "Afternoon", hours: "12 to 4 pm" },
       { id: "evening", label: "Evening", hours: "4 to 8 pm" },
     ],
+    // Not drawn: a window nobody is free in, and a fortnight with none open. The owner approves the words.
+    full: "Full",
+    noneOpen: "Fully booked for the next two weeks.",
+    noneOpenAction: "Message us on WhatsApp for the next opening",
     /** Not drawn: what to book, the consultation alone or the consultation and fit in one visit. */
     plan: {
       legend: "What to book",
@@ -307,7 +311,7 @@ export const referral = {
   errors: {
     rateLimited: "That is a few too many tries. Please try again tomorrow.",
     turnstile: "We could not confirm you are a person. Please try again.",
-    taken: "That window has just gone. Please pick another.",
+    taken: "That window is full. Please pick another.",
     notBookable: "That day is no longer open. Please pick another.",
     other: "Something went wrong at our end. Please try again.",
     // Not drawn: the discount code given does not apply, whatever the reason (ADR 0108). The owner approves the words.
