@@ -84,6 +84,8 @@ export const ERROR_CODES = [
   "service_exists",
   "last_of_kind",
   "service_retired",
+  // A first fit, or a consultation and fit in one visit, on a day the console offers no hair system to sell.
+  "no_product",
   // An invite ops attach to a client (docs/decisions/0089-an-invite-is-not-lost.md): no invite has the code; it is the
   // client's own; or the client came with one already.
   "unknown_invite",

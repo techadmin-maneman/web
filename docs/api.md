@@ -49,7 +49,7 @@ The prices the site publishes, from the price book, in force today. Cacheable fo
 }
 ```
 
-**503**: unavailable: the book lacks a standard one of them, so the site shows its own
+**503**: unavailable: the book lacks the standard service visit or replacement, so the site shows its own
 
 ```json
 {
@@ -225,7 +225,7 @@ Request body:
 }
 ```
 
-**422**: not_bookable: the pincode is not served, the day is not open, or this number is past consultations and books in the app; code_not_applicable: the discount code does not apply, fields names discount_code; idempotency_key_reused: the key was used with a different body
+**422**: not_bookable: the pincode is not served, the day is not open, or this number is past consultations and books in the app; code_not_applicable: the discount code does not apply, fields names discount_code; no_product: one visit, on a day the console offers no hair system; idempotency_key_reused: the key was used with a different body
 
 ```json
 {
@@ -560,7 +560,7 @@ Request body:
 }
 ```
 
-**422**: not_bookable: the pincode is not served, the day is not open, or this number is past consultations; idempotency_key_reused: the key was used with a different body
+**422**: not_bookable: the pincode is not served, the day is not open, or this number is past consultations; no_product: one visit, on a day the console offers no hair system; idempotency_key_reused: the key was used with a different body
 
 ```json
 {
@@ -1226,6 +1226,7 @@ Razorpay's webhook: payments and refunds
             "service_exists",
             "last_of_kind",
             "service_retired",
+            "no_product",
             "unknown_invite",
             "own_invite",
             "already_invited",
@@ -1361,10 +1362,7 @@ Razorpay's webhook: payments and refunds
       "enum": [
         "standard"
       ],
-      "description": "The tier of the three figures below: each kind's standard."
-    },
-    "first_fit": {
-      "$ref": "#/components/schemas/Price"
+      "description": "The tier of the two figures below: each kind's standard."
     },
     "service": {
       "$ref": "#/components/schemas/Price"
@@ -1377,13 +1375,12 @@ Razorpay's webhook: payments and refunds
       "items": {
         "$ref": "#/components/schemas/PublishedService"
       },
-      "description": "Every service offered and priced today, a kind at a time, in the console's order."
+      "description": "Every service offered and priced today, a kind at a time, in the console's order. A first fit's are the hair systems ops offer; none while ops offer none."
     }
   },
   "required": [
     "on",
     "tier",
-    "first_fit",
     "service",
     "replacement",
     "services"
@@ -1436,7 +1433,7 @@ Razorpay's webhook: payments and refunds
     },
     "tier": {
       "type": "string",
-      "description": "Its code within its kind: standard, premium, or another."
+      "description": "Its code within its kind."
     },
     "name": {
       "type": "string"
@@ -1596,6 +1593,7 @@ Razorpay's webhook: payments and refunds
             "service_exists",
             "last_of_kind",
             "service_retired",
+            "no_product",
             "unknown_invite",
             "own_invite",
             "already_invited",

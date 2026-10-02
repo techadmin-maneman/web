@@ -120,6 +120,31 @@ describe("the day's list", () => {
     // A service one slot, a first fit two, a replacement one and a half (src/config/scheduling.ts).
     expect(jobs.map((job) => job.slots)).toEqual([1, 2, 1.5]);
   });
+
+  // The owner's decision of 2 October 2026: a first fit is one of the hair systems ops offer, and the card names it.
+  it("names the hair system a first fit was sold as, and none for any other visit or a one visit still to choose", async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
+         VALUES ('first_fit', 'essential', 'Mane Man Essential', 90, 1, 'ops@localhost', ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from)
+         VALUES ('first_fit', 'essential', 3200000, 0, '2026-01-01')`,
+      ),
+    ]);
+    await insertJob(LAST_VISIT, { start: "2026-09-21T09:30:00.000Z", type: "first_fit" });
+    await insertJob(OLDER_VISIT, { start: "2026-09-21T11:30:00.000Z", type: "first_fit" });
+    await env.DB.prepare("UPDATE appointments SET tier = 'essential' WHERE id IN (?1, ?2)")
+      .bind(LAST_VISIT, OLDER_VISIT)
+      .run();
+    await env.DB.prepare("UPDATE appointments SET one_visit = 'booked' WHERE id = ?1").bind(OLDER_VISIT).run();
+
+    const { jobs } = await (await get("/api/tech/jobs?date=2026-09-21")).json<{ jobs: { product: string | null }[] }>();
+
+    expect(jobs.map((job) => job.product)).toEqual([null, "Mane Man Essential", null]);
+    expect(await card(LAST_VISIT)).toMatchObject({ product: "Mane Man Essential" });
+  });
 });
 
 describe("the card", () => {

@@ -33,7 +33,7 @@ export type HomePrompt =
       readonly kind: "next_visit";
       readonly type: "service" | "replacement";
       /** The service of its kind it offers (NextOffer.tier). */
-      readonly tier: string;
+      readonly tier: string | null;
       /** India's day it is offered on: the day it falls due, or tomorrow once that has passed. */
       readonly date: string;
       readonly window: BookingWindow | null;
@@ -42,7 +42,7 @@ export type HomePrompt =
       readonly kind: "replacement_due";
       readonly month: string;
       /** The replacement service offered: the client's last one while offered, else the first (serviceToOffer). */
-      readonly tier: string;
+      readonly tier: string | null;
       /** The month begins within how far ahead a visit may be booked, so the replacement can be booked now. */
       readonly bookable: boolean;
     }

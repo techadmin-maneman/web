@@ -140,9 +140,10 @@ export function ServiceStep(props: {
 }) {
   const copy = booking.service;
   const kinds = [...new Set(props.services.map((service) => service.type))];
+  const title = kinds.length === 1 && kinds[0] === "first_fit" ? copy.titleFirstFit : copy.title;
   return (
     <>
-      <Heading title={copy.title} step={booking.step(1, 3 + props.before)} />
+      <Heading title={title} step={booking.step(1, 3 + props.before)} />
       {kinds.map((kind) => (
         <div key={kind} className={styles.kind}>
           <h3 className={styles.label} id={`booking-kind-${kind}`}>

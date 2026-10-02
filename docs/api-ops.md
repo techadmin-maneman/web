@@ -2662,7 +2662,7 @@ Request body:
 }
 ```
 
-**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be
 
 ```json
 {
@@ -2714,7 +2714,7 @@ Request body:
 }
 ```
 
-**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be
 
 ```json
 {
@@ -2766,7 +2766,7 @@ Request body:
 }
 ```
 
-**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be
 
 ```json
 {
@@ -2818,7 +2818,7 @@ Request body:
 }
 ```
 
-**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be
 
 ```json
 {
@@ -2870,7 +2870,7 @@ Request body:
 }
 ```
 
-**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be
 
 ```json
 {
@@ -2914,7 +2914,7 @@ Offer a retired service again, or take back a retirement still to come
 }
 ```
 
-**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be
 
 ```json
 {
@@ -3662,6 +3662,7 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
             "service_exists",
             "last_of_kind",
             "service_retired",
+            "no_product",
             "unknown_invite",
             "own_invite",
             "already_invited",
@@ -5828,6 +5829,7 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
             "service_exists",
             "last_of_kind",
             "service_retired",
+            "no_product",
             "unknown_invite",
             "own_invite",
             "already_invited",
@@ -6149,7 +6151,7 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
         ],
         "additionalProperties": false
       },
-      "description": "The products a correction may name: every first-fit service, retired or not."
+      "description": "The products a correction may name: the hair systems offered today, as the technician's card lists them."
     }
   },
   "required": [

@@ -102,7 +102,7 @@ const refused = {
   404: errorResponse("not_found: no service of that kind has that code"),
   409: errorResponse(
     "service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its " +
-      "kind would be left with nothing to book",
+      "kind would be left with nothing to book, which a first fit may be",
   ),
 };
 const Path = z.object({ kind: Kind, tier: Tier });

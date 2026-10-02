@@ -976,6 +976,7 @@ Request body:
             "service_exists",
             "last_of_kind",
             "service_retired",
+            "no_product",
             "unknown_invite",
             "own_invite",
             "already_invited",
@@ -1369,6 +1370,17 @@ Request body:
       "type": "boolean",
       "description": "A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, at the piece step."
     },
+    "product": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "On a first fit, the hair system the client was sold, by its name in the console. Null on any other visit, on a one visit until the client chooses, and on a first fit that names none."
+    },
     "sector": {
       "anyOf": [
         {
@@ -1430,6 +1442,7 @@ Request body:
     "window_label",
     "type",
     "one_visit",
+    "product",
     "sector",
     "status",
     "badge",
@@ -1505,6 +1518,17 @@ Request body:
     "one_visit": {
       "type": "boolean",
       "description": "A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, at the piece step."
+    },
+    "product": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "On a first fit, the hair system the client was sold, by its name in the console. Null on any other visit, on a one visit until the client chooses, and on a first fit that names none."
     },
     "sector": {
       "anyOf": [
@@ -1908,6 +1932,7 @@ Request body:
     "window_label",
     "type",
     "one_visit",
+    "product",
     "sector",
     "status",
     "badge",

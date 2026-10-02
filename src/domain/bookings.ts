@@ -27,7 +27,7 @@
 // is what was sold (docs/decisions/0085-services-ops-can-edit.md).
 
 import { PAYMENT_GRACE_SECONDS } from "../config/scheduling.ts";
-import { FSM_SERVICE_NAMES, type VisitType } from "../config/visit-types.ts";
+import { VISIT_TYPE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { indiaIso } from "../lib/india-time.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
 import { createLogger, type Logger } from "../log.ts";
@@ -511,7 +511,7 @@ async function appointmentFor(
 }
 
 const summaryOf = (hold: HoldRow, labelAsTest: boolean) =>
-  `${labelAsTest ? "Staging test: " : ""}${hold.service_name ?? FSM_SERVICE_NAMES[hold.type]} for ${hold.person_name}`;
+  `${labelAsTest ? "Staging test: " : ""}${hold.service_name ?? VISIT_TYPE_NAMES[hold.type]} for ${hold.person_name}`;
 
 async function keepWorkOrder(db: D1Database, holdId: string, workOrderId: string): Promise<void> {
   await db.prepare("UPDATE slot_holds SET fsm_work_order_id = ?2 WHERE id = ?1").bind(holdId, workOrderId).run();
