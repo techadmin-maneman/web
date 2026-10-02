@@ -3,9 +3,10 @@ import { createApp } from "./app.ts";
 import type { App } from "./http/context.ts";
 import { ENABLED_SURFACES, type Surface } from "./config/environments.ts";
 import { productionDependencies } from "./dependencies.ts";
+import { alertIfForgotten, MAINTENANCE_RETRY_SECONDS, maintenanceUnderWay } from "./domain/maintenance.ts";
 import { createCachedIdentityCheck, validateStaticConfig } from "./guard.ts";
 import { byHost } from "./http/surfaces.ts";
-import { createLogger } from "./log.ts";
+import { createLogger, type Logger } from "./log.ts";
 import { handleCrmSyncBatch } from "./queues/crm-sync.ts";
 import { handleFsmSyncBatch } from "./queues/fsm-sync.ts";
 import { handleMessagingBatch } from "./queues/messaging.ts";
@@ -34,6 +35,16 @@ async function assertOwnDatabase(db: D1Database): Promise<void> {
   if (identity.state !== "ok") throw new Error(`database identity check failed: ${identity.state}`);
 }
 
+/** Whether the cron stands still this run for maintenance, which ops are told of once it has gone on too long. */
+async function stoppedForMaintenance(workerEnv: Env, log: Logger): Promise<boolean> {
+  const maintenance = await maintenanceUnderWay(workerEnv.DB);
+  if (maintenance === null) return false;
+  log.warn("cron_stopped_for_maintenance", { since: maintenance.startedAt });
+  const deps = makeDependencies(workerEnv, log);
+  await alertIfForgotten(maintenance, deps.alertOnce, deps.now());
+  return true;
+}
+
 export default {
   fetch: byHost(apps, config.environment),
 
@@ -44,6 +55,11 @@ export default {
     // Consumer runs have stalled for minutes before their first outside call (docs/decisions/0012).
     const identityMs = Date.now() - started;
     if (identityMs > SLOW_STEP_MS) log.warn("slow_step", { step: "database_identity", duration_ms: identityMs });
+    if ((await maintenanceUnderWay(workerEnv.DB)) !== null) {
+      log.warn("queue_stopped_for_maintenance", { messages: batch.messages.length });
+      batch.retryAll({ delaySeconds: MAINTENANCE_RETRY_SECONDS });
+      return;
+    }
     const deps = makeDependencies(workerEnv, log);
 
     if (batch.queue.startsWith("mm-crm-sync-")) {
@@ -74,6 +90,7 @@ export default {
   async scheduled(_controller, workerEnv) {
     const log = baseLog.child({ job: "cron" });
     await assertOwnDatabase(workerEnv.DB);
+    if (await stoppedForMaintenance(workerEnv, log)) return;
     const deps = makeDependencies(workerEnv, log);
     await runCronJobs(CRON_JOBS, { env: workerEnv, deps, config, log });
   },
