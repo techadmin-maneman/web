@@ -94,6 +94,21 @@ export default defineConfig({
           include: ["test/node/**/*.test.ts"],
         },
       },
+      {
+        // The apps' components, mounted on a page. Their React is the client app's: from packages/ui, React
+        // would otherwise resolve to the repository root's React 18, as apps/app/vite.config.ts says.
+        resolve: {
+          alias: {
+            react: `${import.meta.dirname}/apps/app/node_modules/react`,
+            "react-dom": `${import.meta.dirname}/apps/app/node_modules/react-dom`,
+          },
+        },
+        test: {
+          name: "dom",
+          environment: "jsdom",
+          include: ["test/dom/**/*.test.ts"],
+        },
+      },
     ],
   },
 });
