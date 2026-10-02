@@ -5287,6 +5287,8 @@ export interface components {
              * @enum {string}
              */
             d1: "ok" | "unmarked" | "mismatch" | "unreachable";
+            /** @description When the five-minute cron last finished a run; null before its first, or when the database is not this environment's. Information only: status does not depend on it. */
+            cron_completed_at: string | null;
         };
         ClientSearch: {
             mobile: string;

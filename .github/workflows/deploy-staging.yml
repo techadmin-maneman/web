@@ -130,6 +130,11 @@ jobs:
       - name: The try-on buckets expire their objects, and no other bucket does
         continue-on-error: true
         run: node scripts/check-buckets.ts staging
+      # mm-api's CPU time over the last day against the free plan's 10 ms (scripts/lib/cpu-report.ts): a warning over
+      # it, and a failed step, never a failed deploy, where Cloudflare stopped an invocation for a limit.
+      - name: mm-api's CPU time over the last day
+        continue-on-error: true
+        run: node scripts/cpu-report.ts staging
 
       # Cloudflare adds scripts to pages at its edge, which no local run sees. Last, so a failure here leaves every
       # check above run.

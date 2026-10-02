@@ -1082,6 +1082,13 @@ Request body:
         "unreachable"
       ],
       "description": "ok: reachable and marked as this environment's database. unmarked: no identity row. mismatch: marked as another environment's database."
+    },
+    "cron_completed_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "When the five-minute cron last finished a run; null before its first, or when the database is not this environment's. Information only: status does not depend on it."
     }
   },
   "required": [
@@ -1089,7 +1096,8 @@ Request body:
     "environment",
     "version_id",
     "version_tag",
-    "d1"
+    "d1",
+    "cron_completed_at"
   ],
   "additionalProperties": false
 }
