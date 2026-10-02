@@ -1,8 +1,7 @@
 // A visit that has begun, by our own records rather than FSM's status (src/domain/visit-begun.ts): the client can no
 // longer cancel or move it, and the app reads it as under way or done. FSM's status lags behind the visit, or never
-// arrives when FSM refuses a write, so the mirror here stays at "scheduled" throughout, as it did on staging (the
-// audit of 2 October 2026, F01). NOW is Monday 21 September 2026, 12 noon in India; the visit is at 13:00. Every name
-// and number is made up.
+// arrives when FSM refuses a write, so the mirror here stays at "scheduled" throughout. NOW is Monday 21 September
+// 2026, 12 noon in India; the visit is at 13:00. Every name and number is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";

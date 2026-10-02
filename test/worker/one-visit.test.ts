@@ -446,8 +446,6 @@ describe("Razorpay's word that a one visit's link is paid", () => {
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM payments").first()).toEqual({ n: 0 });
   });
 
-  // The audit of 2 October 2026: F01, fitted and paid before its window, still dispatched in FSM, was offered back
-  // every rupee on cancelling, and a free move.
   it("leaves the client nothing to cancel or move, though FSM still has the visit dispatched", async () => {
     const linkId = await fittedAndClosed(createStubPayments());
     await deliver(linkPaid({ id: linkId, reference_id: JOB }), "evt-1");
