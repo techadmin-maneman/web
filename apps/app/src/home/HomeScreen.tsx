@@ -23,13 +23,15 @@ import styles from "./home.module.css";
 
 export function HomeScreen() {
   const { me, offline } = useSession();
+  // A Home the phone kept from an earlier release has no invoice line at all.
+  const invoice = me.invoice ?? null;
   return (
     <Shell header={{ kind: "home" }} tab="/">
       <div className={styles.home}>
         <HomeBody me={me} offline={offline} />
         {me.credits !== null && <CreditTile credits={me.credits} />}
         {me.prompt !== null && <Prompt prompt={me.prompt} />}
-        {me.invoice !== null && <InvoiceLine invoice={me.invoice} />}
+        {invoice !== null && <InvoiceLine invoice={invoice} />}
       </div>
     </Shell>
   );
