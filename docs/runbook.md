@@ -627,9 +627,9 @@ Production runs 268eaa4, of 21 September 2026. The next release carries every mi
 
 ## The CI runner
 
-Where GitHub Actions jobs run is the repository variable `CI_RUNNER`: `maneman` sends them to the owner's machine, in containers (docs/decisions/0006-deployment-pipeline.md, "The runner"), and anything else to GitHub's own runners. **Since 30 September 2026 it is `maneman`** (`gh variable list` shows it), the owner's choice of 1 October 2026: the jobs cost no GitHub minutes, and the full suite runs once a pull request rather than on every push (`docs/decisions/0006-deployment-pipeline.md`, "Two tiers"). Open a pull request as a draft while the work goes on, and mark it ready for review for its full run; add the `full-ci` label to run the full suite again on its next pushes. The rest of this section is for the machine: it must be on, with Docker Desktop running, and the containers start with Docker.
+Where GitHub Actions jobs run is the repository variable `CI_RUNNER`. **Since 2 October 2026 it is `github`** (`gh variable list` shows it): every job runs on GitHub's own runners, and the repository is public, so the minutes are free and the jobs run side by side. Every push to a pull request runs the full suite: the static checks, the unit and contract tests with coverage, the build, every browser-test project and Lighthouse, the deployed code on new migrations and the local smoke. A check that already passed on the same files is not run again (docs/decisions/0006-deployment-pipeline.md, "Checks are not repeated"), and adding a label starts no run.
 
-**There is one,** `maneman-runner` (`maneman-pc`), since 1 October 2026 (the owner's choice). Two side by side on this six-core machine ran two heavy jobs at once, which timed out tests and dropped wrangler's connections; one runner queues the jobs instead. CI still runs vitest on four workers and Playwright on three, and the worker tests allow thirty seconds each (`vitest.config.ts`). The second runner, `maneman-runner-2` (`maneman-pc-2`), can be started again as below.
+**The owner's machine is retired.** Its runner, `maneman-runner` (`maneman-pc`, built from `ops/runner/`), was shut down on 2 October 2026. Never set `CI_RUNNER` to `maneman` while the repository is public: a fork's pull request would run its own code on that machine. The rest of this section is for bringing it back on a private repository: the machine must be on, with Docker Desktop running.
 
 - **Check them:** `docker logs --tail 5 maneman-runner` (and `maneman-runner-2`) ends "Listening for Jobs", and GitHub → the repository → Settings → Actions → Runners lists `maneman-pc` and `maneman-pc-2` as Idle or Active.
 - **Set it up again** (a new machine, or after removing it). Build the image, take a registration token (it lasts an hour), and start the container once with it; the registration is kept in the `maneman-runner` volume. Then start it again without the token, so the token is not left in the container's settings:
@@ -653,8 +653,7 @@ Where GitHub Actions jobs run is the repository variable `CI_RUNNER`: `maneman` 
 
 - **One fewer runner:** `docker rm -f maneman-runner-2`, then remove it in Settings → Actions → Runners. Nothing in the workflows names a particular runner, only the `maneman` label they share.
 
-- **Move the jobs to GitHub's runners:** `gh variable set CI_RUNNER --body github`. They then spend GitHub's minutes, about twice as fast as one job did: GitHub bills each job a minute at least (docs/decisions/0006-deployment-pipeline.md, "Parallel jobs"). When the minutes run out, GitHub starts no job: staging stops deploying and production cannot release. Wherever the jobs run, a check that already passed on the same files is not run again (docs/decisions/0006-deployment-pipeline.md, "Checks are not repeated").
-- **Move them back to the machine:** check both runners are listening (above), then `gh variable set CI_RUNNER --body maneman`.
+- **Move the jobs back to the machine** (a private repository only): check the runner is listening (above), then `gh variable set CI_RUNNER --body maneman`. `gh variable set CI_RUNNER --body github` sends them to GitHub's runners again.
 - **After a new runner release,** the agent updates itself; the image's pinned version only matters for a fresh set-up.
 
 ## Staying on the free tier

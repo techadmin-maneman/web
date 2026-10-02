@@ -34,7 +34,8 @@ interface PullAnswer {
   title: string;
   state: string;
   draft: boolean;
-  head: { sha: string };
+  head: { sha: string; repo: { full_name: string } | null };
+  base: { repo: { full_name: string } };
   labels: { name: string }[];
 }
 interface FileAnswer {
@@ -76,6 +77,8 @@ const verdict = mergeVerdict(
     state: pull.state,
     draft: pull.draft,
     headSha: pull.head.sha,
+    headRepository: pull.head.repo?.full_name ?? null,
+    baseRepository: pull.base.repo.full_name,
     labels: pull.labels.map((label) => label.name),
     files,
   },

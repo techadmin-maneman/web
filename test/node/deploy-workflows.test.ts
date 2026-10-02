@@ -3,7 +3,7 @@
 // what they decide lives in scripts and has tests of its own
 // (test/node/release.test.ts, docs/decisions/0006-deployment-pipeline.md).
 
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { FULL_SUITE_JOB, REUSABLE_CHECKS, type ReusableCheck } from "../../scripts/lib/already-checked.ts";
 import { WORKERS } from "../../scripts/lib/workers.ts";
@@ -58,25 +58,38 @@ describe("the production release", () => {
   });
 });
 
-// docs/decisions/0006-deployment-pipeline.md, "Two tiers": the quick tier on every push, the full suite once.
-describe("ci.yml's two tiers", () => {
+describe("ci.yml on a pull request", () => {
   const text = workflow("ci.yml");
   /** One job's block, from its key to the next job's. */
   const jobOf = (key: string) => text.split(`\n  ${key}:\n`)[1]?.split(/\n {2}[a-z-]+:\n/)[0] ?? "";
 
-  it("runs the build, the browser tests, the smoke and the old code on new migrations only in the full suite", () => {
-    for (const key of ["build", "browser", "smoke", "old-code-on-new-schema"]) {
-      expect(jobOf(key), key).toContain("needs.changes.outputs.full == 'true'");
-    }
-    for (const key of ["static", "tests"]) {
+  it("runs the full suite on every push, and nothing when a label is added", () => {
+    expect(text).toContain("types: [opened, synchronize, reopened, ready_for_review]\n");
+    expect(text).not.toContain("labeled");
+    expect(text).not.toContain("github.event.label");
+    for (const key of ["static", "tests", "build", "browser", "smoke", "old-code-on-new-schema"]) {
       expect(jobOf(key), key).toContain("runs-on:");
       expect(jobOf(key), key).not.toContain("outputs.full");
     }
   });
 
+  it("tests every browser-test project the config declares, then runs Lighthouse", () => {
+    const config = readFileSync("playwright.config.ts", "utf8");
+    const declared = [...config.matchAll(/^ {6}name: "([^"]+)",$/gm)].map((match) => match[1]);
+    const scripts = (JSON.parse(readFileSync("package.json", "utf8")) as { scripts: Record<string, string> }).scripts;
+    const run = [...(scripts["test:e2e"] ?? "").matchAll(/--project=(\S+)/g)].map((match) => match[1]);
+    expect(declared).toEqual(["390", "1440", "app", "ops", "tech", "tech-ios"]);
+    expect(run).toEqual(declared);
+
+    const browser = jobOf("browser");
+    expect(browser).toContain("run: npm run test:e2e\n");
+    expect(browser).toMatch(/- name: Lighthouse[^\n]*\n\s+run: npm run lighthouse\n/);
+  });
+
   it("names the job a later run looks for before it takes the full suite as passed", () => {
-    // Only a run of every project is named so: a run of the touched apps alone is not a full suite.
-    expect(jobOf("full-suite")).toContain(`needs.changes.outputs.all-projects == 'true' && '${FULL_SUITE_JOB}'`);
+    expect(jobOf("full-suite")).toContain(`name: ${FULL_SUITE_JOB}\n`);
+    // When `what changed` failed, every job of the suite was skipped untested: that is no pass.
+    expect(jobOf("full-suite")).toContain("needs.changes.result == 'success'");
     expect(jobOf("checks")).toContain("full-suite");
   });
 
@@ -101,6 +114,23 @@ describe("ci.yml's two tiers", () => {
     const step = jobOf("changes").split("- name: The checks these files already passed")[1] ?? "";
     expect(step).toContain(`elif [ "$(git rev-parse 'HEAD^{tree}')" = "$(git rev-parse "$HEAD_SHA^{tree}")" ]; then`);
     expect(step).toContain('--head "$HEAD_SHA"');
+  });
+});
+
+// The repository is public: anyone can open a pull request from a fork.
+describe("a fork's pull request", () => {
+  it("never runs with a secret or a write token, and never runs its code where one is", () => {
+    for (const file of readdirSync(".github/workflows")) {
+      expect(workflow(file), file).not.toContain("pull_request_target");
+    }
+    expect(workflow("ci.yml")).not.toContain("secrets.");
+    expect(workflow("ci.yml")).not.toMatch(/: write$/m);
+  });
+
+  it("is never merged by auto-merge, which runs main's own scripts", () => {
+    const text = workflow("auto-merge.yml");
+    expect(text).toContain("github.event.workflow_run.head_repository.full_name == github.repository");
+    expect(text).not.toMatch(/^\s+ref:/m);
   });
 });
 

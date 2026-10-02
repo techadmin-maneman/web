@@ -1,10 +1,8 @@
 # Every pull request, and every staging deploy (called from deploy-staging.yml).
 #
-# Two tiers (docs/decisions/0006-deployment-pipeline.md, "Two tiers"; the owner's choice of 1 October 2026). Every
-# push to a pull request runs the quick tier: the static checks and the unit and contract tests. The full suite adds
-# the build, the browser tests and Lighthouse, the deployed code on new migrations and the local smoke, and runs when
-# a pull request is opened ready or marked ready for review, on every push while it carries the full-ci label, and on
-# every staging deploy (scripts/lib/ci-tier.ts).
+# Every push to a pull request runs the full suite: the static checks, the unit and contract tests with coverage, the
+# build, the browser tests of every app and Lighthouse, the deployed code on new migrations and the local smoke.
+# Adding a label starts no run.
 #
 # No check runs twice on the same files (the owner's choice of 1 October 2026). The static checks, the unit and
 # contract tests and the full suite each take as passed what an earlier run passed on exactly these files: in a pull
@@ -20,23 +18,21 @@
 # pull request, which skips the jobs a browser or a build would run, is still
 # green (docs/decisions/0006-deployment-pipeline.md, "Parallel jobs").
 #
-# Jobs run on the owner's machine, two at a time, when the repository variable
-# CI_RUNNER is "maneman" (docs/runbook.md, "The CI runner"), else on GitHub's
-# runners, which bill each job. It is "maneman" since 30 September 2026, the
-# owner's choice (docs/decisions/0006-deployment-pipeline.md, "The runner").
+# Jobs run on GitHub's runners. CI_RUNNER set to "maneman" would send them to the
+# owner's machine, which is retired: on a public repository a fork's pull request
+# would run its code there (docs/runbook.md, "The CI runner").
 name: ci
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, labeled]
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_call:
 
 permissions:
   contents: read
 
-# A label being added runs apart from the pushes, so labelling a pull request never cancels its run.
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}${{ github.event.action == 'labeled' && format('-{0}', github.event.label.name) || '' }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -52,10 +48,6 @@ jobs:
       code: ${{ steps.filter.outputs.code }}
       migrations: ${{ steps.filter.outputs.migrations }}
       dependencies: ${{ steps.filter.outputs.dependencies }}
-      full: ${{ steps.tier.outputs.full }}
-      projects: ${{ steps.projects.outputs.projects }}
-      all-projects: ${{ steps.projects.outputs.all }}
-      lighthouse: ${{ steps.projects.outputs.lighthouse }}
       static-passed: ${{ steps.passed.outputs.static }}
       tests-passed: ${{ steps.passed.outputs.tests }}
       suite-passed: ${{ steps.passed.outputs.suite }}
@@ -67,29 +59,6 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .nvmrc
-
-      - name: The quick tier, or the full suite
-        id: tier
-        env:
-          EVENT: ${{ github.event_name }}
-          ACTION: ${{ github.event.action }}
-          DRAFT: ${{ github.event.pull_request.draft }}
-          LABEL: ${{ github.event.label.name }}
-          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
-        run: node scripts/ci-tier.ts >> "$GITHUB_OUTPUT"
-
-      # A pull request's browser tests run only for the apps its files reach; a staging deploy runs them all
-      # (scripts/lib/e2e-projects.ts, the owner's choice of 1 October 2026).
-      - name: The browser-test projects these changes reach
-        id: projects
-        env:
-          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
-        run: |
-          if [ -z "$BASE" ]; then
-            node scripts/e2e-projects.ts --all >> "$GITHUB_OUTPUT"
-          else
-            git diff --name-only "$BASE...HEAD" | node scripts/e2e-projects.ts >> "$GITHUB_OUTPUT"
-          fi
 
       # A pull request's earlier passes count only while this run checks its head's own files: when the head holds all
       # of main, its merge with main is the head itself. A push to main asks which pull request it merged.
@@ -242,7 +211,7 @@ jobs:
   old-code-on-new-schema:
     name: deployed code on these migrations
     needs: changes
-    if: needs.changes.outputs.migrations == 'true' && needs.changes.outputs.full == 'true' && needs.changes.outputs.suite-passed != 'true'
+    if: needs.changes.outputs.migrations == 'true' && needs.changes.outputs.suite-passed != 'true'
     runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
     timeout-minutes: 25
     steps:
@@ -256,12 +225,14 @@ jobs:
           node-version-file: .nvmrc
           cache: ${{ runner.environment == 'github-hosted' && 'npm' || '' }}
       - name: The base branch's Worker tests, on this branch's migrations
-        run: node scripts/old-code-on-new-schema.ts --base "origin/${{ github.base_ref }}"
+        env:
+          BASE: origin/${{ github.base_ref }}
+        run: node scripts/old-code-on-new-schema.ts --base "$BASE"
 
   build:
     name: build
     needs: changes
-    if: needs.changes.outputs.code == 'true' && needs.changes.outputs.full == 'true' && needs.changes.outputs.suite-passed != 'true'
+    if: needs.changes.outputs.code == 'true' && needs.changes.outputs.suite-passed != 'true'
     runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
     timeout-minutes: 15
     steps:
@@ -275,7 +246,7 @@ jobs:
   browser:
     name: browser tests and Lighthouse
     needs: changes
-    if: needs.changes.outputs.code == 'true' && needs.changes.outputs.full == 'true' && needs.changes.outputs.suite-passed != 'true' && needs.changes.outputs.projects != ''
+    if: needs.changes.outputs.code == 'true' && needs.changes.outputs.suite-passed != 'true'
     runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
     timeout-minutes: 30
     steps:
@@ -317,17 +288,12 @@ jobs:
           npm run build:app -- --env local
           npm run build:ops -- --env local
           npm run build:tech -- --env local
-      - name: Browser tests of the apps these changes reach, against a local mm-api with stub providers
-        env:
-          PROJECTS: ${{ needs.changes.outputs.projects }}
-        run: |
-          read -ra projects <<< "$PROJECTS"
-          npx playwright test "${projects[@]}"
+      - name: Browser tests at 390 and 1440 px, the client and technician apps at 390 and the ops console at 1440, the technician app again on WebKit, against a local mm-api with stub providers
+        run: npm run test:e2e
 
       # After the browser tests, and in their job: Lighthouse measures a page
       # load, so nothing this run starts should be competing for the machine.
       - name: Lighthouse on /, /try, /book, an invite's landing and the client app, mobile profile, against the budgets
-        if: needs.changes.outputs.lighthouse == 'true'
         run: npm run lighthouse
 
       - name: Traces of failed tests
@@ -349,7 +315,7 @@ jobs:
   smoke:
     name: smoke (local)
     needs: changes
-    if: needs.changes.outputs.code == 'true' && needs.changes.outputs.full == 'true' && needs.changes.outputs.suite-passed != 'true'
+    if: needs.changes.outputs.code == 'true' && needs.changes.outputs.suite-passed != 'true'
     runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
     timeout-minutes: 20
     steps:
@@ -369,7 +335,7 @@ jobs:
       - name: Build the site (local)
         run: npm run build:site -- --env local
 
-      # Each runner is its own container, so these ports are this job's alone.
+      # Each job has a runner of its own, so these ports are this job's alone.
       # Within it, one server at a time, each with its own inspector port: two
       # wrangler dev processes starting together race for the same auxiliary ports.
       - name: Start mm-api and mm-site under wrangler dev
@@ -403,15 +369,14 @@ jobs:
             if [ -f "$pid" ]; then kill "$(cat "$pid")" 2> /dev/null || true; fi
           done
 
-  # Present, and green, only in a run of the full suite: a later run takes the full suite as passed only on files
-  # that had one (scripts/lib/already-checked.ts). A job the full suite skipped had nothing it could affect, as the
-  # browser tests have for a documentation-only change, or had passed on these files already.
+  # The job a later run looks for before it takes the build, the browser tests and the smoke as passed on the same
+  # files (scripts/lib/already-checked.ts). A job skipped here had nothing it could affect, as the browser tests have
+  # for a documentation-only change, or had passed on these files already. When `what changed` failed, every job here
+  # was skipped without deciding anything, so this one does not run.
   full-suite:
-    # A run that tested only the apps a pull request reaches is not a full suite, so a staging deploy runs its browser
-    # tests again on everything (scripts/lib/already-checked.ts looks for this name).
-    name: ${{ needs.changes.outputs.all-projects == 'true' && 'full suite' || 'suite of the touched apps' }}
+    name: full suite
     needs: [changes, old-code-on-new-schema, build, browser, smoke]
-    if: ${{ !cancelled() && needs.changes.outputs.full == 'true' }}
+    if: ${{ !cancelled() && needs.changes.result == 'success' }}
     runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
     timeout-minutes: 5
     steps:
@@ -439,7 +404,7 @@ jobs:
 
   # The gate: deploy-staging.yml waits for this workflow, and main's protection
   # waits for this job's name (docs/decisions/0008, when the plan allows it).
-  # A job that was skipped had nothing it could affect, or was not this tier's, which is a pass.
+  # A job that was skipped had nothing it could affect, or had passed on these files already, which is a pass.
   checks:
     name: checks
     needs: [changes, static, tests, old-code-on-new-schema, build, browser, smoke, full-suite]
