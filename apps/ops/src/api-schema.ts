@@ -5973,12 +5973,12 @@ export interface components {
              * @description India's calendar date it was made.
              */
             date: string;
-            /** @description In paise, GST included. */
+            /** @description In paise, GST included: the main figure. */
             amount: number;
-            /** @description In paise, before GST: the main figure. */
-            amount_ex_gst: number;
-            /** @description The GST rate the amount includes. */
-            gst_percent: number;
+            /** @description In paise, before GST; null where no rate was recorded for it. */
+            amount_ex_gst: number | null;
+            /** @description The GST rate the amount includes; null where none was recorded. */
+            gst_percent: number | null;
             /** @description The visit it paid for, when known. */
             visit: {
                 /** Format: uuid */
@@ -5986,6 +5986,18 @@ export interface components {
                 /** Format: date */
                 date: string;
                 type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            } | null;
+            /** @description What it paid for while there is no visit yet: the booking its hold was making. */
+            booking: {
+                /** @enum {string} */
+                type: "consultation" | "first_fit" | "service" | "replacement";
+                /**
+                 * Format: date
+                 * @description India's day the visit was held for.
+                 */
+                date: string;
+                /** @description Still being booked; false once refunded or let go. */
+                under_way: boolean;
             } | null;
             /** @enum {string} */
             status: "authorized" | "captured" | "refunded" | "partially_refunded";
@@ -6055,12 +6067,12 @@ export interface components {
              * @description India's calendar date it was made.
              */
             date: string;
-            /** @description In paise, GST included. */
+            /** @description In paise, GST included: the main figure. */
             amount: number;
-            /** @description In paise, before GST: the main figure. */
-            amount_ex_gst: number;
-            /** @description The GST rate the amount includes. */
-            gst_percent: number;
+            /** @description In paise, before GST; null where no rate was recorded for it. */
+            amount_ex_gst: number | null;
+            /** @description The GST rate the amount includes; null where none was recorded. */
+            gst_percent: number | null;
             /** @description The visit it paid for, when known. */
             visit: {
                 /** Format: uuid */
@@ -6068,6 +6080,18 @@ export interface components {
                 /** Format: date */
                 date: string;
                 type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            } | null;
+            /** @description What it paid for while there is no visit yet: the booking its hold was making. */
+            booking: {
+                /** @enum {string} */
+                type: "consultation" | "first_fit" | "service" | "replacement";
+                /**
+                 * Format: date
+                 * @description India's day the visit was held for.
+                 */
+                date: string;
+                /** @description Still being booked; false once refunded or let go. */
+                under_way: boolean;
             } | null;
             /** @enum {string} */
             status: "created" | "processed" | "failed";
