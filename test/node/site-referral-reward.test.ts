@@ -2,6 +2,7 @@
 // never a count typed into a sentence (site/src/content/referral.ts; docs/decisions/0107-referral-rewards-in-the-console.md).
 
 import { describe, expect, it } from "vitest";
+import { TOLD_NOTICES } from "../../src/config/notices.ts";
 import { inviteDescription, referral } from "../../site/src/content/referral.ts";
 import * as site from "../../site/src/content/site.ts";
 import { publishProblems } from "../../site/src/lib/publish-gate.ts";
@@ -28,8 +29,9 @@ function sentences(given: ReferralReward | null, name: string | null = "Rohit"):
   ].filter((sentence): sentence is string => sentence !== null);
 }
 
-// PS-24: /book says who is told of the fit before it sends the invite this browser remembers.
-describe("what /book says of the invite this browser remembers", () => {
+// PS-24: /book says who is told of the fit before it sends the invite this browser remembers. An attribution records
+// these words by version: if a test here fails because the words changed, add a version to TOLD_NOTICES.
+describe(`what /book says of the invite this browser remembers (${TOLD_NOTICES.book})`, () => {
   it("says who is told of the fit, with the friend's visits as ops set them", () => {
     expect(referral.remembered.consultation(reward(3, 3))).toBe(
       "You have an invite. Whoever invited you is told when you are fitted. That is when the 3 visits land.",
@@ -37,12 +39,26 @@ describe("what /book says of the invite this browser remembers", () => {
     expect(referral.remembered.consultation(reward(3, 0))).toBe(
       "You have an invite. Whoever invited you is told when you are fitted.",
     );
-    expect(referral.remembered.waitlist).toMatch(/ Whoever invited you is told when you are fitted\.$/);
+    expect(referral.remembered.waitlist).toBe(
+      "You have an invite. It stays valid for 12 months after we launch there. Whoever invited you is told when you are fitted.",
+    );
+  });
+});
+
+describe(`what the invite's own page says of who is told (${TOLD_NOTICES.landing})`, () => {
+  it("says it on the waitlist, by the referrer's name where it has one", () => {
+    expect(referral.waitlist.holds).toBe(
+      "{name}’s invite stays valid for 12 months after we launch there. {name} is told when you are fitted.",
+    );
+    expect(referral.waitlist.holdsUnnamed).toBe(
+      "The invite stays valid for 12 months after we launch there. Whoever invited you is told when you are fitted.",
+    );
   });
 
-  it("is said on the landing's waitlist too, by the referrer's name where it has one", () => {
-    expect(referral.waitlist.holds).toMatch(/ \{name\} is told when you are fitted\.$/);
-    expect(referral.waitlist.holdsUnnamed).toMatch(/ Whoever invited you is told when you are fitted\.$/);
+  it("says it on the consultation form", () => {
+    expect(referral.consultation.told("Rohit", reward(3, 3))).toBe(
+      "Rohit is told when you are fitted. That is when the 3 visits land.",
+    );
   });
 });
 
