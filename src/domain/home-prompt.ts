@@ -26,6 +26,8 @@ export type HomePrompt =
       readonly type: "service" | "replacement";
       /** The service of its kind it offers (NextOffer.tier). */
       readonly tier: string | null;
+      /** India's day it fell or falls due (NextOffer.due_on). */
+      readonly due_on: string;
       /** India's day it is offered on: the day it falls due, or tomorrow once that has passed. */
       readonly date: string;
       readonly window: BookingWindow | null;
@@ -123,6 +125,7 @@ function nextVisitPrompt(next: NextService, replacementMonth: string | null): Ho
     kind: "next_visit",
     type: next.type,
     tier: next.tier,
+    due_on: next.due_on,
     date: next.date,
     window: next.window,
     replacement_bookable: next.type === "service" && replacementMonth !== null,

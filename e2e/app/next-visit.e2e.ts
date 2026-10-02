@@ -6,7 +6,7 @@
 
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
-import { shortDate, weekdayDate } from "../../packages/web-kit/dates.ts";
+import { listMonth, shortDate, weekdayDate } from "../../packages/web-kit/dates.ts";
 import { expect, test } from "../support.ts";
 import { nextVisitClients } from "./next-visit.ts";
 import { logIn } from "./signed-in.ts";
@@ -130,8 +130,10 @@ test("Home offers the replacement where the piece falls due first, and a page sa
   const { replacement } = nextVisitClients();
   const asked = await everyWindowOpen(page);
   await logIn(page, replacement.mobile);
-  // Offered on the service's day, and in no window: the last visit was an evening's, which a replacement cannot take.
-  await expect(page.getByText(`Your next replacement piece is due on ${shortDate(replacement.date)}.`)).toBeVisible();
+  // Offered on the piece's own day, said as its month, and in no window: the last visit was an evening's, which a
+  // replacement cannot take.
+  const month = listMonth(replacement.date.slice(0, 7), new Date().getFullYear());
+  await expect(page.getByText(`Your replacement piece is due in ${month}.`)).toBeVisible();
   // One way to book on Home: the prompt's, with the replacement in the service's place.
   await expect(page.getByRole("button", { name: "Book it for then" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Book your replacement piece" })).toHaveCount(0);
