@@ -463,7 +463,7 @@ test("switches a technician off only once asked, and lists the visits he no long
 
   const returned = panel.getByRole("status");
   await expect(returned).toContainText("2 visits are back on the dispatch board, for someone else.");
-  await expect(returned).toContainText("Fri 24 Sep, 10:00 am · Rohit Malhotra");
+  await expect(returned).toContainText("Fri 24 Sep, 10 am · Rohit Malhotra");
   await expect(returned).toContainText("No client on our records");
   await expect(returned.getByRole("link", { name: "Give them out on the dispatch board" })).toHaveAttribute(
     "href",
