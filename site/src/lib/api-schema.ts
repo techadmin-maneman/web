@@ -75,8 +75,201 @@ export interface paths {
                         "application/json": components["schemas"]["PublishedPrices"];
                     };
                 };
-                /** @description unavailable: the book lacks a standard one of them, so the site shows its own */
+                /** @description unavailable: the book lacks the standard service visit or replacement, so the site shows its own */
                 503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/number-code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send a code on WhatsApp to prove a number typed into the site */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["NumberCodeRequest"];
+                };
+            };
+            responses: {
+                /** @description The code is on its way */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["NumberCode"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description turnstile_failed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description rate_limited: too many codes for this number today, or from this address this hour */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description busy: today's ceiling on codes is reached; unavailable: Turnstile could not be reached */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/number-code/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Check a code. The right one proves its number for 30 minutes */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["NumberCodeVerifyRequest"];
+                };
+            };
+            responses: {
+                /** @description Right; or wrong, with the attempts left */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["NumberCodeVerify"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description code_expired: expired, already entered, or void after five wrong codes */
+                410: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/availability/public": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The days and windows the booking form can book, open or full. Cacheable for a minute. */
+        get: {
+            parameters: {
+                query: {
+                    /** @description A six-digit Indian pincode. */
+                    pincode: string;
+                    /** @description The consultation alone, or the consultation and fit in one visit. */
+                    plan: "consultation" | "one_visit";
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Each day's three windows */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OpenWindows"];
+                    };
+                };
+                /** @description invalid_request: fields names the pincode or the plan */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_bookable: the pincode is not served */
+                422: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -121,10 +314,10 @@ export interface paths {
                         /** @description A six-digit Indian pincode. */
                         pincode: string;
                         /**
-                         * @description Where the hair loss is, as the form's drawings show it.
+                         * @description Where the hair loss is, as the form's drawings show it. Left out when the visitor does not say.
                          * @enum {string}
                          */
-                        loss_extent: "crown" | "receding" | "advanced";
+                        loss_extent?: "crown" | "receding" | "advanced";
                         turnstile_token: string;
                         attribution?: {
                             utm_source?: string;
@@ -136,8 +329,13 @@ export interface paths {
                             referrer?: string;
                             landing_path?: string;
                         };
-                        /** @description The code of an invite this browser opened in the last 30 days. One we do not have, or not shaped like a code, is ignored: the booking goes ahead without an invite. */
+                        /** @description The code of an invite this browser opened in the last 30 days. One sent without invite_told, one we do not have, or one not shaped like a code, is ignored: the booking goes ahead without an invite. */
                         invite_code?: string;
+                        /**
+                         * @description true: beside the invite, the form said that whoever sent it is told when the friend is fitted, and offered to go on without it. The attribution records it.
+                         * @enum {boolean}
+                         */
+                        invite_told?: true;
                         /** Format: date */
                         date: string;
                         /** @enum {string} */
@@ -145,6 +343,11 @@ export interface paths {
                         address: components["schemas"]["TypedAddress"];
                         /** @description true: the consultation and the first fit in one visit, three hours, in the morning or the afternoon; the client chooses the product with the technician and pays once fitted, so nothing is paid here. Left out or false, the consultation alone. */
                         one_visit?: boolean;
+                        /**
+                         * Format: uuid
+                         * @description The WhatsApp code that proved the number (POST /api/number-code/verify) in the last 30 minutes. One visit needs it, and is refused number_not_proved without it.
+                         */
+                        number_code_id?: string;
                         /** @description A discount code for the consultation and fit in one visit, as typed, any case: it comes off the product's price at the payment link (docs/decisions/0108-discount-codes.md). A code that does not apply refuses the booking, code_not_applicable, and so does any code with the consultation alone. */
                         discount_code?: string;
                         /**
@@ -156,7 +359,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description Booked, or asked for */
+                /** @description Booked, or asked for. A number with a consultation still to happen, or past consultations, gets the answer a new number would, books nothing, and is told why on WhatsApp. */
                 201: {
                     headers: {
                         [name: string]: unknown;
@@ -174,7 +377,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description turnstile_failed */
+                /** @description turnstile_failed; number_not_proved: one visit, without a WhatsApp code that proved the number in the last 30 minutes */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -183,16 +386,16 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description taken: that window has gone; already_booked: this number has a consultation still to happen; idempotency_in_progress: the first request with this key is still running */
+                /** @description taken: that window has gone; idempotency_in_progress: the first request with this key is still running */
                 409: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["ErrorResponse"] | components["schemas"]["AlreadyBooked"];
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_bookable: the pincode is not served, the day is not open, or this number is past consultations and books in the app; code_not_applicable: the discount code does not apply, fields names discount_code; idempotency_key_reused: the key was used with a different body */
+                /** @description not_bookable: the pincode is not served, or the day is not open; code_not_applicable: the discount code does not apply, fields names discount_code; no_product: one visit, on a day the console offers no hair system; idempotency_key_reused: the key was used with a different body */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -254,10 +457,10 @@ export interface paths {
                         /** @description A six-digit Indian pincode. */
                         pincode: string;
                         /**
-                         * @description Where the hair loss is, as the form's drawings show it.
+                         * @description Where the hair loss is, as the form's drawings show it. Left out when the visitor does not say.
                          * @enum {string}
                          */
-                        loss_extent: "crown" | "receding" | "advanced";
+                        loss_extent?: "crown" | "receding" | "advanced";
                         turnstile_token: string;
                         attribution?: {
                             utm_source?: string;
@@ -269,8 +472,13 @@ export interface paths {
                             referrer?: string;
                             landing_path?: string;
                         };
-                        /** @description The code of an invite this browser opened in the last 30 days. One we do not have, or not shaped like a code, is ignored: the booking goes ahead without an invite. */
+                        /** @description The code of an invite this browser opened in the last 30 days. One sent without invite_told, one we do not have, or one not shaped like a code, is ignored: the booking goes ahead without an invite. */
                         invite_code?: string;
+                        /**
+                         * @description true: beside the invite, the form said that whoever sent it is told when the friend is fitted, and offered to go on without it. The attribution records it.
+                         * @enum {boolean}
+                         */
+                        invite_told?: true;
                         /**
                          * @description "You may contact me about this request." Required.
                          * @enum {boolean}
@@ -511,6 +719,11 @@ export interface paths {
                         name: string;
                         mobile: string;
                         turnstile_token: string;
+                        /**
+                         * @description true: the form said that whoever sent the invite is told when the friend is fitted. The attribution records it; the invite applies either way.
+                         * @enum {boolean}
+                         */
+                        invite_told?: true;
                         /** @description A six-digit Indian pincode. */
                         pincode: string;
                         /** Format: date */
@@ -521,6 +734,11 @@ export interface paths {
                         /** @description true: the consultation and the first fit in one visit, three hours, in the morning or the afternoon; the client chooses the product with the technician and pays once fitted, so nothing is paid here. Left out or false, the consultation alone. */
                         one_visit?: boolean;
                         /**
+                         * Format: uuid
+                         * @description The WhatsApp code that proved the number (POST /api/number-code/verify) in the last 30 minutes. One visit needs it, and is refused number_not_proved without it.
+                         */
+                        number_code_id?: string;
+                        /**
                          * @description "You may contact me on WhatsApp about this consultation."
                          * @enum {boolean}
                          */
@@ -529,7 +747,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description Booked, or asked for */
+                /** @description Booked, or asked for. A number with a consultation still to happen, or past consultations, gets the answer a new number would, books nothing, and is told why on WhatsApp. */
                 201: {
                     headers: {
                         [name: string]: unknown;
@@ -547,7 +765,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description turnstile_failed */
+                /** @description turnstile_failed; number_not_proved: one visit, without a WhatsApp code that proved the number in the last 30 minutes */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -556,16 +774,16 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description taken: that window has gone; already_booked: this number has a consultation still to happen; idempotency_in_progress: the first request with this key is still running */
+                /** @description taken: that window has gone; idempotency_in_progress: the first request with this key is still running */
                 409: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["ErrorResponse"] | components["schemas"]["AlreadyBooked"];
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_bookable: the pincode is not served, the day is not open, or this number is past consultations; idempotency_key_reused: the key was used with a different body */
+                /** @description not_bookable: the pincode is not served, or the day is not open; no_product: one visit, on a day the console offers no hair system; idempotency_key_reused: the key was used with a different body */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -627,6 +845,11 @@ export interface paths {
                         name: string;
                         mobile: string;
                         turnstile_token: string;
+                        /**
+                         * @description true: the form said that whoever sent the invite is told when the friend is fitted. The attribution records it; the invite applies either way.
+                         * @enum {boolean}
+                         */
+                        invite_told?: true;
                         /** @description A six-digit Indian pincode. */
                         pincode: string;
                         /**
@@ -1140,7 +1363,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description look_limit_reached: this number had its look in the last thirty days */
+                /** @description look_limit_reached: this number had its look in the last thirty days; number_not_proved: no WhatsApp code proved the number in the last 30 minutes */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -1264,14 +1487,12 @@ export interface paths {
                         "application/json": components["schemas"]["Look"];
                     };
                 };
-                /** @description not_found: this browser has no look */
-                404: {
+                /** @description This browser has had no look yet */
+                204: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
+                    content?: never;
                 };
             };
         };
@@ -1594,7 +1815,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -1621,6 +1842,8 @@ export interface components {
              * @enum {string}
              */
             d1: "ok" | "unmarked" | "mismatch" | "unreachable";
+            /** @description When the five-minute cron last finished a run; null before its first, or when the database is not this environment's. Information only: status does not depend on it. */
+            cron_completed_at: string | null;
         };
         PublishedPrices: {
             /**
@@ -1629,14 +1852,13 @@ export interface components {
              */
             on: string;
             /**
-             * @description The tier of the three figures below: each kind's standard.
+             * @description The tier of the two figures below: each kind's standard.
              * @enum {string}
              */
             tier: "standard";
-            first_fit: components["schemas"]["Price"];
             service: components["schemas"]["Price"];
             replacement: components["schemas"]["Price"];
-            /** @description Every service offered and priced today, a kind at a time, in the console's order. */
+            /** @description Every service offered and priced today, a kind at a time, in the console's order. A first fit's are the hair systems ops offer; none while ops offer none. */
             services: components["schemas"]["PublishedService"][];
         };
         Price: {
@@ -1649,11 +1871,51 @@ export interface components {
         PublishedService: {
             /** @enum {string} */
             type: "consultation" | "first_fit" | "service" | "replacement";
-            /** @description Its code within its kind: standard, premium, or another. */
+            /** @description Its code within its kind. */
             tier: string;
             name: string;
             minutes: number;
             price: components["schemas"]["Price"];
+        };
+        /** @description The code is on its way to the number on WhatsApp. */
+        NumberCode: {
+            /** Format: uuid */
+            code_id: string;
+        };
+        NumberCodeRequest: {
+            mobile: string;
+            /** @description The name typed beside the number. */
+            name: string;
+            turnstile_token: string;
+        };
+        NumberCodeVerify: {
+            /** @enum {boolean} */
+            verified: true;
+        } | {
+            /** @enum {boolean} */
+            verified: false;
+            /** @description 0 means the code is now void. */
+            attempts_left: number;
+        };
+        NumberCodeVerifyRequest: {
+            /** Format: uuid */
+            code_id: string;
+            code: string;
+        };
+        OpenWindows: {
+            /** @enum {string} */
+            plan: "consultation" | "one_visit";
+            /** @description The days the form offers: 14, from tomorrow in India. */
+            days: {
+                /** Format: date */
+                date: string;
+                /** @description true where booking that window now would be taken; false where it is full. */
+                windows: {
+                    morning: boolean;
+                    afternoon: boolean;
+                    evening: boolean;
+                };
+            }[];
         };
         Consultation: {
             /**
@@ -1665,6 +1927,7 @@ export interface components {
             date: string;
             /** @enum {string} */
             window: "morning" | "afternoon" | "evening";
+            /** @description The area once ops have named it, its city until then. */
             area: string;
             /** @description Whether the invite's service visits apply. */
             credits: boolean;
@@ -1673,38 +1936,20 @@ export interface components {
              * @enum {string}
              */
             invite: "valid" | "expired" | "unknown";
-            /**
-             * @description saved: the address sent is now the person's; on_account: the person already had one, which the visit goes to, and the one sent was not written. The address on the account is never sent back.
-             * @enum {string}
-             */
-            address: "saved" | "on_account";
             /** @description true: the consultation and the first fit in one visit were booked, or asked for. */
             one_visit: boolean;
-            /** @description true: the code given stands on the booking, or on the request ops book from; false when none was given, or another booking took the code's last use a moment before, and the booking stands without it. */
-            discount_code: boolean;
+            /** @description The code given, as it stands on the booking or on the request ops book from; null when none was given, or another booking took the code's last use a moment before, and the booking stands without it. */
+            discount_code: components["schemas"]["StandingCode"] | null;
         };
-        AlreadyBooked: {
-            error: {
-                /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon";
-                request_id: string;
-                /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
-                fields?: string[];
-                /** @description superseded, to a technician's phone, for a job given to another technician: whom, and when (docs/open-points.md, item 92). */
-                moved?: {
-                    /** @description Their first name, and nothing else of theirs */
-                    technician: string;
-                    /** @description When ops moved the job to them; null when it was moved in FSM itself */
-                    at: string | null;
-                };
-            };
-            /** @description The day and window of the consultation still to happen. */
-            booked: {
-                /** Format: date */
-                date: string;
-                /** @enum {string} */
-                window: "morning" | "afternoon" | "evening";
-            };
+        StandingCode: {
+            /** @description In capitals, as it is kept. */
+            code: string;
+            /** @enum {string} */
+            kind: "percent" | "amount";
+            /** @description Per cent for a percentage; paise before GST for an amount. */
+            value: number;
+            /** @description The most a percentage takes off, in paise before GST; null for none. */
+            cap: number | null;
         };
         TypedAddress: {
             line1: string;
@@ -1720,6 +1965,7 @@ export interface components {
             landmark?: string | null;
         };
         Waitlist: {
+            /** @description Null until ops have named the area, and for a pincode we do not know. */
             area: string | null;
             /** @description Whether the invite's service visits apply. */
             credits: boolean;
@@ -1744,7 +1990,7 @@ export interface components {
         PincodeAnswer: {
             pincode: string;
             served: boolean;
-            /** @description Null for a pincode we do not know. */
+            /** @description The area's name once ops have named it; null until then, and for a pincode we do not know. */
             area: string | null;
             city: string | null;
         };
@@ -1758,6 +2004,7 @@ export interface components {
             date: string;
             /** @enum {string} */
             window: "morning" | "afternoon" | "evening";
+            /** @description The area once ops have named it, its city until then. */
             area: string;
             /** @description Whether the invite's service visits apply. */
             credits: boolean;
@@ -1766,15 +2013,11 @@ export interface components {
              * @enum {string}
              */
             invite: "valid" | "expired" | "unknown";
-            /**
-             * @description saved: the address sent is now the person's; on_account: the person already had one, which the visit goes to, and the one sent was not written. The address on the account is never sent back.
-             * @enum {string}
-             */
-            address: "saved" | "on_account";
             /** @description true: the consultation and the first fit in one visit were booked, or asked for. */
             one_visit: boolean;
         };
         ReferralWaitlist: {
+            /** @description Null until ops have named the area, and for a pincode we do not know. */
             area: string | null;
             /** @description Whether the invite's service visits apply. */
             credits: boolean;
@@ -1848,6 +2091,11 @@ export interface components {
             name: string;
             /** @example 98100 00000 */
             mobile: string;
+            /**
+             * Format: uuid
+             * @description The code that proved the number (POST /api/number-code/verify). It proves it for 30 minutes after it was entered.
+             */
+            number_code_id: string;
             /**
              * @description The hair-loss stage the visitor picked: the lead's, and the one the look is made for.
              * @enum {string}

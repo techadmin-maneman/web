@@ -76,6 +76,7 @@ const job = (
   status: "scheduled",
   notice_hours: 24,
   untold: null,
+  begun: null,
 });
 
 /** One technician's row: their seven days, from the blocks given against the day each falls on. */
@@ -117,6 +118,7 @@ const tray = (
   asked_window: asked,
   offered_window: offered,
   date: dateOf(day),
+  was_technician: null,
 });
 
 /**

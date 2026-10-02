@@ -16,7 +16,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type Area, type Launch } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { BOOKING_URL, waitlist } from "../content.ts";
-import { settingsPath } from "../route.ts";
+import { useAccess } from "../lib/access.ts";
+import { sectionOf } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./waitlist.module.css";
 
@@ -85,7 +86,7 @@ function LaunchPanel({
       </dl>
       <p className={styles.message}>{copy.message(areaName(area), bookingUrl)}</p>
       <p className={styles.named}>
-        {copy.named} <OpsLink to={settingsPath("area")}>{copy.rename}</OpsLink>
+        {copy.named} <OpsLink to={sectionOf("service-area").path}>{copy.rename}</OpsLink>
       </p>
       {!area.served && step !== "done" && (
         <div className={styles.field}>
@@ -145,14 +146,19 @@ function LaunchPanel({
  * One pincode. The board draws six columns and no button, so the pincode is
  * the control: choosing it asks what a launch would send. A pincode we already
  * come to says so beside its area, and choosing it tells whoever there is still untold.
+ * For a person whose access does not reach a launch, it is only the pincode.
  */
-function AreaRow({ area, thisYear, onChoose }: { area: Area; thisYear: number; onChoose: () => void }) {
+function AreaRow({ area, thisYear, onChoose }: { area: Area; thisYear: number; onChoose: (() => void) | null }) {
   return (
     <tr>
       <th scope="row" className={styles.pincode}>
-        <button className={styles.choose} type="button" aria-label={chooseLabel(area)} onClick={onChoose}>
-          {area.pincode}
-        </button>
+        {onChoose === null ? (
+          area.pincode
+        ) : (
+          <button className={styles.choose} type="button" aria-label={chooseLabel(area)} onClick={onChoose}>
+            {area.pincode}
+          </button>
+        )}
       </th>
       <td className={styles.area}>
         {areaName(area)}
@@ -178,7 +184,7 @@ function Pincodes({
   areas: readonly Area[];
   more: boolean;
   thisYear: number;
-  onChoose: (area: Area) => void;
+  onChoose: ((area: Area) => void) | null;
 }) {
   if (areas.length === 0) return <p className={styles.empty}>{waitlist.empty}</p>;
   return (
@@ -199,9 +205,13 @@ function Pincodes({
               key={area.pincode}
               area={area}
               thisYear={thisYear}
-              onChoose={() => {
-                onChoose(area);
-              }}
+              onChoose={
+                onChoose === null
+                  ? null
+                  : () => {
+                      onChoose(area);
+                    }
+              }
             />
           ))}
         </tbody>
@@ -219,6 +229,7 @@ export function WaitlistScreen() {
   const thisYear = new Date().getFullYear();
   const today = indiaDate(new Date().toISOString());
   const [launchOn, setLaunchOn] = useState(today);
+  const mayLaunch = useAccess().mayCall("POST /api/pincodes/{pin}/launch");
 
   const choose = useCallback(
     async (area: Area) => {
@@ -257,7 +268,12 @@ export function WaitlistScreen() {
           loading: <Loading />,
           failed: <PanelFailed onRetry={retry} />,
           loaded: ({ areas, more }) => (
-            <Pincodes areas={areas} more={more} thisYear={thisYear} onChoose={(area) => void choose(area)} />
+            <Pincodes
+              areas={areas}
+              more={more}
+              thisYear={thisYear}
+              onChoose={mayLaunch ? (area) => void choose(area) : null}
+            />
           ),
         })}
         {launching !== null && (

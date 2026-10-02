@@ -45,6 +45,8 @@ Nothing here needs a release. The first two have dates.
 
 - [ ] **Production's AILabTools key** (item 153): `W secret put AILAB_API_KEY --env production`, with a key of production's own.
 - [ ] **Staging's refund account:** the owner's "Razorpay – staging test" ID as `BOOKS_REFUND_ACCOUNT_ID` in `env.staging.vars`, released through CI (item 10).
+- [ ] **Staging's cron heartbeat** (RB, "The outside watchers", point 1): a healthchecks.io check, its ping URL as staging's `HEARTBEAT_URL`; and Account Analytics: Read on `mm-ci-staging`, so each staging deploy reports mm-api's CPU time (RB 6).
+- [ ] **The watch on the daily allowances** (RB, "The daily allowances"): an Account API Token with Account Analytics: Read and nothing else, as staging's `CLOUDFLARE_ANALYTICS_TOKEN`. Within the hour staging's logs show `daily_allowances_read`.
 
 ## 2. Proofs on staging
 
@@ -79,6 +81,13 @@ Each is written up in `docs/verification.md` when it passes. The payment run is 
 - [ ] The analytics IDs, and the consent banner they need (item 84).
 - [ ] The dedicated WhatsApp number (item 38) and `MESSAGING_ENABLED` `"true"` in production's vars (item 164): the try-on's look goes to WhatsApp only, so while it is off the try-on does not run (ADR 0104).
 - [ ] Production's AILabTools key and resources (section 1).
+- [ ] The outside watchers (RB, "The outside watchers"): production's healthchecks.io check as its `HEARTBEAT_URL`, and an uptime monitor on `https://maneman.in/api/health`. After the release, the check shows a ping every five minutes and `GET /api/health` a `cron_completed_at` minutes old.
+- [ ] The daily allowances watched from production (RB, "The daily allowances"): the analytics token put on production as `CLOUDFLARE_ANALYTICS_TOKEN` and deleted from staging (`W secret delete CLOUDFLARE_ANALYTICS_TOKEN --env staging`), so the alerts come once.
+- [ ] The zone's table in "The dashboards" (section 4) walked and recorded: this release is the first to need it.
+- [ ] **`www.maneman.in` sent to `maneman.in`.** On 2 October 2026 `www` still reached GoDaddy's parked page through an old proxied record: 200 over http, 525 over https. In the Cloudflare dashboard, on `maneman.in`:
+  1. **DNS → Records:** replace the `www` record with an `AAAA` record, name `www`, content `100::`, **Proxied**. The address is never reached: Cloudflare answers every request for `www` with the redirect.
+  2. **Rules → Redirect Rules → Create rule,** named "www to maneman.in": when the request URL matches the wildcard pattern `https://www.maneman.in/*`, redirect to `https://maneman.in/${1}` with status **301** and **Preserve query string** on.
+  3. **Check:** `curl -sI "https://www.maneman.in/book?from=www"` answers `301` with `location: https://maneman.in/book?from=www`, and `curl -sL -o /dev/null -w "%{url_effective}\n" http://www.maneman.in/` prints `https://maneman.in/` once Always Use HTTPS is on.
 
 **The code**, in one pull request through CI and staging: production's `assets.directory` in `site/wrangler.jsonc` pointed at `./dist/production`, a production site build before "Deploy mm-site" in `deploy-production.yml` (`docs/frontend.md`, steps 4 and 5), and the analytics IDs.
 
@@ -96,7 +105,8 @@ With self-serve booking off, a consultation booked on the site is a request: the
 **Before it:**
 
 - [ ] The payment run of section 2 passed (item 8).
-- [ ] Razorpay live: KYC, live keys, the live webhook to `https://maneman.in/api/hooks/razorpay` with the eight events, and automatic capture confirmed for live payments (items 5, 6 and 154; RB 11c).
+- [ ] Razorpay live: KYC, live keys, and the live webhook to `https://maneman.in/api/hooks/razorpay` with the nine events of "The dashboards" below (items 5, 6 and 154; RB 11c).
+- [ ] The Razorpay and Zoho tables of "The dashboards" below walked on staging and production, each result recorded.
 - [ ] The CA's answers, and GST on in Books with the real GSTIN, FSM and Books synced again (items 2, 3, 9, 14, 16, 17 and 26).
 - [ ] Counsel's answers (items 22, 23, 40, 41, 55, 63, 69 and 148).
 - [ ] The org clean of staging's records before production reads FSM (items 19 and 155).
@@ -106,9 +116,9 @@ With self-serve booking off, a consultation booked on the site is a request: the
 **Provisioning** (RB 7, 11, 11a, 11b, 11c, 12 and 13):
 
 - [ ] DNS and Access for `app.maneman.in`, `ops.maneman.in` and `tech.maneman.in`, with `mm-ci-production` on each (RB 11, points 1 and 2); `ACCESS_OPS_AUD` for the ops console (RB 11, point 3).
-- [ ] FSM and Books: the client and its secrets, `setup-fsm.ts --check`, the providers `zoho`, the hosts and `ZOHO_BOOKS_ORG_ID`, and `BOOKS_REFUND_ACCOUNT_ID` of the account "Razorpay" (RB 11b, points 1 to 7).
+- [ ] FSM and Books: each one's client and its secrets, `setup-fsm.ts --check`, the providers `zoho`, the hosts and `ZOHO_BOOKS_ORG_ID`, and `BOOKS_REFUND_ACCOUNT_ID` of the account "Razorpay" (RB 11b, points 1 to 7).
 - [ ] FSM's two webhooks for production, the second for deletion, with a token you keep (item 31; RB 11b, point 6).
-- [ ] The rest of production's secrets, each before the release that needs it (RB 7): `OTP_PEPPER` (`openssl rand -hex 32`), `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `EVOLUTION_WEBHOOK_TOKEN`, and `GOOGLE_MAPS_API_KEY` once production has its own restricted key (RB 13). A required secret left empty stops every request, so check `GET /api/health` after each.
+- [ ] The rest of production's secrets, each before the release that needs it (RB 7): `OTP_PEPPER` (`openssl rand -hex 32`; the site's WhatsApp codes need it too, so without it the one visit and `/try` cannot prove a number), `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `EVOLUTION_WEBHOOK_TOKEN`, and `GOOGLE_MAPS_API_KEY` once production has its own restricted key (RB 13). A required secret left empty stops every request, so check `GET /api/health` after each.
 - [ ] Bootstrap `mm-ops-production` and `mm-tech-production`, and add both to `mm-ci-production` (RB 11, point 6; RB 6).
 
 **The code**, in one pull request: `ENABLED_SURFACES.production` gains the three surfaces, `env.production.routes` their `/api/*` routes, and each app's `wrangler.jsonc` its production route (RB 11, point 4); `env.production.vars` set `FSM_PROVIDER`, `BOOKS_PROVIDER` and `PAYMENTS_PROVIDER` on, `RAZORPAY_KEY_ID` to the live key, `GEOCODE_PROVIDER` `"google"` and `SELF_SERVE_BOOKING` `"true"`; `FSM_CATALOGUE_PUSH.production` `true` (item 11).
@@ -118,6 +128,49 @@ With self-serve booking off, a consultation booked on the site is a request: the
 **The owner's live proof, behind Access:** sign in with a real code on the dedicated number; pay a real service visit; see it booked in FSM and its receipt in the app; cancel it more than 24 hours out, and see the refund reach Razorpay, the app and Books. Stop before an invoice is issued, which only a credit note undoes. Then set a price in the console and see `fsm_catalogue_pushed` in the logs and no `fsm_catalogue` alert an hour later (item 25). The same hour's check adds each consumable to FSM's catalogue as a part at Rs. 0: see `fsm_part_added` in the logs, each part in FSM, and Settings · Consumables saying "In FSM" beside each, with no `fsm_catalogue:consumables` alert (ADR 0087).
 
 **Open the doors:** delete the Access applications for `app.maneman.in` and `tech.maneman.in`; the ops console stays behind Access. Read the open alerts after the first day (RB, "Alerts and the cron").
+
+### The dashboards
+
+These settings live only in each vendor's dashboard, where no test can read them. Walk each table, change what differs, and write the date you saw the expected value. Where a row says what was seen on 2 October 2026, that is what has to change.
+
+**The zone, `maneman.in`.** One zone serves staging and production, so it is walked once, in the Cloudflare dashboard.
+
+| Setting               | Where                                                         | Expected                                                                                                                                                       | Checked |
+| --------------------- | ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| Always Use HTTPS      | SSL/TLS → Edge Certificates                                   | On. Off on 2 October 2026: `http://maneman.in/` answered 200                                                                                                   |         |
+| Minimum TLS version   | SSL/TLS → Edge Certificates                                   | TLS 1.2. Lower on 2 October 2026: a TLS 1.1 handshake was accepted                                                                                             |         |
+| Bot Fight Mode        | Security → Settings                                           | Off (ADR 0025, item 12)                                                                                                                                        |         |
+| JavaScript detections | Security → Settings                                           | Off (item 111; RB 14, point 1). Every page still carried its script on 2 October 2026                                                                          |         |
+| Web Analytics         | Web Analytics → `maneman.in` → Manage site → Advanced options | The beacon on `maneman.in` and `staging.maneman.in` only: a Disable rule for each app, ops and technician host of both environments (item 144; RB 14, point 2) |         |
+| `www.maneman.in`      | DNS, and Rules → Redirect Rules                               | A proxied `www` record and the 301 to `https://maneman.in/` (section 3)                                                                                        |         |
+
+**Razorpay.** Staging uses test mode and production live mode, and each mode keeps its own settings. RB 11c has the webhook's steps.
+
+| Setting                  | Expected                                                                                                                                                                                                                                                                               | Staging (test) | Production (live) |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- | ----------------- |
+| The name a client sees   | "Mane Man", on Checkout and on a payment link's page. In test mode on 2 October 2026, a link's page read "Payment Request from ADWATE KUMAR"                                                                                                                                           |                |                   |
+| Logo and colour          | The Mane Man mark, `design/brand/mark-navy.svg` exported as a square PNG of at least 256 pixels, and the ink navy `#16233a`                                                                                                                                                            |                |                   |
+| The webhook              | Active, on `https://staging.maneman.in/api/hooks/razorpay` or `https://maneman.in/api/hooks/razorpay`, with that environment's `RAZORPAY_WEBHOOK_SECRET`                                                                                                                               |                |                   |
+| Its events               | These nine and no others: `order.paid`, `payment.authorized`, `payment.captured`, `payment.failed`, `refund.created`, `refund.processed`, `refund.failed`, `refund.speed_changed` and `payment_link.paid`. Staging received `settlement.processed` on 25 September 2026: switch it off |                |                   |
+| Its alert e-mail         | An inbox someone reads every day: Razorpay writes there when the webhook fails                                                                                                                                                                                                         |                |                   |
+| Payment capture          | Automatic (item 154)                                                                                                                                                                                                                                                                   |                |                   |
+| Payment links            | Enabled (item 166)                                                                                                                                                                                                                                                                     |                |                   |
+| Two-factor sign-in       | On for everyone who signs in, and nobody on the team who does not need the dashboard                                                                                                                                                                                                   |                |                   |
+| Disputes and chargebacks | One person, named here, reads Razorpay's dispute e-mails and answers each before its deadline                                                                                                                                                                                          |                |                   |
+
+**Zoho Books and the CRM.** Staging and production share one org, so it is walked once; only the refund accounts differ.
+
+| Setting                 | Expected                                                                                                                                                                         | Checked        |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| Books: "MM person ID"   | A custom field on customers: Text, unique, API name `cf_mm_person_id`                                                                                                            | 2 October 2026 |
+| Books: items            | One service item for each service on sale in the console, under the console's name and at the price book's price. Each is made and priced from the console; none is made by hand |                |
+| Books: discounts        | At line-item level, before tax (item 181; RB 11b, point 9)                                                                                                                       |                |
+| Books: refund accounts  | Bank accounts in INR: "Razorpay – staging test" for staging and "Razorpay" for production, each one's ID that environment's `BOOKS_REFUND_ACCOUNT_ID` (item 10; RB 11b, point 7) |                |
+| Books: payment mode     | "Razorpay", under which every payment and refund is recorded                                                                                                                     |                |
+| Books: GST              | Off until the CA answers; then on, with the real GSTIN and state, and each item's SAC and rate (items 2 and 3)                                                                   |                |
+| Books and the CRM       | Books' Zoho CRM integration: two-way, Contacts only, transaction sync off, duplicates "Skip", and "MM person ID" mapped to a CRM Contacts field. Leads stay Leads (ADR 0110)     |                |
+| The CRM's fields        | `setup-crm.ts --check` finds nothing missing, and `check-zoho-setup.ts` passes (item 34; RB 8)                                                                                   |                |
+| The CRM's workflow rule | One rule: contact consent becoming true assigns an owner, and nothing fires for "Try-on — delivery only" (item 35; RB 8)                                                         |                |
 
 ## Rolling back
 

@@ -74,11 +74,19 @@ const LATEST = [
      VALUES ('tl1', 't1', '2026-10-02', '2026-10-03', 'ops@example.com', '${AT}')`,
 ];
 
+/** The Zoho tokens in use, held in the one table every client's token went to. */
+const ZOHO = [
+  `INSERT INTO zoho_access_tokens (client, access_token, expires_at, refreshing_until)
+     VALUES ('crm', 'a-token', '2026-09-21T07:30:00.000Z', '${AT}')`,
+  `INSERT INTO zoho_access_tokens (client, access_token, expires_at) VALUES ('fsm', 'b-token', '2026-09-21T07:30:00.000Z')`,
+];
+
 /** Each set of rows goes in straight after the migration that creates the last of its tables. */
 const SEEDS = [
   { after: "0003", rows: PHASE_1 },
   { after: "0027", rows: PHASE_2 },
   { after: "0034", rows: LATEST },
+  { after: "0041", rows: ZOHO },
 ] as const;
 
 /** The table each seeded row is in, and how many rows it gets. */
@@ -134,6 +142,56 @@ describe("the migrations, against a database that is in use", () => {
     const visit = db.prepare("SELECT outcome FROM visits WHERE appointment_id = 'ap1'").get();
     expect(visit).toEqual({ outcome: "done" });
     expect(db.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
+    db.close();
+  });
+
+  it("takes a visit booked without FSM, under its own ID, for a client with a Books customer", () => {
+    const db = migrate();
+    db.exec(
+      `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status, synced_at)
+       VALUES ('ap2', 'ap2', 'p2', 'service', '2026-10-22T03:30:00.000Z', '2026-10-22T05:00:00.000Z', 't1',
+               'scheduled', '${AT}')`,
+    );
+    db.exec("UPDATE people SET books_customer_id = 'customer-2' WHERE id = 'p2'");
+    const booked = db.prepare("SELECT fsm_id, fsm_status, fsm_modified_at FROM appointments WHERE id = 'ap2'").get();
+    expect(booked).toEqual({ fsm_id: "ap2", fsm_status: null, fsm_modified_at: null });
+    const mirrored = db.prepare("SELECT fsm_status, fsm_modified_at FROM appointments WHERE id = 'ap1'").get();
+    expect(mirrored).toEqual({ fsm_status: "Completed", fsm_modified_at: AT });
+    expect(db.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
+    db.close();
+  });
+
+  it("counts an erased client's Books erasure from no tries, and keeps it once done", () => {
+    const db = migrate();
+    db.exec(`UPDATE people SET books_customer_id = 'customer-2', erased_at = '${AT}' WHERE id = 'p2'`);
+    const due = db.prepare("SELECT books_erased_at, books_erasure_attempts FROM people WHERE id = 'p2'").get();
+    expect(due).toEqual({ books_erased_at: null, books_erasure_attempts: 0 });
+    db.exec(`UPDATE people SET books_erased_at = '${AT}' WHERE id = 'p2'`);
+    const done = db.prepare("SELECT books_erased_at FROM people WHERE id = 'p2'").get();
+    expect(done).toEqual({ books_erased_at: AT });
+    db.close();
+  });
+
+  it("takes a hold ops made that the client pays for by a link, and keeps every other hold paid as it was", () => {
+    const db = migrate();
+    const hold = (id: string) =>
+      `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
+         amount_ex_gst, gst_percent, state, expires_at, created_at, updated_at)
+       VALUES ('${id}', 'p2', 'service', '2026-10-22', 'morning', 't1', 0, 150000, 150000, 0, 'held', '${AT}',
+               '${AT}', '${AT}')`;
+    db.exec(hold("h1"));
+    db.exec(hold("h2"));
+    db.exec(
+      "UPDATE slot_holds SET pay_by_link = 1, payment_link_id = 'plink_1', payment_link_url = 'u' WHERE id = 'h2'",
+    );
+    const holds = db.prepare("SELECT id, pay_by_link, payment_link_id FROM slot_holds ORDER BY id").all();
+    expect(holds).toEqual([
+      { id: "h1", pay_by_link: 0, payment_link_id: null },
+      { id: "h2", pay_by_link: 1, payment_link_id: "plink_1" },
+    ]);
+    expect(() => {
+      db.exec("UPDATE slot_holds SET payment_link_id = 'plink_1' WHERE id = 'h1'");
+    }).toThrow();
     db.close();
   });
 

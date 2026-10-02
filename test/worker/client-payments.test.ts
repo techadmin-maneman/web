@@ -69,21 +69,39 @@ async function refund(id: string, paymentId: string, status: "created" | "proces
 
 const REFUND = "55555555-5555-4555-8555-555555555555";
 
+/** The split a hold priced the payment at, kept on it when it was captured. */
+const priced = (id: string, amountExGst: number, percent: number) =>
+  env.DB.prepare("UPDATE payments SET amount_ex_gst = ?2, gst_percent = ?3 WHERE id = ?1")
+    .bind(id, amountExGst, percent)
+    .run();
+
 describe("GET /api/payments", () => {
-  it("lists payments and refunds as one list, newest first, each with its ex-GST figure", async () => {
+  it("lists payments and refunds as one list, newest first, each split at the rate it was sold at", async () => {
     await visit(VISIT, P1, "stub-41");
     await payment(PAY_OLD, P1, VISIT, "2026-09-01T06:00:00.000Z");
+    await priced(PAY_OLD, 2542373, 18);
     await payment(PAY_NEW, P1, null, "2026-09-15T06:00:00.000Z");
     await refund(REFUND, PAY_OLD, "created", "2026-09-10T06:00:00.000Z");
     const { entries } = await (await get("/api/payments")).json<{ entries: Record<string, unknown>[] }>();
     expect(entries).toEqual([
-      expect.objectContaining({ kind: "payment", id: PAY_NEW, date: "2026-09-15", visit: null }),
+      // No hold or link priced it, so no rate is known: never split at a guessed one (MON-49).
+      expect.objectContaining({
+        kind: "payment",
+        id: PAY_NEW,
+        date: "2026-09-15",
+        amount: 3000000,
+        amount_ex_gst: null,
+        gst_percent: null,
+        visit: null,
+        booking: null,
+      }),
       expect.objectContaining({
         kind: "refund",
         id: REFUND,
         payment_id: PAY_OLD,
         amount: 200000,
-        amount_ex_gst: 200000,
+        amount_ex_gst: 169492,
+        gst_percent: 18,
         status: "created",
         destination: "upi",
         speed: "normal",
@@ -93,11 +111,12 @@ describe("GET /api/payments", () => {
         id: PAY_OLD,
         reference: "MM-2026-0001",
         amount: 3000000,
-        amount_ex_gst: 3000000,
-        gst_percent: 0,
+        amount_ex_gst: 2542373,
+        gst_percent: 18,
         status: "captured",
         method: "upi",
         visit: { id: VISIT, date: "2026-09-10", type: "first_fit" },
+        booking: null,
       }),
     ]);
   });
@@ -133,6 +152,48 @@ describe("GET /api/payments", () => {
     expect((await get(`/api/payments/${PAY_OLD}`)).status).toBe(404);
     expect((await get(`/api/payments/${REFUND}`)).status).toBe(404);
     expect((await (await get("/api/payments")).json<{ entries: unknown[] }>()).entries).toEqual([]);
+  });
+});
+
+// A payment for a booking still being made was "Payment", and its tax invoice "taking longer than it should" a week
+// before the visit (MON-19, MON-20, CP-18).
+describe("GET /api/payments, a booking paid for and not yet a visit", () => {
+  const ORDER = "order_held_1";
+
+  async function paidHold() {
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 'resource-1', 'Imran Qureshi', 'IQ', 1, ?1)",
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
+           amount_ex_gst, gst_percent, state, razorpay_order_id, expires_at, created_at, updated_at, confirmed_at)
+         VALUES ('hold-1', ?1, 'first_fit', '2026-09-24', 'morning', 't1', 0, 2700000, 2700000, 0, 'held', ?2, ?3, ?3,
+           ?3, ?3)`,
+      ).bind(P1, ORDER, NOW.toISOString()),
+    ]);
+    await payment(PAY_OLD, P1, null, "2026-09-15T06:00:00.000Z");
+    await env.DB.prepare("UPDATE payments SET razorpay_order_id = ?2 WHERE id = ?1").bind(PAY_OLD, ORDER).run();
+  }
+
+  it("names what is being booked, and says it is still being booked", async () => {
+    await paidHold();
+    expect(await (await get(`/api/payments/${PAY_OLD}`)).json()).toMatchObject({
+      visit: null,
+      booking: { type: "first_fit", date: "2026-09-24", under_way: true },
+    });
+  });
+
+  it("says the booking is no longer being made once it is refunded, on the payment and on its refund", async () => {
+    await paidHold();
+    await env.DB.prepare("UPDATE slot_holds SET state = 'released', refunded_at = ?1").bind(NOW.toISOString()).run();
+    await refund(REFUND, PAY_OLD, "processed", "2026-09-16T06:00:00.000Z");
+    const { entries } = await (await get("/api/payments")).json<{ entries: Record<string, unknown>[] }>();
+    const gone = { type: "first_fit", date: "2026-09-24", under_way: false };
+    expect(entries).toEqual([
+      expect.objectContaining({ kind: "refund", id: REFUND, booking: gone }),
+      expect.objectContaining({ kind: "payment", id: PAY_OLD, booking: gone }),
+    ]);
   });
 });
 

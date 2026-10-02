@@ -10,6 +10,7 @@
 // permits sending this result and nothing else (docs/decisions/0012-zoho-sync.md).
 
 import type { LossExtent } from "../config/booking.ts";
+import { recordConsent } from "./consents.ts";
 import type { Attribution } from "./leads.ts";
 import { recordEvent, type JobRow } from "./tryon.ts";
 
@@ -65,26 +66,35 @@ export async function recordClaim(db: D1Database, claim: NewClaim): Promise<stri
 
   try {
     await db.batch([
-      // A returning person keeps their ID and whether they are contactable.
+      // A returning person keeps their ID, their name and whether they are contactable: anyone can type a
+      // number at the gate, so the gate never renames the person it belongs to.
       db
         .prepare(
           `INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES (?, ?, ?, ?, 0)
-           ON CONFLICT (mobile_e164) DO UPDATE SET name = excluded.name`,
+           ON CONFLICT (mobile_e164) DO NOTHING`,
         )
         .bind(crypto.randomUUID(), at, mobileE164, claim.name),
-      db
-        .prepare(
-          `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash, source)
-           VALUES (?, ${personId}, 'result_delivery', ?, 1, ?, ?, 'try_on')`,
-        )
-        .bind(crypto.randomUUID(), mobileE164, claim.gateNotice, at, claim.ipHash),
+      recordConsent(db, {
+        person: { mobileE164 },
+        purpose: "result_delivery",
+        granted: true,
+        notice: claim.gateNotice,
+        source: "try_on",
+        rule: "always",
+        ipHash: claim.ipHash,
+        givenAt: at,
+      }).statement,
       // The photo consent was given before the upload; it is recorded now that we know who gave it.
-      db
-        .prepare(
-          `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, ip_hash, source)
-           VALUES (?, ${personId}, 'tryon_photo', ?, 1, ?, ?, 'try_on')`,
-        )
-        .bind(crypto.randomUUID(), mobileE164, job.photo_consent_version, job.photo_consent_at, job.ip_hash),
+      recordConsent(db, {
+        person: { mobileE164 },
+        purpose: "tryon_photo",
+        granted: true,
+        notice: job.photo_consent_version,
+        source: "try_on",
+        rule: "always",
+        ipHash: job.ip_hash,
+        givenAt: job.photo_consent_at,
+      }).statement,
       db
         .prepare(
           `INSERT INTO leads (id, person_id, created_at, source, loss_extent, utm_source, utm_medium, utm_campaign,
@@ -106,10 +116,13 @@ export async function recordClaim(db: D1Database, claim: NewClaim): Promise<stri
           attribution.landing_path ?? null,
           claim.requestId,
         ),
-      // The render is made for the stage the lead records (src/routes/tryon-generate.ts).
+      // The render is made for the stage the lead records (src/routes/tryon-generate.ts). Every claim comes with
+      // its number proved by a code, so the try-on may show in its client's app.
       db
-        .prepare(`UPDATE tryon_jobs SET person_id = ${personId}, lead_id = ?, stage = ? WHERE id = ?`)
-        .bind(mobileE164, leadId, claim.stage, job.id),
+        .prepare(
+          `UPDATE tryon_jobs SET person_id = ${personId}, lead_id = ?, stage = ?, number_proved_at = ? WHERE id = ?`,
+        )
+        .bind(mobileE164, leadId, claim.stage, at, job.id),
       db
         .prepare(
           `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_id, state)

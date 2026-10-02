@@ -38,7 +38,7 @@ describe.each(COMMITTED)("the %s surface's API documentation", (surface, documen
     expect(renderApiMarkdown(buildOpenApiDocument(surface))).toBe(markdown.replace(/\r\n/g, "\n"));
   });
 
-  it("documents every GET response with a JSON schema, or as an image, a PDF or a redirect", () => {
+  it("documents every GET response with a JSON schema, or as an image, a PDF, a redirect or no content", () => {
     const generated = buildOpenApiDocument(surface);
     for (const [path, item] of Object.entries(generated.paths ?? {})) {
       for (const [status, response] of Object.entries(item.get?.responses ?? {}) as [string, unknown][]) {
@@ -47,7 +47,10 @@ describe.each(COMMITTED)("the %s surface's API documentation", (surface, documen
           types.length > 0 && types.every((type) => type.startsWith("image/") || type === "application/pdf");
         // A redirect has no body: the invite's preview sends the house card to the site (ADR 0048).
         const isRedirect = status.startsWith("3") && types.length === 0;
-        if (!isFile && !isRedirect) expect(readResponse(response).jsonSchema, `${path} ${status}`).toBeDefined();
+        const isNoContent = status === "204" && types.length === 0;
+        if (!isFile && !isRedirect && !isNoContent) {
+          expect(readResponse(response).jsonSchema, `${path} ${status}`).toBeDefined();
+        }
       }
     }
     expect(Object.keys(generated.components?.schemas ?? {})).toEqual(
@@ -114,9 +117,9 @@ function errorAnswers(): { where: string; status: string; description: string }[
 // answers with one status everywhere, so that neither can say something the other does not.
 describe("the error codes", () => {
   it("are read from the first word of each clause of an answer's description", () => {
-    expect(codesNamedIn("taken: that window has gone; already_booked: it has one; or ops_assisted")).toEqual([
+    expect(codesNamedIn("taken: that window has gone; hold_expired: it lapsed; or ops_assisted")).toEqual([
       "taken",
-      "already_booked",
+      "hold_expired",
       "ops_assisted",
     ]);
     expect(codesNamedIn("fsm_refused: nothing moved. fsm_partly: FSM took the technician")).toEqual([

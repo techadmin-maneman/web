@@ -762,6 +762,170 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/visits/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A client's windows for a kind of visit over 14 days, and who is free in each */
+        get: {
+            parameters: {
+                query: {
+                    client: string;
+                    kind: "consultation" | "first_fit" | "service" | "replacement";
+                    /** @description The service; left out, the first offered. */
+                    tier?: string;
+                    /** @description The first day; tomorrow if left out, or if earlier. */
+                    from?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Each day's windows */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OpsAvailability"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such client, or one who has been erased */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_bookable: the kind offers no such service; no_product: a first fit, with no hair system on sale */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/visits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Book a visit for a client: at once when nothing is paid at booking, else by a payment link */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["VisitToBook"];
+                };
+            };
+            responses: {
+                /** @description Booked, on its way, or waiting for the link to be paid */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OpsBooking"];
+                    };
+                };
+                /** @description invalid_request: a one visit that is not a first fit, or in the evening */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such client, or one who has been erased */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description taken: nobody chosen is free in that window now; already_booked: a consultation or first fit is still to come, or a payment link for one is open; terms_changed: the client's last credit went on another booking a moment before */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_bookable: the day, the kind or the service cannot be booked; no_product: a first fit, with no hair system on sale that day; code_not_applicable: the code does not apply to this booking */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description unavailable: Razorpay could not make the payment link, so nothing is held */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/clients/{id}/referral": {
         parameters: {
             query?: never;
@@ -1622,6 +1786,7 @@ export interface paths {
                         "application/json": {
                             areas: {
                                 pincode: string;
+                                /** @description The area's name once ops have named it; null until then, and for a pincode we do not know. */
                                 area: string | null;
                                 city: string | null;
                                 served: boolean;
@@ -1841,7 +2006,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such live job, or one in progress or closed, which stays where it is */
+                /** @description not_found: no such live job, or one the technician has begun, which stays where it is */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2004,7 +2169,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description clash; on_leave; does_not_fit; superseded, with what changed in fields; in_progress: the technician has begun the visit. FSM has it in progress, or he closed it, and it stays where it is; or he has arrived or started, and it moves only with set_aside_work */
+                /** @description clash; on_leave; does_not_fit; superseded, with what changed in fields; in_progress: the technician has begun the visit, which stays where it is */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -2181,7 +2346,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required, or not_permitted: waiving asks Finance MANAGE */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -2270,7 +2435,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Active technicians, the phones they have logged in on, and the leave they are down for */
+        /** Active technicians, the phones they have logged in on and their leave, and those switched off */
         get: {
             parameters: {
                 query?: never;
@@ -2301,7 +2466,58 @@ export interface paths {
             };
         };
         put?: never;
-        post?: never;
+        /** Add a technician. His number signs in to the technician app at once */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["NewTechnician"];
+                };
+            };
+            responses: {
+                /** @description Added */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TechnicianId"];
+                    };
+                };
+                /** @description invalid_request: no name, or not an Indian mobile */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required, or not_permitted: changing a technician asks Operations MANAGE */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description number_in_use: another active technician signs in with that number */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -2588,7 +2804,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required, or not_permitted: refunding asks Finance MANAGE */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -2631,7 +2847,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description The groups with something in them */
+                /** @description The groups with something in them, of the caller's own departments once the Staff list is enforced */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -2640,7 +2856,7 @@ export interface paths {
                         "application/json": components["schemas"]["Tasks"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required, or not_permitted: no View in any department */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -2702,7 +2918,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required: no Access token, or a service token, which names no member of staff */
+                /** @description access_required: no Access token, or a service token, which names no member of staff; or not_permitted: it asks Act in the department that decides the task's group */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -2848,6 +3064,217 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/technicians/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change a technician's name, number or zone */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TechnicianChange"];
+                };
+            };
+            responses: {
+                /** @description Changed */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TechnicianId"];
+                    };
+                };
+                /** @description invalid_request: nothing to change, no name, or not an Indian mobile */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required, or not_permitted: changing a technician asks Operations MANAGE */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such technician */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description number_in_use: another active technician signs in with that number; managed_in_fsm: FSM lists this technician, so he is changed there while FSM is the record */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/api/technicians/{id}/deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Switch a technician off: he is signed out at once, and his visits still to come are unassigned */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Switched off */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TechnicianDeactivated"];
+                    };
+                };
+                /** @description access_required, or not_permitted: changing a technician asks Operations MANAGE */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such technician */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description managed_in_fsm: FSM lists this technician, so he is changed there while FSM is the record */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/technicians/{id}/reactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Switch a technician back on, so he can sign in again */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Switched on */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            active: true;
+                        };
+                    };
+                };
+                /** @description access_required, or not_permitted: changing a technician asks Operations MANAGE */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such technician */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description number_in_use: another active technician signs in with his number now; managed_in_fsm: FSM lists this technician, so he is changed there while FSM is the record */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -3688,7 +4115,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book */
+                /** @description service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -3767,7 +4194,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book */
+                /** @description service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -3846,7 +4273,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book */
+                /** @description service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -3924,7 +4351,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book */
+                /** @description service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -4003,7 +4430,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book */
+                /** @description service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -4078,7 +4505,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book */
+                /** @description service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -4881,7 +5308,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** What the photographs and referral cards hold in R2, against their share */
+        /** What the photographs and referral cards hold in R2, against their share, and the database against its limit */
         get: {
             parameters: {
                 query?: never;
@@ -5019,7 +5446,7 @@ export interface paths {
                         "application/json": components["schemas"]["DiscountCodesMade"];
                     };
                 };
-                /** @description invalid_request: fields names code when it is not one a code can be, count for a typed code made more than once, value for a percentage over 100, cap on an amount, covers named twice, expires_on before today, and max_uses for a batch whose codes are not single-use */
+                /** @description invalid_request: fields names code when it is not one a code can be, count for a typed code made more than once, value for a percentage over 100 or an amount not in whole rupees, cap on an amount or not in whole rupees, covers named twice, expires_on before today, and max_uses for a batch whose codes are not single-use */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -5253,6 +5680,263 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/staff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The Staff list, narrowed to the caller's own places */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The Staff page as it now stands */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffBook"];
+                    };
+                };
+                /** @description access_required, or not_permitted */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Add a member of staff, or replace their grants and whether they are let in */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["StaffSave"];
+                };
+            };
+            responses: {
+                /** @description The Staff page as it now stands */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffBook"];
+                    };
+                };
+                /** @description invalid_request: a grant names no place it may, or the same place twice */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required, or not_permitted: the change reaches beyond the caller's Admin MANAGE, or comes from a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description last_admin: nobody would be left with Admin MANAGE nationally */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/enforcement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Enforce the Staff list, or stop */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        on: boolean;
+                    };
+                };
+            };
+            responses: {
+                /** @description The Staff page as it now stands */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffBook"];
+                    };
+                };
+                /** @description access_required, or not_permitted: only a person with Admin MANAGE nationally */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/service-tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Let a service token in, as every caller was before the Staff list */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["StaffServiceToken"];
+                };
+            };
+            responses: {
+                /** @description The Staff page as it now stands */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffBook"];
+                    };
+                };
+                /** @description access_required, or not_permitted: only a person with Admin MANAGE nationally */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/service-tokens/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Take a service token off */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @description The service token's client ID, as Access names it. */
+                        client_id: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description The Staff page as it now stands */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffBook"];
+                    };
+                };
+                /** @description access_required, or not_permitted: only a person with Admin MANAGE nationally */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such token is listed */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -5260,7 +5944,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -5287,6 +5971,8 @@ export interface components {
              * @enum {string}
              */
             d1: "ok" | "unmarked" | "mismatch" | "unreachable";
+            /** @description When the five-minute cron last finished a run; null before its first, or when the database is not this environment's. Information only: status does not depend on it. */
+            cron_completed_at: string | null;
         };
         ClientSearch: {
             mobile: string;
@@ -5379,8 +6065,8 @@ export interface components {
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
             /** @enum {string} */
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
-            /** @description For a visit FSM has not closed: still to come, under way in its window, or over and waiting for FSM to close it. Null once FSM has closed it. */
-            stage: ("booked" | "in_progress" | "closing") | null;
+            /** @description For a visit FSM has not closed: still to come, under way (the technician has checked in, whatever FSM says), closed as done from the technician's phone, or otherwise over and waiting for FSM to close it. Null once FSM has closed it. */
+            stage: ("booked" | "in_progress" | "done" | "closing") | null;
             /** @description Paid for ahead, or covered by a visit credit: board C1's Prepaid. */
             prepaid: boolean;
             technician: components["schemas"]["Technician"] | null;
@@ -5431,8 +6117,8 @@ export interface components {
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
             /** @enum {string} */
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
-            /** @description For a visit FSM has not closed: still to come, under way in its window, or over and waiting for FSM to close it. Null once FSM has closed it. */
-            stage: ("booked" | "in_progress" | "closing") | null;
+            /** @description For a visit FSM has not closed: still to come, under way (the technician has checked in, whatever FSM says), closed as done from the technician's phone, or otherwise over and waiting for FSM to close it. Null once FSM has closed it. */
+            stage: ("booked" | "in_progress" | "done" | "closing") | null;
             /** @description Paid for ahead, or covered by a visit credit: board C1's Prepaid. */
             prepaid: boolean;
             technician: components["schemas"]["Technician"] | null;
@@ -5452,12 +6138,12 @@ export interface components {
              * @description India's calendar date it was made.
              */
             date: string;
-            /** @description In paise, GST included. */
+            /** @description In paise, GST included: the main figure. */
             amount: number;
-            /** @description In paise, before GST: the main figure. */
-            amount_ex_gst: number;
-            /** @description The GST rate the amount includes. */
-            gst_percent: number;
+            /** @description In paise, before GST; null where no rate was recorded for it. */
+            amount_ex_gst: number | null;
+            /** @description The GST rate the amount includes; null where none was recorded. */
+            gst_percent: number | null;
             /** @description The visit it paid for, when known. */
             visit: {
                 /** Format: uuid */
@@ -5465,6 +6151,18 @@ export interface components {
                 /** Format: date */
                 date: string;
                 type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            } | null;
+            /** @description What it paid for while there is no visit yet: the booking its hold was making. */
+            booking: {
+                /** @enum {string} */
+                type: "consultation" | "first_fit" | "service" | "replacement";
+                /**
+                 * Format: date
+                 * @description India's day the visit was held for.
+                 */
+                date: string;
+                /** @description Still being booked; false once refunded or let go. */
+                under_way: boolean;
             } | null;
             /** @enum {string} */
             status: "authorized" | "captured" | "refunded" | "partially_refunded";
@@ -5498,6 +6196,12 @@ export interface components {
             } | null;
             /** @description The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07). */
             no_show: components["schemas"]["NoShowNote"] | null;
+            /** @description The discount code the visit was paid with; null for none, and on a late fee. */
+            discount_code: {
+                code: string;
+                /** @description In paise before GST; null where the visit's price was not yet known. */
+                amount_off: number | null;
+            } | null;
         };
         NoShowNote: {
             /**
@@ -5534,12 +6238,12 @@ export interface components {
              * @description India's calendar date it was made.
              */
             date: string;
-            /** @description In paise, GST included. */
+            /** @description In paise, GST included: the main figure. */
             amount: number;
-            /** @description In paise, before GST: the main figure. */
-            amount_ex_gst: number;
-            /** @description The GST rate the amount includes. */
-            gst_percent: number;
+            /** @description In paise, before GST; null where no rate was recorded for it. */
+            amount_ex_gst: number | null;
+            /** @description The GST rate the amount includes; null where none was recorded. */
+            gst_percent: number | null;
             /** @description The visit it paid for, when known. */
             visit: {
                 /** Format: uuid */
@@ -5547,6 +6251,18 @@ export interface components {
                 /** Format: date */
                 date: string;
                 type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            } | null;
+            /** @description What it paid for while there is no visit yet: the booking its hold was making. */
+            booking: {
+                /** @enum {string} */
+                type: "consultation" | "first_fit" | "service" | "replacement";
+                /**
+                 * Format: date
+                 * @description India's day the visit was held for.
+                 */
+                date: string;
+                /** @description Still being booked; false once refunded or let go. */
+                under_way: boolean;
             } | null;
             /** @enum {string} */
             status: "created" | "processed" | "failed";
@@ -5767,10 +6483,109 @@ export interface components {
             /** @description In paise, where one was refunded. */
             amount: number | null;
         };
+        OpsAvailability: {
+            /** @enum {string} */
+            kind: "consultation" | "first_fit" | "service" | "replacement";
+            /** @description The kind's services offered on the first day. */
+            services: components["schemas"]["ServiceOffer"][];
+            service: components["schemas"]["VisitService"];
+            /**
+             * @description How the visit is paid for: nothing at booking (free, or a consultation and fit in one visit, paid by a link once fitted), a service-visit credit, or a payment link Razorpay texts the client.
+             * @enum {string}
+             */
+            pays: "nothing" | "credit" | "link";
+            /** @description The service-visit credits the client has to spend. */
+            credits: number;
+            days: {
+                /** Format: date */
+                date: string;
+                windows: {
+                    /** @enum {string} */
+                    window: "morning" | "afternoon" | "evening";
+                    /** @description When the window starts that day, in India's time. */
+                    start: string;
+                    end: string;
+                    /** @description Who is free for the visit, the client's regular technician first. */
+                    technicians: components["schemas"]["FreeTechnician"][];
+                }[];
+            }[];
+        };
+        ServiceOffer: {
+            tier: string;
+            name: string;
+            minutes: number;
+            price: components["schemas"]["VisitPrice"];
+        };
+        VisitPrice: {
+            /** @description In paise, before GST. */
+            amount_ex_gst: number;
+            /** @description In paise, GST included: what the client pays. */
+            amount: number;
+            gst_percent: number;
+        };
+        /** @description The service the windows are for: the one asked, else the first. */
+        VisitService: {
+            /** @description Its code within its kind, which never changes. */
+            tier: string;
+            name: string;
+            /** @description How long the visit is booked for. */
+            minutes: number;
+        };
+        FreeTechnician: {
+            id: string;
+            name: string;
+        };
+        OpsBooking: {
+            /** Format: uuid */
+            hold_id: string;
+            /**
+             * @description booked: the visit is written. being_booked: it is on its way to the field record, within a minute. awaiting_payment: the slot is held and the link sent; the visit is booked once the client pays.
+             * @enum {string}
+             */
+            outcome: "booked" | "being_booked" | "awaiting_payment";
+            /** @description The visit, once booked. */
+            visit_id: string | null;
+            /**
+             * @description How the visit is paid for: nothing at booking (free, or a consultation and fit in one visit, paid by a link once fitted), a service-visit credit, or a payment link Razorpay texts the client.
+             * @enum {string}
+             */
+            pays: "nothing" | "credit" | "link";
+            service: components["schemas"]["VisitService"];
+            price: components["schemas"]["VisitPrice"] & unknown;
+            /** Format: date */
+            date: string;
+            /** @enum {string} */
+            window: "morning" | "afternoon" | "evening";
+            technician: components["schemas"]["FreeTechnician"];
+            /** @description The payment link Razorpay texted the client, and when it closes and the slot goes. */
+            link: {
+                url: string;
+                /** Format: date-time */
+                open_until: string;
+            } | null;
+        };
+        VisitToBook: {
+            /** Format: uuid */
+            client: string;
+            /** @enum {string} */
+            kind: "consultation" | "first_fit" | "service" | "replacement";
+            /** @description The service; left out, the kind's standard one. A first fit names the hair system. */
+            tier?: string;
+            /** @description The technician ops chose; left out, whoever is free, the client's regular one first. */
+            technician?: string;
+            /** Format: date */
+            date: string;
+            /** @enum {string} */
+            window: "morning" | "afternoon" | "evening";
+            /** @description A consultation and fit in one visit: a first fit, morning or afternoon. */
+            one_visit?: boolean;
+            /** @description A discount code the client gave. */
+            code?: string;
+        };
         AlreadyInvited: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -5831,7 +6646,7 @@ export interface components {
             latest: components["schemas"]["HairProfile"] | null;
             /** @description Every version, newest first. */
             versions: components["schemas"]["HairProfileVersion"][];
-            /** @description The products a correction may name: every first-fit service, retired or not. */
+            /** @description The products a correction may name: the hair systems offered today, as the technician's card lists them. */
             products: {
                 tier: string;
                 name: string;
@@ -6063,6 +6878,12 @@ export interface components {
                 asked_window: ("morning" | "afternoon" | "evening") | null;
                 offered_window: ("morning" | "afternoon" | "evening") | null;
                 date: string | null;
+                /** @description The technician the job is still on, who was switched off and so has no row; null for a job nobody holds. A move of it names him as the expected technician. */
+                was_technician: {
+                    /** Format: uuid */
+                    id: string;
+                    name: string;
+                } | null;
             }[];
             /** @description Each column's utilisation, in per cent: the slots the day's jobs take, done or still to do, out of the slots of the technicians not on leave. Written to events daily as well. */
             utilisation: {
@@ -6114,7 +6935,7 @@ export interface components {
                 /** Format: date-time */
                 starts_at: string;
             } | null;
-            /** @description How far the technician has got, from the steps his phone sent rather than FSM's status: arrived (checked in), started, or closed (an outcome, a no-show among them). Null before he arrives. A visit he has arrived at or started moves only with set_aside_work; a closed one never does. */
+            /** @description How far the technician has got, from the steps his phone sent: arrived (checked in), started, or closed (an outcome, a no-show among them). Null before he arrives. A visit he has begun, or one in progress, is not moved. */
             begun: ("arrived" | "started" | "closed") | null;
         };
         DispatchClient: {
@@ -6190,11 +7011,6 @@ export interface components {
              * @description The start the board showed the job with.
              */
             expected_starts_at: string;
-            /**
-             * @description Ops were warned that the technician has arrived or started, and move the visit anyway: every step his phone sent on it is set aside, and the audit log names who chose it. Without it, such a visit answers 409 in_progress.
-             * @enum {boolean}
-             */
-            set_aside_work?: true;
         };
         NoShowCases: {
             cases: components["schemas"]["NoShowCase"][];
@@ -6290,6 +7106,10 @@ export interface components {
                 name: string;
                 initials: string;
                 zone: string | null;
+                /** @description The number he signs in with, +91 and ten digits; null where none is recorded. */
+                mobile: string | null;
+                /** @description Whether ops change him here. While FSM is the record of field work, a technician FSM lists is changed in FSM; one ops added is theirs. */
+                editable: boolean;
                 devices: {
                     device_id: string;
                     label: string | null;
@@ -6299,6 +7119,17 @@ export interface components {
                 }[];
                 /** @description Leave that has not ended yet, soonest first (ADR 0062). */
                 leave: components["schemas"]["TechnicianLeave"][];
+            }[];
+            /** @description Technicians switched off, by name: they cannot sign in, and nothing is booked on them. */
+            switched_off: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+                zone: string | null;
+                /** @description The number he signs in with, +91 and ten digits; null where none is recorded. */
+                mobile: string | null;
+                /** @description Whether ops change him here. While FSM is the record of field work, a technician FSM lists is changed in FSM; one ops added is theirs. */
+                editable: boolean;
             }[];
         };
         TechnicianLeave: {
@@ -6482,6 +7313,38 @@ export interface components {
             change: ("cancelled" | "moved") | null;
             /** @description Who attended and found nobody in; null on a late cancellation. */
             technician: string | null;
+        };
+        TechnicianId: {
+            /** Format: uuid */
+            id: string;
+        };
+        NewTechnician: {
+            /** @description His whole name, as clients see it. */
+            name: string;
+            /** @description The Indian mobile he signs in with; his sign-in code goes to it on WhatsApp. */
+            mobile: string;
+            /** @description Where he mostly works, in ops' words; null for none. */
+            zone?: string | null;
+        };
+        /** @description Only what is sent changes. */
+        TechnicianChange: {
+            /** @description His whole name, as clients see it. */
+            name?: string;
+            /** @description The Indian mobile he signs in with; his sign-in code goes to it on WhatsApp. */
+            mobile?: string;
+            /** @description Where he mostly works, in ops' words; null for none. */
+            zone?: string | null;
+        };
+        TechnicianDeactivated: {
+            /** @description His visits still to come, now unassigned: each waits in the dispatch board's tray for ops to give it to another. A visit already begun stays his. Empty when he was switched off already. */
+            visits: {
+                /** Format: uuid */
+                appointment_id: string;
+                /** Format: date-time */
+                starts_at: string;
+                type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+                client: string | null;
+            }[];
         };
         /** @description Counted at read time from the appointments themselves. */
         TechniciansWork: {
@@ -7041,12 +7904,46 @@ export interface components {
             share_bytes: number;
             /** @description Past this the technician app's photographs are refused and wait on the phones. */
             ceiling_bytes: number;
+            /** @description What this environment's D1 database holds. */
+            database_bytes: number;
+            /** @description D1's limit on one database on the free plan; past it every write fails. */
+            database_limit_bytes: number;
         };
         Whoami: {
             /** @description A member of staff's e-mail, or a service token's ID. */
             signed_in_as: string;
             /** @description Access's logout path; null where no Access stands in front, as locally. */
             sign_out: string | null;
+            staff: {
+                /** @description Whether the Staff list decides what they may open. */
+                enforced: boolean;
+                /** @description An active person on the Staff list, or a service token on its list of tokens. */
+                listed: boolean;
+                /** @description A person's grants; none for a service token. */
+                grants: components["schemas"]["StaffGrant"][];
+                /**
+                 * @description The ops routes their calls go ahead on, as "GET /api/tasks": every one while the list is not enforced. The console shows only the sections whose pages they can read.
+                 * @example [
+                 *       "GET /api/health",
+                 *       "GET /api/whoami",
+                 *       "GET /api/tasks"
+                 *     ]
+                 */
+                may_call: string[];
+            };
+        };
+        StaffGrant: {
+            /** @enum {string} */
+            department: "operations" | "customer_care" | "finance" | "growth" | "admin";
+            /**
+             * @description view < act < manage: each level can do what the ones before it can.
+             * @enum {string}
+             */
+            level: "view" | "act" | "manage";
+            /** @enum {string} */
+            geography: "national" | "zone" | "city";
+            /** @description The zone's or the city's name; null for national. */
+            place: string | null;
         };
         DiscountCodes: {
             /**
@@ -7104,9 +8001,9 @@ export interface components {
             count?: number;
             /** @enum {string} */
             kind: "percent" | "amount";
-            /** @description Per cent, 1 to 100, for a percentage; paise before GST for an amount. */
+            /** @description Per cent, 1 to 100, for a percentage; paise in whole rupees, before GST, for an amount. */
             value: number;
-            /** @description A percentage's most, in paise before GST; none if left out. */
+            /** @description A percentage's most, in paise in whole rupees, before GST; none if left out. */
             cap?: number | null;
             covers: ("first_fit" | "service" | "replacement")[];
             /** @description The last day in India it may be entered, today or later; no end if left out. */
@@ -7121,6 +8018,55 @@ export interface components {
             amount_off: number | null;
             /** @enum {string} */
             given_by: "client" | "technician" | "ops";
+        };
+        StaffBook: {
+            enforced: {
+                /** @description Off: nothing is refused, and what would have been is logged. */
+                on: boolean;
+                set_by: string | null;
+                set_at: string | null;
+            };
+            /** @description Whether the caller may switch enforcement and change the service tokens: a person with Admin MANAGE nationally. */
+            may_run_access: boolean;
+            people: {
+                email: string;
+                active: boolean;
+                grants: components["schemas"]["StaffGrant"][];
+                added_by: string;
+                /** Format: date-time */
+                added_at: string;
+                changed_by: string | null;
+                changed_at: string | null;
+            }[];
+            service_tokens: {
+                client_id: string;
+                label: string;
+                added_by: string;
+                /** Format: date-time */
+                added_at: string;
+            }[];
+            zones: {
+                name: string;
+                cities: string[];
+            }[];
+            /** @description Every city a grant may name. */
+            cities: string[];
+        };
+        StaffSave: {
+            /**
+             * Format: email
+             * @description Their Cloudflare Access e-mail.
+             */
+            email: string;
+            /** @description False keeps them listed, with their grants, but lets them in nowhere. */
+            active: boolean;
+            /** @description Every grant they are to hold; this replaces them all. */
+            grants: components["schemas"]["StaffGrant"][];
+        };
+        StaffServiceToken: {
+            /** @description The service token's client ID, as Access names it. */
+            client_id: string;
+            label: string;
         };
     };
     responses: never;

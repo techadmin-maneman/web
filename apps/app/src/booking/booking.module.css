@@ -27,7 +27,7 @@
 
 .sheet {
   min-height: 0;
-  padding: var(--sp-22) var(--sp-20) var(--sp-24);
+  padding: var(--sp-22) var(--sp-20) calc(var(--sp-24) + env(safe-area-inset-bottom));
   overflow-y: auto;
   background: var(--paper);
   color: var(--text);
@@ -414,7 +414,7 @@
   color: var(--text);
 }
 
-/* The address step (ADR 0079), which no board draws: why the address comes first, above Profile's form. */
+/* A line no board draws under a step's heading: why the address comes first, or that the day offered is full. */
 .sheet .why {
   font-size: var(--fs-15);
   line-height: var(--lh-155);
@@ -509,6 +509,12 @@
 .noteInput:focus {
   outline: var(--focus-width) solid var(--ink);
   outline-offset: calc(-1 * var(--focus-width));
+}
+
+.offlineLine {
+  font-size: var(--fs-15);
+  line-height: var(--lh-155);
+  color: var(--text-soft);
 }
 
 .changeTitle {

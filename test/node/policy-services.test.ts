@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from "vitest";
 import { PRICE_TIER } from "../../src/config/ops-settings.ts";
-import { STANDARD_TIER, VISIT_TYPES } from "../../src/config/visit-types.ts";
+import { hasStandardService, STANDARD_TIER, VISIT_TYPES } from "../../src/config/visit-types.ts";
 import { isOffered, retireRefusal, RULES, SERVICE_NAME, tierCodeOf } from "../../src/policy/services.ts";
 
 describe("the services", () => {
@@ -51,10 +51,19 @@ describe("the services", () => {
     ]);
   });
 
-  it("keeps every kind bookable: its last service never retired and priced cannot be retired", () => {
-    expect(retireRefusal([])).toBe("last_of_kind");
-    expect(retireRefusal([{ retiredDate: "2026-12-01", pricedBy: true }])).toBe("last_of_kind");
-    expect(retireRefusal([{ retiredDate: null, pricedBy: false }])).toBe("last_of_kind");
-    expect(retireRefusal([{ retiredDate: null, pricedBy: true }])).toBeNull();
+  it("keeps a kind with a standard service bookable: its last service never retired and priced cannot be retired", () => {
+    for (const kind of ["consultation", "service", "replacement"] as const) {
+      expect(retireRefusal(kind, [])).toBe("last_of_kind");
+      expect(retireRefusal(kind, [{ retiredDate: "2026-12-01", pricedBy: true }])).toBe("last_of_kind");
+      expect(retireRefusal(kind, [{ retiredDate: null, pricedBy: false }])).toBe("last_of_kind");
+      expect(retireRefusal(kind, [{ retiredDate: null, pricedBy: true }])).toBeNull();
+    }
+  });
+
+  // The owner's decision of 2 October 2026: only the hair systems ops offer, and no generic first fit in their place.
+  it("lets ops retire a first fit's every hair system, so nothing stands in for them", () => {
+    expect(hasStandardService("first_fit")).toBe(false);
+    expect(retireRefusal("first_fit", [])).toBeNull();
+    expect(retireRefusal("first_fit", [{ retiredDate: "2026-12-01", pricedBy: true }])).toBeNull();
   });
 });

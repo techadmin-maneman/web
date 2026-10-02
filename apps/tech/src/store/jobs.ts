@@ -6,8 +6,7 @@
 // Two answers of the API's are kept beside them, because no later call gives
 // them back: what a check-in measured (board B5's distance and its wait), and
 // the instant the technician closed the job out, which board B4's duration runs
-// to. So is the job's start as the card showed it at check-in, which every
-// later step is sent with.
+// to.
 
 import type { CheckIn, Job, JobSummary } from "../api.ts";
 import { dayAfter } from "../lib/when.ts";
@@ -17,13 +16,11 @@ type Kept =
   | { readonly id: string; readonly kind: "day"; readonly date: string; readonly jobs: readonly JobSummary[] }
   | { readonly id: string; readonly kind: "job"; readonly job: Job }
   | { readonly id: string; readonly kind: "arrival"; readonly job_id: string; readonly arrival: CheckIn }
-  | { readonly id: string; readonly kind: "closed"; readonly job_id: string; readonly at: number }
-  | { readonly id: string; readonly kind: "check_in_start"; readonly job_id: string; readonly starts_at: string };
+  | { readonly id: string; readonly kind: "closed"; readonly job_id: string; readonly at: number };
 
 const dayKey = (date: string) => `day:${date}`;
 const arrivalKey = (jobId: string) => `arrival:${jobId}`;
 const closedKey = (jobId: string) => `closed:${jobId}`;
-const checkInStartKey = (jobId: string) => `check_in_start:${jobId}`;
 
 export async function keepDay(date: string, jobs: readonly JobSummary[]): Promise<void> {
   await put("jobs", { id: dayKey(date), kind: "day", date, jobs } satisfies Kept);
@@ -50,13 +47,15 @@ export async function keptJob(id: string): Promise<Job | null> {
  * today's shape, so a job opened with no signal after an update still closes:
  * each reason worded from its id, and the step with nothing to start from. One
  * kept before the hair profile carries none, and lists no step for it
- * (docs/decisions/0106-a-clients-hair-profile.md).
+ * (docs/decisions/0106-a-clients-hair-profile.md). One kept before a one
+ * visit's discount code was on the card carries none, and the outcome step asks.
  */
 function inTodaysShape(job: Job): Job {
-  const kept = job as Omit<Job, "partial_reasons" | "consumables" | "profile"> & {
+  const kept = job as Omit<Job, "partial_reasons" | "consumables" | "profile" | "discount_code"> & {
     readonly partial_reasons: readonly (Job["partial_reasons"][number] | string)[];
     readonly consumables?: Job["consumables"];
     readonly profile?: Job["profile"];
+    readonly discount_code?: Job["discount_code"];
   };
   return {
     ...kept,
@@ -65,6 +64,7 @@ function inTodaysShape(job: Job): Job {
     ),
     consumables: kept.consumables ?? [],
     profile: kept.profile ?? null,
+    discount_code: kept.discount_code ?? null,
   };
 }
 
@@ -94,29 +94,6 @@ export async function keptClosed(jobId: string): Promise<number | null> {
   return kept !== null && kept.kind === "closed" ? kept.at : null;
 }
 
-/**
- * The job's start as the card showed it when the technician checked in. A move ops make after that is one his later
- * steps must be refused for, so they carry this start, not one a card read again since would give.
- */
-export async function keepStartAtCheckIn(jobId: string, startsAt: string): Promise<void> {
-  await put("jobs", {
-    id: checkInStartKey(jobId),
-    kind: "check_in_start",
-    job_id: jobId,
-    starts_at: startsAt,
-  } satisfies Kept);
-}
-
-export async function keptStartAtCheckIn(jobId: string): Promise<string | null> {
-  const kept = await get<Kept>("jobs", checkInStartKey(jobId));
-  return kept !== null && kept.kind === "check_in_start" ? kept.starts_at : null;
-}
-
-/** Once the technician has let go of a job's work: a check-in on it again keeps the start it then has. */
-export async function forgetStartAtCheckIn(jobId: string): Promise<void> {
-  await remove("jobs", checkInStartKey(jobId));
-}
-
 /** Every job the technician closed out on this phone, so the day's list can say so before FSM does. */
 export async function keptClosedJobs(): Promise<Set<string>> {
   const kept = await all<Kept>("jobs");
@@ -141,6 +118,13 @@ export async function keptNames(): Promise<Map<string, string>> {
   return names;
 }
 
+/** The days and the clients' cards, gone; each job's arrival and close-out stay with the work not yet sent. */
+export async function dropCards(): Promise<void> {
+  for (const kept of await all<Kept>("jobs")) {
+    if (kept.kind === "day" || kept.kind === "job") await remove("jobs", kept.id);
+  }
+}
+
 /** Whether a kept record is still needed: its day is today or tomorrow, or its job is one the phone still needs. */
 function stillNeeded(kept: Kept, days: ReadonlySet<string>, jobs: ReadonlySet<string>): boolean {
   switch (kept.kind) {
@@ -150,7 +134,6 @@ function stillNeeded(kept: Kept, days: ReadonlySet<string>, jobs: ReadonlySet<st
       return jobs.has(kept.id);
     case "arrival":
     case "closed":
-    case "check_in_start":
       return jobs.has(kept.job_id);
   }
 }

@@ -8,7 +8,8 @@
 
 import { shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
-import { FSM_SERVICE_NAMES, type VisitType } from "../config/visit-types.ts";
+import type { BookingWindow } from "../config/scheduling.ts";
+import { VISIT_TYPE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
 import { DAY_BEFORE_REMINDER_HOUR } from "../policy/job-visibility.ts";
 import type { Charge } from "../policy/moving-a-visit.ts";
@@ -16,7 +17,7 @@ import type { OneVisitState } from "../policy/one-visit.ts";
 import { WAIVER_GIVES_BACK, type DisputeRuling, type NoShowDecision, type Waiver } from "../policy/no-show.ts";
 import { codeOnVisit } from "./discount-code-uses.ts";
 import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
-import type { AppointmentStatus } from "./fsm-mirror.ts";
+import type { AppointmentStatus } from "./visit-status.ts";
 import { consentGiven, type MessageKind } from "./messages.ts";
 import { windowTimesOf } from "../policy/slot-times.ts";
 import { MINUTE_MS, minutesBetween } from "../lib/durations.ts";
@@ -128,6 +129,22 @@ export function visitMessage(
   return { id, statement };
 }
 
+/** visitMessage, written only if the visit change `changeId` is: for the batch whose first statement claims it. */
+export function visitMessageOnChange(
+  db: D1Database,
+  input: { personId: string; appointmentId: string; kind: VisitMessageKind; now: Date; changeId: string },
+): { id: string; statement: D1PreparedStatement } {
+  const id = crypto.randomUUID();
+  const statement = db
+    .prepare(
+      `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at)
+       SELECT ?1, ?2, ?3, ?4, 'appointment', ?5, 'queued', ?2
+       WHERE EXISTS (SELECT 1 FROM visit_changes WHERE id = ?6)`,
+    )
+    .bind(id, input.now.toISOString(), input.personId, input.kind, input.appointmentId, input.changeId);
+  return { id, statement };
+}
+
 /**
  * Writes the arrival notice for a check-in that passed, once per visit (the index outbound_messages_one_arrival).
  * A check-in heard of too late to tell the client anything is recorded as not sent, with why, so a no-show's
@@ -160,9 +177,42 @@ export async function arrivalNotice(
   return written.meta.changes === 1 && !late ? id : null;
 }
 
+/**
+ * Why a reminder or an arrival notice is no longer worth sending, as after waiting out a bridge that was down; null
+ * while it still is. The reminder says the visit is tomorrow, and the arrival notice that the technician is at the door.
+ */
+export async function tooLateToSend(
+  db: D1Database,
+  kind: VisitMessageKind,
+  appointmentId: string,
+  writtenAt: Date,
+  now: Date,
+): Promise<string | null> {
+  if (kind === "arrival_notice") {
+    const minutesWaited = (now.getTime() - writtenAt.getTime()) / MINUTE_MS;
+    if (minutesWaited > ARRIVAL_NOTICE_WITHIN_MINUTES) return "too late to tell the client the technician had arrived";
+    return null;
+  }
+  if (kind !== "visit_reminder") return null;
+  const visit = await db
+    .prepare("SELECT window_start FROM appointments WHERE id = ?1")
+    .bind(appointmentId)
+    .first<{ window_start: string | null }>();
+  const windowStart = visit?.window_start ?? null;
+  if (windowStart === null) return null;
+  const visitDay = indiaDate(new Date(windowStart));
+  if (visitDay <= indiaDate(now)) return "too late for a day-before reminder";
+  return null;
+}
+
 /** "12 to 4 pm", as the app writes a window, by the times in force on the visit's day. */
 function windowHours(start: Date, schedule: SlotSchedule): string {
   const { date, window } = schedule.at(start);
+  return hoursOfWindow(date, window, schedule);
+}
+
+/** "12 to 4 pm" for a day's window, by the times in force that day. */
+export function hoursOfWindow(date: string, window: BookingWindow, schedule: SlotSchedule): string {
   const { start: from, end: to } = windowTimesOf(schedule.on(date))[window];
   const hour = (time: string) => {
     const hours = Number(time.slice(0, 2));
@@ -216,7 +266,7 @@ export async function composeVisitMessage(
   const start = new Date(visit.window_start);
   const params = [
     firstNameOf(visit.name),
-    visit.one_visit === "booked" ? ONE_VISIT_NAME : FSM_SERVICE_NAMES[visit.type].toLowerCase(),
+    visit.one_visit === "booked" ? ONE_VISIT_NAME : VISIT_TYPE_NAMES[visit.type].toLowerCase(),
     shortDate(indiaDate(start)),
     windowHours(start, await loadSlotSchedule(db)),
     visit.technician === null ? "our technician" : firstNameOf(visit.technician),

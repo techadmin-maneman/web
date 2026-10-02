@@ -13,6 +13,7 @@ import {
   NEXT_VISIT_DAY_BOUNDS,
   NEXT_VISIT_DAY_KEYS,
   NEXT_VISIT_DAYS,
+  nextVisitAfter,
   nextVisitType,
   offeredDay,
   remindedIfDoneBetween,
@@ -49,6 +50,35 @@ describe("the next visit", () => {
     // Offered on the day it falls due, or tomorrow once that has passed: the client books it, on the day they choose.
     expect(offeredDay("2026-10-10", TOMORROW)).toBe("2026-10-10");
     expect(offeredDay("2026-09-01", TOMORROW)).toBe(TOMORROW);
+  });
+
+  it(RULES[6], () => {
+    // A service past its due day keeps that day, and is offered for tomorrow.
+    expect(nextVisitAfter("2026-08-01", null, TOMORROW, NEXT_VISIT_DAYS)).toEqual({
+      type: "service",
+      dueOn: "2026-08-31",
+      offeredOn: TOMORROW,
+    });
+    // A piece falling due before the service is offered on its own day, not the service's.
+    expect(nextVisitAfter("2026-09-10", "2026-10-05", TOMORROW, NEXT_VISIT_DAYS)).toEqual({
+      type: "replacement",
+      dueOn: "2026-10-05",
+      offeredOn: "2026-10-05",
+    });
+    // A piece already overdue is offered for tomorrow, under its own due day.
+    expect(nextVisitAfter("2026-09-10", "2026-09-01", TOMORROW, NEXT_VISIT_DAYS)).toEqual({
+      type: "replacement",
+      dueOn: "2026-09-01",
+      offeredOn: TOMORROW,
+    });
+    // Both overdue, the service first: the overdue piece is still the visit offered, for tomorrow.
+    expect(nextVisitAfter("2026-08-01", "2026-09-10", TOMORROW, NEXT_VISIT_DAYS)).toEqual({
+      type: "replacement",
+      dueOn: "2026-09-10",
+      offeredOn: TOMORROW,
+    });
+    // A piece falling due after the service is offered stays a service.
+    expect(nextVisitAfter("2026-09-10", "2026-10-11", TOMORROW, NEXT_VISIT_DAYS)).toMatchObject({ type: "service" });
   });
 
   it(RULES[3], () => {

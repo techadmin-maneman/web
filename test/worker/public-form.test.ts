@@ -94,6 +94,14 @@ describe("the site's forms: the body", () => {
     expect((await errorOf(answer)).code).toBe("invalid_request");
   });
 
+  // BK-60, UX-38: the form chose crown thinning for everyone who skipped the question.
+  it("takes a form that does not say where the hair loss is, and records it as not said", async () => {
+    const { loss_extent: _skipped, ...withoutExtent } = JOINING;
+    expect((await join(appFor(), withoutExtent)).status).toBe(201);
+    const lead = await env.DB.prepare("SELECT loss_extent FROM leads").first<{ loss_extent: string | null }>();
+    expect(lead).toEqual({ loss_extent: null });
+  });
+
   it("never echoes the values it refused", async () => {
     const text = await (await join(appFor(), { ...JOINING, mobile: "12345", name: "x".repeat(81) })).text();
     expect(text).not.toContain("12345");

@@ -22,27 +22,80 @@ interface GrantRow {
   remaining: number;
 }
 
+/** The grants of person ?1 still in date at ?2, with what each has left. */
+const LIVE_GRANTS = `SELECT g.id, g.expires_at, g.created_at,
+    g.visits + COALESCE((SELECT SUM(e.visits) FROM credit_ledger e WHERE e.grant_id = g.id), 0) AS remaining
+  FROM credit_ledger g
+  WHERE g.person_id = ?1 AND g.kind = 'grant' AND (g.expires_at IS NULL OR g.expires_at > ?2)`;
+
+/** Credits are spent from the grant that expires soonest. */
+const SOONEST_FIRST = "ORDER BY expires_at IS NULL, expires_at, created_at";
+
+/** The grant person ?1's next credit is spent from at ?2. */
+const NEXT_GRANT = `SELECT id FROM (${LIVE_GRANTS}) WHERE remaining > 0 ${SOONEST_FIRST} LIMIT 1`;
+
+/**
+ * A credit hold confirmed but not yet booked: its credit is redeemed as its visit is booked, so until then no other
+ * booking may count on it.
+ */
+const PROMISED_CREDIT = "use_credit = 1 AND state = 'held' AND confirmed_at IS NOT NULL";
+
+/**
+ * spendableCredits as SQL, for a statement that decides on it as it writes: what person ?1 may spend at ?2, leaving
+ * out hold ?3.
+ */
+export const SPENDABLE_CREDITS = `((SELECT COALESCE(SUM(remaining), 0) FROM (${LIVE_GRANTS}) WHERE remaining > 0)
+  - (SELECT COUNT(*) FROM slot_holds WHERE person_id = ?1 AND ${PROMISED_CREDIT} AND id IS NOT ?3))`;
+
 /** The person's grants still in date, with what each has left, soonest to expire first. */
 async function liveGrants(db: D1Database, personId: string, now: Date): Promise<GrantRow[]> {
   const { results } = await db
-    .prepare(
-      `SELECT g.id, g.expires_at,
-         g.visits + COALESCE((SELECT SUM(e.visits) FROM credit_ledger e WHERE e.grant_id = g.id), 0) AS remaining
-       FROM credit_ledger g
-       WHERE g.person_id = ?1 AND g.kind = 'grant' AND (g.expires_at IS NULL OR g.expires_at > ?2)
-       ORDER BY g.expires_at IS NULL, g.expires_at, g.created_at`,
-    )
+    .prepare(`${LIVE_GRANTS} ${SOONEST_FIRST}`)
     .bind(personId, now.toISOString())
     .all<GrantRow>();
   return results.filter((grant) => grant.remaining > 0);
 }
 
+const balanceOf = (grants: readonly GrantRow[]): Balance => ({
+  visits: grants.reduce((sum, grant) => sum + grant.remaining, 0),
+  earliestExpiry: grants[0]?.expires_at ?? null,
+});
+
+/** What the ledger holds for the person. Ops see this; a booking counts on spendableCredits. */
 export async function creditBalance(db: D1Database, personId: string, now: Date): Promise<Balance> {
-  const grants = await liveGrants(db, personId, now);
-  return {
-    visits: grants.reduce((sum, grant) => sum + grant.remaining, 0),
-    earliestExpiry: grants[0]?.expires_at ?? null,
-  };
+  return balanceOf(await liveGrants(db, personId, now));
+}
+
+/**
+ * What the person may still spend: their balance, less the credits their confirmed, not yet booked bookings will
+ * redeem, other than `exceptHoldId`'s. Those are taken from the grants that expire soonest, as a redeem takes them.
+ */
+export async function spendableCredits(
+  db: D1Database,
+  personId: string,
+  now: Date,
+  exceptHoldId: string | null = null,
+): Promise<Balance> {
+  const [grants, promised] = await Promise.all([
+    liveGrants(db, personId, now),
+    db
+      .prepare(`SELECT COUNT(*) AS holds FROM slot_holds WHERE person_id = ?1 AND ${PROMISED_CREDIT} AND id IS NOT ?2`)
+      .bind(personId, exceptHoldId)
+      .first<{ holds: number }>(),
+  ]);
+  return balanceOf(withoutPromised(grants, promised?.holds ?? 0));
+}
+
+/** The grants with `promised` visits taken from them, soonest to expire first, leaving out any with nothing left. */
+function withoutPromised(grants: readonly GrantRow[], promised: number): GrantRow[] {
+  let toTake = promised;
+  const left: GrantRow[] = [];
+  for (const grant of grants) {
+    const taken = Math.min(toTake, grant.remaining);
+    toTake -= taken;
+    if (grant.remaining > taken) left.push({ ...grant, remaining: grant.remaining - taken });
+  }
+  return left;
 }
 
 /** A grant of visits from a source, which a repeat of the same source cannot grant again. */
@@ -69,23 +122,49 @@ export function grantCredits(
 }
 
 /**
- * One credit, from the grant that expires soonest, for a visit; null if the person has none left. A visit
- * redeems once: asked again, it writes nothing (credit_ledger_one_use).
+ * One credit for a visit, from the grant that expires soonest; nothing is written if the person has none left. The
+ * grant is chosen as the statement writes, so two redeems at once never draw on the same credit. A visit redeems
+ * once: asked again, it writes nothing (credit_ledger_one_use).
  */
-export async function redeemCredit(
-  db: D1Database,
-  personId: string,
-  appointmentId: string,
-  now: Date,
-): Promise<D1PreparedStatement | null> {
-  const [grant] = await liveGrants(db, personId, now);
-  if (grant === undefined) return null;
+export function redeemCredit(db: D1Database, personId: string, appointmentId: string, now: Date): D1PreparedStatement {
   return db
     .prepare(
       `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
-       VALUES (?1, ?2, 'redeem', -1, ?3, 'appointment', ?4, ?5) ON CONFLICT DO NOTHING`,
+       SELECT ?3, ?1, 'redeem', -1, soonest.id, 'appointment', ?4, ?2
+       FROM credit_ledger soonest
+       WHERE soonest.id = (${NEXT_GRANT})
+       ON CONFLICT DO NOTHING`,
     )
-    .bind(crypto.randomUUID(), personId, grant.id, appointmentId, now.toISOString());
+    .bind(personId, now.toISOString(), crypto.randomUUID(), appointmentId);
+}
+
+/**
+ * redeemCredit for the visit a booking is booked as, for the batch that books it, placed after the statement that
+ * does: it writes nothing if that statement booked nothing.
+ */
+export function redeemCreditForBooking(
+  db: D1Database,
+  booking: { readonly holdId: string; readonly personId: string },
+  now: Date,
+): D1PreparedStatement {
+  return db
+    .prepare(
+      `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
+       SELECT ?3, ?1, 'redeem', -1, soonest.id, 'appointment', h.appointment_id, ?2
+       FROM slot_holds h, credit_ledger soonest
+       WHERE h.id = ?4 AND h.state = 'booked' AND h.appointment_id IS NOT NULL AND soonest.id = (${NEXT_GRANT})
+       ON CONFLICT DO NOTHING`,
+    )
+    .bind(booking.personId, now.toISOString(), crypto.randomUUID(), booking.holdId);
+}
+
+/** Whether a credit was redeemed for the visit. */
+export async function creditRedeemedFor(db: D1Database, appointmentId: string): Promise<boolean> {
+  const redeem = await db
+    .prepare("SELECT 1 FROM credit_ledger WHERE source_id = ?1 AND kind = 'redeem'")
+    .bind(appointmentId)
+    .first();
+  return redeem !== null;
 }
 
 /** Why ops put a balance right by hand: a credit given or taken in error, or visits given to make up for something. */

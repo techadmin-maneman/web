@@ -70,24 +70,35 @@ export interface ZohoSettings {
   readonly larId: string | null;
 }
 
-/** The Zoho client FSM and Books share, in the real org (ADR 0025, item 26). */
+/** FSM's Zoho client, in the real org (ADR 0025, item 26). */
 export interface ZohoFsmSettings {
   readonly clientId: string;
   readonly clientSecret: string;
   readonly refreshToken: string;
   /** e.g. accounts.zoho.in */
   readonly accountsHost: string;
-  /** e.g. www.zohoapis.in, where FSM answers at /fsm/v1 and Books at /books/v3. */
+  /** e.g. www.zohoapis.in, where FSM answers at /fsm/v1. */
   readonly apiHost: string;
-  /** The Books organisation invoices and receipts are in. Present when BOOKS_PROVIDER is "zoho". */
-  readonly booksOrgId: string | null;
+  /** The secret in FSM's webhook URL. Without it the webhook answers 404, and the reconciliation alone keeps the mirror. */
+  readonly webhookToken: string | null;
+}
+
+/** Books' own Zoho client, in the real org. */
+export interface ZohoBooksSettings {
+  readonly clientId: string;
+  readonly clientSecret: string;
+  readonly refreshToken: string;
+  /** e.g. accounts.zoho.in */
+  readonly accountsHost: string;
+  /** e.g. www.zohoapis.in, where Books answers at /books/v3. */
+  readonly apiHost: string;
+  /** The Books organisation invoices and receipts are in. */
+  readonly orgId: string;
   /**
    * The Books account refunds are paid from: the one Razorpay settles into. Without it, refunds are not recorded
    * in Books and their vouchers wait (docs/open-points.md).
    */
-  readonly booksRefundAccountId: string | null;
-  /** The secret in FSM's webhook URL. Without it the webhook answers 404, and the reconciliation alone keeps the mirror. */
-  readonly webhookToken: string | null;
+  readonly refundAccountId: string | null;
 }
 
 /** Razorpay (docs/decisions/0044-payments-mirror.md). */
@@ -169,12 +180,21 @@ export interface Settings {
   readonly alertWebhookUrl: string | null;
   /** Where new-lead notices are posted: LEAD_WEBHOOK_URL, or else the alert webhook. */
   readonly leadWebhookUrl: string | null;
+  /** HEARTBEAT_URL: the outside monitor the cron pings after each run (src/providers/heartbeat.ts). Optional. */
+  readonly heartbeatUrl: string | null;
+  /**
+   * CLOUDFLARE_ANALYTICS_TOKEN: a token that can only read the account's analytics, for the cron's hourly look at
+   * the daily free allowances (src/scheduled/daily-allowances.ts). Optional; without it nobody is told.
+   */
+  readonly analyticsToken: string | null;
   /** The operators' secret for POST /api/erasure (docs/decisions/0019-erasure.md). */
   readonly erasureSecret: string;
   /** Present when CRM_PROVIDER is "zoho". */
   readonly zoho: ZohoSettings | null;
-  /** Present when FSM_PROVIDER or BOOKS_PROVIDER is "zoho". */
+  /** Present when FSM_PROVIDER is "zoho". */
   readonly zohoFsm: ZohoFsmSettings | null;
+  /** Present when BOOKS_PROVIDER is "zoho". */
+  readonly zohoBooks: ZohoBooksSettings | null;
   /**
    * Present when PAYMENTS_PROVIDER is "razorpay", and for the stub, with no keys: locally its payments arrive by the
    * same signed webhook, with a placeholder secret (docs/getting-started.md).
@@ -338,18 +358,18 @@ export function readSettings(
   if (leadWebhookUrl !== null && !leadWebhookUrl.startsWith("https://")) {
     read.problems.push("LEAD_WEBHOOK_URL must be an https:// URL");
   }
+  const watchers = readWatchers(read);
 
-  const zoho = readZoho(read, providers);
-  const zohoFsm = readZohoFsm(read, providers);
+  const zohoClients = readZohoClients(read, providers);
   const razorpay = readRazorpay(read, providers, environment);
   const geocode = readGeocode(read, providers);
   const access = readAccess(read, providers, environment);
 
   const clientOn = environment !== undefined && ENABLED_SURFACES[environment].includes("client");
-  for (const variable of ["FSM_PROVIDER", "BOOKS_PROVIDER"] as const) {
-    if (clientOn && providers[variable] === "none") {
-      read.problems.push(`${variable} is "none" while the client surface is on: visits and documents come from Zoho`);
-    }
+  if (clientOn && providers.BOOKS_PROVIDER === "none") {
+    read.problems.push(
+      'BOOKS_PROVIDER is "none" while the client surface is on: invoices and receipts come from Zoho Books',
+    );
   }
   const login = readLogin(read, environment, clientOn);
 
@@ -374,9 +394,9 @@ export function readSettings(
     ipHashSalt,
     alertWebhookUrl: alertWebhookUrl === "" ? null : alertWebhookUrl,
     leadWebhookUrl: leadWebhookUrl ?? (alertWebhookUrl === "" ? null : alertWebhookUrl),
+    ...watchers,
     erasureSecret: read.key("ERASURE_SECRET"),
-    zoho,
-    zohoFsm,
+    ...zohoClients,
     razorpay,
     access,
     geocode,
@@ -388,11 +408,29 @@ export function readSettings(
   return { settings, problems: read.problems };
 }
 
+/** What watches mm-api from outside it: the cron's heartbeat, and the token that reads the account's usage. */
+function readWatchers(read: Reader): Pick<Settings, "heartbeatUrl" | "analyticsToken"> {
+  const heartbeatUrl = read.optionalText("HEARTBEAT_URL");
+  if (heartbeatUrl !== null && !heartbeatUrl.startsWith("https://")) {
+    read.problems.push("HEARTBEAT_URL must be an https:// URL");
+  }
+  return { heartbeatUrl, analyticsToken: read.optionalText("CLOUDFLARE_ANALYTICS_TOKEN") };
+}
+
 /** Each Zoho host named, which must be a hostname without https://. */
 function checkZohoHosts(read: Reader, hosts: readonly (readonly [name: string, host: string])[]): void {
   for (const [name, host] of hosts) {
     if (host !== "" && !ZOHO_HOST.test(host)) read.problems.push(`${name} must be a Zoho hostname, without https://`);
   }
+}
+
+/** The CRM's, FSM's and Books' Zoho clients, each only where its provider is zoho. */
+function readZohoClients(read: Reader, providers: ProvidersRead): Pick<Settings, "zoho" | "zohoFsm" | "zohoBooks"> {
+  return {
+    zoho: readZoho(read, providers),
+    zohoFsm: readZohoFsm(read, providers),
+    zohoBooks: readZohoBooks(read, providers),
+  };
 }
 
 /** The CRM's Zoho client, when CRM_PROVIDER is zoho. */
@@ -413,18 +451,16 @@ function readZoho(read: Reader, providers: ProvidersRead): ZohoSettings | null {
   return zoho;
 }
 
-/** The Zoho client FSM and Books share, when either is zoho. */
+/** FSM's Zoho client, when FSM_PROVIDER is zoho. */
 function readZohoFsm(read: Reader, providers: ProvidersRead): ZohoFsmSettings | null {
-  if (providers.FSM_PROVIDER !== "zoho" && providers.BOOKS_PROVIDER !== "zoho") return null;
+  if (providers.FSM_PROVIDER !== "zoho") return null;
   const zohoFsm: ZohoFsmSettings = {
     clientId: read.text("ZOHO_FSM_CLIENT_ID"),
     clientSecret: read.text("ZOHO_FSM_CLIENT_SECRET"),
     refreshToken: read.text("ZOHO_FSM_REFRESH_TOKEN"),
     accountsHost: read.text("ZOHO_FSM_ACCOUNTS_HOST"),
     apiHost: read.text("ZOHO_FSM_API_HOST"),
-    booksOrgId: providers.BOOKS_PROVIDER === "zoho" ? read.text("ZOHO_BOOKS_ORG_ID") : null,
     webhookToken: read.optionalText("FSM_WEBHOOK_TOKEN"),
-    booksRefundAccountId: read.optionalText("BOOKS_REFUND_ACCOUNT_ID"),
   };
   if (zohoFsm.webhookToken !== null && zohoFsm.webhookToken.length < 32) {
     read.problems.push("FSM_WEBHOOK_TOKEN must be at least 32 characters");
@@ -434,6 +470,25 @@ function readZohoFsm(read: Reader, providers: ProvidersRead): ZohoFsmSettings | 
     ["ZOHO_FSM_API_HOST", zohoFsm.apiHost],
   ]);
   return zohoFsm;
+}
+
+/** Books' own Zoho client, its organisation and refund account, when BOOKS_PROVIDER is zoho. */
+function readZohoBooks(read: Reader, providers: ProvidersRead): ZohoBooksSettings | null {
+  if (providers.BOOKS_PROVIDER !== "zoho") return null;
+  const zohoBooks: ZohoBooksSettings = {
+    clientId: read.text("ZOHO_BOOKS_CLIENT_ID"),
+    clientSecret: read.text("ZOHO_BOOKS_CLIENT_SECRET"),
+    refreshToken: read.text("ZOHO_BOOKS_REFRESH_TOKEN"),
+    accountsHost: read.text("ZOHO_BOOKS_ACCOUNTS_HOST"),
+    apiHost: read.text("ZOHO_BOOKS_API_HOST"),
+    orgId: read.text("ZOHO_BOOKS_ORG_ID"),
+    refundAccountId: read.optionalText("BOOKS_REFUND_ACCOUNT_ID"),
+  };
+  checkZohoHosts(read, [
+    ["ZOHO_BOOKS_ACCOUNTS_HOST", zohoBooks.accountsHost],
+    ["ZOHO_BOOKS_API_HOST", zohoBooks.apiHost],
+  ]);
+  return zohoBooks;
 }
 
 /** Razorpay's keys, when PAYMENTS_PROVIDER is razorpay; the stub's webhook secret, when it is the stub. */

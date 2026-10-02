@@ -6,7 +6,7 @@
 
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
-import { shortDate, weekdayDate } from "../../packages/web-kit/dates.ts";
+import { listMonth, shortDate, weekdayDate } from "../../packages/web-kit/dates.ts";
 import { expect, test } from "../support.ts";
 import { nextVisitClients } from "./next-visit.ts";
 import { logIn } from "./signed-in.ts";
@@ -50,7 +50,8 @@ async function everyWindowOpen(page: Page): Promise<URL[]> {
           { window: "evening", start: "16:00", end: "20:00", with: "another" },
         ],
       }));
-      return route.fulfill({ json: { type: url.searchParams.get("type"), price, regular: null, days } });
+      const last = daysAfter(tomorrow(), 44);
+      return route.fulfill({ json: { type: url.searchParams.get("type"), price, regular: null, last, days } });
     },
   );
   return asked;
@@ -67,9 +68,10 @@ test("Home offers the next service on the day it falls due, and the sheet opens 
   await expect(
     page.getByText(`Your next service visit is due on ${shortDate(due.date)}, in the morning.`),
   ).toBeVisible();
-  // A fitted client may book either kind: the one offered first, the other beside it.
-  await expect(page.getByRole("button", { name: "Book your next visit" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Or book a replacement piece" })).toBeVisible();
+  // One way to book on Home: the prompt's. This client has no piece, so no replacement is offered beside it.
+  await expect(page.getByRole("button", { name: "Book it for then" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Book your next visit" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Or book a replacement piece" })).toHaveCount(0);
   await accessible(page);
 
   await page.getByRole("button", { name: "Book it for then" }).click();
@@ -88,6 +90,22 @@ test("Home offers the next service on the day it falls due, and the sheet opens 
   await expect(windows.getByRole("button", { name: "Continue to payment" })).toBeEnabled();
   await windows.getByRole("button", { name: "Close" }).click();
   await expect(windows).toHaveCount(0);
+});
+
+test("Home offers the replacement beside the next service once the API says it may be booked", async ({ page }) => {
+  const { due } = nextVisitClients();
+  const asked = await everyWindowOpen(page);
+  await logIn(page, due.mobile);
+  await expect(page.getByRole("button", { name: "Book it for then" })).toBeVisible();
+  // This client has no piece, so the API's answer is altered on its way.
+  const me = await page.evaluate(async () => (await fetch("/api/me")).json() as Promise<{ prompt: object }>);
+  await page.route("**/api/me", (route) =>
+    route.fulfill({ json: { ...me, prompt: { ...me.prompt, replacement_bookable: true } } }),
+  );
+  await page.reload();
+  await page.getByRole("button", { name: "Or book a replacement piece" }).click();
+  await expect(page.getByRole("dialog", { name: "Pick a date" })).toBeVisible();
+  expect(asked.at(-1)?.searchParams.get("type")).toBe("replacement");
 });
 
 test("Visits lets a fitted client book a service or a replacement, each in its own sheet", async ({ page }) => {
@@ -113,10 +131,14 @@ test("Home offers the replacement where the piece falls due first, and a page sa
   const { replacement } = nextVisitClients();
   const asked = await everyWindowOpen(page);
   await logIn(page, replacement.mobile);
-  // Offered on the service's day, and in no window: the last visit was an evening's, which a replacement cannot take.
-  await expect(page.getByText(`Your next replacement piece is due on ${shortDate(replacement.date)}.`)).toBeVisible();
-  await expect(page.getByRole("button", { name: "Book your replacement piece" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Or book a service visit" })).toBeVisible();
+  // Offered on the piece's own day, said as its month, and in no window: the last visit was an evening's, which a
+  // replacement cannot take.
+  const month = listMonth(replacement.date.slice(0, 7), new Date().getFullYear());
+  await expect(page.getByText(`Your replacement piece is due in ${month}.`)).toBeVisible();
+  // One way to book on Home: the prompt's, with the replacement in the service's place.
+  await expect(page.getByRole("button", { name: "Book it for then" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Book your replacement piece" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Or book a service visit" })).toHaveCount(0);
 
   // No WhatsApp: the app's own page.
   const involves = page.getByRole("link", { name: "See what that involves" });

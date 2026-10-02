@@ -15,7 +15,7 @@ import type { Block, Board, BoardRow, BookingWindow } from "../api.ts";
 import { dispatch } from "../content.ts";
 import label from "../components/label.module.css";
 import styles from "./dispatch.module.css";
-import { isMovable, nameOf, type Job, type Target } from "./job.ts";
+import { begunWord, isMovable, nameOf, type Job, type Target } from "./job.ts";
 
 /** A job in hand, and the windows each technician's day would take it in; null while the board is asking. */
 export interface InHand {
@@ -52,19 +52,16 @@ function sizeOf(block: Block): string | undefined {
 export const isAway = (leave: Board["leave"], technicianId: string, date: string) =>
   leave.some((period) => period.technician_id === technicianId && period.from <= date && date <= period.to);
 
+/** Takes a job up to move it; null when the person's access does not let them move one. */
+type Take = ((job: Job, from: HTMLElement) => void) | null;
+
 interface BlockButtonProps {
   readonly job: Job & { readonly kind: "block" };
   readonly onOpen: (job: Job, from: HTMLElement) => void;
-  readonly onTake: (job: Job, from: HTMLElement) => void;
+  readonly onTake: Take;
 }
 
-/** "Arrived", "Started" or "Closed" while the technician's phone is ahead of FSM; null before he arrives, or once done. */
-function begunWord(block: Block): string | null {
-  if (block.begun === null || block.status === "completed") return null;
-  return dispatch.board.begun[block.begun];
-}
-
-/** The block as a screen reader names it: the visit, its day and window, and how far it has got. */
+/** The block as a screen reader names it: the visit, its day and window, and done or how far it has got. */
 function blockLabel(job: Job & { readonly kind: "block" }): string {
   const { block } = job;
   const where = [nameOf(job), shortDate(job.date), windowWord(block.window)] as const;
@@ -75,7 +72,7 @@ function blockLabel(job: Job & { readonly kind: "block" }): string {
 
 /**
  * One visit on a technician's day. A visit done, or one the technician has begun, opens its drawer and cannot be
- * dragged: the drawer is where a begun visit is moved, after its warning.
+ * dragged.
  */
 function BlockButton({ job, onOpen, onTake }: BlockButtonProps) {
   const { block } = job;
@@ -83,12 +80,13 @@ function BlockButton({ job, onOpen, onTake }: BlockButtonProps) {
   const begun = begunWord(block);
   return (
     <button
-      className={`${styles.block ?? ""} ${inkOf(block) ?? ""} ${sizeOf(block) ?? ""} ${movable ? "" : (styles.inPlace ?? "")}`}
+      className={`${styles.block ?? ""} ${inkOf(block) ?? ""} ${sizeOf(block) ?? ""} ${movable ? "" : (styles.finished ?? "")}`}
       type="button"
       data-appointment={block.appointment_id}
-      draggable={movable}
+      draggable={movable && onTake !== null}
       aria-label={blockLabel(job)}
       onDragStart={(event) => {
+        if (onTake === null) return;
         event.dataTransfer.effectAllowed = "move";
         event.dataTransfer.setData("text/plain", block.appointment_id);
         onTake(job, event.currentTarget);
@@ -99,7 +97,7 @@ function BlockButton({ job, onOpen, onTake }: BlockButtonProps) {
     >
       <span className={styles.who}>{block.client ?? dispatch.unknown}</span>
       <span className={styles.what}>{whatOf(block)}</span>
-      {begun !== null && <span className={`${styles.begunMark ?? ""} ${label.caps ?? ""}`}>{begun}</span>}
+      {begun !== null && <span className={styles.what}>{begun}</span>}
     </button>
   );
 }
@@ -112,7 +110,7 @@ interface CellProps {
   readonly away: boolean;
   readonly inHand: InHand | null;
   readonly onOpen: (job: Job, from: HTMLElement) => void;
-  readonly onTake: (job: Job, from: HTMLElement) => void;
+  readonly onTake: Take;
   readonly onLand: (to: Target) => void;
 }
 
@@ -194,7 +192,7 @@ interface GridProps {
   readonly rows: readonly BoardRow[];
   readonly inHand: InHand | null;
   readonly onOpen: (job: Job, from: HTMLElement) => void;
-  readonly onTake: (job: Job, from: HTMLElement) => void;
+  readonly onTake: Take;
   readonly onLand: (to: Target) => void;
 }
 

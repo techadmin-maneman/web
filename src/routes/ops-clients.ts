@@ -19,6 +19,7 @@
 // and what is kept of them is a record for the deletion queue, not a page to read.
 
 import { createRoute, z } from "@hono/zod-openapi";
+import { typedDigits } from "@maneman/web-kit/mobile";
 import { staffOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
@@ -36,7 +37,7 @@ import { creditBalance } from "../domain/credits.ts";
 import { clientVisitCodes } from "../domain/discount-code-uses.ts";
 import { heldBookingsOf, type HeldBooking } from "../domain/held-bookings.ts";
 import { clientInviteOf } from "../domain/referrals.ts";
-import { VISIT_OUTCOMES } from "../domain/fsm-mirror.ts";
+import { VISIT_OUTCOMES } from "../domain/visit-status.ts";
 import { consentRecordsOf, currentAddress, type ConsentState, type SavedAddress } from "../domain/profile.ts";
 import { partialVisitsClosed } from "../domain/task-closures.ts";
 import { ANGLES, PHASES } from "../domain/visit-photos.ts";
@@ -429,7 +430,7 @@ type Search = { readonly by: "number" | "name"; readonly text: string };
 
 function searchOf(typed: string): Search | null {
   const digits = typed.replace(/[\s+-]/g, "");
-  if (/^\d+$/.test(digits)) return digits.length >= DIGITS_MIN ? { by: "number", text: digits } : null;
+  if (/^\d+$/.test(digits)) return digits.length >= DIGITS_MIN ? { by: "number", text: typedDigits(digits) } : null;
   return typed.length >= NAME_MIN ? { by: "name", text: typed } : null;
 }
 

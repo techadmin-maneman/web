@@ -7,17 +7,19 @@
 //   POST /api/dispatch/moves/:id/told   ops called a client who had not heard of a move
 //
 // Both writes run the clash check before anything reaches FSM, write to FSM,
-// then the mirror, then message the client with his new window. "The client's
-// payment carries over and he is never charged for a move ops make", so no
-// amount appears anywhere below.
+// then the mirror, then message the client with his new window; where our own
+// database holds the record of field work, all of it is one write there. A
+// visit the technician has begun is not moved. "The client's payment carries
+// over and he is never charged for a move ops make", so no amount appears
+// anywhere below.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { staffOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
+import { fieldRecord } from "../config/field-record.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
-import type { AuditEntry } from "../domain/audit.ts";
 import { BOARD_DAYS, dispatchBoard, moveJob, recordToldByPhone, roomFor, type MoveInput } from "../domain/dispatch.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
@@ -74,7 +76,7 @@ const BlockSchema = z
     }),
     begun: z.union([z.enum(BEGUN), z.null()]).openapi({
       description:
-        "How far the technician has got, from the steps his phone sent rather than FSM's status: arrived (checked in), started, or closed (an outcome, a no-show among them). Null before he arrives. A visit he has arrived at or started moves only with set_aside_work; a closed one never does.",
+        "How far the technician has got, from the steps his phone sent: arrived (checked in), started, or closed (an outcome, a no-show among them). Null before he arrives. A visit he has begun, or one in progress, is not moved.",
     }),
   })
   .strict()
@@ -107,6 +109,11 @@ const BoardSchema = z
           }),
           offered_window: z.union([z.enum(BOOKING_WINDOWS), z.null()]),
           date: z.union([z.iso.date(), z.null()]),
+          was_technician: z.union([z.object({ id: z.uuid(), name: z.string() }).strict(), z.null()]).openapi({
+            description:
+              "The technician the job is still on, who was switched off and so has no row; null for a job nobody " +
+              "holds. A move of it names him as the expected technician.",
+          }),
         })
         .strict(),
     ),
@@ -164,10 +171,6 @@ const MoveRequestSchema = z
     window: z.enum(BOOKING_WINDOWS).optional(),
     reason: z.enum(MOVE_REASONS),
     ...EXPECTED,
-    set_aside_work: z.literal(true).optional().openapi({
-      description:
-        "Ops were warned that the technician has arrived or started, and move the visit anyway: every step his phone sent on it is set aside, and the audit log names who chose it. Without it, such a visit answers 409 in_progress.",
-    }),
   })
   .strict()
   .openapi("DispatchMoveRequest");
@@ -224,7 +227,7 @@ const moveRoute = createRoute({
     403: errorResponse("access_required"),
     404: errorResponse("not_found: no such live job"),
     409: errorResponse(
-      "clash; on_leave; does_not_fit; superseded, with what changed in fields; in_progress: the technician has begun the visit. FSM has it in progress, or he closed it, and it stays where it is; or he has arrived or started, and it moves only with set_aside_work",
+      "clash; on_leave; does_not_fit; superseded, with what changed in fields; in_progress: the technician has begun the visit, which stays where it is",
     ),
     502: errorResponse("fsm_refused; fsm_partly: FSM took the technician and not the time"),
   },
@@ -257,7 +260,7 @@ const roomRoute = createRoute({
   responses: {
     200: { description: "Where it would land", ...json(RoomSchema) },
     403: errorResponse("access_required"),
-    404: errorResponse("not_found: no such live job, or one in progress or closed, which stays where it is"),
+    404: errorResponse("not_found: no such live job, or one the technician has begun, which stays where it is"),
   },
 });
 
@@ -318,18 +321,6 @@ export function registerOpsDispatch(app: App): void {
 
 type MoveRequest = z.infer<typeof MoveRequestSchema>;
 
-/** The audit entry of a move that sets aside what the technician has done, under whoever chose it; null otherwise. */
-function setAsideEntry(c: Context<AppEnv>, request: MoveRequest): AuditEntry | null {
-  if (request.set_aside_work !== true) return null;
-  return {
-    surface: "ops",
-    actor: staffOf(c),
-    action: "dispatch.work_set_aside",
-    subject: { kind: "appointment", id: request.appointment_id },
-    requestId: c.var.requestId,
-  };
-}
-
 /** Assigning and moving are the same write; only what ops change differs. */
 async function write(c: Context<AppEnv>, request: MoveRequest) {
   const { requestId, deps, config, log } = c.var;
@@ -343,7 +334,6 @@ async function write(c: Context<AppEnv>, request: MoveRequest) {
     reason: request.reason,
     actor: staff.id,
     expected: { technicianId: request.expected_technician_id, startsAt: request.expected_starts_at },
-    setAside: setAsideEntry(c, request),
   };
   const outcome = await moveJob(
     c.env.DB,
@@ -352,6 +342,7 @@ async function write(c: Context<AppEnv>, request: MoveRequest) {
       labelAsTest: config.environment !== "production",
       notify: (messageId) =>
         c.env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: requestId } satisfies MessagingMessage),
+      record: fieldRecord(config.providers),
     },
     input,
     deps.now(),
@@ -359,11 +350,11 @@ async function write(c: Context<AppEnv>, request: MoveRequest) {
 
   if (outcome.kind === "not_found") return c.json(errorBody("not_found", requestId), 404);
   if (outcome.kind === "superseded") return c.json(errorBody("superseded", requestId, outcome.changed), 409);
+  if (outcome.kind === "in_progress") return c.json(errorBody("in_progress", requestId), 409);
   if (outcome.kind === "nothing_to_move") {
     return c.json(errorBody("invalid_request", requestId, ["technician_id", "date", "window"]), 400);
   }
   if (outcome.kind === "no_technician") return c.json(errorBody("invalid_request", requestId, ["technician_id"]), 400);
-  if (outcome.kind === "begun") return c.json(errorBody("in_progress", requestId), 409);
   if (outcome.kind === "refused") return c.json(errorBody(outcome.reason, requestId), 409);
   if (outcome.kind === "fsm_refused" || outcome.kind === "fsm_partly") {
     log.warn("dispatch_move_refused_by_fsm", {

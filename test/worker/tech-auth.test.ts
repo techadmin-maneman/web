@@ -287,6 +287,7 @@ describe("a signed-in phone", () => {
 
     expect(answer.status).toBe(200);
     expect(await answer.json()).toEqual({
+      id: IMRAN,
       name: "Imran Qureshi",
       first_name: "Imran",
       initials: "IQ",
@@ -317,7 +318,8 @@ describe("a signed-in phone", () => {
   });
 
   // A technician who has left keeps his phone, and on it the cards of the day:
-  // clients' addresses and mobiles. Being inactive in FSM ends his session at once.
+  // clients' addresses and mobiles. Being inactive in FSM ends his session at once,
+  // and says why, so the phone sets aside what it has not sent rather than wipe it.
   it("is signed out on its next call once FSM no longer lists him as active", async () => {
     const cookie = await signIn();
     await env.DB.prepare("UPDATE technicians SET active = 0 WHERE id = ?1").bind(IMRAN).run();
@@ -325,7 +327,7 @@ describe("a signed-in phone", () => {
     for (const path of ["/api/tech/me", "/api/tech/jobs"]) {
       const answer = await withCookie(cookie, path);
       expect(answer.status).toBe(401);
-      expect(await answer.json()).toMatchObject({ error: { code: "session_required" } });
+      expect(await answer.json()).toMatchObject({ error: { code: "technician_inactive" } });
     }
     const session = await env.DB.prepare("SELECT revoked_at FROM sessions WHERE subject_id = ?1")
       .bind(IMRAN)
@@ -401,6 +403,21 @@ describe("the technician list", () => {
 
     const challenge = await env.DB.prepare("SELECT technician_id FROM otp_challenges WHERE id = ?1").bind(id).first();
     expect(challenge).toEqual({ technician_id: IMRAN });
+  });
+
+  // FSM writes a user's mobile as "91-9810000007"; the mirror read that as no number, so he could never sign in.
+  it("reads a number FSM writes in its own 91- form, and his code goes to it", async () => {
+    deps = fakeDependencies({
+      fsm: createStubFsm({ ...EMPTY_FSM, technicians: [technician({ mobile: "91-9810000007" })] }),
+    });
+    tech = appFor("local", deps, {}, "tech");
+
+    await syncTechnicians(env.DB, deps.fsm, NOW.toISOString());
+    const naveen = await env.DB.prepare("SELECT mobile_e164 FROM technicians WHERE fsm_id = 'resource-9'").first();
+    expect(naveen).toEqual({ mobile_e164: "+919810000007" });
+
+    await challengeFor("+91 98100 00007");
+    expect(deps.sentCodes.map((sent) => sent.to)).toEqual(["+919810000007"]);
   });
 
   it("stops no one when FSM lists no one, which is a failed read rather than an empty org", async () => {

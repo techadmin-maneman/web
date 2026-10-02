@@ -33,6 +33,7 @@ import {
 } from "../api.ts";
 import { Shell } from "../components/Shell.tsx";
 import { dispatch } from "../content.ts";
+import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { BlockDrawer } from "./BlockDrawer.tsx";
 import styles from "./dispatch.module.css";
@@ -51,15 +52,11 @@ type Rooms =
   | { readonly state: "known"; readonly rooms: readonly Room[] }
   | { readonly state: "unknown" };
 
-/**
- * A move in hand: the job, the window chosen for it, whether it is being sent, and whether ops chose, after the
- * drawer's warning, to set aside what the technician has done on it.
- */
+/** A move in hand: the job, the window chosen for it, and whether it is being sent. */
 interface Move {
   readonly job: Job;
   readonly to: Target | null;
   readonly sending: boolean;
-  readonly settingAside: boolean;
 }
 
 /** A line over the board: what a move did, or why it was refused. A call still to make carries its move. */
@@ -174,6 +171,10 @@ export function DispatchScreen() {
   const [notice, setNotice] = useState<Notice | null>(null);
   const { loaded, last, refresh, retry } = useBoard(query, move !== null || opened !== null);
   const board = loaded.state === "loaded" ? loaded.value : null;
+  const access = useAccess();
+  const mayMove = access.mayCall("POST /api/dispatch/move");
+  const mayAssign = access.mayCall("POST /api/dispatch/assign");
+  const mayTell = access.mayCall("POST /api/dispatch/moves/{id}/told");
 
   /** What the drawer or the move was opened from, so the keyboard comes back to it. */
   const opener = useRef<HTMLElement | null>(null);
@@ -217,11 +218,11 @@ export function DispatchScreen() {
   }, []);
 
   const take = useCallback(
-    (job: Job, from: HTMLElement | null, settingAside = false) => {
+    (job: Job, from: HTMLElement | null) => {
       opener.current = from;
       setOpened(null);
       setNotice(null);
-      setMove({ job, to: null, sending: false, settingAside });
+      setMove({ job, to: null, sending: false });
       askRooms(job);
     },
     [askRooms],
@@ -279,9 +280,7 @@ export function DispatchScreen() {
       const landing: Landing = { technicianId: to.technician.technician_id, date: to.date, window: to.window, reason };
       const shown = shownOf(job);
       const answer: Answer<Moved> =
-        job.kind === "block"
-          ? await api.move(idOf(job), landing, shown, move.settingAside)
-          : await api.assign(idOf(job), landing, shown);
+        job.kind === "block" ? await api.move(idOf(job), landing, shown) : await api.assign(idOf(job), landing, shown);
 
       if (answer.ok) {
         setMove(null);
@@ -300,7 +299,7 @@ export function DispatchScreen() {
         return;
       }
       // Nothing was written: the job stays in hand, and the board asks again where it fits.
-      setMove({ ...move, to: null, sending: false });
+      setMove({ job, to: null, sending: false });
       setNotice({ tone: "refusal", text: refusalOf(job, to, answer.code), call: null });
       askRooms(job);
     },
@@ -357,30 +356,42 @@ export function DispatchScreen() {
                   <p className={styles.empty}>{dispatch.tools.nothingFound(find.trim())}</p>
                 )}
                 {rows.length > 0 && (
-                  <Grid board={board} rows={rows} inHand={inHand} onOpen={open} onTake={take} onLand={land} />
+                  <Grid
+                    board={board}
+                    rows={rows}
+                    inHand={inHand}
+                    onOpen={open}
+                    onTake={mayMove ? take : null}
+                    onLand={land}
+                  />
                 )}
               </div>
               <p className={styles.note}>{dispatch.board.leave}</p>
             </>
           )}
         </div>
-        {board !== null && <Tray unassigned={board.unassigned} onTake={take} />}
+        {board !== null && <Tray unassigned={board.unassigned} onTake={mayAssign ? take : null} />}
       </div>
 
       {opened !== null && (
         <BlockDrawer
           job={opened}
           onClose={closeDrawer}
-          onMove={() => {
-            take(opened, opener.current);
-          }}
-          onMoveAnyway={() => {
-            take(opened, opener.current, true);
-          }}
-          onTold={(moveId) => {
-            setOpened(null);
-            void told(moveId, opened.block.person?.name ?? nameOf(opened)).then(restore);
-          }}
+          onMove={
+            mayMove
+              ? () => {
+                  take(opened, opener.current);
+                }
+              : null
+          }
+          onTold={
+            mayTell
+              ? (moveId) => {
+                  setOpened(null);
+                  void told(moveId, opened.block.person?.name ?? nameOf(opened)).then(restore);
+                }
+              : null
+          }
         />
       )}
       {picking !== null && (
@@ -389,7 +400,6 @@ export function DispatchScreen() {
           onCancel={unpick}
           onSend={(reason) => void send(reason)}
           sending={picking.sending}
-          settingAside={picking.settingAside}
           to={picking.to}
         />
       )}

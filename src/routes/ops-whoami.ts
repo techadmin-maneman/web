@@ -1,5 +1,5 @@
 // Who is signed in to the ops console, behind Access:
-//   GET /api/whoami    the identity Access let through, and where signing out goes
+//   GET /api/whoami    the identity Access let through, where signing out goes, and what the Staff list lets them do
 //
 // The console holds no session of its own (docs/decisions/0031-access-and-audit.md),
 // so it cannot know who is working unless it asks. Board A1 draws them at the
@@ -8,6 +8,9 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
+import { callerAccess } from "../http/staff-access.ts";
+import { routesOpenTo } from "../policy/console-routes.ts";
+import { grantJson, GrantSchema } from "./ops-staff.ts";
 
 /** Access's own path on every host it guards: it ends the session and shows the team's page. */
 export const ACCESS_LOGOUT_PATH = "/cdn-cgi/access/logout";
@@ -27,6 +30,21 @@ const whoamiRoute = createRoute({
               sign_out: z
                 .union([z.string(), z.null()])
                 .openapi({ description: "Access's logout path; null where no Access stands in front, as locally." }),
+              staff: z
+                .object({
+                  enforced: z.boolean().openapi({ description: "Whether the Staff list decides what they may open." }),
+                  listed: z.boolean().openapi({
+                    description: "An active person on the Staff list, or a service token on its list of tokens.",
+                  }),
+                  grants: z.array(GrantSchema).openapi({ description: "A person's grants; none for a service token." }),
+                  may_call: z.array(z.string()).openapi({
+                    description:
+                      'The ops routes their calls go ahead on, as "GET /api/tasks": every one while the list is not ' +
+                      "enforced. The console shows only the sections whose pages they can read.",
+                    example: ["GET /api/health", "GET /api/whoami", "GET /api/tasks"],
+                  }),
+                })
+                .strict(),
             })
             .strict()
             .openapi("Whoami"),
@@ -37,11 +55,17 @@ const whoamiRoute = createRoute({
 });
 
 export function registerOpsWhoami(app: App): void {
-  app.openapi(whoamiRoute, (c) => {
+  app.openapi(whoamiRoute, async (c) => {
     const identity = c.var.accessIdentity;
     if (identity === undefined) throw new Error("ops routes run after requireAccess");
     const signedInAs = identity.kind === "staff" ? identity.email : identity.clientId;
     const signOut = c.var.config.settings.access === null ? null : ACCESS_LOGOUT_PATH;
-    return c.json({ signed_in_as: signedInAs, sign_out: signOut }, 200);
+    const { enforced, caller, zoneOf } = await callerAccess(c);
+    const mayCall = routesOpenTo(caller, enforced, zoneOf);
+    const staff =
+      caller.kind === "person"
+        ? { enforced, listed: caller.active, grants: caller.grants.map(grantJson), may_call: mayCall }
+        : { enforced, listed: caller.allowed, grants: [], may_call: mayCall };
+    return c.json({ signed_in_as: signedInAs, sign_out: signOut, staff }, 200);
   });
 }

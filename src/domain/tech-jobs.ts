@@ -37,12 +37,13 @@ import { paidAtTheVisit, type OneVisitState } from "../policy/one-visit.ts";
 import { unitsFor } from "../policy/visit-length.ts";
 import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
 import { latestArrival } from "./check-ins.ts";
-import type { AppointmentStatus } from "./fsm-mirror.ts";
+import { codeOnVisit, type VisitCode } from "./discount-code-uses.ts";
+import type { AppointmentStatus } from "./visit-status.ts";
 import { latestProfile, profileTakenAt, type HairProfile } from "./hair-profiles.ts";
 import { EVIDENCE_MESSAGE } from "./no-shows.ts";
 import { piecesOf, type Piece } from "./pieces.ts";
 import { bookedMinutes } from "./scheduling.ts";
-import { offeredServices } from "./services.ts";
+import { offeredProducts } from "./services.ts";
 import { firstNameOf } from "../lib/names.ts";
 
 /** The statuses a job the technician still has work on can be in. */
@@ -58,6 +59,8 @@ export interface JobSummary {
   readonly type: VisitType | null;
   /** A consultation and fit in one visit, which runs the first fit's steps with the client's choice at the piece. */
   readonly one_visit: boolean;
+  /** On a first fit, the hair system the client was sold, by its name in the console (productOf). */
+  readonly product: string | null;
   /** Where the visit is, at the coarsest useful grain: a locked job shows this and nothing else of the place. */
   readonly sector: string | null;
   readonly status: AppointmentStatus;
@@ -147,10 +150,18 @@ export interface JobDetail extends JobSummary {
   readonly products: Product[];
   /** On a one visit closed as done, the link the client pays by, and whether they have. */
   readonly payment_link: JobPaymentLink | null;
+  /** On a one visit, the discount code already on it; never what it takes off. */
+  readonly discount_code: JobCode | null;
   /** The client's hair profile as it stands; null while the job is locked, or before one is recorded. */
   readonly profile: HairProfile | null;
   /** The screens this job runs, in order: its type's steps, and the profile where it takes one and has a client. */
   readonly steps: CardStep[];
+}
+
+/** A one visit's discount code, and who gave it: the client as they booked, ops, or the technician. */
+export interface JobCode {
+  readonly code: string;
+  readonly given_by: VisitCode["givenBy"];
 }
 
 /** A product the client may choose at a one visit: a first fit's service, by its tier and its name. */
@@ -170,6 +181,8 @@ interface JobRow {
   window_start: string;
   window_end: string | null;
   type: VisitType | null;
+  /** The visit's service within its kind; null where the mirror knows none. */
+  tier: string | null;
   one_visit: OneVisitState | null;
   status: AppointmentStatus;
   person_id: string | null;
@@ -197,12 +210,15 @@ interface JobRow {
   free: number;
   /** The length of the visit's service, from the services table; null where no service is it. */
   service_minutes: number | null;
+  /** The visit's service's name in the console; null where no service is it. */
+  service_name: string | null;
 }
 
 // `free`: the price book's row for the visit's own service, its kind and its tier (the standard tier's where the
 // mirror knows no other), on the visit's day in India charges nothing, as it does a consultation.
 const SELECT_JOB = `
-  SELECT a.id, a.window_start, a.window_end, a.type, a.one_visit, a.status, a.person_id, a.service_city, a.client_note,
+  SELECT a.id, a.window_start, a.window_end, a.type, a.tier, a.one_visit, a.status, a.person_id, a.service_city,
+    a.client_note,
     sp.area AS pincode_area,
     p.name AS client_name, p.mobile_e164 AS client_mobile,
     d.line1, d.line2, d.building, d.tower, d.floor, d.flat, d.landmark, d.locality, d.city, d.pincode,
@@ -212,7 +228,7 @@ const SELECT_JOB = `
               WHERE b.item = a.type AND b.tier = COALESCE(a.tier, 'standard')
                 AND b.valid_from <= date(a.window_start, '+330 minutes')
               ORDER BY b.valid_from DESC LIMIT 1), 0) AS free,
-    s.minutes AS service_minutes
+    s.minutes AS service_minutes, s.name AS service_name
   FROM appointments a
   LEFT JOIN people p ON p.id = a.person_id
   LEFT JOIN addresses d ON d.person_id = a.person_id AND d.replaced_at IS NULL
@@ -261,6 +277,7 @@ export async function jobDetail(
     reminder: null,
     products: takesProfile(type, row.one_visit !== null) ? await productsOn(db, summary.date) : [],
     payment_link: row.one_visit === null ? null : await paymentLinkOf(db, row.id),
+    discount_code: row.one_visit === null ? null : await jobCodeOf(db, row.id),
     profile: null,
     steps: cardStepsFor(type, row.one_visit !== null, row.person_id !== null),
   };
@@ -280,9 +297,9 @@ export async function jobDetail(
   };
 }
 
-/** The products offered on a visit's day: the first fit's services offered and priced then, in ops' order. */
+/** The products offered on a visit's day: the hair systems offered and priced then, in ops' order. */
 async function productsOn(db: D1Database, date: string): Promise<Product[]> {
-  return (await offeredServices(db, date, ["first_fit"])).map((service) => ({
+  return (await offeredProducts(db, date)).map((service) => ({
     tier: service.tier,
     name: service.name,
   }));
@@ -294,6 +311,11 @@ async function paymentLinkOf(db: D1Database, appointmentId: string): Promise<Job
     .bind(appointmentId)
     .first<{ short_url: string | null; paid_at: string | null }>();
   return link === null ? null : { url: link.short_url, paid: link.paid_at !== null };
+}
+
+async function jobCodeOf(db: D1Database, appointmentId: string): Promise<JobCode | null> {
+  const code = await codeOnVisit(db, appointmentId);
+  return code === null ? null : { code: code.code, given_by: code.givenBy };
 }
 
 /** Dates as the piece lookup names them: the fitted and due dates are days, the failure an instant. */
@@ -452,6 +474,7 @@ function summaryOf(row: JobRow, now: Date, unlockHour: number, schedule: SlotSch
     window_label: schedule.at(starts).window,
     type: row.type,
     one_visit: row.one_visit !== null,
+    product: productOf(row),
     // "only time, type and sector": the area, never the street, whether the job is unlocked or not. The visit's
     // pincode names it first, as the dispatch board does (ADR 0069).
     sector: row.pincode_area ?? row.locality ?? row.service_city,
@@ -461,6 +484,15 @@ function summaryOf(row: JobRow, now: Date, unlockHour: number, schedule: SlotSch
     unlocked: open,
     unlocks_at: unlocksAt(starts, unlockHour).toISOString(),
   };
+}
+
+/**
+ * The hair system a first fit was sold as, which the technician brings and fits. None on any other visit, on a one
+ * visit until the client chooses theirs, or on a first fit that names none.
+ */
+function productOf(row: JobRow): string | null {
+  if (row.type !== "first_fit" || row.tier === null || row.one_visit === "booked") return null;
+  return row.service_name;
 }
 
 function badgeOf(row: JobRow): PaymentBadge {

@@ -595,7 +595,7 @@ Ask for the account to be deleted. Ops process it; asking twice makes one reques
 
 The client's visits, upcoming and past
 
-**200**: Upcoming soonest first; past newest first
+**200**: Upcoming soonest first; past newest first, a visit cancelled among them
 
 ```json
 {
@@ -997,7 +997,7 @@ The windows open for a service over 14 days
 }
 ```
 
-**422**: not_bookable: the client may not book this kind of visit, or the service is not offered
+**422**: not_bookable: the client may not book this kind of visit, or the service is not offered; no_product: a first fit, on a day the console offers no hair system
 
 ```json
 {
@@ -1027,7 +1027,7 @@ Request body:
     "tier": {
       "type": "string",
       "pattern": "^[a-z][a-z0-9_]{0,31}$",
-      "description": "The service's code within its kind; left out, the kind's standard service while offered."
+      "description": "The service's code within its kind; left out, the kind's standard service while offered. A first fit has none: it names the hair system."
     },
     "date": {
       "type": "string",
@@ -1080,7 +1080,7 @@ Request body:
 }
 ```
 
-**422**: not_bookable: this kind of visit, this service, or that day, is not open to the client
+**422**: not_bookable: this kind of visit, this service, or that day, is not open to the client; no_product: a first fit, on a day the console offers no hair system
 
 ```json
 {
@@ -1128,7 +1128,7 @@ One of the client's holds
 
 Let a hold go
 
-**204**: Let go, or already gone
+**204**: Let go, or already gone; or kept, when it has a Razorpay order and its pay_by has not passed, since a payment may still land on it.
 
 **401**: session_required
 
@@ -1644,6 +1644,7 @@ Request body:
             "look_limit_reached",
             "claim_required",
             "whatsapp_unavailable",
+            "number_not_proved",
             "unauthorized",
             "visit_booked",
             "payment_held",
@@ -1667,6 +1668,9 @@ Request body:
             "out_of_order",
             "not_today",
             "already_started",
+            "piece_code",
+            "technician_inactive",
+            "managed_in_fsm",
             "clash",
             "on_leave",
             "does_not_fit",
@@ -1678,6 +1682,7 @@ Request body:
             "service_exists",
             "last_of_kind",
             "service_retired",
+            "no_product",
             "unknown_invite",
             "own_invite",
             "already_invited",
@@ -1688,7 +1693,9 @@ Request body:
             "already_discounted",
             "price_settled",
             "code_exists",
-            "slot_times_too_soon"
+            "slot_times_too_soon",
+            "not_permitted",
+            "last_admin"
           ]
         },
         "request_id": {
@@ -1784,6 +1791,13 @@ Request body:
         "unreachable"
       ],
       "description": "ok: reachable and marked as this environment's database. unmarked: no identity row. mismatch: marked as another environment's database."
+    },
+    "cron_completed_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "When the five-minute cron last finished a run; null before its first, or when the database is not this environment's. Information only: status does not depend on it."
     }
   },
   "required": [
@@ -1791,7 +1805,8 @@ Request body:
     "environment",
     "version_id",
     "version_tag",
-    "d1"
+    "d1",
+    "cron_completed_at"
   ],
   "additionalProperties": false
 }
@@ -1849,7 +1864,7 @@ Request body:
   "properties": {
     "mobile": {
       "type": "string",
-      "pattern": "^(?:\\+91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
+      "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
       "example": "98100 00000"
     }
   },
@@ -2120,13 +2135,21 @@ Request body:
               "description": "The next service, or the replacement where the piece in wear falls due first."
             },
             "tier": {
-              "type": "string",
+              "type": [
+                "string",
+                "null"
+              ],
               "description": "The service of its kind it offers, as booking.next's (ADR 0085)."
+            },
+            "due_on": {
+              "type": "string",
+              "format": "date",
+              "description": "India's day it fell or falls due: a service's from the last visit and the cadence, a replacement's the piece's own. Before `date`, it has passed."
             },
             "date": {
               "type": "string",
               "format": "date",
-              "description": "India's day it falls due: the last visit's day and the cadence; tomorrow once passed."
+              "description": "India's day it is offered on: the day it falls due, or tomorrow once that has passed."
             },
             "window": {
               "anyOf": [
@@ -2143,14 +2166,20 @@ Request body:
                 }
               ],
               "description": "The last visit's window, where this kind of visit can start in it."
+            },
+            "replacement_bookable": {
+              "type": "boolean",
+              "description": "A service offered while the piece in wear falls due within how far ahead a visit may be booked, and no replacement is booked: the replacement is offered beside it."
             }
           },
           "required": [
             "kind",
             "type",
             "tier",
+            "due_on",
             "date",
-            "window"
+            "window",
+            "replacement_bookable"
           ],
           "additionalProperties": false
         },
@@ -2168,31 +2197,31 @@ Request body:
               "pattern": "^\\d{4}-\\d{2}$"
             },
             "tier": {
-              "type": "string",
-              "description": "The replacement service it offers: the client's last one while that is offered, else the first in the console's order (ADR 0085)."
-            },
-            "bookable": {
-              "type": "boolean",
-              "description": "The month begins within how far ahead a visit may be booked, so it can be booked now."
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The replacement service it offers: the client's last one while that is offered, else the first in the console's order (ADR 0085); null while none is offered."
             }
           },
           "required": [
             "kind",
             "month",
-            "tier",
-            "bookable"
+            "tier"
           ],
           "additionalProperties": false
         },
         {
+          "type": "null"
+        }
+      ],
+      "description": "Board B1's one prompt, the first that applies, in the owner's order: no address given while something is booked; the next service due and not booked; then, once no invoice is ready, the month the piece in wear falls due, never the day, and only once that month may be booked. Null when none applies."
+    },
+    "invoice": {
+      "anyOf": [
+        {
           "type": "object",
           "properties": {
-            "kind": {
-              "type": "string",
-              "enum": [
-                "invoice_ready"
-              ]
-            },
             "visit_id": {
               "type": "string",
               "format": "uuid"
@@ -2220,7 +2249,6 @@ Request body:
             }
           },
           "required": [
-            "kind",
             "visit_id",
             "date",
             "type"
@@ -2231,7 +2259,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "Board B1's one contextual prompt, the first that applies, in the owner's order: no address given while something is booked; the next service due and not booked; the month the piece in wear falls due, never the day (ADR 0059); an invoice issued in the last fortnight, which ops may lengthen or shorten. Null when none applies."
+      "description": "An invoice issued in the last fortnight, which ops may lengthen or shorten, ready to open: a line beneath the prompt, or the only one. Null when none is."
     },
     "booking": {
       "type": "object",
@@ -2258,7 +2286,7 @@ Request body:
           "items": {
             "$ref": "#/components/schemas/OfferedService"
           },
-          "description": "Every service of those kinds offered and priced now, a kind at a time, in the console's order."
+          "description": "Every service of those kinds offered and priced now, a kind at a time, in the console's order. A first fit's are the hair systems ops offer; with none, a first fit cannot be booked yet."
         },
         "next": {
           "anyOf": [
@@ -2274,13 +2302,21 @@ Request body:
                   ]
                 },
                 "tier": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The service it is offered as: the one the client's last visit of its kind was, while that is offered, else its kind's first in the console's order (ADR 0085). Null while its kind offers none, as a first fit does before ops offer a hair system: it cannot be booked yet."
+                },
+                "due_on": {
                   "type": "string",
-                  "description": "The service it is offered as: the one the client's last visit of its kind was, while that is offered, else its kind's first in the console's order (ADR 0085)."
+                  "format": "date",
+                  "description": "India's day it fell or falls due: a service's from the last visit and the cadence, a replacement's the piece's own, a first fit's from the consultation and the lead time."
                 },
                 "date": {
                   "type": "string",
                   "format": "date",
-                  "description": "India's day it is offered on."
+                  "description": "India's day it is offered on: the day it falls due, or tomorrow once that has passed."
                 },
                 "window": {
                   "anyOf": [
@@ -2301,6 +2337,7 @@ Request body:
               "required": [
                 "type",
                 "tier",
+                "due_on",
                 "date",
                 "window"
               ],
@@ -2310,7 +2347,7 @@ Request body:
               "type": "null"
             }
           ],
-          "description": "What the app offers next, with nothing booked, for the booking sheet to open with: the first fit once the consultation is done, from the lead time and in the window the site's request asked for; or the next service on its due day, in the last visit's window, or the replacement where the piece falls due first (ADR 0086)."
+          "description": "What the app offers next, with nothing booked, for the booking sheet to open with: the first fit once the consultation is done, from the lead time and in the window the site's request asked for; or the next service on its due day, in the last visit's window, or the replacement where the piece falls due first, on the earlier of its own due day and the service's (ADR 0086)."
         }
       },
       "required": [
@@ -2335,6 +2372,7 @@ Request body:
     "being_booked",
     "credits",
     "prompt",
+    "invoice",
     "booking",
     "referral_reward"
   ],
@@ -2411,6 +2449,7 @@ Request body:
           "enum": [
             "booked",
             "in_progress",
+            "done",
             "closing"
           ]
         },
@@ -2418,7 +2457,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "For a visit FSM has not closed: still to come, under way in its window, or over and waiting for FSM to close it. Null once FSM has closed it."
+      "description": "For a visit FSM has not closed: still to come, under way (the technician has checked in, whatever FSM says), closed as done from the technician's phone, or otherwise over and waiting for FSM to close it. Null once FSM has closed it."
     },
     "prepaid": {
       "type": "boolean",
@@ -3116,7 +3155,7 @@ Request body:
   "properties": {
     "new_mobile": {
       "type": "string",
-      "pattern": "^(?:\\+91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$"
+      "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$"
     }
   },
   "required": [
@@ -3337,6 +3376,7 @@ Request body:
           "enum": [
             "booked",
             "in_progress",
+            "done",
             "closing"
           ]
         },
@@ -3344,7 +3384,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "For a visit FSM has not closed: still to come, under way in its window, or over and waiting for FSM to close it. Null once FSM has closed it."
+      "description": "For a visit FSM has not closed: still to come, under way (the technician has checked in, whatever FSM says), closed as done from the technician's phone, or otherwise over and waiting for FSM to close it. Null once FSM has closed it."
     },
     "prepaid": {
       "type": "boolean",
@@ -3949,15 +3989,29 @@ Request body:
     },
     "amount": {
       "type": "integer",
-      "description": "In paise, GST included."
+      "description": "In paise, GST included: the main figure."
     },
     "amount_ex_gst": {
-      "type": "integer",
-      "description": "In paise, before GST: the main figure."
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "In paise, before GST; null where no rate was recorded for it."
     },
     "gst_percent": {
-      "type": "number",
-      "description": "The GST rate the amount includes."
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The GST rate the amount includes; null where none was recorded."
     },
     "visit": {
       "anyOf": [
@@ -4001,6 +4055,43 @@ Request body:
         }
       ],
       "description": "The visit it paid for, when known."
+    },
+    "booking": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "consultation",
+                "first_fit",
+                "service",
+                "replacement"
+              ]
+            },
+            "date": {
+              "type": "string",
+              "format": "date",
+              "description": "India's day the visit was held for."
+            },
+            "under_way": {
+              "type": "boolean",
+              "description": "Still being booked; false once refunded or let go."
+            }
+          },
+          "required": [
+            "type",
+            "date",
+            "under_way"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What it paid for while there is no visit yet: the booking its hold was making."
     },
     "status": {
       "type": "string",
@@ -4096,6 +4187,38 @@ Request body:
         }
       ],
       "description": "The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07)."
+    },
+    "discount_code": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "amount_off": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "In paise before GST; null where the visit's price was not yet known."
+            }
+          },
+          "required": [
+            "code",
+            "amount_off"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The discount code the visit was paid with; null for none, and on a late fee."
     }
   },
   "required": [
@@ -4106,13 +4229,15 @@ Request body:
     "amount_ex_gst",
     "gst_percent",
     "visit",
+    "booking",
     "status",
     "method",
     "reference",
     "refunded_amount",
     "purpose",
     "charge",
-    "no_show"
+    "no_show",
+    "discount_code"
   ],
   "additionalProperties": false
 }
@@ -4145,15 +4270,29 @@ Request body:
     },
     "amount": {
       "type": "integer",
-      "description": "In paise, GST included."
+      "description": "In paise, GST included: the main figure."
     },
     "amount_ex_gst": {
-      "type": "integer",
-      "description": "In paise, before GST: the main figure."
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "In paise, before GST; null where no rate was recorded for it."
     },
     "gst_percent": {
-      "type": "number",
-      "description": "The GST rate the amount includes."
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The GST rate the amount includes; null where none was recorded."
     },
     "visit": {
       "anyOf": [
@@ -4198,6 +4337,43 @@ Request body:
       ],
       "description": "The visit it paid for, when known."
     },
+    "booking": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "consultation",
+                "first_fit",
+                "service",
+                "replacement"
+              ]
+            },
+            "date": {
+              "type": "string",
+              "format": "date",
+              "description": "India's day the visit was held for."
+            },
+            "under_way": {
+              "type": "boolean",
+              "description": "Still being booked; false once refunded or let go."
+            }
+          },
+          "required": [
+            "type",
+            "date",
+            "under_way"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What it paid for while there is no visit yet: the booking its hold was making."
+    },
     "status": {
       "type": "string",
       "enum": [
@@ -4238,6 +4414,7 @@ Request body:
     "amount_ex_gst",
     "gst_percent",
     "visit",
+    "booking",
     "status",
     "destination",
     "speed"
@@ -4384,15 +4561,29 @@ Request body:
     },
     "amount": {
       "type": "integer",
-      "description": "In paise, GST included."
+      "description": "In paise, GST included: the main figure."
     },
     "amount_ex_gst": {
-      "type": "integer",
-      "description": "In paise, before GST: the main figure."
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "In paise, before GST; null where no rate was recorded for it."
     },
     "gst_percent": {
-      "type": "number",
-      "description": "The GST rate the amount includes."
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The GST rate the amount includes; null where none was recorded."
     },
     "visit": {
       "anyOf": [
@@ -4436,6 +4627,43 @@ Request body:
         }
       ],
       "description": "The visit it paid for, when known."
+    },
+    "booking": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "consultation",
+                "first_fit",
+                "service",
+                "replacement"
+              ]
+            },
+            "date": {
+              "type": "string",
+              "format": "date",
+              "description": "India's day the visit was held for."
+            },
+            "under_way": {
+              "type": "boolean",
+              "description": "Still being booked; false once refunded or let go."
+            }
+          },
+          "required": [
+            "type",
+            "date",
+            "under_way"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What it paid for while there is no visit yet: the booking its hold was making."
     },
     "status": {
       "type": "string",
@@ -4532,6 +4760,38 @@ Request body:
       ],
       "description": "The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07)."
     },
+    "discount_code": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "amount_off": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "In paise before GST; null where the visit's price was not yet known."
+            }
+          },
+          "required": [
+            "code",
+            "amount_off"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The discount code the visit was paid with; null for none, and on a late fee."
+    },
     "documents": {
       "type": "object",
       "properties": {
@@ -4575,6 +4835,7 @@ Request body:
     "amount_ex_gst",
     "gst_percent",
     "visit",
+    "booking",
     "status",
     "method",
     "reference",
@@ -4582,6 +4843,7 @@ Request body:
     "purpose",
     "charge",
     "no_show",
+    "discount_code",
     "documents"
   ],
   "additionalProperties": false
@@ -4615,15 +4877,29 @@ Request body:
     },
     "amount": {
       "type": "integer",
-      "description": "In paise, GST included."
+      "description": "In paise, GST included: the main figure."
     },
     "amount_ex_gst": {
-      "type": "integer",
-      "description": "In paise, before GST: the main figure."
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "In paise, before GST; null where no rate was recorded for it."
     },
     "gst_percent": {
-      "type": "number",
-      "description": "The GST rate the amount includes."
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The GST rate the amount includes; null where none was recorded."
     },
     "visit": {
       "anyOf": [
@@ -4667,6 +4943,43 @@ Request body:
         }
       ],
       "description": "The visit it paid for, when known."
+    },
+    "booking": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "consultation",
+                "first_fit",
+                "service",
+                "replacement"
+              ]
+            },
+            "date": {
+              "type": "string",
+              "format": "date",
+              "description": "India's day the visit was held for."
+            },
+            "under_way": {
+              "type": "boolean",
+              "description": "Still being booked; false once refunded or let go."
+            }
+          },
+          "required": [
+            "type",
+            "date",
+            "under_way"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What it paid for while there is no visit yet: the booking its hold was making."
     },
     "status": {
       "type": "string",
@@ -4712,6 +5025,7 @@ Request body:
     "amount_ex_gst",
     "gst_percent",
     "visit",
+    "booking",
     "status",
     "destination",
     "speed",
@@ -4772,6 +5086,11 @@ Request body:
         }
       ],
       "description": "Whoever did the client's latest visit."
+    },
+    "last": {
+      "type": "string",
+      "format": "date",
+      "description": "The last day this visit may be booked on: later days are asked for up to it."
     },
     "days": {
       "type": "array",
@@ -4853,6 +5172,7 @@ Request body:
     "service",
     "price",
     "regular",
+    "last",
     "days"
   ],
   "additionalProperties": false
@@ -4988,6 +5308,11 @@ Request body:
       "type": "string",
       "format": "date-time"
     },
+    "pay_by": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The last moment a payment counts as made in time: expires_at and the grace after it. Checkout closes then."
+    },
     "state": {
       "type": "string",
       "enum": [
@@ -5106,6 +5431,7 @@ Request body:
     "change_notice_hours",
     "late_change_charge",
     "expires_at",
+    "pay_by",
     "state",
     "paid",
     "visit_id",

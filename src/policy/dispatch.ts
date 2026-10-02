@@ -59,8 +59,8 @@ export type MoveReason = (typeof MOVE_REASONS)[number];
 export const keepsTheClientsNotice = (reason: MoveReason): boolean => reason !== "client_asked";
 
 /**
- * How far the technician has got on a visit, by the steps his phone has sent us, which FSM's status can lag behind:
- * he has checked in, started, or closed it (a no-show closes it too).
+ * How far the technician has got on a visit, by the steps his phone has sent, which FSM's status can lag behind: he
+ * has arrived, started, or closed it (a no-show closes it too).
  */
 export const BEGUN = ["arrived", "started", "closed"] as const;
 export type Begun = (typeof BEGUN)[number];
@@ -75,19 +75,6 @@ export function begunFrom(landed: {
   if (landed.start) return "started";
   if (landed.checkIn) return "arrived";
   return null;
-}
-
-/**
- * Whether a visit must stay where it is. One in progress in FSM, or closed by the technician, stays where it was
- * worked. One he has arrived at or started moves only when ops, warned, choose to set his work on it aside.
- */
-export function keptInPlace(
-  visit: { readonly status: string; readonly begun: Begun | null },
-  settingWorkAside: boolean,
-): boolean {
-  if (visit.status === "in_progress" || visit.begun === "closed") return true;
-  if (visit.begun === null) return false;
-  return !settingWorkAside;
 }
 
 /**

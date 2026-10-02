@@ -367,49 +367,74 @@ describe("the item a booking goes on", () => {
   });
 
   it("falls back to its kind's standard item where FSM has none, and tells ops once, however often it is booked", async () => {
-    await service("first_fit", "premium", "Premium first fit", 4_000_000);
+    await service("replacement", "lace", "Lace replacement", 2_000_000);
     const logs = captureLogs();
     const { told, deps: itemDeps } = deps();
     const fsm = createStubFsm({ ...EMPTY_FSM, items: AGREEING });
 
-    const item = await itemForService(env.DB, fsm, { kind: "first_fit", tier: "premium" }, itemDeps);
-    await itemForService(env.DB, fsm, { kind: "first_fit", tier: "premium" }, itemDeps);
+    const item = await itemForService(env.DB, fsm, { kind: "replacement", tier: "lace" }, itemDeps);
+    await itemForService(env.DB, fsm, { kind: "replacement", tier: "lace" }, itemDeps);
 
-    expect(item.id).toBe("fsm-item-first-fit");
+    expect(item.id).toBe("fsm-item-replacement");
     expect(told).toHaveLength(1);
-    expect(told[0]).toContain('no item for the service "Premium first fit"');
-    expect(await openAlert("fsm_item_fallback:first_fit/premium")).not.toBeNull();
+    expect(told[0]).toContain('no item for the service "Lace replacement"');
+    expect(await openAlert("fsm_item_fallback:replacement/lace")).not.toBeNull();
     expect(logs.lines().filter((line) => line.event === "fsm_item_fallback")).toHaveLength(2);
   });
 
+  // The owner's decision of 2 October 2026: only the hair systems ops offer, and no generic first fit in their place.
+  it("books a first fit only on its hair system's own item, never FSM's First fit, and tells ops once", async () => {
+    await service("first_fit", "essential", "Mane Man Essential", 3_200_000);
+    const logs = captureLogs();
+    const { told, deps: itemDeps } = deps();
+    const fsm = createStubFsm({ ...EMPTY_FSM, items: AGREEING });
+    const wanted = { kind: "first_fit", tier: "essential" } as const;
+
+    await expect(itemForService(env.DB, fsm, wanted, itemDeps)).rejects.toThrow("no item for the hair system");
+    await expect(itemForService(env.DB, fsm, wanted, itemDeps)).rejects.toThrow("no item for the hair system");
+
+    expect(told).toHaveLength(1);
+    expect(told[0]).toContain('no item for the hair system "Mane Man Essential"');
+    expect(await openAlert("fsm_item_fallback:first_fit/essential")).not.toBeNull();
+    expect(logs.lines().filter((line) => line.event === "fsm_item_missing")).toHaveLength(2);
+    expect(logs.lines().filter((line) => line.event === "fsm_item_fallback")).toHaveLength(0);
+  });
+
   it("closes that alert once the hourly check finds the service's own item", async () => {
-    await service("first_fit", "premium", "Premium first fit", 4_000_000);
+    await service("first_fit", "essential", "Mane Man Essential", 3_200_000);
     await itemForService(
       env.DB,
       createStubFsm({ ...EMPTY_FSM, items: AGREEING }),
-      { kind: "first_fit", tier: "premium" },
+      { kind: "first_fit", tier: "essential" },
       deps().deps,
-    );
+    ).catch(() => undefined);
     const items = [
       ...AGREEING,
-      { id: "fsm-item-premium", name: "Premium first fit", type: "Service" as const, price: 4_000_000 },
+      { id: "fsm-item-essential", name: "Mane Man Essential", type: "Service" as const, price: 3_200_000 },
     ];
 
     await check(createStubFsm({ ...EMPTY_FSM, items }), { push: false }).done;
 
-    expect(await openAlert("fsm_item_fallback:first_fit/premium")).toBeNull();
+    expect(await openAlert("fsm_item_fallback:first_fit/essential")).toBeNull();
+    const booked = await itemForService(
+      env.DB,
+      createStubFsm({ ...EMPTY_FSM, items }),
+      { kind: "first_fit", tier: "essential" },
+      deps().deps,
+    );
+    expect(booked.id).toBe("fsm-item-essential");
   });
 
   it("still refuses a kind FSM has no item for at all, as a booking always has", async () => {
-    const without = AGREEING.filter((item) => item.name !== "First fit");
+    const without = AGREEING.filter((item) => item.name !== "Service visit");
     await expect(
       itemForService(
         env.DB,
         createStubFsm({ ...EMPTY_FSM, items: without }),
-        { kind: "first_fit", tier: "standard" },
+        { kind: "service", tier: "standard" },
         deps().deps,
       ),
-    ).rejects.toThrow("FSM has no First fit item");
+    ).rejects.toThrow("FSM has no Service visit item");
   });
 });
 
@@ -467,9 +492,7 @@ describe("the consumables, as parts", () => {
       refreshToken: "1000.fsm-refresh",
       accountsHost: "accounts.zoho.in",
       apiHost: "www.zohoapis.in",
-      booksOrgId: "60088931635",
       webhookToken: null,
-      booksRefundAccountId: null,
     };
     const zoho = createFsmProvider("zoho", settings, {
       db: env.DB,

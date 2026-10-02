@@ -1,12 +1,12 @@
-// The parts both forms are made of: the pincode they are for, where the hair loss is, the person's fields and the
-// button that sends them.
+// The parts both forms are made of: the pincode they are for, where the hair loss is, the person's fields, the
+// invite /book remembers, and the button that sends them.
 
 import { ICONS } from "@maneman/brand/icons";
+import { formatMobileField, mobileDigits } from "@maneman/web-kit/mobile";
 import type { LossExtent } from "../../../../src/config/booking.ts";
 import { referral } from "../../content/referral.ts";
 import { booking, stageOptions } from "../../content/site.ts";
 import type { PincodeAnswer, ReferralReward } from "../../lib/api.ts";
-import { formatMobile, isCompleteMobile } from "../../lib/phone.ts";
 import { Icon, StageDrawing } from "../Drawings.tsx";
 import styles from "./Invite.module.css";
 import type { PersonFields } from "./useTurnstileForm.ts";
@@ -39,10 +39,11 @@ export function ForPincode(props: { text: string; onChange: () => void }) {
 }
 
 /**
- * Where the hair loss is, as the site's own form has always asked (v2's booking board).
- * An invited friend is never asked: their invite carries no such question.
+ * Where the hair loss is, as the site's own form has always asked (v2's booking board). Nothing is chosen until the
+ * visitor chooses, and a visitor who skips it is recorded as not saying. An invited friend is never asked: their
+ * invite carries no such question.
  */
-export function ExtentFieldset(props: { extent: LossExtent; onChange: (extent: LossExtent) => void }) {
+export function ExtentFieldset(props: { extent: LossExtent | null; onChange: (extent: LossExtent) => void }) {
   return (
     <fieldset class={styles.group}>
       <legend class={`caps ${styles.legend}`}>{booking.extent}</legend>
@@ -77,7 +78,7 @@ export function PersonFieldset(props: {
 }) {
   const { fields, touched, idPrefix } = props;
   const nameBad = touched && fields.name.trim() === "";
-  const mobileBad = touched && !isCompleteMobile(fields.mobile);
+  const mobileBad = touched && mobileDigits(fields.mobile) === null;
   const consentBad = touched && !fields.consent;
   return (
     <>
@@ -125,7 +126,7 @@ export function PersonFieldset(props: {
               aria-invalid={mobileBad}
               aria-describedby={mobileBad ? `${idPrefix}-mobile-error` : undefined}
               onInput={(event) => {
-                props.onChange({ ...fields, mobile: formatMobile(event.currentTarget.value) });
+                props.onChange({ ...fields, mobile: formatMobileField(event.currentTarget.value) });
               }}
             />
           </div>
@@ -180,5 +181,20 @@ export function Send(props: { failure: string | null; sending: boolean; label: s
         {props.sending ? props.sendingLabel : props.label}
       </button>
     </>
+  );
+}
+
+/**
+ * On /book, the invite this browser remembers, said before the form sends it: who is told of the fit, and the choice
+ * to go on without it.
+ */
+export function RememberedInvite(props: { line: string; without: string; onWithout: () => void }) {
+  return (
+    <div class={styles.remembered}>
+      <p class={styles.told}>{props.line}</p>
+      <button type="button" class={styles.change} onClick={props.onWithout}>
+        {props.without}
+      </button>
+    </div>
   );
 }

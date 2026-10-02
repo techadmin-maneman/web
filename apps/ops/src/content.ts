@@ -9,36 +9,52 @@ export const BOOKING_URL: Readonly<Record<string, string>> = {
   production: "https://maneman.in/book",
 };
 
+/** PLACEHOLDER: the API refused a call the person's access does not reach. */
+export const NOT_PERMITTED = "Your access doesn't include this. Ask an admin.";
+
+/** The five departments, as the navigation heads its sections and the Staff page names a grant. */
+const DEPARTMENT_NAMES = {
+  operations: "Operations",
+  customer_care: "Customer Care",
+  finance: "Finance",
+  growth: "Growth",
+  admin: "Admin",
+} as const;
+
 export const shell = {
-  /** The sidebar's own title, as boards A1 and B1 letter it. */
-  title: "Operations",
   /**
-   * Each section's name in the navigation, in apps/ops/src/route.ts's order;
-   * the design draws eight. Its third is drawn as "Payments" and built as
-   * "No-shows": the day's money is there, over the queue, but the dispute the
-   * board rules on has no record behind it (docs/open-points.md, item 60).
-   * Settings is the eighth, built from ADR 0061.
-   *
-   * Grievances, Deletion requests and Number changes are drawn on no board at
-   * all. They are what a client asks of us about their own data
-   * (docs/decisions/0049-dpdp.md, docs/fidelity-method.md).
+   * PLACEHOLDER: the sidebar's own title. Boards A1 and B1 letter it "Operations", which is now the name of one of the
+   * departments beneath it.
    */
+  title: "Console",
+  departments: DEPARTMENT_NAMES,
+  /** PLACEHOLDER where no board draws it: each section's name in the navigation, which the design draws flat. */
   sections: {
+    tasks: "Tasks",
     dispatch: "Dispatch",
+    technicians: "Technicians",
+    stock: "Stock",
     clients: "Clients",
+    grievances: "Grievances",
+    "number-changes": "Number changes",
+    "deletion-requests": "Deletion requests",
     "no-shows": "No-shows",
+    prices: "Prices",
+    "discount-codes": "Discount codes",
     referrals: "Referrals",
     waitlist: "Waitlist",
-    tasks: "Tasks",
-    technicians: "Technicians",
-    // PLACEHOLDER: no board draws stock; the owner ruled it is kept here (docs/decisions/0087-consumables-and-stock.md).
-    stock: "Stock",
-    grievances: "Grievances",
-    "deletion-requests": "Deletion requests",
-    "number-changes": "Number changes",
+    "service-area": "Service area",
     settings: "Settings",
+    staff: "Staff",
   },
-  /** The browser tab's title: "Services and prices · Settings · Mane Man operations". */
+  /** PLACEHOLDER: a section's name in the navigation, read out with the count of tasks waiting in it. */
+  waiting: (section: string, count: number, overdue: boolean) =>
+    overdue ? `${section}, ${String(count)} waiting, some overdue` : `${section}, ${String(count)} waiting`,
+  /** PLACEHOLDER: the first thing the keyboard reaches, which jumps past the navigation. */
+  skip: "Skip to content",
+  /** PLACEHOLDER: a page opened by its address that the person's access does not reach. */
+  closed: "Your access does not reach this page. An Admin can add it on the Staff page.",
+  /** The browser tab's title: "Blackout days · Settings · Mane Man operations". */
   documentTitle: (parts: readonly string[]) => [...parts, "Mane Man operations"].join(" · "),
   /**
    * PLACEHOLDER: who is signed in, where board A1 draws "AK" in a box at the
@@ -56,6 +72,8 @@ export const shell = {
    */
   lapsed: "Your sign-in to the console has run out, so nothing more can be read or saved. Reload to sign in again.",
   reload: "Reload",
+  /** PLACEHOLDER: a person Access lets in whom the enforced Staff list does not name. */
+  notListed: "You are not on the Staff list, so the console is closed to you. Ask the owner to add you.",
 } as const;
 
 export const states = {
@@ -128,8 +146,8 @@ export const dispatch = {
     block: (job: string, date: string, window: string) => `${job}, ${date}, ${window}`,
     /** A block for a visit already done, which stays where it was worked and cannot be moved. */
     doneBlock: (job: string, date: string, window: string) => `${job}, ${date}, ${window}, done`,
-    /** How far the technician has got, from his phone's own steps: FSM's status can lag behind them. */
-    begun: { arrived: "Arrived", started: "Started", closed: "Closed" },
+    /** PLACEHOLDER: how far the technician has got, from his phone. A visit he has begun stays where it is. */
+    begun: { arrived: "Arrived", started: "Started", closed: "Closed" } as Readonly<Record<string, string>>,
     begunBlock: (job: string, date: string, window: string, begun: string) =>
       `${job}, ${date}, ${window}, ${begun.toLowerCase()}`,
     /** PLACEHOLDER: the board draws no board without technicians. */
@@ -157,6 +175,8 @@ export const dispatch = {
     notAsked: "Asked · not recorded",
     /** The brief's "referral source": who invited the client, where someone did. */
     referred: (name: string) => `Referred by ${name}`,
+    // PLACEHOLDER: a job still on a technician who was switched off, which no board draws.
+    was: (name: string) => `Was ${name}'s · switched off`,
     /** Beneath the tray: where the asked window comes from, and why some rows have none. */
     same: "Asked is what the client picked on their booking. A visit booked without one says so.",
     // PLACEHOLDER: the board draws four waiting and no empty tray.
@@ -186,30 +206,22 @@ export const dispatch = {
       terminated: "Terminated",
       other: "Other",
     } as Readonly<Record<string, string>>,
+    /** PLACEHOLDER: the State row once the technician's phone says he has begun. */
+    begun: {
+      arrived: "Technician arrived",
+      started: "Technician started",
+      closed: "Closed by the technician",
+    } as Readonly<Record<string, string>>,
+    /** PLACEHOLDER: a visit the technician has begun has no move. */
+    stays: "Under way, so it stays where it is.",
     /** Board A3's two buttons: "WhatsApp Rohit" and "Open client". */
     whatsapp: (firstName: string) => `WhatsApp ${firstName}`,
     openClient: "Open client",
     /** PLACEHOLDER: a move the client has not heard of, which ops tell him of by phone (ADR 0069). */
     untold: (when: string, mobile: string) =>
       `Not told of the move to ${when}: no WhatsApp. Call ${mobile}, then record it here.`,
-    /** The State row once the technician has begun, from his phone's steps rather than FSM's status. */
-    begun: {
-      arrived: "Technician arrived",
-      started: "Technician started",
-      closed: "Closed by the technician",
-    },
-    /** PLACEHOLDER: a visit in progress in FSM, or closed by the technician, has no move. */
-    stays: "Under way, so it stays where it is.",
-    /** PLACEHOLDER: the warning before ops move a visit the technician has begun. */
-    setAside: {
-      arrived: (technician: string) =>
-        `${technician} has checked in. Moving this visit sets aside his check-in, and he starts again at the new time.`,
-      started: (technician: string) =>
-        `${technician} has started this visit. Moving it sets aside everything he has sent on it, and he starts again at the new time.`,
-    },
     /** The keyboard way to do what the drag does; the board draws the drag alone. */
     move: "Move this visit",
-    moveAnyway: "Move anyway",
     close: "Close",
   },
   /** Board A2: the reason a move must carry, asked for before anything is written. */
@@ -244,12 +256,9 @@ export const dispatch = {
      */
     soon: (hours: number) =>
       `This visit is inside ${String(hours)} hours. The client is not charged, because we moved it.`,
-    /** PLACEHOLDER: a move of a visit the technician has begun, which ops chose after the drawer's warning. */
-    setAside: "Everything the technician has sent on this visit is set aside.",
     send: "Move and notify",
     /** PLACEHOLDER: the same button where nothing goes to the client, so it does not promise a message. */
     sendQuietly: "Move",
-    sendSettingAside: "Set aside and move",
     sending: "Moving",
     cancel: "Cancel",
   },
@@ -307,6 +316,7 @@ export const dispatch = {
     /** PLACEHOLDER: another ops user's move of the same job is still being written. */
     beingMoved: (job: string) => `Someone else is moving ${job} right now. Nothing was moved.`,
     errors: {
+      not_permitted: NOT_PERMITTED,
       invalid_request: "That move is not one we can make. Nothing was moved.",
       not_found: "This visit is no longer live. The board now shows it as it stands.",
       fsm_refused: "Our scheduling system would not take it. Nothing was moved.",
@@ -314,7 +324,7 @@ export const dispatch = {
       fsm_partly:
         "Our scheduling system took the new technician but not the new time. The board now shows it as it stands.",
       /** PLACEHOLDER: the technician began the visit after the board was read. */
-      in_progress: "The technician has begun this visit. Nothing was moved. The board now shows it as it stands.",
+      in_progress: "The technician has begun this visit, so it stays where it is. Nothing was moved.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Nothing was moved.",
     },
@@ -358,6 +368,7 @@ export const referrals = {
     empty: "Nothing is held for review.",
     deciding: "Deciding",
     errors: {
+      not_permitted: NOT_PERMITTED,
       not_found: "Someone has decided this one already. Reload to see the queue as it stands.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Please try again.",
@@ -395,6 +406,7 @@ export const clients = {
     none: (text: string) => `Nobody matches “${text}”. An erased client has no page.`,
     more: "More clients match than are listed. Add to the name or the number.",
     errors: {
+      not_permitted: NOT_PERMITTED,
       invalid_request: "Type two letters of a name, or four digits of a number.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Please try again.",
@@ -510,6 +522,7 @@ export const clients = {
       removeLabel: (visit: string) => `Take the discount code off the visit of ${visit}`,
       removing: "Taking it off",
       errors: {
+        not_permitted: NOT_PERMITTED,
         code_not_applicable: "That code does not apply to this visit.",
         already_discounted: "This visit has a code already.",
         price_settled: "This visit is paid for or invoiced, so its code stays as it is.",
@@ -520,6 +533,68 @@ export const clients = {
     },
     noUpcoming: "Nothing booked.",
     noPast: "No visit done yet.",
+    /**
+     * PLACEHOLDER, all of it: booking a visit for the client from the console, which no board draws. Every kind; a
+     * paid visit goes out as a payment link, and is booked once the client pays.
+     */
+    book: {
+      open: "Book a visit",
+      title: (name: string) => `Book a visit for ${name}`,
+      close: "Close",
+      kind: "Visit",
+      kinds: {
+        consultation: "Consultation",
+        one_visit: "Consultation and fit in one visit",
+        first_fit: "First fit",
+        service: "Service visit",
+        replacement: "Replacement",
+      },
+      service: "Service",
+      hairSystem: "Hair system",
+      day: "Day",
+      window: "Window",
+      technician: "Technician",
+      anyone: "Whoever is free",
+      earlier: "Earlier days",
+      later: "Later days",
+      noDays: "Nobody is free on these days.",
+      code: "Discount code (optional)",
+      codeHint: "One the client gave you. It comes off before GST.",
+      pays: {
+        nothing: "Nothing to pay.",
+        oneVisit: "Nothing to pay now. A payment link goes to them once they are fitted.",
+        credit: (left: number) => `Paid with a visit credit. ${String(left)} left.`,
+        link: (amount: string) =>
+          `${amount} before any code. A payment link goes to them by SMS; the visit is booked once they pay.`,
+      },
+      book: "Book it",
+      booking: "Booking…",
+      /** "Service visit, Wed 23 Sep, morning, with Sandeep Rawat." */
+      summary: (visit: string, day: string, window: string, technician: string) =>
+        `${visit}, ${day}, ${window}, with ${technician}.`,
+      outcomes: {
+        booked: "Booked.",
+        being_booked: "Booked. It reaches the dispatch board within a minute.",
+        awaiting_payment: (amount: string, until: string) =>
+          `Payment link sent for ${amount}. The slot is held until ${until}; the visit is booked once they pay.`,
+      },
+      link: "Payment link",
+      loading: "Finding free windows…",
+      unreadable: "The free windows could not be read.",
+      retry: "Try again",
+      errors: {
+        taken: "That window was taken a moment ago. Choose another.",
+        already_booked: "They already have one of these to come, or a payment link open for one.",
+        not_bookable: "That day or service cannot be booked.",
+        no_product: "No hair system is on sale that day.",
+        code_not_applicable: "That code does not apply to this visit.",
+        terms_changed: "Their last credit went on another booking a moment ago. Check, then book again.",
+        unavailable: "Razorpay could not make the payment link, so nothing was held. Try again in a minute.",
+        not_found: "This client cannot be booked.",
+        offline: "You are offline. Connect, then try again.",
+        unknown: "That did not go through. Nothing was booked.",
+      } as Readonly<Record<string, string>>,
+    },
     /** "9 am to 12", as the dispatch drawer writes a window. */
     time: (from: string, to: string) => `${from} to ${to}`,
     types: {
@@ -529,7 +604,12 @@ export const clients = {
       replacement: "Replacement",
     },
     /** A visit to come, by where it stands, and one done, by how FSM closed it. */
-    stages: { booked: "Booked", in_progress: "Under way", closing: "Being closed" },
+    stages: {
+      booked: "Booked",
+      in_progress: "Under way",
+      done: "Done, not yet closed in FSM",
+      closing: "Being closed",
+    },
     // PLACEHOLDER: "Not home" is ours; the board draws Done and Partial.
     outcomes: { done: "Done", partial: "Partial", no_show: "Not home" },
     statuses: { cancelled: "Cancelled", terminated: "Not done", other: "—" } as Readonly<Record<string, string>>,
@@ -609,6 +689,7 @@ export const clients = {
           `FSM may hold a work order for it: look for "(booking ${booking})" among its work orders and cancel it.`,
       },
       errors: {
+        not_permitted: NOT_PERMITTED,
         not_found: "It is no longer waiting: it may have been booked or refunded. Reload the page.",
         not_changeable: "Its time has passed, so FSM is not tried again. Link a visit booked in FSM, or refund it.",
         superseded: "A try is writing it to FSM right now. Reload in a minute to see how it went.",
@@ -640,6 +721,9 @@ export const clients = {
     } as Readonly<Record<string, string>>,
     refundStates: { created: "Processing", processed: "Back", failed: "Failed" } as Readonly<Record<string, string>>,
     reference: (reference: string) => `Ref ${reference}`,
+    // PLACEHOLDER: a discount code on a payment, which no board draws (docs/decisions/0108-discount-codes.md).
+    /** "Code AUDTEST, Rs. 1,000 off", beneath what the payment was for. */
+    code: (applied: string) => `Code ${applied}`,
   },
   /** Putting a client's service-visit credits right by hand (POST /api/clients/{id}/credits). */
   credits: {
@@ -660,6 +744,7 @@ export const clients = {
     saving: "Saving",
     saved: (count: number) => `Done. They now hold ${String(count)} ${count === 1 ? "visit" : "visits"}.`,
     errors: {
+      not_permitted: NOT_PERMITTED,
       invalid_request:
         "That would take away more visits than they hold, or is not a number from -12 to 12. Nothing was changed.",
       not_found: "This client is no longer on our records. Nothing was changed.",
@@ -691,6 +776,8 @@ export const clients = {
     attachedBy: "Attached by",
     why: "Why",
     none: "They came with no invite. If a friend sent them and they booked another way, attach the friend's invite here.",
+    /** PLACEHOLDER: the same, to a person whose access does not let them attach one. */
+    noInvite: "They came with no invite.",
     form: {
       code: "Invite code",
       codeHint: "The letters and digits after maneman.in/r/ in the friend's link.",
@@ -700,6 +787,7 @@ export const clients = {
       save: "Attach the invite",
       saving: "Attaching",
       errors: {
+        not_permitted: NOT_PERMITTED,
         unknown_invite: "No invite has that code. Check it with the client. Nothing was attached.",
         own_invite: "That is this client's own invite. Nothing was attached.",
         invalid_request: "Type the code as letters and digits, and say why. Nothing was attached.",
@@ -777,7 +865,7 @@ export const clients = {
     formTitle: "Correct the hair profile",
     formNote: "Saved as a new version under your name. Every version before it is kept.",
     notRecorded: "Not recorded",
-    product: "The first fit's tier",
+    product: "Hair system",
     invalid: "Check this field.",
     refused: "Some fields were not accepted. Check the fields marked.",
     failed: "That did not go through. Nothing was saved.",
@@ -822,6 +910,7 @@ export const clients = {
     // PLACEHOLDER: the board draws no client without photographs, and no photograph that would not load.
     empty: "No photographs of this client yet, so nothing was logged.",
     errors: {
+      not_permitted: NOT_PERMITTED,
       unavailable: "The view could not be recorded, so nothing is shown.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That photograph did not load.",
@@ -931,7 +1020,7 @@ export const waitlist = {
     date: "Launch date",
     dateHint: "The day a technician starts coming. A held referral invite lapses twelve months from it.",
     /** PLACEHOLDER: where the area's name in the message comes from, and where it is changed (OPS-13). */
-    named: "The message names the area as Settings has it.",
+    named: "The message names the area once Service area gives it a name, and its city until then.",
     rename: "Change the name",
     /**
      * What each of them gets. The words are launch_alert_v1's in
@@ -956,6 +1045,7 @@ export const waitlist = {
     done: (alerts: number) =>
       alerts === 0 ? "Marked live. Nobody was messaged." : `Launched. ${String(alerts)} on their way.`,
     errors: {
+      not_permitted: NOT_PERMITTED,
       not_found: "We have no such pincode.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Please try again.",
@@ -1131,6 +1221,7 @@ export const noShows = {
     /** PLACEHOLDER: the board draws no empty queue. */
     empty: "No no-show is waiting for a decision.",
     errors: {
+      not_permitted: NOT_PERMITTED,
       not_found: "Someone has ruled on this one already. Reload to see the queue as it stands.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Please try again.",
@@ -1171,6 +1262,7 @@ export const noShows = {
     /** PLACEHOLDER: the board always draws one. */
     none: "No charge is disputed.",
     errors: {
+      not_permitted: NOT_PERMITTED,
       not_found: "Someone has ruled on this dispute already. Reload to see where it stands.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Please try again.",
@@ -1240,6 +1332,8 @@ export const tasks = {
   } as Readonly<Record<string, string>>,
   /** PLACEHOLDER: a group longer than the board lists: its count is all of them. */
   shown: (shown: number, count: number) => `The ${String(shown)} longest waits of ${String(count)}.`,
+  /** PLACEHOLDER: what a consultation asked for, a first fit to book and a replacement due are done with. */
+  book: "Book a visit",
   /** PLACEHOLDER: more were waiting than one look reads. */
   truncated: "More are waiting than one look reads, so a count here may be short.",
   /** The second line, one per group: the one fact the group turns on. */
@@ -1261,13 +1355,13 @@ export const tasks = {
     /** "Asked for 23 Sep 2026, morning": the day nobody could book for them, self-serve booking being off. */
     consultation_request: (day: string, when: string) => `Asked for ${day}, ${when}`,
     /**
-     * PLACEHOLDER: "+ consultation and fit in one visit", after the day and window asked for: book the client's first
-     * fit in FSM for three hours, paid for at the visit (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+     * PLACEHOLDER: "+ consultation and fit in one visit", after the day and window asked for: book it from the row,
+     * paid for once the client is fitted (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
      */
     withOneVisit: "+ consultation and fit in one visit",
     /**
-     * PLACEHOLDER: ", code WEDDNG25", after the one visit: the discount code the client gave on the form, which ops
-     * enter on the visit once they have booked it (docs/decisions/0108-discount-codes.md).
+     * PLACEHOLDER: ", code WEDDNG25", after the one visit: the discount code the client gave on the form, which the
+     * booking from the row starts with (docs/decisions/0108-discount-codes.md).
      */
     withCode: (code: string) => `, code ${code}`,
     /**
@@ -1341,6 +1435,7 @@ export const tasks = {
     saving: "Saving…",
     cancel: "Cancel",
     errors: {
+      not_permitted: NOT_PERMITTED,
       not_found: "This task has left the list meanwhile: its thing was done. Reload the page to see the list now.",
       invalid_request: "Nobody has used the console lately with that e-mail, so the task cannot be theirs.",
       unknown: "That did not save. Try again.",
@@ -1358,6 +1453,7 @@ export const tasks = {
     closing: "Closing…",
     cancel: "Cancel",
     errors: {
+      not_permitted: NOT_PERMITTED,
       not_found: "This task has left the list meanwhile: a visit was booked, or it was closed. Reload the page.",
       invalid_request: "Say why no visit is booked, in a sentence or two.",
       unknown: "That did not close. Try again.",
@@ -1384,10 +1480,12 @@ export const technicians = {
    */
   columns: ["Technician", "Zone", "Jobs", "Avg service", "Leave"],
   /**
-   * PLACEHOLDER: the technician's name opens their phones and their leave,
+   * PLACEHOLDER: the technician's name opens his details, phones and leave,
    * which the board's rows have no room for, in a panel over the roster.
    */
-  open: (name: string) => `${name}: phones and leave`,
+  open: (name: string) => `${name}: details, phones and leave`,
+  /** A technician switched off has no phone signed in and no leave to record: his name opens his details. */
+  openSwitchedOff: (name: string) => `${name}: details`,
   close: "Close",
   /** The Leave column: away today, the first day of leave to come, or nothing. */
   away: "Away",
@@ -1433,6 +1531,7 @@ export const technicians = {
     /** PLACEHOLDER: the board draws no revoke, so nothing writes what one does. */
     warning: "The session ends, and the phone drops its cached jobs when it is next online.",
     errors: {
+      not_permitted: NOT_PERMITTED,
       not_found: "That phone is not this technician's any more. Reload to see the roster as it stands.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Please try again.",
@@ -1470,12 +1569,71 @@ export const technicians = {
       move: "Move them on the dispatch board",
     },
     errors: {
+      not_permitted: NOT_PERMITTED,
       invalid_request:
         "Those dates do not work: the last day cannot come before the first, and leave runs a year at most.",
       not_found: "That technician or that leave is no longer here. Reload to see the roster as it stands.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Please try again.",
     },
+  },
+  // PLACEHOLDER: the board draws no way to add, change or switch off a technician, so every line below is ours.
+  fields: { name: "Name", mobile: "Mobile", zone: "Zone (optional)" },
+  add: {
+    open: "Add a technician",
+    title: "Add a technician",
+    effect: "His sign-in codes go to this number on WhatsApp. He can sign in as soon as he is added.",
+    save: "Add technician",
+    saving: "Adding",
+    cancel: "Cancel",
+    added: (name: string) => `${name} is added. He can sign in now.`,
+  },
+  details: {
+    title: "Details",
+    mobile: "Mobile",
+    zone: "Zone",
+    change: "Change details",
+    changeLabel: (name: string) => `Change ${name}'s details`,
+    save: "Save changes",
+    saving: "Saving",
+    cancel: "Cancel",
+    fsm: "His details come from Zoho FSM. Change them there.",
+  },
+  switchOff: {
+    open: "Switch off",
+    openLabel: (name: string) => `Switch off ${name}`,
+    warning:
+      "He is signed out at once and cannot sign in. His visits from now on go back on the dispatch board for someone else; a visit under way stays his.",
+    confirm: "Switch him off",
+    sending: "Switching off",
+    cancel: "Keep him on",
+    returned: (count: number) =>
+      count === 0
+        ? "He had no visits to come."
+        : `${String(count)} ${count === 1 ? "visit is" : "visits are"} back on the dispatch board, for someone else.`,
+    visit: (when: string, client: string) => `${when} · ${client}`,
+    noClient: "No client on our records",
+    move: "Give them out on the dispatch board",
+  },
+  switchOn: {
+    note: "Switched off. He cannot sign in, and nothing is booked on him.",
+    open: "Switch back on",
+    openLabel: (name: string) => `Switch ${name} back on`,
+    sending: "Switching on",
+    done: (name: string) => `${name} can sign in again.`,
+  },
+  switchedOff: "Switched off",
+  /** Why an add, a change or a switch was refused; nothing changed either way. */
+  errors: {
+    number_in_use: "Another active technician signs in with that number.",
+    number_in_use_now: "Another active technician signs in with his number now. Change one of the two numbers first.",
+    unreadable_mobile: "Enter a 10-digit Indian mobile.",
+    invalid_request: "Enter his name and a 10-digit Indian mobile.",
+    managed_in_fsm: "His details come from Zoho FSM. Change them there.",
+    not_found: "That technician is no longer here. Reload to see the roster as it stands.",
+    not_permitted: NOT_PERMITTED,
+    offline: "You are offline. Connect, then try again.",
+    unknown: "That did not go through. Please try again.",
   },
 } as const;
 
@@ -1516,6 +1674,7 @@ export const grievances = {
       `The client is told in the app that we answer within ${String(days)} days, on WhatsApp. ` +
       "Nothing here messages them: send your answer, then record it.",
     errors: {
+      not_permitted: NOT_PERMITTED,
       not_found: "Someone has answered this one already. Reload to see the queue as it stands.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Please try again.",
@@ -1557,7 +1716,7 @@ export const deletions = {
       items: [
         "Their visits, payments, refunds and credits, as records",
         "Their invoices in Books, eight years, by law",
-        "Their Zoho record and their FSM contact, blanked within a few minutes",
+        "Their records in the CRM, Books and FSM, blanked within a few minutes",
       ],
     },
     /** The runbook's first step, "Check the request comes from the number's owner". */
@@ -1577,6 +1736,7 @@ export const deletions = {
       `Each request is processed within ${String(days)} days of being made. ` +
       "Ops are alerted once when one has waited five.",
     errors: {
+      not_permitted: NOT_PERMITTED,
       not_found: "Someone has decided this one already. Reload to see the queue as it stands.",
       /** The API refuses while something is still owed (docs/decisions/0066-erasure-all-or-nothing.md). */
       visit_booked:
@@ -1611,6 +1771,7 @@ export const numberChanges = {
     deciding: "Deciding",
     empty: "No number change is waiting.",
     errors: {
+      not_permitted: NOT_PERMITTED,
       number_in_use: "Another client holds that number already. Nothing was changed.",
       not_found: "Someone has decided this one already. Reload to see the queue as it stands.",
       offline: "You are offline. Connect, then try again.",
@@ -1637,14 +1798,13 @@ export const settings = {
   storage: (held: number, share: number) =>
     `Photographs and referral cards hold ${(held / 1e9).toFixed(2)} GB in R2, ${String(Math.round((held / share) * 100))}% ` +
     `of their ${String(share / 1e9)} GB share. Past it R2 bills, as the owner accepted; ops are told at 50%, 80% and 100%.`,
-  // PLACEHOLDER: the prices tab holds the services too (docs/decisions/0085-services-ops-can-edit.md), and no board
-  // draws the last three tabs' names (docs/decisions/0087-consumables-and-stock.md,
-  // docs/decisions/0088-every-policy-in-the-console.md).
+  /** PLACEHOLDER: no board draws this line either. Megabytes as Cloudflare counts them, a million bytes. */
+  database: (held: number, limit: number) =>
+    `The database holds ${(held / 1e6).toFixed(0)} MB, ${String(Math.round((held / limit) * 100))}% of the ` +
+    `${String(limit / 1e6)} MB the free plan allows. Past it every write fails; ops are told at 50%, 80% and 95%.`,
+  // PLACEHOLDER: no board draws the tabs' names.
   tabs: {
     rules: "Rules",
-    prices: "Services and prices",
-    "discount-codes": "Discount codes",
-    area: "Service area",
     blackouts: "Blackout days",
     consumables: "Consumables",
     "job-sheet": "Job sheet",
@@ -1721,10 +1881,11 @@ export const settings = {
       `No booking takes it from now on. ${String(uses)} ${uses === 1 ? "booking keeps" : "bookings keep"} it, as sold.`,
     switching: "Switching off",
     errors: {
+      not_permitted: NOT_PERMITTED,
       code: "A code is 4 to 16 letters and figures, none of them I, L, O, 0 or 1.",
       count: "A code you type is made once. Generate them to make more.",
-      value: "A percentage is 1 to 100.",
-      cap: "Only a percentage takes a cap.",
+      value: "A percentage is 1 to 100. An amount is whole rupees.",
+      cap: "Only a percentage takes a cap, in whole rupees.",
       covers: "Choose what the code covers.",
       expires_on: "The last day cannot be before today.",
       max_uses: "Generated codes are single-use: one use each.",
@@ -1826,6 +1987,7 @@ export const settings = {
     /** The rule's name, or one of its boxes, and what the API said of it. */
     outside: (field: string) => `${field} is outside what this rule allows. Nothing was changed.`,
     errors: {
+      not_permitted: NOT_PERMITTED,
       invalid_request: "That figure is outside what this rule allows. Nothing was changed.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Nothing was changed.",
@@ -1860,6 +2022,7 @@ export const settings = {
     removeLabel: (period: string) => `Offer ${period} again`,
     removing: "Offering them again",
     errors: {
+      not_permitted: NOT_PERMITTED,
       from: "The first day cannot be before today.",
       to: "The last day cannot come before the first, and one go covers a month at most.",
       reason: "Say why, in letters and figures, up to 60 of them.",
@@ -1881,6 +2044,10 @@ export const settings = {
       "already sold moves. Each service reaches FSM's catalogue as its own item.",
     /** The four kinds, as the rest of the console names them. */
     kinds: dispatch.typeNames,
+    /** Under First fit: its services are the hair systems clients choose from, and nothing stands in for them. */
+    hairSystems:
+      "Clients book a first fit only as one of these hair systems, by its name and price here. With none offered " +
+      "and priced, first fits and the consultation and fit in one visit cannot be booked.",
     /** "180 minutes · code premium": how long it is held and booked for, and what the price book prices it by. */
     facts: (minutes: number, tier: string) => `${String(minutes)} minutes · code ${tier}`,
     fsm: { linked: "In FSM's catalogue", notYet: "Not found in FSM's catalogue yet" },
@@ -1916,6 +2083,7 @@ export const settings = {
       up: "Move up",
       down: "Move down",
       add: (kind: string) => `Add a service to ${kind}`,
+      addHairSystem: "Add a hair system",
     },
     /** Each button named for a screen reader with what it acts on. */
     labels: {
@@ -1988,6 +2156,7 @@ export const settings = {
     },
     /** A refusal names the box it came from (src/routes/ops-services.ts, ops-settings.ts); these are said of each. */
     errors: {
+      not_permitted: NOT_PERMITTED,
       tier: "No service of this kind has that code, or a code cannot be made from that name. Nothing was changed.",
       name: "A name starts with a letter or a digit, runs from 2 to 60 characters, and opens no formula. Nothing was changed.",
       minutes: "A length is whole minutes, inside the range under the field. Nothing was changed.",
@@ -2000,8 +2169,8 @@ export const settings = {
       was_valid_from: "That price applies already, so it stays in the book.",
       service_exists: "Another service already has that name, or this kind that code. Nothing was changed.",
       last_of_kind:
-        "Each kind keeps one service that is never retired and has a price, so clients can always book it. Add and " +
-        "price the one that replaces it first.",
+        "A consultation, a service visit and a replacement each keep one service that is never retired and has a " +
+        "price, so clients can always book them. Add and price the one that replaces it first.",
       service_retired: "The service is retired by that day, so it takes no price from then. Nothing was changed.",
       not_found: "That is no longer in the console. Reload to see it as it stands.",
       offline: "You are offline. Connect, then try again.",
@@ -2009,6 +2178,7 @@ export const settings = {
     } as Readonly<Record<string, string>>,
     /** Taking back a price that applies already, or has applied: it may stand on an invoice. */
     takeBackErrors: {
+      not_permitted: NOT_PERMITTED,
       valid_from: "That price applies already, so it stays in the book.",
     } as Readonly<Record<string, string>>,
   },
@@ -2082,6 +2252,7 @@ export const settings = {
     download: "Download the current list",
     downloadName: "service-area.csv",
     errors: {
+      not_permitted: NOT_PERMITTED,
       no_service_area: "That would leave no pincode served, and every client on the waitlist. Nothing was changed.",
       /** A pincode we do not hold: the file is reference data, not a way to add one. */
       invalid_request: "That names a pincode we do not hold. Nothing was changed.",
@@ -2200,6 +2371,7 @@ export const settings = {
     },
     /** PLACEHOLDER: a refusal, said of the box it names (src/routes/ops-consumables.ts). */
     errors: {
+      not_permitted: NOT_PERMITTED,
       name: "Another consumable has that name, or it does not start with a letter or a digit. Nothing was changed.",
       unit: "A unit is a word of letters: strip, ml, sachet. Nothing was changed.",
       unit_cost: "The cost is in rupees, inside the range under the field. Nothing was changed.",
@@ -2262,11 +2434,125 @@ export const settings = {
       nothing: "Nothing has changed.",
     },
     errors: {
+      not_permitted: NOT_PERMITTED,
       items: "A list holds at least one item and no more than the limit under it. Nothing was changed.",
       label: "Each item needs words, no longer than the limit, and no two alike. Nothing was changed.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Nothing was changed.",
     } as Readonly<Record<string, string>>,
+  },
+  /**
+   * PLACEHOLDER, every line of it: no board draws the Staff page. A change is shown before it is saved.
+   */
+  staff: {
+    title: "Staff",
+    note:
+      "Who may use the console, and for what. Each grant gives one department at one level, nationally, across a " +
+      "zone or in one city. View sees; Act does the day's work; Manage also refunds, waives, sets prices, codes and " +
+      "settings, deletes accounts and grants access.",
+    departments: DEPARTMENT_NAMES,
+    levels: { view: "View", act: "Act", manage: "Manage" },
+    national: "National",
+    zone: (name: string) => `${name} zone`,
+    zones: "Zones",
+    cities: "Cities",
+    grant: (department: string, level: string, place: string) => `${department} · ${level} · ${place}`,
+    columns: { person: "Person", access: "Access", state: "Status" },
+    noAccess: "No access yet",
+    active: "Let in",
+    inactive: "Switched off",
+    add: "Add a person",
+    change: "Change",
+    changeLabel: (email: string) => `Change ${email}`,
+    form: {
+      addTitle: "Add a person",
+      changeTitle: (email: string) => `Change ${email}`,
+      email: "Sign-in e-mail",
+      emailHint: "The address they sign in to the console with.",
+      letIn: "Let them in",
+      access: "Access",
+      department: "Department",
+      level: "Level",
+      place: "Where",
+      addGrant: "Add a department",
+      removeGrant: "Remove",
+      removeGrantLabel: (grant: string) => `Remove ${grant}`,
+      review: "Review",
+      cancel: "Cancel",
+    },
+    confirm: {
+      title: "Check the change",
+      adds: (email: string) => `Adds ${email}.`,
+      letsIn: "Lets them in again.",
+      switchesOff: "Switches them off: the console closes to them.",
+      gives: (grant: string) => `Gives ${grant}`,
+      takes: (grant: string) => `Takes away ${grant}`,
+      nothing: "Nothing has changed.",
+      send: "Save it",
+      sending: "Saving",
+      back: "Change it",
+    },
+    saved: "Saved.",
+    errors: {
+      email: "Enter the e-mail they sign in with.",
+      already_listed: "This person is already on the list. Use Change beside their e-mail.",
+      place: "Choose where this access applies.",
+      grants: "Give each department once for each place.",
+      not_permitted: "You can grant access only within your own area, and only with Admin · Manage.",
+      last_admin: "Someone must keep Admin · Manage nationally. Give it to another person first.",
+      offline: "You are offline. Connect, then try again.",
+      unknown: "That did not go through. Nothing was changed.",
+    } as Readonly<Record<string, string>>,
+    enforcement: {
+      title: "Access control",
+      off:
+        "Not enforced yet. Everyone Access lets in can open every section, and each call this list would refuse is " +
+        "logged. Check the list, then start enforcing.",
+      on: "Enforced. People open only the departments and places granted here; anyone not listed sees nothing.",
+      setBy: (who: string, when: string) => `Switched by ${who} on ${when}`,
+      start: "Start enforcing",
+      stop: "Stop enforcing",
+      startTitle: "Start enforcing access?",
+      startLine: "From now on, only the people listed here can use the console, and only as granted.",
+      stopTitle: "Stop enforcing access?",
+      stopLine: "Everyone Access lets in will open every section again.",
+      sending: "Saving",
+      back: "Go back",
+      onlyNational: "Only someone with Admin · Manage nationally can switch this.",
+      errors: {
+        not_permitted: "Only someone with Admin · Manage nationally can switch this.",
+        offline: "You are offline. Connect, then try again.",
+        unknown: "That did not go through. Nothing was changed.",
+      } as Readonly<Record<string, string>>,
+    },
+    tokens: {
+      title: "Service tokens",
+      note:
+        "Automated access, such as the test runner's. A token listed here can do everything except grant access; " +
+        "one not listed is refused once access is enforced.",
+      none: "No service token is listed.",
+      addedBy: (who: string, when: string) => `Added by ${who} on ${when}`,
+      clientId: "Client ID",
+      clientIdHint: "From Cloudflare Access, under Service credentials.",
+      label: "Name",
+      add: "Add the token",
+      adding: "Adding",
+      remove: "Remove",
+      removeLabel: (label: string) => `Remove ${label}`,
+      removeTitle: (label: string) => `Remove ${label}?`,
+      removeLine: "Whatever uses it is refused once access is enforced.",
+      removing: "Removing",
+      back: "Keep it",
+      onlyNational: "Only someone with Admin · Manage nationally can change service tokens.",
+      errors: {
+        client_id: "Paste the client ID exactly as Cloudflare Access shows it.",
+        label: "Give it a short name.",
+        not_found: "That token is no longer listed. Reload to see the list as it stands.",
+        not_permitted: "Only someone with Admin · Manage nationally can change service tokens.",
+        offline: "You are offline. Connect, then try again.",
+        unknown: "That did not go through. Nothing was changed.",
+      } as Readonly<Record<string, string>>,
+    },
   },
 } as const;
 
@@ -2340,6 +2626,7 @@ export const stock = {
   },
   /** PLACEHOLDER: a refusal, said of the box it names (src/routes/ops-stock.ts). */
   errors: {
+    not_permitted: NOT_PERMITTED,
     consumable_code: "That consumable is not in the list any more. Reload the page.",
     from: "That kit is not one we know. Reload the page.",
     to: "Stock moves from one place to another, not to the place it is in. Nothing was recorded.",

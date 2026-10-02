@@ -29,6 +29,11 @@ export type ClientPayment = ClientRecord["payments"][number];
 /** A booking FSM refused five times running, held for ops (docs/decisions/0095-a-booking-fsm-refuses-is-held.md). */
 export type HeldBooking = ClientRecord["held_bookings"][number];
 export type HeldBookingRefunded = Body<paths["/api/held-bookings/{id}/refund"]["post"]>;
+/** A visit ops book for a client: the windows free for it, what is sent, and what came of it. */
+export type VisitAvailability = Body<paths["/api/visits/availability"]["get"]>;
+export type AvailabilityQuery = NonNullable<paths["/api/visits/availability"]["get"]["parameters"]["query"]>;
+export type VisitToBook = Sent<paths["/api/visits"]["post"]>;
+export type VisitBooked = Body<paths["/api/visits"]["post"]>;
 export type CreditBalance = Body<paths["/api/clients/{id}/credits"]["post"]>;
 export type CreditAdjustment = Sent<paths["/api/clients/{id}/credits"]["post"]>;
 export type ClientInvite = NonNullable<ClientRecord["invite"]>;
@@ -105,12 +110,27 @@ export type StockTransfer = Sent<paths["/api/stock/transfers"]["post"]>;
 export type StockCount = Sent<paths["/api/stock/counts"]["post"]>;
 export type StockWriteOff = Sent<paths["/api/stock/write-offs"]["post"]>;
 
+/** The Staff list: who may do what, and whether it is enforced. */
+export type StaffBook = Body<paths["/api/staff"]["get"]>;
+export type StaffPerson = StaffBook["people"][number];
+export type StaffGrant = StaffPerson["grants"][number];
+export type StaffSave = Sent<paths["/api/staff"]["post"]>;
+export type StaffToken = StaffBook["service_tokens"][number];
+export type StaffTokenAdd = Sent<paths["/api/staff/service-tokens"]["post"]>;
+
 export type NoShowCase = Body<paths["/api/no-shows"]["get"]>["cases"][number];
 export type NoShowDispute = Body<paths["/api/no-shows/disputes"]["get"]>["disputes"][number];
 export type DisputeRuling = Sent<paths["/api/no-shows/disputes/{id}/ruling"]["post"]>["ruling"];
 export type DayMoney = Body<paths["/api/payments"]["get"]>;
 export type Charge = DayMoney["charges"][number];
-export type Technician = Body<paths["/api/technicians"]["get"]>["technicians"][number];
+export type Roster = Body<paths["/api/technicians"]["get"]>;
+export type Technician = Roster["technicians"][number];
+/** A technician as both lists carry him: active, or switched off. */
+export type TechnicianSummary = Roster["switched_off"][number];
+export type NewTechnician = Sent<paths["/api/technicians"]["post"]>;
+export type TechnicianChange = Sent<paths["/api/technicians/{id}"]["patch"]>;
+/** A visit a technician just switched off no longer holds, which waits on the dispatch board for another. */
+export type ReturnedVisit = Body<paths["/api/technicians/{id}/deactivate"]["post"]>["visits"][number];
 export type Device = Technician["devices"][number];
 export type Leave = Technician["leave"][number];
 export type LeaveRecorded = Body<paths["/api/technicians/{id}/leave"]["post"]>;
@@ -218,14 +238,9 @@ export const api = {
    */
   assign: (appointmentId: string, to: Landing, shown: Shown) =>
     client.post("/api/dispatch/assign", { body: moveBody(appointmentId, to, shown) }),
-  /**
-   * A job already on the board, moved. The client is never charged for it; the answer says how he hears of it. A
-   * visit the technician has begun moves only with `settingAside`, once ops have read that his work on it is set aside.
-   */
-  move: (appointmentId: string, to: Landing, shown: Shown, settingAside = false) =>
-    client.post("/api/dispatch/move", {
-      body: settingAside ? { ...moveBody(appointmentId, to, shown), set_aside_work: true } : moveBody(appointmentId, to, shown),
-    }),
+  /** A job already on the board, moved. The client is never charged for it; the answer says how he hears of it. */
+  move: (appointmentId: string, to: Landing, shown: Shown) =>
+    client.post("/api/dispatch/move", { body: moveBody(appointmentId, to, shown) }),
   /** Ops called a client who had not heard of a move; its task leaves the Tasks board. */
   toldByPhone: (moveId: string) => client.post("/api/dispatch/moves/{id}/told", { path: { id: moveId } }),
   held: () => client.get("/api/referrals/held"),
@@ -256,6 +271,10 @@ export const api = {
     client.post("/api/held-bookings/{id}/link", { path: { id }, body: { visit_id: visitId } }),
   /** What FSM holds for it cancelled, its payment refunded, and the client told. */
   refundHeldBooking: (id: string) => client.post("/api/held-bookings/{id}/refund", { path: { id } }),
+  /** A client's 14 days of windows for a kind of visit, who is free in each, and how it would be paid. */
+  visitAvailability: (query: AvailabilityQuery) => client.get("/api/visits/availability", { query }),
+  /** A visit booked for a client: at once when nothing is paid at booking, else a payment link goes to them. */
+  bookVisit: (visit: VisitToBook) => client.post("/api/visits", { body: visit }),
   /** Visits added or taken away by hand, with the reason; the answer is the balance after it. */
   adjustCredits: (id: string, adjustment: CreditAdjustment) =>
     client.post("/api/clients/{id}/credits", { path: { id }, body: adjustment }),
@@ -324,6 +343,14 @@ export const api = {
   decideNumberChange: (id: string, decision: "confirm" | "reject", reason: string | null) =>
     client.post("/api/number-changes/{id}/decision", { path: { id }, body: { decision, reason } }),
   technicians: () => client.get("/api/technicians"),
+  /** His number signs in to the technician app at once. */
+  addTechnician: (technician: NewTechnician) => client.post("/api/technicians", { body: technician }),
+  /** Only the fields sent change. */
+  changeTechnician: (id: string, change: TechnicianChange) =>
+    client.patch("/api/technicians/{id}", { path: { id }, body: change }),
+  /** Signed out at once; his visits still to come are given back unassigned, and listed in the answer. */
+  switchOff: (id: string) => client.post("/api/technicians/{id}/deactivate", { path: { id } }),
+  switchOn: (id: string) => client.post("/api/technicians/{id}/reactivate", { path: { id } }),
   /** What each of them has finished, over the period the route rules; the roster above carries no figure. */
   technicianWork: () => client.get("/api/technicians/work"),
   /** The phone's ID is the app's own, never a hardware serial, so it can stand in a path. */
@@ -412,6 +439,14 @@ export const api = {
     client.post("/api/job-sheet/checklists/{visit_type}", { path: { visit_type: type }, body: { items: [...items] } }),
   setPartialReasons: (items: readonly JobSheetItemSent[]) =>
     client.post("/api/job-sheet/partial-reasons", { body: { items: [...items] } }),
+  /** The Staff list, narrowed to the places the caller may see. */
+  staff: () => client.get("/api/staff"),
+  /** A person added, or their grants and whether they are let in replaced whole. */
+  saveStaff: (person: StaffSave) => client.post("/api/staff", { body: person }),
+  setEnforcement: (on: boolean) => client.post("/api/staff/enforcement", { body: { on } }),
+  addServiceToken: (token: StaffTokenAdd) => client.post("/api/staff/service-tokens", { body: token }),
+  removeServiceToken: (clientId: string) =>
+    client.post("/api/staff/service-tokens/remove", { body: { client_id: clientId } }),
   /** What each place holds, what is low, and the latest movements. */
   stock: () => client.get("/api/stock"),
   recordDelivery: (delivery: StockDelivery) => client.post("/api/stock/deliveries", { body: delivery }),
