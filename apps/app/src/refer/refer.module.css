@@ -478,7 +478,7 @@ img.card {
 
 .sheet {
   min-height: 0;
-  padding: var(--sp-24) var(--sp-20) var(--sp-26);
+  padding: var(--sp-24) var(--sp-20) calc(var(--sp-26) + env(safe-area-inset-bottom));
   overflow-y: auto;
   background: var(--paper);
   color: var(--text);
