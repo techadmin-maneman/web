@@ -296,6 +296,62 @@
         ],
         "additionalProperties": false
       },
+      "OpenWindows": {
+        "type": "object",
+        "properties": {
+          "plan": {
+            "type": "string",
+            "enum": [
+              "consultation",
+              "one_visit"
+            ]
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "windows": {
+                  "type": "object",
+                  "properties": {
+                    "morning": {
+                      "type": "boolean"
+                    },
+                    "afternoon": {
+                      "type": "boolean"
+                    },
+                    "evening": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "morning",
+                    "afternoon",
+                    "evening"
+                  ],
+                  "additionalProperties": false,
+                  "description": "true where booking that window now would be taken; false where it is full."
+                }
+              },
+              "required": [
+                "date",
+                "windows"
+              ],
+              "additionalProperties": false
+            },
+            "description": "The days the form offers: 14, from tomorrow in India."
+          }
+        },
+        "required": [
+          "plan",
+          "days"
+        ],
+        "additionalProperties": false
+      },
       "Consultation": {
         "type": "object",
         "properties": {
@@ -1162,6 +1218,70 @@
         }
       }
     },
+    "/api/availability/public": {
+      "get": {
+        "summary": "The days and windows the booking form can book, open or full. Cacheable for a minute.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[1-8]\\d{5}$",
+              "description": "A six-digit Indian pincode."
+            },
+            "required": true,
+            "description": "A six-digit Indian pincode.",
+            "name": "pincode",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "consultation",
+                "one_visit"
+              ],
+              "description": "The consultation alone, or the consultation and fit in one visit."
+            },
+            "required": true,
+            "description": "The consultation alone, or the consultation and fit in one visit.",
+            "name": "plan",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Each day's three windows",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenWindows"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names the pincode or the plan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "not_bookable: the pincode is not served",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/consultation": {
       "post": {
         "summary": "Book a free consultation",
@@ -1252,7 +1372,14 @@
                   "invite_code": {
                     "type": "string",
                     "maxLength": 64,
-                    "description": "The code of an invite this browser opened in the last 30 days. One we do not have, or not shaped like a code, is ignored: the booking goes ahead without an invite."
+                    "description": "The code of an invite this browser opened in the last 30 days. One sent without invite_told, one we do not have, or one not shaped like a code, is ignored: the booking goes ahead without an invite."
+                  },
+                  "invite_told": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ],
+                    "description": "true: beside the invite, the form said that whoever sent it is told when the friend is fitted, and offered to go on without it. The attribution records it."
                   },
                   "date": {
                     "type": "string",
@@ -1466,7 +1593,14 @@
                   "invite_code": {
                     "type": "string",
                     "maxLength": 64,
-                    "description": "The code of an invite this browser opened in the last 30 days. One we do not have, or not shaped like a code, is ignored: the booking goes ahead without an invite."
+                    "description": "The code of an invite this browser opened in the last 30 days. One sent without invite_told, one we do not have, or one not shaped like a code, is ignored: the booking goes ahead without an invite."
+                  },
+                  "invite_told": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ],
+                    "description": "true: beside the invite, the form said that whoever sent it is told when the friend is fitted, and offered to go on without it. The attribution records it."
                   },
                   "contact_consent": {
                     "type": "boolean",
@@ -1710,6 +1844,13 @@
                     "minLength": 1,
                     "maxLength": 2048
                   },
+                  "invite_told": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ],
+                    "description": "true: the form said that whoever sent the invite is told when the friend is fitted. The attribution records it; the invite applies either way."
+                  },
                   "pincode": {
                     "type": "string",
                     "pattern": "^[1-8]\\d{5}$",
@@ -1874,6 +2015,13 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 2048
+                  },
+                  "invite_told": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ],
+                    "description": "true: the form said that whoever sent the invite is told when the friend is fitted. The attribution records it; the invite applies either way."
                   },
                   "pincode": {
                     "type": "string",

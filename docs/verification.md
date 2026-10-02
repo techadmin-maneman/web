@@ -60,6 +60,17 @@ M1 merged in PR #1 and PR #2. The merge commit `357c26f` then went out through t
 
 M1 is done. The exceptions are required checks on `main` and required reviewers on `production`, which the owner deferred to the paid GitHub plan (ADR 0008).
 
+### A rollback by hand, rehearsed on staging, 2 October 2026
+
+The runbook's "Rolling back a Worker version" on `mm-site-staging`, between two staging deploys, with wrangler 4.135.0:
+
+1. `release.ts current --worker mm-site --env staging`: `d1362126…` (commit `17de1fe9`). The version before it, `2f14a7ae…`, built the same pages, so the rehearsal went back to `c7ff524c…` (commit `da6d74ce`), whose `/book` differs. That shows what the edge serves changed, not only Cloudflare's record.
+2. `release.ts restore --env staging --message "rollback rehearsal (P0-20)" --to mm-site=c7ff524c…` at 14:26:59 UTC: "restored" 14 s later. `release.ts current` answered `c7ff524c…`, `/book` named the older build's `Invite.Cp272hs4.css`, and the smoke suite passed.
+3. Before rolling forward, `release.ts current` still answered `c7ff524c…`, so no deploy had moved it on. `restore --to mm-site=d1362126…` at 14:27:48: "restored" 14 s later, `/book` named `Invite.u_Eeh9hu.css` again, and the smoke suite passed.
+4. The same restore once more: "unchanged".
+
+`wrangler deployments list` records both, with their messages. What a release does when Cloudflare drops a reply (an upload that landed is not made twice; a split is checked before failing) needs Cloudflare to drop one, so it is proven against a fake account in `test/node/release.test.ts`, not live.
+
 ## M2: lead path
 
 Merged in PR #3. Fixes from the staging proof: PR #4 (Zoho call timing, 20-second timeout, a quick retry) and PR #5 (the checker confirms `D1_Person_ID` is unique).

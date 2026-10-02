@@ -595,7 +595,7 @@ Ask for the account to be deleted. Ops process it; asking twice makes one reques
 
 The client's visits, upcoming and past
 
-**200**: Upcoming soonest first; past newest first
+**200**: Upcoming soonest first; past newest first, a visit cancelled among them
 
 ```json
 {
@@ -5017,6 +5017,11 @@ Request body:
       ],
       "description": "Whoever did the client's latest visit."
     },
+    "last": {
+      "type": "string",
+      "format": "date",
+      "description": "The last day this visit may be booked on: later days are asked for up to it."
+    },
     "days": {
       "type": "array",
       "items": {
@@ -5097,6 +5102,7 @@ Request body:
     "service",
     "price",
     "regular",
+    "last",
     "days"
   ],
   "additionalProperties": false

@@ -13,7 +13,9 @@
 //
 // Opened with the visit the app offers next, the sheet starts its strip a week
 // before the day offered and has that day and window chosen where they are
-// free, for the client to take or change (ADR 0086).
+// free, for the client to take or change (ADR 0086). With the day offered full,
+// the next open day is chosen. Later days are added to the strip on asking, up
+// to the last a visit may be booked on.
 //
 // The hold's ten minutes are counted on the API's clock, not the phone's
 // (lib/clock.ts), and when the phone sees them run out it lets the hold go too.
@@ -38,6 +40,7 @@ import { focusIfLost } from "../lib/arrival.ts";
 import { apiNow } from "../lib/clock.ts";
 import { loadCheckout, pay, type Paid, type PayMethod } from "./checkout.ts";
 import { undecidedOf } from "./consents.ts";
+import { dayAfter, firstOpenFrom, hasLaterDays, openWindow, withDays } from "./days.ts";
 import {
   AddressStep,
   ConfirmedStep,
@@ -102,10 +105,8 @@ const OFFER_WEEK = 7;
 const daysBefore = (date: string, days: number) =>
   new Date(Date.parse(`${date}T00:00:00Z`) - days * 86_400_000).toISOString().slice(0, 10);
 
-/** The offered window on a day, where it is open that day; null otherwise. */
-function openWindow(day: Availability["days"][number] | undefined, window: BookingWindow | null | undefined) {
-  return day?.windows.find((each) => each.window === window && each.with !== null)?.window ?? null;
-}
+/** Asking for the days after those shown: not yet, under way, or failed. */
+type LaterAsk = "idle" | "busy" | "failed";
 
 export function BookingSheet({
   type,
@@ -144,6 +145,7 @@ export function BookingSheet({
     () => services.find((service) => service.tier === tier) ?? null,
   );
   const [availability, setAvailability] = useState<Availability | null>(null);
+  const [laterAsk, setLaterAsk] = useState<LaterAsk>("idle");
   const [date, setDate] = useState<string | null>(null);
   const [chosenWindow, setChosenWindow] = useState<BookingWindow | null>(null);
   const [method, setMethod] = useState<PayMethod>("upi");
@@ -172,16 +174,20 @@ export function BookingSheet({
   };
 
   /**
-   * The days of the visit wanted, and the step after them: the address if there is none yet, else the date. The day
-   * offered is chosen where it has a window open, and its window where that one is.
+   * The days of the visit wanted, and the step after them: the address if there is none yet, else the date. The first
+   * open day on or after the day offered is chosen, and the window offered where it is open that day.
    */
   const showDays = (days: Availability) => {
     setAvailability(days);
-    const open = days.days.find(
-      (each) => each.date === offeredDate && each.windows.some((window) => window.with !== null),
+    setLaterAsk("idle");
+    const chosen = offeredDate === undefined ? null : firstOpenFrom(days.days, offeredDate);
+    setDate(chosen);
+    setChosenWindow(
+      openWindow(
+        days.days.find((each) => each.date === chosen),
+        offeredWindow,
+      ),
     );
-    setDate(open?.date ?? null);
-    setChosenWindow(openWindow(open, offeredWindow));
     if (addressMissing.current) askForAddress(false);
     else setStep({ kind: "date" });
   };
@@ -226,10 +232,28 @@ export function BookingSheet({
     else setStep({ kind: "broken" });
   };
 
-  // Each step's heading takes the focus the last step's button took with it.
+  /** The days after the last shown, added to the strip. */
+  const showLater = async () => {
+    const lastShown = availability?.days.at(-1)?.date;
+    if (wanted === null || lastShown === undefined) return;
+    setLaterAsk("busy");
+    const answer = await api.availability(wanted, movingId, dayAfter(lastShown));
+    if (!answer.ok) {
+      setLaterAsk("failed");
+      return;
+    }
+    setLaterAsk("idle");
+    setAvailability((now) =>
+      now === null ? answer.body : { ...answer.body, days: withDays(now.days, answer.body.days) },
+    );
+  };
+
+  // Each step's heading takes the focus the last step's button took with it, as it does when "Later dates" goes with
+  // the last of them.
+  const daysShown = availability?.days.length;
   useEffect(() => {
     focusIfLost(dialog.current?.querySelector<HTMLElement>(`#${TITLE_ID}`) ?? null);
-  }, [step.kind]);
+  }, [step.kind, daysShown]);
 
   // The hold has lapsed while the client was paying or deciding. The phone may see it before the API
   // does, so it lets the hold go itself, rather than leave the slot blocked for no one. A payment
@@ -292,8 +316,13 @@ export function BookingSheet({
     if (answer.ok) setStep({ kind: "pay", hold: answer.body });
     else if (answer.code === "taken") {
       setProblem(booking.window.taken);
-      const fresh = await api.availability(wanted, movingId, firstDay);
-      if (fresh.ok) setAvailability(fresh.body);
+      // From the day chosen, which may be among the later days.
+      const fresh = await api.availability(wanted, movingId, date);
+      if (fresh.ok) {
+        setAvailability((now) =>
+          now === null ? fresh.body : { ...fresh.body, days: withDays(now.days, fresh.body.days) },
+        );
+      }
       setChosenWindow(null);
     } else if (answer.code === "address_required") askForAddress(true);
     else setProblem(booking.failedToStart);
@@ -412,7 +441,13 @@ export function BookingSheet({
           <DateStep
             before={before}
             days={availability.days}
+            offered={offeredDate ?? null}
             chosen={date}
+            later={
+              hasLaterDays(availability)
+                ? { busy: laterAsk === "busy", failed: laterAsk === "failed", onShow: () => void showLater() }
+                : null
+            }
             onChoose={(chosen) => {
               setDate(chosen);
               // The window offered stays chosen on another day only where it is open there too.

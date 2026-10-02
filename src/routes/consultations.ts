@@ -1,7 +1,8 @@
 // Booking from the public site (docs/decisions/0051-booking-from-the-site.md):
 //
-//   POST /api/consultation   a free consultation on a real date and window
-//   POST /api/waitlist       the number, for a pincode we do not serve yet
+//   GET  /api/availability/public   the form's days and windows, open or not, naming nobody
+//   POST /api/consultation          a free consultation on a real date and window
+//   POST /api/waitlist              the number, for a pincode we do not serve yet
 //
 // These are the referral landing's two routes without the invite, and they share
 // their whole path (src/domain/public-booking.ts, and src/http/public-form.ts for
@@ -28,17 +29,20 @@
 // (docs/decisions/0108-discount-codes.md).
 //
 // Either may carry the code of an invite the visitor opened on this browser in the
-// last 30 days, and is then attributed to it exactly as the landing's would be. A
-// code we do not have, or one not shaped like a code, is ignored, and the booking
-// goes ahead without an invite (docs/decisions/0089-an-invite-is-not-lost.md).
+// last 30 days, and is then attributed to it exactly as the landing's would be,
+// once the form has said beside it who is told of the fit. A code sent without
+// that, a code we do not have, or one not shaped like a code, is ignored, and the
+// booking goes ahead without an invite (docs/decisions/0089-an-invite-is-not-lost.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
 import { LOSS_EXTENTS } from "../config/booking.ts";
+import { TOLD_NOTICES } from "../config/notices.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
-import { bookConsultation, joinTheWaitlist } from "../domain/public-booking.ts";
-import type { Plan } from "../policy/one-visit.ts";
+import { openDays } from "../domain/open-windows.ts";
+import { bookConsultation, joinTheWaitlist, pincodeOf } from "../domain/public-booking.ts";
+import { PLANS, type Plan } from "../policy/one-visit.ts";
 import { CODE_PATTERN, inviteOf, type Invite } from "../domain/referrals.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
@@ -80,8 +84,16 @@ const Person = {
     .optional()
     .openapi({
       description:
-        "The code of an invite this browser opened in the last 30 days. One we do not have, or not shaped like a " +
-        "code, is ignored: the booking goes ahead without an invite.",
+        "The code of an invite this browser opened in the last 30 days. One sent without invite_told, one we do " +
+        "not have, or one not shaped like a code, is ignored: the booking goes ahead without an invite.",
+    }),
+  invite_told: z
+    .literal(true)
+    .optional()
+    .openapi({
+      description:
+        "true: beside the invite, the form said that whoever sent it is told when the friend is fitted, and offered " +
+        "to go on without it. The attribution records it.",
     }),
 };
 
@@ -189,6 +201,43 @@ export const BOOKED_DESCRIPTION =
   "Booked, or asked for. A number with a consultation still to happen, or past consultations, gets the answer a " +
   "new number would, books nothing, and is told why on WhatsApp.";
 
+const OpenWindowsSchema = z
+  .object({
+    plan: z.enum(PLANS),
+    days: z
+      .array(
+        z
+          .object({
+            date: z.iso.date(),
+            windows: z
+              .object({ morning: z.boolean(), afternoon: z.boolean(), evening: z.boolean() })
+              .strict()
+              .openapi({ description: "true where booking that window now would be taken; false where it is full." }),
+          })
+          .strict(),
+      )
+      .openapi({ description: "The days the form offers: 14, from tomorrow in India." }),
+  })
+  .strict()
+  .openapi("OpenWindows");
+
+const openWindowsRoute = createRoute({
+  method: "get",
+  path: "/api/availability/public",
+  summary: "The days and windows the booking form can book, open or full. Cacheable for a minute.",
+  request: {
+    query: z.object({
+      pincode: PincodeSchema,
+      plan: z.enum(PLANS).openapi({ description: "The consultation alone, or the consultation and fit in one visit." }),
+    }),
+  },
+  responses: {
+    200: { description: "Each day's three windows", content: { "application/json": { schema: OpenWindowsSchema } } },
+    400: errorResponse("invalid_request: fields names the pincode or the plan"),
+    422: errorResponse("not_bookable: the pincode is not served"),
+  },
+});
+
 const consultationRoute = createRoute({
   method: "post",
   path: "/api/consultation",
@@ -237,13 +286,29 @@ const waitlistRoute = createRoute({
   },
 });
 
-/** The invite a remembered code names; null for none, one we do not have, or one not shaped like a code. */
-function rememberedInvite(c: Context<AppEnv>, code: string | undefined): Promise<Invite | null> {
-  if (code === undefined || !CODE_PATTERN.test(code)) return Promise.resolve(null);
+/**
+ * The invite a remembered code names, once the form has said who is told of the fit beside it; null for none, one
+ * sent without that, one we do not have, or one not shaped like a code.
+ */
+function rememberedInvite(
+  c: Context<AppEnv>,
+  sent: { invite_code?: string | undefined; invite_told?: true | undefined },
+): Promise<Invite | null> {
+  const code = sent.invite_code;
+  if (sent.invite_told !== true || code === undefined || !CODE_PATTERN.test(code)) return Promise.resolve(null);
   return inviteOf(c.env.DB, code, c.var.config.settings.referrerNameOnInvite);
 }
 
 export function registerConsultations(app: App): void {
+  app.openapi(openWindowsRoute, async (c) => {
+    const { pincode, plan } = c.req.valid("query");
+    const served = (await pincodeOf(c.env.DB, pincode))?.served === 1;
+    if (!served) return c.json(errorBody("not_bookable", c.var.requestId), 422);
+    const { settings } = c.var.config;
+    const days = await openDays(c.env.DB, plan, settings.selfServeBooking, c.var.deps.now());
+    return c.json({ plan, days }, 200, { "Cache-Control": "public, max-age=60" });
+  });
+
   app.openapi(consultationRoute, async (c) => {
     const body = c.req.valid("json");
     const { requestId } = c.var;
@@ -260,7 +325,8 @@ export function registerConsultations(app: App): void {
         lossExtent: body.loss_extent ?? null,
         turnstileToken: body.turnstile_token,
         attribution: body.attribution ?? {},
-        invite: await rememberedInvite(c, body.invite_code),
+        invite: await rememberedInvite(c, body),
+        toldNotice: TOLD_NOTICES.book,
         source: "site_booking",
         plan: planOf(body.one_visit),
         discountCode: body.discount_code ?? null,
@@ -293,7 +359,8 @@ export function registerConsultations(app: App): void {
         launchAlert: body.launch_alert,
         turnstileToken: body.turnstile_token,
         attribution: body.attribution ?? {},
-        invite: await rememberedInvite(c, body.invite_code),
+        invite: await rememberedInvite(c, body),
+        toldNotice: TOLD_NOTICES.book,
         source: "site_waitlist",
       });
       if (!listed.ok) return listed;

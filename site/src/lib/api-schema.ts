@@ -94,6 +94,65 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/availability/public": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The days and windows the booking form can book, open or full. Cacheable for a minute. */
+        get: {
+            parameters: {
+                query: {
+                    /** @description A six-digit Indian pincode. */
+                    pincode: string;
+                    /** @description The consultation alone, or the consultation and fit in one visit. */
+                    plan: "consultation" | "one_visit";
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Each day's three windows */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OpenWindows"];
+                    };
+                };
+                /** @description invalid_request: fields names the pincode or the plan */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_bookable: the pincode is not served */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/consultation": {
         parameters: {
             query?: never;
@@ -136,8 +195,13 @@ export interface paths {
                             referrer?: string;
                             landing_path?: string;
                         };
-                        /** @description The code of an invite this browser opened in the last 30 days. One we do not have, or not shaped like a code, is ignored: the booking goes ahead without an invite. */
+                        /** @description The code of an invite this browser opened in the last 30 days. One sent without invite_told, one we do not have, or one not shaped like a code, is ignored: the booking goes ahead without an invite. */
                         invite_code?: string;
+                        /**
+                         * @description true: beside the invite, the form said that whoever sent it is told when the friend is fitted, and offered to go on without it. The attribution records it.
+                         * @enum {boolean}
+                         */
+                        invite_told?: true;
                         /** Format: date */
                         date: string;
                         /** @enum {string} */
@@ -269,8 +333,13 @@ export interface paths {
                             referrer?: string;
                             landing_path?: string;
                         };
-                        /** @description The code of an invite this browser opened in the last 30 days. One we do not have, or not shaped like a code, is ignored: the booking goes ahead without an invite. */
+                        /** @description The code of an invite this browser opened in the last 30 days. One sent without invite_told, one we do not have, or one not shaped like a code, is ignored: the booking goes ahead without an invite. */
                         invite_code?: string;
+                        /**
+                         * @description true: beside the invite, the form said that whoever sent it is told when the friend is fitted, and offered to go on without it. The attribution records it.
+                         * @enum {boolean}
+                         */
+                        invite_told?: true;
                         /**
                          * @description "You may contact me about this request." Required.
                          * @enum {boolean}
@@ -511,6 +580,11 @@ export interface paths {
                         name: string;
                         mobile: string;
                         turnstile_token: string;
+                        /**
+                         * @description true: the form said that whoever sent the invite is told when the friend is fitted. The attribution records it; the invite applies either way.
+                         * @enum {boolean}
+                         */
+                        invite_told?: true;
                         /** @description A six-digit Indian pincode. */
                         pincode: string;
                         /** Format: date */
@@ -627,6 +701,11 @@ export interface paths {
                         name: string;
                         mobile: string;
                         turnstile_token: string;
+                        /**
+                         * @description true: the form said that whoever sent the invite is told when the friend is fitted. The attribution records it; the invite applies either way.
+                         * @enum {boolean}
+                         */
+                        invite_told?: true;
                         /** @description A six-digit Indian pincode. */
                         pincode: string;
                         /**
@@ -1653,6 +1732,21 @@ export interface components {
             name: string;
             minutes: number;
             price: components["schemas"]["Price"];
+        };
+        OpenWindows: {
+            /** @enum {string} */
+            plan: "consultation" | "one_visit";
+            /** @description The days the form offers: 14, from tomorrow in India. */
+            days: {
+                /** Format: date */
+                date: string;
+                /** @description true where booking that window now would be taken; false where it is full. */
+                windows: {
+                    morning: boolean;
+                    afternoon: boolean;
+                    evening: boolean;
+                };
+            }[];
         };
         Consultation: {
             /**

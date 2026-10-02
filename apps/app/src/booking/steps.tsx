@@ -23,15 +23,13 @@ import { AddressForm } from "../profile/AddressForm.tsx";
 import type { PayMethod } from "./checkout.ts";
 import { CodeBox } from "./CodeBox.tsx";
 import { consentLines } from "./consents.ts";
+import { isFull, offeredFullLine, windowNote, type Day } from "./days.ts";
 import styles from "./booking.module.css";
-
-type Day = Availability["days"][number];
 
 /** The id every step's heading carries, which names the sheet (BookingSheet.tsx). */
 export const TITLE_ID = "booking-title";
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
-const isFull = (day: Day) => day.windows.every((window) => window.with === null);
 
 /** Whole minutes and seconds: 9:42. */
 const minutesAndSeconds = (seconds: number) =>
@@ -192,22 +190,34 @@ export function ServiceStep(props: {
   );
 }
 
+/** Later days, up to the last a visit may be booked on: asking for them, and whether that failed. */
+interface LaterDays {
+  readonly busy: boolean;
+  readonly failed: boolean;
+  readonly onShow: () => void;
+}
+
 /**
- * Board C2: fourteen days, full ones shown but not chosen. The days are one group of native radio
- * buttons, drawn as the design's squares: one tab stop, and the arrow keys move between the days.
- * `before`: the steps the sheet took before the date.
+ * Board C2: fourteen days, full ones shown but not chosen, and later ones added beneath them on asking. The days are
+ * one group of native radio buttons, drawn as the design's squares: one tab stop, and the arrow keys move between the
+ * days. `before`: the steps the sheet took before the date. `offered`: the day the visit is offered on.
  */
 export function DateStep(props: {
   before: number;
-  days: Day[];
+  days: readonly Day[];
+  offered: string | null;
   chosen: string | null;
+  /** Null when no later day may be booked. */
+  later: LaterDays | null;
   onChoose: (date: string) => void;
   onNext: () => void;
 }) {
   const copy = booking.date;
+  const fullLine = offeredFullLine(props.days, props.offered, props.chosen);
   return (
     <>
       <Heading title={copy.title} step={stepOf(1, props.before)} />
+      {fullLine !== null && <p className={styles.why}>{fullLine}</p>}
       <div className={styles.strip} role="radiogroup" aria-labelledby={TITLE_ID}>
         {props.days.map((day) => {
           const full = isFull(day);
@@ -245,6 +255,23 @@ export function DateStep(props: {
           {copy.full}
         </span>
       </div>
+      {props.later !== null && (
+        <Button
+          variant="outline"
+          size="control"
+          className={styles.secondary}
+          disabled={props.later.busy}
+          busy={props.later.busy}
+          onClick={props.later.onShow}
+        >
+          {copy.later}
+        </Button>
+      )}
+      {props.later?.failed === true && (
+        <p className={styles.problem} role="alert">
+          {copy.laterFailed}
+        </p>
+      )}
       <Button
         variant="primary"
         size="action"
@@ -258,7 +285,10 @@ export function DateStep(props: {
   );
 }
 
-/** Board C3: the day's three windows, and whether the regular technician is free. */
+/**
+ * Board C3: the day's windows the visit can start in, and who would come: the regular technician by name, or another
+ * where the client has a regular one. A client who has none is told nothing of who.
+ */
 export function WindowStep(props: {
   before: number;
   day: Day;
@@ -273,36 +303,33 @@ export function WindowStep(props: {
   const regularName = props.regular === null ? null : firstName(props.regular.name);
   const chosen = props.day.windows.find((each) => each.window === props.chosen);
 
-  const noteFor = (who: Day["windows"][number]["with"]) => {
-    if (who === null) return copy.full;
-    if (who === "regular" && regularName !== null) return copy.regularFree(regularName);
-    return copy.another;
-  };
-
   return (
     <>
       <Heading title={copy.title} step={stepOf(2, props.before)} />
       <p className={styles.dayLine}>{weekdayDate(props.day.date)}</p>
       <div className={styles.windows} role="radiogroup" aria-labelledby={TITLE_ID}>
-        {props.day.windows.map(({ window, with: who }) => (
-          <label key={window} className={styles.window}>
-            <input
-              className={styles.radio}
-              type="radio"
-              name="booking-window"
-              checked={window === props.chosen}
-              disabled={who === null}
-              onChange={() => {
-                props.onChoose(window);
-              }}
-            />
-            <span>
-              <span className={styles.windowName}>{WINDOW_NAMES[window]}</span>
-              <span className={styles.windowTime}>{WINDOW_HOURS[window]}</span>
-            </span>
-            <span className={styles.windowNote}>{noteFor(who)}</span>
-          </label>
-        ))}
+        {props.day.windows.map(({ window, with: who }) => {
+          const note = windowNote(who, regularName);
+          return (
+            <label key={window} className={styles.window}>
+              <input
+                className={styles.radio}
+                type="radio"
+                name="booking-window"
+                checked={window === props.chosen}
+                disabled={who === null}
+                onChange={() => {
+                  props.onChoose(window);
+                }}
+              />
+              <span>
+                <span className={styles.windowName}>{WINDOW_NAMES[window]}</span>
+                <span className={styles.windowTime}>{WINDOW_HOURS[window]}</span>
+              </span>
+              {note !== null && <span className={styles.windowNote}>{note}</span>}
+            </label>
+          );
+        })}
       </div>
       {props.regular !== null && regularName !== null && chosen !== undefined && (
         <div className={styles.regular}>
