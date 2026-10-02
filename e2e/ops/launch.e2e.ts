@@ -95,5 +95,5 @@ test("says where the message's name for the area comes from, and leads there", a
   await open(page, { [LAUNCH_BANDRA]: launchRoute(PREVIEW, LAUNCHED) });
   await page.getByRole("button", { name: "Mark 400050 live, Bandra W" }).click();
   await page.getByRole("link", { name: "Change the name" }).click();
-  await expect(page).toHaveURL(/\/settings\/area$/);
+  await expect(page).toHaveURL(/\/service-area$/);
 });

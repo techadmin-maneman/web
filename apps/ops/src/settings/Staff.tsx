@@ -1,4 +1,4 @@
-// Settings · Staff: who may use the console and for what, whether that is enforced yet, and the service tokens let
+// Admin · Staff: who may use the console and for what, whether that is enforced yet, and the service tokens let
 // in. No board draws it, so it is laid out as the other Settings panels are. The API narrows the list to the places
 // its viewer may see, and refuses a change beyond their own.
 

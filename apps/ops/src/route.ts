@@ -8,7 +8,8 @@
 //   /clients/:id/:tab       a client's page, a tab at a time
 //   /settings/:tab          the rules, blackout days, consumables and the job sheet
 //
-// Anything else, "/" included, is Tasks, where the console opens.
+// Anything else, "/" included, is where the console opens: Tasks, or for a
+// person who may not open Tasks, the first section they may.
 
 import { clients, settings, shell } from "./content.ts";
 import type { Department } from "./settings/grants.ts";
@@ -16,7 +17,7 @@ import type { Department } from "./settings/grants.ts";
 /** The router the apps share (packages/ui/router.tsx): the console's pages take it from here. */
 export { followsHere, go, redirect, usePath, type Click } from "@maneman/ui/router";
 
-export interface Section {
+interface SectionShape {
   readonly page: string;
   readonly path: string;
   readonly department: Department;
@@ -46,9 +47,11 @@ export const SECTIONS = [
   { page: "service-area", path: "/service-area", department: "growth", reads: "GET /api/service-area" },
   { page: "settings", path: "/settings", department: "admin", reads: "GET /api/settings" },
   { page: "staff", path: "/staff", department: "admin", reads: "GET /api/staff" },
-] as const satisfies readonly Section[];
+] as const satisfies readonly SectionShape[];
 
-export type Page = (typeof SECTIONS)[number]["page"];
+export type Section = (typeof SECTIONS)[number];
+export type Page = Section["page"];
+export type SectionPath = Section["path"];
 
 /** A section that is one page, with nothing beneath it. */
 export type PlainPage = Exclude<Page, "clients" | "settings">;
@@ -98,16 +101,19 @@ const settingsTabOf = (named: string | undefined): SettingsTab =>
 
 const isPlain = (page: Page): page is PlainPage => page !== "clients" && page !== "settings";
 
-export function routeOf(asked: string): Route {
+/** The page a path names, or null for a path the console has no page at. */
+export function knownRoute(asked: string): Route | null {
   const path = movedTo(asked) ?? asked;
   const client = CLIENT_PATH.exec(path);
   if (client !== null) return { page: "clients", clientId: client[1] ?? null, tab: clientTabOf(client[2]) };
   const setting = SETTINGS_PATH.exec(path);
   if (setting !== null) return { page: "settings", tab: settingsTabOf(setting[1]) };
   const section = SECTIONS.find((each) => each.path === path);
-  if (section === undefined || !isPlain(section.page)) return TASKS;
+  if (section === undefined || !isPlain(section.page)) return null;
   return { page: section.page };
 }
+
+export const routeOf = (path: string): Route => knownRoute(path) ?? TASKS;
 
 export const settingsPath = (tab: SettingsTab): string => (tab === "rules" ? "/settings" : `/settings/${tab}`);
 
@@ -116,6 +122,33 @@ export function sectionOf(page: Page): Section {
   const section = SECTIONS.find((each) => each.page === page);
   if (section === undefined) throw new Error(`no section has the page ${page}`);
   return section;
+}
+
+/**
+ * The calls that go ahead for the person signed in, as "GET /api/tasks" (GET /api/whoami's may_call); null until the
+ * API has said, when every section is shown and the API still refuses what it must.
+ */
+export type MayCall = ReadonlySet<string> | null;
+
+/** Whether the person may open a page: whether the call it opens with goes ahead for them. */
+export const mayOpen = (mayCall: MayCall, page: Page): boolean =>
+  mayCall === null || mayCall.has(sectionOf(page).reads);
+
+/** Where the console opens: the first section in the navigation the person may open, Tasks for most. */
+export function landingPath(mayCall: MayCall): SectionPath | null {
+  const first = SECTIONS.find((section) => mayOpen(mayCall, section.page));
+  return first === undefined ? null : first.path;
+}
+
+/**
+ * The path to show in place of the one asked for: a moved page's new one, or where the console opens for a path it
+ * has no page at, once the API has said what the person may open. Null to leave the path as it is.
+ */
+export function redirectOf(path: string, mayCall: MayCall): string | null {
+  const moved = movedTo(path);
+  if (moved !== null) return moved;
+  if (knownRoute(path) !== null || mayCall === null) return null;
+  return landingPath(mayCall);
 }
 
 /** Each section's name and each Settings tab's, from content.ts; typed here, so one left unnamed fails the build. */

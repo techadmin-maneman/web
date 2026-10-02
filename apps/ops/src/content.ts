@@ -25,10 +25,7 @@ export const shell = {
    */
   title: "Console",
   departments: DEPARTMENT_NAMES,
-  /**
-   * PLACEHOLDER where no board draws it: each section's name in the navigation. The design draws eight, flat; the
-   * owner had them grouped by department (docs/decisions/0109-console-departments-and-access.md).
-   */
+  /** PLACEHOLDER where no board draws it: each section's name in the navigation, which the design draws flat. */
   sections: {
     tasks: "Tasks",
     dispatch: "Dispatch",
@@ -53,7 +50,7 @@ export const shell = {
   /** PLACEHOLDER: the first thing the keyboard reaches, which jumps past the navigation. */
   skip: "Skip to content",
   /** PLACEHOLDER: a page opened by its address that the person's access does not reach. */
-  closed: "Your access does not include this page. An Admin can give it to you on the Staff page.",
+  closed: "Your access does not reach this page. An Admin can add it on the Staff page.",
   /** The browser tab's title: "Blackout days · Settings · Mane Man operations". */
   documentTitle: (parts: readonly string[]) => [...parts, "Mane Man operations"].join(" · "),
   /**
@@ -929,7 +926,7 @@ export const waitlist = {
     date: "Launch date",
     dateHint: "The day a technician starts coming. A held referral invite lapses twelve months from it.",
     /** PLACEHOLDER: where the area's name in the message comes from, and where it is changed (OPS-13). */
-    named: "The message names the area as Settings has it.",
+    named: "The message uses the area's name as Service area sets it.",
     rename: "Change the name",
     /**
      * What each of them gets. The words are launch_alert_v1's in
