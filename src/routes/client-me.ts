@@ -106,8 +106,13 @@ export const MeSchema = z
               .string()
               .nullable()
               .openapi({ description: "The service of its kind it offers, as booking.next's (ADR 0085)." }),
+            due_on: z.iso.date().openapi({
+              description:
+                "India's day it fell or falls due: a service's from the last visit and the cadence, a replacement's " +
+                "the piece's own. Before `date`, it has passed.",
+            }),
             date: z.iso.date().openapi({
-              description: "India's day it falls due: the last visit's day and the cadence; tomorrow once passed.",
+              description: "India's day it is offered on: the day it falls due, or tomorrow once that has passed.",
             }),
             window: z
               .union([z.enum(BOOKING_WINDOWS), z.null()])
@@ -193,7 +198,14 @@ export const MeSchema = z
                       "offered, else its kind's first in the console's order (ADR 0085). Null while its kind offers " +
                       "none, as a first fit does before ops offer a hair system: it cannot be booked yet.",
                   }),
-                date: z.iso.date().openapi({ description: "India's day it is offered on." }),
+                due_on: z.iso.date().openapi({
+                  description:
+                    "India's day it fell or falls due: a service's from the last visit and the cadence, a " +
+                    "replacement's the piece's own, a first fit's from the consultation and the lead time.",
+                }),
+                date: z.iso.date().openapi({
+                  description: "India's day it is offered on: the day it falls due, or tomorrow once that has passed.",
+                }),
                 window: z.union([z.enum(BOOKING_WINDOWS), z.null()]),
               })
               .strict(),
@@ -204,7 +216,7 @@ export const MeSchema = z
               "What the app offers next, with nothing booked, for the booking sheet to open with: the first fit " +
               "once the consultation is done, from the lead time and in the window the site's request asked for; " +
               "or the next service on its due day, in the last visit's window, or the replacement where the piece " +
-              "falls due first (ADR 0086).",
+              "falls due first, on the earlier of its own due day and the service's (ADR 0086).",
           }),
       })
       .strict(),
