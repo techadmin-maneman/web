@@ -41,6 +41,7 @@
     "test/node/app-next-visit-words.test.ts",
     "test/node/app-referral-card.test.ts",
     "test/node/app-route.test.ts",
+    "test/node/ops-access.test.ts",
     "test/node/ops-dispatch-job.test.ts",
     "test/node/ops-route.test.ts",
     "test/node/ops-staff-grants.test.ts",
