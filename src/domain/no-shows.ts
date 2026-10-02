@@ -24,8 +24,11 @@ import {
   canCloseAsNoShow,
   chargedCredit,
   chargedRefund,
+  DISPUTE_WINDOW_DAYS,
+  disputeUntil,
   isDisputable,
   noShowWaitEnds,
+  withinDisputeWindow,
   type DisputeRuling,
   type DisputeState,
   type NoShowDecision,
@@ -224,6 +227,7 @@ interface NoteRow {
   credit_spent: number | null;
   dispute_ruling: DisputeRuling | null;
   dispute_id: string | null;
+  dispute_until: string | null;
 }
 
 function chargeTaken(row: NoteRow): NoShowNote["charge"] {
@@ -236,7 +240,7 @@ function disputeOf(row: NoteRow): DisputeState | null {
   return row.dispute_ruling ?? "open";
 }
 
-function noteOf(row: NoteRow): NoShowNote {
+function noteOf(row: NoteRow, now: Date): NoShowNote {
   const charge = chargeTaken(row);
   const dispute = disputeOf(row);
   return {
@@ -245,25 +249,32 @@ function noteOf(row: NoteRow): NoShowNote {
     charge,
     dispute,
     disputable:
-      charge !== null && dispute === null && isDisputable({ kept: charge.kept, creditSpent: charge.credit_spent }),
+      charge !== null &&
+      dispute === null &&
+      isDisputable({ kept: charge.kept, creditSpent: charge.credit_spent }) &&
+      withinDisputeWindow(row.dispute_until, now),
   };
 }
 
-/** The no-show note of each of these visits that has one: its latest case. */
-export async function noShowNotes(db: D1Database, appointmentIds: readonly string[]): Promise<Map<string, NoShowNote>> {
+/** The no-show note of each of these visits that has one: its latest case, as it stands at `now`. */
+export async function noShowNotes(
+  db: D1Database,
+  appointmentIds: readonly string[],
+  now: Date,
+): Promise<Map<string, NoShowNote>> {
   if (appointmentIds.length === 0) return new Map();
   const placeholders = appointmentIds.map((_, index) => `?${String(index + 1)}`).join(", ");
   const { results } = await db
     .prepare(
       `SELECT n.appointment_id, n.decision, n.wait_started_at, COALESCE(n.closed_at, n.wait_ends_at) AS ended_at,
-         n.charge, ${CHARGE_TAKEN}, d.id AS dispute_id, d.ruling AS dispute_ruling
+         n.charge, ${CHARGE_TAKEN}, d.id AS dispute_id, d.ruling AS dispute_ruling, n.dispute_until
        FROM no_show_cases n LEFT JOIN no_show_disputes d ON d.case_id = n.id
        WHERE n.appointment_id IN (${placeholders}) ORDER BY n.created_at`,
     )
     .bind(...appointmentIds)
     .all<NoteRow>();
   // Oldest first, so a later case of the same visit is the one kept.
-  return new Map(results.map((row) => [row.appointment_id, noteOf(row)]));
+  return new Map(results.map((row) => [row.appointment_id, noteOf(row, now)]));
 }
 
 /** The cases ops have still to rule on, oldest first, then the decided ones. */
@@ -389,6 +400,8 @@ export async function decideNoShow(
     /** What a waiver gives back of the payment and the credit, as ops set it (src/policy/no-show.ts). */
     waiver: Waiver;
     terms: TermsInputs;
+    /** Days the client may dispute a charge, as ops set them; the charge keeps its own deadline. */
+    disputeWindowDays?: number;
   },
 ): Promise<Ruled | null> {
   const open = await db
@@ -420,7 +433,8 @@ export async function decideNoShow(
     db
       .prepare(
         `UPDATE no_show_cases SET decision = ?2, decided_by = ?3, decided_at = ?4, decision_reason = ?5,
-           waiver_payment = ?6, waiver_credit = ?7, charge = ?8, kept_amount = ?9, refund_amount = ?10, ruling_id = ?11
+           waiver_payment = ?6, waiver_credit = ?7, charge = ?8, kept_amount = ?9, refund_amount = ?10, ruling_id = ?11,
+           dispute_until = ?12
          WHERE id = ?1 AND decision = 'undecided'`,
       )
       .bind(
@@ -435,6 +449,7 @@ export async function decideNoShow(
         charged?.kept ?? null,
         charged?.refund ?? null,
         ruled.rulingId,
+        charged === null ? null : disputeUntil(input.now, input.disputeWindowDays ?? DISPUTE_WINDOW_DAYS).toISOString(),
       ),
     auditStatementIfRuled(db, input.audit, input.now, ruled),
     ...(message === null ? [] : [message.statement]),

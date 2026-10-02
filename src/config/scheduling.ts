@@ -1,8 +1,9 @@
 // A working day, as booking and dispatch count it (docs/decisions/0035-window-slot-map.md).
 // The client books one of three windows; the dispatch board has four slots a
 // day. Slots are counted in halves, so a replacement's slot and a half is a
-// whole number. The times are placeholders until the owner rules
-// (docs/open-points.md, item 53).
+// whole number. The times here are the defaults: ops set others in the console,
+// each from a day nothing is booked or bookable on (src/policy/slot-times.ts;
+// docs/decisions/0102-window-times.md). Which half-slots each window has stays here.
 
 import type { VisitType } from "./visit-types.ts";
 
@@ -10,13 +11,18 @@ export const SLOTS_PER_DAY = 4;
 /** Half-slots in a day. */
 export const UNITS_PER_DAY = SLOTS_PER_DAY * 2;
 
-/** When each half-slot starts, in India's time. */
+/** When each half-slot starts, in India's time, until ops set other times. */
 export const UNIT_STARTS = ["09:00", "10:30", "12:00", "13:00", "14:00", "15:00", "16:00", "18:00"] as const;
+/** When the day ends, and the evening with it, until ops set another time. */
+export const DAY_END = "20:00";
 
 export const BOOKING_WINDOWS = ["morning", "afternoon", "evening"] as const;
 export type BookingWindow = (typeof BOOKING_WINDOWS)[number];
 
-/** Each window's span, in India's time. */
+/**
+ * Each window's span under the default times, which the site prints until it reads the day's hours from the API.
+ * mm-api reads a day's windows from the times in force on it (windowTimesOf, src/policy/slot-times.ts).
+ */
 export const WINDOW_TIMES: Readonly<Record<BookingWindow, { start: string; end: string }>> = {
   morning: { start: "09:00", end: "12:00" },
   afternoon: { start: "12:00", end: "16:00" },

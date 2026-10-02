@@ -265,6 +265,7 @@ describe("the public form, with a client's number, while that client's hold is p
           window: "evening",
           consent: true,
           address: {
+            flat: "Flat 402",
             line1: "Palm Grove Society",
             line2: null,
             locality: "Sector 65",
@@ -411,7 +412,7 @@ describe("FSM refuses five times (W10)", () => {
     };
     const second = {
       id: "m2",
-      body: { lead_id: "77777777-7777-4777-8777-777777777777", request_id: "r2" },
+      body: { erase_person_id: "nobody-erased", request_id: "r2" },
       attempts: 1,
       ack: vi.fn(),
       retry: vi.fn(),
@@ -597,6 +598,7 @@ describe("where a visit booked from the site is (LIFE-04, CLI-14)", () => {
           window: "morning",
           consent: true,
           address: {
+            flat: "Flat 402",
             line1: "Palm Grove Society",
             line2: null,
             locality: "Sector 65",

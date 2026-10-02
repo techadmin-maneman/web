@@ -27,7 +27,7 @@
 
 import type { BookingWindow } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
-import { addDays, indiaDate, indiaInstant, indiaTime } from "../lib/india-time.ts";
+import { addDays, indiaDate, indiaInstant } from "../lib/india-time.ts";
 import { takesProfile } from "../policy/hair-profile.ts";
 import { cardStepsFor, type CardStep, type JobEventKind } from "../policy/in-job-steps.ts";
 import { jobDay, paymentBadge, unlocked, unlocksAt, type JobDay, type PaymentBadge } from "../policy/job-visibility.ts";
@@ -35,6 +35,7 @@ import { slotsFor } from "../policy/dispatch.ts";
 import { noShowWaitEnds, type Waits } from "../policy/no-show.ts";
 import { paidAtTheVisit, type OneVisitState } from "../policy/one-visit.ts";
 import { unitsFor } from "../policy/visit-length.ts";
+import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
 import { latestArrival } from "./check-ins.ts";
 import type { AppointmentStatus } from "./fsm-mirror.ts";
 import { latestProfile, profileTakenAt, type HairProfile } from "./hair-profiles.ts";
@@ -42,7 +43,6 @@ import { EVIDENCE_MESSAGE } from "./no-shows.ts";
 import { piecesOf, type Piece } from "./pieces.ts";
 import { bookedMinutes } from "./scheduling.ts";
 import { offeredServices } from "./services.ts";
-import { windowAt } from "../policy/windows.ts";
 import { firstNameOf } from "../lib/names.ts";
 
 /** The statuses a job the technician still has work on can be in. */
@@ -236,7 +236,8 @@ export async function jobsOn(
       indiaInstant(addDays(date, 1), "00:00").toISOString(),
     )
     .all<JobRow>();
-  return results.filter(worthShowing).map((row) => summaryOf(row, now, unlockHour));
+  const schedule = await loadSlotSchedule(db);
+  return results.filter(worthShowing).map((row) => summaryOf(row, now, unlockHour, schedule));
 }
 
 /** One job of this technician's, with everything the day-before unlock allows. */
@@ -246,7 +247,7 @@ export async function jobDetail(
 ): Promise<JobDetail | null> {
   const row = await db.prepare(`${SELECT_JOB} AND a.id = ?2`).bind(options.technicianId, options.jobId).first<JobRow>();
   if (row === null) return null;
-  const summary = summaryOf(row, options.now, options.unlockHour);
+  const summary = summaryOf(row, options.now, options.unlockHour, await loadSlotSchedule(db));
   const type = row.type ?? "service";
   const locked = {
     ...summary,
@@ -352,7 +353,8 @@ export async function lastVisitPhoto(
   options: { technicianId: string; jobId: string; now: Date; unlockHour: number },
 ): Promise<{ key: string; contentType: string } | null> {
   const row = await db.prepare(`${SELECT_JOB} AND a.id = ?2`).bind(options.technicianId, options.jobId).first<JobRow>();
-  if (row === null || !summaryOf(row, options.now, options.unlockHour).unlocked) return null;
+  if (row === null || !summaryOf(row, options.now, options.unlockHour, await loadSlotSchedule(db)).unlocked)
+    return null;
   const visit = await lastVisit(db, row);
   if (visit === null) return null;
   const photo = await db
@@ -438,7 +440,7 @@ function worthShowing(row: JobRow): boolean {
   return (LIVE as readonly string[]).includes(row.status) || row.status === "completed" || row.status === "terminated";
 }
 
-function summaryOf(row: JobRow, now: Date, unlockHour: number): JobSummary {
+function summaryOf(row: JobRow, now: Date, unlockHour: number, schedule: SlotSchedule): JobSummary {
   const starts = new Date(row.window_start);
   const open = unlocked(starts, now, unlockHour);
   return {
@@ -447,7 +449,7 @@ function summaryOf(row: JobRow, now: Date, unlockHour: number): JobSummary {
     date: indiaDate(starts),
     starts_at: starts.toISOString(),
     ends_at: row.window_end,
-    window_label: windowAt(indiaTime(starts)),
+    window_label: schedule.at(starts).window,
     type: row.type,
     one_visit: row.one_visit !== null,
     // "only time, type and sector": the area, never the street, whether the job is unlocked or not. The visit's

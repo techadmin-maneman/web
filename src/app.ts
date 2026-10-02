@@ -44,6 +44,7 @@ import { registerOpsTasks } from "./routes/ops-tasks.ts";
 import { registerOpsTechnicians } from "./routes/ops-technicians.ts";
 import { registerOpsServices } from "./routes/ops-services.ts";
 import { registerOpsSettings } from "./routes/ops-settings.ts";
+import { registerOpsSlotTimes } from "./routes/ops-slot-times.ts";
 import { registerOpsStock } from "./routes/ops-stock.ts";
 import { registerOpsWaitlist } from "./routes/ops-waitlist.ts";
 import { registerConsultations } from "./routes/consultations.ts";
@@ -134,6 +135,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsPayments,
     registerOpsTechnicians,
     registerOpsSettings,
+    // The day's half-slot times, from a day nothing is booked or bookable on (docs/decisions/0102-window-times.md).
+    registerOpsSlotTimes,
     // The days no visit is offered (docs/decisions/0088-every-policy-in-the-console.md).
     registerOpsBlackouts,
     // The services clients book (docs/decisions/0085-services-ops-can-edit.md).

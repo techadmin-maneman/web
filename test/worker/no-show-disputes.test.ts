@@ -12,7 +12,7 @@ import { ruleOnDispute } from "../../src/domain/no-show-disputes.ts";
 import { composeVisitMessage } from "../../src/domain/visit-messages.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import type { DisputeRuling } from "../../src/policy/no-show.ts";
-import { createStubPayments } from "../../src/providers/payments.ts";
+import { createStubPayments, PaymentUnanswered } from "../../src/providers/payments.ts";
 import {
   appFor,
   captureLogs,
@@ -191,6 +191,20 @@ describe("POST /api/visits/:id/dispute", () => {
     expect((await dispute("I was home")).status).toBe(201);
   });
 
+  it("neither offers nor takes a dispute once the charge's days for it are past", async () => {
+    await env.DB.prepare("UPDATE no_show_cases SET dispute_until = ?1").bind("2026-09-21T06:29:59.000Z").run();
+    expect(await noShowNote()).toMatchObject({ decision: "charged", disputable: false });
+    const answer = await dispute("I was home all afternoon");
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "dispute_window_closed" } });
+  });
+
+  it("still takes one on its last day", async () => {
+    await env.DB.prepare("UPDATE no_show_cases SET dispute_until = ?1").bind("2026-09-21T06:30:01.000Z").run();
+    expect(await noShowNote()).toMatchObject({ disputable: true });
+    expect((await dispute("I was home all afternoon")).status).toBe(201);
+  });
+
   it("refuses a no-show that was waived, or not ruled on, and another client's visit", async () => {
     const otherCookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: OTHER, deviceLabel: null, now: NOW })}`;
     expect((await dispute("Not mine", client, otherCookie)).status).toBe(404);
@@ -349,6 +363,24 @@ describe("POST /api/no-shows/disputes/:id/ruling", () => {
       key: `no_show_refund_failed:refunded on dispute:${VISIT}`,
     });
     expect(await env.DB.prepare("SELECT ruling FROM no_show_disputes").first()).toEqual({ ruling: "refunded" });
+  });
+
+  it("tells ops to look in Razorpay before refunding by hand, when Razorpay will not say it refunded", async () => {
+    const id = await raised();
+    const silent = () => Promise.reject(new PaymentUnanswered("refund", new Error("The operation timed out.")));
+    const deps = fakeDependencies({ payments: { ...createStubPayments(), refund: silent } });
+
+    const answer = await rule(appFor("local", deps, {}, "ops"), id, {
+      ruling: "refunded",
+      reason: "The bell was broken",
+    });
+
+    expect(answer.status).toBe(200);
+    expect(deps.alerts).toEqual([
+      `Razorpay did not answer the refund of Rs. 4000 for visit ${VISIT}, a no-show refunded on dispute (payment ` +
+        "pay_visit), so it may have been made. Look at the payment in Razorpay, and refund it by hand only if no " +
+        `refund of Rs. 4000 is there. http://ops.localhost:4323/clients/${PERSON}`,
+    ]);
   });
 
   // Once the ruling has committed, a retry answers "ruled already" and the client's message says the money is on its

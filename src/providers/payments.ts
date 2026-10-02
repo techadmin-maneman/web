@@ -8,6 +8,13 @@ import type { Logger } from "../log.ts";
 import { ProviderError } from "./provider-error.ts";
 import { createRazorpay } from "./razorpay.ts";
 
+/** A refund, asked for under a receipt of ours that no other refund of the payment carries. */
+export interface RefundAsked {
+  readonly amount: number;
+  readonly notes: Record<string, string>;
+  readonly receipt: string;
+}
+
 /** A payment link to make: what it asks for, our reference for it, and whom Razorpay texts it to. */
 export interface PaymentLinkRequest {
   readonly amount: number;
@@ -22,8 +29,11 @@ export interface PaymentLinkRequest {
 export interface PaymentsProvider {
   /** An order for Checkout to pay; its notes come back on the payment. */
   createOrder(order: { amount: number; receipt: string; notes: Record<string, string> }): Promise<{ id: string }>;
-  /** Gives a payment back, in full or part, to where it came from. */
-  refund(paymentId: string, refund: { amount: number; notes: Record<string, string> }): Promise<{ id: string }>;
+  /**
+   * Gives a payment back, in full or part, to where it came from; answers the refund's ID, or null where a refund
+   * under the same receipt was made before. Throws PaymentUnanswered where it cannot say whether it was made.
+   */
+  refund(paymentId: string, refund: RefundAsked): Promise<{ id: string | null }>;
   /**
    * A payment link, which Razorpay texts to the customer itself. Refused for a reference Razorpay already holds a
    * link under.
@@ -37,6 +47,17 @@ export interface PaymentsProvider {
 export interface MadeLink {
   readonly id: string;
   readonly shortUrl: string;
+}
+
+/**
+ * The payment provider gave no answer it could be held to, a timeout or its own failure, so a refund may or may not
+ * have been made. Asking again under the same receipt is safe: a second refund under it is refused.
+ */
+export class PaymentUnanswered extends Error {
+  constructor(step: string, cause: unknown) {
+    super(`the payment provider did not answer the ${step}`, { cause });
+    this.name = "PaymentUnanswered";
+  }
 }
 
 export function createPaymentsProvider(
@@ -60,8 +81,9 @@ export interface StubPayments extends PaymentsProvider {
 }
 
 /**
- * Local and test stand-in: takes no money and reaches nothing. Its IDs are unique, as a new stub answers each request,
- * and, as Razorpay does, it refuses a second link under a reference it already holds one under.
+ * Local and test stand-in: takes no money and reaches nothing. Its IDs are unique, as a new stub answers each request.
+ * As Razorpay does, it makes no second refund of a payment under the same receipt, and refuses a second link under a
+ * reference it already holds one under.
  */
 export function createStubPayments(): StubPayments {
   const made = {
@@ -69,6 +91,7 @@ export function createStubPayments(): StubPayments {
     refunds: [] as { paymentId: string; amount: number }[],
     links: [] as PaymentLinkRequest[],
   };
+  const receipts = new Set<string>();
   const linksByReference = new Map<string, MadeLink>();
   return {
     made,
@@ -77,6 +100,9 @@ export function createStubPayments(): StubPayments {
       return Promise.resolve({ id: `order_stub_${crypto.randomUUID()}` });
     },
     refund: (paymentId, refund) => {
+      const receipt = `${paymentId} ${refund.receipt}`;
+      if (receipts.has(receipt)) return Promise.resolve({ id: null });
+      receipts.add(receipt);
       made.refunds.push({ paymentId, amount: refund.amount });
       return Promise.resolve({ id: `rfnd_stub_${crypto.randomUUID()}` });
     },

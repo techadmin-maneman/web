@@ -55,6 +55,8 @@ import {
   type Moving,
 } from "../domain/scheduling.ts";
 import { bookableService, serviceOf, type PricedService } from "../domain/services.ts";
+import { loadSlotSchedule } from "../domain/slot-times.ts";
+import { windowTimesOf } from "../policy/slot-times.ts";
 import {
   changeableVisit,
   changeTerms,
@@ -118,6 +120,10 @@ const AvailabilitySchema = z
             z
               .object({
                 window: z.enum(BOOKING_WINDOWS),
+                start: z
+                  .string()
+                  .openapi({ description: "When the window starts that day, in India's time, as 12:00." }),
+                end: z.string().openapi({ description: "When it ends that day: ops set the day's times from a date." }),
                 with: z
                   .union([z.enum(["regular", "another"]), z.null()])
                   .openapi({ description: "Who would come: the regular technician, another, or nobody (full)." }),
@@ -450,10 +456,11 @@ export function registerClientBooking(app: App): void {
     // A move in place keeps the visit's technician; a charged move books a new visit with anyone.
     const moving = move === null || move.terms.move.cost === "charged" ? null : move.moving;
     const until = offered?.retired_date ?? null;
-    const [days, regularId, technicians] = await Promise.all([
+    const [days, regularId, technicians, schedule] = await Promise.all([
       availability(db, session.subjectId, { minutes: service.minutes, until }, start, BOOKING_DAYS, now, moving),
       moving === null ? regularTechnician(db, session.subjectId) : moving.technicianId,
       activeTechnicians(db),
+      loadSlotSchedule(db),
     ]);
     // A free or late-fee move costs the same whichever day it goes to; a new visit costs that day's price.
     const priceOn = async (date: string): Promise<Price> => {
@@ -461,12 +468,13 @@ export function registerClientBooking(app: App): void {
       return (await priceOf(db, type, date, service.tier)) ?? price;
     };
     const regular = technicians.find((technician) => technician.id === regularId);
-    // A day before the bookable days open, or past the last, is offered to nobody.
-    const strip = days.map((day) =>
-      day.date < range.opens || day.date > range.last
-        ? { ...day, windows: day.windows.map((each) => ({ ...each, with: null })) }
-        : day,
-    );
+    // A day before the bookable days open, or past the last, is offered to nobody. Each window says its hours that day.
+    const strip = days.map((day) => {
+      const hours = windowTimesOf(schedule.on(day.date));
+      const shut = day.date < range.opens || day.date > range.last;
+      const windows = day.windows.map((each) => ({ ...each, ...hours[each.window], with: shut ? null : each.with }));
+      return { ...day, windows };
+    });
     return c.json(
       {
         type,

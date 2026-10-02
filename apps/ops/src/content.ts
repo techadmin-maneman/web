@@ -313,6 +313,8 @@ export const referrals = {
       monthly_cap: "Monthly cap exceeded",
       // PLACEHOLDER: the board draws the other three rules, not this one.
       same_mobile: "Same mobile number",
+      // PLACEHOLDER: an invite ops attached after the friend's first fit (the owner's ruling of 30 September 2026).
+      attached_after_fit: "Attached after the first fit",
     },
     approve: "Approve",
     reject: "Reject",
@@ -451,7 +453,7 @@ export const clients = {
       pincode: "Pincode",
       accessNotes: "Access notes (optional)",
       accessHint: "A gate code, or where to park. The technician sees it the day before the visit.",
-      invalid: "Fill in the building or street, the area, the city and a six-digit pincode.",
+      invalid: "Fill in the flat or house number, the building or street, the area, the city and a six-digit pincode.",
       save: "Save their address",
       saving: "Saving…",
       cancel: "Cancel",
@@ -569,6 +571,10 @@ export const clients = {
         refund_refused: (amount: string, payment: string) =>
           `Razorpay refused to refund ${amount} (payment ${payment}), so nothing has gone back and the booking ` +
           "still waits. Try again, or refund it in Razorpay's dashboard and then press Refund it here.",
+        // Not refund it in the dashboard: the refund may have been made, and only ours cannot be made twice.
+        refund_unanswered: (amount: string, payment: string) =>
+          `Razorpay did not say whether it refunded ${amount} (payment ${payment}), so it may have, and the booking ` +
+          "still waits. Press Refund it again: Razorpay will not refund it twice.",
       },
       fsm: {
         cancelled: (workOrder: string) => `Its work order ${workOrder} is cancelled in FSM.`,
@@ -671,8 +677,6 @@ export const clients = {
       errors: {
         unknown_invite: "No invite has that code. Check it with the client. Nothing was attached.",
         own_invite: "That is this client's own invite. Nothing was attached.",
-        already_fitted:
-          "They have had their first fit, so no invite can be attached now. Whether one may be is the owner's to rule.",
         invalid_request: "Type the code as letters and digits, and say why. Nothing was attached.",
         not_found: "This client is no longer on our records. Nothing was attached.",
         offline: "You are offline. Connect, then try again.",

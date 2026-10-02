@@ -20,9 +20,13 @@ export const CRM_ORG_HAS_REFERRAL_FIELDS = false as boolean;
 /** Lead_Source's value for a lead who came through a friend's invite. */
 export const REFERRAL_LEAD_SOURCE = "Referral";
 
-/** Booked_Window's values: the three windows a Phase 2 booking asks for, with their hours. */
+/**
+ * Booked_Window's values: the three windows a Phase 2 booking asks for, by name. Not their hours, which ops set in the
+ * console from a date (docs/decisions/0102-window-times.md): a pick-list's values are fixed in the org by
+ * scripts/setup-crm.ts, and Zoho refuses a value it does not hold.
+ */
 export const BOOKED_WINDOW_NAMES: Readonly<Record<BookingWindow, string>> = {
-  morning: "Morning, 9 am to 12 pm",
-  afternoon: "Afternoon, 12 to 4 pm",
-  evening: "Evening, 4 to 8 pm",
+  morning: "Morning",
+  afternoon: "Afternoon",
+  evening: "Evening",
 };

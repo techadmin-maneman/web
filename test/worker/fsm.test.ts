@@ -11,7 +11,6 @@ import {
   fsmAttachmentRecord,
   fsmContactRecord,
   fsmInvoiceRecord,
-  fsmRequestRecord,
   fsmUserRecord,
   fsmWorkOrderRecord,
 } from "./fsm-fixtures.ts";
@@ -472,13 +471,11 @@ describe("FSM: booking a visit, once", () => {
     );
   });
 
-  it("gives a new contact's service address the pincode the booking gave, and stamps a Request with the lead", async () => {
+  it("gives a new contact's service address the pincode the booking gave", async () => {
     const { fsm: provider, calls } = fsm({
       [ZOHO_TOKEN_URL]: () => tokenIssued(),
       [`${FSM_API}/Territories`]: territories,
-      [`${FSM_API}/Contacts/contact-1`]: addresses,
       [`${FSM_API}/Contacts`]: () => json({ data: { Contacts: [{ id: "contact-9" }] } }, 201),
-      [`${FSM_API}/Requests`]: () => json({ data: { Requests: [{ id: "req-9" }] } }, 201),
     });
     await provider.createContact({
       firstName: "Rohit",
@@ -490,14 +487,6 @@ describe("FSM: booking a visit, once", () => {
       street: { street1: "House 12", street2: "Tower C, Sector 65" },
       state: "Haryana",
       stateCode: "HR",
-    });
-    await provider.createRequest({
-      contactId: "contact-1",
-      summary: "Consultation for Rohit Malhotra",
-      serviceId: "item-consult",
-      preferredDate: null,
-      preferenceNote: "",
-      reference: "lead-1",
     });
     const posts = calls
       .filter((call) => call.method === "POST" && call.url.startsWith(FSM_API))
@@ -514,7 +503,6 @@ describe("FSM: booking a visit, once", () => {
         },
       ],
     });
-    expect(posts[1]).toMatchObject({ data: [{ Summary: "Consultation for Rohit Malhotra (lead lead-1)" }] });
   });
 });
 
@@ -547,6 +535,57 @@ describe("FSM: a client's changed number or address", () => {
         },
       ],
     });
+  });
+});
+
+// Tried on the org on 30 September 2026 (docs/decisions/fsm-trial.md, "Text FSM keeps").
+describe("FSM: a client's note on an appointment", () => {
+  const NOTES = `${FSM_API}/Service_Appointments/ap-1/Notes`;
+  const writes = (calls: { method: string; url: string; body: string }[]) =>
+    calls
+      .filter((call) => call.method !== "GET" && call.url.startsWith(FSM_API))
+      .map((call) => ({ method: call.method, url: call.url, body: JSON.parse(call.body) as unknown }));
+
+  it("adds the note, titled as the client's, where the appointment has none", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [NOTES]: (call) =>
+        call.method === "GET" ? new Response(null, { status: 204 }) : json({ data: [{ code: "SUCCESS" }] }, 201),
+    });
+    await provider.writeClientNote("ap-1", "Ring twice");
+    expect(writes(calls)).toEqual([
+      { method: "POST", url: NOTES, body: { data: [{ Note_Title: "From the client", Note_Content: "Ring twice" }] } },
+    ]);
+  });
+
+  it("changes the client's note in place, and leaves ops' own notes alone", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      // Matched by prefix, so the note's own path comes before the list's.
+      [`${NOTES}/note-1`]: () => json({ data: [{ code: "SUCCESS" }] }),
+      [NOTES]: () =>
+        json({
+          data: [
+            { id: "note-ops", Note_Title: null, Note_Content: "Called the client" },
+            { id: "note-1", Note_Title: "From the client", Note_Content: "Ring twice" },
+          ],
+        }),
+    });
+    await provider.writeClientNote("ap-1", "The lift is out");
+    await provider.writeClientNote("ap-1", "");
+    expect(writes(calls)).toEqual([
+      { method: "PUT", url: `${NOTES}/note-1`, body: { data: [{ Note_Content: "The lift is out" }] } },
+      { method: "PUT", url: `${NOTES}/note-1`, body: { data: [{ Note_Content: "" }] } },
+    ]);
+  });
+
+  it("writes nothing to blank a note that was never written", async () => {
+    const { fsm: provider, calls } = fsm({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [NOTES]: () => new Response(null, { status: 204 }),
+    });
+    await provider.writeClientNote("ap-1", "");
+    expect(writes(calls)).toEqual([]);
   });
 });
 
@@ -755,51 +794,6 @@ describe("FSM: billing a finished job", () => {
     await expect(provider.invoiceWorkOrder("wo-1")).rejects.toThrow(
       "Zoho 400 2031: One or more line items are already invoiced",
     );
-  });
-});
-
-describe("FSM: what the client asked for", () => {
-  it("follows the work order's Request to the preference our booking wrote on it", async () => {
-    const { fsm: provider, calls } = fsm({
-      [ZOHO_TOKEN_URL]: () => tokenIssued(),
-      [`${FSM_API}/Work_Orders/wo-1`]: () =>
-        json({ data: [fsmWorkOrderRecord({ Request: { name: "REQ1", id: "req-1" } })] }),
-      [`${FSM_API}/Requests/req-1`]: () => json({ data: [fsmRequestRecord()] }),
-    });
-
-    expect(await provider.requestPreference("wo-1")).toEqual({
-      requestId: "req-1",
-      preferredDate: "2026-09-25",
-      preferenceNote: "Morning, 9 am to 12 pm",
-    });
-    // Two reads and no write: nothing about the visit is changed by asking.
-    expect(calls.filter((call) => call.method !== "GET" && !call.url.includes("oauth"))).toEqual([]);
-  });
-
-  it("answers nothing for a work order our own booking made, which names no Request", async () => {
-    const { fsm: provider, calls } = fsm({
-      [ZOHO_TOKEN_URL]: () => tokenIssued(),
-      [`${FSM_API}/Work_Orders/wo-1`]: () => json({ data: [fsmWorkOrderRecord()] }),
-    });
-
-    expect(await provider.requestPreference("wo-1")).toBeNull();
-    // The Request is never read, because there is none to read.
-    expect(calls.some((call) => call.url.includes("/Requests/"))).toBe(false);
-  });
-
-  it("answers the Request with no preference on it as one with nothing asked for", async () => {
-    const { fsm: provider } = fsm({
-      [ZOHO_TOKEN_URL]: () => tokenIssued(),
-      [`${FSM_API}/Work_Orders/wo-1`]: () =>
-        json({ data: [fsmWorkOrderRecord({ Request: { name: "REQ1", id: "req-1" } })] }),
-      [`${FSM_API}/Requests/req-1`]: () => json({ data: [fsmRequestRecord({ Preference: null })] }),
-    });
-
-    expect(await provider.requestPreference("wo-1")).toEqual({
-      requestId: "req-1",
-      preferredDate: null,
-      preferenceNote: null,
-    });
   });
 });
 

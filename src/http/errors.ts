@@ -85,15 +85,15 @@ export const ERROR_CODES = [
   "last_of_kind",
   "service_retired",
   // An invite ops attach to a client (docs/decisions/0089-an-invite-is-not-lost.md): no invite has the code; it is the
-  // client's own; the client came with one already; or they have had their first fit.
+  // client's own; or the client came with one already.
   "unknown_invite",
   "own_invite",
   "already_invited",
-  "already_fitted",
   // A client's dispute of a no-show's charge (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md): the charge
-  // was disputed already, or took nothing to give back.
+  // was disputed already, took nothing to give back, or is past the days it could be disputed.
   "already_disputed",
   "not_disputable",
+  "dispute_window_closed",
   // Discount codes (docs/decisions/0108-discount-codes.md): the code entered does not apply, which is all its enterer
   // is told; the booking carries a code already; the booking's price is settled, so no code goes on or comes off; or
   // ops typed a code that already exists.
@@ -101,6 +101,9 @@ export const ERROR_CODES = [
   "already_discounted",
   "price_settled",
   "code_exists",
+  // A change of the day's times from a day a client can still book, or a visit is booked on or after
+  // (docs/decisions/0102-window-times.md).
+  "slot_times_too_soon",
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 

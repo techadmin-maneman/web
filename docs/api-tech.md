@@ -979,13 +979,14 @@ Request body:
             "unknown_invite",
             "own_invite",
             "already_invited",
-            "already_fitted",
             "already_disputed",
             "not_disputable",
+            "dispute_window_closed",
             "code_not_applicable",
             "already_discounted",
             "price_settled",
-            "code_exists"
+            "code_exists",
+            "slot_times_too_soon"
           ]
         },
         "request_id": {

@@ -169,6 +169,85 @@ describe("POST /api/clients/:id/referral", () => {
     ]);
   });
 
+  // The owner ruled on 30 September 2026 (docs/open-points.md, item 157): ops may attach an invite after the friend's
+  // first fit, and the grant waits for their review, as one the fraud rules hold.
+  describe("for a client already fitted", () => {
+    async function fitted() {
+      await env.DB.batch([
+        env.DB.prepare(
+          `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, fsm_modified_at,
+             synced_at)
+           VALUES ('fit-1', 'fsm-fit-1', ?1, 'first_fit', 'completed', 'Completed', '2026-09-10T03:30:00.000Z', ?2, ?2)`,
+        ).bind(FRIEND, NOW.toISOString()),
+        env.DB.prepare(
+          "INSERT INTO visits (id, appointment_id, outcome, updated_at) VALUES ('visit-1', 'fit-1', 'done', ?1)",
+        ).bind(NOW.toISOString()),
+      ]);
+    }
+
+    it("attaches the invite held for ops' review, audited and sent on, and lists it with the others held", async () => {
+      await fitted();
+      const answer = await attach({ code: "RM4K7P", reason: REASON });
+      expect(answer.status).toBe(201);
+      expect(await answer.json()).toMatchObject({ code: "RM4K7P", grant: "held" });
+      const row = await env.DB.prepare(
+        "SELECT grant_state, fraud_signals, first_fit_appointment_id FROM referral_attributions",
+      ).first();
+      expect(row).toEqual({
+        grant_state: "held",
+        fraud_signals: '["attached_after_fit"]',
+        first_fit_appointment_id: "fit-1",
+      });
+      expect((await audits()).results).toHaveLength(1);
+      expect(crm.sent).toHaveLength(1);
+
+      const held = await request(ops, "/api/referrals/held");
+      expect(await held.json()).toMatchObject({ held: [{ signals: ["attached_after_fit"] }] });
+    });
+
+    async function approve() {
+      const id = (await env.DB.prepare("SELECT id FROM referral_attributions").first<{ id: string }>())?.id ?? "";
+      return request(ops, `/api/referrals/${id}/decision`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Origin: "https://maneman.test" },
+        body: JSON.stringify({ decision: "approve", reason: "Confirmed with Rohit on the phone" }),
+      });
+    }
+
+    const credits = async () =>
+      (
+        await env.DB.prepare(
+          "SELECT person_id, SUM(visits) AS visits FROM credit_ledger WHERE kind = 'grant' GROUP BY person_id ORDER BY person_id",
+        ).all()
+      ).results;
+
+    it("grants both sides their credits once ops approve it", async () => {
+      await fitted();
+      await attach({ code: "RM4K7P", reason: REASON });
+      expect((await approve()).status).toBe(200);
+      expect(await credits()).toEqual([
+        { person_id: REFERRER, visits: 3 },
+        { person_id: FRIEND, visits: 3 },
+      ]);
+    });
+
+    // It keeps no reward as it is attached, so it takes the one in force when ops approve it (ADR 0107).
+    it("grants the reward ops have set by the time they approve it", async () => {
+      await fitted();
+      await attach({ code: "RM4K7P", reason: REASON });
+      await env.DB.prepare(
+        "INSERT OR REPLACE INTO ops_settings (name, value, set_by, set_at) VALUES ('referral_reward', ?1, 'ops@localhost', ?2)",
+      )
+        .bind(JSON.stringify({ referrer_visits: 2, friend_visits: 4, valid_days: 60 }), NOW.toISOString())
+        .run();
+      expect((await approve()).status).toBe(200);
+      expect(await credits()).toEqual([
+        { person_id: REFERRER, visits: 2 },
+        { person_id: FRIEND, visits: 4 },
+      ]);
+    });
+  });
+
   describe("refuses, in words ops read, writing nothing", () => {
     async function nothingWritten() {
       expect((await audits()).results).toEqual([]);
@@ -205,22 +284,6 @@ describe("POST /api/clients/:id/referral", () => {
       expect((await attributions()).results).toMatchObject([{ code: "VSAB23" }]);
       expect((await audits()).results).toHaveLength(1);
       expect(crm.sent).toHaveLength(1);
-    });
-
-    // Whether ops may attach one after the first fit is the owner's to rule (docs/open-points.md, item 157).
-    it("a client already fitted", async () => {
-      await env.DB.prepare(
-        `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, fsm_modified_at,
-           synced_at)
-         VALUES ('fit-1', 'fsm-fit-1', ?1, 'first_fit', 'completed', 'Completed', '2026-09-10T03:30:00.000Z', ?2, ?2)`,
-      )
-        .bind(FRIEND, NOW.toISOString())
-        .run();
-      const answer = await attach({ code: "RM4K7P", reason: REASON });
-      expect(answer.status).toBe(409);
-      expect(await answer.json()).toMatchObject({ error: { code: "already_fitted" } });
-      expect((await attributions()).results).toEqual([]);
-      await nothingWritten();
     });
 
     it("an attach without its reason, or with something that is not a code", async () => {

@@ -477,7 +477,7 @@ Request body:
 }
 ```
 
-**409**: own_invite: the client is the code's own referrer; already_invited: the client came with an invite already, which the answer names; already_fitted: the client has had their first fit
+**409**: own_invite: the client is the code's own referrer; already_invited: the client came with an invite already, which the answer names
 
 ```json
 {
@@ -975,7 +975,8 @@ Referral grants held for review, oldest first
                 "shared_address",
                 "shared_upi",
                 "monthly_cap",
-                "same_mobile"
+                "same_mobile",
+                "attached_after_fit"
               ]
             }
           },
@@ -2423,6 +2424,80 @@ Request body:
 }
 ```
 
+### GET /api/slot-times
+
+The day's half-slot times in force, every change set, and the earliest a change may apply from
+
+**200**: The times
+
+```json
+{
+  "$ref": "#/components/schemas/SlotTimes"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/slot-times
+
+A change of the day's half-slot times, from a day nothing is booked or bookable on
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/SlotTimesSet"
+}
+```
+
+**201**: Set, from its day
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "applies_from": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "applies_from"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request: fields names what is wrong with the times: not_eight_starts, not_a_time, not_in_order or outside_the_day (06:00 to 22:00)
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: slot_times_too_soon: the day is before the earliest a change may apply from, which GET says
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/blackouts
 
 Every day from today on that no visit is offered, with the visits still booked on each
@@ -3590,13 +3665,14 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
             "unknown_invite",
             "own_invite",
             "already_invited",
-            "already_fitted",
             "already_disputed",
             "not_disputable",
+            "dispute_window_closed",
             "code_not_applicable",
             "already_discounted",
             "price_settled",
-            "code_exists"
+            "code_exists",
+            "slot_times_too_soon"
           ]
         },
         "request_id": {
@@ -5652,9 +5728,10 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
         "refunded_before",
         "nothing_paid",
         "booked",
-        "refund_refused"
+        "refund_refused",
+        "refund_unanswered"
       ],
-      "description": "refunded in full now; refunded_before, by an earlier press or in Razorpay's dashboard; nothing_paid, as a free or credit booking; booked, by a try that landed meanwhile, so nothing is refunded; refund_refused by Razorpay, so nothing has gone back and the booking still waits."
+      "description": "refunded in full now; refunded_before, by an earlier press or in Razorpay's dashboard; nothing_paid, as a free or credit booking; booked, by a try that landed meanwhile, so nothing is refunded; refund_refused by Razorpay, so nothing has gone back and the booking still waits; refund_unanswered, Razorpay would not say whether it refunded, so it may have, and the booking still waits: pressing again cannot refund twice."
     },
     "payment_id": {
       "anyOf": [
@@ -5754,13 +5831,14 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
             "unknown_invite",
             "own_invite",
             "already_invited",
-            "already_fitted",
             "already_disputed",
             "not_disputable",
+            "dispute_window_closed",
             "code_not_applicable",
             "already_discounted",
             "price_settled",
-            "code_exists"
+            "code_exists",
+            "slot_times_too_soon"
           ]
         },
         "request_id": {
@@ -5975,10 +6053,8 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
       "description": "The building as chosen from the suggestions; null if typed."
     },
     "flat": {
-      "type": [
-        "string",
-        "null"
-      ],
+      "type": "string",
+      "minLength": 1,
       "maxLength": 40
     },
     "floor": {
@@ -6024,7 +6100,8 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
     "locality",
     "city",
     "pincode",
-    "access_notes"
+    "access_notes",
+    "flat"
   ],
   "additionalProperties": false
 }
@@ -9120,6 +9197,7 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
         "piece_cycle_days",
         "payment_hold",
         "fsm_retry",
+        "dispute_window_days",
         "technician_work",
         "booking_days",
         "referral_reward"
@@ -9292,6 +9370,7 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
         "piece_cycle_days",
         "payment_hold",
         "fsm_retry",
+        "dispute_window_days",
         "technician_work",
         "booking_days",
         "referral_reward"
@@ -9703,6 +9782,230 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
   },
   "required": [
     "changes"
+  ],
+  "additionalProperties": false
+}
+```
+
+### SlotTimes
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "in_force": {
+      "type": "object",
+      "properties": {
+        "applies_from": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Null for the times in code."
+        },
+        "unit_starts": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^\\d\\d:\\d\\d$",
+            "description": "In India's time, as 09:00."
+          },
+          "description": "When each of the day's eight half-slots starts, in order."
+        },
+        "day_end": {
+          "type": "string",
+          "pattern": "^\\d\\d:\\d\\d$",
+          "description": "When the day, and the evening with it, ends."
+        },
+        "windows": {
+          "$ref": "#/components/schemas/WindowTimes"
+        }
+      },
+      "required": [
+        "applies_from",
+        "unit_starts",
+        "day_end",
+        "windows"
+      ],
+      "additionalProperties": false
+    },
+    "changes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/SlotTimesChange"
+      },
+      "description": "Every change set, the earliest first; none are removed."
+    },
+    "earliest": {
+      "type": "string",
+      "format": "date",
+      "description": "The first day a change may apply from: after the last a client can book, the last visit booked and the last change."
+    }
+  },
+  "required": [
+    "in_force",
+    "changes",
+    "earliest"
+  ],
+  "additionalProperties": false
+}
+```
+
+### WindowTimes
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "morning": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "type": "string",
+          "pattern": "^\\d\\d:\\d\\d$",
+          "description": "In India's time, as 09:00."
+        },
+        "end": {
+          "type": "string",
+          "pattern": "^\\d\\d:\\d\\d$",
+          "description": "In India's time, as 09:00."
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "additionalProperties": false
+    },
+    "afternoon": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "type": "string",
+          "pattern": "^\\d\\d:\\d\\d$",
+          "description": "In India's time, as 09:00."
+        },
+        "end": {
+          "type": "string",
+          "pattern": "^\\d\\d:\\d\\d$",
+          "description": "In India's time, as 09:00."
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "additionalProperties": false
+    },
+    "evening": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "type": "string",
+          "pattern": "^\\d\\d:\\d\\d$",
+          "description": "In India's time, as 09:00."
+        },
+        "end": {
+          "type": "string",
+          "pattern": "^\\d\\d:\\d\\d$",
+          "description": "In India's time, as 09:00."
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "morning",
+    "afternoon",
+    "evening"
+  ],
+  "additionalProperties": false,
+  "description": "Each window's span, read from the half-slots it has."
+}
+```
+
+### SlotTimesChange
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "applies_from": {
+      "type": "string",
+      "format": "date"
+    },
+    "unit_starts": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^\\d\\d:\\d\\d$",
+        "description": "In India's time, as 09:00."
+      },
+      "description": "When each of the day's eight half-slots starts, in order."
+    },
+    "day_end": {
+      "type": "string",
+      "pattern": "^\\d\\d:\\d\\d$",
+      "description": "When the day, and the evening with it, ends."
+    },
+    "set_by": {
+      "type": "string",
+      "description": "The member of staff's Access e-mail."
+    },
+    "set_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "applies_from",
+    "unit_starts",
+    "day_end",
+    "set_by",
+    "set_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+### SlotTimesSet
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "applies_from": {
+      "type": "string",
+      "format": "date"
+    },
+    "unit_starts": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^\\d\\d:\\d\\d$",
+        "description": "In India's time, as 09:00."
+      },
+      "description": "When each of the day's eight half-slots starts, in order."
+    },
+    "day_end": {
+      "type": "string",
+      "pattern": "^\\d\\d:\\d\\d$",
+      "description": "When the day, and the evening with it, ends."
+    }
+  },
+  "required": [
+    "applies_from",
+    "unit_starts",
+    "day_end"
   ],
   "additionalProperties": false
 }

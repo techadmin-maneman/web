@@ -53,7 +53,8 @@ test("takes an address and its access notes, and shows them", async ({ page }) =
   await loggedIn(page);
   await expect(page.getByText("No address yet.")).toBeVisible();
   await page.getByRole("button", { name: "Add your address and access notes" }).click();
-  await page.getByLabel("Building, society or street").fill("House 4417, Tower C");
+  await page.getByLabel("Flat or house number").fill("House 4417");
+  await page.getByLabel("Building, society or street").fill("Tower C");
   await page.getByLabel("Sector or area").fill("Sector 65");
   await page.getByLabel("City").fill("Gurgaon");
   await page.getByLabel("Pincode").fill("122018");
@@ -149,23 +150,42 @@ test("an address can still be typed when the search gives nothing", async ({ pag
 test("refuses an address without a six-digit pincode", async ({ page }) => {
   await loggedIn(page);
   await page.getByRole("button", { name: "Add your address and access notes" }).click();
-  await page.getByLabel("Building, society or street").fill("House 1");
+  await page.getByLabel("Flat or house number").fill("House 1");
+  await page.getByLabel("Building, society or street").fill("Palm Grove Society");
   await page.getByLabel("Sector or area").fill("Sector 65");
   await page.getByLabel("City").fill("Gurgaon");
   await page.getByLabel("Pincode").fill("1220");
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("alert")).toHaveText(
-    "Fill in the building or street, the area, the city and a six-digit pincode.",
+    "Fill in the flat or house number, the building or street, the area, the city and a six-digit pincode.",
   );
   // The field that is wrong is marked, named by the error, and given the focus (A11Y-16).
   const pincode = page.getByLabel("Pincode");
   await expect(pincode).toHaveAttribute("aria-invalid", "true");
   await expect(pincode).toHaveAccessibleDescription(
-    "Fill in the building or street, the area, the city and a six-digit pincode.",
+    "Fill in the flat or house number, the building or street, the area, the city and a six-digit pincode.",
   );
   await expect(pincode).toBeFocused();
   await expect(page.getByLabel("City")).not.toHaveAttribute("aria-invalid", "true");
   await expect(page.getByLabel("City")).toHaveAttribute("required", "");
+});
+
+// The owner's ruling of 27 September 2026: FSM's work order must name the door (docs/open-points.md, item 45).
+test("refuses an address without the flat or house number, and says so on the flat", async ({ page }) => {
+  await loggedIn(page);
+  await page.getByRole("button", { name: "Add your address and access notes" }).click();
+  await page.getByLabel("Building, society or street").fill("Palm Grove Society");
+  await page.getByLabel("Sector or area").fill("Sector 65");
+  await page.getByLabel("City").fill("Gurgaon");
+  await page.getByLabel("Pincode").fill("122018");
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("alert")).toHaveText(
+    "Fill in the flat or house number, the building or street, the area, the city and a six-digit pincode.",
+  );
+  const flat = page.getByLabel("Flat or house number");
+  await expect(flat).toHaveAttribute("aria-invalid", "true");
+  await expect(flat).toHaveAttribute("required", "");
+  await expect(flat).toBeFocused();
 });
 
 // Saved, the form closes on its own heading, so the client lands where they were rather than mid-page (CLI-30).
@@ -213,7 +233,8 @@ test("says an address was given to us on the phone, so the client can check it",
 test("lands on where we come once the address is saved", async ({ page }) => {
   await loggedIn(page);
   await page.getByRole("button", { name: "Add your address and access notes" }).click();
-  await page.getByLabel("Building, society or street").fill("House 4417");
+  await page.getByLabel("Flat or house number").fill("House 4417");
+  await page.getByLabel("Building, society or street").fill("Palm Grove Society");
   await page.getByLabel("Sector or area").fill("Sector 65");
   await page.getByLabel("City").fill("Gurgaon");
   await page.getByLabel("Pincode").fill("122018");

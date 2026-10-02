@@ -11,7 +11,6 @@
 //   GET /fsm/v1/files?file_id=                         the file itself
 //   GET /fsm/v1/Territories                            { data: [territory] }
 //   POST /fsm/v1/Contacts                              { data: { Contacts: [{ id }] } }
-//   POST /fsm/v1/Requests                              { data: { Requests: [{ id }], Service_Line_Items: [...] } }
 //   POST /fsm/v1/Work_Orders                           { data: { Work_Orders: [{ id }], Service_Line_Items: [{ id }] } }
 //   POST /fsm/v1/Service_Appointments                  { data: [{ id }] }
 //   PUT  /fsm/v1/Service_Appointments/{id}/actions/reschedule    new times; a plain edit changes nothing
@@ -27,21 +26,21 @@
 //   PUT  /fsm/v1/Service_Appointments/{id}/actions/blueprint     start, close or terminate, with its mandatory note
 //   POST /fsm/v1/files                                           multipart; answers { data: { file_id } }
 //   POST /fsm/v1/Service_Appointments/{id}/Attachments           attaches an uploaded file
-//   GET  /fsm/v1/Work_Orders/{id}                                { data: [work order with its service lines, and the
-//        Request it was converted from] }
-//   GET  /fsm/v1/Requests/{id}                                   { data: [request with its Preference subform] }
+//   GET  /fsm/v1/Work_Orders/{id}                                { data: [work order with its service lines] }
 //   POST /fsm/v1/Invoices                                        the work order, the line IDs and $finance_data;
 //        answers Books' ID under data.Invoices[0].finance_data.Invoice_Id
 //   GET  /fsm/v1/Invoices/{id}                                   { data: [invoice with ZBilling_InvoiceId] }
+//   GET  /fsm/v1/Service_Appointments/{id}/Notes                 { data: [note with Note_Title] }, or 204
+//   POST /fsm/v1/Service_Appointments/{id}/Notes                 { data: [{ Note_Title, Note_Content }] }
+//   PUT  /fsm/v1/Service_Appointments/{id}/Notes/{note id}       { data: [{ Note_Content }] }; no call deletes one
 //
-// Three reads have not yet been tried on the org, and nothing waits on them
+// Two reads have not yet been tried on the org, and nothing waits on them
 // (docs/decisions/0068-a-paid-hold-is-kept.md): a contact looked for by mobile
-// number before one is added, and the latest Requests and work orders, read as
-// the latest appointments are, when a retry looks for one whose answer was
-// lost. A look that fails is logged, and the record is made as before.
+// number before one is added, and the latest work orders, read as the latest
+// appointments are, when a retry looks for one whose answer was lost. A look
+// that fails is logged, and the record is made as before.
 //
 //   GET  /fsm/v1/Contacts/search?criteria=(Mobile:equals:…)      { data: [contact] }, or 204
-//   GET  /fsm/v1/Requests?page=1&per_page=&sort_by=Modified_Time&sort_order=desc
 //   GET  /fsm/v1/Work_Orders?page=1&per_page=&sort_by=Modified_Time&sort_order=desc
 //
 // Nor have the writes that keep FSM's catalogue in line with the console's services and the price book, which run
@@ -86,7 +85,6 @@ import type {
   NewFsmAppointment,
   NewFsmAsset,
   NewFsmContact,
-  NewFsmRequest,
   NewFsmWorkOrder,
 } from "./fsm.ts";
 import { createZohoRequester, ZohoError, zohoErrorFrom, type ZohoRequesterDependencies } from "./zoho-http.ts";
@@ -134,14 +132,10 @@ const WorkOrderBilling = z.object({
 /** An invoice as FSM holds it: the link, and Books' ID for the document itself. */
 const Invoice = z.object({ id: z.string(), ZBilling_InvoiceId: z.string().nullish() });
 
-/** The Request a work order was converted from; absent on one our own booking made outright. */
-const WorkOrderRequest = z.object({ Request: Reference });
+const Note = z.object({ id: z.string(), Note_Title: z.string().nullish() });
 
-/** What the client asked for, as `createRequest` wrote it. */
-const RequestPreference = z.object({
-  id: z.string(),
-  Preference: z.object({ Preferred_Date_1: z.string().nullish(), Preference_Note: z.string().nullish() }).nullish(),
-});
+/** The title the client's note carries in FSM, so it is found again among the notes ops write. */
+export const CLIENT_NOTE_TITLE = "From the client";
 
 /** A raised invoice: FSM's new record, with Books' ID for it under finance_data. */
 const Raised = z.object({
@@ -223,7 +217,7 @@ const Summarised = z.object({ id: z.string(), Summary: z.string().nullish() });
 const LATEST = 50;
 
 /** The summary FSM keeps, with our reference at its end: "Service visit for Rohit Malhotra (booking 6f1c…)". */
-const stamped = (summary: string, kind: "booking" | "lead", reference: string) => `${summary} (${kind} ${reference})`;
+const stamped = (summary: string, kind: "booking", reference: string) => `${summary} (${kind} ${reference})`;
 
 const Attachment = z.object({
   id: z.string(),
@@ -540,38 +534,6 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDepe
       });
     },
 
-    async findRequest(reference) {
-      return findStamped("find_request", "Requests", `(lead ${reference})`);
-    },
-
-    // A Request and its line both need the contact's addresses by ID.
-    async createRequest(wanted: NewFsmRequest) {
-      const [contact] = records(await json("request_contact", `/Contacts/${wanted.contactId}`), "data", Addresses);
-      if (contact === undefined) throw new ZohoError(404, "NO_CONTACT", "the Request's contact is not in FSM");
-      const serviceAddress = { id: contact.Service_Address.id };
-      return create("create_request", "Requests", {
-        Summary: stamped(wanted.summary, "lead", wanted.reference),
-        Contact: wanted.contactId,
-        Service_Address: serviceAddress,
-        Billing_Address: { id: contact.Billing_Address.id },
-        Request_Origin: "Web",
-        Preference: {
-          ...(wanted.preferredDate === null ? {} : { Preferred_Date_1: wanted.preferredDate }),
-          Preference_Note: wanted.preferenceNote,
-        },
-        ...(wanted.preferredDate === null ? {} : { Due_Date: wanted.preferredDate }),
-        Service_Line_Items: [
-          {
-            Service: wanted.serviceId,
-            Quantity: 1,
-            Sequence: 1,
-            Contact: wanted.contactId,
-            Service_Address: serviceAddress,
-          },
-        ],
-      });
-    },
-
     async findWorkOrder(reference) {
       return findStamped("find_work_order", "Work_Orders", `(booking ${reference})`);
     },
@@ -775,27 +737,6 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDepe
       return { id: raised.id, booksInvoiceId: raised.finance_data.Invoice_Id, created: true, total };
     },
 
-    // Two reads, no write. The work order names the Request it was converted
-    // from, and the Request alone keeps the client's preference: FSM drops
-    // anything written to the same subform on an appointment (ADR 0063).
-    async requestPreference(workOrderId) {
-      const [order] = records(
-        await json("request_work_order", `/Work_Orders/${workOrderId}`),
-        "data",
-        WorkOrderRequest,
-      );
-      const requestId = order?.Request?.id;
-      if (requestId === undefined) return null;
-
-      const [asked] = records(await json("request_preference", `/Requests/${requestId}`), "data", RequestPreference);
-      if (asked === undefined) return null;
-      return {
-        requestId,
-        preferredDate: asked.Preference?.Preferred_Date_1 ?? null,
-        preferenceNote: asked.Preference?.Preference_Note ?? null,
-      };
-    },
-
     // The same write as the erasure's, tried on the org: the number, and the street through the
     // service address's ID. The city and pincode on that address have not yet been written this way.
     async updateContact(contactId, update: FsmContactUpdate) {
@@ -839,6 +780,27 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDepe
             },
           ],
         },
+      });
+    },
+
+    // Tried on the real org on 30 September 2026 (docs/decisions/fsm-trial.md, "Text FSM keeps"). Found by its
+    // title, so a write whose answer was lost is changed rather than made twice.
+    async writeClientNote(appointmentId, note) {
+      const path = `/Service_Appointments/${appointmentId}/Notes`;
+      const ours = records(await json("client_note_read", path), "data", Note).find(
+        (written) => written.Note_Title === CLIENT_NOTE_TITLE,
+      );
+      if (ours !== undefined) {
+        await request("client_note_change", `/fsm/v1${path}/${ours.id}`, {
+          method: "PUT",
+          body: { data: [{ Note_Content: note }] },
+        });
+        return;
+      }
+      if (note === "") return;
+      await request("client_note_add", `/fsm/v1${path}`, {
+        method: "POST",
+        body: { data: [{ Note_Title: CLIENT_NOTE_TITLE, Note_Content: note }] },
       });
     },
   };

@@ -41,7 +41,8 @@ import { redeemCredit } from "./credits.ts";
 import { itemForService } from "./fsm-catalogue.ts";
 import { fsmContactOf, type Place } from "./fsm-contacts.ts";
 import { toLinkAlert, toLinkAlertKey } from "./held-bookings.ts";
-import { heldMinutes, liveVisitOf, visitTimes } from "./scheduling.ts";
+import { askRefund, refundReceipt } from "./refunds.ts";
+import { heldVisitTimes, liveVisitOf } from "./scheduling.ts";
 import { visitPayment } from "./visit-changes.ts";
 import { visitMessage, type VisitMessageKind } from "./visit-messages.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
@@ -362,7 +363,7 @@ async function bookNewVisit(
   // FSM's webhook may have mirrored the appointment already; either way the visit is the one with its FSM ID. Its
   // tier is the hold's whatever the mirror read from its item, which may be its kind's where FSM had none of its own,
   // and it is a one visit exactly when its hold was, whatever the mirror took it for, since FSM's item does not say.
-  const { start, end } = visitTimes(hold.date, hold.start_unit, heldMinutes(hold));
+  const { start, end } = await heldVisitTimes(db, hold);
   const at = now.toISOString();
   const visitId = "(SELECT id FROM appointments WHERE fsm_id = ?1)";
   await db.batch([
@@ -495,7 +496,7 @@ async function appointmentFor(
   workOrder: WorkOrder,
   options: ConfirmOptions,
 ): Promise<string> {
-  const { start, end } = visitTimes(hold.date, hold.start_unit, heldMinutes(hold));
+  const { start, end } = await heldVisitTimes(db, hold);
   const madeBefore = workOrder.madeNow ? null : await fsm.workOrderAppointment(workOrder.id);
   const id =
     madeBefore ??
@@ -582,7 +583,7 @@ async function moveInPlace(
     await giveBack(db, payments, hold.id, now, "the visit could no longer be moved", options.alongside);
     return hold.amount > 0 ? "refunded" : "lapsed";
   }
-  const { start, end } = visitTimes(hold.date, hold.start_unit, heldMinutes(hold));
+  const { start, end } = await heldVisitTimes(db, hold);
   await fsm.rescheduleVisit(visit.fsm_id, { start: indiaIso(start), end: indiaIso(end) });
 
   const at = now.toISOString();
@@ -671,6 +672,7 @@ async function retireReplaced(
   }
   const payment = await visitPayment(db, old.id);
   const at = now.toISOString();
+  const nowStart = (await heldVisitTimes(db, hold)).start.toISOString();
   await db.batch([
     db
       .prepare("UPDATE appointments SET status = 'cancelled', fsm_status = 'Cancelled', synced_at = ?1 WHERE id = ?2")
@@ -686,7 +688,7 @@ async function retireReplaced(
         old.id,
         hold.person_id,
         old.window_start,
-        visitTimes(hold.date, hold.start_unit, heldMinutes(hold)).start.toISOString(),
+        nowStart,
         payment?.paid ?? 0,
         payment?.id ?? null,
         hold.id,
@@ -715,8 +717,24 @@ export class RefundRefused extends Error {
 }
 
 /**
+ * Razorpay did not say whether it refunded the payment, twice: the refund may have been made, and the hold still
+ * holds its time. Asking again is safe, under the hold's receipt (src/domain/refunds.ts).
+ */
+export class RefundUnanswered extends Error {
+  readonly paymentId: string;
+  readonly amount: number;
+
+  constructor(paymentId: string, amount: number, cause: unknown) {
+    super(`Razorpay did not answer the refund of ${paymentId}`, { cause });
+    this.paymentId = paymentId;
+    this.amount = amount;
+  }
+}
+
+/**
  * Lets a hold go, and refunds in full, once, any payment taken for it. Says what it did with the money; throws
- * RefundRefused, and keeps the hold, when Razorpay will not refund it. `alongside` is written in the same batch as
+ * RefundRefused, or RefundUnanswered, and keeps the hold, when Razorpay will not refund it or will not say whether it
+ * did. `alongside` is written in the same batch as
  * the hold is let go: ops' audit entry, and the client's message.
  */
 export async function giveBack(
@@ -773,13 +791,18 @@ async function refundOnce(
     .bind(now.toISOString(), holdId)
     .first();
   if (claimed === null) return { kind: "refunded_before", paymentId: payment.razorpay_payment_id };
-  try {
-    await payments.refund(payment.razorpay_payment_id, { amount: payment.amount, notes: { hold_id: holdId, reason } });
-  } catch (error) {
-    await db.prepare("UPDATE slot_holds SET refunded_at = NULL WHERE id = ?1").bind(holdId).run();
-    throw new RefundRefused(payment.razorpay_payment_id, payment.amount, error);
+  const asked = await askRefund(payments, payment.razorpay_payment_id, {
+    amount: payment.amount,
+    notes: { hold_id: holdId, reason },
+    receipt: refundReceipt({ kind: "hold", holdId }),
+  });
+  if (asked.kind === "refunded") {
+    return { kind: "refunded", paymentId: payment.razorpay_payment_id, amount: payment.amount };
   }
-  return { kind: "refunded", paymentId: payment.razorpay_payment_id, amount: payment.amount };
+  // Let go, so the refund can be asked for again: its receipt keeps Razorpay from making it twice.
+  await db.prepare("UPDATE slot_holds SET refunded_at = NULL WHERE id = ?1").bind(holdId).run();
+  if (asked.kind === "refused") throw new RefundRefused(payment.razorpay_payment_id, payment.amount, asked.error);
+  throw new RefundUnanswered(payment.razorpay_payment_id, payment.amount, asked.error);
 }
 
 /** What FSM held for a booking given up on. */
@@ -793,7 +816,9 @@ export type LeftInFsm =
 export interface GaveUp {
   /** Whose booking it was, for the console's link. */
   readonly personId: string;
-  readonly money: GivenBack | { readonly kind: "refund_refused"; readonly paymentId: string; readonly amount: number };
+  readonly money:
+    | GivenBack
+    | { readonly kind: "refund_refused" | "refund_unanswered"; readonly paymentId: string; readonly amount: number };
   readonly fsm: LeftInFsm;
 }
 
@@ -827,8 +852,18 @@ export async function giveUpOnBooking(
     return { personId, money, fsm: left };
   } catch (error) {
     await releaseLease(db, holdId);
-    if (!(error instanceof RefundRefused)) throw error;
-    return { personId, money: { kind: "refund_refused", paymentId: error.paymentId, amount: error.amount }, fsm: left };
+    if (error instanceof RefundRefused) {
+      return {
+        personId,
+        money: { kind: "refund_refused", paymentId: error.paymentId, amount: error.amount },
+        fsm: left,
+      };
+    }
+    if (error instanceof RefundUnanswered) {
+      const money = { kind: "refund_unanswered", paymentId: error.paymentId, amount: error.amount } as const;
+      return { personId, money, fsm: left };
+    }
+    throw error;
   }
 }
 

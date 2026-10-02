@@ -112,7 +112,9 @@ describe("GET /api/profile", () => {
 
 describe("PATCH /api/profile/address", () => {
   const address = {
-    line1: "House 4417, Tower C",
+    flat: "4417",
+    tower: "Tower C",
+    line1: "Palm Grove Society",
     line2: null,
     locality: "Sector 65",
     city: "Gurgaon",
@@ -122,16 +124,16 @@ describe("PATCH /api/profile/address", () => {
 
   it("saves the address and its access notes, keeping the old one as replaced", async () => {
     expect((await send(client, "PATCH", "/api/profile/address", address)).status).toBe(200);
-    expect((await send(client, "PATCH", "/api/profile/address", { ...address, line1: "House 12" })).status).toBe(200);
+    expect((await send(client, "PATCH", "/api/profile/address", { ...address, line1: "Silver Oaks" })).status).toBe(
+      200,
+    );
 
-    // An address given without the building search saves every new field null.
+    // An address given without the building search saves no building or Place ID, and a part left out as null.
     expect((await profile()).address).toEqual({
       ...address,
-      line1: "House 12",
+      line1: "Silver Oaks",
       building: null,
-      flat: null,
       floor: null,
-      tower: null,
       landmark: null,
       place_id: null,
     });
@@ -139,9 +141,21 @@ describe("PATCH /api/profile/address", () => {
       "SELECT line1, replaced_at IS NULL AS current FROM addresses ORDER BY created_at, rowid",
     ).all();
     expect(rows.results).toEqual([
-      { line1: "House 4417, Tower C", current: 0 },
-      { line1: "House 12", current: 1 },
+      { line1: "Palm Grove Society", current: 0 },
+      { line1: "Silver Oaks", current: 1 },
     ]);
+  });
+
+  // The owner's ruling of 27 September 2026 (docs/open-points.md, item 45): FSM's work order must name the door.
+  it("refuses an address without the flat or house number", async () => {
+    const { flat: _left, ...withoutFlat } = address;
+    for (const body of [withoutFlat, { ...address, flat: null }, { ...address, flat: "  " }]) {
+      const answer = await send(client, "PATCH", "/api/profile/address", body);
+      expect(answer.status, JSON.stringify(body)).toBe(400);
+      expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["flat"] } });
+    }
+    expect((await profile()).address).toBeNull();
+    expect(contactSyncs()).toEqual({ crm: [], fsm: [] });
   });
 
   it("refuses a pincode that is not six digits", async () => {

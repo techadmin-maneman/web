@@ -17,3 +17,11 @@ export const REFERRAL_MONTHLY_CAP = 5;
 /** Each rule a grant can meet, in the order above. The card fingerprint is not given to us (ADR 0025, item 21). */
 export const FRAUD_SIGNALS = ["shared_address", "shared_upi", "monthly_cap", "same_mobile"] as const;
 export type FraudSignal = (typeof FRAUD_SIGNALS)[number];
+
+/** The owner's ruling of 30 September 2026 (docs/open-points.md, item 157), which no fraud rule above covers. */
+export const LATE_ATTACH_RULE =
+  "Ops may attach an invite after the friend's first fit; its credits wait for ops' review, as a held grant's do." as const;
+
+/** Why a grant waits for ops: a fraud rule it met, or an invite ops attached after the friend's first fit. */
+export const HOLD_REASONS = [...FRAUD_SIGNALS, "attached_after_fit"] as const;
+export type HoldReason = (typeof HOLD_REASONS)[number];

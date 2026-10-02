@@ -63,6 +63,22 @@ test("sends the dispute with the client's words, and says it is with us", async 
   await expect(page.getByRole("dialog").getByRole("status")).toContainText("We have your dispute.");
 });
 
+// The owner ruled on 30 September 2026: a charge may be disputed for 30 days after it (src/policy/no-show.ts).
+test("says the days to dispute have passed, when they pass while the sheet is open", async ({ page }) => {
+  const visitId = await charged(page, null);
+  const disputed = `/api/visits/${visitId}/dispute`;
+  const closed = { error: { code: "dispute_window_closed", request_id: "r-1" } };
+  assertInContract("client", "POST", disputed, 409, closed);
+  await page.route(`**${disputed}`, (route) => route.fulfill({ status: 409, json: closed }));
+  await page.getByRole("button", { name: "Dispute this charge" }).click();
+  const sheet = page.getByRole("dialog", { name: "Dispute this charge" });
+  await sheet.getByLabel("Why is the charge wrong?").fill("I was home all morning.");
+  await sheet.getByRole("button", { name: "Send" }).click();
+  await expect(page.getByRole("dialog").getByRole("status")).toContainText(
+    "The days to dispute this charge have passed.",
+  );
+});
+
 test("says a dispute is being looked at, and offers no second one", async ({ page }) => {
   await charged(page, "open");
   await expect(page.getByText("You disputed this charge. We are looking at it.")).toBeVisible();

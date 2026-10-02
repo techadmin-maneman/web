@@ -2,7 +2,8 @@
 
 import { describe, expect, it } from "vitest";
 import { WINDOW_SLOT_MAP, WINDOW_TIMES } from "../../src/config/scheduling.ts";
-import { RULES, windowAt } from "../../src/policy/windows.ts";
+import { DEFAULT_SLOT_TIMES, windowAt } from "../../src/policy/slot-times.ts";
+import { RULES } from "../../src/policy/windows.ts";
 
 describe("the windows", () => {
   it(RULES[0], () => {
@@ -15,11 +16,12 @@ describe("the windows", () => {
   });
 
   it("puts a time of day in India in the window it falls in, each window starting where the last one ends", () => {
-    expect(windowAt("09:00")).toBe("morning");
-    expect(windowAt("11:59")).toBe("morning");
-    expect(windowAt("12:00")).toBe("afternoon");
-    expect(windowAt("15:59")).toBe("afternoon");
-    expect(windowAt("16:00")).toBe("evening");
-    expect(windowAt("19:30")).toBe("evening");
+    const inWindow = (time: string) => windowAt(time, DEFAULT_SLOT_TIMES);
+    expect(inWindow("09:00")).toBe("morning");
+    expect(inWindow("11:59")).toBe("morning");
+    expect(inWindow("12:00")).toBe("afternoon");
+    expect(inWindow("15:59")).toBe("afternoon");
+    expect(inWindow("16:00")).toBe("evening");
+    expect(inWindow("19:30")).toBe("evening");
   });
 });

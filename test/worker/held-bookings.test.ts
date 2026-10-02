@@ -15,7 +15,12 @@ import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { saltedHash } from "../../src/lib/hash.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubFsm, EMPTY_FSM, type FsmProvider, type StubFsm } from "../../src/providers/fsm.ts";
-import { createStubPayments, type PaymentsProvider } from "../../src/providers/payments.ts";
+import {
+  createStubPayments,
+  PaymentUnanswered,
+  type PaymentsProvider,
+  type StubPayments,
+} from "../../src/providers/payments.ts";
 import { handleFsmSyncBatch } from "../../src/queues/fsm-sync.ts";
 import { CRON_JOBS, runCronJobs } from "../../src/scheduled/cron.ts";
 import {
@@ -399,6 +404,25 @@ beforeEach(async () => {
     .run();
   await fittedPerson(PERSON, "+919810000001", "Rohit Malhotra");
   await fittedPerson(OTHER, "+919810000005", "Karan Bhatia");
+});
+
+/** The stub, with Razorpay's first answer to a refund lost though the refund was made (open point 161). */
+function losingFirstAnswer(payments: StubPayments): PaymentsProvider {
+  let asked = 0;
+  return {
+    ...payments,
+    refund: async (paymentId, refund) => {
+      asked += 1;
+      const made = await payments.refund(paymentId, refund);
+      if (asked === 1) throw new PaymentUnanswered("refund", new Error("The operation timed out."));
+      return made;
+    },
+  };
+}
+
+const silent = (): PaymentsProvider => ({
+  ...createStubPayments(),
+  refund: () => Promise.reject(new PaymentUnanswered("refund", new Error("The operation timed out."))),
 });
 
 describe("a booking FSM refuses five times running", () => {
@@ -1103,6 +1127,39 @@ describe("ops refunding it from the console", () => {
     expect(await holdRow(holdId)).toMatchObject({ state: "held", refunded_at: null });
     expect(await auditRows("booking.refund")).toEqual([]);
     expect(messages.sent).toEqual([]);
+  });
+
+  // docs/open-points.md, item 161: a refund whose answer never came is asked for again under its receipt.
+  it("refunds once, and says so, when Razorpay made the refund but its answer was lost", async () => {
+    const { holdId } = await paidHold();
+    await refusedFiveTimes(holdId);
+    const payments = createStubPayments();
+    const deps = fakeDependencies({ now: () => afterHeld(26 * HOUR), payments: losingFirstAnswer(payments) });
+    const { answer, messages } = refund(deps, holdId);
+    expect(await (await answer).json()).toMatchObject({
+      money: { kind: "refunded", payment_id: "pay_h1", amount: 200000 },
+    });
+    expect(payments.made.refunds).toEqual([{ paymentId: "pay_h1", amount: 200000 }]);
+    expect(await holdRow(holdId)).toMatchObject({ state: "released" });
+    expect(messages.sent).toHaveLength(1);
+  });
+
+  it("keeps the booking waiting when Razorpay will not say it refunded, and a later press refunds it", async () => {
+    const { holdId } = await paidHold();
+    await refusedFiveTimes(holdId);
+    const first = refund(fakeDependencies({ now: () => afterHeld(26 * HOUR), payments: silent() }), holdId);
+    expect(await (await first.answer).json()).toEqual({
+      money: { kind: "refund_unanswered", payment_id: "pay_h1", amount: 200000 },
+      fsm: { kind: "nothing", work_order_id: null },
+    });
+    expect(await holdRow(holdId)).toMatchObject({ state: "held", refunded_at: null });
+    expect(await auditRows("booking.refund")).toEqual([]);
+    expect(first.messages.sent).toEqual([]);
+
+    const payments = createStubPayments();
+    const again = refund(fakeDependencies({ now: () => afterHeld(27 * HOUR), payments }), holdId);
+    expect(await (await again.answer).json()).toMatchObject({ money: { kind: "refunded" } });
+    expect(payments.made.refunds).toEqual([{ paymentId: "pay_h1", amount: 200000 }]);
   });
 
   it("waits while a try is writing the booking to FSM, and refunds nothing meanwhile", async () => {

@@ -46,6 +46,8 @@ export interface OpsInputs {
   readonly lateChangeCharges: Charges;
   readonly noShowCharges: Charges;
   readonly noShowWaiver: Waiver;
+  /** Days a client may dispute a no-show's charge after it (src/policy/no-show.ts). */
+  readonly disputeWindowDays: number;
   readonly addressUnlockHour: number;
   readonly reminderHour: number;
   readonly taskSlaHours: Slas;
@@ -87,6 +89,7 @@ function shape(values: Readonly<Record<OpsSettingName, SettingValue>>): OpsInput
     lateChangeCharges: values.late_change_charge as Charges,
     noShowCharges: values.no_show_charge as Charges,
     noShowWaiver: values.no_show_waiver as Waiver,
+    disputeWindowDays: values.dispute_window_days as number,
     addressUnlockHour: values.address_unlock_hour as number,
     reminderHour: values.reminder_hour as number,
     taskSlaHours: values.task_sla_hours as Slas,

@@ -1229,13 +1229,14 @@ Razorpay's webhook: payments and refunds
             "unknown_invite",
             "own_invite",
             "already_invited",
-            "already_fitted",
             "already_disputed",
             "not_disputable",
+            "dispute_window_closed",
             "code_not_applicable",
             "already_discounted",
             "price_settled",
-            "code_exists"
+            "code_exists",
+            "slot_times_too_soon"
           ]
         },
         "request_id": {
@@ -1598,13 +1599,14 @@ Razorpay's webhook: payments and refunds
             "unknown_invite",
             "own_invite",
             "already_invited",
-            "already_fitted",
             "already_disputed",
             "not_disputable",
+            "dispute_window_closed",
             "code_not_applicable",
             "already_discounted",
             "price_settled",
-            "code_exists"
+            "code_exists",
+            "slot_times_too_soon"
           ]
         },
         "request_id": {
@@ -1724,10 +1726,8 @@ Razorpay's webhook: payments and refunds
       "description": "For the technician, from the day before the visit: gate code, parking."
     },
     "flat": {
-      "type": [
-        "string",
-        "null"
-      ],
+      "type": "string",
+      "minLength": 1,
       "maxLength": 40
     },
     "floor": {
@@ -1758,7 +1758,8 @@ Razorpay's webhook: payments and refunds
     "locality",
     "city",
     "pincode",
-    "access_notes"
+    "access_notes",
+    "flat"
   ],
   "additionalProperties": false
 }

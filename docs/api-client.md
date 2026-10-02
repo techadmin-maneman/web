@@ -805,7 +805,7 @@ Request body:
 }
 ```
 
-**409**: already_disputed: the charge was disputed before; or not_disputable: the charge took nothing to give back
+**409**: already_disputed: the charge was disputed before; not_disputable: the charge took nothing to give back; or dispute_window_closed: the days the charge could be disputed are past
 
 ```json
 {
@@ -1680,13 +1680,14 @@ Request body:
             "unknown_invite",
             "own_invite",
             "already_invited",
-            "already_fitted",
             "already_disputed",
             "not_disputable",
+            "dispute_window_closed",
             "code_not_applicable",
             "already_discounted",
             "price_settled",
-            "code_exists"
+            "code_exists",
+            "slot_times_too_soon"
           ]
         },
         "request_id": {
@@ -3026,10 +3027,8 @@ Request body:
       "description": "The building as chosen from the suggestions; null if typed."
     },
     "flat": {
-      "type": [
-        "string",
-        "null"
-      ],
+      "type": "string",
+      "minLength": 1,
       "maxLength": 40
     },
     "floor": {
@@ -3075,7 +3074,8 @@ Request body:
     "locality",
     "city",
     "pincode",
-    "access_notes"
+    "access_notes",
+    "flat"
   ],
   "additionalProperties": false
 }
@@ -4804,6 +4804,14 @@ Request body:
                     "evening"
                   ]
                 },
+                "start": {
+                  "type": "string",
+                  "description": "When the window starts that day, in India's time, as 12:00."
+                },
+                "end": {
+                  "type": "string",
+                  "description": "When it ends that day: ops set the day's times from a date."
+                },
                 "with": {
                   "anyOf": [
                     {
@@ -4822,6 +4830,8 @@ Request body:
               },
               "required": [
                 "window",
+                "start",
+                "end",
                 "with"
               ],
               "additionalProperties": false

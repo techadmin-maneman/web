@@ -517,6 +517,7 @@ export const dispute = {
   sending: "Sending",
   sent: "We have your dispute. We will look at it and tell you what we decide.",
   already: "You have disputed this charge already. We will tell you what we decide.",
+  closed: "The days to dispute this charge have passed. If something is wrong, message us.",
   failed: "That did not go through. Please try again.",
   tryAgain: "Try again",
 };
@@ -894,7 +895,7 @@ export const profile = {
     accessHint: "A gate code, or where to park. Your technician sees it the day before the visit.",
     save: "Save",
     cancel: "Cancel",
-    invalid: "Fill in the building or street, the area, the city and a six-digit pincode.",
+    invalid: "Fill in the flat or house number, the building or street, the area, the city and a six-digit pincode.",
   },
   agreed: "What you have agreed to",
   purposes: {

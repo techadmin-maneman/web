@@ -924,6 +924,19 @@ SELECT id, razorpay_payment_id, captured_at FROM payments WHERE captured_at IS N
 SELECT id, razorpay_refund_id, created_at FROM refunds WHERE status = 'processed' AND books_refund_id IS NULL;
 ```
 
+### Staging's records in the org
+
+Staging writes to the owner's real FSM and Books (open point 19), and production's reconciliation and invoice pass will read the same org (open point 155), so staging's records go before production connects FSM. The script lists them, the owner reviews the list, and a second run deletes what the owner kept in it. It uses the scripts' own token (step 8.7).
+
+1. List them: `node --env-file=.env.fsm-scripts scripts/staging-records.ts`. It prints every FSM appointment, work order and Request whose summary starts "Staging test: ", and every FSM and Books contact named "Staging test" or "Load test"; and every Books payment whose description starts "Staging test: ", with its refunds, and every Books invoice of a staging contact. It writes them to `private/staging-records-<date>.json`, and names apart any record that looks like a test but carries neither mark, which it never deletes.
+2. The owner reads the list. To keep a record, take its entry out of the file.
+3. Delete: `node --env-file=.env.fsm-scripts scripts/staging-records.ts --delete private/staging-records-<date>.json`. It reads the org again and deletes only what the file keeps and the org still marks as staging's, what points at a record before it: Books' refunds and payments, FSM's appointments, Books' invoices, FSM's work orders and Requests, then the contacts. Each line says `deleted`, `already gone` or `refused` with FSM's or Books' reason.
+4. A refusal is usually a record another still points at: run the delete again, and anything freed by the first run goes. What stays refused is put right by hand in FSM or Books.
+
+FSM's API deletes no invoice, so the list names FSM's invoices of staging's work orders apart: delete them in FSM's Invoices screen, if it still shows them, once the run has deleted their work orders and Books' invoices. On 1 October 2026 it showed none: FSM's API went on listing the three invoices as links of no work order, which neither FSM's screens nor anything of ours reads. Nothing of production reads them, since its invoice pass reads each of its own work orders' invoice.
+
+FSM keeps a deleted record in its recycle bin, out of every list the API gives, so production's reconciliation never sees it.
+
 ---
 
 ## Razorpay

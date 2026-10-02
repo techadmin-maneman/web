@@ -18,7 +18,7 @@ export interface AddressFields {
 }
 
 /** The parts an address is not one without, in the order the form asks for them. */
-const REQUIRED = ["line1", "locality", "city"] as const;
+const REQUIRED = ["flat", "line1", "locality", "city"] as const;
 export type RequiredPart = (typeof REQUIRED)[number];
 
 export function isRequiredPart(part: keyof AddressFields): part is RequiredPart {
@@ -49,7 +49,7 @@ const orNone = (part: string): string | null => (part.trim() === "" ? null : par
 /** The address as the API takes it, in the pincode checked. */
 export function addressToSend(address: AddressFields, pincode: string): TypedAddress {
   return {
-    flat: orNone(address.flat),
+    flat: address.flat.trim(),
     floor: orNone(address.floor),
     tower: orNone(address.tower),
     line1: address.line1.trim(),

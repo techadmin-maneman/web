@@ -48,13 +48,13 @@ import {
   movesOpenSince,
   occupancy,
   placement,
-  unitAt,
   visitTimes,
   type Day,
 } from "./scheduling.ts";
 import { latestConsentSql } from "./messages.ts";
 import { visitMessage } from "./visit-messages.ts";
-import { windowAt } from "../policy/windows.ts";
+import { unitAt, type SlotTimes } from "../policy/slot-times.ts";
+import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
 import { failureReason } from "../log.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
 
@@ -213,7 +213,7 @@ export async function dispatchBoard(
   const fromAt = indiaInstant(options.from, "00:00").toISOString();
   const toAt = indiaInstant(addDays(last, 1), "00:00").toISOString();
 
-  const [technicians, scheduled, untold, cities] = await Promise.all([
+  const [technicians, scheduled, untold, cities, schedule] = await Promise.all([
     db
       .prepare("SELECT id, name, initials, zone FROM technicians WHERE active = 1 ORDER BY name")
       .all<{ id: string; name: string; initials: string; zone: string | null }>(),
@@ -228,6 +228,7 @@ export async function dispatchBoard(
       .bind(fromAt, toAt)
       .all<{ id: string; appointment_id: string; now_start: string }>(),
     listCities(db),
+    loadSlotSchedule(db),
   ]);
   const untoldOf = (appointmentId: string) => {
     const move = untold.results.find((each) => each.appointment_id === appointmentId);
@@ -239,7 +240,7 @@ export async function dispatchBoard(
       date,
       blocks: scheduled.results
         .filter((job) => job.technician_id === technician.id && indiaDate(new Date(job.window_start)) === date)
-        .map((job) => blockOf(job, untoldOf(job.id), options.noticeHours ?? FREE_CHANGE_NOTICE_HOURS)),
+        .map((job) => blockOf(job, untoldOf(job.id), options.noticeHours ?? FREE_CHANGE_NOTICE_HOURS, schedule)),
     }));
     return {
       technician_id: technician.id,
@@ -252,7 +253,7 @@ export async function dispatchBoard(
 
   const unassigned = scheduled.results
     .filter((job) => job.technician_id === null && job.status !== "completed")
-    .map(unassignedOf);
+    .map((job) => unassignedOf(job, schedule));
   const leave = (await leaveBetween(db, options.from, last)).map((period) => ({
     technician_id: period.technician_id,
     // Clipped to the week, so the board draws the days it has columns for and no others.
@@ -329,19 +330,19 @@ function clientOf(job: BoardJobRow): BoardClient | null {
   };
 }
 
-function blockOf(job: BoardJobRow, untold: Block["untold"], noticeInForce: number): Block {
+function blockOf(job: BoardJobRow, untold: Block["untold"], noticeInForce: number, schedule: SlotSchedule): Block {
   const start = new Date(job.window_start);
   return {
     ...visitOf(job),
     starts_at: start.toISOString(),
-    window: windowAt(indiaTime(start)),
+    window: schedule.at(start).window,
     status: job.status,
     notice_hours: job.sold_notice_hours ?? noticeInForce,
     untold,
   };
 }
 
-function unassignedOf(job: BoardJobRow): UnassignedJob {
+function unassignedOf(job: BoardJobRow, schedule: SlotSchedule): UnassignedJob {
   const start = new Date(job.window_start);
   return {
     ...visitOf(job),
@@ -350,7 +351,7 @@ function unassignedOf(job: BoardJobRow): UnassignedJob {
     // 0060). Null where nothing recorded one, and the tray says so in words: the
     // offered window is never repeated as though it were the asked one.
     asked_window: job.asked_window,
-    offered_window: windowAt(indiaTime(start)),
+    offered_window: schedule.at(start).window,
     date: indiaDate(start),
   };
 }
@@ -432,6 +433,8 @@ interface Target {
   readonly window: BookingWindow;
   /** Only the technician changes: the visit keeps its own start, and its half-slots are checked there. */
   readonly keepsTime: boolean;
+  /** The target day's times, which its half-slots are read by. */
+  readonly times: SlotTimes;
 }
 
 type Landing =
@@ -447,7 +450,7 @@ interface Placing {
 function startOn(day: Day, job: Placing, target: Target): number | null {
   const units = unitsFor(job.minutes);
   if (!target.keepsTime) return placement(day, target.window, units);
-  const start = unitAt(indiaTime(job.start));
+  const start = unitAt(indiaTime(job.start), target.times);
   return fitsAt(day, start, units) ? start : null;
 }
 
@@ -494,10 +497,16 @@ function liveJob(db: D1Database, appointmentId: string): Promise<LiveJob | null>
 }
 
 /** Where a move puts the job. A day and window that are the job's own keep its start: only the technician changes. */
-function targetOf(job: LiveJob, technicianId: string, date: string, window: BookingWindow): Target {
-  const start = new Date(job.window_start);
-  const keepsTime = date === indiaDate(start) && window === windowAt(indiaTime(start));
-  return { technicianId, date, window, keepsTime };
+function targetOf(
+  job: LiveJob,
+  technicianId: string,
+  date: string,
+  window: BookingWindow,
+  schedule: SlotSchedule,
+): Target {
+  const now = schedule.at(job.window_start);
+  const keepsTime = date === now.date && window === now.window;
+  return { technicianId, date, window, keepsTime, times: schedule.on(date) };
 }
 
 /** Where the job already is: no move at all. */
@@ -519,10 +528,11 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
   const wasStart = new Date(job.window_start);
   const technicianId = input.technicianId ?? job.technician_id;
   if (technicianId === null) return { kind: "no_technician" };
+  const schedule = await loadSlotSchedule(db);
   // What ops left out keeps what the job has.
   const date = input.date ?? indiaDate(wasStart);
-  const window = input.window ?? windowAt(indiaTime(wasStart));
-  const target = targetOf(job, technicianId, date, window);
+  const window = input.window ?? schedule.at(wasStart).window;
+  const target = targetOf(job, technicianId, date, window, schedule);
   if (isWhereItIs(job, target)) return { kind: "nothing_to_move" };
 
   // The check runs on the server before any write to FSM. The job's own time
@@ -532,7 +542,7 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
   const landing = landingOf(held(technicianId, date), { minutes, start: wasStart }, target);
   if (landing.kind === "refused") return landing;
 
-  const times = target.keepsTime ? null : visitTimes(date, landing.start, minutes);
+  const times = target.keepsTime ? null : visitTimes(date, landing.start, minutes, schedule);
   const nowStart = times?.start ?? wasStart;
   const moveId = crypto.randomUUID();
   const opened = await openMove(
@@ -748,14 +758,15 @@ export async function roomFor(
   const job = await liveJob(db, input.appointmentId);
   if (job === null) return null;
   const dates = weekFrom(input.from);
-  const [technicians, held] = await Promise.all([
+  const [technicians, held, schedule] = await Promise.all([
     activeTechnicians(db),
     occupancy(db, input.from, dates[dates.length - 1] ?? input.from, now, job.id),
+    loadSlotSchedule(db),
   ]);
   const visit = { minutes: bookedMinutes(job), start: new Date(job.window_start) };
   const windowsFor = (technicianId: string, date: string) =>
     BOOKING_WINDOWS.filter((window) => {
-      const target = targetOf(job, technicianId, date, window);
+      const target = targetOf(job, technicianId, date, window, schedule);
       return !isWhereItIs(job, target) && landingOf(held(technicianId, date), visit, target).kind === "lands";
     });
   return technicians

@@ -33,7 +33,7 @@ const EMPTY: Draft = {
   pincode: "",
   access_notes: null,
   building: null,
-  flat: null,
+  flat: "",
   floor: null,
   tower: null,
   landmark: null,
@@ -49,6 +49,7 @@ const orNull = (part: string | null | undefined): string | null => (given(part) 
 /** The fields an address is not one without, left out, as the app's form checks them. */
 function missing(draft: Draft): Part[] {
   const left: Part[] = [];
+  if (!given(draft.flat)) left.push("flat");
   if (draft.line1.trim() === "") left.push("line1");
   if (draft.locality.trim() === "") left.push("locality");
   if (draft.city.trim() === "") left.push("city");
@@ -223,7 +224,7 @@ export function GivenAddressForm({
         ...sent,
         line2: orNull(sent.line2),
         access_notes: orNull(sent.access_notes),
-        flat: orNull(sent.flat),
+        flat: sent.flat.trim(),
         floor: orNull(sent.floor),
         tower: orNull(sent.tower),
         landmark: orNull(sent.landmark),
@@ -285,7 +286,7 @@ export function GivenAddressForm({
           setDraft((was) => ({ ...was, building: chosen.primary, place_id: chosen.place_id }));
         }}
       />
-      {field("flat", copy.flat)}
+      {field("flat", copy.flat, { required: true })}
       {field("floor", copy.floor)}
       {field("tower", copy.tower)}
       {/* Only for an address nobody searched for: otherwise the building is line one. */}

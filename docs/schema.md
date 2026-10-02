@@ -64,6 +64,7 @@ A column ending `_at` holds an instant, as ISO 8601 in UTC (`2026-09-27T06:30:00
 - [sessions](#sessions): The client app's and the technician app's sessions: whose, from which device, and when each ends or was revoked (ADR 0029, ADR 0052).
 - [slot_claims](#slot_claims): What a hold or a visit takes of a technician's day, a row per half-slot and window, so no time is taken twice (ADR 0034, ADR 0069).
 - [slot_holds](#slot_holds): A slot held while a client pays, and what became of it (ADR 0045, ADR 0068).
+- [slot_times](#slot_times): Each change of the day's half-slot times ops set, from the day it applies; never changed (ADR 0102).
 - [stock_balances](#stock_balances): What each place holds of each consumable, and when it last counted it: the sum of its rows in `stock_movements`, kept by triggers as each is written (ADR 0087).
 - [stock_movements](#stock_movements): Every movement of a consumable into or out of the central store or a technician's kit, never changed; what a place holds is the sum of its rows (ADR 0087).
 - [storage_meter](#storage_meter): What Phase 2's two buckets, client-photos and referral-cards, hold together: one row, the sum of `stored_objects` kept beside it, and the last mark of the share ops were told of (ADR 0093).
@@ -144,7 +145,7 @@ Indexes:
 
 The mirror of FSM's appointments: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice (ADR 0032).
 
-Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`, `0059_no_show_charges_and_disputes.sql`, `0060_flat_task_reads.sql`, `0061_one_visit.sql`, `0063_discount_codes.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`, `0059_no_show_charges_and_disputes.sql`, `0060_flat_task_reads.sql`, `0061_one_visit.sql`, `0063_discount_codes.sql`, `0066_client_note_in_fsm.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -177,6 +178,7 @@ Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_i
 | `start_before_move` | TEXT | yes |  |  |
 | `one_visit` | TEXT | yes |  |  |
 | `nothing_owed_at` | TEXT | yes |  |  |
+| `fsm_note_written_at` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -798,7 +800,7 @@ Indexes:
 
 The evidence a no-show is ruled on, the ruling, and what a charge cost the client (ADR 0065, ADR 0072, ADR 0096).
 
-Made by `0026_field_operations.sql`; changed by `0042_no_show_reasons.sql`, `0044_hand_offs_and_messages.sql`, `0054_policies_in_the_console.sql`, `0059_no_show_charges_and_disputes.sql`.
+Made by `0026_field_operations.sql`; changed by `0042_no_show_reasons.sql`, `0044_hand_offs_and_messages.sql`, `0054_policies_in_the_console.sql`, `0059_no_show_charges_and_disputes.sql`, `0065_dispute_window.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -821,6 +823,7 @@ Made by `0026_field_operations.sql`; changed by `0042_no_show_reasons.sql`, `004
 | `kept_amount` | INTEGER | yes |  |  |
 | `refund_amount` | INTEGER | yes |  |  |
 | `ruling_id` | TEXT | yes |  |  |
+| `dispute_until` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -1409,6 +1412,27 @@ Indexes:
 - `slot_holds_confirmed_by_person`: on (`person_id`), where `state = 'held' AND confirmed_at IS NOT NULL`
 - `slot_holds_held`: on (`expires_at`), where `state = 'held'`
 - A `UNIQUE` constraint: unique on (`razorpay_order_id`)
+
+## slot_times
+
+Each change of the day's half-slot times ops set, from the day it applies; never changed (ADR 0102).
+
+Made by `0067_slot_times.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `applies_from` | TEXT | no |  |  |
+| `unit_starts` | TEXT | no |  |  |
+| `day_end` | TEXT | no |  |  |
+| `set_by` | TEXT | no |  |  |
+| `set_at` | TEXT | no |  |  |
+
+Indexes:
+
+- A `UNIQUE` constraint: unique on (`applies_from`)
+
+Triggers: `slot_times_no_delete`, `slot_times_no_update`.
 
 ## stock_balances
 

@@ -13,7 +13,7 @@ import { json } from "../http/openapi.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { needsReason, REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
-import { FRAUD_SIGNALS } from "../policy/fraud-holds.ts";
+import { HOLD_REASONS } from "../policy/fraud-holds.ts";
 import { dueAt } from "../policy/tasks.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 
@@ -36,7 +36,7 @@ const heldRoute = createRoute({
                   referrer: PersonRef,
                   referred: PersonRef,
                   fitted_on: z.iso.date(),
-                  signals: z.array(z.enum(FRAUD_SIGNALS)),
+                  signals: z.array(z.enum(HOLD_REASONS)),
                   held_since: z.iso.datetime().openapi({ description: "When the fraud rules held it for review." }),
                   due: z.iso.datetime().openapi({
                     description: "When ops should have decided: the Tasks board's allowance for a review.",
@@ -100,7 +100,7 @@ export function registerOpsReferrals(app: App): void {
       held_since: string;
     }>();
     const sla = (await opsInputs(c)).taskSlaHours;
-    const known = new Set<string>(FRAUD_SIGNALS);
+    const known = new Set<string>(HOLD_REASONS);
     return c.json(
       {
         held: results.map((row) => ({
@@ -109,7 +109,7 @@ export function registerOpsReferrals(app: App): void {
           referred: { person_id: row.referred_person_id, name: row.referred_name },
           fitted_on: indiaDate(new Date(row.window_start)),
           signals: (JSON.parse(row.fraud_signals ?? "[]") as string[]).filter(
-            (signal): signal is (typeof FRAUD_SIGNALS)[number] => known.has(signal),
+            (signal): signal is (typeof HOLD_REASONS)[number] => known.has(signal),
           ),
           held_since: row.held_since,
           due: dueAt(new Date(row.held_since), "referral_review", sla).toISOString(),

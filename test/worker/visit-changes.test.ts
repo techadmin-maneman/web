@@ -11,7 +11,7 @@ import { moveJob } from "../../src/domain/dispatch.ts";
 import { syncAppointment } from "../../src/domain/fsm-mirror.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { createStubFsm, EMPTY_FSM, type FsmProvider } from "../../src/providers/fsm.ts";
-import { createStubPayments } from "../../src/providers/payments.ts";
+import { createStubPayments, PaymentUnanswered, type PaymentsProvider } from "../../src/providers/payments.ts";
 import type { MoveReason } from "../../src/policy/dispatch.ts";
 import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request, savedAddress } from "./helpers.ts";
 
@@ -167,6 +167,48 @@ describe("POST /api/appointments/:id/cancel", () => {
     expect(deps.alerts).toEqual([
       `The refund of Rs. 2000 for visit ${VISIT}, cancelled by the client, failed (Razorpay payment pay_visit). ` +
         `Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}`,
+    ]);
+  });
+
+  // docs/open-points.md, item 161: ops were told to refund by hand a refund Razorpay may have made.
+  it("refunds a cancel once, and tells ops nothing, when Razorpay made the refund but its answer was lost", async () => {
+    await booked("service", THURSDAY_NOON, 200000);
+    const payments = createStubPayments();
+    let asked = 0;
+    const losing: PaymentsProvider = {
+      ...payments,
+      refund: async (paymentId, refund) => {
+        asked += 1;
+        const made = await payments.refund(paymentId, refund);
+        if (asked === 1) throw new PaymentUnanswered("refund", new Error("The operation timed out."));
+        return made;
+      },
+    };
+    const deps = fakeDependencies({ fsm: createStubFsm(world()), payments: losing });
+    const done = await post(appFor("local", deps, {}, "client"), `/api/appointments/${VISIT}/cancel`, {
+      confirm: true,
+      notice: "free",
+    });
+    expect(await done.json()).toMatchObject({ cancelled: true, refund: 200000 });
+    expect(payments.made.refunds).toEqual([{ paymentId: "pay_visit", amount: 200000 }]);
+    expect(deps.alerts).toEqual([]);
+  });
+
+  it("tells ops to look in Razorpay before refunding by hand, when Razorpay will not say it refunded", async () => {
+    await booked("service", THURSDAY_NOON, 200000);
+    const silent = () => Promise.reject(new PaymentUnanswered("refund", new Error("The operation timed out.")));
+    const deps = fakeDependencies({
+      fsm: createStubFsm(world()),
+      payments: { ...createStubPayments(), refund: silent },
+    });
+    const app = appFor("local", deps, {}, "client");
+
+    const done = await post(app, `/api/appointments/${VISIT}/cancel`, { confirm: true, notice: "free" });
+    expect(await done.json()).toMatchObject({ cancelled: true });
+    expect(deps.alerts).toEqual([
+      `Razorpay did not answer the refund of Rs. 2000 for visit ${VISIT}, cancelled by the client (payment ` +
+        "pay_visit), so it may have been made. Look at the payment in Razorpay, and refund it by hand only if no " +
+        `refund of Rs. 2000 is there. http://ops.localhost:4323/clients/${PERSON}`,
     ]);
   });
 
@@ -450,7 +492,7 @@ describe("moving a visit", () => {
     }>();
     expect(body.regular.name).toBe("Imran Qureshi");
     expect(body.price.amount).toBe(0);
-    expect(body.days[0]?.windows).toEqual([
+    expect(body.days[0]?.windows.map(({ window, with: who }) => ({ window, with: who }))).toEqual([
       { window: "morning", with: "regular" },
       { window: "afternoon", with: "regular" },
       { window: "evening", with: "regular" },

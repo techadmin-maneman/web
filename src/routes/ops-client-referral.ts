@@ -5,7 +5,8 @@
 //   POST /api/clients/:id/referral   { code, reason }: attach the invite, under the landing's own rules
 //
 // The client is attributed through the landing's own function, so its rules hold here too: never the code's own
-// referrer, never a client who came with an invite already, never one already fitted. Who attached it and why are
+// referrer, never a client who came with an invite already; one attached after the friend's first fit waits for ops'
+// review (src/policy/fraud-holds.ts, LATE_ATTACH_RULE). Who attached it and why are
 // kept with it, and its audit entry is written in the same batch. The CRM is then sent the client again, and reads
 // the invite they now carry.
 
@@ -85,7 +86,7 @@ const attachRoute = createRoute({
     409: {
       description:
         "own_invite: the client is the code's own referrer; already_invited: the client came with an invite " +
-        "already, which the answer names; already_fitted: the client has had their first fit",
+        "already, which the answer names",
       content: { "application/json": { schema: z.union([ErrorResponseSchema, AlreadyInvitedSchema]) } },
     },
     422: errorResponse("unknown_invite: no invite has that code"),
@@ -155,7 +156,8 @@ export function registerOpsClientReferral(app: App): void {
       },
     });
     if (outcome.outcome === "own_invite") return c.json(errorBody("own_invite", requestId), 409);
-    if (outcome.outcome === "fitted") return c.json(errorBody("already_fitted", requestId), 409);
+    // Ops may attach after the friend's first fit; the grant is held for their review (LATE_ATTACH_RULE).
+    if (outcome.outcome === "fitted") throw new Error("an invite ops attach is never refused for a first fit");
     if (outcome.outcome === "already_attributed") {
       return c.json({ ...errorBody("already_invited", requestId), invite: { code: outcome.code } }, 409);
     }

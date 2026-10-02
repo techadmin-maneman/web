@@ -119,6 +119,7 @@ describe("POST /api/clients/{id}/address", () => {
 
   it("refuses what the app's own save refuses", async () => {
     for (const body of [
+      { ...GIVEN, flat: "" },
       { ...GIVEN, locality: "" },
       { ...GIVEN, pincode: "12201" },
       { ...GIVEN, lat: 28.4, lng: 77.0 },

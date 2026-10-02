@@ -1,6 +1,6 @@
 # 0074. What each person learns when something changes for them
 
-- Status: accepted; amended 28 September 2026 by [0092](0092-task-owners.md), under which ops close a visit left partly done without a follow-up, with a reason, and record an address a client gives them on the phone; and 29 September 2026 by [0096](0096-a-no-shows-charge-and-its-dispute.md), under which a charge costs what the booking was sold to cost a no-show, and the client disputes it in the app
+- Status: accepted; amended 28 September 2026 by [0092](0092-task-owners.md), under which ops close a visit left partly done without a follow-up, with a reason, and record an address a client gives them on the phone; and 29 September 2026 by [0096](0096-a-no-shows-charge-and-its-dispute.md), under which a charge costs what the booking was sold to cost a no-show, and the client disputes it in the app; and 1 October 2026 by [0099](0099-the-clients-note-in-fsm.md), under which the client's note is written to the visit's appointment in FSM
 - Date: 2026-09-26
 - Amends [0047](0047-visit-messages.md), [0048](0048-referrals.md), [0049](0049-dpdp.md), [0062](0062-leave-on-the-dispatch-board.md) and [0063](0063-the-asked-window.md); follows [0060](0060-an-invited-friend-reaches-ops-and-the-crm.md), [0067](0067-alerts-and-silent-failures.md), [0070](0070-vendor-correctness.md) and [0072](0072-ops-clients-and-queues.md)
 

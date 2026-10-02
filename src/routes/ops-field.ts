@@ -303,6 +303,7 @@ export function registerOpsField(app: App): void {
       now,
       waiver: inputs.noShowWaiver,
       terms: inputs,
+      disputeWindowDays: inputs.disputeWindowDays,
     });
     if (ruled === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     const notify = (messageId: string) =>
