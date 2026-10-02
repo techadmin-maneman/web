@@ -47,7 +47,7 @@ export type RazorpayPayment = z.infer<typeof RazorpayPaymentSchema>;
 export const RazorpayPaymentLinkSchema = z.object({
   id: z.string(),
   status: z.string(),
-  /** Ours: the visit the link is for, which a link ops make by hand in Razorpay's dashboard carries too. */
+  /** Ours: the reference its payment will have, or the visit's ID on a link ops made by hand in Razorpay's dashboard. */
   reference_id: z.string().nullish(),
 });
 
@@ -72,6 +72,16 @@ const DUPLICATE_RECEIPT = "Duplicate receipt found for this refund request.";
 const Created = z.object({ id: z.string() });
 const LinkMade = z.object({ id: z.string(), short_url: z.string() });
 const LinksFound = z.object({ payment_links: z.array(LinkMade) });
+
+/**
+ * How a link's page reads: in our name rather than the account's, with the client's number already in its Checkout so
+ * it is not asked for again, and our reference labelled as one rather than as a receipt.
+ */
+const linkPage = (contact: string) => ({
+  checkout: { name: "Mane Man", prefill: { contact } },
+  hosted_page: { label: { receipt: "REFERENCE" } },
+});
+
 /** Razorpay's reason for a refusal, as much of it as it gave. */
 const Refused = z.object({
   error: z.object({
@@ -148,6 +158,7 @@ export function createRazorpay(
           notify: { sms: true, email: false },
           reminder_enable: true,
           notes: link.notes,
+          options: linkPage(link.customer.contact),
         },
         LinkMade,
       );

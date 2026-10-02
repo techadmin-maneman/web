@@ -1072,7 +1072,7 @@ Made by `0049_consumables_and_stock.sql`.
 
 The Razorpay payment link a consultation and fit in one visit is paid by once the client is fitted: one a visit, the product and its price, when Razorpay made and texted it, and the payment that paid it (ADR 0105).
 
-Made by `0061_one_visit.sql`.
+Made by `0061_one_visit.sql`; changed by `0075_payment_link_references.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1090,9 +1090,14 @@ Made by `0061_one_visit.sql`.
 | `paid_at` | TEXT | yes |  |  |
 | `created_at` | TEXT | no |  |  |
 | `updated_at` | TEXT | no |  |  |
+| `reference` | TEXT | yes |  |  |
+| `reference_year` | INTEGER | yes |  |  |
+| `reference_number` | INTEGER | yes |  |  |
 
 Indexes:
 
+- `payment_links_reference`: unique on (`reference`)
+- `payment_links_reference_number`: unique on (`reference_year`, `reference_number`)
 - `payment_links_unpaid`: on (`created_at`), where `paid_at IS NULL`
 - `payment_links_unsent`: on (`created_at`), where `sent_at IS NULL AND refused_at IS NULL`
 - A `UNIQUE` constraint: unique on (`appointment_id`)

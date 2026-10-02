@@ -1,6 +1,6 @@
 # 0105. A consultation and fit in one visit
 
-- Status: accepted, on the owner's ruling D2 of 1 October 2026 and the rulings of the same day on the piece, the payment and the length (ADR 0025, item 89); what they left open is taken for the owner to confirm (items 90 to 92)
+- Status: accepted, on the owner's ruling D2 of 1 October 2026 and the rulings of the same day on the piece, the payment and the length (ADR 0025, item 89); what they left open is taken for the owner to confirm (items 90 to 92). Amended 2 October 2026: a link is made under the reference its payment will have ("MM-2026-0841"), which the client reads on Razorpay's page; a link ops make by hand still takes the visit's ID
 - Date: 2026-10-01
 - Amends [0086](0086-the-next-visit-is-offered.md), whose site form asked for the first fit to follow the consultation; [0045](0045-self-serve-booking.md) and [0068](0068-a-paid-hold-is-kept.md), under which every visit is paid for before it is booked; [0096](0096-a-no-shows-charge-and-its-dispute.md), whose charge a booking that holds no payment is now sold to cost nothing; follows [0103](0103-the-home-pages-first-copy-round.md), whose "Still to build" named this piece
 

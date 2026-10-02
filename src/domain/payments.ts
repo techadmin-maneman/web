@@ -101,21 +101,54 @@ export async function recordPayment(
 }
 
 /**
- * A captured payment's reference, "MM-2026-0841": the next number of its India
- * year. One statement, so two captures at once cannot take the same number.
+ * The next number of the year ?2. Payments and payment links number from one series, so a link can carry the
+ * reference its payment will have.
+ */
+const NEXT_NUMBER = `(SELECT COALESCE(MAX(number), 0) + 1 FROM (
+  SELECT reference_number AS number FROM payments WHERE reference_year = ?2
+  UNION ALL SELECT reference_number FROM payment_links WHERE reference_year = ?2))`;
+
+/** "MM-2026-0841": the year ?3, as text, and the next number. */
+const NEXT_REFERENCE = `'MM-' || ?3 || '-' || printf('%04d', ${NEXT_NUMBER})`;
+
+/** The year of India's date, as a number and again as text: D1 binds a number as a decimal, which prints "2026.0". */
+function referenceYear(now: Date): [number, string] {
+  const year = Number(indiaDate(now).slice(0, 4));
+  return [year, String(year)];
+}
+
+/**
+ * A captured payment's reference: the one its link was made under, which the client read on Razorpay's page, else the
+ * next of its India year. Each is one statement, so two captures at once cannot take the same number.
  */
 async function giveReference(db: D1Database, razorpayPaymentId: string, now: Date): Promise<void> {
-  const year = Number(indiaDate(now).slice(0, 4));
-  const next = "(SELECT COALESCE(MAX(reference_number), 0) + 1 FROM payments WHERE reference_year = ?2)";
-  await db
+  await db.batch([
+    db
+      .prepare(
+        `UPDATE payments SET (reference_year, reference_number, reference) = (
+           SELECT l.reference_year, l.reference_number, l.reference FROM payment_links l
+           WHERE l.appointment_id = payments.appointment_id AND l.amount = payments.amount
+             AND NOT EXISTS (SELECT 1 FROM payments taken WHERE taken.reference = l.reference))
+         WHERE razorpay_payment_id = ?1 AND reference IS NULL`,
+      )
+      .bind(razorpayPaymentId),
+    db
+      .prepare(
+        `UPDATE payments SET reference_year = ?2, reference_number = ${NEXT_NUMBER}, reference = ${NEXT_REFERENCE}
+         WHERE razorpay_payment_id = ?1 AND reference IS NULL`,
+      )
+      .bind(razorpayPaymentId, ...referenceYear(now)),
+  ]);
+}
+
+/** Gives a payment link just written the next reference of its India year, which its payment then takes. */
+export function referenceLink(db: D1Database, linkId: string, now: Date): D1PreparedStatement {
+  return db
     .prepare(
-      `UPDATE payments SET reference_year = ?2, reference_number = ${next},
-         reference = 'MM-' || ?3 || '-' || printf('%04d', ${next})
-       WHERE razorpay_payment_id = ?1 AND reference IS NULL`,
+      `UPDATE payment_links SET reference_year = ?2, reference_number = ${NEXT_NUMBER}, reference = ${NEXT_REFERENCE}
+       WHERE id = ?1 AND reference IS NULL`,
     )
-    // The year again as text: D1 binds a number as a decimal, which would print "2026.0".
-    .bind(razorpayPaymentId, year, String(year))
-    .run();
+    .bind(linkId, ...referenceYear(now));
 }
 
 /** Our refund's state from Razorpay's: processed and failed as they are, anything earlier still created. */
