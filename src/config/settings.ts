@@ -160,8 +160,8 @@ export interface Settings {
   readonly referrerNameOnInvite: boolean;
   /**
    * A price ops set is written to FSM's catalogue, which prices a visit's invoice: FSM_CATALOGUE_PUSH in
-   * ./environments.ts (docs/decisions/0073-prices-from-the-price-book.md). Off everywhere until the owner switches
-   * it on in production; off, the hourly catalogue check tells ops what to set by hand.
+   * ./environments.ts (docs/decisions/0073-prices-from-the-price-book.md). Off, the hourly catalogue check tells ops
+   * what to set by hand.
    */
   readonly fsmCataloguePush: boolean;
   readonly ipHashSalt: string;

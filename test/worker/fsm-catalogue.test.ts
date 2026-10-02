@@ -1,8 +1,7 @@
 // FSM's catalogue against the services and the price book (docs/decisions/0073-prices-from-the-price-book.md,
 // docs/decisions/0085-services-ops-can-edit.md): the hourly check, which reads only and tells ops, and the push, which
-// makes a missing item and writes the console's name and the book's price only while the owner has it switched on.
-// Staging's FSM is the owner's real org, so nothing here may write to it by itself (INT-03). The push is forced on
-// here, in the tests alone: FSM_CATALOGUE_PUSH is off in every environment (test/worker/guard.test.ts).
+// makes a missing item and writes the console's name and the book's price only where FSM_CATALOGUE_PUSH is on. Each
+// test sets the push on or off as its own option.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -413,9 +412,7 @@ describe("the item a booking goes on", () => {
   });
 });
 
-// Ops' consumables, kept in FSM's catalogue as parts at Rs. 0 (docs/decisions/0087-consumables-and-stock.md). The
-// push is forced on here only, as a test's own option: FSM_CATALOGUE_PUSH is off in every environment, and staging's
-// FSM is the owner's real org.
+// Ops' consumables, kept in FSM's catalogue as parts at Rs. 0 (docs/decisions/0087-consumables-and-stock.md).
 describe("the consumables, as parts", () => {
   async function consumable(code: string, name: string, fsm: { id: string; name: string } | null = null) {
     await env.DB.prepare(

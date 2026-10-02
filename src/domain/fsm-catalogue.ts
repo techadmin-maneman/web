@@ -12,9 +12,10 @@
 // and both figures.
 //
 // The push makes an item FSM does not have and writes the console's name and the book's price over each that
-// differs, and only where FSM_CATALOGUE_PUSH is on (one environment at a time, as they share one Zoho org). A change in the console that FSM should follow today queues it at once; a price from a later
-// day is found by the check on its day, which queues it then. It is tried once: the next hour's check is its retry,
-// and tells ops if FSM still differs.
+// differs, and only where FSM_CATALOGUE_PUSH is on: one environment at a time, as they share one Zoho org. A change
+// in the console that FSM should follow today queues it at once; a price from a later day is found by the check on
+// its day, which queues it then. It is tried once: the next hour's check is its retry, and tells ops if FSM still
+// differs.
 //
 // The same pass keeps ops' consumables in the catalogue as parts at Rs. 0 (docs/decisions/0087-consumables-and-stock.md).
 // It finds each one's part by our name, and remembers it by its ID, so the console can say where each stands. With
