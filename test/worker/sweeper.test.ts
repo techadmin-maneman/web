@@ -127,9 +127,7 @@ describe("sweeper: leads", () => {
     await sweep(sweepEnv().bindings, fakeDependencies(), createLogger(), OPTIONS);
 
     expect((await env.DB.prepare("SELECT id FROM otp_challenges").all()).results).toEqual([{ id: "recent-code" }]);
-    expect((await env.DB.prepare("SELECT id FROM number_codes").all()).results).toEqual([
-      { id: "recent-number-code" },
-    ]);
+    expect((await env.DB.prepare("SELECT id FROM number_codes").all()).results).toEqual([{ id: "recent-number-code" }]);
     expect((await env.DB.prepare("SELECT id FROM sessions ORDER BY id").all()).results).toEqual([
       { id: "live" },
       { id: "recently-revoked" },

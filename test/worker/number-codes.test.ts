@@ -63,8 +63,10 @@ describe("POST /api/number-code", () => {
 
     expect(status).toBe(202);
     expect(Object.keys(body)).toEqual(["code_id"]);
-    expect(deps.sentCodes).toEqual([{ channel: "whatsapp", to: MOBILE, code: expect.stringMatching(/^\d{6}$/) }]);
-    const row = await env.DB.prepare("SELECT * FROM number_codes").first<Record<string, unknown>>();
+    expect(deps.sentCodes).toEqual([
+      { channel: "whatsapp", to: MOBILE, code: expect.stringMatching(/^\d{6}$/) as string },
+    ]);
+    const row = await env.DB.prepare("SELECT * FROM number_codes").first();
     expect(JSON.stringify(row)).not.toContain("9810000001");
     expect(JSON.stringify(row)).not.toContain(received());
     expect(row).toMatchObject({ id: body.code_id, attempts: 0, verified_at: null, voided_at: null });

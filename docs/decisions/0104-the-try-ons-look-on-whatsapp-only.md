@@ -1,6 +1,6 @@
 # 0104. The try-on's look on WhatsApp only
 
-- Status: accepted, on the owner's ruling D3 of 1 October 2026 (ADR 0025, item 88). Its notices await counsel (`docs/open-points.md`, item 146), its words the owner's second round (item 163), and its run in production waits on WhatsApp (item 164).
+- Status: accepted, on the owner's ruling D3 of 1 October 2026 (ADR 0025, item 88). Its notices await counsel (`docs/open-points.md`, item 146), its words the owner's second round (item 163), and its run in production waits on WhatsApp (item 164). Amended 2 October 2026 (audit finding PS-10; the owner's decision 7): a WhatsApp code proves the number before the claim.
 - Date: 2026-10-01
 - Amends [0014](0014-try-on-api.md), [0018](0018-one-look-pro-only-lead-notices.md), [0022](0022-site-departures-from-v2.md) (items 18, 19, 21 to 24, 30, 32, 33 and 38), [0024](0024-the-browsers-own-look.md), [0070](0070-vendor-correctness.md) and [0084](0084-a-clients-try-on-is-kept.md); follows [0082](0082-try-ons-in-the-app.md) and [0103](0103-the-home-pages-first-copy-round.md)
 
@@ -80,3 +80,13 @@ Every word above that v2 does not have is ours until the owner's second round (i
   - `e2e/try.e2e.ts`, `e2e/try-flow.e2e.ts`, `e2e/try-api.e2e.ts` and `e2e/accessibility.e2e.ts`: the screens, the order of the calls, the sent and unavailable screens, and the local API end to end. The tests that asserted the look on screen now assert the sent screen.
 
 **Amended by the owner, 1 October 2026:** one look per WhatsApp number every thirty days ("One per number, every 30 days"), held at the claim, since the number is known before the look is made (`LOOK_PER_NUMBER_DAYS`, src/policy/tryon-delivery.ts). A look counts once its render was asked for and did not fail; a number that had one is shown that its look was already sent. The three-a-day caps stay as abuse limits.
+
+## Amended 2 October 2026: a WhatsApp code proves the number before the claim
+
+Anyone could type any number at the gate: our number then sent that person a face, the number's thirty-day look was used up, two consents were recorded in its name, and the uploaded photograph appeared in the number owner's app, where it could be kept as their before photo (audit finding PS-10). The owner's decision 7: a WhatsApp code proves the number for `/try`, as it does for the one visit on `/book` (ADR 0081, whose amendment describes the code and its two routes; the rules are `src/policy/number-proof.ts`).
+
+- **The claim needs `number_code_id`:** a code that proved the claimed number in the last 30 minutes. Without one it is refused `403 number_not_proved`, before the job is read and before anything is written.
+- **The gate.** "Send my look" sends the code; its field appears under the number, and "Confirm and send my look" checks it, then claims and asks for the render as before. Another number drops the code; a code past its 30 minutes is refused, and the next press sends a new one. The code is asked for with a fresh Turnstile token, the upload's having been spent.
+- **Only a proved try-on is the client's.** A claim records `tryon_jobs.number_proved_at` (migration 0071). The client app's Photos tab shows, and the sweeper keeps (ADR 0084), only a try-on whose claim came with its number proved. One claimed before this change may hold a stranger's photograph, so it is no longer shown or kept, and goes on its look's day. Staging holds the only such try-ons.
+- **Scripts.** `scripts/staging-tryon.ts` proves its "Staging test" number with `STAGING_TEST_RECORD_CODE`, which it now needs beside `STAGING_TEST_MOBILE`.
+- **Tests.** `test/worker/tryon-api.test.ts` refuses a claim with no code, another number's, one never entered and one past its 30 minutes; `test/worker/client-try-ons.test.ts` and `test/worker/kept-try-ons.test.ts` leave out and let go of a try-on no code proved; `e2e/try-flow.e2e.ts` and `e2e/try-api.e2e.ts` walk the gate with the code.

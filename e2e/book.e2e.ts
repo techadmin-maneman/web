@@ -7,7 +7,18 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page, Request } from "@playwright/test";
 import { fillAddress } from "./booking-area.ts";
-import { analyticsEvents, expect, expectNoPersonalData, fakeTurnstile, test, visit } from "./support.ts";
+import {
+  analyticsEvents,
+  enterNumberCode,
+  expect,
+  expectNoPersonalData,
+  fakeTurnstile,
+  mockNumberCode,
+  NUMBER_CODE,
+  NUMBER_CODE_ID,
+  test,
+  visit,
+} from "./support.ts";
 
 const SERVED = { pincode: "122018", served: true, area: "Sector 65", city: "Gurgaon" };
 const UNSERVED = { pincode: "400050", served: false, area: "Bandra", city: "Mumbai" };
@@ -33,6 +44,7 @@ async function mockApi(
 ): Promise<Request[]> {
   const requests: Request[] = [];
   await fakeTurnstile(page);
+  await mockNumberCode(page);
   await page.route("**/api/pincodes/*", (route) => {
     const pincode = route.request().url().split("/").pop();
     return route.fulfill({ json: pincode === SERVED.pincode ? SERVED : UNSERVED });
@@ -157,9 +169,64 @@ test("offers the consultation and fit in one visit, and says what it holds", asy
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation and fit" }).click();
 
+  // PS-10: nothing is booked for the number until the WhatsApp code sent to it is entered.
+  await expect(page.getByText("Sent on WhatsApp to +91 98100 00000.", { exact: false })).toBeVisible();
+  await expect(page.getByLabel("WhatsApp code")).toBeFocused();
+  expect(requests).toHaveLength(0);
+  const withCode = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(withCode.violations.map((violation) => violation.id)).toEqual([]);
+  await enterNumberCode(page, "Confirm and book");
+
   await expect(page.getByText("Booking received")).toBeVisible();
   const sent = requests[0]?.postDataJSON() as Record<string, unknown>;
-  expect(sent).toMatchObject({ one_visit: true, window: "morning", consent: true, loss_extent: "crown" });
+  expect(sent).toMatchObject({
+    one_visit: true,
+    window: "morning",
+    consent: true,
+    loss_extent: "crown",
+    number_code_id: NUMBER_CODE_ID,
+  });
+});
+
+test("books the one visit only with the right WhatsApp code, and a new number needs its own", async ({ page }) => {
+  const requests = await mockApi(page, { consultation: { status: 201, body: { ...BOOKED, one_visit: true } } });
+  const verified: unknown[] = [];
+  await page.route("**/api/number-code/verify", (route) => {
+    verified.push(route.request().postDataJSON());
+    const right = verified.length > 1;
+    return route.fulfill({ json: right ? { verified: true } : { verified: false, attempts_left: 4 } });
+  });
+  await visit(page, "/book");
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  await page.getByRole("group", { name: "What to book" }).getByText("Consultation and fit, in one visit").click();
+  await fillAddress(page);
+  await page.getByLabel("Name").fill("Test Visitor");
+  await page.getByLabel("Mobile").fill("9810000000");
+  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByRole("button", { name: "Book the consultation and fit" }).click();
+
+  await page.getByLabel("WhatsApp code").fill("111111");
+  await page.getByRole("button", { name: "Confirm and book" }).click();
+  await expect(page.getByText("That code is not right. 4 tries left.")).toBeVisible();
+  expect(requests).toHaveLength(0);
+
+  // The code is the first number's: another number takes the form back to sending one.
+  await page.getByLabel("Mobile").fill("9810000001");
+  await expect(page.getByLabel("WhatsApp code")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Book the consultation and fit" })).toBeVisible();
+  await page.getByLabel("Mobile").fill("9810000000");
+
+  await page.getByLabel("WhatsApp code").fill(NUMBER_CODE);
+  await page.getByRole("button", { name: "Confirm and book" }).click();
+  await expect(page.getByText("Booking received")).toBeVisible();
+  expect(verified).toEqual([
+    { code_id: NUMBER_CODE_ID, code: "111111" },
+    { code_id: NUMBER_CODE_ID, code: NUMBER_CODE },
+  ]);
+  expect(requests).toHaveLength(1);
 });
 
 // A discount code for the one visit, on /book only (docs/decisions/0108-discount-codes.md), which no board draws.
@@ -185,6 +252,7 @@ test("takes a discount code with the one visit, and says only that a wrong one d
   await page.getByLabel("Mobile").fill("9810000000");
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation and fit" }).click();
+  await enterNumberCode(page, "Confirm and book");
   await expect(
     page.getByText("That discount code does not apply. Check it, or leave it out to book without it."),
   ).toBeVisible();

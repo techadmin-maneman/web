@@ -902,11 +902,17 @@ export const tryOn = {
     mobilePlaceholder: "98100 00000",
     mobileError: "Enter all ten digits so we can send your look.",
     submit: "Send my look",
+    // Not drawn: once the WhatsApp code is on its way, the button confirms it and sends the look.
+    confirm: "Confirm and send my look",
     sending: "Sending",
     errors: {
       rateLimited: "This number has had its looks for today. Please try again tomorrow.",
       taken: "This look is already on its way to another number.",
       other: "That did not go through. Please try again in a minute.",
+      // Not drawn: refusals of the WhatsApp code. The owner approves the words.
+      codes: "That is a few too many codes for this number today. Please try again tomorrow.",
+      turnstile: "We could not confirm you are a person. Please try again.",
+      notProved: "Your WhatsApp code has expired. Press Send my look for a new one.",
     },
   },
   /** After the gate: the look is on its way to WhatsApp, and never shown here. */
@@ -959,6 +965,28 @@ export const tryOn = {
       },
     },
   },
+};
+
+// ---------------------------------------------------------------------------
+// The WhatsApp code
+// ---------------------------------------------------------------------------
+
+/**
+ * The code that proves the number before /book's consultation and fit in one visit, or /try's look, acts on it. Not
+ * drawn: words for the owner to approve.
+ */
+export const numberCode = {
+  label: "WhatsApp code",
+  /** The number the code went to goes after it. */
+  sentTo: "Sent on WhatsApp to +91 ",
+  hint: "It confirms the number is yours.",
+  incomplete: "Enter the six digits from WhatsApp.",
+  wrong: (left: number) =>
+    left === 1 ? "That code is not right. One try left." : `That code is not right. ${String(left)} tries left.`,
+  expired: "That code has expired. Send a new one.",
+  failed: "That did not go through. Please try again.",
+  again: "Send a new code",
+  checking: "Checking",
 };
 
 // ---------------------------------------------------------------------------

@@ -27,6 +27,7 @@ function refusal(code: ErrorCode | "network"): string {
   if (code === "not_bookable") return errors.notBookable;
   if (code === "code_not_applicable") return errors.codeNotApplicable;
   if (code === "no_product") return errors.noProduct;
+  if (code === "number_not_proved") return errors.notProved;
   return errors.other;
 }
 
