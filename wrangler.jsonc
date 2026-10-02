@@ -91,6 +91,10 @@
     "ZOHO_BOOKS_API_HOST": "",
     "ZOHO_BOOKS_ORG_ID": "",
     "BOOKS_REFUND_ACCOUNT_ID": "",
+    // GST in Books, empty until the CA gives the GSTIN, the state it is registered in and the SAC code.
+    "BOOKS_GSTIN": "",
+    "BOOKS_GST_STATE": "",
+    "BOOKS_SAC": "",
     // Razorpay (docs/decisions/0044-payments-mirror.md). The stub takes no money and reaches nothing.
     "PAYMENTS_PROVIDER": "stub",
     "GEOCODE_PROVIDER": "stub",
@@ -202,6 +206,10 @@
         "ZOHO_BOOKS_API_HOST": "www.zohoapis.in",
         "ZOHO_BOOKS_ORG_ID": "60088931635",
         "BOOKS_REFUND_ACCOUNT_ID": "4242595000000038161",
+        // GST in Books, empty until the CA gives the GSTIN, the state it is registered in and the SAC code.
+        "BOOKS_GSTIN": "",
+        "BOOKS_GST_STATE": "",
+        "BOOKS_SAC": "",
         // Razorpay in test mode: no real money. The key secret and the webhook secret are secrets.
         "PAYMENTS_PROVIDER": "razorpay",
         // The owner's key is in place (docs/runbook.md, section 13); production waits for the release.
@@ -306,6 +314,10 @@
         "ZOHO_BOOKS_API_HOST": "",
         "ZOHO_BOOKS_ORG_ID": "",
         "BOOKS_REFUND_ACCOUNT_ID": "",
+        // GST in Books, empty until the CA gives the GSTIN, the state it is registered in and the SAC code.
+        "BOOKS_GSTIN": "",
+        "BOOKS_GST_STATE": "",
+        "BOOKS_SAC": "",
         // Razorpay stays off until Phase 2's release (docs/open-points.md, item 6).
         "PAYMENTS_PROVIDER": "none",
         "GEOCODE_PROVIDER": "none",

@@ -12,10 +12,14 @@
 // calls to D1, R2 and the queues are a separate allowance of 1,000 a run, kept
 // by each job's batch sizes (docs/decisions/0093-the-storage-meter.md).
 
+import { BOOKS_ITEM_PUSH } from "../config/environments.ts";
 import { fieldRecord } from "../config/field-record.ts";
+import { NO_GST, type GstRegistration } from "../config/gst.ts";
 import type { Dependencies } from "../dependencies.ts";
 import { resolveAskedWindows } from "../domain/asked-windows.ts";
 import { bookUnbookedHolds, requeueUnbookedHolds } from "../domain/bookings.ts";
+import { raiseBooksInvoices } from "../domain/books-invoices.ts";
+import { checkBooksItems } from "../domain/books-items.ts";
 import { syncBooks, type BooksSyncOptions } from "../domain/books-sync.ts";
 import { finishRun, startRun } from "../domain/cron-runs.ts";
 import { alertAgedDeletions } from "../domain/deletion.ts";
@@ -75,8 +79,9 @@ const ALERT_AFTER_FAILED_RUNS = 3;
 /**
  * What a job needs switched on in this environment before it runs. "fsm_record" is the real FSM: the stub remembers
  * no appointment, so a job that trusts FSM's word on what exists would take it that every visit had been deleted.
+ * "books_without_fsm" is Books where D1, not FSM, is the record of field work (src/config/field-record.ts).
  */
-type Needs = "nothing" | "fsm" | "fsm_record" | "fsm_and_books" | "messaging";
+type Needs = "nothing" | "fsm" | "fsm_record" | "fsm_and_books" | "books" | "books_without_fsm" | "messaging";
 
 export interface CronJob {
   readonly name: string;
@@ -101,6 +106,10 @@ function isSwitchedOn(needs: Needs, config: StaticConfig): boolean {
       return config.providers.FSM_PROVIDER === "zoho";
     case "fsm_and_books":
       return fsm && books;
+    case "books":
+      return books;
+    case "books_without_fsm":
+      return books && fieldRecord(config.providers) === "ours";
     case "messaging":
       return config.settings.messaging.enabled;
   }
@@ -228,9 +237,24 @@ async function paymentLinksJob({ env, deps, log, budget }: CronContext): Promise
   if (sent > 0) log.info("payment_links_sent", { count: sent });
 }
 
-async function invoicesJob({ env, deps, log, budget }: CronContext): Promise<void> {
-  const done = await raiseInvoices(env.DB, deps, deps.now(), log, budget);
+/** FSM raises the invoice on its path; without it, we raise it in Books. */
+async function invoicesJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
+  const options = { labelAsTest: config.environment !== "production", gst: booksGst(config) };
+  const done =
+    fieldRecord(config.providers) === "ours"
+      ? await raiseBooksInvoices(env.DB, deps, options, deps.now(), log, budget)
+      : await raiseInvoices(env.DB, deps, deps.now(), log, budget);
   if (done.raised + done.issued > 0) log.info("invoices_raised", done);
+}
+
+/** Once an hour: the Books item each service offered today is invoiced on. */
+async function booksItemsJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
+  const checked = await checkBooksItems(
+    env.DB,
+    { books: deps.books, alertOnce: deps.alertOnce, resolveAlert: deps.resolveAlert, log },
+    { push: BOOKS_ITEM_PUSH[config.environment], sac: booksGst(config).sac, now: deps.now(), budget },
+  );
+  if (checked !== null && checked.differs.length > 0) log.warn("books_items_differ", { ...checked });
 }
 
 async function askedWindowsJob({ env, deps, log }: CronContext): Promise<void> {
@@ -238,17 +262,27 @@ async function askedWindowsJob({ env, deps, log }: CronContext): Promise<void> {
   if (done.resolved > 0) log.info("asked_windows_resolved", done);
 }
 
-/** The refund account Books' own settings name, and whether what the pass records is labelled as a test. */
+/**
+ * The refund account Books' own settings name, whether what the pass records is labelled as a test, and whether it
+ * makes each client's customer itself, as it does without FSM.
+ */
 export function booksSyncOptions(config: StaticConfig): BooksSyncOptions {
   return {
     refundAccountId: config.settings.zohoBooks?.refundAccountId ?? null,
     labelAsTest: config.environment !== "production",
+    fieldRecord: fieldRecord(config.providers),
+    gst: booksGst(config),
   };
+}
+
+/** The GST registration Books carries here; none where Books is not Zoho's. */
+function booksGst(config: StaticConfig): GstRegistration {
+  return config.settings.zohoBooks?.gst ?? NO_GST;
 }
 
 async function booksJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
   const done = await syncBooks(env.DB, deps, booksSyncOptions(config), deps.now(), log, budget);
-  if (done.recorded + done.applied + done.refunded > 0) log.info("books_synced", done);
+  if (done.customers + done.recorded + done.applied + done.refunded > 0) log.info("books_synced", done);
 }
 
 export const CRON_JOBS: readonly CronJob[] = [
@@ -280,12 +314,14 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "next_service_reminders", needs: "messaging", run: nextServiceRemindersJob },
   // A one visit's payment link its close could not have Razorpay make (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
   { name: "payment_links", needs: "nothing", run: paymentLinksJob },
+  // Once an hour without FSM: the Books item each service is invoiced on, before the invoices that need one.
+  { name: "books_items", needs: "books_without_fsm", run: booksItemsJob },
   // A finished job's invoice (ADRs 0055 and 0056), before the Books pass, which sets
   // a client's advance against the invoice once it is issued.
-  { name: "invoices", needs: "fsm_and_books", run: invoicesJob },
+  { name: "invoices", needs: "books", run: invoicesJob },
   // What the client asked for, beside what the board offers them (ADR 0063).
   { name: "asked_windows", needs: "fsm_and_books", run: askedWindowsJob },
-  { name: "books_sync", needs: "fsm_and_books", run: booksJob },
+  { name: "books_sync", needs: "books", run: booksJob },
 ];
 
 /**
