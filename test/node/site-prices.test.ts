@@ -55,7 +55,7 @@ describe("the site's prices", () => {
     expect(site.prices.rows.map((row) => [row.label, fillPrices(row.amount, words)])).toEqual([
       ["First fit", "From Rs. 35,000"],
       ["Monthly service visit", "Rs. 2,500"],
-      ["Replacement piece", "Rs. 16,000"],
+      ["Replacement hair system", "Rs. 16,000"],
     ]);
     expect(fillPrices(site.prices.example, words)).toBe(
       "Your first year, from Rs. 65,000: the first fit and twelve service visits at Rs. 2,500.",
