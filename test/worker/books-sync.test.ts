@@ -4,7 +4,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { FieldRecord } from "../../src/config/field-record.ts";
-import { GST_REGISTRATION, type GstRegistration } from "../../src/config/gst.ts";
+import { NO_GST, type GstRegistration } from "../../src/config/gst.ts";
 import { createAlertOnce, createResolveAlert } from "../../src/domain/alerts.ts";
 import {
   CALLS_PER_CUSTOMER,
@@ -16,12 +16,7 @@ import {
 } from "../../src/domain/books-sync.ts";
 import { createCallBudget, type CallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
-import {
-  createStubBooks,
-  type BooksInvoice,
-  type BooksProvider,
-  type StubBooks,
-} from "../../src/providers/books.ts";
+import { createStubBooks, type BooksInvoice, type BooksProvider, type StubBooks } from "../../src/providers/books.ts";
 import { createStubFsm, EMPTY_FSM, type FsmContact } from "../../src/providers/fsm.ts";
 import { ZohoError } from "../../src/providers/zoho-http.ts";
 import { captureLogs, NOW } from "./helpers.ts";
@@ -69,7 +64,7 @@ const optionsFor = (record: FieldRecord, overrides: Partial<BooksSyncOptions> = 
   refundAccountId: "bank-7",
   labelAsTest: true,
   fieldRecord: record,
-  gst: GST_REGISTRATION,
+  gst: NO_GST,
   ...overrides,
 });
 
@@ -149,7 +144,7 @@ const openAlerts = () => env.DB.prepare("SELECT COUNT(*) AS n FROM alerts WHERE 
  */
 function bothLooking() {
   let looks = 0;
-  let release = () => {};
+  let release: () => void = () => undefined;
   const second = new Promise<void>((resolve) => {
     release = resolve;
   });
@@ -756,6 +751,20 @@ describe("without FSM, the pass makes each client's Books customer", () => {
     expect(await pass(books, null)).toEqual(did({ customers: 1 }));
   });
 
+  it("makes none for a client whose only finished visit is free: a consultation, or a one visit they declined", async () => {
+    await env.DB.prepare("UPDATE appointments SET status = 'completed', type = 'consultation' WHERE id = ?1")
+      .bind(VISIT)
+      .run();
+    const books = createStubBooks();
+    expect(await pass(books, null)).toEqual(did({}));
+
+    await env.DB.prepare("UPDATE appointments SET type = 'first_fit', one_visit = 'declined' WHERE id = ?1")
+      .bind(VISIT)
+      .run();
+    expect(await pass(books, null, later(RECHECK_AFTER_MS * 2))).toEqual(did({}));
+    expect(books.made.customers).toEqual([]);
+  });
+
   it("makes none for a client with nothing to record", async () => {
     const books = createStubBooks();
     expect(await pass(books, null)).toEqual(did({}));
@@ -803,7 +812,9 @@ describe("without FSM, the pass makes each client's Books customer", () => {
     const logs = captureLogs();
 
     expect(await pass(books, null)).toEqual(did({}));
-    expect(logs.lines()).toContainEqual(expect.objectContaining({ event: "books_customer_refused", person_id: PERSON }));
+    expect(logs.lines()).toContainEqual(
+      expect.objectContaining({ event: "books_customer_refused", person_id: PERSON }),
+    );
     expect(told).toEqual([
       `Books refused client ${PERSON}'s customer record: 400 4071. It is asked again every hour. ${CLIENT_LINK}`,
     ]);

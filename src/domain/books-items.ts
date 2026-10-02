@@ -1,16 +1,13 @@
-// The Books item each service is invoiced on (docs/decisions/0110-field-work-without-fsm.md), where FSM's catalogue
-// no longer is. The invoice pass bills a visit on its service's item (src/domain/books-invoices.ts), and waits for one
-// whose service has none.
+// The Books item each service is invoiced on, where FSM's catalogue no longer is. The invoice pass bills a visit on
+// its service's item, and waits for a service that has none.
 //
 // Once an hour each service offered today is matched to its item: the one kept on it, else the active one Books holds
-// under its name, which is then kept, so the two stay together whatever either is renamed to. With the push on, an
-// item Books lacks is made, and one that differs is written with the console's name, the price book's price today,
-// GST included, and the SAC code once the CA has given one, a few a pass; ops hear only of one still unsettled an hour
-// on. With the push off, ops are told of each at once. The push is on only where this environment is Books' one writer
-// of items (BOOKS_ITEM_PUSH): staging and production share one Books organisation.
+// under its name, which is then kept. With the push on, an item Books lacks is made, and one that differs is written
+// with the console's name, today's GST-inclusive price and the SAC code, a few a pass; ops hear only of one still
+// unsettled an hour on. With the push off, ops are told of each at once. Staging and production share one Books
+// organisation, so only the environment BOOKS_ITEM_PUSH names writes.
 //
-// An invoice carries its own name and price, so an item that differs never changes what a client is billed: the item
-// is what Books offers ops raising an invoice by hand.
+// An invoice carries its own name and price, so an item that differs never changes what a client is billed.
 
 import { rupees } from "@maneman/web-kit/money";
 import type { CallBudget } from "../lib/call-budget.ts";
@@ -152,9 +149,7 @@ function itemFor(
 ): BooksItem | undefined {
   const kept = items.find((item) => item.id === service.booksItemId);
   if (kept !== undefined) return kept;
-  const keptByOthers = new Set(
-    offered.filter((other) => other !== service).map((other) => other.booksItemId),
-  );
+  const keptByOthers = new Set(offered.filter((other) => other !== service).map((other) => other.booksItemId));
   return items.find((item) => item.active && sameName(item.name, service.name) && !keptByOthers.has(item.id));
 }
 
@@ -197,8 +192,8 @@ function gapMessage(gap: ItemGap, pushOn: boolean): string {
   if (item === null) {
     if (pushOn) {
       return (
-        `Books still has no item named "${wanted.name}" an hour after this check tried to make it, so its visits ` +
-        `cannot be invoiced: look for books_item_push_failed in the logs, and add it in Books as a service at ${price}.`
+        `Books still has no item named "${wanted.name}" an hour after it was asked to make one, so its visits ` +
+        `cannot be invoiced. Add it in Books as a service at ${price}, named exactly so.`
       );
     }
     return (
@@ -218,7 +213,7 @@ function gapMessage(gap: ItemGap, pushOn: boolean): string {
   }
   lines.push(
     pushOn
-      ? "It still differs an hour after this check tried to write it: look for books_item_push_failed in the logs, and set it in Books by hand."
+      ? "It still differs an hour after Books was asked to change it: set it in Books by hand."
       : "Set it in Books by hand. An invoice carries its own price, so this changes only what Books offers an invoice raised by hand.",
   );
   return lines.join(" ");

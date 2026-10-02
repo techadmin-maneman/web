@@ -445,6 +445,14 @@ describe("GET /api/tasks", () => {
     expect(groupNames(await tasks())).toEqual([]);
   });
 
+  it("lists the draft of a visit booked without FSM, which has no work order", async () => {
+    await draftInvoice();
+    await env.DB.prepare("UPDATE appointments SET fsm_id = id, fsm_work_order_id = NULL, fsm_status = NULL").run();
+    expect(tasksIn(await tasks(), "draft_invoice")).toEqual([
+      expect.objectContaining({ id: VISIT, detail: "books-inv-7" }),
+    ]);
+  });
+
   it("lists an erased client whose FSM contact the sweeper gave up on, until it is anonymised", async () => {
     const erased = (attempts: number) =>
       env.DB.prepare(

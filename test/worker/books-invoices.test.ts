@@ -1,9 +1,9 @@
 // The invoice a finished visit gets in Books without FSM: raised from our own figures, sent when it totals what was
-// sold (docs/decisions/0110-field-work-without-fsm.md). Every name and number here is made up.
+// sold. Every name and number here is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { GST_REGISTRATION, type GstRegistration } from "../../src/config/gst.ts";
+import { NO_GST, type GstRegistration } from "../../src/config/gst.ts";
 import { createAlertOnce, createResolveAlert } from "../../src/domain/alerts.ts";
 import {
   CALLS_PER_VISIT,
@@ -51,7 +51,7 @@ function invoicePass(
   options: Partial<BooksInvoiceOptions> = {},
   budget: CallBudget = createCallBudget(Infinity),
 ) {
-  const all = { labelAsTest: true, gst: GST_REGISTRATION, ...options };
+  const all = { labelAsTest: true, gst: NO_GST, ...options };
   return raiseBooksInvoices(env.DB, depsAt(books, now), all, now, createLogger(), budget);
 }
 
@@ -98,7 +98,14 @@ async function paid(amount: number, appointmentId = VISIT) {
        captured_at, created_at, updated_at)
      VALUES (?1, ?2, ?3, ?4, ?5, 'INR', 'captured', 'visit', ?6, ?6, ?6)`,
   )
-    .bind(`payment-${appointmentId}`, PERSON, appointmentId, `pay_${appointmentId.slice(0, 8)}`, amount, NOW.toISOString())
+    .bind(
+      `payment-${appointmentId}`,
+      PERSON,
+      appointmentId,
+      `pay_${appointmentId.slice(0, 8)}`,
+      amount,
+      NOW.toISOString(),
+    )
     .run();
 }
 
@@ -120,7 +127,8 @@ function booksTotalling(stub: StubBooks) {
     stub,
     provider: {
       ...stub,
-      createInvoice: async (invoice: Parameters<StubBooks["createInvoice"]>[0]) => off(await stub.createInvoice(invoice)),
+      createInvoice: async (invoice: Parameters<StubBooks["createInvoice"]>[0]) =>
+        off(await stub.createInvoice(invoice)),
       invoice: async (id: string) => {
         const held = await stub.invoice(id);
         return held === null ? null : off(held);
@@ -179,12 +187,16 @@ describe("the invoice a finished visit gets", () => {
     expect(books.made.issued).toEqual([billed?.fsm_invoice_id]);
     expect(billed?.invoice_issued_at).toBe(AFTER.toISOString());
 
-    const options = { refundAccountId: null, labelAsTest: true, fieldRecord: "ours", gst: GST_REGISTRATION } as const;
+    const options = { refundAccountId: null, labelAsTest: true, fieldRecord: "ours", gst: NO_GST } as const;
     const deps = { ...depsAt(books, AFTER), fsm: createStubFsm(EMPTY_FSM) };
     await syncBooks(env.DB, deps, options, AFTER, createLogger(), createCallBudget(Infinity));
     expect(books.made.customers).toHaveLength(1);
     expect(books.made.applied).toEqual([
-      { paymentId: expect.stringMatching(/^stub-payment-/) as string, invoiceId: billed?.fsm_invoice_id, amount: 3_000_000 },
+      {
+        paymentId: expect.stringMatching(/^stub-payment-/) as string,
+        invoiceId: billed?.fsm_invoice_id,
+        amount: 3_000_000,
+      },
     ]);
   });
 
@@ -219,7 +231,11 @@ describe("the invoice a finished visit gets", () => {
 
     expect(await invoicePass(books)).toEqual({ raised: 0, issued: 0 });
     expect(logs.lines()).toContainEqual(expect.objectContaining({ event: "invoice_failed", appointment_id: VISIT }));
-    expect(await row()).toEqual({ fsm_invoice_id: null, invoice_checked_at: AFTER.toISOString(), invoice_issued_at: null });
+    expect(await row()).toEqual({
+      fsm_invoice_id: null,
+      invoice_checked_at: AFTER.toISOString(),
+      invoice_issued_at: null,
+    });
 
     expect(await invoicePass(books, later(RECHECK_AFTER_MS / 2))).toEqual({ raised: 0, issued: 0 });
     expect(await invoicePass(books, later(RECHECK_AFTER_MS + 1000))).toEqual({ raised: 0, issued: 1 });
@@ -252,7 +268,11 @@ describe("the invoice a finished visit gets", () => {
     const books = createStubBooks();
 
     expect(await invoicePass(books)).toEqual({ raised: 1, issued: 1 });
-    expect(books.made.invoices[0]?.line).toMatchObject({ itemId: "item-classic", name: "Mane Classic", rate: 2_500_000 });
+    expect(books.made.invoices[0]?.line).toMatchObject({
+      itemId: "item-classic",
+      name: "Mane Classic",
+      rate: 2_500_000,
+    });
   });
 
   it("raises none for a consultation, nor for a one visit the client declined", async () => {
@@ -290,7 +310,9 @@ describe("the invoice a finished visit gets", () => {
     await visit();
     const books = createStubBooks();
     expect(await invoicePass(books)).toEqual({ raised: 0, issued: 0 });
-    expect(logs.lines()).toContainEqual(expect.objectContaining({ event: "invoice_item_missing", appointment_id: VISIT }));
+    expect(logs.lines()).toContainEqual(
+      expect.objectContaining({ event: "invoice_item_missing", appointment_id: VISIT }),
+    );
     expect(alerted).toEqual([]);
 
     await itemKept("service", "standard", "item-service");
@@ -375,7 +397,7 @@ describe("sending it", () => {
 
     expect(await invoicePass(books)).toEqual({ raised: 1, issued: 0 });
     expect(alerted[0]).toContain("was paid with a referral credit");
-    expect(alerted[0]).toContain("open point 14");
+    expect(alerted[0]).toContain("waits for the accountant");
     await invoicePass(books, later(RECHECK_AFTER_MS + 1000));
     expect(books.made.issued).toEqual([]);
     expect(books.made.invoices).toHaveLength(1);

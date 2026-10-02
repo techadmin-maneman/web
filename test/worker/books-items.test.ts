@@ -1,5 +1,4 @@
-// The hourly check of each service's Books item, without FSM (docs/decisions/0110-field-work-without-fsm.md). Every
-// name and number here is made up.
+// The hourly check of each service's Books item, without FSM. Every name and number here is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -108,9 +107,7 @@ describe("each service's Books item", () => {
 
     const checked = await check(books, { push: true, now: sunday });
     expect(books.made.itemsMade).toEqual([{ name: "Service visit", rate: 210_000, sac: null }]);
-    expect(books.made.itemUpdates).toEqual([
-      { itemId: before?.id, name: "Replacement", rate: 1_575_000, sac: null },
-    ]);
+    expect(books.made.itemUpdates).toEqual([{ itemId: before?.id, name: "Replacement", rate: 1_575_000, sac: null }]);
     expect(checked).toEqual({ differs: [], written: 2 });
     const kept = await keptItems();
     expect(kept).toContainEqual({ kind: "service", books_item_id: expect.stringMatching(/^stub-item-/) as string });
@@ -123,7 +120,9 @@ describe("each service's Books item", () => {
     const books = createStubBooks({ draftTotal: 0, items: renamed });
 
     await check(books, { push: true });
-    expect(books.made.itemUpdates).toEqual([{ itemId: "item-service", name: "Service visit", rate: 200_000, sac: null }]);
+    expect(books.made.itemUpdates).toEqual([
+      { itemId: "item-service", name: "Service visit", rate: 200_000, sac: null },
+    ]);
     expect(books.made.itemsMade).toEqual([]);
   });
 
@@ -152,9 +151,8 @@ describe("each service's Books item", () => {
     books.refuseNext("createItem", "1001");
     await check(books, { push: true, now: anHourOn(1) });
     expect(alerted).toEqual([
-      'Books still has no item named "Service visit" an hour after this check tried to make it, so its visits ' +
-        "cannot be invoiced: look for books_item_push_failed in the logs, and add it in Books as a service at " +
-        `Rs. 2,000, GST included. ${PRICES_LINK}`,
+      'Books still has no item named "Service visit" an hour after it was asked to make one, so its visits ' +
+        `cannot be invoiced. Add it in Books as a service at Rs. 2,000, GST included, named exactly so. ${PRICES_LINK}`,
     ]);
 
     await check(books, { push: true, now: anHourOn(2) });

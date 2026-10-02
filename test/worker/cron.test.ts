@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { GST_REGISTRATION } from "../../src/config/gst.ts";
+import { NO_GST } from "../../src/config/gst.ts";
 import { CUT_SHORT_ALERT, finishRun, lastCompletedAt, startRun } from "../../src/domain/cron-runs.ts";
 import type { StaticConfig } from "../../src/guard.ts";
 import { createLogger } from "../../src/log.ts";
@@ -376,15 +376,15 @@ describe("CRON_JOBS", () => {
     ]);
   });
 
-  it("without FSM, bills and settles in Books and checks its items, and runs none of FSM's jobs", async () => {
+  it("without FSM, bills and settles in Books, checks its items and books unbooked holds, and runs none of FSM's jobs", async () => {
     const ours: StaticConfig = {
       ...LOCAL_CONFIG,
       providers: { ...LOCAL_CONFIG.providers, FSM_PROVIDER: "none", BOOKS_PROVIDER: "stub" },
     };
     const outcomes = await runCronJobs(CRON_JOBS, { env, deps: fakeDependencies(), config: ours, log: createLogger() });
     const ran = outcomes.map((outcome) => outcome.job);
-    expect(ran).toEqual(expect.arrayContaining(["books_items", "invoices", "books_sync"]));
-    for (const fsmOnly of ["unbooked_holds", "fsm_reconcile", "fsm_catalogue", "asked_windows"]) {
+    expect(ran).toEqual(expect.arrayContaining(["unbooked_holds", "books_items", "invoices", "books_sync"]));
+    for (const fsmOnly of ["fsm_reconcile", "fsm_catalogue", "asked_windows"]) {
       expect(ran, fsmOnly).not.toContain(fsmOnly);
     }
     expect(outcomes.filter((outcome) => !outcome.ok)).toEqual([]);
@@ -490,9 +490,10 @@ describe("the Books pass's options", () => {
     apiHost: "www.zohoapis.in",
     orgId: "60088931635",
     refundAccountId: "bank-7",
+    gst: { gstin: "06AAACM1234A1Z5", stateCode: "HR", sac: "999721" },
   };
 
-  it("takes the refund account from Books' own settings, whatever FSM is, and makes customers only without it", () => {
+  it("takes the refund account and GST from Books' own settings, whatever FSM is, and makes customers only without it", () => {
     for (const [FSM_PROVIDER, record] of [
       ["zoho", "fsm"],
       ["none", "ours"],
@@ -507,15 +508,16 @@ describe("the Books pass's options", () => {
         refundAccountId: "bank-7",
         labelAsTest: true,
         fieldRecord: record,
-        gst: GST_REGISTRATION,
+        gst: zohoBooks.gst,
       });
     }
   });
 
-  it("has no refund account without Books' settings, and labels nothing as a test in production", () => {
+  it("has no refund account or GST without Books' settings, and labels nothing as a test in production", () => {
     expect(booksSyncOptions({ ...LOCAL_CONFIG, environment: "production" })).toMatchObject({
       refundAccountId: null,
       labelAsTest: false,
+      gst: NO_GST,
     });
   });
 });

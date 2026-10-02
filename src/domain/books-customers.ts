@@ -1,10 +1,6 @@
-// A client's customer in Zoho Books, which we make ourselves where FSM's sync no longer does
-// (docs/decisions/0110-field-work-without-fsm.md). Books finds it by the person's ID, kept in its "MM person ID"
-// field, so a write whose answer never came lands on the same customer. Made on the five-minute cron only, never while
-// someone books, and never for a person erased: an erased customer still holds the ID, and a write would refill it.
-//
-// The customer carries the state of the client's city as their place of contact once GST is on in Books, so Books
-// splits the tax by the right state (src/config/gst.ts).
+// A client's customer in Zoho Books, where no FSM sync makes it. Books keys it by the person's ID in its "MM person
+// ID" field, so a write whose answer never came lands on the same customer. Never written for an erased person: their
+// customer still holds the ID, and a write would refill it.
 
 import { placeOfSupply, stateOf, type GstRegistration } from "../config/gst.ts";
 import type { BooksProvider, NewBooksCustomer } from "../providers/books.ts";
@@ -36,17 +32,6 @@ function personRow(db: D1Database, personId: string): Promise<PersonRow | null> 
     .first<PersonRow>();
 }
 
-/** The person as their Books customer holds them; null for one erased, or no such person. */
-export async function booksCustomerOf(
-  db: D1Database,
-  personId: string,
-  gst: GstRegistration,
-): Promise<NewBooksCustomer | null> {
-  const person = await personRow(db, personId);
-  if (person === null || person.erased_at !== null) return null;
-  return customerFrom(db, personId, person, gst);
-}
-
 async function customerFrom(
   db: D1Database,
   personId: string,
@@ -71,8 +56,8 @@ function billingAddressOf(saved: SavedAddress | null): NewBooksCustomer["address
 }
 
 /**
- * The person's Books customer: the one kept on them, else one written now by their person ID and kept at once, so
- * the pass that wrote it and any after it use the same. One Books call at most. Null for a person erased.
+ * The person's Books customer: the one kept on them, else one written now by their person ID and kept at once. One
+ * Books call at most. Null for a person erased.
  */
 export async function customerFor(
   db: D1Database,
@@ -81,13 +66,16 @@ export async function customerFor(
   gst: GstRegistration,
 ): Promise<string | null> {
   const person = await personRow(db, personId);
-  if (person === null || person.erased_at !== null) return null;
+  if (person === null) return null;
+  if (person.erased_at !== null) return null;
   if (person.books_customer_id !== null) return person.books_customer_id;
 
   const customerId = await books.upsertCustomer(await customerFrom(db, personId, person, gst));
-  // Kept whatever happened to the person meanwhile: an erasure finds the customer by it.
+  // Kept even if the person was erased meanwhile: the erasure finds the customer by it.
   await db
-    .prepare("UPDATE people SET books_customer_id = ?1, books_checked_at = NULL WHERE id = ?2 AND books_customer_id IS NULL")
+    .prepare(
+      "UPDATE people SET books_customer_id = ?1, books_checked_at = NULL WHERE id = ?2 AND books_customer_id IS NULL",
+    )
     .bind(customerId, personId)
     .run();
   return customerId;

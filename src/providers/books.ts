@@ -380,7 +380,15 @@ function stubDocumentsAndPayments(made: StubMade, world: StubBooksWorld, control
       const id = `stub-invoice-${crypto.randomUUID()}`;
       const total = invoice.line.rate - invoice.line.discount;
       const number = `INV-${String(made.invoices.length).padStart(6, "0")}`;
-      const raised = { id, number, date: invoice.date, total, balance: total, status: "draft", reference: invoice.reference };
+      const raised = {
+        id,
+        number,
+        date: invoice.date,
+        total,
+        balance: total,
+        status: "draft",
+        reference: invoice.reference,
+      };
       invoicesById.set(id, raised);
       invoicesByReference.set(invoice.reference, raised);
       return controls.answer("createInvoice", raised, id);
@@ -446,7 +454,8 @@ function stubItems(made: StubMade, world: StubBooksWorld, controls: StubControls
       made.itemUpdates.push({ itemId, ...item });
       const index = held.findIndex((each) => each.id === itemId);
       const current = held[index];
-      if (current !== undefined) held[index] = { ...current, name: item.name, rate: item.rate, sac: item.sac ?? current.sac };
+      if (current !== undefined)
+        held[index] = { ...current, name: item.name, rate: item.rate, sac: item.sac ?? current.sac };
     },
   };
   return stub;

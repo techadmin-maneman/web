@@ -11,6 +11,7 @@
 
 import { DatabaseSync } from "node:sqlite";
 import { parseArgs } from "node:util";
+import { NO_GST } from "../src/config/gst.ts";
 import type { ZohoBooksSettings } from "../src/config/settings.ts";
 import { indiaDate } from "../src/lib/india-time.ts";
 import type { Logger, LogFields } from "../src/log.ts";
@@ -40,6 +41,7 @@ const settings: ZohoBooksSettings = {
   apiHost: required("ZOHO_BOOKS_API_HOST"),
   orgId: required("ZOHO_BOOKS_ORG_ID"),
   refundAccountId: null,
+  gst: NO_GST,
 };
 
 /** The one table the requester keeps, in memory: the access token, minted once for the run. */

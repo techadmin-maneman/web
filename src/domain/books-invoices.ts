@@ -1,23 +1,13 @@
-// The invoice for a finished visit, raised in Books from our own figures where FSM no longer raises it
-// (docs/decisions/0110-field-work-without-fsm.md, rule 6; 0055-invoices.md and 0056-issuing-the-invoice.md).
+// The invoice for a finished visit, raised in Books from our own figures where FSM does not raise it.
 //
-// One line on the visit's Books item (src/domain/books-items.ts): the price book's price on the day of the visit, GST
-// included, less a discount code before tax (docs/decisions/0108-discount-codes.md), under the appointment's ID as
-// its reference, which is how a later pass finds it. Its place of supply is the visit's state once GST is on. Books'
-// ID for it is kept in `appointments.fsm_invoice_id`, the column the client app streams the invoice from.
+// One line on the visit's Books item: the price book's GST-inclusive price on the day, less any discount code before
+// tax, under the appointment's ID as its reference, by which a later pass finds it. Books works out the total. The
+// invoice is sent, and the client may open it, only when it totals what the visit was sold for, and never for a visit a
+// referral credit paid for; otherwise it stays a draft and ops are told. A draft under any other reference was made by
+// hand, and is never sent from here. A consultation is free, and is not invoiced.
 //
-// Books works out the total, which is read back. The invoice is sent, and only then may the client open it, when it
-// totals what the client was sold the visit for, and never for a visit a referral credit paid for until the CA rules
-// how (src/policy/prepayment.ts). Otherwise it stays a draft and ops are told. A draft of ours, found again by its
-// reference, is sent by a later pass once it totals what was sold; a draft Books holds under any other reference was
-// made by hand, and is never sent from here (the owner's ruling of 2 October 2026).
-//
-// A consultation is free and gets no invoice, nor does a one visit the client declined; a one visit the client was
-// fitted at is invoiced on the product they chose (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
-//
-// On the five-minute cron, before the Books pass, a few visits a run. Each is claimed before Books is asked, so a run
-// that overlaps the one before leaves it, and is handled on its own (docs/decisions/0067-alerts-and-silent-failures.md):
-// one that fails waits an hour, and ops are told of a refusal at once and of any other failure on its third time.
+// Each visit is claimed before Books is asked, so overlapping runs never raise it twice. One that fails waits an hour;
+// ops hear of a refusal at once and of any other failure on its third time.
 
 import { shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
@@ -264,7 +254,8 @@ async function itemOf(db: D1Database, visit: Visit): Promise<{ itemId: string; n
     .prepare("SELECT name, books_item_id FROM services WHERE kind = ?1 AND tier = ?2")
     .bind(visit.type, visit.tier ?? STANDARD_TIER)
     .first<{ name: string; books_item_id: string | null }>();
-  if (service === null || service.books_item_id === null) return null;
+  if (service === null) return null;
+  if (service.books_item_id === null) return null;
   return { itemId: service.books_item_id, name: service.name };
 }
 
@@ -350,8 +341,8 @@ async function tellHeld(
       `nothing here says what the visit was sold for, so its ${rupees(invoice.total)} cannot be checked. ` +
       "Check the draft in Books and send it there.",
     paid_with_credit:
-      "the visit was paid with a referral credit, and how a credit visit is invoiced waits for the CA " +
-      "(open point 14). Leave the draft until then: nothing here sends it.",
+      "the visit was paid with a referral credit, and how such a visit is invoiced waits for the accountant. " +
+      "Leave the draft until then: nothing here sends it.",
   };
   await pass.deps.alertOnce({ key: `invoice_draft:${visit.id}`, message: `${held} ${why[hold]}`, link: linkTo(visit) });
 }

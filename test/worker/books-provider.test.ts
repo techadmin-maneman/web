@@ -4,6 +4,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import { NO_GST } from "../../src/config/gst.ts";
 import type { ZohoBooksSettings } from "../../src/config/settings.ts";
 import { createLogger } from "../../src/log.ts";
 import {
@@ -36,6 +37,7 @@ const SETTINGS: ZohoBooksSettings = {
   apiHost: "www.zohoapis.in",
   orgId: "60088931635",
   refundAccountId: null,
+  gst: NO_GST,
 };
 
 const ZOHO_TOKEN_URL = "https://accounts.zoho.in/oauth/v2/token";
@@ -338,7 +340,13 @@ describe("Books: items", () => {
     });
     const items = await books.items();
     expect(items).toHaveLength(6);
-    expect(items[1]).toEqual({ id: "4242595000000034206", name: "First fit", rate: 3_000_000, active: true, sac: null });
+    expect(items[1]).toEqual({
+      id: "4242595000000034206",
+      name: "First fit",
+      rate: 3_000_000,
+      active: true,
+      sac: null,
+    });
     expect(items[5]).toEqual({
       id: "4242595000000245041",
       name: "Staging test: proof item 82af00 b",
@@ -706,7 +714,9 @@ describe("the stand-ins", () => {
     books.refuseNext("upsertCustomer", "120303");
     await expect(books.upsertCustomer(CUSTOMER)).rejects.toMatchObject({ status: 400, code: "120303", refusal: true });
     books.loseAnswer("createItem");
-    await expect(books.createItem({ name: "Replacement", rate: 1, sac: null })).rejects.toThrow(/its answer never came/);
+    await expect(books.createItem({ name: "Replacement", rate: 1, sac: null })).rejects.toThrow(
+      /its answer never came/,
+    );
     expect((await books.items()).map((item) => item.name)).toContain("Replacement");
   });
 

@@ -130,8 +130,8 @@ export async function syncBooks(
 // ---------------------------------------------------------------------------
 
 /**
- * People with a captured payment not yet recorded, or a finished visit not yet invoiced, and no customer yet. Read
- * from what waits on them, so only the waiting rows are read; one with two such rows is listed once.
+ * People with no customer yet and a captured payment not yet recorded, or a finished visit to invoice. Read from what
+ * waits on them, so only the waiting rows are read; one with two such rows is listed once.
  */
 async function customersToAdd(pass: Pass): Promise<string[]> {
   const { results } = await pass.db
@@ -140,7 +140,8 @@ async function customersToAdd(pass: Pass): Promise<string[]> {
          SELECT p.person_id AS id FROM payments p WHERE p.books_payment_id IS NULL AND p.captured_at IS NOT NULL
          UNION ALL
          SELECT a.person_id AS id FROM appointments a
-         WHERE a.status = 'completed' AND a.invoice_issued_at IS NULL AND a.deleted_at IS NULL) waiting
+         WHERE a.status = 'completed' AND a.invoice_issued_at IS NULL AND a.deleted_at IS NULL
+           AND a.type IN ('first_fit', 'service', 'replacement') AND a.one_visit IS NOT 'declined') waiting
        JOIN people pe ON pe.id = waiting.id
        WHERE pe.books_customer_id IS NULL AND pe.erased_at IS NULL
          AND (pe.books_checked_at IS NULL OR pe.books_checked_at < ?1)
@@ -230,7 +231,7 @@ async function customerOfPayment(pass: Pass, payment: PaymentToRecord): Promise<
 /** True when Books has it now. */
 async function recordPayment(pass: Pass, payment: PaymentToRecord): Promise<boolean> {
   const { db, deps } = pass;
-  if (!(await claimPayment(pass, payment.id))) return false;
+  if (!(await claimToRecord(pass, payment.id))) return false;
   const failed = {
     kind: "payment",
     id: payment.id,
@@ -299,7 +300,7 @@ async function paymentsToApply(pass: Pass): Promise<PaymentToApply[]> {
 /** True when it was set against its invoice now. */
 async function applyPayment(pass: Pass, payment: PaymentToApply): Promise<boolean> {
   const { deps } = pass;
-  if (!(await claimPayment(pass, payment.id))) return false;
+  if (!(await claimToApply(pass, payment.id))) return false;
   const failed = {
     kind: "apply",
     id: payment.id,
@@ -548,13 +549,27 @@ async function closeFailures(pass: Pass, record: FailedRecord): Promise<void> {
 
 /**
  * Takes the payment for this pass, marking it tried now, so an overlapping run leaves it and a failure waits an hour;
- * false where another run took it first.
+ * false where another run took it first, or has recorded it since.
  */
-async function claimPayment(pass: Pass, paymentId: string): Promise<boolean> {
+async function claimToRecord(pass: Pass, paymentId: string): Promise<boolean> {
   const claimed = await pass.db
     .prepare(
       `UPDATE payments SET books_checked_at = ?1
-       WHERE id = ?2 AND (books_checked_at IS NULL OR books_checked_at < ?3) RETURNING id`,
+       WHERE id = ?2 AND books_payment_id IS NULL AND (books_checked_at IS NULL OR books_checked_at < ?3)
+       RETURNING id`,
+    )
+    .bind(pass.at, paymentId, pass.recheck)
+    .first();
+  return claimed !== null;
+}
+
+/** As claimToRecord, for setting the payment against its invoice. */
+async function claimToApply(pass: Pass, paymentId: string): Promise<boolean> {
+  const claimed = await pass.db
+    .prepare(
+      `UPDATE payments SET books_checked_at = ?1
+       WHERE id = ?2 AND books_applied_at IS NULL AND (books_checked_at IS NULL OR books_checked_at < ?3)
+       RETURNING id`,
     )
     .bind(pass.at, paymentId, pass.recheck)
     .first();

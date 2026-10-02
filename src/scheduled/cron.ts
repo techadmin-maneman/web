@@ -14,7 +14,7 @@
 
 import { BOOKS_ITEM_PUSH } from "../config/environments.ts";
 import { fieldRecord } from "../config/field-record.ts";
-import { GST_REGISTRATION } from "../config/gst.ts";
+import { NO_GST, type GstRegistration } from "../config/gst.ts";
 import type { Dependencies } from "../dependencies.ts";
 import { resolveAskedWindows } from "../domain/asked-windows.ts";
 import { bookUnbookedHolds, requeueUnbookedHolds } from "../domain/bookings.ts";
@@ -232,7 +232,7 @@ async function paymentLinksJob({ env, deps, log, budget }: CronContext): Promise
 
 /** FSM raises the invoice on its path; without it, we raise it in Books. */
 async function invoicesJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
-  const options = { labelAsTest: config.environment !== "production", gst: GST_REGISTRATION };
+  const options = { labelAsTest: config.environment !== "production", gst: booksGst(config) };
   const done =
     fieldRecord(config.providers) === "ours"
       ? await raiseBooksInvoices(env.DB, deps, options, deps.now(), log, budget)
@@ -245,7 +245,7 @@ async function booksItemsJob({ env, deps, config, log, budget }: CronContext): P
   const checked = await checkBooksItems(
     env.DB,
     { books: deps.books, alertOnce: deps.alertOnce, resolveAlert: deps.resolveAlert, log },
-    { push: BOOKS_ITEM_PUSH[config.environment], sac: GST_REGISTRATION.sac, now: deps.now(), budget },
+    { push: BOOKS_ITEM_PUSH[config.environment], sac: booksGst(config).sac, now: deps.now(), budget },
   );
   if (checked !== null && checked.differs.length > 0) log.warn("books_items_differ", { ...checked });
 }
@@ -264,8 +264,13 @@ export function booksSyncOptions(config: StaticConfig): BooksSyncOptions {
     refundAccountId: config.settings.zohoBooks?.refundAccountId ?? null,
     labelAsTest: config.environment !== "production",
     fieldRecord: fieldRecord(config.providers),
-    gst: GST_REGISTRATION,
+    gst: booksGst(config),
   };
+}
+
+/** The GST registration Books carries here; none where Books is not Zoho's. */
+function booksGst(config: StaticConfig): GstRegistration {
+  return config.settings.zohoBooks?.gst ?? NO_GST;
 }
 
 async function booksJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
