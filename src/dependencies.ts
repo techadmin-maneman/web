@@ -93,7 +93,7 @@ export function productionDependencies(config: StaticConfig): DependencyFactory 
       access,
       codes: createCodeSender(config.providers.SMS_PROVIDER, { messaging, log }),
       fsm: createFsmProvider(config.providers.FSM_PROVIDER, settings.zohoFsm, zoho),
-      books: createBooksProvider(config.providers.BOOKS_PROVIDER, settings.zohoFsm, zoho),
+      books: createBooksProvider(config.providers.BOOKS_PROVIDER, settings.zohoBooks, zoho),
       payments: createPaymentsProvider(config.providers.PAYMENTS_PROVIDER, settings.razorpay, {
         fetch: httpFetch,
         log,

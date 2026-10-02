@@ -467,9 +467,7 @@ describe("the consumables, as parts", () => {
       refreshToken: "1000.fsm-refresh",
       accountsHost: "accounts.zoho.in",
       apiHost: "www.zohoapis.in",
-      booksOrgId: "60088931635",
       webhookToken: null,
-      booksRefundAccountId: null,
     };
     const zoho = createFsmProvider("zoho", settings, {
       db: env.DB,

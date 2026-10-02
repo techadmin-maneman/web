@@ -12,7 +12,7 @@
 import type { Dependencies } from "../dependencies.ts";
 import { resolveAskedWindows } from "../domain/asked-windows.ts";
 import { requeueUnbookedHolds } from "../domain/bookings.ts";
-import { syncBooks } from "../domain/books-sync.ts";
+import { syncBooks, type BooksSyncOptions } from "../domain/books-sync.ts";
 import { alertAgedDeletions } from "../domain/deletion.ts";
 import { checkCatalogue } from "../domain/fsm-catalogue.ts";
 import { recordUtilisation } from "../domain/dispatch.ts";
@@ -197,12 +197,16 @@ async function askedWindowsJob({ env, deps, log }: CronContext): Promise<void> {
   if (done.resolved > 0) log.info("asked_windows_resolved", done);
 }
 
-async function booksJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
-  const options = {
-    refundAccountId: config.settings.zohoFsm?.booksRefundAccountId ?? null,
+/** The refund account Books' own settings name, and whether what the pass records is labelled as a test. */
+export function booksSyncOptions(config: StaticConfig): BooksSyncOptions {
+  return {
+    refundAccountId: config.settings.zohoBooks?.refundAccountId ?? null,
     labelAsTest: config.environment !== "production",
   };
-  const done = await syncBooks(env.DB, deps, options, deps.now(), log, budget);
+}
+
+async function booksJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
+  const done = await syncBooks(env.DB, deps, booksSyncOptions(config), deps.now(), log, budget);
   if (done.recorded + done.applied + done.refunded > 0) log.info("books_synced", done);
 }
 
