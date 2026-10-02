@@ -9,7 +9,7 @@
 // at the payment link, for a one visit, whose product the client chooses at the visit. The hold, the link, the payment
 // and the invoice then carry the discounted price.
 
-import type { VisitType } from "../config/visit-types.ts";
+import { STANDARD_TIER, type VisitType } from "../config/visit-types.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import {
   amountOff,
@@ -24,7 +24,7 @@ import {
 } from "../policy/discount-codes.ts";
 import type { OneVisitState } from "../policy/one-visit.ts";
 import { auditStatementIfStamped, auditStatementIfWritten, type AuditActor, type AuditEntry } from "./audit.ts";
-import { creditBalance } from "./credits.ts";
+import { spendableCredits } from "./credits.ts";
 import { CODE_COLUMNS, coversOf, standing, termsOf, type CodeRow } from "./discount-codes.ts";
 import { priceOf, type Price } from "./price-book.ts";
 
@@ -103,7 +103,7 @@ export async function checkCode(
     oncePerClient: code.once_per_client === 1,
     usedByClient: (counted?.theirs ?? 0) > 0,
   };
-  const credits = booking.onCredit ? 0 : (await creditBalance(db, personId, now)).visits;
+  const credits = booking.onCredit ? 0 : (await spendableCredits(db, personId, now)).visits;
   const onCredit = booking.onCredit || creditComesFirst(booking.type, credits);
   const refusal = codeRefusal(state, { ...booking, onCredit }, indiaDate(now));
   return refusal === null ? { ok: true, code } : { ok: false, reason: refusal };
@@ -224,7 +224,7 @@ async function visitOf(db: D1Database, visitId: string): Promise<VisitRow | null
 const TAKES_A_CODE = new Set(["scheduled", "dispatched", "in_progress", "completed"]);
 
 /** A visit's code, entered on it or on the hold that booked it. */
-interface VisitCode {
+export interface VisitCode {
   readonly useId: string;
   readonly code: string;
   readonly terms: DiscountTerms;
@@ -324,7 +324,7 @@ export async function codeToCarry(
 /** The visit's own price in the book on its day: its service's, or a one visit's product once chosen. */
 async function priceOfVisit(db: D1Database, visit: VisitRow): Promise<Price | null> {
   if (visit.type === null || visit.window_start === null || visit.one_visit === "booked") return null;
-  return priceOf(db, visit.type, indiaDate(new Date(visit.window_start)), visit.tier ?? undefined);
+  return priceOf(db, visit.type, indiaDate(new Date(visit.window_start)), visit.tier ?? STANDARD_TIER);
 }
 
 /**

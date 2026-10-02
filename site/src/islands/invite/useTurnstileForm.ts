@@ -1,31 +1,33 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { mobileDigits } from "@maneman/web-kit/mobile";
 import { referral } from "../../content/referral.ts";
-import type { AlreadyBooked, Answer, ErrorCode } from "../../lib/api.ts";
-import { bookedHeadline } from "../../lib/dates.ts";
+import type { Answer, ErrorCode } from "../../lib/api.ts";
 import { keyPerRequest } from "../../lib/idempotency.ts";
-import { isCompleteMobile } from "../../lib/phone.ts";
-import { fill } from "../../lib/text.ts";
 import { turnstileWidget } from "../../lib/turnstile.ts";
-import { windowHours } from "./Done.tsx";
 
 /** What both forms hold: the name, the number and the agreement. */
 export interface PersonFields {
   name: string;
+  /** As the field shows it, "98100 00000"; mobileToSend reads it. */
   mobile: string;
   consent: boolean;
 }
 
+/** The ten digits a form sends. Empty while the field holds no mobile number, when submit sends nothing anyway. */
+export function mobileToSend(fields: PersonFields): string {
+  return mobileDigits(fields.mobile) ?? "";
+}
+
 /** What a form says when the API refuses it. */
-function refusal(code: ErrorCode | "network", booked: AlreadyBooked | undefined): string {
+function refusal(code: ErrorCode | "network"): string {
   const { errors } = referral;
-  if (booked !== undefined) {
-    return fill(errors.alreadyBooked, { when: bookedHeadline(booked.date, windowHours(booked.window)) });
-  }
   if (code === "rate_limited") return errors.rateLimited;
   if (code === "turnstile_failed") return errors.turnstile;
   if (code === "taken") return errors.taken;
   if (code === "not_bookable") return errors.notBookable;
   if (code === "code_not_applicable") return errors.codeNotApplicable;
+  if (code === "no_product") return errors.noProduct;
+  if (code === "number_not_proved") return errors.notProved;
   return errors.other;
 }
 
@@ -39,6 +41,8 @@ export function useTurnstileForm(siteKey: string) {
   const [touched, setTouched] = useState(false);
   const [sending, setSending] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
+  // The fields the last refusal named, so a form can say it beside the one at fault.
+  const [refusedFields, setRefusedFields] = useState<readonly string[]>([]);
   const box = useRef<HTMLDivElement>(null);
   const widget = useRef<ReturnType<typeof turnstileWidget> | null>(null);
   const keyFor = useMemo(keyPerRequest, []);
@@ -61,12 +65,13 @@ export function useTurnstileForm(siteKey: string) {
   ) {
     event.preventDefault();
     if (sending) return;
-    if (!complete || fields.name.trim() === "" || !isCompleteMobile(fields.mobile) || !fields.consent) {
+    if (!complete || fields.name.trim() === "" || mobileDigits(fields.mobile) === null || !fields.consent) {
       setTouched(true);
       return;
     }
     setSending(true);
     setFailure(null);
+    setRefusedFields([]);
     const token = (await widget.current?.token()) ?? null;
     if (token === null) {
       setFailure(referral.errors.turnstile);
@@ -78,11 +83,12 @@ export function useTurnstileForm(siteKey: string) {
     setSending(false);
     if (!result.ok) {
       if (result.code === "invalid_request") setTouched(true);
-      setFailure(refusal(result.code, result.booked));
+      setFailure(refusal(result.code));
+      setRefusedFields(result.fields);
       return;
     }
     sent(result.body);
   }
 
-  return { fields, setFields, touched, sending, failure, box, submit };
+  return { fields, setFields, touched, sending, failure, refusedFields, box, submit };
 }

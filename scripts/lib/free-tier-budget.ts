@@ -1,6 +1,6 @@
 // The worst case the try-on can cost Cloudflare, from the ceilings in each
 // environment's config, plus the share set aside for Phase 2, and what the
-// cron reads from D1. test/node/free-tier-budget.test.ts holds them under 80%
+// cron and the console's two boards read from D1. test/node/free-tier-budget.test.ts holds them under 80%
 // of the free allowances, so no ceiling can be raised past the free tier, or
 // into Phase 2's share, without the build failing
 // (docs/decisions/0009-stay-inside-cloudflare-free-tier.md, 0039-phase-2-budget.md).
@@ -16,15 +16,16 @@ import {
   RENDER_GIVE_UP_MS,
 } from "../../src/config/pipeline.ts";
 import { MAX_COPY_BYTES, MAX_RESULT_BYTES, MAX_UPLOAD_BYTES, PHOTO_RETENTION_MS } from "../../src/config/tryon.ts";
+import { DAILY_ALLOWANCES } from "../../src/policy/daily-allowances.ts";
 import { PHASE_2_SHARE_BYTES } from "../../src/policy/storage-share.ts";
 
 /** The Workers Free plan, per Cloudflare's pricing pages (read 21 September 2026). */
 export const FREE_TIER = {
-  queueOperationsPerDay: 10_000,
+  queueOperationsPerDay: DAILY_ALLOWANCES.queueOperations,
   /** Past this the requests fail, so it is also the most work one day can ask of anything else. */
   workersRequestsPerDay: 100_000,
   /** Past this D1 refuses every query until midnight UTC (docs/decisions/0009). */
-  d1RowsReadPerDay: 5_000_000,
+  d1RowsReadPerDay: DAILY_ALLOWANCES.d1RowsRead,
   /** 10 GB-month, counted in decimal gigabytes, which is the smaller reading. */
   r2StorageBytes: 10 * 1e9,
   r2ClassAPerMonth: 1_000_000,
@@ -75,6 +76,62 @@ export const CRON_READ_SHARE = 0.4;
 /** Production's cron as busy as it can be on every run, and staging's at rest. */
 export function cronRowsReadPerDay(perBusyRun: number = CRON_ROWS_READ_PER_BUSY_RUN): number {
   return CRON_RUNS_PER_DAY * (perBusyRun + CRON_ROWS_READ_PER_QUIET_RUN);
+}
+
+/** The requests' share of the daily reads: what the 80% leaves after the cron's. */
+export const REQUEST_READ_SHARE = HEADROOM - CRON_READ_SHARE;
+
+/**
+ * The console's two boards, open through the working day: the dispatch board reads itself again on a timer, the
+ * Tasks board at most once a minute as pages open. Measured on staging on 2 October 2026 with 31 visits in the board's
+ * week: a board load read 484 rows, about 66 and 13.5 for each visit, and a look at Tasks 364. A visit whose card has
+ * everything on it (two answers on WhatsApp, an invite, a credit) reads 18.5. test/worker/cron-reads.test.ts holds
+ * one load of each to the figures below.
+ */
+export const CONSOLE_STAFF = 2;
+export const CONSOLE_HOURS_PER_DAY = 10;
+export const BOARD_ROWS_READ_FIXED = 70;
+export const BOARD_ROWS_READ_PER_VISIT = 20;
+export const TASKS_ROWS_READ_PER_LOOK = 400;
+/** What the apps, the site and the console's other pages read in a day: about 330,000 at 2,000 clients. */
+export const OTHER_REQUESTS_ROWS_READ_PER_DAY = 500_000;
+
+/** How often each board is read: its own timers, from the console's code. */
+export interface ConsoleCadence {
+  readonly boardRefreshMs: number;
+  readonly tasksFreshMs: number;
+}
+
+/** How many times the staff's open pages read, every `everyMs`, in a working day. */
+export function readsPerWorkingDay(everyMs: number): number {
+  return (CONSOLE_STAFF * CONSOLE_HOURS_PER_DAY * 60 * 60 * 1000) / everyMs;
+}
+
+/** What the two boards read in a day, with `visitsInWeek` on the dispatch board. */
+export function consoleRowsReadPerDay(visitsInWeek: number, cadence: ConsoleCadence): number {
+  const boardLoad = BOARD_ROWS_READ_FIXED + BOARD_ROWS_READ_PER_VISIT * visitsInWeek;
+  const board = readsPerWorkingDay(cadence.boardRefreshMs) * boardLoad;
+  const tasks = readsPerWorkingDay(cadence.tasksFreshMs) * TASKS_ROWS_READ_PER_LOOK;
+  return board + tasks;
+}
+
+/**
+ * The most rows a request to a route may read, on average while a release soaks, before it is rolled back. The
+ * dispatch board's is a load at the most visits the boards have room for (test/node/ops-board-budget.test.ts holds it
+ * there); a route not named has OTHER_ROUTE_ROWS_READ, several times what the busiest of them read on 2 October 2026.
+ */
+export const ROUTE_ROWS_READ: Readonly<Record<string, number>> = {
+  "/api/dispatch": 850,
+  "/api/tasks": TASKS_ROWS_READ_PER_LOOK,
+};
+export const OTHER_ROUTE_ROWS_READ = 300;
+
+/** The most visits the board's week can hold before the boards and the other requests pass the requests' share. */
+export function consoleRunwayVisits(cadence: ConsoleCadence): number {
+  const share = FREE_TIER.d1RowsReadPerDay * REQUEST_READ_SHARE;
+  const room = share - OTHER_REQUESTS_ROWS_READ_PER_DAY - consoleRowsReadPerDay(0, cadence);
+  const perVisit = readsPerWorkingDay(cadence.boardRefreshMs) * BOARD_ROWS_READ_PER_VISIT;
+  return Math.max(0, Math.floor(room / perVisit));
 }
 
 /** A visit's photographs: five before and five after, each re-encoded on the phone to about 250 KB. */

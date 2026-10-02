@@ -52,25 +52,26 @@ export const requireTechnicianSession = createMiddleware<AppEnv>(async (c, next)
     return c.json(errorBody("session_required", c.var.requestId), 401);
   }
 
-  // The device is read first: revoking one ends its session too, and a phone
-  // that was revoked must hear so, not just that it is logged out.
-  const device = await deviceOfSession(c.env.DB, await sha256Hex(token));
+  // The device is read first: revoking one, or switching its technician off, ends its session too, and the phone
+  // must hear which, not just that it is logged out.
+  const sessionId = await sha256Hex(token);
+  const device = await deviceOfSession(c.env.DB, sessionId);
   if (device !== null && device.revokedAt !== null) {
     await markWiped(c.env.DB, device.id, now);
     clearTechnicianCookie(c);
     return c.json(errorBody("device_revoked", c.var.requestId), 401);
   }
 
+  // A technician switched off has left, or is away from the work: the app drops the clients' cards it holds and
+  // sets aside the work it has not sent, which goes once he is switched back on and signs in again.
+  if (device !== null && !device.technicianActive) {
+    await revokeSession(c.env.DB, sessionId, now);
+    clearTechnicianCookie(c);
+    return c.json(errorBody("technician_inactive", c.var.requestId), 401);
+  }
+
   const session = await findSession(c.env.DB, "technician", token, now);
   if (session === null || device === null) return c.json(errorBody("session_required", c.var.requestId), 401);
-
-  // One FSM no longer lists as active has left, and his phone still holds clients'
-  // addresses: the session ends here, and the app wipes what it holds on the 401.
-  if (!device.technicianActive) {
-    await revokeSession(c.env.DB, session.id, now);
-    clearTechnicianCookie(c);
-    return c.json(errorBody("session_required", c.var.requestId), 401);
-  }
 
   if (now.getTime() - session.lastSeenAt.getTime() > SESSION_TOUCH_MS) {
     await touchSession(c.env.DB, session, now);

@@ -1,0 +1,35 @@
+# A push to a pull request takes its reviewed label off, so a review covers exactly the head it saw
+# (scripts/lib/auto-merge.ts). It is a workflow of its own so that a later run of ci cancelling an earlier one never
+# cancels this.
+name: review-label
+
+on:
+  pull_request:
+    types: [synchronize]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  unreview:
+    name: a push ends the review
+    if: contains(github.event.pull_request.labels.*.name, 'reviewed')
+    runs-on: ${{ vars.CI_RUNNER == 'maneman' && fromJSON('["self-hosted", "maneman"]') || 'ubuntu-latest' }}
+    timeout-minutes: 5
+    steps:
+      # 404: the label is already off.
+      - name: Take the reviewed label off
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          status=$(curl -sS -o /dev/null -w '%{http_code}' -X DELETE \
+            -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/issues/$NUMBER/labels/reviewed")
+          case "$status" in
+            200 | 404) echo "#$NUMBER: the reviewed label is off ($status)" ;;
+            *)
+              echo "::error::could not take the reviewed label off #$NUMBER (HTTP $status)"
+              exit 1
+              ;;
+          esac

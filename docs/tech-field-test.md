@@ -91,6 +91,7 @@ The price is one extra sign-in: the home-screen app is a separate app with its o
 | Did it ask you to sign in again?                                                                |               |
 | Did you see the line "This is the app on your home screen"? Write down what the rest of it says |               |
 | Did the second code arrive as quickly as the first? How many seconds                            |               |
+| Does the gold button at the bottom sit clear of the thin bar along the screen's bottom edge?    |               |
 
 After this, ops check the technician's phones on board D3 and write down what they see:
 
@@ -263,19 +264,20 @@ Do one **entire** job with the phone in aeroplane mode, from the door to the out
 10. Now turn aeroplane mode **off**, and stand still for two minutes.
 11. Go back to the day's jobs and open the waiting line again.
 
-| Question                                                                             | Write it here |
-| ------------------------------------------------------------------------------------ | ------------- |
-| Did the app open at all with no signal after being closed? (yes / no)                |               |
-| Did it show the day's jobs, or a blank page?                                         |               |
-| Could you open the job's card and see the address?                                   |               |
-| Did any step refuse to go through?                                                   |               |
-| How much was waiting when you finished the job (photo sets, actions)                 |               |
-| Time you turned aeroplane mode off (hh:mm)                                           |               |
-| Time the waiting line emptied (hh:mm)                                                |               |
-| Did anything stay stuck? If so, exactly what it said                                 |               |
-| Did you see **This phone has not promised to keep unsent work**? (yes / no)          |               |
-| What time did **Waiting since** show for the job, and was it right?                  |               |
-| Did the check-in that ran when signal came back pass? What did the screen then show? |               |
+| Question                                                                                                    | Write it here |
+| ----------------------------------------------------------------------------------------------------------- | ------------- |
+| Did the app open at all with no signal after being closed? (yes / no)                                       |               |
+| Did it show the day's jobs, or a blank page?                                                                |               |
+| Could you open the job's card and see the address?                                                          |               |
+| Did any step refuse to go through?                                                                          |               |
+| Was the gold button at the bottom on screen at every step, with no scrolling to find it? If not, which step |               |
+| How much was waiting when you finished the job (photo sets, actions)                                        |               |
+| Time you turned aeroplane mode off (hh:mm)                                                                  |               |
+| Time the waiting line emptied (hh:mm)                                                                       |               |
+| Did anything stay stuck? If so, exactly what it said                                                        |               |
+| Did you see **This phone has not promised to keep unsent work**? (yes / no)                                 |               |
+| What time did **Waiting since** show for the job, and was it right?                                         |               |
+| Did the check-in that ran when signal came back pass? What did the screen then show?                        |               |
 
 After this, ops check that nothing was lost or doubled:
 

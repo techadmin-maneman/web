@@ -87,7 +87,15 @@ import type {
   NewFsmContact,
   NewFsmWorkOrder,
 } from "./fsm.ts";
-import { createZohoRequester, ZohoError, zohoErrorFrom, type ZohoRequesterDependencies } from "./zoho-http.ts";
+import {
+  answerOf,
+  createZohoRequester,
+  readAnswer,
+  ZohoError,
+  zohoErrorFrom,
+  type ZohoAnswer,
+  type ZohoRequesterDependencies,
+} from "./zoho-http.ts";
 
 /** How many items FSM answers a page of its catalogue with. */
 export const FSM_ITEMS_A_PAGE = 200;
@@ -291,21 +299,22 @@ function contactFrom(record: z.infer<typeof Contact>): FsmContact {
 }
 
 export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDependencies): FsmProvider {
-  // FSM and Books share the FSM client's token (src/providers/zoho-http.ts).
   const request = createZohoRequester("fsm", settings, deps);
 
-  /** A JSON answer, or null for FSM's empty 204. */
-  async function json(step: string, path: string): Promise<unknown> {
-    const response = await request(step, `/fsm/v1${path}`);
-    if (response.status === 204) return null;
-    return response.json();
+  /** What FSM answered a read; its body is null for FSM's empty 204. */
+  async function json(step: string, path: string): Promise<ZohoAnswer> {
+    return answerOf(step, await request(step, `/fsm/v1${path}`));
   }
 
   /** The records under `key` in an answer, parsed; none for a 204. */
-  function records<T extends z.ZodType>(answer: unknown, key: string, schema: T): z.infer<T>[] {
-    if (answer === null) return [];
-    const list = (answer as Record<string, unknown>)[key];
-    return z.array(schema).parse(list ?? []);
+  function records<T extends z.ZodType>(answer: ZohoAnswer, key: string, schema: T): z.infer<T>[] {
+    return readAnswer(answer, z.array(schema).nullish(), [key]) ?? [];
+  }
+
+  /** The transitions a record's blueprint offers now; an empty answer offers none. */
+  function transitionsIn(answer: ZohoAnswer): z.infer<typeof Transitions>["transitions"] {
+    if (answer.body === null) return [];
+    return readAnswer(answer, Transitions).transitions;
   }
 
   /** One page of the catalogue, and whether FSM holds more after it. */
@@ -318,7 +327,7 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDepe
       // FSM's prices are rupees; ours are paise.
       price: item.Unit_Price === null || item.Unit_Price === undefined ? null : Math.round(item.Unit_Price * 100),
     }));
-    const more = (answer as { info?: { more_records?: unknown } } | null)?.info?.more_records === true;
+    const more = (answer.body as { info?: { more_records?: unknown } } | null)?.info?.more_records === true;
     return { items, more };
   }
 
@@ -329,7 +338,7 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDepe
     record: Record<string, unknown>,
   ): Promise<Record<string, string | undefined>> {
     const response = await request(step, `/fsm/v1/${module}`, { method: "POST", body: { data: [record] } });
-    const { data } = Created.parse(await response.json());
+    const { data } = readAnswer(await answerOf(step, response), Created);
     const ids = Array.isArray(data)
       ? { [module]: data[0]?.id }
       : Object.fromEntries(Object.entries(data).map(([name, records]) => [name, records[0]?.id]));
@@ -350,7 +359,7 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDepe
   }
 
   /** The latest records of a module, most recently changed first, as the reconciliation reads appointments. */
-  async function latest(step: string, module: string): Promise<unknown> {
+  async function latest(step: string, module: string): Promise<ZohoAnswer> {
     const query = new URLSearchParams({
       page: "1",
       per_page: String(LATEST),
@@ -388,7 +397,7 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDepe
     // FSM answers a deleted appointment with a 204, and an ID it cannot parse, such as a
     // staging seed's, with 404 INVALID_URL_PATTERN. Neither is there, and neither is a failure.
     async appointment(id) {
-      let answer: unknown;
+      let answer: ZohoAnswer;
       try {
         answer = await json("appointment", `/Service_Appointments/${id}`);
       } catch (error) {
@@ -407,7 +416,7 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDepe
         sort_order: "desc",
       });
       const answer = await json("appointments", `/Service_Appointments?${query.toString()}`);
-      const more = (answer as { info?: { more_records?: unknown } } | null)?.info?.more_records === true;
+      const more = (answer.body as { info?: { more_records?: unknown } } | null)?.info?.more_records === true;
       return { appointments: records(answer, "data", Appointment).map(appointmentFrom), more };
     },
 
@@ -451,7 +460,7 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDepe
         method: "POST",
         body: { data: [{ Name: item.name, Type: "Service", Unit_Price: item.price / 100 }] },
       });
-      const { data } = Created.parse(await response.json());
+      const { data } = readAnswer(await answerOf("create_item", response), Created);
       // Under the module's name, as a Contact's is, or a list, as an appointment's is: the org has not said which.
       const id = Array.isArray(data) ? data[0]?.id : Object.values(data).flat()[0]?.id;
       if (id === undefined) throw new ZohoError(response.status, "NO_ID", "create_item answered without the new ID");
@@ -471,7 +480,7 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDepe
         method: "POST",
         body: { data: [{ Name: name, Type: "Part", Unit_Price: 0, Description: PART_DESCRIPTION }] },
       });
-      const { data } = ItemCreated.parse(await response.json());
+      const { data } = readAnswer(await answerOf("create_part", response), ItemCreated);
       const [first] = Array.isArray(data) ? data : [];
       const id = Array.isArray(data) ? (first?.id ?? first?.details?.id) : Object.values(data)[0]?.[0]?.id;
       if (id === undefined) throw new ZohoError(response.status, "NO_ID", "create_part answered without the new ID");
@@ -634,13 +643,13 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDepe
         "appointment_transitions",
         `/Service_Appointments/${appointmentId}/actions/blueprint/transitions`,
       );
-      return Transitions.parse(answer ?? { transitions: [] }).transitions.map((transition) => transition.name);
+      return transitionsIn(answer).map((transition) => transition.name);
     },
 
     // The note is mandatory on every transition (the trial, 22 September 2026).
     async transitionAppointment(appointmentId, name, note) {
       const path = `/Service_Appointments/${appointmentId}/actions/blueprint`;
-      const { transitions } = Transitions.parse((await json("job_transitions", `${path}/transitions`)) ?? {});
+      const transitions = transitionsIn(await json("job_transitions", `${path}/transitions`));
       const wanted = transitions.find((transition) => transition.name === name);
       if (wanted === undefined) return false;
       await request("job_transition", `/fsm/v1${path}`, {
@@ -662,7 +671,7 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDepe
       const form = new FormData();
       form.append("file", new Blob([file.bytes], { type: file.contentType }), file.name);
       const uploaded = await request("upload_file", "/fsm/v1/files", { method: "POST", form });
-      const { data } = Uploaded.parse(await uploaded.json());
+      const { data } = readAnswer(await answerOf("upload_file", uploaded), Uploaded);
       // The upload answers `file_id`, but the Attachments module wants `File_Id`;
       // `file_id` is refused with 400 INVALID_DATA (staging, 23 September 2026).
       return create("attach_file", `Service_Appointments/${appointmentId}/Attachments`, {
@@ -674,7 +683,7 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDepe
     // Cancelling is a transition of the work order's blueprint, offered only while the work order is open.
     async cancelVisit(workOrderId, note) {
       const path = `/Work_Orders/${workOrderId}/actions/blueprint`;
-      const { transitions } = Transitions.parse(await json("cancel_transitions", `${path}/transitions`));
+      const { transitions } = readAnswer(await json("cancel_transitions", `${path}/transitions`), Transitions);
       const cancel = transitions.find((transition) => transition.name === "Cancel");
       if (cancel === undefined) return false;
       await request("cancel", `/fsm/v1${path}`, {
@@ -730,9 +739,9 @@ export function createZohoFsm(settings: ZohoFsmSettings, deps: ZohoRequesterDepe
         },
       });
       // A refusal FSM expects — a line already invoiced, say — comes back 200 with an error body.
-      const answer: unknown = await response.json();
-      if ((answer as { status?: unknown }).status === "error") throw zohoErrorFrom(400, answer);
-      const raised = Raised.parse(answer).data.Invoices[0];
+      const answer = await answerOf("create_invoice", response);
+      if ((answer.body as { status?: unknown } | null)?.status === "error") throw zohoErrorFrom(400, answer.body);
+      const raised = readAnswer(answer, Raised).data.Invoices[0];
       if (raised === undefined) throw new ZohoError(response.status, "NO_ID", "the invoice answered without its ID");
       return { id: raised.id, booksInvoiceId: raised.finance_data.Invoice_Id, created: true, total };
     },

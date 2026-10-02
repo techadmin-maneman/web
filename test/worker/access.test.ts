@@ -245,7 +245,7 @@ describe("the ops surface", () => {
   });
 
   it("answers a member of staff, having audited the call under their e-mail", async () => {
-    const res = await request(opsApp(), "/api/health", {
+    const res = await request(opsApp(), "/api/whoami", {
       headers: { [ACCESS_TOKEN_HEADER]: await tokenFor(published, staffClaims()) },
     });
 
@@ -259,7 +259,7 @@ describe("the ops surface", () => {
       action: "ops.call",
       request_id: res.headers.get("X-Request-Id"),
     });
-    expect(JSON.parse(row?.detail ?? "null")).toEqual({ method: "GET", route: "/api/health" });
+    expect(JSON.parse(row?.detail ?? "null")).toEqual({ method: "GET", route: "/api/whoami", path: "/api/whoami" });
   });
 
   it("audits the call before the route runs, and refuses it if the audit cannot be written", async () => {
@@ -267,7 +267,7 @@ describe("the ops surface", () => {
     const broken = { ...env, DB: failingInserts(env.DB) };
     const res = await request(
       app,
-      "/api/health",
+      "/api/whoami",
       {
         headers: { [ACCESS_TOKEN_HEADER]: await tokenFor(published, staffClaims()) },
       },

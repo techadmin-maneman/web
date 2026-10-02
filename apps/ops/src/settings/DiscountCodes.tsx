@@ -1,4 +1,4 @@
-// Settings · Discount codes (docs/decisions/0108-discount-codes.md): making codes, the latest made with how far each
+// Finance · Discount codes (docs/decisions/0108-discount-codes.md): making codes, the latest made with how far each
 // is used and what it has given, one found by its text, and switching one off. No board draws it, so it is laid out
 // as Blackout days is: the form above, then a code a row.
 //
@@ -13,6 +13,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useState } from "react";
 import { api, type DiscountCode } from "../api.ts";
 import { settings } from "../content.ts";
+import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { CheckPanel } from "./CheckPanel.tsx";
 import { DiscountCodeForm } from "./DiscountCodeForm.tsx";
@@ -38,7 +39,14 @@ const capOf = (code: DiscountCode): string | null => (code.cap === null ? null :
 
 type Switching = "idle" | "checking" | "sending" | Failure;
 
-function CodeRow({ code, onSwitched }: { code: DiscountCode; onSwitched: () => void }) {
+interface CodeRowProps {
+  readonly code: DiscountCode;
+  /** Whether the person's access lets them switch a code off. */
+  readonly maySwitchOff: boolean;
+  readonly onSwitched: () => void;
+}
+
+function CodeRow({ code, maySwitchOff, onSwitched }: CodeRowProps) {
   const [switching, setSwitching] = useState<Switching>("idle");
 
   const switchOff = async () => {
@@ -74,7 +82,7 @@ function CodeRow({ code, onSwitched }: { code: DiscountCode; onSwitched: () => v
           }}
         />
       )}
-      {code.switched_off === null && switching !== "checking" && switching !== "sending" && (
+      {maySwitchOff && code.switched_off === null && switching !== "checking" && switching !== "sending" && (
         <div className={styles.actions}>
           <Button
             variant="outline"
@@ -153,6 +161,9 @@ export function DiscountCodes() {
   const [loaded, retry] = useLoad(load);
   /** The list as it was read again after a change, so the form above it keeps what it says. */
   const [refreshed, setRefreshed] = useState<readonly DiscountCode[] | null>(null);
+  const access = useAccess();
+  const mayMake = access.mayCall("POST /api/discount-codes");
+  const maySwitchOff = access.mayCall("POST /api/discount-codes/{id}/off");
 
   const find = (code: string | null) => {
     setRefreshed(null);
@@ -176,14 +187,14 @@ export function DiscountCodes() {
         </h2>
       </div>
       <p className={styles.note}>{copy.note}</p>
-      <DiscountCodeForm today={today} most={most} onMade={() => void refresh()} />
+      {mayMake && <DiscountCodeForm today={today} most={most} onMade={() => void refresh()} />}
       <FindForm finding={finding} onFind={find} />
       {codes.length === 0 ? (
         <p className={styles.note}>{finding === null ? copy.none : copy.noneFound}</p>
       ) : (
         <ul className={styles.rules}>
           {codes.map((code) => (
-            <CodeRow key={code.id} code={code} onSwitched={() => void refresh()} />
+            <CodeRow key={code.id} code={code} maySwitchOff={maySwitchOff} onSwitched={() => void refresh()} />
           ))}
         </ul>
       )}

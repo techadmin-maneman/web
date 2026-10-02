@@ -5,8 +5,8 @@
 // (C8), and Add a note keeps the note on the visit for the technician (NoteSheet.tsx). Until then, Reschedule and
 // Add a note open WhatsApp to ops with a message ready
 // (docs/prompts/phase2-backend.md, "Booking"). Offline, rescheduling waits for the connection (B3). Once the
-// visit has begun, or its window has passed while FSM still has it open, nothing is left to move: its card says
-// where it stands, and only a note can still be added.
+// visit has begun, or its window has passed while FSM still has it open, its card says where it stands, and offers
+// nothing more.
 
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { shortDate } from "@maneman/web-kit/dates";
@@ -37,14 +37,17 @@ export const notingOf = (visit: VisitSummary): NotingVisit => ({
   technician: visit.technician === null ? null : firstName(visit.technician.name),
 });
 
-/** Under way or being closed: the visit has begun, and there is nothing left to move. */
-export const hasBegun = (visit: VisitSummary) => visit.stage === "in_progress" || visit.stage === "closing";
+/** Under way, done or being closed: the visit has begun, and there is nothing left to move or add. */
+export const hasBegun = (visit: VisitSummary) => visit.stage !== null && visit.stage !== "booked";
+
+/** Where a visit that has begun stands; null for one still to come. */
+export function stageText(visit: VisitSummary): string | null {
+  if (visit.stage === null || visit.stage === "booked") return null;
+  return home.stages[visit.stage];
+}
 
 /** The window, or where a visit that has begun stands. */
-export function whenText(visit: VisitSummary): string {
-  if (visit.stage === "in_progress" || visit.stage === "closing") return home.stages[visit.stage];
-  return windowText(visit.window_label);
-}
+export const whenText = (visit: VisitSummary): string => stageText(visit) ?? windowText(visit.window_label);
 
 function Reschedule(props: { what: string; date: string; changing: ChangingVisit | null; onOpen: () => void }) {
   const { me, offline } = useSession();
@@ -82,40 +85,47 @@ export interface NotingVisit {
   readonly technician: string | null;
 }
 
+function NoteOnWhatsApp({ message }: { message: string }) {
+  return (
+    <ButtonLink
+      variant="outlineOnInk"
+      size="control"
+      className={styles.action}
+      href={whatsappWith(message)}
+      rel="noopener"
+    >
+      {home.note}
+    </ButtonLink>
+  );
+}
+
 /**
  * Add a note: kept on the visit for the technician's card while self-serve booking is on (REQ-04), else sent to ops
- * on WhatsApp, as ADR 0043 has it. Offline, WhatsApp keeps the note until the phone is back online.
+ * on WhatsApp. Tapped offline, it opens WhatsApp, which keeps the note until the phone is back online. A sheet
+ * already open stays open when the connection drops, with what the client has written.
  */
 function AddNote(props: { what: string; date: string; noting: NotingVisit | null }) {
   const { me, offline } = useSession();
   const [open, setOpen] = useState(false);
   const message = messages.note(props.what, props.date);
-  if (!me.booking.self_serve || offline || props.noting === null) {
-    return (
-      <ButtonLink
-        variant="outlineOnInk"
-        size="control"
-        className={styles.action}
-        href={whatsappWith(message)}
-        rel="noopener"
-      >
-        {home.note}
-      </ButtonLink>
-    );
-  }
-  const noting = props.noting;
+  const noting = me.booking.self_serve ? props.noting : null;
+  if (noting === null) return <NoteOnWhatsApp message={message} />;
   return (
     <>
-      <Button
-        variant="outlineOnInk"
-        size="control"
-        className={styles.action}
-        onClick={() => {
-          setOpen(true);
-        }}
-      >
-        {home.note}
-      </Button>
+      {offline && !open ? (
+        <NoteOnWhatsApp message={message} />
+      ) : (
+        <Button
+          variant="outlineOnInk"
+          size="control"
+          className={styles.action}
+          onClick={() => {
+            setOpen(true);
+          }}
+        >
+          {home.note}
+        </Button>
+      )}
       {open && (
         <NoteSheet
           visitId={noting.visitId}
@@ -135,23 +145,20 @@ export function Actions(props: {
   date: string;
   changing: ChangingVisit | null;
   noting: NotingVisit | null;
-  begun?: boolean;
 }) {
   const { what, date, changing } = props;
   const { refresh } = useSession();
   const [open, setOpen] = useState(false);
   return (
     <div className={styles.actions}>
-      {props.begun !== true && (
-        <Reschedule
-          what={what}
-          date={date}
-          changing={changing}
-          onOpen={() => {
-            setOpen(true);
-          }}
-        />
-      )}
+      <Reschedule
+        what={what}
+        date={date}
+        changing={changing}
+        onOpen={() => {
+          setOpen(true);
+        }}
+      />
       <AddNote what={what} date={date} noting={props.noting} />
       {open && changing !== null && (
         <ChangeSheet
@@ -187,13 +194,9 @@ export function VisitCard({ visit }: { visit: VisitSummary }) {
         </div>
       </div>
       {visit.place !== "" && <p className={styles.place}>{visit.place}</p>}
-      <Actions
-        what={what}
-        date={date}
-        changing={changingOf(visit, what)}
-        noting={notingOf(visit)}
-        begun={hasBegun(visit)}
-      />
+      {!hasBegun(visit) && (
+        <Actions what={what} date={date} changing={changingOf(visit, what)} noting={notingOf(visit)} />
+      )}
     </div>
   );
 }

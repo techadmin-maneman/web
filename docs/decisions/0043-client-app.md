@@ -1,6 +1,6 @@
 # 0043. The client app: build, Worker and policy
 
-- Status: accepted
+- Status: accepted. Amended 2 October 2026: Checkout lists the ways to pay, so the pay step chooses none first and C6 offers "Try again" alone.
 - Date: 2026-09-22
 
 ## Context
@@ -20,7 +20,7 @@ The API it calls is mm-api's client surface on the same host (ADR 0026). Only th
 
 - **React 19.3 is pinned inside it.** React 18.3.1 stays at the repository root, where the fidelity harness renders the design with it.
 - **Vite 8.3 builds it.** Astro already brought Vite 8.3 into the repository.
-- **Styles are CSS modules on the brand's tokens** (`packages/brand`). `test/node/app-tokens.test.ts` refuses a raw colour or size, an undefined token, and an inline `style`, which the policy would block anyway.
+- **Styles are CSS modules on the brand's tokens** (`packages/brand`). `test/node/app-tokens.test.ts` refuses a raw colour or size, an undefined token, and an inline `style`. Since 2 October 2026 the policy allows inline styles, for Razorpay Checkout's own; the app writes none.
 - **Every word is in `apps/app/src/content.ts`,** from the design.
 
 **One build per environment.** `npm run build:app -- --env <env>` writes `apps/app/dist/<env>` (`scripts/build-app.ts`), with a `_headers` file from `packages/web-kit`:
@@ -28,7 +28,7 @@ The API it calls is mm-api's client surface on the same host (ADR 0026). Only th
 - **The content security policy:**
   - `default-src 'none'`;
   - scripts, styles, fonts, images, the manifest, workers and API calls from the app's own origin only;
-  - no inline code of any kind;
+  - no inline code of any kind (since 2 October 2026, inline styles are allowed for Razorpay Checkout; see "The policy" below);
   - no frames, `frame-ancestors 'none'`, `base-uri 'none'`.
 
   Vite's production build has no inline script, and inline assets are off, so no `data:` URL is made.
@@ -123,7 +123,7 @@ Boards C2 to C6, over self-serve booking (ADR 0045), on staging ahead of the res
 - **Where it opens.** "Book your next visit" (Home and Visits), "Book your first fit" after a consultation, and "Book a free consultation". `GET /api/me` says whether self-serve booking is on and what the client may book. On, the button opens the booking sheet; off, it opens WhatsApp to ops, as before; offline, it waits. Reschedule and cancel stay on WhatsApp until their boards (C7, C8) arrive.
 - **The sheet** rises over the ink-night ground: the date (C2), fourteen days with full ones shown and not chosen; the window (C3), with whether the regular technician is free; then paying (C4, and C5's first fit, with its guarantee and late-fee lines). The hold counts down in whole seconds, not read aloud each second, and lapses to C6's "That slot has gone back". Closed before paying, the hold is let go.
 - **Paying is Razorpay Checkout,** loaded from `checkout.razorpay.com` when a client first pays, on the order our API made, with the client's chosen method first. Checkout's own retry is off, so a failed payment comes back to C6's screen with the hold still counting, "Try again" and "Another method". Paid, the sheet polls the hold every two seconds for a minute: booked shows C6's confirmation; refunded, or slow, says so.
-- **The policy** (`apps/app/headers.ts`) allows Checkout's script, its frames from `api.razorpay.com`, calls to it and its logger, and popups: the opener policy is `same-origin-allow-popups`, since a card's check can open one.
+- **The policy** (`apps/app/headers.ts`) allows Checkout's script, its frames from `api.razorpay.com`, calls to it and its logger, and popups: the opener policy is `same-origin-allow-popups`, since a card's check can open one. **Changed 2 October 2026:** it also allows the risk-detection script Checkout loads from `cdn.razorpay.com`, which Razorpay's fraud checks rely on and which the policy had refused on every Checkout opened; Checkout's two other logging hosts; and inline styles, since Checkout writes a style element and a style attribute into the page that change with Razorpay's releases, so no hash would hold. Inline scripts stay refused. `e2e/app/checkout-policy.e2e.ts` loads and opens the real Checkout and fails on anything the policy refuses.
 - **Browser tests** replace Checkout's script with one that pays or fails at once, and answer the hold's poll as Razorpay's webhook and FSM would leave it, since neither reaches a local run. The booking tests share the one fitted client and run one after another, since a client has one hold at a time.
 
 ## Refer (P2-F3)

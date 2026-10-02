@@ -12,6 +12,7 @@ import { useState } from "react";
 import { api, type ClientInvite } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { clients } from "../content.ts";
+import { useAccess } from "../lib/access.ts";
 import styles from "./clients.module.css";
 
 const copy = clients.invite;
@@ -164,16 +165,15 @@ export function Invite({
   news: InviteNews | null;
   onInvite: (invite: ClientInvite, news: InviteNews) => void;
 }) {
+  const mayAttach = useAccess().mayCall("POST /api/clients/{id}/referral");
   return (
     <section className={styles.invite} aria-labelledby="invite">
       <h3 className={styles.sectionTitle} id="invite">
         {copy.title}
       </h3>
-      {invite === null ? (
-        <AttachForm clientId={clientId} onInvite={onInvite} />
-      ) : (
-        <Details invite={invite} news={news} />
-      )}
+      {invite !== null && <Details invite={invite} news={news} />}
+      {invite === null && mayAttach && <AttachForm clientId={clientId} onInvite={onInvite} />}
+      {invite === null && !mayAttach && <p className={styles.findHint}>{copy.noInvite}</p>}
     </section>
   );
 }

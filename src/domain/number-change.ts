@@ -4,8 +4,8 @@
 
 import { newLoginCode } from "../policy/one-time-code.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
-import { createChallenge, verifyCode, type Challenge, type Verification } from "./login.ts";
-import type { ChallengePurpose } from "./one-time-codes.ts";
+import { verifyCode, type Verification } from "./login.ts";
+import { createChallenge, type Challenge, type ChallengePurpose } from "./one-time-codes.ts";
 import { DAY_MS } from "../lib/durations.ts";
 
 export type NumberChangeState = "verifying" | "awaiting_ops" | "confirmed" | "rejected" | "withdrawn";
@@ -140,7 +140,8 @@ export async function startNumberChange(
   const codeFor = async (which: WhichNumber) => {
     const code = options.fixedCode ?? newLoginCode();
     const challenge = await createChallenge(db, {
-      personId: options.personId,
+      holder: "person",
+      holderId: options.personId,
       code,
       pepper: options.pepper,
       now: options.now,

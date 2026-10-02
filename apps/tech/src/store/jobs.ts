@@ -47,13 +47,15 @@ export async function keptJob(id: string): Promise<Job | null> {
  * today's shape, so a job opened with no signal after an update still closes:
  * each reason worded from its id, and the step with nothing to start from. One
  * kept before the hair profile carries none, and lists no step for it
- * (docs/decisions/0106-a-clients-hair-profile.md).
+ * (docs/decisions/0106-a-clients-hair-profile.md). One kept before a one
+ * visit's discount code was on the card carries none, and the outcome step asks.
  */
 function inTodaysShape(job: Job): Job {
-  const kept = job as Omit<Job, "partial_reasons" | "consumables" | "profile"> & {
+  const kept = job as Omit<Job, "partial_reasons" | "consumables" | "profile" | "discount_code"> & {
     readonly partial_reasons: readonly (Job["partial_reasons"][number] | string)[];
     readonly consumables?: Job["consumables"];
     readonly profile?: Job["profile"];
+    readonly discount_code?: Job["discount_code"];
   };
   return {
     ...kept,
@@ -62,6 +64,7 @@ function inTodaysShape(job: Job): Job {
     ),
     consumables: kept.consumables ?? [],
     profile: kept.profile ?? null,
+    discount_code: kept.discount_code ?? null,
   };
 }
 
@@ -113,6 +116,13 @@ export async function keptNames(): Promise<Map<string, string>> {
     if (kept.kind === "job" && kept.job.client !== null) names.set(kept.job.id, kept.job.client.name);
   }
   return names;
+}
+
+/** The days and the clients' cards, gone; each job's arrival and close-out stay with the work not yet sent. */
+export async function dropCards(): Promise<void> {
+  for (const kept of await all<Kept>("jobs")) {
+    if (kept.kind === "day" || kept.kind === "job") await remove("jobs", kept.id);
+  }
 }
 
 /** Whether a kept record is still needed: its day is today or tomorrow, or its job is one the phone still needs. */

@@ -1,13 +1,15 @@
 // A client who pays inside the hold gets the visit, or, paying too late, an
 // automatic refund; nothing is booked twice (docs/decisions/0068-a-paid-hold-is-kept.md).
 // A visit FSM refuses is held for ops, with its payment: test/worker/held-bookings.test.ts.
+// What does not depend on FSM runs on both records of field work: FSM's, and our own
+// database's, where the webhook books the visit itself (test/worker/booking-without-fsm.test.ts).
 // The scenarios are the audit's (24 September 2026, W1 to W10), each at the
 // moment it went wrong. NOW is Monday 21 September 2026, 12 noon in India, and a
 // hold lasts ten minutes. Every name and number here is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { confirmBooking, requeueUnbookedHolds } from "../../src/domain/bookings.ts";
+import { bookUnbookedHolds, confirmBooking, requeueUnbookedHolds } from "../../src/domain/bookings.ts";
 import { creditBalance, grantCredits } from "../../src/domain/credits.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { saltedHash } from "../../src/lib/hash.ts";
@@ -16,17 +18,23 @@ import { createStubFsm, EMPTY_FSM, type FsmProvider } from "../../src/providers/
 import { createStubPayments } from "../../src/providers/payments.ts";
 import { handleFsmSyncBatch } from "../../src/queues/fsm-sync.ts";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
+import type { FieldRecord } from "../../src/config/field-record.ts";
+import type { PaymentsProvider } from "../../src/providers/payments.ts";
 import {
   appFor,
   captureLogs,
   fakeDependencies,
   fakeQueue,
+  fsmSwitchedOff,
   LOCAL_SETTINGS,
   markDatabase,
   NOW,
+  PROVIDERS_FOR,
   request,
   savedAddress,
 } from "./helpers.ts";
+
+const RECORDS: readonly FieldRecord[] = ["fsm", "ours"];
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const OTHER = "55555555-5555-4555-8555-555555555555";
@@ -46,8 +54,18 @@ const world = () => ({
 
 const cookies = new Map<string, string>();
 
-function call(personId: string, path: string, init: { method?: string; body?: object } = {}, now = NOW) {
-  const app = appFor("local", fakeDependencies({ now: () => now }), {}, "client");
+/** The dependencies each record runs with: FSM's stub, or FSM switched off. */
+const depsFor = (record: FieldRecord, overrides: Parameters<typeof fakeDependencies>[0] = {}) =>
+  fakeDependencies({ fsm: record === "ours" ? fsmSwitchedOff() : createStubFsm(world()), ...overrides });
+
+function call(
+  personId: string,
+  path: string,
+  init: { method?: string; body?: object } = {},
+  now = NOW,
+  record: FieldRecord = "fsm",
+) {
+  const app = appFor("local", depsFor(record, { now: () => now }), {}, "client", PROVIDERS_FOR[record]);
   return request(
     app,
     path,
@@ -85,22 +103,25 @@ async function fittedPerson(id: string, mobile: string, name: string) {
   );
 }
 
-/** Razorpay's signed webhook for a payment, or for a refund of it, delivered at `now`. */
+/**
+ * Razorpay's signed webhook for a payment, or for `through.refund` of it, delivered at `now`. On our own record it
+ * books the hold itself, refunding through `through.payments` a payment made too late.
+ */
 async function webhook(
   event: string,
   eventId: string,
   payment: object,
   now: Date,
   queue = fakeQueue(),
-  refund: object | null = null,
+  through: { readonly record?: FieldRecord; readonly payments?: PaymentsProvider; readonly refund?: object } = {},
 ) {
-  const app = appFor("local", fakeDependencies({ now: () => now }), {
-    ...LOCAL_SETTINGS,
-    razorpay: { keyId: "rzp_test_money", keySecret: "s", webhookSecret: SECRET },
-  });
-  const payload =
-    refund === null ? { payment: { entity: payment } } : { payment: { entity: payment }, refund: { entity: refund } };
-  const body = JSON.stringify({ entity: "event", event, payload });
+  const record = through.record ?? "fsm";
+  const payments = through.payments ?? createStubPayments();
+  const deps = depsFor(record, { now: () => now, payments });
+  const settings = { ...LOCAL_SETTINGS, razorpay: { keyId: "rzp_test_money", keySecret: "s", webhookSecret: SECRET } };
+  const app = appFor("local", deps, settings, "public", PROVIDERS_FOR[record]);
+  const refund = through.refund === undefined ? {} : { refund: { entity: through.refund } };
+  const body = JSON.stringify({ entity: "event", event, payload: { payment: { entity: payment }, ...refund } });
   const answer = await request(
     app,
     "/api/hooks/razorpay",
@@ -119,10 +140,17 @@ async function webhook(
 }
 
 /** A service visit held on Thursday afternoon, and its Razorpay order. */
-async function heldAndOrdered(personId: string, now = NOW, date = "2026-09-24", window = "afternoon") {
-  const held = await call(personId, "/api/holds", { method: "POST", body: { type: "service", date, window } }, now);
+async function heldAndOrdered(
+  personId: string,
+  now = NOW,
+  date = "2026-09-24",
+  window = "afternoon",
+  record: FieldRecord = "fsm",
+) {
+  const body = { type: "service", date, window };
+  const held = await call(personId, "/api/holds", { method: "POST", body }, now, record);
   const hold = await held.json<{ id: string; expires_at: string }>();
-  const started = await call(personId, "/api/bookings", { method: "POST", body: { hold_id: hold.id } }, now);
+  const started = await call(personId, "/api/bookings", { method: "POST", body: { hold_id: hold.id } }, now, record);
   const checkout = (await started.json<{ checkout: { order_id: string; amount: number } | null }>()).checkout;
   return { holdId: hold.id, orderId: checkout?.order_id ?? "", amount: checkout?.amount ?? 0 };
 }
@@ -142,6 +170,21 @@ const payment = (id: string, ordered: { holdId: string; orderId: string; amount:
 const holdRow = (id: string) =>
   env.DB.prepare("SELECT state, refunded_at FROM slot_holds WHERE id = ?1").bind(id).first();
 
+/**
+ * What FSM's queue does with the holds sent to it: each booked with the stub FSM, as the consumer would. On our own
+ * record nothing is queued: the request that confirmed the hold booked it.
+ */
+async function drain(queue: { sent: unknown[] }, now: Date, payments: PaymentsProvider = createStubPayments()) {
+  for (const sent of queue.sent as { hold_id: string }[]) {
+    await confirmBooking(env.DB, createStubFsm(world()), payments, sent.hold_id, now, { labelAsTest: true });
+  }
+}
+
+const scheduledServiceVisits = (personId: string) =>
+  env.DB.prepare("SELECT id FROM appointments WHERE person_id = ?1 AND type = 'service' AND status = 'scheduled'")
+    .bind(personId)
+    .all();
+
 beforeEach(async () => {
   await markDatabase();
   captureLogs();
@@ -154,34 +197,148 @@ beforeEach(async () => {
   await fittedPerson(PERSON, "+919810000001", "Rohit Malhotra");
 });
 
-describe("a payment made inside the hold whose webhook lands after it (W1)", () => {
+describe.each(RECORDS)("a payment made inside the hold whose webhook lands after it (W1), on %s's record", (record) => {
   it("is booked, judged on Razorpay's time for the payment, not on when the webhook came", async () => {
-    const ordered = await heldAndOrdered(PERSON);
-    // Paid at 9 minutes 50 seconds; the webhook reaches us at 10 minutes 5.
-    await webhook("payment.captured", "evt_w1", payment("pay_w1", ordered, at(590)), at(605));
+    const ordered = await heldAndOrdered(PERSON, NOW, "2026-09-24", "afternoon", record);
     const payments = createStubPayments();
-    const outcome = await confirmBooking(env.DB, createStubFsm(world()), payments, ordered.holdId, at(606), {
-      labelAsTest: true,
+    const queue = fakeQueue();
+    // Paid at 9 minutes 50 seconds; the webhook reaches us at 10 minutes 5.
+    await webhook("payment.captured", "evt_w1", payment("pay_w1", ordered, at(590)), at(605), queue, {
+      record,
+      payments,
     });
-    expect(outcome).toBe("booked");
+    await drain(queue, at(606), payments);
+    expect(await holdRow(ordered.holdId)).toEqual({ state: "booked", refunded_at: null });
     expect(payments.made.refunds).toEqual([]);
   });
 
   it("is still refunded when Razorpay's own time for it is past the hold and the two minutes' grace", async () => {
-    const ordered = await heldAndOrdered(PERSON);
-    await webhook("payment.captured", "evt_w1b", payment("pay_w1b", ordered, at(725)), at(726));
+    const ordered = await heldAndOrdered(PERSON, NOW, "2026-09-24", "afternoon", record);
     const payments = createStubPayments();
-    const outcome = await confirmBooking(env.DB, createStubFsm(world()), payments, ordered.holdId, at(727), {
-      labelAsTest: true,
+    const queue = fakeQueue();
+    await webhook("payment.captured", "evt_w1b", payment("pay_w1b", ordered, at(725)), at(726), queue, {
+      record,
+      payments,
     });
-    expect(outcome).toBe("refunded");
+    await drain(queue, at(727), payments);
+    expect((await holdRow(ordered.holdId))?.state).toBe("released");
     expect(payments.made.refunds).toEqual([{ paymentId: "pay_w1b", amount: 200000 }]);
+  });
+});
+
+// A payment may land on a hold's order until its grace ends, so until then neither the app's lapse nor the client's
+// next hold lets that hold go (MON-03, BK-03).
+describe.each(RECORDS)("a hold with a Razorpay order, let go before its grace ends, on %s's record", (record) => {
+  const letGo = (holdId: string, now: Date) => call(PERSON, `/api/holds/${holdId}`, { method: "DELETE" }, now, record);
+
+  /** The webhook of a payment made at `madeAt`, heard of at `heardAt`, and the booking it leads to. */
+  async function paidAndBooked(ordered: Awaited<ReturnType<typeof heldAndOrdered>>, madeAt: Date, heardAt: Date) {
+    const payments = createStubPayments();
+    const queue = fakeQueue();
+    const id = `pay_${String(madeAt.getTime())}`;
+    await webhook("payment.captured", `evt_${id}`, payment(id, ordered, madeAt), heardAt, queue, { record, payments });
+    await drain(queue, new Date(heardAt.getTime() + SECOND), payments);
+    return payments;
+  }
+
+  it("is booked when the app lets it go at ten minutes and the payment is made in the grace", async () => {
+    const ordered = await heldAndOrdered(PERSON, NOW, "2026-09-24", "afternoon", record);
+    expect((await letGo(ordered.holdId, at(600))).status).toBe(204);
+    expect(await holdRow(ordered.holdId)).toEqual({ state: "held", refunded_at: null });
+    const payments = await paidAndBooked(ordered, at(630), at(635));
+    expect(await holdRow(ordered.holdId)).toEqual({ state: "booked", refunded_at: null });
+    expect(payments.made.refunds).toEqual([]);
+  });
+
+  it("is booked when the app lets it go at ten minutes before the webhook of a payment made in them", async () => {
+    const ordered = await heldAndOrdered(PERSON, NOW, "2026-09-24", "afternoon", record);
+    await letGo(ordered.holdId, at(600));
+    const payments = await paidAndBooked(ordered, at(590), at(605));
+    expect(await holdRow(ordered.holdId)).toEqual({ state: "booked", refunded_at: null });
+    expect(payments.made.refunds).toEqual([]);
+  });
+
+  it("keeps its time when its client lets it go mid-countdown, or holds another window", async () => {
+    const ordered = await heldAndOrdered(PERSON, NOW, "2026-09-24", "afternoon", record);
+    await letGo(ordered.holdId, at(300));
+    const another = await call(
+      PERSON,
+      "/api/holds",
+      { method: "POST", body: { type: "service", date: "2026-09-30", window: "morning" } },
+      at(310),
+      record,
+    );
+    expect(another.status).toBe(201);
+    expect(await holdRow(ordered.holdId)).toEqual({ state: "held", refunded_at: null });
+  });
+
+  it("is let go once its grace has ended", async () => {
+    const ordered = await heldAndOrdered(PERSON, NOW, "2026-09-24", "afternoon", record);
+    await letGo(ordered.holdId, at(719));
+    expect(await holdRow(ordered.holdId)).toEqual({ state: "held", refunded_at: null });
+    await letGo(ordered.holdId, at(720));
+    expect(await holdRow(ordered.holdId)).toEqual({ state: "released", refunded_at: null });
+  });
+});
+
+// A payment made in time whose webhook lands only after the hold was let go at the end of its grace (MON-03).
+describe.each(RECORDS)("a payment made in time, heard of after its hold was let go, on %s's record", (record) => {
+  const otherHolds = async (date: string, window: string) => {
+    await fittedPerson(OTHER, "+919810000005", "Karan Bhatia");
+    return call(OTHER, "/api/holds", { method: "POST", body: { type: "service", date, window } }, at(730), record);
+  };
+
+  /** The webhook of a payment made at nine and a half minutes, heard of at `heardAt`, and what follows it. */
+  async function heardLate(ordered: Awaited<ReturnType<typeof heldAndOrdered>>, eventId: string, heardAt: Date) {
+    const payments = createStubPayments();
+    const queue = fakeQueue();
+    const id = `pay_${eventId}`;
+    await webhook("payment.captured", eventId, payment(id, ordered, at(570)), heardAt, queue, { record, payments });
+    await drain(queue, new Date(heardAt.getTime() + SECOND), payments);
+    return { payments, id };
+  }
+
+  it("is booked on its own time, taken back, when nobody has taken that since", async () => {
+    const ordered = await heldAndOrdered(PERSON, NOW, "2026-09-24", "afternoon", record);
+    expect((await otherHolds("2026-09-30", "morning")).status).toBe(201);
+    expect(await holdRow(ordered.holdId)).toEqual({ state: "released", refunded_at: null });
+    const { payments } = await heardLate(ordered, "evt_r1", at(750));
+    expect(await holdRow(ordered.holdId)).toEqual({ state: "booked", refunded_at: null });
+    expect(payments.made.refunds).toEqual([]);
+    const booked = await env.DB.prepare(
+      "SELECT window_start FROM appointments WHERE person_id = ?1 AND type = 'service' AND status = 'scheduled'",
+    )
+      .bind(PERSON)
+      .all();
+    expect(booked.results).toEqual([{ window_start: "2026-09-24T06:30:00.000Z" }]);
+  });
+
+  it("is refunded when another client has held its time since", async () => {
+    const ordered = await heldAndOrdered(PERSON, NOW, "2026-09-24", "afternoon", record);
+    expect((await otherHolds("2026-09-24", "afternoon")).status).toBe(201);
+    const { payments, id } = await heardLate(ordered, "evt_r2", at(750));
+    expect((await holdRow(ordered.holdId))?.state).toBe("released");
+    expect(payments.made.refunds).toEqual([{ paymentId: id, amount: 200000 }]);
+    const claims = await env.DB.prepare("SELECT COUNT(*) AS n FROM slot_claims WHERE hold_id = ?1")
+      .bind(ordered.holdId)
+      .first();
+    expect(claims).toEqual({ n: 0 });
+  });
+
+  it("is refunded when its visit has begun by the time the payment is heard of", async () => {
+    const ordered = await heldAndOrdered(PERSON, NOW, "2026-09-24", "afternoon", record);
+    expect((await otherHolds("2026-09-30", "morning")).status).toBe(201);
+    // Thursday's visit started at noon in India, 06:30 UTC.
+    const { payments, id } = await heardLate(ordered, "evt_r3", new Date("2026-09-24T07:00:00.000Z"));
+    expect((await holdRow(ordered.holdId))?.state).toBe("released");
+    expect(payments.made.refunds).toEqual([{ paymentId: id, amount: 200000 }]);
+    expect((await scheduledServiceVisits(PERSON)).results).toEqual([]);
   });
 });
 
 // The grace is ops' to set, and a hold is judged by the one it was made with
 // (docs/decisions/0088-every-policy-in-the-console.md).
-describe("a payment made in the grace its hold was made with", () => {
+describe.each(RECORDS)("a payment made in the grace its hold was made with, on %s's record", (record) => {
   const grace = (minutes: number) =>
     env.DB.prepare(
       "INSERT OR REPLACE INTO ops_settings (name, value, set_by, set_at) VALUES ('payment_hold', ?1, 'ops', ?2)",
@@ -191,15 +348,17 @@ describe("a payment made in the grace its hold was made with", () => {
 
   it("is booked, though ops shortened the grace after the hold was made", async () => {
     await grace(5);
-    const ordered = await heldAndOrdered(PERSON);
+    const ordered = await heldAndOrdered(PERSON, NOW, "2026-09-24", "afternoon", record);
     await grace(1);
-    // Paid at 14 minutes: past a minute's grace, inside the five the hold was made with.
-    await webhook("payment.captured", "evt_g1", payment("pay_g1", ordered, at(840)), at(841));
     const payments = createStubPayments();
-    const outcome = await confirmBooking(env.DB, createStubFsm(world()), payments, ordered.holdId, at(842), {
-      labelAsTest: true,
+    const queue = fakeQueue();
+    // Paid at 14 minutes: past a minute's grace, inside the five the hold was made with.
+    await webhook("payment.captured", "evt_g1", payment("pay_g1", ordered, at(840)), at(841), queue, {
+      record,
+      payments,
     });
-    expect(outcome).toBe("booked");
+    await drain(queue, at(842), payments);
+    expect(await holdRow(ordered.holdId)).toEqual({ state: "booked", refunded_at: null });
     expect(payments.made.refunds).toEqual([]);
   });
 });
@@ -318,14 +477,11 @@ async function lateServiceVisit() {
 }
 
 /** The hold for a new visit on Thursday that replaces it, with the move started. */
-async function replacementHold(): Promise<string> {
-  const hold = await (
-    await call(PERSON, "/api/holds", {
-      method: "POST",
-      body: { type: "service", date: "2026-09-24", window: "afternoon", moving: OLD_VISIT },
-    })
-  ).json<{ id: string }>();
-  await call(PERSON, `/api/appointments/${OLD_VISIT}/reschedule`, { method: "POST", body: { hold_id: hold.id } });
+async function replacementHold(record: FieldRecord = "fsm"): Promise<string> {
+  const body = { type: "service", date: "2026-09-24", window: "afternoon", moving: OLD_VISIT };
+  const hold = await (await call(PERSON, "/api/holds", { method: "POST", body }, NOW, record)).json<{ id: string }>();
+  const move = { method: "POST", body: { hold_id: hold.id } };
+  await call(PERSON, `/api/appointments/${OLD_VISIT}/reschedule`, move, NOW, record);
   return hold.id;
 }
 
@@ -390,13 +546,37 @@ describe("a credit-covered move inside 24 hours whose old work order FSM fails t
   });
 });
 
-describe("order.paid and payment.captured for one payment (W9)", () => {
-  it("queues the booking once, on the capture", async () => {
-    const ordered = await heldAndOrdered(PERSON);
+describe("a credit-covered move inside 24 hours, on our own record (W4)", () => {
+  it("spends the credit once, tells the client once, and cancels the old visit without FSM", async () => {
+    await lateServiceVisit();
+    await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "ops", sourceId: "o1", now: NOW }).run();
+
+    // The move confirmed it free, on the credit, so the request that confirmed it booked it.
+    const holdId = await replacementHold("ours");
+    const again = await confirmBooking(env.DB, fsmSwitchedOff(), createStubPayments(), holdId, at(40), {
+      labelAsTest: true,
+      record: "ours",
+    });
+
+    expect(again).toBe("already_booked");
+    const redeemed = await env.DB.prepare("SELECT COUNT(*) AS n FROM credit_ledger WHERE kind = 'redeem'").first();
+    expect(redeemed).toEqual({ n: 1 });
+    expect((await creditBalance(env.DB, PERSON, at(60))).visits).toBe(0);
+    const told = await env.DB.prepare("SELECT kind FROM outbound_messages WHERE person_id = ?1").bind(PERSON).all();
+    expect(told.results).toEqual([{ kind: "reschedule_confirmation" }]);
+    expect(await oldVisitStatus()).toEqual({ status: "cancelled" });
+  });
+});
+
+describe.each(RECORDS)("order.paid and payment.captured for one payment (W9), on %s's record", (record) => {
+  it("books the visit once, on the capture", async () => {
+    const ordered = await heldAndOrdered(PERSON, NOW, "2026-09-24", "afternoon", record);
     const queue = fakeQueue();
-    await webhook("payment.captured", "evt_w9a", payment("pay_w9", ordered, at(30)), at(31), queue);
-    await webhook("order.paid", "evt_w9b", payment("pay_w9", ordered, at(30)), at(31), queue);
-    expect(queue.sent).toEqual([{ hold_id: ordered.holdId, request_id: expect.any(String) as string }]);
+    await webhook("payment.captured", "evt_w9a", payment("pay_w9", ordered, at(30)), at(31), queue, { record });
+    await webhook("order.paid", "evt_w9b", payment("pay_w9", ordered, at(30)), at(31), queue, { record });
+    expect(queue.sent.length).toBeLessThanOrEqual(1);
+    await drain(queue, at(40));
+    expect((await scheduledServiceVisits(PERSON)).results).toHaveLength(1);
   });
 });
 
@@ -564,10 +744,20 @@ describe("the half-hour pass over paid holds (BIZ-06)", () => {
 });
 
 // MON-12: after an outage the runbook has ops refund, from Razorpay's dashboard, a payment whose capture never came.
-describe("a refund of a payment whose capture never reached us", () => {
-  it("records both and books nothing: the hold is not confirmed, and the half-hour pass leaves it alone", async () => {
-    const ordered = await heldAndOrdered(PERSON);
-    const refunded = { ...payment("pay_m12", ordered, at(30)), status: "refunded", captured: true };
+describe.each(RECORDS)("a refund of a payment whose capture never reached us, on %s's record", (record) => {
+  /** The cron's half-hour pass over paid holds on this record: how many it put back or booked. */
+  function halfHourPass(now: Date) {
+    const deps = depsFor(record);
+    const budget = createCallBudget(40);
+    const log = createLogger();
+    if (record === "fsm") return requeueUnbookedHolds(env.DB, { queue: fakeQueue(), ...deps, budget, log }, now);
+    return bookUnbookedHolds(env.DB, { ...deps, notify: () => Promise.resolve(), labelAsTest: true, budget, log }, now);
+  }
+
+  /** A hold paid for inside its ten minutes, then refunded in full from Razorpay's dashboard an hour on. */
+  async function refundedInDashboard() {
+    const ordered = await heldAndOrdered(PERSON, NOW, "2026-09-24", "afternoon", record);
+    const paid = payment("pay_m12", ordered, at(30));
     const refund = {
       id: "rfnd_m12",
       payment_id: "pay_m12",
@@ -575,9 +765,14 @@ describe("a refund of a payment whose capture never reached us", () => {
       status: "processed",
       created_at: Math.floor(at(3600).getTime() / SECOND),
     };
+    return { ordered, paid, refunded: { ...paid, status: "refunded", captured: true }, refund };
+  }
+
+  it("records both and books nothing: the hold is not confirmed, and the half-hour pass leaves it alone", async () => {
+    const { ordered, refunded, refund } = await refundedInDashboard();
     const queue = fakeQueue();
 
-    const answer = await webhook("refund.processed", "evt_m12", refunded, at(3601), queue, refund);
+    const answer = await webhook("refund.processed", "evt_m12", refunded, at(3601), queue, { record, refund });
 
     expect(answer.status).toBe(200);
     expect(queue.sent).toEqual([]);
@@ -585,22 +780,35 @@ describe("a refund of a payment whose capture never reached us", () => {
     expect(await paid.first()).toEqual({ status: "refunded" });
     const hold = env.DB.prepare("SELECT confirmed_at FROM slot_holds WHERE id = ?1").bind(ordered.holdId);
     expect(await hold.first()).toEqual({ confirmed_at: null });
-    const deps = fakeDependencies();
-    const pass = { queue, alertOnce: deps.alertOnce, budget: createCallBudget(40), log: createLogger() };
-    expect(await requeueUnbookedHolds(env.DB, pass, at(3 * 3600))).toBe(0);
+    expect(await halfHourPass(at(3 * 3600))).toBe(0);
+    expect((await scheduledServiceVisits(PERSON)).results).toEqual([]);
+  });
+
+  it("books nothing when the capture arrives after the refund, and asks Razorpay for no second refund", async () => {
+    const { ordered, paid, refunded, refund } = await refundedInDashboard();
+    const payments = createStubPayments();
+    const queue = fakeQueue();
+    await webhook("refund.processed", "evt_m12", refunded, at(3601), queue, { record, refund });
+
+    await webhook("payment.captured", "evt_m12_late", paid, at(3700), queue, { record, payments });
+    await drain(queue, at(3701), payments);
+
+    expect((await holdRow(ordered.holdId))?.state).toBe("released");
+    expect(payments.made.refunds).toEqual([]);
+    expect((await scheduledServiceVisits(PERSON)).results).toEqual([]);
   });
 });
 
-describe("GST once a price carries it (W7, BIZ-07)", () => {
+describe.each(RECORDS)("GST once a price carries it (W7, BIZ-07), on %s's record", (record) => {
   it("shows the Payments tab the figure before GST, and the rate, that the hold charged", async () => {
     await env.DB.prepare(
       "INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from) VALUES ('service', 'standard', 200000, 18, '2026-09-23')",
     ).run();
-    const ordered = await heldAndOrdered(PERSON);
+    const ordered = await heldAndOrdered(PERSON, NOW, "2026-09-24", "afternoon", record);
     expect(ordered.amount).toBe(236000);
-    await webhook("payment.captured", "evt_w7", payment("pay_w7", ordered, at(30)), at(31));
+    await webhook("payment.captured", "evt_w7", payment("pay_w7", ordered, at(30)), at(31), fakeQueue(), { record });
     const { entries } = await (
-      await call(PERSON, "/api/payments", {}, at(60))
+      await call(PERSON, "/api/payments", {}, at(60), record)
     ).json<{
       entries: Record<string, unknown>[];
     }>();

@@ -8,11 +8,13 @@
 // kind ops offer, or of every kind open to the client where it is given none
 // (ADR 0085), with the one the app offers chosen where it is given one. It is
 // drawn as the screen's primary action, or quietly, as Home's prompt draws its
-// way on.
+// way on. A first fit while ops offer no hair system is not bookable at all,
+// and says so in place of the button.
 
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { useState } from "react";
 import type { BookableType } from "../api.ts";
+import { booking } from "../content.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
 import { BookingSheet, type Offered } from "./BookingSheet.tsx";
@@ -32,8 +34,8 @@ export function BookButton({
   className?: string;
   /** The kind of visit it books; the first the client may book, if left out. */
   type?: BookableType;
-  /** The service of that kind the app offers, which the sheet opens with chosen (ADR 0085). */
-  tier?: string;
+  /** The service of that kind the app offers, which the sheet opens with chosen (ADR 0085); null for none. */
+  tier?: string | null;
   /** The day and window the app offers it on, which the sheet opens with chosen. */
   offer?: Offered;
   /** The strip's first day, where it should not start from the first day open. */
@@ -47,7 +49,11 @@ export function BookButton({
   const services =
     type === undefined ? me.booking.services : me.booking.services.filter((service) => service.type === type);
   const words = quiet ? <span>{label}</span> : label;
-  if (offline) {
+  if (kind === "first_fit" && !services.some((service) => service.type === "first_fit")) {
+    return <p>{booking.firstFitNotYet}</p>;
+  }
+  // A sheet already open stays open when the connection drops, with its hold and any payment under way.
+  if (offline && !open) {
     return quiet ? (
       <button type="button" className={className} disabled>
         {words}
@@ -87,7 +93,7 @@ export function BookButton({
         <BookingSheet
           type={kind}
           services={services}
-          {...(tier === undefined ? {} : { tier })}
+          {...(tier === undefined || tier === null ? {} : { tier })}
           {...(offer === undefined ? {} : { offer })}
           {...(from === undefined ? {} : { from })}
           onClose={(changed) => {

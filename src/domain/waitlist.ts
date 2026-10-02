@@ -5,12 +5,14 @@
 import { PUBLIC_ORIGIN } from "../config/environments.ts";
 import type { EnvironmentName } from "../config/environments.ts";
 import { indiaInstant } from "../lib/india-time.ts";
+import { namedArea } from "./area-names.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import { consentGiven, latestConsentSql } from "./messages.ts";
 import { firstNameOf } from "../lib/names.ts";
 
 export interface WaitlistArea {
   readonly pincode: string;
+  /** Null until ops have named the area, and for a pincode we do not know. */
   readonly area: string | null;
   readonly city: string | null;
   readonly served: boolean;
@@ -27,7 +29,8 @@ export interface WaitlistArea {
 export async function waitlistByPincode(db: D1Database, limit: number): Promise<WaitlistArea[]> {
   const { results } = await db
     .prepare(
-      `SELECT w.pincode, p.area, p.city, p.served, p.launched_at, COUNT(*) AS waiting, MIN(w.created_at) AS oldest,
+      `SELECT w.pincode, ${namedArea("p")} AS area, p.city, p.served, p.launched_at, COUNT(*) AS waiting,
+         MIN(w.created_at) AS oldest,
          SUM(CASE WHEN w.referral_code IS NOT NULL THEN 1 ELSE 0 END) AS referred,
          SUM(w.launch_alert) AS alerts
        FROM waitlist_entries w LEFT JOIN serviceable_pincodes p ON p.pincode = w.pincode
@@ -162,7 +165,7 @@ export async function launchPincode(
   return { alerts };
 }
 
-/** What a launch alert says: the area we now come to, and where to book. */
+/** What a launch alert says: the area we now come to, its city until ops have named it, and where to book. */
 export async function composeLaunchAlert(
   db: D1Database,
   pincode: string,
@@ -171,7 +174,8 @@ export async function composeLaunchAlert(
 ): Promise<{ template: string; params: string[] } | { skip: string }> {
   const row = await db
     .prepare(
-      `SELECT p.name, s.area, s.city, s.served FROM people p LEFT JOIN serviceable_pincodes s ON s.pincode = ?2
+      `SELECT p.name, ${namedArea("s")} AS area, s.city, s.served FROM people p
+       LEFT JOIN serviceable_pincodes s ON s.pincode = ?2
        WHERE p.id = ?1`,
     )
     .bind(personId, pincode)
@@ -205,8 +209,11 @@ export function waitlistConfirmation(
     .bind(crypto.randomUUID(), input.now.toISOString(), input.personId, input.pincode);
 }
 
+/** How a waitlist confirmation names the place: the area once ops have named it, else the pincode, "pincode 400050". */
+const waitedFor = (area: string | null, pincode: string): string => area ?? `pincode ${pincode}`;
+
 /**
- * What the confirmation says: the area they wait for, and that they will hear of its launch only if they asked
+ * What the confirmation says: the place they wait for, and that they will hear of its launch only if they asked
  * to and still consent to it. Sent only while they consent to being contacted about the request, which joining
  * the list asks for (the landing's notice `waitlist-v1`).
  */
@@ -218,7 +225,8 @@ export async function composeWaitlistConfirmation(
   if (!(await consentGiven(db, personId, "contact"))) return { skip: "no consent to be contacted about the request" };
   const row = await db
     .prepare(
-      `SELECT p.name, w.pincode, w.launch_alert, s.area FROM waitlist_entries w JOIN people p ON p.id = w.person_id
+      `SELECT p.name, w.pincode, w.launch_alert, ${namedArea("s")} AS area
+       FROM waitlist_entries w JOIN people p ON p.id = w.person_id
        LEFT JOIN serviceable_pincodes s ON s.pincode = w.pincode
        WHERE w.id = ?1 AND w.person_id = ?2`,
     )
@@ -228,6 +236,6 @@ export async function composeWaitlistConfirmation(
   const told = row.launch_alert === 1 && (await consentGiven(db, personId, "whatsapp_launches"));
   return {
     template: told ? "waitlist_listed_alert_v1" : "waitlist_listed_v1",
-    params: [firstNameOf(row.name), row.area ?? row.pincode],
+    params: [firstNameOf(row.name), waitedFor(row.area, row.pincode)],
   };
 }

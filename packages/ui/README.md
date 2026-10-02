@@ -10,7 +10,7 @@ The React parts the three Phase 2 apps share: the client app, the ops console an
 | `@maneman/ui/VisuallyHidden` | Words for a screen reader alone                                                                    |
 | `@maneman/ui/Caps`           | The boards' small-caps serif label                                                                 |
 | `@maneman/ui/Button`         | `Button` and `ButtonLink`: a variant (the colours) and a size (what it is for), with every state   |
-| `@maneman/ui/Sheet`          | A sheet that rises from the foot of the column, as a native modal dialog                           |
+| `@maneman/ui/Sheet`          | A sheet that rises from the foot of the column, as a native modal dialog that Back closes          |
 | `@maneman/ui/Dialog`         | A panel opened over the page as a native modal dialog, whose caller decides when it may close      |
 | `@maneman/ui/Panel`          | The ops console's bordered panel, headed by its title and its count                                |
 | `@maneman/ui/Field`          | `Field` (a label, a hint and an error tied to their control), `TextInput`, `TextArea`, `Checkbox`  |

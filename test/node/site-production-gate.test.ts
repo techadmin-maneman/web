@@ -1,27 +1,31 @@
 // The publish gate, end to end: the production site builds only when every
-// notice is approved, and then ships none of the design's placeholder material.
+// notice and legal page is approved, and then ships none of the design's
+// placeholder material.
 // The gate's refusals are proven in test/node/site-content.test.ts.
 //
 // Since the owner's ruling of 1 October 2026 the try-on's look goes to WhatsApp
 // only (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md), and the only
 // notices that say so await counsel (docs/open-points.md, item 146). Until
-// counsel approves them the production build refuses them, and nothing else;
-// what a production build ships is checked again the day it builds.
+// counsel approves them, and the legal pages' Phase 2 wording, the production
+// build refuses them, and nothing else; what a production build ships is
+// checked again the day it builds.
 
 import { spawnSync } from "node:child_process";
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { DESIGN_PLACEHOLDERS } from "../../site/src/content/design-placeholders.ts";
-import { notices } from "../../site/src/content/site.ts";
+import { legalPages, notices } from "../../site/src/content/site.ts";
 import { unreferencedAssets } from "../../site/src/lib/static-files.ts";
 
 const OUT = "site/dist/production";
 const AWAITING_COUNSEL = Object.values(notices).filter((notice) => !notice.approved);
-const BUILDS = AWAITING_COUNSEL.length === 0;
+const PAGES_AWAITING_COUNSEL = Object.values(legalPages).filter((page) => !page.approved);
+const BUILDS = AWAITING_COUNSEL.length === 0 && PAGES_AWAITING_COUNSEL.length === 0;
 
 describe("the production site build", () => {
-  it.runIf(!BUILDS)("refuses the try-on's notices awaiting counsel, and nothing else", { timeout: 180_000 }, () => {
+  it.runIf(!BUILDS)("refuses what awaits counsel, and nothing else", { timeout: 180_000 }, () => {
     expect(AWAITING_COUNSEL.map((notice) => notice.version)).toEqual(["photo-v3", "gate-v3"]);
+    expect(PAGES_AWAITING_COUNSEL.map((page) => page.title)).toEqual(["Privacy", "Terms"]);
     const build = spawnSync(process.execPath, ["scripts/build-site.ts", "--env", "production"], { encoding: "utf8" });
     const output = `${build.stdout}${build.stderr}`;
     expect(build.status, output).not.toBe(0);
@@ -29,6 +33,8 @@ describe("the production site build", () => {
     expect(problems).toEqual([
       "  - the photo notice (photo-v3) is not approved",
       "  - the gate notice (gate-v3) is not approved",
+      "  - the privacy page's wording is not approved",
+      "  - the terms page's wording is not approved",
     ]);
   });
 

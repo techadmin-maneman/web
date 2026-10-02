@@ -7,7 +7,8 @@
 //               or whose FSM contact is not yet anonymised              -> fsm-sync
 //   job steps   a technician's step not written to FSM for 15 minutes -> fsm-sync
 //               and after an hour, an alert naming it
-//   messages    queued but unsent for over 5 minutes                  -> messaging
+//   messages    queued but unsent for over 5 minutes, while WhatsApp is up -> messaging
+//               and failed after a day (src/scheduled/unsent-messages.ts)
 //   renders     queued but never started, or rendering past the give-up time -> render
 //   downloads   a stored result URL not yet fetched, until it expires  -> render
 //   moves       a dispatch move still open after five minutes: its claimed time let go, the move closed
@@ -30,13 +31,12 @@ import { addDays, indiaDate } from "../lib/india-time.ts";
 import type { Logger } from "../log.ts";
 import { MAX_SYNC_ATTEMPTS, type CrmSyncMessage } from "../queues/crm-sync.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
-import { SENDING_LEASE_MS, type MessagingMessage } from "../queues/messaging.ts";
 import type { RenderMessage } from "../queues/render.ts";
+import { requeueUnsentMessages } from "./unsent-messages.ts";
 import { DAY_MS, HOUR_MS, MINUTE_MS } from "../lib/durations.ts";
 
 /** A pending lead, or a queued job, older than this has lost its queue message. */
 const PENDING_GRACE_MS = 2 * MINUTE_MS;
-const MESSAGE_GRACE_MS = 5 * MINUTE_MS;
 /** Past the fsm-sync consumer's whole retry chain: 30 s, 1, 2 and 4 minutes. */
 const JOB_EVENT_GRACE_MS = 15 * MINUTE_MS;
 /** A step still not in FSM after this has outlived several sends, and ops are told. */
@@ -119,7 +119,14 @@ export async function sweep(
   const erasures = await requeueCrmErasures(run);
   if (options.fsmConnected === true) await requeueFsmErasures(run);
   const jobEvents = await requeueJobEvents(run);
-  const messages = await requeueMessages(run);
+  const messages = await requeueUnsentMessages({
+    db: env.DB,
+    queue: env.MESSAGE_QUEUE,
+    deps,
+    log,
+    now,
+    budget: options.budget,
+  });
   const { renders, abandoned, downloads, lost } = await requeueTryons(run);
   const { expired: jobsExpired, kept: tryOnsKept } = await expireJobs(env, now);
   const photosDeleted = await deletePhotos(env, now);
@@ -244,25 +251,6 @@ async function requeueJobEvents(run: SweepRun): Promise<string[]> {
   return jobEvents;
 }
 
-/** Result messages queued and never sent, sent to messaging again. */
-async function requeueMessages(run: SweepRun): Promise<string[]> {
-  const { db, env, before } = run;
-  const messages = await ids(
-    db
-      .prepare(
-        `SELECT id FROM outbound_messages
-       WHERE state = 'queued' AND queued_at < ?1 AND (sending_at IS NULL OR sending_at < ?2)
-       ORDER BY queued_at LIMIT ?3`,
-      )
-      .bind(before(MESSAGE_GRACE_MS), before(SENDING_LEASE_MS), BATCH_LIMIT),
-  );
-  await sendAll(
-    env.MESSAGE_QUEUE,
-    messages.map((id) => ({ message_id: id, request_id: "sweeper" }) satisfies MessagingMessage),
-  );
-  return messages;
-}
-
 /** Try-on renders and downloads whose queue message was lost, sent to render again; ones past saving failed. */
 async function requeueTryons(
   run: SweepRun,
@@ -326,7 +314,7 @@ async function requeueTryons(
   return { renders, abandoned, downloads, lost };
 }
 
-/** Deletes what has outlived its use: idempotency keys, counters, sessions, spent login codes and stale claims. */
+/** Deletes what has outlived its use: idempotency keys, counters, sessions, spent codes and stale claims. */
 async function housekeep(run: SweepRun): Promise<void> {
   const { db, now, before } = run;
   const sessionsEnded = before(SESSION_RETENTION_MS);
@@ -335,6 +323,7 @@ async function housekeep(run: SweepRun): Promise<void> {
     db.prepare("DELETE FROM counters WHERE window_start < ?1").bind(addDays(indiaDate(now), -COUNTER_RETENTION_DAYS)),
     db.prepare("DELETE FROM tryon_sessions WHERE expires_at < ?1").bind(now.toISOString()),
     db.prepare("DELETE FROM otp_challenges WHERE expires_at < ?1").bind(before(CHALLENGE_RETENTION_MS)),
+    db.prepare("DELETE FROM number_codes WHERE expires_at < ?1").bind(before(CHALLENGE_RETENTION_MS)),
     // A technician's phone keeps pointing at the last session it logged in with,
     // so it lets go of that session before the session is deleted.
     db
@@ -414,7 +403,8 @@ async function expireJobs(env: SweepEnv, now: Date): Promise<{ expired: number; 
   const db = env.DB;
   const { results: pastExpiry } = await db
     .prepare(
-      `SELECT id, created_at, person_id, photo_consent_version, state, result_key, expires_at, kept_at, copy_key, kept_look_key
+      `SELECT id, created_at, person_id, photo_consent_version, state, result_key, expires_at, kept_at, copy_key,
+         kept_look_key, number_proved_at
        FROM tryon_jobs WHERE state = 'ready' AND expires_at < ?1 ORDER BY created_at LIMIT ?2`,
     )
     .bind(now.toISOString(), EXPIRY_BATCH)

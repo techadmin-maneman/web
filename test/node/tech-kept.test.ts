@@ -47,6 +47,7 @@ const summary = (id: string, date: string) =>
     window_label: "morning",
     type: "service",
     one_visit: false,
+    product: null,
     sector: "Sector 65",
     status: "scheduled",
     badge: "prepaid",
@@ -92,6 +93,7 @@ const card = (id: string, date: string) =>
     consumables: [],
     products: [],
     payment_link: null,
+    discount_code: null,
     profile: null,
   }) as Job;
 
@@ -261,6 +263,12 @@ describe("a job's card", () => {
       { id: "client_unwell", label: "Client unwell" },
     ]);
     expect(kept?.consumables).toEqual([]);
+  });
+
+  it("kept before a one visit's code was on the card, reads as having none, so the outcome asks", async () => {
+    const { discount_code: _none, ...earlier } = card("a", TODAY);
+    await keepJob(earlier as unknown as Job);
+    expect((await keptJob("a"))?.discount_code).toBeNull();
   });
 });
 

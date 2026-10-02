@@ -1,7 +1,8 @@
 // A client's own try-ons, for the client app's Photos tab (docs/decisions/0082-try-ons-in-the-app.md): the
 // photograph they uploaded on the site and the look made from it, each only while it is held. A try-on is the
-// client's once the site's gate was passed with their number (src/domain/tryon-claims.ts), the number they log in to
-// the app with. Every image goes through a link that lasts 15 minutes, and only to that client.
+// client's once the site's gate was passed with their number, proved by its WhatsApp code (src/domain/tryon-claims.ts),
+// the number they log in to the app with. One claimed without a proved number may have been anyone's, so it is not
+// shown. Every image goes through a link that lasts 15 minutes, and only to that client.
 //
 // A client's try-on is kept (docs/decisions/0084-a-clients-try-on-is-kept.md): its photograph, as the small copy the
 // site sent with it, until they ask us to delete it, and its look until their first fit is photographed. Which try-on
@@ -154,7 +155,8 @@ export async function clientTryOns(
 ): Promise<ClientTryOn[]> {
   const { results } = await db
     .prepare(
-      `SELECT ${COLUMNS} FROM tryon_jobs j WHERE j.person_id = ?1 AND j.state != 'failed' ORDER BY j.created_at DESC`,
+      `SELECT ${COLUMNS} FROM tryon_jobs j
+       WHERE j.person_id = ?1 AND j.state != 'failed' AND j.number_proved_at IS NOT NULL ORDER BY j.created_at DESC`,
     )
     .bind(personId)
     .all<TryOnRow>();
@@ -183,7 +185,9 @@ export async function ownTryOnImage(
   now: Date,
 ): Promise<{ bucket: TryOnBucket; key: string; madeOn: string } | null> {
   const row = await db
-    .prepare(`SELECT ${COLUMNS} FROM tryon_jobs j WHERE j.id = ?1 AND j.person_id = ?2`)
+    .prepare(
+      `SELECT ${COLUMNS} FROM tryon_jobs j WHERE j.id = ?1 AND j.person_id = ?2 AND j.number_proved_at IS NOT NULL`,
+    )
     .bind(jobId, personId)
     .first<TryOnRow>();
   if (row === null) return null;

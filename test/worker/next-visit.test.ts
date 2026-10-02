@@ -92,7 +92,7 @@ async function consent(granted: boolean) {
 }
 
 interface Me {
-  booking: { types: string[]; next: { type: string; date: string; window: string | null } | null };
+  booking: { types: string[]; next: { type: string; due_on: string; date: string; window: string | null } | null };
   prompt: Record<string, unknown> | null;
 }
 
@@ -150,35 +150,64 @@ describe("what the app offers next (GET /api/me)", () => {
     await visit("first_fit", "2026-08-11T04:30:00.000Z");
     await visit("service", "2026-09-10T04:30:00.000Z");
     const home = await me();
-    expect(home.booking.next).toEqual({ type: "service", tier: "standard", date: "2026-10-10", window: "morning" });
+    expect(home.booking.next).toEqual({
+      type: "service",
+      tier: "standard",
+      due_on: "2026-10-10",
+      date: "2026-10-10",
+      window: "morning",
+    });
     expect(home.prompt).toEqual({
       kind: "next_visit",
       type: "service",
       tier: "standard",
+      due_on: "2026-10-10",
       date: "2026-10-10",
       window: "morning",
+      replacement_bookable: false,
     });
   });
 
-  it("offers it for tomorrow once the day it fell due has passed", async () => {
+  it("offers it for tomorrow once the day it fell due has passed, and keeps the day it was due", async () => {
     await visit("service", "2026-08-01T08:30:00.000Z");
-    expect((await me()).booking.next).toEqual({
+    const home = await me();
+    expect(home.booking.next).toEqual({
       type: "service",
       tier: "standard",
+      due_on: "2026-08-31",
       date: "2026-09-22",
       window: "afternoon",
     });
+    expect(home.prompt).toMatchObject({ kind: "next_visit", due_on: "2026-08-31", date: "2026-09-22" });
   });
 
-  it("offers the replacement where the piece falls due first, and not in the evening, where it cannot start", async () => {
-    await visit("service", "2026-09-10T11:30:00.000Z"); // 5 pm in India
+  it("offers the replacement on the piece's own day where it falls due first, and not in the evening", async () => {
+    await visit("service", "2026-09-10T11:30:00.000Z"); // 5 pm in India, which a replacement cannot start in
     await pieceDue("2026-10-05");
     expect((await me()).booking.next).toEqual({
       type: "replacement",
       tier: "standard",
-      date: "2026-10-10",
+      due_on: "2026-10-05",
+      date: "2026-10-05",
       window: null,
     });
+  });
+
+  it("offers an overdue piece for tomorrow, under its own due day, with the strip from the first bookable day", async () => {
+    await visit("service", "2026-09-01T04:30:00.000Z"); // the service falls due on 1 October
+    await pieceDue("2026-09-10");
+    const home = await me();
+    expect(home.booking.next).toEqual({
+      type: "replacement",
+      tier: "standard",
+      due_on: "2026-09-10",
+      date: "2026-09-22",
+      window: "morning",
+    });
+    expect(home.prompt).toMatchObject({ kind: "next_visit", type: "replacement", due_on: "2026-09-10" });
+    // The app asks for the strip from a week before the day offered: it starts tomorrow, the first day bookable.
+    const strip = await availability("type=replacement&from=2026-09-15");
+    expect(strip.days[0]?.date).toBe("2026-09-22");
   });
 
   // ADR 0086, amended by ADR 0085: the visit offered is one of the services ops keep.
@@ -197,6 +226,7 @@ describe("what the app offers next (GET /api/me)", () => {
     expect((await me()).booking.next).toEqual({
       type: "service",
       tier: "premium",
+      due_on: "2026-10-10",
       date: "2026-10-10",
       window: "morning",
     });
@@ -237,7 +267,13 @@ describe("what the app offers next (GET /api/me)", () => {
       .bind(PERSON, NOW.toISOString())
       .run();
     const home = await me();
-    expect(home.booking.next).toEqual({ type: "first_fit", tier: "standard", date: "2026-09-22", window: "afternoon" });
+    expect(home.booking.next).toEqual({
+      type: "first_fit",
+      tier: "standard",
+      due_on: "2026-09-18",
+      date: "2026-09-22",
+      window: "afternoon",
+    });
     // The first fit is Home's own card, "Book your first fit", and never the prompt beneath it.
     expect(home.prompt).toBeNull();
   });
@@ -248,6 +284,7 @@ describe("what the app offers next (GET /api/me)", () => {
     expect((await me()).booking.next).toEqual({
       type: "first_fit",
       tier: "standard",
+      due_on: "2026-09-28",
       date: "2026-09-28",
       window: null,
     });
@@ -258,10 +295,14 @@ describe("the days a visit may be booked on", () => {
   it("opens a first fit no sooner than the lead time after the consultation, in the strip and in a hold", async () => {
     await visit("consultation", "2026-09-18T04:30:00.000Z");
     await opsSet({ first_fit_lead: 10 });
-    const strip = await availability("type=first_fit");
+    const strip = await availability("type=first_fit&tier=standard");
     expect(strip.days[0]?.date).toBe("2026-09-28");
-    expect((await hold({ type: "first_fit", date: "2026-09-25", window: "morning" })).status).toBe(422);
-    expect((await hold({ type: "first_fit", date: "2026-09-28", window: "morning" })).status).toBe(201);
+    expect((await hold({ type: "first_fit", tier: "standard", date: "2026-09-25", window: "morning" })).status).toBe(
+      422,
+    );
+    expect((await hold({ type: "first_fit", tier: "standard", date: "2026-09-28", window: "morning" })).status).toBe(
+      201,
+    );
   });
 
   it("reaches 45 days from tomorrow, and a strip asked for further on ends there", async () => {

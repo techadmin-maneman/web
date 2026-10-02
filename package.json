@@ -38,6 +38,7 @@
     "schema": "node scripts/generate-schema-doc.ts",
     "openapi": "node scripts/generate-openapi.ts && openapi-typescript docs/openapi.json --output site/src/lib/api-schema.ts && openapi-typescript docs/openapi-client.json --output apps/app/src/api-schema.ts && openapi-typescript docs/openapi-ops.json --output apps/ops/src/api-schema.ts && openapi-typescript docs/openapi-tech.json --output apps/tech/src/api-schema.ts",
     "smoke": "node scripts/smoke.ts",
+    "smoke:csp": "node scripts/smoke-csp.ts",
     "apply-triggers": "node scripts/apply-triggers.ts",
     "check:triggers": "node scripts/check-triggers.ts",
     "check:buckets": "node scripts/check-buckets.ts",

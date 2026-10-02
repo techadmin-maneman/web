@@ -6,7 +6,7 @@
 // and to act on a booking FSM refused, which heads the tab while it waits
 // (HeldBookings.tsx; docs/decisions/0095-a-booking-fsm-refuses-is-held.md),
 // and to enter a discount code on a visit or take it off (VisitCode.tsx;
-// docs/decisions/0108-discount-codes.md).
+// docs/decisions/0108-discount-codes.md), and to book the client a visit (BookVisit.tsx).
 
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
@@ -14,7 +14,9 @@ import { fullDate, indiaClock, longDate } from "@maneman/web-kit/dates";
 import { useRef, useState } from "react";
 import type { ClientRecord, ClientVisit } from "../api.ts";
 import { clients } from "../content.ts";
+import { useAccess } from "../lib/access.ts";
 import styles from "./clients.module.css";
+import { BookVisit } from "./BookVisit.tsx";
 import { GivenAddressForm } from "./GivenAddress.tsx";
 import { HeldBookings } from "./HeldBookings.tsx";
 import { VisitCode } from "./VisitCode.tsx";
@@ -71,6 +73,7 @@ function Address({
   const [recording, setRecording] = useState(false);
   const [saved, setSaved] = useState(false);
   const opener = useRef<HTMLButtonElement>(null);
+  const mayRecord = useAccess().mayCall("POST /api/clients/{id}/address");
 
   if (recording) {
     return (
@@ -97,18 +100,20 @@ function Address({
           {copy.given.saved}
         </p>
       )}
-      <Button
-        variant="outline"
-        size="small"
-        ref={opener}
-        className={styles.secondary}
-        onClick={() => {
-          setSaved(false);
-          setRecording(true);
-        }}
-      >
-        {address === null ? copy.given.open : copy.given.change}
-      </Button>
+      {mayRecord && (
+        <Button
+          variant="outline"
+          size="small"
+          ref={opener}
+          className={styles.secondary}
+          onClick={() => {
+            setSaved(false);
+            setRecording(true);
+          }}
+        >
+          {address === null ? copy.given.open : copy.given.change}
+        </Button>
+      )}
     </div>
   );
 }
@@ -165,20 +170,58 @@ function VisitTable({ title, visits, empty }: { title: string; visits: readonly 
   );
 }
 
+/** Book a visit, and the panel it opens; a visit booked, or a link sent, has the page read the record again. */
+function BookOne({ clientId, record, onBooked }: { clientId: string; record: ClientRecord; onBooked: () => void }) {
+  const [open, setOpen] = useState(false);
+  const opener = useRef<HTMLButtonElement>(null);
+  const mayBook = useAccess().mayCall("POST /api/visits");
+  if (!mayBook) return null;
+  return (
+    <>
+      <Button
+        variant="primary"
+        size="small"
+        ref={opener}
+        className={styles.primary}
+        onClick={() => {
+          setOpen(true);
+        }}
+      >
+        {copy.book.open}
+      </Button>
+      {open && (
+        <BookVisit
+          clientId={clientId}
+          name={record.name}
+          prefill={{ choice: record.state === "fitted" ? "service" : "consultation" }}
+          onClose={(booked) => {
+            setOpen(false);
+            if (booked !== null) onBooked();
+            else requestAnimationFrame(() => opener.current?.focus());
+          }}
+        />
+      )}
+    </>
+  );
+}
+
 export function Visits({
   clientId,
   record,
   address,
   onAddress,
+  onBooked,
 }: {
   clientId: string;
   record: ClientRecord;
   /** The address visits go to, the one saved on this page since it opened if there is one. */
   address: ClientRecord["address"];
   onAddress: (address: SavedAddress) => void;
+  onBooked: () => void;
 }) {
   return (
     <div className={styles.visits}>
+      <BookOne clientId={clientId} record={record} onBooked={onBooked} />
       <HeldBookings bookings={record.held_bookings} upcoming={record.visits.upcoming} />
       <Address clientId={clientId} address={address} onAddress={onAddress} />
       <VisitTable title={copy.upcoming} visits={record.visits.upcoming} empty={copy.noUpcoming} />

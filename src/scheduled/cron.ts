@@ -2,17 +2,22 @@
 // order. A job that throws is logged as `cron_job_failed` and the next one runs
 // anyway, so one failing job never stops the others. Each job's failed runs in
 // a row are counted in `cron_jobs`, and a job that fails three in a row alerts
-// (docs/decisions/0067-alerts-and-silent-failures.md).
+// (docs/decisions/0067-alerts-and-silent-failures.md). Each run is noted as it
+// starts and as it finishes, so a run Cloudflare stopped part-way is told by the
+// next (src/domain/cron-runs.ts), and each ends with a ping to an outside monitor
+// (src/providers/heartbeat.ts).
 //
 // The jobs share one budget of outside calls a run, so that together they stay
 // under the free plan's 50 fetch subrequests (src/lib/call-budget.ts). Their
 // calls to D1, R2 and the queues are a separate allowance of 1,000 a run, kept
 // by each job's batch sizes (docs/decisions/0093-the-storage-meter.md).
 
+import { fieldRecord } from "../config/field-record.ts";
 import type { Dependencies } from "../dependencies.ts";
 import { resolveAskedWindows } from "../domain/asked-windows.ts";
-import { requeueUnbookedHolds } from "../domain/bookings.ts";
-import { syncBooks } from "../domain/books-sync.ts";
+import { bookUnbookedHolds, requeueUnbookedHolds } from "../domain/bookings.ts";
+import { syncBooks, type BooksSyncOptions } from "../domain/books-sync.ts";
+import { finishRun, startRun } from "../domain/cron-runs.ts";
 import { alertAgedDeletions } from "../domain/deletion.ts";
 import { checkCatalogue } from "../domain/fsm-catalogue.ts";
 import { recordUtilisation } from "../domain/dispatch.ts";
@@ -22,12 +27,15 @@ import { anyHeldBooking, retryHeldBookings } from "../domain/held-bookings.ts";
 import { queueNextServiceReminders } from "../domain/next-visit.ts";
 import { sendUnsentLinks } from "../domain/payment-links.ts";
 import { readOpsInputs, type OpsInputs } from "../domain/ops-settings.ts";
-import { tellOfStorage } from "../domain/storage-meter.ts";
+import { readDatabaseBytes, tellOfDatabaseSize, tellOfStorage } from "../domain/storage-meter.ts";
 import { queueReminders } from "../domain/visit-messages.ts";
 import type { StaticConfig } from "../guard.ts";
 import { createCallBudget, type CallBudget } from "../lib/call-budget.ts";
+import { meterDatabase, usageFields, usageSince, type MeteredDatabase } from "../lib/d1-meter.ts";
 import { scrubString, type Logger } from "../log.ts";
+import { pingHeartbeat } from "../providers/heartbeat.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
+import { checkDailyAllowances } from "./daily-allowances.ts";
 import { reconcileFsm } from "./reconcile-fsm.ts";
 import { referralPass } from "./referrals.ts";
 import { sweep } from "./sweeper.ts";
@@ -46,12 +54,18 @@ export interface CronContext {
 }
 
 /** What a run is given; the budget and the figures ops set are the run's own, shared by its jobs. */
-export type CronRun = Omit<CronContext, "budget" | "inputs">;
+export type CronRun = Omit<CronContext, "budget" | "inputs"> & {
+  /**
+   * The meter env.DB already reads through, which the run's dependencies were made with too. Without one the run
+   * meters env.DB itself, and what its dependencies read (an alert raised or closed) goes uncounted.
+   */
+  readonly meter?: MeteredDatabase;
+};
 
 /**
  * Outside calls one run may make. The free plan allows 50 fetch subrequests an
  * invocation; the other ten are for what no job can plan: a Zoho token
- * refresh, and the alerts the run sends.
+ * refresh, the alerts the run sends, and its heartbeat (src/providers/heartbeat.ts).
  */
 export const CRON_CALLS = 40;
 
@@ -109,9 +123,15 @@ async function sweepJob({ env, deps, config, log, budget }: CronContext): Promis
 
 /**
  * Holds paid for, or booked free, and neither booked nor refunded: one the queue lost goes back on it half an hour on,
- * and one FSM has refused five times running as often and for as long as ops set.
+ * and one FSM has refused five times running as often and for as long as ops set. Where our own database holds the
+ * record, each is booked here instead.
  */
-async function unbookedHoldsJob({ env, deps, log, budget, inputs }: CronContext): Promise<void> {
+async function unbookedHoldsJob(context: CronContext): Promise<void> {
+  if (fieldRecord(context.config.providers) === "ours") {
+    await bookUnbookedHoldsJob(context);
+    return;
+  }
+  const { env, deps, log, budget, inputs } = context;
   const now = deps.now();
   const requeued = await requeueUnbookedHolds(
     env.DB,
@@ -122,6 +142,14 @@ async function unbookedHoldsJob({ env, deps, log, budget, inputs }: CronContext)
   if (!(await anyHeldBooking(env.DB))) return;
   const retried = await retryHeldBookings(env.DB, { queue: env.FSM_QUEUE, log }, now, (await inputs()).fsmRetry);
   if (retried > 0) log.info("held_bookings_retried", { count: retried });
+}
+
+async function bookUnbookedHoldsJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
+  const notify = (messageId: string) =>
+    env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: "unbooked-holds" } satisfies MessagingMessage);
+  const pass = { ...deps, notify, labelAsTest: config.environment !== "production", budget, log };
+  const booked = await bookUnbookedHolds(env.DB, pass, deps.now());
+  if (booked > 0) log.warn("unbooked_holds_booked", { count: booked });
 }
 
 async function erasedFilesJob({ env, deps, log }: CronContext): Promise<void> {
@@ -146,11 +174,24 @@ async function deletionAlertsJob({ env, deps }: CronContext): Promise<void> {
   await alertAgedDeletions(env.DB, deps.now(), deps.alert);
 }
 
-/** Once an hour, on the half hour: the share fills over months, and the hour's other checks run on the hour. */
+/**
+ * Once an hour, on the half hour: R2's share and the database fill over months, and the hour's other checks run on
+ * the hour.
+ */
 async function storageMeterJob({ env, deps }: CronContext): Promise<void> {
   const minute = deps.now().getUTCMinutes();
   if (minute < 30 || minute >= 35) return;
   await tellOfStorage(env.DB, deps.alertOnce);
+  await tellOfDatabaseSize(env.DB, deps.alertOnce, await readDatabaseBytes(env.DB));
+}
+
+/** Once an hour, at a quarter past, where a token to read the account's analytics is set. */
+async function dailyAllowancesJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
+  const token = config.settings.analyticsToken;
+  if (token === null) return;
+  const minute = deps.now().getUTCMinutes();
+  if (minute < 15 || minute >= 20) return;
+  await checkDailyAllowances({ db: env.DB, deps, token, log, budget });
 }
 
 async function whatsAppBridgeJob({ deps, log, budget }: CronContext): Promise<void> {
@@ -197,12 +238,16 @@ async function askedWindowsJob({ env, deps, log }: CronContext): Promise<void> {
   if (done.resolved > 0) log.info("asked_windows_resolved", done);
 }
 
-async function booksJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
-  const options = {
-    refundAccountId: config.settings.zohoFsm?.booksRefundAccountId ?? null,
+/** The refund account Books' own settings name, and whether what the pass records is labelled as a test. */
+export function booksSyncOptions(config: StaticConfig): BooksSyncOptions {
+  return {
+    refundAccountId: config.settings.zohoBooks?.refundAccountId ?? null,
     labelAsTest: config.environment !== "production",
   };
-  const done = await syncBooks(env.DB, deps, options, deps.now(), log, budget);
+}
+
+async function booksJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
+  const done = await syncBooks(env.DB, deps, booksSyncOptions(config), deps.now(), log, budget);
   if (done.recorded + done.applied + done.refunded > 0) log.info("books_synced", done);
 }
 
@@ -210,7 +255,7 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "sweeper", needs: "nothing", run: sweepJob },
   // A hold paid for and neither booked nor refunded half an hour on (docs/decisions/0068-a-paid-hold-is-kept.md), and
   // one FSM refused five times running, tried every hour for a day (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
-  { name: "unbooked_holds", needs: "fsm", run: unbookedHoldsJob },
+  { name: "unbooked_holds", needs: "nothing", run: unbookedHoldsJob },
   // What an erasure could not delete from R2 at the time (docs/decisions/0066-erasure-all-or-nothing.md).
   { name: "erased_files", needs: "nothing", run: erasedFilesJob },
   // The FSM mirror's repair (docs/decisions/0032-fsm-mirror.md).
@@ -220,8 +265,11 @@ export const CRON_JOBS: readonly CronJob[] = [
   // as parts (docs/decisions/0087-consumables-and-stock.md).
   { name: "fsm_catalogue", needs: "fsm", run: catalogueJob },
   { name: "deletion_alerts", needs: "nothing", run: deletionAlertsJob },
-  // What the photographs and cards hold of R2, told at half, 80% and all of their share (docs/decisions/0093).
+  // What the photographs and cards hold of R2, told at half, 80% and all of their share (docs/decisions/0093), and
+  // the database against D1's limit, told at half, 80% and 95%.
   { name: "storage_meter", needs: "nothing", run: storageMeterJob },
+  // What the account has used today of the free plan's daily allowances, told at 70%.
+  { name: "daily_allowances", needs: "nothing", run: dailyAllowancesJob },
   // Every login code goes through the WhatsApp bridge (src/scheduled/whatsapp-bridge.ts).
   { name: "whatsapp_bridge", needs: "nothing", run: whatsAppBridgeJob },
   // Once a day: the operating figure behind the weekend-share assumption (src/policy/dispatch.ts).
@@ -256,27 +304,86 @@ function sharedInputs({ env, deps, log }: CronRun): () => Promise<OpsInputs> {
 
 /**
  * Runs each job switched on here, in order, each under a logger named for it, on one budget of outside calls and one
- * read of the figures ops set.
+ * read of the figures ops set. The run ends with one line saying what it cost D1, and what each job read of it.
  */
-export async function runCronJobs(jobs: readonly CronJob[], run: CronRun): Promise<CronOutcome[]> {
+export async function runCronJobs(jobs: readonly CronJob[], given: CronRun): Promise<CronOutcome[]> {
+  const { run, meter } = metered(given);
+  const startedAt = run.deps.now().toISOString();
+  await recordStart(run, startedAt);
+  const failing = await failingJobs(run);
   const budget = createCallBudget(CRON_CALLS);
   const inputs = sharedInputs(run);
   const outcomes: CronOutcome[] = [];
+  const rowsReadByJob: Record<string, number> = {};
   for (const job of jobs) {
     if (!isSwitchedOn(job.needs, run.config)) continue;
     const context = { ...run, log: run.log.child({ job: job.name }), budget, inputs };
+    const before = meter.usage();
     try {
       await job.run(context);
       outcomes.push({ job: job.name, ok: true });
-      await countSuccess(context, job.name);
+      if (failing.has(job.name)) await countSuccess(context, job.name);
     } catch (error) {
       context.log.error("cron_job_failed", { error });
       outcomes.push({ job: job.name, ok: false });
       await countFailure(context, job.name, error);
     }
+    rowsReadByJob[job.name] = usageSince(before, meter.usage()).rowsRead;
   }
   if (budget.ranOut()) run.log.warn("cron_calls_spent", { calls: CRON_CALLS });
+  await recordFinish(run, startedAt, failedJobs(outcomes).length);
+  run.log.info("cron_run", {
+    failed_jobs: failedJobs(outcomes),
+    ...usageFields(meter.usage()),
+    d1_rows_read_by_job: rowsReadByJob,
+  });
   return outcomes;
+}
+
+function metered(run: CronRun): { run: CronRun; meter: MeteredDatabase } {
+  if (run.meter !== undefined) return { run, meter: run.meter };
+  const meter = meterDatabase(run.env.DB);
+  return { run: { ...run, env: { ...run.env, DB: meter.db }, meter }, meter };
+}
+
+/** A whole scheduled run: the jobs, then the heartbeat that tells the outside monitor the cron is still running. */
+export async function runCron(jobs: readonly CronJob[], run: CronRun): Promise<void> {
+  const outcomes = await runCronJobs(jobs, run);
+  const heartbeat = { url: run.config.settings.heartbeatUrl, fetch: run.deps.fetch, log: run.log };
+  await pingHeartbeat(heartbeat, failedJobs(outcomes));
+}
+
+function failedJobs(outcomes: readonly CronOutcome[]): string[] {
+  return outcomes.filter((outcome) => !outcome.ok).map((outcome) => outcome.job);
+}
+
+/** Keeping the run record must never stop the jobs, so a failure to is only logged. */
+async function recordStart({ env, deps, log }: CronRun, startedAt: string): Promise<void> {
+  try {
+    await startRun({ db: env.DB, alertOnce: deps.alertOnce }, startedAt);
+  } catch (error) {
+    log.error("cron_run_not_recorded", { error });
+  }
+}
+
+async function recordFinish({ env, deps, log }: CronRun, startedAt: string, failedJobCount: number): Promise<void> {
+  const run = { startedAt, completedAt: deps.now().toISOString(), failedJobs: failedJobCount };
+  try {
+    await finishRun({ db: env.DB, resolveAlert: deps.resolveAlert }, run);
+  } catch (error) {
+    log.error("cron_run_not_recorded", { error });
+  }
+}
+
+/** The jobs whose last run failed, read once a run: only these have a count for a success to reset. */
+async function failingJobs({ env, log }: CronRun): Promise<ReadonlySet<string>> {
+  try {
+    const { results } = await env.DB.prepare("SELECT job FROM cron_jobs WHERE failed_runs > 0").all<{ job: string }>();
+    return new Set(results.map((row) => row.job));
+  } catch (error) {
+    log.error("cron_outcome_not_counted", { error });
+    return new Set();
+  }
 }
 
 /** A job that works again starts its count afresh, and its alert is closed. */

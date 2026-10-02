@@ -49,6 +49,8 @@ The consultation form, on `/book` and on an invite's landing alike, begins with 
 
 "Nothing booked" is no visit still to happen and none paid for and on its way to FSM (ADR 0068), and a booking's consultation not yet in FSM counts as booked. "The piece falling due first" is the piece in wear due on or before the day the service would be: the owner's "if the client's piece falls due before, offer the replacement instead".
 
+**Amended 2 October 2026 (owner, audit decision 17).** The replacement is offered on the earlier of the piece's own due day and the service's, or tomorrow once that has passed, not on the service's day; "the day the service would be" is the day it is offered, so a piece already overdue is the visit offered. `booking.next` and the `next_visit` prompt carry `due_on` beside the day offered, and Home says a visit whose due day has passed "was due": "Your service visit was due on Thu 24 Sep.", with "Book it for Sat 3 Oct"; a replacement's as its month, as Visits says it.
+
 **The booking sheet opens pre-filled.** It asks for the strip from a week before the day offered, so a week either side of it is in view, and has that day chosen where it has a window free, and the window offered where that one is. The client takes them or picks others; nothing is held until they tap. `BookingSheet` takes the day and window offered as props and changes none of its steps.
 
 **The client chooses the kind.** Home's card for a client with nothing booked, and Visits' foot, book the visit offered, in the sheet so filled; beside it, quietly, a fitted client may book the other kind instead, "Or book a replacement piece", or "Or book a service visit". A client after their consultation books the first fit.

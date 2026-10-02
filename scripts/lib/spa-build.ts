@@ -55,12 +55,37 @@ function commitBuilt(): string {
   }
 }
 
-function gzippedJavaScript(dist: string): number {
-  const scripts = readdirSync(`${dist}/assets`)
+function everyScript(dist: string): string[] {
+  return readdirSync(`${dist}/assets`)
     .filter((file) => file.endsWith(".js"))
     .map((file) => `${dist}/assets/${file}`);
-  if (existsSync(`${dist}/sw.js`)) scripts.push(`${dist}/sw.js`);
-  return scripts.reduce((total, file) => total + gzipSync(readFileSync(file)).length, 0);
+}
+
+/** The scripts the page itself loads, and the modules it preloads with them, as "/assets/index-abc.js". */
+function pageScripts(dist: string): string[] {
+  const page = readFileSync(`${dist}/index.html`, "utf8");
+  const tags = page.match(/<(?:script|link)\b[^>]*>/g) ?? [];
+  const loading = tags.filter((tag) => tag.startsWith("<script") || tag.includes('rel="modulepreload"'));
+  const files: string[] = [];
+  for (const tag of loading) {
+    const path = /\s(?:src|href)="\/([^"]+\.js)"/.exec(tag)?.[1];
+    if (path !== undefined) files.push(`${dist}/${path}`);
+  }
+  if (files.length === 0) throw new Error(`${dist}/index.html loads no script`);
+  return files;
+}
+
+/**
+ * The JavaScript a first visit fetches. With a service worker, every script, since the worker precaches them all.
+ * Without one, as the ops console has none, only what the page loads: a section loaded when it opens is fetched then.
+ */
+export function firstLoadScripts(dist: string): string[] {
+  if (existsSync(`${dist}/sw.js`)) return [...everyScript(dist), `${dist}/sw.js`];
+  return pageScripts(dist);
+}
+
+function gzippedJavaScript(dist: string): number {
+  return firstLoadScripts(dist).reduce((total, file) => total + gzipSync(readFileSync(file)).length, 0);
 }
 
 export function buildSpa(build: SpaBuild, { environment, allowPlaceholders }: BuildOptions): void {

@@ -53,6 +53,7 @@ const ME = {
   next_visit: null,
   credits: null,
   prompt: null,
+  invoice: null,
   booking: { self_serve: false, types: ["consultation"] },
 };
 
@@ -166,6 +167,7 @@ const paid = (n: number, of: (typeof PAST)[number], exGst: number, method: strin
   amount_ex_gst: exGst,
   gst_percent: 18,
   visit: visitRef(of),
+  booking: null,
   status: "captured",
   method,
   reference,
@@ -187,6 +189,7 @@ const ENTRIES = {
       amount_ex_gst: 200000,
       gst_percent: 18,
       visit: { id: "c0000000-0000-4000-8000-000000000009", date: "2027-09-16", type: "service" },
+      booking: null,
       status: "created",
       destination: "upi",
       speed: "normal",
@@ -571,7 +574,7 @@ async function fitted(browser: Browser, design: Page): Promise<void> {
   await entry.getByRole("heading", { name: "Tax documents" }).waitFor();
   await pair(OUT, WIDTH, "e2-entry", await frame(design, "Payments · detail"), await shot(entry));
   await entry.getByRole("button", { name: "Receipt" }).click();
-  await entry.getByText("Notify me").waitFor();
+  await entry.getByText("Ask us for it").waitFor();
   await pair(
     OUT,
     WIDTH,

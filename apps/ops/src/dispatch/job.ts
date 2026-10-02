@@ -62,10 +62,13 @@ export function whenOf(job: Job): { readonly date: string | null; readonly windo
   return { date: job.job.date, window: job.job.offered_window };
 }
 
-/** The job as the board shows it, which a move sends so a stale board is refused (FEO-05). */
+/**
+ * The job as the board shows it, which a move sends so a stale board is refused (FEO-05). A tray job still on a
+ * technician who was switched off is his until it moves.
+ */
 export function shownOf(job: Job): Shown {
   if (job.kind === "block") return { technicianId: job.technician.technician_id, startsAt: job.block.starts_at };
-  return { technicianId: null, startsAt: job.job.starts_at };
+  return { technicianId: job.job.was_technician?.id ?? null, startsAt: job.job.starts_at };
 }
 
 /** Whether a move to this target changes the day or window, which is what the client is told of. */
