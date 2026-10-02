@@ -6,8 +6,7 @@ import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
 import { routePath } from "hono/route";
 import { callerAccessOf, type CallerAccess } from "../domain/staff.ts";
-import { can, NATIONAL } from "../policy/access.ts";
-import { needOf, SIGNED_IN, type RouteNeed } from "../policy/console-routes.ts";
+import { meetsNeed, needOf, SIGNED_IN, type RouteNeed } from "../policy/console-routes.ts";
 import type { AppEnv } from "./context.ts";
 import { errorBody } from "./errors.ts";
 
@@ -22,10 +21,7 @@ export async function callerAccess(c: Context<AppEnv>): Promise<CallerAccess> {
   return access;
 }
 
-function meets(access: CallerAccess, need: RouteNeed): boolean {
-  const where = need.ownPlaces === true ? "anywhere" : NATIONAL;
-  return can(access.caller, need.department, need.level, where, access.zoneOf);
-}
+const meets = (access: CallerAccess, need: RouteNeed): boolean => meetsNeed(access.caller, need, access.zoneOf);
 
 /**
  * Whether a call goes ahead: when it is allowed, and, while the list is not enforced, when it is not, with a line in
