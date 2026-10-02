@@ -144,9 +144,9 @@ export const TEMPLATES: Readonly<Record<string, string>> = {
   consultation_exists_v1:
     "Hello {{1}}, this number was just used to book on our site. Your {{2}} is already booked for {{3}}, {{4}}, so we have not booked another. You can see or move it in the Mane Man app.",
   book_in_app_v1:
-    "Hello {{1}}, this number was just used to book on our site. As a Mane Man client, you book your visits in the Mane Man app: sign in there with this number.",
+    "Hello {{1}}, this number was just used to book on our site. As a Mane Man client, you book your next visit in the Mane Man app. Sign in with this number.",
   address_on_account_v1:
-    "Hello {{1}}, your booking from our site goes to the address already on your account, not the one typed there. You can change it in the Mane Man app.",
+    "Hello {{1}}, we will come to the address already on your account, not the one typed on our site. You can change it in the Mane Man app.",
 };
 
 /** The text with its params filled in, or null for an unknown template or a missing param. */

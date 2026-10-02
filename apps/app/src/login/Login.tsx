@@ -15,7 +15,6 @@ import { login } from "../content.ts";
 import { focusIfLost, nameInTitle } from "../lib/arrival.ts";
 import { CodeScreen, type CodeProblem } from "./CodeScreen.tsx";
 import { HelpScreen } from "./HelpScreen.tsx";
-import { carriesMobile, mobileInLink } from "./linked-mobile.ts";
 import { MobileScreen } from "./MobileScreen.tsx";
 
 type Step =
@@ -46,8 +45,19 @@ function rewind(): void {
   if (depth > 0) window.history.go(-depth);
 }
 
-/** `ended`: the session ended while the app was open, and the first screen says so. */
-export function Login({ ended, onSignedIn }: { ended: boolean; onSignedIn: () => void }) {
+/**
+ * `ended`: the session ended while the app was open, and the first screen says so. `linkedMobile`: the number the
+ * site's booking confirmation opened the app with, or "".
+ */
+export function Login({
+  ended,
+  linkedMobile,
+  onSignedIn,
+}: {
+  ended: boolean;
+  linkedMobile: string;
+  onSignedIn: () => void;
+}) {
   const [step, setStep] = useState<Step>({ kind: "mobile" });
   // The last code sent, which a step back and then forward again returns to.
   const lastChallenge = useRef<LoginChallenge | null>(null);
@@ -77,12 +87,7 @@ export function Login({ ended, onSignedIn }: { ended: boolean; onSignedIn: () =>
     nameInTitle(TITLES[step.kind]);
     focusIfLost(document.querySelector("h1"));
   }, [step.kind]);
-  const [mobile, setMobile] = useState(() => mobileInLink(window.location.hash));
-  // The number is not left in the browser's history.
-  useEffect(() => {
-    if (!carriesMobile(window.location.hash)) return;
-    window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}`);
-  }, []);
+  const [mobile, setMobile] = useState(linkedMobile);
   const [mobileError, setMobileError] = useState<string | null>(null);
   const [problem, setProblem] = useState<CodeProblem | null>(null);
   // One code at a time: a second send bills a second code, voids the first, and takes another

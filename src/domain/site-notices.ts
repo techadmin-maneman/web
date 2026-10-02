@@ -39,11 +39,18 @@ async function nameOf(db: D1Database, personId: string): Promise<string | null> 
   return row?.name ?? null;
 }
 
+/** A consultation and fit in one visit is the client's first fit as well as their consultation. */
+async function visitName(db: D1Database, personId: string): Promise<string> {
+  const oneVisit = await liveVisitOf(db, personId, "first_fit");
+  return oneVisit === null ? "consultation" : "consultation and fit";
+}
+
 async function consultationExists(db: D1Database, personId: string, firstName: string): Promise<Composed> {
   const live = await liveVisitOf(db, personId, "consultation");
   if (live === null) return { skip: "no consultation still to happen" };
   const hours = hoursOfWindow(live.date, live.window, await loadSlotSchedule(db));
-  return { template: "consultation_exists_v1", params: [firstName, "consultation", shortDate(live.date), hours] };
+  const params = [firstName, await visitName(db, personId), shortDate(live.date), hours];
+  return { template: "consultation_exists_v1", params };
 }
 
 async function bookInApp(db: D1Database, personId: string, firstName: string): Promise<Composed> {

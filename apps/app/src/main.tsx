@@ -1,15 +1,17 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App.tsx";
+import { takeLinkedMobile } from "./login/linked-mobile.ts";
 import { ErrorBoundary } from "./states/ErrorBoundary.tsx";
 import "./styles/global.css";
 
 const root = document.getElementById("root");
 if (root === null) throw new Error("index.html has no #root");
+const linkedMobile = takeLinkedMobile();
 createRoot(root).render(
   <StrictMode>
     <ErrorBoundary>
-      <App />
+      <App linkedMobile={linkedMobile} />
     </ErrorBoundary>
   </StrictMode>,
 );

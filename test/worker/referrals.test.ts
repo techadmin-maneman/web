@@ -231,7 +231,6 @@ describe("POST /api/r/:code/consultation", () => {
       area: "Gurgaon South City II",
       credits: true,
       invite: "valid",
-      address: "saved",
       one_visit: false,
     });
     expect(queue.sent).toEqual([{ hold_id: expect.any(String) as string, request_id: expect.any(String) as string }]);
@@ -448,7 +447,6 @@ describe("POST /api/r/:code/consultation", () => {
       area: "Gurgaon South City II",
       credits: true,
       invite: "valid",
-      address: "saved",
       one_visit: false,
     });
     // Nothing is held and FSM is not told; the lead and the invite still stand.

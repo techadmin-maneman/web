@@ -92,6 +92,21 @@ describe("a consultation still to happen", () => {
     );
   });
 
+  it("is named the consultation and fit when it is the two in one visit", async () => {
+    await consentToVisitMessages();
+    await env.DB.prepare(
+      `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end,
+         fsm_modified_at, synced_at, one_visit)
+       VALUES ('one-visit', 'fsm-one-visit', ?1, 'first_fit', 'scheduled', 'Scheduled', '2026-09-23T03:30:00.000Z',
+         '2026-09-23T06:30:00.000Z', ?2, ?2, 'booked')`,
+    )
+      .bind(PERSON, NOW.toISOString())
+      .run();
+    expect((await send("consultation_exists")).text).toContain(
+      "Your consultation and fit is already booked for Wed 23 Sep, 9 am to 12 pm",
+    );
+  });
+
   it("is not sent once the consultation has gone", async () => {
     await consentToVisitMessages();
     expect(await send("consultation_exists")).toEqual({ text: null, skipped: "no consultation still to happen" });
@@ -111,8 +126,8 @@ describe("a client past consultations", () => {
     await consentToVisitMessages();
     await fitted();
     expect((await send("book_in_app")).text).toBe(
-      "Hello Karan, this number was just used to book on our site. As a Mane Man client, you book your visits in " +
-        "the Mane Man app: sign in there with this number.",
+      "Hello Karan, this number was just used to book on our site. As a Mane Man client, you book your next visit " +
+        "in the Mane Man app. Sign in with this number.",
     );
   });
 
@@ -133,8 +148,8 @@ describe("an address already on the account", () => {
       .run();
     const { text } = await send("address_on_account");
     expect(text).toBe(
-      "Hello Karan, your booking from our site goes to the address already on your account, not the one typed " +
-        "there. You can change it in the Mane Man app.",
+      "Hello Karan, we will come to the address already on your account, not the one typed on our site. You can " +
+        "change it in the Mane Man app.",
     );
     expect(text).not.toContain("House 12");
   });
