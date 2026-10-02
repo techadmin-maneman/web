@@ -4,11 +4,12 @@
 // what the Staff list lets them do.
 
 import { beforeEach, describe, expect, it } from "vitest";
+import { ROUTE_NEEDS } from "../../src/policy/console-routes.ts";
 import { appFor, fakeDependencies, markDatabase, request } from "./helpers.ts";
 
 const ACCESS = { teamDomain: "maneman.cloudflareaccess.com", opsAudience: "ops-audience" };
-/** A fresh database lists nobody, and does not enforce the list. */
-const NOT_LISTED = { enforced: false, listed: false, grants: [] };
+/** A fresh database lists nobody, and does not enforce the list, so every call goes ahead. */
+const NOT_LISTED = { enforced: false, listed: false, grants: [], may_call: Object.keys(ROUTE_NEEDS) };
 
 beforeEach(async () => {
   await markDatabase();

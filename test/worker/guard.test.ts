@@ -62,21 +62,35 @@ const ZOHO = {
   ZOHO_LAR_ID: "4876876000000123",
 };
 
-/** FSM and Books on Zoho, as staging has them: the client surface is on there. */
+/** FSM on Zoho, as staging has it: the client surface is on there. */
 const ZOHO_FSM = {
   FSM_PROVIDER: "zoho",
-  BOOKS_PROVIDER: "zoho",
   ZOHO_FSM_CLIENT_ID: "1000.FSMCLIENT",
   ZOHO_FSM_CLIENT_SECRET: "fsm-secret",
   ZOHO_FSM_REFRESH_TOKEN: "1000.fsm-refresh",
   ZOHO_FSM_ACCOUNTS_HOST: "accounts.zoho.in",
   ZOHO_FSM_API_HOST: "www.zohoapis.in",
+};
+
+/** Books on Zoho, on a client of its own. */
+const ZOHO_BOOKS = {
+  BOOKS_PROVIDER: "zoho",
+  ZOHO_BOOKS_CLIENT_ID: "1000.BOOKSCLIENT",
+  ZOHO_BOOKS_CLIENT_SECRET: "books-secret",
+  ZOHO_BOOKS_REFRESH_TOKEN: "1000.books-refresh",
+  ZOHO_BOOKS_ACCOUNTS_HOST: "accounts.zoho.in",
+  ZOHO_BOOKS_API_HOST: "www.zohoapis.in",
   ZOHO_BOOKS_ORG_ID: "60088931635",
 };
 
 const production = { ENVIRONMENT: "production", ...REAL, ...SETTINGS, ...ALERTS, ...ZOHO, ...IMAGE, ...EVOLUTION };
 /** Staging has the client surface on, so FSM and Books are connected there. */
-const stagingBase = { ...production, ENVIRONMENT: "staging", ...ZOHO_FSM };
+const stagingBase = { ...production, ENVIRONMENT: "staging", ...ZOHO_FSM, ...ZOHO_BOOKS };
+
+/** `env` without the named vars and secrets. */
+function without(env: Record<string, unknown>, names: readonly string[]): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(env).filter(([name]) => !names.includes(name)));
+}
 
 function problemsOf(env: Record<string, unknown>): readonly string[] {
   try {
@@ -212,6 +226,12 @@ describe("validateStaticConfig: settings and secrets", () => {
     expect(problemsOf({ ...production, HEARTBEAT_URL: "http://hc-ping.com/check" })).toEqual([
       "HEARTBEAT_URL must be an https:// URL",
     ]);
+  });
+
+  it("watches the daily allowances only where CLOUDFLARE_ANALYTICS_TOKEN is set", () => {
+    expect(validateStaticConfig(production).settings.analyticsToken).toBeNull();
+    const watching = validateStaticConfig({ ...production, CLOUDFLARE_ANALYTICS_TOKEN: " analytics-token " });
+    expect(watching.settings.analyticsToken).toBe("analytics-token");
   });
 
   it("requires every Zoho secret when the CRM is Zoho, and none when it is the stub", () => {
@@ -419,32 +439,73 @@ describe("validateStaticConfig: Cloudflare Access", () => {
 });
 
 describe("validateStaticConfig: Zoho FSM and Books", () => {
-  it("reads the FSM client, its hosts and the Books organisation in staging", () => {
-    const fsm = validateStaticConfig(stagingBase).settings.zohoFsm;
-    expect(fsm).toEqual({
+  it("reads the FSM client and its hosts in staging", () => {
+    expect(validateStaticConfig(stagingBase).settings.zohoFsm).toEqual({
       clientId: "1000.FSMCLIENT",
       clientSecret: "fsm-secret",
       refreshToken: "1000.fsm-refresh",
       accountsHost: "accounts.zoho.in",
       apiHost: "www.zohoapis.in",
-      booksOrgId: "60088931635",
-      booksRefundAccountId: null,
       webhookToken: null,
     });
-    const withAccount = validateStaticConfig({ ...stagingBase, BOOKS_REFUND_ACCOUNT_ID: "bank-7" });
-    expect(withAccount.settings.zohoFsm?.booksRefundAccountId).toBe("bank-7");
   });
 
-  it("requires every FSM secret when either is Zoho, and the Books organisation only for Books", () => {
-    const { ZOHO_FSM_CLIENT_SECRET: _secret, ZOHO_BOOKS_ORG_ID: _org, ...partial } = stagingBase;
-    expect(problemsOf(partial)).toEqual(["ZOHO_FSM_CLIENT_SECRET is not set", "ZOHO_BOOKS_ORG_ID is not set"]);
-    const fsmOnly = validateStaticConfig({ ...partial, ZOHO_FSM_CLIENT_SECRET: "s", BOOKS_PROVIDER: "stub" });
-    expect(fsmOnly.settings.zohoFsm?.booksOrgId).toBeNull();
+  it("reads Books' own client, its hosts, its organisation and the refund account in staging", () => {
+    expect(validateStaticConfig(stagingBase).settings.zohoBooks).toEqual({
+      clientId: "1000.BOOKSCLIENT",
+      clientSecret: "books-secret",
+      refreshToken: "1000.books-refresh",
+      accountsHost: "accounts.zoho.in",
+      apiHost: "www.zohoapis.in",
+      orgId: "60088931635",
+      refundAccountId: null,
+    });
+    const withAccount = validateStaticConfig({ ...stagingBase, BOOKS_REFUND_ACCOUNT_ID: "bank-7" });
+    expect(withAccount.settings.zohoBooks?.refundAccountId).toBe("bank-7");
+  });
+
+  it("requires every Books setting while Books is Zoho", () => {
+    const booksSettings = Object.keys(ZOHO_BOOKS).filter((name) => name !== "BOOKS_PROVIDER");
+    expect(problemsOf(without(stagingBase, booksSettings))).toEqual([
+      "ZOHO_BOOKS_CLIENT_ID is not set",
+      "ZOHO_BOOKS_CLIENT_SECRET is not set",
+      "ZOHO_BOOKS_REFRESH_TOKEN is not set",
+      "ZOHO_BOOKS_ACCOUNTS_HOST is not set",
+      "ZOHO_BOOKS_API_HOST is not set",
+      "ZOHO_BOOKS_ORG_ID is not set",
+    ]);
+  });
+
+  it("requires every FSM setting while FSM is Zoho", () => {
+    const fsmSettings = Object.keys(ZOHO_FSM).filter((name) => name !== "FSM_PROVIDER");
+    expect(problemsOf(without(stagingBase, fsmSettings))).toEqual([
+      "ZOHO_FSM_CLIENT_ID is not set",
+      "ZOHO_FSM_CLIENT_SECRET is not set",
+      "ZOHO_FSM_REFRESH_TOKEN is not set",
+      "ZOHO_FSM_ACCOUNTS_HOST is not set",
+      "ZOHO_FSM_API_HOST is not set",
+    ]);
+  });
+
+  it("reads Books without FSM's client where FSM is off, as production has it", () => {
+    const config = validateStaticConfig({ ...production, ...ZOHO_BOOKS });
+    expect(config.settings.zohoBooks?.clientId).toBe("1000.BOOKSCLIENT");
+    expect(config.settings.zohoFsm).toBeNull();
+  });
+
+  it("reads FSM without Books' client where Books is not Zoho", () => {
+    const booksSettings = Object.keys(ZOHO_BOOKS);
+    const config = validateStaticConfig({ ...without(stagingBase, booksSettings), BOOKS_PROVIDER: "stub" });
+    expect(config.settings.zohoFsm?.clientId).toBe("1000.FSMCLIENT");
+    expect(config.settings.zohoBooks).toBeNull();
   });
 
   it("needs nothing from Zoho for the stubs or for none", () => {
-    expect(validateStaticConfig({ ENVIRONMENT: "local", ...STUBS, ...SETTINGS }).settings.zohoFsm).toBeNull();
+    const local = validateStaticConfig({ ENVIRONMENT: "local", ...STUBS, ...SETTINGS });
+    expect(local.settings.zohoFsm).toBeNull();
+    expect(local.settings.zohoBooks).toBeNull();
     expect(validateStaticConfig(production).settings.zohoFsm).toBeNull();
+    expect(validateStaticConfig(production).settings.zohoBooks).toBeNull();
   });
 
   it("refuses none where the client surface is on, and allows it where the surface is off", () => {
@@ -458,6 +519,9 @@ describe("validateStaticConfig: Zoho FSM and Books", () => {
   it("refuses a Zoho host given as a URL", () => {
     expect(problemsOf({ ...stagingBase, ZOHO_FSM_API_HOST: "https://www.zohoapis.in" })).toEqual([
       "ZOHO_FSM_API_HOST must be a Zoho hostname, without https://",
+    ]);
+    expect(problemsOf({ ...stagingBase, ZOHO_BOOKS_ACCOUNTS_HOST: "https://accounts.zoho.in" })).toEqual([
+      "ZOHO_BOOKS_ACCOUNTS_HOST must be a Zoho hostname, without https://",
     ]);
   });
 });

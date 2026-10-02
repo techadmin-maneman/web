@@ -67,6 +67,8 @@
                   "out_of_order",
                   "not_today",
                   "already_started",
+                  "technician_inactive",
+                  "managed_in_fsm",
                   "clash",
                   "on_leave",
                   "does_not_fit",
@@ -2101,6 +2103,8 @@
                   "out_of_order",
                   "not_today",
                   "already_started",
+                  "technician_inactive",
+                  "managed_in_fsm",
                   "clash",
                   "on_leave",
                   "does_not_fit",
@@ -3515,6 +3519,31 @@
                       "type": "null"
                     }
                   ]
+                },
+                "was_technician": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "The technician the job is still on, who was switched off and so has no row; null for a job nobody holds. A move of it names him as the expected technician."
                 }
               },
               "required": [
@@ -3529,7 +3558,8 @@
                 "starts_at",
                 "asked_window",
                 "offered_window",
-                "date"
+                "date",
+                "was_technician"
               ],
               "additionalProperties": false
             }
@@ -4402,6 +4432,21 @@
                     }
                   ]
                 },
+                "mobile": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "The number he signs in with, +91 and ten digits; null where none is recorded."
+                },
+                "editable": {
+                  "type": "boolean",
+                  "description": "Whether ops change him here. While FSM is the record of field work, a technician FSM lists is changed in FSM; one ops added is theirs."
+                },
                 "devices": {
                   "type": "array",
                   "items": {
@@ -4458,15 +4503,67 @@
                 "name",
                 "initials",
                 "zone",
+                "mobile",
+                "editable",
                 "devices",
                 "leave"
               ],
               "additionalProperties": false
             }
+          },
+          "switched_off": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "zone": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "mobile": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "The number he signs in with, +91 and ten digits; null where none is recorded."
+                },
+                "editable": {
+                  "type": "boolean",
+                  "description": "Whether ops change him here. While FSM is the record of field work, a technician FSM lists is changed in FSM; one ops added is theirs."
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "zone",
+                "mobile",
+                "editable"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Technicians switched off, by name: they cannot sign in, and nothing is booked on them."
           }
         },
         "required": [
-          "technicians"
+          "technicians",
+          "switched_off"
         ],
         "additionalProperties": false
       },
@@ -5129,6 +5226,143 @@
           "visit_started_at",
           "change",
           "technician"
+        ],
+        "additionalProperties": false
+      },
+      "TechnicianId": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "NewTechnician": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "description": "His whole name, as clients see it."
+          },
+          "mobile": {
+            "type": "string",
+            "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
+            "description": "The Indian mobile he signs in with; his sign-in code goes to it on WhatsApp."
+          },
+          "zone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Where he mostly works, in ops' words; null for none."
+          }
+        },
+        "required": [
+          "name",
+          "mobile"
+        ],
+        "additionalProperties": false
+      },
+      "TechnicianChange": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "description": "His whole name, as clients see it."
+          },
+          "mobile": {
+            "type": "string",
+            "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
+            "description": "The Indian mobile he signs in with; his sign-in code goes to it on WhatsApp."
+          },
+          "zone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Where he mostly works, in ops' words; null for none."
+          }
+        },
+        "additionalProperties": false,
+        "description": "Only what is sent changes."
+      },
+      "TechnicianDeactivated": {
+        "type": "object",
+        "properties": {
+          "visits": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "appointment_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "starts_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "type": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "consultation",
+                        "first_fit",
+                        "service",
+                        "replacement"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "client": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "appointment_id",
+                "starts_at",
+                "type",
+                "client"
+              ],
+              "additionalProperties": false
+            },
+            "description": "His visits still to come, now unassigned: each waits in the dispatch board's tray for ops to give it to another. A visit already begun stays his. Empty when he was switched off already."
+          }
+        },
+        "required": [
+          "visits"
         ],
         "additionalProperties": false
       },
@@ -7440,12 +7674,25 @@
                   "$ref": "#/components/schemas/StaffGrant"
                 },
                 "description": "A person's grants; none for a service token."
+              },
+              "may_call": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "The ops routes their calls go ahead on, as \"GET /api/tasks\": every one while the list is not enforced. The console shows only the sections whose pages they can read.",
+                "example": [
+                  "GET /api/health",
+                  "GET /api/whoami",
+                  "GET /api/tasks"
+                ]
               }
             },
             "required": [
               "enforced",
               "listed",
-              "grants"
+              "grants",
+              "may_call"
             ],
             "additionalProperties": false
           }
@@ -10434,7 +10681,7 @@
     },
     "/api/technicians": {
       "get": {
-        "summary": "Active technicians, the phones they have logged in on, and the leave they are down for",
+        "summary": "Active technicians, the phones they have logged in on and their leave, and those switched off",
         "responses": {
           "200": {
             "description": "The technicians",
@@ -10448,6 +10695,61 @@
           },
           "403": {
             "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Add a technician. His number signs in to the technician app at once",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewTechnician"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TechnicianId"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: no name, or not an Indian mobile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required, or not_permitted: changing a technician asks Operations MANAGE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "number_in_use: another active technician signs in with that number",
             "content": {
               "application/json": {
                 "schema": {
@@ -11010,6 +11312,212 @@
           },
           "403": {
             "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/technicians/{id}": {
+      "patch": {
+        "summary": "Change a technician's name, number or zone",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TechnicianChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TechnicianId"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: nothing to change, no name, or not an Indian mobile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required, or not_permitted: changing a technician asks Operations MANAGE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such technician",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "number_in_use: another active technician signs in with that number; managed_in_fsm: FSM lists this technician, so he is changed there while FSM is the record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/technicians/{id}/deactivate": {
+      "post": {
+        "summary": "Switch a technician off: he is signed out at once, and his visits still to come are unassigned",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Switched off",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TechnicianDeactivated"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required, or not_permitted: changing a technician asks Operations MANAGE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such technician",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "managed_in_fsm: FSM lists this technician, so he is changed there while FSM is the record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/technicians/{id}/reactivate": {
+      "post": {
+        "summary": "Switch a technician back on, so he can sign in again",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Switched on",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "active": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "active"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required, or not_permitted: changing a technician asks Operations MANAGE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such technician",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "number_in_use: another active technician signs in with his number now; managed_in_fsm: FSM lists this technician, so he is changed there while FSM is the record",
             "content": {
               "application/json": {
                 "schema": {

@@ -15,7 +15,7 @@
 import type { Dependencies } from "../dependencies.ts";
 import { resolveAskedWindows } from "../domain/asked-windows.ts";
 import { requeueUnbookedHolds } from "../domain/bookings.ts";
-import { syncBooks } from "../domain/books-sync.ts";
+import { syncBooks, type BooksSyncOptions } from "../domain/books-sync.ts";
 import { finishRun, startRun } from "../domain/cron-runs.ts";
 import { alertAgedDeletions } from "../domain/deletion.ts";
 import { checkCatalogue } from "../domain/fsm-catalogue.ts";
@@ -33,6 +33,7 @@ import { createCallBudget, type CallBudget } from "../lib/call-budget.ts";
 import { scrubString, type Logger } from "../log.ts";
 import { pingHeartbeat } from "../providers/heartbeat.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
+import { checkDailyAllowances } from "./daily-allowances.ts";
 import { reconcileFsm } from "./reconcile-fsm.ts";
 import { referralPass } from "./referrals.ts";
 import { sweep } from "./sweeper.ts";
@@ -158,6 +159,15 @@ async function storageMeterJob({ env, deps }: CronContext): Promise<void> {
   await tellOfStorage(env.DB, deps.alertOnce);
 }
 
+/** Once an hour, at a quarter past, where a token to read the account's analytics is set. */
+async function dailyAllowancesJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
+  const token = config.settings.analyticsToken;
+  if (token === null) return;
+  const minute = deps.now().getUTCMinutes();
+  if (minute < 15 || minute >= 20) return;
+  await checkDailyAllowances({ db: env.DB, deps, token, log, budget });
+}
+
 async function whatsAppBridgeJob({ deps, log, budget }: CronContext): Promise<void> {
   await checkWhatsAppBridge(deps, log, budget);
 }
@@ -202,12 +212,16 @@ async function askedWindowsJob({ env, deps, log }: CronContext): Promise<void> {
   if (done.resolved > 0) log.info("asked_windows_resolved", done);
 }
 
-async function booksJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
-  const options = {
-    refundAccountId: config.settings.zohoFsm?.booksRefundAccountId ?? null,
+/** The refund account Books' own settings name, and whether what the pass records is labelled as a test. */
+export function booksSyncOptions(config: StaticConfig): BooksSyncOptions {
+  return {
+    refundAccountId: config.settings.zohoBooks?.refundAccountId ?? null,
     labelAsTest: config.environment !== "production",
   };
-  const done = await syncBooks(env.DB, deps, options, deps.now(), log, budget);
+}
+
+async function booksJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
+  const done = await syncBooks(env.DB, deps, booksSyncOptions(config), deps.now(), log, budget);
   if (done.recorded + done.applied + done.refunded > 0) log.info("books_synced", done);
 }
 
@@ -227,6 +241,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "deletion_alerts", needs: "nothing", run: deletionAlertsJob },
   // What the photographs and cards hold of R2, told at half, 80% and all of their share (docs/decisions/0093).
   { name: "storage_meter", needs: "nothing", run: storageMeterJob },
+  // What the account has used today of the free plan's daily allowances, told at 70%.
+  { name: "daily_allowances", needs: "nothing", run: dailyAllowancesJob },
   // Every login code goes through the WhatsApp bridge (src/scheduled/whatsapp-bridge.ts).
   { name: "whatsapp_bridge", needs: "nothing", run: whatsAppBridgeJob },
   // Once a day: the operating figure behind the weekend-share assumption (src/policy/dispatch.ts).

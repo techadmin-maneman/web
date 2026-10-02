@@ -67,6 +67,7 @@ const inTray = (overrides: Partial<Unassigned> = {}): TrayJob => ({
     asked_window: "morning",
     offered_window: "evening",
     date: "2025-09-20",
+    was_technician: null,
     ...overrides,
   },
 });
@@ -95,6 +96,11 @@ describe("where a job stands, and what a move changes", () => {
   it("sends what the board shows, so a stale board is refused, and no technician for a tray job", () => {
     expect(shownOf(onBoard())).toEqual({ technicianId: "t1", startsAt: "2025-09-19T03:30:00.000Z" });
     expect(shownOf(inTray())).toEqual({ technicianId: null, startsAt: "2025-09-20T10:30:00.000Z" });
+  });
+
+  it("sends the switched-off technician a tray job is still on, so the move takes it from him", () => {
+    const left = inTray({ was_technician: { id: "t9", name: "Ravi Kumar" } });
+    expect(shownOf(left)).toEqual({ technicianId: "t9", startsAt: "2025-09-20T10:30:00.000Z" });
   });
 
   it("changes the time only when the day or the window does, which is what the client is told of", () => {

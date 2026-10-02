@@ -1667,6 +1667,8 @@ Request body:
             "out_of_order",
             "not_today",
             "already_started",
+            "technician_inactive",
+            "managed_in_fsm",
             "clash",
             "on_leave",
             "does_not_fit",
@@ -2156,6 +2158,10 @@ Request body:
                 }
               ],
               "description": "The last visit's window, where this kind of visit can start in it."
+            },
+            "replacement_bookable": {
+              "type": "boolean",
+              "description": "A service offered while the piece in wear falls due within how far ahead a visit may be booked, and no replacement is booked: the replacement is offered beside it."
             }
           },
           "required": [
@@ -2163,7 +2169,8 @@ Request body:
             "type",
             "tier",
             "date",
-            "window"
+            "window",
+            "replacement_bookable"
           ],
           "additionalProperties": false
         },
@@ -2186,29 +2193,26 @@ Request body:
                 "null"
               ],
               "description": "The replacement service it offers: the client's last one while that is offered, else the first in the console's order (ADR 0085); null while none is offered."
-            },
-            "bookable": {
-              "type": "boolean",
-              "description": "The month begins within how far ahead a visit may be booked, so it can be booked now."
             }
           },
           "required": [
             "kind",
             "month",
-            "tier",
-            "bookable"
+            "tier"
           ],
           "additionalProperties": false
         },
         {
+          "type": "null"
+        }
+      ],
+      "description": "Board B1's one prompt, the first that applies, in the owner's order: no address given while something is booked; the next service due and not booked; then, once no invoice is ready, the month the piece in wear falls due, never the day, and only once that month may be booked. Null when none applies."
+    },
+    "invoice": {
+      "anyOf": [
+        {
           "type": "object",
           "properties": {
-            "kind": {
-              "type": "string",
-              "enum": [
-                "invoice_ready"
-              ]
-            },
             "visit_id": {
               "type": "string",
               "format": "uuid"
@@ -2236,7 +2240,6 @@ Request body:
             }
           },
           "required": [
-            "kind",
             "visit_id",
             "date",
             "type"
@@ -2247,7 +2250,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "Board B1's one contextual prompt, the first that applies, in the owner's order: no address given while something is booked; the next service due and not booked; the month the piece in wear falls due, never the day (ADR 0059); an invoice issued in the last fortnight, which ops may lengthen or shorten. Null when none applies."
+      "description": "An invoice issued in the last fortnight, which ops may lengthen or shorten, ready to open: a line beneath the prompt, or the only one. Null when none is."
     },
     "booking": {
       "type": "object",
@@ -2354,6 +2357,7 @@ Request body:
     "being_booked",
     "credits",
     "prompt",
+    "invoice",
     "booking",
     "referral_reward"
   ],

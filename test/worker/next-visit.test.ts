@@ -157,6 +157,7 @@ describe("what the app offers next (GET /api/me)", () => {
       tier: "standard",
       date: "2026-10-10",
       window: "morning",
+      replacement_bookable: false,
     });
   });
 
