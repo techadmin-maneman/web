@@ -25,7 +25,6 @@ import {
   chargeEvidence,
   documentsOf,
   entryAmount,
-  entryDiscount,
   entryNamed,
   entryStatus,
   entryTitle,
@@ -114,7 +113,6 @@ function Detail({ entry }: { entry: EntryDetail }) {
   const today = indiaDate(new Date(apiNow()).toISOString());
   const late = refundIsLate(entry, today);
   const { split } = priceFigures(entry);
-  const discount = entry.kind === "payment" ? entryDiscount(entry) : null;
   return (
     <div className={styles.detail}>
       <p className={styles.bigAmount}>{entryAmount(entry)}</p>
@@ -123,7 +121,6 @@ function Detail({ entry }: { entry: EntryDetail }) {
         <Fact name={rows.date} value={fullDate(entry.date)} />
         {entry.kind === "refund" && <Fact name={rows.for} value={entryWhat(entry)} />}
         {method !== null && <Fact name={entry.kind === "refund" ? rows.destination : rows.method} value={method} />}
-        {discount !== null && <Fact name={rows.discount} value={discount} />}
         <Fact name={rows.status} value={late ? payments.lateRefund : entryStatus(entry, true)} />
         {entry.kind === "payment" && entry.charge !== null && (
           <Fact name={payments.charge} value={chargeEvidence(entry.charge)} />

@@ -175,7 +175,6 @@ const paid = (n: number, of: (typeof PAST)[number], exGst: number, method: strin
   purpose: "visit",
   charge: null,
   no_show: null,
-  discount: null,
 });
 const SERVICE_PAID = paid(2, AUGUST, 200000, "upi", "MM-2027-0841");
 /** Board E1's entries that exist before booking (P2-M5): the charge and the credit arrive with it. */

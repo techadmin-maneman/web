@@ -433,7 +433,7 @@ export const booking = {
       label: "Discount code",
       apply: "Apply",
       applying: "Applying",
-      /** "Code TENOFF: Rs. 200 off", before GST, beneath the price. */
+      /** "Code TENOFF: Rs. 236 off", beneath the price: what it takes off the price shown, GST included. */
       applied: (code: string, off: string) => `Code ${code}: ${off} off`,
       remove: "Remove code",
       removing: "Removing",
@@ -814,7 +814,7 @@ export const payments = {
     emi: ["EMI", "EMI"],
     paylater: ["pay later", "Pay later"],
   } as Readonly<Record<string, readonly [string, string]>>,
-  // PLACEHOLDER: the design draws a payment's rows; a refund's "Refunded to" and "For", and "Discount", are ours.
+  // PLACEHOLDER: the design draws a payment's rows; a refund's "Refunded to" and "For" are ours.
   rows: {
     date: "Date",
     method: "Method",
@@ -822,10 +822,7 @@ export const payments = {
     status: "Status",
     reference: "Reference",
     for: "For",
-    discount: "Discount",
   },
-  /** "WEDDNG25 · Rs. 200 off", the code applied at payment and what it took off before GST. */
-  discount: (code: string, off: string) => `${code} · ${off} off`,
   documents: "Tax documents",
   invoice: "Tax invoice",
   /** Said to a screen reader only, since a document opens outside the app. */

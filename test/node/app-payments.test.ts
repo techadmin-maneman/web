@@ -11,7 +11,6 @@ import {
   documentsOf,
   entryAmount,
   entryBeneath,
-  entryDiscount,
   entryMeta,
   entryNamed,
   entryStatus,
@@ -36,7 +35,6 @@ const payment = (overrides: Record<string, unknown>) =>
     purpose: "visit",
     charge: null,
     no_show: null,
-    discount: null,
     ...overrides,
   }) as unknown as Extract<Entry, { kind: "payment" }>;
 
@@ -93,13 +91,6 @@ describe("a payment in the list", () => {
     expect(entryWhat(payment({ visit: null, booking }))).toBe("First fit");
     expect(entryWhat(refund({ visit: null, booking: { ...booking, under_way: false } }))).toBe("First fit");
     expect(entryWhat(payment({ visit: null }))).toBe("Payment");
-  });
-
-  it("keeps the discount code applied when it was paid", () => {
-    expect(entryDiscount(payment({ discount: { code: "WEDDNG25", amount_off: 20000 } }))).toBe(
-      "WEDDNG25 · Rs. 200 off",
-    );
-    expect(entryDiscount(payment({}))).toBeNull();
   });
 });
 

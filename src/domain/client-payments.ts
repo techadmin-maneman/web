@@ -44,8 +44,6 @@ interface PaymentRow extends VisitColumns, RateColumns, HeldColumns {
   charged_at: string | null;
   charged_visit_start: string | null;
   charged_amount: number | null;
-  discount_code: string | null;
-  discount_off: number | null;
 }
 
 interface RefundRow extends VisitColumns, RateColumns, HeldColumns {
@@ -63,17 +61,14 @@ const VISIT_JOIN = `LEFT JOIN appointments a ON a.id = p.appointment_id AND a.de
 
 const HELD_COLUMNS = "h.type AS held_type, h.date AS held_date, h.state AS held_state";
 
-// The change that kept a payment, if any: a late cancel or move keeps the visit's payment, or its late fee. The
-// discount is the code on the hold the payment was for.
+// The change that kept a payment, if any: a late cancel or move keeps the visit's payment, or its late fee.
 const PAYMENT_QUERY = `SELECT p.id, p.reference, p.created_at, p.amount, p.amount_ex_gst, p.gst_percent,
     p.refunded_amount, p.status, p.method,
     p.books_payment_id, p.kind, a.id AS appointment_id, a.window_start, a.type, a.invoice_issued_at,
     c.kind AS charged_change, c.created_at AS charged_at, c.was_start AS charged_visit_start,
-    c.kept_amount AS charged_amount, ${HELD_COLUMNS}, d.code AS discount_code, u.amount_off AS discount_off
+    c.kept_amount AS charged_amount, ${HELD_COLUMNS}
   FROM payments p ${VISIT_JOIN}
   LEFT JOIN visit_changes c ON c.payment_id = p.id AND c.notice = 'late' AND c.kept_amount > 0
-  LEFT JOIN discount_code_uses u ON u.hold_id = h.id AND u.removed_at IS NULL
-  LEFT JOIN discount_codes d ON d.id = u.code_id
   WHERE p.person_id = ?1 AND p.status != 'failed'`;
 
 const REFUND_QUERY = `SELECT r.id, r.payment_id, r.created_at, r.amount, r.status, r.speed, p.method, p.gst_percent,
@@ -114,11 +109,6 @@ function moneyOf(row: MoneyColumns) {
   };
 }
 
-const discountOf = (row: PaymentRow) =>
-  row.discount_code === null || row.discount_off === null
-    ? null
-    : { code: row.discount_code, amount_off: row.discount_off };
-
 const paymentOf = (row: PaymentRow, noShows: ReadonlyMap<string, NoShowNote>) => ({
   kind: "payment" as const,
   id: row.id,
@@ -138,7 +128,6 @@ const paymentOf = (row: PaymentRow, noShows: ReadonlyMap<string, NoShowNote>) =>
           amount: row.charged_amount ?? 0,
         },
   no_show: row.kind === "visit" && row.appointment_id !== null ? (noShows.get(row.appointment_id) ?? null) : null,
-  discount: discountOf(row),
 });
 
 const refundOf = (row: RefundRow) => ({

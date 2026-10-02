@@ -57,12 +57,6 @@ export function entryBeneath(entry: Entry): string | null {
   return method === null ? null : payments.backTo(method);
 }
 
-/** The code applied when it was paid, "WEDDNG25 · Rs. 200 off", or null. */
-export function entryDiscount(entry: PaymentEntry): string | null {
-  if (entry.discount === null) return null;
-  return payments.discount(entry.discount.code, rupees(entry.discount.amount_off));
-}
-
 /** A charge's evidence: "cancelled 9:14 am, visit was 10 am", with the dates on different days. */
 export function chargeEvidence(charge: NonNullable<Extract<Entry, { kind: "payment" }>["charge"]>): string {
   const sameDay = indiaDate(charge.at) === indiaDate(charge.visit_started_at);

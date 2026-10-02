@@ -94,7 +94,6 @@ describe("GET /api/payments", () => {
         gst_percent: null,
         visit: null,
         booking: null,
-        discount: null,
       }),
       expect.objectContaining({
         kind: "refund",
@@ -157,7 +156,7 @@ describe("GET /api/payments", () => {
 });
 
 // A payment for a booking still being made was "Payment", and its tax invoice "taking longer than it should" a week
-// before the visit; a discount used at payment was invisible afterwards (MON-19, MON-20, CP-18).
+// before the visit (MON-19, MON-20, CP-18).
 describe("GET /api/payments, a booking paid for and not yet a visit", () => {
   const ORDER = "order_held_1";
 
@@ -172,26 +171,16 @@ describe("GET /api/payments, a booking paid for and not yet a visit", () => {
          VALUES ('hold-1', ?1, 'first_fit', '2026-09-24', 'morning', 't1', 0, 2700000, 2700000, 0, 'held', ?2, ?3, ?3,
            ?3, ?3)`,
       ).bind(P1, ORDER, NOW.toISOString()),
-      env.DB.prepare(
-        `INSERT INTO discount_codes (id, code, kind, value, covers_first_fit, covers_service, covers_replacement,
-           once_per_client, created_by, created_at)
-         VALUES ('code-1', 'WEDDNG25', 'amount', 300000, 1, 0, 0, 1, 'ops@localhost', ?1)`,
-      ).bind(NOW.toISOString()),
-      env.DB.prepare(
-        `INSERT INTO discount_code_uses (id, code_id, person_id, hold_id, amount_off, given_by, given_by_id, created_at)
-         VALUES ('use-1', 'code-1', ?1, 'hold-1', 300000, 'client', ?1, ?2)`,
-      ).bind(P1, NOW.toISOString()),
     ]);
     await payment(PAY_OLD, P1, null, "2026-09-15T06:00:00.000Z");
     await env.DB.prepare("UPDATE payments SET razorpay_order_id = ?2 WHERE id = ?1").bind(PAY_OLD, ORDER).run();
   }
 
-  it("names what is being booked, says it is still being booked, and keeps the code it was paid with", async () => {
+  it("names what is being booked, and says it is still being booked", async () => {
     await paidHold();
     expect(await (await get(`/api/payments/${PAY_OLD}`)).json()).toMatchObject({
       visit: null,
       booking: { type: "first_fit", date: "2026-09-24", under_way: true },
-      discount: { code: "WEDDNG25", amount_off: 300000 },
     });
   });
 

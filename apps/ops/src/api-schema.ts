@@ -6031,12 +6031,6 @@ export interface components {
             } | null;
             /** @description The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07). */
             no_show: components["schemas"]["NoShowNote"] | null;
-            /** @description The discount code applied when it was paid, and what it took off. */
-            discount: {
-                code: string;
-                /** @description In paise, before GST. */
-                amount_off: number;
-            } | null;
         };
         NoShowNote: {
             /**

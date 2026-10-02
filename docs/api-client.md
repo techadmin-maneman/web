@@ -4172,31 +4172,6 @@ Request body:
         }
       ],
       "description": "The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07)."
-    },
-    "discount": {
-      "anyOf": [
-        {
-          "type": "object",
-          "properties": {
-            "code": {
-              "type": "string"
-            },
-            "amount_off": {
-              "type": "integer",
-              "description": "In paise, before GST."
-            }
-          },
-          "required": [
-            "code",
-            "amount_off"
-          ],
-          "additionalProperties": false
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "description": "The discount code applied when it was paid, and what it took off."
     }
   },
   "required": [
@@ -4214,8 +4189,7 @@ Request body:
     "refunded_amount",
     "purpose",
     "charge",
-    "no_show",
-    "discount"
+    "no_show"
   ],
   "additionalProperties": false
 }
@@ -4738,31 +4712,6 @@ Request body:
       ],
       "description": "The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07)."
     },
-    "discount": {
-      "anyOf": [
-        {
-          "type": "object",
-          "properties": {
-            "code": {
-              "type": "string"
-            },
-            "amount_off": {
-              "type": "integer",
-              "description": "In paise, before GST."
-            }
-          },
-          "required": [
-            "code",
-            "amount_off"
-          ],
-          "additionalProperties": false
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "description": "The discount code applied when it was paid, and what it took off."
-    },
     "documents": {
       "type": "object",
       "properties": {
@@ -4814,7 +4763,6 @@ Request body:
     "purpose",
     "charge",
     "no_show",
-    "discount",
     "documents"
   ],
   "additionalProperties": false

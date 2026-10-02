@@ -91,7 +91,6 @@ export const RECORD = {
       purpose: "visit",
       charge: null,
       no_show: null,
-      discount: null,
     },
   ],
   /*

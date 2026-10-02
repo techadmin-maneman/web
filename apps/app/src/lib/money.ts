@@ -22,3 +22,6 @@ function splitOf(price: Amount): string | null {
   if (price.amount_ex_gst === null || price.amount_ex_gst === price.amount) return null;
   return gstSplit(rupees(price.amount_ex_gst), rupees(price.amount - price.amount_ex_gst));
 }
+
+/** What a discount code takes off the price shown, GST included: the price before it less the price after. */
+export const amountOff = (before: Amount, after: Amount): string => rupees(before.amount - after.amount);

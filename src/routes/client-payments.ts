@@ -90,17 +90,6 @@ const PaymentEntrySchema = z
       description:
         "The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07).",
     }),
-    discount: z
-      .union([
-        z
-          .object({
-            code: z.string(),
-            amount_off: z.number().int().openapi({ description: "In paise, before GST." }),
-          })
-          .strict(),
-        z.null(),
-      ])
-      .openapi({ description: "The discount code applied when it was paid, and what it took off." }),
   })
   .strict()
   .openapi("PaymentEntry");
