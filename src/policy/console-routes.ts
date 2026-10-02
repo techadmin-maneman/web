@@ -4,10 +4,15 @@
 // A route needs a national grant unless it keeps to the caller's own places itself (`ownPlaces`): until a list or a
 // record is narrowed to the caller's cities, a grant of one city or zone must not open it everywhere.
 
-import { can, NATIONAL, type Caller, type Department, type Level, type ZoneOfCity } from "./access.ts";
+import { can, DEPARTMENTS, NATIONAL, type Caller, type Department, type Level, type ZoneOfCity } from "./access.ts";
+import type { TaskGroup } from "./tasks.ts";
+
+/** A route that keeps to the caller's own departments, as Tasks lists each department its own groups. */
+export const OWN_DEPARTMENTS = "own";
 
 export interface RouteNeed {
-  readonly department: Department;
+  /** OWN_DEPARTMENTS: a grant in any department lets them in. */
+  readonly department: Department | typeof OWN_DEPARTMENTS;
   readonly level: Level;
   /** The route narrows what it reads or changes to the caller's places, so a grant over any place lets them in. */
   readonly ownPlaces?: true;
@@ -18,6 +23,7 @@ export const SIGNED_IN = "signed_in";
 
 const need = (department: Department, level: Level): RouteNeed => ({ department, level });
 const inOwnPlaces = (department: Department, level: Level): RouteNeed => ({ department, level, ownPlaces: true });
+const inOwnDepartments = (level: Level): RouteNeed => ({ department: OWN_DEPARTMENTS, level });
 
 /** Every ops route, as "METHOD /path" with the OpenAPI document's placeholders. A route not here is refused. */
 export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>> = {
@@ -30,8 +36,9 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/dispatch/assign": need("operations", "act"),
   "POST /api/dispatch/move": need("operations", "act"),
   "POST /api/dispatch/moves/{id}/told": need("operations", "act"),
-  "GET /api/tasks": need("operations", "view"),
-  "PUT /api/tasks/{group}/{id}/owner": need("operations", "act"),
+  // Each department sees its own groups of tasks, and Act takes one of them or gives it to someone (TASK_DEPARTMENTS).
+  "GET /api/tasks": inOwnDepartments("view"),
+  "PUT /api/tasks/{group}/{id}/owner": inOwnDepartments("act"),
   "POST /api/tasks/{group}/{id}/close": need("operations", "act"),
   "POST /api/held-bookings/{id}/retry": need("operations", "act"),
   "POST /api/held-bookings/{id}/stop": need("operations", "act"),
@@ -139,10 +146,35 @@ export const WAIVING_A_NO_SHOW: RouteNeed = need("finance", "manage");
 /** Refunding a disputed charge, where upholding it keeps the money. */
 export const REFUNDING_A_DISPUTE: RouteNeed = need("finance", "manage");
 
+/** The department that decides each group of tasks: its people see the group on Tasks, and Act may take a task of it. */
+export const TASK_DEPARTMENTS: Readonly<Record<TaskGroup, Department>> = {
+  untold_move: "operations",
+  held_booking: "operations",
+  leave_conflict: "operations",
+  address_to_confirm: "customer_care",
+  consultation_request: "customer_care",
+  first_fit_to_book: "customer_care",
+  replacement_order: "operations",
+  at_risk_client: "customer_care",
+  partial_visit: "operations",
+  referral_review: "growth",
+  no_show_decision: "finance",
+  number_change: "customer_care",
+  erasure_request: "customer_care",
+  grievance: "customer_care",
+  draft_invoice: "finance",
+  payment_owed: "finance",
+  erasure_unfinished: "customer_care",
+};
+
+/** What seeing a group of tasks, or taking a task of it, asks. */
+export const taskNeed = (group: TaskGroup, level: Level): RouteNeed => need(TASK_DEPARTMENTS[group], level);
+
 /** Whether the caller's grants reach what a route asks: over any place if it keeps to their own, nationally if not. */
 export function meetsNeed(caller: Caller, need: RouteNeed, zoneOf: ZoneOfCity): boolean {
   const where = need.ownPlaces === true ? "anywhere" : NATIONAL;
-  return can(caller, need.department, need.level, where, zoneOf);
+  const departments = need.department === OWN_DEPARTMENTS ? DEPARTMENTS : [need.department];
+  return departments.some((department) => can(caller, department, need.level, where, zoneOf));
 }
 
 /** The routes a caller's calls go ahead on, as "GET /api/tasks": every one while the list is not enforced. */

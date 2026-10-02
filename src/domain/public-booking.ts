@@ -64,7 +64,7 @@ import { bookableService, offeredProducts } from "./services.ts";
 import type { ConsentSource } from "../policy/consents.ts";
 import { notBookedFromSite, typedAddress, type NotBookedFromSite } from "../policy/site-booking.ts";
 import { currentAddress, firstAddressStatement, type Address } from "./profile.ts";
-import { checkForOneVisit, codeOnHold, useOnNewHold } from "./discount-code-holds.ts";
+import { checkForOneVisit, codeOnHold, useOnNewHold, type OneVisitCode } from "./discount-code-holds.ts";
 import { attribute, hasAskedForAVisit, type Invite, type InviteState, type Via } from "./referrals.ts";
 import { availability, bookableTypes, holdSlot, liveVisitOf, type HeldService } from "./scheduling.ts";
 import { saveBookingLead, type Attribution } from "./leads.ts";
@@ -395,9 +395,15 @@ export interface Booked {
   readonly invite: InviteState;
   /** Whether it is the consultation and the first fit in one visit. */
   readonly oneVisit: boolean;
-  /** Whether the discount code given stands on the booking, or on the request ops book it from. */
-  readonly discountCode: boolean;
+  /**
+   * The discount code given, with what it takes off, while it stands on the booking or on the request ops book it
+   * from; null when none was given, or another booking took its last use a moment before.
+   */
+  readonly discountCode: StandingCode | null;
 }
+
+/** A code that stands on a site booking: the code, and what it takes off the hair system's price when they pay. */
+export type StandingCode = Pick<OneVisitCode, "code" | "terms">;
 
 /**
  * Books the free consultation, or the consultation and fit in one visit: the slot, the lead, and the invite's credits
@@ -494,6 +500,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   // The code's use is written with the hold only while the code still has a use left for it, which another booking
   // may have taken a moment before.
   const codeStands = code !== null && (holdId === null || (await codeOnHold(db, holdId)) !== null);
+  const standingCode = codeStands ? { code: code.code, terms: code.terms } : null;
   // Someone we knew may be in FSM and the CRM already, with no address. Someone new is added to both with this
   // one, by the booking and its lead.
   if (knownId !== null && address === "saved") await form.syncContact(person.id);
@@ -537,7 +544,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     credits: invited.credits,
     invite: invited.invite,
     oneVisit,
-    discountCode: codeStands,
+    discountCode: standingCode,
   };
 }
 
@@ -569,7 +576,7 @@ async function answerAsForANewNumber(
     credits: request.invite !== null,
     invite: request.invite === null ? "unknown" : "valid",
     oneVisit,
-    discountCode: code !== null,
+    discountCode: code === null ? null : { code: code.code, terms: code.terms },
   };
 }
 
@@ -608,7 +615,7 @@ async function oneVisitCode(
   text: string,
   knownId: string | null,
   oneVisit: boolean,
-): Promise<{ readonly ok: true; readonly codeId: string; readonly code: string } | Refusal> {
+): Promise<OneVisitCode | Refusal> {
   const notApplicable = { ok: false, status: 422, code: "code_not_applicable", fields: ["discount_code"] } as const;
   if (!oneVisit) {
     form.log.info("discount_code_refused", { reason: "not_covered" });

@@ -41,7 +41,7 @@ const BOOKED_MORNING = {
   credits: false,
   invite: "unknown",
   one_visit: false,
-  discount_code: false,
+  discount_code: null,
 };
 
 const site = (settings = {}) => appFor("local", fakeDependencies(), settings, "public");
@@ -89,7 +89,7 @@ describe("POST /api/consultation", () => {
       credits: false,
       invite: "unknown",
       one_visit: false,
-      discount_code: false,
+      discount_code: null,
     });
     expect(fsm.sent).toEqual([{ hold_id: expect.any(String) as string, request_id: expect.any(String) as string }]);
     expect(crm.sent).toEqual([{ lead_id: expect.any(String) as string, request_id: expect.any(String) as string }]);
@@ -180,7 +180,7 @@ describe("POST /api/consultation", () => {
       credits: false,
       invite: "unknown",
       one_visit: false,
-      discount_code: false,
+      discount_code: null,
     });
     expect(fsm.sent).toEqual([]);
     expect(crm.sent).toHaveLength(1);
@@ -547,7 +547,7 @@ describe("an invite the browser remembered", () => {
       credits: true,
       invite: "valid",
       one_visit: false,
-      discount_code: false,
+      discount_code: null,
     });
     expect((await attributions()).results).toEqual([
       {
@@ -824,7 +824,7 @@ describe("a consultation and fit in one visit", () => {
       credits: false,
       invite: "unknown",
       one_visit: true,
-      discount_code: false,
+      discount_code: null,
     });
     expect(fsm.sent).toHaveLength(1);
     const held = await env.DB.prepare(

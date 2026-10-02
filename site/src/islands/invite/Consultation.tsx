@@ -1,12 +1,18 @@
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
-import { useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import type { LossExtent } from "../../../../src/config/booking.ts";
 import { ONE_VISIT_WINDOWS } from "../../../../src/policy/one-visit.ts";
 import { referral } from "../../content/referral.ts";
 import { numberCode as numberCodeWords, whatsapp } from "../../content/site.ts";
 import { track } from "../../lib/analytics.ts";
 import { addressToSend, emptyAddress, missingParts, type AddressFields } from "../../lib/address.ts";
-import { bookConsultation, bookPublicConsultation, type ErrorCode, type ReferralConsultation } from "../../lib/api.ts";
+import {
+  bookConsultation,
+  bookPublicConsultation,
+  type Consultation as PublicConsultation,
+  type ErrorCode,
+  type ReferralConsultation,
+} from "../../lib/api.ts";
 import { dayStrip, indiaTomorrow, stripMonths } from "../../lib/dates.ts";
 import { anyOpen, chosenSlot, dayOpen, isOpen, type Slot } from "../../lib/open-windows.ts";
 import { forgetInvite, rememberedInvite } from "../../lib/remembered-invite.ts";
@@ -90,6 +96,16 @@ export function Consultation(props: ConsultationProps) {
   const days = dayStrip(open.days?.[0]?.date ?? indiaTomorrow(), open.days?.length ?? DAYS);
   // The site's own page takes a discount code for the one visit; an invite's page is the invite's offer (ADR 0108).
   const takesCode = plan === "one_visit" && !props.invited;
+  const sentCode = takesCode && code.trim() !== "" ? code.trim() : null;
+  const codeRefused = takesCode && form.refusedFields.includes("discount_code");
+  const codeBox = useRef<HTMLInputElement>(null);
+
+  // A refused code is said under its box, which is brought into view and focused, so the form need not be searched.
+  useEffect(() => {
+    if (!codeRefused) return;
+    codeBox.current?.scrollIntoView({ block: "center" });
+    codeBox.current?.focus({ preventScroll: true });
+  }, [codeRefused, form.refusedFields]);
 
   const digits = mobileToSend(form.fields);
   const addressComplete = missingParts(address).length === 0;
@@ -149,14 +165,14 @@ export function Consultation(props: ConsultationProps) {
       ...(extent === null ? {} : { loss_extent: extent }),
       ...(attribution === undefined ? {} : { attribution }),
       ...(remembered === null ? {} : { invite_code: remembered, invite_told: true as const }),
-      ...(takesCode && code.trim() !== "" ? { discount_code: code.trim() } : {}),
+      ...(sentCode === null ? {} : { discount_code: sentCode }),
     };
     const invite = props.invited ? codeInPath() : remembered;
     const send = (token: string, keyFor: (request: unknown) => string) =>
       props.invited
         ? bookConsultation(codeInPath(), { ...onInvite, turnstile_token: token }, keyFor(onInvite))
         : bookPublicConsultation({ ...onBook, turnstile_token: token }, keyFor(onBook));
-    void form.submit(
+    void form.submit<ReferralConsultation | PublicConsultation>(
       event,
       async (token, keyFor) => {
         const answer = await send(token, keyFor);
@@ -172,7 +188,7 @@ export function Consultation(props: ConsultationProps) {
         track({ name: "lead_submitted", page, served: true, area, window: slot.window, loss_extent });
         track({ name: "booking_confirmed", page, area: booked.area, window: booked.window, state: booked.state });
         if (invite !== null) forgetInvite(invite);
-        props.onBooked({ result: booked, mobile: fields.mobile });
+        props.onBooked({ result: booked, mobile: fields.mobile, code: sentCode });
       },
       addressComplete,
     );
@@ -228,17 +244,28 @@ export function Consultation(props: ConsultationProps) {
             {consultation.code.label}
           </label>
           <input
+            ref={codeBox}
             id="invite-consultation-code"
-            class={styles.input}
+            class={`${styles.input} ${codeRefused ? styles.bad : ""}`}
             value={code}
             autocomplete="off"
             autocapitalize="characters"
             spellcheck={false}
-            aria-describedby="invite-consultation-code-hint"
+            aria-invalid={codeRefused}
+            aria-describedby={
+              codeRefused
+                ? "invite-consultation-code-error invite-consultation-code-hint"
+                : "invite-consultation-code-hint"
+            }
             onInput={(event) => {
               setCode(event.currentTarget.value);
             }}
           />
+          {codeRefused && (
+            <div id="invite-consultation-code-error" class={styles.error}>
+              {form.failure}
+            </div>
+          )}
           <p id="invite-consultation-code-hint" class={styles.hint}>
             {consultation.code.hint}
           </p>
@@ -344,7 +371,7 @@ export function Consultation(props: ConsultationProps) {
 
       <div ref={form.box} class={styles.turnstile} />
       <Send
-        failure={form.failure}
+        failure={codeRefused ? null : form.failure}
         sending={form.sending || numberCode.checking}
         label={submitLabel(plan, codeWaiting)}
         sendingLabel={numberCode.checking ? numberCodeWords.checking : consultation.sending}

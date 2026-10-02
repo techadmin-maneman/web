@@ -1,6 +1,6 @@
 # 0109. The console by departments, and who may do what in it
 
-- Status: accepted, on the owner's ruling of 2 October 2026 (audit decision 18, and its design answers); amended the same day for the navigation
+- Status: accepted, on the owner's ruling of 2 October 2026 (audit decision 18, and its design answers); amended the same day for the navigation, and for actions by level
 - Date: 2026-10-02
 
 ## Context
@@ -71,7 +71,7 @@ Migration 0069 lists every person in the ops audit log (Access e-mails, `actor_k
 1. This change: the tables, the seed, the check on every call with enforcement off, the would-refuse log, and the Staff page.
 2. The owner opens Admin › Staff on `ops-staging.maneman.in`, adds everyone else who uses the console with their grants (they also need to be on the Access application's Allow policy), and checks the list. We read the would-refuse log for those days and correct the table where a rightful call would be refused.
 3. The owner presses "Start enforcing".
-4. The navigation grouped by department, showing only what the person may open (below, amended 2 October 2026). Next: Tasks narrowed to each department's groups; and the lists and records narrowed by place, area by area, each flipping its routes to `ownPlaces`.
+4. The navigation grouped by department, showing only what the person may open (below, amended 2 October 2026), and each action offered only at the level it needs (below, "Actions by level"). Next: the lists and records narrowed by place, area by area, each flipping its routes to `ownPlaces`.
 5. Production, when its console is switched on: its audit log has no ops calls, so the list starts empty and off. The owner signs in, adds himself and the others, adds `mm-ci-production` to the tokens, and starts enforcing before anyone beyond the founders is given Access.
 
 ## The navigation (amended 2 October 2026)
@@ -83,6 +83,12 @@ Migration 0069 lists every person in the ops audit log (Access e-mails, `actor_k
 - Each section shows how many tasks wait in it, from the one task board: Tasks all of them, and each other section the groups it decides (`apps/ops/src/tasks/decided.ts`). The count is filled when any of them is overdue.
 - A new page moves the keyboard to its heading, and "Skip to content" is the first stop on every page.
 - The sidebar's own title, which the boards letter "Operations", reads "Console" until the owner names it, since Operations is now one department beneath it.
+
+## Actions by level (amended 2 October 2026)
+
+- The console asks what the API asks. A button shows only where `may_call` names its route, and a choice inside a route that asks more (waiving a no-show, refunding a disputed charge) only where the caller's grants reach it by the same rules (`useAccess()` in `apps/ops/src/lib/access.ts`, which reuses `meetsNeed` and `can`). A View sees the data with no Act or Manage buttons; a settings panel shows its figures without a Save.
+- A refusal the API still makes, as when access changes while a page is open, reads "Your access doesn't include this. Ask an admin."
+- Tasks shows each department the groups it decides (`TASK_DEPARTMENTS` in `src/policy/console-routes.ts`): `GET /api/tasks` asks View in any department and returns only the caller's departments' groups, and taking or giving a task asks Act in the department of its group.
 
 ## Consequences
 

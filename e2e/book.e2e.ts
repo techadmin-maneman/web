@@ -31,7 +31,7 @@ const BOOKED = {
   credits: false,
   invite: "unknown",
   one_visit: false,
-  discount_code: false,
+  discount_code: null,
 };
 
 const CODE = "RM4K7P";
@@ -271,44 +271,70 @@ test("books the one visit only with the right WhatsApp code, and a new number ne
   expect(requests).toHaveLength(1);
 });
 
-// A discount code for the one visit, on /book only (docs/decisions/0108-discount-codes.md), which no board draws.
-test("takes a discount code with the one visit, and says only that a wrong one does not apply", async ({ page }) => {
-  let applies = false;
-  const requests = await mockApi(page);
-  await page.route("**/api/consultation", (route) => {
-    requests.push(route.request());
-    if (applies) {
-      return route.fulfill({ status: 201, json: { ...BOOKED, one_visit: true, discount_code: true } });
-    }
-    const refused = { error: { code: "code_not_applicable", request_id: "test", fields: ["discount_code"] } };
-    return route.fulfill({ status: 422, json: refused });
-  });
+/** Books the one visit on /book with the code typed. */
+async function bookOneVisitWithCode(page: Page, code: string): Promise<void> {
   await visit(page, "/book");
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
   await expect(page.getByLabel("Discount code (optional)")).toHaveCount(0);
   await page.getByRole("group", { name: "What to book" }).getByText("Consultation and fit · three hours").click();
-  await page.getByLabel("Discount code (optional)").fill("wrong1");
+  await page.getByLabel("Discount code (optional)").fill(code);
   await fillAddress(page);
   await page.getByLabel("Name").fill("Test Visitor");
   await page.getByLabel("Mobile").fill("9810000000");
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation and fit" }).click();
   await enterNumberCode(page, "Confirm and book");
-  await expect(
-    page.getByText("That discount code does not apply. Check it, or leave it out to book without it."),
-  ).toBeVisible();
+}
+
+// A discount code for the one visit, on /book only (docs/decisions/0108-discount-codes.md), which no board draws.
+// MON-22 and CP-23: a refused code was said by the button, far below its box, and one that applied was never said.
+test("says a wrong code under its box, and what a right one takes off once booked", async ({ page }) => {
+  let applies = false;
+  const requests = await mockApi(page);
+  await page.route("**/api/consultation", (route) => {
+    requests.push(route.request());
+    if (applies) {
+      const standing = { code: "WEDDNG25", kind: "amount", value: 100_000, cap: null };
+      return route.fulfill({ status: 201, json: { ...BOOKED, one_visit: true, discount_code: standing } });
+    }
+    const refused = { error: { code: "code_not_applicable", request_id: "test", fields: ["discount_code"] } };
+    return route.fulfill({ status: 422, json: refused });
+  });
+  await bookOneVisitWithCode(page, "wrong1");
+  const box = page.getByLabel("Discount code (optional)");
+  const refusal = "That discount code does not apply. Check it, or leave it out to book without it.";
+  await expect(box).toHaveAttribute("aria-invalid", "true");
+  await expect(box).toBeFocused();
+  await expect(box).toHaveAccessibleDescription(/^That discount code does not apply\./);
+  await expect(page.getByText(refusal)).toHaveCount(1);
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
 
   applies = true;
-  await page.getByLabel("Discount code (optional)").fill(" WEDDNG25 ");
+  await box.fill(" WEDDNG25 ");
   await page.getByRole("button", { name: "Book the consultation and fit" }).click();
   await expect(page.getByText("Booking received")).toBeVisible();
+  await expect(page.getByText("Code WEDDNG25: Rs. 1,000 off, taken when you pay.")).toBeVisible();
   const sent = requests.at(-1)?.postDataJSON() as Record<string, unknown>;
   expect(sent).toMatchObject({ one_visit: true, discount_code: "WEDDNG25" });
+});
+
+// CP-23: another booking may take a code's last use between its check and the hold, and the booking stands without it.
+test("says when the code sent could not be applied, and that the booking stands without it", async ({ page }) => {
+  await mockApi(page, { consultation: { status: 201, body: { ...BOOKED, one_visit: true, discount_code: null } } });
+  await bookOneVisitWithCode(page, "weddng25");
+  await expect(page.getByText("Booking received")).toBeVisible();
+  await expect(page.getByText("We could not apply code WEDDNG25. Your booking stands without it.")).toBeVisible();
+});
+
+test("says what a percentage code takes off, up to its cap", async ({ page }) => {
+  const standing = { code: "TENPC", kind: "percent", value: 10, cap: 200_000 };
+  await mockApi(page, { consultation: { status: 201, body: { ...BOOKED, one_visit: true, discount_code: standing } } });
+  await bookOneVisitWithCode(page, "tenpc");
+  await expect(page.getByText("Code TENPC: 10% off, up to Rs. 2,000, taken when you pay.")).toBeVisible();
 });
 
 test("offers the one visit the morning and the afternoon, never the evening, and the consultation all three", async ({

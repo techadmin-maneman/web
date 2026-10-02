@@ -1937,8 +1937,18 @@ export interface components {
             invite: "valid" | "expired" | "unknown";
             /** @description true: the consultation and the first fit in one visit were booked, or asked for. */
             one_visit: boolean;
-            /** @description true: the code given stands on the booking, or on the request ops book from; false when none was given, or another booking took the code's last use a moment before, and the booking stands without it. */
-            discount_code: boolean;
+            /** @description The code given, as it stands on the booking or on the request ops book from; null when none was given, or another booking took the code's last use a moment before, and the booking stands without it. */
+            discount_code: components["schemas"]["StandingCode"] | null;
+        };
+        StandingCode: {
+            /** @description In capitals, as it is kept. */
+            code: string;
+            /** @enum {string} */
+            kind: "percent" | "amount";
+            /** @description Per cent for a percentage; paise before GST for an amount. */
+            value: number;
+            /** @description The most a percentage takes off, in paise before GST; null for none. */
+            cap: number | null;
         };
         TypedAddress: {
             line1: string;
