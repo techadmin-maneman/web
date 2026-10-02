@@ -2,7 +2,7 @@
 // the payments mirror and the credit ledger. Ops read the same list on the client's page. The routes are
 // src/routes/client-payments.ts; what an amount means is said there.
 
-import { exGst, GST_PERCENT } from "../config/gst.ts";
+import { exGst } from "../config/gst.ts";
 import type { VISIT_TYPES } from "../config/visit-types.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { noShowNotes, type NoShowNote } from "./no-shows.ts";
@@ -16,12 +16,19 @@ interface VisitColumns {
   type: (typeof VISIT_TYPES)[number] | null;
 }
 
-/** The GST rate a payment was sold at; null for one no hold priced. */
+/** The GST rate a payment was sold at; null for one no hold or link priced. */
 interface RateColumns {
   gst_percent: number | null;
 }
 
-interface PaymentRow extends VisitColumns, RateColumns {
+/** The hold the payment was made for, found by its Razorpay order. */
+interface HeldColumns {
+  held_type: (typeof VISIT_TYPES)[number] | null;
+  held_date: string | null;
+  held_state: string | null;
+}
+
+interface PaymentRow extends VisitColumns, RateColumns, HeldColumns {
   id: string;
   reference: string | null;
   created_at: string;
@@ -37,9 +44,11 @@ interface PaymentRow extends VisitColumns, RateColumns {
   charged_at: string | null;
   charged_visit_start: string | null;
   charged_amount: number | null;
+  discount_code: string | null;
+  discount_off: number | null;
 }
 
-interface RefundRow extends VisitColumns, RateColumns {
+interface RefundRow extends VisitColumns, RateColumns, HeldColumns {
   id: string;
   payment_id: string;
   created_at: string;
@@ -49,20 +58,26 @@ interface RefundRow extends VisitColumns, RateColumns {
   method: string | null;
 }
 
-const VISIT_JOIN = `LEFT JOIN appointments a ON a.id = p.appointment_id AND a.deleted_at IS NULL`;
+const VISIT_JOIN = `LEFT JOIN appointments a ON a.id = p.appointment_id AND a.deleted_at IS NULL
+  LEFT JOIN slot_holds h ON h.razorpay_order_id = p.razorpay_order_id`;
 
-// The change that kept a payment, if any: a late cancel or move keeps the visit's payment, or its late fee.
+const HELD_COLUMNS = "h.type AS held_type, h.date AS held_date, h.state AS held_state";
+
+// The change that kept a payment, if any: a late cancel or move keeps the visit's payment, or its late fee. The
+// discount is the code on the hold the payment was for.
 const PAYMENT_QUERY = `SELECT p.id, p.reference, p.created_at, p.amount, p.amount_ex_gst, p.gst_percent,
     p.refunded_amount, p.status, p.method,
     p.books_payment_id, p.kind, a.id AS appointment_id, a.window_start, a.type, a.invoice_issued_at,
     c.kind AS charged_change, c.created_at AS charged_at, c.was_start AS charged_visit_start,
-    c.kept_amount AS charged_amount
+    c.kept_amount AS charged_amount, ${HELD_COLUMNS}, d.code AS discount_code, u.amount_off AS discount_off
   FROM payments p ${VISIT_JOIN}
   LEFT JOIN visit_changes c ON c.payment_id = p.id AND c.notice = 'late' AND c.kept_amount > 0
+  LEFT JOIN discount_code_uses u ON u.hold_id = h.id AND u.removed_at IS NULL
+  LEFT JOIN discount_codes d ON d.id = u.code_id
   WHERE p.person_id = ?1 AND p.status != 'failed'`;
 
 const REFUND_QUERY = `SELECT r.id, r.payment_id, r.created_at, r.amount, r.status, r.speed, p.method, p.gst_percent,
-    a.id AS appointment_id, a.window_start, a.type
+    a.id AS appointment_id, a.window_start, a.type, ${HELD_COLUMNS}
   FROM refunds r JOIN payments p ON p.id = r.payment_id ${VISIT_JOIN}
   WHERE p.person_id = ?1`;
 
@@ -72,18 +87,37 @@ const visitRefOf = (row: VisitColumns) =>
     ? null
     : { id: row.appointment_id, date: indiaDate(new Date(row.window_start)), type: row.type };
 
-function moneyOf(
-  row: VisitColumns & RateColumns & { created_at: string; amount: number; amount_ex_gst?: number | null },
-) {
-  const rate = row.gst_percent ?? GST_PERCENT;
+/** What a payment with no visit yet was for: its hold's booking, and whether that is still being made. */
+function bookingOf(row: VisitColumns & HeldColumns) {
+  if (visitRefOf(row) !== null) return null;
+  if (row.held_type === null || row.held_date === null) return null;
+  return { type: row.held_type, date: row.held_date, under_way: row.held_state === "held" };
+}
+
+/** The split before GST, at the rate the amount was sold at; both null where no rate was recorded. */
+function gstSplitOf(row: RateColumns & { amount: number; amount_ex_gst?: number | null }) {
+  if (row.gst_percent === null) return { amount_ex_gst: null, gst_percent: null };
+  return { amount_ex_gst: row.amount_ex_gst ?? exGst(row.amount, row.gst_percent), gst_percent: row.gst_percent };
+}
+
+type MoneyColumns = VisitColumns &
+  RateColumns &
+  HeldColumns & { created_at: string; amount: number; amount_ex_gst?: number | null };
+
+function moneyOf(row: MoneyColumns) {
   return {
     date: indiaDate(new Date(row.created_at)),
     amount: row.amount,
-    amount_ex_gst: row.amount_ex_gst ?? exGst(row.amount, rate),
-    gst_percent: rate,
+    ...gstSplitOf(row),
     visit: visitRefOf(row),
+    booking: bookingOf(row),
   };
 }
+
+const discountOf = (row: PaymentRow) =>
+  row.discount_code === null || row.discount_off === null
+    ? null
+    : { code: row.discount_code, amount_off: row.discount_off };
 
 const paymentOf = (row: PaymentRow, noShows: ReadonlyMap<string, NoShowNote>) => ({
   kind: "payment" as const,
@@ -104,6 +138,7 @@ const paymentOf = (row: PaymentRow, noShows: ReadonlyMap<string, NoShowNote>) =>
           amount: row.charged_amount ?? 0,
         },
   no_show: row.kind === "visit" && row.appointment_id !== null ? (noShows.get(row.appointment_id) ?? null) : null,
+  discount: discountOf(row),
 });
 
 const refundOf = (row: RefundRow) => ({

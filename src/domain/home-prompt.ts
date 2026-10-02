@@ -11,8 +11,10 @@
 //   3. the piece in wear falling due, as a month and never a day (ADR 0059),
 //      which is booked in the app like any other visit, while no replacement is
 //      booked or paid for: one already on its way is Home's card, and offering
-//      another would sell the client a second;
-//   4. an invoice issued in the last fortnight, ready to open.
+//      another would sell the client a second.
+//
+// Beneath it, whatever the prompt, a second line: an invoice issued in the last
+// fortnight, ready to open.
 //
 // One statement answers the rest, so Home, the route the app calls every time it
 // opens, costs one more D1 read and not three. How long an invoice is shown, and
@@ -45,14 +47,21 @@ export type HomePrompt =
       readonly tier: string | null;
       /** The month begins within how far ahead a visit may be booked, so the replacement can be booked now. */
       readonly bookable: boolean;
-    }
-  | {
-      readonly kind: "invoice_ready";
-      readonly visit_id: string;
-      /** India's date of the visit. */
-      readonly date: string;
-      readonly type: VisitType | null;
     };
+
+/** An invoice issued lately, ready to open. */
+export interface InvoiceReady {
+  readonly visit_id: string;
+  /** India's date of the visit. */
+  readonly date: string;
+  readonly type: VisitType | null;
+}
+
+/** What Home shows beneath its card: the one prompt, and the invoice line under it. */
+export interface HomePrompts {
+  readonly prompt: HomePrompt | null;
+  readonly invoice: InvoiceReady | null;
+}
 
 const PROMPT = `SELECT
   EXISTS (SELECT 1 FROM addresses WHERE person_id = ?1 AND replaced_at IS NULL) AS has_address,
@@ -88,23 +97,33 @@ export interface ClientStanding {
 const nextServiceOf = (offer: NextOffer | null): (NextOffer & { type: "service" | "replacement" }) | null =>
   offer !== null && offer.type !== "first_fit" ? { ...offer, type: offer.type } : null;
 
-/** The prompt Home shows this client, or null when nothing applies. */
-export async function homePrompt(
+/** The prompt and the invoice line Home shows this client; either is null when nothing applies. */
+export async function homePrompts(
   db: D1Database,
   personId: string,
   standing: ClientStanding,
   now: Date,
   days: NextVisitDays,
-): Promise<HomePrompt | null> {
+): Promise<HomePrompts> {
   const since = new Date(now.getTime() - days.invoice_prompt * DAY_MS).toISOString();
   const row = await db.prepare(PROMPT).bind(personId, since).first<Row>();
-  if (row === null) return null;
+  if (row === null) return { prompt: null, invoice: null };
+  return { prompt: await promptOf(db, personId, row, standing, now, days), invoice: invoiceOf(row) };
+}
+
+async function promptOf(
+  db: D1Database,
+  personId: string,
+  row: Row,
+  standing: ClientStanding,
+  now: Date,
+  days: NextVisitDays,
+): Promise<HomePrompt | null> {
   const next = nextServiceOf(standing.offer);
   const kind = homePromptOf({
     address: row.has_address === 0 && standing.booked,
     next_visit: next !== null,
     replacement_due: row.due_on !== null && row.replacement_booked === 0,
-    invoice_ready: row.invoiced_id !== null && row.invoiced_start !== null,
   });
   switch (kind) {
     case "address":
@@ -119,16 +138,12 @@ export async function homePrompt(
       const tier = await serviceToOffer(db, personId, "replacement", from);
       return { kind, month, tier, bookable: `${month}-01` <= lastBookableDay(tomorrow, days) };
     }
-    case "invoice_ready":
-      return row.invoiced_id === null || row.invoiced_start === null
-        ? null
-        : {
-            kind,
-            visit_id: row.invoiced_id,
-            date: indiaDate(new Date(row.invoiced_start)),
-            type: row.invoiced_type,
-          };
     case null:
       return null;
   }
+}
+
+function invoiceOf(row: Row): InvoiceReady | null {
+  if (row.invoiced_id === null || row.invoiced_start === null) return null;
+  return { visit_id: row.invoiced_id, date: indiaDate(new Date(row.invoiced_start)), type: row.invoiced_type };
 }

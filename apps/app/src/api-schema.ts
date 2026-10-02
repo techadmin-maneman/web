@@ -2637,7 +2637,7 @@ export interface components {
             } | null;
             /** @description The credit tile: balance and earliest expiry; null with none left. */
             credits: components["schemas"]["Credits"] | null;
-            /** @description Board B1's one contextual prompt, the first that applies, in the owner's order: no address given while something is booked; the next service due and not booked; the month the piece in wear falls due, never the day (ADR 0059); an invoice issued in the last fortnight, which ops may lengthen or shorten. Null when none applies. */
+            /** @description Board B1's one contextual prompt, the first that applies, in the owner's order: no address given while something is booked; the next service due and not booked; the month the piece in wear falls due, never the day (ADR 0059). Null when none applies. */
             prompt: {
                 /** @enum {string} */
                 kind: "address";
@@ -2666,9 +2666,9 @@ export interface components {
                 tier: string | null;
                 /** @description The month begins within how far ahead a visit may be booked, so it can be booked now. */
                 bookable: boolean;
-            } | {
-                /** @enum {string} */
-                kind: "invoice_ready";
+            } | null;
+            /** @description An invoice issued in the last fortnight, which ops may lengthen or shorten: a second line beneath the prompt, whatever the prompt. Null when none was. */
+            invoice_ready: {
                 /** Format: uuid */
                 visit_id: string;
                 /**
@@ -3050,12 +3050,12 @@ export interface components {
              * @description India's calendar date it was made.
              */
             date: string;
-            /** @description In paise, GST included. */
+            /** @description In paise, GST included: the main figure. */
             amount: number;
-            /** @description In paise, before GST: the main figure. */
-            amount_ex_gst: number;
-            /** @description The GST rate the amount includes. */
-            gst_percent: number;
+            /** @description In paise, before GST; null where no rate was recorded for it. */
+            amount_ex_gst: number | null;
+            /** @description The GST rate the amount includes; null where none was recorded. */
+            gst_percent: number | null;
             /** @description The visit it paid for, when known. */
             visit: {
                 /** Format: uuid */
@@ -3063,6 +3063,18 @@ export interface components {
                 /** Format: date */
                 date: string;
                 type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            } | null;
+            /** @description What it paid for while there is no visit yet: the booking its hold was making. */
+            booking: {
+                /** @enum {string} */
+                type: "consultation" | "first_fit" | "service" | "replacement";
+                /**
+                 * Format: date
+                 * @description India's day the visit was held for.
+                 */
+                date: string;
+                /** @description Still being booked; false once refunded or let go. */
+                under_way: boolean;
             } | null;
             /** @enum {string} */
             status: "authorized" | "captured" | "refunded" | "partially_refunded";
@@ -3096,6 +3108,12 @@ export interface components {
             } | null;
             /** @description The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07). */
             no_show: components["schemas"]["NoShowNote"] | null;
+            /** @description The discount code applied when it was paid, and what it took off. */
+            discount: {
+                code: string;
+                /** @description In paise, before GST. */
+                amount_off: number;
+            } | null;
         };
         RefundEntry: {
             /**
@@ -3112,12 +3130,12 @@ export interface components {
              * @description India's calendar date it was made.
              */
             date: string;
-            /** @description In paise, GST included. */
+            /** @description In paise, GST included: the main figure. */
             amount: number;
-            /** @description In paise, before GST: the main figure. */
-            amount_ex_gst: number;
-            /** @description The GST rate the amount includes. */
-            gst_percent: number;
+            /** @description In paise, before GST; null where no rate was recorded for it. */
+            amount_ex_gst: number | null;
+            /** @description The GST rate the amount includes; null where none was recorded. */
+            gst_percent: number | null;
             /** @description The visit it paid for, when known. */
             visit: {
                 /** Format: uuid */
@@ -3125,6 +3143,18 @@ export interface components {
                 /** Format: date */
                 date: string;
                 type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            } | null;
+            /** @description What it paid for while there is no visit yet: the booking its hold was making. */
+            booking: {
+                /** @enum {string} */
+                type: "consultation" | "first_fit" | "service" | "replacement";
+                /**
+                 * Format: date
+                 * @description India's day the visit was held for.
+                 */
+                date: string;
+                /** @description Still being booked; false once refunded or let go. */
+                under_way: boolean;
             } | null;
             /** @enum {string} */
             status: "created" | "processed" | "failed";
@@ -3173,12 +3203,12 @@ export interface components {
              * @description India's calendar date it was made.
              */
             date: string;
-            /** @description In paise, GST included. */
+            /** @description In paise, GST included: the main figure. */
             amount: number;
-            /** @description In paise, before GST: the main figure. */
-            amount_ex_gst: number;
-            /** @description The GST rate the amount includes. */
-            gst_percent: number;
+            /** @description In paise, before GST; null where no rate was recorded for it. */
+            amount_ex_gst: number | null;
+            /** @description The GST rate the amount includes; null where none was recorded. */
+            gst_percent: number | null;
             /** @description The visit it paid for, when known. */
             visit: {
                 /** Format: uuid */
@@ -3186,6 +3216,18 @@ export interface components {
                 /** Format: date */
                 date: string;
                 type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            } | null;
+            /** @description What it paid for while there is no visit yet: the booking its hold was making. */
+            booking: {
+                /** @enum {string} */
+                type: "consultation" | "first_fit" | "service" | "replacement";
+                /**
+                 * Format: date
+                 * @description India's day the visit was held for.
+                 */
+                date: string;
+                /** @description Still being booked; false once refunded or let go. */
+                under_way: boolean;
             } | null;
             /** @enum {string} */
             status: "authorized" | "captured" | "refunded" | "partially_refunded";
@@ -3219,6 +3261,12 @@ export interface components {
             } | null;
             /** @description The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07). */
             no_show: components["schemas"]["NoShowNote"] | null;
+            /** @description The discount code applied when it was paid, and what it took off. */
+            discount: {
+                code: string;
+                /** @description In paise, before GST. */
+                amount_off: number;
+            } | null;
             documents: {
                 /** @description The visit's tax invoice, for GET /api/documents/{id}, once Books has issued it. */
                 invoice: string | null;
@@ -3241,12 +3289,12 @@ export interface components {
              * @description India's calendar date it was made.
              */
             date: string;
-            /** @description In paise, GST included. */
+            /** @description In paise, GST included: the main figure. */
             amount: number;
-            /** @description In paise, before GST: the main figure. */
-            amount_ex_gst: number;
-            /** @description The GST rate the amount includes. */
-            gst_percent: number;
+            /** @description In paise, before GST; null where no rate was recorded for it. */
+            amount_ex_gst: number | null;
+            /** @description The GST rate the amount includes; null where none was recorded. */
+            gst_percent: number | null;
             /** @description The visit it paid for, when known. */
             visit: {
                 /** Format: uuid */
@@ -3254,6 +3302,18 @@ export interface components {
                 /** Format: date */
                 date: string;
                 type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            } | null;
+            /** @description What it paid for while there is no visit yet: the booking its hold was making. */
+            booking: {
+                /** @enum {string} */
+                type: "consultation" | "first_fit" | "service" | "replacement";
+                /**
+                 * Format: date
+                 * @description India's day the visit was held for.
+                 */
+                date: string;
+                /** @description Still being booked; false once refunded or let go. */
+                under_way: boolean;
             } | null;
             /** @enum {string} */
             status: "created" | "processed" | "failed";

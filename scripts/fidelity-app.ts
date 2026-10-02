@@ -53,6 +53,7 @@ const ME = {
   next_visit: null,
   credits: null,
   prompt: null,
+  invoice_ready: null,
   booking: { self_serve: false, types: ["consultation"] },
 };
 
@@ -166,6 +167,7 @@ const paid = (n: number, of: (typeof PAST)[number], exGst: number, method: strin
   amount_ex_gst: exGst,
   gst_percent: 18,
   visit: visitRef(of),
+  booking: null,
   status: "captured",
   method,
   reference,
@@ -173,6 +175,7 @@ const paid = (n: number, of: (typeof PAST)[number], exGst: number, method: strin
   purpose: "visit",
   charge: null,
   no_show: null,
+  discount: null,
 });
 const SERVICE_PAID = paid(2, AUGUST, 200000, "upi", "MM-2027-0841");
 /** Board E1's entries that exist before booking (P2-M5): the charge and the credit arrive with it. */
@@ -187,6 +190,7 @@ const ENTRIES = {
       amount_ex_gst: 200000,
       gst_percent: 18,
       visit: { id: "c0000000-0000-4000-8000-000000000009", date: "2027-09-16", type: "service" },
+      booking: null,
       status: "created",
       destination: "upi",
       speed: "normal",

@@ -419,6 +419,7 @@ describe("the session", () => {
       credits: null,
       // A consultation is booked and no address given: board B1's prompt asks for one.
       prompt: { kind: "address" },
+      invoice_ready: null,
       // Every service of the kinds open to them, with its length and price (docs/decisions/0085-services-ops-can-edit.md);
       // nothing is offered next while a visit is booked (ADR 0086).
       booking: {

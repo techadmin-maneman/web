@@ -28,7 +28,7 @@ const REMINDED = "Imran messages you the day before.";
 /** A first fit and its late fee once GST applies, as it will in production (on staging GST is nothing). */
 const FIRST_FIT = { amount_ex_gst: 3000000, amount: 3540000, gst_percent: 18 };
 const LATE_FEE = { amount_ex_gst: 400000, amount: 472000, gst_percent: 18 };
-const LATE_FEE_LINE = "Moving inside 24 hours costs Rs. 4,000 (Rs. 4,720 incl. GST). The balance carries over.";
+const LATE_FEE_LINE = "Moving inside 24 hours costs Rs. 4,720 (Rs. 4,000 + Rs. 720 GST). The balance carries over.";
 
 type Hold = Record<string, unknown>;
 
@@ -287,7 +287,8 @@ test("books and pays for a service visit through Razorpay Checkout", async ({ pa
   const pay = page.getByRole("dialog", { name: "Pay and confirm" });
   await expect(pay.getByText(/^Slot held \d:\d\d$/)).toBeVisible();
   await expect(pay.getByText("Rs. 2,000", { exact: true })).toBeVisible();
-  await expect(pay.getByText("Rs. 2,000 incl. GST")).toBeVisible();
+  // GST is nothing here, so the figure is said once, with no "incl. GST" repeating it (MON-19).
+  await expect(pay.getByText(/GST/)).toHaveCount(0);
   await expect(pay.getByText(/^Free to move until .+\. After that it is charged\.$/)).toBeVisible();
   await expect(pay.getByRole("radio", { name: "UPI · any app" })).toBeChecked();
   await expect(pay.getByText("Imran never handles money.")).toBeVisible();
@@ -508,7 +509,9 @@ test("offers every service of the kind it books, the one offered chosen, with ho
   await expect(kind).toContainText("1 hour 30 minutes");
   await expect(kind).toContainText("Rs. 2,000");
   await expect(kind).toContainText("2 hours");
-  await expect(kind).toContainText("Rs. 3,540 incl. GST");
+  // Once GST applies, what is charged leads and its split sits beneath (MON-32).
+  await expect(kind).toContainText("Rs. 3,540");
+  await expect(kind).toContainText("Rs. 3,000 + Rs. 540 GST");
   await expect(visits.getByRole("link")).toHaveCount(0);
   await scanOf(page);
   // One choice among them, one tab stop, and the arrow keys move between them.
@@ -530,7 +533,8 @@ test("opens on the service offered, books it, and names it on the pay step", asy
 
   const pay = page.getByRole("dialog", { name: "Pay and confirm" });
   await expect(pay.getByText("Premium service visit", { exact: true })).toBeVisible();
-  await expect(pay.getByText("Rs. 3,000", { exact: true })).toBeVisible();
+  await expect(pay.getByText("Rs. 3,540", { exact: true })).toBeVisible();
+  await expect(pay.getByText("Rs. 3,000 + Rs. 540 GST", { exact: true })).toBeVisible();
   expect(held).toMatchObject([{ type: "service", tier: "premium" }]);
 });
 
@@ -576,7 +580,7 @@ test("names a first fit's service and how long it takes, and sends no one to Wha
   await expect(pay.locator('a[href*="wa.me"]')).toHaveCount(0);
 });
 
-test("writes a first fit's late fee ex-GST, with the inclusive figure beside it", async ({ page }) => {
+test("writes a first fit's late fee as charged, with its GST split beside it", async ({ page }) => {
   await holdAs(page, { type: "first_fit", price: FIRST_FIT, late_fee: LATE_FEE, late_change_charge: "late_fee" });
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: "Pay and confirm" });

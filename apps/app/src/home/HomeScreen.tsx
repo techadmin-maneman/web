@@ -5,8 +5,8 @@
 // booked free, waits for FSM to take it: Home says it is being booked, and that the payment is in (ADR 0095).
 //
 // Beneath the card, B1's credit tile while there is a balance, and its one contextual prompt, in the owner's order:
-// an address to give, the next service due and not booked, the replacement falling due, an invoice just issued
-// (src/domain/home-prompt.ts). The next visit opens the booking sheet with its day and window chosen, and a
+// an address to give, the next service due and not booked, the replacement falling due; under it, an invoice just
+// issued (src/domain/home-prompt.ts). The next visit opens the booking sheet with its day and window chosen, and a
 // replacement is booked here like any other visit, with a page on what it involves (ADR 0086).
 
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -24,12 +24,15 @@ import styles from "./home.module.css";
 
 export function HomeScreen() {
   const { me, offline } = useSession();
+  // A Home the phone kept from an earlier release has no invoice line at all.
+  const invoice = me.invoice_ready ?? null;
   return (
     <Shell header={{ kind: "home" }} tab="/">
       <div className={styles.home}>
         <HomeBody me={me} offline={offline} />
         {me.credits !== null && <CreditTile credits={me.credits} />}
         {me.prompt !== null && <Prompt prompt={me.prompt} />}
+        {invoice !== null && <InvoiceReady invoice={invoice} />}
       </div>
     </Shell>
   );
@@ -225,17 +228,21 @@ function Prompt({ prompt }: { prompt: NonNullable<Me["prompt"]> }) {
         </div>
       );
     }
-    case "invoice_ready":
-      return (
-        <div className={styles.prompt}>
-          <p className={styles.promptLine}>{copy.invoice(visitName(prompt.type), shortDate(prompt.date))}</p>
-          <a className={styles.promptLink} href={documentUrl(prompt.visit_id)} target="_blank" rel="noopener">
-            <span>{copy.openInvoice}</span>
-            <VisuallyHidden>{visits.detail.invoice.newTab}</VisuallyHidden>
-          </a>
-        </div>
-      );
   }
+}
+
+/** An invoice just issued: a second line beneath the prompt, whatever the prompt. */
+function InvoiceReady({ invoice }: { invoice: NonNullable<Me["invoice_ready"]> }) {
+  const copy = home.prompt;
+  return (
+    <div className={styles.prompt}>
+      <p className={styles.promptLine}>{copy.invoice(visitName(invoice.type), shortDate(invoice.date))}</p>
+      <a className={styles.promptLink} href={documentUrl(invoice.visit_id)} target="_blank" rel="noopener">
+        <span>{copy.openInvoice}</span>
+        <VisuallyHidden>{visits.detail.invoice.newTab}</VisuallyHidden>
+      </a>
+    </div>
+  );
 }
 
 /** "See what that involves": the app's own page on a replacement, in place of a WhatsApp message to us. */

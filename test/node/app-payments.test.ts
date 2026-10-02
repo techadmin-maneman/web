@@ -1,5 +1,6 @@
-// What the client's Payments say of a visit they were not home for (LIFE-07), and of their service-visit credits,
-// which never appeared there (LIFE-14). Every name and figure is made up.
+// What the client's Payments say of a payment and a refund (MON-19, CP-18), of a visit they were not home for
+// (LIFE-07), and of their service-visit credits, which never appeared there (LIFE-14). Every name and figure is made
+// up.
 
 import { describe, expect, it } from "vitest";
 import type { CreditLine, Entry } from "../../apps/app/src/api.ts";
@@ -8,8 +9,14 @@ import {
   creditMeta,
   creditStatus,
   documentsOf,
+  entryAmount,
+  entryBeneath,
+  entryDiscount,
   entryMeta,
+  entryNamed,
   entryStatus,
+  entryTitle,
+  entryWhat,
   paymentsAndCredits,
 } from "../../apps/app/src/payments/entry.ts";
 
@@ -18,14 +25,83 @@ const payment = (overrides: Record<string, unknown>) =>
     kind: "payment",
     id: "p",
     date: "2030-09-10",
+    amount: 3000000,
+    amount_ex_gst: 3000000,
+    gst_percent: 0,
     status: "captured",
     method: "upi",
+    reference: null,
     visit: { id: "v", date: "2030-09-19", type: "service" },
+    booking: null,
     purpose: "visit",
     charge: null,
     no_show: null,
+    discount: null,
     ...overrides,
   }) as unknown as Extract<Entry, { kind: "payment" }>;
+
+const refund = (overrides: Record<string, unknown>) =>
+  ({
+    kind: "refund",
+    id: "r",
+    payment_id: "p",
+    date: "2030-09-14",
+    amount: 3000000,
+    amount_ex_gst: 3000000,
+    gst_percent: 0,
+    status: "processed",
+    destination: "upi",
+    speed: "normal",
+    visit: { id: "v", date: "2030-09-19", type: "first_fit" },
+    booking: null,
+    ...overrides,
+  }) as unknown as Extract<Entry, { kind: "refund" }>;
+
+// After a refund the list showed two rows, both "Payment" and both "Refunded Rs. 30,000", which read as a charge
+// made twice.
+describe("a refund in the list", () => {
+  it("is titled a refund, says what it gave back, and shows money coming back and where it goes", () => {
+    const entry = refund({});
+    expect(entryTitle(entry)).toBe("Refund");
+    expect(entryMeta(entry, 2030)).toBe("14 Sep · First fit");
+    expect(entryAmount(entry)).toBe("+ Rs. 30,000");
+    expect(entryBeneath(entry)).toBe("back to your UPI");
+  });
+
+  it("is named in a WhatsApp asking for its voucher by what it gave back", () => {
+    expect(entryNamed(refund({}))).toBe("first fit refund on 14 Sep 2030");
+  });
+});
+
+describe("a payment in the list", () => {
+  it("leads with what was paid and has nothing dangling after it while GST is nothing", () => {
+    const entry = payment({});
+    expect(entryTitle(entry)).toBe("Service visit");
+    expect(entryAmount(entry)).toBe("Rs. 30,000");
+    expect(entryBeneath(entry)).toBeNull();
+  });
+
+  it("gives the GST split beneath once GST applies, and nothing where no rate was recorded", () => {
+    expect(entryBeneath(payment({ amount: 3540000, amount_ex_gst: 3000000, gst_percent: 18 }))).toBe(
+      "Rs. 30,000 + Rs. 5,400 GST",
+    );
+    expect(entryBeneath(payment({ amount_ex_gst: null, gst_percent: null }))).toBeNull();
+  });
+
+  it("is named from the booking under way while there is no visit yet, and is a payment only when nothing is known", () => {
+    const booking = { type: "first_fit", date: "2030-09-19", under_way: true };
+    expect(entryWhat(payment({ visit: null, booking }))).toBe("First fit");
+    expect(entryWhat(refund({ visit: null, booking: { ...booking, under_way: false } }))).toBe("First fit");
+    expect(entryWhat(payment({ visit: null }))).toBe("Payment");
+  });
+
+  it("keeps the discount code applied when it was paid", () => {
+    expect(entryDiscount(payment({ discount: { code: "WEDDNG25", amount_off: 20000 } }))).toBe(
+      "WEDDNG25 · Rs. 200 off",
+    );
+    expect(entryDiscount(payment({}))).toBeNull();
+  });
+});
 
 const credit = (overrides: Partial<CreditLine>): CreditLine => ({
   id: "c",

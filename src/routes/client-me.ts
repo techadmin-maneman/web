@@ -3,7 +3,8 @@
 // done (the FSM mirror, docs/decisions/0032-fsm-mirror.md); a lead has a
 // consultation, from the mirror or from their booking on the site before FSM
 // has it; else nothing is booked. The next visit comes from the mirror, and
-// the credit tile and board B1's one prompt beneath it (src/domain/home-prompt.ts).
+// the credit tile, board B1's one prompt and the invoice line beneath it
+// (src/domain/home-prompt.ts).
 // What the client may book now is every service offered of each kind open to
 // them, for the booking sheet to offer (docs/decisions/0085-services-ops-can-edit.md).
 //
@@ -24,7 +25,7 @@ import { VISIT_TYPES } from "../config/visit-types.ts";
 import { CLIENT_STATES, clientStateOf, isFitted, nextVisit } from "../domain/client-visits.ts";
 import { bookingUnderWay } from "../domain/holds.ts";
 import { creditBalance } from "../domain/credits.ts";
-import { homePrompt } from "../domain/home-prompt.ts";
+import { homePrompts } from "../domain/home-prompt.ts";
 import { nextVisitFacts } from "../domain/next-visit.ts";
 import { bookableTypes } from "../domain/scheduling.ts";
 import { offeredServices } from "../domain/services.ts";
@@ -131,9 +132,18 @@ export const MeSchema = z
             }),
           })
           .strict(),
+        z.null(),
+      ])
+      .openapi({
+        description:
+          "Board B1's one contextual prompt, the first that applies, in the owner's order: no address given while " +
+          "something is booked; the next service due and not booked; the month the piece in wear falls due, never " +
+          "the day (ADR 0059). Null when none applies.",
+      }),
+    invoice_ready: z
+      .union([
         z
           .object({
-            kind: z.literal("invoice_ready"),
             visit_id: z.uuid(),
             date: z.iso.date().openapi({ description: "India's date of the visit." }),
             type: z.union([z.enum(VISIT_TYPES), z.null()]),
@@ -143,10 +153,8 @@ export const MeSchema = z
       ])
       .openapi({
         description:
-          "Board B1's one contextual prompt, the first that applies, in the owner's order: no address given while " +
-          "something is booked; the next service due and not booked; the month the piece in wear falls due, never " +
-          "the day (ADR 0059); an invoice issued in the last fortnight, which ops may lengthen or shorten. Null " +
-          "when none applies.",
+          "An invoice issued in the last fortnight, which ops may lengthen or shorten: a second line beneath the " +
+          "prompt, whatever the prompt. Null when none was.",
       }),
     booking: z
       .object({
@@ -259,6 +267,7 @@ export function registerClientMe(app: App): void {
     // A booking's consultation, not yet in FSM, is booked as much as a visit FSM has.
     const booked = facts.booked || upcoming !== null || proposal !== null;
     const offer = booked ? null : facts.offer;
+    const prompts = await homePrompts(db, session.subjectId, { booked, offer }, now, days);
 
     return c.json(
       {
@@ -273,7 +282,8 @@ export function registerClientMe(app: App): void {
         next_visit: upcoming,
         being_booked: underWay,
         credits: credits.visits > 0 ? { visits: credits.visits, earliest_expiry: credits.earliestExpiry } : null,
-        prompt: await homePrompt(db, session.subjectId, { booked, offer }, now, days),
+        prompt: prompts.prompt,
+        invoice_ready: prompts.invoice,
         booking: { self_serve: c.var.config.settings.selfServeBooking, types, services, next: offer },
         referral_reward: referralReward,
       },

@@ -2201,14 +2201,16 @@ Request body:
           "additionalProperties": false
         },
         {
+          "type": "null"
+        }
+      ],
+      "description": "Board B1's one contextual prompt, the first that applies, in the owner's order: no address given while something is booked; the next service due and not booked; the month the piece in wear falls due, never the day (ADR 0059). Null when none applies."
+    },
+    "invoice_ready": {
+      "anyOf": [
+        {
           "type": "object",
           "properties": {
-            "kind": {
-              "type": "string",
-              "enum": [
-                "invoice_ready"
-              ]
-            },
             "visit_id": {
               "type": "string",
               "format": "uuid"
@@ -2236,7 +2238,6 @@ Request body:
             }
           },
           "required": [
-            "kind",
             "visit_id",
             "date",
             "type"
@@ -2247,7 +2248,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "Board B1's one contextual prompt, the first that applies, in the owner's order: no address given while something is booked; the next service due and not booked; the month the piece in wear falls due, never the day (ADR 0059); an invoice issued in the last fortnight, which ops may lengthen or shorten. Null when none applies."
+      "description": "An invoice issued in the last fortnight, which ops may lengthen or shorten: a second line beneath the prompt, whatever the prompt. Null when none was."
     },
     "booking": {
       "type": "object",
@@ -2354,6 +2355,7 @@ Request body:
     "being_booked",
     "credits",
     "prompt",
+    "invoice_ready",
     "booking",
     "referral_reward"
   ],
@@ -3970,15 +3972,29 @@ Request body:
     },
     "amount": {
       "type": "integer",
-      "description": "In paise, GST included."
+      "description": "In paise, GST included: the main figure."
     },
     "amount_ex_gst": {
-      "type": "integer",
-      "description": "In paise, before GST: the main figure."
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "In paise, before GST; null where no rate was recorded for it."
     },
     "gst_percent": {
-      "type": "number",
-      "description": "The GST rate the amount includes."
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The GST rate the amount includes; null where none was recorded."
     },
     "visit": {
       "anyOf": [
@@ -4022,6 +4038,43 @@ Request body:
         }
       ],
       "description": "The visit it paid for, when known."
+    },
+    "booking": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "consultation",
+                "first_fit",
+                "service",
+                "replacement"
+              ]
+            },
+            "date": {
+              "type": "string",
+              "format": "date",
+              "description": "India's day the visit was held for."
+            },
+            "under_way": {
+              "type": "boolean",
+              "description": "Still being booked; false once refunded or let go."
+            }
+          },
+          "required": [
+            "type",
+            "date",
+            "under_way"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What it paid for while there is no visit yet: the booking its hold was making."
     },
     "status": {
       "type": "string",
@@ -4117,6 +4170,31 @@ Request body:
         }
       ],
       "description": "The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07)."
+    },
+    "discount": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "amount_off": {
+              "type": "integer",
+              "description": "In paise, before GST."
+            }
+          },
+          "required": [
+            "code",
+            "amount_off"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The discount code applied when it was paid, and what it took off."
     }
   },
   "required": [
@@ -4127,13 +4205,15 @@ Request body:
     "amount_ex_gst",
     "gst_percent",
     "visit",
+    "booking",
     "status",
     "method",
     "reference",
     "refunded_amount",
     "purpose",
     "charge",
-    "no_show"
+    "no_show",
+    "discount"
   ],
   "additionalProperties": false
 }
@@ -4166,15 +4246,29 @@ Request body:
     },
     "amount": {
       "type": "integer",
-      "description": "In paise, GST included."
+      "description": "In paise, GST included: the main figure."
     },
     "amount_ex_gst": {
-      "type": "integer",
-      "description": "In paise, before GST: the main figure."
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "In paise, before GST; null where no rate was recorded for it."
     },
     "gst_percent": {
-      "type": "number",
-      "description": "The GST rate the amount includes."
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The GST rate the amount includes; null where none was recorded."
     },
     "visit": {
       "anyOf": [
@@ -4219,6 +4313,43 @@ Request body:
       ],
       "description": "The visit it paid for, when known."
     },
+    "booking": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "consultation",
+                "first_fit",
+                "service",
+                "replacement"
+              ]
+            },
+            "date": {
+              "type": "string",
+              "format": "date",
+              "description": "India's day the visit was held for."
+            },
+            "under_way": {
+              "type": "boolean",
+              "description": "Still being booked; false once refunded or let go."
+            }
+          },
+          "required": [
+            "type",
+            "date",
+            "under_way"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What it paid for while there is no visit yet: the booking its hold was making."
+    },
     "status": {
       "type": "string",
       "enum": [
@@ -4259,6 +4390,7 @@ Request body:
     "amount_ex_gst",
     "gst_percent",
     "visit",
+    "booking",
     "status",
     "destination",
     "speed"
@@ -4405,15 +4537,29 @@ Request body:
     },
     "amount": {
       "type": "integer",
-      "description": "In paise, GST included."
+      "description": "In paise, GST included: the main figure."
     },
     "amount_ex_gst": {
-      "type": "integer",
-      "description": "In paise, before GST: the main figure."
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "In paise, before GST; null where no rate was recorded for it."
     },
     "gst_percent": {
-      "type": "number",
-      "description": "The GST rate the amount includes."
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The GST rate the amount includes; null where none was recorded."
     },
     "visit": {
       "anyOf": [
@@ -4457,6 +4603,43 @@ Request body:
         }
       ],
       "description": "The visit it paid for, when known."
+    },
+    "booking": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "consultation",
+                "first_fit",
+                "service",
+                "replacement"
+              ]
+            },
+            "date": {
+              "type": "string",
+              "format": "date",
+              "description": "India's day the visit was held for."
+            },
+            "under_way": {
+              "type": "boolean",
+              "description": "Still being booked; false once refunded or let go."
+            }
+          },
+          "required": [
+            "type",
+            "date",
+            "under_way"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What it paid for while there is no visit yet: the booking its hold was making."
     },
     "status": {
       "type": "string",
@@ -4553,6 +4736,31 @@ Request body:
       ],
       "description": "The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07)."
     },
+    "discount": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "amount_off": {
+              "type": "integer",
+              "description": "In paise, before GST."
+            }
+          },
+          "required": [
+            "code",
+            "amount_off"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The discount code applied when it was paid, and what it took off."
+    },
     "documents": {
       "type": "object",
       "properties": {
@@ -4596,6 +4804,7 @@ Request body:
     "amount_ex_gst",
     "gst_percent",
     "visit",
+    "booking",
     "status",
     "method",
     "reference",
@@ -4603,6 +4812,7 @@ Request body:
     "purpose",
     "charge",
     "no_show",
+    "discount",
     "documents"
   ],
   "additionalProperties": false
@@ -4636,15 +4846,29 @@ Request body:
     },
     "amount": {
       "type": "integer",
-      "description": "In paise, GST included."
+      "description": "In paise, GST included: the main figure."
     },
     "amount_ex_gst": {
-      "type": "integer",
-      "description": "In paise, before GST: the main figure."
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "In paise, before GST; null where no rate was recorded for it."
     },
     "gst_percent": {
-      "type": "number",
-      "description": "The GST rate the amount includes."
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The GST rate the amount includes; null where none was recorded."
     },
     "visit": {
       "anyOf": [
@@ -4688,6 +4912,43 @@ Request body:
         }
       ],
       "description": "The visit it paid for, when known."
+    },
+    "booking": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "consultation",
+                "first_fit",
+                "service",
+                "replacement"
+              ]
+            },
+            "date": {
+              "type": "string",
+              "format": "date",
+              "description": "India's day the visit was held for."
+            },
+            "under_way": {
+              "type": "boolean",
+              "description": "Still being booked; false once refunded or let go."
+            }
+          },
+          "required": [
+            "type",
+            "date",
+            "under_way"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What it paid for while there is no visit yet: the booking its hold was making."
     },
     "status": {
       "type": "string",
@@ -4733,6 +4994,7 @@ Request body:
     "amount_ex_gst",
     "gst_percent",
     "visit",
+    "booking",
     "status",
     "destination",
     "speed",
