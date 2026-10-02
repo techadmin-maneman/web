@@ -161,6 +161,29 @@ describe("the migrations, against a database that is in use", () => {
     db.close();
   });
 
+  it("takes a hold ops made that the client pays for by a link, and keeps every other hold paid as it was", () => {
+    const db = migrate();
+    const hold = (id: string) =>
+      `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
+         amount_ex_gst, gst_percent, state, expires_at, created_at, updated_at)
+       VALUES ('${id}', 'p2', 'service', '2026-10-22', 'morning', 't1', 0, 150000, 150000, 0, 'held', '${AT}',
+               '${AT}', '${AT}')`;
+    db.exec(hold("h1"));
+    db.exec(hold("h2"));
+    db.exec(
+      "UPDATE slot_holds SET pay_by_link = 1, payment_link_id = 'plink_1', payment_link_url = 'u' WHERE id = 'h2'",
+    );
+    const holds = db.prepare("SELECT id, pay_by_link, payment_link_id FROM slot_holds ORDER BY id").all();
+    expect(holds).toEqual([
+      { id: "h1", pay_by_link: 0, payment_link_id: null },
+      { id: "h2", pay_by_link: 1, payment_link_id: "plink_1" },
+    ]);
+    expect(() => {
+      db.exec("UPDATE slot_holds SET payment_link_id = 'plink_1' WHERE id = 'h1'");
+    }).toThrow();
+    db.close();
+  });
+
   // A booking made on the site has a date and a window of its own, and no rough
   // preference; it does say where the hair loss is, because its form asks.
   it("takes a booking's lead, which names a loss extent and no rough window", () => {

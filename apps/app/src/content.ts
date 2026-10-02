@@ -513,6 +513,7 @@ export const note = {
   title: (technician: string | null) =>
     technician === null ? "Add a note for your technician" : `Add a note for ${technician}`,
   label: "What should they know at the door?",
+  offline: "No connection. Your note stays here until you are back online.",
   save: "Save the note",
   saving: "Saving",
   saved: (technician: string | null) =>
