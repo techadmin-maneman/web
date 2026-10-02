@@ -155,9 +155,11 @@ test("offers the consultation and fit in one visit, and says what it holds", asy
 
   const plan = page.getByRole("group", { name: "What to book" });
   await expect(plan.getByRole("radio")).toHaveCount(2);
-  await plan.getByText("Consultation and fit, in one visit").click();
-  await expect(plan.getByRole("radio", { name: "Consultation and fit, in one visit" })).toBeChecked();
-  await expect(page.getByText(/Three hours, at home, in the morning or the afternoon\./)).toBeVisible();
+  await plan.getByText("Consultation and fit · three hours").click();
+  await expect(plan.getByRole("radio", { name: "Consultation and fit · three hours" })).toBeChecked();
+  await expect(page.getByText(/^Starts in the morning or the afternoon\./)).toBeVisible();
+  // CP-20: the page's heading follows what it books.
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Book a consultation and fit");
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();
@@ -201,7 +203,7 @@ test("books the one visit only with the right WhatsApp code, and a new number ne
   await visit(page, "/book");
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
-  await page.getByRole("group", { name: "What to book" }).getByText("Consultation and fit, in one visit").click();
+  await page.getByRole("group", { name: "What to book" }).getByText("Consultation and fit · three hours").click();
   await fillAddress(page);
   await page.getByLabel("Name").fill("Test Visitor");
   await page.getByLabel("Mobile").fill("9810000000");
@@ -245,7 +247,7 @@ test("takes a discount code with the one visit, and says only that a wrong one d
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
   await expect(page.getByLabel("Discount code (optional)")).toHaveCount(0);
-  await page.getByRole("group", { name: "What to book" }).getByText("Consultation and fit, in one visit").click();
+  await page.getByRole("group", { name: "What to book" }).getByText("Consultation and fit · three hours").click();
   await page.getByLabel("Discount code (optional)").fill("wrong1");
   await fillAddress(page);
   await page.getByLabel("Name").fill("Test Visitor");
@@ -280,13 +282,14 @@ test("offers the one visit the morning and the afternoon, never the evening, and
   const windows = page.getByRole("group", { name: "Window" });
   await windows.getByText("Evening").click();
 
-  await plan.getByText("Consultation and fit, in one visit").click();
+  await plan.getByText("Consultation and fit · three hours").click();
   await expect(windows.getByRole("radio")).toHaveCount(2);
   await expect(windows.getByText("Evening")).toHaveCount(0);
   await expect(windows.getByRole("radio", { name: /Morning/ })).toBeChecked();
 
-  await plan.getByText("A consultation", { exact: true }).click();
+  await plan.getByText("Consultation · an hour", { exact: true }).click();
   await expect(windows.getByRole("radio")).toHaveCount(3);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Book a free consultation");
 
   await fillAddress(page);
   await page.getByLabel("Name").fill("Test Visitor");
@@ -375,15 +378,18 @@ test("says nothing about an invite to someone who came here directly", async ({ 
 
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
-  // The page is headed once, not twice: the form beneath it repeats nothing.
+  // CP-20: the page is headed and introduced once: the form beneath it repeats neither.
   await expect(page.getByRole("heading", { name: "Book a free consultation" })).toHaveCount(1);
-  await expect(page.getByText("An hour, and free. Or have your fit in the same visit.")).toBeVisible();
+  await expect(page.getByText(/^Your technician measures your scalp and matches your colour/)).toBeVisible();
+  await expect(page.getByText("An hour, and free. Or have your fit in the same visit.")).toHaveCount(0);
   for (const words of invited) await expect(page.getByText(words)).toHaveCount(0);
 
   await visit(page, "/book");
   await page.getByLabel("Pincode").fill(UNSERVED.pincode);
   await page.getByRole("button", { name: "Check" }).click();
   await expect(page.getByRole("button", { name: "Add me to the list" })).toBeVisible();
+  // CP-20: where we do not come yet, the page no longer offers to book.
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Not in your area yet");
   for (const words of invited) await expect(page.getByText(words)).toHaveCount(0);
 });
 

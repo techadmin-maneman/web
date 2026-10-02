@@ -68,6 +68,12 @@ export function createResolveAlert(deps: { db: D1Database; now: () => Date }): R
   };
 }
 
+/** Whether an alert is open under this key: raised, and not yet resolved. */
+export async function isAlertOpen(db: D1Database, key: string): Promise<boolean> {
+  const row = await db.prepare("SELECT 1 FROM alerts WHERE key = ?1 AND resolved_at IS NULL").bind(key).first();
+  return row !== null;
+}
+
 /** Opens the key's alert, or counts one more sighting of the open one; how many there have been. */
 async function countSighting(
   db: D1Database,

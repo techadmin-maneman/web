@@ -254,6 +254,33 @@ describe("the client, at the app's pay step", () => {
     expect(await answer.json()).toMatchObject({ error: { code: "code_not_applicable" } });
   });
 
+  it("takes a code on the next service visit once the client's last credit is on its way to FSM on another", async () => {
+    await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "ops", sourceId: "o1", now: NOW }).run();
+    await make();
+    const onCredit = await heldService(PERSON);
+    const booked = await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: onCredit.id } });
+    expect(await booked.json()).toEqual({ hold_id: onCredit.id, checkout: null });
+    const next = await heldService(PERSON, NOW, "morning");
+    const answer = await enter(PERSON, next.id, "TENPC");
+    expect(answer.status).toBe(200);
+  });
+
+  it("takes a code on a hold whose credit another device's booking took, and books it in money for what is left", async () => {
+    await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "ops", sourceId: "o1", now: NOW }).run();
+    await make();
+    const onCredit = await heldService(PERSON);
+    await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: onCredit.id } });
+    const next = await heldService(PERSON, NOW, "morning");
+    // The other device read the balance just before the first booking was confirmed.
+    await env.DB.prepare("UPDATE slot_holds SET use_credit = 1 WHERE id = ?1").bind(next.id).run();
+
+    expect((await enter(PERSON, next.id, "TENPC")).status).toBe(200);
+    const booked = await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: next.id } });
+    expect(await booked.json()).toMatchObject({ checkout: { amount: 180_000 } });
+    const hold = await env.DB.prepare("SELECT use_credit FROM slot_holds WHERE id = ?1").bind(next.id).first();
+    expect(hold).toEqual({ use_credit: 0 });
+  });
+
   // The owner's ruling of 1 October 2026: "send whatsapp message even when the code makes the visit free".
   it("books a visit a code makes free without Checkout, and tells the client on WhatsApp as a paid one is told", async () => {
     await make({ code: "ALLFREE", kind: "amount", value: 200_000 });

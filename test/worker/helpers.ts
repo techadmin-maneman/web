@@ -35,6 +35,7 @@ export const LOCAL_SETTINGS: Settings = {
   alertWebhookUrl: null,
   leadWebhookUrl: null,
   heartbeatUrl: null,
+  analyticsToken: null,
   erasureSecret: "test-erasure-secret-that-is-long-enough",
   zoho: null,
   zohoFsm: null,
