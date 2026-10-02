@@ -254,10 +254,7 @@ export async function settleReferrals(
   now: Date,
   reward: ReferralReward,
 ): Promise<{ granted: number; held: number; expired: number; messageIds: string[] }> {
-  const { results } = await db
-    .prepare(PENDING_SETTLEMENTS)
-    .bind(PER_PASS)
-    .all<AttributionRow>();
+  const { results } = await db.prepare(PENDING_SETTLEMENTS).bind(PER_PASS).all<AttributionRow>();
   const outcome = { granted: 0, held: 0, expired: 0, messageIds: [] as string[] };
   const at = now.toISOString();
   const settled = new Set<string>();
@@ -330,10 +327,7 @@ export async function decideHeldReferral(
     now: Date;
   },
 ): Promise<{ state: "approved" | "rejected"; messageIds: string[] } | null> {
-  const row = await db
-    .prepare(HELD_FOR_REVIEW)
-    .bind(input.id)
-    .first<AttributionRow>();
+  const row = await db.prepare(HELD_FOR_REVIEW).bind(input.id).first<AttributionRow>();
   if (row === null) return null;
   const attribution = attributionFrom(row);
   const reward = attribution.keptReward ?? input.rewardNow;
