@@ -271,6 +271,7 @@ test("records leave, saying first that nobody can be booked on those days, and s
 
   // The roster is read again, and the panel stays open over it with the leave in it.
   const recorded = {
+    ...TECHNICIANS,
     technicians: TECHNICIANS.technicians.map((each) =>
       each.id === IMRAN
         ? { ...each, leave: [{ id: LEAVE_RECORDED.id, from: "2027-10-12", to: "2027-10-14", note: "Away" }] }
