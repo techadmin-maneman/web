@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "vitest";
 import opsDocument from "../../docs/openapi-ops.json";
-import { needOf, ROUTE_NEEDS } from "../../src/policy/console-routes.ts";
+import { needOf, ROUTE_NEEDS, SIGNED_IN } from "../../src/policy/console-routes.ts";
 
 const METHODS = ["get", "post", "put", "patch", "delete"];
 
@@ -32,6 +32,11 @@ describe("what each ops route asks of its caller", () => {
     });
     expect(needOf("GET", "/api/*")).toBeUndefined();
     expect(needOf("GET", "/constructor")).toBeUndefined();
+  });
+
+  it("asks of HEAD what it asks of GET, since Hono answers HEAD with the GET route", () => {
+    expect(needOf("HEAD", "/api/health")).toBe(SIGNED_IN);
+    expect(needOf("HEAD", "/api/grievances")).toEqual({ department: "customer_care", level: "view" });
   });
 
   it("asks MANAGE of what gives money back, waives it, or sets prices, codes, settings, erasures and access", () => {

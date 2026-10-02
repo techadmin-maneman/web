@@ -2306,6 +2306,7 @@ export const settings = {
     saved: "Saved.",
     errors: {
       email: "Enter the e-mail they sign in with.",
+      already_listed: "This person is already on the list. Use Change beside their e-mail.",
       place: "Choose where this access applies.",
       grants: "Give each department once for each place.",
       not_permitted: "You can grant access only within your own area, and only with Admin · Manage.",

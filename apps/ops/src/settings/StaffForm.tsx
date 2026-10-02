@@ -6,7 +6,17 @@ import { useState } from "react";
 import { api, type StaffBook, type StaffGrant, type StaffPerson, type StaffSave } from "../api.ts";
 import { settings } from "../content.ts";
 import { CheckPanel } from "./CheckPanel.tsx";
-import { departmentOf, DEPARTMENTS, grantWords, levelOf, LEVELS, sameGrant, whereOf, whereValue } from "./grants.ts";
+import {
+  alreadyListed,
+  departmentOf,
+  DEPARTMENTS,
+  grantWords,
+  levelOf,
+  LEVELS,
+  sameGrant,
+  whereOf,
+  whereValue,
+} from "./grants.ts";
 import { refusalOf, type Failure } from "./refusal.ts";
 import styles from "./settings.module.css";
 import staffStyles from "./staff.module.css";
@@ -194,6 +204,10 @@ export function StaffForm(props: {
       aria-label={person === null ? copy.form.addTitle : copy.form.changeTitle(person.email)}
       onSubmit={(event) => {
         event.preventDefault();
+        if (person === null && alreadyListed(book.people, draft.email)) {
+          setStep({ step: "failed", failure: { code: "already_listed", fields: [] } });
+          return;
+        }
         setStep({
           step: "checking",
           sent: { email: draft.email.trim(), active: draft.active, grants: [...draft.grants] },

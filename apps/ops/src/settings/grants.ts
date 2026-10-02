@@ -1,6 +1,6 @@
 // A member of staff's grants, as the Staff page says them and as its boxes hold them.
 
-import type { StaffGrant } from "../api.ts";
+import type { StaffGrant, StaffPerson } from "../api.ts";
 import { settings } from "../content.ts";
 
 const copy = settings.staff;
@@ -38,6 +38,15 @@ export function whereOf(value: string): Where {
   const place = name.join(":");
   if (geography === "zone" || geography === "city") return { geography, place };
   return { geography: "national", place: null };
+}
+
+/**
+ * Whether an e-mail typed to add a person names someone already listed. Saving it would replace their grants whole,
+ * so the form sends them to Change instead.
+ */
+export function alreadyListed(people: readonly StaffPerson[], typed: string): boolean {
+  const email = typed.trim().toLowerCase();
+  return people.some((each) => each.email === email);
 }
 
 export const sameGrant = (one: StaffGrant, other: StaffGrant): boolean =>

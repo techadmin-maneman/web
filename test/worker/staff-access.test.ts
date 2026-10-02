@@ -4,6 +4,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import type { AccessIdentity } from "../../src/providers/cloudflare-access.ts";
 import { captureLogs, markDatabase, request } from "./helpers.ts";
 import { allowToken, enforce, listStaff, opsAs, person, post, token } from "./staff-fixtures.ts";
 
@@ -90,6 +91,16 @@ describe("once the Staff list is enforced", () => {
     const whoami = await request(stranger, "/api/whoami");
     expect(whoami.status).toBe(200);
     expect(await whoami.json()).toMatchObject({ staff: { enforced: true, listed: false, grants: [] } });
+  });
+
+  it("answers HEAD as it answers GET, so a probe of the health check is not refused", async () => {
+    await listStaff("care@maneman.in", ["customer_care:view:national"]);
+    const head = (identity: AccessIdentity, path: string) =>
+      opsAs(identity).request(`https://maneman.test${path}`, { method: "HEAD" }, env);
+
+    expect((await head(person("stranger@maneman.in"), "/api/health")).status).toBe(200);
+    expect((await head(person("care@maneman.in"), "/api/grievances")).status).toBe(200);
+    expect((await head(person("care@maneman.in"), "/api/dispatch")).status).toBe(403);
   });
 
   it("refuses a path no route answers, as it refuses any route the table does not list", async () => {

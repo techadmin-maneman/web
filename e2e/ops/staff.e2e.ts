@@ -90,6 +90,19 @@ test("adds a person only after the check names what they are given", async ({ pa
   await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
 });
 
+test("sends someone already listed to Change, rather than replacing their access unseen", async ({ page }) => {
+  await open(page);
+  await page.getByRole("button", { name: "Add a person" }).click();
+  const form = page.getByRole("form", { name: "Add a person" });
+  await form.getByLabel("Sign-in e-mail").fill("Owner@ManeMan.in");
+  await form.getByRole("button", { name: "Review" }).click();
+
+  await expect(page.getByRole("alert")).toHaveText(
+    "This person is already on the list. Use Change beside their e-mail.",
+  );
+  await expect(page.getByRole("group", { name: "Check the change" })).toHaveCount(0);
+});
+
 test("says why a change was refused", async ({ page }) => {
   await open(page, { "POST /api/staff": fails(409, "last_admin") });
   await page.getByRole("button", { name: "Change owner@maneman.in" }).click();

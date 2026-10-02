@@ -133,8 +133,14 @@ export const WAIVING_A_NO_SHOW: RouteNeed = need("finance", "manage");
 /** Refunding a disputed charge, where upholding it keeps the money. */
 export const REFUNDING_A_DISPUTE: RouteNeed = need("finance", "manage");
 
+/** Hono answers HEAD with the GET route, so HEAD asks what GET asks. */
+function listedMethod(method: string): string {
+  const upper = method.toUpperCase();
+  return upper === "HEAD" ? "GET" : upper;
+}
+
 /** What a route asks, from its method and Hono's path, "/api/clients/:id"; undefined for a route not listed. */
 export function needOf(method: string, honoPath: string): RouteNeed | typeof SIGNED_IN | undefined {
-  const key = `${method.toUpperCase()} ${honoPath.replace(/:(\w+)/g, "{$1}")}`;
+  const key = `${listedMethod(method)} ${honoPath.replace(/:(\w+)/g, "{$1}")}`;
   return Object.hasOwn(ROUTE_NEEDS, key) ? ROUTE_NEEDS[key] : undefined;
 }

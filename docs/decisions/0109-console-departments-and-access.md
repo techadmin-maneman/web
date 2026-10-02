@@ -41,7 +41,7 @@ Every route's department and lowest level is one table, `ROUTE_NEEDS` in `src/po
 **Deny by default.** Once enforced:
 
 - A person Access lets in who is not on the list, or is switched off, is refused everything (`403 not_permitted`) except `GET /api/whoami`, which tells the console to say so, and the health check.
-- A route `ROUTE_NEEDS` does not list is refused.
+- A route `ROUTE_NEEDS` does not list is refused. HEAD asks what GET asks, as Hono answers it with the GET route.
 - A route needs a **national** grant until it keeps its lists and records to the caller's own places (`ownPlaces` in the table). Today only the Staff routes do. So a city or zone grant opens nothing else yet: it never shows a city lead another city's clients.
 
 **The owner is the national super-admin:** every department at Manage, nationally.
