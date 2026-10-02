@@ -22,23 +22,29 @@ interface GrantRow {
   remaining: number;
 }
 
-/** SQL for the person's grants still in date, with what each has left; its arguments are placeholders. */
-const liveGrantsSql = (personId: string, now: string) =>
-  `SELECT g.id, g.expires_at,
-     g.visits + COALESCE((SELECT SUM(e.visits) FROM credit_ledger e WHERE e.grant_id = g.id), 0) AS remaining
-   FROM credit_ledger g
-   WHERE g.person_id = ${personId} AND g.kind = 'grant' AND (g.expires_at IS NULL OR g.expires_at > ${now})`;
+/** The grants of person ?1 still in date at ?2, with what each has left. */
+const LIVE_GRANTS = `SELECT g.id, g.expires_at,
+    g.visits + COALESCE((SELECT SUM(e.visits) FROM credit_ledger e WHERE e.grant_id = g.id), 0) AS remaining
+  FROM credit_ledger g
+  WHERE g.person_id = ?1 AND g.kind = 'grant' AND (g.expires_at IS NULL OR g.expires_at > ?2)`;
 
 /**
- * A credit hold confirmed and on its way to FSM: its credit is redeemed once FSM books the visit, so until then no
- * other booking may count on it.
+ * A credit hold confirmed but not yet booked: its credit is redeemed as its visit is booked, so until then no other
+ * booking may count on it.
  */
 const PROMISED_CREDIT = "use_credit = 1 AND state = 'held' AND confirmed_at IS NOT NULL";
+
+/**
+ * spendableCredits as SQL, for a statement that decides on it as it writes: what person ?1 may spend at ?2, leaving
+ * out hold ?3.
+ */
+export const SPENDABLE_CREDITS = `((SELECT COALESCE(SUM(remaining), 0) FROM (${LIVE_GRANTS}) WHERE remaining > 0)
+  - (SELECT COUNT(*) FROM slot_holds WHERE person_id = ?1 AND ${PROMISED_CREDIT} AND id IS NOT ?3))`;
 
 /** The person's grants still in date, with what each has left, soonest to expire first. */
 async function liveGrants(db: D1Database, personId: string, now: Date): Promise<GrantRow[]> {
   const { results } = await db
-    .prepare(`${liveGrantsSql("?1", "?2")} ORDER BY g.expires_at IS NULL, g.expires_at, g.created_at`)
+    .prepare(`${LIVE_GRANTS} ORDER BY g.expires_at IS NULL, g.expires_at, g.created_at`)
     .bind(personId, now.toISOString())
     .all<GrantRow>();
   return results.filter((grant) => grant.remaining > 0);
@@ -55,7 +61,7 @@ export async function creditBalance(db: D1Database, personId: string, now: Date)
 }
 
 /**
- * What the person may still spend: their balance, less the credits their confirmed bookings on the way to FSM will
+ * What the person may still spend: their balance, less the credits their confirmed, not yet booked bookings will
  * redeem, other than `exceptHoldId`'s. Those are taken from the grants that expire soonest, as a redeem takes them.
  */
 export async function spendableCredits(
@@ -85,11 +91,6 @@ function withoutPromised(grants: readonly GrantRow[], promised: number): GrantRo
   }
   return left;
 }
-
-/** spendableCredits as SQL, for a statement that decides on it as it writes; its arguments are placeholders. */
-export const spendableCreditsSql = (personId: string, now: string, exceptHoldId: string): string =>
-  `((SELECT COALESCE(SUM(remaining), 0) FROM (${liveGrantsSql(personId, now)}) WHERE remaining > 0)
-    - (SELECT COUNT(*) FROM slot_holds WHERE person_id = ${personId} AND ${PROMISED_CREDIT} AND id IS NOT ${exceptHoldId}))`;
 
 /** A grant of visits from a source, which a repeat of the same source cannot grant again. */
 export function grantCredits(

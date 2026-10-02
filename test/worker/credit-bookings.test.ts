@@ -6,7 +6,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { renderMessage } from "../../src/config/message-templates.ts";
 import { confirmBooking } from "../../src/domain/bookings.ts";
-import { creditBalance, grantCredits } from "../../src/domain/credits.ts";
+import { clawBack, creditBalance, grantCredits } from "../../src/domain/credits.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { composeVisitMessage } from "../../src/domain/visit-messages.ts";
 import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
@@ -133,7 +133,10 @@ describe("one credit pays for one visit", () => {
       price: unknown;
     }>();
   const book = async (holdId: string) =>
-    (await post("/api/bookings", { hold_id: holdId }, { FSM_QUEUE: fakeQueue() })).json();
+    (await post("/api/bookings", { hold_id: holdId }, { FSM_QUEUE: fakeQueue() })).json<{
+      hold_id: string;
+      checkout: { amount: number } | null;
+    }>();
   const get = async (path: string) =>
     (await request(app(), path, { headers: { Cookie: cookie, Origin: "https://maneman.test" } })).json();
   const confirm = (holdId: string, now = NOW, options = {}) =>
@@ -144,7 +147,7 @@ describe("one credit pays for one visit", () => {
   const redeems = async () =>
     (await env.DB.prepare("SELECT source_id FROM credit_ledger WHERE kind = 'redeem'").all()).results;
 
-  it("asks for payment on a second visit booked in another tab while the first is on its way to FSM", async () => {
+  it("asks for payment on a second visit booked in another tab while the first waits to be booked", async () => {
     await credits(1);
     const first = await hold("2026-09-24");
     expect(await book(first.id)).toEqual({ hold_id: first.id, checkout: null });
@@ -158,6 +161,19 @@ describe("one credit pays for one visit", () => {
     expect(await confirm(first.id)).toBe("booked");
     expect(await redeems()).toHaveLength(1);
     expect((await creditBalance(env.DB, PERSON, NOW)).visits).toBe(0);
+  });
+
+  it("covers one of two visits booked in two tabs at the same moment, and asks payment for the other", async () => {
+    await credits(1);
+    const first = await hold("2026-09-24");
+    const second = await hold("2026-09-25");
+    // Each tab held its visit on the credit before either was booked.
+    await env.DB.prepare("UPDATE slot_holds SET state = 'held', use_credit = 1").run();
+
+    const answers = await Promise.all([book(first.id), book(second.id)]);
+    const onCredit = answers.filter((answer) => answer.checkout === null);
+    const paid = answers.filter((answer) => answer.checkout?.amount === 200000);
+    expect([onCredit.length, paid.length]).toEqual([1, 1]);
   });
 
   it("asks for payment on a hold whose credit another device's booking took after the hold was made", async () => {
@@ -230,21 +246,15 @@ describe("one credit pays for one visit", () => {
     expect(await redeems()).toEqual([{ source_id: "mirrored" }]);
   });
 
-  it("books a credit visit whose credit has expired since, and tells ops nothing paid for it", async () => {
-    await grantCredits(env.DB, {
-      personId: PERSON,
-      visits: 1,
-      source: "ops",
-      sourceId: "o1",
-      now: NOW,
-      expiresAt: new Date(NOW.getTime() + 60 * 60_000),
-    }).run();
+  it("books a credit visit whose credit was clawed back since, and tells ops nothing paid for it", async () => {
+    await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "referral", sourceId: "r1", now: NOW }).run();
     const first = await hold("2026-09-24");
     await book(first.id);
+    // The friend's first fit was refunded under the guarantee before this visit was booked.
+    await clawBack(env.DB, "referral", "r1", NOW);
     const deps = fakeDependencies();
 
-    const later = new Date(NOW.getTime() + 2 * 60 * 60_000);
-    expect(await confirm(first.id, later, { alertOnce: deps.alertOnce })).toBe("booked");
+    expect(await confirm(first.id, NOW, { alertOnce: deps.alertOnce })).toBe("booked");
     expect(await redeems()).toEqual([]);
     expect(deps.alerts).toEqual([expect.stringContaining("no credit left")]);
   });

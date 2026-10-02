@@ -37,7 +37,7 @@ import { TRIES_STOPPED, triesStopped } from "../policy/held-bookings.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import type { AlertOnce } from "./alerts.ts";
 import { auditStatement, auditStatementIfBooked, type AuditEntry } from "./audit.ts";
-import { redeemCreditForBooking, spendableCreditsSql } from "./credits.ts";
+import { redeemCreditForBooking, SPENDABLE_CREDITS } from "./credits.ts";
 import { itemForService } from "./fsm-catalogue.ts";
 import { fsmContactOf, type Place } from "./fsm-contacts.ts";
 import { toLinkAlert, toLinkAlertKey } from "./held-bookings.ts";
@@ -200,11 +200,11 @@ async function confirmFree(db: D1Database, hold: HoldRow, now: Date): Promise<bo
   const confirmed = await db
     .prepare(
       `UPDATE slot_holds SET confirmed_at = COALESCE(confirmed_at, ?2), queued_at = ?2, updated_at = ?2
-       WHERE id = ?1 AND (amount = 0
-         OR (use_credit = 1 AND (confirmed_at IS NOT NULL OR ${spendableCreditsSql("?3", "?2", "?1")} > 0)))
+       WHERE id = ?3 AND (amount = 0
+         OR (use_credit = 1 AND (confirmed_at IS NOT NULL OR ${SPENDABLE_CREDITS} > 0)))
        RETURNING id`,
     )
-    .bind(hold.id, now.toISOString(), hold.person_id)
+    .bind(hold.person_id, now.toISOString(), hold.id)
     .first();
   return confirmed !== null;
 }
@@ -377,10 +377,7 @@ async function visitBookedSinceHeld(db: D1Database, hold: HoldRow): Promise<stri
   return results.find((visit) => !theBookingsOwn(visit))?.id ?? null;
 }
 
-/**
- * Books a new visit: FSM first, then, in one batch, the mirror, the hold, its claims, its payment and the credit
- * that pays for it.
- */
+/** Books a new visit: FSM first, then the booking written with the visit as FSM has it. */
 async function bookNewVisit(
   db: D1Database,
   fsm: FsmProvider,
@@ -390,69 +387,98 @@ async function bookNewVisit(
 ): Promise<Confirmed> {
   const workOrder = await workOrderFor(db, fsm, hold, now, options);
   const appointmentId = hold.fsm_appointment_id ?? (await appointmentFor(db, fsm, hold, workOrder, options));
-  const redeem = await creditSpentBy(db, hold, now);
+  const visit = await mirroredVisit(db, hold, { appointmentId, workOrderId: workOrder.id }, now);
+  await writeNewBooking(db, fsm, hold, { fsmId: appointmentId, row: visit }, now, options);
+  return "booked";
+}
 
-  // FSM's webhook may have mirrored the appointment already; either way the visit is the one with its FSM ID. Its
-  // tier is the hold's whatever the mirror read from its item, which may be its kind's where FSM had none of its own,
-  // and it is a one visit exactly when its hold was, whatever the mirror took it for, since FSM's item does not say.
+/**
+ * The mirror's row for the visit FSM booked. FSM's webhook may have mirrored it already; either way the visit is the
+ * one with its FSM ID. Its tier is the hold's whatever the mirror read from its item, which may be its kind's where FSM
+ * had none of its own, and it is a one visit exactly when its hold was, whatever the mirror took it for, since FSM's
+ * item does not say.
+ */
+async function mirroredVisit(
+  db: D1Database,
+  hold: HoldRow,
+  inFsm: { readonly appointmentId: string; readonly workOrderId: string },
+  now: Date,
+): Promise<D1PreparedStatement> {
   const { start, end } = await heldVisitTimes(db, hold);
+  const at = now.toISOString();
+  return db
+    .prepare(
+      `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, tier, window_start, window_end,
+         technician_id, status, fsm_status, service_city, service_pincode, fsm_modified_at, synced_at, first_seen_at,
+         one_visit)
+       VALUES (?2, ?1, ?3, ?4, ?5, ?12, ?6, ?7, ?8, 'scheduled', 'Scheduled', ?9, ?10, ?11, ?11, ?11, ?13)
+       ON CONFLICT (fsm_id) DO UPDATE SET
+         tier = excluded.tier,
+         one_visit = excluded.one_visit,
+         service_city = COALESCE(appointments.service_city, excluded.service_city),
+         service_pincode = COALESCE(appointments.service_pincode, excluded.service_pincode)`,
+    )
+    .bind(
+      inFsm.appointmentId,
+      crypto.randomUUID(),
+      inFsm.workOrderId,
+      hold.person_id,
+      hold.type,
+      start.toISOString(),
+      end.toISOString(),
+      hold.technician_id,
+      hold.city,
+      hold.pincode,
+      at,
+      hold.tier,
+      hold.one_visit === 1 ? "booked" : null,
+    );
+}
+
+/**
+ * Writes a new booking in one batch with its visit's row: the hold booked as the visit, its claims let go, its payment
+ * and referral linked to the visit, and the credit that pays for it redeemed. Then what follows a booking. The visit is
+ * found by `visit.fsmId`.
+ */
+async function writeNewBooking(
+  db: D1Database,
+  fsm: FsmProvider,
+  hold: HoldRow,
+  visit: { readonly fsmId: string; readonly row: D1PreparedStatement },
+  now: Date,
+  options: ConfirmOptions,
+): Promise<void> {
+  const redeem = await creditSpentBy(db, hold, now);
   const at = now.toISOString();
   const visitId = "(SELECT id FROM appointments WHERE fsm_id = ?1)";
   await db.batch([
-    db
-      .prepare(
-        `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, tier, window_start, window_end,
-           technician_id, status, fsm_status, service_city, service_pincode, fsm_modified_at, synced_at, first_seen_at,
-           one_visit)
-         VALUES (?2, ?1, ?3, ?4, ?5, ?12, ?6, ?7, ?8, 'scheduled', 'Scheduled', ?9, ?10, ?11, ?11, ?11, ?13)
-         ON CONFLICT (fsm_id) DO UPDATE SET
-           tier = excluded.tier,
-           one_visit = excluded.one_visit,
-           service_city = COALESCE(appointments.service_city, excluded.service_city),
-           service_pincode = COALESCE(appointments.service_pincode, excluded.service_pincode)`,
-      )
-      .bind(
-        appointmentId,
-        crypto.randomUUID(),
-        workOrder.id,
-        hold.person_id,
-        hold.type,
-        start.toISOString(),
-        end.toISOString(),
-        hold.technician_id,
-        hold.city,
-        hold.pincode,
-        at,
-        hold.tier,
-        hold.one_visit === 1 ? "booked" : null,
-      ),
+    visit.row,
     db
       .prepare(
         `UPDATE slot_holds SET state = 'booked', appointment_id = ${visitId}, updated_at = ?2
          WHERE id = ?3 AND state = 'held'`,
       )
-      .bind(appointmentId, at, hold.id),
+      .bind(visit.fsmId, at, hold.id),
     db.prepare("DELETE FROM slot_claims WHERE hold_id = ?1").bind(hold.id),
     db
       .prepare(
         `UPDATE payments SET appointment_id = ${visitId}, updated_at = ?2
          WHERE razorpay_order_id = ?3 AND appointment_id IS NULL`,
       )
-      .bind(appointmentId, at, hold.razorpay_order_id),
+      .bind(visit.fsmId, at, hold.razorpay_order_id),
     // The consultation an invited friend booked, so ops' referral record names it: a one visit is theirs too.
     db
       .prepare(
         `UPDATE referral_attributions SET consultation_appointment_id = ${visitId}, updated_at = ?2
          WHERE referred_person_id = ?3 AND consultation_appointment_id IS NULL AND (?4 = 'consultation' OR ?5 = 1)`,
       )
-      .bind(appointmentId, at, hold.person_id, hold.type, hold.one_visit),
+      .bind(visit.fsmId, at, hold.person_id, hold.type, hold.one_visit),
     ...(redeem === null ? [] : [redeem]),
     ...(options.alongside ?? []),
   ]);
   if (hold.use_credit === 1 && redeem === null) await alertNoCreditLeft(hold, options);
   const booked = await holdOf(db, hold.id);
   if (booked !== null) await afterBooked(db, fsm, booked, now, options);
-  return "booked";
 }
 
 /** The redeem of the credit a credit booking spends, for the batch that books it; null when it spends none. */
@@ -467,8 +493,8 @@ async function alertNoCreditLeft(hold: HoldRow, options: Omit<ConfirmOptions, "a
   await options.alertOnce?.({
     key: `credit_visit_without_credit:${hold.id}`,
     message:
-      `Booking ${hold.id}, a visit on ${hold.date}, was booked on a visit credit, but the client had no credit left ` +
-      `to spend on it, so nothing has paid for it. Decide whether to charge for the visit.`,
+      `Booking ${hold.id} for ${hold.date} was booked on a visit credit, but the client had no credit left by then, ` +
+      "so nothing has paid for the visit. Decide whether to charge for it.",
     link: `/clients/${hold.person_id}`,
   });
 }
