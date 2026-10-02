@@ -306,6 +306,45 @@ export function failingAfterTheFirstBatch(db: D1Database): D1Database {
   return failing as D1Database;
 }
 
+/**
+ * The database, counting the round trips a request waits on one after another. A trip starts whenever a statement is
+ * sent while none is on its way, so statements sent together count once, and statements awaited in turn count each.
+ * It never counts more trips than a request waits on, so a budget it meets holds in production too.
+ */
+export function countingRoundTrips(db: D1Database): { readonly db: D1Database; readonly trips: () => number } {
+  let onTheirWay = 0;
+  let trips = 0;
+  const send = async <T>(statement: () => Promise<T>): Promise<T> => {
+    if (onTheirWay === 0) trips += 1;
+    onTheirWay += 1;
+    try {
+      return await statement();
+    } finally {
+      onTheirWay -= 1;
+    }
+  };
+
+  // A batch is sent the real statements behind the counted ones.
+  const realStatements = new WeakMap<D1PreparedStatement, D1PreparedStatement>();
+  const counted = (statement: D1PreparedStatement): D1PreparedStatement => {
+    const wrapper = {
+      bind: (...values: unknown[]) => counted(statement.bind(...values)),
+      first: (column?: string) => send(() => (column === undefined ? statement.first() : statement.first(column))),
+      all: () => send(() => statement.all()),
+      run: () => send(() => statement.run()),
+      raw: () => send(() => statement.raw()),
+    } as unknown as D1PreparedStatement;
+    realStatements.set(wrapper, statement);
+    return wrapper;
+  };
+  const counting: Pick<D1Database, "prepare" | "batch"> = {
+    prepare: (sql) => counted(db.prepare(sql)),
+    batch: <T = unknown>(statements: D1PreparedStatement[]) =>
+      send(() => db.batch<T>(statements.map((statement) => realStatements.get(statement) ?? statement))),
+  };
+  return { db: counting as D1Database, trips: () => trips };
+}
+
 /** A queue binding that keeps what is sent, instead of delivering it. */
 export function fakeQueue(): Queue & { sent: unknown[] } {
   const sent: unknown[] = [];

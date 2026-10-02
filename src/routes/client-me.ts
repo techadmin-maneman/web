@@ -17,19 +17,25 @@
 // each as one of the services ops offer.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../http/context.ts";
+import type { Context } from "hono";
+import type { App, AppEnv } from "../http/context.ts";
 import { WINDOW_LABELS, type WindowLabel } from "../config/booking.ts";
 import { BOOKING_WINDOWS, type BookingWindow } from "../config/scheduling.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { CLIENT_STATES, clientStateOf, isFitted, nextVisit } from "../domain/client-visits.ts";
 import { bookingUnderWay } from "../domain/holds.ts";
 import { creditBalance } from "../domain/credits.ts";
-import { homePrompt } from "../domain/home-prompt.ts";
+import { homePrompt, promptFacts } from "../domain/home-prompt.ts";
 import { nextVisitFacts } from "../domain/next-visit.ts";
 import { bookableTypes } from "../domain/scheduling.ts";
-import { offeredServices } from "../domain/services.ts";
+import { offeredAmong, servicesOnDay } from "../domain/services.ts";
 import { currentAddress, liveContact } from "../domain/profile.ts";
-import { hasFsmVisit, latestProposal, windowAskedFor } from "../domain/proposed-visits.ts";
+import {
+  hasFsmVisit,
+  latestProposal,
+  windowAskedFor,
+  type ProposedBooking,
+} from "../domain/proposed-visits.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
@@ -212,44 +218,82 @@ export const meRoute = createRoute({
   },
 });
 
+type Consultation = NonNullable<z.infer<typeof MeSchema>["consultation"]>;
+
+/** The latest booking a form left, and that booking while FSM has no visit for the person yet. */
+interface FormBooking {
+  readonly booking: ProposedBooking | null;
+  /** The booking's consultation stands for the visit only until FSM has any visit for the person. */
+  readonly proposal: ProposedBooking | null;
+  /** Home's consultation card: the proposal's day, the window it asked for, and where. */
+  readonly card: Consultation | null;
+}
+
+async function formBookingOf(c: Context<AppEnv>, personId: string): Promise<FormBooking> {
+  const db = c.env.DB;
+  const [booking, inFsm] = await Promise.all([latestProposal(db, personId), hasFsmVisit(db, personId)]);
+  const proposal = inFsm ? null : booking;
+  if (proposal === null) return { booking, proposal, card: null };
+
+  const [window, address] = await Promise.all([
+    windowAskedFor(db, personId, proposal),
+    currentAddress(db, personId),
+  ]);
+  if (window === null) {
+    c.var.log.warn("consultation_window_unknown", { person_id: personId });
+    return { booking, proposal, card: null };
+  }
+  const place = address === null ? (proposal.city ?? "") : `${address.locality}, ${address.city} ${address.pincode}`;
+  const card = { date: proposal.proposed_visit_date, window, window_label: PHASE1_WORDS[window] ?? null, place };
+  return { booking, proposal, card };
+}
+
+/** What Home's offer and prompt turn on: the figures ops set, then the client's facts, read together. */
+async function homeFactsOf(c: Context<AppEnv>, personId: string, now: Date) {
+  const inputs = await opsInputs(c);
+  const days = inputs.nextVisitDays;
+  const [next, prompt] = await Promise.all([
+    nextVisitFacts(c.env.DB, personId, now, days),
+    promptFacts(c.env.DB, personId, now, days),
+  ]);
+  return { days, referralReward: inputs.referralReward, next, prompt };
+}
+
 export function registerClientMe(app: App): void {
   app.use(meRoute.path, requireClientSession);
   app.openapi(meRoute, async (c) => {
-    const session = clientOf(c);
-
+    const personId = clientOf(c).subjectId;
     const db = c.env.DB;
-    const person = await liveContact(db, session.subjectId);
-    if (person === null) return c.json(errorBody("session_required", c.var.requestId), 401);
-    const { name } = person;
-
     const now = c.var.deps.now();
-    const upcoming = await nextVisit(db, session.subjectId, now);
-    const underWay = await bookingUnderWay(db, session.subjectId);
-    const credits = await creditBalance(db, session.subjectId, now);
-    const fitted = await isFitted(db, session.subjectId);
-    const booking = await latestProposal(db, session.subjectId);
-    // A booking's proposal stands only until FSM has any visit for the person.
-    const proposal = (await hasFsmVisit(db, session.subjectId)) ? null : booking;
-    const window = proposal === null ? null : await windowAskedFor(db, session.subjectId, proposal);
-    if (proposal !== null && window === null) {
-      c.var.log.warn("consultation_window_unknown", { person_id: session.subjectId });
-    }
-    const address = proposal === null ? null : await currentAddress(db, session.subjectId);
-    const place = address === null ? (booking?.city ?? "") : `${address.locality}, ${address.city} ${address.pincode}`;
-    const state = clientStateOf(fitted, upcoming !== null || booking !== null);
-    const types = await bookableTypes(db, session.subjectId);
-    const services = (await offeredServices(db, addDays(indiaDate(now), 1), types)).map((service) => ({
+    const tomorrow = addDays(indiaDate(now), 1);
+
+    // Each read is a trip to D1 and back, so the reads that need nothing from each other go together.
+    const [person, upcoming, underWay, credits, fitted, form, types, services, home] = await Promise.all([
+      liveContact(db, personId),
+      nextVisit(db, personId, now),
+      bookingUnderWay(db, personId),
+      creditBalance(db, personId, now),
+      isFitted(db, personId),
+      formBookingOf(c, personId),
+      bookableTypes(db, personId),
+      servicesOnDay(db, tomorrow),
+      homeFactsOf(c, personId, now),
+    ]);
+    if (person === null) return c.json(errorBody("session_required", c.var.requestId), 401);
+
+    const { name } = person;
+    const state = clientStateOf(fitted, upcoming !== null || form.booking !== null);
+    // A booking's consultation, not yet in FSM, is booked as much as a visit FSM has.
+    const booked = home.next.booked || upcoming !== null || form.proposal !== null;
+    const offer = booked ? null : home.next.offer;
+    const offered = offeredAmong(services, tomorrow, types).map((service) => ({
       type: service.kind,
       tier: service.tier,
       name: service.name,
       minutes: service.minutes,
       price: service.price,
     }));
-    const { nextVisitDays: days, referralReward } = await opsInputs(c);
-    const facts = await nextVisitFacts(db, session.subjectId, now, days);
-    // A booking's consultation, not yet in FSM, is booked as much as a visit FSM has.
-    const booked = facts.booked || upcoming !== null || proposal !== null;
-    const offer = booked ? null : facts.offer;
+    const prompt = await homePrompt(db, personId, home.prompt, { booked, offer }, now, home.days);
 
     return c.json(
       {
@@ -257,16 +301,13 @@ export function registerClientMe(app: App): void {
         name,
         first_name: firstNameOf(name),
         initials: initialsOf(name),
-        consultation:
-          proposal === null || window === null
-            ? null
-            : { date: proposal.proposed_visit_date, window, window_label: PHASE1_WORDS[window] ?? null, place },
+        consultation: form.card,
         next_visit: upcoming,
         being_booked: underWay,
         credits: credits.visits > 0 ? { visits: credits.visits, earliest_expiry: credits.earliestExpiry } : null,
-        prompt: await homePrompt(db, session.subjectId, { booked, offer }, now, days),
-        booking: { self_serve: c.var.config.settings.selfServeBooking, types, services, next: offer },
-        referral_reward: referralReward,
+        prompt,
+        booking: { self_serve: c.var.config.settings.selfServeBooking, types, services: offered, next: offer },
+        referral_reward: home.referralReward,
       },
       200,
     );

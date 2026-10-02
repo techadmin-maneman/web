@@ -66,6 +66,8 @@ export interface JobSummary {
   readonly slots: number | null;
   readonly unlocked: boolean;
   readonly unlocks_at: string;
+  /** The client's name once the job unlocks, as the card gives it, so the day's list can say whom each job is for. */
+  readonly client_name: string | null;
 }
 
 export interface JobClient {
@@ -228,43 +230,58 @@ export async function jobsOn(
   now: Date,
   unlockHour: number,
 ): Promise<JobSummary[]> {
-  const { results } = await db
-    .prepare(`${SELECT_JOB} AND a.window_start >= ?2 AND a.window_start < ?3 ORDER BY a.window_start`)
-    .bind(
-      technicianId,
-      indiaInstant(date, "00:00").toISOString(),
-      indiaInstant(addDays(date, 1), "00:00").toISOString(),
-    )
-    .all<JobRow>();
-  const schedule = await loadSlotSchedule(db);
-  return results.filter(worthShowing).map((row) => summaryOf(row, now, unlockHour, schedule));
+  const [jobs, schedule] = await Promise.all([
+    db
+      .prepare(`${SELECT_JOB} AND a.window_start >= ?2 AND a.window_start < ?3 ORDER BY a.window_start`)
+      .bind(
+        technicianId,
+        indiaInstant(date, "00:00").toISOString(),
+        indiaInstant(addDays(date, 1), "00:00").toISOString(),
+      )
+      .all<JobRow>(),
+    loadSlotSchedule(db),
+  ]);
+  return jobs.results.filter(worthShowing).map((row) => summaryOf(row, now, unlockHour, schedule));
 }
 
-/** One job of this technician's, with everything the day-before unlock allows. */
+/**
+ * One job of this technician's, with everything the day-before unlock allows. Each read is a trip to D1 and back, so
+ * the reads that need nothing from each other go together: the job and the day's times, then all the job leads to.
+ */
 export async function jobDetail(
   db: D1Database,
   options: { technicianId: string; jobId: string; now: Date; unlockHour: number; waits: Waits },
 ): Promise<JobDetail | null> {
-  const row = await db.prepare(`${SELECT_JOB} AND a.id = ?2`).bind(options.technicianId, options.jobId).first<JobRow>();
+  const [row, schedule] = await Promise.all([
+    db.prepare(`${SELECT_JOB} AND a.id = ?2`).bind(options.technicianId, options.jobId).first<JobRow>(),
+    loadSlotSchedule(db),
+  ]);
   if (row === null) return null;
-  const summary = summaryOf(row, options.now, options.unlockHour, await loadSlotSchedule(db));
+  const summary = summaryOf(row, options.now, options.unlockHour, schedule);
   const type = row.type ?? "service";
+  const oneVisit = row.one_visit !== null;
+  const [progress, products, paymentLink, unlockedParts] = await Promise.all([
+    progressOf(db, { id: row.id, type }, options.waits),
+    takesProfile(type, oneVisit) ? productsOn(db, summary.date) : [],
+    oneVisit ? paymentLinkOf(db, row.id) : null,
+    summary.unlocked ? unlockedPartsOf(db, row) : null,
+  ]);
   const locked = {
     ...summary,
     address: null,
     access_notes: null,
     client: null,
-    progress: await progressOf(db, { id: row.id, type }, options.waits),
+    progress,
     no_show_wait_min: options.waits[type],
     pieces: null,
     last_visit: null,
     reminder: null,
-    products: takesProfile(type, row.one_visit !== null) ? await productsOn(db, summary.date) : [],
-    payment_link: row.one_visit === null ? null : await paymentLinkOf(db, row.id),
+    products,
+    payment_link: paymentLink,
     profile: null,
-    steps: cardStepsFor(type, row.one_visit !== null, row.person_id !== null),
+    steps: cardStepsFor(type, oneVisit, row.person_id !== null),
   };
-  if (!summary.unlocked) return locked;
+  if (unlockedParts === null) return locked;
   return {
     ...locked,
     address: addressOf(row),
@@ -273,11 +290,23 @@ export async function jobDetail(
       row.client_name === null || row.client_mobile === null
         ? null
         : { name: row.client_name, mobile: row.client_mobile, note: row.client_note },
-    pieces: row.person_id === null ? [] : (await piecesOf(db, row.person_id)).map(cardPiece),
-    last_visit: await lastVisitOf(db, row),
-    reminder: await reminderOf(db, row.id),
-    profile: row.person_id === null ? null : await latestProfile(db, row.person_id),
+    ...unlockedParts,
   };
+}
+
+/** What only an unlocked card carries beyond the job's own row: the client's pieces and profile, and their last visit. */
+async function unlockedPartsOf(
+  db: D1Database,
+  row: JobRow,
+): Promise<Pick<JobDetail, "pieces" | "last_visit" | "reminder" | "profile">> {
+  const personId = row.person_id;
+  const [pieces, lastVisit, reminder, profile] = await Promise.all([
+    personId === null ? [] : piecesOf(db, personId),
+    lastVisitOf(db, row),
+    reminderOf(db, row.id),
+    personId === null ? null : latestProfile(db, personId),
+  ]);
+  return { pieces: pieces.map(cardPiece), last_visit: lastVisit, reminder, profile };
 }
 
 /** The products offered on a visit's day: the first fit's services offered and priced then, in ops' order. */
@@ -460,6 +489,7 @@ function summaryOf(row: JobRow, now: Date, unlockHour: number, schedule: SlotSch
     slots: row.type === null ? null : slotsFor(unitsFor(bookedMinutes(row))),
     unlocked: open,
     unlocks_at: unlocksAt(starts, unlockHour).toISOString(),
+    client_name: open ? row.client_name : null,
   };
 }
 
@@ -473,37 +503,41 @@ export async function progressOf(
   job: { id: string; type: VisitType },
   waits: Waits,
 ): Promise<JobProgress> {
-  const { results } = await db
-    .prepare(
-      `SELECT kind, body, occurred_at, received_at FROM job_events
-       WHERE appointment_id = ?1 AND superseded = 0 ORDER BY received_at, rowid`,
-    )
-    .bind(job.id)
-    .all<{ kind: JobEventKind; body: string; occurred_at: string; received_at: string }>();
+  const [events, latest, profileAt] = await Promise.all([
+    db
+      .prepare(
+        `SELECT kind, body, occurred_at, received_at FROM job_events
+         WHERE appointment_id = ?1 AND superseded = 0 ORDER BY received_at, rowid`,
+      )
+      .bind(job.id)
+      .all<{ kind: JobEventKind; body: string; occurred_at: string; received_at: string }>(),
+    latestArrival(db, job.id),
+    profileTakenAt(db, job.id),
+  ]);
+  const { results } = events;
   const checkIn = results.find((event) => event.kind === "check_in");
   const start = results.find((event) => event.kind === "start");
   const outcome = results.findLast((event) => event.kind === "outcome");
-  const arrival = checkIn === undefined ? null : await latestArrival(db, job.id);
+  // An arrival counts only while the check-in that measured it stands.
+  const arrival = checkIn === undefined ? null : latest;
   return {
     checked_in_at: checkIn?.occurred_at ?? null,
     wait_ends_at: arrival === null ? null : noShowWaitEnds(arrival, job.type, waits).toISOString(),
     distance_m: arrival?.distanceM ?? null,
     started_at: start?.occurred_at ?? null,
-    steps_done: await stepsDone(db, job.id, results),
+    steps_done: stepsDone(results, profileAt),
     outcome: outcome === undefined ? null : outcomeOf(outcome.body),
   };
 }
 
 /** The steps that have reached us, in the order they did: the job's events after the start, and the profile. */
-async function stepsDone(
-  db: D1Database,
-  jobId: string,
+function stepsDone(
   events: readonly { kind: JobEventKind; received_at: string }[],
-): Promise<CardStep[]> {
+  profileAt: string | null,
+): CardStep[] {
   const steps: { step: CardStep; at: string }[] = events
     .filter((event) => event.kind !== "check_in" && event.kind !== "start")
     .map((event) => ({ step: event.kind, at: event.received_at }));
-  const profileAt = await profileTakenAt(db, jobId);
   if (profileAt !== null) steps.push({ step: "profile", at: profileAt });
   // A stable sort: steps that reached us in the same millisecond keep the order they were read in.
   return steps.sort((a, b) => a.at.localeCompare(b.at)).map((taken) => taken.step);

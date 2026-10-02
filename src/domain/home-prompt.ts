@@ -69,13 +69,25 @@ const PROMPT = `SELECT
     ORDER BY invoice_issued_at DESC LIMIT 1
   ) invoiced ON TRUE`;
 
-interface Row {
-  has_address: number;
-  due_on: string | null;
-  replacement_booked: number;
-  invoiced_id: string | null;
-  invoiced_type: VisitType | null;
-  invoiced_start: string | null;
+/** What the prompt turns on beyond the client's standing. */
+export interface PromptFacts {
+  readonly has_address: number;
+  readonly due_on: string | null;
+  readonly replacement_booked: number;
+  readonly invoiced_id: string | null;
+  readonly invoiced_type: VisitType | null;
+  readonly invoiced_start: string | null;
+}
+
+/** Read apart from the decision, so Home can send this read with its others. */
+export function promptFacts(
+  db: D1Database,
+  personId: string,
+  now: Date,
+  days: NextVisitDays,
+): Promise<PromptFacts | null> {
+  const since = new Date(now.getTime() - days.invoice_prompt * DAY_MS).toISOString();
+  return db.prepare(PROMPT).bind(personId, since).first<PromptFacts>();
 }
 
 /** What the client has now: whether anything is booked, and what the app offers them next. */
@@ -92,12 +104,11 @@ const nextServiceOf = (offer: NextOffer | null): (NextOffer & { type: "service" 
 export async function homePrompt(
   db: D1Database,
   personId: string,
+  row: PromptFacts | null,
   standing: ClientStanding,
   now: Date,
   days: NextVisitDays,
 ): Promise<HomePrompt | null> {
-  const since = new Date(now.getTime() - days.invoice_prompt * DAY_MS).toISOString();
-  const row = await db.prepare(PROMPT).bind(personId, since).first<Row>();
   if (row === null) return null;
   const next = nextServiceOf(standing.offer);
   const kind = homePromptOf({

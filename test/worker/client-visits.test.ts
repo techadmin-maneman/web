@@ -10,10 +10,15 @@ import { findEligiblePerson } from "../../src/domain/login.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { exportVisitPhotos } from "../../src/domain/visit-photos.ts";
 import { createStubFsm, type FsmAppointment, type StubFsmWorld } from "../../src/providers/fsm.ts";
-import { appFor, fakeDependencies, markDatabase, NOW, request } from "./helpers.ts";
+import { appFor, countingRoundTrips, fakeDependencies, markDatabase, NOW, request } from "./helpers.ts";
 import { syntheticJpeg } from "./tryon-fixtures.ts";
 
 const MOBILE = "+919810000001";
+/**
+ * The most trips to D1 Home waits on in turn: the database's own check, the session, the figures ops set, the next
+ * visit's facts, the service it is offered as, and the replacement the prompt offers.
+ */
+const ME_TRIPS = 6;
 
 const fsmAppointment = (id: string, overrides: Partial<FsmAppointment> = {}): FsmAppointment => ({
   id,
@@ -244,24 +249,25 @@ describe("a visit FSM has not closed", () => {
 // Board B1's one contextual prompt, in the owner's order of 27 September 2026 (src/policy/home-prompt.ts): an
 // address to give while something is booked, then the next service due and not booked, then a replacement falling
 // due, then an invoice just issued. One at a time, the first that applies (LIFE-08).
+const personId = async () =>
+  (await env.DB.prepare("SELECT id FROM people WHERE mobile_e164 = ?1").bind(MOBILE).first<{ id: string }>())?.id ??
+  "";
+const giveAddress = async () =>
+  env.DB.prepare(
+    `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode)
+     VALUES (?1, ?2, ?3, 'House 12', 'Sector 65', 'Gurgaon', '122018')`,
+  )
+    .bind(crypto.randomUUID(), await personId(), NOW.toISOString())
+    .run();
+const fitPiece = async (due: string) =>
+  env.DB.prepare(
+    `INSERT INTO pieces (id, fsm_id, person_id, piece_code, fitted_at, replacement_due_at, synced_at)
+     VALUES (?1, ?1, ?2, 'MM-STD-4417-B', '2026-09-10', ?3, ?4)`,
+  )
+    .bind(crypto.randomUUID(), await personId(), due, NOW.toISOString())
+    .run();
+
 describe("GET /api/me's one prompt", () => {
-  const personId = async () =>
-    (await env.DB.prepare("SELECT id FROM people WHERE mobile_e164 = ?1").bind(MOBILE).first<{ id: string }>())?.id ??
-    "";
-  const giveAddress = async () =>
-    env.DB.prepare(
-      `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode)
-       VALUES (?1, ?2, ?3, 'House 12', 'Sector 65', 'Gurgaon', '122018')`,
-    )
-      .bind(crypto.randomUUID(), await personId(), NOW.toISOString())
-      .run();
-  const fitPiece = async (due: string) =>
-    env.DB.prepare(
-      `INSERT INTO pieces (id, fsm_id, person_id, piece_code, fitted_at, replacement_due_at, synced_at)
-       VALUES (?1, ?1, ?2, 'MM-STD-4417-B', '2026-09-10', ?3, ?4)`,
-    )
-      .bind(crypto.randomUUID(), await personId(), due, NOW.toISOString())
-      .run();
   const issueInvoice = async (appointmentId: string, daysAgo: number) =>
     env.DB.prepare("UPDATE appointments SET fsm_invoice_id = 'stub-1', invoice_issued_at = ?1 WHERE id = ?2")
       .bind(new Date(NOW.getTime() - daysAgo * 24 * 60 * 60 * 1000).toISOString(), appointmentId)
@@ -342,6 +348,50 @@ describe("GET /api/me's one prompt", () => {
       .run();
     await signIn();
     expect(await (await get("/api/me")).json()).toMatchObject({ state: "nothing_booked", prompt: null });
+  });
+});
+
+// Home is what the app waits on each time it opens, and each D1 read is a trip to the database's region and back. Reads
+// that need nothing from each other go together, so Home waits on a few trips, not one for each read (PLAT-15).
+describe("GET /api/me's trips to D1", () => {
+  const tripsForMe = async () => {
+    const counting = countingRoundTrips(env.DB);
+    const answer = await request(client, "/api/me", { headers: { Cookie: cookie } }, { DB: counting.db });
+    expect(answer.status).toBe(200);
+    return counting.trips();
+  };
+
+  it("are few for a fitted client with a visit booked and the replacement falling due", async () => {
+    await mirror([done("ap-done", "2026-09-10"), fsmAppointment("ap-next")]);
+    await signIn();
+    await giveAddress();
+    await fitPiece("2026-10-05");
+    expect(await tripsForMe()).toBeLessThanOrEqual(ME_TRIPS);
+  });
+
+  it("are few for a fitted client offered the next service", async () => {
+    await mirror([done("ap-done", "2026-09-10")]);
+    await signIn();
+    await giveAddress();
+    expect(await tripsForMe()).toBeLessThanOrEqual(ME_TRIPS);
+  });
+
+  it("are few for a lead whose booking FSM does not have yet", async () => {
+    await env.DB.prepare(
+      "INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p1', ?1, ?2, 'Rohit Malhotra')",
+    )
+      .bind(NOW.toISOString(), MOBILE)
+      .run();
+    await env.DB.prepare(
+      `INSERT INTO leads (id, person_id, created_at, source, city, first_choice_window, loss_extent, proposed_visit_date,
+         sync_state, request_id)
+       VALUES ('l1', 'p1', ?1, 'form', 'Gurgaon', NULL, 'crown', '2026-09-24', 'synced', 'r1')`,
+    )
+      .bind(NOW.toISOString())
+      .run();
+    await signIn();
+    await giveAddress();
+    expect(await tripsForMe()).toBeLessThanOrEqual(ME_TRIPS);
   });
 });
 

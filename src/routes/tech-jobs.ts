@@ -146,6 +146,9 @@ const JobSummarySchema = z
       .openapi({ description: "How much of the day the visit takes: 1, 1.5 or 2 slots. Null for an unknown type." }),
     unlocked: z.boolean(),
     unlocks_at: z.iso.datetime(),
+    client_name: z.union([z.string(), z.null()]).openapi({
+      description: "The client's name, from the day before the visit as the card's client is; null until then.",
+    }),
   })
   .strict()
   .openapi("TechnicianJob");

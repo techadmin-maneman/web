@@ -86,12 +86,12 @@ interface SummaryContext {
 }
 
 async function contextOf(db: D1Database, personId: string): Promise<SummaryContext> {
-  const address = await currentAddress(db, personId);
+  const [address, schedule] = await Promise.all([currentAddress(db, personId), loadSlotSchedule(db)]);
   const place = (row: AppointmentRow) =>
     address !== null
       ? `${address.locality}, ${address.city} ${address.pincode}`
       : [row.service_city, row.service_pincode].filter((part) => part !== null).join(" ");
-  return { place, schedule: await loadSlotSchedule(db) };
+  return { place, schedule };
 }
 
 /** A visit whose window has ended is being closed, whatever FSM last said of it, until FSM closes it. */
@@ -168,21 +168,23 @@ export async function listVisits(
   personId: string,
   now: Date,
 ): Promise<{ upcoming: VisitSummary[]; past: VisitSummary[] }> {
-  const context = await contextOf(db, personId);
-  const upcoming = await db
-    .prepare(
-      `SELECT ${APPOINTMENT_COLUMNS} FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id
-       WHERE ${LIVE} AND a.status IN ${UPCOMING_STATUSES} ORDER BY a.window_start`,
-    )
-    .bind(personId)
-    .all<AppointmentRow>();
-  const past = await db
-    .prepare(
-      `SELECT ${APPOINTMENT_COLUMNS} FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id
-       WHERE ${LIVE} AND a.status IN ${PAST_STATUSES} ORDER BY a.window_start DESC`,
-    )
-    .bind(personId)
-    .all<AppointmentRow>();
+  const [context, upcoming, past] = await Promise.all([
+    contextOf(db, personId),
+    db
+      .prepare(
+        `SELECT ${APPOINTMENT_COLUMNS} FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id
+         WHERE ${LIVE} AND a.status IN ${UPCOMING_STATUSES} ORDER BY a.window_start`,
+      )
+      .bind(personId)
+      .all<AppointmentRow>(),
+    db
+      .prepare(
+        `SELECT ${APPOINTMENT_COLUMNS} FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id
+         WHERE ${LIVE} AND a.status IN ${PAST_STATUSES} ORDER BY a.window_start DESC`,
+      )
+      .bind(personId)
+      .all<AppointmentRow>(),
+  ]);
   return {
     upcoming: upcoming.results.map((row) => summaryOf(row, context, now)),
     past: past.results.map((row) => summaryOf(row, context, now)),

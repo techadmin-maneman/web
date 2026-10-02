@@ -107,15 +107,8 @@ export async function nextVisitFacts(
     const due = serviceDue(indiaDate(last), days);
     const type = nextVisitType(due, row.piece_due);
     const date = offeredDay(due, tomorrow);
-    return {
-      booked,
-      offer: {
-        type,
-        tier: await serviceToOffer(db, personId, type, date),
-        date,
-        window: windowFor(type, (await loadSlotSchedule(db)).at(last).window),
-      },
-    };
+    const [tier, schedule] = await Promise.all([serviceToOffer(db, personId, type, date), loadSlotSchedule(db)]);
+    return { booked, offer: { type, tier, date, window: windowFor(type, schedule.at(last).window) } };
   }
   if (row.consulted_start === null) return { booked, offer: null };
   const consulted = indiaDate(new Date(row.consulted_start));
