@@ -64,6 +64,10 @@ export const ERROR_CODES = [
   "out_of_order",
   "not_today",
   "already_started",
+  // Ops switched the technician off: the phone sets his unsent work aside rather than wiping it.
+  "technician_inactive",
+  // A technician FSM lists is changed in FSM, while FSM is the record of field work.
+  "managed_in_fsm",
   // Dispatch (docs/decisions/0034-clash-check.md): the technician already holds a job in that
   // window, is away that day (ADR 0062), the window is free but the visit has no room in it,
   // or FSM would not take the move, or took only its new technician.

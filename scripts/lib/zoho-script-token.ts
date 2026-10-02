@@ -9,6 +9,7 @@
 export const SCRIPT_TOKENS = {
   crm: { scripts: "ZOHO_SCRIPTS_REFRESH_TOKEN", worker: "ZOHO_REFRESH_TOKEN" },
   fsm: { scripts: "ZOHO_FSM_SCRIPTS_REFRESH_TOKEN", worker: "ZOHO_FSM_REFRESH_TOKEN" },
+  books: { scripts: "ZOHO_BOOKS_SCRIPTS_REFRESH_TOKEN", worker: "ZOHO_BOOKS_REFRESH_TOKEN" },
 } as const;
 
 export type ZohoClient = keyof typeof SCRIPT_TOKENS;

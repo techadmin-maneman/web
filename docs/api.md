@@ -1195,6 +1195,8 @@ Razorpay's webhook: payments and refunds
             "out_of_order",
             "not_today",
             "already_started",
+            "technician_inactive",
+            "managed_in_fsm",
             "clash",
             "on_leave",
             "does_not_fit",
