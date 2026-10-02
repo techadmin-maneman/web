@@ -1,6 +1,7 @@
 // The login (boards A1 to A3): a number, then its code. Every number gets the
 // same second screen, so the app never says whether a number has a booking
-// (docs/decisions/0030-one-time-codes.md).
+// (docs/decisions/0030-one-time-codes.md). The site's booking confirmation
+// links here with the number typed there filled in (linked-mobile.ts).
 //
 // Each step forward is an entry in the browser's history, so a phone's Back
 // steps back from the code to the number, as the screen's own back arrow does,
@@ -14,6 +15,7 @@ import { login } from "../content.ts";
 import { focusIfLost, nameInTitle } from "../lib/arrival.ts";
 import { CodeScreen, type CodeProblem } from "./CodeScreen.tsx";
 import { HelpScreen } from "./HelpScreen.tsx";
+import { carriesMobile, mobileInLink } from "./linked-mobile.ts";
 import { MobileScreen } from "./MobileScreen.tsx";
 
 type Step =
@@ -75,7 +77,12 @@ export function Login({ ended, onSignedIn }: { ended: boolean; onSignedIn: () =>
     nameInTitle(TITLES[step.kind]);
     focusIfLost(document.querySelector("h1"));
   }, [step.kind]);
-  const [mobile, setMobile] = useState("");
+  const [mobile, setMobile] = useState(() => mobileInLink(window.location.hash));
+  // The number is not left in the browser's history.
+  useEffect(() => {
+    if (!carriesMobile(window.location.hash)) return;
+    window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}`);
+  }, []);
   const [mobileError, setMobileError] = useState<string | null>(null);
   const [problem, setProblem] = useState<CodeProblem | null>(null);
   // One code at a time: a second send bills a second code, voids the first, and takes another

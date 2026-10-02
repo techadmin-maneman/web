@@ -258,15 +258,15 @@ export const referral = {
   },
   /**
    * What a booking answers (C4), the same for every number, since whoever typed it may not be its owner: the details
-   * go to the number on WhatsApp, and the app shows them once its owner signs in with a code. Placeholder words for
-   * the owner to approve.
+   * go to the number on WhatsApp, and the app shows them once its owner signs in with a code. Not drawn as worded
+   * here; the owner approves the words.
    */
   booked: {
     label: "Booking received",
     title: "Check WhatsApp",
     body: "Your booking details are on their way to +91 {mobile}.",
     credits: visitsLand,
-    appHint: "Sign in with this number to see your booking.",
+    appHint: "See it in the app too: sign in with this number.",
     app: "Open the app",
     back: "See the site",
   },

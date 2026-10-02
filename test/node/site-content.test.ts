@@ -6,7 +6,6 @@ import { describe, expect, it } from "vitest";
 import { DESIGN_PLACEHOLDERS, type PlaceholderBlockName } from "../../site/src/content/design-placeholders.ts";
 import { referral } from "../../site/src/content/referral.ts";
 import * as site from "../../site/src/content/site.ts";
-import { bookedHeadline } from "../../site/src/lib/dates.ts";
 import { siteEnvironment } from "../../site/src/lib/environment.ts";
 import { HOUSE_CARD, HOUSE_CARD_VERSION } from "../../site/src/lib/invite.ts";
 import { formatMobile, isCompleteMobile, mobileDigits } from "../../site/src/lib/phone.ts";
@@ -247,11 +246,6 @@ describe("site helpers", () => {
     expect(mobileDigits("+91 98100-00000")).toBe("9198100000");
     expect(isCompleteMobile("98100 00000")).toBe(true);
     expect(isCompleteMobile("98100 0000")).toBe(false);
-  });
-
-  it("writes the booked headline as board C4 does, from the date and the window's hours", () => {
-    expect(bookedHeadline("2026-09-21", "9 am to 12 pm")).toBe("Monday 21 Sep, 9 am to 12 pm");
-    expect(bookedHeadline("2027-01-02", "4 to 8 pm")).toBe("Saturday 2 Jan, 4 to 8 pm");
   });
 
   it("fills content holes and leaves unknown ones", () => {

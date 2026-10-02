@@ -76,7 +76,6 @@ describe("POST /api/consultation", () => {
       area: "Gurgaon South City II",
       credits: false,
       invite: "unknown",
-      address: "saved",
       one_visit: false,
       discount_code: false,
     });
@@ -168,7 +167,6 @@ describe("POST /api/consultation", () => {
       area: "Gurgaon South City II",
       credits: false,
       invite: "unknown",
-      address: "saved",
       one_visit: false,
       discount_code: false,
     });
@@ -525,7 +523,6 @@ describe("an invite the browser remembered", () => {
       area: "Gurgaon South City II",
       credits: true,
       invite: "valid",
-      address: "saved",
       one_visit: false,
       discount_code: false,
     });
@@ -709,7 +706,6 @@ describe("a consultation and fit in one visit", () => {
       area: "Gurgaon South City II",
       credits: false,
       invite: "unknown",
-      address: "saved",
       one_visit: true,
       discount_code: false,
     });

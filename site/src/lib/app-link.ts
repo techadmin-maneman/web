@@ -9,19 +9,18 @@ import type { SiteEnvironment } from "./environment.ts";
 /** Locally the browser tests serve the app here (playwright.config.ts). */
 const LOCAL_APP = "http://app.localhost:4322";
 
-function clientAppOrigin(environment: SiteEnvironment): string | null {
+export function clientAppOrigin(environment: SiteEnvironment): string | null {
   if (!ENABLED_SURFACES[environment].includes("client")) return null;
   if (environment === "local") return LOCAL_APP;
   return `https://${SURFACE_HOSTS[environment].client}`;
 }
 
 /**
- * The app's sign-in with the number typed already filled in; the code is still asked for. The number goes after
+ * The app's sign-in with the number typed on the site filled in; the code is still asked for. The number goes after
  * the #, which the browser never sends to a server.
  */
-export function signInLink(environment: SiteEnvironment, typedMobile: string): string | null {
-  const origin = clientAppOrigin(environment);
-  if (origin === null) return null;
+export function signInLink(appOrigin: string, typedMobile: string): string {
   const digits = mobileDigits(typedMobile);
-  return digits === null ? origin : `${origin}/#mobile=${digits}`;
+  if (digits === null) return appOrigin;
+  return `${appOrigin}/#mobile=${digits}`;
 }

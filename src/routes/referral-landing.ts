@@ -13,8 +13,8 @@
 // takes the full address it is at, as the booking form's does (docs/decisions/0081-the-site-takes-the-address.md),
 // and may book the consultation and fit in one visit, as it may there
 // (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). Every number gets the same answer, as there
-// (src/policy/site-booking.ts). An unknown code still books or waits, without an invite. The same submission sent again under its
-// Idempotency-Key gets its first answer.
+// (src/policy/site-booking.ts). An unknown code still books or waits, without an invite. The same submission sent
+// again under its Idempotency-Key gets its first answer.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";

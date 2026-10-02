@@ -138,15 +138,15 @@ export const TEMPLATES: Readonly<Record<string, string>> = {
   move_refunded_v1:
     "Hello {{1}}, we could not move your {{2}} to {{3}}, so it stays as it was booked. {{6}} is on its way back to your {{8}}, in 5 to 7 working days.",
   move_not_made_v1: "Hello {{1}}, we could not move your {{2}} to {{3}}, so it stays as it was booked.",
-  // To a number the site's booking form was sent for, where the page gives every number the same answer
+  // To a number our site's booking form was just sent for, since the page tells every number the same thing
   // (src/domain/site-notices.ts). PLACEHOLDER COPY, pending the owner's wording: {{1}} the first name, and for a
   // consultation still to happen {{2}} the visit, {{3}} its day and {{4}} its window.
   consultation_exists_v1:
-    "Hello {{1}}, your {{2}} is already booked for {{3}}, {{4}}, so we have not booked another. You can see or move it in the Mane Man app.",
+    "Hello {{1}}, this number was just used to book on our site. Your {{2}} is already booked for {{3}}, {{4}}, so we have not booked another. You can see or move it in the Mane Man app.",
   book_in_app_v1:
-    "Hello {{1}}, as a Mane Man client, you book your visits in the Mane Man app. Sign in there with this number.",
+    "Hello {{1}}, this number was just used to book on our site. As a Mane Man client, you book your visits in the Mane Man app: sign in there with this number.",
   address_on_account_v1:
-    "Hello {{1}}, we will come to the address already on your account, not the one given on the site. You can change it in the Mane Man app.",
+    "Hello {{1}}, your booking from our site goes to the address already on your account, not the one typed there. You can change it in the Mane Man app.",
 };
 
 /** The text with its params filled in, or null for an unknown template or a missing param. */

@@ -2,8 +2,8 @@
 
 import { describe, expect, it } from "vitest";
 import { addressToSend, emptyAddress, missingParts } from "../../site/src/lib/address.ts";
+import { signInLink } from "../../site/src/lib/app-link.ts";
 import { attributionFrom } from "../../site/src/lib/attribution.ts";
-import { consultationCalendar } from "../../site/src/lib/calendar.ts";
 import { keyPerRequest } from "../../site/src/lib/idempotency.ts";
 
 // FEO-21: a key that changed on every press protected nothing.
@@ -42,27 +42,17 @@ describe("attribution", () => {
   });
 });
 
-// CLI-13, REQ-05: the calendar file follows the windows the booking offers (src/config/scheduling.ts).
-describe("the calendar file", () => {
-  const now = new Date("2026-09-22T06:00:00Z");
+// The owner's decision of 2 October 2026: the confirmation opens the app with the number typed filled in.
+describe("the link into the client app", () => {
+  const APP = "https://app-staging.maneman.in";
 
-  it("covers the morning window, 09:00 to 12:00 in India, in UTC", () => {
-    const text = consultationCalendar("2026-09-24", "morning", "Mane Man consultation", now);
-    expect(text).toContain("DTSTART:20260924T033000Z\r\n");
-    expect(text).toContain("DTEND:20260924T063000Z\r\n");
-    expect(text).toContain("UID:consultation-2026-09-24-morning@maneman.in\r\n");
-    expect(text).toContain("DTSTAMP:20260922T060000Z\r\n");
-    expect(text).toContain("SUMMARY:Mane Man consultation\r\n");
-    expect(text.startsWith("BEGIN:VCALENDAR\r\n")).toBe(true);
+  it("puts the number typed after the #, as ten digits however it was typed", () => {
+    expect(signInLink(APP, "98100 00000")).toBe(`${APP}/#mobile=9810000000`);
+    expect(signInLink(APP, "+91 98100-00000")).toBe(`${APP}/#mobile=9810000000`);
   });
 
-  it("covers the afternoon, 12:00 to 16:00, and the evening, 16:00 to 20:00, in India", () => {
-    const afternoon = consultationCalendar("2026-09-24", "afternoon", "Mane Man consultation", now);
-    expect(afternoon).toContain("DTSTART:20260924T063000Z");
-    expect(afternoon).toContain("DTEND:20260924T103000Z");
-    const evening = consultationCalendar("2026-09-24", "evening", "Mane Man consultation", now);
-    expect(evening).toContain("DTSTART:20260924T103000Z");
-    expect(evening).toContain("DTEND:20260924T143000Z");
+  it("opens the plain sign-in for anything that is not a mobile number", () => {
+    expect(signInLink(APP, "12345")).toBe(APP);
   });
 });
 

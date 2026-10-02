@@ -1,7 +1,7 @@
-// What the site's booking form tells a number we already know, privately on WhatsApp, since the page gives every
-// number the same answer (src/policy/site-booking.ts): that it has a consultation still to happen, that it books in
-// the app, or that the visit goes to the address already on its account. Each is about the person, written when the
-// form is sent, and says what is true when it is sent.
+// What the site's booking form tells a number we already know, privately on WhatsApp, since the page tells every
+// number the same thing (src/policy/site-booking.ts): that it has a consultation still to happen, that it books in
+// the app, or that the visit goes to the address already on its account. Each is composed as it is sent, from how
+// the person stands then.
 
 import { shortDate } from "@maneman/web-kit/dates";
 import { firstNameOf } from "../lib/names.ts";

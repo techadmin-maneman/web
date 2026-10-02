@@ -1,12 +1,12 @@
 // Board C4, the landing's confirmations: the consultation booked (or asked for, while self-serve booking is off),
 // the number on a waitlist, and the invite that has expired for this friend. The booked one says the same to every
-// number, since whoever typed it may not be its owner: the details go to the number on WhatsApp, and the client app
-// shows them once its owner signs in with a code (src/policy/site-booking.ts).
+// number, since whoever typed it may not be its owner (src/policy/site-booking.ts): the details go to the number on
+// WhatsApp, and the client app shows them once its owner signs in with a code.
 
 import { ICONS } from "@maneman/brand/icons";
 import { referral } from "../../content/referral.ts";
 import type { ReferralConsultation, ReferralReward, ReferralWaitlist } from "../../lib/api.ts";
-import { signInLink } from "../../lib/app-link.ts";
+import { clientAppOrigin, signInLink } from "../../lib/app-link.ts";
 import { ENVIRONMENT } from "../../lib/build.ts";
 import { fill } from "../../lib/text.ts";
 import { Icon } from "../Drawings.tsx";
@@ -35,13 +35,22 @@ function Expired(props: { reward: ReferralReward | null }) {
   );
 }
 
+/**
+ * Opens the app's sign-in with the number filled in. The number is added only as the link is followed, so no
+ * analytics tag that reads the page's links ever sees it. A click asking for a new tab opens the plain sign-in.
+ */
+function openApp(event: MouseEvent, appOrigin: string, mobile: string): void {
+  const plainClick = event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
+  if (!plainClick) return;
+  event.preventDefault();
+  window.location.assign(signInLink(appOrigin, mobile));
+}
+
 export function Booked(props: { booking: Booking; reward: ReferralReward | null; heading: HeadingRef }) {
   const { result, mobile } = props.booking;
-  const asked = result.state === "requested";
-  const copy = asked ? referral.requested : referral.booked;
+  const copy = result.state === "requested" ? referral.requested : referral.booked;
   const credits = result.credits ? referral.booked.credits(props.reward) : null;
-  // A request's hour is not fixed yet, so there is nothing in the app to see.
-  const app = asked ? null : signInLink(ENVIRONMENT, mobile);
+  const app = clientAppOrigin(ENVIRONMENT);
   return (
     <section class={styles.done}>
       <div class={`${styles.doneBlock} on-ink`}>
@@ -58,7 +67,13 @@ export function Booked(props: { booking: Booking; reward: ReferralReward | null;
         {app !== null && <p class={styles.doneNote}>{referral.booked.appHint}</p>}
         <div class={styles.doneActions}>
           {app !== null && (
-            <a class="btn btn--lg btn--ink" href={app}>
+            <a
+              class="btn btn--lg btn--ink"
+              href={app}
+              onClick={(event) => {
+                openApp(event, app, mobile);
+              }}
+            >
               {referral.booked.app}
             </a>
           )}
