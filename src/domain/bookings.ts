@@ -63,7 +63,6 @@ export interface ConfirmOptions {
 interface HoldRow {
   id: string;
   person_id: string;
-  person_name: string;
   type: VisitType;
   tier: string;
   /** The length it was held for; null for a hold made before services had lengths. */
@@ -104,12 +103,12 @@ interface HoldRow {
 async function holdOf(db: D1Database, holdId: string): Promise<HoldRow | null> {
   return db
     .prepare(
-      `SELECT h.id, h.person_id, p.name AS person_name, h.type, h.tier, h.minutes, s.name AS service_name, h.date,
+      `SELECT h.id, h.person_id, h.type, h.tier, h.minutes, s.name AS service_name, h.date,
               h.start_unit, h.technician_id, t.fsm_id AS technician_fsm_id, h.amount, h.state, h.expires_at,
               h.grace_seconds, h.confirmed_at, h.razorpay_order_id, h.appointment_id, h.moves_appointment_id, h.move_kind,
               h.use_credit, h.one_visit, h.fsm_tried_at, h.fsm_work_order_id, h.fsm_appointment_id, h.fsm_held_at, h.queued_at,
               h.refunded_at, h.pincode, sp.city
-       FROM slot_holds h JOIN technicians t ON t.id = h.technician_id JOIN people p ON p.id = h.person_id
+       FROM slot_holds h JOIN technicians t ON t.id = h.technician_id
        LEFT JOIN serviceable_pincodes sp ON sp.pincode = h.pincode
        LEFT JOIN services s ON s.kind = h.type AND s.tier = h.tier
        WHERE h.id = ?1`,
@@ -510,8 +509,9 @@ async function appointmentFor(
   return id;
 }
 
+/** The service, and never the client's name: FSM's contact holds that, and an erasure blanks it there. */
 const summaryOf = (hold: HoldRow, labelAsTest: boolean) =>
-  `${labelAsTest ? "Staging test: " : ""}${hold.service_name ?? FSM_SERVICE_NAMES[hold.type]} for ${hold.person_name}`;
+  `${labelAsTest ? "Staging test: " : ""}${hold.service_name ?? FSM_SERVICE_NAMES[hold.type]}`;
 
 async function keepWorkOrder(db: D1Database, holdId: string, workOrderId: string): Promise<void> {
   await db.prepare("UPDATE slot_holds SET fsm_work_order_id = ?2 WHERE id = ?1").bind(holdId, workOrderId).run();

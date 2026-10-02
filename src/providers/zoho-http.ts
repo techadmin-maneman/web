@@ -74,10 +74,17 @@ export interface ZohoRequesterDependencies {
 }
 
 /** A write: JSON for a module call, or multipart for a file upload. */
-export type ZohoWrite = { method: "POST" | "PUT"; body: unknown } | { method: "POST"; form: FormData };
+export type ZohoWrite =
+  | { method: "POST" | "PUT"; body: unknown }
+  | { method: "POST"; form: FormData }
+  | { method: "DELETE" };
 
-/** A write's body: a multipart form as it is, which sets its own Content-Type, or JSON. */
-const bodyOf = (write: ZohoWrite): FormData | string => ("form" in write ? write.form : JSON.stringify(write.body));
+/** A write's body: a multipart form as it is, which sets its own Content-Type, JSON, or none for a delete. */
+function bodyOf(write: ZohoWrite): FormData | string | undefined {
+  if ("form" in write) return write.form;
+  if ("body" in write) return JSON.stringify(write.body);
+  return undefined;
+}
 
 /** One authorised call to a path on the API host. A failed one throws a ZohoError. */
 export type ZohoRequest = (step: string, path: string, write?: ZohoWrite) => Promise<Response>;

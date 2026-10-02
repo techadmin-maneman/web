@@ -289,6 +289,14 @@ export interface FsmProvider {
   /** Anonymises an erased client's contact: name, numbers, e-mail and street; the city stays for the records. */
   eraseContact(contactId: string): Promise<void>;
   /**
+   * Blanks an erased client's work order: a summary with no name, ending with the booking's reference where one made
+   * it, and "Erased" for the street of its service and billing addresses, whose city and pincode stay. Nothing for one
+   * FSM no longer holds.
+   */
+  eraseWorkOrder(workOrderId: string, summary: string, bookingReference: string | null): Promise<void>;
+  /** The same for an appointment: its summary, and the street of its service address. */
+  eraseAppointment(appointmentId: string, summary: string): Promise<void>;
+  /**
    * Writes the client's note on an appointment, over the one written before, so FSM holds only the latest. An empty
    * note blanks it, since FSM's API deletes no note; one never written stays unwritten.
    */
@@ -379,6 +387,8 @@ export interface StubFsm extends FsmProvider {
     readonly cancelled: { workOrderId: string; note: string }[];
     readonly invoiced: string[];
     readonly erased: string[];
+    readonly erasedWorkOrders: { workOrderId: string; summary: string; bookingReference: string | null }[];
+    readonly erasedAppointments: { appointmentId: string; summary: string }[];
     readonly contactUpdates: ({ contactId: string } & FsmContactUpdate)[];
     readonly assets: NewFsmAsset[];
     readonly assetUpdates: { assetId: string; status?: string }[];
@@ -433,7 +443,10 @@ export type StubFsmStep =
   | "rescheduleVisit"
   | "invoiceWorkOrder"
   | "updateContact"
-  | "writeClientNote";
+  | "writeClientNote"
+  | "eraseContact"
+  | "eraseWorkOrder"
+  | "eraseAppointment";
 
 /**
  * Local and test stand-in: answers from the world it is given, and reaches nothing. What is written stays with it,
@@ -448,6 +461,8 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
     cancelled: [] as { workOrderId: string; note: string }[],
     invoiced: [] as string[],
     erased: [] as string[],
+    erasedWorkOrders: [] as { workOrderId: string; summary: string; bookingReference: string | null }[],
+    erasedAppointments: [] as { appointmentId: string; summary: string }[],
     contactUpdates: [] as ({ contactId: string } & FsmContactUpdate)[],
     assets: [] as NewFsmAsset[],
     assetUpdates: [] as { assetId: string; status?: string }[],
@@ -711,7 +726,18 @@ export function createStubFsm(world: StubFsmWorld = EMPTY_FSM): StubFsm {
       return Promise.resolve();
     },
     eraseContact: (contactId) => {
+      checkFailure("eraseContact");
       made.erased.push(contactId);
+      return Promise.resolve();
+    },
+    eraseWorkOrder: (workOrderId, summary, bookingReference) => {
+      checkFailure("eraseWorkOrder");
+      made.erasedWorkOrders.push({ workOrderId, summary, bookingReference });
+      return Promise.resolve();
+    },
+    eraseAppointment: (appointmentId, summary) => {
+      checkFailure("eraseAppointment");
+      made.erasedAppointments.push({ appointmentId, summary });
       return Promise.resolve();
     },
     writeClientNote: (appointmentId, note) => {
@@ -749,6 +775,8 @@ function createUnconnectedFsm(): FsmProvider {
     cancelVisit: off,
     invoiceWorkOrder: off,
     eraseContact: off,
+    eraseWorkOrder: off,
+    eraseAppointment: off,
     writeClientNote: off,
     assets: off,
     createAsset: off,
