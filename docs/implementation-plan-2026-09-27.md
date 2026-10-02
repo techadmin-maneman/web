@@ -61,18 +61,18 @@ Section B listed the three builds under way on 27 September 2026; all three are 
 
 In the order they are best built. The owner's standing rule, which was the first, is built (section A); several pieces here add settings to what it built.
 
-| #   | Piece                                                                                                                                        | Answer             | Size | Waits on                            |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | ---- | ----------------------------------- |
-| C4  | **The booking's work order carries its Request**, so FSM moves the Request on                                                                | Item 33            | S    | Tried on staging first              |
-| C5  | **The CRM's customer.** The Lead marked "Client" at the first completed first fit; the Contacts write and the Contacts erasure in one change | Items 20 and 21    | M    | The owner's Contacts token; item 22 |
-| C6  | **Staging's records out of the org.** A script listing every staging-marked record in FSM and Books, with a second run deleting them         | Items 19 and 155   | M    | The owner's review of the list      |
-| C11 | **A move goes to every client on WhatsApp**, and "Call about a move" only for a message that fails                                           | ADR 0025, item 45  | S    | Counsel (item 41)                   |
-| C13 | **A consultation takes the before photographs only**                                                                                         | Item 69            | S    | Counsel on the consent              |
-| C16 | **The client's note written to FSM**, once tried on staging                                                                                  | Item 64            | S    | The proof                           |
-| C18 | **The flat or house number required**, in the site's form and the app, and written into FSM's service address                                | Items 45 and 150   | S    | Tried on staging (item 25)          |
-| C22 | **SMS as the login code's fallback**, through MSG91                                                                                          | Item 37            | M    | DLT                                 |
-| C24 | **Live capture.** `createOrder` sets the capture itself, or live mode's automatic capture is confirmed                                       | Item 154           | S    | Razorpay live                       |
-| C25 | **The switches, at the apps' release**: `FSM_CATALOGUE_PUSH` production, `CRM_ORG_HAS_REFERRAL_FIELDS`, `SELF_SERVE_BOOKING`, the providers  | Items 8, 11 and 34 | S    | Their proofs                        |
+| #   | Piece                                                                                                                                        | Answer             | Size | Waits on                                                                           |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | ---- | ---------------------------------------------------------------------------------- |
+| C4  | **The booking's work order carries its Request**, so FSM moves the Request on                                                                | Item 33            | S    | Tried on staging first                                                             |
+| C5  | **The CRM's customer.** The Lead marked "Client" at the first completed first fit; the Contacts write and the Contacts erasure in one change | Items 20 and 21    | M    | The owner's Contacts token; item 22                                                |
+| C6  | **Staging's records out of the org.** A script listing every staging-marked record in FSM and Books, with a second run deleting them         | Items 19 and 155   | M    | Built and run 1 October 2026; a last run before production connects FSM (item 155) |
+| C11 | **A move goes to every client on WhatsApp**, and "Call about a move" only for a message that fails                                           | ADR 0025, item 45  | S    | Counsel (item 41)                                                                  |
+| C13 | **A consultation takes the before photographs only**                                                                                         | Item 69            | S    | Counsel on the consent                                                             |
+| C16 | **The client's note written to FSM**, once tried on staging                                                                                  | Item 64            | S    | The proof                                                                          |
+| C18 | **The flat or house number required**, in the site's form and the app, and written into FSM's service address                                | Items 45 and 150   | S    | Tried on staging (item 25)                                                         |
+| C22 | **SMS as the login code's fallback**, through MSG91                                                                                          | Item 37            | M    | DLT                                                                                |
+| C24 | **Live capture.** `createOrder` sets the capture itself, or live mode's automatic capture is confirmed                                       | Item 154           | S    | Razorpay live                                                                      |
+| C25 | **The switches, at the apps' release**: `FSM_CATALOGUE_PUSH` production, `CRM_ORG_HAS_REFERRAL_FIELDS`, `SELF_SERVE_BOOKING`, the providers  | Items 8, 11 and 34 | S    | Their proofs                                                                       |
 
 ## D. Owed before the site's release
 
