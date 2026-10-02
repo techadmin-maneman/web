@@ -195,8 +195,13 @@ export interface paths {
                             referrer?: string;
                             landing_path?: string;
                         };
-                        /** @description The code of an invite this browser opened in the last 30 days. One we do not have, or not shaped like a code, is ignored: the booking goes ahead without an invite. */
+                        /** @description The code of an invite this browser opened in the last 30 days. One sent without invite_told, one we do not have, or one not shaped like a code, is ignored: the booking goes ahead without an invite. */
                         invite_code?: string;
+                        /**
+                         * @description true: beside the invite, the form said that whoever sent it is told when the friend is fitted, and offered to go on without it. The attribution records it.
+                         * @enum {boolean}
+                         */
+                        invite_told?: true;
                         /** Format: date */
                         date: string;
                         /** @enum {string} */
@@ -328,8 +333,13 @@ export interface paths {
                             referrer?: string;
                             landing_path?: string;
                         };
-                        /** @description The code of an invite this browser opened in the last 30 days. One we do not have, or not shaped like a code, is ignored: the booking goes ahead without an invite. */
+                        /** @description The code of an invite this browser opened in the last 30 days. One sent without invite_told, one we do not have, or one not shaped like a code, is ignored: the booking goes ahead without an invite. */
                         invite_code?: string;
+                        /**
+                         * @description true: beside the invite, the form said that whoever sent it is told when the friend is fitted, and offered to go on without it. The attribution records it.
+                         * @enum {boolean}
+                         */
+                        invite_told?: true;
                         /**
                          * @description "You may contact me about this request." Required.
                          * @enum {boolean}
@@ -570,6 +580,11 @@ export interface paths {
                         name: string;
                         mobile: string;
                         turnstile_token: string;
+                        /**
+                         * @description true: the form said that whoever sent the invite is told when the friend is fitted. The attribution records it; the invite applies either way.
+                         * @enum {boolean}
+                         */
+                        invite_told?: true;
                         /** @description A six-digit Indian pincode. */
                         pincode: string;
                         /** Format: date */
@@ -686,6 +701,11 @@ export interface paths {
                         name: string;
                         mobile: string;
                         turnstile_token: string;
+                        /**
+                         * @description true: the form said that whoever sent the invite is told when the friend is fitted. The attribution records it; the invite applies either way.
+                         * @enum {boolean}
+                         */
+                        invite_told?: true;
                         /** @description A six-digit Indian pincode. */
                         pincode: string;
                         /**
