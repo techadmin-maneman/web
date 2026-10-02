@@ -4183,6 +4183,38 @@ Request body:
         }
       ],
       "description": "The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07)."
+    },
+    "discount_code": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "amount_off": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "In paise before GST; null where the visit's price was not yet known."
+            }
+          },
+          "required": [
+            "code",
+            "amount_off"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The discount code the visit was paid with; null for none, and on a late fee."
     }
   },
   "required": [
@@ -4200,7 +4232,8 @@ Request body:
     "refunded_amount",
     "purpose",
     "charge",
-    "no_show"
+    "no_show",
+    "discount_code"
   ],
   "additionalProperties": false
 }
@@ -4723,6 +4756,38 @@ Request body:
       ],
       "description": "The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07)."
     },
+    "discount_code": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "amount_off": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "In paise before GST; null where the visit's price was not yet known."
+            }
+          },
+          "required": [
+            "code",
+            "amount_off"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The discount code the visit was paid with; null for none, and on a late fee."
+    },
     "documents": {
       "type": "object",
       "properties": {
@@ -4774,6 +4839,7 @@ Request body:
     "purpose",
     "charge",
     "no_show",
+    "discount_code",
     "documents"
   ],
   "additionalProperties": false

@@ -1758,6 +1758,15 @@ export interface components {
                 url: string | null;
                 paid: boolean;
             } | null;
+            /** @description On a one visit, the discount code already on it, so the outcome step asks for none; never what it takes off. Null on any other visit, and on a one visit with no code. */
+            discount_code: {
+                code: string;
+                /**
+                 * @description client: as they booked; ops: on the booking in the console; technician: at the visit.
+                 * @enum {string}
+                 */
+                given_by: "client" | "technician" | "ops";
+            } | null;
             /** @description The client's hair profile as it stands, for the piece card and for the profile step to start from. Null until the day before the visit, or before one is recorded. */
             profile: components["schemas"]["HairProfile"] | null;
         };
