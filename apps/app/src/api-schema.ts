@@ -2653,7 +2653,12 @@ export interface components {
                 tier: string | null;
                 /**
                  * Format: date
-                 * @description India's day it falls due: the last visit's day and the cadence; tomorrow once passed.
+                 * @description India's day it fell or falls due: a service's from the last visit and the cadence, a replacement's the piece's own. Before `date`, it has passed.
+                 */
+                due_on: string;
+                /**
+                 * Format: date
+                 * @description India's day it is offered on: the day it falls due, or tomorrow once that has passed.
                  */
                 date: string;
                 /** @description The last visit's window, where this kind of visit can start in it. */
@@ -2685,7 +2690,7 @@ export interface components {
                 types: ("consultation" | "first_fit" | "service" | "replacement")[];
                 /** @description Every service of those kinds offered and priced now, a kind at a time, in the console's order. A first fit's are the hair systems ops offer; with none, a first fit cannot be booked yet. */
                 services: components["schemas"]["OfferedService"][];
-                /** @description What the app offers next, with nothing booked, for the booking sheet to open with: the first fit once the consultation is done, from the lead time and in the window the site's request asked for; or the next service on its due day, in the last visit's window, or the replacement where the piece falls due first (ADR 0086). */
+                /** @description What the app offers next, with nothing booked, for the booking sheet to open with: the first fit once the consultation is done, from the lead time and in the window the site's request asked for; or the next service on its due day, in the last visit's window, or the replacement where the piece falls due first, on the earlier of its own due day and the service's (ADR 0086). */
                 next: {
                     /** @enum {string} */
                     type: "first_fit" | "service" | "replacement";
@@ -2693,7 +2698,12 @@ export interface components {
                     tier: string | null;
                     /**
                      * Format: date
-                     * @description India's day it is offered on.
+                     * @description India's day it fell or falls due: a service's from the last visit and the cadence, a replacement's the piece's own, a first fit's from the consultation and the lead time.
+                     */
+                    due_on: string;
+                    /**
+                     * Format: date
+                     * @description India's day it is offered on: the day it falls due, or tomorrow once that has passed.
                      */
                     date: string;
                     window: ("morning" | "afternoon" | "evening") | null;

@@ -181,8 +181,12 @@ export const home = {
       window === null
         ? `Your next ${what.toLowerCase()} is due on ${date}.`
         : `Your next ${what.toLowerCase()} is due on ${date}, in the ${window.toLowerCase()}.`,
+    /** Once its due day has passed: "Your service visit was due on Thu 24 Sep." */
+    wasDue: (what: string, date: string) => `Your ${what.toLowerCase()} was due on ${date}.`,
     /** PLACEHOLDER: the booking sheet, with the day and window chosen. */
     bookNext: "Book it for then",
+    /** The booking sheet at the day offered, once the due day has passed: "Book it for Sat 3 Oct". */
+    bookOn: (date: string) => `Book it for ${date}`,
     /** PLACEHOLDER: the booking sheet, at the replacement. */
     bookReplacement: "Book the replacement",
     involves: "See what that involves",

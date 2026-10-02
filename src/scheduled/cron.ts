@@ -12,9 +12,10 @@
 // calls to D1, R2 and the queues are a separate allowance of 1,000 a run, kept
 // by each job's batch sizes (docs/decisions/0093-the-storage-meter.md).
 
+import { fieldRecord } from "../config/field-record.ts";
 import type { Dependencies } from "../dependencies.ts";
 import { resolveAskedWindows } from "../domain/asked-windows.ts";
-import { requeueUnbookedHolds } from "../domain/bookings.ts";
+import { bookUnbookedHolds, requeueUnbookedHolds } from "../domain/bookings.ts";
 import { syncBooks, type BooksSyncOptions } from "../domain/books-sync.ts";
 import { finishRun, startRun } from "../domain/cron-runs.ts";
 import { alertAgedDeletions } from "../domain/deletion.ts";
@@ -115,9 +116,15 @@ async function sweepJob({ env, deps, config, log, budget }: CronContext): Promis
 
 /**
  * Holds paid for, or booked free, and neither booked nor refunded: one the queue lost goes back on it half an hour on,
- * and one FSM has refused five times running as often and for as long as ops set.
+ * and one FSM has refused five times running as often and for as long as ops set. Where our own database holds the
+ * record, each is booked here instead.
  */
-async function unbookedHoldsJob({ env, deps, log, budget, inputs }: CronContext): Promise<void> {
+async function unbookedHoldsJob(context: CronContext): Promise<void> {
+  if (fieldRecord(context.config.providers) === "ours") {
+    await bookUnbookedHoldsJob(context);
+    return;
+  }
+  const { env, deps, log, budget, inputs } = context;
   const now = deps.now();
   const requeued = await requeueUnbookedHolds(
     env.DB,
@@ -128,6 +135,14 @@ async function unbookedHoldsJob({ env, deps, log, budget, inputs }: CronContext)
   if (!(await anyHeldBooking(env.DB))) return;
   const retried = await retryHeldBookings(env.DB, { queue: env.FSM_QUEUE, log }, now, (await inputs()).fsmRetry);
   if (retried > 0) log.info("held_bookings_retried", { count: retried });
+}
+
+async function bookUnbookedHoldsJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
+  const notify = (messageId: string) =>
+    env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: "unbooked-holds" } satisfies MessagingMessage);
+  const pass = { ...deps, notify, labelAsTest: config.environment !== "production", budget, log };
+  const booked = await bookUnbookedHolds(env.DB, pass, deps.now());
+  if (booked > 0) log.warn("unbooked_holds_booked", { count: booked });
 }
 
 async function erasedFilesJob({ env, deps, log }: CronContext): Promise<void> {
@@ -229,7 +244,7 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "sweeper", needs: "nothing", run: sweepJob },
   // A hold paid for and neither booked nor refunded half an hour on (docs/decisions/0068-a-paid-hold-is-kept.md), and
   // one FSM refused five times running, tried every hour for a day (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
-  { name: "unbooked_holds", needs: "fsm", run: unbookedHoldsJob },
+  { name: "unbooked_holds", needs: "nothing", run: unbookedHoldsJob },
   // What an erasure could not delete from R2 at the time (docs/decisions/0066-erasure-all-or-nothing.md).
   { name: "erased_files", needs: "nothing", run: erasedFilesJob },
   // The FSM mirror's repair (docs/decisions/0032-fsm-mirror.md).

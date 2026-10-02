@@ -55,7 +55,6 @@ import type { Logger } from "../log.ts";
 import type { SoldTerms } from "../policy/moving-a-visit.ts";
 import { bookingNeedsProof } from "../policy/number-proof.ts";
 import { ONE_VISIT_TERMS, ONE_VISIT_WINDOWS, type Plan } from "../policy/one-visit.ts";
-import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import type { Price } from "./price-book.ts";
 import { recordConsent } from "./consents.ts";
@@ -114,7 +113,7 @@ export type Checked =
 /** What booking from a form needs of the request it arrived in. */
 export interface FormRequest {
   readonly db: D1Database;
-  readonly queues: { readonly crm: Queue; readonly fsm: Queue; readonly messages: Queue };
+  readonly queues: { readonly crm: Queue; readonly messages: Queue };
   readonly log: Logger;
   readonly requestId: string;
   readonly now: Date;
@@ -126,6 +125,8 @@ export interface FormRequest {
   readonly provedNumber: (codeId: string | null, mobileE164: string) => Promise<boolean>;
   /** Sends a person's first address on to their FSM contact and CRM lead, as saving it in the app does. */
   readonly syncContact: (personId: string) => Promise<void>;
+  /** Sends a hold the form booked free to be booked (src/http/book-hold.ts). */
+  readonly bookHold: (holdId: string) => Promise<void>;
 }
 
 /** The person a form is from, and the writes that record them and the consent they gave on the page. */
@@ -392,7 +393,7 @@ export interface Booked {
  * where they apply.
  */
 export async function bookConsultation(form: FormRequest, request: ConsultationRequest): Promise<Booked | Refusal> {
-  const { db, log, requestId, now } = form;
+  const { db, log, now } = form;
 
   const first = addDays(indiaDate(now), 1);
   const pincode = await pincodeOf(db, request.pincode);
@@ -447,7 +448,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     ...(addressNotice === null ? [] : [addressNotice.statement]),
   ];
 
-  // A slot is held and FSM told only while self-serve booking is on and the day offers what was asked for;
+  // A slot is held and booked only while self-serve booking is on and the day offers what was asked for;
   // otherwise booking goes through WhatsApp, and what the person asked for waits for ops.
   const visit = form.selfServeBooking ? await siteVisit(db, request.plan, request.date) : null;
   let holdId: string | null = null;
@@ -473,7 +474,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     );
     if (hold === null) return { ok: false, status: 409, code: "taken" };
     holdId = hold.id;
-    await form.queues.fsm.send({ hold_id: hold.id, request_id: requestId } satisfies FsmSyncMessage);
+    await form.bookHold(hold.id);
   } else {
     const asked = { personId: person.id, pincode: request.pincode, date: request.date, window: request.window };
     const kept = { oneVisit, invite: request.invite, discountCode: code?.code ?? null, now };

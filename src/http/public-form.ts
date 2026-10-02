@@ -9,6 +9,7 @@ import { saltedHash } from "../lib/hash.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { toE164 } from "../lib/mobile.ts";
 import { skipsAddressLimits } from "../policy/staging-test-records.ts";
+import { bookHold } from "./book-hold.ts";
 import { queueContactSync } from "./contact-sync.ts";
 import type { AppEnv } from "./context.ts";
 import { provedNumber } from "./number-proof.ts";
@@ -48,7 +49,7 @@ async function checkPerson(c: Context<AppEnv>, mobile: string, token: string, na
 export function formRequest(c: Context<AppEnv>): FormRequest {
   return {
     db: c.env.DB,
-    queues: { crm: c.env.CRM_QUEUE, fsm: c.env.FSM_QUEUE, messages: c.env.MESSAGE_QUEUE },
+    queues: { crm: c.env.CRM_QUEUE, messages: c.env.MESSAGE_QUEUE },
     log: c.var.log,
     requestId: c.var.requestId,
     now: c.var.deps.now(),
@@ -56,5 +57,6 @@ export function formRequest(c: Context<AppEnv>): FormRequest {
     checkPerson: (mobile, token, name) => checkPerson(c, mobile, token, name),
     provedNumber: (codeId, mobileE164) => provedNumber(c, codeId, mobileE164),
     syncContact: (personId) => queueContactSync(c, personId),
+    bookHold: (holdId) => bookHold(c, holdId),
   };
 }
