@@ -104,13 +104,14 @@ describe("the publish gate, on what a referral earns", () => {
   const approved = Object.fromEntries(
     Object.entries(site.notices).map(([name, notice]) => [name, { ...notice, approved: true }]),
   );
+  const legalApproved = { privacy: { approved: true }, terms: { approved: true } };
 
   it("stops a count of visits typed into the landing", () => {
     const landing = {
       ...referral,
       booked: { ...referral.booked, credits: "The 3 service visits land when you are fitted." },
     };
-    expect(publishProblems(undefined, approved, [site, landing])).toEqual([
+    expect(publishProblems(undefined, approved, [site, landing], legalApproved)).toEqual([
       'a count of visits is typed by hand, "The 3 service visits land when you are fitted.": what a referral earns ' +
         "is set in the console (docs/decisions/0107-referral-rewards-in-the-console.md)",
     ]);
@@ -122,7 +123,7 @@ describe("the publish gate, on what a referral earns", () => {
     "The consultation is still free; the three service visits do not apply.",
   ])("stops a reward spelled out in words: %s", (typed) => {
     const landing = { ...referral, booked: { ...referral.booked, credits: typed } };
-    expect(publishProblems(undefined, approved, [site, landing])).toHaveLength(1);
+    expect(publishProblems(undefined, approved, [site, landing], legalApproved)).toHaveLength(1);
   });
 
   // The site's own words for a year of visits, and for the fit, are no reward.
@@ -132,10 +133,10 @@ describe("the publish gate, on what a referral earns", () => {
       hero: "Transformation and confidence, delivered in one visit.",
       cell: "One visit a month",
     };
-    expect(publishProblems(undefined, approved, [site, referral, words])).toEqual([]);
+    expect(publishProblems(undefined, approved, [site, referral, words], legalApproved)).toEqual([]);
   });
 
   it("finds none in the site or the landing as they are", () => {
-    expect(publishProblems(undefined, approved, [site, referral])).toEqual([]);
+    expect(publishProblems(undefined, approved, [site, referral], legalApproved)).toEqual([]);
   });
 });
