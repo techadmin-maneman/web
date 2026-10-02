@@ -3,7 +3,7 @@
 // days" of a refund begun eighteen days ago, were both untrue.
 
 import { describe, expect, it } from "vitest";
-import type { Entry, VisitDetail } from "../../apps/app/src/api.ts";
+import type { Entry, EntryDetail, VisitDetail } from "../../apps/app/src/api.ts";
 import { documentsOf, missingInvoice, refundIsLate } from "../../apps/app/src/payments/entry.ts";
 import { invoiceState } from "../../apps/app/src/lib/visit.ts";
 
@@ -49,16 +49,28 @@ const payment = (overrides: Record<string, unknown>) =>
   ({
     kind: "payment",
     date: "2030-09-10",
+    status: "captured",
     visit: { id: "v", date: "2030-09-19", type: "service" },
+    booking: null,
     purpose: "visit",
     charge: null,
     no_show: null,
+    documents: { invoice: null, receipt: null },
     ...overrides,
-  }) as unknown as Extract<Entry, { kind: "payment" }>;
+  }) as unknown as Extract<EntryDetail, { kind: "payment" }>;
+
+/** A first fit paid for a week ahead, not yet a visit: being booked, or refunded before it became one. */
+const booked = (underWay: boolean) =>
+  payment({ visit: null, booking: { type: "first_fit", date: "2030-09-19", under_way: underWay } });
 
 describe("a payment's invoice not yet raised", () => {
   it("is raised once the visit is done, which it is not yet", () => {
     expect(missingInvoice(payment({}), "2030-09-12")).toBe("invoiceAfterVisit");
+  });
+
+  // A prepaid first fit a week away said "The invoice is taking longer than it should" (MON-20).
+  it("comes after the visit for a booking still being made, which has no visit yet", () => {
+    expect(missingInvoice(booked(true), "2030-09-12")).toBe("invoiceAfterVisit");
   });
 
   it("is still generating on the visit's day and the day after, and late after that", () => {
@@ -79,6 +91,20 @@ describe("a payment's documents", () => {
     const charge = { change: "cancelled", at: "", visit_started_at: "", amount: 1 };
     expect(documentsOf(payment({ charge }))).toEqual(["receipt"]);
     expect(documentsOf(payment({ purpose: "late_fee" }))).toEqual(["receipt"]);
+  });
+
+  // A payment refunded in full offered "Tax invoice", which said it was taking longer than it should (MON-20).
+  it("are the receipt alone for a payment refunded in full, or a booking refunded before it became a visit", () => {
+    expect(documentsOf(payment({ status: "refunded" }))).toEqual(["receipt"]);
+    expect(documentsOf(booked(false))).toEqual(["receipt"]);
+    expect(documentsOf(payment({ status: "partially_refunded" }))).toEqual(["invoice", "receipt"]);
+    expect(documentsOf(booked(true))).toEqual(["invoice", "receipt"]);
+  });
+
+  it("keep an invoice already issued when the payment is later refunded in full under the guarantee", () => {
+    const invoiced = { invoice: "v", receipt: "p" };
+    expect(documentsOf(payment({ status: "refunded", documents: invoiced }))).toEqual(["invoice", "receipt"]);
+    expect(documentsOf(payment({ purpose: "late_fee", documents: invoiced }))).toEqual(["receipt"]);
   });
 });
 

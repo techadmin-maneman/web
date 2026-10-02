@@ -132,6 +132,9 @@ export const VISIT_TYPES = {
 // PLACEHOLDER: a visit whose FSM service item is none of the four.
 export const OTHER_VISIT = "Visit";
 
+/** A price's GST, beneath the amount charged once GST applies: "Rs. 30,000 + Rs. 5,400 GST". */
+export const gstSplit = (exGst: string, gst: string) => `${exGst} + ${gst} GST`;
+
 /**
  * While self-serve booking is off, booking, rescheduling and notes open WhatsApp to ops with a message ready
  * (docs/prompts/phase2-backend.md, "Booking"). PLACEHOLDER wording, all of it.
@@ -351,7 +354,6 @@ export const booking = {
     /** A first fit's choice, which is only ever one of the hair systems ops offer. */
     titleFirstFit: "Choose your hair system",
     free: "Free",
-    incl: (amount: string) => `${amount} incl. GST`,
     continue: "Continue",
   },
   /** PLACEHOLDER: no board draws it. A first fit while ops offer no hair system in the console. */
@@ -386,7 +388,6 @@ export const booking = {
   pay: {
     title: "Pay and confirm",
     held: (time: string) => `Slot held ${time}`,
-    incl: (amount: string) => `${amount} incl. GST`,
     freeUntil: (when: string) => `Free to move until ${when}. After that it is charged.`,
     // PLACEHOLDER: a booking ops set to cost nothing when changed late (docs/decisions/0088-every-policy-in-the-console.md).
     freeAnyTime: "Free to move or cancel at any time.",
@@ -436,7 +437,7 @@ export const booking = {
       label: "Discount code",
       apply: "Apply",
       applying: "Applying",
-      /** "Code TENOFF: Rs. 200 off", before GST, beneath the price. */
+      /** "Code TENOFF: Rs. 236 off", beneath the price: what it takes off the price shown, GST included. */
       applied: (code: string, off: string) => `Code ${code}: ${off} off`,
       remove: "Remove code",
       removing: "Removing",
@@ -452,13 +453,13 @@ export const booking = {
     },
   },
   /**
-   * Board C5's late-fee line, which C7 repeats word for word: the ex-GST figure, and the inclusive one after it,
+   * Board C5's late-fee line, which C7 repeats word for word: the amount charged, and its GST split after it,
    * muted, once GST applies.
    */
   lateFee: {
     /** The notice is the one the visit is sold under, which ops set: 24 hours to begin with. */
     costs: (amount: string, hours: number) => `Moving inside ${String(hours)} hours costs ${amount}`,
-    inclusive: (amount: string) => ` (${amount} incl. GST)`,
+    split: (split: string) => ` (${split})`,
     rest: ". The balance carries over.",
   },
   // PLACEHOLDER: said to a screen reader, once, a minute before the hold lapses.
@@ -735,7 +736,12 @@ export const payments = {
   back: "Back to payments",
   // PLACEHOLDER: an entry that paid for no visit we know of.
   payment: "Payment",
-  refundOf: (what: string) => `${what} · refund`,
+  refund: "Refund",
+  /** A refund as a WhatsApp asking for its voucher names it: "service visit refund on 2 Sep 2030". */
+  refundOf: (what: string) => `${what} refund`,
+  /** A refund's figure: money coming back, never another charge. */
+  moneyBack: (amount: string) => `+ ${amount}`,
+  backTo: (method: string) => `back to your ${method}`,
   // PLACEHOLDER: a late fee's name, and a charge's row; the evidence is the design's ("cancelled 9:14 am, visit
   // was 10 am"), with the dates when the two fall on different days.
   lateFeeOf: (what: string) => `${what} · late fee`,
@@ -782,7 +788,6 @@ export const payments = {
       return credits;
     },
   },
-  refundTo: (method: string) => `refund to ${method}`,
   /** A payment's status, and a refund's. */
   status: {
     captured: "Paid",
@@ -813,10 +818,15 @@ export const payments = {
     emi: ["EMI", "EMI"],
     paylater: ["pay later", "Pay later"],
   } as Readonly<Record<string, readonly [string, string]>>,
-  incl: (amount: string) => `${amount} incl.`,
-  including: (amount: string, percent: number) => `${amount} including GST at ${String(percent)}%`,
-  // PLACEHOLDER: the design draws a payment's rows; a refund's "Refunded to" is ours.
-  rows: { date: "Date", method: "Method", destination: "Refunded to", status: "Status", reference: "Reference" },
+  // PLACEHOLDER: the design draws a payment's rows; a refund's "Refunded to" and "For" are ours.
+  rows: {
+    date: "Date",
+    method: "Method",
+    destination: "Refunded to",
+    status: "Status",
+    reference: "Reference",
+    for: "For",
+  },
   documents: "Tax documents",
   invoice: "Tax invoice",
   /** Said to a screen reader only, since a document opens outside the app. */
