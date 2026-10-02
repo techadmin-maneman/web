@@ -2,8 +2,9 @@
 //
 // The look goes to WhatsApp only, and never to the site
 // (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md), so the gate comes
-// before the render: the claim is accepted once the photograph is uploaded,
-// and POST /api/tryon/generate refuses a job no claim has. A claim whose look
+// before the render: the claim is accepted once the photograph is uploaded and
+// a WhatsApp code has proved the number (src/routes/number-codes.ts), and
+// POST /api/tryon/generate refuses a job no claim has. A claim whose look
 // could not be sent is refused before anything is written. What a claim writes
 // is src/domain/tryon-claims.ts.
 
@@ -17,6 +18,7 @@ import { loadJob, type JobRow } from "../domain/tryon.ts";
 import { hadLookSince, leadOfOwnClaim, recordClaim, reserveJob } from "../domain/tryon-claims.ts";
 import { errorBody, errorResponse, type ErrorCode } from "../http/errors.ts";
 import { IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
+import { provedNumber } from "../http/number-proof.ts";
 import { visitorOf } from "../http/visitor.ts";
 import { saltedHash } from "../lib/hash.ts";
 import { DAY_MS } from "../lib/durations.ts";
@@ -24,6 +26,7 @@ import { indiaDate } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import { LOOK_PER_NUMBER_DAYS, undelivered } from "../policy/tryon-delivery.ts";
 import { heldBackByAllowlist, resultMessageCap } from "../queues/messaging.ts";
+import { NumberCodeIdSchema } from "./number-codes.ts";
 
 const AttributionSchema = z
   .object({
@@ -44,6 +47,7 @@ export const ClaimRequestSchema = z
     job_id: z.uuid(),
     name: z.string().trim().min(1).max(60),
     mobile: z.string().regex(INDIAN_MOBILE_PATTERN).openapi({ example: "98100 00000" }),
+    number_code_id: NumberCodeIdSchema,
     stage: z.enum(TRYON_STAGES).openapi({
       description: "The hair-loss stage the visitor picked: the lead's, and the one the look is made for.",
     }),
@@ -81,7 +85,10 @@ export const claimRoute = createRoute({
     201: { description: "Saved", content: { "application/json": { schema: ClaimResponseSchema } } },
     400: errorResponse("invalid_request: see error.fields"),
     404: errorResponse("not_found"),
-    403: errorResponse("look_limit_reached: this number had its look in the last thirty days"),
+    403: errorResponse(
+      "look_limit_reached: this number had its look in the last thirty days; number_not_proved: no WhatsApp code " +
+        "proved the number in the last 30 minutes",
+    ),
     409: errorResponse(
       "job_not_claimable: no photo was uploaded, its render was asked for already, or it is another number's; " +
         "idempotency_in_progress",
@@ -136,6 +143,9 @@ async function claim(c: Context<AppEnv>, request: z.infer<typeof ClaimRequestSch
   const gateNotice = request.notice_version ?? CURRENT_NOTICE.result_delivery;
   if (gateNotice !== CURRENT_NOTICE.result_delivery) {
     return { ok: false, status: 400, code: "invalid_request", fields: ["notice_version"] };
+  }
+  if (!(await provedNumber(c, request.number_code_id, mobileE164))) {
+    return { ok: false, status: 403, code: "number_not_proved" };
   }
 
   const job = await loadJob(db, request.job_id);

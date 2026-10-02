@@ -1,10 +1,10 @@
-// Visits (board C1): what is coming on ink, what has been done below, each
-// opening its own page (C9 for one done). A booking's consultation, not yet in
-// FSM, shows as the one upcoming. A visit FSM has not closed stays under
-// upcoming, saying it is under way or being closed, and "Book your next visit"
-// waits while it is. That opens WhatsApp to ops while self-serve booking is
-// off, and waits for the connection offline. "Prepaid" marks a visit paid for
-// ahead, or covered by a credit.
+// Visits (board C1): what is coming on ink, what has been done or cancelled
+// below, each opening its own page (C9 for one done). A booking's
+// consultation, not yet in FSM, shows as the one upcoming. A visit FSM has not
+// closed stays under upcoming, saying where it stands, and "Book your next
+// visit" waits while it is. That opens WhatsApp to ops while self-serve
+// booking is off, and waits for the connection offline. "Prepaid" marks a
+// visit paid for ahead, or covered by a credit.
 //
 // Beneath them, the client's own record, which the board draws nowhere: how
 // often they have been served, what they have bought, what they have paid, and
@@ -16,9 +16,9 @@ import { fullDate, listMonth, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { api, type Me, type VisitSummary, type Visits } from "../api.ts";
 import { BookNext } from "../booking/BookNext.tsx";
-import { home, VISIT_TYPES, visits, WINDOW_HOURS } from "../content.ts";
+import { VISIT_TYPES, visits, WINDOW_HOURS } from "../content.ts";
 import { AppLink, Shell } from "../home/Shell.tsx";
-import { hasBegun } from "../home/VisitCard.tsx";
+import { hasBegun, stageText } from "../home/VisitCard.tsx";
 import { CHEVRON } from "../icons.ts";
 import { technicianOf, visitName } from "../lib/visit.ts";
 import { useSession } from "../session.ts";
@@ -43,8 +43,8 @@ function UpcomingCard({ date, parts, prepaid }: { date: string; parts: readonly 
 
 /** A visit FSM has, which opens its own page; the window, or where one that has begun stands. */
 function Upcoming({ visit }: { visit: VisitSummary }) {
-  const when = visit.stage === "in_progress" || visit.stage === "closing" ? home.stages[visit.stage] : null;
-  const parts = [visitName(visit.type), when ?? WINDOW_HOURS[visit.window_label], ...technicianOf(visit)];
+  const when = stageText(visit) ?? WINDOW_HOURS[visit.window_label];
+  const parts = [visitName(visit.type), when, ...technicianOf(visit)];
   return (
     <li>
       <AppLink className={styles.card} to={`/visits/${visit.id}`}>
@@ -78,7 +78,6 @@ function Record({ history }: { history: Visits["history"] }) {
       {due !== null && (
         <div className={styles.due}>
           <p className={styles.dueLine}>{due.month < thisMonth ? copy.overdue(month) : copy.due(month)}</p>
-          <p className={styles.dueNote}>{copy.approximate}</p>
         </div>
       )}
       <dl className={styles.facts}>
@@ -92,6 +91,12 @@ function Record({ history }: { history: Visits["history"] }) {
       </dl>
     </section>
   );
+}
+
+/** A past visit's line: what it was and who did it, or that it was cancelled. */
+function pastLine(visit: VisitSummary): string {
+  const after = visit.status === "cancelled" ? [visits.cancelled] : technicianOf(visit);
+  return [visitName(visit.type), ...after].join(" · ");
 }
 
 function Fact({ label, value, note }: { label: string; value: string; note?: string }) {
@@ -139,9 +144,7 @@ function VisitList({ list, consultation }: { list: Visits; consultation: Me["con
                 <AppLink className={styles.row} to={`/visits/${visit.id}`}>
                   <span>
                     <span className={styles.rowDate}>{fullDate(visit.date)}</span>
-                    <span className={styles.rowWhat}>
-                      {[visitName(visit.type), ...technicianOf(visit)].join(" · ")}
-                    </span>
+                    <span className={styles.rowWhat}>{pastLine(visit)}</span>
                   </span>
                   <Icon className={styles.chevron} d={CHEVRON} size={17} />
                 </AppLink>
@@ -171,7 +174,7 @@ export function VisitsScreen() {
     >
       {whenLoaded(loaded, {
         loading: <Loading />,
-        failed: <PageFailed onRetry={retry} />,
+        failed: <PageFailed onRetry={retry} offlineLine={visits.offline} />,
         loaded: (list) => <VisitList list={list} consultation={me.consultation} />,
       })}
     </Shell>

@@ -35,25 +35,41 @@ const ROUTES: Answers = {
   "GET /api/discount-codes": json(DISCOUNT_CODES),
 };
 
-const PANELS = ["/settings", "/settings/prices", "/settings/discount-codes", "/settings/area", "/settings/blackouts"];
+const PANELS = ["/settings", "/prices", "/discount-codes", "/service-area", "/settings/blackouts"];
+
+/** The panels that were tabs of Settings and are now sections of their own departments, by their headings. */
+const OWN_SECTIONS: Readonly<Record<string, string>> = {
+  "/prices": "Prices",
+  "/discount-codes": "Discount codes",
+  "/service-area": "Service area",
+};
 
 async function open(page: Page, path = "/settings", extra: Answers = {}): Promise<void> {
   await answer(page, { ...ROUTES, ...extra });
   await page.goto(path);
-  await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: OWN_SECTIONS[path] ?? "Settings" })).toBeVisible();
 }
 
 const posted = (page: Page, path: string) =>
   page.waitForRequest((request) => request.url().endsWith(path) && request.method() === "POST");
 
 // The storage meter (docs/decisions/0093-the-storage-meter.md): one line above the tabs, which no board draws.
-test("says what the photographs and referral cards hold in R2, against their share", async ({ page }) => {
+test("says what the photographs and referral cards hold in R2, and the database against its limit", async ({
+  page,
+}) => {
   await open(page, "/settings", {
-    "GET /api/storage": json({ held_bytes: 1_240_000_000, share_bytes: 4e9, ceiling_bytes: 20e9 }),
+    "GET /api/storage": json({
+      held_bytes: 1_240_000_000,
+      share_bytes: 4e9,
+      ceiling_bytes: 20e9,
+      database_bytes: 212_000_000,
+      database_limit_bytes: 500e6,
+    }),
   });
   await expect(
     page.getByText("Photographs and referral cards hold 1.24 GB in R2, 31% of their 4 GB share."),
   ).toBeVisible();
+  await expect(page.getByText("The database holds 212 MB, 42% of the 500 MB the free plan allows.")).toBeVisible();
 });
 
 test.describe("the rules", () => {
@@ -290,7 +306,7 @@ test.describe("the services and their prices", () => {
   test("lists each kind's services with their length, whether FSM has them, and whether they are offered", async ({
     page,
   }) => {
-    await open(page, "/settings/prices");
+    await open(page, "/prices");
     for (const kind of ["Consultation", "First fit", "Service visit", "Replacement"]) {
       await expect(page.getByRole("heading", { level: 3, name: kind, exact: true })).toBeVisible();
     }
@@ -304,7 +320,7 @@ test.describe("the services and their prices", () => {
   test("marks the price in force, and the one still to come, in words, and folds the spent ones away", async ({
     page,
   }) => {
-    await open(page, "/settings/prices");
+    await open(page, "/prices");
     const visit = block(page, "Service visit");
     await expect(visit).toContainText("Now Rs. 2,000 + 18% GST, since 22 Sep 2026.");
     await expect(visit).toContainText("Rs. 2,500 + 18% GST from 1 Oct 2027");
@@ -315,15 +331,24 @@ test.describe("the services and their prices", () => {
 
   // OPS-15: GST opened at nought and the amount blank, whatever the item, so an 18% item was saved GST-free.
   test("starts a new price from the price in force, its GST included", async ({ page }) => {
-    await open(page, "/settings/prices");
+    await open(page, "/prices");
     await page.getByRole("button", { name: "Change the price of Service visit" }).click();
     await expect(page.getByLabel("Price before GST, in rupees")).toHaveValue("2000");
     await expect(page.getByLabel("GST", { exact: true })).toHaveValue("18");
   });
 
+  // MON-34: a new price once started from today, and changed what clients had been quoted that day.
+  test("starts a new price from tomorrow, and offers no earlier day", async ({ page }) => {
+    await open(page, "/prices");
+    await page.getByRole("button", { name: "Change the price of Service visit" }).click();
+    const from = page.getByLabel("Applies from");
+    await expect(from).toHaveValue("2027-09-22");
+    await expect(from).toHaveAttribute("min", "2027-09-22");
+  });
+
   test("shows the old price beside the new, and GST changing, before anything is sent", async ({ page }) => {
     let sent = 0;
-    await open(page, "/settings/prices", {
+    await open(page, "/prices", {
       "POST /api/prices": (route) => {
         sent += 1;
         return json({ prices: PRICE_ROWS })(route);
@@ -354,7 +379,7 @@ test.describe("the services and their prices", () => {
   });
 
   test("goes back to the form without sending when the change is not the one meant", async ({ page }) => {
-    await open(page, "/settings/prices");
+    await open(page, "/prices");
     await page.getByRole("button", { name: "Change the price of Service visit" }).click();
     await page.getByRole("button", { name: "Check the change" }).click();
     await page.getByRole("button", { name: "Change it" }).click();
@@ -362,18 +387,18 @@ test.describe("the services and their prices", () => {
     await expect(page.getByRole("button", { name: "Check the change" })).toBeEnabled();
   });
 
-  test("says a price cannot be back-dated when the API refuses the date", async ({ page }) => {
-    await open(page, "/settings/prices", {
+  test("says a price applies from tomorrow at the earliest when the API refuses the date", async ({ page }) => {
+    await open(page, "/prices", {
       "POST /api/prices": fails(400, "invalid_request", ["valid_from"]),
     });
     await page.getByRole("button", { name: "Change the price of Service visit" }).click();
     await page.getByRole("button", { name: "Check the change" }).click();
     await page.getByRole("group", { name: "Check the change" }).getByRole("button", { name: "Set this price" }).click();
-    await expect(page.getByRole("alert")).toContainText("applies from today or a day after it");
+    await expect(page.getByRole("alert")).toContainText("applies from tomorrow at the earliest");
   });
 
   test("says why a price for a retired service is refused", async ({ page }) => {
-    await open(page, "/settings/prices", { "POST /api/prices": fails(400, "service_retired", ["valid_from"]) });
+    await open(page, "/prices", { "POST /api/prices": fails(400, "service_retired", ["valid_from"]) });
     await page.getByRole("button", { name: "Change the price of Premium" }).click();
     await page.getByRole("button", { name: "Check the change" }).click();
     await page.getByRole("button", { name: "Set this price" }).click();
@@ -382,7 +407,7 @@ test.describe("the services and their prices", () => {
 
   test("takes back a price still to come, once asked", async ({ page }) => {
     const left = PRICE_ROWS.filter((price) => price.valid_from !== "2027-10-01");
-    await open(page, "/settings/prices", { "POST /api/prices/withdraw": json({ prices: left }) });
+    await open(page, "/prices", { "POST /api/prices/withdraw": json({ prices: left }) });
     await page.getByRole("button", { name: "Take back the Service visit price from 1 Oct 2027" }).click();
     const asked = page.getByRole("group", { name: /Take back the price from 1 Oct 2027/ });
     await expect(asked).toBeFocused();
@@ -395,7 +420,7 @@ test.describe("the services and their prices", () => {
   });
 
   test("corrects a price still to come in one go, from the day it had or another", async ({ page }) => {
-    await open(page, "/settings/prices", { "POST /api/prices/correct": json({ prices: PRICE_ROWS }) });
+    await open(page, "/prices", { "POST /api/prices/correct": json({ prices: PRICE_ROWS }) });
     await page.getByRole("button", { name: "Correct the Service visit price from 1 Oct 2027" }).click();
     await expect(page.getByLabel("Price before GST, in rupees")).toHaveValue("2500");
     await expect(page.getByLabel("Applies from")).toHaveValue("2027-10-01");
@@ -418,14 +443,17 @@ test.describe("the services and their prices", () => {
   });
 
   test("offers no way to take back or correct the price in force or a spent one", async ({ page }) => {
-    await open(page, "/settings/prices");
+    await open(page, "/prices");
     await expect(page.getByRole("button", { name: /^Take back/ })).toHaveCount(1);
     await expect(page.getByRole("button", { name: /^Correct/ })).toHaveCount(1);
   });
 
-  test("adds a service to a kind, its code made from its name and its length its kind's", async ({ page }) => {
-    await open(page, "/settings/prices", { "POST /api/services": json(SERVICES, 201) });
-    await page.getByRole("button", { name: "Add a service to First fit" }).click();
+  test("adds a hair system to the first fit, its code made from its name and its length its kind's", async ({
+    page,
+  }) => {
+    await open(page, "/prices", { "POST /api/services": json(SERVICES, 201) });
+    await expect(page.getByText("Clients book a first fit only as one of these hair systems")).toBeVisible();
+    await page.getByRole("button", { name: "Add a hair system" }).click();
     await page.getByLabel("Name", { exact: true }).fill("Thin skin");
     await expect(page.getByLabel("Code")).toHaveValue("thin_skin");
     await expect(page.getByLabel("Length, in minutes")).toHaveValue("180");
@@ -446,7 +474,7 @@ test.describe("the services and their prices", () => {
   });
 
   test("renames a service and says its code, and so its prices, stay", async ({ page }) => {
-    await open(page, "/settings/prices", { "POST /api/services/first_fit/premium/name": json(SERVICES) });
+    await open(page, "/prices", { "POST /api/services/first_fit/premium/name": json(SERVICES) });
     await page.getByRole("button", { name: "Rename Premium" }).click();
     await page.getByLabel("Name", { exact: true }).fill("Premium first fit");
     await page.getByRole("button", { name: "Check the change" }).click();
@@ -459,7 +487,7 @@ test.describe("the services and their prices", () => {
   });
 
   test("gives a service another length, inside what the day holds", async ({ page }) => {
-    await open(page, "/settings/prices", { "POST /api/services/first_fit/premium/length": json(SERVICES) });
+    await open(page, "/prices", { "POST /api/services/first_fit/premium/length": json(SERVICES) });
     await page.getByRole("button", { name: "Change the length of Premium" }).click();
     await expect(page.getByLabel("Length, in minutes")).toHaveAttribute("max", "360");
     await page.getByLabel("Length, in minutes").fill("300");
@@ -471,23 +499,23 @@ test.describe("the services and their prices", () => {
   });
 
   test("retires a service from a day, and says why a kind's last one stays", async ({ page }) => {
-    await open(page, "/settings/prices", {
-      "POST /api/services/first_fit/standard/retire": fails(409, "last_of_kind"),
+    await open(page, "/prices", {
+      "POST /api/services/replacement/standard/retire": fails(409, "last_of_kind"),
     });
-    await page.getByRole("button", { name: "Retire First fit" }).click();
+    await page.getByRole("button", { name: "Retire Replacement" }).click();
     await page.getByLabel("Clients stop seeing it from").fill("2027-10-01");
     await page.getByRole("button", { name: "Check the change" }).click();
     await expect(page.getByRole("group", { name: "Check the change" })).toContainText(
-      "Clients stop seeing First fit from 1 Oct 2027. Visits already sold stay as they were sold.",
+      "Clients stop seeing Replacement from 1 Oct 2027. Visits already sold stay as they were sold.",
     );
-    const request = posted(page, "/api/services/first_fit/standard/retire");
+    const request = posted(page, "/api/services/replacement/standard/retire");
     await page.getByRole("button", { name: "Save it" }).click();
     expect((await request).postDataJSON()).toEqual({ from: "2027-10-01" });
-    await expect(page.getByRole("alert")).toContainText("Each kind keeps one service that is never retired");
+    await expect(page.getByRole("alert")).toContainText("each keep one service that is never retired");
   });
 
   test("offers a retired service again, once asked", async ({ page }) => {
-    await open(page, "/settings/prices", { "POST /api/services/replacement/lace/restore": json(SERVICES) });
+    await open(page, "/prices", { "POST /api/services/replacement/lace/restore": json(SERVICES) });
     await page.getByRole("button", { name: "Restore Lace replacement" }).click();
     const asked = page.getByRole("group", { name: /Offer Lace replacement again/ });
     await expect(asked).toBeFocused();
@@ -498,7 +526,7 @@ test.describe("the services and their prices", () => {
   });
 
   test("moves a service up its kind, showing the new order before it is sent", async ({ page }) => {
-    await open(page, "/settings/prices", { "POST /api/services/first_fit/order": json(SERVICES) });
+    await open(page, "/prices", { "POST /api/services/first_fit/order": json(SERVICES) });
     await expect(page.getByRole("button", { name: "Move First fit up" })).toHaveCount(0);
     await page.getByRole("button", { name: "Move Premium up" }).click();
     const asked = page.getByRole("group", { name: "First fit: First fit, Premium → Premium, First fit." });
@@ -509,7 +537,7 @@ test.describe("the services and their prices", () => {
   });
 
   test("prices a late fee beside its kind, one figure a kind", async ({ page }) => {
-    await open(page, "/settings/prices");
+    await open(page, "/prices");
     const fee = block(page, "Late fee on a first fit");
     await expect(fee).toContainText("Now Rs. 4,000 + 0% GST, since 22 Sep 2026.");
     await fee.getByRole("button", { name: "Change the price of Late fee on a first fit" }).click();
@@ -521,7 +549,7 @@ test.describe("the service area", () => {
   const area = (page: Page, pincode: string) => page.getByRole("textbox", { name: `Area name for ${pincode}` });
 
   test("lists one city at a time, since 198 pincodes is not a page", async ({ page }) => {
-    await open(page, "/settings/area");
+    await open(page, "/service-area");
     await expect(page.getByRole("button", { name: "Delhi · 1 of 2" })).toBeVisible();
     await expect(area(page, "110017")).toHaveValue("Saket");
     // Gurgaon's pincode is not drawn until its city is chosen.
@@ -532,7 +560,7 @@ test.describe("the service area", () => {
   });
 
   test("sends only the pincodes that changed", async ({ page }) => {
-    await open(page, "/settings/area", {
+    await open(page, "/service-area", {
       "POST /api/service-area": json({ changed: 1, served: 1, alerted: 0 }),
     });
     await expect(page.getByRole("button", { name: "Save these pincodes" })).toBeDisabled();
@@ -548,7 +576,7 @@ test.describe("the service area", () => {
 
   // OPS-13: launch messages read "we now come to Sec91", with no way to say it better.
   test("sends a better name for an area, and refuses one a spreadsheet would run", async ({ page }) => {
-    await open(page, "/settings/area", {
+    await open(page, "/service-area", {
       "POST /api/service-area": json({ changed: 1, served: 1, alerted: 0 }),
     });
     await page.getByRole("button", { name: "Gurgaon · 0 of 1" }).click();
@@ -565,7 +593,7 @@ test.describe("the service area", () => {
   });
 
   test("fills a whole city in one press", async ({ page }) => {
-    await open(page, "/settings/area");
+    await open(page, "/service-area");
     await page.getByRole("button", { name: "Serve all of Delhi" }).click();
     await expect(page.getByRole("button", { name: "Delhi · 2 of 2" })).toBeVisible();
     await expect(page.getByRole("checkbox", { name: "Served 110024" })).toBeChecked();
@@ -573,7 +601,7 @@ test.describe("the service area", () => {
 
   // FEO-02: serving a pincode here sent none of the launch alerts the waitlist's launch sends.
   test("says who serving a pincode will message, and messages them only once ops agree", async ({ page }) => {
-    await open(page, "/settings/area", {
+    await open(page, "/service-area", {
       "POST /api/service-area": json({ changed: 1, served: 2, alerted: 3 }),
     });
     await page.getByRole("checkbox", { name: "Served 110024" }).check();
@@ -592,7 +620,7 @@ test.describe("the service area", () => {
   });
 
   test("says so when a change would leave nowhere served", async ({ page }) => {
-    await open(page, "/settings/area", {
+    await open(page, "/service-area", {
       "POST /api/service-area": fails(400, "no_service_area"),
     });
     await page.getByRole("checkbox", { name: "Served 110017" }).uncheck();
@@ -609,7 +637,7 @@ test.describe("the service area", () => {
 
   // FEO-01: the table kept the old values after an upload, and the next Save put them back.
   test("puts a file's changes in the table, so the one Save sends the file's values", async ({ page }) => {
-    await open(page, "/settings/area", {
+    await open(page, "/service-area", {
       "POST /api/service-area": json({ changed: 1, served: 2, alerted: 0 }),
     });
     await upload(page, "pincode,served,launch_on\n110017,yes,2026-09-01\n110024,no,2026-11-01\n");
@@ -630,7 +658,7 @@ test.describe("the service area", () => {
 
   // FEO-03: a file without its served column switched every pincode in it off.
   test("refuses a file that leaves out one of its three columns", async ({ page }) => {
-    await open(page, "/settings/area");
+    await open(page, "/service-area");
     await upload(page, "pincode,launch_on\n110017,2026-09-01\n");
     await expect(page.getByRole("alert")).toContainText("needs a pincode, a served and a launch_on column");
     await expect(page.getByRole("button", { name: "Put these in the table" })).toHaveCount(0);
@@ -725,7 +753,7 @@ test.describe("the discount codes", () => {
   test("lists each code with what it takes off, its limits, how far it is used and what it has given", async ({
     page,
   }) => {
-    await open(page, "/settings/discount-codes");
+    await open(page, "/discount-codes");
     const wedding = page.getByRole("listitem").filter({ hasText: "WEDDNG25" });
     await expect(wedding).toContainText("Takes off 25%, at most Rs. 5,000 before GST");
     await expect(wedding).toContainText("Until Fri 31 Dec, the last day");
@@ -738,7 +766,7 @@ test.describe("the discount codes", () => {
   });
 
   test("makes a code ops typed only once they have read what it takes off", async ({ page }) => {
-    await open(page, "/settings/discount-codes", { "POST /api/discount-codes": made(["DIWALI"]) });
+    await open(page, "/discount-codes", { "POST /api/discount-codes": made(["DIWALI"]) });
     const form = page.getByRole("form", { name: "Make codes" });
     const check = form.getByRole("button", { name: "Check" });
     await expect(check).toBeDisabled();
@@ -767,7 +795,7 @@ test.describe("the discount codes", () => {
   });
 
   test("generates a batch of single-use codes, an amount off each", async ({ page }) => {
-    await open(page, "/settings/discount-codes", { "POST /api/discount-codes": made(["A2B3C4D5", "E6F7G8H9"]) });
+    await open(page, "/discount-codes", { "POST /api/discount-codes": made(["A2B3C4D5", "E6F7G8H9"]) });
     const form = page.getByRole("form", { name: "Make codes" });
     await form.getByLabel("The code").selectOption({ label: "Generate them" });
     await form.getByLabel("How many").fill("2");
@@ -794,7 +822,7 @@ test.describe("the discount codes", () => {
   });
 
   test("says why the API refused a code, of the box it refused", async ({ page }) => {
-    await open(page, "/settings/discount-codes", {
+    await open(page, "/discount-codes", {
       "POST /api/discount-codes": fails(400, "invalid_request", ["code"]),
     });
     const form = page.getByRole("form", { name: "Make codes" });
@@ -812,7 +840,7 @@ test.describe("the discount codes", () => {
     const [wedding] = DISCOUNT_CODES.codes;
     if (wedding === undefined) throw new Error("the fixture has no code");
     const off = `POST /api/discount-codes/${wedding.id}/off` as const;
-    await open(page, "/settings/discount-codes", { [off]: empty() });
+    await open(page, "/discount-codes", { [off]: empty() });
     await page.getByRole("button", { name: "Switch off WEDDNG25" }).click();
     const panel = page.getByRole("group", { name: "Switch off WEDDNG25?" });
     await expect(panel).toContainText("No booking takes it from now on. 3 bookings keep it, as sold.");

@@ -1,9 +1,8 @@
-// What a late change costs, as the client app's booking sheet says it (apps/app/src/booking/late-change.ts): the pay
-// step's promise, and the days the date picker marks.
+// What a late change costs, as the client app's booking and move sheets say it (apps/app/src/booking/late-change.ts).
 
 import { describe, expect, it } from "vitest";
-import type { Availability, Hold, MoveTerms } from "../../apps/app/src/api.ts";
-import { atStake, dayInsideNotice, insideNotice } from "../../apps/app/src/booking/late-change.ts";
+import type { Hold, MoveTerms } from "../../apps/app/src/api.ts";
+import { atStake, insideNotice, moveButton } from "../../apps/app/src/booking/late-change.ts";
 
 const NOW = Date.parse("2026-10-02T04:50:00Z"); // 10:20 on Friday 2 October in India
 
@@ -54,24 +53,18 @@ describe("the pay step's promise", () => {
   });
 });
 
-describe("the date picker", () => {
-  type Day = Availability["days"][number];
-  const day = (windows: { with: "regular" | "another" | null; change_charged: boolean }[]) =>
-    ({ date: "2026-10-03", windows }) as unknown as Day;
-
-  it("marks a day with an open window inside the notice", () => {
-    expect(dayInsideNotice(day([{ with: "regular", change_charged: true }]))).toBe(true);
-    expect(dayInsideNotice(day([{ with: "another", change_charged: false }]))).toBe(false);
+describe("the move sheet's button (MON-33, BK-16, UX-06, CP-05)", () => {
+  it("only picks a new date for a consultation inside the notice, which moves free", () => {
+    expect(moveButton({ cost: "free" })).toBe("Pick a new date");
   });
 
-  it("leaves a full window out of the mark, since it cannot be booked", () => {
-    expect(
-      dayInsideNotice(
-        day([
-          { with: null, change_charged: true },
-          { with: "regular", change_charged: false },
-        ]),
-      ),
-    ).toBe(false);
+  it("only picks a new date for a one visit inside the notice, whose payment carries over", () => {
+    const oneVisit = { ...MOVE, notice: "late", paid: 2900000 } as MoveTerms;
+    expect(moveButton(oneVisit)).toBe("Pick a new date");
+  });
+
+  it("accepts the charge where the move costs a late fee or the visit", () => {
+    expect(moveButton({ cost: "late_fee" })).toBe("Move and accept charge");
+    expect(moveButton({ cost: "charged" })).toBe("Move and accept charge");
   });
 });

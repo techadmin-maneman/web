@@ -7,8 +7,7 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  min-height: 100dvh;
-  padding: var(--sp-48) var(--sp-24) var(--sp-28);
+  padding: var(--sp-48) var(--sp-24) calc(var(--sp-28) + env(safe-area-inset-bottom));
   background: var(--ink-deep);
 }
 

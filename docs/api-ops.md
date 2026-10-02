@@ -433,6 +433,110 @@ Give back a booking FSM would not take: its work order cancelled, its payment re
 }
 ```
 
+### GET /api/visits/availability
+
+A client's windows for a kind of visit over 14 days, and who is free in each
+
+**200**: Each day's windows
+
+```json
+{
+  "$ref": "#/components/schemas/OpsAvailability"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such client, or one who has been erased
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**422**: not_bookable: the kind offers no such service; no_product: a first fit, with no hair system on sale
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/visits
+
+Book a visit for a client: at once when nothing is paid at booking, else by a payment link
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/VisitToBook"
+}
+```
+
+**201**: Booked, on its way, or waiting for the link to be paid
+
+```json
+{
+  "$ref": "#/components/schemas/OpsBooking"
+}
+```
+
+**400**: invalid_request: a one visit that is not a first fit, or in the evening
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such client, or one who has been erased
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: taken: nobody chosen is free in that window now; already_booked: a consultation or first fit is still to come, or a payment link for one is open; terms_changed: the client's last credit went on another booking a moment before
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**422**: not_bookable: the day, the kind or the service cannot be booked; no_product: a first fit, with no hair system on sale that day; code_not_applicable: the code does not apply to this booking
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**503**: unavailable: Razorpay could not make the payment link, so nothing is held
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/clients/{id}/referral
 
 Attach an invite to a client who booked away from its page, with the reason
@@ -1187,7 +1291,8 @@ Who is waiting, by pincode, the longest wait first
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The area's name once ops have named it; null until then, and for a pincode we do not know."
           },
           "city": {
             "anyOf": [
@@ -1639,7 +1744,7 @@ Request body:
 }
 ```
 
-**403**: access_required
+**403**: access_required, or not_permitted: waiving asks Finance MANAGE
 
 ```json
 {
@@ -1685,7 +1790,7 @@ A client's pieces: code, base, fitted date, supplier lot, replacement due and an
 
 ### GET /api/technicians
 
-Active technicians, the phones they have logged in on, and the leave they are down for
+Active technicians, the phones they have logged in on and their leave, and those switched off
 
 **200**: The technicians
 
@@ -1696,6 +1801,50 @@ Active technicians, the phones they have logged in on, and the leave they are do
 ```
 
 **403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/technicians
+
+Add a technician. His number signs in to the technician app at once
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/NewTechnician"
+}
+```
+
+**201**: Added
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianId"
+}
+```
+
+**400**: invalid_request: no name, or not an Indian mobile
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required, or not_permitted: changing a technician asks Operations MANAGE
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: number_in_use: another active technician signs in with that number
 
 ```json
 {
@@ -1891,7 +2040,7 @@ Request body:
 }
 ```
 
-**403**: access_required
+**403**: access_required, or not_permitted: refunding asks Finance MANAGE
 
 ```json
 {
@@ -1911,7 +2060,7 @@ Request body:
 
 What ops still have to do, by group, the longest wait first
 
-**200**: The groups with something in them
+**200**: The groups with something in them, of the caller's own departments once the Staff list is enforced
 
 ```json
 {
@@ -1919,7 +2068,7 @@ What ops still have to do, by group, the longest wait first
 }
 ```
 
-**403**: access_required
+**403**: access_required, or not_permitted: no View in any department
 
 ```json
 {
@@ -1955,7 +2104,7 @@ Request body:
 }
 ```
 
-**403**: access_required: no Access token, or a service token, which names no member of staff
+**403**: access_required: no Access token, or a service token, which names no member of staff; or not_permitted: it asks Act in the department that decides the task's group
 
 ```json
 {
@@ -2030,6 +2179,142 @@ A day's money: what was collected, what went back, and each charge kept or ruled
 ```
 
 **403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### PATCH /api/technicians/{id}
+
+Change a technician's name, number or zone
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianChange"
+}
+```
+
+**200**: Changed
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianId"
+}
+```
+
+**400**: invalid_request: nothing to change, no name, or not an Indian mobile
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required, or not_permitted: changing a technician asks Operations MANAGE
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such technician
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: number_in_use: another active technician signs in with that number; managed_in_fsm: FSM lists this technician, so he is changed there while FSM is the record
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/technicians/{id}/deactivate
+
+Switch a technician off: he is signed out at once, and his visits still to come are unassigned
+
+**200**: Switched off
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianDeactivated"
+}
+```
+
+**403**: access_required, or not_permitted: changing a technician asks Operations MANAGE
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such technician
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: managed_in_fsm: FSM lists this technician, so he is changed there while FSM is the record
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/technicians/{id}/reactivate
+
+Switch a technician back on, so he can sign in again
+
+**200**: Switched on
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "active": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
+    }
+  },
+  "required": [
+    "active"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required, or not_permitted: changing a technician asks Operations MANAGE
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such technician
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: number_in_use: another active technician signs in with his number now; managed_in_fsm: FSM lists this technician, so he is changed there while FSM is the record
 
 ```json
 {
@@ -2180,7 +2465,7 @@ The price book: every price, past, present and scheduled
 
 ### POST /api/prices
 
-A price from the date it applies. A change is a new row, so nothing already invoiced moves
+A price from the date it applies, tomorrow at the earliest. A change is a new row, so nothing sold moves
 
 Request body:
 
@@ -2210,7 +2495,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names what was refused, tier where no service of the kind has it; service_retired: the service is retired by the day it would apply from
+**400**: invalid_request: fields names what was refused, valid_from when it is before tomorrow, tier where no service of the kind has it; service_retired: the service is retired by the day it would apply from
 
 ```json
 {
@@ -2228,7 +2513,7 @@ Request body:
 
 ### POST /api/prices/correct
 
-Correct a price still to come: take it back and set its replacement, from any day from today, at once
+Correct a price still to come: take it back and set its replacement, from tomorrow or later, at once
 
 Request body:
 
@@ -2662,7 +2947,7 @@ Request body:
 }
 ```
 
-**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be
 
 ```json
 {
@@ -2714,7 +2999,7 @@ Request body:
 }
 ```
 
-**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be
 
 ```json
 {
@@ -2766,7 +3051,7 @@ Request body:
 }
 ```
 
-**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be
 
 ```json
 {
@@ -2818,7 +3103,7 @@ Request body:
 }
 ```
 
-**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be
 
 ```json
 {
@@ -2870,7 +3155,7 @@ Request body:
 }
 ```
 
-**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be
 
 ```json
 {
@@ -2914,7 +3199,7 @@ Offer a retired service again, or take back a retirement still to come
 }
 ```
 
-**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book
+**409**: service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its kind would be left with nothing to book, which a first fit may be
 
 ```json
 {
@@ -3388,7 +3673,7 @@ Request body:
 
 ### GET /api/storage
 
-What the photographs and referral cards hold in R2, against their share
+What the photographs and referral cards hold in R2, against their share, and the database against its limit
 
 **200**: The storage meter
 
@@ -3458,7 +3743,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names code when it is not one a code can be, count for a typed code made more than once, value for a percentage over 100, cap on an amount, covers named twice, expires_on before today, and max_uses for a batch whose codes are not single-use
+**400**: invalid_request: fields names code when it is not one a code can be, count for a typed code made more than once, value for a percentage over 100 or an amount not in whole rupees, cap on an amount or not in whole rupees, covers named twice, expires_on before today, and max_uses for a batch whose codes are not single-use
 
 ```json
 {
@@ -3597,6 +3882,182 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
 }
 ```
 
+### GET /api/staff
+
+The Staff list, narrowed to the caller's own places
+
+**200**: The Staff page as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/StaffBook"
+}
+```
+
+**403**: access_required, or not_permitted
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/staff
+
+Add a member of staff, or replace their grants and whether they are let in
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/StaffSave"
+}
+```
+
+**200**: The Staff page as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/StaffBook"
+}
+```
+
+**400**: invalid_request: a grant names no place it may, or the same place twice
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required, or not_permitted: the change reaches beyond the caller's Admin MANAGE, or comes from a service token
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: last_admin: nobody would be left with Admin MANAGE nationally
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/staff/enforcement
+
+Enforce the Staff list, or stop
+
+Request body:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "on": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "on"
+  ],
+  "additionalProperties": false
+}
+```
+
+**200**: The Staff page as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/StaffBook"
+}
+```
+
+**403**: access_required, or not_permitted: only a person with Admin MANAGE nationally
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/staff/service-tokens
+
+Let a service token in, as every caller was before the Staff list
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/StaffServiceToken"
+}
+```
+
+**200**: The Staff page as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/StaffBook"
+}
+```
+
+**403**: access_required, or not_permitted: only a person with Admin MANAGE nationally
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/staff/service-tokens/remove
+
+Take a service token off
+
+Request body:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "client_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]{1,100}$",
+      "description": "The service token's client ID, as Access names it."
+    }
+  },
+  "required": [
+    "client_id"
+  ],
+  "additionalProperties": false
+}
+```
+
+**200**: The Staff page as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/StaffBook"
+}
+```
+
+**403**: access_required, or not_permitted: only a person with Admin MANAGE nationally
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such token is listed
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ## Schemas
 
 ### ErrorResponse
@@ -3629,6 +4090,7 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
             "look_limit_reached",
             "claim_required",
             "whatsapp_unavailable",
+            "number_not_proved",
             "unauthorized",
             "visit_booked",
             "payment_held",
@@ -3652,6 +4114,8 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
             "out_of_order",
             "not_today",
             "already_started",
+            "technician_inactive",
+            "managed_in_fsm",
             "clash",
             "on_leave",
             "does_not_fit",
@@ -3662,6 +4126,7 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
             "service_exists",
             "last_of_kind",
             "service_retired",
+            "no_product",
             "unknown_invite",
             "own_invite",
             "already_invited",
@@ -3672,7 +4137,9 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
             "already_discounted",
             "price_settled",
             "code_exists",
-            "slot_times_too_soon"
+            "slot_times_too_soon",
+            "not_permitted",
+            "last_admin"
           ]
         },
         "request_id": {
@@ -3768,6 +4235,13 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
         "unreachable"
       ],
       "description": "ok: reachable and marked as this environment's database. unmarked: no identity row. mismatch: marked as another environment's database."
+    },
+    "cron_completed_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "When the five-minute cron last finished a run; null before its first, or when the database is not this environment's. Information only: status does not depend on it."
     }
   },
   "required": [
@@ -3775,7 +4249,8 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
     "environment",
     "version_id",
     "version_tag",
-    "d1"
+    "d1",
+    "cron_completed_at"
   ],
   "additionalProperties": false
 }
@@ -3789,7 +4264,7 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
   "properties": {
     "mobile": {
       "type": "string",
-      "pattern": "^(?:\\+91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$"
+      "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$"
     }
   },
   "required": [
@@ -4218,6 +4693,7 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
           "enum": [
             "booked",
             "in_progress",
+            "done",
             "closing"
           ]
         },
@@ -4225,7 +4701,7 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
           "type": "null"
         }
       ],
-      "description": "For a visit FSM has not closed: still to come, under way in its window, or over and waiting for FSM to close it. Null once FSM has closed it."
+      "description": "For a visit FSM has not closed: still to come, under way (the technician has checked in, whatever FSM says), closed as done from the technician's phone, or otherwise over and waiting for FSM to close it. Null once FSM has closed it."
     },
     "prepaid": {
       "type": "boolean",
@@ -4458,6 +4934,7 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
           "enum": [
             "booked",
             "in_progress",
+            "done",
             "closing"
           ]
         },
@@ -4465,7 +4942,7 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
           "type": "null"
         }
       ],
-      "description": "For a visit FSM has not closed: still to come, under way in its window, or over and waiting for FSM to close it. Null once FSM has closed it."
+      "description": "For a visit FSM has not closed: still to come, under way (the technician has checked in, whatever FSM says), closed as done from the technician's phone, or otherwise over and waiting for FSM to close it. Null once FSM has closed it."
     },
     "prepaid": {
       "type": "boolean",
@@ -4527,15 +5004,29 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
     },
     "amount": {
       "type": "integer",
-      "description": "In paise, GST included."
+      "description": "In paise, GST included: the main figure."
     },
     "amount_ex_gst": {
-      "type": "integer",
-      "description": "In paise, before GST: the main figure."
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "In paise, before GST; null where no rate was recorded for it."
     },
     "gst_percent": {
-      "type": "number",
-      "description": "The GST rate the amount includes."
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The GST rate the amount includes; null where none was recorded."
     },
     "visit": {
       "anyOf": [
@@ -4579,6 +5070,43 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
         }
       ],
       "description": "The visit it paid for, when known."
+    },
+    "booking": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "consultation",
+                "first_fit",
+                "service",
+                "replacement"
+              ]
+            },
+            "date": {
+              "type": "string",
+              "format": "date",
+              "description": "India's day the visit was held for."
+            },
+            "under_way": {
+              "type": "boolean",
+              "description": "Still being booked; false once refunded or let go."
+            }
+          },
+          "required": [
+            "type",
+            "date",
+            "under_way"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What it paid for while there is no visit yet: the booking its hold was making."
     },
     "status": {
       "type": "string",
@@ -4674,6 +5202,38 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
         }
       ],
       "description": "The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07)."
+    },
+    "discount_code": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "amount_off": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "In paise before GST; null where the visit's price was not yet known."
+            }
+          },
+          "required": [
+            "code",
+            "amount_off"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The discount code the visit was paid with; null for none, and on a late fee."
     }
   },
   "required": [
@@ -4684,13 +5244,15 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
     "amount_ex_gst",
     "gst_percent",
     "visit",
+    "booking",
     "status",
     "method",
     "reference",
     "refunded_amount",
     "purpose",
     "charge",
-    "no_show"
+    "no_show",
+    "discount_code"
   ],
   "additionalProperties": false
 }
@@ -4800,15 +5362,29 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
     },
     "amount": {
       "type": "integer",
-      "description": "In paise, GST included."
+      "description": "In paise, GST included: the main figure."
     },
     "amount_ex_gst": {
-      "type": "integer",
-      "description": "In paise, before GST: the main figure."
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "In paise, before GST; null where no rate was recorded for it."
     },
     "gst_percent": {
-      "type": "number",
-      "description": "The GST rate the amount includes."
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The GST rate the amount includes; null where none was recorded."
     },
     "visit": {
       "anyOf": [
@@ -4853,6 +5429,43 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
       ],
       "description": "The visit it paid for, when known."
     },
+    "booking": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "consultation",
+                "first_fit",
+                "service",
+                "replacement"
+              ]
+            },
+            "date": {
+              "type": "string",
+              "format": "date",
+              "description": "India's day the visit was held for."
+            },
+            "under_way": {
+              "type": "boolean",
+              "description": "Still being booked; false once refunded or let go."
+            }
+          },
+          "required": [
+            "type",
+            "date",
+            "under_way"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What it paid for while there is no visit yet: the booking its hold was making."
+    },
     "status": {
       "type": "string",
       "enum": [
@@ -4893,6 +5506,7 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
     "amount_ex_gst",
     "gst_percent",
     "visit",
+    "booking",
     "status",
     "destination",
     "speed"
@@ -5765,6 +6379,389 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
 }
 ```
 
+### OpsAvailability
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement"
+      ]
+    },
+    "services": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/ServiceOffer"
+      },
+      "description": "The kind's services offered on the first day."
+    },
+    "service": {
+      "$ref": "#/components/schemas/VisitService"
+    },
+    "pays": {
+      "type": "string",
+      "enum": [
+        "nothing",
+        "credit",
+        "link"
+      ],
+      "description": "How the visit is paid for: nothing at booking (free, or a consultation and fit in one visit, paid by a link once fitted), a service-visit credit, or a payment link Razorpay texts the client."
+    },
+    "credits": {
+      "type": "integer",
+      "description": "The service-visit credits the client has to spend."
+    },
+    "days": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "windows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "window": {
+                  "type": "string",
+                  "enum": [
+                    "morning",
+                    "afternoon",
+                    "evening"
+                  ]
+                },
+                "start": {
+                  "type": "string",
+                  "description": "When the window starts that day, in India's time."
+                },
+                "end": {
+                  "type": "string"
+                },
+                "technicians": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FreeTechnician"
+                  },
+                  "description": "Who is free for the visit, the client's regular technician first."
+                }
+              },
+              "required": [
+                "window",
+                "start",
+                "end",
+                "technicians"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "date",
+          "windows"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "kind",
+    "services",
+    "service",
+    "pays",
+    "credits",
+    "days"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ServiceOffer
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "tier": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "minutes": {
+      "type": "integer"
+    },
+    "price": {
+      "$ref": "#/components/schemas/VisitPrice"
+    }
+  },
+  "required": [
+    "tier",
+    "name",
+    "minutes",
+    "price"
+  ],
+  "additionalProperties": false
+}
+```
+
+### VisitPrice
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "amount_ex_gst": {
+      "type": "integer",
+      "description": "In paise, before GST."
+    },
+    "amount": {
+      "type": "integer",
+      "description": "In paise, GST included: what the client pays."
+    },
+    "gst_percent": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "amount_ex_gst",
+    "amount",
+    "gst_percent"
+  ],
+  "additionalProperties": false
+}
+```
+
+### VisitService
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "tier": {
+      "type": "string",
+      "description": "Its code within its kind, which never changes."
+    },
+    "name": {
+      "type": "string"
+    },
+    "minutes": {
+      "type": "integer",
+      "description": "How long the visit is booked for."
+    }
+  },
+  "required": [
+    "tier",
+    "name",
+    "minutes"
+  ],
+  "additionalProperties": false,
+  "description": "The service the windows are for: the one asked, else the first."
+}
+```
+
+### FreeTechnician
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "name"
+  ],
+  "additionalProperties": false
+}
+```
+
+### OpsBooking
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "hold_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "booked",
+        "being_booked",
+        "awaiting_payment"
+      ],
+      "description": "booked: the visit is written. being_booked: it is on its way to the field record, within a minute. awaiting_payment: the slot is held and the link sent; the visit is booked once the client pays."
+    },
+    "visit_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The visit, once booked."
+    },
+    "pays": {
+      "type": "string",
+      "enum": [
+        "nothing",
+        "credit",
+        "link"
+      ],
+      "description": "How the visit is paid for: nothing at booking (free, or a consultation and fit in one visit, paid by a link once fitted), a service-visit credit, or a payment link Razorpay texts the client."
+    },
+    "service": {
+      "$ref": "#/components/schemas/VisitService"
+    },
+    "price": {
+      "allOf": [
+        {
+          "$ref": "#/components/schemas/VisitPrice"
+        },
+        {
+          "description": "What the client pays: the service's price less any code."
+        }
+      ]
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "window": {
+      "type": "string",
+      "enum": [
+        "morning",
+        "afternoon",
+        "evening"
+      ]
+    },
+    "technician": {
+      "$ref": "#/components/schemas/FreeTechnician"
+    },
+    "link": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "url": {
+              "type": "string"
+            },
+            "open_until": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          "required": [
+            "url",
+            "open_until"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The payment link Razorpay texted the client, and when it closes and the slot goes."
+    }
+  },
+  "required": [
+    "hold_id",
+    "outcome",
+    "visit_id",
+    "pays",
+    "service",
+    "price",
+    "date",
+    "window",
+    "technician",
+    "link"
+  ],
+  "additionalProperties": false
+}
+```
+
+### VisitToBook
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "client": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "first_fit",
+        "service",
+        "replacement"
+      ]
+    },
+    "tier": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,31}$",
+      "description": "The service; left out, the kind's standard one. A first fit names the hair system."
+    },
+    "technician": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "description": "The technician ops chose; left out, whoever is free, the client's regular one first."
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "window": {
+      "type": "string",
+      "enum": [
+        "morning",
+        "afternoon",
+        "evening"
+      ]
+    },
+    "one_visit": {
+      "type": "boolean",
+      "description": "A consultation and fit in one visit: a first fit, morning or afternoon."
+    },
+    "code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40,
+      "description": "A discount code the client gave."
+    }
+  },
+  "required": [
+    "client",
+    "kind",
+    "date",
+    "window"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### AlreadyInvited
 
 ```json
@@ -5795,6 +6792,7 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
             "look_limit_reached",
             "claim_required",
             "whatsapp_unavailable",
+            "number_not_proved",
             "unauthorized",
             "visit_booked",
             "payment_held",
@@ -5818,6 +6816,8 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
             "out_of_order",
             "not_today",
             "already_started",
+            "technician_inactive",
+            "managed_in_fsm",
             "clash",
             "on_leave",
             "does_not_fit",
@@ -5828,6 +6828,7 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
             "service_exists",
             "last_of_kind",
             "service_retired",
+            "no_product",
             "unknown_invite",
             "own_invite",
             "already_invited",
@@ -5838,7 +6839,9 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
             "already_discounted",
             "price_settled",
             "code_exists",
-            "slot_times_too_soon"
+            "slot_times_too_soon",
+            "not_permitted",
+            "last_admin"
           ]
         },
         "request_id": {
@@ -6149,7 +7152,7 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
         ],
         "additionalProperties": false
       },
-      "description": "The products a correction may name: every first-fit service, retired or not."
+      "description": "The products a correction may name: the hair systems offered today, as the technician's card lists them."
     }
   },
   "required": [
@@ -7319,6 +8322,31 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
                 "type": "null"
               }
             ]
+          },
+          "was_technician": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The technician the job is still on, who was switched off and so has no row; null for a job nobody holds. A move of it names him as the expected technician."
           }
         },
         "required": [
@@ -7333,7 +8361,8 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
           "starts_at",
           "asked_window",
           "offered_window",
-          "date"
+          "date",
+          "was_technician"
         ],
         "additionalProperties": false
       }
@@ -8266,6 +9295,21 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
               }
             ]
           },
+          "mobile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The number he signs in with, +91 and ten digits; null where none is recorded."
+          },
+          "editable": {
+            "type": "boolean",
+            "description": "Whether ops change him here. While FSM is the record of field work, a technician FSM lists is changed in FSM; one ops added is theirs."
+          },
           "devices": {
             "type": "array",
             "items": {
@@ -8322,15 +9366,67 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
           "name",
           "initials",
           "zone",
+          "mobile",
+          "editable",
           "devices",
           "leave"
         ],
         "additionalProperties": false
       }
+    },
+    "switched_off": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "zone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mobile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The number he signs in with, +91 and ten digits; null where none is recorded."
+          },
+          "editable": {
+            "type": "boolean",
+            "description": "Whether ops change him here. While FSM is the record of field work, a technician FSM lists is changed in FSM; one ops added is theirs."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "zone",
+          "mobile",
+          "editable"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Technicians switched off, by name: they cannot sign in, and nothing is booked on them."
     }
   },
   "required": [
-    "technicians"
+    "technicians",
+    "switched_off"
   ],
   "additionalProperties": false
 }
@@ -9053,6 +10149,163 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
     "visit_started_at",
     "change",
     "technician"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianId
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    }
+  },
+  "required": [
+    "id"
+  ],
+  "additionalProperties": false
+}
+```
+
+### NewTechnician
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "description": "His whole name, as clients see it."
+    },
+    "mobile": {
+      "type": "string",
+      "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
+      "description": "The Indian mobile he signs in with; his sign-in code goes to it on WhatsApp."
+    },
+    "zone": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Where he mostly works, in ops' words; null for none."
+    }
+  },
+  "required": [
+    "name",
+    "mobile"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianChange
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "description": "His whole name, as clients see it."
+    },
+    "mobile": {
+      "type": "string",
+      "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
+      "description": "The Indian mobile he signs in with; his sign-in code goes to it on WhatsApp."
+    },
+    "zone": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Where he mostly works, in ops' words; null for none."
+    }
+  },
+  "additionalProperties": false,
+  "description": "Only what is sent changes."
+}
+```
+
+### TechnicianDeactivated
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "visits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "appointment_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "consultation",
+                  "first_fit",
+                  "service",
+                  "replacement"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "client": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "appointment_id",
+          "starts_at",
+          "type",
+          "client"
+        ],
+        "additionalProperties": false
+      },
+      "description": "His visits still to come, now unassigned: each waits in the dispatch board's tray for ops to give it to another. A visit already begun stays his. Empty when he was switched off already."
+    }
+  },
+  "required": [
+    "visits"
   ],
   "additionalProperties": false
 }
@@ -11540,12 +12793,22 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
     "ceiling_bytes": {
       "type": "integer",
       "description": "Past this the technician app's photographs are refused and wait on the phones."
+    },
+    "database_bytes": {
+      "type": "integer",
+      "description": "What this environment's D1 database holds."
+    },
+    "database_limit_bytes": {
+      "type": "integer",
+      "description": "D1's limit on one database on the free plan; past it every write fails."
     }
   },
   "required": [
     "held_bytes",
     "share_bytes",
-    "ceiling_bytes"
+    "ceiling_bytes",
+    "database_bytes",
+    "database_limit_bytes"
   ],
   "additionalProperties": false
 }
@@ -11571,11 +12834,108 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
         }
       ],
       "description": "Access's logout path; null where no Access stands in front, as locally."
+    },
+    "staff": {
+      "type": "object",
+      "properties": {
+        "enforced": {
+          "type": "boolean",
+          "description": "Whether the Staff list decides what they may open."
+        },
+        "listed": {
+          "type": "boolean",
+          "description": "An active person on the Staff list, or a service token on its list of tokens."
+        },
+        "grants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/StaffGrant"
+          },
+          "description": "A person's grants; none for a service token."
+        },
+        "may_call": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The ops routes their calls go ahead on, as \"GET /api/tasks\": every one while the list is not enforced. The console shows only the sections whose pages they can read.",
+          "example": [
+            "GET /api/health",
+            "GET /api/whoami",
+            "GET /api/tasks"
+          ]
+        }
+      },
+      "required": [
+        "enforced",
+        "listed",
+        "grants",
+        "may_call"
+      ],
+      "additionalProperties": false
     }
   },
   "required": [
     "signed_in_as",
-    "sign_out"
+    "sign_out",
+    "staff"
+  ],
+  "additionalProperties": false
+}
+```
+
+### StaffGrant
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "department": {
+      "type": "string",
+      "enum": [
+        "operations",
+        "customer_care",
+        "finance",
+        "growth",
+        "admin"
+      ]
+    },
+    "level": {
+      "type": "string",
+      "enum": [
+        "view",
+        "act",
+        "manage"
+      ],
+      "description": "view < act < manage: each level can do what the ones before it can."
+    },
+    "geography": {
+      "type": "string",
+      "enum": [
+        "national",
+        "zone",
+        "city"
+      ]
+    },
+    "place": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The zone's or the city's name; null for national."
+    }
+  },
+  "required": [
+    "department",
+    "level",
+    "geography",
+    "place"
   ],
   "additionalProperties": false
 }
@@ -11813,7 +13173,7 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
       "type": "integer",
       "minimum": 1,
       "maximum": 100000000,
-      "description": "Per cent, 1 to 100, for a percentage; paise before GST for an amount."
+      "description": "Per cent, 1 to 100, for a percentage; paise in whole rupees, before GST, for an amount."
     },
     "cap": {
       "anyOf": [
@@ -11826,7 +13186,7 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
           "type": "null"
         }
       ],
-      "description": "A percentage's most, in paise before GST; none if left out."
+      "description": "A percentage's most, in paise in whole rupees, before GST; none if left out."
     },
     "covers": {
       "type": "array",
@@ -11913,6 +13273,239 @@ Take the code off a client's visit, before it is paid for, its link is made, or 
     "code",
     "amount_off",
     "given_by"
+  ],
+  "additionalProperties": false
+}
+```
+
+### StaffBook
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "enforced": {
+      "type": "object",
+      "properties": {
+        "on": {
+          "type": "boolean",
+          "description": "Off: nothing is refused, and what would have been is logged."
+        },
+        "set_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "set_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "on",
+        "set_by",
+        "set_at"
+      ],
+      "additionalProperties": false
+    },
+    "may_run_access": {
+      "type": "boolean",
+      "description": "Whether the caller may switch enforcement and change the service tokens: a person with Admin MANAGE nationally."
+    },
+    "people": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "grants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StaffGrant"
+            }
+          },
+          "added_by": {
+            "type": "string"
+          },
+          "added_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "changed_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "changed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "email",
+          "active",
+          "grants",
+          "added_by",
+          "added_at",
+          "changed_by",
+          "changed_at"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "service_tokens": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "client_id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "added_by": {
+            "type": "string"
+          },
+          "added_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "client_id",
+          "label",
+          "added_by",
+          "added_at"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "zones": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "cities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "cities"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "cities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Every city a grant may name."
+    }
+  },
+  "required": [
+    "enforced",
+    "may_run_access",
+    "people",
+    "service_tokens",
+    "zones",
+    "cities"
+  ],
+  "additionalProperties": false
+}
+```
+
+### StaffSave
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string",
+      "maxLength": 254,
+      "format": "email",
+      "description": "Their Cloudflare Access e-mail."
+    },
+    "active": {
+      "type": "boolean",
+      "description": "False keeps them listed, with their grants, but lets them in nowhere."
+    },
+    "grants": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/StaffGrant"
+      },
+      "maxItems": 40,
+      "description": "Every grant they are to hold; this replaces them all."
+    }
+  },
+  "required": [
+    "email",
+    "active",
+    "grants"
+  ],
+  "additionalProperties": false
+}
+```
+
+### StaffServiceToken
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "client_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]{1,100}$",
+      "description": "The service token's client ID, as Access names it."
+    },
+    "label": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60
+    }
+  },
+  "required": [
+    "client_id",
+    "label"
   ],
   "additionalProperties": false
 }

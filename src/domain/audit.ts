@@ -4,8 +4,8 @@
 // not happen. What only reads, an export or a photograph viewed, writes its
 // entry first, and a failed write stops the read.
 //
-// Every call to the ops console is recorded as it arrives by auditCall, and the
-// member of staff behind it named, in src/http/audit.ts.
+// Each call to the ops console is recorded as it arrives by auditCall, with the
+// member of staff behind it and whose record it opened, in src/http/audit.ts.
 
 import type { Surface } from "../config/environments.ts";
 import type { RulingClaim } from "./ruling-claims.ts";
@@ -42,6 +42,11 @@ export const AUDIT_ACTIONS = [
   // and to the dispatch board alike (ADR 0062).
   "technician.leave",
   "technician.leave_cancelled",
+  // Ops adding a technician, changing his name, number or zone, and switching him off or back on.
+  "technician.add",
+  "technician.change",
+  "technician.deactivate",
+  "technician.reactivate",
   // The business inputs ops set for themselves (docs/decisions/0061-ops-editable-inputs.md):
   // one of the rules, a price from a date, and whether we go to a pincode. A price still to
   // come taken back, and an area's name (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
@@ -93,6 +98,8 @@ export const AUDIT_ACTIONS = [
   "booking.refund",
   "booking.stop",
   "booking.give_back",
+  // A visit ops booked for a client from the console: its slot held, and booked at once or sent a payment link.
+  "visit.book",
   // Ops correcting a client's hair profile, which keeps every version (docs/decisions/0106-a-clients-hair-profile.md).
   // The entry names the client and the version, never a word of the profile.
   "hair_profile.correct",
@@ -102,6 +109,12 @@ export const AUDIT_ACTIONS = [
   "discount_code.switch_off",
   "discount_code.apply",
   "discount_code.remove",
+  // The Staff list: a member of staff added or changed, the list enforced or not, and a service token let in or
+  // taken off.
+  "staff.set",
+  "staff.enforce",
+  "staff.token_add",
+  "staff.token_remove",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
@@ -117,7 +130,7 @@ export interface AuditEntry {
   readonly subject?: { readonly kind: string; readonly id: string };
   readonly requestId: string | null;
   /** IDs, counts and codes only. Never a name, a mobile number or an image reference. */
-  readonly detail?: Readonly<Record<string, string | number | boolean>>;
+  readonly detail?: Readonly<Record<string, string | number | boolean | null>>;
 }
 
 const COLUMNS = "at, surface, actor_kind, actor, action, subject_kind, subject_id, request_id, detail";
@@ -162,7 +175,8 @@ export function auditStatementIfWritten(
       | "no_show_disputes"
       | "hair_profiles"
       | "discount_code_uses"
-      | "slot_times";
+      | "slot_times"
+      | "technicians";
     readonly id: string;
   },
 ): D1PreparedStatement {
@@ -232,6 +246,28 @@ export function auditStatementIfStamped(
        WHERE EXISTS (SELECT 1 FROM ${stamped.table} WHERE id = ?10 AND ${stamped.column} = ?1)`,
     )
     .bind(...valuesOf(entry, now), stamped.id);
+}
+
+/**
+ * The entry, unless its actor wrote one with the same action and detail after `since`: a board polling, or a record
+ * opened again and again, is one entry for the stretch.
+ */
+export function auditStatementUnlessRepeated(
+  db: D1Database,
+  entry: AuditEntry,
+  now: Date,
+  since: Date,
+): D1PreparedStatement {
+  return db
+    .prepare(
+      `INSERT INTO audit_log (${COLUMNS})
+       SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9
+       WHERE NOT EXISTS (
+         SELECT 1 FROM audit_log
+         WHERE actor_kind = ?3 AND actor = ?4 AND at > ?10 AND action = ?5 AND detail IS ?9
+       )`,
+    )
+    .bind(...valuesOf(entry, now), since.toISOString());
 }
 
 export async function recordAudit(db: D1Database, entry: AuditEntry, now: Date): Promise<void> {

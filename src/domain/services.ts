@@ -10,7 +10,7 @@
 import { withGst } from "../config/gst.ts";
 import { PRICE_TIER } from "../config/ops-settings.ts";
 import { VISIT_BLOCKS } from "../config/scheduling.ts";
-import { STANDARD_TIER, VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
+import { hasStandardService, STANDARD_TIER, VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
 import { isOffered, retireRefusal, SERVICE_NAME, tierCodeOf } from "../policy/services.ts";
 import { isServiceLength } from "../policy/visit-length.ts";
 import { auditStatement, type AuditActor } from "./audit.ts";
@@ -126,8 +126,8 @@ export async function offeredServices(
 /**
  * The service a booking is for, offered and priced on the day: the one named, or, where a booking names only its
  * kind, the kind's standard service while it is offered, else the first the kind offers. So the site's consultation,
- * a lead's Request and an app from before services, which sends no tier, each book what the kind offers. Null when
- * the kind offers nothing that day, or not the one named.
+ * a lead's Request and an app from before services, which sends no tier, each book what the kind offers. A first fit
+ * is booked only as the hair system named. Null when the kind offers nothing that day, or not the one named.
  */
 export async function bookableService(
   db: D1Database,
@@ -137,16 +137,27 @@ export async function bookableService(
 ): Promise<PricedService | null> {
   const offered = await offeredServices(db, on, [kind]);
   if (tier !== undefined) return offered.find((service) => service.tier === tier) ?? null;
+  if (!hasStandardService(kind)) return null;
   return offered.find((service) => service.tier === STANDARD_TIER) ?? offered[0] ?? null;
+}
+
+/** The hair systems a first fit is sold as on a day: the first-fit services offered and priced then, in ops' order. */
+export function offeredProducts(db: D1Database, on: string): Promise<PricedService[]> {
+  return offeredServices(db, on, ["first_fit"]);
 }
 
 /**
  * The service a visit of this kind is offered to a client as (docs/decisions/0086-the-next-visit-is-offered.md): the
  * one their last visit of the kind was, while it is offered and priced on the day, else the kind's first offered in
- * the console's order. A visit the mirror knows no service of was the standard one. The kind's standard code where it
- * offers nothing that day, which a booking is then refused for, as any would be.
+ * the console's order. A visit the mirror knows no service of was the standard one. Null where the kind offers
+ * nothing that day.
  */
-export async function serviceToOffer(db: D1Database, personId: string, kind: VisitType, on: string): Promise<string> {
+export async function serviceToOffer(
+  db: D1Database,
+  personId: string,
+  kind: VisitType,
+  on: string,
+): Promise<string | null> {
   const [offered, last] = await Promise.all([
     offeredServices(db, on, [kind]),
     db
@@ -158,7 +169,7 @@ export async function serviceToOffer(db: D1Database, personId: string, kind: Vis
       .bind(personId, kind)
       .first<{ tier: string }>(),
   ]);
-  return offered.find((service) => service.tier === last?.tier)?.tier ?? offered[0]?.tier ?? STANDARD_TIER;
+  return offered.find((service) => service.tier === last?.tier)?.tier ?? offered[0]?.tier ?? null;
 }
 
 /** Why a change to a service was refused: the box it names, where there is one. */
@@ -166,7 +177,7 @@ export type ServiceRefusal =
   | { readonly refused: "invalid"; readonly field: "name" | "tier" | "minutes" | "retired_date" | "order" }
   /** Another service already has the name, or this kind the code. */
   | { readonly refused: "taken"; readonly field: "name" | "tier" }
-  /** Retiring it would leave its kind with nothing to book (src/policy/services.ts). */
+  /** Retiring it would leave its kind, one with a standard service, with nothing to book (src/policy/services.ts). */
   | { readonly refused: "last_of_kind" }
   | { readonly refused: "not_found" };
 
@@ -358,7 +369,8 @@ export async function reorderServices(
 
 /**
  * Retires a service from a day, today or later: from then clients no longer see it or book it, and a visit already
- * sold stays as it was sold. A kind keeps one service that is never retired and priced by then (src/policy/services.ts).
+ * sold stays as it was sold. A kind with a standard service keeps one that is never retired and priced by then, and a
+ * first fit may be left with none (src/policy/services.ts).
  * A service already retired is restored first; one whose retirement is still to come may be given another day.
  */
 export async function retireService(
@@ -385,6 +397,7 @@ export async function retireService(
     .bind(kind, tier, from)
     .all<{ retired_date: string | null; priced: number }>();
   const refusal = retireRefusal(
+    kind,
     others.map((other) => ({ retiredDate: other.retired_date, pricedBy: other.priced === 1 })),
   );
   if (refusal !== null) return { refused: refusal };

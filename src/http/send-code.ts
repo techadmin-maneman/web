@@ -19,7 +19,7 @@
 import type { Context } from "hono";
 import type { AppEnv } from "./context.ts";
 import { onAllowlist, type LoginSettings } from "../config/settings.ts";
-import { alertCeilingReached, ceilingReached, takeFromCeiling } from "../domain/ceilings.ts";
+import { alertCeilingReached, ceilingReached, takeFromCeiling, type Ceiling } from "../domain/ceilings.ts";
 import { countOne, isSpent, takeOne } from "../domain/rate-limit.ts";
 import { saltedHash } from "../lib/hash.ts";
 import { indiaDate, indiaHour } from "../lib/india-time.ts";
@@ -48,16 +48,24 @@ const unknownNumbers = (ipHash: string, now: Date) => ({
 /** How a request for a code is answered before anyone is looked up. */
 export type CodeGate = "open" | "rate_limited" | "busy";
 
+/** The day's ceiling a code counts against: the apps' logins share one, and the site's forms have their own. */
+export type CodeCeiling = Extract<Ceiling, "login_code" | "form_code">;
+
 /**
  * Asked before the number is looked up, so every number gets the same answer:
  * refused while the address has spent its day of unknown numbers, and busy
  * while the day's ceiling is reached.
  */
-export async function codeGate(c: Context<AppEnv>, ipHash: string, now: Date): Promise<CodeGate> {
+export async function codeGate(
+  c: Context<AppEnv>,
+  ipHash: string,
+  now: Date,
+  ceiling: CodeCeiling = "login_code",
+): Promise<CodeGate> {
   if (await isSpent(c.env.DB, unknownNumbers(ipHash, now))) return "rate_limited";
   const { codeDailyCeiling } = c.var.config.settings.login;
-  if (!(await ceilingReached(c.env.DB, "login_code", codeDailyCeiling, now))) return "open";
-  await alertCeilingReached(c.env.DB, c.var.deps.alert, "login_code", codeDailyCeiling, now);
+  if (!(await ceilingReached(c.env.DB, ceiling, codeDailyCeiling, now))) return "open";
+  await alertCeilingReached(c.env.DB, c.var.deps.alert, ceiling, codeDailyCeiling, now);
   return "busy";
 }
 
@@ -70,7 +78,8 @@ export async function codeGate(c: Context<AppEnv>, ipHash: string, now: Date): P
 export async function mayAskForCode(
   c: Context<AppEnv>,
   input: {
-    readonly surface: "login" | "tech";
+    /** "form" is a code proving a number typed into the site. */
+    readonly surface: "login" | "tech" | "form";
     readonly mobileE164: string;
     readonly ipHash: string;
     readonly now: Date;
@@ -78,7 +87,7 @@ export async function mayAskForCode(
     readonly name: string | null;
   },
 ): Promise<CodeGate> {
-  const gate = await codeGate(c, input.ipHash, input.now);
+  const gate = await codeGate(c, input.ipHash, input.now, input.surface === "form" ? "form_code" : "login_code");
   if (gate !== "open") return gate;
   const { login: limits, ipHashSalt } = c.var.config.settings;
   const db = c.env.DB;
@@ -129,13 +138,14 @@ export async function countCode(
   name: string | null,
   ipHash: string,
   now: Date,
+  ceiling: CodeCeiling = "login_code",
 ): Promise<boolean> {
   if (sendsTo === null) {
     await countOne(c.env.DB, unknownNumbers(ipHash, now));
     return true;
   }
   if (name !== null && heldBackByAllowlist(c, sendsTo, name)) return true;
-  return withinCodeCeiling(c, now);
+  return withinCodeCeiling(c, now, ceiling);
 }
 
 /**
@@ -188,9 +198,13 @@ async function countFailure(c: Context<AppEnv>, detail: string): Promise<void> {
 }
 
 /** One more code today, counted across every number; false, with one alert a day, once the ceiling is reached. */
-export async function withinCodeCeiling(c: Context<AppEnv>, now: Date): Promise<boolean> {
+export async function withinCodeCeiling(
+  c: Context<AppEnv>,
+  now: Date,
+  ceiling: CodeCeiling = "login_code",
+): Promise<boolean> {
   const { login } = c.var.config.settings;
-  if (await takeFromCeiling(c.env.DB, "login_code", login.codeDailyCeiling, now)) return true;
-  await alertCeilingReached(c.env.DB, c.var.deps.alert, "login_code", login.codeDailyCeiling, now);
+  if (await takeFromCeiling(c.env.DB, ceiling, login.codeDailyCeiling, now)) return true;
+  await alertCeilingReached(c.env.DB, c.var.deps.alert, ceiling, login.codeDailyCeiling, now);
   return false;
 }

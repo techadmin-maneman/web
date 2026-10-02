@@ -19,7 +19,7 @@ import { alertCeilingReached, takeFromCeiling } from "../domain/ceilings.ts";
 import { clientHistory } from "../domain/client-history.ts";
 import { clientTryOns, ownTryOnImage, TRY_ON_IMAGES, TRY_ON_TOKEN_PURPOSES } from "../domain/client-try-ons.ts";
 import { listVisits, ownPhotoKey, photoSets, visitDetail } from "../domain/client-visits.ts";
-import { VISIT_OUTCOMES } from "../domain/fsm-mirror.ts";
+import { VISIT_OUTCOMES } from "../domain/visit-status.ts";
 import { DISPUTE_RULINGS, NO_SHOW_DECISIONS } from "../policy/no-show.ts";
 import { ANGLES, PHASES } from "../domain/visit-photos.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
@@ -42,10 +42,11 @@ export const VisitSummarySchema = z
     length_minutes: z.number().int(),
     type: z.union([z.enum(VISIT_TYPES), z.null()]),
     status: z.enum(["scheduled", "dispatched", "in_progress", "completed", "cancelled", "terminated", "other"]),
-    stage: z.union([z.enum(["booked", "in_progress", "closing"]), z.null()]).openapi({
+    stage: z.union([z.enum(["booked", "in_progress", "done", "closing"]), z.null()]).openapi({
       description:
-        "For a visit FSM has not closed: still to come, under way in its window, or over and waiting for FSM to " +
-        "close it. Null once FSM has closed it.",
+        "For a visit FSM has not closed: still to come, under way (the technician has checked in, whatever FSM " +
+        "says), closed as done from the technician's phone, or otherwise over and waiting for FSM to close it. " +
+        "Null once FSM has closed it.",
     }),
     prepaid: z.boolean().openapi({ description: "Paid for ahead, or covered by a visit credit: board C1's Prepaid." }),
     technician: z.union([TechnicianSchema, z.null()]),
@@ -252,7 +253,7 @@ const visitsRoute = createRoute({
   summary: "The client's visits, upcoming and past",
   responses: {
     200: {
-      description: "Upcoming soonest first; past newest first",
+      description: "Upcoming soonest first; past newest first, a visit cancelled among them",
       content: { "application/json": { schema: VisitsSchema } },
     },
     401: errorResponse("session_required"),
@@ -360,7 +361,7 @@ export function registerClientVisits(app: App): void {
   app.openapi(visitsRoute, async (c) => {
     const session = clientOf(c);
     const [visits, history] = await Promise.all([
-      listVisits(c.env.DB, session.subjectId, c.var.deps.now()),
+      listVisits(c.env.DB, session.subjectId, c.var.deps.now(), { withCancelled: true }),
       clientHistory(c.env.DB, session.subjectId),
     ]);
     // The client is told the month and never the day: see ClientHistorySchema.

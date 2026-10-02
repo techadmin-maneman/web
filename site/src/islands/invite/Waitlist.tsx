@@ -4,46 +4,52 @@ import type { LossExtent } from "../../../../src/config/booking.ts";
 import { referral } from "../../content/referral.ts";
 import { track } from "../../lib/analytics.ts";
 import { joinPublicWaitlist, joinWaitlist } from "../../lib/api.ts";
-import { mobileDigits } from "../../lib/phone.ts";
 import { forgetInvite, rememberedInvite } from "../../lib/remembered-invite.ts";
 import { fill } from "../../lib/text.ts";
 import { readAttribution } from "../../lib/visit.ts";
 import { Icon } from "../Drawings.tsx";
 import type { Listing } from "./Done.tsx";
-import { ExtentFieldset, ForPincode, PersonFieldset, Send, type FormProps } from "./fields.tsx";
+import { ExtentFieldset, ForPincode, PersonFieldset, RememberedInvite, Send, type FormProps } from "./fields.tsx";
 import styles from "./Invite.module.css";
 import { codeInPath } from "./page.ts";
-import { useTurnstileForm } from "./useTurnstileForm.ts";
+import { mobileToSend, useTurnstileForm } from "./useTurnstileForm.ts";
 
 /** Board C3: we do not come there yet, so the page takes a number instead. */
 export function Waitlist(props: FormProps & { onListed: (listing: Listing) => void }) {
   const form = useTurnstileForm(props.turnstileSiteKey);
   const [alert, setAlert] = useState(false);
-  const [extent, setExtent] = useState<LossExtent>("crown");
+  const [extent, setExtent] = useState<LossExtent | null>(null);
+  // On /book, the invite this browser remembers: the form says who is told of the fit before it sends it.
+  const [remembered, setRemembered] = useState(() => (props.invited ? null : rememberedInvite()));
+
+  function joinWithoutInvite() {
+    if (remembered !== null) forgetInvite(remembered);
+    setRemembered(null);
+  }
 
   function submit(event: Event) {
     const { fields } = form;
     const request = {
       name: fields.name.trim(),
-      mobile: mobileDigits(fields.mobile),
+      mobile: mobileToSend(fields),
       pincode: props.answer.pincode,
       contact_consent: true as const,
       launch_alert: alert,
     };
     const attribution = readAttribution();
-    const remembered = props.invited ? null : rememberedInvite();
+    const onInvite = { ...request, ...(props.credits ? { invite_told: true as const } : {}) };
     const onBook = {
       ...request,
-      loss_extent: extent,
+      ...(extent === null ? {} : { loss_extent: extent }),
       ...(attribution === undefined ? {} : { attribution }),
-      ...(remembered === null ? {} : { invite_code: remembered }),
+      ...(remembered === null ? {} : { invite_code: remembered, invite_told: true as const }),
     };
     const invite = props.invited ? codeInPath() : remembered;
     void form.submit(
       event,
       (token, keyFor) =>
         props.invited
-          ? joinWaitlist(codeInPath(), { ...request, turnstile_token: token }, keyFor(request))
+          ? joinWaitlist(codeInPath(), { ...onInvite, turnstile_token: token }, keyFor(onInvite))
           : joinPublicWaitlist({ ...onBook, turnstile_token: token }, keyFor(onBook)),
       (listed) => {
         const page = props.invited ? "invite" : "book";
@@ -97,6 +103,14 @@ export function Waitlist(props: FormProps & { onListed: (listing: Listing) => vo
           <span class={styles.consentNote}>{` ${waitlist.optional}`}</span>
         </span>
       </label>
+
+      {remembered !== null && (
+        <RememberedInvite
+          line={referral.remembered.waitlist}
+          without={referral.remembered.joinWithout}
+          onWithout={joinWithoutInvite}
+        />
+      )}
 
       <div ref={form.box} class={styles.turnstile} />
       <Send failure={form.failure} sending={form.sending} label={waitlist.submit} sendingLabel={waitlist.sending} />

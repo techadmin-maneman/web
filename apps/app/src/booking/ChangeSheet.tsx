@@ -16,6 +16,7 @@ import { whatsappWith } from "../lib/whatsapp.ts";
 import { methodName } from "../payments/entry.ts";
 import { useSession } from "../session.ts";
 import { BookingSheet } from "./BookingSheet.tsx";
+import { moveButton } from "./late-change.ts";
 import { LateFee } from "./steps.tsx";
 import styles from "./booking.module.css";
 
@@ -47,9 +48,6 @@ function moveLine(terms: MoveTerms): ReactNode {
   if (terms.cost === "late_fee") return <LateFee fee={terms.price} noticeHours={terms.notice_hours} />;
   return terms.paid > 0 ? change.move.free(rupees(terms.paid)) : change.move.freeNothingPaid;
 }
-
-/** What going on to the new date says: a free move only picks one, whatever the notice; any other accepts its cost. */
-const moveButton = (terms: MoveTerms): string => (terms.cost === "free" ? change.move.pick : change.move.accept);
 
 /** What confirming a cancellation says: that a credit is lost, that a fee is kept, or only that it cancels. */
 function cancelButton(terms: CancelTerms): string {

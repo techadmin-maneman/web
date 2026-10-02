@@ -81,6 +81,7 @@ function ChoiceList({
       <h2 className={styles.fieldTitle} id="client-choice-title">
         {oneVisit.choice}
       </h2>
+      {products.length === 0 && <p className={styles.note}>{oneVisit.noProducts}</p>}
       <div className={styles.choiceList}>
         {options.map((option) => (
           <button

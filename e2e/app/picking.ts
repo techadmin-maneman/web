@@ -12,10 +12,13 @@ import { expect } from "../support.ts";
 /** Board C3's words when the window went while the client was choosing. */
 export const TAKEN = "That window has just gone. Pick another.";
 
-/** Picks a free window on the day the sheet is showing, and continues to payment. */
+/** The pay step: "Pay and confirm", or "Confirm" for a visit that costs nothing. */
+export const PAY_STEP = /^(Pay and confirm|Confirm)$/;
+
+/** Picks a free window on the day the sheet is showing, and continues to the pay step. */
 export async function continueToPayment(page: Page): Promise<void> {
   const windows = page.getByRole("dialog", { name: "Pick a window" });
-  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
+  const pay = page.getByRole("dialog", { name: PAY_STEP });
   // Three tries: the day has three windows, and a client would give up on the day too.
   for (let tries = 0; tries < 3; tries += 1) {
     await windows.getByRole("radio").and(page.locator(":enabled")).first().click();
@@ -25,7 +28,8 @@ export async function continueToPayment(page: Page): Promise<void> {
       (response) => response.request().method() === "POST" && new URL(response.url()).pathname === "/api/holds",
       { timeout: 30_000 },
     );
-    await windows.getByRole("button", { name: "Continue to payment" }).click();
+    // "Continue" alone where the day costs nothing, as a free move's does.
+    await windows.getByRole("button", { name: /^Continue( to payment)?$/ }).click();
     if ((await answered).ok()) {
       await expect(pay).toBeVisible();
       return;

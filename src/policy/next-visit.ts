@@ -17,6 +17,7 @@ export const RULES = [
   "the fit may be booked as soon as the consultation is completed; the gap becomes a console setting starting at 0 days, so a lead time can be set later without a release.",
   "the fit is booked and paid in the app after the consultation, and ops see any request not yet booked on the Tasks board.",
   "the horizon becomes a console setting starting at 45 days (item 12), so a service due in 30 days can be booked the day the last visit closes.",
+  "overdue hair system offered on the earlier of its own due date and the service due date",
 ] as const;
 
 /** The figures, each in days, in the order Settings · Rules lists them. */
@@ -76,17 +77,51 @@ export const serviceDue = (lastVisitDay: string, days: NextVisitDays): string =>
 
 /**
  * What the next visit is: a service, or the replacement where the piece in wear falls due on or before the day the
- * service would. The owner's words for it: "If the client's piece falls due before, offer the replacement instead."
+ * service would be. The owner's words for it: "If the client's piece falls due before, offer the replacement instead."
  */
-export const nextVisitType = (serviceDueDay: string, pieceDueDay: string | null): "service" | "replacement" =>
-  pieceDueDay !== null && pieceDueDay <= serviceDueDay ? "replacement" : "service";
+export const nextVisitType = (serviceDay: string, pieceDueDay: string | null): "service" | "replacement" =>
+  pieceDueDay !== null && pieceDueDay <= serviceDay ? "replacement" : "service";
 
 /** The day the app offers a visit on: its due day, or tomorrow once that has passed. */
 export const offeredDay = (dueDay: string, tomorrow: string): string => later(dueDay, tomorrow);
 
-/** The first day a first fit may be booked on: the consultation's day and the lead time, and never before tomorrow. */
+/** A fitted client's next visit: what it is, the day it fell or falls due, and the day the app offers it on. */
+export interface NextVisitDue {
+  readonly type: "service" | "replacement";
+  readonly dueOn: string;
+  readonly offeredOn: string;
+}
+
+/**
+ * The visit after a first fit, a service or a replacement. The service falls due `service_cadence` days after the
+ * last visit. Where the piece in wear falls due on or before the day the service is offered, the replacement is
+ * offered instead: due on the piece's own day, and offered on the earlier of the two due days.
+ */
+export function nextVisitAfter(
+  lastVisitDay: string,
+  pieceDueDay: string | null,
+  tomorrow: string,
+  days: NextVisitDays,
+): NextVisitDue {
+  const serviceDueDay = serviceDue(lastVisitDay, days);
+  const serviceOfferedOn = offeredDay(serviceDueDay, tomorrow);
+  if (pieceDueDay === null || nextVisitType(serviceOfferedOn, pieceDueDay) === "service") {
+    return { type: "service", dueOn: serviceDueDay, offeredOn: serviceOfferedOn };
+  }
+  return {
+    type: "replacement",
+    dueOn: pieceDueDay,
+    offeredOn: offeredDay(sooner(pieceDueDay, serviceDueDay), tomorrow),
+  };
+}
+
+/** The day a first fit falls due: the consultation's day and the lead time ops set. */
+export const firstFitDue = (consultationDay: string, days: NextVisitDays): string =>
+  addDays(consultationDay, days.first_fit_lead);
+
+/** The first day a first fit may be booked on: the day it falls due, and never before tomorrow. */
 export const firstFitOpens = (consultationDay: string, tomorrow: string, days: NextVisitDays): string =>
-  later(addDays(consultationDay, days.first_fit_lead), tomorrow);
+  offeredDay(firstFitDue(consultationDay, days), tomorrow);
 
 /** The last day a visit may be booked on in the app: `horizon` days, counted from tomorrow. */
 export const lastBookableDay = (tomorrow: string, days: NextVisitDays): string => addDays(tomorrow, days.horizon - 1);

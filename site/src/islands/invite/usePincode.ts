@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { referral } from "../../content/referral.ts";
 import { checkPincode, type PincodeAnswer } from "../../lib/api.ts";
+import { currentStep, pushStep } from "./history.ts";
+
+/** What is wrong with the pincode typed, or null when it reads as one. */
+function pincodeProblem(pincode: string): string | null {
+  if (pincode === "") return referral.pincode.empty;
+  if (!/^[1-8]\d{5}$/.test(pincode)) return referral.pincode.invalid;
+  return null;
+}
 
 /** The pincode check: the field, the API's answer, and where focus goes as the answer comes and goes. */
 export function usePincode() {
@@ -27,8 +35,9 @@ export function usePincode() {
 
   async function check(event: Event) {
     event.preventDefault();
-    if (!/^[1-8]\d{5}$/.test(pincode)) {
-      setError(referral.pincode.invalid);
+    const problem = pincodeProblem(pincode);
+    if (problem !== null) {
+      setError(problem);
       setAnswer(null);
       return;
     }
@@ -40,17 +49,26 @@ export function usePincode() {
       setError(referral.pincode.failed);
       return;
     }
-    focusNext.current = "answer";
-    setAnswer(found.body);
+    show(found.body);
+    pushStep("form", found.body);
   }
 
-  /** Back to the field, from the form the answer opened. */
+  /** An answer, with focus moved to it; or, for none, the field again. */
+  function show(next: PincodeAnswer | null) {
+    focusNext.current = next === null ? "field" : "answer";
+    setAnswer(next);
+  }
+
+  /** Back to the field, from the form the answer opened: the same as the browser's Back. */
   function change() {
-    focusNext.current = "field";
-    setAnswer(null);
+    if (currentStep() === "form") {
+      history.back();
+      return;
+    }
+    show(null);
   }
 
-  return { pincode, setPincode, answer, setAnswer, error, checking, check, change, panel, answerHeading, field };
+  return { pincode, setPincode, answer, setAnswer, error, checking, check, show, change, panel, answerHeading, field };
 }
 
 export type PincodeCheck = ReturnType<typeof usePincode>;

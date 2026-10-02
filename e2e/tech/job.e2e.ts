@@ -6,7 +6,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { atTheDoor, fakeTech, JOB_ID, ROHITS_PIECE, TOMORROW_JOB_ID } from "./fixtures.ts";
+import { atTheDoor, fakeTech, JOB_ID, pageScrolls, ROHITS_PIECE, TOMORROW_JOB_ID } from "./fixtures.ts";
 
 const wcag = (page: Page) =>
   new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
@@ -355,4 +355,30 @@ test("walks the six steps of a service visit and closes it out (boards B1 to B4)
 
   const results = await wcag(page);
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
+});
+
+test.describe("on a 360 × 640 phone", () => {
+  test.use({ viewport: { width: 360, height: 640 } });
+
+  test("keeps I have arrived, then Start job, at the foot of a long card, its head in view", async ({ page }) => {
+    const fake = await fakeTech(page);
+    fake.pieces = [ROHITS_PIECE];
+    fake.lastVisit = true;
+    await atTheDoor(page);
+    await page.goto(`/jobs/${JOB_ID}`);
+
+    const heading = page.getByRole("heading", { level: 1, name: "Rohit M." });
+    await expect(foot(page)).toHaveText("I have arrived");
+    await expect(foot(page)).toBeInViewport({ ratio: 1 });
+    await expect(heading).toBeInViewport({ ratio: 1 });
+    // Only the card scrolls, between the head and the foot: never the page.
+    expect(await pageScrolls(page)).toBe(false);
+
+    await foot(page).click();
+    await expect(page.getByText("2 · Waiting")).toBeVisible();
+    await expect(foot(page)).toHaveText("Start job");
+    await expect(foot(page)).toBeInViewport({ ratio: 1 });
+    await expect(heading).toBeInViewport({ ratio: 1 });
+    expect(await pageScrolls(page)).toBe(false);
+  });
 });

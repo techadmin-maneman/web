@@ -102,6 +102,11 @@ const BoardSchema = z
           }),
           offered_window: z.union([z.enum(BOOKING_WINDOWS), z.null()]),
           date: z.union([z.iso.date(), z.null()]),
+          was_technician: z.union([z.object({ id: z.uuid(), name: z.string() }).strict(), z.null()]).openapi({
+            description:
+              "The technician the job is still on, who was switched off and so has no row; null for a job nobody " +
+              "holds. A move of it names him as the expected technician.",
+          }),
         })
         .strict(),
     ),

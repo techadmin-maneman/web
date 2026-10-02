@@ -31,6 +31,7 @@ export type Piece = TechReply<"/api/tech/pieces/lookup">["piece"];
 export type HairProfile = NonNullable<Card["profile"]>;
 
 export const ME = {
+  id: "88000000-0000-4000-8000-000000000001",
   name: "Imran Qureshi",
   first_name: "Imran",
   initials: "IQ",
@@ -82,6 +83,7 @@ const firstJob = (date: string, type: VisitType, oneVisit = false): Job => ({
   window_label: "morning",
   type,
   one_visit: oneVisit,
+  product: null,
   sector: "Sector 65",
   status: "scheduled",
   badge: oneVisit ? "at_visit" : "prepaid",
@@ -99,6 +101,7 @@ const secondJob = (date: string): Job => ({
   window_label: "morning",
   type: "service",
   one_visit: false,
+  product: null,
   sector: "DLF Phase 4",
   status: "scheduled",
   badge: "credit",
@@ -117,6 +120,7 @@ const lockedJob = (date: string): Job => ({
   window_label: "afternoon",
   type: "first_fit",
   one_visit: false,
+  product: "Mane Man Natural",
   sector: "Sector 43",
   status: "scheduled",
   badge: "prepaid",
@@ -137,6 +141,7 @@ const tomorrowsJob = (today: string): Job => {
     window_label: "morning",
     type: "service",
     one_visit: false,
+    product: null,
     sector: "Sector 50",
     status: "scheduled",
     badge: "free",
@@ -158,6 +163,19 @@ const CHECKLIST: Card["checklist"] = [
   { id: "piece_removed", label: "PLACEHOLDER Piece removed" },
   { id: "scalp_cleaned", label: "PLACEHOLDER Scalp cleaned" },
   { id: "piece_cleaned", label: "PLACEHOLDER Piece cleaned" },
+];
+
+/** A consultation and fit in one visit: the consultation's three items, then the first fit's six (src/config/job-sheet.ts). */
+export const ONE_VISIT_CHECKLIST: Card["checklist"] = [
+  { id: "scalp_checked", label: "PLACEHOLDER Scalp and hairline checked" },
+  { id: "measurements_taken", label: "PLACEHOLDER Measurements taken" },
+  { id: "options_shown", label: "PLACEHOLDER Options and prices shown" },
+  { id: "template_checked", label: "PLACEHOLDER Template checked against the head" },
+  { id: "base_trimmed", label: "PLACEHOLDER Base trimmed and shaped" },
+  { id: "adhesive_applied", label: "PLACEHOLDER Adhesive applied" },
+  { id: "piece_set", label: "PLACEHOLDER Piece set and pressed" },
+  { id: "cut_and_styled", label: "PLACEHOLDER Cut and styled" },
+  { id: "aftercare_explained", label: "PLACEHOLDER Aftercare explained" },
 ];
 
 /** The reasons as the console set them: the committed four, in src/config/job-sheet.ts's words. */
@@ -263,6 +281,9 @@ export interface CardOptions {
   readonly oneVisit?: boolean;
   /** The client's hair profile as it stands; none recorded unless a test gives one. */
   readonly profile?: HairProfile | null;
+  readonly checklist?: Card["checklist"];
+  /** A one visit's discount code already on it; none unless a test gives one. */
+  readonly discountCode?: Card["discount_code"];
 }
 
 export function card(date: string, progress: Progress, options: CardOptions = {}): Card {
@@ -297,11 +318,12 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
         : null,
     reminder: options.reminderDelivered === undefined ? null : { delivered_at: options.reminderDelivered },
     steps: stepsFor(oneVisit ? "first_fit" : type, oneVisit),
-    checklist: CHECKLIST,
+    checklist: options.checklist ?? CHECKLIST,
     partial_reasons: PARTIAL_REASONS,
     consumables: CONSUMABLES,
     products: oneVisit || type === "consultation" ? PRODUCTS : [],
     payment_link: null,
+    discount_code: options.discountCode ?? null,
     profile: options.profile ?? null,
   };
 }
@@ -324,6 +346,7 @@ export function lockedCard(date: string): Card {
     consumables: CONSUMABLES,
     products: [],
     payment_link: null,
+    discount_code: null,
     profile: null,
   };
 }
@@ -348,6 +371,8 @@ export interface Fake {
   signedIn: boolean;
   /** True once ops revoke the phone: every call is a 401 `device_revoked`. */
   revoked: boolean;
+  /** True once ops switch the technician off: every call but the sign-in's is a 401 `technician_inactive`. */
+  switchedOff: boolean;
   /** True makes the next code the phone checks one the API has closed, a `410`. */
   codeClosed: boolean;
   /** Every mobile number a code was asked for, in order. */
@@ -389,10 +414,14 @@ export interface Fake {
   type: VisitType;
   /** True makes the first job a consultation and fit in one visit. */
   oneVisit: boolean;
+  /** The discount code already on the one visit, or none. */
+  discountCode: Card["discount_code"];
   /** The client's pieces on the card. */
   pieces: Piece[];
   /** The client's hair profile on the card, or none recorded. */
   profile: HairProfile | null;
+  /** The checklist on the card: three items unless a test gives a longer one. */
+  checklist: Card["checklist"];
   /** Parts of the address beyond the fixture's two lines. */
   address: AddressParts;
   /** Whether the client has a last visit with an after photograph. */
@@ -456,6 +485,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     online: true,
     signedIn: true,
     revoked: false,
+    switchedOff: false,
     codeClosed: false,
     codesSent: [],
     malformed: false,
@@ -470,8 +500,10 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     pin: true,
     type: "service",
     oneVisit: false,
+    discountCode: null,
     pieces: [],
     profile: null,
+    checklist: CHECKLIST,
     address: {},
     lastVisit: false,
     reminderDelivered: undefined,
@@ -493,6 +525,8 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       address: fake.address,
       oneVisit: fake.oneVisit,
       profile: fake.profile,
+      checklist: fake.checklist,
+      discountCode: fake.discountCode,
     });
 
   await on.route("**/api/tech/**", async (route: Route) => {
@@ -518,6 +552,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       return reply(route, 200, { verified: true, first_name: ME.first_name, device_id: ME.device.device_id });
     }
     if (fake.revoked) return refuse(route, 401, "device_revoked");
+    if (fake.switchedOff) return refuse(route, 401, "technician_inactive");
     if (!fake.signedIn) return refuse(route, 401, "session_required");
 
     // The photograph itself, and its thumbnail: PUT to the links the API handed out.
@@ -652,6 +687,15 @@ function stepOf(path: string, body: { phase?: string } | null): Step | null {
     if (path.endsWith(`/${step}`)) return step;
   }
   return null;
+}
+
+/** Whether anything scrolls but a screen's own body: the page, or the column the screens sit in. */
+export function pageScrolls(page: Page): Promise<boolean> {
+  return page.evaluate(() => {
+    const column = document.getElementById("root");
+    const pageHeight = document.scrollingElement?.scrollHeight ?? 0;
+    return pageHeight > window.innerHeight || (column !== null && column.scrollHeight > column.clientHeight);
+  });
 }
 
 /** Everything the phone is holding in its own store, read from the page. */

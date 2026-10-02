@@ -12,7 +12,7 @@ import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useEffect, useId, useRef, useState } from "react";
 import { api, type AddressGiven, type ClientRecord, type Suggestion } from "../api.ts";
-import { clients } from "../content.ts";
+import { clients, NOT_PERMITTED } from "../content.ts";
 import styles from "./address.module.css";
 
 const copy = clients.visits.given;
@@ -231,7 +231,7 @@ export function GivenAddressForm({
         session_token: sessionToken,
       });
       if (!answer.ok) {
-        setProblem(copy.failed);
+        setProblem(answer.code === "not_permitted" ? NOT_PERMITTED : copy.failed);
         return;
       }
       onSaved(answer.body);

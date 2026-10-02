@@ -1,28 +1,19 @@
 ---
 // Published prices: the three-row table, the first-year example and payment,
 // all of them the price book's (docs/decisions/0073-prices-from-the-price-book.md).
-// Premium's column is built hidden and shown by mm-site's Worker once the book
-// prices a first fit coded premium (docs/decisions/0085-services-ops-can-edit.md).
+// The first fit's is the cheapest hair system ops offer, which mm-site's Worker
+// writes in; the page is built without one.
 import { prices } from "../../content/site.ts";
 import { asBuilt, priceTemplate } from "../../lib/prices.ts";
-
-const [standard, premium] = prices.columns;
 ---
 
 <section id="prices" class="container prices" data-section="prices">
   <h2 class="label-title caps">{prices.label}</h2>
   <p class="lead intro">{prices.intro}</p>
   <div class="table" role="table" aria-label={prices.label}>
-    <div class="row head" role="row">
-      <div role="columnheader">
-        <span class="visually-hidden">{prices.label}</span>
-      </div>
-      <div class="column" role="columnheader">
-        {standard}
-      </div>
-      <div class="column" role="columnheader" data-premium hidden>
-        {premium}
-      </div>
+    <div class="visually-hidden" role="row">
+      <div role="columnheader">{prices.label}</div>
+      <div role="columnheader">{prices.column}</div>
     </div>
     {prices.rows.map((row) => (
       <div class="row" role="row">
@@ -30,11 +21,8 @@ const [standard, premium] = prices.columns;
           <div class="name">{row.label}</div>
           <div class="note">{row.note}</div>
         </div>
-        <div class="amount" role="cell" data-price={priceTemplate(row.standard)}>
-          {asBuilt(row.standard)}
-        </div>
-        <div class="amount" role="cell" data-price={priceTemplate(row.premium)} data-premium hidden>
-          {asBuilt(row.premium)}
+        <div class="amount" role="cell" data-price={priceTemplate(row.amount)}>
+          {asBuilt(row.amount)}
         </div>
       </div>
     ))}
@@ -73,23 +61,10 @@ const [standard, premium] = prices.columns;
      and on the narrowest phones a long word breaks rather than pushing the prices off the page. */
   .row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) var(--price-column) var(--price-column);
+    grid-template-columns: minmax(0, 1fr) var(--price-column);
     align-items: baseline;
     padding: var(--price-row-pad) 0;
     border-bottom: var(--hairline) solid var(--paper-line);
-  }
-  /* Without Premium, the table is the standard column alone. */
-  .table:has([data-premium][hidden]) .row {
-    grid-template-columns: minmax(0, 1fr) var(--price-column);
-  }
-  .head {
-    align-items: stretch;
-    padding: var(--sp-18) 0;
-  }
-  .column {
-    padding-left: var(--price-cell-pad);
-    font-family: var(--font-serif);
-    font-size: var(--fs-price-head);
   }
   .what {
     padding-right: var(--sp-16);

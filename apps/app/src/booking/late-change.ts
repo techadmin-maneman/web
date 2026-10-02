@@ -1,9 +1,12 @@
-// What changing a visit late costs the client, as the booking sheet says it: the days and windows already inside
-// the notice, which are still sold and marked, and what the pay step promises about moving or cancelling later.
+// What changing a visit late costs the client, as the booking and move sheets say it: free until a time, what a move
+// or cancel takes once the visit is inside its notice, and whether going on to move it accepts a charge.
 
-import type { Availability, Hold, MoveTerms, Price } from "../api.ts";
+import type { Hold, MoveTerms, Price } from "../api.ts";
+import { change } from "../content.ts";
 
-type Day = Availability["days"][number];
+/** What going on to the new date says: a free move only picks one, inside the notice or not; any other accepts its cost. */
+export const moveButton = (terms: Pick<MoveTerms, "cost">): string =>
+  terms.cost === "free" ? change.move.pick : change.move.accept;
 
 /** What a change inside the notice takes from the client. */
 export type AtStake =
@@ -34,7 +37,3 @@ export function atStake(hold: Hold, moving?: MoveTerms): AtStake {
 /** Whether the visit is already inside the notice it is sold under at `now`, by the API's clock. */
 export const insideNotice = (hold: Pick<Hold, "free_until">, now: number): boolean =>
   Date.parse(hold.free_until) <= now;
-
-/** Whether a visit booked now in any of the day's open windows would already cost the client to change. */
-export const dayInsideNotice = (day: Day): boolean =>
-  day.windows.some((window) => window.with !== null && window.change_charged);

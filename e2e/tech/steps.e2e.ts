@@ -10,6 +10,8 @@ import {
   fakeTech,
   heldOnPhone,
   JOB_ID,
+  ONE_VISIT_CHECKLIST,
+  pageScrolls,
   ROHITS_PIECE,
   ROHITS_PROFILE,
   type HairProfile,
@@ -227,6 +229,59 @@ test("a focused checklist line shows its whole focus ring, not one cut by the sc
   expect(clipped).toBeNull();
 });
 
+/** A step's one action, in the foot below its body. */
+const footAction = (page: Page) => page.locator("main > div").last().getByRole("button");
+
+test.describe("on a 360 × 640 phone", () => {
+  test.use({ viewport: { width: 360, height: 640 } });
+
+  test("keeps a long checklist's action at the foot and its head in view, scrolling only the list", async ({
+    page,
+  }) => {
+    const fake = await fakeTech(page);
+    fake.type = "first_fit";
+    fake.oneVisit = true;
+    fake.checklist = ONE_VISIT_CHECKLIST;
+    startedThrough(fake, "before_photos");
+    await page.goto(`/jobs/${JOB_ID}/checklist`);
+
+    const heading = page.getByRole("heading", { level: 1, name: "Consultation and fit checklist" });
+    await expect(heading).toBeInViewport({ ratio: 1 });
+    await expect(footAction(page)).toHaveText("Finish the list to continue");
+    await expect(footAction(page)).toBeInViewport({ ratio: 1 });
+    expect(await pageScrolls(page)).toBe(false);
+
+    // Reaching each item scrolls the list alone; the head and the foot stay where they are.
+    const items = page.getByRole("button", { name: /PLACEHOLDER/ });
+    await expect(items).toHaveCount(9);
+    for (const item of await items.all()) await item.click();
+
+    await expect(footAction(page)).toHaveText("Next");
+    await expect(footAction(page)).toBeInViewport({ ratio: 1 });
+    await expect(heading).toBeInViewport({ ratio: 1 });
+    expect(await pageScrolls(page)).toBe(false);
+  });
+
+  test("keeps the hair profile's action at the foot and its head in view, down to its last field", async ({ page }) => {
+    const fake = await fakeTech(page);
+    fake.type = "consultation";
+    startedThrough(fake, "before_photos", "checklist", "consumables");
+    await page.goto(`/jobs/${JOB_ID}/profile`);
+
+    const heading = page.getByRole("heading", { level: 1, name: "Hair profile" });
+    await expect(heading).toBeInViewport({ ratio: 1 });
+    await expect(footAction(page)).toBeInViewport({ ratio: 1 });
+    expect(await pageScrolls(page)).toBe(false);
+
+    const lastField = page.locator("main > div").first().locator(":scope > *").last();
+    await lastField.scrollIntoViewIfNeeded();
+    await expect(lastField).toBeInViewport();
+    await expect(heading).toBeInViewport({ ratio: 1 });
+    await expect(footAction(page)).toBeInViewport({ ratio: 1 });
+    expect(await pageScrolls(page)).toBe(false);
+  });
+});
+
 test.describe("with motion", () => {
   test.use({ reducedMotion: "no-preference" });
 
@@ -409,7 +464,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
   test("asks the client's choice first, by name, and sends the product with the piece fitted", async ({ page }) => {
     const fake = await onTheChoice(page);
     await expect(
-      page.getByRole("button", { name: "Choose the product, or that the client decided against it" }),
+      page.getByRole("button", { name: "Choose the hair system, or that the client decided against it" }),
     ).toBeDisabled();
     expect((await wcag(page)).violations).toEqual([]);
 
@@ -466,6 +521,19 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     expect(asked).toEqual([{ code: "wrong1" }, { code: "WEDDNG25" }]);
     // Asked straight, never queued in the outbox.
     expect(writesTo(fake, "discount-code")).toHaveLength(0);
+  });
+
+  test("says the code the client booked with, and asks for none", async ({ page }) => {
+    const fake = await fakeTech(page);
+    fake.type = "first_fit";
+    fake.oneVisit = true;
+    fake.discountCode = { code: "AUDTEST", given_by: "client" };
+    startedThrough(fake, "before_photos", "checklist", "consumables", "piece", "after_photos");
+    await page.goto(`/jobs/${JOB_ID}/outcome`);
+    await page.getByRole("button", { name: "Done", exact: true }).click();
+    await expect(page.getByText("Code AUDTEST applied at booking. The payment link will take it off.")).toBeVisible();
+    await expect(page.getByLabel("Discount code, if the client has one")).toHaveCount(0);
+    expect((await wcag(page)).violations).toEqual([]);
   });
 
   test("names the job a consultation and fit, paid for once fitted", async ({ page }) => {

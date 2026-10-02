@@ -5,9 +5,9 @@
 import type { Page } from "@playwright/test";
 
 /**
- * No real Razorpay in a browser test. The pay step loads Checkout as it opens, and the real script pulls in more of
- * Razorpay's than the app's policy allows (its risk-detection bundle, inline styles), which failed whichever test
- * happened to let it arrive before it ended. Registered before a test's own fake, which therefore answers first.
+ * No real Razorpay in a booking test: the pay step loads Checkout as it opens, and a test should not wait on
+ * Razorpay's servers. Only checkout-policy.e2e.ts lets the real script in. Registered before a test's own fake, which
+ * therefore answers first.
  */
 export async function noRealCheckout(page: Page): Promise<void> {
   await page.route(/^https:\/\/(checkout|cdn)\.razorpay\.com\//, (route) => route.abort());
@@ -29,6 +29,55 @@ export async function fakeCheckout(page: Page, outcome: "paid" | "failed"): Prom
       };`,
     }),
   );
+}
+
+interface LeftOpen {
+  /** The timeout Checkout was opened with, in seconds, and when, on the page's clock. */
+  readonly timeout: number;
+  readonly openedAt: number;
+  pay(): void;
+  close(): void;
+}
+
+/** Checkout that stays open until the test pays in it (paidInCheckout) or closes it (closedCheckout). */
+export async function checkoutLeftOpen(page: Page): Promise<void> {
+  await page.route("https://checkout.razorpay.com/v1/checkout.js", (route) =>
+    route.fulfill({
+      contentType: "text/javascript",
+      body: `window.Razorpay = function (options) {
+        this.on = () => {};
+        this.open = () => {
+          window.__checkout = {
+            timeout: options.timeout,
+            openedAt: Date.now(),
+            pay: () => options.handler({ razorpay_payment_id: "pay_fake" }),
+            close: () => options.modal.ondismiss(),
+          };
+        };
+      };`,
+    }),
+  );
+}
+
+/** Waits for Checkout to open; its timeout, and when it opened. */
+export async function checkoutOpened(page: Page): Promise<{ timeout: number; openedAt: number }> {
+  await page.waitForFunction(() => (window as unknown as { __checkout?: LeftOpen }).__checkout !== undefined);
+  return page.evaluate(() => {
+    const checkout = (window as unknown as { __checkout: LeftOpen }).__checkout;
+    return { timeout: checkout.timeout, openedAt: checkout.openedAt };
+  });
+}
+
+export async function paidInCheckout(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    (window as unknown as { __checkout: LeftOpen }).__checkout.pay();
+  });
+}
+
+export async function closedCheckout(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    (window as unknown as { __checkout: LeftOpen }).__checkout.close();
+  });
 }
 
 /**
@@ -65,6 +114,15 @@ export async function checkoutOnTop(page: Page): Promise<void> {
  * page was given; only the browser resolves app.localhost, so the test cannot fetch it again itself.
  */
 export async function confirmedByRazorpay(page: Page): Promise<void> {
+  await paidAndThen(page, { state: "booked", visit_id: crypto.randomUUID() });
+}
+
+/** The hold's poll answered as a paid hold that could not be booked: let go, and its payment refunded. */
+export async function refundedAfterPaying(page: Page): Promise<void> {
+  await paidAndThen(page, { state: "released" });
+}
+
+async function paidAndThen(page: Page, outcome: Record<string, unknown>): Promise<void> {
   let hold: Record<string, unknown> = {};
   page.on("response", (response) => {
     if (response.request().method() === "POST" && response.url().endsWith("/api/holds")) {
@@ -75,7 +133,7 @@ export async function confirmedByRazorpay(page: Page): Promise<void> {
   });
   await page.route(/\/api\/holds\/[0-9a-f-]{36}$/, (route) =>
     route.request().method() === "GET"
-      ? route.fulfill({ json: { ...hold, state: "booked", paid: true, visit_id: crypto.randomUUID() } })
+      ? route.fulfill({ json: { ...hold, paid: true, ...outcome } })
       : route.fallback(),
   );
 }

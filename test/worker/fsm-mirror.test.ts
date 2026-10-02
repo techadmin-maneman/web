@@ -1,6 +1,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { statusOf, syncAppointment } from "../../src/domain/fsm-mirror.ts";
+import { syncAppointment } from "../../src/domain/fsm-mirror.ts";
+import { statusOf } from "../../src/domain/visit-status.ts";
 import { createLogger } from "../../src/log.ts";
 import { createStubFsm, type FsmAppointment, type FsmProvider, type StubFsmWorld } from "../../src/providers/fsm.ts";
 import { handleFsmSyncBatch } from "../../src/queues/fsm-sync.ts";
@@ -430,9 +431,7 @@ describe("FSM's webhook", () => {
       refreshToken: "r",
       accountsHost: "accounts.zoho.in",
       apiHost: "www.zohoapis.in",
-      booksOrgId: null,
       webhookToken: TOKEN,
-      booksRefundAccountId: null,
     },
   };
 

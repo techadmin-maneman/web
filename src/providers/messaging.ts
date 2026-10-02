@@ -8,8 +8,13 @@ export type SendResult =
   | { readonly ok: true; readonly providerMessageId: string | null }
   | {
       readonly ok: false;
-      /** A timeout, a 5xx or a 429: worth trying again. */
+      /** An unreachable bridge, a 5xx or a 429: worth trying again soon. */
       readonly transient: boolean;
+      /**
+       * The bridge itself cannot send anything: no such instance, a refused key, or its WhatsApp session closed.
+       * The message is not at fault, so it waits for the bridge rather than failing.
+       */
+      readonly bridgeDown?: boolean;
       /** The provider's status and code. Never the number or the message. */
       readonly detail: string;
     };
@@ -25,8 +30,12 @@ export interface OutboundMessage {
   readonly mediaUrl?: string;
 }
 
-/** Whether the provider can reach WhatsApp now; if not, what it said. */
-export type Connection = { readonly open: true } | { readonly open: false; readonly detail: string };
+/** Why the bridge cannot reach WhatsApp. Each has its own fix (src/scheduled/whatsapp-bridge.ts). */
+export type BridgeFault = "no_instance" | "key_refused" | "logged_out" | "unreachable";
+
+/** Whether the provider can reach WhatsApp now; if not, why, and what it said. */
+export type Connection =
+  { readonly open: true } | { readonly open: false; readonly fault: BridgeFault; readonly detail: string };
 
 export interface MessagingProvider {
   send(message: OutboundMessage): Promise<SendResult>;

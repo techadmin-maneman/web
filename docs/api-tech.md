@@ -143,7 +143,7 @@ Who is signed in, and the phone this session is bound to
 }
 ```
 
-**401**: session_required; device_revoked: ops revoked this phone, so drop the cached jobs
+**401**: session_required; device_revoked: ops revoked this phone, so drop the cached jobs; technician_inactive: ops switched him off, so drop the cards and set aside the work not yet sent
 
 ```json
 {
@@ -943,6 +943,7 @@ Request body:
             "look_limit_reached",
             "claim_required",
             "whatsapp_unavailable",
+            "number_not_proved",
             "unauthorized",
             "visit_booked",
             "payment_held",
@@ -966,6 +967,8 @@ Request body:
             "out_of_order",
             "not_today",
             "already_started",
+            "technician_inactive",
+            "managed_in_fsm",
             "clash",
             "on_leave",
             "does_not_fit",
@@ -976,6 +979,7 @@ Request body:
             "service_exists",
             "last_of_kind",
             "service_retired",
+            "no_product",
             "unknown_invite",
             "own_invite",
             "already_invited",
@@ -986,7 +990,9 @@ Request body:
             "already_discounted",
             "price_settled",
             "code_exists",
-            "slot_times_too_soon"
+            "slot_times_too_soon",
+            "not_permitted",
+            "last_admin"
           ]
         },
         "request_id": {
@@ -1082,6 +1088,13 @@ Request body:
         "unreachable"
       ],
       "description": "ok: reachable and marked as this environment's database. unmarked: no identity row. mismatch: marked as another environment's database."
+    },
+    "cron_completed_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "When the five-minute cron last finished a run; null before its first, or when the database is not this environment's. Information only: status does not depend on it."
     }
   },
   "required": [
@@ -1089,7 +1102,8 @@ Request body:
     "environment",
     "version_id",
     "version_tag",
-    "d1"
+    "d1",
+    "cron_completed_at"
   ],
   "additionalProperties": false
 }
@@ -1125,7 +1139,7 @@ Request body:
   "properties": {
     "mobile": {
       "type": "string",
-      "pattern": "^(?:\\+91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$"
+      "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$"
     },
     "device_id": {
       "type": "string",
@@ -1227,6 +1241,11 @@ Request body:
 {
   "type": "object",
   "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Whose work the phone holds: it keeps work it set aside only for him."
+    },
     "name": {
       "type": "string"
     },
@@ -1269,6 +1288,7 @@ Request body:
     }
   },
   "required": [
+    "id",
     "name",
     "first_name",
     "initials",
@@ -1369,6 +1389,17 @@ Request body:
       "type": "boolean",
       "description": "A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, at the piece step."
     },
+    "product": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "On a first fit, the hair system the client was sold, by its name in the console. Null on any other visit, on a one visit until the client chooses, and on a first fit that names none."
+    },
     "sector": {
       "anyOf": [
         {
@@ -1430,6 +1461,7 @@ Request body:
     "window_label",
     "type",
     "one_visit",
+    "product",
     "sector",
     "status",
     "badge",
@@ -1505,6 +1537,17 @@ Request body:
     "one_visit": {
       "type": "boolean",
       "description": "A consultation and fit in one visit: the first fit's steps, with the client's choice of product, or none, at the piece step."
+    },
+    "product": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "On a first fit, the hair system the client was sold, by its name in the console. Null on any other visit, on a one visit until the client chooses, and on a first fit that names none."
     },
     "sector": {
       "anyOf": [
@@ -1887,6 +1930,36 @@ Request body:
       ],
       "description": "On a one visit closed as done with the client fitted, its payment link; else null."
     },
+    "discount_code": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "given_by": {
+              "type": "string",
+              "enum": [
+                "client",
+                "technician",
+                "ops"
+              ],
+              "description": "client: as they booked; ops: on the booking in the console; technician: at the visit."
+            }
+          },
+          "required": [
+            "code",
+            "given_by"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "On a one visit, the discount code already on it, so the outcome step asks for none; never what it takes off. Null on any other visit, and on a one visit with no code."
+    },
     "profile": {
       "anyOf": [
         {
@@ -1908,6 +1981,7 @@ Request body:
     "window_label",
     "type",
     "one_visit",
+    "product",
     "sector",
     "status",
     "badge",
@@ -1928,6 +2002,7 @@ Request body:
     "consumables",
     "products",
     "payment_link",
+    "discount_code",
     "profile"
   ],
   "additionalProperties": false

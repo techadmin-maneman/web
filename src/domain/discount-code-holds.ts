@@ -4,7 +4,8 @@
 // takes off waits for the payment link (src/domain/payment-links.ts). Uses are src/domain/discount-code-uses.ts.
 
 import type { VisitType } from "../config/visit-types.ts";
-import { amountOff, discounted } from "../policy/discount-codes.ts";
+import { amountOff, discounted, type DiscountTerms } from "../policy/discount-codes.ts";
+import { spendableCredits } from "./credits.ts";
 import { termsOf } from "./discount-codes.ts";
 import {
   checkCode,
@@ -83,7 +84,8 @@ export async function enterOnHold(
   if (closed !== null) return closed;
   if ((await codeOnHold(db, hold.id)) !== null) return { kind: "already_discounted" };
 
-  const booking = { type: hold.type, onCredit: hold.use_credit === 1, moves: hold.moves_appointment_id !== null };
+  const onCredit = await creditStillCovers(db, hold, entry.personId, now);
+  const booking = { type: hold.type, onCredit, moves: hold.moves_appointment_id !== null };
   const checked = await checkCode(db, entry.text, booking, entry.personId, now);
   if (!checked.ok) return { kind: "not_applicable", reason: checked.reason };
 
@@ -102,12 +104,18 @@ export async function enterOnHold(
     useStatement(db, use, "unpaid_hold", now),
     db
       .prepare(
-        `UPDATE slot_holds SET amount_ex_gst = ?2, amount = ?3, updated_at = ?4
+        `UPDATE slot_holds SET amount_ex_gst = ?2, amount = ?3, use_credit = 0, updated_at = ?4
          WHERE id = ?1 AND EXISTS (SELECT 1 FROM discount_code_uses WHERE id = ?5)`,
       )
       .bind(hold.id, price.amount_ex_gst, price.amount, now.toISOString(), use.id),
   ]);
   return enteredAs(db, use.id, checked.code.code);
+}
+
+/** Whether a credit still pays for the hold: none does once another booking has taken the client's last one. */
+async function creditStillCovers(db: D1Database, hold: HoldRow, personId: string, now: Date): Promise<boolean> {
+  if (hold.use_credit !== 1) return false;
+  return (await spendableCredits(db, personId, now, hold.id)).visits > 0;
 }
 
 /** The client takes the code off their hold, before Checkout has the order: the hold is back at its price. */
@@ -166,20 +174,26 @@ export async function holdDiscount(
   };
 }
 
-/** A code the site's form was given, checked for a consultation and fit in one visit: its ID, or why not. */
+/** A code that applies to a consultation and fit in one visit: its ID, its text and what it takes off. */
+export interface OneVisitCode {
+  readonly ok: true;
+  readonly codeId: string;
+  readonly code: string;
+  readonly terms: DiscountTerms;
+}
+
+/** A code the site's form was given, checked for a consultation and fit in one visit: the code, or why not. */
 export async function checkForOneVisit(
   db: D1Database,
   text: string,
   personId: string | null,
   now: Date,
-): Promise<
-  | { readonly ok: true; readonly codeId: string; readonly code: string }
-  | { readonly ok: false; readonly reason: Refused }
-> {
+): Promise<OneVisitCode | { readonly ok: false; readonly reason: Refused }> {
   const booking = { type: "first_fit", onCredit: false, moves: false } as const;
   // Someone new has used nothing, which no person's ID matches.
   const checked = await checkCode(db, text, booking, personId ?? "", now);
-  return checked.ok ? { ok: true, codeId: checked.code.id, code: checked.code.code } : checked;
+  if (!checked.ok) return checked;
+  return { ok: true, codeId: checked.code.id, code: checked.code.code, terms: termsOf(checked.code) };
 }
 
 /**

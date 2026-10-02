@@ -205,23 +205,24 @@
 }
 .preview {
   width: 100%;
-  height: var(--preview-h);
+  min-height: var(--preview-h);
+  padding: var(--sp-24);
   background: var(--ink-frame);
   position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
   overflow: hidden;
 }
 .oval {
   width: 70%;
   max-width: var(--oval-max);
+  margin: auto 0;
 }
+/* Below the oval's corner brackets, never across them. */
 .previewCaption {
-  position: absolute;
-  left: var(--sp-24);
-  right: var(--sp-24);
-  bottom: var(--sp-24);
+  align-self: stretch;
+  margin-top: var(--sp-16);
   font-size: var(--fs-14);
   color: var(--ink-muted);
   line-height: var(--lh-155);
@@ -424,6 +425,7 @@
 .gateFrameLabel {
   position: absolute;
   left: var(--sp-20);
+  right: calc(50% + var(--sp-20));
   bottom: var(--sp-20);
   font-size: var(--fs-15);
   color: var(--ink-muted);
@@ -435,6 +437,15 @@
   color: var(--ink-muted);
   max-width: var(--measure-form);
   text-wrap: pretty;
+}
+/* On a phone the frame holds nothing to look at: the caption says it all. */
+@media (max-width: 600px) {
+  .gateFrame {
+    display: none;
+  }
+  .gateCaption {
+    margin-top: 0;
+  }
 }
 .fields {
   margin-top: var(--flow-choices-gap);
@@ -500,6 +511,23 @@
 .gateFailure {
   margin-top: var(--sp-20);
   max-width: var(--measure-form);
+}
+.codeHint {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-165);
+  color: var(--ink-muted);
+}
+.codeAgain {
+  margin-top: var(--sp-12);
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: var(--fs-14);
+  color: var(--paper);
+  text-decoration: underline;
+  text-underline-offset: var(--sp-3);
+  cursor: pointer;
 }
 .gateSubmit {
   width: 100%;
