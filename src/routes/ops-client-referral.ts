@@ -141,6 +141,7 @@ export function registerOpsClientReferral(app: App): void {
       invite,
       personId,
       ...(await howTheyCame(db, personId)),
+      toldNotice: null,
       now: c.var.deps.now(),
       attachedBy: {
         by: staff.id,

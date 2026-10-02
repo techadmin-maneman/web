@@ -69,6 +69,11 @@ function toldWhenFitted(name: string | null, reward: ReferralReward | null): str
   return `${told} That is when the ${visits(friend)} ${agreeing(friend, "lands", "land")}.`;
 }
 
+/** /book's line for the invite this browser remembers, above the consultation form's button. */
+function rememberedOnBooking(reward: ReferralReward | null): string {
+  return `You have an invite. ${toldWhenFitted(null, reward)}`;
+}
+
 /** The booked confirmation's line of the friend's visits (C4); null where they get none, or it is not known. */
 function visitsLand(reward: ReferralReward | null): string | null {
   const friend = friendVisits(reward);
@@ -242,8 +247,21 @@ export const referral = {
     optional: "Optional",
     submit: "Add me to the list",
     sending: "Adding",
-    holds: "{name}’s invite stays valid for 12 months after we launch there.",
-    holdsUnnamed: "The invite stays valid for 12 months after we launch there.",
+    // Not drawn: who is told, as the consultation form says it. The owner approves the words.
+    holds: "{name}’s invite stays valid for 12 months after we launch there. {name} is told when you are fitted.",
+    holdsUnnamed:
+      "The invite stays valid for 12 months after we launch there. Whoever invited you is told when you are fitted.",
+  },
+  /**
+   * Not drawn: /book's line for the invite this browser remembers, before the form sends it with the booking, so the
+   * friend knows who is told of the fit and may go on without it. The owner approves the words.
+   */
+  remembered: {
+    consultation: rememberedOnBooking,
+    waitlist:
+      "You have an invite. It stays valid for 12 months after we launch there. Whoever invited you is told when you are fitted.",
+    bookWithout: "Book without the invite",
+    joinWithout: "Join without the invite",
   },
   /** Shared between the two forms. */
   form: {
