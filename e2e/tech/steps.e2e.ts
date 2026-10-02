@@ -461,7 +461,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
   test("asks the client's choice first, by name, and sends the product with the piece fitted", async ({ page }) => {
     const fake = await onTheChoice(page);
     await expect(
-      page.getByRole("button", { name: "Choose the product, or that the client decided against it" }),
+      page.getByRole("button", { name: "Choose the hair system, or that the client decided against it" }),
     ).toBeDisabled();
     expect((await wcag(page)).violations).toEqual([]);
 

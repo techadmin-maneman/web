@@ -6,8 +6,8 @@
 // data-price="{firstFit}, then {service} a month", and the Worker fills it from the book; the structured data is
 // built again from the same figures; and the book's answer goes onto <body> for the booking form's island, which
 // draws its own. The answer is kept a minute. When mm-api has never answered, the page is served with the figures
-// it was built with. Premium is built hidden, having no figures of its own, and is shown only where the book prices
-// a first fit coded premium (docs/decisions/0085-services-ops-can-edit.md).
+// it was built with. A first fit's figure is the cheapest hair system ops offer in the console, which a page is built
+// without.
 //
 // The referral landing at /r/:code (docs/decisions/0027-referral-landing.md). WhatsApp's crawler runs no
 // JavaScript, so the invite's preview has to be in the HTML it receives. The Worker serves the built page for every
@@ -23,7 +23,7 @@
 import { inviteDescription, inviteTitle } from "./content/referral.ts";
 import type { Invite, PublishedPrices, ReferralReward } from "./lib/api.ts";
 import { cardPath, HOUSE_CARD, isInvite } from "./lib/invite.ts";
-import { fillPrices, isPublishedPrices, premiumOf, priceWords, standardOf, type PriceWords } from "./lib/prices.ts";
+import { fillPrices, isPublishedPrices, pricesOf, priceWords, type PriceWords } from "./lib/prices.ts";
 import { isReferralReward } from "./lib/reward.ts";
 import { faqPage, jsonLd, localBusiness } from "./lib/structured-data.ts";
 
@@ -176,13 +176,6 @@ class Figure {
   }
 }
 
-/** An element that shows Premium, which the page is built with hidden: shown, now the book prices it. */
-class Premium {
-  element(element: Element): void {
-    element.removeAttribute("hidden");
-  }
-}
-
 /** A block of structured data, built again with the book's figures. */
 class Structured {
   readonly json: string;
@@ -197,10 +190,8 @@ class Structured {
 }
 
 function writePrices(rewriter: HTMLRewriter, prices: PublishedPrices): void {
-  const premium = premiumOf(prices);
-  const words = priceWords(standardOf(prices), premium);
+  const words = priceWords(pricesOf(prices));
   rewriter.on("[data-price]", new Figure(words));
-  if (premium !== null) rewriter.on("[data-premium]", new Premium());
   rewriter.on('script[data-structured="business"]', new Structured(localBusiness(words)));
   rewriter.on('script[data-structured="faq"]', new Structured(faqPage(words)));
   rewriter.on("body", new Written("data-prices", JSON.stringify(prices)));

@@ -53,7 +53,7 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   checklist_items:
     "Each kind of visit's checklist as ops set it, an item they took off kept as retired; a kind with no rows takes the committed list (ADR 0087).",
   cities:
-    "The cities Phase 1's booking form offered. The leads it left name one, a booking's lead names its pincode's, and the dispatch board filters by them.",
+    "The cities Phase 1's booking form offered. The leads it left name one, a booking's lead names its pincode's, the dispatch board filters by them, and a zone groups them for staff access (ADR 0109).",
   consents:
     "What each person agreed to, under which notice's version, and where (ADR 0094). Rows are only ever added (ADR 0042, ADR 0049).",
   consultation_requests:
@@ -68,6 +68,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   credit_ledger:
     "Service-visit credits, entry by entry, each drawing on the grant it spends; a balance is summed, never kept (ADR 0033).",
   cron_jobs: "Each job of the five-minute cron, and how many runs in a row it has failed (ADR 0067).",
+  cron_runs:
+    "One row: when the five-minute cron's latest run started and its last finished run ended, so a run cut short is told by the next.",
   deletion_requests: "A client's request to be erased, waiting for ops, and what ops decided (ADR 0042, ADR 0078).",
   discount_code_uses:
     "Each time a discount code was entered on a booking, its hold or its visit: by whom, and what it took off before GST once the price was known. Never deleted: one taken off is marked removed (ADR 0108).",
@@ -131,6 +133,13 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "What a hold or a visit takes of a technician's day, a row per half-slot and window, so no time is taken twice (ADR 0034, ADR 0069).",
   slot_holds: "A slot held while a client pays, and what became of it (ADR 0045, ADR 0068).",
   slot_times: "Each change of the day's half-slot times ops set, from the day it applies; never changed (ADR 0102).",
+  staff:
+    "Each member of staff on the console's Staff list, by their Access e-mail, and whether they are let in (ADR 0109).",
+  staff_access_mode: "One row: whether the console enforces the Staff list yet, and who last switched it (ADR 0109).",
+  staff_grants:
+    "What each member of staff may do: a department, at a level, over a place, national, a zone or a city (ADR 0109).",
+  staff_service_tokens:
+    "The Access service tokens let in as every caller was before the Staff list, such as CI's (ADR 0109).",
   stock_balances:
     "What each place holds of each consumable, and when it last counted it: the sum of its rows in `stock_movements`, kept by triggers as each is written (ADR 0087).",
   stock_movements:
@@ -156,6 +165,7 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   visits: "What an appointment became once FSM closed it: the outcome, its reason and its times (ADR 0032, ADR 0074).",
   waitlist_entries: "Someone waiting for us to reach their pincode, and whether they were told it launched (ADR 0048).",
   webhook_inbox: "FSM's webhook deliveries, each kept once (ADR 0032).",
+  zones: "A region made of cities, as NCR is, which a grant of staff access may name (ADR 0109).",
   zoho_access_tokens:
     "Each Zoho client's access token, and the lease one caller holds while it asks for a new one (ADR 0070).",
   zoho_token: "The CRM's access token before migration 0041; unread since, and dropped later (open point 90).",

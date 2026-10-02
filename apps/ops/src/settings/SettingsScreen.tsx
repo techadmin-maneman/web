@@ -9,7 +9,8 @@
 // expected use, and the job sheet (docs/decisions/0087-consumables-and-stock.md). And
 // the days no visit is offered, which the runbook's SQL set before
 // (docs/decisions/0088-every-policy-in-the-console.md). The discount codes ops make for
-// clients' bookings (docs/decisions/0108-discount-codes.md). Above them, one line says
+// clients' bookings (docs/decisions/0108-discount-codes.md). The Staff list: who may use
+// the console, and for what. Above them, one line says
 // what the photographs and referral cards hold in R2 against their share
 // (docs/decisions/0093-the-storage-meter.md).
 
@@ -26,6 +27,7 @@ import { JobSheet } from "./JobSheet.tsx";
 import { Services } from "./Services.tsx";
 import { Rules } from "./Rules.tsx";
 import { ServiceArea } from "./ServiceArea.tsx";
+import { Staff } from "./Staff.tsx";
 import styles from "./settings.module.css";
 
 function Panel({ tab }: { tab: SettingsTab }) {
@@ -35,6 +37,7 @@ function Panel({ tab }: { tab: SettingsTab }) {
   if (tab === "blackouts") return <Blackouts />;
   if (tab === "consumables") return <Consumables />;
   if (tab === "job-sheet") return <JobSheet />;
+  if (tab === "staff") return <Staff />;
   return <Rules />;
 }
 

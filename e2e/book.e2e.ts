@@ -84,6 +84,30 @@ test("the page introduces itself, with no invite and no card", async ({ page }) 
   await expect(page.locator("img[width='1200']")).toHaveCount(0);
 });
 
+// The field kept the first ten digits, so "+91 98765 43210" was booked as 91987 65432, someone else's number.
+test("a number with +91, 91, 0 or 0091 in front books its own ten digits, pasted or typed", async ({ page }) => {
+  const requests = await mockApi(page);
+  await visit(page, "/book");
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  await fillAddress(page);
+  await page.getByLabel("Name").fill("Test Visitor");
+
+  const mobile = page.getByLabel("Mobile");
+  for (const typed of ["+91 98765 43210", "+919876543210", "919876543210", "09876543210", "0091 98765 43210"]) {
+    await mobile.fill(typed);
+    await expect(mobile).toHaveValue("98765 43210");
+    await mobile.clear();
+    await mobile.pressSequentially(typed);
+    await expect(mobile).toHaveValue("98765 43210");
+  }
+  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByRole("button", { name: "Book the consultation" }).click();
+
+  await expect(page.getByText("Consultation booked")).toBeVisible();
+  expect(requests[0]?.postDataJSON()).toMatchObject({ mobile: "9876543210" });
+});
+
 test("a served pincode books, and sends where the hair loss is", async ({ page }) => {
   const requests = await mockApi(page);
   await visit(page, "/book");

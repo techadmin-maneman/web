@@ -70,7 +70,7 @@ function HomeBody({ me, offline }: { me: Me; offline: boolean }) {
   return <NothingBooked me={me} offline={offline} />;
 }
 
-/** Board B2: the consultation card on ink, and what to expect on paper. */
+/** Board B2: the consultation card on ink, and what to expect on paper until it begins. */
 function Consultation(props: {
   date: string;
   /** The window, or where a consultation that has begun stands. */
@@ -83,6 +83,7 @@ function Consultation(props: {
   begun?: boolean;
 }) {
   const date = shortDate(props.date);
+  const begun = props.begun === true;
   return (
     <>
       <section aria-labelledby="consultation">
@@ -94,31 +95,33 @@ function Consultation(props: {
           <p className={styles.window}>{props.when}</p>
           {props.place !== "" && <p className={styles.place}>{props.place}</p>}
           <p className={styles.free}>{home.consultation.free}</p>
-          <Actions
-            what={VISIT_TYPES.consultation}
-            date={date}
-            changing={props.changing}
-            noting={props.noting}
-            begun={props.begun}
-          />
+          {!begun && (
+            <Actions what={VISIT_TYPES.consultation} date={date} changing={props.changing} noting={props.noting} />
+          )}
         </div>
       </section>
-      <section className={styles.expect} aria-labelledby="expect">
-        <h2 className={styles.label} id="expect">
-          {home.expect.label}
-        </h2>
-        <ol className={styles.steps}>
-          {home.expect.steps.map((step, index) => (
-            <li key={step} className={styles.step}>
-              <span className={styles.number} aria-hidden="true">
-                {index + 1}
-              </span>
-              <span>{step}</span>
-            </li>
-          ))}
-        </ol>
-      </section>
+      {!begun && <WhatToExpect />}
     </>
+  );
+}
+
+function WhatToExpect() {
+  return (
+    <section className={styles.expect} aria-labelledby="expect">
+      <h2 className={styles.label} id="expect">
+        {home.expect.label}
+      </h2>
+      <ol className={styles.steps}>
+        {home.expect.steps.map((step, index) => (
+          <li key={step} className={styles.step}>
+            <span className={styles.number} aria-hidden="true">
+              {index + 1}
+            </span>
+            <span>{step}</span>
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }
 

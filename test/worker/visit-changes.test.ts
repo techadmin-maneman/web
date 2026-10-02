@@ -100,6 +100,27 @@ const visitRow = () =>
     .bind(VISIT)
     .first<{ status: string; window_start: string; window_end: string }>();
 
+/** The hold's payment, captured by Razorpay. */
+const paidFor = (holdId: string, paymentId: string) =>
+  env.DB.prepare(
+    `INSERT INTO payments (id, person_id, razorpay_order_id, razorpay_payment_id, amount, currency, method, status,
+       captured_at, created_at, updated_at)
+     SELECT ?3, person_id, razorpay_order_id, ?4, amount, 'INR', 'upi', 'captured', ?1, ?1, ?1
+     FROM slot_holds WHERE id = ?2`,
+  )
+    .bind(NOW.toISOString(), holdId, crypto.randomUUID(), paymentId)
+    .run();
+
+/** Imran's check-in, landed from his phone; the mirror still has the visit as FSM last said. */
+const checkedIn = () =>
+  env.DB.prepare(
+    `INSERT INTO job_events (id, appointment_id, event_id, technician_id, kind, body, occurred_at, received_at,
+       updated_at)
+     VALUES (?1, ?2, 'event-checkin-01', 't1', 'check_in', '{}', ?3, ?3, ?3)`,
+  )
+    .bind(crypto.randomUUID(), VISIT, NOW.toISOString())
+    .run();
+
 const changes = () =>
   env.DB.prepare(
     "SELECT kind, notice, refund_amount, kept_amount, payment_id, now_start FROM visit_changes ORDER BY created_at",
@@ -688,6 +709,61 @@ describe("moving a visit", () => {
     expect(await confirmBooking(env.DB, fsm, payments, held.id, NOW, { labelAsTest: true })).toBe("refunded");
     expect(payments.made.refunds).toEqual([{ paymentId: "pay_fee", amount: 400000 }]);
     expect(fsm.made.rescheduled).toEqual([]);
+  });
+
+  it("gives the late fee back when the technician checked in before the move was confirmed, whatever FSM says", async () => {
+    await booked("first_fit", TUESDAY_MORNING, 3000000);
+    const payments = createStubPayments();
+    const app = client({ payments });
+    const held = await hold(app, "first_fit", "2026-09-28", "morning");
+    await post(app, `/api/appointments/${VISIT}/reschedule`, { hold_id: held.id });
+    await paidFor(held.id, "pay_fee");
+    await checkedIn();
+    const fsm = createStubFsm(world());
+    expect(await confirmBooking(env.DB, fsm, payments, held.id, NOW, { labelAsTest: true })).toBe("refunded");
+    expect(payments.made.refunds).toEqual([{ paymentId: "pay_fee", amount: 400000 }]);
+    expect(fsm.made.rescheduled).toEqual([]);
+    expect((await visitRow())?.status).toBe("scheduled");
+  });
+
+  it("books nothing in place of a visit the technician checked in to before a late move was confirmed", async () => {
+    await booked("service", TUESDAY_MORNING, 200000);
+    const payments = createStubPayments();
+    const app = client({ payments });
+    const held = await hold(app, "service", "2026-09-26", "afternoon");
+    await post(app, `/api/appointments/${VISIT}/reschedule`, { hold_id: held.id });
+    await paidFor(held.id, "pay_new");
+    await checkedIn();
+    const fsm = createStubFsm(world());
+    expect(await confirmBooking(env.DB, fsm, payments, held.id, NOW, { labelAsTest: true })).toBe("refunded");
+    expect(payments.made.refunds).toEqual([{ paymentId: "pay_new", amount: 200000 }]);
+    expect(fsm.made.visits).toEqual([]);
+    expect(fsm.made.cancelled).toEqual([]);
+  });
+
+  it("never cancels a visit the technician began after its replacement was booked, and tells ops", async () => {
+    await booked("service", TUESDAY_MORNING, 200000);
+    const app = client();
+    const held = await hold(app, "service", "2026-09-26", "afternoon");
+    await post(app, `/api/appointments/${VISIT}/reschedule`, { hold_id: held.id });
+    await paidFor(held.id, "pay_new");
+    const stub = createStubFsm(world());
+    const failing: FsmProvider = { ...stub, cancelVisit: () => Promise.reject(new Error("Zoho 503")) };
+    await expect(
+      confirmBooking(env.DB, failing, createStubPayments(), held.id, NOW, { labelAsTest: true }),
+    ).rejects.toThrow("503");
+    await checkedIn();
+
+    const told: string[] = [];
+    const alertOnce = (alert: { key: string }) => {
+      told.push(alert.key);
+      return Promise.resolve();
+    };
+    const options = { labelAsTest: true, alertOnce };
+    expect(await confirmBooking(env.DB, stub, createStubPayments(), held.id, NOW, options)).toBe("already_booked");
+    expect(stub.made.cancelled).toEqual([]);
+    expect((await visitRow())?.status).toBe("scheduled");
+    expect(told).toEqual([`replaced_after_begun:${VISIT}`]);
   });
 
   it("refuses a move of another type, or of a visit no longer ahead", async () => {
