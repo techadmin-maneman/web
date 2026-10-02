@@ -1,18 +1,27 @@
-// Money as the app writes it: "The ex-GST figure is the main number with the
-// inclusive figure muted beside it" (docs/prompts/phase2-frontend.md, "Money").
+// Money as the app writes it: the amount charged, GST included, is the main
+// figure, and once GST applies its split sits beneath it.
 
 import { rupees } from "@maneman/web-kit/money";
-import type { Price } from "../api.ts";
+import { gstSplit } from "../content.ts";
+
+/** A price, or a payment, whose split before GST may be unknown. */
+interface Amount {
+  readonly amount: number;
+  readonly amount_ex_gst: number | null;
+}
 
 /**
- * A price's two figures: for the one line boards C4, C5 and C7 all write about
- * moving inside 24 hours, and for each visit the client may choose between.
- * The inclusive figure is given only once GST applies, so the line reads as
- * the boards draw it while GST is nothing.
+ * An amount's two figures: what is charged, and how that splits once GST applies ("Rs. 30,000 + Rs. 5,400 GST").
+ * The split is null while GST is nothing, and where no rate was recorded.
  */
-export function priceFigures(price: Price): { exGst: string; inclusive: string | null } {
-  return {
-    exGst: rupees(price.amount_ex_gst),
-    inclusive: price.amount === price.amount_ex_gst ? null : rupees(price.amount),
-  };
+export function priceFigures(price: Amount): { amount: string; split: string | null } {
+  return { amount: rupees(price.amount), split: splitOf(price) };
 }
+
+function splitOf(price: Amount): string | null {
+  if (price.amount_ex_gst === null || price.amount_ex_gst === price.amount) return null;
+  return gstSplit(rupees(price.amount_ex_gst), rupees(price.amount - price.amount_ex_gst));
+}
+
+/** What a discount code takes off the price shown, GST included: the price before it less the price after. */
+export const amountOff = (before: Amount, after: Amount): string => rupees(before.amount - after.amount);
