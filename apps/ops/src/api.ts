@@ -118,7 +118,14 @@ export type NoShowDispute = Body<paths["/api/no-shows/disputes"]["get"]>["disput
 export type DisputeRuling = Sent<paths["/api/no-shows/disputes/{id}/ruling"]["post"]>["ruling"];
 export type DayMoney = Body<paths["/api/payments"]["get"]>;
 export type Charge = DayMoney["charges"][number];
-export type Technician = Body<paths["/api/technicians"]["get"]>["technicians"][number];
+export type Roster = Body<paths["/api/technicians"]["get"]>;
+export type Technician = Roster["technicians"][number];
+/** A technician as both lists carry him: active, or switched off. */
+export type TechnicianSummary = Roster["switched_off"][number];
+export type NewTechnician = Sent<paths["/api/technicians"]["post"]>;
+export type TechnicianChange = Sent<paths["/api/technicians/{id}"]["patch"]>;
+/** A visit a technician just switched off no longer holds, which waits on the dispatch board for another. */
+export type ReturnedVisit = Body<paths["/api/technicians/{id}/deactivate"]["post"]>["visits"][number];
 export type Device = Technician["devices"][number];
 export type Leave = Technician["leave"][number];
 export type LeaveRecorded = Body<paths["/api/technicians/{id}/leave"]["post"]>;
@@ -327,6 +334,14 @@ export const api = {
   decideNumberChange: (id: string, decision: "confirm" | "reject", reason: string | null) =>
     client.post("/api/number-changes/{id}/decision", { path: { id }, body: { decision, reason } }),
   technicians: () => client.get("/api/technicians"),
+  /** His number signs in to the technician app at once. */
+  addTechnician: (technician: NewTechnician) => client.post("/api/technicians", { body: technician }),
+  /** Only the fields sent change. */
+  changeTechnician: (id: string, change: TechnicianChange) =>
+    client.patch("/api/technicians/{id}", { path: { id }, body: change }),
+  /** Signed out at once; his visits still to come are given back unassigned, and listed in the answer. */
+  switchOff: (id: string) => client.post("/api/technicians/{id}/deactivate", { path: { id } }),
+  switchOn: (id: string) => client.post("/api/technicians/{id}/reactivate", { path: { id } }),
   /** What each of them has finished, over the period the route rules; the roster above carries no figure. */
   technicianWork: () => client.get("/api/technicians/work"),
   /** The phone's ID is the app's own, never a hardware serial, so it can stand in a path. */

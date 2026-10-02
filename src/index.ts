@@ -3,9 +3,10 @@ import { createApp } from "./app.ts";
 import type { App } from "./http/context.ts";
 import { ENABLED_SURFACES, type Surface } from "./config/environments.ts";
 import { productionDependencies } from "./dependencies.ts";
+import { alertIfForgotten, MAINTENANCE_RETRY_SECONDS, maintenanceUnderWay } from "./domain/maintenance.ts";
 import { createCachedIdentityCheck, validateStaticConfig } from "./guard.ts";
 import { byHost } from "./http/surfaces.ts";
-import { createLogger } from "./log.ts";
+import { createLogger, type Logger } from "./log.ts";
 import { handleCrmSyncBatch } from "./queues/crm-sync.ts";
 import { handleFsmSyncBatch } from "./queues/fsm-sync.ts";
 import { handleMessagingBatch } from "./queues/messaging.ts";
@@ -34,6 +35,24 @@ async function assertOwnDatabase(db: D1Database): Promise<void> {
   if (identity.state !== "ok") throw new Error(`database identity check failed: ${identity.state}`);
 }
 
+/** Whether the cron stands still this run for maintenance, which ops are told of once it has gone on too long. */
+async function cronHeldForMaintenance(workerEnv: Env, log: Logger): Promise<boolean> {
+  const maintenance = await maintenanceUnderWay(workerEnv.DB);
+  if (maintenance === null) return false;
+  log.warn("cron_stopped_for_maintenance", { since: maintenance.startedAt });
+  const deps = makeDependencies(workerEnv, log);
+  await alertIfForgotten(maintenance, deps.alertOnce, deps.now());
+  return true;
+}
+
+/** Whether a queue batch waits out maintenance, to be delivered again a few minutes later. */
+async function batchHeldForMaintenance(batch: MessageBatch, db: D1Database, log: Logger): Promise<boolean> {
+  if ((await maintenanceUnderWay(db)) === null) return false;
+  log.warn("queue_stopped_for_maintenance", { messages: batch.messages.length });
+  batch.retryAll({ delaySeconds: MAINTENANCE_RETRY_SECONDS });
+  return true;
+}
+
 export default {
   fetch: byHost(apps, config.environment),
 
@@ -44,6 +63,7 @@ export default {
     // Consumer runs have stalled for minutes before their first outside call (docs/decisions/0012).
     const identityMs = Date.now() - started;
     if (identityMs > SLOW_STEP_MS) log.warn("slow_step", { step: "database_identity", duration_ms: identityMs });
+    if (await batchHeldForMaintenance(batch, workerEnv.DB, log)) return;
     const deps = makeDependencies(workerEnv, log);
 
     if (batch.queue.startsWith("mm-crm-sync-")) {
@@ -74,6 +94,7 @@ export default {
   async scheduled(_controller, workerEnv) {
     const log = baseLog.child({ job: "cron" });
     await assertOwnDatabase(workerEnv.DB);
+    if (await cronHeldForMaintenance(workerEnv, log)) return;
     const deps = makeDependencies(workerEnv, log);
     await runCron(CRON_JOBS, { env: workerEnv, deps, config, log });
   },

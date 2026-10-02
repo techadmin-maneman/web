@@ -88,7 +88,7 @@ Request body:
         "receding",
         "advanced"
       ],
-      "description": "Where the hair loss is, as the form's drawings show it."
+      "description": "Where the hair loss is, as the form's drawings show it. Left out when the visitor does not say."
     },
     "turnstile_token": {
       "type": "string",
@@ -175,7 +175,6 @@ Request body:
     "name",
     "mobile",
     "pincode",
-    "loss_extent",
     "turnstile_token",
     "date",
     "window",
@@ -280,7 +279,7 @@ Request body:
         "receding",
         "advanced"
       ],
-      "description": "Where the hair loss is, as the form's drawings show it."
+      "description": "Where the hair loss is, as the form's drawings show it. Left out when the visitor does not say."
     },
     "turnstile_token": {
       "type": "string",
@@ -346,7 +345,6 @@ Request body:
     "name",
     "mobile",
     "pincode",
-    "loss_extent",
     "turnstile_token",
     "contact_consent",
     "launch_alert"
@@ -1210,6 +1208,8 @@ Razorpay's webhook: payments and refunds
             "out_of_order",
             "not_today",
             "already_started",
+            "technician_inactive",
+            "managed_in_fsm",
             "clash",
             "on_leave",
             "does_not_fit",
@@ -1587,6 +1587,8 @@ Razorpay's webhook: payments and refunds
             "out_of_order",
             "not_today",
             "already_started",
+            "technician_inactive",
+            "managed_in_fsm",
             "clash",
             "on_leave",
             "does_not_fit",

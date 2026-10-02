@@ -23,7 +23,7 @@ import { BOOKING_WINDOWS, type BookingWindow } from "../config/scheduling.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { CLIENT_STATES, clientStateOf, isFitted, nextVisit } from "../domain/client-visits.ts";
 import { bookingUnderWay } from "../domain/holds.ts";
-import { creditBalance } from "../domain/credits.ts";
+import { spendableCredits } from "../domain/credits.ts";
 import { homePrompts } from "../domain/home-prompt.ts";
 import { nextVisitFacts } from "../domain/next-visit.ts";
 import { bookableTypes } from "../domain/scheduling.ts";
@@ -255,7 +255,7 @@ export function registerClientMe(app: App): void {
     const now = c.var.deps.now();
     const upcoming = await nextVisit(db, session.subjectId, now);
     const underWay = await bookingUnderWay(db, session.subjectId);
-    const credits = await creditBalance(db, session.subjectId, now);
+    const credits = await spendableCredits(db, session.subjectId, now);
     const fitted = await isFitted(db, session.subjectId);
     const booking = await latestProposal(db, session.subjectId);
     // A booking's proposal stands only until FSM has any visit for the person.
