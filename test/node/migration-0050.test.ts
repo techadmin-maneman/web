@@ -6,7 +6,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
 import { VISIT_BLOCKS } from "../../src/config/scheduling.ts";
-import { FSM_SERVICE_NAMES, VISIT_TYPES } from "../../src/config/visit-types.ts";
+import { VISIT_TYPE_NAMES, VISIT_TYPES } from "../../src/config/visit-types.ts";
 
 const MIGRATIONS = readdirSync("migrations")
   .filter((file) => file.endsWith(".sql"))
@@ -45,7 +45,7 @@ describe("migration 0050", () => {
       VISIT_TYPES.map((kind) => ({
         kind,
         tier: "standard",
-        name: FSM_SERVICE_NAMES[kind],
+        name: VISIT_TYPE_NAMES[kind],
         minutes: VISIT_BLOCKS[kind].minutes,
         retired_date: null,
         fsm_item_id: null,

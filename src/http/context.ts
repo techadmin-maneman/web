@@ -6,6 +6,7 @@ import type { Surface } from "../config/environments.ts";
 import type { Dependencies } from "../dependencies.ts";
 import type { ReadOpsInputs } from "../domain/ops-settings.ts";
 import type { Session } from "../domain/sessions.ts";
+import type { CallerAccess } from "../domain/staff.ts";
 import type { IdentityCheck, StaticConfig } from "../guard.ts";
 import type { Logger } from "../log.ts";
 import type { AccessIdentity } from "../providers/cloudflare-access.ts";
@@ -25,6 +26,8 @@ export type AppEnv = {
     surface: Surface;
     /** Set on the ops surface by requireAccess. */
     accessIdentity?: AccessIdentity;
+    /** The caller as the Staff list sees them, read once per call by src/http/staff-access.ts. */
+    staffAccess?: CallerAccess;
     /** Set on the client surface's session routes by requireClientSession. */
     clientSession?: Session;
     /** Set on the technician surface's session routes by requireTechnicianSession. */

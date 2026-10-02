@@ -6,7 +6,7 @@
 //
 //   /clients/:id/:tab       a client's page, a tab at a time (B1 to B3, and the tabs no board draws)
 //   /settings/:tab          the rules, the price book and the service area (ADR 0061), the consumables
-//                           and the job sheet (ADR 0087)
+//                           and the job sheet (ADR 0087), and the Staff list
 //
 // Anything else, "/" included, is the dispatch board, which is what the design opens on.
 
@@ -61,6 +61,7 @@ export const SETTINGS_TABS = [
   "blackouts",
   "consumables",
   "job-sheet",
+  "staff",
 ] as const;
 export type SettingsTab = (typeof SETTINGS_TABS)[number];
 
@@ -71,7 +72,7 @@ export type Route =
 
 const DISPATCH: Route = { page: "dispatch" };
 const CLIENT_PATH = /^\/clients(?:\/([0-9a-f-]{36})(?:\/(visits|pieces|payments|photos|consents|history))?)?$/;
-const SETTINGS_PATH = /^\/settings(?:\/(prices|discount-codes|area|blackouts|consumables|job-sheet))?$/;
+const SETTINGS_PATH = /^\/settings(?:\/(prices|discount-codes|area|blackouts|consumables|job-sheet|staff))?$/;
 
 /** The tab a client's path names; Pieces without one, as the board draws the page. */
 const clientTabOf = (named: string | undefined): ClientTab => CLIENT_TABS.find((tab) => tab === named) ?? OPENING_TAB;

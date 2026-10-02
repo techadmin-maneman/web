@@ -3,12 +3,12 @@
 // Worker writes them into each page that shows a price, and the booking form
 // asks for them itself where the Worker could not.
 //
-//   GET /api/published-prices    the standard services' first fit, service visit and replacement, and every service
+//   GET /api/published-prices    the standard service visit and replacement, and every service offered
 //
-// The site draws two columns, Standard and Premium: each kind's service coded
-// standard, and its service coded premium where the console offers one
-// (docs/decisions/0085-services-ops-can-edit.md). Every service offered today
-// is in the answer, so the site takes what it draws from it.
+// A first fit is priced only as the hair systems ops offer in the console: the
+// first-fit services among `services`, which the site takes its first-fit
+// figures from. With none offered, the site gives no first-fit price, and
+// nothing is booked as one.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
@@ -21,8 +21,7 @@ import { PriceSchema } from "./client-booking.ts";
 const PublishedPricesSchema = z
   .object({
     on: z.iso.date().openapi({ description: "The day in India these are in force." }),
-    tier: z.literal("standard").openapi({ description: "The tier of the three figures below: each kind's standard." }),
-    first_fit: PriceSchema,
+    tier: z.literal("standard").openapi({ description: "The tier of the two figures below: each kind's standard." }),
     service: PriceSchema,
     replacement: PriceSchema,
     services: z
@@ -30,7 +29,7 @@ const PublishedPricesSchema = z
         z
           .object({
             type: z.enum(VISIT_TYPES),
-            tier: z.string().openapi({ description: "Its code within its kind: standard, premium, or another." }),
+            tier: z.string().openapi({ description: "Its code within its kind." }),
             name: z.string(),
             minutes: z.number().int(),
             price: PriceSchema,
@@ -38,7 +37,11 @@ const PublishedPricesSchema = z
           .strict()
           .openapi("PublishedService"),
       )
-      .openapi({ description: "Every service offered and priced today, a kind at a time, in the console's order." }),
+      .openapi({
+        description:
+          "Every service offered and priced today, a kind at a time, in the console's order. A first fit's are the " +
+          "hair systems ops offer; none while ops offer none.",
+      }),
   })
   .strict()
   .openapi("PublishedPrices");
@@ -49,7 +52,9 @@ export const publishedPricesRoute = createRoute({
   summary: "The prices the site publishes, from the price book, in force today. Cacheable for a minute.",
   responses: {
     200: { description: "The prices", content: { "application/json": { schema: PublishedPricesSchema } } },
-    503: errorResponse("unavailable: the book lacks a standard one of them, so the site shows its own"),
+    503: errorResponse(
+      "unavailable: the book lacks the standard service visit or replacement, so the site shows its own",
+    ),
   },
 });
 
@@ -60,8 +65,8 @@ export function registerPublishedPrices(app: App): void {
     const standard = (kind: VisitType) =>
       offered.find((service) => service.kind === kind && service.tier === STANDARD_TIER)?.price ?? null;
     // The consultation is free in the site's own words, and a late fee is not published.
-    const [firstFit, service, replacement] = [standard("first_fit"), standard("service"), standard("replacement")];
-    if (firstFit === null || service === null || replacement === null) {
+    const [service, replacement] = [standard("service"), standard("replacement")];
+    if (service === null || replacement === null) {
       c.var.log.warn("published_price_missing", { on });
       return c.json(errorBody("unavailable", c.var.requestId), 503);
     }
@@ -72,7 +77,7 @@ export function registerPublishedPrices(app: App): void {
       minutes: each.minutes,
       price: each.price,
     }));
-    const prices = { on, tier: "standard" as const, first_fit: firstFit, service, replacement, services };
+    const prices = { on, tier: "standard" as const, service, replacement, services };
     return c.json(prices, 200, { "Cache-Control": "public, max-age=60" });
   });
 }

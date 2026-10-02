@@ -9,7 +9,7 @@
 // at the payment link, for a one visit, whose product the client chooses at the visit. The hold, the link, the payment
 // and the invoice then carry the discounted price.
 
-import type { VisitType } from "../config/visit-types.ts";
+import { STANDARD_TIER, type VisitType } from "../config/visit-types.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import {
   amountOff,
@@ -324,7 +324,7 @@ export async function codeToCarry(
 /** The visit's own price in the book on its day: its service's, or a one visit's product once chosen. */
 async function priceOfVisit(db: D1Database, visit: VisitRow): Promise<Price | null> {
   if (visit.type === null || visit.window_start === null || visit.one_visit === "booked") return null;
-  return priceOf(db, visit.type, indiaDate(new Date(visit.window_start)), visit.tier ?? undefined);
+  return priceOf(db, visit.type, indiaDate(new Date(visit.window_start)), visit.tier ?? STANDARD_TIER);
 }
 
 /**

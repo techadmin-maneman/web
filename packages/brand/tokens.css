@@ -131,7 +131,6 @@
   --fs-person: clamp(20px, 1.9vw, 26px);
   --fs-range-tagline: clamp(26px, 2.4vw, 34px);
   --fs-materials-group: clamp(20px, 2vw, 26px);
-  --fs-price-head: clamp(18px, 2vw, 28px);
   --fs-price: clamp(24px, 3vw, 40px);
   --fs-quote: clamp(19px, 1.8vw, 23px);
   --fs-guarantee: clamp(26px, 3.2vw, 40px);

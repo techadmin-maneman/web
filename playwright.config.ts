@@ -27,16 +27,10 @@ export default defineConfig({
   forbidOnly: !local,
   retries: local ? 0 : 1,
   /*
-   * Two runners share the machine (docs/runbook.md, "The CI runner"), so a job
-   * cannot have it to itself. Playwright's default takes half the cores, which
-   * between two jobs took all of them and more: wrangler's dev proxy then
-   * dropped connections and tests failed for want of a CPU, not a defect.
+   * In CI: three workers, a step waits up to fifteen seconds and a test a minute. The runner is also busy with the
+   * local mm-api and four servers, so a page can answer late; a test should fail for a defect, not for want of a CPU.
    */
   workers: local ? undefined : 3,
-  /*
-   * The same machine also runs the other runner's job, so a page there can take longer than five seconds to answer:
-   * in CI a step waits up to fifteen, and a test a minute (1 October 2026, after load failed a run of six tests).
-   */
   timeout: local ? 30_000 : 60_000,
   expect: { timeout: local ? 5_000 : 15_000 },
   reporter: local ? "list" : [["list"], ["github"]],
