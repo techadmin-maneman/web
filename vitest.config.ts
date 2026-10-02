@@ -18,7 +18,7 @@ export default defineConfig({
     reporters: ["default", ...(process.env.GITHUB_ACTIONS === "true" ? ["github-actions"] : []), new StalledFiles()],
     coverage: {
       provider: "istanbul",
-      include: ["src/**/*.ts"],
+      include: ["src/**/*.ts", "scripts/lib/**/*.ts"],
       // "src/**" also matches the apps' and the site's own src/ folders, which the report then counted as mm-api's.
       exclude: ["src/**/*.d.ts", "apps/**", "site/**", "packages/**"],
       reporter: ["text", "json-summary"],
@@ -35,6 +35,9 @@ export default defineConfig({
         "src/providers/razorpay.ts": { lines: 95, branches: 95 },
         "src/providers/fsm-zoho.ts": { lines: 95, branches: 90 },
         "src/domain/payments.ts": { lines: 90, branches: 90 },
+        // What the deploy and check scripts share. A release's recovery from a lost reply first runs in an incident.
+        "scripts/lib/**": { lines: 85, branches: 70 },
+        "scripts/lib/release.ts": { lines: 95, branches: 90 },
       },
     },
     projects: [
