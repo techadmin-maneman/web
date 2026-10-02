@@ -2,6 +2,7 @@
 // never a count typed into a sentence (site/src/content/referral.ts; docs/decisions/0107-referral-rewards-in-the-console.md).
 
 import { describe, expect, it } from "vitest";
+import { TOLD_NOTICES } from "../../src/config/notices.ts";
 import { inviteDescription, referral } from "../../site/src/content/referral.ts";
 import * as site from "../../site/src/content/site.ts";
 import { publishProblems } from "../../site/src/lib/publish-gate.ts";
@@ -27,6 +28,39 @@ function sentences(given: ReferralReward | null, name: string | null = "Rohit"):
     inviteDescription(VALID, given),
   ].filter((sentence): sentence is string => sentence !== null);
 }
+
+// PS-24: /book says who is told of the fit before it sends the invite this browser remembers. An attribution records
+// these words by version: if a test here fails because the words changed, add a version to TOLD_NOTICES.
+describe(`what /book says of the invite this browser remembers (${TOLD_NOTICES.book})`, () => {
+  it("says who is told of the fit, with the friend's visits as ops set them", () => {
+    expect(referral.remembered.consultation(reward(3, 3))).toBe(
+      "You have an invite. Whoever invited you is told when you are fitted. That is when the 3 visits land.",
+    );
+    expect(referral.remembered.consultation(reward(3, 0))).toBe(
+      "You have an invite. Whoever invited you is told when you are fitted.",
+    );
+    expect(referral.remembered.waitlist).toBe(
+      "You have an invite. It stays valid for 12 months after we launch there. Whoever invited you is told when you are fitted.",
+    );
+  });
+});
+
+describe(`what the invite's own page says of who is told (${TOLD_NOTICES.landing})`, () => {
+  it("says it on the waitlist, by the referrer's name where it has one", () => {
+    expect(referral.waitlist.holds).toBe(
+      "{name}’s invite stays valid for 12 months after we launch there. {name} is told when you are fitted.",
+    );
+    expect(referral.waitlist.holdsUnnamed).toBe(
+      "The invite stays valid for 12 months after we launch there. Whoever invited you is told when you are fitted.",
+    );
+  });
+
+  it("says it on the consultation form", () => {
+    expect(referral.consultation.told("Rohit", reward(3, 3))).toBe(
+      "Rohit is told when you are fitted. That is when the 3 visits land.",
+    );
+  });
+});
 
 describe("what the landing says an invite earns", () => {
   it("says the design's words while each side gets 3", () => {
@@ -104,13 +138,14 @@ describe("the publish gate, on what a referral earns", () => {
   const approved = Object.fromEntries(
     Object.entries(site.notices).map(([name, notice]) => [name, { ...notice, approved: true }]),
   );
+  const legalApproved = { privacy: { approved: true }, terms: { approved: true } };
 
   it("stops a count of visits typed into the landing", () => {
     const landing = {
       ...referral,
       booked: { ...referral.booked, credits: "The 3 service visits land when you are fitted." },
     };
-    expect(publishProblems(undefined, approved, [site, landing])).toEqual([
+    expect(publishProblems(undefined, approved, [site, landing], legalApproved)).toEqual([
       'a count of visits is typed by hand, "The 3 service visits land when you are fitted.": what a referral earns ' +
         "is set in the console (docs/decisions/0107-referral-rewards-in-the-console.md)",
     ]);
@@ -122,7 +157,7 @@ describe("the publish gate, on what a referral earns", () => {
     "The consultation is still free; the three service visits do not apply.",
   ])("stops a reward spelled out in words: %s", (typed) => {
     const landing = { ...referral, booked: { ...referral.booked, credits: typed } };
-    expect(publishProblems(undefined, approved, [site, landing])).toHaveLength(1);
+    expect(publishProblems(undefined, approved, [site, landing], legalApproved)).toHaveLength(1);
   });
 
   // The site's own words for a year of visits, and for the fit, are no reward.
@@ -132,10 +167,10 @@ describe("the publish gate, on what a referral earns", () => {
       hero: "Transformation and confidence, delivered in one visit.",
       cell: "One visit a month",
     };
-    expect(publishProblems(undefined, approved, [site, referral, words])).toEqual([]);
+    expect(publishProblems(undefined, approved, [site, referral, words], legalApproved)).toEqual([]);
   });
 
   it("finds none in the site or the landing as they are", () => {
-    expect(publishProblems(undefined, approved, [site, referral])).toEqual([]);
+    expect(publishProblems(undefined, approved, [site, referral], legalApproved)).toEqual([]);
   });
 });

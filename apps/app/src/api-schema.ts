@@ -874,7 +874,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Upcoming soonest first; past newest first */
+                /** @description Upcoming soonest first; past newest first, a visit cancelled among them */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -1781,7 +1781,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Let go, or already gone */
+                /** @description Let go, or already gone; or kept, when it has a Razorpay order and its pay_by has not passed, since a payment may still land on it. */
                 204: {
                     headers: {
                         [name: string]: unknown;
@@ -2531,7 +2531,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -3118,6 +3118,12 @@ export interface components {
             } | null;
             /** @description The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07). */
             no_show: components["schemas"]["NoShowNote"] | null;
+            /** @description The discount code the visit was paid with; null for none, and on a late fee. */
+            discount_code: {
+                code: string;
+                /** @description In paise before GST; null where the visit's price was not yet known. */
+                amount_off: number | null;
+            } | null;
         };
         RefundEntry: {
             /**
@@ -3265,6 +3271,12 @@ export interface components {
             } | null;
             /** @description The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07). */
             no_show: components["schemas"]["NoShowNote"] | null;
+            /** @description The discount code the visit was paid with; null for none, and on a late fee. */
+            discount_code: {
+                code: string;
+                /** @description In paise before GST; null where the visit's price was not yet known. */
+                amount_off: number | null;
+            } | null;
             documents: {
                 /** @description The visit's tax invoice, for GET /api/documents/{id}, once Books has issued it. */
                 invoice: string | null;
@@ -3332,6 +3344,11 @@ export interface components {
                 name: string;
                 initials: string;
             } | null;
+            /**
+             * Format: date
+             * @description The last day this visit may be booked on: later days are asked for up to it.
+             */
+            last: string;
             days: {
                 /** Format: date */
                 date: string;
@@ -3391,6 +3408,11 @@ export interface components {
             late_change_charge: "nothing" | "late_fee" | "visit";
             /** Format: date-time */
             expires_at: string;
+            /**
+             * Format: date-time
+             * @description The last moment a payment counts as made in time: expires_at and the grace after it. Checkout closes then.
+             */
+            pay_by: string;
             /** @enum {string} */
             state: "held" | "expired" | "booked" | "released";
             /** @description Razorpay has confirmed the payment; the visit is being booked. */

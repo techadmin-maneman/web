@@ -28,9 +28,64 @@ const askedWord = (each: Unassigned) =>
 /** The client asked for one window and is being offered another. */
 const isOtherThanAsked = (each: Unassigned) => each.asked_window !== null && each.asked_window !== each.offered_window;
 
+function TrayLines({ each }: { each: Unassigned }) {
+  const referredBy = each.person === null ? null : each.person.referred_by;
+  return (
+    <>
+      <span className={styles.trayTop}>
+        <span>{each.person?.name ?? nameOf({ kind: "unassigned", job: each })}</span>
+        <span className={styles.trayType}>
+          {each.type === null ? dispatch.unknown : (dispatch.typeNames[each.type] ?? each.type)}
+        </span>
+      </span>
+      <span className={styles.trayLine}>{askedWord(each)}</span>
+      <span className={isOtherThanAsked(each) ? styles.trayOffered : styles.trayLine}>
+        {dispatch.tray.offered(offeredWord(each.date, each.offered_window))}
+      </span>
+      {referredBy !== null && <span className={styles.trayLine}>{dispatch.tray.referred(referredBy)}</span>}
+      {each.was_technician !== null && (
+        <span className={styles.trayWas}>{dispatch.tray.was(each.was_technician.name)}</span>
+      )}
+    </>
+  );
+}
+
+type Take = (job: Job, from: HTMLElement) => void;
+
+/** A job to take up and put on a technician, or, for a person who may not, only to read. */
+function TrayJob({ each, onTake }: { each: Unassigned; onTake: Take | null }) {
+  if (onTake === null) {
+    return (
+      <div className={`${styles.trayJob ?? ""} ${styles.trayJobStill ?? ""}`}>
+        <TrayLines each={each} />
+      </div>
+    );
+  }
+  const job: Job = { kind: "unassigned", job: each };
+  return (
+    <button
+      className={styles.trayJob}
+      type="button"
+      draggable
+      data-appointment={each.appointment_id}
+      onDragStart={(event) => {
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", each.appointment_id);
+        onTake(job, event.currentTarget);
+      }}
+      onClick={(event) => {
+        onTake(job, event.currentTarget);
+      }}
+    >
+      <TrayLines each={each} />
+    </button>
+  );
+}
+
 interface Props {
   readonly unassigned: readonly Unassigned[];
-  readonly onTake: (job: Job, from: HTMLElement) => void;
+  /** Null when the person's access does not let them put a job on a technician. */
+  readonly onTake: Take | null;
 }
 
 export function Tray({ unassigned, onTake }: Props) {
@@ -46,43 +101,11 @@ export function Tray({ unassigned, onTake }: Props) {
         <p className={styles.empty}>{dispatch.tray.empty}</p>
       ) : (
         <ul className={styles.trayList}>
-          {unassigned.map((each) => {
-            const job: Job = { kind: "unassigned", job: each };
-            const referredBy = each.person === null ? null : each.person.referred_by;
-            return (
-              <li key={each.appointment_id}>
-                <button
-                  className={styles.trayJob}
-                  type="button"
-                  draggable
-                  data-appointment={each.appointment_id}
-                  onDragStart={(event) => {
-                    event.dataTransfer.effectAllowed = "move";
-                    event.dataTransfer.setData("text/plain", each.appointment_id);
-                    onTake(job, event.currentTarget);
-                  }}
-                  onClick={(event) => {
-                    onTake(job, event.currentTarget);
-                  }}
-                >
-                  <span className={styles.trayTop}>
-                    <span>{each.person?.name ?? nameOf(job)}</span>
-                    <span className={styles.trayType}>
-                      {each.type === null ? dispatch.unknown : (dispatch.typeNames[each.type] ?? each.type)}
-                    </span>
-                  </span>
-                  <span className={styles.trayLine}>{askedWord(each)}</span>
-                  <span className={isOtherThanAsked(each) ? styles.trayOffered : styles.trayLine}>
-                    {dispatch.tray.offered(offeredWord(each.date, each.offered_window))}
-                  </span>
-                  {referredBy !== null && <span className={styles.trayLine}>{dispatch.tray.referred(referredBy)}</span>}
-                  {each.was_technician !== null && (
-                    <span className={styles.trayWas}>{dispatch.tray.was(each.was_technician.name)}</span>
-                  )}
-                </button>
-              </li>
-            );
-          })}
+          {unassigned.map((each) => (
+            <li key={each.appointment_id}>
+              <TrayJob each={each} onTake={onTake} />
+            </li>
+          ))}
         </ul>
       )}
       <p className={styles.note}>{dispatch.tray.same}</p>

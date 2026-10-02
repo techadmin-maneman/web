@@ -13,6 +13,7 @@ import { NEXT_VISIT_DAYS } from "../../src/policy/next-visit.ts";
 import { MAX_SYNC_ATTEMPTS } from "../../src/queues/crm-sync.ts";
 import { TASKS_SHOWN } from "../../src/routes/ops-tasks.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "./helpers.ts";
+import { enforce, listStaff, opsAs, person as staffPerson } from "./staff-fixtures.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const REFERRED = "11111111-1111-4111-8111-111111111112";
@@ -1114,5 +1115,51 @@ describe("POST /api/tasks/{group}/{id}/close", () => {
     await close("partial_visit", VISIT, { reason: WHY });
     await leftPartlyDone(LATER_VISIT, "2026-09-20T04:30:00.000Z");
     expect(tasksIn(await tasks(), "partial_visit").map((task) => task.id)).toEqual([LATER_VISIT]);
+  });
+});
+
+// Once the Staff list is enforced, each department sees the groups it decides, and takes a task only with Act there.
+describe("the board by department, once the Staff list is enforced", () => {
+  const CARE = "care@maneman.in";
+  const MONEY = "money@maneman.in";
+
+  const boardOf = async (email: string): Promise<Body> =>
+    (await request(opsAs(staffPerson(email)), "/api/tasks")).json();
+
+  const take = (email: string, group: string, id: string) =>
+    request(opsAs(staffPerson(email)), `/api/tasks/${group}/${id}/owner`, {
+      method: "PUT",
+      headers: { Origin: "https://maneman.test", "Content-Type": "application/json" },
+      body: JSON.stringify({ owner: email }),
+    });
+
+  beforeEach(async () => {
+    await enforce();
+    await noShowCase("undecided");
+    await grievance(GRIEVANCE);
+    await heldGrant('["shared_address"]');
+  });
+
+  it("shows each person only the groups of the departments they hold", async () => {
+    await listStaff(MONEY, ["finance:view:national"]);
+    await listStaff(CARE, ["customer_care:act:national", "growth:view:national"]);
+
+    expect(groupNames(await boardOf(MONEY))).toEqual(["no_show_decision"]);
+    expect(groupNames(await boardOf(CARE))).toEqual(["referral_review", "grievance"]);
+  });
+
+  it("lets a task be taken with Act in its group's department, and refuses one of another department's", async () => {
+    await listStaff(CARE, ["customer_care:act:national", "finance:view:national"]);
+
+    expect((await take(CARE, "grievance", GRIEVANCE)).status).toBe(200);
+    const refused = await take(CARE, "no_show_decision", CASE);
+    expect(refused.status).toBe(403);
+    expect(await refused.json()).toMatchObject({ error: { code: "not_permitted" } });
+    expect(tasksIn(await boardOf(CARE), "grievance").map((task) => task.owner)).toEqual([CARE]);
+  });
+
+  it("refuses the board to a person on the list with no grant", async () => {
+    await listStaff("new.joiner@maneman.in", []);
+    expect((await request(opsAs(staffPerson("new.joiner@maneman.in")), "/api/tasks")).status).toBe(403);
   });
 });

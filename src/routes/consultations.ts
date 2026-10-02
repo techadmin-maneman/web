@@ -21,7 +21,8 @@
 // person's address unless they already have one; a waitlist entry takes none
 // (docs/decisions/0081-the-site-takes-the-address.md).
 //
-// The form may book the consultation and the first fit in one visit instead:
+// The form may book the consultation and the first fit in one visit instead,
+// once a WhatsApp code has proved the number (src/routes/number-codes.ts):
 // three hours, morning or afternoon, with nothing paid here; the client chooses
 // the product with the technician and pays by a link once fitted
 // (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). That one may
@@ -29,17 +30,20 @@
 // (docs/decisions/0108-discount-codes.md).
 //
 // Either may carry the code of an invite the visitor opened on this browser in the
-// last 30 days, and is then attributed to it exactly as the landing's would be. A
-// code we do not have, or one not shaped like a code, is ignored, and the booking
-// goes ahead without an invite (docs/decisions/0089-an-invite-is-not-lost.md).
+// last 30 days, and is then attributed to it exactly as the landing's would be,
+// once the form has said beside it who is told of the fit. A code sent without
+// that, a code we do not have, or one not shaped like a code, is ignored, and the
+// booking goes ahead without an invite (docs/decisions/0089-an-invite-is-not-lost.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
 import { LOSS_EXTENTS } from "../config/booking.ts";
+import { TOLD_NOTICES } from "../config/notices.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { openDays } from "../domain/open-windows.ts";
-import { bookConsultation, joinTheWaitlist, pincodeOf } from "../domain/public-booking.ts";
+import { bookConsultation, joinTheWaitlist, pincodeOf, type StandingCode } from "../domain/public-booking.ts";
+import { DISCOUNT_KINDS } from "../policy/discount-codes.ts";
 import { PLANS, type Plan } from "../policy/one-visit.ts";
 import { CODE_PATTERN, inviteOf, type Invite } from "../domain/referrals.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
@@ -82,8 +86,16 @@ const Person = {
     .optional()
     .openapi({
       description:
-        "The code of an invite this browser opened in the last 30 days. One we do not have, or not shaped like a " +
-        "code, is ignored: the booking goes ahead without an invite.",
+        "The code of an invite this browser opened in the last 30 days. One sent without invite_told, one we do " +
+        "not have, or one not shaped like a code, is ignored: the booking goes ahead without an invite.",
+    }),
+  invite_told: z
+    .literal(true)
+    .optional()
+    .openapi({
+      description:
+        "true: beside the invite, the form said that whoever sent it is told when the friend is fitted, and offered " +
+        "to go on without it. The attribution records it.",
     }),
 };
 
@@ -117,6 +129,22 @@ export const OneVisitRequestSchema = z
       "false, the consultation alone.",
   });
 
+/** The code that proved the number, which the one visit needs. */
+export const OneVisitNumberCodeSchema = z
+  .uuid()
+  .optional()
+  .openapi({
+    description:
+      "The WhatsApp code that proved the number (POST /api/number-code/verify) in the last 30 minutes. One visit " +
+      "needs it, and is refused number_not_proved without it.",
+  });
+
+/** 403, for a booking from either page. */
+export const turnstileOrNotProved = errorResponse(
+  "turnstile_failed; number_not_proved: one visit, without a WhatsApp code that proved the number in the last 30 " +
+    "minutes",
+);
+
 /** What a booking says of the plan it booked. */
 export const OneVisitOutcomeSchema = z.boolean().openapi({
   description: "true: the consultation and the first fit in one visit were booked, or asked for.",
@@ -132,6 +160,7 @@ const ConsultationRequestSchema = z
     window: z.enum(BOOKING_WINDOWS),
     address: TypedAddressSchema,
     one_visit: OneVisitRequestSchema,
+    number_code_id: OneVisitNumberCodeSchema,
     discount_code: z
       .string()
       .trim()
@@ -156,6 +185,18 @@ const WaitlistRequestSchema = z
   })
   .strict();
 
+const StandingCodeSchema = z
+  .object({
+    code: z.string().openapi({ description: "In capitals, as it is kept." }),
+    kind: z.enum(DISCOUNT_KINDS),
+    value: z.number().int().openapi({ description: "Per cent for a percentage; paise before GST for an amount." }),
+    cap: z
+      .union([z.number().int(), z.null()])
+      .openapi({ description: "The most a percentage takes off, in paise before GST; null for none." }),
+  })
+  .strict()
+  .openapi("StandingCode");
+
 const ConsultationSchema = z
   .object({
     state: z.enum(["booked", "requested"]).openapi({
@@ -163,21 +204,34 @@ const ConsultationSchema = z
     }),
     date: z.iso.date(),
     window: z.enum(BOOKING_WINDOWS),
-    area: z.string(),
+    area: z.string().openapi({ description: "The area once ops have named it, its city until then." }),
     credits: CreditsSchema,
     invite: InviteStateSchema,
     one_visit: OneVisitOutcomeSchema,
-    discount_code: z.boolean().openapi({
+    discount_code: z.union([StandingCodeSchema, z.null()]).openapi({
       description:
-        "true: the code given stands on the booking, or on the request ops book from; false when none was given, " +
+        "The code given, as it stands on the booking or on the request ops book from; null when none was given, " +
         "or another booking took the code's last use a moment before, and the booking stands without it.",
     }),
   })
   .strict()
   .openapi("Consultation");
 
+/** A code as it stands on a site booking: what it takes off comes off the hair system's price when they pay. */
+function standingCodeBody(standing: StandingCode | null) {
+  if (standing === null) return null;
+  const { kind, value, cap } = standing.terms;
+  return { code: standing.code, kind, value, cap };
+}
+
 const WaitlistSchema = z
-  .object({ area: z.union([z.string(), z.null()]), credits: CreditsSchema, invite: InviteStateSchema })
+  .object({
+    area: z
+      .union([z.string(), z.null()])
+      .openapi({ description: "Null until ops have named the area, and for a pincode we do not know." }),
+    credits: CreditsSchema,
+    invite: InviteStateSchema,
+  })
   .strict()
   .openapi("Waitlist");
 
@@ -242,7 +296,7 @@ const consultationRoute = createRoute({
       "invalid_request: fields names what was refused, address.pincode for an address in another pincode, window " +
         "for one visit in the evening",
     ),
-    403: errorResponse("turnstile_failed"),
+    403: turnstileOrNotProved,
     409: takenOrInProgress,
     422: errorResponse(
       "not_bookable: the pincode is not served, or the day is not open; code_not_applicable: the discount code " +
@@ -276,9 +330,16 @@ const waitlistRoute = createRoute({
   },
 });
 
-/** The invite a remembered code names; null for none, one we do not have, or one not shaped like a code. */
-function rememberedInvite(c: Context<AppEnv>, code: string | undefined): Promise<Invite | null> {
-  if (code === undefined || !CODE_PATTERN.test(code)) return Promise.resolve(null);
+/**
+ * The invite a remembered code names, once the form has said who is told of the fit beside it; null for none, one
+ * sent without that, one we do not have, or one not shaped like a code.
+ */
+function rememberedInvite(
+  c: Context<AppEnv>,
+  sent: { invite_code?: string | undefined; invite_told?: true | undefined },
+): Promise<Invite | null> {
+  const code = sent.invite_code;
+  if (sent.invite_told !== true || code === undefined || !CODE_PATTERN.test(code)) return Promise.resolve(null);
   return inviteOf(c.env.DB, code, c.var.config.settings.referrerNameOnInvite);
 }
 
@@ -308,15 +369,17 @@ export function registerConsultations(app: App): void {
         lossExtent: body.loss_extent ?? null,
         turnstileToken: body.turnstile_token,
         attribution: body.attribution ?? {},
-        invite: await rememberedInvite(c, body.invite_code),
+        invite: await rememberedInvite(c, body),
+        toldNotice: TOLD_NOTICES.book,
         source: "site_booking",
         plan: planOf(body.one_visit),
         discountCode: body.discount_code ?? null,
+        numberCodeId: body.number_code_id ?? null,
       });
       if (!booked.ok) return booked;
       const { state, date, window, area, credits, invite, oneVisit, discountCode } = booked;
       const answer = { state, date, window, area, credits, invite, one_visit: oneVisit };
-      return { ok: true, body: { ...answer, discount_code: discountCode } };
+      return { ok: true, body: { ...answer, discount_code: standingCodeBody(discountCode) } };
     });
     if (run.kind === "replay") return c.json(run.body, 201);
     if (run.kind === "in_progress") return c.json(errorBody("idempotency_in_progress", requestId), 409);
@@ -341,7 +404,8 @@ export function registerConsultations(app: App): void {
         launchAlert: body.launch_alert,
         turnstileToken: body.turnstile_token,
         attribution: body.attribution ?? {},
-        invite: await rememberedInvite(c, body.invite_code),
+        invite: await rememberedInvite(c, body),
+        toldNotice: TOLD_NOTICES.book,
         source: "site_waitlist",
       });
       if (!listed.ok) return listed;

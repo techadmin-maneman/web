@@ -1,11 +1,13 @@
 // Board C4, the landing's confirmations: the consultation booked (or asked for, while self-serve booking is off),
 // the number on a waitlist, and the invite that has expired for this friend. The booked one says the same to every
 // number, since whoever typed it may not be its owner (src/policy/site-booking.ts): the details go to the number on
-// WhatsApp, and the client app shows them once its owner signs in with a code.
+// WhatsApp, and the client app shows them once its owner signs in with a code. It also says whether the discount code
+// sent with it stands (ADR 0108).
 
 import { ICONS } from "@maneman/brand/icons";
+import { rupees } from "@maneman/web-kit/money";
 import { referral } from "../../content/referral.ts";
-import type { ReferralConsultation, ReferralReward, ReferralWaitlist } from "../../lib/api.ts";
+import type { Consultation, ReferralConsultation, ReferralReward, ReferralWaitlist } from "../../lib/api.ts";
 import { clientAppOrigin, signInLink } from "../../lib/app-link.ts";
 import { ENVIRONMENT } from "../../lib/build.ts";
 import { fill } from "../../lib/text.ts";
@@ -14,11 +16,18 @@ import styles from "./Invite.module.css";
 
 type HeadingRef = { current: HTMLHeadingElement | null };
 
-/** A booking's answer, with the number the visitor typed: the answer does not carry it. */
+/**
+ * A booking's answer, with the number the visitor typed and the discount code they sent: the answer carries neither.
+ * Only the site's own page sends a code, and only its answer says whether it stands.
+ */
 export interface Booking {
-  readonly result: ReferralConsultation;
+  readonly result: ReferralConsultation | Consultation;
   readonly mobile: string;
+  /** As it was sent; null for none. */
+  readonly code: string | null;
 }
+
+type StandingCode = NonNullable<Consultation["discount_code"]>;
 
 /** The waitlist's answer, the landing's or /book's: /book's carries the invite this browser remembered, if any. */
 export type Listing = Pick<ReferralWaitlist, "area" | "credits" | "invite">;
@@ -46,10 +55,26 @@ function openApp(event: MouseEvent, appOrigin: string, mobile: string): void {
   window.location.assign(signInLink(appOrigin, mobile));
 }
 
+/** What a code takes off the hair system's price, before GST: "Rs. 1,000 off", or "10% off, up to Rs. 2,000". */
+function offOf(standing: StandingCode): string {
+  const words = referral.booked.code;
+  if (standing.kind === "amount") return words.amountOff(rupees(standing.value));
+  return words.percentOff(standing.value, standing.cap === null ? null : rupees(standing.cap));
+}
+
+/** What the confirmation says of the code sent: what it takes off when they pay, or that the booking stands without. */
+function codeNote(booking: Booking): string | null {
+  if (booking.code === null) return null;
+  const standing = "discount_code" in booking.result ? booking.result.discount_code : null;
+  if (standing === null) return referral.booked.code.notApplied(booking.code.toUpperCase());
+  return referral.booked.code.applied(standing.code, offOf(standing));
+}
+
 export function Booked(props: { booking: Booking; reward: ReferralReward | null; heading: HeadingRef }) {
   const { result, mobile } = props.booking;
   const copy = result.state === "requested" ? referral.requested : referral.booked;
   const credits = result.credits ? referral.booked.credits(props.reward) : null;
+  const code = codeNote(props.booking);
   const app = clientAppOrigin(ENVIRONMENT);
   return (
     <section class={styles.done}>
@@ -62,6 +87,7 @@ export function Booked(props: { booking: Booking; reward: ReferralReward | null;
         <p class={styles.doneBlockBody}>{fill(copy.body, { mobile })}</p>
       </div>
       <div class={styles.doneAfter}>
+        {code !== null && <p class={styles.doneNote}>{code}</p>}
         {credits !== null && <p class={styles.doneNote}>{credits}</p>}
         {result.invite === "expired" && <Expired reward={props.reward} />}
         {app !== null && <p class={styles.doneNote}>{referral.booked.appHint}</p>}

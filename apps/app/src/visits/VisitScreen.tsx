@@ -1,10 +1,10 @@
 // One visit. Past (board C9): its photographs, technician, duration and type,
 // what was done, and the visit's own tax invoice beneath them (ADR 0056; the
 // board has none). A visit the client was not home for says what ops ruled and
-// what a charge took, and offers the charge's dispute (ADR 0096). Not yet closed
-// in FSM: its card as Home draws its next visit (board B1), with Reschedule and
-// Add a note until it begins. A visit that is not the client's says so, rather
-// than offering to try again.
+// what a charge took, and offers the charge's dispute (ADR 0096); a cancelled
+// one says it was cancelled. Not yet closed in FSM: its card as Home draws its
+// next visit (board B1), with Reschedule and Add a note until it begins. A
+// visit that is not the client's says so, rather than offering to try again.
 
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
@@ -141,6 +141,7 @@ function PastVisit({ visit, onChanged }: { visit: VisitDetail; onChanged: () => 
   const photographed = visit.photos.before.length > 0 || visit.photos.after.length > 0;
   return (
     <div className={styles.detail}>
+      {visit.status === "cancelled" && <p className={styles.cancelled}>{copy.cancelled}</p>}
       {visit.no_show !== null && <NoShow visitId={visit.id} note={visit.no_show} onDisputed={onChanged} />}
       {photographed && (
         <section aria-labelledby="photographs">

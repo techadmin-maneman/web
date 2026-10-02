@@ -57,6 +57,94 @@ The prices the site publishes, from the price book, in force today. Cacheable fo
 }
 ```
 
+### POST /api/number-code
+
+Send a code on WhatsApp to prove a number typed into the site
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/NumberCodeRequest"
+}
+```
+
+**202**: The code is on its way
+
+```json
+{
+  "$ref": "#/components/schemas/NumberCode"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: turnstile_failed
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**429**: rate_limited: too many codes for this number today, or from this address this hour
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**503**: busy: today's ceiling on codes is reached; unavailable: Turnstile could not be reached
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/number-code/verify
+
+Check a code. The right one proves its number for 30 minutes
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/NumberCodeVerifyRequest"
+}
+```
+
+**200**: Right; or wrong, with the attempts left
+
+```json
+{
+  "$ref": "#/components/schemas/NumberCodeVerify"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**410**: code_expired: expired, already entered, or void after five wrong codes
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/availability/public
 
 The days and windows the booking form can book, open or full. Cacheable for a minute.
@@ -164,7 +252,14 @@ Request body:
     "invite_code": {
       "type": "string",
       "maxLength": 64,
-      "description": "The code of an invite this browser opened in the last 30 days. One we do not have, or not shaped like a code, is ignored: the booking goes ahead without an invite."
+      "description": "The code of an invite this browser opened in the last 30 days. One sent without invite_told, one we do not have, or one not shaped like a code, is ignored: the booking goes ahead without an invite."
+    },
+    "invite_told": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "true: beside the invite, the form said that whoever sent it is told when the friend is fitted, and offered to go on without it. The attribution records it."
     },
     "date": {
       "type": "string",
@@ -184,6 +279,11 @@ Request body:
     "one_visit": {
       "type": "boolean",
       "description": "true: the consultation and the first fit in one visit, three hours, in the morning or the afternoon; the client chooses the product with the technician and pays once fitted, so nothing is paid here. Left out or false, the consultation alone."
+    },
+    "number_code_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The WhatsApp code that proved the number (POST /api/number-code/verify) in the last 30 minutes. One visit needs it, and is refused number_not_proved without it."
     },
     "discount_code": {
       "type": "string",
@@ -229,7 +329,7 @@ Request body:
 }
 ```
 
-**403**: turnstile_failed
+**403**: turnstile_failed; number_not_proved: one visit, without a WhatsApp code that proved the number in the last 30 minutes
 
 ```json
 {
@@ -348,7 +448,14 @@ Request body:
     "invite_code": {
       "type": "string",
       "maxLength": 64,
-      "description": "The code of an invite this browser opened in the last 30 days. One we do not have, or not shaped like a code, is ignored: the booking goes ahead without an invite."
+      "description": "The code of an invite this browser opened in the last 30 days. One sent without invite_told, one we do not have, or one not shaped like a code, is ignored: the booking goes ahead without an invite."
+    },
+    "invite_told": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "true: beside the invite, the form said that whoever sent it is told when the friend is fitted, and offered to go on without it. The attribution records it."
     },
     "contact_consent": {
       "type": "boolean",
@@ -494,6 +601,13 @@ Request body:
       "minLength": 1,
       "maxLength": 2048
     },
+    "invite_told": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "true: the form said that whoever sent the invite is told when the friend is fitted. The attribution records it; the invite applies either way."
+    },
     "pincode": {
       "type": "string",
       "pattern": "^[1-8]\\d{5}$",
@@ -517,6 +631,11 @@ Request body:
     "one_visit": {
       "type": "boolean",
       "description": "true: the consultation and the first fit in one visit, three hours, in the morning or the afternoon; the client chooses the product with the technician and pays once fitted, so nothing is paid here. Left out or false, the consultation alone."
+    },
+    "number_code_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The WhatsApp code that proved the number (POST /api/number-code/verify) in the last 30 minutes. One visit needs it, and is refused number_not_proved without it."
     },
     "consent": {
       "type": "boolean",
@@ -556,7 +675,7 @@ Request body:
 }
 ```
 
-**403**: turnstile_failed
+**403**: turnstile_failed; number_not_proved: one visit, without a WhatsApp code that proved the number in the last 30 minutes
 
 ```json
 {
@@ -619,6 +738,13 @@ Request body:
       "type": "string",
       "minLength": 1,
       "maxLength": 2048
+    },
+    "invite_told": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "true: the form said that whoever sent the invite is told when the friend is fitted. The attribution records it; the invite applies either way."
     },
     "pincode": {
       "type": "string",
@@ -945,7 +1071,7 @@ Request body:
 }
 ```
 
-**403**: look_limit_reached: this number had its look in the last thirty days
+**403**: look_limit_reached: this number had its look in the last thirty days; number_not_proved: no WhatsApp code proved the number in the last 30 minutes
 
 ```json
 {
@@ -1199,6 +1325,7 @@ Razorpay's webhook: payments and refunds
             "look_limit_reached",
             "claim_required",
             "whatsapp_unavailable",
+            "number_not_proved",
             "unauthorized",
             "visit_booked",
             "payment_held",
@@ -1473,6 +1600,123 @@ Razorpay's webhook: payments and refunds
 }
 ```
 
+### NumberCode
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code_id": {
+      "type": "string",
+      "format": "uuid"
+    }
+  },
+  "required": [
+    "code_id"
+  ],
+  "additionalProperties": false,
+  "description": "The code is on its way to the number on WhatsApp."
+}
+```
+
+### NumberCodeRequest
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "mobile": {
+      "type": "string",
+      "maxLength": 20
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "description": "The name typed beside the number."
+    },
+    "turnstile_token": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
+    }
+  },
+  "required": [
+    "mobile",
+    "name",
+    "turnstile_token"
+  ],
+  "additionalProperties": false
+}
+```
+
+### NumberCodeVerify
+
+```json
+{
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "verified": {
+          "type": "boolean",
+          "enum": [
+            true
+          ]
+        }
+      },
+      "required": [
+        "verified"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "verified": {
+          "type": "boolean",
+          "enum": [
+            false
+          ]
+        },
+        "attempts_left": {
+          "type": "integer",
+          "description": "0 means the code is now void."
+        }
+      },
+      "required": [
+        "verified",
+        "attempts_left"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}
+```
+
+### NumberCodeVerifyRequest
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "code": {
+      "type": "string",
+      "pattern": "^\\d{6}$"
+    }
+  },
+  "required": [
+    "code_id",
+    "code"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### OpenWindows
 
 ```json
@@ -1561,7 +1805,8 @@ Razorpay's webhook: payments and refunds
       ]
     },
     "area": {
-      "type": "string"
+      "type": "string",
+      "description": "The area once ops have named it, its city until then."
     },
     "credits": {
       "type": "boolean",
@@ -1581,8 +1826,15 @@ Razorpay's webhook: payments and refunds
       "description": "true: the consultation and the first fit in one visit were booked, or asked for."
     },
     "discount_code": {
-      "type": "boolean",
-      "description": "true: the code given stands on the booking, or on the request ops book from; false when none was given, or another booking took the code's last use a moment before, and the booking stands without it."
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/StandingCode"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The code given, as it stands on the booking or on the request ops book from; null when none was given, or another booking took the code's last use a moment before, and the booking stands without it."
     }
   },
   "required": [
@@ -1594,6 +1846,49 @@ Razorpay's webhook: payments and refunds
     "invite",
     "one_visit",
     "discount_code"
+  ],
+  "additionalProperties": false
+}
+```
+
+### StandingCode
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "In capitals, as it is kept."
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "percent",
+        "amount"
+      ]
+    },
+    "value": {
+      "type": "integer",
+      "description": "Per cent for a percentage; paise before GST for an amount."
+    },
+    "cap": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The most a percentage takes off, in paise before GST; null for none."
+    }
+  },
+  "required": [
+    "code",
+    "kind",
+    "value",
+    "cap"
   ],
   "additionalProperties": false
 }
@@ -1693,7 +1988,8 @@ Razorpay's webhook: payments and refunds
         {
           "type": "null"
         }
-      ]
+      ],
+      "description": "Null until ops have named the area, and for a pincode we do not know."
     },
     "credits": {
       "type": "boolean",
@@ -1794,7 +2090,7 @@ Razorpay's webhook: payments and refunds
           "type": "null"
         }
       ],
-      "description": "Null for a pincode we do not know."
+      "description": "The area's name once ops have named it; null until then, and for a pincode we do not know."
     },
     "city": {
       "anyOf": [
@@ -1844,7 +2140,8 @@ Razorpay's webhook: payments and refunds
       ]
     },
     "area": {
-      "type": "string"
+      "type": "string",
+      "description": "The area once ops have named it, its city until then."
     },
     "credits": {
       "type": "boolean",
@@ -1891,7 +2188,8 @@ Razorpay's webhook: payments and refunds
         {
           "type": "null"
         }
-      ]
+      ],
+      "description": "Null until ops have named the area, and for a pincode we do not know."
     },
     "credits": {
       "type": "boolean",
@@ -2133,6 +2431,11 @@ Razorpay's webhook: payments and refunds
       "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
       "example": "98100 00000"
     },
+    "number_code_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The code that proved the number (POST /api/number-code/verify). It proves it for 30 minutes after it was entered."
+    },
     "stage": {
       "type": "string",
       "enum": [
@@ -2157,6 +2460,7 @@ Razorpay's webhook: payments and refunds
     "job_id",
     "name",
     "mobile",
+    "number_code_id",
     "stage"
   ],
   "additionalProperties": false

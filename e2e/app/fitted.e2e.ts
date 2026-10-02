@@ -6,6 +6,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { fullDate, listMonth, shortDate } from "../../packages/web-kit/dates.ts";
+import { assertInContract } from "../contract.ts";
 import { expect, test } from "../support.ts";
 import { fittedClient } from "./fitted.ts";
 import { logIn } from "./signed-in.ts";
@@ -335,6 +336,23 @@ test("Payments: one list of payments and refunds, an entry's documents, and a do
     new RegExp(encodeURIComponent("My refund for service visit from")),
   );
   await expect(page.getByText("+ Rs. 1,000", { exact: true })).toBeVisible();
+});
+
+// MON-22: after paying, the entry did not say the code the visit was booked with. No route puts a code on the seeded
+// payment, so its entry is answered with one, held to the API's contract.
+test("a payment made with a discount code names the code, and what it took off", async ({ page }) => {
+  const client = fittedClient();
+  await logIn(page, client.mobile);
+  await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
+  const path = `/api/payments/${client.servicePayment}`;
+  // Read by the page, whose app.localhost only the browser resolves.
+  const entry = await page.evaluate(async (url) => (await fetch(url)).json() as Promise<object>, path);
+  const body = { ...entry, discount_code: { code: "AUDTEST", amount_off: 100_000 } };
+  assertInContract("client", "GET", path, 200, body);
+  await page.route(`**${path}`, (route) => route.fulfill({ json: body }));
+  await page.goto(`/payments/${client.servicePayment}`);
+  await expect(page.getByRole("heading", { level: 1, name: "Service visit" })).toBeVisible();
+  await expect(page.getByText("AUDTEST: Rs. 1,000 off")).toBeVisible();
 });
 
 test("each read surface meets WCAG 2.2 AA", async ({ page }) => {

@@ -9,7 +9,17 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page, Request } from "@playwright/test";
 import { fillAddress } from "./booking-area.ts";
-import { analyticsCommands, analyticsEvents, expect, fakeTurnstile, test, visit } from "./support.ts";
+import {
+  analyticsCommands,
+  analyticsEvents,
+  enterNumberCode,
+  expect,
+  fakeTurnstile,
+  mockNumberCode,
+  NUMBER_CODE_ID,
+  test,
+  visit,
+} from "./support.ts";
 
 const CODE = "RM4K7P";
 
@@ -32,6 +42,7 @@ interface Answers {
 async function mockApi(page: Page, answers: Answers = {}): Promise<Request[]> {
   const requests: Request[] = [];
   await fakeTurnstile(page);
+  await mockNumberCode(page);
   // The days and windows open: the API cannot say, so the form draws every window open (e2e/book.e2e.ts answers).
   await page.route(/\/api\/availability\/public\?/, (route) =>
     route.fulfill({ status: 503, json: { error: { code: "unavailable", request_id: "r" } } }),
@@ -103,6 +114,8 @@ test("the invite names the referrer, and a served pincode opens the consultation
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeVisible();
   const sent = requests[0]?.postDataJSON() as Record<string, unknown>;
   expect(sent).toMatchObject({ pincode: SERVED.pincode, window: "afternoon", consent: true, mobile: "9810000000" });
+  // The form said who is told of the fit, and says so.
+  expect(sent.invite_told).toBe(true);
   expect(sent.address).toMatchObject({ line1: "Palm Grove Society", city: SERVED.city, pincode: SERVED.pincode });
   expect(sent.turnstile_token).toBeTruthy();
 });
@@ -201,6 +214,12 @@ test("an unserved pincode takes the number instead, and the launch alert is the 
   // Nothing is booked, so nothing asks where (ADR 0081).
   await expect(page.getByLabel("Building or society")).toHaveCount(0);
 
+  await expect(
+    page.getByText(
+      "Rohit’s invite stays valid for 12 months after we launch there. Rohit is told when you are fitted.",
+    ),
+  ).toBeVisible();
+
   await fillPerson(page);
   await page.getByText("You may contact me about this request.").click();
   await page.getByText("Tell me when you launch in my area.").click();
@@ -212,6 +231,7 @@ test("an unserved pincode takes the number instead, and the launch alert is the 
     pincode: UNSERVED.pincode,
     contact_consent: true,
     launch_alert: true,
+    invite_told: true,
   });
 });
 
@@ -598,10 +618,13 @@ test("offers the consultation alone or with the fit in one visit, and asks ops f
   await fillForm(page);
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation and fit" }).click();
+  // Asked for only once the WhatsApp code sent to the number is entered.
+  await enterNumberCode(page, "Confirm and book");
 
   await expect(page.getByText("Request received")).toBeVisible();
   const sent = requests[0]?.postDataJSON() as Record<string, unknown>;
   expect(sent.one_visit).toBe(true);
+  expect(sent.number_code_id).toBe(NUMBER_CODE_ID);
   // The consent recorded is the consultation's own line, unchanged.
   expect(sent.consent).toBe(true);
 });

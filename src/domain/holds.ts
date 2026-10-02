@@ -18,7 +18,7 @@ import {
 import { spendableCredits } from "./credits.ts";
 import { holdDiscount } from "./discount-code-holds.ts";
 import { lateFeeOn, type Price } from "./price-book.ts";
-import { heldMinutes, visitTimes } from "./scheduling.ts";
+import { graceEndOf, graceEnds, heldMinutes, visitTimes } from "./scheduling.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
 
 interface HoldRow {
@@ -36,6 +36,8 @@ interface HoldRow {
   gst_percent: number;
   state: "held" | "booked" | "released";
   expires_at: string;
+  /** The grace it was made with; null for a hold made before holds kept one. */
+  grace_seconds: number | null;
   confirmed_at: string | null;
   late_fee_ex_gst: number | null;
   late_fee_gst_percent: number | null;
@@ -52,7 +54,7 @@ interface HoldRow {
 }
 
 const HOLD_QUERY = `SELECT h.id, h.type, h.tier, h.minutes, s.name AS service_name, h.date, h.window_label, h.start_unit,
-    h.amount, h.amount_ex_gst, h.gst_percent, h.state, h.expires_at, h.confirmed_at, h.late_fee_ex_gst,
+    h.amount, h.amount_ex_gst, h.gst_percent, h.state, h.expires_at, h.grace_seconds, h.confirmed_at, h.late_fee_ex_gst,
     h.late_fee_gst_percent, h.change_notice_hours, h.late_change_charge, t.name AS technician_name, t.initials AS technician_initials, h.appointment_id,
     h.moves_appointment_id, h.use_credit, h.person_id,
     EXISTS (SELECT 1 FROM payments p WHERE p.razorpay_order_id = h.razorpay_order_id AND p.status = 'captured') AS paid
@@ -102,6 +104,7 @@ async function holdOf(db: D1Database, row: HoldRow, now: Date) {
     change_notice_hours: noticeHours,
     late_change_charge: lateCharge,
     expires_at: row.expires_at,
+    pay_by: graceEndOf(row).toISOString(),
     state: hasLapsed(row, now) ? ("expired" as const) : row.state,
     paid: row.paid === 1,
     visit_id: row.appointment_id,
@@ -132,15 +135,18 @@ export async function clientHold(db: D1Database, holdId: string, personId: strin
 
 /**
  * Lets a client's hold go, with the time it held. Once paid for, or booked free, it is on its way to FSM, and only
- * a booking or a refund ends it (docs/decisions/0068-a-paid-hold-is-kept.md).
+ * a booking or a refund ends it. Once it has a Razorpay order, it keeps its time until its grace ends, since a payment
+ * on that order may still land; the next hold anyone makes after that lets it go.
  */
 export async function releaseHold(db: D1Database, hold: { holdId: string; personId: string; now: Date }) {
-  const mine = "SELECT id FROM slot_holds WHERE id = ?1 AND person_id = ?2 AND state = 'held' AND confirmed_at IS NULL";
+  const mine = `SELECT id FROM slot_holds WHERE id = ?1 AND person_id = ?2 AND state = 'held' AND confirmed_at IS NULL
+    AND (razorpay_order_id IS NULL OR ${graceEnds("slot_holds")} <= ?3)`;
+  const at = hold.now.toISOString();
   await db.batch([
-    db.prepare(`DELETE FROM slot_claims WHERE hold_id IN (${mine})`).bind(hold.holdId, hold.personId),
+    db.prepare(`DELETE FROM slot_claims WHERE hold_id IN (${mine})`).bind(hold.holdId, hold.personId, at),
     db
       .prepare(`UPDATE slot_holds SET state = 'released', updated_at = ?3 WHERE id IN (${mine})`)
-      .bind(hold.holdId, hold.personId, hold.now.toISOString()),
+      .bind(hold.holdId, hold.personId, at),
   ]);
 }
 

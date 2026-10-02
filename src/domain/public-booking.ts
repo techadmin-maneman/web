@@ -2,8 +2,10 @@
 // (docs/decisions/0051-booking-from-the-site.md). Two pages do this, and they do
 // it the same way: the public site's /book, and a friend's invite at /r/:code.
 // The only difference is the invite, which the landing passes always and the site
-// only when the visitor's browser remembers one they opened
-// (docs/decisions/0089-an-invite-is-not-lost.md).
+// only when the visitor's browser remembers one they opened, and the form said
+// who is told of the fit beside it (docs/decisions/0089-an-invite-is-not-lost.md).
+// A waitlist entry carries no invite for someone who has had, booked or asked for
+// a visit: a form anyone can fill in with a number never attributes a client.
 //
 // Each booking leaves three records:
 //
@@ -33,7 +35,8 @@
 // the slot are written in one batch: a slot that has gone leaves nothing behind
 // (docs/decisions/0068-a-paid-hold-is-kept.md).
 //
-// The form may book the consultation and the fit in one visit instead: a first
+// The form may book the consultation and the fit in one visit instead, for a
+// number proved with its WhatsApp code (src/policy/number-proof.ts): a first
 // fit marked as one, three hours, with nothing paid. The client chooses the
 // product with the technician and pays by a link once fitted, so the site still
 // takes no money (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
@@ -47,40 +50,46 @@
 // after the pincode and the day, so a form refused for those costs neither.
 
 import type { LossExtent } from "../config/booking.ts";
-import { CURRENT_NOTICE, LANDING_NOTICES } from "../config/notices.ts";
+import { CURRENT_NOTICE, LANDING_NOTICES, type ToldNotice } from "../config/notices.ts";
 import { BOOKING_DAYS, HOLD_SECONDS, type BookingWindow } from "../config/scheduling.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
 import type { Logger } from "../log.ts";
 import type { SoldTerms } from "../policy/moving-a-visit.ts";
+import { bookingNeedsProof } from "../policy/number-proof.ts";
 import { ONE_VISIT_TERMS, planStartsIn, type Plan } from "../policy/one-visit.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import type { Price } from "./price-book.ts";
-import { recordConsent } from "./consents.ts";
+import { recordConsent, type ConsentRule } from "./consents.ts";
 import { bookableService, offeredProducts } from "./services.ts";
 import type { ConsentSource } from "../policy/consents.ts";
 import { notBookedFromSite, typedAddress, type NotBookedFromSite } from "../policy/site-booking.ts";
 import { currentAddress, firstAddressStatement, type Address } from "./profile.ts";
-import { checkForOneVisit, codeOnHold, useOnNewHold } from "./discount-code-holds.ts";
-import { attribute, type Invite, type InviteState, type Via } from "./referrals.ts";
+import { checkForOneVisit, codeOnHold, useOnNewHold, type OneVisitCode } from "./discount-code-holds.ts";
+import { attribute, hasAskedForAVisit, type Invite, type InviteState, type Via } from "./referrals.ts";
 import { availability, bookableTypes, holdSlot, liveVisitOf, type HeldService } from "./scheduling.ts";
 import { saveBookingLead, type Attribution } from "./leads.ts";
 import { siteNotice, type SiteNoticeKind } from "./site-notices.ts";
 import { waitlistConfirmation } from "./waitlist.ts";
+import { namedArea } from "./area-names.ts";
 
 /** A pincode we know, and whether a technician works there. */
 export interface Pincode {
   readonly pincode: string;
-  readonly area: string;
+  /** Null until ops have named the area. */
+  readonly area: string | null;
   readonly city: string;
   readonly served: number;
 }
 
 export function pincodeOf(db: D1Database, pin: string): Promise<Pincode | null> {
   return db
-    .prepare("SELECT pincode, area, city, served FROM serviceable_pincodes WHERE pincode = ?1")
+    .prepare(`SELECT pincode, ${namedArea("p")} AS area, city, served FROM serviceable_pincodes p WHERE pincode = ?1`)
     .bind(pin)
     .first<Pincode>();
 }
+
+/** Where a booking is, as the client reads it: the area once ops have named it, its city until then. */
+const placeOf = (pincode: Pincode): string => pincode.area ?? pincode.city;
 
 /**
  * Why a submission was refused, in the codes the routes answer with. Each route
@@ -98,7 +107,8 @@ export interface Refusal<Status extends number = 400 | 403 | 409 | 422 | 429 | 5
     | "taken"
     | "not_bookable"
     | "code_not_applicable"
-    | "no_product";
+    | "no_product"
+    | "number_not_proved";
   /** For invalid_request: the field refused, where the request was well formed and did not add up. */
   readonly fields?: readonly string[];
 }
@@ -118,6 +128,8 @@ export interface FormRequest {
   readonly selfServeBooking: boolean;
   /** The number, the Turnstile token and the day's limits per number and address, the same for both pages. */
   readonly checkPerson: (mobile: string, turnstileToken: string, name: string) => Promise<Checked>;
+  /** Whether the WhatsApp code `codeId` proved this number (src/policy/number-proof.ts). */
+  readonly provedNumber: (codeId: string | null, mobileE164: string) => Promise<boolean>;
   /** Sends a person's first address on to their FSM contact and CRM lead, as saving it in the app does. */
   readonly syncContact: (personId: string) => Promise<void>;
   /** Sends a hold the form booked free to be booked (src/http/book-hold.ts). */
@@ -185,7 +197,14 @@ async function notBookedFor(db: D1Database, personId: string): Promise<NotBooked
 /** Attributes the person to the invite they came with, after what the form booked stands. */
 async function applyInvite(
   db: D1Database,
-  input: { invite: Invite | null; personId: string; via: Via; pincode: string; now: Date },
+  input: {
+    invite: Invite | null;
+    personId: string;
+    via: Via;
+    pincode: string;
+    toldNotice: ToldNotice | null;
+    now: Date;
+  },
 ): Promise<{ readonly credits: boolean; readonly invite: InviteState }> {
   if (input.invite === null) return { credits: false, invite: "unknown" };
   const attribution = await attribute(db, { ...input, invite: input.invite });
@@ -346,6 +365,8 @@ export interface ConsultationRequest {
   readonly attribution: Attribution;
   /** The invite the friend arrived with, where there is one. */
   readonly invite: Invite | null;
+  /** The line beside the invite that told the friend their referrer hears of the fit; null where the page showed none. */
+  readonly toldNotice: ToldNotice | null;
   /**
    * Where the consent on the form is given: the site's /book, or an invite's page
    * (docs/decisions/0094-where-a-consent-was-given.md).
@@ -358,6 +379,8 @@ export interface ConsultationRequest {
    * payment link (docs/decisions/0108-discount-codes.md).
    */
   readonly discountCode: string | null;
+  /** The WhatsApp code that proved the number, which the one visit needs; null for none. */
+  readonly numberCodeId: string | null;
 }
 
 export interface Booked {
@@ -370,6 +393,7 @@ export interface Booked {
   readonly state: "booked" | "requested";
   readonly date: string;
   readonly window: BookingWindow;
+  /** The area once ops have named it, its city until then. */
   readonly area: string;
   /** Whether the invite's service visits apply. */
   readonly credits: boolean;
@@ -377,9 +401,15 @@ export interface Booked {
   readonly invite: InviteState;
   /** Whether it is the consultation and the first fit in one visit. */
   readonly oneVisit: boolean;
-  /** Whether the discount code given stands on the booking, or on the request ops book it from. */
-  readonly discountCode: boolean;
+  /**
+   * The discount code given, with what it takes off, while it stands on the booking or on the request ops book it
+   * from; null when none was given, or another booking took its last use a moment before.
+   */
+  readonly discountCode: StandingCode | null;
 }
+
+/** A code that stands on a site booking: the code, and what it takes off the hair system's price when they pay. */
+export type StandingCode = Pick<OneVisitCode, "code" | "terms">;
 
 /**
  * Books the free consultation, or the consultation and fit in one visit: the slot, the lead, and the invite's credits
@@ -407,6 +437,10 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   }
   const checked = await form.checkPerson(request.mobile, request.turnstileToken, request.name);
   if (!checked.ok) return checked;
+  // Nothing is looked up or written for a number the plan needs proved until its code was entered.
+  if (bookingNeedsProof(request.plan) && !(await form.provedNumber(request.numberCodeId, checked.mobile))) {
+    return { ok: false, status: 403, code: "number_not_proved" };
+  }
 
   const knownId = await personWithMobile(db, checked.mobile);
   if (knownId !== null) {
@@ -472,6 +506,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   // The code's use is written with the hold only while the code still has a use left for it, which another booking
   // may have taken a moment before.
   const codeStands = code !== null && (holdId === null || (await codeOnHold(db, holdId)) !== null);
+  const standingCode = codeStands ? { code: code.code, terms: code.terms } : null;
   // Someone we knew may be in FSM and the CRM already, with no address. Someone new is added to both with this
   // one, by the booking and its lead.
   if (knownId !== null && address === "saved") await form.syncContact(person.id);
@@ -481,6 +516,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     personId: person.id,
     via: "consultation",
     pincode: request.pincode,
+    toldNotice: request.toldNotice,
     now,
   });
 
@@ -510,11 +546,11 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     state,
     date: request.date,
     window: request.window,
-    area: pincode.area,
+    area: placeOf(pincode),
     credits: invited.credits,
     invite: invited.invite,
     oneVisit,
-    discountCode: codeStands,
+    discountCode: standingCode,
   };
 }
 
@@ -541,12 +577,12 @@ async function answerAsForANewNumber(
     state,
     date: request.date,
     window: request.window,
-    area: pincode.area,
+    area: placeOf(pincode),
     // A new number carries a valid invite's credits.
     credits: request.invite !== null,
     invite: request.invite === null ? "unknown" : "valid",
     oneVisit,
-    discountCode: code !== null,
+    discountCode: code === null ? null : { code: code.code, terms: code.terms },
   };
 }
 
@@ -585,7 +621,7 @@ async function oneVisitCode(
   text: string,
   knownId: string | null,
   oneVisit: boolean,
-): Promise<{ readonly ok: true; readonly codeId: string; readonly code: string } | Refusal> {
+): Promise<OneVisitCode | Refusal> {
   const notApplicable = { ok: false, status: 422, code: "code_not_applicable", fields: ["discount_code"] } as const;
   if (!oneVisit) {
     form.log.info("discount_code_refused", { reason: "not_covered" });
@@ -606,6 +642,8 @@ export interface WaitlistRequest {
   readonly turnstileToken: string;
   readonly attribution: Attribution;
   readonly invite: Invite | null;
+  /** The line beside the invite that told the friend their referrer hears of the fit; null where the page showed none. */
+  readonly toldNotice: ToldNotice | null;
   /**
    * Where the consents on the form are given: the site's waitlist, or an invite's page
    * (docs/decisions/0094-where-a-consent-was-given.md).
@@ -615,9 +653,29 @@ export interface WaitlistRequest {
 
 export interface Listed {
   readonly ok: true;
+  /** Null until ops have named the area, and for a pincode we do not know. */
   readonly area: string | null;
   readonly credits: boolean;
   readonly invite: InviteState;
+}
+
+/**
+ * The invite a waitlist entry carries: none for someone who has had a visit, or booked or asked for one. Anyone can
+ * join a list with a number, so the list never attributes a client already in the funnel; ops may attach their invite
+ * on the client's page instead.
+ */
+async function waitlistInvite(db: D1Database, knownId: string | null, invite: Invite | null): Promise<Invite | null> {
+  if (invite === null || knownId === null) return invite;
+  if (await hasAskedForAVisit(db, knownId)) return null;
+  return invite;
+}
+
+/**
+ * How the launch alert ticked on the form is recorded: as given, for someone new; for someone we know, only while
+ * they have never decided it. Anyone can fill in the form with their number, so a decision they made stands.
+ */
+function launchAlertRule(knownId: string | null): ConsentRule {
+  return knownId === null ? "always" : "if_undecided";
 }
 
 /** Takes the number for a pincode we do not serve yet, with the launch alert if it was asked for. */
@@ -631,8 +689,10 @@ export async function joinTheWaitlist(
   const checked = await form.checkPerson(request.mobile, request.turnstileToken, request.name);
   if (!checked.ok) return checked;
 
+  const knownId = await personWithMobile(db, checked.mobile);
+  const invite = await waitlistInvite(db, knownId, request.invite);
   const person = formPerson(db, {
-    knownId: await personWithMobile(db, checked.mobile),
+    knownId,
     mobile: checked.mobile,
     name: request.name,
     purpose: "contact",
@@ -651,7 +711,7 @@ export async function joinTheWaitlist(
           granted: true,
           notice: CURRENT_NOTICE.whatsapp_launches,
           source: request.source,
-          rule: "always",
+          rule: launchAlertRule(knownId),
           ipHash: checked.ipHash,
           givenAt: at,
         }).statement,
@@ -667,23 +727,17 @@ export async function joinTheWaitlist(
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?5)
          ON CONFLICT (pincode, person_id) DO UPDATE SET launch_alert = MAX(launch_alert, excluded.launch_alert)`,
       )
-      .bind(
-        crypto.randomUUID(),
-        request.pincode,
-        personId,
-        request.invite?.code ?? null,
-        at,
-        request.launchAlert ? 1 : 0,
-      ),
+      .bind(crypto.randomUUID(), request.pincode, personId, invite?.code ?? null, at, request.launchAlert ? 1 : 0),
     waitlistConfirmation(db, { personId, pincode: request.pincode, now }),
   ]);
   const confirmation = written.at(-1)?.results[0]?.id;
   if (confirmation !== undefined) await queueMessage(form, confirmation);
   const invited = await applyInvite(db, {
-    invite: request.invite,
+    invite,
     personId,
     via: "waitlist",
     pincode: request.pincode,
+    toldNotice: request.toldNotice,
     now,
   });
 

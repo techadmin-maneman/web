@@ -943,6 +943,7 @@ Request body:
             "look_limit_reached",
             "claim_required",
             "whatsapp_unavailable",
+            "number_not_proved",
             "unauthorized",
             "visit_booked",
             "payment_held",
@@ -1928,6 +1929,36 @@ Request body:
       ],
       "description": "On a one visit closed as done with the client fitted, its payment link; else null."
     },
+    "discount_code": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "given_by": {
+              "type": "string",
+              "enum": [
+                "client",
+                "technician",
+                "ops"
+              ],
+              "description": "client: as they booked; ops: on the booking in the console; technician: at the visit."
+            }
+          },
+          "required": [
+            "code",
+            "given_by"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "On a one visit, the discount code already on it, so the outcome step asks for none; never what it takes off. Null on any other visit, and on a one visit with no code."
+    },
     "profile": {
       "anyOf": [
         {
@@ -1970,6 +2001,7 @@ Request body:
     "consumables",
     "products",
     "payment_link",
+    "discount_code",
     "profile"
   ],
   "additionalProperties": false

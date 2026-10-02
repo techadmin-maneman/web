@@ -69,6 +69,11 @@ function toldWhenFitted(name: string | null, reward: ReferralReward | null): str
   return `${told} That is when the ${visits(friend)} ${agreeing(friend, "lands", "land")}.`;
 }
 
+/** /book's line for the invite this browser remembers, above the consultation form's button. */
+function rememberedOnBooking(reward: ReferralReward | null): string {
+  return `You have an invite. ${toldWhenFitted(null, reward)}`;
+}
+
 /** The booked confirmation's line of the friend's visits (C4); null where they get none, or it is not known. */
 function visitsLand(reward: ReferralReward | null): string | null {
   const friend = friendVisits(reward);
@@ -198,6 +203,8 @@ export const referral = {
     consent: lineOf(notices.consultation),
     submit: "Book the consultation",
     submitOneVisit: "Book the consultation and fit",
+    // Not drawn: once the WhatsApp code is on its way, the button confirms it and books. The owner approves the words.
+    confirmOneVisit: "Confirm and book",
     sending: "Booking",
     told: toldWhenFitted,
   },
@@ -242,8 +249,21 @@ export const referral = {
     optional: "Optional",
     submit: "Add me to the list",
     sending: "Adding",
-    holds: "{name}’s invite stays valid for 12 months after we launch there.",
-    holdsUnnamed: "The invite stays valid for 12 months after we launch there.",
+    // Not drawn: who is told, as the consultation form says it. The owner approves the words.
+    holds: "{name}’s invite stays valid for 12 months after we launch there. {name} is told when you are fitted.",
+    holdsUnnamed:
+      "The invite stays valid for 12 months after we launch there. Whoever invited you is told when you are fitted.",
+  },
+  /**
+   * Not drawn: /book's line for the invite this browser remembers, before the form sends it with the booking, so the
+   * friend knows who is told of the fit and may go on without it. The owner approves the words.
+   */
+  remembered: {
+    consultation: rememberedOnBooking,
+    waitlist:
+      "You have an invite. It stays valid for 12 months after we launch there. Whoever invited you is told when you are fitted.",
+    bookWithout: "Book without the invite",
+    joinWithout: "Join without the invite",
   },
   /** Shared between the two forms. */
   form: {
@@ -265,6 +285,16 @@ export const referral = {
     title: "Check WhatsApp",
     body: "Your booking details are on their way to +91 {mobile}.",
     credits: visitsLand,
+    // Not drawn: the discount code given with the one visit, as it stands on the booking, or not, when another
+    // booking took its last use a moment before (ADR 0108). What it takes off is before GST. The owner approves the
+    // words.
+    code: {
+      applied: (code: string, off: string) => `Code ${code}: ${off}, taken when you pay.`,
+      notApplied: (code: string) => `We could not apply code ${code}. Your booking stands without it.`,
+      amountOff: (amount: string) => `${amount} off`,
+      percentOff: (percent: number, cap: string | null) =>
+        cap === null ? `${String(percent)}% off` : `${String(percent)}% off, up to ${cap}`,
+    },
     appHint: "See it in the app too: sign in with this number.",
     app: "Open the app",
     back: "Back to the site",
@@ -308,6 +338,8 @@ export const referral = {
     codeNotApplicable: "That discount code does not apply. Check it, or leave it out to book without it.",
     // Not drawn: the one visit was asked for while no hair system is offered in the console.
     noProduct: "Consultation and fit in one visit is not available to book yet. Book the consultation instead.",
+    // Not drawn: the WhatsApp code was entered more than 30 minutes before the booking was sent.
+    notProved: "Your WhatsApp code has expired. Book again for a new one.",
   },
   /**
    * What a shared invite's preview says (boards B1 and B2), which the mm-site Worker writes into the page. Only a

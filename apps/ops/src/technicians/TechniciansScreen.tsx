@@ -33,6 +33,7 @@ import {
 } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { technicians } from "../content.ts";
+import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { AddTechnician, Details, Returned } from "./TechnicianForms.tsx";
 import styles from "./technicians.module.css";
@@ -91,6 +92,7 @@ type Revoking =
 
 function Phone({ phone, technician }: { phone: Device; technician: Technician }) {
   const [revoking, setRevoking] = useState<Revoking>({ step: "listed" });
+  const mayRevoke = useAccess().mayCall("POST /api/technicians/{id}/devices/{device}/revoke");
   const copy = technicians.phones;
   const name = phoneName(phone);
 
@@ -107,7 +109,7 @@ function Phone({ phone, technician }: { phone: Device; technician: Technician })
   // A phone is offered, then asked about, then gone: one of the three at a time.
   const gone = revokedAt !== null;
   const asking = !gone && (revoking.step === "asking" || sending);
-  const offered = !gone && !asking;
+  const offered = mayRevoke && !gone && !asking;
 
   return (
     <li className={styles.phone}>
@@ -207,6 +209,9 @@ function LeaveBlock({ technician, onChange }: { technician: Technician; onChange
   const [sending, setSending] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
   const [stranded, setStranded] = useState<readonly JobOnLeave[]>([]);
+  const access = useAccess();
+  const mayRecord = access.mayCall("POST /api/technicians/{id}/leave");
+  const mayTakeBack = access.mayCall("POST /api/technicians/{id}/leave/{leave}/cancel");
   /** Why it was refused, in the console's words; nothing was recorded either way. */
   const refusal = (code: string): string => {
     const errors: Readonly<Record<string, string | undefined>> = copy.errors;
@@ -254,22 +259,24 @@ function LeaveBlock({ technician, onChange }: { technician: Technician; onChange
             <li className={styles.leaveRow} key={leave.id}>
               <span className={styles.leavePeriod}>{periodOf(leave)}</span>
               {leave.note !== null && <span className={styles.leaveNote}>{leave.note}</span>}
-              <Button
-                variant="outline"
-                size="small"
-                className={styles.quiet}
-                disabled={sending}
-                aria-label={copy.takeLabel(periodOf(leave), technician.name)}
-                onClick={() => void take(leave)}
-              >
-                {sending ? copy.taking : copy.take}
-              </Button>
+              {mayTakeBack && (
+                <Button
+                  variant="outline"
+                  size="small"
+                  className={styles.quiet}
+                  disabled={sending}
+                  aria-label={copy.takeLabel(periodOf(leave), technician.name)}
+                  onClick={() => void take(leave)}
+                >
+                  {sending ? copy.taking : copy.take}
+                </Button>
+              )}
             </li>
           ))}
         </ul>
       )}
 
-      {form === null ? (
+      {form === null && mayRecord && (
         <div className={styles.actions}>
           <Button
             variant="outline"
@@ -284,7 +291,8 @@ function LeaveBlock({ technician, onChange }: { technician: Technician; onChange
             {copy.add}
           </Button>
         </div>
-      ) : (
+      )}
+      {form !== null && (
         <form
           className={styles.leaveForm}
           onSubmit={(event) => {
@@ -549,6 +557,7 @@ function Roster() {
   const [switched, setSwitched] = useState<Switched | null>(null);
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState<string | null>(null);
+  const mayAdd = useAccess().mayCall("POST /api/technicians");
 
   if (loaded.state === "loading" || work.state === "loading") return <Loading />;
   if (loaded.state === "failed" || work.state === "failed") {
@@ -575,19 +584,21 @@ function Roster() {
       <VisuallyHidden as="h2" id="roster">
         {technicians.title}
       </VisuallyHidden>
-      <div className={styles.toolbar}>
-        <Button
-          variant="outline"
-          size="small"
-          className={styles.quiet}
-          onClick={() => {
-            setAdded(null);
-            setAdding(true);
-          }}
-        >
-          {technicians.add.open}
-        </Button>
-      </div>
+      {mayAdd && (
+        <div className={styles.toolbar}>
+          <Button
+            variant="outline"
+            size="small"
+            className={styles.quiet}
+            onClick={() => {
+              setAdded(null);
+              setAdding(true);
+            }}
+          >
+            {technicians.add.open}
+          </Button>
+        </div>
+      )}
       {added !== null && (
         <p className={styles.notice} role="status">
           {technicians.add.added(added)}

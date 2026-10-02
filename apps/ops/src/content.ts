@@ -9,6 +9,9 @@ export const BOOKING_URL: Readonly<Record<string, string>> = {
   production: "https://maneman.in/book",
 };
 
+/** PLACEHOLDER: the API refused a call the person's access does not reach. */
+export const NOT_PERMITTED = "Your access doesn't include this. Ask an admin.";
+
 /** The five departments, as the navigation heads its sections and the Staff page names a grant. */
 const DEPARTMENT_NAMES = {
   operations: "Operations",
@@ -301,6 +304,7 @@ export const dispatch = {
     /** PLACEHOLDER: another ops user's move of the same job is still being written. */
     beingMoved: (job: string) => `Someone else is moving ${job} right now. Nothing was moved.`,
     errors: {
+      not_permitted: NOT_PERMITTED,
       invalid_request: "That move is not one we can make. Nothing was moved.",
       not_found: "This visit is no longer live. The board now shows it as it stands.",
       fsm_refused: "Our scheduling system would not take it. Nothing was moved.",
@@ -350,6 +354,7 @@ export const referrals = {
     empty: "Nothing is held for review.",
     deciding: "Deciding",
     errors: {
+      not_permitted: NOT_PERMITTED,
       not_found: "Someone has decided this one already. Reload to see the queue as it stands.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Please try again.",
@@ -387,6 +392,7 @@ export const clients = {
     none: (text: string) => `Nobody matches “${text}”. An erased client has no page.`,
     more: "More clients match than are listed. Add to the name or the number.",
     errors: {
+      not_permitted: NOT_PERMITTED,
       invalid_request: "Type two letters of a name, or four digits of a number.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Please try again.",
@@ -502,6 +508,7 @@ export const clients = {
       removeLabel: (visit: string) => `Take the discount code off the visit of ${visit}`,
       removing: "Taking it off",
       errors: {
+        not_permitted: NOT_PERMITTED,
         code_not_applicable: "That code does not apply to this visit.",
         already_discounted: "This visit has a code already.",
         price_settled: "This visit is paid for or invoiced, so its code stays as it is.",
@@ -606,6 +613,7 @@ export const clients = {
           `FSM may hold a work order for it: look for "(booking ${booking})" among its work orders and cancel it.`,
       },
       errors: {
+        not_permitted: NOT_PERMITTED,
         not_found: "It is no longer waiting: it may have been booked or refunded. Reload the page.",
         not_changeable: "Its time has passed, so FSM is not tried again. Link a visit booked in FSM, or refund it.",
         superseded: "A try is writing it to FSM right now. Reload in a minute to see how it went.",
@@ -637,6 +645,9 @@ export const clients = {
     } as Readonly<Record<string, string>>,
     refundStates: { created: "Processing", processed: "Back", failed: "Failed" } as Readonly<Record<string, string>>,
     reference: (reference: string) => `Ref ${reference}`,
+    // PLACEHOLDER: a discount code on a payment, which no board draws (docs/decisions/0108-discount-codes.md).
+    /** "Code AUDTEST, Rs. 1,000 off", beneath what the payment was for. */
+    code: (applied: string) => `Code ${applied}`,
   },
   /** Putting a client's service-visit credits right by hand (POST /api/clients/{id}/credits). */
   credits: {
@@ -657,6 +668,7 @@ export const clients = {
     saving: "Saving",
     saved: (count: number) => `Done. They now hold ${String(count)} ${count === 1 ? "visit" : "visits"}.`,
     errors: {
+      not_permitted: NOT_PERMITTED,
       invalid_request:
         "That would take away more visits than they hold, or is not a number from -12 to 12. Nothing was changed.",
       not_found: "This client is no longer on our records. Nothing was changed.",
@@ -688,6 +700,8 @@ export const clients = {
     attachedBy: "Attached by",
     why: "Why",
     none: "They came with no invite. If a friend sent them and they booked another way, attach the friend's invite here.",
+    /** PLACEHOLDER: the same, to a person whose access does not let them attach one. */
+    noInvite: "They came with no invite.",
     form: {
       code: "Invite code",
       codeHint: "The letters and digits after maneman.in/r/ in the friend's link.",
@@ -697,6 +711,7 @@ export const clients = {
       save: "Attach the invite",
       saving: "Attaching",
       errors: {
+        not_permitted: NOT_PERMITTED,
         unknown_invite: "No invite has that code. Check it with the client. Nothing was attached.",
         own_invite: "That is this client's own invite. Nothing was attached.",
         invalid_request: "Type the code as letters and digits, and say why. Nothing was attached.",
@@ -819,6 +834,7 @@ export const clients = {
     // PLACEHOLDER: the board draws no client without photographs, and no photograph that would not load.
     empty: "No photographs of this client yet, so nothing was logged.",
     errors: {
+      not_permitted: NOT_PERMITTED,
       unavailable: "The view could not be recorded, so nothing is shown.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That photograph did not load.",
@@ -928,7 +944,7 @@ export const waitlist = {
     date: "Launch date",
     dateHint: "The day a technician starts coming. A held referral invite lapses twelve months from it.",
     /** PLACEHOLDER: where the area's name in the message comes from, and where it is changed (OPS-13). */
-    named: "The message uses the area's name as Service area sets it.",
+    named: "The message names the area once Service area gives it a name, and its city until then.",
     rename: "Change the name",
     /**
      * What each of them gets. The words are launch_alert_v1's in
@@ -953,6 +969,7 @@ export const waitlist = {
     done: (alerts: number) =>
       alerts === 0 ? "Marked live. Nobody was messaged." : `Launched. ${String(alerts)} on their way.`,
     errors: {
+      not_permitted: NOT_PERMITTED,
       not_found: "We have no such pincode.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Please try again.",
@@ -1128,6 +1145,7 @@ export const noShows = {
     /** PLACEHOLDER: the board draws no empty queue. */
     empty: "No no-show is waiting for a decision.",
     errors: {
+      not_permitted: NOT_PERMITTED,
       not_found: "Someone has ruled on this one already. Reload to see the queue as it stands.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Please try again.",
@@ -1168,6 +1186,7 @@ export const noShows = {
     /** PLACEHOLDER: the board always draws one. */
     none: "No charge is disputed.",
     errors: {
+      not_permitted: NOT_PERMITTED,
       not_found: "Someone has ruled on this dispute already. Reload to see where it stands.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Please try again.",
@@ -1338,6 +1357,7 @@ export const tasks = {
     saving: "Saving…",
     cancel: "Cancel",
     errors: {
+      not_permitted: NOT_PERMITTED,
       not_found: "This task has left the list meanwhile: its thing was done. Reload the page to see the list now.",
       invalid_request: "Nobody has used the console lately with that e-mail, so the task cannot be theirs.",
       unknown: "That did not save. Try again.",
@@ -1355,6 +1375,7 @@ export const tasks = {
     closing: "Closing…",
     cancel: "Cancel",
     errors: {
+      not_permitted: NOT_PERMITTED,
       not_found: "This task has left the list meanwhile: a visit was booked, or it was closed. Reload the page.",
       invalid_request: "Say why no visit is booked, in a sentence or two.",
       unknown: "That did not close. Try again.",
@@ -1432,6 +1453,7 @@ export const technicians = {
     /** PLACEHOLDER: the board draws no revoke, so nothing writes what one does. */
     warning: "The session ends, and the phone drops its cached jobs when it is next online.",
     errors: {
+      not_permitted: NOT_PERMITTED,
       not_found: "That phone is not this technician's any more. Reload to see the roster as it stands.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Please try again.",
@@ -1469,6 +1491,7 @@ export const technicians = {
       move: "Move them on the dispatch board",
     },
     errors: {
+      not_permitted: NOT_PERMITTED,
       invalid_request:
         "Those dates do not work: the last day cannot come before the first, and leave runs a year at most.",
       not_found: "That technician or that leave is no longer here. Reload to see the roster as it stands.",
@@ -1530,7 +1553,7 @@ export const technicians = {
     invalid_request: "Enter his name and a 10-digit Indian mobile.",
     managed_in_fsm: "His details come from Zoho FSM. Change them there.",
     not_found: "That technician is no longer here. Reload to see the roster as it stands.",
-    not_permitted: "Only someone with Operations · Manage can add, change or switch off technicians.",
+    not_permitted: NOT_PERMITTED,
     offline: "You are offline. Connect, then try again.",
     unknown: "That did not go through. Please try again.",
   },
@@ -1573,6 +1596,7 @@ export const grievances = {
       `The client is told in the app that we answer within ${String(days)} days, on WhatsApp. ` +
       "Nothing here messages them: send your answer, then record it.",
     errors: {
+      not_permitted: NOT_PERMITTED,
       not_found: "Someone has answered this one already. Reload to see the queue as it stands.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Please try again.",
@@ -1634,6 +1658,7 @@ export const deletions = {
       `Each request is processed within ${String(days)} days of being made. ` +
       "Ops are alerted once when one has waited five.",
     errors: {
+      not_permitted: NOT_PERMITTED,
       not_found: "Someone has decided this one already. Reload to see the queue as it stands.",
       /** The API refuses while something is still owed (docs/decisions/0066-erasure-all-or-nothing.md). */
       visit_booked:
@@ -1668,6 +1693,7 @@ export const numberChanges = {
     deciding: "Deciding",
     empty: "No number change is waiting.",
     errors: {
+      not_permitted: NOT_PERMITTED,
       number_in_use: "Another client holds that number already. Nothing was changed.",
       not_found: "Someone has decided this one already. Reload to see the queue as it stands.",
       offline: "You are offline. Connect, then try again.",
@@ -1777,6 +1803,7 @@ export const settings = {
       `No booking takes it from now on. ${String(uses)} ${uses === 1 ? "booking keeps" : "bookings keep"} it, as sold.`,
     switching: "Switching off",
     errors: {
+      not_permitted: NOT_PERMITTED,
       code: "A code is 4 to 16 letters and figures, none of them I, L, O, 0 or 1.",
       count: "A code you type is made once. Generate them to make more.",
       value: "A percentage is 1 to 100. An amount is whole rupees.",
@@ -1882,6 +1909,7 @@ export const settings = {
     /** The rule's name, or one of its boxes, and what the API said of it. */
     outside: (field: string) => `${field} is outside what this rule allows. Nothing was changed.`,
     errors: {
+      not_permitted: NOT_PERMITTED,
       invalid_request: "That figure is outside what this rule allows. Nothing was changed.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Nothing was changed.",
@@ -1916,6 +1944,7 @@ export const settings = {
     removeLabel: (period: string) => `Offer ${period} again`,
     removing: "Offering them again",
     errors: {
+      not_permitted: NOT_PERMITTED,
       from: "The first day cannot be before today.",
       to: "The last day cannot come before the first, and one go covers a month at most.",
       reason: "Say why, in letters and figures, up to 60 of them.",
@@ -2049,6 +2078,7 @@ export const settings = {
     },
     /** A refusal names the box it came from (src/routes/ops-services.ts, ops-settings.ts); these are said of each. */
     errors: {
+      not_permitted: NOT_PERMITTED,
       tier: "No service of this kind has that code, or a code cannot be made from that name. Nothing was changed.",
       name: "A name starts with a letter or a digit, runs from 2 to 60 characters, and opens no formula. Nothing was changed.",
       minutes: "A length is whole minutes, inside the range under the field. Nothing was changed.",
@@ -2070,6 +2100,7 @@ export const settings = {
     } as Readonly<Record<string, string>>,
     /** Taking back a price that applies already, or has applied: it may stand on an invoice. */
     takeBackErrors: {
+      not_permitted: NOT_PERMITTED,
       valid_from: "That price applies already, so it stays in the book.",
     } as Readonly<Record<string, string>>,
   },
@@ -2143,6 +2174,7 @@ export const settings = {
     download: "Download the current list",
     downloadName: "service-area.csv",
     errors: {
+      not_permitted: NOT_PERMITTED,
       no_service_area: "That would leave no pincode served, and every client on the waitlist. Nothing was changed.",
       /** A pincode we do not hold: the file is reference data, not a way to add one. */
       invalid_request: "That names a pincode we do not hold. Nothing was changed.",
@@ -2261,6 +2293,7 @@ export const settings = {
     },
     /** PLACEHOLDER: a refusal, said of the box it names (src/routes/ops-consumables.ts). */
     errors: {
+      not_permitted: NOT_PERMITTED,
       name: "Another consumable has that name, or it does not start with a letter or a digit. Nothing was changed.",
       unit: "A unit is a word of letters: strip, ml, sachet. Nothing was changed.",
       unit_cost: "The cost is in rupees, inside the range under the field. Nothing was changed.",
@@ -2323,6 +2356,7 @@ export const settings = {
       nothing: "Nothing has changed.",
     },
     errors: {
+      not_permitted: NOT_PERMITTED,
       items: "A list holds at least one item and no more than the limit under it. Nothing was changed.",
       label: "Each item needs words, no longer than the limit, and no two alike. Nothing was changed.",
       offline: "You are offline. Connect, then try again.",
@@ -2514,6 +2548,7 @@ export const stock = {
   },
   /** PLACEHOLDER: a refusal, said of the box it names (src/routes/ops-stock.ts). */
   errors: {
+    not_permitted: NOT_PERMITTED,
     consumable_code: "That consumable is not in the list any more. Reload the page.",
     from: "That kit is not one we know. Reload the page.",
     to: "Stock moves from one place to another, not to the place it is in. Nothing was recorded.",

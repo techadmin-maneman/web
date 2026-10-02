@@ -20,6 +20,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
 import { HOUSE_CARD } from "../config/house-card.ts";
+import { TOLD_NOTICES, type ToldNotice } from "../config/notices.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { bookConsultation, joinTheWaitlist, pincodeOf } from "../domain/public-booking.ts";
 import { liveCard } from "../domain/referral-cards.ts";
@@ -32,10 +33,12 @@ import {
   BOOKED_DESCRIPTION,
   CreditsSchema,
   InviteStateSchema,
+  OneVisitNumberCodeSchema,
   OneVisitOutcomeSchema,
   OneVisitRequestSchema,
   planOf,
   takenOrInProgress,
+  turnstileOrNotProved,
   TypedAddressSchema,
 } from "./consultations.ts";
 
@@ -65,7 +68,9 @@ const PincodeAnswerSchema = z
   .object({
     pincode: z.string(),
     served: z.boolean(),
-    area: z.union([z.string(), z.null()]).openapi({ description: "Null for a pincode we do not know." }),
+    area: z.union([z.string(), z.null()]).openapi({
+      description: "The area's name once ops have named it; null until then, and for a pincode we do not know.",
+    }),
     city: z.union([z.string(), z.null()]),
   })
   .strict()
@@ -75,7 +80,20 @@ const Person = {
   name: z.string().trim().min(1).max(80),
   mobile: z.string().max(20),
   turnstile_token: z.string().min(1).max(2048),
+  invite_told: z
+    .literal(true)
+    .optional()
+    .openapi({
+      description:
+        "true: the form said that whoever sent the invite is told when the friend is fitted. The attribution " +
+        "records it; the invite applies either way.",
+    }),
 };
+
+/** The line the landing showed beside the invite, as its form says; null where it showed none. */
+function toldOnLanding(told: true | undefined): ToldNotice | null {
+  return told === true ? TOLD_NOTICES.landing : null;
+}
 
 const ConsultationRequestSchema = z
   .object({
@@ -85,6 +103,7 @@ const ConsultationRequestSchema = z
     window: z.enum(BOOKING_WINDOWS),
     address: TypedAddressSchema,
     one_visit: OneVisitRequestSchema,
+    number_code_id: OneVisitNumberCodeSchema,
     consent: z.literal(true).openapi({ description: '"You may contact me on WhatsApp about this consultation."' }),
   })
   .strict();
@@ -154,7 +173,7 @@ const consultationRoute = createRoute({
               }),
               date: z.iso.date(),
               window: z.enum(BOOKING_WINDOWS),
-              area: z.string(),
+              area: z.string().openapi({ description: "The area once ops have named it, its city until then." }),
               credits: CreditsSchema,
               invite: InviteStateSchema,
               one_visit: OneVisitOutcomeSchema,
@@ -168,7 +187,7 @@ const consultationRoute = createRoute({
       "invalid_request: fields names what was refused, address.pincode for an address in another pincode, window " +
         "for one visit in the evening",
     ),
-    403: errorResponse("turnstile_failed"),
+    403: turnstileOrNotProved,
     409: takenOrInProgress,
     422: errorResponse(
       "not_bookable: the pincode is not served, or the day is not open; no_product: one visit, on a day the console " +
@@ -194,7 +213,13 @@ const waitlistRoute = createRoute({
       content: {
         "application/json": {
           schema: z
-            .object({ area: z.union([z.string(), z.null()]), credits: CreditsSchema, invite: InviteStateSchema })
+            .object({
+              area: z
+                .union([z.string(), z.null()])
+                .openapi({ description: "Null until ops have named the area, and for a pincode we do not know." }),
+              credits: CreditsSchema,
+              invite: InviteStateSchema,
+            })
             .strict()
             .openapi("ReferralWaitlist"),
         },
@@ -272,10 +297,12 @@ export function registerReferralLanding(app: App): void {
         turnstileToken: body.turnstile_token,
         attribution: {},
         invite: await invite(c, code),
+        toldNotice: toldOnLanding(body.invite_told),
         source: "referral_landing",
         plan: planOf(body.one_visit),
         // An invite's page takes no discount code: the invite is its offer (docs/decisions/0108-discount-codes.md).
         discountCode: null,
+        numberCodeId: body.number_code_id ?? null,
       });
       if (!booked.ok) return booked;
       return {
@@ -317,6 +344,7 @@ export function registerReferralLanding(app: App): void {
         turnstileToken: body.turnstile_token,
         attribution: {},
         invite: await invite(c, code),
+        toldNotice: toldOnLanding(body.invite_told),
         source: "referral_landing",
       });
       if (!listed.ok) return listed;

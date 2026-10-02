@@ -22,6 +22,7 @@ import { longDate } from "@maneman/web-kit/dates";
 import { useEffect, useRef, useState } from "react";
 import { api, type ChoiceRule, type NumberRule, type OpsSetting, type SettingValue } from "../api.ts";
 import { settings } from "../content.ts";
+import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./settings.module.css";
 
@@ -374,7 +375,14 @@ function Fields({
   );
 }
 
-function Rule({ rule, onSaved }: { rule: OpsSetting; onSaved: (saved: OpsSetting) => void }) {
+interface RuleProps {
+  readonly rule: OpsSetting;
+  /** Whether the person's access lets them change it; if not, its boxes only show the figures. */
+  readonly mayChange: boolean;
+  readonly onSaved: (saved: OpsSetting) => void;
+}
+
+function Rule({ rule, mayChange, onSaved }: RuleProps) {
   const [draft, setDraft] = useState<Draft>(() => draftOf(rule));
   const [saving, setSaving] = useState<Saving>({ step: "editing" });
 
@@ -401,15 +409,15 @@ function Rule({ rule, onSaved }: { rule: OpsSetting; onSaved: (saved: OpsSetting
 
   return (
     <li className={styles.rule}>
-      <fieldset className={styles.group} disabled={checking}>
+      <fieldset className={styles.group} disabled={checking || !mayChange}>
         <legend className={styles.ruleTitle}>{rule.title}</legend>
         <p className={styles.note}>{rule.note}</p>
         <Fields rule={rule} draft={draft} onChange={edit} />
-        {rule.kind === "number" && rule.keys === "open" && <AddKey rule={rule} onAdd={edit} />}
+        {mayChange && rule.kind === "number" && rule.keys === "open" && <AddKey rule={rule} onAdd={edit} />}
       </fieldset>
 
       <p className={styles.set}>{setLine(rule)}</p>
-      {checking ? (
+      {checking && (
         <Check
           rule={rule}
           value={saving.value}
@@ -419,7 +427,8 @@ function Rule({ rule, onSaved }: { rule: OpsSetting; onSaved: (saved: OpsSetting
             setSaving({ step: "editing" });
           }}
         />
-      ) : (
+      )}
+      {!checking && mayChange && (
         <div className={styles.actions}>
           <Button
             variant="primary"
@@ -464,6 +473,7 @@ export function Rules() {
   const [loaded, retry] = useLoad(api.settings);
   /** What each rule reads as now, so "Set by" follows a save without reading the whole list again. */
   const [saved, setSaved] = useState<Readonly<Record<string, OpsSetting>>>({});
+  const mayChange = useAccess().mayCall("POST /api/settings/{name}");
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
@@ -482,6 +492,7 @@ export function Rules() {
             <Rule
               key={rule.name}
               rule={current}
+              mayChange={mayChange}
               onSaved={(next) => {
                 setSaved((already) => ({ ...already, [next.name]: next }));
               }}
