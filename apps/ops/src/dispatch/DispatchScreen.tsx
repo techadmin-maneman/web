@@ -31,15 +31,28 @@ import {
   type MoveReason,
   type Room,
 } from "../api.ts";
+import { CancelVisit } from "../clients/CancelVisit.tsx";
+import { CloseVisit } from "../clients/CloseVisit.tsx";
 import { Shell } from "../components/Shell.tsx";
 import { dispatch } from "../content.ts";
-import { useAccess } from "../lib/access.ts";
+import { useAccess, type Access } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { BlockDrawer } from "./BlockDrawer.tsx";
 import styles from "./dispatch.module.css";
 import { Grid, type InHand } from "./Grid.tsx";
 import { phoneWords } from "../lib/phone.ts";
-import { idOf, nameOf, personOf, shownOf, WINDOWS, type BlockJob, type Job, type Target } from "./job.ts";
+import {
+  changeOf,
+  idOf,
+  nameOf,
+  personOf,
+  shownOf,
+  WINDOWS,
+  type BlockJob,
+  type Job,
+  type Target,
+  type VisitChange,
+} from "./job.ts";
 import { MoveBar } from "./MoveBar.tsx";
 import { MovePicker } from "./MovePicker.tsx";
 import { Toolbar } from "./Toolbar.tsx";
@@ -161,14 +174,43 @@ function staleWords(job: Job, code: string, now: Board | null): string {
 /** Refusals that mean the job is no longer as the board had it: it is let go, and the board read again. */
 const STALE = new Set(["superseded", "not_found", "fsm_partly"]);
 
+/** A visit being cancelled or closed by hand, in its own panel, opened from its drawer. */
+interface Changing {
+  readonly job: BlockJob;
+  readonly change: VisitChange;
+}
+
+/** The change a block's visit takes now, if the person's access reaches it. */
+function changeFor(job: BlockJob, access: Access): VisitChange | null {
+  const change = changeOf(job.block, Date.now());
+  if (change === "cancel" && access.mayCall("POST /api/visits/{id}/cancel")) return change;
+  if (change === "close" && access.mayCall("POST /api/visits/{id}/close")) return change;
+  return null;
+}
+
+/** What a cancel or a close by hand did, over the board once its panel closes. */
+function changedNotice(changing: Changing): Notice {
+  const name = nameOf(changing.job);
+  const text = changing.change === "cancel" ? dispatch.landing.cancelled(name) : dispatch.landing.closedByHand(name);
+  return { tone: "done", text, call: null };
+}
+
+function ChangePanel({ changing, onClose }: { changing: Changing; onClose: (changed: boolean) => void }) {
+  const { job, change } = changing;
+  const name = job.block.person?.name ?? nameOf(job);
+  if (change === "cancel") return <CancelVisit visitId={idOf(job)} name={name} onClose={onClose} />;
+  return <CloseVisit visitId={idOf(job)} name={name} date={job.date} onClose={onClose} />;
+}
+
 export function DispatchScreen() {
   const [query, setQuery] = useState<BoardQuery>({ from: null, city: null });
   const [find, setFind] = useState("");
   const [opened, setOpened] = useState<BlockJob | null>(null);
   const [move, setMove] = useState<Move | null>(null);
+  const [changing, setChanging] = useState<Changing | null>(null);
   const [rooms, setRooms] = useState<Rooms>({ state: "checking" });
   const [notice, setNotice] = useState<Notice | null>(null);
-  const { loaded, last, refresh, retry } = useBoard(query, move !== null || opened !== null);
+  const { loaded, last, refresh, retry } = useBoard(query, move !== null || opened !== null || changing !== null);
   const board = loaded.state === "loaded" ? loaded.value : null;
   const access = useAccess();
   const mayMove = access.mayCall("POST /api/dispatch/move");
@@ -254,6 +296,23 @@ export function DispatchScreen() {
     setOpened(null);
     restore();
   }, [restore]);
+
+  /** The panel closed: a visit cancelled or closed leaves the board as it was read, so it is read again. */
+  const changed = useCallback(
+    async (done: boolean) => {
+      const was = changing;
+      setChanging(null);
+      if (!done || was === null) {
+        restore();
+        return;
+      }
+      opener.current = null;
+      setNotice(changedNotice(was));
+      await refresh();
+      area.current?.focus();
+    },
+    [changing, refresh, restore],
+  );
 
   /** Ops called a client who had not heard of a move: its task leaves the Tasks board. */
   const told = useCallback(
@@ -391,8 +450,15 @@ export function DispatchScreen() {
                 }
               : null
           }
+          change={changeFor(opened, access)}
+          onChange={(change) => {
+            setOpened(null);
+            setNotice(null);
+            setChanging({ job: opened, change });
+          }}
         />
       )}
+      {changing !== null && <ChangePanel changing={changing} onClose={(done) => void changed(done)} />}
       {picking !== null && (
         <MovePicker
           job={picking.job}

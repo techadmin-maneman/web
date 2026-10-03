@@ -210,6 +210,9 @@ export const dispatch = {
       `Not told of the move to ${when}: no WhatsApp. Call ${mobile}, then record it here.`,
     /** The keyboard way to do what the drag does; the board draws the drag alone. */
     move: "Move this visit",
+    /** PLACEHOLDER: a visit ops cancel for the client, or close by hand once its technician's phone was lost. */
+    cancel: "Cancel this visit",
+    closeByHand: "Close by hand",
     close: "Close",
   },
   /** Board A2: the reason a move must carry, asked for before anything is written. */
@@ -283,6 +286,9 @@ export const dispatch = {
     /** PLACEHOLDER: the button that closes the call's task, beside the line that asks for the call. */
     told: "Told by phone",
     toldDone: (name: string) => `Recorded that ${name} was told by phone.`,
+    /** PLACEHOLDER: a visit ops cancelled, or closed by hand, from its drawer. */
+    cancelled: (job: string) => `${job}'s visit is cancelled.`,
+    closedByHand: (job: string) => `${job}'s visit is closed.`,
     /**
      * A refusal names the technician and the window it asked for: the clash check
      * runs before anything is written (ADR 0034), and the API answers with the
@@ -579,6 +585,90 @@ export const clients = {
         not_found: "This client cannot be booked.",
         offline: "You are offline. Connect, then try again.",
         unknown: "That did not go through. Nothing was booked.",
+      } as Readonly<Record<string, string>>,
+    },
+    /**
+     * PLACEHOLDER, all of it: ops cancelling a client's visit, which no board draws. Free to the client unless ops
+     * apply the client's own late terms, with a reason (the owner's ruling of 2 October 2026).
+     */
+    cancel: {
+      open: "Cancel",
+      /** The button's whole name, since every row's says the same. */
+      openLabel: (visit: string) => `Cancel the visit of ${visit}`,
+      drawer: "Cancel this visit",
+      title: (name: string) => `Cancel ${name}'s visit`,
+      close: "Close",
+      loading: "Checking what it gives back…",
+      unreadable: "What the cancel gives back could not be read.",
+      retry: "Try again",
+      paid: {
+        money: (amount: string, method: string) => `Paid ${amount} by ${method}.`,
+        credit: "Paid with a visit credit.",
+        nothing: "Nothing paid.",
+      },
+      /** Where a refund goes, by the payment's method. */
+      destinations: { upi: "UPI", card: "card", netbanking: "bank account" } as Readonly<Record<string, string>>,
+      otherDestination: "payment method",
+      free: "Free to the client",
+      clientTerms: "On their late terms",
+      /** "Free to the client: Rs. 2,000 goes back to their UPI." */
+      terms: (which: string, gives: string) => `${which}: ${gives}`,
+      gives: {
+        refund: (amount: string, to: string) => `${amount} goes back to their ${to}.`,
+        kept: (amount: string) => `${amount} is kept.`,
+        restored: "their visit credit comes back.",
+        lost: "their visit credit is spent.",
+        nothing: "nothing to give back.",
+      },
+      lateTerms: "Apply the client's late terms",
+      lateHint: (hours: number) => `Only when they cancel inside the ${String(hours)} hours' notice themselves.`,
+      reason: "Why",
+      reasonHint: "Kept with the cancel, under your name. The client never sees it.",
+      confirm: "Cancel the visit",
+      cancelling: "Cancelling…",
+      /** "Cancelled. Rs. 2,000 goes back to their UPI." */
+      done: (gives: string) => `Cancelled. ${gives.charAt(0).toUpperCase()}${gives.slice(1)}`,
+      termsChanged: "The client's notice ran out while this was open. Check what it gives back, then cancel again.",
+      errors: {
+        not_permitted: NOT_PERMITTED,
+        not_changeable: "This visit can no longer be cancelled: it has begun, passed or been cancelled already.",
+        invalid_request: "Say why it is cancelled.",
+        unavailable: "FSM did not answer, so nothing changed. Try again in a minute.",
+        offline: "You are offline. Connect, then try again.",
+        unknown: "That did not go through. Nothing was cancelled.",
+      } as Readonly<Record<string, string>>,
+    },
+    /**
+     * PLACEHOLDER, all of it: ops closing a visit by hand, for work whose technician's phone was lost before it sent
+     * it. No board draws it.
+     */
+    handClose: {
+      open: "Close by hand",
+      openLabel: (visit: string) => `Close the visit of ${visit} by hand`,
+      title: (name: string) => `Close ${name}'s visit by hand`,
+      close: "Close",
+      note: "For work done whose record was lost with the technician's phone. What the phone sent before stays.",
+      outcome: "How it went",
+      outcomes: { done: "Done", partial: "Partly done" },
+      started: "Work began at",
+      ended: "Work ended at",
+      /** "On Mon 21 Sep, India time." */
+      timesHint: (day: string) => `On ${day}, India time.`,
+      reason: "What happened, and how you know",
+      reasonHint: "Kept with the visit, under your name.",
+      confirm: "Close the visit",
+      closing: "Closing…",
+      done: { done: "Closed as done.", partial: "Closed as partly done. Its follow-up waits on Tasks." },
+      errors: {
+        not_permitted: NOT_PERMITTED,
+        managed_in_fsm: "FSM holds this visit's record, so close it in FSM.",
+        already_closed: "This visit is closed already, by the technician's phone or from here, or it was cancelled.",
+        too_early_to_close: "This visit's time has not come yet.",
+        times: "The times must fall on the visit's day, begin before they end, and end by now.",
+        reason: "Say what happened.",
+        not_found: "This visit is no longer on our records.",
+        offline: "You are offline. Connect, then try again.",
+        unknown: "That did not go through. Nothing was closed.",
       } as Readonly<Record<string, string>>,
     },
     /** "9 am to 12", as the dispatch drawer writes a window. */
@@ -1726,7 +1816,8 @@ export const deletions = {
       not_found: "Someone has decided this one already. Reload to see the queue as it stands.",
       /** The API refuses while something is still owed (docs/decisions/0066-erasure-all-or-nothing.md). */
       visit_booked:
-        "They still have a visit booked, so nothing was erased. Cancel it in FSM, and refund what they paid, then delete.",
+        "They still have a visit booked, so nothing was erased. Cancel it on their Visits tab, which refunds what they " +
+        "paid, then delete.",
       payment_held:
         "We hold a payment of theirs with no visit behind it, so nothing was erased. Refund it, then delete.",
       offline: "You are offline. Connect, then try again.",

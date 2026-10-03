@@ -120,3 +120,40 @@
   font-size: var(--fs-14);
   color: var(--error-on-paper);
 }
+
+/* Cancelling a visit, or closing one by hand, in the same panel: why, and a closed job's times side by side. */
+.reason {
+  min-height: var(--sp-48);
+  resize: vertical;
+}
+
+.choices {
+  margin: var(--sp-14) 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.legend {
+  padding: 0;
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-10);
+  margin-top: var(--sp-8);
+  font-size: var(--fs-15);
+}
+
+.choice input {
+  margin: 0;
+  accent-color: var(--ink);
+}
+
+.times {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--sp-14);
+}

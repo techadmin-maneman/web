@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import type { Block, BoardRow, Unassigned } from "../../apps/ops/src/api.ts";
 import {
   addDays,
+  changeOf,
   changesTime,
   firstNameOf,
   isMovable,
@@ -112,6 +113,18 @@ describe("where a job stands, and what a move changes", () => {
   it("moves anything not yet done, and nothing done", () => {
     expect(isMovable(block({ status: "in_progress" }))).toBe(true);
     expect(isMovable(block({ status: "completed" }))).toBe(false);
+  });
+
+  it("offers a cancel while the visit is ahead, and a close by hand once its time has come and it is open", () => {
+    const before = Date.parse("2025-09-19T03:00:00.000Z");
+    const after = Date.parse("2025-09-19T06:00:00.000Z");
+    expect(changeOf(block({ status: "scheduled" }), before)).toBe("cancel");
+    expect(changeOf(block({ status: "dispatched" }), before)).toBe("cancel");
+    expect(changeOf(block({ status: "in_progress" }), before)).toBeNull();
+    expect(changeOf(block({ status: "scheduled" }), after)).toBe("close");
+    expect(changeOf(block({ status: "in_progress" }), after)).toBe("close");
+    expect(changeOf(block({ status: "completed" }), after)).toBeNull();
+    expect(changeOf(block({ status: "terminated" }), after)).toBeNull();
   });
 
   it("counts the board's weeks in whole days, across a month and a year's end", () => {
