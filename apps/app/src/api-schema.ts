@@ -90,6 +90,15 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                /** @description turnstile_failed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
                 /** @description rate_limited: too many codes for this number today, or from this address this hour */
                 429: {
                     headers: {
@@ -99,7 +108,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description busy: today's ceiling on codes is reached */
+                /** @description busy: today's ceiling on codes is reached; unavailable: Turnstile could not be reached */
                 503: {
                     headers: {
                         [name: string]: unknown;
@@ -157,7 +166,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description too_early, or rate_limited */
+                /** @description too_early; or rate_limited: this challenge has sent its 3 codes, or too many codes for this number today, or from this address this hour */
                 429: {
                     headers: {
                         [name: string]: unknown;
@@ -233,7 +242,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description too_early, or rate_limited */
+                /** @description too_early; or rate_limited: this challenge has sent its 3 codes, or too many codes for this number today, or from this address this hour */
                 429: {
                     headers: {
                         [name: string]: unknown;
@@ -2578,6 +2587,7 @@ export interface components {
         LoginRequest: {
             /** @example 98100 00000 */
             mobile: string;
+            turnstile_token: string;
         };
         LoginChallengeRequest: {
             /** Format: uuid */
@@ -2634,6 +2644,8 @@ export interface components {
                 window: "morning" | "afternoon" | "evening";
                 /** @description Paid for in money, rather than free or covered by a credit. */
                 paid: boolean;
+                /** @description A consultation and fit in one visit. */
+                one_visit: boolean;
             } | null;
             /** @description The credit tile: balance and earliest expiry; null with none left. */
             credits: components["schemas"]["Credits"] | null;
@@ -3198,6 +3210,8 @@ export interface components {
             } | null;
             /** @description Where credits added came from; null for any other entry. */
             source: ("referral" | "ops" | "import") | null;
+            /** @description For credits an invite added: referrer, for a friend this client invited being fitted; friend, for this client's own fit through an invite. Null for any other entry. */
+            referral_side: ("referrer" | "friend") | null;
             no_show: components["schemas"]["NoShowNote"] | null;
         };
         PaymentDetail: {

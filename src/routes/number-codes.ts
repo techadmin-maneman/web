@@ -96,15 +96,14 @@ const ask: RouteHandler<typeof askRoute, AppEnv> = async (c) => {
   if (turnstile === "unavailable") return c.json(errorBody("unavailable", requestId), 503);
 
   const now = deps.now();
-  const { ipHash } = visitor;
-  const asked = await mayAskForCode(c, { surface: "form", mobileE164, ipHash, now, name: body.name });
-  if (asked === "rate_limited") return c.json(errorBody("rate_limited", requestId), 429);
+  const mobileHash = await mobileHashOf(ipHashSalt, mobileE164);
+  const asked = await mayAskForCode(c, { surface: "form", mobileHash, ipHash: visitor.ipHash, now, name: body.name });
   if (asked === "busy") return c.json(errorBody("busy", requestId), 503);
-  const counted = await countCode(c, mobileE164, body.name, ipHash, now, "form_code");
+  if (asked !== "open") return c.json(errorBody("rate_limited", requestId), 429);
+  const counted = await countCode(c, "form", mobileE164, body.name, now);
   if (!counted) return c.json(errorBody("busy", requestId), 503);
 
   const code = knownCode(login, body.name) ?? newLoginCode();
-  const mobileHash = await mobileHashOf(ipHashSalt, mobileE164);
   const codeId = await createNumberCode(c.env.DB, { mobileHash, code, pepper: login.codePepper, now });
   await sendCodeAfterResponse(c, mobileE164, body.name, "whatsapp", code);
   return c.json({ code_id: codeId }, 202);

@@ -65,6 +65,14 @@ Request body:
 }
 ```
 
+**403**: turnstile_failed
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 **429**: rate_limited: too many codes for this number today, or from this address this hour
 
 ```json
@@ -73,7 +81,7 @@ Request body:
 }
 ```
 
-**503**: busy: today's ceiling on codes is reached
+**503**: busy: today's ceiling on codes is reached; unavailable: Turnstile could not be reached
 
 ```json
 {
@@ -109,7 +117,7 @@ Request body:
 }
 ```
 
-**429**: too_early, or rate_limited
+**429**: too_early; or rate_limited: this challenge has sent its 3 codes, or too many codes for this number today, or from this address this hour
 
 ```json
 {
@@ -161,7 +169,7 @@ Request body:
 }
 ```
 
-**429**: too_early, or rate_limited
+**429**: too_early; or rate_limited: this challenge has sent its 3 codes, or too many codes for this number today, or from this address this hour
 
 ```json
 {
@@ -1866,10 +1874,16 @@ Request body:
       "type": "string",
       "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
       "example": "98100 00000"
+    },
+    "turnstile_token": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
     }
   },
   "required": [
-    "mobile"
+    "mobile",
+    "turnstile_token"
   ],
   "additionalProperties": false
 }
@@ -2073,13 +2087,18 @@ Request body:
             "paid": {
               "type": "boolean",
               "description": "Paid for in money, rather than free or covered by a credit."
+            },
+            "one_visit": {
+              "type": "boolean",
+              "description": "A consultation and fit in one visit."
             }
           },
           "required": [
             "type",
             "date",
             "window",
-            "paid"
+            "paid",
+            "one_visit"
           ],
           "additionalProperties": false
         },
@@ -4514,6 +4533,21 @@ Request body:
       ],
       "description": "Where credits added came from; null for any other entry."
     },
+    "referral_side": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "referrer",
+            "friend"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "For credits an invite added: referrer, for a friend this client invited being fitted; friend, for this client's own fit through an invite. Null for any other entry."
+    },
     "no_show": {
       "anyOf": [
         {
@@ -4532,6 +4566,7 @@ Request body:
     "visits",
     "visit",
     "source",
+    "referral_side",
     "no_show"
   ],
   "additionalProperties": false

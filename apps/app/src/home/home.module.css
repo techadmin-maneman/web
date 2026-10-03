@@ -168,10 +168,6 @@
 
 /* Board B1's credit tile, ruled above and below. */
 .credits {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--sp-16);
   padding: var(--sp-18) 0;
   border-top: var(--hairline) solid var(--paper-line);
   border-bottom: var(--hairline) solid var(--paper-line);
@@ -190,13 +186,6 @@
   margin-top: var(--sp-4);
   font-size: var(--fs-14);
   color: var(--text-muted);
-}
-
-.creditsCount {
-  font-family: var(--font-serif);
-  font-size: var(--fs-30);
-  line-height: var(--lh-100);
-  font-variant-numeric: lining-nums;
 }
 
 /* Board B1's one prompt: a line, and a quiet way on, underlined in brass. */

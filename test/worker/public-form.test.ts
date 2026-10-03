@@ -149,8 +149,8 @@ describe("the site's forms: Turnstile", () => {
 
     for (let visitor = 0; visitor < 3; visitor += 1) await join(app);
     expect(deps.alerts).toEqual([
-      "Turnstile could not check 5 visitors in the last hour (siteverify 502), so their leads and try-ons were " +
-        "turned away. Check Cloudflare's status, and TURNSTILE_SECRET on the Worker.",
+      "Turnstile could not check 5 visitors in the last hour (siteverify 502), so their bookings, try-ons and app " +
+        "logins were turned away. Check Cloudflare's status, and TURNSTILE_SECRET on the Worker.",
     ]);
   });
 

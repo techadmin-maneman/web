@@ -1,4 +1,4 @@
-// A payment or a refund, and a change to the service-visit credits, as the payments screens write them (boards E1
+// A payment or a refund, and a change to the free service visits, as the payments screens write them (boards E1
 // to E3).
 
 import { fullDate, indiaClock, indiaDate, listDate, shortDate } from "@maneman/web-kit/dates";
@@ -149,11 +149,17 @@ export function paymentsAndCredits(entries: readonly Entry[], credits: readonly 
 export const creditWhat = (line: CreditLine) =>
   line.visit === null ? payments.credits.title : visitName(line.visit.type);
 
-/** The list's line under the name: "25 Jul · visit credit", "19 Sep · a friend you invited was fitted". */
+/** Where visits added came from: an invite's by which side of it the client was, else the source. */
+function addedFrom(line: CreditLine): string {
+  if (line.referral_side !== null) return payments.credits.from[line.referral_side];
+  return payments.credits.from[line.source ?? "ops"];
+}
+
+/** The list's line under the name: "25 Jul · free service visit", "19 Sep · your friend was fitted". */
 export function creditMeta(line: CreditLine, thisYear: number): string {
   const date = listDate(line.date, thisYear);
   if (line.no_show !== null) return `${date} · ${payments.noShow.meta(line.no_show)}`;
-  if (line.event === "added") return `${date} · ${payments.credits.from[line.source ?? "ops"]}`;
+  if (line.event === "added") return `${date} · ${addedFrom(line)}`;
   return `${date} · ${payments.credits.meta[line.event]}`;
 }
 

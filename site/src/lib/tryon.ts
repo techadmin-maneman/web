@@ -5,6 +5,7 @@
 // that keeps a client's try-on, the photograph's small copy follows it; a copy
 // refused leaves the try-on as it is (ADR 0084).
 
+import type { TurnstileWidget } from "@maneman/web-kit/turnstile";
 import {
   fetchAvailability,
   fetchLook,
@@ -17,7 +18,6 @@ import {
 } from "./api.ts";
 import type { PreparedPhoto } from "./photo.ts";
 import { errorKindOf, jobProblem, type Failure } from "./tryon-errors.ts";
-import type { turnstileWidget } from "./turnstile.ts";
 
 export type Outcome<T> = { readonly ok: true; readonly value: T } | ({ readonly ok: false } & Failure);
 
@@ -46,7 +46,7 @@ export async function onArrival(): Promise<Arrival> {
 
 export async function startUpload(
   preparing: Promise<PreparedPhoto>,
-  turnstile: ReturnType<typeof turnstileWidget> | null,
+  turnstile: TurnstileWidget | null,
   noticeVersion: string,
 ): Promise<Outcome<Uploaded>> {
   let photo: PreparedPhoto;
