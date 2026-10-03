@@ -4,7 +4,7 @@
 //
 //   npm run tick                              the cron, which on staging runs every five minutes
 //   npm run pay:local [-- <hold-id>]          Razorpay's signed webhook for the last booking held, as if paid by UPI
-//   npm run close:local [-- <visit-id> [--partial]]   FSM closing a visit, as its technician would; alone, lists them
+//   npm run close:local [-- <visit-id> [--partial]]   a technician closing a visit; alone, lists them
 
 import { execFileSync } from "node:child_process";
 import { createHmac, randomUUID } from "node:crypto";
@@ -91,7 +91,7 @@ async function pay(holdId: string | undefined): Promise<void> {
     body,
   });
   if (!answer.ok) throw new Error(`the webhook answered ${String(answer.status)}: ${await answer.text()}`);
-  console.log(`paid hold ${hold.id} (Rs. ${String(hold.amount / 100)}): the booking is written to FSM from its queue`);
+  console.log(`paid hold ${hold.id} (Rs. ${String(hold.amount / 100)}): the webhook books it`);
 }
 
 interface OpenVisit {

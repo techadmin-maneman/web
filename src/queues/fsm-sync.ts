@@ -20,7 +20,7 @@
 // waits for ops to book it or refund it (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
 //
 // Where our own database holds the record of field work (src/config/field-record.ts), only a hold is acted on, and
-// booked there; a message for FSM left over from before the switch is acknowledged and logged.
+// booked there; a message for FSM queued before the switch is acknowledged and logged.
 
 import { z } from "zod";
 import type { FieldRecord } from "../config/field-record.ts";
@@ -32,14 +32,7 @@ import { pushCatalogue } from "../domain/fsm-catalogue.ts";
 import { logDeactivated, syncAppointment } from "../domain/fsm-mirror.ts";
 import { heldAlert, heldAlertKey, holdForFsm, isHeldForFsm, toLinkAlertKey } from "../domain/held-bookings.ts";
 import { streetOf } from "../domain/profile.ts";
-import {
-  eventById,
-  markFsmWrite,
-  nextPending,
-  rejectAllPending,
-  rejectPendingAfter,
-  unwrittenBefore,
-} from "../domain/job-events.ts";
+import { eventById, markFsmWrite, nextPending, rejectPendingAfter, unwrittenBefore } from "../domain/job-events.ts";
 import { writeEventToFsm, type JobForFsm } from "../domain/job-sheet.ts";
 import { readOpsInputs } from "../domain/ops-settings.ts";
 import { exportVisitPhotos } from "../domain/visit-photos.ts";
@@ -117,7 +110,7 @@ export async function handleFsmSyncBatch(
       continue;
     }
     if (record === "ours") {
-      await setAside(message, parsed.data, db, deps, log.child({ request_id: parsed.data.request_id }));
+      setAside(message, parsed.data, log.child({ request_id: parsed.data.request_id }));
       continue;
     }
     if ("catalogue_sync" in parsed.data) {
@@ -266,14 +259,11 @@ async function bookHold(
 /** A message for FSM itself: every kind but a hold to book. */
 type ForFsm = Exclude<FsmSyncMessage, { hold_id: string }>;
 
-const SWITCHED_OFF = "FSM was switched off before it was written";
-
 /**
- * A message queued for FSM before it was switched off: FSM is not written. A technician's step still waiting for FSM
- * is marked as never written, with every other step of its visit, and ops are told once to check the visit.
+ * A message queued for FSM before it was switched off: FSM is not written. A technician's step it named stays
+ * waiting, for the sweeper to give up on with the rest of its visit's (src/scheduled/sweeper.ts).
  */
-async function setAside(message: Message, body: ForFsm, db: D1Database, deps: Dependencies, log: Logger) {
-  if ("job_event_id" in body) await giveUpOnSteps(db, deps, body.job_event_id);
+function setAside(message: Message, body: ForFsm, log: Logger): void {
   log.info("fsm_message_dropped", { kind: fsmWorkOf(body) });
   message.ack();
 }
@@ -286,26 +276,6 @@ function fsmWorkOf(body: ForFsm): string {
   if ("update_contact_person_id" in body) return "contact_update";
   if ("note_appointment_id" in body) return "client_note";
   return "catalogue_push";
-}
-
-async function giveUpOnSteps(db: D1Database, deps: Dependencies, jobEventId: string): Promise<void> {
-  const event = await eventById(db, jobEventId);
-  if (event === null || event.superseded || event.fsmWriteState !== "pending") return;
-
-  const rejected = await rejectAllPending(db, event.appointmentId, deps.now(), SWITCHED_OFF);
-  for (const id of rejected) await deps.resolveAlert(`job_event_pending:${id}`);
-  const visit = await db
-    .prepare("SELECT person_id FROM appointments WHERE id = ?1")
-    .bind(event.appointmentId)
-    .first<{ person_id: string | null }>();
-  const personId = visit?.person_id ?? null;
-  await deps.alertOnce({
-    key: `job_event_unwritten:${event.appointmentId}`,
-    message:
-      `A technician's steps on visit ${event.appointmentId} landed before FSM was switched off and never reached ` +
-      "it. Check the visit, and close it from the console if the work was done.",
-    link: personId === null ? "/dispatch" : `/clients/${personId}`,
-  });
 }
 
 /**

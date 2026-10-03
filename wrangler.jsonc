@@ -82,8 +82,8 @@
     // The stub needs no audience.
     "ACCESS_OPS_AUD": "",
     "SMS_PROVIDER": "stub",
-    // Zoho FSM and Books (docs/decisions/0032-fsm-mirror.md). The stubs reach nothing.
-    "FSM_PROVIDER": "stub",
+    // Zoho FSM is off: our own database is the record of field work. The Books stub reaches nothing.
+    "FSM_PROVIDER": "none",
     "BOOKS_PROVIDER": "stub",
     "ZOHO_FSM_ACCOUNTS_HOST": "",
     "ZOHO_FSM_API_HOST": "",

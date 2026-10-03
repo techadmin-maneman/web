@@ -127,6 +127,7 @@ async function sweepJob({ env, deps, config, log, budget }: CronContext): Promis
   await sweep(env, deps, log, {
     creditFloor: config.settings.tryon.creditFloor,
     fsmConnected: config.providers.FSM_PROVIDER !== "none",
+    record: fieldRecord(config.providers),
     budget,
   });
 }

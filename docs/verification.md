@@ -811,6 +811,27 @@ The provider's new calls, run through the real adapter against the owner's org w
 
 **Not proven by these two runs:** making an item, which only a first run does (`POST /items` answered 201 on the exploratory calls, making `4242595000000245041`); and GST's treatment and places, which wait for GST to be turned on in Books.
 
+## FSM removal, PR 10: staging off FSM
+
+Run once staging is switched (docs/runbook.md, "Switching staging off FSM"), as a real user with staging's test records, backdating rather than waiting. Not run yet.
+
+| #   | Check                                                                    | Answer |
+| --- | ------------------------------------------------------------------------ | ------ |
+| 1   | A consultation booked on the site                                        |        |
+| 2   | A paid first fit booked in the app                                       |        |
+| 3   | A visit booked by ops                                                    |        |
+| 4   | A dispatch move and a reassign                                           |        |
+| 5   | A technician's whole day on a phone                                      |        |
+| 6   | A partial job                                                            |        |
+| 7   | A no-show                                                                |        |
+| 8   | A cancel with a refund                                                   |        |
+| 9   | The invoice issued and the payment applied; the receipt and the PDF open |        |
+| 10  | The CRM Contact appears after Books' Instant Sync, with "MM person ID"   |        |
+| 11  | An erasure blanks the Books customer, and the CRM Contact follows        |        |
+| 12  | A technician added in the console signs in                               |        |
+
+If check 11 fails, the CRM Contact is blanked directly instead: CRM Contacts access (open point 21), about a day's work.
+
 ## What the P2-M2 and P2-M5 proofs left in the owner's org
 
 Staging shares the real Zoho org (open point 19), so the records below are real and are the owner's to keep or clear. Every one of them is labelled "Staging test". Nothing was deleted, because two of them are still wanted: **WO13 carries the invoice the owner raised by hand**, INV-000001, which the invoice check still waits on for the reason in open point 114; and the first fit is the visit a move was proven on.
