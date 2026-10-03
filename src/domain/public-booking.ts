@@ -188,9 +188,13 @@ function formPerson(
 
 /** Why a person we know books nothing from a form; null when they may book a consultation there. */
 async function notBookedFor(db: D1Database, personId: string): Promise<NotBookedFromSite | null> {
+  const [consultationToCome, types] = await Promise.all([
+    liveVisitOf(db, personId, "consultation"),
+    bookableTypes(db, personId),
+  ]);
   return notBookedFromSite({
-    hasConsultationToCome: (await liveVisitOf(db, personId, "consultation")) !== null,
-    mayBookConsultation: (await bookableTypes(db, personId)).includes("consultation"),
+    hasConsultationToCome: consultationToCome !== null,
+    mayBookConsultation: types.includes("consultation"),
   });
 }
 
@@ -419,16 +423,19 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   const { db, log, now } = form;
 
   const first = addDays(indiaDate(now), 1);
-  const pincode = await pincodeOf(db, request.pincode);
+  const oneVisit = request.plan === "one_visit";
+  const [pincode, products] = await Promise.all([
+    pincodeOf(db, request.pincode),
+    oneVisit ? offeredProducts(db, request.date) : [],
+  ]);
   if (pincode?.served !== 1 || request.date < first || request.date > addDays(first, BOOKING_DAYS - 1)) {
     return { ok: false, status: 422, code: "not_bookable" };
   }
   // The first fit's three hours do not fit in the evening (src/policy/one-visit.ts), which the form does not offer.
-  const oneVisit = request.plan === "one_visit";
   if (!planStartsIn(request.plan, request.window)) {
     return { ok: false, status: 400, code: "invalid_request", fields: ["window"] };
   }
-  if (oneVisit && (await offeredProducts(db, request.date)).length === 0) {
+  if (oneVisit && products.length === 0) {
     return { ok: false, status: 422, code: "no_product" };
   }
   // The technician goes to the address, so it must be where the pincode said we come.
@@ -442,12 +449,20 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     return { ok: false, status: 403, code: "number_not_proved" };
   }
 
-  const knownId = await personWithMobile(db, checked.mobile);
+  // A slot is held and booked only while self-serve booking is on and the day offers what was asked for;
+  // otherwise booking goes through WhatsApp, and what the person asked for waits for ops.
+  const [knownId, visit] = await Promise.all([
+    personWithMobile(db, checked.mobile),
+    form.selfServeBooking ? siteVisit(db, request.plan, request.date) : null,
+  ]);
   if (knownId !== null) {
     const notBooked = await notBookedFor(db, knownId);
     if (notBooked !== null) return answerAsForANewNumber(form, request, pincode, { personId: knownId, notBooked });
   }
-  const code = request.discountCode === null ? null : await oneVisitCode(form, request.discountCode, knownId, oneVisit);
+  const [code, saved] = await Promise.all([
+    request.discountCode === null ? null : oneVisitCode(form, request.discountCode, knownId, oneVisit),
+    knownId === null ? null : currentAddress(db, knownId),
+  ]);
   if (code?.ok === false) return code;
   const person = formPerson(db, {
     knownId,
@@ -459,7 +474,6 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     ipHash: checked.ipHash,
     now,
   });
-  const saved = knownId === null ? null : await currentAddress(db, knownId);
   const address = typedAddress({ hasSavedAddress: saved !== null });
   // The page says nothing of an address already on the account; its owner is told on WhatsApp.
   const addressNotice =
@@ -471,9 +485,6 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     ...(addressNotice === null ? [] : [addressNotice.statement]),
   ];
 
-  // A slot is held and booked only while self-serve booking is on and the day offers what was asked for;
-  // otherwise booking goes through WhatsApp, and what the person asked for waits for ops.
-  const visit = form.selfServeBooking ? await siteVisit(db, request.plan, request.date) : null;
   let holdId: string | null = null;
   if (visit !== null) {
     const hold = await holdSlot(

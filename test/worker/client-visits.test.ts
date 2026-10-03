@@ -11,10 +11,12 @@ import { openSession } from "../../src/domain/sessions.ts";
 import { RULES } from "../../src/policy/home-prompt.ts";
 import { exportVisitPhotos } from "../../src/domain/visit-photos.ts";
 import { createStubFsm, type FsmAppointment, type StubFsmWorld } from "../../src/providers/fsm.ts";
-import { appFor, fakeDependencies, markDatabase, NOW, request } from "./helpers.ts";
+import { appFor, d1TripsOf, fakeDependencies, markDatabase, NOW, phaseOneLead, request } from "./helpers.ts";
 import { syntheticJpeg } from "./tryon-fixtures.ts";
 
 const MOBILE = "+919810000001";
+/** The most round trips to D1 Home may wait on in turn: the session, then the client's facts and what they lead to. */
+const ME_TRIPS = 99;
 
 const fsmAppointment = (id: string, overrides: Partial<FsmAppointment> = {}): FsmAppointment => ({
   id,
@@ -431,6 +433,30 @@ describe("GET /api/me's prompt and invoice line", () => {
       prompt: null,
       invoice: null,
     });
+  });
+
+  // PLAT-15: the app waits on Home each time it opens, and each D1 read is a round trip to the database's region. The
+  // reads that need nothing from each other go together, so Home waits on a few trips, not one for each read.
+  it("waits on few round trips to D1, even with the replacement leading, the longest way through", async () => {
+    await mirror([done("ap-done", "2026-09-10"), fsmAppointment("ap-next")]);
+    await signIn();
+    await giveAddress();
+    await fitPiece("2026-10-05");
+
+    const answer = await get("/api/me");
+
+    expect((await answer.json<{ prompt: unknown }>()).prompt).toMatchObject({ kind: "replacement_due" });
+    expect(d1TripsOf(answer)).toBeLessThanOrEqual(ME_TRIPS);
+  });
+
+  it("waits on as few for a lead whose booking from the site has no visit yet", async () => {
+    await phaseOneLead(MOBILE);
+    await signIn();
+
+    const answer = await get("/api/me");
+
+    expect((await answer.json<{ consultation: unknown }>()).consultation).not.toBeNull();
+    expect(d1TripsOf(answer)).toBeLessThanOrEqual(ME_TRIPS);
   });
 });
 

@@ -1,8 +1,16 @@
 import { env } from "cloudflare:workers";
 import { describe, expect, it, vi } from "vitest";
-import { REQUEST_ID_HEADER } from "../../src/http/context.ts";
+import { REQUEST_ID_HEADER, type App } from "../../src/http/context.ts";
 import { ErrorResponseSchema } from "../../src/http/errors.ts";
-import { appFor, captureLogs, countRowsRead, markDatabase, request } from "./helpers.ts";
+import {
+  appFor,
+  captureLogs,
+  countRowsRead,
+  d1TripsOf,
+  fakeDependencies,
+  markDatabase,
+  request,
+} from "./helpers.ts";
 
 describe("errors", () => {
   it("answers an unknown API route with a stable code and the request ID", async () => {
@@ -153,5 +161,30 @@ describe("access log", () => {
     expect(access?.d1_rows_read).toBeGreaterThanOrEqual(2);
     expect(access?.d1_rows_written).toBeGreaterThanOrEqual(2);
     expect(access?.d1_queries).toBeGreaterThanOrEqual(2);
+    expect(access?.d1_trips).toBeGreaterThanOrEqual(2);
+    expect(typeof access?.d1_wait_ms).toBe("number");
+  });
+
+  // PLAT-15: how long a request waited on D1, in a browser's network panel. Not on the public host, where it could
+  // tell a number we know from a new one by the trips its answer took.
+  it("tells a signed-in host's browser how many round trips to D1 it waited on, and the public host's nothing", async () => {
+    await markDatabase();
+    const waitTwice = (app: App) => {
+      app.get("/api/waits", async (c) => {
+        await Promise.all([c.env.DB.prepare("SELECT 1").first(), c.env.DB.prepare("SELECT 2").first()]);
+        await c.env.DB.prepare("SELECT 3").first();
+        return c.json({});
+      });
+      return app;
+    };
+    const signedIn = waitTwice(appFor("local", fakeDependencies(), {}, "client"));
+    const site = waitTwice(appFor());
+
+    await request(signedIn, "/api/waits");
+    const answer = await request(signedIn, "/api/waits");
+
+    expect(answer.headers.get("server-timing")).toMatch(/^d1;dur=\d+;desc="\d+ round trips"$/);
+    expect(d1TripsOf(answer)).toBe(2);
+    expect((await request(site, "/api/waits")).headers.get("server-timing")).toBeNull();
   });
 });

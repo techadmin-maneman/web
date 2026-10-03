@@ -40,7 +40,7 @@ import { clashes } from "../policy/dispatch.ts";
 import type { SoldTerms } from "../policy/moving-a-visit.ts";
 import { bookedLength, unitsFor } from "../policy/visit-length.ts";
 import { unitAt } from "../policy/slot-times.ts";
-import { isFitted } from "./client-visits.ts";
+import { FITTED } from "./fitted.ts";
 import type { Price } from "./price-book.ts";
 import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
 import { MINUTE_MS, minutesBetween } from "../lib/durations.ts";
@@ -238,29 +238,40 @@ export async function occupancy(
   return (technicianId, date) => days.get(`${technicianId}/${date}`) ?? emptyDay();
 }
 
-/**
- * The types a client may book: a consultation first, then a first fit, then service visits and replacements.
- * A consultation or a first fit is booked once at a time: not while one is still to happen.
- */
-export async function bookableTypes(db: D1Database, personId: string): Promise<VisitType[]> {
-  const types = await typesAtStage(db, personId);
-  const live = await Promise.all(types.map((type) => liveVisitOf(db, personId, type)));
-  return types.filter((_type, index) => live[index] === null);
+/** A visit booked and still to happen. */
+const STILL_TO_HAPPEN = "deleted_at IS NULL AND status IN ('scheduled', 'dispatched', 'in_progress')";
+/** A hold paid for, or booked free, on its way to being a visit. */
+const PAID_HOLD = "state = 'held' AND confirmed_at IS NOT NULL";
+
+/** What decides the types a client ?1 may book, in one statement. */
+const STAGE = `SELECT
+  ${FITTED} AS fitted,
+  EXISTS (SELECT 1 FROM appointments WHERE person_id = ?1 AND deleted_at IS NULL AND status = 'completed'
+    AND type = 'consultation') AS consulted,
+  EXISTS (SELECT 1 FROM appointments WHERE person_id = ?1 AND ${STILL_TO_HAPPEN}
+      AND (type = 'consultation' OR one_visit = 'booked'))
+    OR EXISTS (SELECT 1 FROM slot_holds WHERE person_id = ?1 AND ${PAID_HOLD}
+      AND (type = 'consultation' OR one_visit = 1)) AS consultation_live,
+  EXISTS (SELECT 1 FROM appointments WHERE person_id = ?1 AND ${STILL_TO_HAPPEN} AND type = 'first_fit')
+    OR EXISTS (SELECT 1 FROM slot_holds WHERE person_id = ?1 AND ${PAID_HOLD} AND type = 'first_fit')
+    AS first_fit_live`;
+
+interface StageRow {
+  fitted: number;
+  consulted: number;
+  consultation_live: number;
+  first_fit_live: number;
 }
 
-async function typesAtStage(db: D1Database, personId: string): Promise<VisitType[]> {
-  const [fitted, consulted] = await Promise.all([
-    isFitted(db, personId),
-    db
-      .prepare(
-        `SELECT 1 FROM appointments WHERE person_id = ?1 AND deleted_at IS NULL AND status = 'completed'
-           AND type = 'consultation' LIMIT 1`,
-      )
-      .bind(personId)
-      .first(),
-  ]);
-  if (fitted) return ["service", "replacement"];
-  return consulted === null ? ["consultation"] : ["first_fit"];
+/**
+ * The types a client may book: a consultation first, then a first fit, then service visits and replacements.
+ * A consultation or a first fit is booked once at a time: not while one is still to happen (liveVisitOf).
+ */
+export async function bookableTypes(db: D1Database, personId: string): Promise<VisitType[]> {
+  const row = await db.prepare(STAGE).bind(personId).first<StageRow>();
+  if (row?.fitted === 1) return ["service", "replacement"];
+  if (row?.consulted === 1) return row.first_fit_live === 1 ? [] : ["first_fit"];
+  return row?.consultation_live === 1 ? [] : ["consultation"];
 }
 
 /** The kinds of visit a client has one of at a time. */
@@ -288,8 +299,7 @@ export async function liveVisitOf(
     db
       .prepare(
         `SELECT window_start FROM appointments
-         WHERE person_id = ?1 AND (type = ?2 OR (?2 = 'consultation' AND one_visit = 'booked')) AND deleted_at IS NULL
-           AND status IN ('scheduled', 'dispatched', 'in_progress')
+         WHERE person_id = ?1 AND (type = ?2 OR (?2 = 'consultation' AND one_visit = 'booked')) AND ${STILL_TO_HAPPEN}
          ORDER BY window_start LIMIT 1`,
       )
       .bind(personId, type)
@@ -297,8 +307,8 @@ export async function liveVisitOf(
     db
       .prepare(
         `SELECT date, window_label FROM slot_holds
-         WHERE person_id = ?1 AND (type = ?2 OR (?2 = 'consultation' AND one_visit = 1)) AND state = 'held'
-           AND confirmed_at IS NOT NULL AND id IS NOT ?3 LIMIT 1`,
+         WHERE person_id = ?1 AND (type = ?2 OR (?2 = 'consultation' AND one_visit = 1)) AND ${PAID_HOLD}
+           AND id IS NOT ?3 LIMIT 1`,
       )
       .bind(personId, type, exceptHoldId)
       .first<{ date: string; window_label: BookingWindow }>(),
@@ -508,13 +518,14 @@ export async function holdSlot(
 ): Promise<Hold | null> {
   const { personId, service, date, window, price, moves, useCredit = false, oneVisit = false, from = "app" } = input;
   const units = unitsFor(service.minutes);
-  if ((await loadBlackouts(db, date, date)).has(date)) return null;
   const moving = moves?.kind === "move" ? moves.visit : null;
-  const [technicians, regular, held] = await Promise.all([
+  const [blackouts, technicians, regular, held] = await Promise.all([
+    loadBlackouts(db, date, date),
     techniciansFor(db, moving),
     moving === null ? regularTechnician(db, personId) : moving.technicianId,
     occupancy(db, date, date, now, moving?.visitId ?? null),
   ]);
+  if (blackouts.has(date)) return null;
   const chosen =
     input.technicianId === undefined
       ? technicians

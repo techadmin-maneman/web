@@ -90,6 +90,7 @@ const firstJob = (date: string, type: VisitType, oneVisit = false): Job => ({
   slots: SLOTS[type],
   unlocked: true,
   unlocks_at: unlocksAt(date),
+  client_name: "Rohit M.",
 });
 
 const secondJob = (date: string): Job => ({
@@ -108,6 +109,7 @@ const secondJob = (date: string): Job => ({
   slots: 1,
   unlocked: true,
   unlocks_at: unlocksAt(date),
+  client_name: "Vikram S.",
 });
 
 /** This afternoon's first fit, its card still locked as the list shows it. */
@@ -127,6 +129,7 @@ const lockedJob = (date: string): Job => ({
   slots: 2,
   unlocked: false,
   unlocks_at: unlocksAt(date),
+  client_name: null,
 });
 
 /** Tomorrow's one job, unlocked since 6 pm today: its card is open, and its door is not. */
@@ -148,6 +151,7 @@ const tomorrowsJob = (today: string): Job => {
     slots: 1,
     unlocked: true,
     unlocks_at: unlocksAt(date),
+    client_name: "Rohit M.",
   };
 };
 

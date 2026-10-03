@@ -105,11 +105,7 @@ export async function keptDays(): Promise<string[]> {
   return (await all<Kept>("jobs")).filter((kept) => kept.kind === "day").map((kept) => kept.date);
 }
 
-/**
- * Each job whose card the phone holds, by its client's name. The day's list
- * carries no name — the API gives a client only with the card, the day before
- * the visit — so a row, the waiting screen and the close-out all read it here.
- */
+/** Each job whose card the phone holds, by its client's name: what the waiting screen and the close-out read. */
 export async function keptNames(): Promise<Map<string, string>> {
   const names = new Map<string, string>();
   for (const kept of await all<Kept>("jobs")) {

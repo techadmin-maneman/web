@@ -13,7 +13,7 @@ import { requireStaffAccess } from "./http/staff-access.ts";
 import { REQUEST_ID_HEADER, type App, type AppEnv } from "./http/context.ts";
 import { ErrorResponseSchema, errorBody } from "./http/errors.ts";
 import { requireSameOrigin } from "./http/origin.ts";
-import { meterDatabase, usageFields } from "./lib/d1-meter.ts";
+import { meterDatabase, serverTiming, usageFields } from "./lib/d1-meter.ts";
 import { createLogger } from "./log.ts";
 import { registerClientAuth } from "./routes/client-auth.ts";
 import { registerClientMe } from "./routes/client-me.ts";
@@ -223,7 +223,7 @@ export function createApp(
 
 /**
  * Gives each request an ID, a logger, its dependencies and a metered database; sets common headers; logs the request
- * with what it cost D1.
+ * with what it cost D1 and how long it waited on it.
  */
 function requestContext(
   config: StaticConfig,
@@ -254,6 +254,9 @@ function requestContext(
     c.header("X-Content-Type-Options", "nosniff");
     if (!c.res.headers.has("Cache-Control")) c.header("Cache-Control", "no-store");
     if (config.environment !== "production") c.header("X-Robots-Tag", "noindex, nofollow");
+    const waits = meter.waits();
+    // Not on the public host, where how long D1 took could tell a number we know from a new one.
+    if (surface !== "public") c.header("Server-Timing", serverTiming(waits));
 
     log.info("request", {
       method: c.req.method,
@@ -261,6 +264,8 @@ function requestContext(
       status: c.res.status,
       duration_ms: Date.now() - started,
       ...usageFields(meter.usage()),
+      d1_trips: waits.trips,
+      d1_wait_ms: waits.ms,
     });
   });
 }

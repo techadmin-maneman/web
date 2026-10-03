@@ -92,21 +92,19 @@ export function useDay(date: string): readonly [Loaded<readonly JobSummary[]>, (
 /**
  * Once the day's list has arrived, each card it names is fetched and kept, so
  * the phone opens them in a basement: "today's and tomorrow's jobs and client
- * cards are cached" (docs/prompts/phase2-frontend.md). A locked job has no card
- * to keep, and the first call that fails ends the round: there is no signal,
- * or no room.
+ * cards are cached" (docs/prompts/phase2-frontend.md). The cards are fetched
+ * side by side, not one after another. A locked job has no card to keep, and a
+ * card that cannot be fetched or kept is let go: there is no signal, or no room.
  */
 export async function keepCards(jobs: readonly JobSummary[]): Promise<void> {
-  for (const job of jobs) {
-    if (!job.unlocked) continue;
-    const answer = await api.job(job.id);
-    if (!answer.ok) return;
-    try {
-      await keepJob(answer.body);
-    } catch {
-      return;
-    }
-  }
+  const unlocked = jobs.filter((job) => job.unlocked);
+  await Promise.all(unlocked.map((job) => keepCard(job.id)));
+}
+
+async function keepCard(id: string): Promise<void> {
+  const answer = await api.job(id);
+  if (!answer.ok) return;
+  await keepJob(answer.body).catch(() => undefined);
 }
 
 /**
@@ -120,9 +118,9 @@ export function useJob(id: string, watch: unknown = null): readonly [Loaded<Job>
 }
 
 /**
- * The client names the phone holds, by job. The day's list carries none — the
- * API gives a client only with the card, and only from the day before — so the
- * rows, the waiting screen and the close-out all read what `keepCards` kept.
+ * The client names the phone holds, by job, from the cards `keepCards` kept:
+ * what the waiting screen and the close-out name each job by, and the rows of a
+ * day the phone kept before the day's list carried names.
  */
 export function useNames(watch: unknown = null): ReadonlyMap<string, string> {
   const [names, setNames] = useState<ReadonlyMap<string, string>>(new Map());

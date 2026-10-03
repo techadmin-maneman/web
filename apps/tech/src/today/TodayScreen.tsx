@@ -51,6 +51,10 @@ function stateOf(job: JobSummary, queued: readonly Queued[], closedHere: Readonl
   return startedHere || job.status === "in_progress" ? jobCopy.states.inProgress : null;
 }
 
+/** The client's name from the day's list, else from the card the phone kept, for a day kept before the list had names. */
+const clientOf = (job: JobSummary, kept: ReadonlyMap<string, string>): string | undefined =>
+  job.client_name ?? kept.get(job.id);
+
 /** The jobs closed out on this phone, read again whenever the outbox changes. */
 function useClosedHere(watch: unknown): ReadonlySet<string> {
   const [closed, setClosed] = useState<ReadonlySet<string>>(new Set());
@@ -98,8 +102,7 @@ export function TodayScreen() {
   const [cards, setCards] = useState(0);
   const names = useNames(cards);
 
-  // Fresh from the API: keep each card too, so a basement opens them (board A2),
-  // and so the rows can name the client the day's list does not carry.
+  // Fresh from the API: keep each card too, so a basement opens them (board A2).
   useEffect(() => {
     if (day.state === "loaded" && !day.fromPhone) {
       void keepCards(day.value).then(() => {
@@ -217,7 +220,7 @@ export function TodayScreen() {
         <ul className={styles.list}>
           {jobs.map((job) => (
             <li key={job.id}>
-              <JobRow job={job} client={names.get(job.id)} state={stateOf(job, waiting.events, closedHere)} />
+              <JobRow job={job} client={clientOf(job, names)} state={stateOf(job, waiting.events, closedHere)} />
             </li>
           ))}
         </ul>
@@ -240,7 +243,7 @@ export function TodayScreen() {
             <ul className={styles.list}>
               {tomorrowJobs.map((job) => (
                 <li key={job.id}>
-                  <JobRow job={job} client={names.get(job.id)} state={stateOf(job, waiting.events, closedHere)} />
+                  <JobRow job={job} client={clientOf(job, names)} state={stateOf(job, waiting.events, closedHere)} />
                 </li>
               ))}
             </ul>

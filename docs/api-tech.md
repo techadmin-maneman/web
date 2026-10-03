@@ -1552,6 +1552,17 @@ Request body:
     "unlocks_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "client_name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The client's name, from the day before the visit as the card's client is; null until then."
     }
   },
   "required": [
@@ -1569,7 +1580,8 @@ Request body:
     "badge",
     "slots",
     "unlocked",
-    "unlocks_at"
+    "unlocks_at",
+    "client_name"
   ],
   "additionalProperties": false
 }
@@ -1701,6 +1713,17 @@ Request body:
     "unlocks_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "client_name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The client's name, from the day before the visit as the card's client is; null until then."
     },
     "address": {
       "anyOf": [
@@ -2090,6 +2113,7 @@ Request body:
     "slots",
     "unlocked",
     "unlocks_at",
+    "client_name",
     "address",
     "access_notes",
     "client",
