@@ -419,6 +419,24 @@ test("enters a discount code on a visit not yet paid for, says when one does not
   await expect(row.getByRole("button", { name: "Enter a discount code on the visit of 25 Sep 2027" })).toBeVisible();
 });
 
+// MON-23: once the one visit was booked, ops no longer saw the code the client gave when booking on the site.
+test("shows the code the client gave when booking, and starts the box from it", async ({ page }) => {
+  const [coming] = RECORD.visits.upcoming;
+  if (coming === undefined) throw new Error("the record has no visit to come");
+  const asked = {
+    ...RECORD,
+    visits: {
+      ...RECORD.visits,
+      upcoming: [{ ...coming, type: "first_fit" as const, prepaid: false, price_open: true, requested_code: "TENPC" }],
+    },
+  } satisfies OpsReply<"/api/clients/{id}">;
+  await openClient(page, `/clients/${CLIENT.id}/visits`, { [READ_RECORD]: json(asked) });
+  const row = page.getByRole("region", { name: "To come" }).getByRole("row").nth(1);
+  await expect(row).toContainText("Client gave TENPC when booking");
+  await row.getByRole("button", { name: "Enter a discount code on the visit of 25 Sep 2027" }).click();
+  await expect(row.getByLabel("Discount code")).toHaveValue("TENPC");
+});
+
 test("offers no code on a visit already paid for", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/visits`, { [READ_RECORD]: json(RECORD) });
   const row = page.getByRole("region", { name: "To come" }).getByRole("row").nth(1);

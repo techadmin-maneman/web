@@ -4,6 +4,7 @@
 // src/providers/payments.ts chooses this client.
 //
 //   POST https://api.razorpay.com/v1/orders                   { id }
+//   GET  https://api.razorpay.com/v1/orders/{id}/payments     { items: [{ status }] }
 //   POST https://api.razorpay.com/v1/payments/{id}/refund     { id }; a receipt used before on the payment is
 //        refused as "Duplicate receipt found for this refund request.", Razorpay's idempotency for refunds
 //        (https://razorpay.com/docs/api/refunds/create-normal/)
@@ -75,6 +76,7 @@ const API = "https://api.razorpay.com/v1";
 /** Razorpay's refusal of a refund under a receipt a refund of the payment already carries. */
 const DUPLICATE_RECEIPT = "Duplicate receipt found for this refund request.";
 const Created = z.object({ id: z.string() });
+const OrderPayments = z.object({ items: z.array(z.object({ status: z.string() })) });
 const LinkMade = z.object({ id: z.string(), short_url: z.string() });
 const LinksFound = z.object({ payment_links: z.array(LinkMade) });
 /** Razorpay's reason for a refusal, as much of it as it gave. */
@@ -127,6 +129,11 @@ export function createRazorpay(
 
   return {
     createOrder: (order) => call("create_order", "/orders", { ...order, currency: "INR" }, Created),
+    orderPayments: async (orderId) => {
+      const path = `/orders/${encodeURIComponent(orderId)}/payments`;
+      const { items } = await call("order_payments", path, null, OrderPayments);
+      return items.map((payment) => payment.status);
+    },
     // Only a refusal Razorpay gave in words is one; a timeout, a failure of its own or an answer we cannot read
     // leaves the refund made or not.
     refund: async (paymentId, refund) => {

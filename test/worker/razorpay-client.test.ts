@@ -106,6 +106,29 @@ describe("Razorpay: orders and refunds", () => {
     const { payments } = razorpay({ [`${API}/orders`]: () => json({ entity: "order" }) });
     await expect(payments.createOrder({ amount: 1, receipt: "r", notes: {} })).rejects.toThrow();
   });
+
+  it("answers the status of each payment on an order, by a GET that sends no body", async () => {
+    const { payments, calls } = razorpay({
+      [`${API}/orders/order_9/payments`]: () =>
+        json({
+          entity: "collection",
+          count: 2,
+          items: [
+            { id: "pay_1", entity: "payment", amount: 200000, status: "failed", order_id: "order_9" },
+            { id: "pay_2", entity: "payment", amount: 200000, status: "created", order_id: "order_9" },
+          ],
+        }),
+    });
+
+    expect(await payments.orderPayments("order_9")).toEqual(["failed", "created"]);
+    expect(calls[0]?.method).toBe("GET");
+    expect(calls[0]?.body).toBe("");
+  });
+
+  it("fails loudly on a list of an order's payments it cannot read, rather than say none was made", async () => {
+    const { payments } = razorpay({ [`${API}/orders/order_9/payments`]: () => json({ entity: "collection" }) });
+    await expect(payments.orderPayments("order_9")).rejects.toThrow();
+  });
 });
 
 // A consultation and fit in one visit is paid by a link, which Razorpay texts to the client itself
@@ -195,6 +218,7 @@ describe("payments where none is connected", () => {
       }),
     ).rejects.toThrow(/PAYMENTS_PROVIDER is none/);
     await expect(none.findPaymentLink("visit-1")).rejects.toThrow(/PAYMENTS_PROVIDER is none/);
+    await expect(none.orderPayments("order_9")).rejects.toThrow(/PAYMENTS_PROVIDER is none/);
     expect(calls).toEqual([]);
   });
 });

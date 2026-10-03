@@ -27,6 +27,7 @@ import { spendableCredits } from "./credits.ts";
 import { checkForOneVisit, codeOnHold } from "./discount-code-holds.ts";
 import { checkCode, useStatement } from "./discount-code-uses.ts";
 import { termsOf } from "./discount-codes.ts";
+import { typedOnWaitingRequest } from "./requested-codes.ts";
 import type { OpsInputs } from "./ops-settings.ts";
 import { recordPayment } from "./payments.ts";
 import { lateFeeOn, type Price } from "./price-book.ts";
@@ -59,6 +60,8 @@ export type Pays = (typeof PAYS)[number];
 interface AppliedCode {
   readonly id: string;
   readonly amountOff: number | null;
+  /** When the client typed it on /book, for the one visit asked for there; null for a code judged now. */
+  readonly typedAt: Date | null;
 }
 
 /** What a visit is sold as, before its slot is held. */
@@ -130,7 +133,10 @@ export async function paysByCredit(db: D1Database, personId: string, kind: Visit
   return (await spendableCredits(db, personId, now)).visits > 0;
 }
 
-/** The code ops typed, if it applies to this booking for this client; null for none typed, false for one refused. */
+/**
+ * The code ops typed, if it applies to this booking for this client; null for none typed, false for one refused. The
+ * code the client typed on /book for the one visit ops book from their request is honoured as it stood when typed.
+ */
 async function codeFor(
   db: D1Database,
   asked: VisitAsked,
@@ -139,13 +145,14 @@ async function codeFor(
 ): Promise<AppliedCode | null | false> {
   if (asked.code === undefined) return null;
   if (asked.oneVisit) {
-    const checked = await checkForOneVisit(db, asked.code, asked.personId, now);
-    return checked.ok ? { id: checked.codeId, amountOff: null } : false;
+    const typedAt = await typedOnWaitingRequest(db, asked.personId, asked.code);
+    const checked = await checkForOneVisit(db, asked.code, asked.personId, now, typedAt ?? now);
+    return checked.ok ? { id: checked.codeId, amountOff: null, typedAt } : false;
   }
   const codeBooking = { type: asked.kind, onCredit: booking.onCredit, moves: false };
   const checked = await checkCode(db, asked.code, codeBooking, asked.personId, now);
   if (!checked.ok) return false;
-  return { id: checked.code.id, amountOff: amountOff(termsOf(checked.code), booking.priceExGst) };
+  return { id: checked.code.id, amountOff: amountOff(termsOf(checked.code), booking.priceExGst), typedAt: null };
 }
 
 /** Nothing paid at booking, with the service's GST kept for the record. */
@@ -228,6 +235,8 @@ function bookingAudit(db: D1Database, booked: Booked, now: Date): D1PreparedStat
     pays: sale.pays,
   };
   if (asked.code !== undefined) detail.code = asked.code.toUpperCase();
+  const typedAt = sale.code?.typedAt ?? null;
+  if (typedAt !== null) detail.code_typed_at = typedAt.toISOString();
   const entry = {
     surface: "ops",
     actor: by.actor,
@@ -249,6 +258,7 @@ function codeUse(db: D1Database, asked: VisitAsked, code: AppliedCode, holdId: s
     visitId: null,
     amountOff: code.amountOff,
     by: { kind: "ops", actor: by.actor },
+    typedAt: code.typedAt ?? now,
   } as const;
   return useStatement(db, use, "new_hold", now);
 }

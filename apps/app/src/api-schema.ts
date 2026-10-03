@@ -1889,7 +1889,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Take a discount code off the hold's price, before Checkout has its order */
+        /** Take a discount code off the hold's price, while nothing is paid for it */
         post: {
             parameters: {
                 query?: never;
@@ -1932,7 +1932,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description already_discounted: the hold carries a code; hold_expired; price_settled: Checkout has its order, or it is paid for; ops_assisted */
+                /** @description already_discounted: the hold carries a code; hold_expired; price_settled: it is paid for, or a payment on Checkout's order is under way; ops_assisted */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1961,7 +1961,7 @@ export interface paths {
                 };
             };
         };
-        /** Take the code off the hold again, before Checkout has its order */
+        /** Take the code off the hold again, while nothing is paid for it */
         delete: {
             parameters: {
                 query?: never;
@@ -2000,7 +2000,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description hold_expired: the hold ran out; price_settled: Checkout has its order, or it is paid for; ops_assisted */
+                /** @description hold_expired: the hold ran out; price_settled: it is paid for, or a payment on Checkout's order is under way; ops_assisted */
                 409: {
                     headers: {
                         [name: string]: unknown;
