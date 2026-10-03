@@ -7883,7 +7883,7 @@ Request body:
         "null"
       ],
       "maxLength": 300,
-      "description": "Required to reject; kept with the decision (src/policy/decision-reasons.ts)."
+      "description": "Required to reject; kept with the decision, and the client reads it (src/policy/decision-reasons.ts)."
     }
   },
   "required": [
@@ -8022,7 +8022,7 @@ Request body:
         "null"
       ],
       "maxLength": 300,
-      "description": "Required to reject; kept with the decision (src/policy/decision-reasons.ts)."
+      "description": "Required to reject; kept with the decision, and the client reads it (src/policy/decision-reasons.ts)."
     }
   },
   "required": [

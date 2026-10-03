@@ -113,6 +113,13 @@ export const TEMPLATES: Readonly<Record<string, string>> = {
     "Hello {{1}}, this number was just used to book on our site. As a Mane Man client, you book your next visit in the Mane Man app. Sign in with this number.",
   address_on_account_v1:
     "Hello {{1}}, we will come to the address already on your account, not the one typed on our site. You can change it in the Mane Man app.",
+  // Ops' decision on a client's request to delete their account. {{2}} is ops' reason, which they write knowing the
+  // client reads it.
+  deletion_rejected_v1:
+    "Hello {{1}}, we have not deleted your Mane Man account. Our reason: {{2}} Message us if you disagree.",
+  // Sent once the erasure is done, to the number it has just blanked.
+  deletion_done_v1:
+    "Hello {{1}}, as you asked, your Mane Man account is deleted. Your invoices are kept for eight years, as the law requires.",
 };
 
 /** The text with its params filled in, or null for an unknown template or a missing param. */
@@ -171,6 +178,7 @@ export const MESSAGE_CLASSES: Readonly<Record<MessageKind, MessageClass>> = {
   consultation_exists: "answering", // the site's booking form, just sent for this number
   book_in_app: "answering",
   address_on_account: "answering",
+  deletion_rejected: "automatic", // ops' ruling
 };
 
 /** A kind's class, defaulting to automatic for one this table does not name, so an unsure case is never open. */

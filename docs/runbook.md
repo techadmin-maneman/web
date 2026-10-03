@@ -1260,7 +1260,10 @@ The photo notice promises that a person's data is deleted the same day they ask.
 
 - deletes their visit photographs from the client-photos bucket;
 - deletes their saved addresses;
-- anonymises their FSM contact within a few minutes, through the fsm-sync queue (docs/decisions/0049-dpdp.md).
+- anonymises their FSM contact within a few minutes, through the fsm-sync queue (docs/decisions/0049-dpdp.md);
+- tells the client on WhatsApp that it is done (`deletion_done_v1`), so step 5 is not needed. It is sent once, straight after the erasure; the log's `deletion_done_failed` means it did not arrive, and with the number gone it cannot be sent again. Delete the chat (step 4) after it.
+
+Rejecting a request sends the client your reason on WhatsApp (`deletion_rejected_v1`), and their app shows it for 30 days, so write it for them to read.
 
 Check FSM as you check Zoho:
 

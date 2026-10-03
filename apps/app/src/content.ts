@@ -1010,6 +1010,10 @@ export const profile = {
     no: "Keep my account",
     requested: (date: string) => `Deletion requested on ${date}. We will confirm on WhatsApp.`,
     failed: "That did not go through, so nothing has been requested. Please try again.",
+    // PLACEHOLDER: a request ops rejected, shown for 30 days with their reason, which is their own words.
+    rejected: (date: string) => `On ${date} we did not delete your account.`,
+    why: (reason: string) => `Our reason: ${reason}`,
+    disagree: "Message us if you disagree, or ask again.",
   },
   // PLACEHOLDER: the design has no logout; it ends the session on this device.
   logout: "Log out",

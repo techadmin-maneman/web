@@ -6785,7 +6785,7 @@ export interface components {
         NumberChangeDecision: {
             /** @enum {string} */
             decision: "confirm" | "reject";
-            /** @description Required to reject; kept with the decision (src/policy/decision-reasons.ts). */
+            /** @description Required to reject; kept with the decision, and the client reads it (src/policy/decision-reasons.ts). */
             reason: string | null;
         };
         ErasureRefused: {
@@ -6813,7 +6813,7 @@ export interface components {
         DeletionDecision: {
             /** @enum {string} */
             decision: "delete" | "reject";
-            /** @description Required to reject; kept with the decision (src/policy/decision-reasons.ts). */
+            /** @description Required to reject; kept with the decision, and the client reads it (src/policy/decision-reasons.ts). */
             reason: string | null;
         };
         ReferralDecision: {
