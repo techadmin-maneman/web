@@ -257,9 +257,10 @@ test("lists the five consents off, and switches one on with its date and off aga
   ]) {
     await expect(page.getByRole("switch", { name })).toHaveAttribute("aria-checked", "false");
   }
-  // Visit messages off, the client is told what that means.
+  // Visit messages off, the client is told what that means; and that visits are photographed all the same.
   const visitsOff = page.getByText("No visit updates on WhatsApp. We will call you about any change.");
   await expect(visitsOff).toBeVisible();
+  await expect(page.getByText("Each visit is still photographed for your visit record.")).toBeVisible();
 
   const visits = page.getByRole("switch", { name: "WhatsApp about your visits" });
   const switched = page.waitForRequest("**/api/consents/whatsapp_visits");

@@ -217,6 +217,7 @@ export function Photos({ photos, name }: { photos: ReturnType<typeof usePhotos>;
     return (
       <section className={styles.photos} aria-label={copy.title(name)}>
         <p className={styles.eyebrow}>{copy.opened(indiaClock(state.view.logged_at))}</p>
+        <p className={styles.caption}>{copy.basis}</p>
         {state.shown.map((each) => (
           <VisitPhotos key={each.visit.visit_id} visit={each.visit} shown={each.shown} />
         ))}
@@ -230,6 +231,7 @@ export function Photos({ photos, name }: { photos: ReturnType<typeof usePhotos>;
     <section className={styles.photos} aria-label={copy.title(name)}>
       <p className={styles.eyebrow}>{copy.locked}</p>
       <h3 className={styles.photosTitle}>{copy.title(name)}</h3>
+      <p className={styles.caption}>{copy.basis}</p>
       <p className={styles.warning}>{copy.warning(name.split(" ")[0] ?? name)}</p>
       {state.step === "opening" ? (
         <Loading />

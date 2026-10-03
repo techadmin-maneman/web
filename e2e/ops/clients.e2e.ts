@@ -620,6 +620,8 @@ test("keeps the photographs locked, and says what opening them records", async (
   });
   await expect(page.getByText("Locked")).toBeVisible();
   await expect(page.getByRole("heading", { name: `Photographs of ${CLIENT.name}` })).toBeVisible();
+  // Why they are kept, whatever the Consents tab says.
+  await expect(page.getByText("Taken for the visit record, at every visit.")).toBeVisible();
   await expect(page.getByText("Opening these records your name, the client and the time.")).toBeVisible();
   // Nothing is fetched while it is locked, so nothing is logged.
   expect(asked).toBe(0);
