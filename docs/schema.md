@@ -1887,7 +1887,7 @@ Made by `0002_lead_path.sql`; changed by `0054_policies_in_the_console.sql`.
 
 Each move or cancel a client made, with its notice and what it cost (ADR 0046).
 
-Made by `0020_visit_changes.sql`; changed by `0037_cron_indexes.sql`, `0080_cancel_refund_settled.sql`.
+Made by `0020_visit_changes.sql`; changed by `0037_cron_indexes.sql`, `0081_cancel_refund_settled.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
