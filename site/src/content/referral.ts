@@ -17,7 +17,7 @@
 import type { Invite, ReferralReward } from "../lib/api.ts";
 import { fill } from "../lib/text.ts";
 import { capitalised, serviceArea, visitLength } from "./service.ts";
-import { notices, type Notice } from "./site.ts";
+import { booking, notices, pageTitles, type Notice } from "./site.ts";
 
 /** A one-line notice's words, as the backend records them with the consent (src/config/notices.ts). */
 function lineOf(notice: Notice): string {
@@ -98,10 +98,11 @@ export const referral = {
     /**
      * A code we do not know: a typo, a revoked code, or one more than 12 months
      * old (board C4, "Code expired"). The API does not say which, so the page
-     * says only what is true of all three.
+     * says only what is true of all three, under /book's heading.
      */
     unknown: {
-      title: "We do not recognise this invite",
+      title: booking.title,
+      notice: "We do not recognise this invite",
       body: unknownBody,
     },
   },
@@ -272,8 +273,10 @@ export const referral = {
     nameError: "Please tell us your name.",
     mobile: "Mobile",
     mobilePlaceholder: "Your number",
-    mobileError: "Please enter a ten-digit mobile number.",
+    mobileError: "Enter a valid 10-digit mobile number.",
     consentError: "We need this to contact you.",
+    // Not drawn: by the button once three or more fields are marked. The owner approves the words.
+    marked: "Check the {count} fields marked above.",
   },
   /**
    * What a booking answers (C4), the same for every number, since whoever typed it may not be its owner: the details
@@ -331,7 +334,7 @@ export const referral = {
   errors: {
     rateLimited: "That is a few too many tries. Please try again tomorrow.",
     turnstile: "We could not confirm you are a person. Please try again.",
-    taken: "That window is full. Please pick another.",
+    taken: "That time isn’t available. Pick another.",
     notBookable: "That day is no longer open. Please pick another.",
     other: "Something went wrong at our end. Please try again.",
     // Not drawn: the discount code given does not apply, whatever the reason (ADR 0108). The owner approves the words.
@@ -357,6 +360,12 @@ export const referral = {
 /** The title a shared invite carries. */
 export function inviteTitle(name: string | null): string {
   return name === null ? referral.preview.titleUnnamed : fill(referral.preview.title, { name });
+}
+
+/** The browser tab's title: the invite's own, or /book's for a code we do not know, which the page is headed as. */
+export function invitePageTitle(invite: Invite | null): string {
+  if (invite?.state === "unknown") return pageTitles.book;
+  return inviteTitle(invite?.referrer_first_name ?? null);
 }
 
 /**

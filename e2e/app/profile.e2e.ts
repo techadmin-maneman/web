@@ -249,7 +249,7 @@ test("lists the five consents off, and switches one on with its date and off aga
   const switches = page.getByRole("switch");
   await expect(switches).toHaveCount(5);
   for (const name of [
-    "Photographs for your own record",
+    "Photographs taken for your visit record",
     "Photographs on referral cards",
     "Photographs in our marketing",
     "WhatsApp about your visits",
