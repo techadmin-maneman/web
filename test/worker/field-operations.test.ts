@@ -419,7 +419,9 @@ describe.each(RECORDS)("checking in, on %s's record", (record) => {
 
     const answer = await post(`/api/tech/jobs/${OTHER_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
     expect(answer.status).toBe(409);
-    expect(await answer.json()).toMatchObject({ error: { code: "too_early", earliest_at: fourPmLessAnHour } });
+    expect(await answer.json()).toMatchObject({
+      error: { code: "too_early_to_arrive", earliest_at: fourPmLessAnHour },
+    });
 
     const landed = await env.DB.prepare("SELECT COUNT(*) AS n FROM job_events WHERE appointment_id = ?1")
       .bind(OTHER_JOB)
@@ -453,7 +455,7 @@ describe.each(RECORDS)("checking in, on %s's record", (record) => {
       .run();
     const answer = await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
     expect(await answer.json()).toMatchObject({
-      error: { code: "too_early", earliest_at: minutesAfterStart(-30).toISOString() },
+      error: { code: "too_early_to_arrive", earliest_at: minutesAfterStart(-30).toISOString() },
     });
   });
 

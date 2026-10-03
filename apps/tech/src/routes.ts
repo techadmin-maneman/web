@@ -65,7 +65,7 @@ export const TECHNICIAN_INACTIVE = "technician_inactive";
 export const TOO_EARLY_TO_CLOSE = "too_early_to_close";
 
 /** A check-in before the earliest the job takes one. The job is untouched; the card says when to tap again. */
-export const TOO_EARLY = "too_early";
+export const TOO_EARLY_TO_ARRIVE = "too_early_to_arrive";
 
 /** The kinds of write the phone queues, named as the API's job events are, and the client's hair profile. */
 export const EVENT_KINDS = [

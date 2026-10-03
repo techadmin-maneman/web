@@ -164,7 +164,7 @@ export const stopped: Readonly<Record<string, string>> = {
   status: "This job was cancelled while the phone was offline.",
   out_of_order: "A step reached us before the one ahead of it.",
   not_today: "This job is on another day. Arrive and start it on the day.",
-  too_early: "Too early for this job. Tap again from the time on its card.",
+  too_early_to_arrive: "Too early for this job. Tap again from the time on its card.",
   already_started: "This job was started, so it cannot close as a no-show.",
   photo_rejected: "The photographs would not upload.",
   not_found: "This job is no longer on your list, so what it holds cannot reach us.",

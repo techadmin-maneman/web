@@ -295,7 +295,7 @@ Request body:
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day; too_early: before the earliest check-in, which error.earliest_at gives
+**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives
 
 ```json
 {
@@ -339,7 +339,7 @@ Start the job. The duration runs from here to the outcome
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day; too_early: before the earliest check-in, which error.earliest_at gives
+**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives
 
 ```json
 {
@@ -1007,6 +1007,7 @@ Request body:
             "fsm_partly",
             "in_progress",
             "too_early_to_close",
+            "too_early_to_arrive",
             "no_service_area",
             "service_exists",
             "last_of_kind",
@@ -1067,7 +1068,7 @@ Request body:
         "earliest_at": {
           "type": "string",
           "format": "date-time",
-          "description": "too_early, to a technician's check-in or start: the earliest moment the job takes one."
+          "description": "too_early_to_arrive, to a technician's check-in or start: the earliest moment the job takes one."
         }
       },
       "required": [

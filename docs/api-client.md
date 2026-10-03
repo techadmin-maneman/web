@@ -1716,6 +1716,7 @@ Request body:
             "fsm_partly",
             "in_progress",
             "too_early_to_close",
+            "too_early_to_arrive",
             "no_service_area",
             "service_exists",
             "last_of_kind",
@@ -1776,7 +1777,7 @@ Request body:
         "earliest_at": {
           "type": "string",
           "format": "date-time",
-          "description": "too_early, to a technician's check-in or start: the earliest moment the job takes one."
+          "description": "too_early_to_arrive, to a technician's check-in or start: the earliest moment the job takes one."
         }
       },
       "required": [

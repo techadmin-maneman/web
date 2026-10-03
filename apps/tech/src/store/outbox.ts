@@ -12,7 +12,7 @@ import {
   OUT_OF_ORDER,
   pathFor,
   SUPERSEDED,
-  TOO_EARLY,
+  TOO_EARLY_TO_ARRIVE,
   TOO_EARLY_TO_CLOSE,
   unreachable,
   type Angle,
@@ -376,7 +376,7 @@ async function run(): Promise<Replayed> {
       continue;
     }
     // Before the earliest check-in. Nothing is wrong with the job: he taps again once it comes.
-    if (answer.code === TOO_EARLY && event.kind === "check_in") {
+    if (answer.code === TOO_EARLY_TO_ARRIVE && event.kind === "check_in") {
       arrivedEarly.add(event.job_id);
       await remove("outbox", event.seq);
       changed();

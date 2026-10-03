@@ -501,7 +501,7 @@ const STEP_REFUSALS = {
 /** A check-in's or a start's conflict, which may also be on the wrong day or too early in it. */
 const DAY_CONFLICT = errorResponse(
   "superseded: FSM moved the job; out_of_order: send the step before this one first; " +
-    "not_today: the job is on another day; too_early: before the earliest check-in, which error.earliest_at gives",
+    "not_today: the job is on another day; too_early_to_arrive: before the earliest check-in, which error.earliest_at gives",
 );
 
 const jobsRoute = createRoute({
@@ -1186,7 +1186,7 @@ type Landed =
   | { readonly ok: true; readonly accepted: z.infer<typeof AcceptedSchema> }
   | {
       readonly ok: false;
-      readonly code: "superseded" | "out_of_order" | "not_today" | "already_started" | "too_early";
+      readonly code: "superseded" | "out_of_order" | "not_today" | "already_started" | "too_early_to_arrive";
       readonly fields?: string[];
       /** On a job given to another technician: whom, by first name, and when (docs/open-points.md, item 92). */
       readonly moved?: MovedTo;
@@ -1283,7 +1283,7 @@ async function land(
   }
   if (landing.kind === "out_of_order") return { ok: false, code: "out_of_order", fields: [landing.needs] };
   if (landing.kind === "not_today" || landing.kind === "already_started") return { ok: false, code: landing.kind };
-  if (landing.kind === "too_early") return { ok: false, code: "too_early", earliest: landing.earliest };
+  if (landing.kind === "too_early") return { ok: false, code: "too_early_to_arrive", earliest: landing.earliest };
 
   // A replay landed nothing new, so nothing new goes to FSM either; nor does a step our own database recorded.
   if (!landing.replayed && landing.event.fsmWriteState === "pending") await queueFsmWrite(c, landing.event.id);

@@ -37,7 +37,6 @@ export const ERROR_CODES = [
   // The ops surface: no valid Cloudflare Access token (docs/decisions/0031-access-and-audit.md).
   "access_required",
   // The client app's login (docs/decisions/0030-one-time-codes.md): the challenge is closed, or it is too soon to resend.
-  // A technician's check-in or start before the earliest check-in is too_early as well.
   "code_expired",
   "too_early",
   // A number change ops cannot confirm: another person holds the new number (docs/decisions/0042-client-profile.md).
@@ -88,6 +87,8 @@ export const ERROR_CODES = [
   "in_progress",
   // The no-show wait has not run out yet (src/policy/no-show.ts).
   "too_early_to_close",
+  // A check-in or a start before the earliest check-in (src/policy/phone-clock.ts).
+  "too_early_to_arrive",
   // A service-area change that would leave no pincode served at all, and every
   // client on the waitlist (docs/decisions/0061-ops-editable-inputs.md).
   "no_service_area",
@@ -148,7 +149,8 @@ export const ErrorResponseSchema = z
               "superseded, to a technician's phone, for a job given to another technician: whom, and when (docs/open-points.md, item 92).",
           }),
         earliest_at: z.iso.datetime().optional().openapi({
-          description: "too_early, to a technician's check-in or start: the earliest moment the job takes one.",
+          description:
+            "too_early_to_arrive, to a technician's check-in or start: the earliest moment the job takes one.",
         }),
       })
       .strict(),
