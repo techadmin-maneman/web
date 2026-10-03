@@ -8,6 +8,7 @@
 // beneath that (src/domain/home-prompt.ts). Where the prompt offers the next visit, it is Home's one way to book it,
 // with the sheet opened on its day and window; a replacement is booked here like any other visit.
 
+import { ButtonLink } from "@maneman/ui/Button";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { fullDate, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { documentUrl, type Me } from "../api.ts";
@@ -287,9 +288,14 @@ function NothingBooked({ me, offline }: { me: Me; offline: boolean }) {
       {me.booking.self_serve || offline ? (
         <BookButton className={styles.book} label={home.nothing.book} message={messages.book} />
       ) : (
-        <a className={styles.book} href={BOOKING_URL[import.meta.env.MM_ENV] ?? BOOKING_URL.production}>
+        <ButtonLink
+          variant="primary"
+          size="action"
+          className={styles.book}
+          href={BOOKING_URL[import.meta.env.MM_ENV] ?? BOOKING_URL.production}
+        >
           {home.nothing.book}
-        </a>
+        </ButtonLink>
       )}
     </section>
   );

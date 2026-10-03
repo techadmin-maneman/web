@@ -1,5 +1,5 @@
 // Referral codes and who came through them (docs/decisions/0048-referrals.md). A code is the client's
-// initials and four random characters, never from their mobile number, with no characters that look alike.
+// initials and six random characters, never from their mobile number, with no characters that look alike.
 // A person is attributed once, to the first invite they used, and only while they are new: not the
 // referrer, and not already fitted. An invite held for them on a waitlist lapses 12 months after their area
 // launched; from then it carries no credits, and says so when they book.
@@ -14,7 +14,8 @@ import { auditStatementIfWritten, type AuditEntry } from "./audit.ts";
 
 /** No 0, O, 1 or I: a code is read aloud and typed. */
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-const RANDOM_LENGTH = 4;
+/** About a billion codes for each pair of initials: too many to guess. */
+const RANDOM_LENGTH = 6;
 
 /** What the landing's link, the site's form and the console accept as a code, in either case. */
 export const CODE_PATTERN = /^[A-Za-z0-9]{4,12}$/;

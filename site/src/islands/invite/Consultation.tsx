@@ -1,11 +1,18 @@
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useState } from "preact/hooks";
 import type { LossExtent } from "../../../../src/config/booking.ts";
 import { ONE_VISIT_WINDOWS } from "../../../../src/policy/one-visit.ts";
 import { referral } from "../../content/referral.ts";
 import { numberCode as numberCodeWords, whatsapp } from "../../content/site.ts";
 import { track } from "../../lib/analytics.ts";
-import { addressToSend, emptyAddress, missingParts, type AddressFields } from "../../lib/address.ts";
+import {
+  addressToSend,
+  emptyAddress,
+  missingParts,
+  partsToMark,
+  REQUIRED_API_FIELDS,
+  type AddressFields,
+} from "../../lib/address.ts";
 import {
   bookConsultation,
   bookPublicConsultation,
@@ -26,7 +33,7 @@ import { ExtentFieldset, ForPincode, PersonFieldset, RememberedInvite, Send, typ
 import styles from "./Invite.module.css";
 import { codeInPath, hairSystemsInPage } from "./page.ts";
 import { useOpenWindows } from "./useOpenWindows.ts";
-import { mobileToSend, useTurnstileForm } from "./useTurnstileForm.ts";
+import { mobileToSend, PERSON_FIELDS, useTurnstileForm } from "./useTurnstileForm.ts";
 
 type BookingWindow = ReferralConsultation["window"];
 export type Plan = "consultation" | "one_visit";
@@ -61,6 +68,9 @@ function submitLabel(plan: Plan, codeWaiting: boolean): string {
   return plan === "one_visit" ? consultation.submitOneVisit : consultation.submit;
 }
 
+/** The fields this form marks when a refusal names them, by the API's names. */
+const MARKED_FIELDS: readonly string[] = [...PERSON_FIELDS, ...REQUIRED_API_FIELDS, "discount_code"];
+
 /** Whether a refusal means the strip is out of date: a window filled, or a day closed, since it was drawn. */
 const outOfDate = (code: ErrorCode | "network"): boolean => code === "taken" || code === "not_bookable";
 
@@ -73,7 +83,7 @@ const outOfDate = (code: ErrorCode | "network"): boolean => code === "taken" || 
  * the number has been entered.
  */
 export function Consultation(props: ConsultationProps) {
-  const form = useTurnstileForm(props.turnstileSiteKey);
+  const form = useTurnstileForm(props.turnstileSiteKey, MARKED_FIELDS);
   const numberCode = useNumberCode();
   const { plan } = props;
   // Offered while ops offer a hair system to fit. A page with no word of it offers it, and the API refuses it if not.
@@ -98,17 +108,11 @@ export function Consultation(props: ConsultationProps) {
   const takesCode = plan === "one_visit" && !props.invited;
   const sentCode = takesCode && code.trim() !== "" ? code.trim() : null;
   const codeRefused = takesCode && form.refusedFields.includes("discount_code");
-  const codeBox = useRef<HTMLInputElement>(null);
-
-  // A refused code is said under its box, which is brought into view and focused, so the form need not be searched.
-  useEffect(() => {
-    if (!codeRefused) return;
-    codeBox.current?.scrollIntoView({ block: "center" });
-    codeBox.current?.focus({ preventScroll: true });
-  }, [codeRefused, form.refusedFields]);
 
   const digits = mobileToSend(form.fields);
   const addressComplete = missingParts(address).length === 0;
+  const addressBad = partsToMark(address, form.touched, form.refusedFields);
+  const marked = addressBad.length + form.personBad.length + (codeRefused ? 1 : 0);
   // The one visit is booked only for a number its WhatsApp code proved.
   const codeWaiting = plan === "one_visit" && numberCode.waitingFor(digits);
 
@@ -204,7 +208,7 @@ export function Consultation(props: ConsultationProps) {
   }
 
   return (
-    <form class={styles.form} onSubmit={submit} noValidate>
+    <form ref={form.element} class={styles.form} onSubmit={submit} noValidate>
       <div>
         {/* The site's own page is already headed and introduced; the invite's is not. */}
         {props.invited && (
@@ -244,7 +248,6 @@ export function Consultation(props: ConsultationProps) {
             {consultation.code.label}
           </label>
           <input
-            ref={codeBox}
             id="invite-consultation-code"
             class={`${styles.input} ${codeRefused ? styles.bad : ""}`}
             value={code}
@@ -263,7 +266,7 @@ export function Consultation(props: ConsultationProps) {
           />
           {codeRefused && (
             <div id="invite-consultation-code-error" class={styles.error}>
-              {form.failure}
+              {referral.errors.codeNotApplicable}
             </div>
           )}
           <p id="invite-consultation-code-hint" class={styles.hint}>
@@ -332,7 +335,7 @@ export function Consultation(props: ConsultationProps) {
 
       <AddressFieldset
         address={address}
-        missing={form.touched ? missingParts(address) : []}
+        missing={addressBad}
         pincode={pincode}
         idPrefix="invite-consultation"
         onChange={setAddress}
@@ -342,7 +345,7 @@ export function Consultation(props: ConsultationProps) {
 
       <PersonFieldset
         fields={form.fields}
-        touched={form.touched}
+        bad={form.personBad}
         idPrefix="invite-consultation"
         consentLabel={consultation.consent}
         consentNote=""
@@ -371,7 +374,8 @@ export function Consultation(props: ConsultationProps) {
 
       <div ref={form.box} class={styles.turnstile} />
       <Send
-        failure={codeRefused ? null : form.failure}
+        failure={form.failure}
+        marked={marked}
         sending={form.sending || numberCode.checking}
         label={submitLabel(plan, codeWaiting)}
         sendingLabel={numberCode.checking ? numberCodeWords.checking : consultation.sending}

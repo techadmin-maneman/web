@@ -659,7 +659,7 @@ Request body:
 }
 ```
 
-**409**: superseded: FSM moved the job; out_of_order: send the step before this one first
+**409**: superseded: FSM moved the job; out_of_order: send the step before this one first; piece_code: a label already on record, as another client's piece or this client's from an earlier visit, or a piece that came off that is another client's. error.fields names piece_code or old_piece, to correct and send again
 
 ```json
 {
@@ -967,6 +967,7 @@ Request body:
             "out_of_order",
             "not_today",
             "already_started",
+            "piece_code",
             "technician_inactive",
             "managed_in_fsm",
             "clash",
@@ -974,6 +975,7 @@ Request body:
             "does_not_fit",
             "fsm_refused",
             "fsm_partly",
+            "in_progress",
             "too_early_to_close",
             "no_service_area",
             "service_exists",

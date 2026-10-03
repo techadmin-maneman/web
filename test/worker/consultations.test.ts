@@ -108,7 +108,7 @@ describe("POST /api/consultation", () => {
     expect(booked).toEqual({
       name: "Karan Bhatia",
       purpose: "whatsapp_visits",
-      notice_version: "referral-consultation-v1",
+      notice_version: "site-consultation-v1",
       type: "consultation",
       amount: 0,
       source: "form",
@@ -883,7 +883,7 @@ describe("a consultation and fit in one visit", () => {
     // The consent recorded is the consultation's own; whether it covers the fit is counsel's to confirm.
     const consent = await env.DB.prepare("SELECT purpose, notice_version, source FROM consents").all();
     expect(consent.results).toEqual([
-      { purpose: "whatsapp_visits", notice_version: "referral-consultation-v1", source: "site_booking" },
+      { purpose: "whatsapp_visits", notice_version: "site-consultation-v1", source: "site_booking" },
     ]);
   });
 

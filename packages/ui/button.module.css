@@ -35,6 +35,11 @@
     cursor: progress;
   }
 
+  /* A phone shows no cursor, so a busy button still usable is dimmed. A disabled one already looks it. */
+  .button[aria-busy="true"]:not(:disabled) {
+    opacity: var(--busy-opacity);
+  }
+
   /* ---- Sizes: each app's own (./base.css) ---------------------------------- */
 
   .action {
@@ -79,7 +84,7 @@
 
   .light:disabled {
     background: var(--ink-disabled);
-    color: var(--ink-soft);
+    color: var(--ink-tag);
   }
 
   .gold {

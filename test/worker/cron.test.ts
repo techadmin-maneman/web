@@ -358,6 +358,7 @@ describe("CRON_JOBS", () => {
       "sweeper",
       "unbooked_holds",
       "erased_files",
+      "books_erasures",
       "fsm_reconcile",
       "fsm_catalogue",
       "deletion_alerts",

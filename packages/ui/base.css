@@ -40,6 +40,8 @@
     --small-text: var(--fs-15);
     /* A filled button's edge: none, unless the app draws its filled buttons edged as its outlined ones are. */
     --filled-edge: 0;
+    /* The column at its widest, which a sheet matches: the design's, unless the app grows it on a larger phone. */
+    --column-max: var(--app-column);
   }
 
   body {
