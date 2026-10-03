@@ -5,7 +5,6 @@
 
 import { creditExpiry } from "../policy/referral-reward.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
-import { DAY_MS } from "../lib/durations.ts";
 
 export type CreditSource = "referral" | "appointment" | "ops" | "import";
 
@@ -14,6 +13,8 @@ export interface Balance {
   readonly visits: number;
   /** When the soonest of them expires. */
   readonly earliestExpiry: string | null;
+  /** How many of them expire then. */
+  readonly expiringFirst: number;
 }
 
 interface GrantRow {
@@ -22,16 +23,19 @@ interface GrantRow {
   remaining: number;
 }
 
+/** What grant `g` has left: its visits, less everything drawn on it. */
+export const GRANT_REMAINING =
+  "g.visits + COALESCE((SELECT SUM(e.visits) FROM credit_ledger e WHERE e.grant_id = g.id), 0)";
+
 /** The grants of person ?1 still in date at ?2, with what each has left. */
-const LIVE_GRANTS = `SELECT g.id, g.expires_at, g.created_at,
-    g.visits + COALESCE((SELECT SUM(e.visits) FROM credit_ledger e WHERE e.grant_id = g.id), 0) AS remaining
+const LIVE_GRANTS = `SELECT g.id, g.expires_at, g.created_at, ${GRANT_REMAINING} AS remaining
   FROM credit_ledger g
   WHERE g.person_id = ?1 AND g.kind = 'grant' AND (g.expires_at IS NULL OR g.expires_at > ?2)`;
 
 /** Credits are spent from the grant that expires soonest. */
 const SOONEST_FIRST = "ORDER BY expires_at IS NULL, expires_at, created_at";
 
-/** The grant person ?1's next credit is spent from at ?2. */
+/** The grant person ?1's next credit is spent from, of those in date at ?2. */
 const NEXT_GRANT = `SELECT id FROM (${LIVE_GRANTS}) WHERE remaining > 0 ${SOONEST_FIRST} LIMIT 1`;
 
 /**
@@ -56,10 +60,15 @@ async function liveGrants(db: D1Database, personId: string, now: Date): Promise<
   return results.filter((grant) => grant.remaining > 0);
 }
 
-const balanceOf = (grants: readonly GrantRow[]): Balance => ({
-  visits: grants.reduce((sum, grant) => sum + grant.remaining, 0),
-  earliestExpiry: grants[0]?.expires_at ?? null,
-});
+function balanceOf(grants: readonly GrantRow[]): Balance {
+  const earliestExpiry = grants[0]?.expires_at ?? null;
+  const expiringFirst = grants.filter((grant) => grant.expires_at === earliestExpiry);
+  return {
+    visits: grants.reduce((sum, grant) => sum + grant.remaining, 0),
+    earliestExpiry,
+    expiringFirst: expiringFirst.reduce((sum, grant) => sum + grant.remaining, 0),
+  };
+}
 
 /** What the ledger holds for the person. Ops see this; a booking counts on spendableCredits. */
 export async function creditBalance(db: D1Database, personId: string, now: Date): Promise<Balance> {
@@ -140,22 +149,23 @@ export function redeemCredit(db: D1Database, personId: string, appointmentId: st
 
 /**
  * redeemCredit for the visit a booking is booked as, for the batch that books it, placed after the statement that
- * does: it writes nothing if that statement booked nothing.
+ * does: it writes nothing if that statement booked nothing. The credit is one the client held when they made the
+ * booking, so a booking made before its credit expired keeps it, however much later the visit is written.
  */
 export function redeemCreditForBooking(
   db: D1Database,
-  booking: { readonly holdId: string; readonly personId: string },
+  booking: { readonly holdId: string; readonly personId: string; readonly madeAt: string },
   now: Date,
 ): D1PreparedStatement {
   return db
     .prepare(
       `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
-       SELECT ?3, ?1, 'redeem', -1, soonest.id, 'appointment', h.appointment_id, ?2
+       SELECT ?3, ?1, 'redeem', -1, soonest.id, 'appointment', h.appointment_id, ?5
        FROM slot_holds h, credit_ledger soonest
        WHERE h.id = ?4 AND h.state = 'booked' AND h.appointment_id IS NOT NULL AND soonest.id = (${NEXT_GRANT})
        ON CONFLICT DO NOTHING`,
     )
-    .bind(booking.personId, now.toISOString(), crypto.randomUUID(), booking.holdId);
+    .bind(booking.personId, booking.madeAt, crypto.randomUUID(), booking.holdId, now.toISOString());
 }
 
 /** Whether a credit was redeemed for the visit. */
@@ -216,48 +226,94 @@ async function takeAway(
 
 /** How many expired grants a pass closes. */
 const EXPIRE_PER_PASS = 20;
+
+/** Grant `g` has its expire entry. */
+const CLOSED = "EXISTS (SELECT 1 FROM credit_ledger x WHERE x.grant_id = g.id AND x.kind = 'expire')";
+
 /**
- * How far back a pass looks for a grant to close. Every grant that ever expired would otherwise be read again on
- * every five-minute run; a week covers any outage the cron is likely to have.
+ * A booking on a credit that grant `g`'s owner made before it expired, and that is not written yet. Its credit may be
+ * this grant's, so the grant stays open until the booking is written or let go.
  */
-const EXPIRE_LOOKBACK_MS = 7 * DAY_MS;
+const BOOKED_BEFORE_EXPIRY = `EXISTS (SELECT 1 FROM slot_holds
+  WHERE person_id = g.person_id AND ${PROMISED_CREDIT} AND confirmed_at < g.expires_at)`;
+
+interface ExpiredGrant {
+  id: string;
+  person_id: string;
+  source_kind: CreditSource;
+  source_id: string;
+  remaining: number;
+}
 
 /**
  * Closes grants past their expiry: an expire entry takes whatever is left, or marks a spent one closed, so each
- * grant is expired once. The balance already leaves them out; this keeps the ledger's own record.
+ * grant is expired once. The balance already leaves them out; this keeps the ledger's own record. A pass reads on
+ * from where the last left off, however long ago that was.
  */
 export async function expireCredits(db: D1Database, now: Date): Promise<number> {
+  const from = await expiryCursor(db);
   const { results } = await db
     .prepare(
-      `SELECT g.id, g.person_id, g.source_kind, g.source_id,
-         g.visits + COALESCE((SELECT SUM(e.visits) FROM credit_ledger e WHERE e.grant_id = g.id), 0) AS remaining
+      `SELECT g.id, g.person_id, g.source_kind, g.source_id, ${GRANT_REMAINING} AS remaining
        FROM credit_ledger g
-       WHERE g.kind = 'grant' AND g.expires_at <= ?1 AND g.expires_at > ?3
-         AND NOT EXISTS (SELECT 1 FROM credit_ledger x WHERE x.grant_id = g.id AND x.kind = 'expire')
-       LIMIT ?2`,
+       WHERE g.kind = 'grant' AND g.expires_at >= ?1 AND g.expires_at <= ?2
+         AND NOT ${CLOSED} AND NOT ${BOOKED_BEFORE_EXPIRY}
+       ORDER BY g.expires_at LIMIT ?3`,
     )
-    .bind(now.toISOString(), EXPIRE_PER_PASS, new Date(now.getTime() - EXPIRE_LOOKBACK_MS).toISOString())
-    .all<{ id: string; person_id: string; source_kind: CreditSource; source_id: string; remaining: number }>();
-  if (results.length === 0) return 0;
-  await db.batch(
-    results.map((grant) =>
-      db
-        .prepare(
-          `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
-           VALUES (?1, ?2, 'expire', ?3, ?4, ?5, ?6, ?7)`,
-        )
-        .bind(
-          crypto.randomUUID(),
-          grant.person_id,
-          -Math.max(0, grant.remaining),
-          grant.id,
-          grant.source_kind,
-          grant.source_id,
-          now.toISOString(),
-        ),
-    ),
-  );
+    .bind(from, now.toISOString(), EXPIRE_PER_PASS)
+    .all<ExpiredGrant>();
+  if (results.length > 0) await db.batch(results.map((grant) => expireEntry(db, grant, now)));
+  await moveExpiryCursor(db, from, now);
   return results.length;
+}
+
+/** Where the last pass left off; before the first, the beginning. */
+async function expiryCursor(db: D1Database): Promise<string> {
+  const cursor = await db
+    .prepare("SELECT open_from_at FROM credit_expiry_cursor WHERE id = 1")
+    .first<{ open_from_at: string }>();
+  return cursor?.open_from_at ?? "";
+}
+
+function expireEntry(db: D1Database, grant: ExpiredGrant, now: Date): D1PreparedStatement {
+  return db
+    .prepare(
+      `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
+       VALUES (?1, ?2, 'expire', ?3, ?4, ?5, ?6, ?7)`,
+    )
+    .bind(
+      crypto.randomUUID(),
+      grant.person_id,
+      -Math.max(0, grant.remaining),
+      grant.id,
+      grant.source_kind,
+      grant.source_id,
+      now.toISOString(),
+    );
+}
+
+/**
+ * Moves the cursor to the earliest expired grant still open, one kept for a booking or left for the next pass, or, with
+ * none, to now. Nothing is written while no grant has expired since the cursor, or while it stays where it is.
+ */
+async function moveExpiryCursor(db: D1Database, from: string, now: Date): Promise<void> {
+  const since = await db
+    .prepare(
+      `SELECT COUNT(*) AS expired, MIN(CASE WHEN ${CLOSED} THEN NULL ELSE g.expires_at END) AS open_from
+       FROM credit_ledger g WHERE g.kind = 'grant' AND g.expires_at >= ?1 AND g.expires_at <= ?2`,
+    )
+    .bind(from, now.toISOString())
+    .first<{ expired: number; open_from: string | null }>();
+  if (since === null || since.expired === 0) return;
+  const next = since.open_from ?? now.toISOString();
+  if (next === from) return;
+  await db
+    .prepare(
+      `INSERT INTO credit_expiry_cursor (id, open_from_at, updated_at) VALUES (1, ?1, ?2)
+       ON CONFLICT (id) DO UPDATE SET open_from_at = excluded.open_from_at, updated_at = excluded.updated_at`,
+    )
+    .bind(next, now.toISOString())
+    .run();
 }
 
 /** Takes back what is left of a source's grants: a referral whose first fit was refunded under the guarantee. */
