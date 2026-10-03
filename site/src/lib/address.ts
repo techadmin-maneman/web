@@ -44,6 +44,17 @@ export function missingParts(address: AddressFields): RequiredPart[] {
   return REQUIRED.filter((part) => address[part].trim() === "");
 }
 
+/** A required part as the API names it when it refuses it: "address.flat". */
+const apiField = (part: RequiredPart): string => `address.${part}`;
+
+/** The required parts, by the API's names. */
+export const REQUIRED_API_FIELDS: readonly string[] = REQUIRED.map(apiField);
+
+/** The required parts to mark: those left out once the form was checked, and those the API refused. */
+export function partsToMark(address: AddressFields, checked: boolean, refused: readonly string[]): RequiredPart[] {
+  return REQUIRED.filter((part) => (checked && address[part].trim() === "") || refused.includes(apiField(part)));
+}
+
 const orNone = (part: string): string | null => (part.trim() === "" ? null : part.trim());
 
 /** The address as the API takes it, in the pincode checked. */

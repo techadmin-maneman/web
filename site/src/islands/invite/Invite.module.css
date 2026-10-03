@@ -1,8 +1,8 @@
 /*
  * The referral landing (design/phase2/Referral and Waitlist, C1 to C5), and /book, which is the same page without
- * the invite. On a phone it is one column, in the order the boards draw: who sent it, the card, the headline and
- * offer, the prices, how it works, the pincode block, then the form. From 1024 px it is board C5: the prices, the
- * pincode block and the form on the left, the card and how it works on the right.
+ * the invite. On a phone it is one column: who sent it, the card, the headline and offer, the prices, the pincode
+ * block, the form, then how it works, so the one field a friend must fill is above the fold. From 1024 px it is
+ * board C5: the prices, the pincode block and the form on the left, the card and how it works on the right.
  *
  * Fields and checkboxes are edged in --paper-control and the pincode field in --ink-line-strong, 3:1 against their
  * ground (WCAG 1.4.11), where the boards draw 1.3:1 and 1.75:1 (ADR 0022, item 37).
@@ -58,7 +58,7 @@
 }
 
 /* /book has no invite above its headline. */
-.lead > .title:first-child {
+.grid:not(:has(.inviteCard)) .title {
   margin-top: 0;
 }
 
@@ -147,7 +147,7 @@
 /* ---- How it works (C1, C5) ----------------------------------------------- */
 
 .steps {
-  order: 6;
+  order: 8;
   margin-top: var(--sp-32);
 }
 
@@ -201,7 +201,7 @@
 /* ---- The pincode block (C1, C5), and its answer (C2, C3) ------------------ */
 
 .panel {
-  order: 7;
+  order: 6;
   margin-top: var(--sp-32);
   padding: var(--sp-22) var(--sp-20);
   background: var(--ink);
@@ -284,7 +284,7 @@
 /* ---- The two forms (C2, C3) ------------------------------------------------ */
 
 .form {
-  order: 8;
+  order: 7;
   margin-top: var(--sp-28);
   display: flex;
   flex-direction: column;
@@ -793,6 +793,11 @@
     margin-top: var(--sp-22);
     line-height: var(--lh-102);
     letter-spacing: var(--tracking-title);
+  }
+
+  /* The card is in the other column, so a headline with no line naming who sent it starts the column. */
+  .lead > .title:first-child {
+    margin-top: 0;
   }
 
   .offer {

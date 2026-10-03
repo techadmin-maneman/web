@@ -18,6 +18,7 @@ import { NO_GST, type GstRegistration } from "../config/gst.ts";
 import type { Dependencies } from "../dependencies.ts";
 import { resolveAskedWindows } from "../domain/asked-windows.ts";
 import { bookUnbookedHolds, requeueUnbookedHolds } from "../domain/bookings.ts";
+import { eraseBooksCustomers } from "../domain/books-erasure.ts";
 import { raiseBooksInvoices } from "../domain/books-invoices.ts";
 import { checkBooksItems } from "../domain/books-items.ts";
 import { syncBooks, type BooksSyncOptions } from "../domain/books-sync.ts";
@@ -166,6 +167,11 @@ async function erasedFilesJob({ env, deps, log }: CronContext): Promise<void> {
   if (finished > 0) log.info("erased_files_deleted", { people: finished });
 }
 
+async function booksErasuresJob({ env, deps, log, budget }: CronContext): Promise<void> {
+  const erased = await eraseBooksCustomers(env.DB, { ...deps, log, budget }, deps.now());
+  if (erased > 0) log.info("books_customers_erased", { count: erased });
+}
+
 async function reconcileJob({ env, deps, log, budget }: CronContext): Promise<void> {
   await reconcileFsm(env, deps, log, budget);
 }
@@ -282,7 +288,8 @@ function booksGst(config: StaticConfig): GstRegistration {
 
 async function booksJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
   const done = await syncBooks(env.DB, deps, booksSyncOptions(config), deps.now(), log, budget);
-  if (done.customers + done.recorded + done.applied + done.refunded > 0) log.info("books_synced", done);
+  const written = done.customers + done.customersUpdated + done.recorded + done.applied + done.refunded;
+  if (written > 0) log.info("books_synced", done);
 }
 
 export const CRON_JOBS: readonly CronJob[] = [
@@ -292,6 +299,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "unbooked_holds", needs: "nothing", run: unbookedHoldsJob },
   // What an erasure could not delete from R2 at the time (docs/decisions/0066-erasure-all-or-nothing.md).
   { name: "erased_files", needs: "nothing", run: erasedFilesJob },
+  // An erased client's customer in Books, deleted, or blanked where an invoice names it.
+  { name: "books_erasures", needs: "books", run: booksErasuresJob },
   // The FSM mirror's repair (docs/decisions/0032-fsm-mirror.md).
   { name: "fsm_reconcile", needs: "fsm_record", run: reconcileJob },
   // Once an hour: FSM's catalogue against the price book, which it prices invoices by

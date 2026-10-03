@@ -62,6 +62,17 @@ describe("a client's note in FSM", () => {
     expect(await writtenAt()).toBeNull();
   });
 
+  it("writes nothing for a visit FSM never held, whose FSM ID is its own", async () => {
+    await env.DB.prepare("UPDATE appointments SET fsm_id = id WHERE id = ?1").bind(VISIT).run();
+    const fsm = createStubFsm(EMPTY_FSM);
+
+    const { message, done } = consume(fsm, { note_appointment_id: VISIT });
+    await done;
+
+    expect(fsm.made.clientNotes).toEqual([]);
+    expect(message.ack).toHaveBeenCalled();
+  });
+
   it("is tried again when FSM fails, and ops are told on the fifth try, until a later note reaches it", async () => {
     const fsm = createStubFsm(EMPTY_FSM);
     fsm.failNext("writeClientNote", "FSM answered 500");
