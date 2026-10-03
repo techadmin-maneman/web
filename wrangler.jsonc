@@ -13,7 +13,8 @@
   "upload_source_maps": true,
   "observability": { "enabled": true },
   "version_metadata": { "binding": "CF_VERSION_METADATA" },
-  "triggers": { "crons": ["*/5 * * * *"] },
+  // Every minute, each run only the cron jobs due in it (EVERY_MINUTE, src/scheduled/cron.ts).
+  "triggers": { "crons": ["* * * * *"] },
   "d1_databases": [
     {
       "binding": "DB",
@@ -120,7 +121,7 @@
       "preview_urls": false,
       "observability": { "enabled": true },
       "version_metadata": { "binding": "CF_VERSION_METADATA" },
-      "triggers": { "crons": ["*/5 * * * *"] },
+      "triggers": { "crons": ["* * * * *"] },
       // One per switched-on surface (docs/decisions/0026-hosts-and-surfaces.md).
       "routes": [
         { "pattern": "staging.maneman.in/api/*", "zone_name": "maneman.in" },
@@ -236,7 +237,7 @@
       "preview_urls": false,
       "observability": { "enabled": true },
       "version_metadata": { "binding": "CF_VERSION_METADATA" },
-      "triggers": { "crons": ["*/5 * * * *"] },
+      "triggers": { "crons": ["* * * * *"] },
       "routes": [{ "pattern": "maneman.in/api/*", "zone_name": "maneman.in" }],
       "d1_databases": [
         {

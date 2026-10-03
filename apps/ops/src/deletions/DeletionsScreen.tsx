@@ -243,7 +243,7 @@ function Queue() {
   const [loaded, retry] = useLoad(api.deletionRequests);
   const mayDecide = useAccess().mayCall("POST /api/deletion-requests/{id}/decision");
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const now = new Date();
   return (

@@ -105,7 +105,9 @@ export interface Moved {
  * A call's answer. `cached` is true when the service worker answered from its
  * copy (the header both apps' service workers set); `fields` names what an
  * invalid request got wrong, or what changed under a superseded one; `moved`,
- * on a superseded write of a job given to another technician, says to whom.
+ * on a superseded write of a job given to another technician, says to whom;
+ * `requestId` is the API's ID for the call, which every line it logged of the
+ * call carries, and null when the API never answered.
  */
 export type Answer<T, Code extends string = string> =
   | { readonly ok: true; readonly status: number; readonly body: T; readonly cached: boolean }
@@ -115,6 +117,7 @@ export type Answer<T, Code extends string = string> =
       readonly code: Code | LocalCode;
       readonly fields: readonly string[];
       readonly moved: Moved | null;
+      readonly requestId: string | null;
     };
 
 export interface ClientOptions {
@@ -137,7 +140,10 @@ export interface ClientOptions {
 /** The header the apps' service workers set on an answer from their copy. */
 const SERVED_FROM = "Mm-Served-From";
 
-const OFFLINE = { ok: false, status: 0, code: "offline", fields: [], moved: null } as const;
+/** The header mm-api sets on every answer, refusals included. */
+const REQUEST_ID = "X-Request-Id";
+
+const OFFLINE = { ok: false, status: 0, code: "offline", fields: [], moved: null, requestId: null } as const;
 
 const isSessionEnded = (response: Response) => response.status === 401;
 
@@ -189,6 +195,7 @@ interface Refusal {
   readonly code?: string;
   readonly fields?: string[];
   readonly moved?: Moved;
+  readonly request_id?: string;
 }
 
 async function refusalOf(response: Response): Promise<Refusal> {
@@ -245,11 +252,18 @@ export function createClient<Paths, Code extends string = string>(options: Clien
       };
     }
     options.onAnswer?.(response);
-    const { code, fields, moved } = await refusalOf(response);
+    const { code, fields, moved, request_id } = await refusalOf(response);
     if (sessionEnded(response, code)) options.onSessionEnded?.(code ?? "unknown");
     // The API's codes are the document's; one it did not send is the app's own reading of the status.
     const said = (code ?? missingCode(response.status)) as Code | LocalCode;
-    return { ok: false, status: response.status, code: said, fields: fields ?? [], moved: moved ?? null };
+    return {
+      ok: false,
+      status: response.status,
+      code: said,
+      fields: fields ?? [],
+      moved: moved ?? null,
+      requestId: request_id ?? response.headers.get(REQUEST_ID),
+    };
   }
 
   async function request<T>(method: string, url: string, init: Asking = {}): Promise<Answer<T, Code>> {

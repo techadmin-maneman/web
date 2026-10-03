@@ -173,7 +173,7 @@ function ReviewQueue({ onDecided }: { onDecided: () => void }) {
   const mayDecide = useAccess().mayCall("POST /api/referrals/{id}/decision");
   const copy = referrals.queue;
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const now = new Date();
   return (
@@ -196,7 +196,7 @@ function ReviewQueue({ onDecided }: { onDecided: () => void }) {
 /** The referrers read so far, a page at a time, and whether another follows. */
 type Pages =
   | { readonly state: "loading" }
-  | { readonly state: "failed" }
+  | { readonly state: "failed"; readonly requestId: string | null }
   | {
       readonly state: "loaded";
       readonly referrers: readonly Referrer[];
@@ -219,7 +219,7 @@ function useReferrers(version: number) {
       setPages(
         answer.ok
           ? { state: "loaded", referrers: answer.body.referrers, more: answer.body.more, fetching: false }
-          : { state: "failed" },
+          : { state: "failed", requestId: answer.requestId },
       );
     });
     return () => {
@@ -254,7 +254,7 @@ function ReferrersTable({ version }: { version: number }) {
   const copy = referrals.table;
 
   if (pages.state === "loading") return <Loading />;
-  if (pages.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (pages.state === "failed") return <PanelFailed onRetry={retry} requestId={pages.requestId} />;
 
   return (
     <section className={styles.panel} aria-labelledby="referrers">

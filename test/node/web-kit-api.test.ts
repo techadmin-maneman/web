@@ -137,7 +137,32 @@ describe("a refusal", () => {
   it("carries the API's code and the fields it refused", async () => {
     answering(() => refusal(400, "invalid_request", ["mobile"]));
     const answer = await createClient<Paths, Code>().post("/api/auth/otp", { body: { mobile: "1" } });
-    expect(answer).toEqual({ ok: false, status: 400, code: "invalid_request", fields: ["mobile"], moved: null });
+    expect(answer).toEqual({
+      ok: false,
+      status: 400,
+      code: "invalid_request",
+      fields: ["mobile"],
+      moved: null,
+      requestId: "t",
+    });
+  });
+
+  // PLAT-43: the screen shows it, so whoever is told "it failed" can find the call in the logs.
+  it("carries the API's ID for the call, from the refusal or else from its header", async () => {
+    answering(() => refusal(500, "internal_error"));
+    expect(await createClient<Paths, Code>().get("/api/visits/{id}", { path: { id: "a" } })).toMatchObject({
+      requestId: "t",
+    });
+
+    answering(() => new Response("", { status: 502, headers: { "X-Request-Id": "from-the-header" } }));
+    expect(await createClient<Paths, Code>().get("/api/visits/{id}", { path: { id: "a" } })).toMatchObject({
+      requestId: "from-the-header",
+    });
+
+    answering(() => new Response("", { status: 502 }));
+    expect(await createClient<Paths, Code>().get("/api/visits/{id}", { path: { id: "a" } })).toMatchObject({
+      requestId: null,
+    });
   });
 
   // Open point 92: a technician's write for a job ops gave to someone else names them, by first name, and when.
@@ -145,7 +170,14 @@ describe("a refusal", () => {
     const moved = { technician: "Sameer", at: "2027-01-14T05:10:00.000Z" };
     answering(() => json(409, { error: { code: "superseded", request_id: "t", fields: ["technician"], moved } }));
     const answer = await createClient<Paths, Code>().get("/api/visits/{id}", { path: { id: "a" } });
-    expect(answer).toEqual({ ok: false, status: 409, code: "superseded", fields: ["technician"], moved });
+    expect(answer).toEqual({
+      ok: false,
+      status: 409,
+      code: "superseded",
+      fields: ["technician"],
+      moved,
+      requestId: "t",
+    });
   });
 
   it("is `unknown` when the API gave no code, unless the app says what such a status means", async () => {
@@ -196,7 +228,7 @@ describe("no connection", () => {
     vi.stubGlobal("fetch", () => Promise.reject(new TypeError("Failed to fetch")));
     const client = createClient<Paths, Code>({ onUnreached: () => (unreached += 1) });
     const answer = await client.get("/api/visits/{id}", { path: { id: "a" } });
-    expect(answer).toEqual({ ok: false, status: 0, code: "offline", fields: [], moved: null });
+    expect(answer).toEqual({ ok: false, status: 0, code: "offline", fields: [], moved: null, requestId: null });
     expect(unreached).toBe(1);
   });
 

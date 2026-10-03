@@ -16,7 +16,7 @@
 
 import { Button, buttonLook } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";
-import { useLoad } from "@maneman/ui/useLoad";
+import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { fullDate, indiaClock, indiaDate, listDate, longDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
@@ -570,6 +570,7 @@ function Roster() {
           retry();
           retryWork();
         }}
+        requestId={failedRequestId(loaded) ?? failedRequestId(work)}
       />
     );
   }
