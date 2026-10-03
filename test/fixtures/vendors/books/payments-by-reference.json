@@ -1,0 +1,77 @@
+{
+  "code": 0,
+  "message": "success",
+  "customerpayments": [
+    {
+      "payment_id": "4242595000000250002",
+      "payment_number": "17",
+      "retainerinvoice_id": "",
+      "invoice_numbers": "",
+      "date": "2026-10-02",
+      "payment_mode": "Razorpay",
+      "payment_mode_formatted": "Staging test",
+      "amount": 30000,
+      "bcy_amount": 30000,
+      "unused_amount": 0,
+      "bcy_unused_amount": 0,
+      "account_id": "4242595000000000456",
+      "account_name": "Staging test",
+      "description": "Staging test",
+      "product_description": "",
+      "reference_number": "MM-2026-0016",
+      "is_paid_via_check": false,
+      "check_details": {
+        "check_id": "",
+        "check_status": "",
+        "check_number": "",
+        "memo": "",
+        "expiry_date": "",
+        "clearance_account_id": ""
+      },
+      "customer_id": "4242595000000232370",
+      "customer_name": "Staging test",
+      "created_time": "2026-10-02T11:11:06+0530",
+      "last_modified_time": "2026-10-02T11:26:04+0530",
+      "last_four_digits": "",
+      "gateway_transaction_id": "",
+      "payment_gateway": "",
+      "bcy_refunded_amount": 30000,
+      "applied_invoices": [],
+      "has_attachment": false,
+      "tags": [],
+      "documents": "",
+      "custom_fields_list": "",
+      "tax_account_id": "",
+      "tax_account_name": "",
+      "tax_amount_withheld": 0,
+      "payment_type": "Staging test",
+      "payment_status": "Staging test",
+      "settlement_status": "",
+      "registration_details": {},
+      "sales_channel": ""
+    }
+  ],
+  "page_context": {
+    "page": 1,
+    "per_page": 200,
+    "has_more_page": false,
+    "report_name": "Staging test",
+    "applied_filter": "Staging test",
+    "sort_column": "Staging test",
+    "sort_order": "Staging test",
+    "search_criteria": [
+      {
+        "column_name": "customer_id",
+        "search_text": "Staging test",
+        "search_text_formatted": "Staging test",
+        "comparator": "equal"
+      },
+      {
+        "column_name": "reference_number",
+        "search_text": "Staging test",
+        "search_text_formatted": "Staging test",
+        "comparator": "equal"
+      }
+    ]
+  }
+}
