@@ -9,9 +9,10 @@
 // Both writes run the clash check before anything reaches FSM, write to FSM,
 // then the mirror, then message the client with his new window; where our own
 // database holds the record of field work, all of it is one write there. A
-// visit the technician has begun is not moved. "The client's payment carries
-// over and he is never charged for a move ops make", so no amount appears
-// anywhere below.
+// visit the technician has begun is not moved, unless he has only checked in
+// and ops choose to clear his check-in. "The client's payment carries over and
+// he is never charged for a move ops make", so no amount appears anywhere
+// below.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
@@ -20,6 +21,7 @@ import type { App, AppEnv } from "../http/context.ts";
 import { fieldRecord } from "../config/field-record.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
+import type { AuditEntry } from "../domain/audit.ts";
 import { BOARD_DAYS, dispatchBoard, moveJob, recordToldByPhone, roomFor, type MoveInput } from "../domain/dispatch.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
@@ -171,6 +173,10 @@ const MoveRequestSchema = z
     window: z.enum(BOOKING_WINDOWS).optional(),
     reason: z.enum(MOVE_REASONS),
     ...EXPECTED,
+    clear_check_in: z.literal(true).optional().openapi({
+      description:
+        "Ops were warned that the technician has checked in, and move the visit anyway: his check-in is cleared, and he checks in again at the new time. The audit log names who chose it. Without it, a visit he has checked in at answers 409 in_progress.",
+    }),
   })
   .strict()
   .openapi("DispatchMoveRequest");
@@ -227,7 +233,7 @@ const moveRoute = createRoute({
     403: errorResponse("access_required"),
     404: errorResponse("not_found: no such live job"),
     409: errorResponse(
-      "clash; on_leave; does_not_fit; superseded, with what changed in fields; in_progress: the technician has begun the visit, which stays where it is",
+      "clash; on_leave; does_not_fit; superseded, with what changed in fields; in_progress: the technician has begun the visit. One he has only checked in at moves with clear_check_in; one he has started or closed stays where it is",
     ),
     502: errorResponse("fsm_refused; fsm_partly: FSM took the technician and not the time"),
   },
@@ -260,7 +266,9 @@ const roomRoute = createRoute({
   responses: {
     200: { description: "Where it would land", ...json(RoomSchema) },
     403: errorResponse("access_required"),
-    404: errorResponse("not_found: no such live job, or one the technician has begun, which stays where it is"),
+    404: errorResponse(
+      "not_found: no such live job, or one the technician has started or closed, which stays where it is",
+    ),
   },
 });
 
@@ -321,6 +329,18 @@ export function registerOpsDispatch(app: App): void {
 
 type MoveRequest = z.infer<typeof MoveRequestSchema>;
 
+/** The audit entry for clearing the technician's check-in, under whoever chose it; null for an ordinary move. */
+function checkInClearedBy(c: Context<AppEnv>, request: MoveRequest): AuditEntry | null {
+  if (request.clear_check_in !== true) return null;
+  return {
+    surface: "ops",
+    actor: staffOf(c),
+    action: "dispatch.check_in_cleared",
+    subject: { kind: "appointment", id: request.appointment_id },
+    requestId: c.var.requestId,
+  };
+}
+
 /** Assigning and moving are the same write; only what ops change differs. */
 async function write(c: Context<AppEnv>, request: MoveRequest) {
   const { requestId, deps, config, log } = c.var;
@@ -334,6 +354,7 @@ async function write(c: Context<AppEnv>, request: MoveRequest) {
     reason: request.reason,
     actor: staff.id,
     expected: { technicianId: request.expected_technician_id, startsAt: request.expected_starts_at },
+    clearCheckIn: checkInClearedBy(c, request),
   };
   const outcome = await moveJob(
     c.env.DB,
