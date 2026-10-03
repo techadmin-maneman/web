@@ -36,6 +36,7 @@ import {
   type ClientNotice,
   type MoveReason,
   type MoveRefusal,
+  type UntoldReason,
 } from "../policy/dispatch.ts";
 import { paymentBadge, type PaymentBadge } from "../policy/job-visibility.ts";
 import { paidAtTheVisit, type OneVisitState } from "../policy/one-visit.ts";
@@ -61,7 +62,7 @@ import {
 } from "./scheduling.ts";
 import { latestConsentSql } from "./messages.ts";
 import { visitBegun } from "./visit-begun.ts";
-import { visitMessage } from "./visit-messages.ts";
+import { NO_VISITS_CONSENT, visitMessage } from "./visit-messages.ts";
 import { unitAt, type SlotTimes } from "../policy/slot-times.ts";
 import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
 import { failureReason } from "../log.ts";
@@ -105,8 +106,8 @@ export interface Block extends Visit {
   readonly status: AppointmentStatus;
   /** The notice the visit was sold under, in hours: inside it, a change of the client's own costs them. */
   readonly notice_hours: number;
-  /** The latest move of this visit that its client has not heard of: ops call him (src/policy/dispatch.ts). */
-  readonly untold: { readonly move_id: string; readonly starts_at: string } | null;
+  /** The latest move of this visit that its client has not heard of, and why: ops call him (src/policy/dispatch.ts). */
+  readonly untold: { readonly move_id: string; readonly starts_at: string; readonly reason: UntoldReason } | null;
   /** How far the technician has got, from his phone's steps; null before he arrives. A visit begun is not moved. */
   readonly begun: Begun | null;
 }
@@ -172,6 +173,15 @@ export const UNTOLD_MOVE = `m.fsm_write_state = 'written' AND m.was_start <> m.n
     SELECT 1 FROM dispatch_moves later
     WHERE later.appointment_id = m.appointment_id AND later.fsm_write_state = 'written'
       AND later.was_start <> later.now_start AND later.created_at > m.created_at)`;
+
+/**
+ * Why the client of an untold move `m` has not heard of it, as UNTOLD_REASONS names it: no message was queued, since
+ * he had not agreed to WhatsApp about his visits, or the one queued was skipped as he had taken that back; any other
+ * message skipped or failed is not_sent. The Tasks board reads the same (src/domain/tasks.ts).
+ */
+export const UNTOLD_REASON = `CASE WHEN m.message_id IS NULL OR EXISTS (
+    SELECT 1 FROM outbound_messages o WHERE o.id = m.message_id AND o.last_error = '${NO_VISITS_CONSENT}')
+  THEN 'no_consent' ELSE 'not_sent' END`;
 
 /** The statuses of a job still to finish. One under way is live, though it is not moved. */
 const LIVE = "('scheduled', 'dispatched', 'in_progress')";
@@ -240,19 +250,19 @@ export async function dispatchBoard(
     db.prepare(BOARD_JOBS).bind(fromAt, toAt, options.city, FREE_CHANGE_NOTICE_HOURS).all<BoardJobRow>(),
     db
       .prepare(
-        `SELECT m.id, m.appointment_id, m.now_start FROM appointments a
+        `SELECT m.id, m.appointment_id, m.now_start, ${UNTOLD_REASON} AS reason FROM appointments a
          JOIN dispatch_moves m ON m.appointment_id = a.id
          WHERE a.deleted_at IS NULL AND a.status IN ${LIVE} AND a.window_start >= ?1 AND a.window_start < ?2
            AND ${UNTOLD_MOVE}`,
       )
       .bind(fromAt, toAt)
-      .all<{ id: string; appointment_id: string; now_start: string }>(),
+      .all<{ id: string; appointment_id: string; now_start: string; reason: UntoldReason }>(),
     listCities(db),
     loadSlotSchedule(db),
   ]);
   const untoldOf = (appointmentId: string) => {
     const move = untold.results.find((each) => each.appointment_id === appointmentId);
-    return move === undefined ? null : { move_id: move.id, starts_at: move.now_start };
+    return move === undefined ? null : { move_id: move.id, starts_at: move.now_start, reason: move.reason };
   };
 
   const rows = technicians.results.map((technician): BoardRow => {

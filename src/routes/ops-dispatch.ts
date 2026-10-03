@@ -25,7 +25,7 @@ import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { json } from "../http/openapi.ts";
 import { indiaDate } from "../lib/india-time.ts";
-import { BEGUN, CLIENT_NOTICES, MOVE_REASONS } from "../policy/dispatch.ts";
+import { BEGUN, CLIENT_NOTICES, MOVE_REASONS, UNTOLD_REASONS } from "../policy/dispatch.ts";
 import { PAYMENT_BADGES } from "../policy/job-visibility.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 
@@ -70,10 +70,15 @@ const BlockSchema = z
       description:
         "The notice the visit was sold under, in hours, or the one in force for a visit ops booked in FSM: a change of the client's own inside it costs them, one ops make never does.",
     }),
-    untold: z.union([z.object({ move_id: z.uuid(), starts_at: z.iso.datetime() }).strict(), z.null()]).openapi({
-      description:
-        "The latest move of this visit its client has not heard of: he has not agreed to WhatsApp, or the message was never sent. Ops call him, then POST /api/dispatch/moves/{id}/told.",
-    }),
+    untold: z
+      .union([
+        z.object({ move_id: z.uuid(), starts_at: z.iso.datetime(), reason: z.enum(UNTOLD_REASONS) }).strict(),
+        z.null(),
+      ])
+      .openapi({
+        description:
+          "The latest move of this visit its client has not heard of, and why. no_consent: he has not agreed to WhatsApp about his visits; not_sent: the WhatsApp was skipped or failed. Ops call him, then POST /api/dispatch/moves/{id}/told.",
+      }),
     begun: z.union([z.enum(BEGUN), z.null()]).openapi({
       description:
         "How far the technician has got, from the steps his phone sent: arrived (checked in), started, or closed (an outcome, a no-show among them). Null before he arrives. A visit he has begun, or one in progress, is not moved.",

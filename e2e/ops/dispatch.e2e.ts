@@ -221,7 +221,10 @@ test("moves a job from a list, sends the board it was taken from, and says only 
   await reason(page, "Zone rebalance");
   await press(page, "Move and notify");
 
-  await expect(page.getByRole("status")).toHaveText("Rohit M. moved. The client was sent the new window on WhatsApp.");
+  // Queued is not sent: the notice says the message is on its way, and what happens if it fails.
+  await expect(page.getByRole("status")).toHaveText(
+    "Moved. We're sending Rohit M. the new window on WhatsApp; if it fails, a call task appears.",
+  );
   expect(sent).toEqual([
     {
       appointment_id: ROHIT_JOB?.appointment_id,
