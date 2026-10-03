@@ -5,6 +5,7 @@ import type { LossExtent, VisitWindow } from "../config/booking.ts";
 import type { BookingWindow } from "../config/scheduling.ts";
 import type { ZohoSettings } from "../config/settings.ts";
 import type { Logger } from "../log.ts";
+import type { Plan } from "../policy/one-visit.ts";
 import { assertStatusAllowed, statusForNewRecord, statusForUpdate } from "./crm-rules.ts";
 import { createZohoCrm } from "./zoho-crm.ts";
 import type { ZohoRequesterDependencies } from "./zoho-http.ts";
@@ -37,6 +38,10 @@ export interface CrmLead {
   readonly inviteCode: string | null;
   /** The window a Phase 2 booking asked for, where the lead's own Phase 1 choice is absent. */
   readonly askedWindow: BookingWindow | null;
+  /** What a Phase 2 booking asked for: the consultation alone, or with the fit in one visit; null where none did. */
+  readonly plan: Plan | null;
+  /** The discount code given for a consultation and fit in one visit; null for none. */
+  readonly discountCode: string | null;
 }
 
 export interface CrmSyncResult {

@@ -513,6 +513,8 @@ export const clients = {
       givenBy: { client: "by the client", technician: "by the technician", ops: "by ops" } as Readonly<
         Record<string, string>
       >,
+      /** A one visit's code the client typed when booking on the site, which "Enter a code" starts from. */
+      requested: (code: string) => `Client gave ${code} when booking`,
       enter: "Enter a code",
       /** The button's whole name, since every row's says the same. */
       enterLabel: (visit: string) => `Enter a discount code on the visit of ${visit}`,
