@@ -11,10 +11,11 @@
 //
 // The referral landing at /r/:code (docs/decisions/0027-referral-landing.md). WhatsApp's crawler runs no
 // JavaScript, so the invite's preview has to be in the HTML it receives. The Worker serves the built page for every
-// code and rewrites its Open Graph tags from the invite: the referrer's first name if they agreed to be named, and
-// the card's versioned image, which is what makes a revoke reach new shares. It also writes the invite into the
-// page, so the island shows it without a second request. When mm-api cannot say what the invite is, the page is
-// served as built and the island asks for it itself: a failure is never shown as a code we do not know.
+// code and rewrites its title, description and Open Graph tags from the invite: the referrer's first name if they
+// agreed to be named, and the card's versioned image, which is what makes a revoke reach new shares. It also writes
+// the invite into the page, so the island shows it without a second request. When mm-api cannot say what the invite
+// is, the page is served as built and the island asks for it itself: a failure is never shown as a code we do not
+// know. /r with no code goes to /book.
 //
 // What a referral earns, as ops set it (docs/decisions/0107-referral-rewards-in-the-console.md), is asked for and kept
 // as the prices are, on the landing and on /book, which confirms a booking made with an invite. It goes onto <body>
@@ -23,7 +24,7 @@
 // The built films are given a byte range at a time, which the assets cannot do: iOS Safari plays a video only from a
 // server that can.
 
-import { inviteDescription, inviteTitle } from "./content/referral.ts";
+import { inviteDescription, invitePageTitle, inviteTitle } from "./content/referral.ts";
 import type { Invite, PublishedPrices, ReferralReward } from "./lib/api.ts";
 import { partOf } from "./lib/byte-range.ts";
 import { cardPath, HOUSE_CARD, isInvite } from "./lib/invite.ts";
@@ -38,6 +39,9 @@ export interface SiteEnv {
 }
 
 const CODE = /^\/r\/([A-Za-z0-9]{4,12})\/?$/;
+
+/** The landing with no code, which has no invite to show: the booking page is the same page without one. */
+const NO_CODE = /^\/r\/?$/;
 
 /** A built film, /_astro/hero.<hash>.mp4. */
 const FILM = /^\/_astro\/[^/]+\.mp4$/;
@@ -145,12 +149,27 @@ class Meta {
     const property = element.getAttribute("property");
     const name = this.invite?.referrer_first_name ?? null;
     const image = this.invite === null ? HOUSE_CARD : cardPath(this.invite, this.code);
+    const description = inviteDescription(this.invite, this.reward);
+    if (element.getAttribute("name") === "description") element.setAttribute("content", description);
     if (property === "og:title") element.setAttribute("content", inviteTitle(name));
-    if (property === "og:description") element.setAttribute("content", inviteDescription(this.invite, this.reward));
+    if (property === "og:description") element.setAttribute("content", description);
     if (property === "og:image" || property === "og:image:secure_url") {
       element.setAttribute("content", this.origin + image);
     }
     if (property === "og:url") element.setAttribute("content", `${this.origin}/r/${this.code}`);
+  }
+}
+
+/** The landing's <title>, replaced whole. Not named `text`, which HTMLRewriter takes for a handler. */
+class Retitled {
+  readonly title: string;
+
+  constructor(title: string) {
+    this.title = title;
+  }
+
+  element(element: Element): void {
+    element.setInnerContent(this.title);
   }
 }
 
@@ -213,6 +232,7 @@ export function createSiteWorker(clock: () => number = Date.now) {
     async fetch(request: Request, env: SiteEnv): Promise<Response> {
       const url = new URL(request.url);
       if (FILM.test(url.pathname)) return partOf(request, await env.ASSETS.fetch(request));
+      if (NO_CODE.test(url.pathname)) return Response.redirect(`${url.origin}/book${url.search}`, 301);
 
       const code = CODE.exec(url.pathname)?.[1]?.toUpperCase();
       if (code === undefined && !PRICED_PAGES.has(url.pathname)) return env.ASSETS.fetch(request);
@@ -232,6 +252,7 @@ export function createSiteWorker(clock: () => number = Date.now) {
       if (prices !== null) writePrices(rewriter, prices);
       if (reward !== null) rewriter.on("body", new Written("data-reward", JSON.stringify(reward)));
       if (code !== undefined) {
+        rewriter.on("head > title", new Retitled(invitePageTitle(invite)));
         rewriter.on("meta", new Meta(invite, reward, url.origin, code));
         if (invite !== null) rewriter.on("#invite", new Written("data-invite", JSON.stringify({ ...invite, code })));
       }
