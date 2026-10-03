@@ -49,7 +49,7 @@ The app's second screen then says a code is on its way if the number has a booki
 
 > **Amended 3 October 2026 (audit findings PS-12 and FLD-27).** Strangers could still spend the codes clients and technicians need: a resend skipped the number's and the address's limits, so one number got 25 codes a day, and 20 numbers nobody knows locked their whole address out until midnight. Now:
 >
-> - **Every code counts against its number's day and its address's hour**, a resend as much as a first code, whoever holds the number: a login challenge keeps the number's hash (`otp_challenges.mobile_hash`, migration 0077). A challenge sends at most three codes (`MAX_SENDS_PER_CHALLENGE`).
+> - **Every code counts against its number's day and its address's hour**, a resend as much as a first code, whoever holds the number: a login challenge keeps the number's hash (`otp_challenges.mobile_hash`, migration 0078). A challenge sends at most three codes (`MAX_SENDS_PER_CHALLENGE`).
 > - **A number nobody knows is answered like any other** and costs nothing more; its address is never refused for it.
 > - **Technicians have a ceiling of their own**, 100 a day (`OTP_TECH_DAILY_CEILING`), which only codes to active technicians count against; ops are told when an active technician is refused a code, and the alert closes once he is given one.
 > - **Asking for a client login code needs Turnstile**, which the app renders invisibly (`docs/turnstile.md`).
@@ -65,7 +65,7 @@ The app's second screen then says a code is on its way if the number has a booki
 
 **SMS is off until DLT.** `SMS_PROVIDER` is `none` on staging and production; the app offers WhatsApp only (`sms_in_s` is null) and `POST /api/auth/otp/sms` answers `404`. Locally it is `stub`. "none" is not a stub, so production may hold it. The DLT provider (MSG91 is recommended) arrives as a third value, with its OTP template ending in the WebOTP line `@app.maneman.in #<code>`.
 
-**No Turnstile yet.** A code is sent only to a booked number, and each number and address is limited, so a flood of requests sends little and costs nothing. Turnstile comes with the SMS provider, since each SMS is paid for. (Superseded 3 October 2026: see the amendment above.)
+**No Turnstile yet.** A code is sent only to a booked number, and each number and address is limited, so a flood of requests sends few codes and charges nothing. It still spends the account's 100,000 Workers requests a day, which every surface shares, and the limits here act only once a request is counted (corrected 4 October 2026; ADR 0009, "Update, 4 October 2026: a flood"). Turnstile comes with the SMS provider, since each SMS is paid for. (Superseded 3 October 2026: see the amendment above.)
 
 **The message text** is `login_code_v1` in `src/config/message-templates.ts`. It is placeholder copy until the owner approves the wording (plan input 5).
 

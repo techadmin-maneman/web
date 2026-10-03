@@ -1,4 +1,4 @@
--- Migration number: 0077
+-- Migration number: 0078
 --
 -- The number a client's login challenge was asked for, so that a code sent
 -- again on it counts against that number's day, whether or not anyone here

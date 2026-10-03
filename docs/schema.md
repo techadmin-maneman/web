@@ -998,7 +998,7 @@ Made by `0054_policies_in_the_console.sql`.
 
 Each one-time code sent, as a hash, with its sends and attempts (ADR 0030, ADR 0052).
 
-Made by `0007_login.sql`; changed by `0008_profile.sql`, `0027_pieces_and_zones.sql`, `0037_cron_indexes.sql`, `0077_challenge_number.sql`.
+Made by `0007_login.sql`; changed by `0008_profile.sql`, `0027_pieces_and_zones.sql`, `0037_cron_indexes.sql`, `0078_challenge_number.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1150,7 +1150,7 @@ Indexes:
 
 One row per person, keyed by mobile number. D1 owns the identity; the CRM's and Books' IDs are only references (ADR 0011, ADR 0110).
 
-Made by `0002_lead_path.sql`; changed by `0004_erasure.sql`, `0011_fsm_mirror.sql`, `0023_dpdp.sql`, `0036_erased_files.sql`, `0037_cron_indexes.sql`, `0070_field_record_ours.sql`, `0076_books_without_fsm.sql`.
+Made by `0002_lead_path.sql`; changed by `0004_erasure.sql`, `0011_fsm_mirror.sql`, `0023_dpdp.sql`, `0036_erased_files.sql`, `0037_cron_indexes.sql`, `0070_field_record_ours.sql`, `0076_books_without_fsm.sql`, `0077_books_customer_upkeep.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1171,9 +1171,14 @@ Made by `0002_lead_path.sql`; changed by `0004_erasure.sql`, `0011_fsm_mirror.sq
 | `files_erased_at` | TEXT | yes |  |  |
 | `books_customer_id` | TEXT | yes |  |  |
 | `books_checked_at` | TEXT | yes |  |  |
+| `books_erased_at` | TEXT | yes |  |  |
+| `books_erasure_attempts` | INTEGER | no | `0` |  |
+| `books_details_changed_at` | TEXT | yes |  |  |
 
 Indexes:
 
+- `people_books_erasure_due`: on (`erased_at`), where `erased_at IS NOT NULL AND books_customer_id IS NOT NULL AND books_erased_at IS NULL`
+- `people_books_update_due`: on (`books_details_changed_at`), where `books_details_changed_at IS NOT NULL AND books_customer_id IS NOT NULL AND erased_at IS NULL`
 - `people_by_books_customer`: unique on (`books_customer_id`), where `books_customer_id IS NOT NULL`
 - `people_by_fsm_contact`: unique on (`fsm_contact_id`), where `fsm_contact_id IS NOT NULL`
 - `people_crm_erasure_due`: on (`erased_at`), where `erased_at IS NOT NULL AND crm_erased_at IS NULL`
@@ -1454,7 +1459,7 @@ Indexes:
 
 A slot held while a client pays, at Checkout or by a payment link ops sent, and what became of it (ADR 0045, ADR 0068).
 
-Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`, `0058_held_bookings.sql`, `0061_one_visit.sql`, `0075_pay_by_link.sql`.
+Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`, `0058_held_bookings.sql`, `0061_one_visit.sql`, `0075_pay_by_link.sql`, `0077_consents_shown.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1499,6 +1504,8 @@ Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_chan
 | `pay_by_link` | INTEGER | no | `0` |  |
 | `payment_link_id` | TEXT | yes |  |  |
 | `payment_link_url` | TEXT | yes |  |  |
+| `consents_shown` | TEXT | yes |  |  |
+| `consents_ip_hash` | TEXT | yes |  |  |
 
 Indexes:
 

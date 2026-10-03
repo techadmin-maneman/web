@@ -25,6 +25,7 @@ An alert in the alert space names what went wrong with IDs only; "What each aler
 | Ops cannot get into the console                             | "Locked out of the ops console"                                     |
 | R2 storage is growing, or a usage e-mail came               | "Staying on the free tier"                                          |
 | A daily allowance is 70% used                               | "The daily allowances"                                              |
+| Every host answers Cloudflare's error 1027                  | "Workers daily limit reached (1027)"                                |
 | Data is wrong or gone in D1                                 | "Restoring D1"                                                      |
 | The heartbeat or the uptime monitor says mm-api is down     | "The outside watchers", "A cron run cut short"                      |
 | A release is misbehaving                                    | "Rolling back a Worker version"                                     |
@@ -72,6 +73,7 @@ Staging's column is as its deploy of 27 September 2026 found it: all five Worker
 | 12. Evolution receipts: the webhook            | open: the shared instance's webhook                    | not yet                                                                                   |
 | 13. The address search (Google)                | `google`, and Google refuses the key (open point 54)   | not yet: `none`                                                                           |
 | 14. Cloudflare's edge scripts                  | owed: both reach every host (step 14)                  | owed: the same zone settings (step 14)                                                    |
+| 15. The rate-limiting rule                     | owed: the owner's (step 15)                            | the same rule: it is the zone's                                                           |
 
 ### 1. Resources
 
@@ -636,6 +638,27 @@ On 2 October 2026 both reached every staging host: the beacon reached the app, o
 
 If the site's pages carry no beacon once the rules are in, the automatic setup is not reaching the pages the Worker serves. The manual snippet, a `<script defer>` from `static.cloudflareinsights.com` with the site's token, then goes in `site/src/layouts/Site.astro`; the policy already allows its host.
 
+### 15. The rate-limiting rule
+
+The free plan gives the zone one rate-limiting rule. It keeps one address from spending the account's 100,000 Workers requests a day in minutes (ADR 0009, "Update, 4 October 2026: a flood"). A request it blocks is refused at the edge and never reaches a Worker, so it costs nothing. It covers every host in the zone, staging's and production's alike.
+
+1. Cloudflare dashboard → `maneman.in` → **Security** → **Security rules** (on the older dashboard, **Security** → **WAF** → **Rate limiting rules**) → **Create rule** → **Rate limiting rules**.
+2. **Rule name:** `API, per address`.
+3. **If incoming requests match:** choose **Edit expression** and paste:
+
+   ```
+   (starts_with(http.request.uri.path, "/api/") and not starts_with(http.request.uri.path, "/api/hooks/"))
+   ```
+
+   The webhooks (`/api/hooks/razorpay`, `/api/hooks/evolution/…`) stay out, so a burst of payments is never refused. If the editor will not take the expression, build it instead: **URI Path** _starts with_ `/api/`, **And** **URI Path** _does not start with_ `/api/hooks/`.
+
+4. **With the same characteristics:** IP, the only one the free plan offers.
+5. **When rate exceeds:** **Requests** `50`, **Period** 10 seconds.
+6. **Then take action:** **Block**, **Duration** 10 seconds. Then **Deploy**.
+7. **Check.** From a terminal, `for i in $(seq 1 60); do curl -s -o /dev/null -w "%{http_code} " https://maneman.in/api/health; done`: the first 50 or so answer `200`, then `429`, and ten seconds later `200` again. **Security** → **Analytics** → **Events** shows the blocks under the rule's name. Write the date in the table above.
+
+Anything that sends more than 50 API requests in 10 seconds from one address is blocked too. The load test (`scripts/load-test-leads.ts`) sends 50 at once: run it with `--people 20`, or switch the rule off for its run and on again after. If ops working from one office are shown Cloudflare's block page, raise **Requests** rather than delete the rule.
+
 ### Before the first production release of Phase 2
 
 Production runs 268eaa4, of 21 September 2026. The next release carries every migration since, and a Worker that binds what production has never had. Before starting `deploy-production.yml`:
@@ -701,6 +724,16 @@ When one is told:
 1. See what is spending it: the dashboard's D1 and Queues pages, each database's and each queue's Metrics. Staging's names carry `staging`, production's `prod`. For D1's rows, Workers Logs says which work read them: every `request` line carries `d1_rows_read`, `d1_rows_written` and `d1_queries`, as does each cron run's `cron_run` line (with `d1_rows_read_by_job`) and each queue batch's `queue_batch` line. In the Query Builder, sum `d1_rows_read` grouped by `route`.
 2. A test run on staging (a load test, a soak, browser tests in a loop) is the usual cause: stop it. A job retrying the same thing again and again shows in Workers Logs as one event repeating; tell the developers.
 3. If it is production's own traffic, tell the developers the same day. More of these allowances means Workers Paid, which needs the owner's decision and a new ADR (step 3 above).
+
+### Workers daily limit reached (1027)
+
+Workers requests, 100,000 a day, are the account's too, staging and production together, and every surface spends them: the API on every host, the site's home, `/book` and `/r/*` pages, and the three apps. Past them Cloudflare answers every request a Worker would have served with its own error page, **error 1027**, until midnight UTC, 05:30 IST. Clients cannot book or pay, technicians cannot send their steps, ops cannot use the console, and Razorpay's webhooks are refused (Razorpay retries them for a day, so payments catch up after the reset). Nothing is lost from D1, and nothing in the code can lift it before the reset: the owner ruled on 2 October 2026 to stay on Workers Free (ADR 0009, "Update, 4 October 2026: a flood").
+
+1. **Confirm it.** Cloudflare dashboard → **Workers & Pages** → **Overview** shows the day's requests near 100,000. A page that answers 1027 on one host answers it on all of them.
+2. **Find who is spending them.** `maneman.in` → **Security** → **Analytics** (or **Analytics & Logs** → **HTTP Traffic**): group by source IP, then by path and user agent. The rate-limiting rule's blocks (step 15) show there too. A test run on staging is the usual cause, as for the other allowances: stop it.
+3. **Block the attacker.** **Security** → **Security rules** → **Create rule** → **Custom rules** (the free plan has five): match the addresses, their AS number or their country, action **Block**. This stops them spending tomorrow's allowance as well. Keep the rule until the traffic has stopped for a day, then delete it.
+4. **Many addresses at once** cannot be held off by a rule per address. Lower the rate-limiting rule's **Requests** for the day, and tell the owner: the remaining answer is Workers Paid, which needs the owner's decision and a new ADR.
+5. **After the reset,** check the cron ran (the heartbeat, "The outside watchers") and that Razorpay's retried webhooks arrived ("Razorpay's webhook is not arriving").
 
 ### R2 storage growing
 
