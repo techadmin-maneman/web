@@ -604,6 +604,7 @@ export const change = {
     acceptCredit: "Cancel and use it",
     done: "Cancelled",
     doneLine: (visit: string) => `${visit} is cancelled.`,
+    refundPending: (amount: string) => `Your refund of ${amount} is on its way.`,
     close: "Done",
   },
   // PLACEHOLDER: what came of a change that did not go through.
