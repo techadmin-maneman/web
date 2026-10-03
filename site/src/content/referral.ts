@@ -17,7 +17,7 @@
 import type { Invite, ReferralReward } from "../lib/api.ts";
 import { fill } from "../lib/text.ts";
 import { capitalised, serviceArea, visitLength } from "./service.ts";
-import { notices, pageTitles, type Notice } from "./site.ts";
+import { booking, notices, pageTitles, type Notice } from "./site.ts";
 
 /** A one-line notice's words, as the backend records them with the consent (src/config/notices.ts). */
 function lineOf(notice: Notice): string {
@@ -101,7 +101,7 @@ export const referral = {
      * says only what is true of all three, under /book's heading.
      */
     unknown: {
-      title: "Book a free consultation",
+      title: booking.title,
       notice: "We do not recognise this invite",
       body: unknownBody,
     },

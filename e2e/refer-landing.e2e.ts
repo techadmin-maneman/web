@@ -252,6 +252,10 @@ test("a code we do not know still books, without the invite's visits", async ({ 
   });
   await visit(page, `/r/${CODE}`);
 
+  // BK-62, CP-24: headed as /book is, with no line saying there is an invite above the one saying there is not.
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Book a free consultation");
+  await expect(page).toHaveTitle("Book a free consultation — Mane Man");
+  await expect(page.getByText("You have an invite")).toBeHidden();
   await expect(page.getByText("We do not recognise this invite")).toBeVisible();
   await expect(page.getByText("The consultation is still free; the 3 service visits do not apply.")).toBeVisible();
   await expect(page.getByText("Get fitted and you both get 3 service visits free.")).toBeHidden();
@@ -656,6 +660,20 @@ test("the desktop page is board C5's two columns, and its fields keep to their c
     const box = await page.getByLabel(field).boundingBox();
     expect(box?.width ?? 0, field).toBeLessThanOrEqual(width / 2);
   }
+});
+
+// BK-62: on a phone the pincode, the one field a friend must fill, is on the first screen, above how it works.
+test("on a phone the pincode comes before how it works, on the first screen", async ({ page }) => {
+  const size = page.viewportSize() ?? { width: 0, height: 0 };
+  test.skip(size.width >= 1024, "board C5 puts how it works in the other column");
+  await mockApi(page);
+  await visit(page, `/r/${CODE}`);
+  const pincode = await page.getByLabel("Pincode").boundingBox();
+  const steps = await page.getByRole("heading", { name: "How it works" }).boundingBox();
+  expect(pincode).not.toBeNull();
+  expect(steps).not.toBeNull();
+  expect(pincode?.y ?? 0).toBeLessThan(steps?.y ?? 0);
+  expect((pincode?.y ?? 0) + (pincode?.height ?? 0)).toBeLessThanOrEqual(size.height);
 });
 
 // A11Y-03: at 320 px, the narrowest phone WCAG asks for, nothing is cut off and the page does not scroll sideways.

@@ -12,10 +12,10 @@
 // The referral landing at /r/:code (docs/decisions/0027-referral-landing.md). WhatsApp's crawler runs no
 // JavaScript, so the invite's preview has to be in the HTML it receives. The Worker serves the built page for every
 // code and rewrites its title, description and Open Graph tags from the invite: the referrer's first name if they
-// agreed to be named, and the card's versioned image, which is what makes a revoke reach new shares. /r with no code
-// goes to /book. It also writes the invite into the
-// page, so the island shows it without a second request. When mm-api cannot say what the invite is, the page is
-// served as built and the island asks for it itself: a failure is never shown as a code we do not know.
+// agreed to be named, and the card's versioned image, which is what makes a revoke reach new shares. It also writes
+// the invite into the page, so the island shows it without a second request. When mm-api cannot say what the invite
+// is, the page is served as built and the island asks for it itself: a failure is never shown as a code we do not
+// know. /r with no code goes to /book.
 //
 // What a referral earns, as ops set it (docs/decisions/0107-referral-rewards-in-the-console.md), is asked for and kept
 // as the prices are, on the landing and on /book, which confirms a booking made with an invite. It goes onto <body>
@@ -160,16 +160,16 @@ class Meta {
   }
 }
 
-/** An element's text, replaced whole: the landing's <title>. */
+/** The landing's <title>, replaced whole. Not named `text`, which HTMLRewriter takes for a handler. */
 class Retitled {
-  readonly text: string;
+  readonly title: string;
 
-  constructor(text: string) {
-    this.text = text;
+  constructor(title: string) {
+    this.title = title;
   }
 
   element(element: Element): void {
-    element.setInnerContent(this.text);
+    element.setInnerContent(this.title);
   }
 }
 
