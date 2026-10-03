@@ -476,7 +476,7 @@ export function Rules() {
   const mayChange = useAccess().mayCall("POST /api/settings/{name}");
 
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   return (
     <section className={styles.panel} aria-labelledby="rules">

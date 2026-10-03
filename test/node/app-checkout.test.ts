@@ -18,12 +18,17 @@ interface FakeScript {
 }
 
 let scripts: FakeScript[];
-let windowStandIn: { Razorpay?: unknown; setTimeout: typeof setTimeout; clearTimeout: typeof clearTimeout };
+let windowStandIn: {
+  Razorpay?: unknown;
+  setTimeout: typeof setTimeout;
+  clearTimeout: typeof clearTimeout;
+  location: { origin: string };
+};
 
 beforeEach(() => {
   vi.resetModules();
   scripts = [];
-  windowStandIn = { setTimeout, clearTimeout };
+  windowStandIn = { setTimeout, clearTimeout, location: { origin: "https://app.maneman.test" } };
   vi.stubGlobal("window", windowStandIn);
   vi.stubGlobal("document", {
     createElement: () => {
@@ -112,7 +117,7 @@ describe("paying in Checkout", () => {
     amount: 200000,
     currency: "INR" as const,
     name: "Mane Man",
-    description: "Service visit, 2026-09-27",
+    description: "Service visit · Sun 27 Sep",
     prefill: { name: "Rohit Malhotra", contact: "+919810000001" },
   };
 
@@ -143,7 +148,8 @@ describe("paying in Checkout", () => {
     expect(await pay(ORDER, payBy())).toBe("failed");
   });
 
-  it("opens on our order, with Checkout's own retry off", async () => {
+  // MON-42, UX-13: Checkout was headed by a letter "M" where the brand mark belongs.
+  it("opens on our order, under the brand mark on ink, with Checkout's own retry off", async () => {
     const razorpay = standInRazorpay();
     const { pay } = await checkout();
     const paying = pay(ORDER, payBy());
@@ -156,6 +162,7 @@ describe("paying in Checkout", () => {
       prefill: { name: "Rohit Malhotra", contact: "+919810000001" },
       retry: { enabled: false },
       theme: { color: "#16233a" },
+      image: "https://app.maneman.test/icon-512.png",
     });
     razorpay.options().handler();
     expect(await paying).toBe("paid");

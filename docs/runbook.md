@@ -23,6 +23,7 @@ An alert in the alert space names what went wrong with IDs only; "What each aler
 | Try-ons fail                                                | "Try-on and WhatsApp"                                               |
 | A technician lost a phone, or his work is stuck on it       | "A technician's lost phone", "Work stuck on a technician's phone"   |
 | Ops cannot get into the console                             | "Locked out of the ops console"                                     |
+| Someone says a screen failed, or quotes a Ref               | "Someone says a screen failed"                                      |
 | R2 storage is growing, or a usage e-mail came               | "Staying on the free tier"                                          |
 | A daily allowance is 70% used                               | "The daily allowances"                                              |
 | Every host answers Cloudflare's error 1027                  | "Workers daily limit reached (1027)"                                |
@@ -1206,7 +1207,7 @@ The app sends the outbox one step at a time, oldest first, whenever it has signa
 
 - **No signal.** Nothing is wrong. Get to signal and open the app. The app warns when the phone has not promised to keep its store: an iPhone keeps it only with the app on its home screen (ADR 0053), so a technician on an iPhone should not leave work waiting for days.
 - **A job stopped because it changed** ("This job changed while the phone was offline", "Ops moved this job to another time", "Ops moved this job to Sameer at 10:40 am", "This job is someone else's now", "This job was cancelled…"): ops changed the job, and what is left of it cannot reach us from this phone. Agree with the technician what he did; ops enter it in FSM by hand; then he taps "Got it", which asks first and deletes that job's queue from the phone.
-- **A step refused** ("The piece's label was not accepted", and the like): "Correct it" takes him back to the step.
+- **A step refused** ("The piece's label was not accepted", and the like): "Correct it" takes him back to the step. The Ref under it finds the refusal in the logs ("Someone says a screen failed").
 - **Photographs failed**: "Retry".
 - **Never sign out or delete the app while work is waiting**: signing out wipes the phone. The app asks first, and offers "Send first".
 
@@ -1216,6 +1217,18 @@ A step that reached us and not FSM is on the server side: "FSM is down". What re
 SELECT kind, occurred_at, received_at, fsm_write_state, fsm_error FROM job_events
 WHERE appointment_id = '<visit id>' ORDER BY received_at;
 ```
+
+---
+
+## Someone says a screen failed
+
+The console and the technician app show a **Ref** under a page that did not load, and under a technician's step the API refused: the first eight characters of the call's request ID, and "Copy" copies the whole ID. Every line mm-api logged of that call carries it as `request_id`. In Workers Logs (the `mm-api` Worker → Logs), filter on `request_id` starting with the Ref, or equal to the copied ID. A change in the console that failed shows no Ref: every console call is in `audit_log` under the person, with its `request_id`.
+
+```sql
+SELECT at, action, request_id, detail FROM audit_log WHERE actor = '<their e-mail>' ORDER BY at DESC LIMIT 20;
+```
+
+The client app, the console and the technician app also report their own errors, each as one `client_error` line: `app` (client, ops or tech), `kind` (`error`, `unhandled_rejection`, `render`, or `outbox_gave_up` for a step the technician app stopped sending because the API refused it), `message`, `path`, and the outbox's `step`, `code` and `refused_request_id`. A page sends ten at most, and an address twenty an hour. A run of them after a release points at that release: tell the developers.
 
 ---
 
