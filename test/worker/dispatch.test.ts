@@ -465,7 +465,6 @@ describe("a move and the time it goes to", () => {
       fakeDependencies(),
       createLogger(),
       {
-        creditFloor: 0,
         budget: createCallBudget(Infinity),
       },
     );

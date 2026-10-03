@@ -103,7 +103,6 @@ describe("erasure reaches Phase 2's data", () => {
       FSM_QUEUE: fsmQueue,
     };
     await sweep(bindings, fakeDependencies({ now: () => later }), createLogger(), {
-      creditFloor: 0,
       fsmConnected: true,
       budget: createCallBudget(Infinity),
     });
@@ -118,7 +117,6 @@ describe("erasure reaches Phase 2's data", () => {
 
     const again = fakeQueue();
     await sweep({ ...bindings, FSM_QUEUE: again }, fakeDependencies({ now: () => later }), createLogger(), {
-      creditFloor: 0,
       budget: createCallBudget(Infinity),
       fsmConnected: true,
     });
@@ -181,7 +179,7 @@ describe("erasure reaches Phase 2's data", () => {
       { ...env, CRM_QUEUE: fakeQueue(), RENDER_QUEUE: fakeQueue(), MESSAGE_QUEUE: fakeQueue(), FSM_QUEUE: fsmQueue },
       fakeDependencies({ now: () => new Date(NOW.getTime() + 10 * 60_000) }),
       createLogger(),
-      { creditFloor: 0, budget: createCallBudget(Infinity) },
+      { budget: createCallBudget(Infinity) },
     );
     expect(fsmQueue.sent).toEqual([]);
   });

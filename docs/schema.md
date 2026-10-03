@@ -54,8 +54,8 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [consumables_used](#consumables_used): The consumables a technician recorded at a job's third step, with what its service expected and what one cost that day (ADR 0038, ADR 0087).
 - [counters](#counters): Fixed-window counters for the rate limits and the daily ceilings (ADR 0011).
 - [credit_ledger](#credit_ledger): Service-visit credits, entry by entry, each drawing on the grant it spends; a balance is summed, never kept (ADR 0033).
-- [cron_jobs](#cron_jobs): Each job of the five-minute cron, and how many runs in a row it has failed (ADR 0067).
-- [cron_runs](#cron_runs): One row: when the five-minute cron's latest run started and its last finished run ended, so a run cut short is told by the next.
+- [cron_jobs](#cron_jobs): Each job of the cron, and how many runs in a row it has failed (ADR 0067).
+- [cron_runs](#cron_runs): One row: when the cron's latest run started and its last finished run ended, so a run cut short is told by the next.
 - [deletion_requests](#deletion_requests): A client's request to be erased, waiting for ops, and what ops decided (ADR 0042, ADR 0078).
 - [deployment_identity](#deployment_identity): Which environment's database this is, so a Worker refuses to serve on another's (ADR 0003).
 - [discount_code_uses](#discount_code_uses): Each time a discount code was entered on a booking, its hold or its visit: by whom, and what it took off before GST once the price was known. Never deleted: one taken off is marked removed (ADR 0108).
@@ -479,7 +479,7 @@ Triggers: `credit_ledger_no_delete`, `credit_ledger_no_update`.
 
 ## cron_jobs
 
-Each job of the five-minute cron, and how many runs in a row it has failed (ADR 0067).
+Each job of the cron, and how many runs in a row it has failed (ADR 0067).
 
 Made by `0038_alerts.sql`.
 
@@ -492,7 +492,7 @@ Made by `0038_alerts.sql`.
 
 ## cron_runs
 
-One row: when the five-minute cron's latest run started and its last finished run ended, so a run cut short is told by the next.
+One row: when the cron's latest run started and its last finished run ended, so a run cut short is told by the next.
 
 Made by `0068_cron_runs.sql`.
 
