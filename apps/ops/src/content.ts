@@ -214,8 +214,12 @@ export const dispatch = {
       started: "Technician started",
       closed: "Closed by the technician",
     } as Readonly<Record<string, string>>,
-    /** PLACEHOLDER: a visit the technician has begun has no move. */
+    /** PLACEHOLDER: a visit the technician has started or closed has no move. */
     stays: "Under way, so it stays where it is.",
+    /** PLACEHOLDER: the warning before ops move a visit the technician has checked in at. */
+    checkedIn: (technician: string) =>
+      `${technician} has checked in. Moving it clears the check-in, so they check in again at the new time.`,
+    moveAnyway: "Move anyway",
     /** Board A3's two buttons: "WhatsApp Rohit" and "Open client". */
     whatsapp: (firstName: string) => `WhatsApp ${firstName}`,
     openClient: "Open client",
@@ -261,6 +265,8 @@ export const dispatch = {
      */
     soon: (hours: number) =>
       `This visit is inside ${String(hours)} hours. The client is not charged, because we moved it.`,
+    /** PLACEHOLDER: a move of a visit the technician had checked in at, chosen after the drawer's warning. */
+    checkInCleared: "The technician's check-in is cleared. They check in again at the new time.",
     send: "Move and notify",
     /** PLACEHOLDER: the same button where nothing goes to the client, so it does not promise a message. */
     sendQuietly: "Move",
@@ -975,6 +981,8 @@ export const clients = {
   photos: {
     locked: "Locked",
     title: (name: string) => `Photographs of ${name}`,
+    /** Why a client's visits are photographed, which no consent switches off. */
+    basis: "Taken for the visit record, at every visit.",
     /** The board's words, with the client's first name where it writes "Rohit". */
     warning: (firstName: string) =>
       `Opening these records your name, the client and the time. The log is visible to the city head and to ${firstName} on request.`,
@@ -1057,6 +1065,44 @@ export const clients = {
       requested: (date: string) => `Erasure requested ${date}. It is not decided here.`,
       rejected: (date: string) => `Erasure requested ${date} and refused.`,
     },
+  },
+  /**
+   * PLACEHOLDER, all of it: no board draws erasing a client from their page. It is for a request made outside the
+   * app, on WhatsApp or the phone; one made in the app is decided in Deletion requests, which tells the client.
+   */
+  erasure: {
+    title: "Erase this client",
+    note: "When they ask us, outside the app, to delete their data. It cannot be undone.",
+    open: "Erase",
+    openLabel: (name: string) => `Erase ${name}`,
+    confirmLabel: (name: string) => `Erasing ${name}`,
+    warning: "This erases them now. It cannot be undone, and there is no copy to put back.",
+    /** The runbook's first step, "Check the request comes from the number's owner". */
+    checked: "I have confirmed this request with them, on their own number.",
+    confirm: "Erase now",
+    cancel: "Keep them",
+    erasing: "Erasing",
+    /** Why nothing was erased, and what ops may do about it. */
+    owed: {
+      visit_booked: "They still have a visit booked, so nothing was erased. Cancel it and refund what they paid first.",
+      payment_held: "We hold a payment of theirs with no visit behind it, so nothing was erased. Refund it first.",
+    },
+    /** To erase today all the same, when what is owed cannot be settled first. */
+    settle: "I will cancel and refund it by hand today.",
+    anyway: "Erase anyway",
+    done: {
+      title: "Erased",
+      body:
+        "Their photographs and details are gone. Their records in the CRM, Books and FSM are blanked within a few " +
+        "minutes. Tell them it is done, in the chat they asked in.",
+      back: "Find another client",
+    },
+    errors: {
+      not_permitted: NOT_PERMITTED,
+      not_found: "They were erased already. Reload to see.",
+      offline: "You are offline. Connect, then try again.",
+      unknown: "That did not go through. They have not been erased.",
+    } as Readonly<Record<string, string>>,
   },
   /*
    * The client's record in figures (src/domain/client-history.ts). The design

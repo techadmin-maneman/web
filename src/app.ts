@@ -37,6 +37,7 @@ import { registerOpsConsumables } from "./routes/ops-consumables.ts";
 import { registerOpsCredits } from "./routes/ops-credits.ts";
 import { registerOpsDispatch } from "./routes/ops-dispatch.ts";
 import { registerOpsDisputes } from "./routes/ops-disputes.ts";
+import { registerOpsErasure } from "./routes/ops-erasure.ts";
 import { registerOpsField } from "./routes/ops-field.ts";
 import { registerOpsGrievances } from "./routes/ops-grievances.ts";
 import { registerOpsHairProfile } from "./routes/ops-hair-profile.ts";
@@ -58,7 +59,6 @@ import { registerReferralLanding } from "./routes/referral-landing.ts";
 import { registerClientPayments } from "./routes/client-payments.ts";
 import { registerClientVisits } from "./routes/client-visits.ts";
 import { registerDevFsm } from "./routes/dev-fsm.ts";
-import { registerErasure } from "./routes/erasure.ts";
 import { registerEvolutionHook } from "./routes/evolution-hook.ts";
 import { registerFsmHook } from "./routes/fsm-hook.ts";
 import { registerRazorpayHook } from "./routes/razorpay-hook.ts";
@@ -100,7 +100,6 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerTryonGenerate,
     registerTryonClaim,
     registerTryonResult,
-    registerErasure,
     // The page a reminder's or alert's link opens, which stops them without signing in.
     registerStopMessages,
     // Webhooks sit on the public host (ADR 0026).
@@ -144,6 +143,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsClientAddress,
     // A client's hair profile (docs/decisions/0106-a-clients-hair-profile.md).
     registerOpsHairProfile,
+    // Erasing a client from their page, the day they ask.
+    registerOpsErasure,
     registerOpsProfile,
     registerOpsReferrals,
     registerOpsGrievances,

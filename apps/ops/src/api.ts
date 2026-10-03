@@ -243,8 +243,12 @@ export const api = {
   assign: (appointmentId: string, to: Landing, shown: Shown) =>
     client.post("/api/dispatch/assign", { body: moveBody(appointmentId, to, shown) }),
   /** A job already on the board, moved. The client is never charged for it; the answer says how he hears of it. */
-  move: (appointmentId: string, to: Landing, shown: Shown) =>
-    client.post("/api/dispatch/move", { body: moveBody(appointmentId, to, shown) }),
+  move: (appointmentId: string, to: Landing, shown: Shown, clearingCheckIn = false) =>
+    client.post("/api/dispatch/move", {
+      body: clearingCheckIn
+        ? { ...moveBody(appointmentId, to, shown), clear_check_in: true as const }
+        : moveBody(appointmentId, to, shown),
+    }),
   /** Ops called a client who had not heard of a move; its task leaves the Tasks board. */
   toldByPhone: (moveId: string) => client.post("/api/dispatch/moves/{id}/told", { path: { id: moveId } }),
   held: () => client.get("/api/referrals/held"),
@@ -356,6 +360,15 @@ export const api = {
    */
   decideDeletion: (id: string, decision: "delete" | "reject", reason: string | null) =>
     client.post("/api/deletion-requests/{id}/decision", { path: { id }, body: { decision, reason } }),
+  /**
+   * Erases a client now, from their page; it cannot be undone. `settledByHand` erases despite a visit booked or a
+   * payment held, which ops then cancel and refund themselves.
+   */
+  eraseClient: (id: string, settledByHand: boolean) =>
+    client.post("/api/clients/{id}/erasure", {
+      path: { id },
+      body: settledByHand ? { override_open_bookings: true } : {},
+    }),
   numberChanges: () => client.get("/api/number-changes"),
   /** Confirming moves the client to the new number; rejecting needs a reason. */
   decideNumberChange: (id: string, decision: "confirm" | "reject", reason: string | null) =>
