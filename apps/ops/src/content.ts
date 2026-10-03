@@ -214,8 +214,12 @@ export const dispatch = {
       started: "Technician started",
       closed: "Closed by the technician",
     } as Readonly<Record<string, string>>,
-    /** PLACEHOLDER: a visit the technician has begun has no move. */
+    /** PLACEHOLDER: a visit the technician has started or closed has no move. */
     stays: "Under way, so it stays where it is.",
+    /** PLACEHOLDER: the warning before ops move a visit the technician has checked in at. */
+    checkedIn: (technician: string) =>
+      `${technician} has checked in. Moving it clears the check-in, so they check in again at the new time.`,
+    moveAnyway: "Move anyway",
     /** Board A3's two buttons: "WhatsApp Rohit" and "Open client". */
     whatsapp: (firstName: string) => `WhatsApp ${firstName}`,
     openClient: "Open client",
@@ -258,6 +262,8 @@ export const dispatch = {
      */
     soon: (hours: number) =>
       `This visit is inside ${String(hours)} hours. The client is not charged, because we moved it.`,
+    /** PLACEHOLDER: a move of a visit the technician had checked in at, chosen after the drawer's warning. */
+    checkInCleared: "The technician's check-in is cleared. They check in again at the new time.",
     send: "Move and notify",
     /** PLACEHOLDER: the same button where nothing goes to the client, so it does not promise a message. */
     sendQuietly: "Move",

@@ -52,11 +52,15 @@ type Rooms =
   | { readonly state: "known"; readonly rooms: readonly Room[] }
   | { readonly state: "unknown" };
 
-/** A move in hand: the job, the window chosen for it, and whether it is being sent. */
+/**
+ * A move in hand: the job, the window chosen for it, whether it is being sent, and whether ops chose, after the
+ * drawer's warning, to clear the technician's check-in.
+ */
 interface Move {
   readonly job: Job;
   readonly to: Target | null;
   readonly sending: boolean;
+  readonly clearingCheckIn: boolean;
 }
 
 /** A line over the board: what a move did, or why it was refused. A call still to make carries its move. */
@@ -218,11 +222,11 @@ export function DispatchScreen() {
   }, []);
 
   const take = useCallback(
-    (job: Job, from: HTMLElement | null) => {
+    (job: Job, from: HTMLElement | null, clearingCheckIn = false) => {
       opener.current = from;
       setOpened(null);
       setNotice(null);
-      setMove({ job, to: null, sending: false });
+      setMove({ job, to: null, sending: false, clearingCheckIn });
       askRooms(job);
     },
     [askRooms],
@@ -280,7 +284,9 @@ export function DispatchScreen() {
       const landing: Landing = { technicianId: to.technician.technician_id, date: to.date, window: to.window, reason };
       const shown = shownOf(job);
       const answer: Answer<Moved> =
-        job.kind === "block" ? await api.move(idOf(job), landing, shown) : await api.assign(idOf(job), landing, shown);
+        job.kind === "block"
+          ? await api.move(idOf(job), landing, shown, move.clearingCheckIn)
+          : await api.assign(idOf(job), landing, shown);
 
       if (answer.ok) {
         setMove(null);
@@ -299,7 +305,7 @@ export function DispatchScreen() {
         return;
       }
       // Nothing was written: the job stays in hand, and the board asks again where it fits.
-      setMove({ job, to: null, sending: false });
+      setMove({ ...move, to: null, sending: false });
       setNotice({ tone: "refusal", text: refusalOf(job, to, answer.code), call: null });
       askRooms(job);
     },
@@ -384,6 +390,13 @@ export function DispatchScreen() {
                 }
               : null
           }
+          onMoveAnyway={
+            mayMove
+              ? () => {
+                  take(opened, opener.current, true);
+                }
+              : null
+          }
           onTold={
             mayTell
               ? (moveId) => {
@@ -400,6 +413,7 @@ export function DispatchScreen() {
           onCancel={unpick}
           onSend={(reason) => void send(reason)}
           sending={picking.sending}
+          clearingCheckIn={picking.clearingCheckIn}
           to={picking.to}
         />
       )}

@@ -72,6 +72,8 @@ export const AUDIT_ACTIONS = [
   "credit.adjust",
   // Ops calling a client about a move he had not heard of (docs/decisions/0069-dispatch-under-concurrency.md).
   "dispatch.client_told",
+  // Ops moving a visit the technician had checked in at, which clears his check-in.
+  "dispatch.check_in_cleared",
   // The consumables ops keep and what each service is expected to use, the job sheet the technician
   // app reads, and the stock in each kit and the central store (docs/decisions/0087-consumables-and-stock.md).
   "consumable.add",
