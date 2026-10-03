@@ -2298,7 +2298,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such live job, or one the technician has begun, which stays where it is */
+                /** @description not_found: no such live job, or one the technician has started or closed, which stays where it is */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2461,7 +2461,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description clash; on_leave; does_not_fit; superseded, with what changed in fields; in_progress: the technician has begun the visit, which stays where it is */
+                /** @description clash; on_leave; does_not_fit; superseded, with what changed in fields; in_progress: the technician has begun the visit. One he has only checked in at moves with clear_check_in; one he has started or closed stays where it is */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -7414,6 +7414,11 @@ export interface components {
              * @description The start the board showed the job with.
              */
             expected_starts_at: string;
+            /**
+             * @description Ops were warned that the technician has checked in, and move the visit anyway: his check-in is cleared, and he checks in again at the new time. The audit log names who chose it. Without it, a visit he has checked in at answers 409 in_progress.
+             * @enum {boolean}
+             */
+            clear_check_in?: true;
         };
         NoShowCases: {
             cases: components["schemas"]["NoShowCase"][];
