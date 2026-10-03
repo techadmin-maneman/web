@@ -260,7 +260,7 @@ export async function requeueTryons(
   context: SweepContext,
 ): Promise<{ renders: string[]; abandoned: string[]; downloads: string[]; lost: string[] }> {
   const { db, env, now, before, deps, log } = sweepRun(context);
-  // The four lookups in one round trip to D1, which a run's CPU time pays for by the trip.
+  // The four lookups go in one round trip: each trip to D1 costs the cron run CPU time.
   const [renders = [], abandoned = [], downloads = [], lost = []] = await idsOfEach(db, [
     // Renders whose queue message was lost: never started, or silent past the give-up time.
     db

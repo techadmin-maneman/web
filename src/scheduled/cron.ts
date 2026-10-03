@@ -1,7 +1,7 @@
 // The cron (wrangler.jsonc "triggers"): a run every minute, each running only the jobs due in that minute. The free
 // plan stops a run past 10 ms of CPU, and one run of every job took 30 to 60 ms, so the jobs take turns: CRON_JOBS
 // gives each how often it runs (`every`) and in which minute of that period (`at`), a few to each minute
-// (docs/decisions/0009-stay-inside-cloudflare-free-tier.md, "Update, 4 October 2026").
+// (docs/decisions/0009-stay-inside-cloudflare-free-tier.md, "the cron's CPU time").
 //
 // A job that throws is logged as `cron_job_failed` and the next one runs anyway, so one failing job never stops the
 // others. Each job's failed runs in a row are counted in `cron_jobs`, and a job that fails three in a row alerts
@@ -23,7 +23,7 @@ import { eraseBooksCustomers } from "../domain/books-erasure.ts";
 import { raiseBooksInvoices } from "../domain/books-invoices.ts";
 import { checkBooksItems } from "../domain/books-items.ts";
 import { syncBooks, type BooksSyncOptions } from "../domain/books-sync.ts";
-import { finishRun, startRun, type CutShortRun } from "../domain/cron-runs.ts";
+import { finishRun, startRun, type CutShortRun, type RunStart } from "../domain/cron-runs.ts";
 import { alertAgedDeletions } from "../domain/deletion.ts";
 import { checkCatalogue } from "../domain/fsm-catalogue.ts";
 import { recordUtilisation } from "../domain/dispatch.ts";
@@ -474,7 +474,7 @@ async function recordStart(
   { env, deps, log }: CronRun,
   startedAt: string,
   jobs: readonly CronJob[],
-): Promise<{ cutShort: CutShortRun | null; failing: ReadonlySet<string> }> {
+): Promise<RunStart> {
   const names = jobs.map((job) => job.name);
   try {
     return await startRun({ db: env.DB, alertOnce: deps.alertOnce }, startedAt, names);

@@ -1,6 +1,6 @@
 // Everything the handlers use to reach outside the Worker: HTTP, the clock,
-// the providers and alerts. Built once per invocation from the validated
-// config; tests pass their own.
+// the providers and alerts. Made for each invocation from the validated
+// config, each provider when first used; tests pass their own.
 
 import { createAlertOnce, createResolveAlert, type AlertOnce, type ResolveAlert } from "./domain/alerts.ts";
 import type { StaticConfig } from "./guard.ts";
@@ -70,7 +70,7 @@ export function productionDependencies(config: StaticConfig): DependencyFactory 
   // Built once per isolate, so Access's signing keys are fetched once, not per request.
   const access = createAccessVerifier(settings.access, { fetch: httpFetch, now });
   // Each provider is made the first time it is used. Making every one on every invocation was half the CPU time of a
-  // cron run that had nothing to do (docs/decisions/0009, "Update, 4 October 2026").
+  // cron run that had nothing to do (docs/decisions/0009, "the cron's CPU time").
   return (env, log, caller = "background") => {
     const zoho = {
       db: env.DB,

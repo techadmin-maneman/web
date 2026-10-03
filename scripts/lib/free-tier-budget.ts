@@ -89,8 +89,8 @@ export function cronRowsReadPerDay(perBusyRun: number = CRON_ROWS_READ_PER_BUSY_
 
 /**
  * The most statements one minute's run may send D1, its own record's included. The free plan stops a run past 10 ms of
- * CPU, and on staging an invocation cost about 1 ms and 0.35 ms more for each statement (docs/decisions/0009, "Update,
- * 4 October 2026"). 16 come to about 6.6 ms, leaving a third of the 10 for code a run meets for the first time.
+ * CPU, and on staging an invocation cost about 1 ms and 0.35 ms more for each statement (docs/decisions/0009, "the
+ * cron's CPU time"). 16 come to about 6.6 ms, leaving a third of the 10 for code a run meets for the first time.
  * test/worker/cron-reads.test.ts holds every minute of the hour to it, over a history.
  */
 export const CRON_STATEMENTS_PER_RUN = 16;

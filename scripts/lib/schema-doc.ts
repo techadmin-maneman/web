@@ -67,9 +67,9 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   counters: "Fixed-window counters for the rate limits and the daily ceilings (ADR 0011).",
   credit_ledger:
     "Service-visit credits, entry by entry, each drawing on the grant it spends; a balance is summed, never kept (ADR 0033).",
-  cron_jobs: "Each job of the five-minute cron, and how many runs in a row it has failed (ADR 0067).",
+  cron_jobs: "Each job of the cron, and how many runs in a row it has failed (ADR 0067).",
   cron_runs:
-    "One row: when the five-minute cron's latest run started and its last finished run ended, so a run cut short is told by the next.",
+    "One row: when the cron's latest run started and which jobs it ran, and when its last finished run ended, so a run cut short is told by the next.",
   deletion_requests: "A client's request to be erased, waiting for ops, and what ops decided (ADR 0042, ADR 0078).",
   discount_code_uses:
     "Each time a discount code was entered on a booking, its hold or its visit: by whom, and what it took off before GST once the price was known. Never deleted: one taken off is marked removed (ADR 0108).",

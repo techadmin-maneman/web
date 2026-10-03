@@ -41,8 +41,8 @@ function jobsOf(run: RunRow): string[] {
 }
 
 /**
- * Notes the run as started with its jobs, and tells ops if the run before it never finished. One round trip to D1,
- * which also reads the failing jobs: a run every minute pays for each.
+ * Notes the run as started with its jobs, and tells ops if the run before it never finished. It also reads the failing
+ * jobs, all in one round trip to D1: each trip costs every minute's run CPU time.
  */
 export async function startRun(
   deps: { db: D1Database; alertOnce: AlertOnce },
