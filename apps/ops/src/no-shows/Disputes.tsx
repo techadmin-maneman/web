@@ -10,6 +10,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { api, type DisputeRuling, type NoShowDispute } from "../api.ts";
 import { noShows } from "../content.ts";
+import { REFUNDING_A_DISPUTE, useAccess } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { Distance } from "./Distance.tsx";
@@ -63,7 +64,20 @@ function Evidence({ each }: { each: NoShowDispute }) {
 type Step =
   { readonly kind: "open" } | { readonly kind: "sending" } | { readonly kind: "failed"; readonly code: string };
 
-function Dispute({ each, now, onRuled }: { each: NoShowDispute; now: Date; onRuled: () => void }) {
+/** What the person's access lets them do with a dispute: uphold the charge, and refund it, which gives money back. */
+interface MayRule {
+  readonly uphold: boolean;
+  readonly refund: boolean;
+}
+
+interface DisputeProps {
+  readonly each: NoShowDispute;
+  readonly now: Date;
+  readonly may: MayRule;
+  readonly onRuled: () => void;
+}
+
+function Dispute({ each, now, may, onRuled }: DisputeProps) {
   const [reason, setReason] = useState("");
   const [step, setStep] = useState<Step>({ kind: "open" });
 
@@ -92,44 +106,50 @@ function Dispute({ each, now, onRuled }: { each: NoShowDispute; now: Date; onRul
       )}
       <p className={styles.caseSub}>{tookOf(each)}</p>
       <Evidence each={each} />
-      <label className={styles.reasonLabel} htmlFor={`ruling-${each.id}`}>
-        {copy.reason.label}
-      </label>
-      <textarea
-        id={`ruling-${each.id}`}
-        className={styles.reasonField}
-        maxLength={300}
-        placeholder={copy.reason.placeholder}
-        aria-describedby={`ruling-hint-${each.id}`}
-        value={reason}
-        disabled={sending}
-        onChange={(event) => {
-          setReason(event.target.value);
-        }}
-      />
-      <p className={styles.reasonHint} id={`ruling-hint-${each.id}`}>
-        {copy.reason.hint}
-      </p>
-      <div className={styles.actions} role="group" aria-label={copy.ruling}>
-        <Button
-          variant="primary"
-          size="small"
-          className={styles.charge}
-          disabled={sending || noReason}
-          onClick={() => void rule("refunded")}
-        >
-          {copy.refund}
-        </Button>
-        <Button
-          variant="outline"
-          size="small"
-          className={styles.waive}
-          disabled={sending || noReason}
-          onClick={() => void rule("upheld")}
-        >
-          {copy.uphold}
-        </Button>
-      </div>
+      {may.uphold && (
+        <>
+          <label className={styles.reasonLabel} htmlFor={`ruling-${each.id}`}>
+            {copy.reason.label}
+          </label>
+          <textarea
+            id={`ruling-${each.id}`}
+            className={styles.reasonField}
+            maxLength={300}
+            placeholder={copy.reason.placeholder}
+            aria-describedby={`ruling-hint-${each.id}`}
+            value={reason}
+            disabled={sending}
+            onChange={(event) => {
+              setReason(event.target.value);
+            }}
+          />
+          <p className={styles.reasonHint} id={`ruling-hint-${each.id}`}>
+            {copy.reason.hint}
+          </p>
+          <div className={styles.actions} role="group" aria-label={copy.ruling}>
+            {may.refund && (
+              <Button
+                variant="primary"
+                size="small"
+                className={styles.charge}
+                disabled={sending || noReason}
+                onClick={() => void rule("refunded")}
+              >
+                {copy.refund}
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="small"
+              className={styles.waive}
+              disabled={sending || noReason}
+              onClick={() => void rule("upheld")}
+            >
+              {copy.uphold}
+            </Button>
+          </div>
+        </>
+      )}
       {step.kind === "failed" && (
         <p className={styles.error} role="alert">
           {copy.errors[step.code] ?? copy.errors.unknown}
@@ -141,16 +161,19 @@ function Dispute({ each, now, onRuled }: { each: NoShowDispute; now: Date; onRul
 
 export function Disputes() {
   const [loaded, retry] = useLoad(api.disputes);
+  const access = useAccess();
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const now = new Date();
   const { disputes } = loaded.value;
   if (disputes.length === 0) return <p className={styles.caption}>{copy.none}</p>;
+  const uphold = access.mayCall("POST /api/no-shows/disputes/{id}/ruling");
+  const may: MayRule = { uphold, refund: uphold && access.reaches(REFUNDING_A_DISPUTE) };
   return (
     <>
       {disputes.map((each) => (
-        <Dispute key={each.id} each={each} now={now} onRuled={retry} />
+        <Dispute key={each.id} each={each} now={now} may={may} onRuled={retry} />
       ))}
     </>
   );

@@ -6,10 +6,13 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import type { FieldRecord } from "../../src/config/field-record.ts";
 import { confirmBooking, startBooking } from "../../src/domain/bookings.ts";
+import { paymentEntries, paymentEntry } from "../../src/domain/client-payments.ts";
 import { grantCredits } from "../../src/domain/credits.ts";
 import { removeFromHold } from "../../src/domain/discount-code-holds.ts";
 import { priceAfterCode, removeFromVisit } from "../../src/domain/discount-code-uses.ts";
+import { holdForFsm } from "../../src/domain/held-bookings.ts";
 import { composeVisitMessage } from "../../src/domain/visit-messages.ts";
 import { listCodes, makeCodes, type NewCodes } from "../../src/domain/discount-codes.ts";
 import { openSession } from "../../src/domain/sessions.ts";
@@ -22,8 +25,11 @@ import {
   captureLogs,
   fakeDependencies,
   fakeQueue,
+  fsmSwitchedOff,
   markDatabase,
   NOW,
+  PROVIDERS_FOR,
+  provedNumberCode,
   request,
   savedAddress,
 } from "./helpers.ts";
@@ -120,6 +126,17 @@ const uses = () =>
   env.DB.prepare(
     "SELECT hold_id, appointment_id, amount_off, given_by, removed_at IS NOT NULL AS removed FROM discount_code_uses",
   ).all();
+
+/** The client's page in the console, as ops read it behind Access. */
+async function clientRecord(personId: string) {
+  const answer = await request(appFor("local", fakeDependencies(), {}, "ops"), `/api/clients/${personId}`);
+  expect(answer.status).toBe(200);
+  return answer.json<{ held_bookings: unknown[]; visits: { upcoming: unknown[] } }>();
+}
+
+/** Paid for, so the hold keeps its time until it is booked. */
+const paidFor = (holdId: string) =>
+  env.DB.prepare("UPDATE slot_holds SET confirmed_at = ?2 WHERE id = ?1").bind(holdId, NOW.toISOString()).run();
 
 /** The technician the app and the site book, where the technician's own tests bring theirs. */
 async function technician() {
@@ -253,6 +270,33 @@ describe("the client, at the app's pay step", () => {
     expect(await answer.json()).toMatchObject({ error: { code: "code_not_applicable" } });
   });
 
+  it("takes a code on the next service visit once the client's last credit is on its way to FSM on another", async () => {
+    await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "ops", sourceId: "o1", now: NOW }).run();
+    await make();
+    const onCredit = await heldService(PERSON);
+    const booked = await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: onCredit.id } });
+    expect(await booked.json()).toEqual({ hold_id: onCredit.id, checkout: null });
+    const next = await heldService(PERSON, NOW, "morning");
+    const answer = await enter(PERSON, next.id, "TENPC");
+    expect(answer.status).toBe(200);
+  });
+
+  it("takes a code on a hold whose credit another device's booking took, and books it in money for what is left", async () => {
+    await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "ops", sourceId: "o1", now: NOW }).run();
+    await make();
+    const onCredit = await heldService(PERSON);
+    await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: onCredit.id } });
+    const next = await heldService(PERSON, NOW, "morning");
+    // The other device read the balance just before the first booking was confirmed.
+    await env.DB.prepare("UPDATE slot_holds SET use_credit = 1 WHERE id = ?1").bind(next.id).run();
+
+    expect((await enter(PERSON, next.id, "TENPC")).status).toBe(200);
+    const booked = await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: next.id } });
+    expect(await booked.json()).toMatchObject({ checkout: { amount: 180_000 } });
+    const hold = await env.DB.prepare("SELECT use_credit FROM slot_holds WHERE id = ?1").bind(next.id).first();
+    expect(hold).toEqual({ use_credit: 0 });
+  });
+
   // The owner's ruling of 1 October 2026: "send whatsapp message even when the code makes the visit free".
   it("books a visit a code makes free without Checkout, and tells the client on WhatsApp as a paid one is told", async () => {
     await make({ code: "ALLFREE", kind: "amount", value: 200_000 });
@@ -343,6 +387,50 @@ describe("the client, at the app's pay step", () => {
     expect((await enter(OTHER, later.id, "UNQ5", at(20))).status).toBe(200);
   });
 
+  // MON-22: after paying, the app's entry did not say the code was taken.
+  it("names the code on the payment Checkout took, in the list and in the entry", async () => {
+    await make();
+    const hold = await heldService(PERSON);
+    await enter(PERSON, hold.id, "TENPC");
+    const started = await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: hold.id } });
+    const { checkout } = await started.json<{ checkout: { order_id: string; amount: number } }>();
+    await env.DB.prepare(
+      `INSERT INTO payments (id, person_id, razorpay_order_id, razorpay_payment_id, amount, currency, status,
+         captured_at, created_at, updated_at)
+       VALUES ('34000000-0000-4000-8000-000000000001', ?1, ?2, 'pay_1', ?3, 'INR', 'captured', ?4, ?4, ?4)`,
+    )
+      .bind(PERSON, checkout.order_id, checkout.amount, NOW.toISOString())
+      .run();
+
+    const code = { code: "TENPC", amount_off: 20_000 };
+    const listed = await (await call(PERSON, "/api/payments")).json();
+    expect(listed).toMatchObject({ entries: [{ discount_code: code }] });
+    const entry = await (await call(PERSON, "/api/payments/34000000-0000-4000-8000-000000000001")).json();
+    expect(entry).toMatchObject({ discount_code: code });
+  });
+
+  // D-03: ops about to link or refund a booking FSM would not take could not see the code on it.
+  it("names the code, and what it took off, on the booking ops see while FSM will not take it", async () => {
+    await make();
+    const hold = await heldService(PERSON);
+    await enter(PERSON, hold.id, "TENPC");
+    await paidFor(hold.id);
+    await holdForFsm(env.DB, hold.id, NOW, "Zoho 400 INVALID_DATA");
+    const record = await clientRecord(PERSON);
+    expect(record.held_bookings).toMatchObject([{ id: hold.id, discount_code: { code: "TENPC", amount_off: 20_000 } }]);
+  });
+
+  it("names no code on a held booking whose code came off before it was paid for", async () => {
+    await make();
+    const hold = await heldService(PERSON);
+    await enter(PERSON, hold.id, "TENPC");
+    await removeFromHold(env.DB, { holdId: hold.id, personId: PERSON }, NOW);
+    await paidFor(hold.id);
+    await holdForFsm(env.DB, hold.id, NOW, "Zoho 400 INVALID_DATA");
+    const record = await clientRecord(PERSON);
+    expect(record.held_bookings).toMatchObject([{ id: hold.id, discount_code: null }]);
+  });
+
   it("refunds a discounted payment what was paid, and no more", async () => {
     await make();
     const hold = await heldService(PERSON);
@@ -428,16 +516,23 @@ describe("the site's form, for a consultation and fit in one visit", () => {
     pincode: "122018",
     access_notes: null,
   };
-  const book = (body: object, settings = {}) =>
-    request(
-      appFor("local", fakeDependencies(), settings, "public"),
+  /** The one visit, booked with its number proved by a code; where our own database holds the record, booked at once. */
+  const book = async (
+    body: { mobile?: string; [field: string]: unknown },
+    settings = {},
+    record: FieldRecord = "fsm",
+  ) => {
+    const mobile = body.mobile ?? "9810000002";
+    const deps = record === "ours" ? fakeDependencies({ fsm: fsmSwitchedOff() }) : fakeDependencies();
+    return request(
+      appFor("local", deps, settings, "public", PROVIDERS_FOR[record]),
       "/api/consultation",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: "Karan Bhatia",
-          mobile: "9810000002",
+          mobile,
           loss_extent: "crown",
           turnstile_token: "token",
           pincode: "122018",
@@ -446,11 +541,13 @@ describe("the site's form, for a consultation and fit in one visit", () => {
           consent: true,
           address: ADDRESS,
           one_visit: true,
+          number_code_id: await provedNumberCode(`+91${mobile}`),
           ...body,
         }),
       },
       { FSM_QUEUE: fakeQueue(), CRM_QUEUE: fakeQueue() },
     );
+  };
 
   beforeEach(async () => {
     await technician();
@@ -461,11 +558,78 @@ describe("the site's form, for a consultation and fit in one visit", () => {
       .run();
   });
 
+  /** TEN_OFF as the site's confirmation reads it. */
+  const TENPC_STANDS = { code: "TENPC", kind: "percent", value: 10, cap: null };
+
+  /** The site's one visit, booked with a code and in FSM: the visit, and whose it is. */
+  async function bookedWithCode(code: string) {
+    await book({ discount_code: code });
+    const hold = await env.DB.prepare("SELECT id, person_id FROM slot_holds").first<{
+      id: string;
+      person_id: string;
+    }>();
+    const fsm = createStubFsm({
+      ...EMPTY_FSM,
+      items: [{ id: "item-fit", name: "First fit", type: "Service", price: null }],
+    });
+    await confirmBooking(env.DB, fsm, createStubPayments(), hold?.id ?? "", NOW, { labelAsTest: false });
+    const visit = await env.DB.prepare("SELECT id FROM appointments").first<{ id: string }>();
+    return { visitId: visit?.id ?? "", personId: hold?.person_id ?? "" };
+  }
+
+  /** A captured payment of the visit's: its price, or a late fee. */
+  const paid = (id: string, booked: { visitId: string; personId: string }, kind: "visit" | "late_fee") =>
+    env.DB.prepare(
+      `INSERT INTO payments (id, person_id, appointment_id, razorpay_payment_id, amount, currency, status, kind,
+         captured_at, created_at, updated_at)
+       VALUES (?1, ?2, ?3, ?4, 2700000, 'INR', 'captured', ?5, ?6, ?6, ?6)`,
+    )
+      .bind(id, booked.personId, booked.visitId, `pay_${id}`, kind, NOW.toISOString())
+      .run();
+
+  // MON-22 and CP-23: the confirmation said nothing of a code the booking took.
+  it("answers what an amount code takes off, for the confirmation to say", async () => {
+    await make({ code: "AUDTEST", kind: "amount", value: 100_000, covers: ["first_fit"] });
+    const answer = await book({ discount_code: "audtest" });
+    expect(await answer.json()).toMatchObject({
+      discount_code: { code: "AUDTEST", kind: "amount", value: 100_000, cap: null },
+    });
+  });
+
+  // MON-22: after paying, neither the app's entry nor ops' Payments said the code was taken.
+  it("carries the code onto the payment its link took, and not onto a late fee", async () => {
+    await make();
+    const booked = await bookedWithCode("TENPC");
+    const listed = { amount_ex_gst: 3_000_000, amount: 3_000_000, gst_percent: 0 };
+    await env.DB.batch((await priceAfterCode(env.DB, booked.visitId, listed)).fix);
+    await paid("pay-fit", booked, "visit");
+    await paid("pay-fee", booked, "late_fee");
+
+    const entries = await paymentEntries(env.DB, booked.personId, NOW);
+    const codeOf = (id: string) => entries.find((entry) => entry.id === id);
+    expect(codeOf("pay-fit")).toMatchObject({ discount_code: { code: "TENPC", amount_off: 300_000 } });
+    expect(codeOf("pay-fee")).toMatchObject({ discount_code: null });
+    expect(await paymentEntry(env.DB, booked.personId, "pay-fit", NOW)).toMatchObject({
+      discount_code: { code: "TENPC", amount_off: 300_000 },
+    });
+  });
+
+  // P1-71: a number we know that books nothing hears what a new number would, its code included.
+  it("answers a number we know, which books nothing, with the code as a new number hears it", async () => {
+    await make();
+    expect((await book({})).status).toBe(201);
+    const again = await book({ discount_code: "tenpc", date: "2026-09-24" });
+    expect(again.status).toBe(201);
+    expect(await again.json()).toMatchObject({ state: "booked", one_visit: true, discount_code: TENPC_STANDS });
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM slot_holds").first("n")).toBe(1);
+    expect((await uses()).results).toEqual([]);
+  });
+
   it("keeps the code on the booking, to come off the product's price at the link", async () => {
     await make();
     const answer = await book({ discount_code: "tenpc" });
     expect(answer.status).toBe(201);
-    expect(await answer.json()).toMatchObject({ state: "booked", one_visit: true, discount_code: true });
+    expect(await answer.json()).toMatchObject({ state: "booked", one_visit: true, discount_code: TENPC_STANDS });
     expect((await uses()).results).toEqual([
       { hold_id: expect.any(String) as string, appointment_id: null, amount_off: null, given_by: "client", removed: 0 },
     ]);
@@ -488,7 +652,7 @@ describe("the site's form, for a consultation and fit in one visit", () => {
   it("keeps the code on the request while booking is off, and the Tasks board names it", async () => {
     await make();
     const answer = await book({ discount_code: "TENPC" }, { selfServeBooking: false });
-    expect(await answer.json()).toMatchObject({ state: "requested", discount_code: true });
+    expect(await answer.json()).toMatchObject({ state: "requested", discount_code: TENPC_STANDS });
     const asked = await env.DB.prepare("SELECT one_visit, discount_code FROM consultation_requests").first();
     expect(asked).toEqual({ one_visit: 1, discount_code: "TENPC" });
     expect((await uses()).results).toEqual([]);
@@ -501,23 +665,40 @@ describe("the site's form, for a consultation and fit in one visit", () => {
   it("refuses a single-use code another client's booking already stands on", async () => {
     await make({ code: "UNQ5", maxUses: 1, oncePerClient: false });
     const theirs = await book({ discount_code: "UNQ5" });
-    expect(await theirs.json()).toMatchObject({ discount_code: true });
+    expect(await theirs.json()).toMatchObject({ discount_code: { code: "UNQ5" } });
     const mine = await book({ mobile: "9810000003", discount_code: "UNQ5" });
     expect(mine.status).toBe(422);
   });
 
+  // D-03, as staging found it: the site's one visit, booked with a code, then refused by FSM.
+  it("names the code on the booking ops see while FSM will not take it", async () => {
+    await make();
+    await book({ discount_code: "tenpc" });
+    const hold = await env.DB.prepare("SELECT id, person_id FROM slot_holds").first<{
+      id: string;
+      person_id: string;
+    }>();
+    await holdForFsm(env.DB, hold?.id ?? "", NOW, "Zoho 400 INVALID_DATA");
+    const record = await clientRecord(hold?.person_id ?? "");
+    expect(record.held_bookings).toMatchObject([{ discount_code: { code: "TENPC", amount_off: null } }]);
+  });
+
+  it("names the code on the visit ops see once our own database books it, with nothing left waiting", async () => {
+    await make();
+    expect((await book({ discount_code: "tenpc" }, {}, "ours")).status).toBe(201);
+    const personId = await env.DB.prepare("SELECT person_id FROM slot_holds").first<string>("person_id");
+    const record = await clientRecord(personId ?? "");
+    expect(record.held_bookings).toEqual([]);
+    expect(record.visits.upcoming).toMatchObject([
+      { type: "first_fit", discount_code: { code: "TENPC", amount_off: null, given_by: "client" } },
+    ]);
+  });
+
   it("stays the visit's code once the booking is in FSM, and comes off the product's price there", async () => {
     await make();
-    await book({ discount_code: "TENPC" });
-    const [hold] = (await env.DB.prepare("SELECT id FROM slot_holds").all<{ id: string }>()).results;
-    const fsm = createStubFsm({
-      ...EMPTY_FSM,
-      items: [{ id: "item-fit", name: "First fit", type: "Service", price: null }],
-    });
-    await confirmBooking(env.DB, fsm, createStubPayments(), hold?.id ?? "", NOW, { labelAsTest: false });
-    const visit = await env.DB.prepare("SELECT id FROM appointments").first<{ id: string }>();
+    const { visitId } = await bookedWithCode("TENPC");
     const listed = { amount_ex_gst: 3_000_000, amount: 3_000_000, gst_percent: 0 };
-    const after = await priceAfterCode(env.DB, visit?.id ?? "", listed);
+    const after = await priceAfterCode(env.DB, visitId, listed);
     expect(after).toMatchObject({ off: 300_000, price: { amount: 2_700_000 } });
   });
 });
@@ -630,6 +811,34 @@ describe("the technician, before a one visit's payment link", () => {
     expect(use).toEqual({ removed_by: "system", removed_by_id: "declined" });
     const [code] = await listCodes(env.DB, NOW, "UNQ5");
     expect(code?.uses).toBe(0);
+  });
+
+  // MON-22: the technician learnt a code was on the visit only by typing one ("This visit already has a code.").
+  it("puts the code already on a one visit on its card, and who gave it, never what it takes off", async () => {
+    await make();
+    const job = await oneVisit();
+    const card = async () => (await job.get(`/api/tech/jobs/${JOB}`)).json();
+    expect(await card()).toMatchObject({ discount_code: null });
+
+    await env.DB.prepare(
+      `INSERT INTO discount_code_uses (id, code_id, person_id, appointment_id, given_by, given_by_id, created_at)
+       SELECT 'use-booked', id, ?1, ?2, 'client', ?1, ?3 FROM discount_codes WHERE code = 'TENPC'`,
+    )
+      .bind(PERSON, JOB, NOW.toISOString())
+      .run();
+    expect(await card()).toMatchObject({ discount_code: { code: "TENPC", given_by: "client" } });
+
+    // A visit paid ahead takes no code at the visit, so its card names none.
+    await env.DB.prepare("UPDATE appointments SET one_visit = NULL WHERE id = ?1").bind(JOB).run();
+    expect(await card()).toMatchObject({ discount_code: null });
+  });
+
+  it("says the code the technician entered is on the card once it is read again", async () => {
+    await make();
+    const job = await oneVisit();
+    await job.post(`/api/tech/jobs/${JOB}/discount-code`, { code: "TENPC" }, "unused");
+    const card = await (await job.get(`/api/tech/jobs/${JOB}`)).json();
+    expect(card).toMatchObject({ discount_code: { code: "TENPC", given_by: "technician" } });
   });
 
   it("says only that a code does not apply", async () => {

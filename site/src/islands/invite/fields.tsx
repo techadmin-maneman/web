@@ -1,15 +1,16 @@
-// The parts both forms are made of: the pincode they are for, where the hair loss is, the person's fields and the
-// button that sends them.
+// The parts both forms are made of: the pincode they are for, where the hair loss is, the person's fields, the
+// invite /book remembers, and the button that sends them.
 
 import { ICONS } from "@maneman/brand/icons";
+import { formatMobileField } from "@maneman/web-kit/mobile";
 import type { LossExtent } from "../../../../src/config/booking.ts";
 import { referral } from "../../content/referral.ts";
 import { booking, stageOptions } from "../../content/site.ts";
 import type { PincodeAnswer, ReferralReward } from "../../lib/api.ts";
-import { formatMobile, isCompleteMobile } from "../../lib/phone.ts";
+import { fill } from "../../lib/text.ts";
 import { Icon, StageDrawing } from "../Drawings.tsx";
 import styles from "./Invite.module.css";
-import type { PersonFields } from "./useTurnstileForm.ts";
+import type { PersonField, PersonFields } from "./useTurnstileForm.ts";
 
 /** What the island gives either form. */
 export interface FormProps {
@@ -39,10 +40,11 @@ export function ForPincode(props: { text: string; onChange: () => void }) {
 }
 
 /**
- * Where the hair loss is, as the site's own form has always asked (v2's booking board).
- * An invited friend is never asked: their invite carries no such question.
+ * Where the hair loss is, as the site's own form has always asked (v2's booking board). Nothing is chosen until the
+ * visitor chooses, and a visitor who skips it is recorded as not saying. An invited friend is never asked: their
+ * invite carries no such question.
  */
-export function ExtentFieldset(props: { extent: LossExtent; onChange: (extent: LossExtent) => void }) {
+export function ExtentFieldset(props: { extent: LossExtent | null; onChange: (extent: LossExtent) => void }) {
   return (
     <fieldset class={styles.group}>
       <legend class={`caps ${styles.legend}`}>{booking.extent}</legend>
@@ -67,18 +69,22 @@ export function ExtentFieldset(props: { extent: LossExtent; onChange: (extent: L
   );
 }
 
+/** The API's longest name. */
+const NAME_MAX = 80;
+
 export function PersonFieldset(props: {
   fields: PersonFields;
-  touched: boolean;
+  /** The fields to mark as wrong. */
+  bad: readonly PersonField[];
   idPrefix: string;
   consentLabel: string;
   consentNote: string;
   onChange: (fields: PersonFields) => void;
 }) {
-  const { fields, touched, idPrefix } = props;
-  const nameBad = touched && fields.name.trim() === "";
-  const mobileBad = touched && !isCompleteMobile(fields.mobile);
-  const consentBad = touched && !fields.consent;
+  const { fields, idPrefix } = props;
+  const nameBad = props.bad.includes("name");
+  const mobileBad = props.bad.includes("mobile");
+  const consentBad = props.bad.includes("consent");
   return (
     <>
       <div class={styles.fields}>
@@ -92,6 +98,7 @@ export function PersonFieldset(props: {
             value={fields.name}
             placeholder={referral.form.namePlaceholder}
             autocomplete="name"
+            maxLength={NAME_MAX}
             aria-required="true"
             aria-invalid={nameBad}
             aria-describedby={nameBad ? `${idPrefix}-name-error` : undefined}
@@ -125,7 +132,7 @@ export function PersonFieldset(props: {
               aria-invalid={mobileBad}
               aria-describedby={mobileBad ? `${idPrefix}-mobile-error` : undefined}
               onInput={(event) => {
-                props.onChange({ ...fields, mobile: formatMobile(event.currentTarget.value) });
+                props.onChange({ ...fields, mobile: formatMobileField(event.currentTarget.value) });
               }}
             />
           </div>
@@ -170,15 +177,44 @@ export function PersonFieldset(props: {
   );
 }
 
-/** A form's refusal, and the button that sends it. */
-export function Send(props: { failure: string | null; sending: boolean; label: string; sendingLabel: string }) {
+/** Three or more fields marked are counted by the button, since on a phone most of them are out of view. */
+function markedLine(marked: number): string | null {
+  if (marked < 3) return null;
+  return fill(referral.form.marked, { count: String(marked) });
+}
+
+/** A form's refusal, or the count of the fields it marked, and the button that sends it. */
+export function Send(props: {
+  failure: string | null;
+  /** How many fields the form marks as wrong. */
+  marked: number;
+  sending: boolean;
+  label: string;
+  sendingLabel: string;
+}) {
+  const line = markedLine(props.marked) ?? props.failure;
   return (
     <>
-      <div aria-live="polite">{props.failure !== null && <div class={styles.failure}>{props.failure}</div>}</div>
+      <div aria-live="polite">{line !== null && <div class={styles.failure}>{line}</div>}</div>
       <button type="submit" class={`btn btn--lg btn--ink ${styles.submit}`} aria-disabled={props.sending}>
         {props.sending && <Icon path={ICONS.sending} size={15} stroke={1.7} />}
         {props.sending ? props.sendingLabel : props.label}
       </button>
     </>
+  );
+}
+
+/**
+ * On /book, the invite this browser remembers, said before the form sends it: who is told of the fit, and the choice
+ * to go on without it.
+ */
+export function RememberedInvite(props: { line: string; without: string; onWithout: () => void }) {
+  return (
+    <div class={styles.remembered}>
+      <p class={styles.told}>{props.line}</p>
+      <button type="button" class={styles.change} onClick={props.onWithout}>
+        {props.without}
+      </button>
+    </div>
   );
 }

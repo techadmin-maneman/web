@@ -17,6 +17,7 @@ import {
   LOCAL_SETTINGS,
   markDatabase,
   NOW,
+  PROVIDERS_FOR,
   request,
   type TestDependencies,
 } from "./helpers.ts";
@@ -171,6 +172,22 @@ describe("PATCH /api/profile/address", () => {
       crm: [{ update_person_id: "p1", ...request }],
       fsm: [{ update_contact_person_id: "p1", ...request }],
     });
+  });
+
+  it("without FSM, sends nothing to FSM and marks the client's Books customer for the Books pass to write", async () => {
+    const booksChangedAt = () =>
+      env.DB.prepare("SELECT books_details_changed_at FROM people WHERE id = 'p1'").first("books_details_changed_at");
+    await send(client, "PATCH", "/api/profile/address", address);
+    expect(await booksChangedAt()).toBeNull();
+
+    client = appFor("local", deps, {}, "client", PROVIDERS_FOR.ours);
+    queues = { CRM_QUEUE: fakeQueue(), FSM_QUEUE: fakeQueue() };
+    await send(client, "PATCH", "/api/profile/address", { ...address, line1: "Silver Oaks" });
+    expect(contactSyncs()).toEqual({
+      crm: [{ update_person_id: "p1", request_id: expect.any(String) as string }],
+      fsm: [],
+    });
+    expect(await booksChangedAt()).toBe(NOW.toISOString());
   });
 
   it("tells ops when the address cannot be sent on, until a later change is", async () => {
@@ -402,6 +419,14 @@ describe("PATCH /api/consents/:purpose", () => {
     expect(await Promise.all(both.map((answer) => answer.json()))).toEqual([given, given]);
   });
 
+  // PS-36 of the audit, 2 October 2026: the log said a client switched a consent they had not.
+  it("writes no audit entry for a switch to the state the purpose already holds", async () => {
+    await send(client, "PATCH", "/api/consents/whatsapp_visits", { granted: true });
+    const again = await send(client, "PATCH", "/api/consents/whatsapp_visits", { granted: true });
+    expect(again.status).toBe(200);
+    expect(await auditActions()).toEqual(["consent.switch"]);
+  });
+
   it("records the same answer again when the notice behind it has changed", async () => {
     // The referral-card notice gained a line and became v2 (src/config/notices.ts), so a client
     // who agreed under v1 is agreeing to something new, and the ledger says so.
@@ -429,6 +454,16 @@ describe("PATCH /api/consents/:purpose", () => {
       { purpose: "photos_marketing", source: "app_profile" },
       { purpose: "whatsapp_visits", source: "app_booking" },
       { purpose: "photos_referral_cards", source: "app_share_sheet" },
+    ]);
+  });
+
+  it("records the booking sheet's reminder under the box's own line, and the profile's switch under its own", async () => {
+    await send(client, "PATCH", "/api/consents/whatsapp_visits", { granted: true, source: "app_booking" });
+    await send(client, "PATCH", "/api/consents/whatsapp_visits", { granted: false, source: "app_profile" });
+    const rows = await env.DB.prepare("SELECT notice_version, granted FROM consents ORDER BY rowid").all();
+    expect(rows.results).toEqual([
+      { notice_version: "whatsapp-visits-booking-v1", granted: 1 },
+      { notice_version: "whatsapp-visits-v1", granted: 0 },
     ]);
   });
 

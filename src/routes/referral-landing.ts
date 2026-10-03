@@ -9,33 +9,41 @@
 //   GET  /api/og/:code.jpg?v=         the invite's preview image: the referrer's card while it is live, else the
 //                                     house card; the version in the link is what makes a revoke reach new shares
 //
+// Looking up a code that is not there, as the invite or as its preview, counts against the address it comes from;
+// past its misses for the hour the address is refused every code (src/domain/invite-lookups.ts).
+//
 // Posting takes a Turnstile token, and the same limits per number and address as the booking form. A consultation
 // takes the full address it is at, as the booking form's does (docs/decisions/0081-the-site-takes-the-address.md),
 // and may book the consultation and fit in one visit, as it may there
-// (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
-// An unknown code still books or waits, without an invite. The same submission sent again under its
-// Idempotency-Key gets its first answer.
+// (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). Every number gets the same answer, as there
+// (src/policy/site-booking.ts). An unknown code still books or waits, without an invite. The same submission sent
+// again under its Idempotency-Key gets its first answer.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
 import { HOUSE_CARD } from "../config/house-card.ts";
+import { TOLD_NOTICES, type ToldNotice } from "../config/notices.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
+import { countInviteMiss, countInviteOpen, inviteMissesSpent } from "../domain/invite-lookups.ts";
 import { bookConsultation, joinTheWaitlist, pincodeOf } from "../domain/public-booking.ts";
 import { liveCard } from "../domain/referral-cards.ts";
 import { CODE_PATTERN, inviteOf, type Invite } from "../domain/referrals.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
 import { formRequest } from "../http/public-form.ts";
+import { visitorOf } from "../http/visitor.ts";
 import { addressOf } from "./client-profile.ts";
 import {
-  AddressOutcomeSchema,
+  BOOKED_DESCRIPTION,
   CreditsSchema,
   InviteStateSchema,
+  OneVisitNumberCodeSchema,
   OneVisitOutcomeSchema,
   OneVisitRequestSchema,
   planOf,
-  takenOrBooked,
+  takenOrInProgress,
+  turnstileOrNotProved,
   TypedAddressSchema,
 } from "./consultations.ts";
 
@@ -65,7 +73,9 @@ const PincodeAnswerSchema = z
   .object({
     pincode: z.string(),
     served: z.boolean(),
-    area: z.union([z.string(), z.null()]).openapi({ description: "Null for a pincode we do not know." }),
+    area: z.union([z.string(), z.null()]).openapi({
+      description: "The area's name once ops have named it; null until then, and for a pincode we do not know.",
+    }),
     city: z.union([z.string(), z.null()]),
   })
   .strict()
@@ -75,7 +85,20 @@ const Person = {
   name: z.string().trim().min(1).max(80),
   mobile: z.string().max(20),
   turnstile_token: z.string().min(1).max(2048),
+  invite_told: z
+    .literal(true)
+    .optional()
+    .openapi({
+      description:
+        "true: the form said that whoever sent the invite is told when the friend is fitted. The attribution " +
+        "records it; the invite applies either way.",
+    }),
 };
+
+/** The line the landing showed beside the invite, as its form says; null where it showed none. */
+function toldOnLanding(told: true | undefined): ToldNotice | null {
+  return told === true ? TOLD_NOTICES.landing : null;
+}
 
 const ConsultationRequestSchema = z
   .object({
@@ -85,6 +108,7 @@ const ConsultationRequestSchema = z
     window: z.enum(BOOKING_WINDOWS),
     address: TypedAddressSchema,
     one_visit: OneVisitRequestSchema,
+    number_code_id: OneVisitNumberCodeSchema,
     consent: z.literal(true).openapi({ description: '"You may contact me on WhatsApp about this consultation."' }),
   })
   .strict();
@@ -109,16 +133,25 @@ const ogRoute = createRoute({
   request: { params: z.object({ file: z.string().regex(/^[A-Za-z0-9]{4,12}\.jpg$/) }) },
   responses: {
     200: { description: "The referrer's card", content: { "image/jpeg": { schema: z.string() } } },
-    302: { description: "The house card, on the site" },
+    302: { description: "The house card, on the site; for every code from an address past its misses this hour" },
   },
 });
+
+const UNKNOWN_INVITE = {
+  state: "unknown" as const,
+  referrer_first_name: null,
+  card: { state: "house" as const, version: 1 },
+};
 
 const inviteRoute = createRoute({
   method: "get",
   path: "/api/r/{code}",
   summary: "An invite: valid or unknown",
   request: { params: CodeParams },
-  responses: { 200: { description: "The invite", content: { "application/json": { schema: InviteSchema } } } },
+  responses: {
+    200: { description: "The invite", content: { "application/json": { schema: InviteSchema } } },
+    429: errorResponse("rate_limited: this address looked up too many codes that are not there this hour"),
+  },
 });
 
 const pincodeRoute = createRoute({
@@ -143,7 +176,7 @@ const consultationRoute = createRoute({
   },
   responses: {
     201: {
-      description: "Booked, or asked for",
+      description: BOOKED_DESCRIPTION,
       content: {
         "application/json": {
           schema: z
@@ -154,10 +187,9 @@ const consultationRoute = createRoute({
               }),
               date: z.iso.date(),
               window: z.enum(BOOKING_WINDOWS),
-              area: z.string(),
+              area: z.string().openapi({ description: "The area once ops have named it, its city until then." }),
               credits: CreditsSchema,
               invite: InviteStateSchema,
-              address: AddressOutcomeSchema,
               one_visit: OneVisitOutcomeSchema,
             })
             .strict()
@@ -169,11 +201,11 @@ const consultationRoute = createRoute({
       "invalid_request: fields names what was refused, address.pincode for an address in another pincode, window " +
         "for one visit in the evening",
     ),
-    403: errorResponse("turnstile_failed"),
-    409: takenOrBooked,
+    403: turnstileOrNotProved,
+    409: takenOrInProgress,
     422: errorResponse(
-      "not_bookable: the pincode is not served, the day is not open, or this number is past consultations; " +
-        "idempotency_key_reused: the key was used with a different body",
+      "not_bookable: the pincode is not served, or the day is not open; no_product: one visit, on a day the console " +
+        "offers no hair system; idempotency_key_reused: the key was used with a different body",
     ),
     429: errorResponse("rate_limited"),
     503: errorResponse("unavailable: Turnstile could not be reached"),
@@ -195,7 +227,13 @@ const waitlistRoute = createRoute({
       content: {
         "application/json": {
           schema: z
-            .object({ area: z.union([z.string(), z.null()]), credits: CreditsSchema, invite: InviteStateSchema })
+            .object({
+              area: z
+                .union([z.string(), z.null()])
+                .openapi({ description: "Null until ops have named the area, and for a pincode we do not know." }),
+              credits: CreditsSchema,
+              invite: InviteStateSchema,
+            })
             .strict()
             .openapi("ReferralWaitlist"),
         },
@@ -218,27 +256,37 @@ export function registerReferralLanding(app: App): void {
     inviteOf(c.env.DB, code, c.var.config.settings.referrerNameOnInvite);
 
   app.openapi(inviteRoute, async (c) => {
+    const db = c.env.DB;
+    const now = c.var.deps.now();
+    const { ipHash } = await visitorOf(c);
+    if (await inviteMissesSpent(db, ipHash, now)) return c.json(errorBody("rate_limited", c.var.requestId), 429);
+
     const found = await invite(c, c.req.valid("param").code);
+    if (found === null) {
+      await countInviteMiss(db, ipHash, now);
+      return c.json(UNKNOWN_INVITE, 200);
+    }
     // Ops' funnel counts opens; the referrer never sees them (the tracker shows fits only). A chat app fetching the
     // link for its preview is not an open: the site's Worker passes the visitor's user agent on.
-    if (found !== null && !LINK_PREVIEW.test(c.req.header("User-Agent") ?? "")) {
-      await c.env.DB.prepare("UPDATE referral_codes SET opens = opens + 1 WHERE code = ?1").bind(found.code).run();
-    }
-    return c.json(
-      found === null
-        ? { state: "unknown" as const, referrer_first_name: null, card: { state: "house" as const, version: 1 } }
-        : { state: "valid" as const, referrer_first_name: found.referrerFirstName, card: found.card },
-      200,
-    );
+    if (!LINK_PREVIEW.test(c.req.header("User-Agent") ?? "")) await countInviteOpen(db, found.code, ipHash, now);
+    return c.json({ state: "valid" as const, referrer_first_name: found.referrerFirstName, card: found.card }, 200);
   });
 
   app.openapi(ogRoute, async (c) => {
+    const db = c.env.DB;
+    const now = c.var.deps.now();
+    const { ipHash } = await visitorOf(c);
+    if (await inviteMissesSpent(db, ipHash, now)) return c.redirect(HOUSE_CARD, 302);
+
     const code = c.req
       .valid("param")
       .file.replace(/\.jpg$/, "")
       .toUpperCase();
-    const card = await liveCard(c.env.DB, c.env.REFERRAL_CARDS, code);
-    if (card === null) return c.redirect(HOUSE_CARD, 302);
+    const card = await liveCard(db, c.env.REFERRAL_CARDS, code);
+    if (card === null) {
+      await countInviteMiss(db, ipHash, now);
+      return c.redirect(HOUSE_CARD, 302);
+    }
     // A version's card never changes: a new one gets a new link. The length tells a chat's crawler the card's size
     // before it reads it, as the house card's static file does.
     return c.body(card.body, 200, {
@@ -273,10 +321,12 @@ export function registerReferralLanding(app: App): void {
         turnstileToken: body.turnstile_token,
         attribution: {},
         invite: await invite(c, code),
+        toldNotice: toldOnLanding(body.invite_told),
         source: "referral_landing",
         plan: planOf(body.one_visit),
         // An invite's page takes no discount code: the invite is its offer (docs/decisions/0108-discount-codes.md).
         discountCode: null,
+        numberCodeId: body.number_code_id ?? null,
       });
       if (!booked.ok) return booked;
       return {
@@ -288,7 +338,6 @@ export function registerReferralLanding(app: App): void {
           area: booked.area,
           credits: booked.credits,
           invite: booked.invite,
-          address: booked.address,
           one_visit: booked.oneVisit,
         },
       };
@@ -299,9 +348,6 @@ export function registerReferralLanding(app: App): void {
 
     const booked = run.outcome;
     if (booked.ok) return c.json(booked.body, 201);
-    if (booked.booked !== undefined) {
-      return c.json({ ...errorBody("already_booked", requestId), booked: booked.booked }, 409);
-    }
     return c.json(errorBody(booked.code, requestId, booked.fields), booked.status);
   });
 
@@ -322,6 +368,7 @@ export function registerReferralLanding(app: App): void {
         turnstileToken: body.turnstile_token,
         attribution: {},
         invite: await invite(c, code),
+        toldNotice: toldOnLanding(body.invite_told),
         source: "referral_landing",
       });
       if (!listed.ok) return listed;

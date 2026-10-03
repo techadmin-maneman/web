@@ -33,7 +33,10 @@ const waitlistRoute = createRoute({
               z
                 .object({
                   pincode: z.string(),
-                  area: z.union([z.string(), z.null()]),
+                  area: z.union([z.string(), z.null()]).openapi({
+                    description:
+                      "The area's name once ops have named it; null until then, and for a pincode we do not know.",
+                  }),
                   city: z.union([z.string(), z.null()]),
                   served: z.boolean(),
                   launched_at: z.union([z.iso.datetime(), z.null()]),

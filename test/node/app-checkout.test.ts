@@ -18,12 +18,17 @@ interface FakeScript {
 }
 
 let scripts: FakeScript[];
-let windowStandIn: { Razorpay?: unknown; setTimeout: typeof setTimeout; clearTimeout: typeof clearTimeout };
+let windowStandIn: {
+  Razorpay?: unknown;
+  setTimeout: typeof setTimeout;
+  clearTimeout: typeof clearTimeout;
+  location: { origin: string };
+};
 
 beforeEach(() => {
   vi.resetModules();
   scripts = [];
-  windowStandIn = { setTimeout, clearTimeout };
+  windowStandIn = { setTimeout, clearTimeout, location: { origin: "https://app.maneman.test" } };
   vi.stubGlobal("window", windowStandIn);
   vi.stubGlobal("document", {
     createElement: () => {
@@ -112,7 +117,7 @@ describe("paying in Checkout", () => {
     amount: 200000,
     currency: "INR" as const,
     name: "Mane Man",
-    description: "Service visit, 2026-09-27",
+    description: "Service visit · Sun 27 Sep",
     prefill: { name: "Rohit Malhotra", contact: "+919810000001" },
   };
 
@@ -135,39 +140,84 @@ describe("paying in Checkout", () => {
     return { opened, options, fail: () => failed?.() };
   }
 
+  /** The hold's last moment for a payment to count, twelve minutes from now. */
+  const payBy = () => new Date(Date.now() + 12 * 60_000).toISOString();
+
   it("counts it as failed when Checkout never arrived", async () => {
     const { pay } = await checkout();
-    expect(await pay(ORDER, "upi")).toBe("failed");
+    expect(await pay(ORDER, payBy())).toBe("failed");
   });
 
-  it("opens on our order with the method the client chose, and with Checkout's own retry off", async () => {
+  // MON-42, UX-13: Checkout was headed by a letter "M" where the brand mark belongs.
+  it("opens on our order, under the brand mark on ink, with Checkout's own retry off", async () => {
     const razorpay = standInRazorpay();
     const { pay } = await checkout();
-    const paying = pay(ORDER, "card");
+    const paying = pay(ORDER, payBy());
 
     expect(razorpay.opened[0]).toMatchObject({
       key: "rzp_test_abc",
       order_id: "order_9",
       amount: 200000,
       currency: "INR",
-      prefill: { name: "Rohit Malhotra", contact: "+919810000001", method: "card" },
+      prefill: { name: "Rohit Malhotra", contact: "+919810000001" },
       retry: { enabled: false },
       theme: { color: "#16233a" },
+      image: "https://app.maneman.test/icon-512.png",
     });
     razorpay.options().handler();
     expect(await paying).toBe("paid");
+  });
+
+  // MON-44: Checkout ignores a method chosen beforehand unless it is also given an e-mail, which we never send, so
+  // the app's "UPI · any app" was a choice that did nothing. Checkout lists its own ways to pay.
+  it("chooses no way to pay for the client, leaving Checkout to list them", async () => {
+    const razorpay = standInRazorpay();
+    const { pay } = await checkout();
+    void pay(ORDER, payBy());
+
+    const prefill = razorpay.opened[0]?.prefill as Record<string, unknown>;
+    expect(prefill).not.toHaveProperty("method");
+    expect(prefill).not.toHaveProperty("email");
   });
 
   it("tells a window the client closed from a payment that failed", async () => {
     const razorpay = standInRazorpay();
     const { pay } = await checkout();
 
-    const closed = pay(ORDER, "upi");
+    const closed = pay(ORDER, payBy());
     razorpay.options().modal.ondismiss();
     expect(await closed).toBe("dismissed");
 
-    const refused = pay(ORDER, "upi");
+    const refused = pay(ORDER, payBy());
     razorpay.fail();
     expect(await refused).toBe("failed");
+  });
+
+  // A payment Checkout took after the hold's grace would be refused and refunded (MON-03).
+  it("takes no payment once it would be too late to keep the hold", async () => {
+    vi.useFakeTimers({ now: Date.parse("2026-09-21T06:30:00.000Z") });
+    windowStandIn.setTimeout = setTimeout;
+    windowStandIn.clearTimeout = clearTimeout;
+    const razorpay = standInRazorpay();
+    const { pay } = await checkout();
+    void pay(ORDER, "2026-09-21T06:42:00.000Z");
+    expect(razorpay.opened[0]).toMatchObject({ timeout: 720 });
+  });
+
+  it("counts Checkout as closed when it has not closed itself ten seconds after its time is up", async () => {
+    vi.useFakeTimers({ now: Date.parse("2026-09-21T06:30:00.000Z") });
+    windowStandIn.setTimeout = setTimeout;
+    windowStandIn.clearTimeout = clearTimeout;
+    standInRazorpay();
+    const { pay } = await checkout();
+    let outcome: string | null = null;
+    void pay(ORDER, "2026-09-21T06:31:00.000Z").then((answer) => {
+      outcome = answer;
+    });
+
+    await vi.advanceTimersByTimeAsync(69_999);
+    expect(outcome).toBeNull();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(outcome).toBe("dismissed");
   });
 });

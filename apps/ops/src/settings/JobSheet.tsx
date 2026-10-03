@@ -12,8 +12,9 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { useState } from "react";
 import { api, type JobSheet as Sheet, type VisitType } from "../api.ts";
 import { dispatch, settings } from "../content.ts";
+import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import { ListEditor } from "./ListEditor.tsx";
+import { ListEditor, ListRead } from "./ListEditor.tsx";
 import styles from "./settings.module.css";
 
 const copy = settings.jobSheet;
@@ -25,9 +26,12 @@ export function JobSheet() {
   /** The sheet after a save, so "Set by" follows without reading it again. */
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const [kind, setKind] = useState<VisitType>("service");
+  const access = useAccess();
+  const mayChangeChecklists = access.mayCall("POST /api/job-sheet/checklists/{visit_type}");
+  const mayChangeReasons = access.mayCall("POST /api/job-sheet/partial-reasons");
 
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const current = sheet ?? loaded.value;
   const checklist = current.checklists.find((each) => each.visit_type === kind);
 
@@ -61,7 +65,10 @@ export function JobSheet() {
           </select>
         </div>
       </div>
-      {checklist !== undefined && (
+      {checklist !== undefined && !mayChangeChecklists && (
+        <ListRead title={copy.checklist(typeName(kind))} list={checklist} />
+      )}
+      {checklist !== undefined && mayChangeChecklists && (
         <ListEditor
           key={kind}
           id={`checklist-${kind}`}
@@ -77,18 +84,21 @@ export function JobSheet() {
         />
       )}
       <p className={styles.note}>{copy.reasonsNote}</p>
-      <ListEditor
-        id="partial-reasons"
-        title={copy.reasons}
-        list={current.partial_reasons}
-        most={current.max_partial_reasons}
-        longest={current.max_label}
-        itemLabel={copy.reason}
-        addLabel={copy.addReason}
-        onSave={(items) => api.setPartialReasons(items)}
-        pick={(saved) => saved.partial_reasons}
-        onSaved={setSheet}
-      />
+      {!mayChangeReasons && <ListRead title={copy.reasons} list={current.partial_reasons} />}
+      {mayChangeReasons && (
+        <ListEditor
+          id="partial-reasons"
+          title={copy.reasons}
+          list={current.partial_reasons}
+          most={current.max_partial_reasons}
+          longest={current.max_label}
+          itemLabel={copy.reason}
+          addLabel={copy.addReason}
+          onSave={(items) => api.setPartialReasons(items)}
+          pick={(saved) => saved.partial_reasons}
+          onSaved={setSheet}
+        />
+      )}
     </section>
   );
 }

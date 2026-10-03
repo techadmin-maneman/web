@@ -16,6 +16,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { api, type Consumable, type Consumables as Book } from "../api.ts";
 import { settings } from "../content.ts";
+import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { ConsumableForm } from "./ConsumableForm.tsx";
 import { Retirement } from "./Retirement.tsx";
@@ -27,6 +28,19 @@ const copy = settings.consumables;
 
 /** What the panel's form is doing: adding one, or changing, retiring or restoring the one named. */
 type Doing = { readonly kind: "add" } | { readonly kind: "change" | "retire" | "restore"; readonly code: string };
+
+/** Which of those the person's access lets them do. */
+type MayDo = Readonly<Record<Doing["kind"], boolean>>;
+
+function useMayDo(): MayDo {
+  const access = useAccess();
+  return {
+    add: access.mayCall("POST /api/consumables"),
+    change: access.mayCall("POST /api/consumables/{code}"),
+    retire: access.mayCall("POST /api/consumables/{code}/retire"),
+    restore: access.mayCall("POST /api/consumables/{code}/restore"),
+  };
+}
 
 function fsmWords(consumable: Consumable): string {
   switch (consumable.fsm.state) {
@@ -47,8 +61,9 @@ function stateWords(consumable: Consumable): string {
   return consumable.offered ? copy.states.retiring(from) : copy.states.retired(from);
 }
 
-function Row({ consumable, onDo }: { consumable: Consumable; onDo: (doing: Doing) => void }) {
+function Row({ consumable, may, onDo }: { consumable: Consumable; may: MayDo; onDo: (doing: Doing) => void }) {
   const { code, name } = consumable;
+  const notRetired = consumable.retired_from === null;
   return (
     <tr>
       <th scope="row" className={styles.rowHead}>
@@ -59,17 +74,19 @@ function Row({ consumable, onDo }: { consumable: Consumable; onDo: (doing: Doing
       <td className={consumable.fsm.state === "linked" ? undefined : own.quiet}>{fsmWords(consumable)}</td>
       <td className={own.actions}>
         <span className={consumable.offered ? undefined : own.quiet}>{stateWords(consumable)}</span>
-        <button
-          className={styles.inline}
-          type="button"
-          aria-label={copy.changeLabel(name)}
-          onClick={() => {
-            onDo({ kind: "change", code });
-          }}
-        >
-          {copy.change}
-        </button>
-        {consumable.retired_from === null ? (
+        {may.change && (
+          <button
+            className={styles.inline}
+            type="button"
+            aria-label={copy.changeLabel(name)}
+            onClick={() => {
+              onDo({ kind: "change", code });
+            }}
+          >
+            {copy.change}
+          </button>
+        )}
+        {notRetired && may.retire && (
           <button
             className={styles.inline}
             type="button"
@@ -80,7 +97,8 @@ function Row({ consumable, onDo }: { consumable: Consumable; onDo: (doing: Doing
           >
             {copy.retire}
           </button>
-        ) : (
+        )}
+        {!notRetired && may.restore && (
           <button
             className={styles.inline}
             type="button"
@@ -97,20 +115,23 @@ function Row({ consumable, onDo }: { consumable: Consumable; onDo: (doing: Doing
   );
 }
 
-/** The form beneath the table: the one a row's button asked for, else adding a new one. */
+/** The form beneath the table: the one a row's button asked for, else adding a new one, where access allows it. */
 function Form({
   book,
   doing,
+  mayAdd,
   onSaved,
   onCancel,
 }: {
   book: Book;
   doing: Doing;
+  mayAdd: boolean;
   onSaved: (book: Book, said: string) => void;
   onCancel: () => void;
 }) {
   const named = doing.kind === "add" ? undefined : book.consumables.find((each) => each.code === doing.code);
   if (named === undefined || doing.kind === "add") {
+    if (!mayAdd) return null;
     return (
       <ConsumableForm key="new" consumable={null} maxUnitCost={book.max_unit_cost} onSaved={onSaved} onCancel={null} />
     );
@@ -144,9 +165,10 @@ export function Consumables() {
   const [book, setBook] = useState<Book | null>(null);
   const [doing, setDoing] = useState<Doing>({ kind: "add" });
   const [said, setSaid] = useState<string | null>(null);
+  const may = useMayDo();
 
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const current = book ?? loaded.value;
 
   const saved = (next: Book, words: string) => {
@@ -183,6 +205,7 @@ export function Consumables() {
                 <Row
                   key={consumable.code}
                   consumable={consumable}
+                  may={may}
                   onDo={(next) => {
                     setDoing(next);
                     setSaid(null);
@@ -200,6 +223,7 @@ export function Consumables() {
         <Form
           book={current}
           doing={doing}
+          mayAdd={may.add}
           onSaved={saved}
           onCancel={() => {
             setDoing({ kind: "add" });

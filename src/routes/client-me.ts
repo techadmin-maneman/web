@@ -3,7 +3,7 @@
 // done (the FSM mirror, docs/decisions/0032-fsm-mirror.md); a lead has a
 // consultation, from the mirror or from their booking on the site before FSM
 // has it; else nothing is booked. The next visit comes from the mirror, and
-// the credit tile and board B1's one prompt beneath it (src/domain/home-prompt.ts).
+// the credit tile, board B1's one prompt and the invoice line beneath it (src/domain/home-prompt.ts).
 // What the client may book now is every service offered of each kind open to
 // them, for the booking sheet to offer (docs/decisions/0085-services-ops-can-edit.md).
 //
@@ -24,8 +24,8 @@ import { BOOKING_WINDOWS, type BookingWindow } from "../config/scheduling.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { CLIENT_STATES, clientStateOf, isFitted, nextVisit } from "../domain/client-visits.ts";
 import { bookingUnderWay } from "../domain/holds.ts";
-import { creditBalance } from "../domain/credits.ts";
-import { homePrompt, promptFacts } from "../domain/home-prompt.ts";
+import { spendableCredits } from "../domain/credits.ts";
+import { homePrompts, promptFacts } from "../domain/home-prompt.ts";
 import { nextVisitFacts } from "../domain/next-visit.ts";
 import { bookableTypes } from "../domain/scheduling.ts";
 import { offeredAmong, servicesOnDay } from "../domain/services.ts";
@@ -87,6 +87,7 @@ export const MeSchema = z
             date: z.iso.date(),
             window: z.enum(BOOKING_WINDOWS),
             paid: z.boolean().openapi({ description: "Paid for in money, rather than free or covered by a credit." }),
+            one_visit: z.boolean().openapi({ description: "A consultation and fit in one visit." }),
           })
           .strict(),
         z.null(),
@@ -110,32 +111,52 @@ export const MeSchema = z
             }),
             tier: z
               .string()
+              .nullable()
               .openapi({ description: "The service of its kind it offers, as booking.next's (ADR 0085)." }),
+            due_on: z.iso.date().openapi({
+              description:
+                "India's day it fell or falls due: a service's from the last visit and the cadence, a replacement's " +
+                "the piece's own. Before `date`, it has passed.",
+            }),
             date: z.iso.date().openapi({
-              description: "India's day it falls due: the last visit's day and the cadence; tomorrow once passed.",
+              description: "India's day it is offered on: the day it falls due, or tomorrow once that has passed.",
             }),
             window: z
               .union([z.enum(BOOKING_WINDOWS), z.null()])
               .openapi({ description: "The last visit's window, where this kind of visit can start in it." }),
+            replacement_bookable: z.boolean().openapi({
+              description:
+                "A service offered while the piece in wear falls due within how far ahead a visit may be booked, " +
+                "and no replacement is booked: the replacement is offered beside it.",
+            }),
           })
           .strict(),
         z
           .object({
             kind: z.literal("replacement_due"),
             month: z.string().regex(/^\d{4}-\d{2}$/),
-            tier: z.string().openapi({
-              description:
-                "The replacement service it offers: the client's last one while that is offered, else the first " +
-                "in the console's order (ADR 0085).",
-            }),
-            bookable: z.boolean().openapi({
-              description: "The month begins within how far ahead a visit may be booked, so it can be booked now.",
-            }),
+            tier: z
+              .string()
+              .nullable()
+              .openapi({
+                description:
+                  "The replacement service it offers: the client's last one while that is offered, else the first " +
+                  "in the console's order (ADR 0085); null while none is offered.",
+              }),
           })
           .strict(),
+        z.null(),
+      ])
+      .openapi({
+        description:
+          "Board B1's one prompt, the first that applies, in the owner's order: no address given while something " +
+          "is booked; the next service due and not booked; then, once no invoice is ready, the month the piece in " +
+          "wear falls due, never the day, and only once that month may be booked. Null when none applies.",
+      }),
+    invoice: z
+      .union([
         z
           .object({
-            kind: z.literal("invoice_ready"),
             visit_id: z.uuid(),
             date: z.iso.date().openapi({ description: "India's date of the visit." }),
             type: z.union([z.enum(VISIT_TYPES), z.null()]),
@@ -145,10 +166,8 @@ export const MeSchema = z
       ])
       .openapi({
         description:
-          "Board B1's one contextual prompt, the first that applies, in the owner's order: no address given while " +
-          "something is booked; the next service due and not booked; the month the piece in wear falls due, never " +
-          "the day (ADR 0059); an invoice issued in the last fortnight, which ops may lengthen or shorten. Null " +
-          "when none applies.",
+          "An invoice issued in the last fortnight, which ops may lengthen or shorten, ready to open: a line beneath " +
+          "the prompt, or the only one. Null when none is.",
       }),
     booking: z
       .object({
@@ -169,19 +188,31 @@ export const MeSchema = z
           )
           .openapi({
             description:
-              "Every service of those kinds offered and priced now, a kind at a time, in the console's order.",
+              "Every service of those kinds offered and priced now, a kind at a time, in the console's order. A " +
+              "first fit's are the hair systems ops offer; with none, a first fit cannot be booked yet.",
           }),
         next: z
           .union([
             z
               .object({
                 type: z.enum(["first_fit", "service", "replacement"]),
-                tier: z.string().openapi({
+                tier: z
+                  .string()
+                  .nullable()
+                  .openapi({
+                    description:
+                      "The service it is offered as: the one the client's last visit of its kind was, while that is " +
+                      "offered, else its kind's first in the console's order (ADR 0085). Null while its kind offers " +
+                      "none, as a first fit does before ops offer a hair system: it cannot be booked yet.",
+                  }),
+                due_on: z.iso.date().openapi({
                   description:
-                    "The service it is offered as: the one the client's last visit of its kind was, while that is " +
-                    "offered, else its kind's first in the console's order (ADR 0085).",
+                    "India's day it fell or falls due: a service's from the last visit and the cadence, a " +
+                    "replacement's the piece's own, a first fit's from the consultation and the lead time.",
                 }),
-                date: z.iso.date().openapi({ description: "India's day it is offered on." }),
+                date: z.iso.date().openapi({
+                  description: "India's day it is offered on: the day it falls due, or tomorrow once that has passed.",
+                }),
                 window: z.union([z.enum(BOOKING_WINDOWS), z.null()]),
               })
               .strict(),
@@ -192,7 +223,7 @@ export const MeSchema = z
               "What the app offers next, with nothing booked, for the booking sheet to open with: the first fit " +
               "once the consultation is done, from the lead time and in the window the site's request asked for; " +
               "or the next service on its due day, in the last visit's window, or the replacement where the piece " +
-              "falls due first (ADR 0086).",
+              "falls due first, on the earlier of its own due day and the service's (ADR 0086).",
           }),
       })
       .strict(),
@@ -272,7 +303,7 @@ export function registerClientMe(app: App): void {
       liveContact(db, personId),
       nextVisit(db, personId, now),
       bookingUnderWay(db, personId),
-      creditBalance(db, personId, now),
+      spendableCredits(db, personId, now),
       isFitted(db, personId),
       formBookingOf(c, personId),
       bookableTypes(db, personId),
@@ -293,7 +324,7 @@ export function registerClientMe(app: App): void {
       minutes: service.minutes,
       price: service.price,
     }));
-    const prompt = await homePrompt(db, personId, home.prompt, { booked, offer }, now, home.days);
+    const { prompt, invoice } = await homePrompts(db, personId, home.prompt, { booked, offer }, now, home.days);
 
     return c.json(
       {
@@ -306,6 +337,7 @@ export function registerClientMe(app: App): void {
         being_booked: underWay,
         credits: credits.visits > 0 ? { visits: credits.visits, earliest_expiry: credits.earliestExpiry } : null,
         prompt,
+        invoice,
         booking: { self_serve: c.var.config.settings.selfServeBooking, types, services: offered, next: offer },
         referral_reward: home.referralReward,
       },

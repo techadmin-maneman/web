@@ -11,8 +11,9 @@
 // they pay (src/policy/tasks.ts).
 //
 // Each task leads to where it is done: the client's page, and the row in the
-// section that decides it. Each group's count is the whole queue's, and a group
-// longer than the board lists says so.
+// section that decides it. A consultation asked for, a first fit to book and a
+// replacement due are booked from the row itself (BookFromTask.tsx). Each group's
+// count is the whole queue's, and a group longer than the board lists says so.
 //
 // The board writes an owner in ops against every task, in its own column. Ops
 // take a task, give it to another member of staff or hand it back, and close a
@@ -24,14 +25,17 @@ import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useRef, useState } from "react";
-import { api, type Task, type TaskGroup, type Tasks } from "../api.ts";
-import { whoami } from "../components/Account.tsx";
+import type { Task, TaskGroup, Tasks } from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { dispatch, referrals, tasks } from "../content.ts";
+import { taskNeed, useAccess, whoami } from "../lib/access.ts";
 import { daysUntil } from "../lib/due.ts";
+import { readTasks } from "../lib/waiting.ts";
 import { rowPath } from "../lib/target.ts";
 import type { ClientTab } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
+import { BookFromTask } from "./BookFromTask.tsx";
+import { DECIDED_IN } from "./decided.ts";
 import { TaskActions } from "./TaskActions.tsx";
 import styles from "./tasks.module.css";
 
@@ -41,22 +45,6 @@ const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 /** The fraud rules, as board C1 letters them: a held grant is the same grant on both boards. */
 const SIGNALS: Readonly<Record<string, string>> = referrals.queue.signals;
-
-/**
- * Where each group's task is decided: the section, and the kind of row the
- * task's id names there. A group missing here is done outside the console
- * (in FSM or Books), and reaches only the client's page.
- */
-const DECIDED_IN: Partial<Record<Group, { readonly page: string; readonly row: string | null }>> = {
-  // The dispatch board draws a week, not a list, so the call is recorded, and the job moved, from its own block.
-  untold_move: { page: "/dispatch", row: null },
-  leave_conflict: { page: "/dispatch", row: null },
-  referral_review: { page: "/referrals", row: "held" },
-  no_show_decision: { page: "/no-shows", row: "case" },
-  number_change: { page: "/number-changes", row: "change" },
-  erasure_request: { page: "/deletion-requests", row: "request" },
-  grievance: { page: "/grievances", row: "grievance" },
-};
 
 /** The tab of the client's page each group is about; the page opens on Pieces otherwise. */
 const CLIENT_TAB: Partial<Record<Group, ClientTab>> = {
@@ -187,10 +175,16 @@ function slaText(days: number): string {
   return tasks.sla.left(days);
 }
 
-/** What the row's actions need beyond the task: who is signed in, who a task may be given to, and what changed. */
+/**
+ * What the row's actions need beyond the task: who is signed in, who a task may be given to, what their access lets
+ * them do with it, and what changed.
+ */
 interface Acting {
   readonly me: string | null;
   readonly staff: readonly string[];
+  /** Whether they may take it, give it or hand it back: Act in the department that decides its group. */
+  readonly mayOwn: boolean;
+  /** Whether they may close it without a follow-up: a group that allows it, and access that reaches it. */
   readonly closable: boolean;
   readonly owner: string | null;
   readonly onOwner: (owner: string | null) => void;
@@ -226,6 +220,7 @@ function Row({ group, task, now, acting }: { group: Group; task: Task; now: Date
             </OpsLink>
           </span>
         )}
+        <BookFromTask group={group} task={task} subject={subject} onBooked={acting.onClosed} />
         <TaskActions group={group} task={task} subject={subject} {...acting} />
       </div>
       <span className={styles.owner}>
@@ -258,14 +253,15 @@ function sinceRead(board: Tasks, closed: readonly string[], now: Date): Tasks {
 }
 
 function Queue() {
-  const [loaded, retry] = useLoad(api.tasks);
+  const [loaded, retry] = useLoad(readTasks);
   const [signedIn] = useLoad(whoami);
+  const access = useAccess();
   const [owners, setOwners] = useState<ReadonlyMap<string, string | null>>(new Map());
   const [closed, setClosed] = useState<readonly string[]>([]);
   const heading = useRef<HTMLHeadingElement>(null);
 
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const now = new Date();
   const me = signedIn.state === "loaded" ? signedIn.value.signed_in_as : null;
@@ -276,7 +272,8 @@ function Queue() {
     return {
       me,
       staff,
-      closable: group.closable,
+      mayOwn: access.reaches(taskNeed(group.group, "act")),
+      closable: group.closable && access.mayCall("POST /api/tasks/{group}/{id}/close"),
       owner: changed === undefined ? task.owner : changed,
       onOwner: (owner) => {
         setOwners((was) => new Map(was).set(key, owner));

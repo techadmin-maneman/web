@@ -456,6 +456,8 @@ describe("POST /api/clients/find", () => {
   it("finds clients by any four or more digits of their number, typed any of the usual ways", async () => {
     expect(await found("98100")).toEqual(["Rohit Malhotra", "Vikram Sethi"]);
     expect(await found("+91 98200-00003")).toEqual(["Rohini Sethi"]);
+    expect(await found("098200 00003")).toEqual(["Rohini Sethi"]);
+    expect(await found("0091 98200 00003")).toEqual(["Rohini Sethi"]);
   });
 
   it("treats a percent sign or an underscore as itself, not as a wildcard", async () => {

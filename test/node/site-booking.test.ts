@@ -1,10 +1,19 @@
 // The booking form's helpers.
 
 import { describe, expect, it } from "vitest";
-import { addressToSend, emptyAddress, missingParts } from "../../site/src/lib/address.ts";
+import { stepOf } from "../../site/src/islands/invite/step.ts";
+import {
+  addressToSend,
+  emptyAddress,
+  missingParts,
+  partsToMark,
+  REQUIRED_API_FIELDS,
+} from "../../site/src/lib/address.ts";
+import { signInLink } from "../../site/src/lib/app-link.ts";
 import { attributionFrom } from "../../site/src/lib/attribution.ts";
-import { consultationCalendar } from "../../site/src/lib/calendar.ts";
+import { dayStrip, stripMonths } from "../../site/src/lib/dates.ts";
 import { keyPerRequest } from "../../site/src/lib/idempotency.ts";
+import { anyOpen, chosenSlot, dayOpen, isOpen, type OpenDays } from "../../site/src/lib/open-windows.ts";
 
 // FEO-21: a key that changed on every press protected nothing.
 describe("idempotency keys", () => {
@@ -42,27 +51,17 @@ describe("attribution", () => {
   });
 });
 
-// CLI-13, REQ-05: the calendar file follows the windows the booking offers (src/config/scheduling.ts).
-describe("the calendar file", () => {
-  const now = new Date("2026-09-22T06:00:00Z");
+// The confirmation opens the app with the number typed filled in.
+describe("the link into the client app", () => {
+  const APP = "https://app-staging.maneman.in";
 
-  it("covers the morning window, 09:00 to 12:00 in India, in UTC", () => {
-    const text = consultationCalendar("2026-09-24", "morning", "Mane Man consultation", now);
-    expect(text).toContain("DTSTART:20260924T033000Z\r\n");
-    expect(text).toContain("DTEND:20260924T063000Z\r\n");
-    expect(text).toContain("UID:consultation-2026-09-24-morning@maneman.in\r\n");
-    expect(text).toContain("DTSTAMP:20260922T060000Z\r\n");
-    expect(text).toContain("SUMMARY:Mane Man consultation\r\n");
-    expect(text.startsWith("BEGIN:VCALENDAR\r\n")).toBe(true);
+  it("puts the number typed after the #, as ten digits however it was typed", () => {
+    expect(signInLink(APP, "98100 00000")).toBe(`${APP}/#mobile=9810000000`);
+    expect(signInLink(APP, "+91 98100-00000")).toBe(`${APP}/#mobile=9810000000`);
   });
 
-  it("covers the afternoon, 12:00 to 16:00, and the evening, 16:00 to 20:00, in India", () => {
-    const afternoon = consultationCalendar("2026-09-24", "afternoon", "Mane Man consultation", now);
-    expect(afternoon).toContain("DTSTART:20260924T063000Z");
-    expect(afternoon).toContain("DTEND:20260924T103000Z");
-    const evening = consultationCalendar("2026-09-24", "evening", "Mane Man consultation", now);
-    expect(evening).toContain("DTSTART:20260924T103000Z");
-    expect(evening).toContain("DTEND:20260924T143000Z");
+  it("opens the plain sign-in for anything that is not a mobile number", () => {
+    expect(signInLink(APP, "12345")).toBe(APP);
   });
 });
 
@@ -76,6 +75,15 @@ describe("the address a consultation is at", () => {
   it("counts a part filled with spaces as left out", () => {
     const typed = { ...emptyAddress("Gurgaon"), flat: " ", line1: "  ", locality: "Sector 65", city: " " };
     expect(missingParts(typed)).toEqual(["flat", "line1", "city"]);
+  });
+
+  // BK-28, UX-21: a refusal naming an address part was said by the button, with nothing marked.
+  it("marks the parts left out once the form is checked, and the parts the API refused by its names", () => {
+    const typed = { ...emptyAddress("Gurgaon"), flat: "Flat 402" };
+    expect(partsToMark(typed, false, [])).toEqual([]);
+    expect(partsToMark(typed, true, [])).toEqual(["line1", "locality"]);
+    expect(partsToMark(typed, false, ["address.flat", "mobile", "address.pincode"])).toEqual(["flat"]);
+    expect(REQUIRED_API_FIELDS).toEqual(["address.flat", "address.line1", "address.locality", "address.city"]);
   });
 
   it("is sent trimmed, in the pincode checked, with a part left blank as none", () => {
@@ -97,6 +105,105 @@ describe("the address a consultation is at", () => {
       city: "Gurgaon",
       pincode: "122018",
       access_notes: null,
+    });
+  });
+});
+
+// BK-60, UX-33: the strip read "Sat 3 … Fri 16" with no month, to the eye and to a screen reader.
+describe("the date strip", () => {
+  it("reads each day out in full, with its month", () => {
+    const [first] = dayStrip("2026-10-03", 14);
+    expect(first).toMatchObject({ weekday: "Sat", number: "3", month: "October", label: "Saturday 3 October" });
+  });
+
+  it("names the month above it, or both months where it crosses a month's end", () => {
+    expect(stripMonths(dayStrip("2026-10-03", 14))).toBe("October");
+    const crossing = dayStrip("2026-10-24", 14);
+    expect(crossing.map((day) => day.label).slice(7, 9)).toEqual(["Saturday 31 October", "Sunday 1 November"]);
+    expect(stripMonths(crossing)).toBe("October – November");
+  });
+});
+
+// BK-60, UX-38: Back left the page and lost the form; each step is now an entry in the history.
+describe("the page's steps in the browser's history", () => {
+  const answer = { pincode: "122018", served: true, area: "Sector 65", city: "Gurgaon" };
+
+  it("reads back the step and the pincode's answer the page wrote", () => {
+    expect(stepOf({ step: "form", answer })).toEqual({ step: "form", answer });
+    expect(stepOf({ step: "done", answer })).toEqual({ step: "done", answer });
+  });
+
+  it("reads anything else as the pincode field", () => {
+    for (const state of [null, undefined, "form", { step: "form" }, { step: "elsewhere", answer }, { answer }]) {
+      expect(stepOf(state)).toEqual({ step: "pincode", answer: null });
+    }
+  });
+});
+
+// BK-26: every day and window was drawn open, so a full one failed only after the whole form was filled in.
+describe("the days and windows open", () => {
+  const OPEN = { morning: true, afternoon: true, evening: true };
+  const SHUT = { morning: false, afternoon: false, evening: false };
+  const days: OpenDays = [
+    { date: "2026-10-03", windows: SHUT },
+    { date: "2026-10-04", windows: { morning: false, afternoon: true, evening: true } },
+    { date: "2026-10-05", windows: OPEN },
+  ];
+  const ALL = ["morning", "afternoon", "evening"] as const;
+  const ONE_VISIT = ["morning", "afternoon"] as const;
+
+  it("draws everything open until the answer comes, and nothing on a day it does not list", () => {
+    expect(isOpen(null, "2026-10-03", "morning")).toBe(true);
+    expect(anyOpen(null, ALL)).toBe(true);
+    expect(isOpen(days, "2026-10-04", "morning")).toBe(false);
+    expect(isOpen(days, "2026-10-04", "evening")).toBe(true);
+    expect(isOpen(days, "2026-10-20", "evening")).toBe(false);
+  });
+
+  it("closes a day with none of the plan's windows open", () => {
+    expect(dayOpen(days, "2026-10-03", ALL)).toBe(false);
+    expect(dayOpen(days, "2026-10-04", ALL)).toBe(true);
+    const eveningsOnly: OpenDays = [
+      { date: "2026-10-04", windows: { morning: false, afternoon: false, evening: true } },
+    ];
+    expect(dayOpen(eveningsOnly, "2026-10-04", ONE_VISIT)).toBe(false);
+    expect(anyOpen(eveningsOnly, ONE_VISIT)).toBe(false);
+  });
+
+  it("keeps the visitor's pick while it is open", () => {
+    const picked = { date: "2026-10-04", window: "evening" } as const;
+    expect(chosenSlot(days, ALL, picked)).toEqual(picked);
+    expect(chosenSlot(null, ALL, picked)).toEqual(picked);
+  });
+
+  it("moves a full pick to the day's first open window, else to the first day with one", () => {
+    expect(chosenSlot(days, ALL, { date: "2026-10-04", window: "morning" })).toEqual({
+      date: "2026-10-04",
+      window: "afternoon",
+    });
+    // The form's first pick, tomorrow morning, on a day booked full.
+    expect(chosenSlot(days, ALL, { date: "2026-10-03", window: "morning" })).toEqual({
+      date: "2026-10-04",
+      window: "afternoon",
+    });
+  });
+
+  it("moves an evening pick to a window one visit can start in, before the answer and after it", () => {
+    expect(chosenSlot(null, ONE_VISIT, { date: "2026-10-05", window: "evening" })).toEqual({
+      date: "2026-10-05",
+      window: "morning",
+    });
+    expect(chosenSlot(days, ONE_VISIT, { date: "2026-10-04", window: "evening" })).toEqual({
+      date: "2026-10-04",
+      window: "afternoon",
+    });
+  });
+
+  it("leaves the pick where nothing is open at all", () => {
+    const full: OpenDays = [{ date: "2026-10-03", windows: SHUT }];
+    expect(chosenSlot(full, ALL, { date: "2026-10-03", window: "morning" })).toEqual({
+      date: "2026-10-03",
+      window: "morning",
     });
   });
 });

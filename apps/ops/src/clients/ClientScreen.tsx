@@ -11,7 +11,7 @@
 
 import { ICONS } from "@maneman/brand/icons";
 import { Tabs, TAB } from "@maneman/ui/Tabs";
-import { useLoad, whenLoaded } from "@maneman/ui/useLoad";
+import { failedRequestId, useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { useCallback, useState } from "react";
@@ -105,6 +105,7 @@ function Tab({
   onAttached,
   address,
   onAddress,
+  onBooked,
   photos,
 }: {
   clientId: string;
@@ -116,9 +117,12 @@ function Tab({
   onAttached: (attached: Attached) => void;
   address: Address;
   onAddress: (address: NonNullable<Address>) => void;
+  onBooked: () => void;
   photos: ReturnType<typeof usePhotos>;
 }) {
-  if (tab === "visits") return <Visits clientId={clientId} record={record} address={address} onAddress={onAddress} />;
+  if (tab === "visits") {
+    return <Visits clientId={clientId} record={record} address={address} onAddress={onAddress} onBooked={onBooked} />;
+  }
   if (tab === "pieces") return <Pieces clientId={clientId} />;
   if (tab === "payments") {
     return (
@@ -160,7 +164,7 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
         ),
         failed: (
           <div className={styles.waiting}>
-            <PanelFailed onRetry={retry} />
+            <PanelFailed onRetry={retry} requestId={failedRequestId(loaded)} />
           </div>
         ),
         loaded: (record) => (
@@ -193,6 +197,7 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
                 onAddress={(address) => {
                   setGiven({ address });
                 }}
+                onBooked={retry}
                 photos={photos}
               />
             </div>

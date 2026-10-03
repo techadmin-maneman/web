@@ -14,6 +14,7 @@ import { useState } from "react";
 import { api, type Blackout } from "../api.ts";
 import { settings } from "../content.ts";
 import { addDays } from "../dispatch/job.ts";
+import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { refusalOf, type Failure } from "./refusal.ts";
 import styles from "./settings.module.css";
@@ -167,7 +168,14 @@ function AddForm({ today, onAdded }: { today: string; onAdded: (days: readonly B
   );
 }
 
-function PeriodRow({ period, onRemoved }: { period: Period; onRemoved: (days: readonly Blackout[]) => void }) {
+interface PeriodRowProps {
+  readonly period: Period;
+  /** Whether the person's access lets them offer the days again. */
+  readonly mayRemove: boolean;
+  readonly onRemoved: (days: readonly Blackout[]) => void;
+}
+
+function PeriodRow({ period, mayRemove, onRemoved }: PeriodRowProps) {
   const [sending, setSending] = useState(false);
   const [failure, setFailure] = useState<Failure | null>(null);
   const words = periodWords(period);
@@ -190,18 +198,20 @@ function PeriodRow({ period, onRemoved }: { period: Period; onRemoved: (days: re
       </p>
       <p className={styles.set}>{setLine(period)}</p>
       {period.booked > 0 && <p className={styles.checkWarning}>{copy.booked(period.booked)}</p>}
-      <div className={styles.actions}>
-        <Button
-          variant="outline"
-          size="small"
-          className={styles.quiet}
-          disabled={sending}
-          aria-label={copy.removeLabel(words)}
-          onClick={() => void remove()}
-        >
-          {sending ? copy.removing : copy.remove}
-        </Button>
-      </div>
+      {mayRemove && (
+        <div className={styles.actions}>
+          <Button
+            variant="outline"
+            size="small"
+            className={styles.quiet}
+            disabled={sending}
+            aria-label={copy.removeLabel(words)}
+            onClick={() => void remove()}
+          >
+            {sending ? copy.removing : copy.remove}
+          </Button>
+        </div>
+      )}
       {failure !== null && (
         <p className={styles.error} role="alert">
           {refusalOf(copy.errors, failure)}
@@ -215,9 +225,12 @@ export function Blackouts() {
   const [loaded, retry] = useLoad(api.blackouts);
   /** The days as the last change left them, so the list follows a change without reading it again. */
   const [changed, setChanged] = useState<readonly Blackout[] | null>(null);
+  const access = useAccess();
+  const mayAdd = access.mayCall("POST /api/blackouts");
+  const mayRemove = access.mayCall("POST /api/blackouts/remove");
 
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const periods = periodsOf(changed ?? loaded.value.blackouts);
 
   return (
@@ -228,13 +241,13 @@ export function Blackouts() {
         </h2>
       </div>
       <p className={styles.note}>{copy.note}</p>
-      <AddForm today={loaded.value.today} onAdded={setChanged} />
+      {mayAdd && <AddForm today={loaded.value.today} onAdded={setChanged} />}
       {periods.length === 0 ? (
         <p className={styles.note}>{copy.none}</p>
       ) : (
         <ul className={styles.rules}>
           {periods.map((period) => (
-            <PeriodRow key={period.from} period={period} onRemoved={setChanged} />
+            <PeriodRow key={period.from} period={period} mayRemove={mayRemove} onRemoved={setChanged} />
           ))}
         </ul>
       )}

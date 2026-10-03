@@ -81,6 +81,7 @@ function ChoiceList({
       <h2 className={styles.fieldTitle} id="client-choice-title">
         {oneVisit.choice}
       </h2>
+      {products.length === 0 && <p className={styles.note}>{oneVisit.noProducts}</p>}
       <div className={styles.choiceList}>
         {options.map((option) => (
           <button
@@ -134,7 +135,9 @@ export function Piece({ id }: { id: string }) {
   const [choice, setChoice] = useState<Choice>(null);
 
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} />;
+  if (loaded.state === "failed") {
+    return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} requestId={loaded.requestId} />;
+  }
 
   const job = loaded.value;
   const pieces = job.pieces ?? [];

@@ -4,7 +4,7 @@
 // CURRENT_NOTICE at it. test/worker/notices.test.ts fails if a published text
 // changes.
 
-import type { ConsentPurpose } from "../policy/consents.ts";
+import type { ConsentPurpose, ConsentSource } from "../policy/consents.ts";
 
 /** Phase 1's agreements, given on the public site, and Phase 2's consents, switched in the client app. */
 export type NoticePurpose = "contact" | "tryon_photo" | "result_delivery" | ConsentPurpose;
@@ -46,6 +46,19 @@ const BOOKING_REFERRAL_CARDS = [
   NAMING_LINE,
   "You can switch it off in Profile.",
 ];
+
+/** The same lines, with the photographs for the client's record said to be taken for their visit record. */
+const BOOKING_BOTH_V2 = [
+  "By booking this visit, you also agree to photographs taken for your visit record and used on referral cards.",
+  ...BOOKING_BOTH.slice(1),
+];
+const BOOKING_OWN_RECORD_V2 = [
+  "By booking this visit, you also agree to photographs taken for your visit record.",
+  "You can switch it off in Profile.",
+];
+
+/** The booking form's line on /book and on an invite's page. */
+const CONSULTATION_LINE = "You may contact me on WhatsApp about this consultation.";
 
 export const NOTICES: readonly Notice[] = [
   {
@@ -139,6 +152,11 @@ export const NOTICES: readonly Notice[] = [
     text: ["Photographs for your own record"],
   },
   {
+    version: "photos-own-record-v2",
+    purpose: "photos_own_record",
+    text: ["Photographs taken for your visit record"],
+  },
+  {
     // With the four lines the design shows before a client turns their card on (Client App, F3).
     version: "photos-referral-cards-v1",
     purpose: "photos_referral_cards",
@@ -172,6 +190,9 @@ export const NOTICES: readonly Notice[] = [
     purpose: "photos_referral_cards",
     text: BOOKING_REFERRAL_CARDS,
   },
+  { version: "photos-own-record-booking-v2", purpose: "photos_own_record", text: BOOKING_BOTH_V2 },
+  { version: "photos-referral-cards-booking-v2", purpose: "photos_referral_cards", text: BOOKING_BOTH_V2 },
+  { version: "photos-own-record-booking-alone-v2", purpose: "photos_own_record", text: BOOKING_OWN_RECORD_V2 },
   {
     version: "photos-marketing-v1",
     purpose: "photos_marketing",
@@ -183,6 +204,12 @@ export const NOTICES: readonly Notice[] = [
     text: ["WhatsApp about your visits"],
   },
   {
+    // The booking sheet's reminder box.
+    version: "whatsapp-visits-booking-v1",
+    purpose: "whatsapp_visits",
+    text: ["Remind me on WhatsApp the day before"],
+  },
+  {
     // As the waitlist asks it (design/phase2/Referral and Waitlist).
     version: "whatsapp-launches-v1",
     purpose: "whatsapp_launches",
@@ -192,7 +219,13 @@ export const NOTICES: readonly Notice[] = [
   {
     version: "referral-consultation-v1",
     purpose: "whatsapp_visits",
-    text: ["You may contact me on WhatsApp about this consultation."],
+    text: [CONSULTATION_LINE],
+  },
+  {
+    // The same line on the site's /book. Older /book rows name referral-consultation-v1; their source tells them apart.
+    version: "site-consultation-v1",
+    purpose: "whatsapp_visits",
+    text: [CONSULTATION_LINE],
   },
   {
     version: "waitlist-v1",
@@ -204,6 +237,20 @@ export const NOTICES: readonly Notice[] = [
 /** The lines the referral landing shows, by what they are given for. */
 export const LANDING_NOTICES = { consultation: "referral-consultation-v1", waitlist: "waitlist-v1" } as const;
 
+/** The booking form's agreement, by the page it is given on: the same line, named for where it was given. */
+export const CONSULTATION_NOTICES = {
+  site_booking: "site-consultation-v1",
+  referral_landing: LANDING_NOTICES.consultation,
+} as const;
+
+/**
+ * The line beside an invite that tells the friend their referrer hears of their fit, by the page that shows it: the
+ * invite's own page, or /book with the invite this browser remembers. An attribution records the one the friend saw,
+ * so new words take a new version (test/node/site-referral-reward.test.ts holds each version's words).
+ */
+export const TOLD_NOTICES = { landing: "invite-told-landing-v1", book: "invite-told-book-v1" } as const;
+export type ToldNotice = (typeof TOLD_NOTICES)[keyof typeof TOLD_NOTICES];
+
 /**
  * The version shown today for each purpose. The try-on's two are the only ones it records: every earlier version
  * promised the result on screen, which the site no longer shows (ADR 0104).
@@ -212,12 +259,21 @@ export const CURRENT_NOTICE: Readonly<Record<NoticePurpose, string>> = {
   contact: "booking-v1",
   tryon_photo: "photo-v3",
   result_delivery: "gate-v3",
-  photos_own_record: "photos-own-record-v1",
+  photos_own_record: "photos-own-record-v2",
   photos_referral_cards: "photos-referral-cards-v2",
   photos_marketing: "photos-marketing-v1",
   whatsapp_visits: "whatsapp-visits-v1",
   whatsapp_launches: "whatsapp-launches-v1",
 };
+
+/** The booking sheet's reminder box, a yes to WhatsApp about visits in words of its own. */
+export const REMINDER_NOTICE = "whatsapp-visits-booking-v1";
+
+/** The notice a switch in the app is recorded under: the words of the screen it was made on. */
+export function switchNotice(purpose: ConsentPurpose, source: ConsentSource | null): string {
+  if (source === "app_booking" && purpose === "whatsapp_visits") return REMINDER_NOTICE;
+  return CURRENT_NOTICE[purpose];
+}
 
 /**
  * The notices a consent given by booking is recorded under (ADR 0080), by whether the pay step asked for both
@@ -225,11 +281,11 @@ export const CURRENT_NOTICE: Readonly<Record<NoticePurpose, string>> = {
  */
 export const BOOKING_NOTICES = {
   both: {
-    photos_own_record: "photos-own-record-booking-v1",
-    photos_referral_cards: "photos-referral-cards-booking-v1",
+    photos_own_record: "photos-own-record-booking-v2",
+    photos_referral_cards: "photos-referral-cards-booking-v2",
   },
   alone: {
-    photos_own_record: "photos-own-record-booking-alone-v1",
+    photos_own_record: "photos-own-record-booking-alone-v2",
     photos_referral_cards: "photos-referral-cards-booking-alone-v1",
   },
 } as const;

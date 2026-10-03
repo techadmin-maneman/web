@@ -1,5 +1,5 @@
 // Referral codes and who came through them (docs/decisions/0048-referrals.md). A code is the client's
-// initials and four random characters, never from their mobile number, with no characters that look alike.
+// initials and six random characters, never from their mobile number, with no characters that look alike.
 // A person is attributed once, to the first invite they used, and only while they are new: not the
 // referrer, and not already fitted. An invite held for them on a waitlist lapses 12 months after their area
 // launched; from then it carries no credits, and says so when they book.
@@ -7,14 +7,15 @@
 // Ops may attach an invite to a client who booked away from its page, under the same rules and through the
 // same function; who attached it and why are kept with it (docs/decisions/0089-an-invite-is-not-lost.md).
 
-import { NAMING_NOTICES } from "../config/notices.ts";
+import { NAMING_NOTICES, type ToldNotice } from "../config/notices.ts";
 import { inviteLapsed } from "../policy/invites.ts";
 import { firstNameOf } from "../lib/names.ts";
 import { auditStatementIfWritten, type AuditEntry } from "./audit.ts";
 
 /** No 0, O, 1 or I: a code is read aloud and typed. */
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-const RANDOM_LENGTH = 4;
+/** About a billion codes for each pair of initials: too many to guess. */
+const RANDOM_LENGTH = 6;
 
 /** What the landing's link, the site's form and the console accept as a code, in either case. */
 export const CODE_PATTERN = /^[A-Za-z0-9]{4,12}$/;
@@ -138,9 +139,10 @@ export type AttributionOutcome =
 /**
  * Attributes a person to an invite, if they are new to referrals: not the referrer, not already attributed,
  * and, on their own link, not already fitted. Says whether they now carry the invite's credits, and whether the
- * invite they were held under has lapsed, which it is marked as, so it promises nothing more. An invite ops attach
- * carries who attached it and why, and its audit entry, written only if the attribution is; one ops attach after the
- * friend's first fit is held for their review (src/policy/fraud-holds.ts, LATE_ATTACH_RULE).
+ * invite they were held under has lapsed, which it is marked as, so it promises nothing more. It records the line
+ * that told the friend their referrer hears of the fit, where the page showed one. An invite ops attach carries who
+ * attached it and why, and its audit entry, written only if the attribution is; one ops attach after the friend's
+ * first fit is held for their review (src/policy/fraud-holds.ts, LATE_ATTACH_RULE).
  */
 export async function attribute(
   db: D1Database,
@@ -149,6 +151,7 @@ export async function attribute(
     personId: string;
     via: Via;
     pincode: string | null;
+    toldNotice: ToldNotice | null;
     now: Date;
     attachedBy?: AttachedBy;
   },
@@ -171,8 +174,8 @@ export async function attribute(
     db
       .prepare(
         `INSERT INTO referral_attributions (id, code, referred_person_id, first_touch_at, via, pincode, attached_by,
-           attach_reason, grant_state, fraud_signals, first_fit_appointment_id, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?4, ?4)
+           attach_reason, grant_state, fraud_signals, first_fit_appointment_id, told_notice, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?4, ?4)
          ON CONFLICT (referred_person_id) DO NOTHING`,
       )
       .bind(
@@ -187,6 +190,7 @@ export async function attribute(
         heldForReview === null ? "pending" : "held",
         heldForReview === null ? null : JSON.stringify([heldForReview.reason]),
         heldForReview?.firstFitId ?? null,
+        input.toldNotice,
       ),
     ...(attachedBy === undefined
       ? []
@@ -220,6 +224,17 @@ export async function attribute(
   return { outcome, code: kept.code, credits: kept.grant_state === "pending", lapsed: false };
 }
 
+/** Whether person ?1 has had a visit, or booked or asked for one: in SQL, to sit in a query's SELECT. */
+const ASKED_FOR_A_VISIT = `EXISTS (SELECT 1 FROM appointments WHERE person_id = ?1 AND deleted_at IS NULL)
+  OR EXISTS (SELECT 1 FROM slot_holds WHERE person_id = ?1)
+  OR EXISTS (SELECT 1 FROM consultation_requests WHERE person_id = ?1)`;
+
+/** Whether the person has had a visit, or booked or asked for one: a client already in the funnel. */
+export async function hasAskedForAVisit(db: D1Database, personId: string): Promise<boolean> {
+  const row = await db.prepare(`SELECT ${ASKED_FOR_A_VISIT} AS asked`).bind(personId).first<{ asked: number }>();
+  return row?.asked === 1;
+}
+
 /**
  * How a client ops attach an invite to reached us, as the landing would have recorded it: through the waitlist while
  * they wait on a list for an area we still do not serve, and have no visit booked or asked for; otherwise a
@@ -231,9 +246,7 @@ export async function howTheyCame(db: D1Database, personId: string): Promise<{ v
   const row = await db
     .prepare(
       `SELECT
-         EXISTS (SELECT 1 FROM appointments WHERE person_id = ?1 AND deleted_at IS NULL)
-           OR EXISTS (SELECT 1 FROM slot_holds WHERE person_id = ?1)
-           OR EXISTS (SELECT 1 FROM consultation_requests WHERE person_id = ?1) AS asked,
+         ${ASKED_FOR_A_VISIT} AS asked,
          (SELECT w.pincode FROM waitlist_entries w LEFT JOIN serviceable_pincodes pin ON pin.pincode = w.pincode
           WHERE w.person_id = ?1 AND COALESCE(pin.served, 0) = 0
           ORDER BY w.created_at DESC LIMIT 1) AS waiting_in,

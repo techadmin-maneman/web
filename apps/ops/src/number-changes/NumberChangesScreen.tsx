@@ -18,6 +18,7 @@ import { api, type NumberChange } from "../api.ts";
 import { DecisionQueue } from "../components/DecisionQueue.tsx";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { numberChanges } from "../content.ts";
+import { useAccess } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";
 import { phoneWords } from "../lib/phone.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
@@ -34,7 +35,15 @@ type Deciding =
 
 const copy = numberChanges.queue;
 
-function Change({ change, now, onDecided }: { change: NumberChange; now: Date; onDecided: () => void }) {
+interface ChangeProps {
+  readonly change: NumberChange;
+  readonly now: Date;
+  /** Whether the person's access lets them confirm or reject it. */
+  readonly mayDecide: boolean;
+  readonly onDecided: () => void;
+}
+
+function Change({ change, now, mayDecide, onDecided }: ChangeProps) {
   const [deciding, setDeciding] = useState<Deciding>({ step: "open" });
   const [reason, setReason] = useState("");
   const rejectButton = useRef<HTMLButtonElement>(null);
@@ -61,7 +70,7 @@ function Change({ change, now, onDecided }: { change: NumberChange; now: Date; o
       <p className={styles.when}>{copy.requested(longDate(change.requested_at))}</p>
       <p className={styles.move}>{copy.move(phoneWords(change.old_mobile), phoneWords(change.new_mobile))}</p>
       <p className={styles.proven}>{copy.proven}</p>
-      {asking ? (
+      {asking && (
         <div className={styles.reason}>
           <label className={styles.reasonLabel} htmlFor={`reason-${change.id}`}>
             {copy.reason.label}
@@ -106,7 +115,8 @@ function Change({ change, now, onDecided }: { change: NumberChange; now: Date; o
             </Button>
           </div>
         </div>
-      ) : (
+      )}
+      {!asking && mayDecide && (
         <div className={styles.decide}>
           <p className={styles.effect}>{copy.effect}</p>
           <div className={styles.actions}>
@@ -145,8 +155,9 @@ function Change({ change, now, onDecided }: { change: NumberChange; now: Date; o
 
 function Queue() {
   const [loaded, retry] = useLoad(api.numberChanges);
+  const mayDecide = useAccess().mayCall("POST /api/number-changes/{id}/decision");
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const now = new Date();
   return (
@@ -157,7 +168,7 @@ function Queue() {
       rowKind="change"
       empty={copy.empty}
     >
-      {(change, decided) => <Change change={change} now={now} onDecided={decided} />}
+      {(change, decided) => <Change change={change} now={now} mayDecide={mayDecide} onDecided={decided} />}
     </DecisionQueue>
   );
 }

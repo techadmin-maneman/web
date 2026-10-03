@@ -14,24 +14,21 @@ import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import type { Availability, BookingConsent, BookingWindow, Hold, MoveTerms, OfferedService, Price } from "../api.ts";
 import { booking, change, messages, profile, states, VISIT_TYPES, WINDOW_HOURS, WINDOW_NAMES } from "../content.ts";
-import { CHECK, CLOCK } from "../icons.ts";
+import { CLOCK } from "../icons.ts";
 import { priceFigures } from "../lib/money.ts";
 import { useSecondsLeft } from "../lib/useSecondsLeft.ts";
 import { firstName } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { AddressForm } from "../profile/AddressForm.tsx";
-import type { PayMethod } from "./checkout.ts";
 import { CodeBox } from "./CodeBox.tsx";
 import { consentLines } from "./consents.ts";
+import { isFull, offeredFullLine, windowNote, type Day } from "./days.ts";
 import styles from "./booking.module.css";
-
-type Day = Availability["days"][number];
 
 /** The id every step's heading carries, which names the sheet (BookingSheet.tsx). */
 export const TITLE_ID = "booking-title";
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
-const isFull = (day: Day) => day.windows.every((window) => window.with === null);
 
 /** Whole minutes and seconds: 9:42. */
 const minutesAndSeconds = (seconds: number) =>
@@ -81,15 +78,15 @@ function LastMinute({ left }: { left: number }) {
 
 /**
  * The late fee's line, the same on the pay step (boards C4 and C5) and on moving a visit (C7): the
- * ex-GST figure in the sentence, and the inclusive one muted after it once GST applies.
+ * amount charged in the sentence, and its GST split muted after it once GST applies.
  */
 export function LateFee({ fee, noticeHours }: { fee: Price; noticeHours: number }) {
-  const { exGst, inclusive } = priceFigures(fee);
+  const { amount, split } = priceFigures(fee);
   const copy = booking.lateFee;
   return (
     <>
-      {copy.costs(exGst, noticeHours)}
-      {inclusive !== null && <span className={styles.inclusive}>{copy.inclusive(inclusive)}</span>}
+      {copy.costs(amount, noticeHours)}
+      {split !== null && <span className={styles.inclusive}>{copy.split(split)}</span>}
       {copy.rest}
     </>
   );
@@ -140,9 +137,10 @@ export function ServiceStep(props: {
 }) {
   const copy = booking.service;
   const kinds = [...new Set(props.services.map((service) => service.type))];
+  const title = kinds.length === 1 && kinds[0] === "first_fit" ? copy.titleFirstFit : copy.title;
   return (
     <>
-      <Heading title={copy.title} step={booking.step(1, 3 + props.before)} />
+      <Heading title={title} step={booking.step(1, 3 + props.before)} />
       {kinds.map((kind) => (
         <div key={kind} className={styles.kind}>
           <h3 className={styles.label} id={`booking-kind-${kind}`}>
@@ -152,7 +150,7 @@ export function ServiceStep(props: {
             {props.services
               .filter((service) => service.type === kind)
               .map((service) => {
-                const { exGst, inclusive } = priceFigures(service.price);
+                const { amount, split } = priceFigures(service.price);
                 return (
                   <label key={service.tier} className={styles.window}>
                     <input
@@ -169,8 +167,8 @@ export function ServiceStep(props: {
                       <span className={styles.windowTime}>{booking.length(service.minutes)}</span>
                     </span>
                     <span className={styles.serviceMoney}>
-                      <span className={styles.windowName}>{service.price.amount === 0 ? copy.free : exGst}</span>
-                      {inclusive !== null && <span className={styles.windowTime}>{copy.incl(inclusive)}</span>}
+                      <span className={styles.windowName}>{service.price.amount === 0 ? copy.free : amount}</span>
+                      {split !== null && <span className={styles.windowTime}>{split}</span>}
                     </span>
                   </label>
                 );
@@ -191,22 +189,34 @@ export function ServiceStep(props: {
   );
 }
 
+/** Later days, up to the last a visit may be booked on: asking for them, and whether that failed. */
+interface LaterDays {
+  readonly busy: boolean;
+  readonly failed: boolean;
+  readonly onShow: () => void;
+}
+
 /**
- * Board C2: fourteen days, full ones shown but not chosen. The days are one group of native radio
- * buttons, drawn as the design's squares: one tab stop, and the arrow keys move between the days.
- * `before`: the steps the sheet took before the date.
+ * Board C2: fourteen days, full ones shown but not chosen, and later ones added beneath them on asking. The days are
+ * one group of native radio buttons, drawn as the design's squares: one tab stop, and the arrow keys move between the
+ * days. `before`: the steps the sheet took before the date. `offered`: the day the visit is offered on.
  */
 export function DateStep(props: {
   before: number;
-  days: Day[];
+  days: readonly Day[];
+  offered: string | null;
   chosen: string | null;
+  /** Null when no later day may be booked. */
+  later: LaterDays | null;
   onChoose: (date: string) => void;
   onNext: () => void;
 }) {
   const copy = booking.date;
+  const fullLine = offeredFullLine(props.days, props.offered, props.chosen);
   return (
     <>
       <Heading title={copy.title} step={stepOf(1, props.before)} />
+      {fullLine !== null && <p className={styles.why}>{fullLine}</p>}
       <div className={styles.strip} role="radiogroup" aria-labelledby={TITLE_ID}>
         {props.days.map((day) => {
           const full = isFull(day);
@@ -244,6 +254,23 @@ export function DateStep(props: {
           {copy.full}
         </span>
       </div>
+      {props.later !== null && (
+        <Button
+          variant="outline"
+          size="control"
+          className={styles.secondary}
+          disabled={props.later.busy}
+          busy={props.later.busy}
+          onClick={props.later.onShow}
+        >
+          {copy.later}
+        </Button>
+      )}
+      {props.later?.failed === true && (
+        <p className={styles.problem} role="alert">
+          {copy.laterFailed}
+        </p>
+      )}
       <Button
         variant="primary"
         size="action"
@@ -257,7 +284,10 @@ export function DateStep(props: {
   );
 }
 
-/** Board C3: the day's three windows, and whether the regular technician is free. */
+/**
+ * Board C3: the day's windows the visit can start in, and who would come: the regular technician by name, or another
+ * where the client has a regular one. A client who has none is told nothing of who.
+ */
 export function WindowStep(props: {
   before: number;
   day: Day;
@@ -272,36 +302,33 @@ export function WindowStep(props: {
   const regularName = props.regular === null ? null : firstName(props.regular.name);
   const chosen = props.day.windows.find((each) => each.window === props.chosen);
 
-  const noteFor = (who: Day["windows"][number]["with"]) => {
-    if (who === null) return copy.full;
-    if (who === "regular" && regularName !== null) return copy.regularFree(regularName);
-    return copy.another;
-  };
-
   return (
     <>
       <Heading title={copy.title} step={stepOf(2, props.before)} />
       <p className={styles.dayLine}>{weekdayDate(props.day.date)}</p>
       <div className={styles.windows} role="radiogroup" aria-labelledby={TITLE_ID}>
-        {props.day.windows.map(({ window, with: who }) => (
-          <label key={window} className={styles.window}>
-            <input
-              className={styles.radio}
-              type="radio"
-              name="booking-window"
-              checked={window === props.chosen}
-              disabled={who === null}
-              onChange={() => {
-                props.onChoose(window);
-              }}
-            />
-            <span>
-              <span className={styles.windowName}>{WINDOW_NAMES[window]}</span>
-              <span className={styles.windowTime}>{WINDOW_HOURS[window]}</span>
-            </span>
-            <span className={styles.windowNote}>{noteFor(who)}</span>
-          </label>
-        ))}
+        {props.day.windows.map(({ window, with: who }) => {
+          const note = windowNote(who, regularName);
+          return (
+            <label key={window} className={styles.window}>
+              <input
+                className={styles.radio}
+                type="radio"
+                name="booking-window"
+                checked={window === props.chosen}
+                disabled={who === null}
+                onChange={() => {
+                  props.onChoose(window);
+                }}
+              />
+              <span>
+                <span className={styles.windowName}>{WINDOW_NAMES[window]}</span>
+                <span className={styles.windowTime}>{WINDOW_HOURS[window]}</span>
+              </span>
+              {note !== null && <span className={styles.windowNote}>{note}</span>}
+            </label>
+          );
+        })}
       </div>
       {props.regular !== null && regularName !== null && chosen !== undefined && (
         <div className={styles.regular}>
@@ -344,11 +371,10 @@ function payLabel(hold: Hold, moving: MoveTerms | undefined): string {
   return moving === undefined ? booking.pay.confirm : change.confirmMove;
 }
 
-/** Board C4, and C5's first fit: the held visit, what it costs, and how to pay. */
 /** The pay step's figure: nothing for a visit a credit covers, "Free" for one that costs nothing, else its price. */
 function amountLine(hold: Hold, covered: boolean, free: boolean): string {
   if (covered) return booking.pay.credit.zero;
-  return free ? booking.pay.free : rupees(hold.price.amount_ex_gst);
+  return free ? booking.pay.free : rupees(hold.price.amount);
 }
 
 /**
@@ -381,19 +407,35 @@ function ChangeTerms({ hold, moving, covered }: { hold: Hold; moving: MoveTerms 
   );
 }
 
+/**
+ * What booking also agrees to, one tap away beneath Pay: the notice the consent is recorded on, word for word.
+ * Nothing when the client has decided both purposes.
+ */
+function AgreedByBooking({ consents }: { consents: readonly BookingConsent[] }) {
+  const lines = consentLines(consents);
+  if (lines.length === 0) return null;
+  return (
+    <details className={styles.consents}>
+      <summary className={styles.consentsOpen}>{booking.pay.consents.open}</summary>
+      {lines.map((line) => (
+        <p key={line}>{line}</p>
+      ))}
+    </details>
+  );
+}
+
+/** Board C4, and C5's first fit: the held visit, what it costs, and Pay. */
 export function PayStep(props: {
   hold: Hold;
   moving?: MoveTerms | undefined;
-  method: PayMethod;
   busy: boolean;
   problem: string | null;
   /** Whether to ask to remind the client the day before: not when they have already switched it on. */
   askToRemind: boolean;
-  /** The photograph purposes booking also agrees to, whose lines are shown above the button (ADR 0080). */
+  /** The photograph purposes booking also agrees to. */
   consents: readonly BookingConsent[];
   remind: boolean;
   onRemind: (remind: boolean) => void;
-  onMethod: (method: PayMethod) => void;
   onPay: () => void;
   /** The hold priced again, once a discount code is applied or removed. */
   onHold: (hold: Hold) => void;
@@ -410,6 +452,7 @@ export function PayStep(props: {
   // A code is for a visit sold, never a move, nor one a credit pays for, nor a consultation, which costs nothing.
   const takesACode = moving === undefined && !covered && hold.type !== "consultation";
   const listPrice = hold.discount?.list_price ?? null;
+  const { split } = priceFigures(hold.price);
   // A code being applied or taken off may change the price: Pay waits for it, so the order is for the price shown.
   const [codeSending, setCodeSending] = useState(false);
   return (
@@ -425,10 +468,10 @@ export function PayStep(props: {
             {isFirstFit && <p className={styles.itemWhen}>{booking.length(hold.service.minutes)}</p>}
           </div>
           <div className={styles.money}>
-            {covered && <p className={styles.was}>{rupees(hold.price.amount_ex_gst)}</p>}
-            {listPrice !== null && <p className={styles.was}>{rupees(listPrice.amount_ex_gst)}</p>}
+            {covered && <p className={styles.was}>{rupees(hold.price.amount)}</p>}
+            {listPrice !== null && <p className={styles.was}>{rupees(listPrice.amount)}</p>}
             <p className={styles.amount}>{amountLine(hold, covered, free)}</p>
-            {!free && <p className={styles.incl}>{copy.incl(rupees(hold.price.amount))}</p>}
+            {!free && split !== null && <p className={styles.incl}>{split}</p>}
           </div>
         </div>
         {hold.credit !== null && (
@@ -437,34 +480,10 @@ export function PayStep(props: {
             <span>{copy.credit.remaining(hold.credit.remaining)}</span>
           </p>
         )}
-        {isFirstFit && <p className={styles.line}>{copy.guarantee(technician)}</p>}
+        {isFirstFit && <p className={styles.line}>{copy.guarantee}</p>}
         <ChangeTerms hold={hold} moving={inPlace ? moving : undefined} covered={covered} />
       </div>
       {takesACode && <CodeBox hold={hold} busy={props.busy} onHold={props.onHold} onSending={setCodeSending} />}
-      {!free && (
-        <>
-          <h3 className={styles.label}>{copy.with}</h3>
-          <div className={styles.methods} role="radiogroup" aria-label={copy.with}>
-            {(["upi", "card"] as const).map((method) => (
-              <label key={method} className={styles.method}>
-                <input
-                  className={styles.radio}
-                  type="radio"
-                  name="booking-method"
-                  checked={method === props.method}
-                  onChange={() => {
-                    props.onMethod(method);
-                  }}
-                />
-                <span>{copy[method]}</span>
-                <span className={styles.tick} aria-hidden="true">
-                  {method === props.method && <Icon d={CHECK} size={13} />}
-                </span>
-              </label>
-            ))}
-          </div>
-        </>
-      )}
       {props.askToRemind && (
         <label className={styles.remind}>
           <input
@@ -476,14 +495,6 @@ export function PayStep(props: {
           />
           <span>{copy.remind}</span>
         </label>
-      )}
-      {props.consents.length > 0 && (
-        // What the tap below also agrees to, read before it, whole: it is the notice the consent is given on.
-        <div className={styles.consents}>
-          {consentLines(props.consents).map((line) => (
-            <p key={line}>{line}</p>
-          ))}
-        </div>
       )}
       {props.problem !== null && (
         <p className={styles.problem} role="alert">
@@ -504,13 +515,14 @@ export function PayStep(props: {
       {covered && hold.late_change_charge !== "nothing" && (
         <p className={styles.creditNote}>{copy.credit.note(hold.change_notice_hours)}</p>
       )}
+      <AgreedByBooking consents={props.consents} />
     </>
   );
 }
 
-/** Board C6: the payment failed, and the hold's time left. */
-export function FailedStep(props: { hold: Hold; busy: boolean; onRetry: () => void; onAnother: () => void }) {
-  const { hold, busy, onRetry, onAnother } = props;
+/** Board C6: the payment failed, and the hold's time left. Checkout offers every way to pay again. */
+export function FailedStep(props: { hold: Hold; busy: boolean; onRetry: () => void }) {
+  const { hold, busy, onRetry } = props;
   const copy = booking.failed;
   const left = useHoldLeft(hold);
   return (
@@ -527,21 +539,9 @@ export function FailedStep(props: { hold: Hold; busy: boolean; onRetry: () => vo
         <p className={styles.outcomeLine}>{copy.held(minutesAndSeconds(left))}</p>
         <LastMinute left={left} />
       </div>
-      <div className={styles.pair}>
-        <Button
-          variant="primary"
-          size="control"
-          className={styles.primary}
-          disabled={busy}
-          busy={busy}
-          onClick={onRetry}
-        >
-          {copy.retry}
-        </Button>
-        <Button variant="outline" size="control" className={styles.secondary} disabled={busy} onClick={onAnother}>
-          {copy.another}
-        </Button>
-      </div>
+      <Button variant="primary" size="action" className={styles.primary} disabled={busy} busy={busy} onClick={onRetry}>
+        {copy.retry}
+      </Button>
     </div>
   );
 }

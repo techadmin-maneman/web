@@ -45,7 +45,7 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "Each address a client has given, in the app or to ops on the phone, who then saved it for them (`given_to_staff`). The current one has `replaced_at` empty; earlier ones stay for the visits booked to them (ADR 0042, ADR 0054, ADR 0092).",
   alerts: "One row per alert while it is open, kept once it is resolved; raising it again counts it (ADR 0067).",
   appointments:
-    "The mirror of FSM's appointments: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice (ADR 0032).",
+    "Each visit, mirrored from FSM or booked without it: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice. `fsm_id` is FSM's ID for a visit FSM holds, otherwise the row's own (ADR 0032, ADR 0110).",
   audit_log:
     "Every ops action that reads or changes a client's data, and who took it. An entry is never changed (ADR 0031).",
   checkins:
@@ -53,7 +53,7 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   checklist_items:
     "Each kind of visit's checklist as ops set it, an item they took off kept as retired; a kind with no rows takes the committed list (ADR 0087).",
   cities:
-    "The cities Phase 1's booking form offered. The leads it left name one, a booking's lead names its pincode's, and the dispatch board filters by them.",
+    "The cities Phase 1's booking form offered. The leads it left name one, a booking's lead names its pincode's, the dispatch board filters by them, and a zone groups them for staff access (ADR 0109).",
   consents:
     "What each person agreed to, under which notice's version, and where (ADR 0094). Rows are only ever added (ADR 0042, ADR 0049).",
   consultation_requests:
@@ -68,6 +68,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   credit_ledger:
     "Service-visit credits, entry by entry, each drawing on the grant it spends; a balance is summed, never kept (ADR 0033).",
   cron_jobs: "Each job of the five-minute cron, and how many runs in a row it has failed (ADR 0067).",
+  cron_runs:
+    "One row: when the five-minute cron's latest run started and its last finished run ended, so a run cut short is told by the next.",
   deletion_requests: "A client's request to be erased, waiting for ops, and what ops decided (ADR 0042, ADR 0078).",
   discount_code_uses:
     "Each time a discount code was entered on a booking, its hold or its visit: by whom, and what it took off before GST once the price was known. Never deleted: one taken off is marked removed (ADR 0108).",
@@ -91,6 +93,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "Each client's last first fit, service or replacement done, and last consultation done, kept by triggers from the view `last_visits_now` as their visits change; the Tasks board's At-risk client and First fit to book read it (ADR 0086).",
   leads:
     "Each booking, waitlist sign-up and try-on claim as the CRM receives it, and whether it has reached the CRM and FSM (ADR 0011, ADR 0012).",
+  maintenance:
+    'One row while D1 is being restored: the cron and the queue consumers stand still until it is deleted (runbook, "Restoring D1").',
   no_show_cases:
     "The evidence a no-show is ruled on, the ruling, and what a charge cost the client (ADR 0065, ADR 0072, ADR 0096).",
   no_show_disputes:
@@ -101,6 +105,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "The business inputs ops set in the console, a row each; a row that is not there means the committed default (ADR 0061).",
   ops_settings_snapshot:
     "One row holding every `ops_settings` value, kept by that table's triggers: the one row a request reads (ADR 0088).",
+  number_codes:
+    "Each WhatsApp code sent to prove a number typed into the site, with the number and the code only as hashes (ADR 0081, ADR 0104).",
   otp_challenges: "Each one-time code sent, as a hash, with its sends and attempts (ADR 0030, ADR 0052).",
   partial_reasons:
     "The reasons a job may be left partly done, as ops set them, one they took off kept as retired; none means the committed list (ADR 0087).",
@@ -109,11 +115,11 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "The Razorpay payment link a consultation and fit in one visit is paid by once the client is fitted: one a visit, the product and its price, when Razorpay made and texted it, and the payment that paid it (ADR 0105).",
   payments: "The mirror of Razorpay's payments, and where each stands in Books (ADR 0044).",
   people:
-    "One row per person, keyed by mobile number. D1 owns the identity; the CRM's ID is only a reference (ADR 0011).",
+    "One row per person, keyed by mobile number. D1 owns the identity; the CRM's and Books' IDs are only references (ADR 0011, ADR 0110).",
   photo_sets: "A visit's set of photographs, before or after (ADR 0028).",
   photos: "One photograph of a set, by its angle, and where it and its thumbnail are kept in R2 (ADR 0028, ADR 0093).",
   pieces:
-    "The mirror of FSM's assets: each piece fitted, its base and lot, the day it was fitted and the day it falls due, and a failure with its reason (ADR 0032).",
+    "Each piece fitted, its base and lot, the day it was fitted and the day it falls due, and a failure with its reason. `fsm_id` is FSM's ID for a piece mirrored from FSM, otherwise the row's own (ADR 0032, ADR 0110).",
   price_book:
     "Every price from its date, and the only source of prices; an old row stays for what was sold under it (ADR 0045, ADR 0061).",
   razorpay_events: "Each Razorpay webhook event, once, by its event ID (ADR 0044).",
@@ -124,13 +130,21 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   serviceable_pincodes:
     "Every NCR pincode, its area and city, and whether and since when we serve it (ADR 0048, ADR 0061).",
   services:
-    "What clients may book: each kind of visit's services, their names, lengths and order, when each is retired, and its item in FSM's catalogue; the price book prices each by its kind and tier (ADR 0085).",
+    "What clients may book: each kind of visit's services, their names, lengths and order, when each is retired, and its item in FSM's catalogue and in Books; the price book prices each by its kind and tier (ADR 0085, ADR 0110).",
   sessions:
     "The client app's and the technician app's sessions: whose, from which device, and when each ends or was revoked (ADR 0029, ADR 0052).",
   slot_claims:
     "What a hold or a visit takes of a technician's day, a row per half-slot and window, so no time is taken twice (ADR 0034, ADR 0069).",
-  slot_holds: "A slot held while a client pays, and what became of it (ADR 0045, ADR 0068).",
+  slot_holds:
+    "A slot held while a client pays, at Checkout or by a payment link ops sent, and what became of it (ADR 0045, ADR 0068).",
   slot_times: "Each change of the day's half-slot times ops set, from the day it applies; never changed (ADR 0102).",
+  staff:
+    "Each member of staff on the console's Staff list, by their Access e-mail, and whether they are let in (ADR 0109).",
+  staff_access_mode: "One row: whether the console enforces the Staff list yet, and who last switched it (ADR 0109).",
+  staff_grants:
+    "What each member of staff may do: a department, at a level, over a place, national, a zone or a city (ADR 0109).",
+  staff_service_tokens:
+    "The Access service tokens let in as every caller was before the Staff list, such as CI's (ADR 0109).",
   stock_balances:
     "What each place holds of each consumable, and when it last counted it: the sum of its rows in `stock_movements`, kept by triggers as each is written (ADR 0087).",
   stock_movements:
@@ -138,7 +152,7 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   stored_objects:
     "Each object client-photos and referral-cards hold, and its size, written as it is stored and deleted as it is, so the storage meter never counts one twice (ADR 0093).",
   storage_meter:
-    "What Phase 2's two buckets, client-photos and referral-cards, hold together: one row, the sum of `stored_objects` kept beside it, and the last mark of the share ops were told of (ADR 0093).",
+    "What Phase 2's two buckets, client-photos and referral-cards, hold together: one row, the sum of `stored_objects` kept beside it, and the last mark of the share ops were told of (ADR 0093); and the last mark of the database's own size they were told of.",
   sync_cursors: "Where each pass of the reconciliation with FSM has reached (ADR 0032).",
   task_closures:
     "A task on the Tasks board ops closed without doing its thing, a visit left partly done alone, with why, who and when, by the task's group and its row's id (ADR 0092).",
@@ -147,7 +161,7 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   technician_devices: "The phones technicians work from, each bound to a session and revocable by ops (ADR 0052).",
   technician_leave: "A technician's leave in whole days, which the clash check reads beside `slot_claims` (ADR 0062).",
   technicians:
-    "The mirror of FSM's technicians: name, initials, mobile number and zone; and on staging the few written by hand for a test, which the sync leaves alone (ADR 0032, ADR 0052).",
+    "The mirror of FSM's technicians: name, initials, mobile number and zone; and on staging the few written by hand for a test, which the sync leaves alone. `fsm_id` is FSM's ID for a technician FSM holds, otherwise one of ours (ADR 0032, ADR 0052, ADR 0110).",
   tryon_jobs: "One try-on render: the photograph, the look, the provider's job and the result (ADR 0014, ADR 0015).",
   tryon_sessions:
     "The try-on gate's session, which showed a visitor their result (ADR 0014); written no more since the look goes to WhatsApp only (ADR 0104).",
@@ -156,11 +170,220 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   visits: "What an appointment became once FSM closed it: the outcome, its reason and its times (ADR 0032, ADR 0074).",
   waitlist_entries: "Someone waiting for us to reach their pincode, and whether they were told it launched (ADR 0048).",
   webhook_inbox: "FSM's webhook deliveries, each kept once (ADR 0032).",
+  zones: "A region made of cities, as NCR is, which a grant of staff access may name (ADR 0109).",
   zoho_access_tokens:
-    "Each Zoho client's access token, and the lease one caller holds while it asks for a new one (ADR 0070).",
+    "Each Zoho client's access token, the CRM's, FSM's and Books', and the lease one caller holds while it asks for a new one (ADR 0070, ADR 0110).",
   zoho_token: "The CRM's access token before migration 0041; unread since, and dropped later (open point 90).",
   zoho_tokens: "FSM's and Books' access token before migration 0041; unread since, and dropped later (open point 90).",
 };
+
+export interface RestoreGroup {
+  readonly what: string;
+  readonly tables: readonly string[];
+  /** What it means when the tables are left as they were at <T>. */
+  readonly leftAtT: string;
+  readonly putBackBy: string;
+}
+
+/** What a restore to an earlier minute undoes, group by group. Every table is in one, and may be in more. */
+export const RESTORE_GROUPS: readonly RestoreGroup[] = [
+  {
+    what: "Consents given and withdrawn",
+    tables: ["consents"],
+    leftAtT: "Someone who said stop is messaged again",
+    putBackBy: "Adding the rows since `<T>`: they are only ever added",
+  },
+  {
+    what: "Revoked sessions and phones",
+    tables: ["sessions", "technician_devices"],
+    leftAtT: "A lost phone, or a session that was ended, works again",
+    putBackBy: "Revoking again: a phone in the console, a client's session with `sessions.revoked_at`",
+  },
+  {
+    what: "Erasures",
+    tables: [
+      "people",
+      "addresses",
+      "waitlist_entries",
+      "number_change_requests",
+      "photos",
+      "photo_sets",
+      "hair_profiles",
+      "grievances",
+      "no_show_disputes",
+      "task_closures",
+    ],
+    leftAtT: "Erased people come back in D1, with their own words. Their files stay gone, since R2 is not restored",
+    putBackBy:
+      "Erasing again (runbook, \"Erasure within the day\"). List them before restoring: `SELECT id FROM people WHERE erased_at >= '<T>';`",
+  },
+  {
+    what: "Number changes, deletion requests, grievances",
+    tables: ["number_change_requests", "people", "deletion_requests", "grievances"],
+    leftAtT: "A client's new number stops working; a request, or its answer, is lost",
+    putBackBy: "Deciding each again in the console",
+  },
+  {
+    what: "Payments and refunds",
+    tables: ["payments", "refunds", "razorpay_events", "payment_links"],
+    leftAtT:
+      "Money Razorpay took or gave back is unrecorded, and Razorpay does not send it again. A payment link sent since has no row, though a payment on it still finds its visit",
+    putBackBy: "Adding the rows since `<T>`, checked against Razorpay's dashboard",
+  },
+  {
+    what: "Discount codes",
+    tables: ["discount_codes", "discount_code_uses"],
+    leftAtT:
+      "A code made or switched off since goes back, and a use since is forgotten, so a single-use code works again",
+    putBackBy: "Making or switching off the code again in the console. `discount_code_uses` is only ever added to",
+  },
+  {
+    what: "Bookings and moves",
+    tables: [
+      "appointments",
+      "slot_holds",
+      "slot_claims",
+      "dispatch_moves",
+      "visit_changes",
+      "consultation_requests",
+      "first_fit_requests",
+    ],
+    leftAtT:
+      "A visit booked, moved or cancelled since is lost, and its time can be booked again. Where FSM still holds visits, the cron books them there a second time",
+    putBackBy: "The rows since `<T>`, before the switch is turned off",
+  },
+  {
+    what: "Messages",
+    tables: ["outbound_messages"],
+    leftAtT: "The sweeper sends again what was sent since",
+    putBackBy: "The rows since `<T>`, before the switch is turned off",
+  },
+  {
+    what: "Technicians' steps, pieces and photographs",
+    tables: [
+      "job_events",
+      "checkins",
+      "visits",
+      "consumables_used",
+      "no_show_cases",
+      "no_show_disputes",
+      "pieces",
+      "photos",
+      "photo_sets",
+    ],
+    leftAtT:
+      "Steps, check-ins, outcomes, pieces fitted, no-shows and disputes since are lost; a photograph's file is kept with no row",
+    putBackBy: "The rows since `<T>`",
+  },
+  {
+    what: "Hair profiles",
+    tables: ["hair_profiles"],
+    leftAtT: "A profile recorded since is lost, and one an erasure blanked since is whole again",
+    putBackBy: "Adding the rows since `<T>`: they are only ever added. Erasing again blanks the rest",
+  },
+  {
+    what: "Stock",
+    tables: ["stock_movements"],
+    leftAtT:
+      "A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each kit and the store hold is wrong",
+    putBackBy: "Adding the rows since `<T>`",
+  },
+  {
+    what: "Referrals and credits",
+    tables: ["referral_codes", "referral_attributions", "credit_ledger", "waitlist_entries"],
+    leftAtT: "A credit, a grant or a place on a waitlist disappears",
+    putBackBy: "The rows since `<T>`. `credit_ledger` is only ever added to",
+  },
+  {
+    what: "Ops' settings and what we sell",
+    tables: [
+      "ops_settings",
+      "price_book",
+      "services",
+      "slot_times",
+      "serviceable_pincodes",
+      "technician_leave",
+      "visit_blackouts",
+      "cities",
+      "zones",
+      "consumables",
+      "consumable_usage",
+      "checklist_items",
+      "partial_reasons",
+    ],
+    leftAtT: "A price, service, rule, area, day's times, day off, consumable or job-sheet list set since goes back",
+    putBackBy: "Setting it again in the console, which audits it",
+  },
+  {
+    what: "Staff and access",
+    tables: ["staff", "staff_grants", "staff_service_tokens", "staff_access_mode"],
+    leftAtT: "Someone taken off the Staff list since, or a grant taken back, is let in again",
+    putBackBy: "Setting it again on the Staff page, before anything else",
+  },
+  {
+    what: "Tasks",
+    tables: ["task_owners", "task_closures"],
+    leftAtT: "A task closed since opens again, and one given to someone since is nobody's",
+    putBackBy: "Closing or giving it again on the Tasks board",
+  },
+  {
+    what: "The audit log",
+    tables: ["audit_log"],
+    leftAtT: "Who did what since `<T>`",
+    putBackBy: "Adding the rows since `<T>`: they are only ever added",
+  },
+  {
+    what: "New people, leads, addresses and try-ons",
+    tables: ["people", "leads", "addresses", "tryon_jobs"],
+    leftAtT: "Bookings and leads made since are lost here; the CRM has the leads",
+    putBackBy: "The rows since `<T>`",
+  },
+  {
+    what: "Technicians, and FSM's catalogue",
+    tables: ["technicians", "fsm_items"],
+    leftAtT: "A technician added or changed since goes back",
+    putBackBy: "Where FSM still holds them, the cron reads them again; otherwise the rows since `<T>`",
+  },
+  {
+    what: "Worked out from other tables",
+    tables: ["last_visits", "ops_settings_snapshot", "stock_balances"],
+    leftAtT: "Nothing of their own: triggers keep each from the table it is worked out from",
+    putBackBy: "Putting back that table",
+  },
+  {
+    what: "The storage meter",
+    tables: ["stored_objects", "storage_meter"],
+    leftAtT: "Objects stored or deleted since are counted wrongly, as R2 is not restored",
+    putBackBy: "The rows since `<T>`",
+  },
+  {
+    what: "Housekeeping",
+    tables: [
+      "alerts",
+      "cron_jobs",
+      "cron_runs",
+      "counters",
+      "idempotency",
+      "number_codes",
+      "otp_challenges",
+      "tryon_sessions",
+      "events",
+      "sync_cursors",
+      "webhook_inbox",
+      "zoho_access_tokens",
+      "zoho_token",
+      "zoho_tokens",
+    ],
+    leftAtT: "Nothing that lasts",
+    putBackBy: "Nothing",
+  },
+  {
+    what: "The database's identity, and the restore's own switch",
+    tables: ["deployment_identity", "maintenance"],
+    leftAtT: "The identity is the same at every minute. Going back undoes the switch, so the steps turn it on again",
+    putBackBy: "Nothing",
+  },
+];
 
 /** The `_at` columns that hold a calendar day, not an instant, and how each is read. */
 export const DAY_VALUED_AT: Readonly<Record<string, string>> = {
@@ -314,6 +537,23 @@ function tableSection(table: Table): string[] {
   ];
 }
 
+function restoreGroupRow(group: RestoreGroup): string {
+  return `| ${group.what} | ${group.tables.map(code).join(", ")} | ${group.leftAtT} | ${group.putBackBy} |`;
+}
+
+function restoreSection(): string[] {
+  return [
+    "## What a restore undoes",
+    "",
+    'What each group of tables means if it is left as it was at `<T>`, and how it is put back (`docs/runbook.md`, "Restoring D1"). A table may be in more than one group. Every table is in one: the test fails on a table that is not, until it is added to `RESTORE_GROUPS` (`scripts/lib/schema-doc.ts`).',
+    "",
+    "| What | Tables | Left at `<T>` | Put back by |",
+    "| --- | --- | --- | --- |",
+    ...RESTORE_GROUPS.map(restoreGroupRow),
+    "",
+  ];
+}
+
 export function schemaDoc(tables: readonly Table[]): string {
   return [
     "# The database schema",
@@ -326,6 +566,7 @@ export function schemaDoc(tables: readonly Table[]): string {
     "",
     ...Object.entries(DAY_VALUED_AT).map(([column, how]) => `- ${code(column)}: ${how}`),
     "",
+    ...restoreSection(),
     "## Tables",
     "",
     ...tables.map((table) => `- [${table.name}](#${table.name}): ${PURPOSES[table.name] ?? ""}`),

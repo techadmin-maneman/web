@@ -150,7 +150,7 @@ export const OPS_SETTINGS = [
   {
     name: "no_show_waiver",
     title: "What waiving a no-show gives back",
-    note: "When you waive a no-show, whether the visit's payment is refunded and whether its visit credit is returned. The client's message says which, and each ruling keeps what it gave.",
+    note: "When you waive a no-show, whether the visit's payment is refunded and whether its free service visit is returned. The client's message says which, and each ruling keeps what it gave.",
     keys: WAIVER_KEYS,
     choices: { payment: ["refunded", "kept"], credit: ["returned", "spent"] },
     fallback: WAIVER_GIVES_BACK,

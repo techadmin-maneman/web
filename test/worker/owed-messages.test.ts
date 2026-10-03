@@ -99,6 +99,24 @@ describe("the arrival notice (BIZ-22)", () => {
     expect((await send(await queued("arrival_notice", "appointment", VISIT))).text).not.toBeNull();
   });
 
+  it("is not sent once ten minutes have passed since the check-in reached us", async () => {
+    await visit();
+    await consent("whatsapp_visits", true);
+    const messageId = await queued("arrival_notice", "appointment", VISIT);
+    const { provider, sent } = recordingProvider();
+    const elevenMinutesOn = new Date(NOW.getTime() + 11 * 60_000);
+    await sendMessage(
+      env.DB,
+      LOCAL_CONFIG,
+      fakeDependencies({ messaging: provider, now: () => elevenMinutesOn }),
+      log,
+      messageId,
+    );
+    expect(sent).toEqual([]);
+    const row = await env.DB.prepare("SELECT state, last_error FROM outbound_messages").first();
+    expect(row).toEqual({ state: "skipped", last_error: "too late to tell the client the technician had arrived" });
+  });
+
   it("is not sent to a client who never agreed to WhatsApp about visits, and says so for the no-show evidence", async () => {
     await visit();
     expect(await send(await queued("arrival_notice", "appointment", VISIT))).toEqual({
@@ -174,7 +192,7 @@ describe("the no-show ruling (LIFE-07)", () => {
 
   // A ruling that gives the credit back finds its grant expired or clawed back since, and nothing comes back: the
   // message says what the ledger holds, not what the ruling meant to give (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
-  const CREDIT_GONE = "the visit credit it used is no longer valid, so it cannot come back.";
+  const CREDIT_GONE = "the free service visit it used is no longer valid, so it cannot come back.";
 
   it("says a charge ruled before charges were recorded kept what was paid", async () => {
     expect((await send(await ruled("charged", "payment"))).text).toBe(
@@ -186,7 +204,7 @@ describe("the no-show ruling (LIFE-07)", () => {
     const message = await ruled("charged", "credit");
     await recorded("visit", 0, 0);
     expect((await send(message)).text).toBe(
-      `${MISSED} The visit credit it used is spent as the no-show charge. ${DISPUTE}`,
+      `${MISSED} The free service visit it used is spent as the no-show charge. ${DISPUTE}`,
     );
   });
 
@@ -219,7 +237,9 @@ describe("the no-show ruling (LIFE-07)", () => {
     const message = await ruled("charged", "credit");
     await recorded("nothing", 0, 0);
     await creditRestored();
-    expect((await send(message)).text).toBe(`${MISSED} We are not charging you for it, and your visit credit is back.`);
+    expect((await send(message)).text).toBe(
+      `${MISSED} We are not charging you for it, and your free service visit is back.`,
+    );
   });
 
   it("says the credit cannot come back, where a charge of nothing found nothing to give it back to", async () => {
@@ -244,7 +264,9 @@ describe("the no-show ruling (LIFE-07)", () => {
   it("says a waiver of a credit visit gives the credit back", async () => {
     const message = await ruled("waived", "credit");
     await creditRestored();
-    expect((await send(message)).text).toBe(`${MISSED} We are not charging you for it, and your visit credit is back.`);
+    expect((await send(message)).text).toBe(
+      `${MISSED} We are not charging you for it, and your free service visit is back.`,
+    );
   });
 
   it("says the credit cannot come back, where a waiver found nothing to give it back to", async () => {
@@ -265,7 +287,7 @@ describe("the no-show ruling (LIFE-07)", () => {
   it("says a waiver of a credit visit kept the credit where the ruling kept it", async () => {
     const credit = await ruled("waived", "credit");
     await env.DB.prepare("UPDATE no_show_cases SET waiver_payment = 'refunded', waiver_credit = 'spent'").run();
-    expect((await send(credit)).text).not.toContain("your visit credit is back");
+    expect((await send(credit)).text).not.toContain("your free service visit is back");
   });
 
   it("says a waiver of a visit nothing was paid for charges nothing", async () => {
@@ -314,7 +336,9 @@ describe("the no-show ruling (LIFE-07)", () => {
     it("says the credit is back, where the charge spent it", async () => {
       const message = await disputed("credit", "refunded");
       await creditRestored();
-      expect((await send(message)).text).toBe(`${LOOKED_AT}, and we are refunding it: your visit credit is back.`);
+      expect((await send(message)).text).toBe(
+        `${LOOKED_AT}, and we are refunding it: your free service visit is back.`,
+      );
     });
 
     it("says the credit cannot come back, where the refund found nothing to give it back to", async () => {
@@ -339,11 +363,13 @@ describe("the no-show ruling (LIFE-07)", () => {
 });
 
 describe("the waitlist confirmation (REQ-03)", () => {
-  async function listed(launchAlert: boolean) {
+  /** Someone listed in Bandra, whose area ops have named unless `named` is false. */
+  async function listed(launchAlert: boolean, named = true) {
     await env.DB.batch([
       env.DB.prepare(
-        "INSERT INTO serviceable_pincodes (pincode, area, city, served) VALUES ('400050', 'Bandra', 'Mumbai', 0)",
-      ),
+        `INSERT INTO serviceable_pincodes (pincode, area, city, served, area_named_by)
+         VALUES ('400050', 'Bandra', 'Mumbai', 0, ?1)`,
+      ).bind(named ? "ops@localhost" : null),
       env.DB.prepare(
         `INSERT INTO waitlist_entries (id, pincode, person_id, contact_consent_at, launch_alert, created_at)
          VALUES (?1, '400050', ?2, ?3, ?4, ?3)`,
@@ -359,6 +385,12 @@ describe("the waitlist confirmation (REQ-03)", () => {
     expect(sent.text).toBe(
       "Hello Karan, you are on our list for Bandra. We will message you on WhatsApp when we come there.",
     );
+  });
+
+  // CP-25 of the audit, 2 October 2026: "you are on our list for 400050", a bare pincode.
+  it("names the pincode as one until ops name the area", async () => {
+    const sent = await send(await listed(false, false));
+    expect(sent.text).toBe("Hello Karan, you are on our list for pincode 400050. We do not come there yet.");
   });
 
   it("promises nothing more to one who did not ask to be told of the launch", async () => {

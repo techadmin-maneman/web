@@ -14,9 +14,10 @@ import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { api, type Kind, type LateFee, type OpsService, type Price, type ServiceBook } from "../api.ts";
 import { settings } from "../content.ts";
+import { useAccess, type OpsCall } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import {
   AddForm,
@@ -42,6 +43,19 @@ type Action =
   | { readonly kind: "rename" | "length" | "retire" | "restore"; readonly service: OpsService }
   | { readonly kind: "order"; readonly of: Kind; readonly tiers: readonly string[] }
   | { readonly kind: "add"; readonly of: Kind };
+
+/** The call each action makes: an action is offered only where the person's access reaches its call. */
+const CALL_OF: Readonly<Record<Action["kind"], OpsCall>> = {
+  price: "POST /api/prices",
+  correct: "POST /api/prices/correct",
+  takeBack: "POST /api/prices/withdraw",
+  rename: "POST /api/services/{kind}/{tier}/name",
+  length: "POST /api/services/{kind}/{tier}/length",
+  retire: "POST /api/services/{kind}/{tier}/retire",
+  restore: "POST /api/services/{kind}/{tier}/restore",
+  order: "POST /api/services/{kind}/order",
+  add: "POST /api/services",
+};
 
 /** Where a block is, so an action and what came of it are shown in the one it belongs to. */
 const whereOf = (item: string, tier: string) => `${item}/${tier}`;
@@ -88,6 +102,7 @@ function PriceLines(props: {
   readonly target: Priced;
   readonly today: string;
   readonly busy: boolean;
+  readonly may: Opened["may"];
   readonly onAct: (action: Action) => void;
 }) {
   const { target, today } = props;
@@ -102,28 +117,32 @@ function PriceLines(props: {
       {toCome.map((row) => (
         <p key={row.valid_from} className={styles.priceToCome}>
           {copy.toCome(priceWords(row), longDate(row.valid_from))}
-          <button
-            className={styles.inline}
-            type="button"
-            aria-label={copy.labels.correct(target.name, longDate(row.valid_from))}
-            disabled={props.busy}
-            onClick={() => {
-              props.onAct({ kind: "correct", target, row });
-            }}
-          >
-            {copy.actions.correct}
-          </button>
-          <button
-            className={styles.inline}
-            type="button"
-            aria-label={copy.labels.takeBack(target.name, longDate(row.valid_from))}
-            disabled={props.busy}
-            onClick={() => {
-              props.onAct({ kind: "takeBack", target, row });
-            }}
-          >
-            {copy.actions.takeBack}
-          </button>
+          {props.may("correct") && (
+            <button
+              className={styles.inline}
+              type="button"
+              aria-label={copy.labels.correct(target.name, longDate(row.valid_from))}
+              disabled={props.busy}
+              onClick={() => {
+                props.onAct({ kind: "correct", target, row });
+              }}
+            >
+              {copy.actions.correct}
+            </button>
+          )}
+          {props.may("takeBack") && (
+            <button
+              className={styles.inline}
+              type="button"
+              aria-label={copy.labels.takeBack(target.name, longDate(row.valid_from))}
+              disabled={props.busy}
+              onClick={() => {
+                props.onAct({ kind: "takeBack", target, row });
+              }}
+            >
+              {copy.actions.takeBack}
+            </button>
+          )}
         </p>
       ))}
       {spent.length > 0 && (
@@ -162,6 +181,8 @@ interface Opened {
   readonly action: Action | null;
   readonly outcome: { readonly where: string; readonly said: string } | null;
   readonly book: ServiceBook;
+  /** Whether the person's access lets them take this kind of action. */
+  readonly may: (kind: Action["kind"]) => boolean;
   readonly onAct: (action: Action) => void;
   readonly onDone: (written: Written & { ok: true }) => void;
   readonly onCancel: () => void;
@@ -220,6 +241,30 @@ function Outcome({ opened, where }: { opened: Opened; where: string }) {
   );
 }
 
+/** One of a block's buttons, offered only where the person's access reaches what it does. */
+function ActionButton(props: {
+  readonly opened: Opened;
+  readonly kind: Action["kind"];
+  /** Its whole name, which says which service or fee it acts on. */
+  readonly label?: string;
+  readonly onClick: () => void;
+  readonly children: ReactNode;
+}) {
+  if (!props.opened.may(props.kind)) return null;
+  return (
+    <Button
+      variant="outline"
+      size="small"
+      className={styles.quiet}
+      aria-label={props.label}
+      disabled={props.opened.action !== null}
+      onClick={props.onClick}
+    >
+      {props.children}
+    </Button>
+  );
+}
+
 /** One service: what it is, what it costs, and what may be done to it. */
 function ServiceBlock(props: {
   readonly service: OpsService;
@@ -254,88 +299,49 @@ function ServiceBlock(props: {
           standing(service, today),
         ].join(" · ")}
       </p>
-      <PriceLines target={asPriced(service)} today={today} busy={busy} onAct={opened.onAct} />
+      <PriceLines target={asPriced(service)} today={today} busy={busy} may={opened.may} onAct={opened.onAct} />
       <div className={styles.actions}>
         {!retiredNow && (
-          <Button
-            variant="outline"
-            size="small"
-            className={styles.quiet}
-            aria-label={copy.labels.price(service.name)}
-            disabled={busy}
+          <ActionButton
+            opened={opened}
+            kind="price"
+            label={copy.labels.price(service.name)}
             onClick={() => {
               opened.onAct({ kind: "price", target: asPriced(service) });
             }}
           >
             {copy.actions.price}
-          </Button>
+          </ActionButton>
         )}
-        <Button
-          variant="outline"
-          size="small"
-          className={styles.quiet}
-          aria-label={copy.labels.rename(service.name)}
-          disabled={busy}
-          onClick={act("rename")}
-        >
+        <ActionButton opened={opened} kind="rename" label={copy.labels.rename(service.name)} onClick={act("rename")}>
           {copy.actions.rename}
-        </Button>
-        <Button
-          variant="outline"
-          size="small"
-          className={styles.quiet}
-          aria-label={copy.labels.length(service.name)}
-          disabled={busy}
-          onClick={act("length")}
-        >
+        </ActionButton>
+        <ActionButton opened={opened} kind="length" label={copy.labels.length(service.name)} onClick={act("length")}>
           {copy.actions.length}
-        </Button>
+        </ActionButton>
         {service.retired_date === null ? (
-          <Button
-            variant="outline"
-            size="small"
-            className={styles.quiet}
-            aria-label={copy.labels.retire(service.name)}
-            disabled={busy}
-            onClick={act("retire")}
-          >
+          <ActionButton opened={opened} kind="retire" label={copy.labels.retire(service.name)} onClick={act("retire")}>
             {copy.actions.retire}
-          </Button>
+          </ActionButton>
         ) : (
-          <Button
-            variant="outline"
-            size="small"
-            className={styles.quiet}
-            aria-label={copy.labels.restore(service.name)}
-            disabled={busy}
+          <ActionButton
+            opened={opened}
+            kind="restore"
+            label={copy.labels.restore(service.name)}
             onClick={act("restore")}
           >
             {copy.actions.restore}
-          </Button>
+          </ActionButton>
         )}
         {place > 0 && (
-          <Button
-            variant="outline"
-            size="small"
-            className={styles.quiet}
-            aria-label={copy.labels.up(service.name)}
-            disabled={busy}
-            onClick={move(-1)}
-          >
+          <ActionButton opened={opened} kind="order" label={copy.labels.up(service.name)} onClick={move(-1)}>
             {copy.actions.up}
-          </Button>
+          </ActionButton>
         )}
         {place < siblings.length - 1 && (
-          <Button
-            variant="outline"
-            size="small"
-            className={styles.quiet}
-            aria-label={copy.labels.down(service.name)}
-            disabled={busy}
-            onClick={move(1)}
-          >
+          <ActionButton opened={opened} kind="order" label={copy.labels.down(service.name)} onClick={move(1)}>
             {copy.actions.down}
-          </Button>
+          </ActionButton>
         )}
       </div>
       <OpenAction opened={opened} where={where} />
@@ -355,20 +361,24 @@ function LateFeeBlock({ fee, opened }: { fee: LateFee; opened: Opened }) {
         {target.name}
       </h4>
       <p className={styles.facts}>{copy.lateFeeNote}</p>
-      <PriceLines target={target} today={opened.book.today} busy={opened.action !== null} onAct={opened.onAct} />
+      <PriceLines
+        target={target}
+        today={opened.book.today}
+        busy={opened.action !== null}
+        may={opened.may}
+        onAct={opened.onAct}
+      />
       <div className={styles.actions}>
-        <Button
-          variant="outline"
-          size="small"
-          className={styles.quiet}
-          aria-label={copy.labels.price(target.name)}
-          disabled={opened.action !== null}
+        <ActionButton
+          opened={opened}
+          kind="price"
+          label={copy.labels.price(target.name)}
           onClick={() => {
             opened.onAct({ kind: "price", target });
           }}
         >
           {copy.actions.price}
-        </Button>
+        </ActionButton>
       </div>
       <OpenAction opened={opened} where={where} />
       <Outcome opened={opened} where={where} />
@@ -387,6 +397,7 @@ function KindSection({ kind, opened }: { kind: Kind; opened: Opened }) {
       <h3 className={styles.kindTitle} id={titleId}>
         {name}
       </h3>
+      {kind === "first_fit" && <p className={styles.note}>{copy.hairSystems}</p>}
       <ul className={styles.services}>
         {services.map((service) => (
           <ServiceBlock key={service.tier} service={service} siblings={services} opened={opened} />
@@ -395,19 +406,17 @@ function KindSection({ kind, opened }: { kind: Kind; opened: Opened }) {
       </ul>
       <OpenAction opened={opened} where={kind} />
       <Outcome opened={opened} where={kind} />
-      {(opened.action === null || actionWhere(opened.action) !== kind) && (
+      {opened.may("add") && (opened.action === null || actionWhere(opened.action) !== kind) && (
         <div className={styles.actions}>
-          <Button
-            variant="outline"
-            size="small"
-            className={styles.quiet}
-            disabled={opened.action !== null}
+          <ActionButton
+            opened={opened}
+            kind="add"
             onClick={() => {
               opened.onAct({ kind: "add", of: kind });
             }}
           >
-            {copy.actions.add(name)}
-          </Button>
+            {kind === "first_fit" ? copy.actions.addHairSystem : copy.actions.add(name)}
+          </ActionButton>
         </div>
       )}
     </section>
@@ -420,15 +429,17 @@ export function Services() {
   const [book, setBook] = useState<ServiceBook | null>(null);
   const [action, setAction] = useState<Action | null>(null);
   const [outcome, setOutcome] = useState<Opened["outcome"]>(null);
+  const access = useAccess();
 
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const current = book ?? loaded.value;
   const opened: Opened = {
     action,
     outcome,
     book: current,
+    may: (kind) => access.mayCall(CALL_OF[kind]),
     onAct: (next) => {
       setOutcome(null);
       setAction(next);

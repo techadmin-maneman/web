@@ -181,7 +181,7 @@ describe("what a visit message says", () => {
         .bind(PERSON, VISIT, NOW.toISOString())
         .run();
       expect(await text("cancel_confirmation")).toBe(
-        "Hello Rohit, your service visit on Thu 24 Sep is cancelled. Your visit credit is back.",
+        "Hello Rohit, your service visit on Thu 24 Sep is cancelled. Your free service visit is back.",
       );
     });
 
@@ -189,8 +189,8 @@ describe("what a visit message says", () => {
     it("says the credit is gone, when it was cancelled inside the notice", async () => {
       await cancelledOnCredit("late");
       expect(await text("cancel_confirmation")).toBe(
-        "Hello Rohit, your service visit on Thu 24 Sep is cancelled. It was too close to the visit, so the visit " +
-          "credit it used is gone.",
+        "Hello Rohit, your service visit on Thu 24 Sep is cancelled. It was too close to the visit, so the free " +
+          "service visit it used is gone.",
       );
     });
   });
@@ -236,6 +236,24 @@ describe("sending a visit message", () => {
       },
     ]);
     expect((await messages()).results).toEqual([{ kind: "payment_receipt", subject_id: VISIT, state: "sent" }]);
+  });
+
+  it("does not send a day-before reminder once the visit's day has come", async () => {
+    await consent(true);
+    await visit("service", "2026-09-21T09:30:00.000Z");
+    const yesterdayEvening = new Date("2026-09-20T13:00:00.000Z");
+    const message = visitMessage(env.DB, {
+      personId: PERSON,
+      appointmentId: VISIT,
+      kind: "visit_reminder",
+      now: yesterdayEvening,
+    });
+    await message.statement.run();
+    const { provider, sent } = recordingProvider();
+    await sendMessage(env.DB, config(), fakeDependencies({ messaging: provider }), log, message.id);
+    expect(sent).toEqual([]);
+    const row = await env.DB.prepare("SELECT state, last_error FROM outbound_messages").first();
+    expect(row).toEqual({ state: "skipped", last_error: "too late for a day-before reminder" });
   });
 
   it("skips it, and says why, when the client has not consented", async () => {

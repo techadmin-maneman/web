@@ -94,6 +94,14 @@ describe("the site's forms: the body", () => {
     expect((await errorOf(answer)).code).toBe("invalid_request");
   });
 
+  // BK-60, UX-38: the form chose crown thinning for everyone who skipped the question.
+  it("takes a form that does not say where the hair loss is, and records it as not said", async () => {
+    const { loss_extent: _skipped, ...withoutExtent } = JOINING;
+    expect((await join(appFor(), withoutExtent)).status).toBe(201);
+    const lead = await env.DB.prepare("SELECT loss_extent FROM leads").first<{ loss_extent: string | null }>();
+    expect(lead).toEqual({ loss_extent: null });
+  });
+
   it("never echoes the values it refused", async () => {
     const text = await (await join(appFor(), { ...JOINING, mobile: "12345", name: "x".repeat(81) })).text();
     expect(text).not.toContain("12345");
@@ -141,8 +149,8 @@ describe("the site's forms: Turnstile", () => {
 
     for (let visitor = 0; visitor < 3; visitor += 1) await join(app);
     expect(deps.alerts).toEqual([
-      "Turnstile could not check 5 visitors in the last hour (siteverify 502), so their leads and try-ons were " +
-        "turned away. Check Cloudflare's status, and TURNSTILE_SECRET on the Worker.",
+      "Turnstile could not check 5 visitors in the last hour (siteverify 502), so their bookings, try-ons and app " +
+        "logins were turned away. Check Cloudflare's status, and TURNSTILE_SECRET on the Worker.",
     ]);
   });
 

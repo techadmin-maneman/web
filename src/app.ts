@@ -9,9 +9,11 @@ import { auditCall } from "./http/audit.ts";
 import { createCachedIdentityCheck, type IdentityCheck, type StaticConfig } from "./guard.ts";
 import { createCachedOpsInputs, type ReadOpsInputs } from "./domain/ops-settings.ts";
 import { requireAccess } from "./http/access.ts";
+import { requireStaffAccess } from "./http/staff-access.ts";
 import { REQUEST_ID_HEADER, type App, type AppEnv } from "./http/context.ts";
 import { ErrorResponseSchema, errorBody } from "./http/errors.ts";
 import { requireSameOrigin } from "./http/origin.ts";
+import { meterDatabase, usageFields } from "./lib/d1-meter.ts";
 import { createLogger } from "./log.ts";
 import { registerClientAuth } from "./routes/client-auth.ts";
 import { registerClientMe } from "./routes/client-me.ts";
@@ -24,6 +26,7 @@ import { registerClientDiscountCodes } from "./routes/client-discount-codes.ts";
 import { registerOpsDiscountCodes } from "./routes/ops-discount-codes.ts";
 import { registerTechDiscountCodes } from "./routes/tech-discount-codes.ts";
 import { registerClientDisputes } from "./routes/client-disputes.ts";
+import { registerClientErrors } from "./routes/client-errors.ts";
 import { registerClientRefer } from "./routes/client-refer.ts";
 import { registerOpsBlackouts } from "./routes/ops-blackouts.ts";
 import { registerOpsBookings } from "./routes/ops-bookings.ts";
@@ -45,9 +48,11 @@ import { registerOpsTechnicians } from "./routes/ops-technicians.ts";
 import { registerOpsServices } from "./routes/ops-services.ts";
 import { registerOpsSettings } from "./routes/ops-settings.ts";
 import { registerOpsSlotTimes } from "./routes/ops-slot-times.ts";
+import { registerOpsStaff } from "./routes/ops-staff.ts";
 import { registerOpsStock } from "./routes/ops-stock.ts";
 import { registerOpsWaitlist } from "./routes/ops-waitlist.ts";
 import { registerConsultations } from "./routes/consultations.ts";
+import { registerNumberCodes } from "./routes/number-codes.ts";
 import { registerReferralLanding } from "./routes/referral-landing.ts";
 import { registerClientPayments } from "./routes/client-payments.ts";
 import { registerClientVisits } from "./routes/client-visits.ts";
@@ -56,9 +61,11 @@ import { registerErasure } from "./routes/erasure.ts";
 import { registerEvolutionHook } from "./routes/evolution-hook.ts";
 import { registerFsmHook } from "./routes/fsm-hook.ts";
 import { registerRazorpayHook } from "./routes/razorpay-hook.ts";
+import { registerStopMessages } from "./routes/stop-messages.ts";
 import { registerHealth } from "./routes/health.ts";
 import { registerOpsProfile } from "./routes/ops-profile.ts";
 import { registerOpsStorage } from "./routes/ops-storage.ts";
+import { registerOpsVisits } from "./routes/ops-visits.ts";
 import { registerOpsWhoami } from "./routes/ops-whoami.ts";
 import { registerPublishedPrices } from "./routes/published-prices.ts";
 import { registerReferralReward } from "./routes/referral-reward.ts";
@@ -81,6 +88,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
   public: [
     registerHealth,
     registerPublishedPrices,
+    // A WhatsApp code that proves a number before /book's one visit or /try's gate acts on it.
+    registerNumberCodes,
     registerConsultations,
     registerReferralLanding,
     // What a referral earns, for the invite's page and /book (docs/decisions/0107-referral-rewards-in-the-console.md).
@@ -90,6 +99,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerTryonClaim,
     registerTryonResult,
     registerErasure,
+    // The page a reminder's or alert's link opens, which stops them without signing in.
+    registerStopMessages,
     // Webhooks sit on the public host (ADR 0026).
     registerEvolutionHook,
     registerFsmHook,
@@ -97,6 +108,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
   ],
   client: [
     registerHealth,
+    // What goes wrong in the app's own page; the console and the technician app have it too.
+    registerClientErrors,
     registerClientAuth,
     registerClientMe,
     registerClientProfile,
@@ -115,10 +128,13 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
   ],
   ops: [
     registerHealth,
+    registerClientErrors,
     registerOpsClients,
     registerOpsCredits,
     // A booking FSM refused, held for ops to book or refund (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
     registerOpsBookings,
+    // A visit ops book for a client: at once, or by a payment link.
+    registerOpsVisits,
     registerOpsClientReferral,
     // An address a client gives ops on the phone (docs/decisions/0092-task-owners.md).
     registerOpsClientAddress,
@@ -150,9 +166,18 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsWhoami,
     // Discount codes, and a code on a client's visit (docs/decisions/0108-discount-codes.md).
     registerOpsDiscountCodes,
+    // Who may do what in the console.
+    registerOpsStaff,
   ],
   // The discount code after the jobs, which put the technician's session on every /api/tech/jobs/* route.
-  tech: [registerHealth, registerTechAuth, registerTechJobs, registerTechPieces, registerTechDiscountCodes],
+  tech: [
+    registerHealth,
+    registerClientErrors,
+    registerTechAuth,
+    registerTechJobs,
+    registerTechPieces,
+    registerTechDiscountCodes,
+  ],
 };
 
 export function createApp(
@@ -172,8 +197,9 @@ export function createApp(
   const dependencies = makeDependencies ?? productionDependencies(config);
   app.use("*", requestContext(config, dependencies, createCachedIdentityCheck(), createCachedOpsInputs(), surface));
   app.use("/api/*", requireOwnDatabase);
-  // The ops console is staff only: every call needs a valid Access token, and is audited (ADR 0031).
-  if (surface === "ops") app.use("/api/*", requireAccess, auditCall);
+  // The ops console is staff only: every call needs a valid Access token, and is audited (ADR 0031); then the Staff
+  // list decides what the caller may do.
+  if (surface === "ops") app.use("/api/*", requireAccess, auditCall, requireStaffAccess);
   // The public site's writes are guarded by Turnstile; the Phase 2 surfaces carry session cookies.
   if (surface !== "public") app.use("/api/*", requireSameOrigin);
 
@@ -195,7 +221,10 @@ export function createApp(
   return app;
 }
 
-/** Gives each request an ID, a logger and its dependencies; sets common headers; logs the request. */
+/**
+ * Gives each request an ID, a logger, its dependencies and a metered database; sets common headers; logs the request
+ * with what it cost D1.
+ */
 function requestContext(
   config: StaticConfig,
   makeDependencies: DependencyFactory,
@@ -209,6 +238,8 @@ function requestContext(
     const started = Date.now();
     const requestId = crypto.randomUUID();
     const log = baseLog.child({ request_id: requestId });
+    const meter = meterDatabase(c.env.DB);
+    c.env = { ...c.env, DB: meter.db };
     c.set("requestId", requestId);
     c.set("log", log);
     c.set("config", config);
@@ -229,6 +260,7 @@ function requestContext(
       route: routePath(c, -1), // the pattern, e.g. /api/result/:token; never the path, which can hold a token
       status: c.res.status,
       duration_ms: Date.now() - started,
+      ...usageFields(meter.usage()),
     });
   });
 }

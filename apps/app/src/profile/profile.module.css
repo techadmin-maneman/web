@@ -137,7 +137,7 @@
 }
 
 .numberInput::placeholder {
-  color: var(--paper-placeholder);
+  color: var(--paper-hint);
 }
 
 .error {
@@ -235,6 +235,13 @@ textarea.input {
   margin-top: var(--sp-4);
   font-size: var(--fs-14);
   color: var(--text-muted);
+}
+
+.consequence {
+  margin: var(--sp-10) 0 0;
+  font-size: var(--fs-15);
+  line-height: var(--lh-155);
+  color: var(--text-soft);
 }
 
 /*

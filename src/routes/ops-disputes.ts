@@ -15,6 +15,8 @@ import { afterRuling } from "../domain/after-a-ruling.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
+import { permits } from "../http/staff-access.ts";
+import { REFUNDING_A_DISPUTE } from "../policy/console-routes.ts";
 import { needsReason, REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
 import { DISPUTE_RULINGS } from "../policy/no-show.ts";
 import { dueAt } from "../policy/tasks.ts";
@@ -79,7 +81,7 @@ const rulingRoute = createRoute({
   responses: {
     200: { description: "Recorded", ...json(z.object({ ruled: z.boolean() }).strict()) },
     400: errorResponse("invalid_request: a ruling needs a reason"),
-    403: errorResponse("access_required"),
+    403: errorResponse("access_required, or not_permitted: refunding asks Finance MANAGE"),
     404: errorResponse("not_found: no such dispute, or it was ruled on already"),
   },
 });
@@ -97,6 +99,9 @@ export function registerOpsDisputes(app: App): void {
     const { ruling, reason } = c.req.valid("json");
     if (needsReason("no_show_dispute", ruling) && (reason ?? "") === "") {
       return c.json(errorBody("invalid_request", c.var.requestId, ["reason"]), 400);
+    }
+    if (ruling === "refunded" && !(await permits(c, REFUNDING_A_DISPUTE))) {
+      return c.json(errorBody("not_permitted", c.var.requestId), 403);
     }
 
     const ruled = await ruleOnDispute(c.env.DB, {

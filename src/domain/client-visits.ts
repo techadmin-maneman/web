@@ -6,12 +6,13 @@
 import { STANDARD_TIER, type VisitType } from "../config/visit-types.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { signToken } from "../lib/signed-token.ts";
-import type { AppointmentStatus, VisitOutcome } from "./fsm-mirror.ts";
+import type { AppointmentStatus, VisitOutcome } from "./visit-status.ts";
 import { jobSheet } from "./job-sheet-settings.ts";
 import { noShowNotes, type NoShowNote } from "./no-shows.ts";
 import { priceOf } from "./price-book.ts";
 import { currentAddress } from "./profile.ts";
 import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
+import { landedOutcome, visitBegun } from "./visit-begun.ts";
 import { ANGLES, type Angle, type Phase } from "./visit-photos.ts";
 import { MINUTE_MS, minutesBetween } from "../lib/durations.ts";
 
@@ -23,10 +24,11 @@ export const PHOTO_LINK_MS = 15 * MINUTE_MS;
 
 /**
  * Where a visit FSM has not closed stands for the client: still to come, under
- * way in its window, or over and waiting for FSM to close it. A visit stays the
- * client's until FSM closes it, so it never drops out of both lists.
+ * way, closed as done from the technician's phone, or otherwise over and waiting
+ * for FSM to close it. A visit stays the client's until FSM closes it, so it
+ * never drops out of both lists.
  */
-export type VisitStage = "booked" | "in_progress" | "closing";
+export type VisitStage = "booked" | "in_progress" | "done" | "closing";
 
 export interface VisitSummary {
   readonly id: string;
@@ -59,6 +61,8 @@ interface AppointmentRow {
   technician_name: string | null;
   technician_initials: string | null;
   prepaid: number;
+  begun: number;
+  landed_outcome: VisitOutcome | null;
 }
 
 /**
@@ -71,12 +75,16 @@ const PREPAID = `(EXISTS (SELECT 1 FROM payments p WHERE p.appointment_id = a.id
     AND h.state = 'booked' AND h.use_credit = 1))`;
 
 const APPOINTMENT_COLUMNS = `a.id, a.type, a.tier, a.status, a.window_start, a.window_end, a.service_city, a.service_pincode,
-  t.name AS technician_name, t.initials AS technician_initials, ${PREPAID} AS prepaid`;
+  t.name AS technician_name, t.initials AS technician_initials, ${PREPAID} AS prepaid,
+  ${visitBegun("a")} AS begun, ${landedOutcome("a")} AS landed_outcome`;
 const LIVE = `a.person_id = ?1 AND a.deleted_at IS NULL AND a.window_start IS NOT NULL AND a.window_end IS NOT NULL`;
 /** The statuses of a visit FSM has not closed. */
 const NOT_CLOSED: readonly AppointmentStatus[] = ["scheduled", "dispatched", "in_progress"];
 const UPCOMING_STATUSES = `('scheduled', 'dispatched', 'in_progress')`;
 const PAST_STATUSES = `('completed', 'terminated')`;
+/** A visit cancelled outright, not one a charged move replaced with a new visit, which stands in its place. */
+const CANCELLED = `(a.status = 'cancelled' AND NOT EXISTS (SELECT 1 FROM visit_changes c
+    WHERE c.appointment_id = a.id AND c.kind = 'replaced'))`;
 
 /** What a visit's summary reads beyond its row: where it is, and the day's times its window is read by. */
 interface SummaryContext {
@@ -94,11 +102,17 @@ async function contextOf(db: D1Database, personId: string): Promise<SummaryConte
   return { place, schedule };
 }
 
-/** A visit whose window has ended is being closed, whatever FSM last said of it, until FSM closes it. */
+/**
+ * Our own records come before FSM's status, which can lag or never arrive: a visit the technician closed as done is
+ * done; one he closed otherwise, or whose window has ended, is being closed; one he has begun is in progress.
+ */
 function stageOf(row: AppointmentRow, now: Date): VisitStage | null {
   if (!NOT_CLOSED.includes(row.status)) return null;
+  if (row.landed_outcome === "done") return "done";
+  if (row.landed_outcome !== null) return "closing";
   if (Date.parse(row.window_end) < now.getTime()) return "closing";
-  return row.status === "in_progress" ? "in_progress" : "booked";
+  if (row.begun === 1 || row.status === "in_progress") return "in_progress";
+  return "booked";
 }
 
 function summaryOf(row: AppointmentRow, context: SummaryContext, now: Date): VisitSummary {
@@ -123,14 +137,14 @@ function summaryOf(row: AppointmentRow, context: SummaryContext, now: Date): Vis
 
 /**
  * The client's next visit FSM has not closed, if any: the soonest still to come
- * or under way, and only if there is none of those, one being closed.
+ * or under way, and only if there is none of those, one that is over.
  */
 export async function nextVisit(db: D1Database, personId: string, now: Date): Promise<VisitSummary | null> {
   const row = await db
     .prepare(
       `SELECT ${APPOINTMENT_COLUMNS} FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id
        WHERE ${LIVE} AND a.status IN ${UPCOMING_STATUSES}
-       ORDER BY a.window_end < ?2, a.window_start LIMIT 1`,
+       ORDER BY a.window_end < ?2 OR landed_outcome IS NOT NULL, a.window_start LIMIT 1`,
     )
     .bind(personId, now.toISOString())
     .first<AppointmentRow>();
@@ -163,11 +177,14 @@ export async function isFitted(db: D1Database, personId: string): Promise<boolea
   return row !== null;
 }
 
+/** `withCancelled`: past visits include those cancelled, so the client's own list keeps a record of a cancellation. */
 export async function listVisits(
   db: D1Database,
   personId: string,
   now: Date,
+  { withCancelled = false }: { readonly withCancelled?: boolean } = {},
 ): Promise<{ upcoming: VisitSummary[]; past: VisitSummary[] }> {
+  const pastStatus = withCancelled ? `(a.status IN ${PAST_STATUSES} OR ${CANCELLED})` : `a.status IN ${PAST_STATUSES}`;
   const [context, upcoming, past] = await Promise.all([
     contextOf(db, personId),
     db
@@ -180,7 +197,7 @@ export async function listVisits(
     db
       .prepare(
         `SELECT ${APPOINTMENT_COLUMNS} FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id
-         WHERE ${LIVE} AND a.status IN ${PAST_STATUSES} ORDER BY a.window_start DESC`,
+         WHERE ${LIVE} AND ${pastStatus} ORDER BY a.window_start DESC`,
       )
       .bind(personId)
       .all<AppointmentRow>(),

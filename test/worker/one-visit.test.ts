@@ -10,6 +10,8 @@ import { createAlertOnce, createResolveAlert } from "../../src/domain/alerts.ts"
 import { raiseInvoices } from "../../src/domain/fsm-invoices.ts";
 import { syncAppointment } from "../../src/domain/fsm-mirror.ts";
 import { summaryOf } from "../../src/domain/job-sheet.ts";
+import { recordPayment } from "../../src/domain/payments.ts";
+import { openSession } from "../../src/domain/sessions.ts";
 import { outstandingTasks } from "../../src/domain/tasks.ts";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { saltedHash } from "../../src/lib/hash.ts";
@@ -36,6 +38,9 @@ import { JOB, PERSON, working, type Working } from "./job-fixtures.ts";
 
 /** Mane Man Natural, at Rs. 45,000 with no GST, as staging's book has no GST. */
 const NATURAL = { tier: "natural", name: "Mane Man Natural", amount: 4_500_000 };
+
+/** The first reference of NOW's year, which the visit's link takes before any payment. */
+const LINK_REFERENCE = "MM-2026-0001";
 
 const path = (step: string) => `/api/tech/jobs/${JOB}/${step}`;
 const A_PIECE = { piece_code: "MM-NAT-4417-A", base: "Lace", supplier_lot: "L-22" };
@@ -168,11 +173,12 @@ describe("closing a one visit the client was fitted at", () => {
     expect(await closeAsDone(job).then((answer) => answer.json())).toMatchObject({ replayed: true });
 
     expect(await visitRow()).toEqual({ type: "first_fit", tier: NATURAL.tier, one_visit: "fitted" });
+    // MON-30, CP-19: the product as a hair system, and a reference a person can read, not the visit's ID.
     expect(payments.made.links).toEqual([
       {
         amount: NATURAL.amount,
-        reference: JOB,
-        description: "Mane Man Natural, fitted Mon 21 Sep",
+        reference: LINK_REFERENCE,
+        description: "Mane Man Natural hair system · fitted Mon 21 Sep",
         customer: { name: "Rohit Malhotra", contact: "+919810000001" },
         notes: { appointment_id: JOB, person_id: PERSON },
       },
@@ -238,6 +244,27 @@ describe("closing a one visit the client was fitted at", () => {
     expect(stub.made.links).toHaveLength(1);
     expect(await linkRow()).toMatchObject({ made: 1 });
     expect(job.deps.alerts).toEqual([]);
+  });
+
+  // A link written before links had a reference may already be at Razorpay under the visit's ID: a new reference
+  // would make it a second link, and the client could pay twice.
+  it("asks for a link written before links had a reference under the visit's ID", async () => {
+    const stub = createStubPayments();
+    let reachable = false;
+    const payments: PaymentsProvider = {
+      ...stub,
+      createPaymentLink: (link) => (reachable ? stub.createPaymentLink(link) : Promise.reject(new Error("timeout"))),
+    };
+    const job = await oneVisit({ payments });
+    await toThePiece(job, { ...A_PIECE, product: NATURAL.tier });
+    await closeAsDone(job);
+    await env.DB.prepare(
+      "UPDATE payment_links SET reference = NULL, reference_year = NULL, reference_number = NULL",
+    ).run();
+
+    reachable = true;
+    await linksJob(job);
+    expect(stub.made.links.map((link) => link.reference)).toEqual([JOB]);
   });
 
   it("tells ops once when Razorpay refuses the link, with the visit's ID to make one by hand, and asks no more", async () => {
@@ -401,12 +428,12 @@ describe("Razorpay's word that a one visit's link is paid", () => {
     return made?.razorpay_link_id ?? "";
   }
 
-  it("records the payment as the visit's, with its split before GST, and the task goes", async () => {
+  it("records the payment as the visit's, with its split before GST and the link's reference, and the task goes", async () => {
     const linkId = await fittedAndClosed(createStubPayments());
-    expect((await deliver(linkPaid({ id: linkId, reference_id: JOB }), "evt-1")).status).toBe(200);
+    expect((await deliver(linkPaid({ id: linkId, reference_id: LINK_REFERENCE }), "evt-1")).status).toBe(200);
 
     const payment = await env.DB.prepare(
-      `SELECT person_id, appointment_id, kind, status, amount, amount_ex_gst, gst_percent, reference IS NOT NULL AS referenced
+      `SELECT person_id, appointment_id, kind, status, amount, amount_ex_gst, gst_percent, reference
        FROM payments WHERE razorpay_payment_id = 'pay_link_1'`,
     ).first();
     expect(payment).toEqual({
@@ -417,11 +444,61 @@ describe("Razorpay's word that a one visit's link is paid", () => {
       amount: NATURAL.amount,
       amount_ex_gst: NATURAL.amount,
       gst_percent: 0,
-      referenced: 1,
+      // What the client read on Razorpay's page is what their receipt and the app say.
+      reference: LINK_REFERENCE,
     });
     expect(await linkRow()).toMatchObject({ paid_at: "2026-09-22T08:57:15.000Z" });
     const { tasks } = await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS);
     expect(tasks.filter((task) => task.group === "payment_owed")).toEqual([]);
+  });
+
+  it("numbers a payment captured while the link waits after the link, never with the link's number", async () => {
+    const linkId = await fittedAndClosed(createStubPayments());
+    const another = {
+      id: "pay_other",
+      amount: 200000,
+      currency: "INR",
+      status: "captured",
+      order_id: "order_other",
+      notes: [],
+      created_at: 1790067000,
+    };
+    await recordPayment(env.DB, another, "captured", "a-salt", NOW);
+    await deliver(linkPaid({ id: linkId, reference_id: LINK_REFERENCE }), "evt-1");
+
+    const { results } = await env.DB.prepare(
+      "SELECT razorpay_payment_id, reference FROM payments ORDER BY reference",
+    ).all();
+    expect(results).toEqual([
+      { razorpay_payment_id: "pay_link_1", reference: LINK_REFERENCE },
+      { razorpay_payment_id: "pay_other", reference: "MM-2026-0002" },
+    ]);
+  });
+
+  // Razorpay sends payment.captured for a link's payment too, often first, with the link's notes.
+  it("gives the payment the link's reference though its capture arrives before the link's paid event", async () => {
+    const linkId = await fittedAndClosed(createStubPayments());
+    const paid = linkPaid({ id: linkId, reference_id: LINK_REFERENCE });
+    const payment = { ...paid.payload.payment.entity, notes: { appointment_id: JOB, person_id: PERSON } };
+    await deliver({ entity: "event", event: "payment.captured", payload: { payment: { entity: payment } } }, "evt-7");
+    await deliver(paid, "evt-8");
+
+    const { results } = await env.DB.prepare("SELECT reference FROM payments").all();
+    expect(results).toEqual([{ reference: LINK_REFERENCE }]);
+  });
+
+  it("finds the visit by the link's reference where Razorpay's answer to the close never came", async () => {
+    const stub = createStubPayments();
+    const answerLost: StubPayments = {
+      ...stub,
+      createPaymentLink: async (link) => {
+        await stub.createPaymentLink(link);
+        throw new Error("The operation was aborted due to timeout");
+      },
+    };
+    await fittedAndClosed(answerLost);
+    await deliver(linkPaid({ id: "plink_unseen", reference_id: LINK_REFERENCE }), "evt-6");
+    expect(await linkRow()).toMatchObject({ made: 0, paid_at: "2026-09-22T08:57:15.000Z" });
   });
 
   it("finds the visit by its reference, for a link ops made by hand", async () => {
@@ -443,6 +520,27 @@ describe("Razorpay's word that a one visit's link is paid", () => {
   it("records nothing for a link that is not ours, whose payment its own event records", async () => {
     await deliver(linkPaid({ id: "plink_other", reference_id: "someone-else" }), "evt-3");
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM payments").first()).toEqual({ n: 0 });
+  });
+
+  it("leaves the client nothing to cancel or move, though FSM still has the visit dispatched", async () => {
+    const linkId = await fittedAndClosed(createStubPayments());
+    await deliver(linkPaid({ id: linkId, reference_id: JOB }), "evt-1");
+    await env.DB.prepare("UPDATE appointments SET status = 'dispatched' WHERE id = ?1").bind(JOB).run();
+
+    const client = appFor("local", fakeDependencies(), {}, "client");
+    const cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: PERSON, deviceLabel: null, now: NOW })}`;
+    const ask = (change: string, body: object) =>
+      request(client, `/api/appointments/${JOB}/${change}`, {
+        method: "POST",
+        headers: { Cookie: cookie, "Content-Type": "application/json", Origin: "https://maneman.test" },
+        body: JSON.stringify(body),
+      });
+    const cancel = await ask("cancel", { confirm: false });
+    expect(cancel.status).toBe(409);
+    expect(await cancel.json()).toMatchObject({ error: { code: "not_changeable" } });
+    expect((await ask("reschedule", {})).status).toBe(409);
+    const me = await (await request(client, "/api/me", { headers: { Cookie: cookie } })).json();
+    expect(me).toMatchObject({ next_visit: { id: JOB, stage: "done" } });
   });
 });
 

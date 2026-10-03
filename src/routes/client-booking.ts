@@ -6,13 +6,14 @@
 // A visit may be booked from tomorrow as far ahead as ops' horizon, 45 days to
 // begin with, and a first fit no sooner than ops' lead time after the
 // consultation (docs/decisions/0086-the-next-visit-is-offered.md). The strip
-// is 14 days from the day asked for, within those.
+// is 14 days from the day asked for, within those, and the app asks for later
+// ones up to the last.
 //
-//   GET    /api/availability?type=&tier=&from=   14 days of three windows, and who could come
+//   GET    /api/availability?type=&tier=&from=   14 days of the windows the visit can start in, and who could come
 //   POST   /api/holds                      hold a window
 //   GET    /api/holds/:id                  a hold: lapsed, paid, or booked as a visit
 //   DELETE /api/holds/:id                  let it go
-//   POST   /api/bookings                   book a hold: Checkout's order, or, if free, straight to FSM
+//   POST   /api/bookings                   book a hold: Checkout's order, or, if free, sent to be booked
 //
 // With `moving`, availability and a hold are for moving one of the client's
 // visits (docs/decisions/0046-moving-and-cancelling.md): with its technician,
@@ -20,30 +21,33 @@
 //
 // No slot is held, for a new visit or a move, until the client has given the
 // address the visit goes to, and the hold carries its pincode
-// (docs/decisions/0079-an-address-before-a-slot.md). The tap that books a new
-// visit also agrees to the photograph purposes the pay step showed, each only
-// while the client has never decided on it
+// (docs/decisions/0079-an-address-before-a-slot.md). Booking a new visit also
+// agrees to the photograph purposes the pay step showed, each only while the
+// client has never decided on it, recorded once the booking is confirmed
 // (docs/decisions/0080-consents-given-by-booking.md).
 //
 // Once paid for, a hold keeps its time until it is booked or refunded, and the
 // client can no longer let it go (docs/decisions/0068-a-paid-hold-is-kept.md).
 //
 // A booking is for a service: a kind of visit, and the tier the client chose
-// of it, the kind's standard one where they name none. The hold keeps the
+// of it, the kind's standard one where they name none. A first fit has no
+// standard one: it names the hair system, one of those the console offers,
+// and with none offered it is refused as no_product. The hold keeps the
 // service with its price, late fee and length as they are when it is made
 // (docs/decisions/0085-services-ops-can-edit.md). A move keeps its visit's own.
 
 import { createRoute, z } from "@hono/zod-openapi";
+import { shortDate } from "@maneman/web-kit/dates";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
 import { PRICE_TIER } from "../config/ops-settings.ts";
 import { BOOKING_DAYS, BOOKING_WINDOWS } from "../config/scheduling.ts";
-import { FSM_SERVICE_NAMES, VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
-import { recordBookingConsents } from "../domain/booking-consents.ts";
+import { VISIT_TYPE_NAMES, VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
+import { keepShownConsents, recordBookingConsents } from "../domain/booking-consents.ts";
 import { startBooking } from "../domain/bookings.ts";
 import { codeToCarry } from "../domain/discount-code-uses.ts";
-import { creditBalance } from "../domain/credits.ts";
-import { priceOf, type Price } from "../domain/price-book.ts";
+import { spendableCredits } from "../domain/credits.ts";
+import { lateFeeOn, priceOf, type Price } from "../domain/price-book.ts";
 import { checkoutHold, clientHold, releaseHold } from "../domain/holds.ts";
 import { currentAddress } from "../domain/profile.ts";
 import {
@@ -54,7 +58,7 @@ import {
   regularTechnician,
   type Moving,
 } from "../domain/scheduling.ts";
-import { bookableService, serviceOf, type PricedService } from "../domain/services.ts";
+import { bookableService, offeredProducts, serviceOf, type PricedService } from "../domain/services.ts";
 import { loadSlotSchedule } from "../domain/slot-times.ts";
 import { windowTimesOf } from "../policy/slot-times.ts";
 import {
@@ -66,6 +70,7 @@ import {
 } from "../domain/visit-changes.ts";
 import { bookableDays } from "../domain/next-visit.ts";
 import type { OpsInputs } from "../domain/ops-settings.ts";
+import { bookHold } from "../http/book-hold.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
@@ -75,7 +80,6 @@ import { GIVEN_BY_BOOKING, isFullAddress } from "../policy/booking.ts";
 import { CHARGES, LATE_FEES, type SoldTerms } from "../policy/moving-a-visit.ts";
 import { stripStart } from "../policy/next-visit.ts";
 import { takesCredit } from "../policy/referral-reward.ts";
-import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 
 export const PriceSchema = z
   .object({
@@ -103,7 +107,11 @@ const Tier = z
   .string()
   .regex(PRICE_TIER)
   .optional()
-  .openapi({ description: "The service's code within its kind; left out, the kind's standard service while offered." });
+  .openapi({
+    description:
+      "The service's code within its kind; left out, the kind's standard service while offered. A first fit has " +
+      "none: it names the hair system.",
+  });
 
 const AvailabilitySchema = z
   .object({
@@ -111,6 +119,9 @@ const AvailabilitySchema = z
     service: ServiceSchema.openapi({ description: "The service the windows are for: a move's is its visit's." }),
     price: PriceSchema.openapi({ description: "The first day's price." }),
     regular: z.union([TechnicianSchema, z.null()]).openapi({ description: "Whoever did the client's latest visit." }),
+    last: z.iso
+      .date()
+      .openapi({ description: "The last day this visit may be booked on: later days are asked for up to it." }),
     days: z.array(
       z
         .object({
@@ -166,6 +177,10 @@ export const HoldSchema = z
         "the visit itself, whose payment is kept or whose credit is spent (visit).",
     }),
     expires_at: z.iso.datetime(),
+    pay_by: z.iso.datetime().openapi({
+      description:
+        "The last moment a payment counts as made in time: expires_at and the grace after it. Checkout closes then.",
+    }),
     state: z.enum(["held", "expired", "booked", "released"]),
     paid: z.boolean().openapi({ description: "Razorpay has confirmed the payment; the visit is being booked." }),
     visit_id: z.union([z.uuid(), z.null()]).openapi({ description: "The visit it became, once booked." }),
@@ -246,7 +261,10 @@ const availabilityRoute = createRoute({
     200: { description: "Each day's three windows", content: { "application/json": { schema: AvailabilitySchema } } },
     401: errorResponse("session_required"),
     409: errorResponse("ops_assisted: self-serve booking is off; or not_changeable: the visit can no longer be moved"),
-    422: errorResponse("not_bookable: the client may not book this kind of visit, or the service is not offered"),
+    422: errorResponse(
+      "not_bookable: the client may not book this kind of visit, or the service is not offered; no_product: a first " +
+        "fit, on a day the console offers no hair system",
+    ),
   },
 });
 
@@ -278,7 +296,10 @@ const holdRoute = createRoute({
       "address_required: the client has not given the address the visit goes to; taken: nobody is free in that " +
         "window now; not_changeable; or ops_assisted",
     ),
-    422: errorResponse("not_bookable: this kind of visit, this service, or that day, is not open to the client"),
+    422: errorResponse(
+      "not_bookable: this kind of visit, this service, or that day, is not open to the client; no_product: a first " +
+        "fit, on a day the console offers no hair system",
+    ),
   },
 });
 
@@ -305,7 +326,7 @@ const BookingStartSchema = z
       .openapi({
         description:
           "The photograph purposes the pay step showed its lines for. Booking agrees to each the client has never " +
-          "decided on (ADR 0080); left out, none.",
+          "decided on, recorded once the booking is paid for, or at once for a free visit (ADR 0080); left out, none.",
       }),
   })
   .strict()
@@ -329,7 +350,11 @@ const releaseRoute = createRoute({
   summary: "Let a hold go",
   request: { params: z.object({ id: z.uuid() }) },
   responses: {
-    204: { description: "Let go, or already gone" },
+    204: {
+      description:
+        "Let go, or already gone; or kept, when it has a Razorpay order and its pay_by has not passed, since a " +
+        "payment may still land on it.",
+    },
     401: errorResponse("session_required"),
     409: errorResponse("ops_assisted"),
   },
@@ -341,23 +366,27 @@ const rangeFor = async (c: Context<AppEnv>, personId: string, type: VisitType) =
 
 /**
  * The service a client may book, offered that day with its price then: of a kind they may book now, the tier named,
- * or the kind's standard one where they name none. Null when they may not.
+ * or the kind's standard one where they name none. Else why not: no_product for a first fit on a day the console
+ * offers no hair system, not_bookable for anything else.
  */
 async function bookable(
   c: Context<AppEnv>,
   personId: string,
   wanted: { readonly type: VisitType; readonly tier: string | undefined },
   on: string,
-): Promise<PricedService | null> {
+): Promise<PricedService | "no_product" | "not_bookable"> {
   const db = c.env.DB;
-  if (!(await bookableTypes(db, personId)).includes(wanted.type)) return null;
-  return bookableService(db, wanted.type, wanted.tier, on);
+  if (!(await bookableTypes(db, personId)).includes(wanted.type)) return "not_bookable";
+  const service = await bookableService(db, wanted.type, wanted.tier, on);
+  if (service !== null) return service;
+  const noProduct = wanted.type === "first_fit" && (await offeredProducts(db, on)).length === 0;
+  return noProduct ? "no_product" : "not_bookable";
 }
 
 /** A moved visit's own service, by its name as it is now, with the length the visit keeps. */
 async function movedService(c: Context<AppEnv>, visit: ChangeableVisit) {
   const service = await serviceOf(c.env.DB, visit.type, visit.tier);
-  return { tier: visit.tier, name: service?.name ?? FSM_SERVICE_NAMES[visit.type], minutes: visit.minutes };
+  return { tier: visit.tier, name: service?.name ?? VISIT_TYPE_NAMES[visit.type], minutes: visit.minutes };
 }
 
 /** A service as the API names it. */
@@ -402,24 +431,25 @@ async function soldAs(
   const lateFeeItem = LATE_FEES[hold.type];
   return {
     terms: termsInForce(inputs, hold.type),
-    lateFee: lateFeeItem === undefined ? null : await priceOf(c.env.DB, lateFeeItem, hold.date),
+    lateFee: lateFeeItem === undefined ? null : await lateFeeOn(c.env.DB, lateFeeItem, hold.date),
   };
 }
 
-/** Starts paying for a live hold: what Checkout opens with, or null for one that is free and on its way to FSM. */
+/** Starts paying for a live hold: what Checkout opens with, or null for one that is free and sent to be booked. */
 export async function startCheckout(c: Context<AppEnv>, holdId: string, personId: string) {
-  const { deps, requestId } = c.var;
+  const { deps } = c.var;
   const started = await startBooking(c.env.DB, deps.payments, holdId, personId, deps.now());
   if (started === null) return null;
   if (started.kind === "free") {
-    await c.env.FSM_QUEUE.send({ hold_id: holdId, request_id: requestId } satisfies FsmSyncMessage);
+    await bookHold(c, holdId);
     return { hold_id: holdId, checkout: null };
   }
   const row = await checkoutHold(c.env.DB, holdId);
   if (row === null) return null;
-  const name = row.service_name ?? FSM_SERVICE_NAMES[row.type];
-  const description =
-    row.move_kind === "move" ? `Moving your ${name.toLowerCase()} to ${row.date}` : `${name}, ${row.date}`;
+  // "Mane Man Natural · Sat 3 Oct", or "Moving your visit to Sat 3 Oct".
+  const day = shortDate(row.date);
+  const name = row.service_name ?? VISIT_TYPE_NAMES[row.type];
+  const description = row.move_kind === "move" ? `Moving your visit to ${day}` : `${name} · ${day}`;
   return {
     hold_id: holdId,
     checkout: {
@@ -449,6 +479,7 @@ export function registerClientBooking(app: App): void {
     const move = movingId === undefined ? null : await moveTermsFor(c, session.subjectId, movingId, type, start);
     if (movingId !== undefined && move === null) return c.json(errorBody("not_changeable", c.var.requestId), 409);
     const offered = move === null ? await bookable(c, session.subjectId, { type, tier }, start) : null;
+    if (typeof offered === "string") return c.json(errorBody(offered, c.var.requestId), 422);
     const service = move === null ? offered : await movedService(c, move.terms.visit);
     const price = move === null ? (offered?.price ?? null) : move.terms.move.price;
     if (service === null || price === null) return c.json(errorBody("not_bookable", c.var.requestId), 422);
@@ -481,6 +512,7 @@ export function registerClientBooking(app: App): void {
         service: serviceBody(service),
         price,
         regular: regular === undefined ? null : { name: regular.name, initials: regular.initials },
+        last: range.last,
         days: await Promise.all(strip.map(async (day) => ({ ...day, price: await priceOn(day.date) }))),
       },
       200,
@@ -494,6 +526,7 @@ export function registerClientBooking(app: App): void {
     const move = movingId === undefined ? null : await moveTermsFor(c, session.subjectId, movingId, type, date);
     if (movingId !== undefined && move === null) return c.json(errorBody("not_changeable", c.var.requestId), 409);
     const offered = move === null ? await bookable(c, session.subjectId, { type, tier }, date) : null;
+    if (typeof offered === "string") return c.json(errorBody(offered, c.var.requestId), 422);
     const service = move === null ? offered : await movedService(c, move.terms.visit);
     const price = move === null ? (offered?.price ?? null) : move.terms.move.price;
     const { opens, last } = await rangeFor(c, session.subjectId, type);
@@ -507,7 +540,7 @@ export function registerClientBooking(app: App): void {
         ? undefined
         : { visit: move.moving, kind: move.terms.move.cost === "charged" ? ("replace" as const) : ("move" as const) };
     const useCredit =
-      takesCredit(type, moves?.kind ?? null) && (await creditBalance(c.env.DB, session.subjectId, now)).visits > 0;
+      takesCredit(type, moves?.kind ?? null) && (await spendableCredits(c.env.DB, session.subjectId, now)).visits > 0;
     const inputs = await opsInputs(c);
     const sold = await soldAs(c, { type, date, move: move?.terms ?? null, kind: moves?.kind ?? null }, inputs);
     // A visit moved late books a new one in its place, which keeps the visit's discount code, unless a credit pays it
@@ -553,14 +586,15 @@ export function registerClientBooking(app: App): void {
     const { hold_id: holdId, consents = [] } = c.req.valid("json");
     const booking = await startCheckout(c, holdId, session.subjectId);
     if (booking === null) return c.json(errorBody("hold_expired", c.var.requestId), 409);
-    await recordBookingConsents(c.env.DB, {
+    const db = c.env.DB;
+    await keepShownConsents(db, {
       personId: session.subjectId,
       holdId,
       shown: consents,
       ipHash: (await visitorOf(c)).ipHash,
-      requestId: c.var.requestId,
-      now: c.var.deps.now(),
     });
+    // A free visit is confirmed already; a paid one is once Razorpay's webhook says so.
+    await recordBookingConsents(db, { holdId, requestId: c.var.requestId, now: c.var.deps.now() });
     return c.json(booking, 201);
   });
 

@@ -109,7 +109,7 @@ export function CloseOut({ id }: { id: string }) {
   if (loaded.state === "failed") {
     return (
       <main className={styles.screen}>
-        <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} />
+        <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} requestId={loaded.requestId} />
       </main>
     );
   }

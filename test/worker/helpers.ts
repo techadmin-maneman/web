@@ -3,11 +3,19 @@ import { env } from "cloudflare:workers";
 import { vi, type MockInstance } from "vitest";
 import { createApp } from "../../src/app.ts";
 import type { App } from "../../src/http/context.ts";
-import { EXPECTED_DATABASE_NAME, type EnvironmentName, type Surface } from "../../src/config/environments.ts";
+import {
+  EXPECTED_DATABASE_NAME,
+  type EnvironmentName,
+  type Providers,
+  type Surface,
+} from "../../src/config/environments.ts";
+import type { FieldRecord } from "../../src/config/field-record.ts";
 import type { Settings } from "../../src/config/settings.ts";
 import type { Dependencies } from "../../src/dependencies.ts";
 import { createAlertOnce, createResolveAlert } from "../../src/domain/alerts.ts";
 import { erasePerson, personWithMobile, type ErasureSummary } from "../../src/domain/erasure.ts";
+import { mobileHashOf } from "../../src/domain/number-codes.ts";
+import { CODE_TTL_MS } from "../../src/policy/one-time-code.ts";
 import type { StaticConfig } from "../../src/guard.ts";
 import { createAccessVerifier } from "../../src/providers/cloudflare-access.ts";
 import { createLogger } from "../../src/log.ts";
@@ -16,7 +24,7 @@ import { createImageProvider } from "../../src/providers/image.ts";
 import type { CodeChannel } from "../../src/providers/codes.ts";
 import { createStubBooks } from "../../src/providers/books.ts";
 import { createGeocodeProvider } from "../../src/providers/geocode.ts";
-import { createStubFsm } from "../../src/providers/fsm.ts";
+import { createFsmProvider, createStubFsm, type FsmProvider } from "../../src/providers/fsm.ts";
 import { createStubMessaging } from "../../src/providers/messaging.ts";
 
 export const TURNSTILE_TEST_SECRET = "1x0000000000000000000000000000000AA";
@@ -32,9 +40,12 @@ export const LOCAL_SETTINGS: Settings = {
   ipHashSalt: "test-salt-that-is-long-enough-000000",
   alertWebhookUrl: null,
   leadWebhookUrl: null,
+  heartbeatUrl: null,
+  analyticsToken: null,
   erasureSecret: "test-erasure-secret-that-is-long-enough",
   zoho: null,
   zohoFsm: null,
+  zohoBooks: null,
   razorpay: null,
   geocode: { apiKey: null, dailyCeiling: 200 },
   access: null,
@@ -43,6 +54,7 @@ export const LOCAL_SETTINGS: Settings = {
     codeMobileDailyLimit: 5,
     codeIpHourlyLimit: 10,
     codeDailyCeiling: 300,
+    techCodeDailyCeiling: 100,
     fixedCode: null,
     testRecordCode: null,
   },
@@ -154,6 +166,20 @@ export function countRowsRead(): () => number {
     return results;
   });
   return () => read;
+}
+
+/** A WhatsApp code entered for this number at `now`, as POST /api/number-code/verify leaves it. Its ID proves it. */
+export async function provedNumberCode(mobileE164: string, now: Date = NOW): Promise<string> {
+  const id = crypto.randomUUID();
+  const at = now.toISOString();
+  const expiresAt = new Date(now.getTime() + CODE_TTL_MS).toISOString();
+  await env.DB.prepare(
+    `INSERT INTO number_codes (id, created_at, mobile_hash, code_hash, attempts, expires_at, verified_at)
+     VALUES (?1, ?2, ?3, 'entered', 1, ?4, ?2)`,
+  )
+    .bind(id, at, await mobileHashOf(LOCAL_SETTINGS.ipHashSalt, mobileE164), expiresAt)
+    .run();
+  return id;
 }
 
 /** The address a client saved in the app, which they must have before any slot is held (ADR 0079). */
@@ -278,9 +304,27 @@ export function appFor(
   deps: Dependencies = fakeDependencies(),
   settings: Partial<Settings> = {},
   surface: Surface = "public",
+  providers: Partial<Providers> = {},
 ): App {
-  return createApp({ ...LOCAL_CONFIG, environment, settings: { ...LOCAL_SETTINGS, ...settings } }, () => deps, surface);
+  const config = {
+    ...LOCAL_CONFIG,
+    environment,
+    settings: { ...LOCAL_SETTINGS, ...settings },
+    providers: { ...LOCAL_CONFIG.providers, ...providers },
+  };
+  return createApp(config, () => deps, surface);
 }
+
+/** FSM as FSM_PROVIDER "none" leaves it: every call fails, so whatever reaches it fails the test. */
+export function fsmSwitchedOff(): FsmProvider {
+  return createFsmProvider("none", null, { db: env.DB, fetch, now: () => NOW, log: createLogger() });
+}
+
+/** The providers for each holder of the record of field work: FSM, or our own database with FSM switched off. */
+export const PROVIDERS_FOR: Readonly<Record<FieldRecord, Partial<Providers>>> = {
+  fsm: {},
+  ours: { FSM_PROVIDER: "none" },
+};
 
 export function request(app: App, path: string, init?: RequestInit, bindings: Partial<Env> = {}): Promise<Response> {
   return Promise.resolve(app.request(`https://maneman.test${path}`, init, { ...env, ...bindings }));

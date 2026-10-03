@@ -33,6 +33,7 @@ import {
 } from "../api.ts";
 import { Shell } from "../components/Shell.tsx";
 import { dispatch } from "../content.ts";
+import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { BlockDrawer } from "./BlockDrawer.tsx";
 import styles from "./dispatch.module.css";
@@ -152,13 +153,14 @@ function staleWords(job: Job, code: string, now: Board | null): string {
   const copy = dispatch.landing;
   if (code === "not_found") return copy.errors.not_found;
   if (code === "fsm_partly") return copy.errors.fsm_partly;
+  if (code === "in_progress") return copy.errors.in_progress;
   const place = now === null ? null : placeOn(now, job);
   if (place?.unchanged === true) return copy.beingMoved(nameOf(job));
   return copy.superseded(nameOf(job), place?.words ?? copy.supersededGone);
 }
 
 /** Refusals that mean the job is no longer as the board had it: it is let go, and the board read again. */
-const STALE = new Set(["superseded", "not_found", "fsm_partly"]);
+const STALE = new Set(["superseded", "not_found", "fsm_partly", "in_progress"]);
 
 export function DispatchScreen() {
   const [query, setQuery] = useState<BoardQuery>({ from: null, city: null });
@@ -169,6 +171,10 @@ export function DispatchScreen() {
   const [notice, setNotice] = useState<Notice | null>(null);
   const { loaded, last, refresh, retry } = useBoard(query, move !== null || opened !== null);
   const board = loaded.state === "loaded" ? loaded.value : null;
+  const access = useAccess();
+  const mayMove = access.mayCall("POST /api/dispatch/move");
+  const mayAssign = access.mayCall("POST /api/dispatch/assign");
+  const mayTell = access.mayCall("POST /api/dispatch/moves/{id}/told");
 
   /** What the drawer or the move was opened from, so the keyboard comes back to it. */
   const opener = useRef<HTMLElement | null>(null);
@@ -341,7 +347,7 @@ export function DispatchScreen() {
           )}
           {notice !== null && <NoticeLine notice={notice} onTold={told} />}
           {loaded.state === "loading" && <Loading />}
-          {loaded.state === "failed" && <PanelFailed onRetry={retry} />}
+          {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
           {board !== null && (
             <>
               <div className={styles.scroll}>
@@ -350,27 +356,42 @@ export function DispatchScreen() {
                   <p className={styles.empty}>{dispatch.tools.nothingFound(find.trim())}</p>
                 )}
                 {rows.length > 0 && (
-                  <Grid board={board} rows={rows} inHand={inHand} onOpen={open} onTake={take} onLand={land} />
+                  <Grid
+                    board={board}
+                    rows={rows}
+                    inHand={inHand}
+                    onOpen={open}
+                    onTake={mayMove ? take : null}
+                    onLand={land}
+                  />
                 )}
               </div>
               <p className={styles.note}>{dispatch.board.leave}</p>
             </>
           )}
         </div>
-        {board !== null && <Tray unassigned={board.unassigned} onTake={take} />}
+        {board !== null && <Tray unassigned={board.unassigned} onTake={mayAssign ? take : null} />}
       </div>
 
       {opened !== null && (
         <BlockDrawer
           job={opened}
           onClose={closeDrawer}
-          onMove={() => {
-            take(opened, opener.current);
-          }}
-          onTold={(moveId) => {
-            setOpened(null);
-            void told(moveId, opened.block.person?.name ?? nameOf(opened)).then(restore);
-          }}
+          onMove={
+            mayMove
+              ? () => {
+                  take(opened, opener.current);
+                }
+              : null
+          }
+          onTold={
+            mayTell
+              ? (moveId) => {
+                  setOpened(null);
+                  void told(moveId, opened.block.person?.name ?? nameOf(opened)).then(restore);
+                }
+              : null
+          }
         />
       )}
       {picking !== null && (

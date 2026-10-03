@@ -1,10 +1,11 @@
 // The client app's login (boards A1 to A3), against the local mm-api. Locally
 // every code is the fixed one (OTP_FIXED_CODE in playwright.config.ts), so the
-// tests can log in through the stub messaging provider. Numbers are random.
+// tests can log in through the stub messaging provider, and Turnstile is the
+// stand-in that e2e/support.ts gives every app test. Numbers are random.
 
 import type { Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { expect, randomMobile, test } from "../support.ts";
+import { DUMMY_TOKEN, expect, randomMobile, test } from "../support.ts";
 import { bookedNumber } from "./booked-numbers.ts";
 import { holdOpen } from "./one-tap.ts";
 
@@ -32,7 +33,7 @@ test("a booked number logs in with its code and lands on its consultation", asyn
   await expect(page.getByRole("heading", { level: 1, name: "Your consultation" })).toBeVisible();
   await expect(page.getByText("Morning, 9 am to 12 pm")).toBeVisible();
   await expect(page.getByText("Gurgaon", { exact: true })).toBeVisible();
-  await expect(page.getByText("Free · nothing to pay")).toBeVisible();
+  await expect(page.getByText("Free", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Your profile" })).toHaveText("RM");
   await expect(page.getByRole("link", { name: "Reschedule" })).toHaveAttribute(
     "href",
@@ -160,11 +161,41 @@ test("asks for one fresh code when the client taps for one twice", async ({ page
   await expect(page.getByRole("heading", { name: "Your consultation" })).toBeVisible();
 });
 
+test("asks for a code with the token Turnstile gives", async ({ page }) => {
+  const asked = page.waitForRequest((request) => request.url().endsWith("/api/auth/otp"));
+  await sendCode(page, randomMobile());
+  expect((await asked).postDataJSON()).toMatchObject({ turnstile_token: DUMMY_TOKEN });
+});
+
+test("says to use the last code when no other can be sent just now", async ({ page }) => {
+  await page.clock.install();
+  await sendCode(page, randomMobile());
+  await page.clock.runFor(31_000);
+  await page.route("**/api/auth/otp/resend", (route) =>
+    route.fulfill({ status: 429, json: { error: { code: "rate_limited", request_id: "e2e" } } }),
+  );
+  await page.getByRole("button", { name: "Resend on WhatsApp" }).click();
+  await expect(page.getByRole("alert")).toHaveText(
+    "We cannot send another code just now. Use the last one we sent, or message us.",
+  );
+});
+
 test("a number with no booking sees the same screen, and no code opens it", async ({ page }) => {
   await sendCode(page, randomMobile());
   await expect(page.getByText("has a booking with us, a code is on its way on WhatsApp.")).toBeVisible();
   await enter(page, CODE);
   await expect(page.getByRole("alert")).toHaveText("That code did not match. Four attempts left.");
+});
+
+// The site's booking confirmation opens the app with the number typed there.
+test("a link from the site's booking fills in its number, and the code is still asked for", async ({ page }) => {
+  const mobile = randomMobile();
+  await page.goto(`/#mobile=${mobile}`);
+  await expect(page.getByRole("textbox", { name: "Mobile number" })).toHaveValue(mobile);
+  // The number is taken off the address at once, so it is not left in the browser's history.
+  await expect(page).not.toHaveURL(/mobile=/);
+  await page.getByRole("button", { name: "Send code on WhatsApp" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Enter the code" })).toBeVisible();
 });
 
 test("A3 is reached by choice, and points to booking and WhatsApp", async ({ page }) => {

@@ -17,10 +17,19 @@ import { useState } from "react";
 import { api, type Stock } from "../api.ts";
 import { Shell } from "../components/Shell.tsx";
 import { stock as copy } from "../content.ts";
+import { useAccess, type OpsCall } from "../lib/access.ts";
 import form from "../settings/settings.module.css";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { placeName, StockForm } from "./StockForm.tsx";
 import styles from "./stock.module.css";
+
+/** The form offers all four movements. */
+const RECORDING: readonly OpsCall[] = [
+  "POST /api/stock/deliveries",
+  "POST /api/stock/transfers",
+  "POST /api/stock/counts",
+  "POST /api/stock/write-offs",
+];
 
 /** One place's figure: what it holds, marked Low at or below its level, and when it was last counted. */
 function Held({ book, code, technicianId }: { book: Stock; code: string; technicianId: string | null }) {
@@ -127,11 +136,13 @@ export function StockScreen() {
   const [loaded, retry] = useLoad(api.stock);
   /** The stock after a movement, so the table follows without reading it again. */
   const [book, setBook] = useState<Stock | null>(null);
+  const access = useAccess();
+  const mayRecord = RECORDING.every((call) => access.mayCall(call));
 
   return (
     <Shell section="/stock" title={copy.title} sub={copy.sub}>
       {loaded.state === "loading" && <Loading />}
-      {loaded.state === "failed" && <PanelFailed onRetry={retry} />}
+      {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && (
         <div className={styles.screen}>
           <section className={form.panel} aria-labelledby="stock-on-hand">
@@ -143,7 +154,7 @@ export function StockScreen() {
             <p className={form.note}>{copy.lowNote}</p>
             <OnHand book={book ?? loaded.value} />
           </section>
-          {(book ?? loaded.value).consumables.length > 0 && (
+          {mayRecord && (book ?? loaded.value).consumables.length > 0 && (
             <StockForm book={book ?? loaded.value} onRecorded={setBook} />
           )}
           <Movements book={book ?? loaded.value} />

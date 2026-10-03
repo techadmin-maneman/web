@@ -478,7 +478,7 @@ export function checkSiteConfig(config: JsonObject): string[] {
     entry: {
       main: "./src/worker.ts",
       assetsBinding: "ASSETS",
-      runWorkerFirst: ["/", "/book", "/r/*"],
+      runWorkerFirst: ["/", "/book", "/r", "/r/*", "/_astro/*.mp4"],
       service: { binding: "API", worker: "mm-api" },
     },
   });

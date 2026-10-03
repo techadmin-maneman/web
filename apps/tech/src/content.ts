@@ -97,6 +97,9 @@ export const broken = {
   reload: "Reload",
 } as const;
 
+/** A failed call's reference, to quote to ops. */
+export const reference = { label: "Ref", copy: "Copy", copied: "Copied" } as const;
+
 /**
  * When the phone would not promise to keep what the outbox holds: a warning,
  * not an error. Nothing is lost yet, and getting to signal is what saves it
@@ -256,7 +259,15 @@ export const job = {
   piece: {
     title: "The piece",
     // PLACEHOLDER: the board's piece card reads tier, colour, adhesive, template and scalp, which nothing records.
-    rows: { piece: "Piece", base: "Base", lot: "Supplier lot", fitted: "Fitted", due: "Replacement due" },
+    // PLACEHOLDER: the board draws no "Hair system" row; on a first fit it is the one the client was sold.
+    rows: {
+      sold: "Hair system",
+      piece: "Piece",
+      base: "Base",
+      lot: "Supplier lot",
+      fitted: "Fitted",
+      due: "Replacement due",
+    },
     none: "No piece recorded for this client yet.",
     lastVisit: (date: string, who: string | null) =>
       who === null ? `Last visit, after. ${date}.` : `Last visit, after. ${date}, ${who}.`,
@@ -469,7 +480,9 @@ export const oneVisit = {
   checklist: "Consultation and fit checklist",
   choice: "The client's choice",
   declined: "Decided against it",
-  chooseFirst: "Choose the product, or that the client decided against it",
+  // PLACEHOLDER: ops offer no hair system for the visit's day, so there is nothing to choose from.
+  noProducts: "No hair system is offered for this visit. Speak to ops before you fit anything.",
+  chooseFirst: "Choose the hair system, or that the client decided against it",
   declinedNote: "Nothing is fitted. Closing as done ends the visit as a consultation, with nothing to pay.",
   closeNote:
     "Closing as done texts the client a payment link for the product they chose. If they decided against it, the visit ends as a consultation.",
@@ -486,6 +499,8 @@ export const oneVisit = {
     applying: "Checking",
     /** Said once it applies: the link carries it, and nothing else is shown. */
     applied: (code: string) => `Code ${code} applied. The payment link will take it off.`,
+    /** A code the client gave as they booked, or ops on the booking: there is no box to type another in. */
+    appliedAtBooking: (code: string) => `Code ${code} applied at booking. The payment link will take it off.`,
     errors: {
       code_not_applicable: "That code does not apply to this visit.",
       already_discounted: "This visit already has a code.",
@@ -595,5 +610,9 @@ export const typesLower = {
 export const session = {
   // PLACEHOLDER: neither file draws a revoked device.
   revoked: "This phone is no longer signed in. Ask ops, then sign in again.",
+  // PLACEHOLDER: no board draws a technician ops switched off.
+  switchedOff: "Your account is switched off. Ask ops to switch it back on, then sign in.",
+  workKept:
+    "Your account is switched off. Work not yet sent stays on this phone for 7 days, and sends once ops switch you back on and you sign in.",
   checking: "Loading",
 } as const;

@@ -2,6 +2,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
+import type { Connection } from "../../src/providers/messaging.ts";
 import { MAX_SYNC_ATTEMPTS } from "../../src/queues/crm-sync.ts";
 import { sweep, type SweepEnv } from "../../src/scheduled/sweeper.ts";
 import { NOW, captureLogs, fakeDependencies, fakeQueue, markDatabase } from "./helpers.ts";
@@ -95,12 +96,17 @@ describe("sweeper: leads", () => {
     expect((await env.DB.prepare("SELECT id FROM tryon_sessions").all()).results).toEqual([{ id: "live" }]);
   });
 
-  it("removes login codes a day past expiry, and client sessions 30 days after they end", async () => {
+  it("removes login codes and the site's number codes a day past expiry, and client sessions 30 days after they end", async () => {
     const day = 24 * 60;
     const challenge = (id: string, expiredMinutesAgo: number) =>
       env.DB.prepare(
         `INSERT INTO otp_challenges (id, created_at, purpose, channel, last_sent_at, expires_at)
          VALUES (?1, ?2, 'login', 'whatsapp', ?2, ?3)`,
+      ).bind(id, minutesAgo(expiredMinutesAgo + 10), minutesAgo(expiredMinutesAgo));
+    const numberCode = (id: string, expiredMinutesAgo: number) =>
+      env.DB.prepare(
+        `INSERT INTO number_codes (id, created_at, mobile_hash, code_hash, expires_at)
+         VALUES (?1, ?2, 'mobile-hash', 'code-hash', ?3)`,
       ).bind(id, minutesAgo(expiredMinutesAgo + 10), minutesAgo(expiredMinutesAgo));
     const session = (id: string, expires: string, revoked: string | null) =>
       env.DB.prepare(
@@ -110,6 +116,8 @@ describe("sweeper: leads", () => {
     await env.DB.batch([
       challenge("old-code", day + 1),
       challenge("recent-code", 60),
+      numberCode("old-number-code", day + 1),
+      numberCode("recent-number-code", 60),
       session("long-expired", minutesAgo(31 * day), null),
       session("long-revoked", minutesAhead(day), minutesAgo(31 * day)),
       session("recently-revoked", minutesAhead(day), minutesAgo(day)),
@@ -119,6 +127,7 @@ describe("sweeper: leads", () => {
     await sweep(sweepEnv().bindings, fakeDependencies(), createLogger(), OPTIONS);
 
     expect((await env.DB.prepare("SELECT id FROM otp_challenges").all()).results).toEqual([{ id: "recent-code" }]);
+    expect((await env.DB.prepare("SELECT id FROM number_codes").all()).results).toEqual([{ id: "recent-number-code" }]);
     expect((await env.DB.prepare("SELECT id FROM sessions ORDER BY id").all()).results).toEqual([
       { id: "live" },
       { id: "recently-revoked" },
@@ -310,6 +319,77 @@ describe("sweeper: try-on", () => {
 
     expect((await sweep(bindings, fakeDependencies(), createLogger(), OPTIONS)).messagesRequeued).toBe(1);
     expect(queues.messages.sent).toEqual([{ message_id: "stale", request_id: "sweeper" }]);
+  });
+
+  /** A try-on result message, queued `minutes` ago, with what its last try said. */
+  const queuedMessage = (id: string, minutes: number, lastError: string | null = null) =>
+    env.DB.prepare(
+      `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_id, state, queued_at, last_error)
+       VALUES (?1, ?2, 'p', 'tryon_result', 'job', 'queued', ?2, ?3)`,
+    ).bind(id, minutesAgo(minutes), lastError);
+
+  it("holds queued messages while the WhatsApp bridge is down, and sends them again once it is open", async () => {
+    await insertPerson("p", "+919810000001");
+    await queuedMessage("waiting", 30, "HTTP 404 Not Found").run();
+    const { bindings, queues } = sweepEnv();
+    const open = fakeDependencies();
+    const missing: Connection = { open: false, fault: "no_instance", detail: "no instance" };
+    const down = { ...open, messaging: { ...open.messaging, connection: () => Promise.resolve(missing) } };
+
+    expect((await sweep(bindings, down, createLogger(), OPTIONS)).messagesRequeued).toBe(0);
+    expect(queues.messages.sent).toEqual([]);
+
+    expect((await sweep(bindings, open, createLogger(), OPTIONS)).messagesRequeued).toBe(1);
+    expect(queues.messages.sent).toEqual([{ message_id: "waiting", request_id: "sweeper" }]);
+  });
+
+  it("asks the bridge only when a message is waiting, and not once the run has no call left", async () => {
+    const { bindings, queues } = sweepEnv();
+    const deps = fakeDependencies();
+    let asked = 0;
+    const connection = (): Promise<Connection> => {
+      asked += 1;
+      return Promise.resolve({ open: true });
+    };
+    const counting = { ...deps, messaging: { ...deps.messaging, connection } };
+
+    await sweep(bindings, counting, createLogger(), OPTIONS);
+    expect(asked).toBe(0);
+
+    await insertPerson("p", "+919810000001");
+    await queuedMessage("waiting", 30).run();
+    await sweep(bindings, counting, createLogger(), { ...OPTIONS, budget: createCallBudget(0) });
+    expect(asked).toBe(0);
+    expect(queues.messages.sent).toEqual([]);
+  });
+
+  it("fails a message still unsent a day after it was queued, and tells ops once a day", async () => {
+    await insertPerson("p", "+919810000001");
+    await env.DB.batch([
+      queuedMessage("day-old", 24 * 60 + 1, "HTTP 404 Not Found"),
+      queuedMessage("hours-old", 23 * 60),
+    ]);
+    const { bindings, queues } = sweepEnv();
+    const deps = fakeDependencies();
+
+    await sweep(bindings, deps, createLogger(), OPTIONS);
+
+    const rows = await env.DB.prepare("SELECT id, state, last_error FROM outbound_messages ORDER BY id").all();
+    expect(rows.results).toEqual([
+      { id: "day-old", state: "failed", last_error: "not sent within a day: HTTP 404 Not Found" },
+      { id: "hours-old", state: "queued", last_error: null },
+    ]);
+    expect(queues.messages.sent).toEqual([{ message_id: "hours-old", request_id: "sweeper" }]);
+    expect(deps.alerts).toEqual([
+      expect.stringContaining("1 on this run, day-old (tryon_result) among them") as string,
+    ]);
+
+    await queuedMessage("also-day-old", 24 * 60 + 2).run();
+    await sweep(bindings, deps, createLogger(), OPTIONS);
+    expect(await env.DB.prepare("SELECT state FROM outbound_messages WHERE id = 'also-day-old'").first()).toEqual({
+      state: "failed",
+    });
+    expect(deps.alerts).toHaveLength(1);
   });
 
   it("expires abandoned uploads after an hour and results past their date, deleting the result", async () => {

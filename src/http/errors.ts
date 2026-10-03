@@ -25,6 +25,8 @@ export const ERROR_CODES = [
   // gate's claim, and no try-on runs while WhatsApp cannot send its look.
   "claim_required",
   "whatsapp_unavailable",
+  // A site form that acts on a number only once its WhatsApp code was entered: the one visit, and the try-on's gate.
+  "number_not_proved",
   // Erasure (docs/decisions/0019-erasure.md), and what it waits for: a visit still booked, or a payment
   // held with no visit behind it (docs/decisions/0066-erasure-all-or-nothing.md).
   "unauthorized",
@@ -49,7 +51,7 @@ export const ERROR_CODES = [
   "hold_expired",
   // No slot is held for a client who has not given their address (docs/decisions/0079-an-address-before-a-slot.md).
   "address_required",
-  // A public form for a number that already has a consultation still to happen (docs/decisions/0068-a-paid-hold-is-kept.md).
+  // Ops booking a consultation or first fit for a client who has one still to come, or a payment link open for one.
   "already_booked",
   // Moving or cancelling a visit (docs/decisions/0046-moving-and-cancelling.md): it has started, passed or gone;
   // or the 24 hours ran out between showing the terms and confirming them.
@@ -66,6 +68,13 @@ export const ERROR_CODES = [
   "out_of_order",
   "not_today",
   "already_started",
+  // A piece label already on record, for another client or as this client's piece from an earlier visit: the
+  // technician corrects it on the phone.
+  "piece_code",
+  // Ops switched the technician off: the phone sets his unsent work aside rather than wiping it.
+  "technician_inactive",
+  // A technician FSM lists is changed in FSM, while FSM is the record of field work.
+  "managed_in_fsm",
   // Dispatch (docs/decisions/0034-clash-check.md): the technician already holds a job in that
   // window, is away that day (ADR 0062), the window is free but the visit has no room in it,
   // or FSM would not take the move, or took only its new technician.
@@ -74,6 +83,8 @@ export const ERROR_CODES = [
   "does_not_fit",
   "fsm_refused",
   "fsm_partly",
+  // The technician has begun the visit, so a move would leave his work on another day or with another technician.
+  "in_progress",
   // The no-show wait has not run out yet (src/policy/no-show.ts).
   "too_early_to_close",
   // A service-area change that would leave no pincode served at all, and every
@@ -84,6 +95,8 @@ export const ERROR_CODES = [
   "service_exists",
   "last_of_kind",
   "service_retired",
+  // A first fit, or a consultation and fit in one visit, on a day the console offers no hair system to sell.
+  "no_product",
   // An invite ops attach to a client (docs/decisions/0089-an-invite-is-not-lost.md): no invite has the code; it is the
   // client's own; or the client came with one already.
   "unknown_invite",
@@ -104,6 +117,9 @@ export const ERROR_CODES = [
   // A change of the day's times from a day a client can still book, or a visit is booked on or after
   // (docs/decisions/0102-window-times.md).
   "slot_times_too_soon",
+  // The Staff list: the caller's grants do not reach this, or a change would leave nobody with Admin MANAGE nationally.
+  "not_permitted",
+  "last_admin",
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 

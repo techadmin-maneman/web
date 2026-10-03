@@ -62,10 +62,13 @@ export function whenOf(job: Job): { readonly date: string | null; readonly windo
   return { date: job.job.date, window: job.job.offered_window };
 }
 
-/** The job as the board shows it, which a move sends so a stale board is refused (FEO-05). */
+/**
+ * The job as the board shows it, which a move sends so a stale board is refused (FEO-05). A tray job still on a
+ * technician who was switched off is his until it moves.
+ */
 export function shownOf(job: Job): Shown {
   if (job.kind === "block") return { technicianId: job.technician.technician_id, startsAt: job.block.starts_at };
-  return { technicianId: null, startsAt: job.job.starts_at };
+  return { technicianId: job.job.was_technician?.id ?? null, startsAt: job.job.starts_at };
 }
 
 /** Whether a move to this target changes the day or window, which is what the client is told of. */
@@ -74,8 +77,15 @@ export function changesTime(job: Job, to: Target): boolean {
   return was.date !== to.date || was.window !== to.window;
 }
 
-/** A job done stays where it was worked: only one still to do, or under way, can move. */
-export const isMovable = (block: Block): boolean => block.status !== "completed";
+/** A visit done stays where it was worked, and one the technician has begun where he is working it. */
+export const isMovable = (block: Block): boolean =>
+  block.status !== "completed" && block.status !== "in_progress" && block.begun === null;
+
+/** How far the technician has got on a visit not yet done, in the board's word; null before he arrives. */
+export function begunWord(block: Block): string | null {
+  if (block.begun === null || block.status === "completed") return null;
+  return dispatch.board.begun[block.begun] ?? null;
+}
 
 /** "Rohit", as the drawer's WhatsApp button names him. */
 export const firstNameOf = (person: BoardClient): string => person.name.trim().split(/\s+/)[0] ?? person.name;

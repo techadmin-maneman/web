@@ -6,7 +6,7 @@
 import { withGst } from "../config/gst.ts";
 import type { BookingWindow } from "../config/scheduling.ts";
 import { windowTimesOf } from "../policy/slot-times.ts";
-import { FSM_SERVICE_NAMES, type VisitType } from "../config/visit-types.ts";
+import { VISIT_TYPE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { indiaInstant } from "../lib/india-time.ts";
 import {
   FREE_CHANGE_NOTICE_HOURS,
@@ -15,10 +15,10 @@ import {
   LATE_FEES,
   type Charge,
 } from "../policy/moving-a-visit.ts";
-import { creditBalance } from "./credits.ts";
+import { spendableCredits } from "./credits.ts";
 import { holdDiscount } from "./discount-code-holds.ts";
-import { priceOf, type Price } from "./price-book.ts";
-import { heldMinutes, visitTimes } from "./scheduling.ts";
+import { lateFeeOn, type Price } from "./price-book.ts";
+import { graceEndOf, graceEnds, heldMinutes, visitTimes } from "./scheduling.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
 
 interface HoldRow {
@@ -36,6 +36,8 @@ interface HoldRow {
   gst_percent: number;
   state: "held" | "booked" | "released";
   expires_at: string;
+  /** The grace it was made with; null for a hold made before holds kept one. */
+  grace_seconds: number | null;
   confirmed_at: string | null;
   late_fee_ex_gst: number | null;
   late_fee_gst_percent: number | null;
@@ -52,7 +54,7 @@ interface HoldRow {
 }
 
 const HOLD_QUERY = `SELECT h.id, h.type, h.tier, h.minutes, s.name AS service_name, h.date, h.window_label, h.start_unit,
-    h.amount, h.amount_ex_gst, h.gst_percent, h.state, h.expires_at, h.confirmed_at, h.late_fee_ex_gst,
+    h.amount, h.amount_ex_gst, h.gst_percent, h.state, h.expires_at, h.grace_seconds, h.confirmed_at, h.late_fee_ex_gst,
     h.late_fee_gst_percent, h.change_notice_hours, h.late_change_charge, t.name AS technician_name, t.initials AS technician_initials, h.appointment_id,
     h.moves_appointment_id, h.use_credit, h.person_id,
     EXISTS (SELECT 1 FROM payments p WHERE p.razorpay_order_id = h.razorpay_order_id AND p.status = 'captured') AS paid
@@ -67,7 +69,7 @@ const HOLD_QUERY = `SELECT h.id, h.type, h.tier, h.minutes, s.name AS service_na
 async function lateFeeOf(db: D1Database, row: HoldRow, charge: Charge): Promise<Price | null> {
   const item = LATE_FEES[row.type];
   if (item === undefined || charge !== "late_fee") return null;
-  if (row.late_fee_ex_gst === null || row.late_fee_gst_percent === null) return priceOf(db, item, row.date);
+  if (row.late_fee_ex_gst === null || row.late_fee_gst_percent === null) return lateFeeOn(db, item, row.date);
   return {
     amount_ex_gst: row.late_fee_ex_gst,
     amount: withGst(row.late_fee_ex_gst, row.late_fee_gst_percent),
@@ -90,7 +92,7 @@ async function holdOf(db: D1Database, row: HoldRow, now: Date) {
   return {
     id: row.id,
     type: row.type,
-    service: { tier: row.tier, name: row.service_name ?? FSM_SERVICE_NAMES[row.type], minutes },
+    service: { tier: row.tier, name: row.service_name ?? VISIT_TYPE_NAMES[row.type], minutes },
     date: row.date,
     window: row.window_label,
     starts_at: start.toISOString(),
@@ -102,21 +104,27 @@ async function holdOf(db: D1Database, row: HoldRow, now: Date) {
     change_notice_hours: noticeHours,
     late_change_charge: lateCharge,
     expires_at: row.expires_at,
+    pay_by: graceEndOf(row).toISOString(),
     state: hasLapsed(row, now) ? ("expired" as const) : row.state,
     paid: row.paid === 1,
     visit_id: row.appointment_id,
     moves_visit_id: row.moves_appointment_id,
-    credit:
-      row.use_credit === 1
-        ? {
-            remaining: Math.max(
-              0,
-              (await creditBalance(db, row.person_id, now)).visits - (row.state === "held" ? 1 : 0),
-            ),
-          }
-        : null,
+    credit: await creditOn(db, row, now),
     discount: await holdDiscount(db, { id: row.id, price }),
   };
+}
+
+/**
+ * The credit that pays for the hold, with the credits left once it is spent. Null when none does, including a hold not
+ * yet confirmed whose credit another booking has taken since: booking it asks for payment.
+ */
+async function creditOn(db: D1Database, row: HoldRow, now: Date): Promise<{ remaining: number } | null> {
+  if (row.use_credit !== 1) return null;
+  const spendable = (await spendableCredits(db, row.person_id, now, row.id)).visits;
+  if (row.state !== "held") return { remaining: spendable };
+  if (row.confirmed_at === null && spendable === 0) return null;
+  // Until the visit is booked, the credit it spends is still in the balance.
+  return { remaining: Math.max(0, spendable - 1) };
 }
 
 /** One of the client's holds as the app shows it; null when there is no such hold of theirs. */
@@ -127,15 +135,18 @@ export async function clientHold(db: D1Database, holdId: string, personId: strin
 
 /**
  * Lets a client's hold go, with the time it held. Once paid for, or booked free, it is on its way to FSM, and only
- * a booking or a refund ends it (docs/decisions/0068-a-paid-hold-is-kept.md).
+ * a booking or a refund ends it. Once it has a Razorpay order, it keeps its time until its grace ends, since a payment
+ * on that order may still land; the next hold anyone makes after that lets it go.
  */
 export async function releaseHold(db: D1Database, hold: { holdId: string; personId: string; now: Date }) {
-  const mine = "SELECT id FROM slot_holds WHERE id = ?1 AND person_id = ?2 AND state = 'held' AND confirmed_at IS NULL";
+  const mine = `SELECT id FROM slot_holds WHERE id = ?1 AND person_id = ?2 AND state = 'held' AND confirmed_at IS NULL
+    AND (razorpay_order_id IS NULL OR ${graceEnds("slot_holds")} <= ?3)`;
+  const at = hold.now.toISOString();
   await db.batch([
-    db.prepare(`DELETE FROM slot_claims WHERE hold_id IN (${mine})`).bind(hold.holdId, hold.personId),
+    db.prepare(`DELETE FROM slot_claims WHERE hold_id IN (${mine})`).bind(hold.holdId, hold.personId, at),
     db
       .prepare(`UPDATE slot_holds SET state = 'released', updated_at = ?3 WHERE id IN (${mine})`)
-      .bind(hold.holdId, hold.personId, hold.now.toISOString()),
+      .bind(hold.holdId, hold.personId, at),
   ]);
 }
 
@@ -146,6 +157,8 @@ export interface BookingUnderWay {
   readonly window: BookingWindow;
   /** Paid for in money, rather than free or covered by a credit. */
   readonly paid: boolean;
+  /** A consultation and fit in one visit. */
+  readonly one_visit: boolean;
 }
 
 /**
@@ -156,14 +169,27 @@ export interface BookingUnderWay {
 export async function bookingUnderWay(db: D1Database, personId: string): Promise<BookingUnderWay | null> {
   const row = await db
     .prepare(
-      `SELECT type, date, window_label, amount, use_credit FROM slot_holds
+      `SELECT type, date, window_label, amount, use_credit, one_visit FROM slot_holds
        WHERE person_id = ?1 AND state = 'held' AND confirmed_at IS NOT NULL AND moves_appointment_id IS NULL
        ORDER BY date, start_unit LIMIT 1`,
     )
     .bind(personId)
-    .first<{ type: VisitType; date: string; window_label: BookingWindow; amount: number; use_credit: number }>();
+    .first<{
+      type: VisitType;
+      date: string;
+      window_label: BookingWindow;
+      amount: number;
+      use_credit: number;
+      one_visit: number;
+    }>();
   if (row === null) return null;
-  return { type: row.type, date: row.date, window: row.window_label, paid: row.amount > 0 && row.use_credit !== 1 };
+  return {
+    type: row.type,
+    date: row.date,
+    window: row.window_label,
+    paid: row.amount > 0 && row.use_credit !== 1,
+    one_visit: row.one_visit === 1,
+  };
 }
 
 /** What Checkout names a hold's payment with, and prefills. */

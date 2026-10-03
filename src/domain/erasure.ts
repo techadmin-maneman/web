@@ -18,9 +18,11 @@
 // A render still running cannot store its result once its job is expired: the
 // render consumer deletes what it wrote when it finds the job has moved on.
 
+import type { NoticePurpose } from "../config/notices.ts";
 import type { VisitType } from "../config/visit-types.ts";
 import type { Logger } from "../log.ts";
 import { LIVE_VISIT_STATUSES } from "../policy/account-deletion.ts";
+import { recordConsent } from "./consents.ts";
 import { blankProfiles } from "./hair-profiles.ts";
 import { copyKey, keptLookKey } from "./kept-try-ons.ts";
 import { deleteCounted, deleteUnder } from "./storage-meter.ts";
@@ -152,14 +154,19 @@ async function personalDataStatements(db: D1Database, personId: string, at: stri
   const { results: granted } = await db
     .prepare("SELECT DISTINCT purpose FROM consents WHERE person_id = ?1 AND granted = 1")
     .bind(personId)
-    .all<{ purpose: string }>();
-  const withdrawals = granted.map(({ purpose }) =>
-    db
-      .prepare(
-        `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, source)
-         VALUES (?1, ?2, ?3, 'withdrawal', 0, ?4, 'erasure')`,
-      )
-      .bind(crypto.randomUUID(), personId, purpose, at),
+    .all<{ purpose: NoticePurpose }>();
+  const withdrawals = granted.map(
+    ({ purpose }) =>
+      recordConsent(db, {
+        person: { id: personId },
+        purpose,
+        granted: false,
+        notice: "withdrawal",
+        source: "erasure",
+        rule: "always",
+        ipHash: null,
+        givenAt: at,
+      }).statement,
   );
 
   return [
@@ -218,6 +225,10 @@ async function personalDataStatements(db: D1Database, personId: string, at: stri
     // no-show's charge (src/domain/no-show-disputes.ts).
     db.prepare("UPDATE appointments SET client_note = NULL, client_note_at = NULL WHERE person_id = ?1").bind(personId),
     db.prepare("UPDATE no_show_disputes SET reason = NULL WHERE person_id = ?1").bind(personId),
+    // What a pay step showed them, kept on the hold until the booking is confirmed, and their hashed address.
+    db
+      .prepare("UPDATE slot_holds SET consents_shown = NULL, consents_ip_hash = NULL WHERE person_id = ?1")
+      .bind(personId),
     // Their hair profile, its fit spec and their health history, in every version; who took each, and when, stay
     // (docs/decisions/0106-a-clients-hair-profile.md).
     blankProfiles(db, personId),

@@ -69,21 +69,39 @@ async function refund(id: string, paymentId: string, status: "created" | "proces
 
 const REFUND = "55555555-5555-4555-8555-555555555555";
 
+/** The split a hold priced the payment at, kept on it when it was captured. */
+const priced = (id: string, amountExGst: number, percent: number) =>
+  env.DB.prepare("UPDATE payments SET amount_ex_gst = ?2, gst_percent = ?3 WHERE id = ?1")
+    .bind(id, amountExGst, percent)
+    .run();
+
 describe("GET /api/payments", () => {
-  it("lists payments and refunds as one list, newest first, each with its ex-GST figure", async () => {
+  it("lists payments and refunds as one list, newest first, each split at the rate it was sold at", async () => {
     await visit(VISIT, P1, "stub-41");
     await payment(PAY_OLD, P1, VISIT, "2026-09-01T06:00:00.000Z");
+    await priced(PAY_OLD, 2542373, 18);
     await payment(PAY_NEW, P1, null, "2026-09-15T06:00:00.000Z");
     await refund(REFUND, PAY_OLD, "created", "2026-09-10T06:00:00.000Z");
     const { entries } = await (await get("/api/payments")).json<{ entries: Record<string, unknown>[] }>();
     expect(entries).toEqual([
-      expect.objectContaining({ kind: "payment", id: PAY_NEW, date: "2026-09-15", visit: null }),
+      // No hold or link priced it, so no rate is known: never split at a guessed one (MON-49).
+      expect.objectContaining({
+        kind: "payment",
+        id: PAY_NEW,
+        date: "2026-09-15",
+        amount: 3000000,
+        amount_ex_gst: null,
+        gst_percent: null,
+        visit: null,
+        booking: null,
+      }),
       expect.objectContaining({
         kind: "refund",
         id: REFUND,
         payment_id: PAY_OLD,
         amount: 200000,
-        amount_ex_gst: 200000,
+        amount_ex_gst: 169492,
+        gst_percent: 18,
         status: "created",
         destination: "upi",
         speed: "normal",
@@ -93,11 +111,12 @@ describe("GET /api/payments", () => {
         id: PAY_OLD,
         reference: "MM-2026-0001",
         amount: 3000000,
-        amount_ex_gst: 3000000,
-        gst_percent: 0,
+        amount_ex_gst: 2542373,
+        gst_percent: 18,
         status: "captured",
         method: "upi",
         visit: { id: VISIT, date: "2026-09-10", type: "first_fit" },
+        booking: null,
       }),
     ]);
   });
@@ -136,11 +155,61 @@ describe("GET /api/payments", () => {
   });
 });
 
+// A payment for a booking still being made was "Payment", and its tax invoice "taking longer than it should" a week
+// before the visit (MON-19, MON-20, CP-18).
+describe("GET /api/payments, a booking paid for and not yet a visit", () => {
+  const ORDER = "order_held_1";
+
+  async function paidHold() {
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 'resource-1', 'Imran Qureshi', 'IQ', 1, ?1)",
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
+           amount_ex_gst, gst_percent, state, razorpay_order_id, expires_at, created_at, updated_at, confirmed_at)
+         VALUES ('hold-1', ?1, 'first_fit', '2026-09-24', 'morning', 't1', 0, 2700000, 2700000, 0, 'held', ?2, ?3, ?3,
+           ?3, ?3)`,
+      ).bind(P1, ORDER, NOW.toISOString()),
+    ]);
+    await payment(PAY_OLD, P1, null, "2026-09-15T06:00:00.000Z");
+    await env.DB.prepare("UPDATE payments SET razorpay_order_id = ?2 WHERE id = ?1").bind(PAY_OLD, ORDER).run();
+  }
+
+  it("names what is being booked, and says it is still being booked", async () => {
+    await paidHold();
+    expect(await (await get(`/api/payments/${PAY_OLD}`)).json()).toMatchObject({
+      visit: null,
+      booking: { type: "first_fit", date: "2026-09-24", under_way: true },
+    });
+  });
+
+  it("says the booking is no longer being made once it is refunded, on the payment and on its refund", async () => {
+    await paidHold();
+    await env.DB.prepare("UPDATE slot_holds SET state = 'released', refunded_at = ?1").bind(NOW.toISOString()).run();
+    await refund(REFUND, PAY_OLD, "processed", "2026-09-16T06:00:00.000Z");
+    const { entries } = await (await get("/api/payments")).json<{ entries: Record<string, unknown>[] }>();
+    const gone = { type: "first_fit", date: "2026-09-24", under_way: false };
+    expect(entries).toEqual([
+      expect.objectContaining({ kind: "refund", id: REFUND, booking: gone }),
+      expect.objectContaining({ kind: "payment", id: PAY_OLD, booking: gone }),
+    ]);
+  });
+});
+
 // LIFE-07 and LIFE-14: a no-show and a credit never appeared in Payments, though each took or kept something.
 describe("GET /api/payments, what else a visit took", () => {
   interface Body {
     entries: { id: string; no_show: unknown }[];
-    credits: { event: string; visits: number; visit: { id: string } | null; source: string | null; no_show: unknown }[];
+    credits: {
+      id: string;
+      event: string;
+      visits: number;
+      visit: { id: string } | null;
+      source: string | null;
+      referral_side: string | null;
+      no_show: unknown;
+    }[];
   }
   const payments = async () => (await get("/api/payments")).json<Body>();
 
@@ -210,9 +279,49 @@ describe("GET /api/payments, what else a visit took", () => {
         visits: -1,
         visit: { id: VISIT, date: "2026-09-10", type: "first_fit" },
         source: null,
+        referral_side: null,
         no_show: null,
       },
-      { id: "grant-1", date: "2026-09-01", event: "added", visits: 3, visit: null, source: "referral", no_show: null },
+      {
+        id: "grant-1",
+        date: "2026-09-01",
+        event: "added",
+        visits: 3,
+        visit: null,
+        source: "referral",
+        referral_side: null,
+        no_show: null,
+      },
+    ]);
+  });
+
+  // MON-36: an invited friend read the referrer's line, "a friend you invited was fitted", for their own visits.
+  it("says which side of an invite its visits were for: the friend fitted through it, or the referrer", async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO people (id, created_at, mobile_e164, name) VALUES
+           ('referrer-1', ?1, '+919810000009', 'Arjun Mehta'), ('friend-1', ?1, '+919810000008', 'Kabir Singh')`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO referral_codes (code, person_id, created_at, updated_at)
+         VALUES ('AM7K2Q', 'referrer-1', ?1, ?1), ('RM4P9X', ?2, ?1, ?1)`,
+      ).bind(NOW.toISOString(), P1),
+      env.DB.prepare(
+        `INSERT INTO referral_attributions (id, code, referred_person_id, first_touch_at, via, created_at, updated_at)
+         VALUES ('came-with', 'AM7K2Q', ?1, ?2, 'consultation', ?2, ?2),
+           ('sent', 'RM4P9X', 'friend-1', ?2, 'consultation', ?2, ?2)`,
+      ).bind(P1, NOW.toISOString()),
+    ]);
+    await credits(
+      ["grant-1", "grant", 3, "referral", "came-with"],
+      ["grant-2", "grant", 3, "referral", "sent"],
+      ["grant-3", "grant", 1, "ops", "goodwill-1"],
+    );
+    const sides = (await payments()).credits.map((line) => [line.id, line.source, line.referral_side]);
+    expect(sides).toEqual([
+      ["grant-3", "ops", null],
+      ["grant-2", "referral", "referrer"],
+      ["grant-1", "referral", "friend"],
     ]);
   });
 

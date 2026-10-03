@@ -17,6 +17,7 @@ import { api, type Grievance } from "../api.ts";
 import { DecisionQueue } from "../components/DecisionQueue.tsx";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { grievances } from "../content.ts";
+import { useAccess } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";
 import { phoneWords } from "../lib/phone.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
@@ -28,7 +29,15 @@ type Answering =
 
 const copy = grievances.queue;
 
-function Open({ each, now, onAnswered }: { each: Grievance; now: Date; onAnswered: () => void }) {
+interface OpenProps {
+  readonly each: Grievance;
+  readonly now: Date;
+  /** Whether the person's access lets them record the answer. */
+  readonly mayAnswer: boolean;
+  readonly onAnswered: () => void;
+}
+
+function Open({ each, now, mayAnswer, onAnswered }: OpenProps) {
   const [answering, setAnswering] = useState<Answering>({ step: "open" });
   const [response, setResponse] = useState("");
 
@@ -51,32 +60,34 @@ function Open({ each, now, onAnswered }: { each: Grievance; now: Date; onAnswere
       <p className={styles.who}>{copy.raised(phoneWords(each.mobile), longDate(each.raised_at))}</p>
       {/* The client's own words, kept apart from ours so nobody answers a paraphrase. */}
       <blockquote className={styles.words}>{each.text}</blockquote>
-      <div className={styles.answer}>
-        <Field label={copy.label} hint={copy.hint}>
-          {(control) => (
-            <TextArea
-              {...control}
-              className={styles.answerField}
-              maxLength={2000}
-              value={response}
-              onChange={(event) => {
-                setResponse(event.target.value);
-              }}
-            />
-          )}
-        </Field>
-        <div className={styles.actions}>
-          <Button
-            variant="primary"
-            size="small"
-            className={styles.send}
-            disabled={sending || response.trim() === ""}
-            onClick={() => void send()}
-          >
-            {sending ? copy.sending : copy.send}
-          </Button>
+      {mayAnswer && (
+        <div className={styles.answer}>
+          <Field label={copy.label} hint={copy.hint}>
+            {(control) => (
+              <TextArea
+                {...control}
+                className={styles.answerField}
+                maxLength={2000}
+                value={response}
+                onChange={(event) => {
+                  setResponse(event.target.value);
+                }}
+              />
+            )}
+          </Field>
+          <div className={styles.actions}>
+            <Button
+              variant="primary"
+              size="small"
+              className={styles.send}
+              disabled={sending || response.trim() === ""}
+              onClick={() => void send()}
+            >
+              {sending ? copy.sending : copy.send}
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
       {answering.step === "failed" && (
         <p className={styles.error} role="alert">
           {copy.errors[answering.code] ?? copy.errors.unknown}
@@ -88,8 +99,9 @@ function Open({ each, now, onAnswered }: { each: Grievance; now: Date; onAnswere
 
 function Queue() {
   const [loaded, retry] = useLoad(api.grievances);
+  const mayAnswer = useAccess().mayCall("POST /api/grievances/{id}/resolve");
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const now = new Date();
   return (
@@ -101,7 +113,7 @@ function Queue() {
       empty={copy.empty}
       note={copy.note(copy.answerDays)}
     >
-      {(each, answered) => <Open each={each} now={now} onAnswered={answered} />}
+      {(each, answered) => <Open each={each} now={now} mayAnswer={mayAnswer} onAnswered={answered} />}
     </DecisionQueue>
   );
 }

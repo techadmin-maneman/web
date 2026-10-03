@@ -1,9 +1,18 @@
 import { env } from "cloudflare:workers";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { NO_GST } from "../../src/config/gst.ts";
+import { CUT_SHORT_ALERT, finishRun, lastCompletedAt, startRun } from "../../src/domain/cron-runs.ts";
 import type { StaticConfig } from "../../src/guard.ts";
 import { createLogger } from "../../src/log.ts";
-import { CRON_CALLS, CRON_JOBS, runCronJobs, type CronJob } from "../../src/scheduled/cron.ts";
-import { LOCAL_CONFIG, NOW, captureLogs, fakeDependencies } from "./helpers.ts";
+import {
+  CRON_CALLS,
+  CRON_JOBS,
+  booksSyncOptions,
+  runCron,
+  runCronJobs,
+  type CronJob,
+} from "../../src/scheduled/cron.ts";
+import { LOCAL_CONFIG, NOW, captureLogs, fakeDependencies, fakeFetch } from "./helpers.ts";
 
 let logs: ReturnType<typeof captureLogs>;
 beforeEach(() => {
@@ -64,7 +73,12 @@ describe("runCronJobs", () => {
 
   it("skips a job whose provider is not connected here", async () => {
     const { ran, job } = recorder();
-    const jobs = [job("fsm", "fsm"), job("books", "fsm_and_books"), job("always", "nothing")];
+    const jobs = [
+      job("fsm", "fsm"),
+      job("fsm_and_books", "fsm_and_books"),
+      job("books", "books"),
+      job("always", "nothing"),
+    ];
 
     const outcomes = await runCronJobs(jobs, {
       env,
@@ -75,6 +89,17 @@ describe("runCronJobs", () => {
 
     expect(ran).toEqual(["fsm", "always"]);
     expect(outcomes.map((outcome) => outcome.job)).toEqual(["fsm", "always"]);
+  });
+
+  it("runs a job for Books without FSM only where D1, not FSM, is the record", async () => {
+    const { ran, job } = recorder();
+    const jobs = [job("books", "books"), job("books_without_fsm", "books_without_fsm")];
+    const ours: StaticConfig = { ...LOCAL_CONFIG, providers: { ...LOCAL_CONFIG.providers, FSM_PROVIDER: "none" } };
+
+    await runCronJobs(jobs, { env, deps: fakeDependencies(), config: LOCAL_CONFIG, log: createLogger() });
+    expect(ran).toEqual(["books"]);
+    await runCronJobs(jobs, { env, deps: fakeDependencies(), config: ours, log: createLogger() });
+    expect(ran).toEqual(["books", "books", "books_without_fsm"]);
   });
 
   // LIFE-17: the stub remembers no appointment, so locally the repair read every visit it looked at as one FSM had
@@ -136,6 +161,159 @@ describe("a job that keeps failing", () => {
     await runs(3, failing(), deps);
     expect(deps.alerts).toHaveLength(2);
   });
+
+  // PLAT-11: every job's count was written on every run, sixteen writes a run for counts that were almost never set.
+  it("reads which jobs are failing once a run, rather than writing each working job's count", async () => {
+    const { job } = recorder();
+    const prepared = vi.spyOn(env.DB, "prepare");
+
+    await runCronJobs([job("first", "nothing"), job("second", "nothing"), job("third", "nothing")], {
+      env,
+      deps: fakeDependencies(),
+      config: LOCAL_CONFIG,
+      log: createLogger(),
+    });
+
+    const countStatements = prepared.mock.calls.filter(([sql]) => sql.includes("cron_jobs"));
+    expect(countStatements).toEqual([["SELECT job FROM cron_jobs WHERE failed_runs > 0"]]);
+  });
+});
+
+describe("the run record", () => {
+  const MINUTE_MS = 60_000;
+  const at = (minutes: number) => new Date(NOW.getTime() + minutes * MINUTE_MS);
+  const nothing: CronJob = { name: "nothing", needs: "nothing", run: () => Promise.resolve() };
+  const broken: CronJob = { name: "broken", needs: "nothing", run: () => Promise.reject(new Error("down")) };
+
+  /** A run at `minutes` past NOW; what it tells the chat joins `told`. */
+  async function runAt(minutes: number, told: string[] = [], jobs = [nothing]) {
+    const alert = (message: string) => {
+      told.push(message);
+      return Promise.resolve();
+    };
+    const deps = fakeDependencies({ now: () => at(minutes), alert });
+    await runCronJobs(jobs, { env, deps, config: LOCAL_CONFIG, log: createLogger() });
+    return told;
+  }
+
+  /** A run Cloudflare stopped: it noted its start, and never reached its end. */
+  async function cutShortAt(minutes: number) {
+    await startRun({ db: env.DB, alertOnce: fakeDependencies().alertOnce }, at(minutes).toISOString());
+  }
+
+  const record = () =>
+    env.DB.prepare("SELECT started_at, completed_at, failed_jobs, cut_short_at FROM cron_runs").first();
+  const openCutShortAlerts = () =>
+    env.DB.prepare("SELECT COUNT(*) AS n FROM alerts WHERE key = ?1 AND resolved_at IS NULL")
+      .bind(CUT_SHORT_ALERT)
+      .first<number>("n");
+
+  it("notes when each run started and finished, and how many of its jobs failed", async () => {
+    await runAt(0, [], [nothing, broken]);
+
+    expect(await record()).toEqual({
+      started_at: at(0).toISOString(),
+      completed_at: at(0).toISOString(),
+      failed_jobs: 1,
+      cut_short_at: null,
+    });
+    expect(await lastCompletedAt(env.DB)).toBe(at(0).toISOString());
+  });
+
+  // PLAT-11: a run cut short for its CPU left no row and no alert, and the jobs after where it stopped went unrun.
+  it("tells ops once when the run before never finished, however many runs see it", async () => {
+    await runAt(0);
+    await cutShortAt(5);
+
+    const told = await runAt(10);
+    await runAt(15, told);
+
+    expect(told).toEqual([
+      `The cron run started at ${at(5).toISOString()} never finished, so the jobs after where it stopped did not run. ` +
+        `Cloudflare may have stopped it for its CPU time: runbook, "A cron run cut short".`,
+    ]);
+    expect(await record()).toMatchObject({ completed_at: at(15).toISOString(), cut_short_at: at(10).toISOString() });
+  });
+
+  it("says nothing on the first run, nor while every run finishes", async () => {
+    const told: string[] = [];
+    for (const minutes of [0, 5, 10]) await runAt(minutes, told);
+    expect(told).toEqual([]);
+  });
+
+  it("closes the alert once runs have finished for an hour, so the next one is told again", async () => {
+    await cutShortAt(0);
+    const told = await runAt(5);
+    await runAt(50, told);
+    expect(await openCutShortAlerts()).toBe(1);
+
+    await runAt(65, told);
+    expect(await openCutShortAlerts()).toBe(0);
+    expect(await record()).toMatchObject({ cut_short_at: null });
+
+    await cutShortAt(70);
+    await runAt(75, told);
+    expect(told).toHaveLength(2);
+  });
+
+  it("leaves the record to a later run that started before this one finished", async () => {
+    await cutShortAt(0);
+    await cutShortAt(5);
+    await finishRun(
+      { db: env.DB, resolveAlert: fakeDependencies().resolveAlert },
+      { startedAt: at(0).toISOString(), completedAt: at(6).toISOString(), failedJobs: 0 },
+    );
+    expect(await record()).toMatchObject({ started_at: at(5).toISOString(), completed_at: null });
+  });
+
+  it("runs every job even when the record cannot be kept", async () => {
+    await env.DB.exec("DROP TABLE cron_runs");
+    const { ran, job } = recorder();
+
+    await runCronJobs([job("first", "nothing"), job("second", "nothing")], {
+      env,
+      deps: fakeDependencies(),
+      config: LOCAL_CONFIG,
+      log: createLogger(),
+    });
+
+    expect(ran).toEqual(["first", "second"]);
+    expect(logs.lines().filter((line) => line.event === "cron_run_not_recorded")).toHaveLength(2);
+  });
+});
+
+// PLAT-42: every alert was sent from inside mm-api, so a cron that stopped running altogether told nobody.
+describe("the heartbeat after a run", () => {
+  const CHECK = "https://hc-ping.com/0b9f1a52-7c0b-4f5b-9a0e-2f4f6f2b1a01";
+  const WITH_CHECK: StaticConfig = { ...LOCAL_CONFIG, settings: { ...LOCAL_CONFIG.settings, heartbeatUrl: CHECK } };
+
+  it("pings the outside monitor after every run, and its /fail naming the jobs that failed", async () => {
+    const { job } = recorder();
+    const outside = fakeFetch({ [CHECK]: () => new Response("OK") });
+    const run = { env, deps: fakeDependencies({ fetch: outside.fetch }), config: WITH_CHECK, log: createLogger() };
+
+    await runCron([job("first", "nothing")], run);
+    await runCron([job("first", "nothing"), job("second", "nothing", true), job("third", "nothing", true)], run);
+
+    expect(outside.calls.map((call) => [call.url, call.body])).toEqual([
+      [CHECK, ""],
+      [`${CHECK}/fail`, "second, third"],
+    ]);
+  });
+
+  it("pings nothing where no monitor is set", async () => {
+    const { job } = recorder();
+    const outside = fakeFetch({});
+
+    await runCron([job("first", "nothing")], {
+      env,
+      deps: fakeDependencies({ fetch: outside.fetch }),
+      config: LOCAL_CONFIG,
+      log: createLogger(),
+    });
+
+    expect(outside.calls).toEqual([]);
+  });
 });
 
 describe("the run's outside calls", () => {
@@ -180,20 +358,49 @@ describe("CRON_JOBS", () => {
       "sweeper",
       "unbooked_holds",
       "erased_files",
+      "books_erasures",
       "fsm_reconcile",
       "fsm_catalogue",
       "deletion_alerts",
       "storage_meter",
+      "daily_allowances",
       "whatsapp_bridge",
       "dispatch_utilisation",
       "referrals",
       "visit_reminders",
       "next_service_reminders",
       "payment_links",
+      "books_items",
       "invoices",
       "asked_windows",
       "books_sync",
     ]);
+  });
+
+  it("without FSM, bills and settles in Books, checks its items and books unbooked holds, and runs none of FSM's jobs", async () => {
+    const ours: StaticConfig = {
+      ...LOCAL_CONFIG,
+      providers: { ...LOCAL_CONFIG.providers, FSM_PROVIDER: "none", BOOKS_PROVIDER: "stub" },
+    };
+    const outcomes = await runCronJobs(CRON_JOBS, { env, deps: fakeDependencies(), config: ours, log: createLogger() });
+    const ran = outcomes.map((outcome) => outcome.job);
+    expect(ran).toEqual(expect.arrayContaining(["unbooked_holds", "books_items", "invoices", "books_sync"]));
+    for (const fsmOnly of ["fsm_reconcile", "fsm_catalogue", "asked_windows"]) {
+      expect(ran, fsmOnly).not.toContain(fsmOnly);
+    }
+    expect(outcomes.filter((outcome) => !outcome.ok)).toEqual([]);
+  });
+
+  it("on FSM's path, raises invoices through FSM and leaves Books' items to FSM", async () => {
+    const outcomes = await runCronJobs(CRON_JOBS, {
+      env,
+      deps: fakeDependencies(),
+      config: LOCAL_CONFIG,
+      log: createLogger(),
+    });
+    const ran = outcomes.map((outcome) => outcome.job);
+    expect(ran).toEqual(expect.arrayContaining(["invoices", "books_sync", "fsm_catalogue"]));
+    expect(ran).not.toContain("books_items");
   });
 
   it("tells ops once when the photographs fill half their share of R2, however many runs see it", async () => {
@@ -220,5 +427,98 @@ describe("CRON_JOBS", () => {
     const onTheHalfHour = at(0);
     await runCronJobs(job, { env, deps: onTheHalfHour, config: LOCAL_CONFIG, log: createLogger() });
     expect(onTheHalfHour.alerts).toHaveLength(1);
+  });
+
+  // PLAT-16 of the audit, 2 October 2026: nothing read the database's size before D1's limit stopped every write.
+  it("tells ops once when the database reaches half of D1's limit, in the same hourly look", async () => {
+    const deps = fakeDependencies();
+    const job = CRON_JOBS.filter((cronJob) => cronJob.name === "storage_meter");
+    const halfFull = { ...env, DB: holding(env.DB, 260e6) };
+    for (let run = 0; run < 2; run += 1) {
+      await runCronJobs(job, { env: halfFull, deps, config: LOCAL_CONFIG, log: createLogger() });
+    }
+    expect(deps.alerts).toEqual([expect.stringContaining("The database holds 260 MB, 50% of the 500 MB")]);
+  });
+
+  // NOW is half past the hour in UTC, so a quarter past is 15 minutes before it.
+  it("reads the account's usage once an hour, at a quarter past, and only where the analytics token is set", async () => {
+    const job = CRON_JOBS.filter((cronJob) => cronJob.name === "daily_allowances");
+    const graphql = "https://api.cloudflare.com/client/v4/graphql";
+    const withToken: StaticConfig = {
+      ...LOCAL_CONFIG,
+      settings: { ...LOCAL_CONFIG.settings, analyticsToken: "token" },
+    };
+    const runAt = async (minutes: number, config: StaticConfig) => {
+      const { fetch, calls } = fakeFetch({ [graphql]: () => new Response("Bad Gateway", { status: 502 }) });
+      const now = new Date(NOW.getTime() + minutes * 60_000);
+      await runCronJobs(job, { env, deps: fakeDependencies({ fetch, now: () => now }), config, log: createLogger() });
+      return calls.length;
+    };
+
+    expect(await runAt(-15, LOCAL_CONFIG)).toBe(0);
+    for (const minutes of [-16, -10, 0, 25]) {
+      expect(await runAt(minutes, withToken), `${String(minutes)} minutes from half past`).toBe(0);
+    }
+    expect(await runAt(-15, withToken)).toBe(1);
+  });
+});
+
+/** The database, saying it holds `bytes` whenever its size is read. */
+function holding(db: D1Database, bytes: number): D1Database {
+  return new Proxy(db, {
+    get(target, property, receiver) {
+      if (property !== "prepare") return Reflect.get(target, property, receiver) as unknown;
+      return (sql: string) => {
+        const statement = target.prepare(sql);
+        if (sql !== "SELECT 1") return statement;
+        return {
+          run: async () => {
+            const result = await statement.run();
+            return { ...result, meta: { ...result.meta, size_after: bytes } };
+          },
+        };
+      };
+    },
+  });
+}
+
+describe("the Books pass's options", () => {
+  const zohoBooks = {
+    clientId: "1000.BOOKSCLIENT",
+    clientSecret: "books-secret",
+    refreshToken: "1000.books-refresh",
+    accountsHost: "accounts.zoho.in",
+    apiHost: "www.zohoapis.in",
+    orgId: "60088931635",
+    refundAccountId: "bank-7",
+    gst: { gstin: "06AAACM1234A1Z5", stateCode: "HR", sac: "999721" },
+  };
+
+  it("takes the refund account and GST from Books' own settings, whatever FSM is, and makes customers only without it", () => {
+    for (const [FSM_PROVIDER, record] of [
+      ["zoho", "fsm"],
+      ["none", "ours"],
+    ] as const) {
+      const config: StaticConfig = {
+        ...LOCAL_CONFIG,
+        environment: "staging",
+        providers: { ...LOCAL_CONFIG.providers, FSM_PROVIDER, BOOKS_PROVIDER: "zoho" },
+        settings: { ...LOCAL_CONFIG.settings, zohoBooks },
+      };
+      expect(booksSyncOptions(config), FSM_PROVIDER).toEqual({
+        refundAccountId: "bank-7",
+        labelAsTest: true,
+        fieldRecord: record,
+        gst: zohoBooks.gst,
+      });
+    }
+  });
+
+  it("has no refund account or GST without Books' settings, and labels nothing as a test in production", () => {
+    expect(booksSyncOptions({ ...LOCAL_CONFIG, environment: "production" })).toMatchObject({
+      refundAccountId: null,
+      labelAsTest: false,
+      gst: NO_GST,
+    });
   });
 });

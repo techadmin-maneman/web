@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import type { Block, BoardRow, Unassigned } from "../../apps/ops/src/api.ts";
 import {
   addDays,
+  begunWord,
   changesTime,
   firstNameOf,
   isMovable,
@@ -40,6 +41,7 @@ const block = (overrides: Partial<Block> = {}): Block => ({
   status: "scheduled",
   notice_hours: 24,
   untold: null,
+  begun: null,
   ...overrides,
 });
 
@@ -67,6 +69,7 @@ const inTray = (overrides: Partial<Unassigned> = {}): TrayJob => ({
     asked_window: "morning",
     offered_window: "evening",
     date: "2025-09-20",
+    was_technician: null,
     ...overrides,
   },
 });
@@ -97,15 +100,29 @@ describe("where a job stands, and what a move changes", () => {
     expect(shownOf(inTray())).toEqual({ technicianId: null, startsAt: "2025-09-20T10:30:00.000Z" });
   });
 
+  it("sends the switched-off technician a tray job is still on, so the move takes it from him", () => {
+    const left = inTray({ was_technician: { id: "t9", name: "Ravi Kumar" } });
+    expect(shownOf(left)).toEqual({ technicianId: "t9", startsAt: "2025-09-20T10:30:00.000Z" });
+  });
+
   it("changes the time only when the day or the window does, which is what the client is told of", () => {
     expect(changesTime(onBoard(), { technician: ROW, date: "2025-09-19", window: "morning" })).toBe(false);
     expect(changesTime(onBoard(), { technician: ROW, date: "2025-09-19", window: "evening" })).toBe(true);
     expect(changesTime(onBoard(), { technician: ROW, date: "2025-09-20", window: "morning" })).toBe(true);
   });
 
-  it("moves anything not yet done, and nothing done", () => {
-    expect(isMovable(block({ status: "in_progress" }))).toBe(true);
+  it("moves a visit the technician has not begun, and nothing done or under way", () => {
+    expect(isMovable(block({ status: "scheduled" }))).toBe(true);
+    expect(isMovable(block({ status: "dispatched" }))).toBe(true);
+    expect(isMovable(block({ status: "in_progress" }))).toBe(false);
+    expect(isMovable(block({ status: "scheduled", begun: "arrived" }))).toBe(false);
     expect(isMovable(block({ status: "completed" }))).toBe(false);
+  });
+
+  it("says how far the technician has got on a visit not yet done, from his phone", () => {
+    expect(begunWord(block({ begun: "started" }))).toBe("Started");
+    expect(begunWord(block({ begun: null }))).toBeNull();
+    expect(begunWord(block({ status: "completed", begun: "closed" }))).toBeNull();
   });
 
   it("counts the board's weeks in whole days, across a month and a year's end", () => {

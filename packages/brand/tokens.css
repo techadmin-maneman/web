@@ -131,7 +131,6 @@
   --fs-person: clamp(20px, 1.9vw, 26px);
   --fs-range-tagline: clamp(26px, 2.4vw, 34px);
   --fs-materials-group: clamp(20px, 2vw, 26px);
-  --fs-price-head: clamp(18px, 2vw, 28px);
   --fs-price: clamp(24px, 3vw, 40px);
   --fs-quote: clamp(19px, 1.8vw, 23px);
   --fs-guarantee: clamp(26px, 3.2vw, 40px);
@@ -178,6 +177,7 @@
   --btn-lg: 56px;
   --btn-md: 48px;
   --field-h: 52px;
+  --busy-opacity: 0.6; /* a button working on what was asked */
 
   /* ---- Motion: how long, and the one curve, apart ------------------------ */
   --duration-quick: 300ms; /* a state changing: a colour, a fade, a step sliding in */
@@ -186,7 +186,7 @@
   --ease-house: cubic-bezier(0.22, 0.61, 0.36, 1);
 
   /* ---- The viewport: no board draws these; each lets a layout reach past its column -------------- */
-  --reach-screen: 100vmax; /* how far a band drawn to the column's edge reaches to meet the screen's */
+  --app-column-max: 480px; /* the client app's column, filling a phone wider than the design's 390 px */
   --photo-max-h: 56dvh; /* a photograph opened large, with room for its caption beneath */
   --ops-scroll-max-h: 70dvh; /* the dispatch grid on a narrow screen, with the tray beneath it */
 

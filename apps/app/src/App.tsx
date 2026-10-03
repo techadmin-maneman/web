@@ -79,7 +79,8 @@ const pause = (ms: number) =>
     setTimeout(resolve, ms);
   });
 
-export function App() {
+/** `linkedMobile`: the number the site's booking confirmation opened the app with, for the login; or "". */
+export function App({ linkedMobile }: { linkedMobile: string }) {
   const [session, setSession] = useState<Session>({ kind: "checking" });
   const path = usePath();
 
@@ -181,7 +182,7 @@ export function App() {
     case "failed":
       return <LoadFailed booked={session.booked} onRetry={() => void check()} />;
     case "out":
-      return <Login ended={session.ended} onSignedIn={() => void check()} />;
+      return <Login ended={session.ended} linkedMobile={linkedMobile} onSignedIn={() => void check()} />;
     case "in":
       return (
         <SessionContext value={{ me: session.me, offline: session.offline, refresh: () => void refresh(), logOut }}>

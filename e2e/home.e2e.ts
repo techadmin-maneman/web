@@ -1,8 +1,18 @@
 // The home page and the chrome every page shares (docs/feature-inventory.md, items 1–21).
 
-import { expect, test } from "./support.ts";
+import type { Page } from "@playwright/test";
+import { expect, test, visit } from "./support.ts";
 
 const narrow = (width: number | undefined) => (width ?? 0) <= 760;
+
+/** Every film the page asks for from here on, filled in as it asks. */
+function filmsFetched(page: Page): string[] {
+  const films: string[] = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname.endsWith(".mp4")) films.push(request.url());
+  });
+  return films;
+}
 
 test.describe("header", () => {
   test("shows the mark and wordmark, and Book a visit, at every width", async ({ page }) => {
@@ -69,6 +79,16 @@ test.describe("sticky bar and footer: the home page only", () => {
       .evaluate((hero) => getComputedStyle(hero).paddingBottom);
     expect(padding).toBe("72px");
   });
+
+  // UX-33: the bar sat outside every landmark, and at 1440 its button ran 1,350 px across the screen.
+  test("the bar is a landmark, and its button keeps to a phone's width", async ({ page }) => {
+    await page.goto("/");
+    const book = page
+      .getByRole("navigation", { name: "Book or message us" })
+      .getByRole("link", { name: "Book a visit" });
+    await expect(book).toBeVisible();
+    expect((await book.boundingBox())?.width ?? 0).toBeLessThanOrEqual(480);
+  });
 });
 
 test.describe("WhatsApp", () => {
@@ -127,19 +147,20 @@ test.describe("home sections", () => {
   test("the hero's opening line is read whole, once, over the footage", async ({ page }) => {
     await page.goto("/");
     const line = page.locator('[data-section="hero"] .sequence');
-    await expect(line).toHaveText("Undetectable. 100% Real Hair. At Home. Be the Main Man, Again.");
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-      "Transformation and confidence, delivered in one visit.",
-    );
+    await expect(line).toHaveText("Natural up close. 100% real human hair. Fitted at home. Be the Main Man again.");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("A full head of hair, fitted at home.");
   });
 
-  test("the hero footage is muted, looped, inline and fetches metadata only", async ({ page }) => {
+  // UX-20, PLAT-65: every phone downloaded the 2.3 MB film.
+  test("the hero footage is muted, looped, inline, and the screen's own cut once it plays", async ({ page }) => {
     await page.goto("/");
     const video = page.locator("[data-hero-video]");
-    await expect(video).toHaveAttribute("preload", "metadata");
+    await expect(video).toHaveAttribute("preload", "none");
     await expect(video).toHaveAttribute("playsinline", "");
     await expect(video).toHaveAttribute("loop", "");
     expect(await video.evaluate((element: HTMLVideoElement) => element.muted)).toBe(true);
+    const phone = (page.viewportSize()?.width ?? 0) <= 600;
+    await expect(video).toHaveAttribute("src", phone ? /\/hero-phone\.[^/]+\.mp4$/ : /\/hero\.[^/]+\.mp4$/);
   });
 
   test("shows the design's Placeholder tags outside production", async ({ page }) => {
@@ -190,9 +211,12 @@ test.describe("home sections", () => {
     await expect(page.getByRole("link", { name: "Start the try-on" })).toHaveAttribute("href", "/try");
   });
 
-  test("how it works: four numbered steps", async ({ page }) => {
+  // CP-45: nothing books a phone call, so no step promises one.
+  test("how it works: three numbered steps, from the consultation at home", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator('[data-section="how"] ol > li')).toHaveCount(4);
+    const steps = page.locator('[data-section="how"] ol > li');
+    await expect(steps).toHaveCount(3);
+    await expect(steps.locator("h3")).toHaveText(["Consultation at home", "The fit", "Monthly service"]);
   });
 
   test("technicians, the range and testimonials: three, four and three cards", async ({ page }) => {
@@ -260,14 +284,41 @@ test.describe("reduced motion", () => {
     await expect(phrases.last()).toHaveCSS("animation-name", "none");
   });
 
-  test("the hero footage stays paused and scrolling is instant", async ({ page }) => {
+  // UX-20, PLAT-65: a phone that never played the film still downloaded 1.4 MB of it.
+  test("the hero footage stays paused, none of it is fetched, and scrolling is instant", async ({ page }) => {
+    const films = filmsFetched(page);
     await page.goto("/");
     // The footage is started, if at all, by the page's load event: a frame after it, that has happened.
     await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
     expect(await page.locator("[data-hero-video]").evaluate((video: HTMLVideoElement) => video.paused)).toBe(true);
+    expect(films).toEqual([]);
     expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior)).toBe("auto");
     // Paused already, so the control offers to play it.
     await expect(page.getByRole("button", { name: "Play the film" })).toBeVisible();
+  });
+});
+
+test.describe("a visitor saving data", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(Navigator.prototype, "connection", {
+        get: () => ({ saveData: true, effectiveType: "4g" }),
+      });
+    });
+  });
+
+  // UX-20, PLAT-65: the film cost a phone on prepaid data 2.3 MB before the visitor chose anything.
+  test("the hero footage waits for Play, and fetches nothing until then", async ({ page }) => {
+    const films = filmsFetched(page);
+    await page.goto("/");
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+    const video = page.locator("[data-hero-video]");
+    expect(await video.evaluate((element: HTMLVideoElement) => element.paused)).toBe(true);
+    expect(films).toEqual([]);
+
+    await page.getByRole("button", { name: "Play the film" }).click();
+    await expect(page.getByRole("button", { name: "Pause the film" })).toBeVisible();
+    await expect(video).toHaveAttribute("src", /\.mp4$/);
   });
 });
 
@@ -325,13 +376,27 @@ test.describe("other pages", () => {
     await expect(page.locator("header")).toBeVisible();
   });
 
-  test("privacy and terms carry their text, with no placeholder tag", async ({ page }) => {
+  // UX-39, CP-51: a heading per topic, and the number to ask for erasure is a link a phone can tap.
+  test("privacy and terms carry their text under a heading per topic, with the number as a WhatsApp link", async ({
+    page,
+  }) => {
     await page.goto("/privacy");
-    await expect(page.locator("article p")).toHaveCount(2);
+    await expect(page.locator("article h2")).toHaveCount(6);
+    await expect(page.getByRole("heading", { name: "Your rights" })).toBeVisible();
+    // Twice: to withdraw an agreement, and to ask for erasure.
+    const privacyLinks = page.locator("article a", { hasText: "+91 90079 73247" });
+    await expect(privacyLinks).toHaveCount(2);
+    for (const link of await privacyLinks.all()) {
+      await expect(link).toHaveAttribute("href", "https://wa.me/919007973247");
+    }
     await expect(page.locator(".label", { hasText: "Placeholder" })).toHaveCount(0);
     await page.goto("/terms");
-    await expect(page.locator("article p")).toHaveCount(5);
+    await expect(page.locator("article h2")).toHaveCount(8);
     await expect(page.getByText("the courts at New Delhi have jurisdiction", { exact: false })).toBeVisible();
+    await expect(page.locator("article a", { hasText: "+91 90079 73247" })).toHaveAttribute(
+      "href",
+      "https://wa.me/919007973247",
+    );
     await expect(page.locator(".label", { hasText: "Placeholder" })).toHaveCount(0);
   });
 
@@ -345,8 +410,40 @@ test.describe("other pages", () => {
     await expect(page.locator('footer a[href^="tel:"]')).toHaveCount(0);
   });
 
+  // PS-29: a reminder or the launch alert could be stopped only from the app.
+  test("/stop stops the messages its link names in one tap, and forgets the link", async ({ page }) => {
+    const sent: unknown[] = [];
+    await page.route("**/api/stop", (route) => {
+      sent.push(route.request().postDataJSON());
+      return route.fulfill({ json: { purpose: "whatsapp_launches" } });
+    });
+    await visit(page, "/stop#the-token");
+    await page.getByRole("button", { name: "Stop them" }).click();
+
+    await expect(page.getByRole("heading", { name: "Done." })).toBeFocused();
+    await expect(page.getByText("We will no longer message you when we come to a new area.")).toBeVisible();
+    expect(sent).toEqual([{ token: "the-token" }]);
+    expect(new URL(page.url()).hash).toBe("");
+  });
+
+  test("/stop says a refused or missing link no longer works, and how else to stop", async ({ page }) => {
+    await page.route("**/api/stop", (route) =>
+      route.fulfill({ status: 404, json: { error: { code: "not_found", request_id: "r" } } }),
+    );
+    await visit(page, "/stop#forged");
+    await page.getByRole("button", { name: "Stop them" }).click();
+    await expect(page.getByRole("heading", { name: "This link no longer works." })).toBeVisible();
+
+    await visit(page, "/stop");
+    await expect(page.getByRole("heading", { name: "This link no longer works." })).toBeVisible();
+    await expect(page.getByRole("link", { name: "+91 90079 73247" })).toHaveAttribute(
+      "href",
+      "https://wa.me/919007973247",
+    );
+  });
+
   test("every page says it is mm-site, and is not indexed outside production", async ({ page }) => {
-    for (const path of ["/", "/try", "/book", "/privacy", "/terms"]) {
+    for (const path of ["/", "/try", "/book", "/privacy", "/terms", "/stop"]) {
       await page.goto(path);
       await expect(page.locator('meta[name="mm-worker"]')).toHaveAttribute("content", "mm-site");
       await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex, nofollow");

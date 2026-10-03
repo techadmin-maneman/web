@@ -233,7 +233,7 @@
   cursor: grab;
 }
 
-/* A visit already done stays where it was worked, and opens its drawer rather than being dragged. */
+/* A visit done, or one the technician has begun, stays where it is, and opens its drawer rather than being dragged. */
 .finished {
   cursor: pointer;
 }
@@ -485,14 +485,19 @@
 }
 
 .trayLine,
-.trayOffered {
+.trayOffered,
+.trayWas {
   display: block;
   line-height: var(--lh-140);
   color: var(--text-muted);
 }
 
-/* An offered window the client did not ask for, lettered in oxblood as the board draws it. */
-.trayOffered {
+/*
+ * An offered window the client did not ask for, lettered in oxblood as the board draws it, and a job left on a
+ * technician who was switched off, which needs someone as much.
+ */
+.trayOffered,
+.trayWas {
   color: var(--error-on-paper);
 }
 
@@ -502,6 +507,14 @@
 
 .trayJob:hover {
   background: var(--paper-shade);
+}
+
+.trayJobStill {
+  cursor: auto;
+}
+
+.trayJobStill:hover {
+  background: transparent;
 }
 
 .trayJob:focus-visible {

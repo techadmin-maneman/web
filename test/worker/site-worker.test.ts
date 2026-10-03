@@ -1,8 +1,8 @@
 // The mm-site Worker (site/src/worker.ts): in front of /r/:code, what the preview says for each invite and the page
 // it serves when mm-api cannot answer (docs/decisions/0027-referral-landing.md); and on every page that shows a
 // price, the price book's figures written over the ones the page was built with
-// (docs/decisions/0073-prices-from-the-price-book.md), Premium shown only where the book prices it
-// (docs/decisions/0085-services-ops-can-edit.md).
+// (docs/decisions/0073-prices-from-the-price-book.md), a first fit's only from the hair systems ops offer; and the
+// built films, given a byte range at a time.
 
 import { describe, expect, it } from "vitest";
 import { HOUSE_CARD } from "../../src/config/house-card.ts";
@@ -10,6 +10,8 @@ import { createSiteWorker, type SiteEnv } from "../../site/src/worker.ts";
 
 /** The landing's head as the build writes it (site/src/layouts/Site.astro): the house card is its image. */
 const PAGE = `<!doctype html><html><head>
+<title>You have a Mane Man invite</title>
+<meta name="description" content="Home-fitted hair systems.">
 <meta property="og:title" content="You have a Mane Man invite">
 <meta property="og:description" content="Home-fitted hair systems.">
 <meta property="og:url" content="https://maneman.in/r">
@@ -22,17 +24,20 @@ const PAGE = `<!doctype html><html><head>
 
 /**
  * A page as the build writes one that shows prices: each figure's sentence, with the figures it was built with, and
- * Premium's hidden and empty, since a page is built without it.
+ * a first fit's empty, since a page is built without one.
  */
 const PRICED_PAGE = `<!doctype html><html><head>
-<script type="application/ld+json" data-structured="business">{"priceRange":"Rs. 30,000"}</script>
+<script type="application/ld+json" data-structured="business">{"name":"Mane Man"}</script>
 <script type="application/ld+json" data-structured="faq">{}</script>
 </head><body>
-<div class="amount" data-price="{firstFit}">Rs. 30,000</div>
-<div class="amount" data-premium hidden data-price="{premiumFirstFit}"></div>
-<span data-price="A standard base in the first year: {firstFit} plus twelve service visits at {service} — {firstYear}.">A standard base in the first year: Rs. 30,000 plus twelve service visits at Rs. 2,000 — Rs. 54,000.</span>
+<div class="amount" data-price="From {firstFit}"></div>
+<div class="amount" data-price="{service}">Rs. 2,000</div>
+<span data-price="Your first year, from {firstYear}: the first fit and twelve service visits at {service}."></span>
 <p>Nothing to fill</p>
 </body></html>`;
+
+/** The figures of PRICED_PAGE as it was built. */
+const AS_BUILT = ["", "Rs. 2,000", ""];
 
 const VALID = { state: "valid", referrer_first_name: "Rohit", card: { state: "personal", version: 3 } };
 const UNKNOWN = { state: "unknown", referrer_first_name: null, card: { state: "house", version: 1 } };
@@ -46,25 +51,22 @@ const offered = (type: string, tier: string, name: string, amountExGst: number) 
   price: price(amountExGst),
 });
 
-/** The book, moved on from the figures the page was built with, and pricing no premium first fit. */
+/** The book, moved on from the figures the page was built with, and offering two hair systems as first fits. */
 const PRICES = {
   on: "2026-09-26",
   tier: "standard",
-  first_fit: price(3_500_000),
   service: price(250_000),
   replacement: price(1_600_000),
   services: [
-    offered("first_fit", "standard", "First fit", 3_500_000),
+    offered("first_fit", "essential", "Mane Man Essential", 3_500_000),
+    offered("first_fit", "natmax", "Mane Man NatMax", 4_500_000),
     offered("service", "standard", "Service visit", 250_000),
     offered("replacement", "standard", "Replacement", 1_600_000),
   ],
 };
 
-/** The same book, once ops have added a first fit coded premium in the console. */
-const WITH_PREMIUM = {
-  ...PRICES,
-  services: [...PRICES.services, offered("first_fit", "premium", "Premium first fit", 4_500_000)],
-};
+/** The same book while ops offer no hair system. */
+const NO_HAIR_SYSTEM = { ...PRICES, services: PRICES.services.filter((service) => service.type !== "first_fit") };
 
 type Api = (request: Request) => Response | Promise<Response>;
 
@@ -111,7 +113,9 @@ async function open(api: Api, headers: HeadersInit = {}, origin = "https://manem
   const meta = (property: string) =>
     new RegExp(`<meta property="${property}" content="([^"]*)"`).exec(html)?.[1] ?? "(missing)";
   const invite = /data-invite="([^"]*)"/.exec(html)?.[1]?.replaceAll("&quot;", '"') ?? "(missing)";
-  return { response, html, meta, invite, asked };
+  const title = /<title>([^<]*)<\/title>/.exec(html)?.[1] ?? "(missing)";
+  const description = /<meta name="description" content="([^"]*)"/.exec(html)?.[1] ?? "(missing)";
+  return { response, html, meta, invite, title, description, asked };
 }
 
 /** A page with prices, read back: its figures, its structured data and what the booking form's island is given. */
@@ -124,12 +128,9 @@ function readPriced(html: string) {
   };
   const figures = [...html.matchAll(/data-price="[^"]*">([^<]*)</g)].map(([, text]) => text);
   const written = /<body data-prices="([^"]*)"/.exec(html)?.[1]?.replaceAll("&quot;", '"');
-  // Whether Premium's figure is still hidden, as the page was built.
-  const premiumHidden = html.includes('<div class="amount" data-premium hidden');
   return {
     structured,
     figures,
-    premiumHidden,
     written: written === undefined ? null : (JSON.parse(written) as unknown),
   };
 }
@@ -178,6 +179,36 @@ describe("the site Worker at /r/:code", () => {
     expect((await visit()).asked.filter(isRewardRequest)).toHaveLength(1);
   });
 
+  // CP-24: the tab and search results read "You have a Mane Man invite" whatever the invite.
+  it("titles and describes the page as its preview, by the referrer's name", async () => {
+    const page = await open(withReward());
+    expect(page.title).toBe("Rohit sent you a Mane Man invite");
+    expect(page.description).toBe(page.meta("og:description"));
+    expect(page.description).toContain("3 service visits free");
+  });
+
+  // BK-62: a code we do not know is headed as /book is, so its tab does not say there is an invite.
+  it("titles a code we do not know as the booking page", async () => {
+    const page = await open(() => Response.json(UNKNOWN));
+    expect(page.title).toBe("Book a free consultation — Mane Man");
+    expect(page.description).not.toContain("service visits");
+  });
+
+  it("leaves the page's own title when mm-api cannot say what the invite is", async () => {
+    const page = await open(() => Response.json({ error: { code: "unavailable" } }, { status: 503 }));
+    expect(page.title).toBe("You have a Mane Man invite");
+  });
+
+  // BK-62: /r with no code answered 200 with a form that would post to /api/r//consultation.
+  it.each(["/r", "/r/"])("sends %s, which has no code, to /book", async (path) => {
+    const { env, asked, files } = siteEnv(withReward());
+    const response = await createSiteWorker().fetch(new Request(`https://maneman.in${path}?utm_source=wa`), env);
+    expect(response.status).toBe(301);
+    expect(response.headers.get("Location")).toBe("https://maneman.in/book?utm_source=wa");
+    expect(asked).toEqual([]);
+    expect(files).toEqual([]);
+  });
+
   // REQ-S8-01: a code the API does not know books without credits, so its preview must not promise them.
   it("promises no visits for an invite that is not valid, and versions the house card", async () => {
     const page = await open(() => Response.json(UNKNOWN));
@@ -205,6 +236,7 @@ describe("the site Worker at /r/:code", () => {
   // FEO-18: a failure is not an unknown code. The page is served as built and the island asks again.
   it.each([
     ["answers 503", () => Response.json({ error: { code: "unavailable" } }, { status: 503 })],
+    ["refuses an address past its misses", () => Response.json({ error: { code: "rate_limited" } }, { status: 429 })],
     [
       "throws",
       () => {
@@ -223,10 +255,14 @@ describe("the site Worker at /r/:code", () => {
   });
 
   // FEO-25: mm-api counts an open only for a person, so it needs to know who asked.
-  it("passes the visitor's user agent on to mm-api", async () => {
-    const page = await open(() => Response.json(VALID), { "User-Agent": "WhatsApp/2.23.20.0" });
+  it("passes the visitor's user agent and address on to mm-api", async () => {
+    const page = await open(() => Response.json(VALID), {
+      "User-Agent": "WhatsApp/2.23.20.0",
+      "CF-Connecting-IP": "203.0.113.7",
+    });
     const lookUp = page.asked.find((request) => new URL(request.url).pathname === "/api/r/RM4K7P");
     expect(lookUp?.headers.get("User-Agent")).toBe("WhatsApp/2.23.20.0");
+    expect(lookUp?.headers.get("CF-Connecting-IP")).toBe("203.0.113.7");
   });
 
   it("gives the landing's island the book's prices beside the invite", async () => {
@@ -250,31 +286,25 @@ describe("the site Worker on a page that shows a price", () => {
 
     expect(page.response.status).toBe(200);
     expect(page.figures).toEqual([
-      "Rs. 35,000",
-      "",
-      "A standard base in the first year: Rs. 35,000 plus twelve service visits at Rs. 2,500 — Rs. 65,000.",
+      "From Rs. 35,000",
+      "Rs. 2,500",
+      "Your first year, from Rs. 65,000: the first fit and twelve service visits at Rs. 2,500.",
     ]);
-    expect(page.premiumHidden).toBe(true);
     expect(page.html).toContain("<p>Nothing to fill</p>");
     expect(page.files.map((file) => new URL(file.url).pathname)).toEqual([path]);
   });
 
-  // The owner's ruling of 27 September 2026 (ADR 0085): premium is a service ops price in the console.
-  it("shows Premium, with the book's figure, once the book prices a first fit coded premium", async () => {
-    const page = await visit("/", withPrices(undefined, WITH_PREMIUM));
+  // The owner's decision of 2 October 2026: only the hair systems ops offer, and no generic first fit in their place.
+  it("gives no first-fit figure while ops offer no hair system, and tells the booking form so", async () => {
+    const page = await visit("/book", withPrices(undefined, NO_HAIR_SYSTEM));
 
-    expect(page.figures).toEqual([
-      "Rs. 35,000",
-      "Rs. 45,000",
-      "A standard base in the first year: Rs. 35,000 plus twelve service visits at Rs. 2,500 — Rs. 65,000.",
-    ]);
-    expect(page.premiumHidden).toBe(false);
-    expect(page.html).toContain('<div class="amount" data-premium data-price="{premiumFirstFit}">Rs. 45,000</div>');
+    expect(page.figures).toEqual(["", "Rs. 2,500", ""]);
+    expect(page.written).toEqual(NO_HAIR_SYSTEM);
   });
 
   // The owner took the prices off the site on 1 October 2026 (ADR 0103), the price range search engines read with them.
   it("builds the structured data again, with no price while the site gives none", async () => {
-    const page = await visit("/", withPrices(undefined, WITH_PREMIUM));
+    const page = await visit("/", withPrices());
 
     expect(page.structured("business")).toMatchObject({ "@type": "LocalBusiness", name: "Mane Man" });
     expect(page.structured("business")).not.toHaveProperty("priceRange");
@@ -321,17 +351,16 @@ describe("the site Worker on a page that shows a price", () => {
       },
     ],
     ["answers a shape it does not know", () => Response.json({ ...PRICES, service: null })],
+    [
+      "answers with no services, as an mm-api from before them did",
+      () => Response.json({ ...PRICES, services: undefined }),
+    ],
   ])("serves the page as built when mm-api %s and it has no answer yet", async (_, api: Api) => {
     const page = await visit("/", api);
 
     expect(page.response.status).toBe(200);
-    expect(page.figures).toEqual([
-      "Rs. 30,000",
-      "",
-      "A standard base in the first year: Rs. 30,000 plus twelve service visits at Rs. 2,000 — Rs. 54,000.",
-    ]);
-    expect(page.premiumHidden).toBe(true);
-    expect(page.structured("business")).toEqual({ priceRange: "Rs. 30,000" });
+    expect(page.figures).toEqual(AS_BUILT);
+    expect(page.structured("business")).toEqual({ name: "Mane Man" });
     expect(page.written).toBeNull();
   });
 
@@ -343,7 +372,7 @@ describe("the site Worker on a page that shows a price", () => {
     now = 120_000;
     const page = await visit("/", () => Response.json({ error: { code: "unavailable" } }, { status: 503 }), worker);
 
-    expect(page.figures[0]).toBe("Rs. 35,000");
+    expect(page.figures[0]).toBe("From Rs. 35,000");
     expect(page.written).toEqual(PRICES);
   });
 
@@ -358,6 +387,87 @@ describe("the site Worker on a page that shows a price", () => {
     const page = await visit("/try", withPrices());
 
     expect(page.asked).toEqual([]);
-    expect(page.figures[0]).toBe("Rs. 30,000");
+    expect(page.figures).toEqual(AS_BUILT);
+  });
+});
+
+describe("the site Worker on a built film", () => {
+  const PATH = "/_astro/hero.bJkdvSLL.mp4";
+
+  /** 1,000 bytes, each its own position: the part a range gives can be read back. */
+  const FILM = Uint8Array.from({ length: 1000 }, (_, position) => position % 256);
+
+  /** The assets as Cloudflare runs them: the whole film whatever is asked, or `status` with no body. */
+  function filmEnv(status: number) {
+    const asked: Request[] = [];
+    const fetcher = (answer: (request: Request) => Response) =>
+      ({
+        fetch: (input: RequestInfo | URL, init?: RequestInit) => answer(new Request(input, init)),
+      }) as unknown as Fetcher;
+    const headers = {
+      "Content-Type": "video/mp4",
+      ETag: '"film"',
+      "Cache-Control": "public, max-age=31536000, immutable",
+    };
+    const env: SiteEnv = {
+      ASSETS: fetcher(() => new Response(status === 200 ? FILM : null, { status, headers })),
+      API: fetcher((request) => {
+        asked.push(request);
+        return new Response(null, { status: 500 });
+      }),
+    };
+    return { env, asked };
+  }
+
+  async function fetchFilm(headers: HeadersInit = {}, status = 200) {
+    const { env, asked } = filmEnv(status);
+    const response = await createSiteWorker().fetch(new Request(`https://maneman.in${PATH}`, { headers }), env);
+    const body = new Uint8Array(await response.arrayBuffer());
+    return { response, body, asked };
+  }
+
+  // UX-20, PLAT-65: a Range of bytes=0-1023 got 200 and all 2,343,106 bytes, so iOS Safari never played the film.
+  it("gives the part a range asks for, as iOS Safari needs", async () => {
+    const { response, body, asked } = await fetchFilm({ Range: "bytes=0-1" });
+
+    expect(response.status).toBe(206);
+    expect(response.headers.get("Content-Range")).toBe("bytes 0-1/1000");
+    expect(response.headers.get("Accept-Ranges")).toBe("bytes");
+    expect(response.headers.get("Content-Type")).toBe("video/mp4");
+    expect(response.headers.get("Cache-Control")).toBe("public, max-age=31536000, immutable");
+    expect([...body]).toEqual([0, 1]);
+    expect(asked).toEqual([]);
+  });
+
+  it("gives the rest of the film from where a range starts", async () => {
+    const { response, body } = await fetchFilm({ Range: "bytes=600-" });
+
+    expect(response.status).toBe(206);
+    expect(response.headers.get("Content-Range")).toBe("bytes 600-999/1000");
+    expect(body.length).toBe(400);
+    expect(body[0]).toBe(600 % 256);
+  });
+
+  it("gives the whole film, saying parts may be asked for, when no range is asked", async () => {
+    const { response, body } = await fetchFilm();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Accept-Ranges")).toBe("bytes");
+    expect(response.headers.get("Content-Range")).toBeNull();
+    expect(body.length).toBe(1000);
+  });
+
+  it("answers 416 for a range past the end", async () => {
+    const { response, body } = await fetchFilm({ Range: "bytes=1000-" });
+
+    expect(response.status).toBe(416);
+    expect(response.headers.get("Content-Range")).toBe("bytes */1000");
+    expect(body.length).toBe(0);
+  });
+
+  it("passes on what the assets say of a film the browser already has", async () => {
+    const { response } = await fetchFilm({ Range: "bytes=0-1", "If-None-Match": '"film"' }, 304);
+
+    expect(response.status).toBe(304);
   });
 });

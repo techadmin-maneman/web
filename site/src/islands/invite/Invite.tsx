@@ -22,22 +22,24 @@
 // if the friend leaves and books there later (site/src/lib/remembered-invite.ts).
 
 import { useEffect, useRef, useState } from "preact/hooks";
-import { referral } from "../../content/referral.ts";
+import { invitePageTitle, referral } from "../../content/referral.ts";
 import { booking, PRICES_SHOWN } from "../../content/site.ts";
 import {
   fetchInvite,
   fetchPublishedPrices,
   fetchReferralReward,
   type Invite as InviteAnswer,
+  type PincodeAnswer,
   type ReferralReward,
 } from "../../lib/api.ts";
 import { cardPath, HOUSE_CARD, isInvite } from "../../lib/invite.ts";
-import { BUILT_WORDS, isPublishedPrices, priceWords, standardOf, type PriceWords } from "../../lib/prices.ts";
+import { BUILT_WORDS, isPublishedPrices, pricesOf, priceWords, type PriceWords } from "../../lib/prices.ts";
 import { rememberInvite } from "../../lib/remembered-invite.ts";
 import { isReferralReward } from "../../lib/reward.ts";
 import { fill } from "../../lib/text.ts";
-import { Consultation } from "./Consultation.tsx";
+import { Consultation, type Plan } from "./Consultation.tsx";
 import { Booked, Listed, type Booking, type Listing } from "./Done.tsx";
+import { onStepChange, pushStep, startAtPincode } from "./history.ts";
 import { HowItWorks } from "./HowItWorks.tsx";
 import styles from "./Invite.module.css";
 import { codeInPath, inviteInPage, pricesInPage, rewardInPage } from "./page.ts";
@@ -66,6 +68,19 @@ type State = "arrival" | "booked" | "listed";
 /** The card the page shows: the referrer's own while it is live, else our house one. */
 const CARD = { width: 1200, height: 630 };
 
+/** The site's own page is headed with what it books: the plan chosen, or the waitlist where we do not come yet. */
+function bookingTitle(answer: PincodeAnswer | null, plan: Plan): string {
+  if (answer?.served === false) return booking.titleWaitlist;
+  if (answer?.served === true && plan === "one_visit") return booking.titleOneVisit;
+  return booking.title;
+}
+
+/** The invite's heading, which for a code we do not know promises nothing the invite would have. */
+function inviteHeading(invite: InviteAnswer | null): string {
+  if (invite?.state === "unknown") return referral.arrival.unknown.title;
+  return referral.arrival.title;
+}
+
 export default function Invite(props: Props) {
   // Null until the invite is known: the page then says only what is true of every invite.
   const [invite, setInvite] = useState<InviteAnswer | null>(null);
@@ -74,6 +89,8 @@ export default function Invite(props: Props) {
   // Null until it is known: no sentence gives a count without it.
   const [reward, setReward] = useState<ReferralReward | null>(() => rewardInPage());
   const [state, setState] = useState<State>("arrival");
+  // Kept here rather than in the form, so the page's heading follows it and a changed pincode keeps it.
+  const [plan, setPlan] = useState<Plan>("consultation");
   const [booked, setBooked] = useState<Booking | null>(null);
   const [listed, setListed] = useState<Listing | null>(null);
   const pincode = usePincode();
@@ -83,6 +100,7 @@ export default function Invite(props: Props) {
   const name = invited ? (invite?.referrer_first_name ?? null) : null;
   // Only a valid invite carries its visits; the API books any other without them.
   const credits = invited && invite?.state === "valid";
+  const unknown = invited && invite?.state === "unknown";
 
   // The invite: from the page where the Worker wrote it, otherwise from the API.
   useEffect(() => {
@@ -103,11 +121,16 @@ export default function Invite(props: Props) {
     if (invited && invite?.state === "valid") rememberInvite(codeInPath());
   }, [invited, invite]);
 
+  // The Worker titles the tab; where it could not look the invite up, the island does once it has.
+  useEffect(() => {
+    if (invited && invite !== null) document.title = invitePageTitle(invite);
+  }, [invited, invite]);
+
   // The prices: from the page where the Worker wrote them, otherwise from the API.
   useEffect(() => {
     if (!PRICES_SHOWN || pricesInPage() !== null) return;
     void fetchPublishedPrices().then((found) => {
-      if (found.ok && isPublishedPrices(found.body)) setPrices(priceWords(standardOf(found.body)));
+      if (found.ok && isPublishedPrices(found.body)) setPrices(priceWords(pricesOf(found.body)));
     });
   }, []);
 
@@ -136,6 +159,28 @@ export default function Invite(props: Props) {
   }, [props.allowStateSwitch]);
 
   useEffect(() => {
+    startAtPincode();
+  }, []);
+
+  // Back and Forward move between the page's steps; a confirmation shows again only while this page holds it.
+  useEffect(
+    () =>
+      onStepChange((entry) => {
+        if (entry.step === "done" && booked !== null) {
+          setState("booked");
+          return;
+        }
+        if (entry.step === "done" && listed !== null) {
+          setState("listed");
+          return;
+        }
+        setState("arrival");
+        pincode.show(entry.answer);
+      }),
+    [booked, listed],
+  );
+
+  useEffect(() => {
     if (state !== "arrival") {
       globalThis.scrollTo(0, 0);
       heading.current?.focus();
@@ -161,20 +206,20 @@ export default function Invite(props: Props) {
     <section class={styles.arrival}>
       <div class={`${styles.inner} ${styles.grid}`}>
         <div class={styles.lead}>
-          {invited && (
+          {invited && !unknown && (
             <div class={`caps ${styles.from}`}>
               {name === null ? referral.arrival.unnamed : fill(referral.arrival.invited, { name })}
             </div>
           )}
           <h1 ref={heading} tabIndex={-1} class={styles.title}>
-            {invited ? referral.arrival.title : booking.title}
+            {invited ? inviteHeading(invite) : bookingTitle(answer, plan)}
           </h1>
           <div class={styles.offer}>
             {!invited && <p>{booking.intro}</p>}
             {offer !== null && <p>{offer}</p>}
-            {invited && invite !== null && !credits && (
+            {unknown && (
               <p>
-                <span class={styles.unknownTitle}>{referral.arrival.unknown.title}</span>
+                <span class={styles.unknownTitle}>{referral.arrival.unknown.notice}</span>
                 <span class={styles.unknownBody}>{referral.arrival.unknown.body(reward)}</span>
               </p>
             )}
@@ -186,9 +231,13 @@ export default function Invite(props: Props) {
             <Consultation
               {...formProps}
               answer={answer}
+              plan={plan}
+              onPlanChange={setPlan}
               onBooked={(result) => {
                 setBooked(result);
+                setListed(null);
                 setState("booked");
+                pushStep("done", answer);
               }}
             />
           )}
@@ -198,7 +247,9 @@ export default function Invite(props: Props) {
               answer={answer}
               onListed={(result) => {
                 setListed(result);
+                setBooked(null);
                 setState("listed");
+                pushStep("done", answer);
               }}
             />
           )}

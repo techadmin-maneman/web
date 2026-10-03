@@ -3,8 +3,9 @@
 import { createScheduledController } from "cloudflare:test";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { lastCompletedAt } from "../../src/domain/cron-runs.ts";
 import worker from "../../src/index.ts";
-import { captureLogs, fakeQueue, markDatabase } from "./helpers.ts";
+import { captureLogs, countRowsRead, fakeQueue, markDatabase } from "./helpers.ts";
 import { insertJob, insertPerson, syntheticJpeg } from "./tryon-fixtures.ts";
 
 beforeEach(() => {
@@ -21,6 +22,13 @@ function queueBatch(queue: string, bodies: unknown[]) {
     retry: vi.fn(),
   }));
   return { queue, messages, ackAll: vi.fn(), retryAll: vi.fn() };
+}
+
+/** What the runbook's first step of a restore writes. */
+async function switchMaintenanceOn(startedAt: string): Promise<void> {
+  await env.DB.prepare("INSERT INTO maintenance (id, reason, started_at) VALUES (1, 'restoring D1', ?1)")
+    .bind(startedAt)
+    .run();
 }
 
 describe("queue handler", () => {
@@ -88,16 +96,87 @@ describe("queue handler", () => {
     expect(await env.DB.prepare("SELECT state FROM outbound_messages").first()).toEqual({ state: "sent" });
   });
 
+  it("ends each batch with a line saying what it cost D1", async () => {
+    await markDatabase();
+    const leadId = "0b9f1a52-7c0b-4f5b-9a0e-2f4f6f2b1a04";
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES ('p1', '2026-09-21T00:00:00Z', '+919810000001', 'A', 1)",
+      ),
+      env.DB.prepare(
+        `INSERT INTO leads (id, person_id, created_at, source, city, first_choice_window, loss_extent, request_id)
+         VALUES (?1, 'p1', '2026-09-21T00:00:00Z', 'form', 'Gurgaon', 'weekday_am', 'crown', 'r')`,
+      ).bind(leadId),
+    ]);
+    const logs = captureLogs();
+    const rowsRead = countRowsRead();
+    const batch = queueBatch("mm-crm-sync-local", [{ lead_id: leadId, request_id: "r" }]);
+
+    await worker.queue(batch as unknown as MessageBatch, env);
+    const summary = logs.lines().find((line) => line.event === "queue_batch");
+    const read = rowsRead();
+    vi.restoreAllMocks();
+
+    expect(summary).toMatchObject({ queue: "mm-crm-sync-local", messages: 1, d1_rows_read: read });
+    expect(summary?.d1_rows_written).toBeGreaterThan(0);
+    expect(summary?.d1_queries).toBeGreaterThan(1);
+  });
+
   it("retries messages from a queue it does not know", async () => {
     await markDatabase();
     const batch = queueBatch("mm-mystery-local", [{}]);
     await worker.queue(batch as unknown as MessageBatch, env);
     expect(batch.retryAll).toHaveBeenCalledOnce();
   });
+
+  it("turns a batch away while D1 is being restored, to be delivered again in five minutes", async () => {
+    await markDatabase();
+    await switchMaintenanceOn(new Date().toISOString());
+    const batch = queueBatch("mm-crm-sync-local", [{ lead_id: "lead-1", request_id: "r" }]);
+
+    await worker.queue(batch as unknown as MessageBatch, env);
+
+    expect(batch.retryAll).toHaveBeenCalledWith({ delaySeconds: 300 });
+    expect(batch.messages[0]?.ack).not.toHaveBeenCalled();
+  });
+});
+
+describe("scheduled handler while D1 is being restored", () => {
+  const queues = {
+    CRM_QUEUE: fakeQueue(),
+    RENDER_QUEUE: fakeQueue(),
+    MESSAGE_QUEUE: fakeQueue(),
+    FSM_QUEUE: fakeQueue(),
+  };
+
+  it("runs no job and notes no run", async () => {
+    await markDatabase();
+    await switchMaintenanceOn(new Date().toISOString());
+    const logs = captureLogs();
+
+    await worker.scheduled(createScheduledController({ cron: "*/5 * * * *" }), { ...env, ...queues });
+
+    expect(logs.lines().some((line) => line.event === "sweep")).toBe(false);
+    expect(logs.lines().some((line) => line.event === "cron_stopped_for_maintenance")).toBe(true);
+    expect(await lastCompletedAt(env.DB)).toBeNull();
+    expect(await env.DB.prepare("SELECT COUNT(*) AS alerts FROM alerts").first()).toEqual({ alerts: 0 });
+  });
+
+  it("tells ops once the switch has been on for an hour", async () => {
+    await markDatabase();
+    const startedAt = new Date(Date.now() - 61 * 60_000).toISOString();
+    await switchMaintenanceOn(startedAt);
+
+    await worker.scheduled(createScheduledController({ cron: "*/5 * * * *" }), { ...env, ...queues });
+
+    const alert = await env.DB.prepare("SELECT key, message FROM alerts").first<{ key: string; message: string }>();
+    expect(alert?.key).toBe(`maintenance:${startedAt}`);
+    expect(alert?.message).toContain('switch it off: runbook, "Restoring D1"');
+  });
 });
 
 describe("scheduled handler", () => {
-  it("runs the sweeper", async () => {
+  it("runs the sweeper, and notes the run as finished", async () => {
     await markDatabase();
     const logs = captureLogs();
     await worker.scheduled(createScheduledController({ cron: "*/5 * * * *" }), {
@@ -107,6 +186,32 @@ describe("scheduled handler", () => {
       MESSAGE_QUEUE: fakeQueue(),
     });
     expect(logs.lines().some((line) => line.event === "sweep")).toBe(true);
+    expect(await lastCompletedAt(env.DB)).not.toBeNull();
+  });
+
+  it("ends the run with a line saying what it cost D1, and what each job read of it", async () => {
+    await markDatabase();
+    const logs = captureLogs();
+    const rowsRead = countRowsRead();
+
+    await worker.scheduled(createScheduledController({ cron: "*/5 * * * *" }), {
+      ...env,
+      CRM_QUEUE: fakeQueue(),
+      RENDER_QUEUE: fakeQueue(),
+      MESSAGE_QUEUE: fakeQueue(),
+      FSM_QUEUE: fakeQueue(),
+    });
+    const summary = logs.lines().find((line) => line.event === "cron_run");
+    const read = rowsRead();
+    vi.restoreAllMocks();
+
+    expect(summary).toMatchObject({ job: "cron", failed_jobs: [], d1_rows_read: read });
+    expect(summary?.d1_rows_written).toBeGreaterThan(0);
+    const byJob = summary?.d1_rows_read_by_job as Record<string, number>;
+    expect(Object.keys(byJob)).toEqual(expect.arrayContaining(["sweeper", "referrals", "books_sync"]));
+    const jobsRead = Object.values(byJob).reduce((total, rows) => total + rows, 0);
+    expect(jobsRead).toBeGreaterThan(0);
+    expect(jobsRead).toBeLessThanOrEqual(read);
   });
 
   it("offers captured payments to Books", async () => {

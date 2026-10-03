@@ -1,6 +1,7 @@
 // Everything the phone holds, in one IndexedDB database. It is app-private, as
 // the design's open question asks ("Needs an app-private store, not the camera
-// roll"), and it is wiped whole when the session ends or ops revoke the device.
+// roll"), and it is wiped whole when the session ends or ops revoke the device. A technician ops switch off keeps
+// the work he has not sent for a while (./set-aside.ts).
 //
 //   device   the device's own ID and label, made once at enrolment
 //   jobs     today's and tomorrow's jobs and cards, so the app opens in a basement
@@ -173,6 +174,11 @@ export async function add(name: StoreName, value: object): Promise<number> {
 
 export async function remove(name: StoreName, key: IDBValidKey): Promise<void> {
   await write(name, (target) => target.delete(key));
+}
+
+/** Everything one store holds, gone; the other stores keep theirs. */
+export async function clear(name: StoreName): Promise<void> {
+  await write(name, (target) => target.clear());
 }
 
 /**

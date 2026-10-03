@@ -9,6 +9,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, type Kind, type OpsService, type Price, type ServiceBook } from "../api.ts";
 import { settings } from "../content.ts";
+import { addDays } from "../dispatch/job.ts";
 import { CODE, codeOf } from "./code.ts";
 import styles from "./settings.module.css";
 
@@ -153,8 +154,8 @@ function FormButtons(props: { readonly ready: boolean; readonly onNext: () => vo
 }
 
 /**
- * A new price from a day, or, given `correcting`, the price still to come it corrects: taken back and set again, in
- * one go. The boxes start from the price in force, or the one corrected.
+ * A new price from a day, tomorrow at the earliest, or, given `correcting`, the price still to come it corrects: taken
+ * back and set again, in one go. The boxes start from the price in force, or the one corrected.
  */
 export function PriceForm(props: {
   readonly target: Priced;
@@ -170,7 +171,8 @@ export function PriceForm(props: {
   const start = correcting ?? inForce;
   const [rupeesTyped, setRupees] = useState(start === undefined ? "" : String(start.amount_ex_gst / 100));
   const [gst, setGst] = useState(start === undefined ? "" : String(start.gst_percent));
-  const [from, setFrom] = useState(correcting?.valid_from ?? today);
+  const firstDay = addDays(today, 1);
+  const [from, setFrom] = useState(correcting?.valid_from ?? firstDay);
   const key = `${target.item}-${target.tier}`;
   // Rupees on the screen, paise in the book: the API and the database count in paise.
   const change = {
@@ -253,7 +255,7 @@ export function PriceForm(props: {
               className={styles.date}
               id={`price-from-${key}`}
               type="date"
-              min={today}
+              min={firstDay}
               value={from}
               aria-describedby={hint}
               onChange={(event) => {

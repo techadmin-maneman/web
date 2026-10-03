@@ -105,7 +105,8 @@ describe("POST /api/bookings", () => {
         amount: 200000,
         currency: "INR",
         name: "Mane Man",
-        description: "Service visit, 2026-09-22",
+        // The day as the app writes it, never "2026-09-22" (MON-42).
+        description: "Service visit · Tue 22 Sep",
         prefill: { name: "Rohit Malhotra", contact: "+919810000001" },
       },
     });
@@ -276,7 +277,7 @@ describe("booking a service ops added", () => {
       .first();
     expect(held).toEqual({ type: "service", tier: "premium", minutes: 120, amount: 250000 });
     const started = await (await post(app, "/api/bookings", { hold_id: holdId })).json<{ checkout: object }>();
-    expect(started.checkout).toMatchObject({ amount: 250000, description: "Premium service, 2026-09-22" });
+    expect(started.checkout).toMatchObject({ amount: 250000, description: "Premium service · Tue 22 Sep" });
 
     await captured(holdId);
     const fsm = createStubFsm(withItem());

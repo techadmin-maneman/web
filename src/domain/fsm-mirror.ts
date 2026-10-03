@@ -5,34 +5,19 @@
 //
 // The visit's service, its kind and its tier, comes from its FSM item: the
 // service whose item it is by the ID kept on it, else the one of its name,
-// else, for an item scripts/setup-fsm.ts made, its kind's standard service.
+// else, for an item named as its kind is, its kind's standard service, or for
+// a first fit, which has none, no tier at all.
 // A visit a hold booked keeps the hold's tier, since the hold is what was
 // sold, and FSM may hold it on its kind's item where it had none of its own
 // (docs/decisions/0085-services-ops-can-edit.md).
 
-import { STANDARD_TIER, visitTypeOfService, type VisitType } from "../config/visit-types.ts";
+import { hasStandardService, STANDARD_TIER, visitTypeOfService, type VisitType } from "../config/visit-types.ts";
 import { toE164 } from "../lib/mobile.ts";
 import { initialsOf } from "../lib/names.ts";
 import type { Logger } from "../log.ts";
 import type { FsmAppointment, FsmProvider } from "../providers/fsm.ts";
 import { minutesBetween } from "../lib/durations.ts";
-
-export type AppointmentStatus =
-  "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
-
-/** FSM's status words, as the mirror stores them. Any other word is kept as "other", with FSM's own. */
-const STATUSES: Readonly<Record<string, AppointmentStatus>> = {
-  Scheduled: "scheduled",
-  Dispatched: "dispatched",
-  "In Progress": "in_progress",
-  Completed: "completed",
-  Cancelled: "cancelled",
-  Terminated: "terminated",
-};
-
-export function statusOf(fsmStatus: string): AppointmentStatus {
-  return STATUSES[fsmStatus] ?? "other";
-}
+import { statusOf, terminatedAs, type AppointmentStatus } from "./visit-status.ts";
 
 export interface SyncResult {
   /** "written" when the copy now matches FSM; "gone" when FSM no longer has the appointment. */
@@ -157,10 +142,6 @@ function utc(instant: string | null): string | null {
   return instant === null ? null : new Date(instant).toISOString();
 }
 
-/** How a closed visit ended: done, partly done with the technician's reason, or not at all, the client not home. */
-export const VISIT_OUTCOMES = ["done", "partial", "no_show"] as const;
-export type VisitOutcome = (typeof VISIT_OUTCOMES)[number];
-
 /** A closed appointment's visit, with its times: done when FSM completed it; otherwise FSM terminated it. */
 function visitOf(appointment: FsmAppointment, status: AppointmentStatus) {
   if (status !== "completed" && status !== "terminated") return null;
@@ -168,28 +149,6 @@ function visitOf(appointment: FsmAppointment, status: AppointmentStatus) {
   const endedAt = utc(appointment.actualEnd);
   const durationMinutes = startedAt !== null && endedAt !== null ? minutesBetween(startedAt, endedAt) : null;
   return { startedAt, endedAt, durationMinutes, done: status === "completed" };
-}
-
-/**
- * How a visit FSM terminated ended: a no-show where the technician closed it
- * as one (BIZ-21), else partial, with the reason he chose from the app's list
- * (src/config/job-sheet.ts). FSM holds either only as prose in the closing
- * note, so it comes from the job's own outcome event. A visit closed in FSM's
- * own screen is partial with no reason.
- */
-async function terminatedAs(
-  db: D1Database,
-  appointmentId: string,
-): Promise<{ outcome: VisitOutcome; partialReason: string | null }> {
-  const row = await db
-    .prepare(
-      `SELECT json_extract(body, '$.outcome') AS outcome, json_extract(body, '$.reason') AS reason FROM job_events
-       WHERE appointment_id = ?1 AND kind = 'outcome' AND superseded = 0 ORDER BY received_at DESC LIMIT 1`,
-    )
-    .bind(appointmentId)
-    .first<{ outcome: unknown; reason: unknown }>();
-  if (row?.outcome === "no_show") return { outcome: "no_show", partialReason: null };
-  return { outcome: "partial", partialReason: typeof row?.reason === "string" ? row.reason : null };
 }
 
 /**
@@ -316,7 +275,7 @@ async function serviceOfItems(
   fsm: FsmProvider,
   serviceIds: readonly string[],
   at: string,
-): Promise<{ type: VisitType; tier: string } | null> {
+): Promise<{ type: VisitType; tier: string | null } | null> {
   if (serviceIds.length === 0) return null;
   let names = await itemNames(db, serviceIds);
   if (names.size < new Set(serviceIds).size) {
@@ -342,14 +301,15 @@ async function serviceOfItems(
 }
 
 /**
- * The service an FSM item is: the one its ID is kept on, else the one of its name, else, for an item named as
- * scripts/setup-fsm.ts names a kind's, that kind's standard service. Null for an item that is no service of ours.
+ * The service an FSM item is: the one its ID is kept on, else the one of its name, else, for an item named as a kind
+ * is, that kind's standard service, or a first fit of no hair system we know. Null for an item that is no service of
+ * ours.
  */
 async function serviceByItem(
   db: D1Database,
   itemId: string,
   name: string | null,
-): Promise<{ type: VisitType; tier: string } | null> {
+): Promise<{ type: VisitType; tier: string | null } | null> {
   const service = await db
     .prepare(
       `SELECT kind AS type, tier, 0 AS rank FROM services WHERE fsm_item_id = ?1
@@ -360,7 +320,8 @@ async function serviceByItem(
     .first<{ type: VisitType; tier: string }>();
   if (service !== null) return service;
   const type = visitTypeOfService(name ?? "");
-  return type === null ? null : { type, tier: STANDARD_TIER };
+  if (type === null) return null;
+  return { type, tier: hasStandardService(type) ? STANDARD_TIER : null };
 }
 
 async function itemNames(db: D1Database, ids: readonly string[]): Promise<Map<string, string>> {

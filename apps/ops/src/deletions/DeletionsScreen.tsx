@@ -26,6 +26,7 @@ import { api, type DeletionRequest } from "../api.ts";
 import { DecisionQueue } from "../components/DecisionQueue.tsx";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { deletions } from "../content.ts";
+import { useAccess } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";
 import { phoneWords } from "../lib/phone.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
@@ -112,7 +113,15 @@ function ConfirmDelete({
   );
 }
 
-function Request({ request, now, onDecided }: { request: DeletionRequest; now: Date; onDecided: () => void }) {
+interface RequestProps {
+  readonly request: DeletionRequest;
+  readonly now: Date;
+  /** Whether the person's access lets them delete the account or reject the request. */
+  readonly mayDecide: boolean;
+  readonly onDecided: () => void;
+}
+
+function Request({ request, now, mayDecide, onDecided }: RequestProps) {
   const [deciding, setDeciding] = useState<Deciding>({ step: "listed" });
   const [reason, setReason] = useState("");
   const openers = { delete: useRef<HTMLButtonElement>(null), reject: useRef<HTMLButtonElement>(null) };
@@ -193,7 +202,7 @@ function Request({ request, now, onDecided }: { request: DeletionRequest; now: D
           </div>
         </div>
       )}
-      {asking === null && (
+      {asking === null && mayDecide && (
         <div className={styles.actions}>
           <Button
             variant="destructive"
@@ -232,8 +241,9 @@ function Request({ request, now, onDecided }: { request: DeletionRequest; now: D
 
 function Queue() {
   const [loaded, retry] = useLoad(api.deletionRequests);
+  const mayDecide = useAccess().mayCall("POST /api/deletion-requests/{id}/decision");
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const now = new Date();
   return (
@@ -245,7 +255,7 @@ function Queue() {
       empty={copy.empty}
       note={copy.note(copy.processDays)}
     >
-      {(request, decided) => <Request request={request} now={now} onDecided={decided} />}
+      {(request, decided) => <Request request={request} now={now} mayDecide={mayDecide} onDecided={decided} />}
     </DecisionQueue>
   );
 }

@@ -23,6 +23,7 @@ import { api, type Charge, type NoShowCase } from "../api.ts";
 import { DecisionQueue } from "../components/DecisionQueue.tsx";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { noShows } from "../content.ts";
+import { useAccess, WAIVING_A_NO_SHOW } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";
 import { Disputes } from "./Disputes.tsx";
 import { Distance } from "./Distance.tsx";
@@ -76,7 +77,7 @@ function Money() {
   const copy = noShows.money;
 
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const day = loaded.value;
   return (
@@ -224,20 +225,8 @@ function ConfirmCharge({ each, onCharge, onBack }: { each: NoShowCase; onCharge:
   );
 }
 
-function Case({ each, now, onDecided }: { each: NoShowCase; now: Date; onDecided: () => void }) {
-  const [ruling, setRuling] = useState<Ruling>({ step: "open" });
-  const [reason, setReason] = useState("");
-  const chargeButton = useRef<HTMLButtonElement>(null);
-
-  const decide = async (choice: Choice) => {
-    setRuling({ step: "sending" });
-    const answer = await api.decideNoShow(each.id, choice, reason.trim());
-    if (answer.ok) onDecided();
-    else setRuling({ step: "failed", code: answer.code });
-  };
-
-  const sending = ruling.step === "sending";
-  const noReason = reason.trim() === "";
+/** The case as anyone who may read it sees it: the client, the visit, and the evidence. */
+function CaseFacts({ each, now }: { each: NoShowCase; now: Date }) {
   return (
     <>
       <div className={styles.caseHead}>
@@ -249,6 +238,42 @@ function Case({ each, now, onDecided }: { each: NoShowCase; now: Date; onDecided
         {each.technician !== null && ` · ${copy.attended(each.technician)}`}
       </p>
       <Facts each={each} />
+    </>
+  );
+}
+
+/** What the person's access lets them do with a case: charge it, and waive it, which gives money back. */
+interface MayRule {
+  readonly charge: boolean;
+  readonly waive: boolean;
+}
+
+interface CaseProps {
+  readonly each: NoShowCase;
+  readonly now: Date;
+  readonly may: MayRule;
+  readonly onDecided: () => void;
+}
+
+function Case({ each, now, may, onDecided }: CaseProps) {
+  const [ruling, setRuling] = useState<Ruling>({ step: "open" });
+  const [reason, setReason] = useState("");
+  const chargeButton = useRef<HTMLButtonElement>(null);
+
+  const decide = async (choice: Choice) => {
+    setRuling({ step: "sending" });
+    const answer = await api.decideNoShow(each.id, choice, reason.trim());
+    if (answer.ok) onDecided();
+    else setRuling({ step: "failed", code: answer.code });
+  };
+
+  if (!may.charge) return <CaseFacts each={each} now={now} />;
+
+  const sending = ruling.step === "sending";
+  const noReason = reason.trim() === "";
+  return (
+    <>
+      <CaseFacts each={each} now={now} />
       <label className={styles.reasonLabel} htmlFor={`reason-${each.id}`}>
         {copy.reason.label}
       </label>
@@ -291,15 +316,17 @@ function Case({ each, now, onDecided }: { each: NoShowCase; now: Date; onDecided
           >
             {sending ? copy.deciding : copy.charge}
           </Button>
-          <Button
-            variant="outline"
-            size="small"
-            className={styles.waive}
-            disabled={sending || noReason}
-            onClick={() => void decide("waived")}
-          >
-            {copy.waive}
-          </Button>
+          {may.waive && (
+            <Button
+              variant="outline"
+              size="small"
+              className={styles.waive}
+              disabled={sending || noReason}
+              onClick={() => void decide("waived")}
+            >
+              {copy.waive}
+            </Button>
+          )}
         </div>
       )}
       {ruling.step === "failed" && (
@@ -313,10 +340,13 @@ function Case({ each, now, onDecided }: { each: NoShowCase; now: Date; onDecided
 
 function Queue() {
   const [loaded, retry] = useLoad(api.noShows);
+  const access = useAccess();
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const now = new Date();
+  const charge = access.mayCall("POST /api/no-shows/{id}/decision");
+  const may: MayRule = { charge, waive: charge && access.reaches(WAIVING_A_NO_SHOW) };
   return (
     <DecisionQueue
       titleId="no-shows"
@@ -326,7 +356,7 @@ function Queue() {
       empty={copy.empty}
       note={copy.note(loaded.value.waiver)}
     >
-      {(each, ruled) => <Case each={each} now={now} onDecided={ruled} />}
+      {(each, ruled) => <Case each={each} now={now} may={may} onDecided={ruled} />}
     </DecisionQueue>
   );
 }

@@ -33,6 +33,8 @@ A component holds no copy of its own. To change words, change `site.ts`.
 
 Put the file in `site/src/assets` and write its name in `site.ts`. A name there wins over the same name in `design/assets`. Astro serves it as AVIF and WebP at the widths each section asks for.
 
+The hero film comes in two files: the film, and its phone cut, the film's upright centre under 800 KB, made with the `ffmpeg` line beside `heroFootage` in `site.ts`. Phones get the cut. Neither is fetched until it plays, and it does not play by itself under reduced motion, Save-Data or a connection below 4G.
+
 ## Publishing a placeholder block
 
 A placeholder block in `site.ts` carries `publish: false` and holds v2's material, and the list of placeholder blocks is in `design-placeholders.ts`. In staging it shows with the design's "Placeholder" tag. In production an unpublished block shows nothing, and its section or image collapses.
@@ -62,6 +64,10 @@ The site shows five consent notices, each the backend's, in `src/config/notices.
 - **Once counsel approves a notice,** add its version to `APPROVED_NOTICES` in `site.ts`.
 - **To change the wording,** add a new version in `src/config/notices.ts`, point `CURRENT_NOTICE` at it, and approve that version. A published version is never edited.
 
+The privacy and terms pages (`legalPages` in `site.ts`) carry `approved` too. Their Phase 2 wording is a draft, so production's build refuses until counsel approves it.
+
+- **Once counsel approves a page,** set its `approved` to `true`. A paragraph writes the business number as `{whatsapp}`, which the page shows as a WhatsApp link.
+
 ## Changing a preset label
 
 The six looks are the backend's presets, in `src/config/presets.ts`, in its order. The page shows each label split at its first " · ": "Full density · Natural hairline · short" becomes "Full density" over "Natural hairline · short". Change the label there. The API works on the preset's `id`, so a label change is safe.
@@ -70,7 +76,7 @@ The six looks are the backend's presets, in `src/config/presets.ts`, in its orde
 
 The site calls `mm-api` on its own host, `/api/*`. The request and response types in `site/src/lib/api-schema.ts` are generated from `docs/openapi.json` by `npm run openapi`; never edit them by hand. `site/src/lib/api.ts` holds the calls.
 
-- **Turnstile.** A booking and a try-on upload link carry a Turnstile token; the gate's claim takes none (ADR 0022, 20). The widget is managed, rendered invisibly, and appears only if Cloudflare needs the visitor to act (`site/src/lib/turnstile.ts`, site keys in `docs/turnstile.md`).
+- **Turnstile.** A booking and a try-on upload link carry a Turnstile token; the gate's claim takes none (ADR 0022, 20). The widget is managed, rendered invisibly, and appears only if Cloudflare needs the visitor to act (`packages/web-kit/turnstile.ts`, shared with the client app's login; site keys in `docs/turnstile.md`).
 - **Idempotency.** Each submission attempt sends a new `Idempotency-Key`.
 - **Attribution.** The first page of a visit stores its campaign tags, referring site and landing path in `sessionStorage` (`site/src/lib/attribution.ts`). Never a query string.
 

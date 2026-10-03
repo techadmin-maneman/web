@@ -75,6 +75,14 @@
   color: var(--ink-soft);
 }
 
+/* A visit being booked: Home's line that it is, beneath what and when. */
+.cardNote {
+  display: block;
+  margin-top: var(--sp-7);
+  font-size: var(--fs-15);
+  color: var(--ink-soft);
+}
+
 .past {
   padding-bottom: var(--sp-22);
 }
@@ -164,13 +172,6 @@
   margin: 0;
   font-size: var(--fs-17);
   line-height: var(--lh-150);
-}
-
-.dueNote {
-  margin: var(--sp-8) 0 0;
-  font-size: var(--fs-14);
-  line-height: var(--lh-160);
-  color: var(--text-muted);
 }
 
 .record .facts {
@@ -285,7 +286,8 @@
   color: var(--ink);
 }
 
-.invoiceLine {
+.invoiceLine,
+.cancelled {
   margin: 0;
   font-size: var(--fs-16);
   line-height: var(--lh-155);

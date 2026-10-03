@@ -113,31 +113,53 @@ describe("Razorpay: orders and refunds", () => {
 describe("Razorpay: payment links", () => {
   const LINK = {
     amount: 4500000,
-    reference: "visit-1",
-    description: "Mane Man Natural, fitted Mon 21 Sep",
+    reference: "MM-2026-0841",
+    description: "Mane Man Natural hair system · fitted Mon 21 Sep",
     customer: { name: "Rohit Malhotra", contact: "+919810000001" },
     notes: { appointment_id: "visit-1", person_id: "person-1" },
   };
 
-  it("makes a link for the whole amount, under our reference, which Razorpay texts the client and reminds them of", async () => {
+  /** What the link was made with. */
+  async function linkMade(): Promise<Record<string, unknown>> {
     const { payments, calls } = razorpay({
       [`${API}/payment_links`]: () =>
-        json({ id: "plink_9", short_url: "https://rzp.io/i/abc", status: "created", reference_id: "visit-1" }),
+        json({ id: "plink_9", short_url: "https://rzp.io/i/abc", status: "created", reference_id: "MM-2026-0841" }),
     });
-
     expect(await payments.createPaymentLink(LINK)).toEqual({ id: "plink_9", shortUrl: "https://rzp.io/i/abc" });
     expect(calls[0]?.headers.get("Authorization")).toBe(`Basic ${btoa("rzp_test_abc:key-secret")}`);
-    expect(JSON.parse(calls[0]?.body ?? "")).toEqual({
+    return JSON.parse(calls[0]?.body ?? "") as Record<string, unknown>;
+  }
+
+  it("makes a link for the whole amount, under our reference, which Razorpay texts the client and reminds them of", async () => {
+    const made = await linkMade();
+    expect(made).not.toHaveProperty("expire_by");
+    expect(made).toMatchObject({
       amount: 4500000,
       currency: "INR",
       accept_partial: false,
-      reference_id: "visit-1",
-      description: "Mane Man Natural, fitted Mon 21 Sep",
+      reference_id: "MM-2026-0841",
+      description: "Mane Man Natural hair system · fitted Mon 21 Sep",
       customer: { name: "Rohit Malhotra", contact: "+919810000001" },
       notify: { sms: true, email: false },
       reminder_enable: true,
       notes: { appointment_id: "visit-1", person_id: "person-1" },
     });
+  });
+
+  // MON-30: the page read "Payment Request from" the account holder's own name, and "RECEIPT" over our reference.
+  it("has Razorpay's page name us and label our reference as one", async () => {
+    expect((await linkMade()).options).toEqual({
+      checkout: { name: "Mane Man" },
+      hosted_page: { label: { receipt: "REFERENCE" } },
+    });
+  });
+
+  it("closes a link at the moment asked, in Unix seconds, where one is asked", async () => {
+    const { payments, calls } = razorpay({
+      [`${API}/payment_links`]: () => json({ id: "plink_9", short_url: "https://rzp.io/i/abc" }),
+    });
+    await payments.createPaymentLink({ ...LINK, closesAt: new Date("2026-09-22T06:30:00.000Z") });
+    expect(JSON.parse(calls[0]?.body ?? "")).toMatchObject({ expire_by: 1790058600 });
   });
 
   it("names Razorpay's refusal as a refusal, so ops are told rather than the close sent again", async () => {

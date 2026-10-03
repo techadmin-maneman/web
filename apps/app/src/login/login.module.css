@@ -86,9 +86,10 @@
   border: var(--hairline) solid var(--ink-line-strong);
 }
 
-/* The field's own edge turns gilt as it takes focus, as the design draws it, so the input needs no ring of its own. */
+/* The app's focus ring, drawn round the whole field: the prefix with the number. */
 .field:focus-within {
-  border-color: var(--gilt);
+  outline: var(--focus-width) solid var(--focus-colour);
+  outline-offset: var(--focus-offset);
 }
 
 .prefix {
@@ -114,6 +115,7 @@
   color: var(--paper);
 }
 
+/* The field draws the ring. */
 .input:focus-visible {
   outline: none;
 }
@@ -131,6 +133,11 @@
   font-size: var(--fs-15);
   line-height: var(--lh-155);
   color: var(--error-on-ink);
+}
+
+/* Turnstile's box takes no space unless Cloudflare shows its check. */
+.turnstile:not(:empty) {
+  margin-top: var(--sp-16);
 }
 
 .automatic {

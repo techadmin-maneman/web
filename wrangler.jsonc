@@ -87,8 +87,14 @@
     "BOOKS_PROVIDER": "stub",
     "ZOHO_FSM_ACCOUNTS_HOST": "",
     "ZOHO_FSM_API_HOST": "",
+    "ZOHO_BOOKS_ACCOUNTS_HOST": "",
+    "ZOHO_BOOKS_API_HOST": "",
     "ZOHO_BOOKS_ORG_ID": "",
     "BOOKS_REFUND_ACCOUNT_ID": "",
+    // GST in Books, empty until the CA gives the GSTIN, the state it is registered in and the SAC code.
+    "BOOKS_GSTIN": "",
+    "BOOKS_GST_STATE": "",
+    "BOOKS_SAC": "",
     // Razorpay (docs/decisions/0044-payments-mirror.md). The stub takes no money and reaches nothing.
     "PAYMENTS_PROVIDER": "stub",
     "GEOCODE_PROVIDER": "stub",
@@ -190,13 +196,20 @@
         "ACCESS_OPS_AUD": "c291b99aae607b12ae256176566169e7a50dcfa839ef0834ad807563353dcee4",
         "SMS_PROVIDER": "none",
         // Zoho FSM and Books, in the real org (ADR 0025, item 26; docs/decisions/0032-fsm-mirror.md).
-        // The client's ID, secret and refresh token are the secrets ZOHO_FSM_CLIENT_ID, _SECRET and _REFRESH_TOKEN.
+        // Secrets ZOHO_FSM_CLIENT_ID, _SECRET and _REFRESH_TOKEN, and ZOHO_BOOKS_CLIENT_ID, _SECRET and _REFRESH_TOKEN:
+        // the org's one Self Client, so the IDs and secrets match, and a refresh token each.
         "FSM_PROVIDER": "zoho",
         "BOOKS_PROVIDER": "zoho",
         "ZOHO_FSM_ACCOUNTS_HOST": "accounts.zoho.in",
         "ZOHO_FSM_API_HOST": "www.zohoapis.in",
+        "ZOHO_BOOKS_ACCOUNTS_HOST": "accounts.zoho.in",
+        "ZOHO_BOOKS_API_HOST": "www.zohoapis.in",
         "ZOHO_BOOKS_ORG_ID": "60088931635",
         "BOOKS_REFUND_ACCOUNT_ID": "4242595000000038161",
+        // GST in Books, empty until the CA gives the GSTIN, the state it is registered in and the SAC code.
+        "BOOKS_GSTIN": "",
+        "BOOKS_GST_STATE": "",
+        "BOOKS_SAC": "",
         // Razorpay in test mode: no real money. The key secret and the webhook secret are secrets.
         "PAYMENTS_PROVIDER": "razorpay",
         // The owner's key is in place (docs/runbook.md, section 13); production waits for the release.
@@ -297,8 +310,14 @@
         "BOOKS_PROVIDER": "none",
         "ZOHO_FSM_ACCOUNTS_HOST": "",
         "ZOHO_FSM_API_HOST": "",
+        "ZOHO_BOOKS_ACCOUNTS_HOST": "",
+        "ZOHO_BOOKS_API_HOST": "",
         "ZOHO_BOOKS_ORG_ID": "",
         "BOOKS_REFUND_ACCOUNT_ID": "",
+        // GST in Books, empty until the CA gives the GSTIN, the state it is registered in and the SAC code.
+        "BOOKS_GSTIN": "",
+        "BOOKS_GST_STATE": "",
+        "BOOKS_SAC": "",
         // Razorpay stays off until Phase 2's release (docs/open-points.md, item 6).
         "PAYMENTS_PROVIDER": "none",
         "GEOCODE_PROVIDER": "none",

@@ -6,7 +6,6 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/http/context.ts";
 import type { Settings } from "../../src/config/settings.ts";
 import { openSession } from "../../src/domain/sessions.ts";
-import { UNKNOWN_NUMBERS_PER_ADDRESS_DAILY } from "../../src/http/send-code.ts";
 import { sha256Hex } from "../../src/lib/hash.ts";
 import { RULES } from "../../src/policy/one-time-code.ts";
 import {
@@ -14,10 +13,13 @@ import {
   captureLogs,
   eraseByMobile,
   fakeDependencies,
+  fakeFetch,
+  json,
   LOCAL_SETTINGS,
   markDatabase,
   NOW,
   request,
+  TURNSTILE_URL,
   type TestDependencies,
 } from "./helpers.ts";
 
@@ -72,10 +74,14 @@ function post(path: string, body: unknown, headers: Record<string, string> = {})
   });
 }
 
-async function start(mobile: string) {
-  const res = await post("/api/auth/otp", { mobile });
+/** Asks for a code, with the Turnstile token the app's widget gives (fakeDependencies' Turnstile passes it). */
+async function start(mobile: string, headers: Record<string, string> = {}) {
+  const res = await post("/api/auth/otp", { mobile, turnstile_token: "token" }, headers);
   return { res, body: await res.json<Record<string, unknown> & { challenge_id: string }>() };
 }
+
+const resend = (challengeId: string, headers: Record<string, string> = {}) =>
+  post("/api/auth/otp/resend", { challenge_id: challengeId }, headers);
 
 const verify = (challengeId: string, code: string) => post("/api/auth/verify", { challenge_id: challengeId, code });
 const lastCode = () => deps.sentCodes.at(-1)?.code ?? "";
@@ -226,7 +232,7 @@ describe("POST /api/auth/otp", () => {
     for (const mobile of ["98100 00001", "98100 00002", "98100 00009"]) {
       expect((await start(mobile)).res.status).toBe(503);
     }
-    expect(deps.alerts).toEqual([expect.stringContaining("the client and technician apps' login codes") as string]);
+    expect(deps.alerts).toEqual([expect.stringContaining("the client app's login codes and number changes") as string]);
   });
 
   it("counts only codes that are sent against the ceiling, so numbers nobody knows cannot use it up", async () => {
@@ -238,30 +244,54 @@ describe("POST /api/auth/otp", () => {
     expect(deps.sentCodes.map((sent) => sent.to)).toEqual([BOOKED]);
   });
 
-  it("refuses an address every number for the day once it has asked for twenty that nobody knows", async () => {
+  // PS-12, FLD-27: twenty numbers nobody knows used to lock their address out for the day, an office or a carrier's
+  // shared address with it, so one stranger's typos stopped every client there signing in.
+  it("keeps answering an address that asks for many numbers nobody knows, and sends its client's code", async () => {
     const address = { "CF-Connecting-IP": "203.0.113.50" };
-    for (let unknown = 0; unknown < UNKNOWN_NUMBERS_PER_ADDRESS_DAILY; unknown += 1) {
+    for (let unknown = 0; unknown < 40; unknown += 1) {
       if (unknown % 10 === 0) later(3600); // past the address's ten an hour
-      const mobile = `98200 ${String(unknown).padStart(5, "0")}`;
-      expect((await post("/api/auth/otp", { mobile }, address)).status).toBe(202);
+      expect((await start(`98200 ${String(unknown).padStart(5, "0")}`, address)).res.status).toBe(202);
     }
     later(3600);
-    expect((await post("/api/auth/otp", { mobile: "98200 99999" }, address)).status).toBe(429);
-    expect((await post("/api/auth/otp", { mobile: "98100 00001" }, address)).status).toBe(429);
+    expect((await start("98100 00001", address)).res.status).toBe(202);
+    expect(deps.sentCodes.map((sent) => sent.to)).toEqual([BOOKED]);
+  });
 
-    // Another address, and the next day, are untouched.
-    expect(
-      (await post("/api/auth/otp", { mobile: "98100 00001" }, { "CF-Connecting-IP": "203.0.113.51" })).status,
-    ).toBe(202);
-    later(24 * 3600);
-    expect((await post("/api/auth/otp", { mobile: "98100 00001" }, address)).status).toBe(202);
+  it("refuses without Turnstile, and sends nothing", async () => {
+    deps = fakeDependencies({
+      now: () => clock,
+      fetch: fakeFetch({ [TURNSTILE_URL]: () => json({ success: false }) }).fetch,
+    });
+    app = appFor("local", deps, {}, "client");
+
+    const { res, body } = await start("98100 00001");
+
+    expect(res.status).toBe(403);
+    expect(body).toMatchObject({ error: { code: "turnstile_failed" } });
+    expect(deps.sentCodes).toEqual([]);
+    const missing = await post("/api/auth/otp", { mobile: "98100 00001" });
+    expect(missing.status).toBe(400);
+  });
+
+  it("answers unavailable, and sends nothing, while Turnstile cannot be reached", async () => {
+    deps = fakeDependencies({
+      now: () => clock,
+      fetch: fakeFetch({ [TURNSTILE_URL]: () => json({}, 502) }).fetch,
+    });
+    app = appFor("local", deps, {}, "client");
+
+    const { res, body } = await start("98100 00001");
+
+    expect(res.status).toBe(503);
+    expect(body).toMatchObject({ error: { code: "unavailable" } });
+    expect(deps.sentCodes).toEqual([]);
   });
 
   it("refuses a write from another origin, like every client-surface write", async () => {
     const res = await request(app, "/api/auth/otp", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mobile: "98100 00001" }),
+      body: JSON.stringify({ mobile: "98100 00001", turnstile_token: "token" }),
     });
     expect(res.status).toBe(403);
     expect(deps.sentCodes).toEqual([]);
@@ -374,15 +404,78 @@ describe("sending the code again", () => {
     });
   });
 
-  it("sends at most five codes on one challenge", async () => {
+  it("sends at most three codes on one challenge", async () => {
     const { body } = await start("98100 00001");
-    for (let i = 0; i < 4; i += 1) {
+    for (let i = 0; i < 2; i += 1) {
       later(30);
-      expect((await post("/api/auth/otp/resend", { challenge_id: body.challenge_id })).status).toBe(202);
+      expect((await resend(body.challenge_id)).status).toBe(202);
     }
     later(30);
-    expect((await post("/api/auth/otp/resend", { challenge_id: body.challenge_id })).status).toBe(429);
+    expect((await resend(body.challenge_id)).status).toBe(429);
+    expect(deps.sentCodes).toHaveLength(3);
+  });
+
+  /**
+   * The answers to two challenges for one number, each sent as often as it may be, then a third challenge; from an
+   * address of its own, so only the number's day is spent.
+   */
+  async function spendTheDay(mobile: string, ip: string): Promise<number[]> {
+    const address = { "CF-Connecting-IP": ip };
+    const statuses: number[] = [];
+    for (let challenge = 0; challenge < 2; challenge += 1) {
+      const { res, body } = await start(mobile, address);
+      statuses.push(res.status);
+      for (let again = 0; again < 2; again += 1) {
+        later(31);
+        statuses.push((await resend(body.challenge_id, address)).status);
+      }
+    }
+    statuses.push((await start(mobile, address)).res.status);
+    return statuses;
+  }
+
+  // PS-12: resends skipped the number's day, so five challenges of five sends put 25 codes on one number a day.
+  it("counts every code sent again against the number's day, so a number gets five codes a day at most", async () => {
+    expect(await spendTheDay("98100 00001", "203.0.113.60")).toEqual([202, 202, 202, 202, 202, 429, 429]);
     expect(deps.sentCodes).toHaveLength(5);
+  });
+
+  it("answers a number nobody knows exactly as it answers a client's, code for code", async () => {
+    const client = await spendTheDay("98100 00001", "203.0.113.60");
+    const nobody = await spendTheDay("98100 00009", "203.0.113.61");
+    expect(nobody).toEqual(client);
+    expect(deps.sentCodes.map((sent) => sent.to)).toEqual(Array<string>(5).fill(BOOKED));
+  });
+
+  it("counts every code sent again against the address's hour", async () => {
+    build({ login: { ...LOCAL_SETTINGS.login, codeIpHourlyLimit: 2 } });
+    const { body } = await start("98100 00001");
+    later(30);
+    expect((await resend(body.challenge_id)).status).toBe(202);
+    later(30);
+    const refused = await resend(body.challenge_id);
+    expect(refused.status).toBe(429);
+    expect(await refused.json()).toMatchObject({ error: { code: "rate_limited" } });
+    expect(deps.sentCodes).toHaveLength(2);
+  });
+
+  it("starts again on a challenge made before its number was kept", async () => {
+    const { body } = await start("98100 00001");
+    await env.DB.prepare("UPDATE otp_challenges SET mobile_hash = NULL").run();
+    later(30);
+    expect((await resend(body.challenge_id)).status).toBe(410);
+    expect(deps.sentCodes).toHaveLength(1);
+  });
+
+  it("keeps the number only as the limits key it", async () => {
+    await start("98100 00001");
+    await start("98100 00009");
+    const kept = await env.DB.prepare("SELECT mobile_hash FROM otp_challenges").all<{ mobile_hash: string }>();
+    expect(kept.results.map((row) => row.mobile_hash)).toEqual([
+      expect.stringMatching(/^[0-9a-f]{64}$/) as string,
+      expect.stringMatching(/^[0-9a-f]{64}$/) as string,
+    ]);
+    expect(JSON.stringify(kept.results)).not.toMatch(/9810000001|9810000009/);
   });
 
   it("offers no SMS while there is no SMS provider", async () => {
@@ -419,6 +512,7 @@ describe("the session", () => {
       credits: null,
       // A consultation is booked and no address given: board B1's prompt asks for one.
       prompt: { kind: "address" },
+      invoice: null,
       // Every service of the kinds open to them, with its length and price (docs/decisions/0085-services-ops-can-edit.md);
       // nothing is offered next while a visit is booked (ADR 0086).
       booking: {

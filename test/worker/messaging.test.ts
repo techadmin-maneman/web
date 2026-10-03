@@ -176,6 +176,49 @@ describe("messaging: sending a result", () => {
     expect(await message()).toMatchObject({ state: "failed", attempts: 1 });
     expect(deps.alerts).toHaveLength(1);
   });
+
+  it("keeps a message queued, with no alert, while the bridge is down, for the sweeper to send once it is back", async () => {
+    await queuedMessage();
+    const detail = 'the bridge has no instance named "mane man": wrong URL or port, or the instance was deleted';
+    const { provider } = recordingProvider({ ok: false, transient: false, bridgeDown: true, detail });
+    const deps = fakeDependencies({ messaging: provider });
+
+    expect(await sendMessage(env.DB, config(), deps, log, "m1")).toEqual({});
+
+    expect(await message()).toMatchObject({ state: "queued", attempts: 1, last_error: detail, sending_at: null });
+    expect(deps.alerts).toEqual([]);
+  });
+
+  it("fails a message the bridge still refuses on its last attempt, though it read as open", async () => {
+    await queuedMessage();
+    await env.DB.prepare("UPDATE outbound_messages SET attempts = ?")
+      .bind(MAX_SEND_ATTEMPTS - 1)
+      .run();
+    const { provider } = recordingProvider({ ok: false, transient: false, bridgeDown: true, detail: "HTTP 401" });
+    const deps = fakeDependencies({ messaging: provider });
+
+    expect(await sendMessage(env.DB, config(), deps, log, "m1")).toEqual({});
+
+    expect(await message()).toMatchObject({ state: "failed", attempts: MAX_SEND_ATTEMPTS });
+    expect(deps.alerts).toHaveLength(1);
+  });
+
+  it("takes a send that throws as a transient failure, so it fails in the end", async () => {
+    await queuedMessage();
+    const throwing: MessagingProvider = {
+      send: () => Promise.reject(new Error("socket hang up")),
+      connection: () => Promise.resolve({ open: true }),
+    };
+    const deps = fakeDependencies({ messaging: throwing });
+
+    for (let attempt = 1; attempt < MAX_SEND_ATTEMPTS; attempt++) {
+      expect(await sendMessage(env.DB, config(), deps, log, "m1")).toEqual({ retryAfterSeconds: 30 });
+    }
+    expect(await sendMessage(env.DB, config(), deps, log, "m1")).toEqual({});
+
+    expect(await message()).toMatchObject({ state: "failed", attempts: MAX_SEND_ATTEMPTS, last_error: "threw Error" });
+    expect(deps.alerts).toHaveLength(1);
+  });
 });
 
 describe("messaging: the queue batch", () => {
@@ -203,6 +246,61 @@ describe("messaging: the queue batch", () => {
 
     expect(messages[0]?.retry).toHaveBeenCalledWith({ delaySeconds: 30 });
     expect(messages[1]?.ack).toHaveBeenCalledOnce();
+  });
+
+  it("fails a message that throws on its fourth delivery, and tells ops", async () => {
+    const id = "00000000-0000-4000-8000-00000000000b";
+    await insertPerson("p", "+919810000001", "Arjun Mehta");
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at)
+         VALUES ('c1', 'p', 'whatsapp_visits', 'whatsapp-visits-v1', 1, ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end,
+           fsm_modified_at, synced_at)
+         VALUES ('visit', 'fsm-visit', 'p', 'service', 'scheduled', 'Scheduled', 'not a date', 'not a date', ?1, ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at)
+         VALUES (?1, ?2, 'p', 'consultation_confirmation', 'appointment', 'visit', 'queued', ?2)`,
+      ).bind(id, NOW.toISOString()),
+    ]);
+    const deps = fakeDependencies();
+    const delivery = (attempts: number) => ({
+      id: String(attempts),
+      body: { message_id: id, request_id: "r" },
+      attempts,
+      timestamp: NOW,
+      ack: vi.fn(),
+      retry: vi.fn(),
+    });
+    const deliver = (each: ReturnType<typeof delivery>) =>
+      handleMessagingBatch(
+        {
+          queue: "mm-messaging-local",
+          messages: [each],
+          ackAll: vi.fn(),
+          retryAll: vi.fn(),
+        } as unknown as MessageBatch,
+        env.DB,
+        config(),
+        deps,
+        log,
+      );
+
+    const third = delivery(MAX_SEND_ATTEMPTS - 1);
+    await deliver(third);
+    expect(third.retry).toHaveBeenCalledWith({ delaySeconds: 30 });
+    expect(await message(id)).toMatchObject({ state: "queued" });
+
+    const fourth = delivery(MAX_SEND_ATTEMPTS);
+    await deliver(fourth);
+    expect(fourth.ack).toHaveBeenCalledOnce();
+    expect(await message(id)).toMatchObject({ state: "failed", last_error: "could not be sent: Invalid time value" });
+    expect(deps.alerts).toEqual([
+      expect.stringContaining(`Message ${id} (consultation_confirmation) failed after 4 attempts`) as string,
+    ]);
   });
 });
 
@@ -247,27 +345,51 @@ describe("Evolution API", () => {
     expect(http.calls).toHaveLength(1);
   });
 
+  it("ends the text with the link that stops it, when the message carries one", async () => {
+    const http = fakeFetch({ [SEND_TEXT]: () => json({ key: { id: "T1" } }) });
+    const evolution = createEvolutionMessaging(settings, { fetch: http.fetch });
+    await evolution.send({
+      to: "+919810000001",
+      template: "launch_alert_v1",
+      params: ["Arjun", "Sector 65", "https://maneman.in/book"],
+      stopLink: "https://maneman.in/stop#token",
+    });
+    const { text } = JSON.parse(http.calls[0]?.body ?? "{}") as { text: string };
+    expect(text).toMatch(/^Hello Arjun, we now come to Sector 65\./);
+    expect(text).toMatch(/\n\nStop these messages: https:\/\/maneman\.in\/stop#token$/);
+  });
+
+  const sendImage = (evolution: MessagingProvider) =>
+    evolution.send({
+      to: "+919810000001",
+      template: "tryon_result_v1",
+      params: ["A"],
+      mediaUrl: "https://x.test/r.png",
+    });
+
   it.each([
     [500, { error: { code: "INTERNAL_SERVER_ERROR" } }, true, "HTTP 500 INTERNAL_SERVER_ERROR"],
     [429, {}, true, "HTTP 429 "],
-    [400, { error: "Connection Closed" }, true, "HTTP 400 Connection Closed"],
-    [401, { error: { code: "UNAUTHORIZED" } }, false, "HTTP 401 UNAUTHORIZED"],
     [400, { error: "number 919810000001 does not exist" }, false, "HTTP 400 number ############ does not exist"],
   ])("classifies HTTP %i", async (status, body, transient, detail) => {
     const http = fakeFetch({ [SEND_MEDIA]: () => json(body, status) });
     const evolution = createEvolutionMessaging(settings, { fetch: http.fetch });
-    expect(
-      await evolution.send({
-        to: "+919810000001",
-        template: "tryon_result_v1",
-        params: ["A"],
-        mediaUrl: "https://x.test/r.png",
-      }),
-    ).toEqual({
-      ok: false,
-      transient,
-      detail,
-    });
+    expect(await sendImage(evolution)).toEqual({ ok: false, transient, detail });
+  });
+
+  it.each([
+    [
+      404,
+      { status: 404, error: "Not Found", response: { message: ['The "mane man" instance does not exist'] } },
+      'the bridge has no instance named "mane man": wrong URL or port, or the instance was deleted',
+    ],
+    [401, { error: { code: "UNAUTHORIZED" } }, "HTTP 401 UNAUTHORIZED"],
+    [403, { error: "Forbidden" }, "HTTP 403 Forbidden"],
+    [400, { error: "Connection Closed" }, "HTTP 400 Connection Closed"],
+  ])("reads HTTP %i as the bridge being down, which is no fault of the message", async (status, body, detail) => {
+    const http = fakeFetch({ [SEND_MEDIA]: () => json(body, status) });
+    const evolution = createEvolutionMessaging(settings, { fetch: http.fetch });
+    expect(await sendImage(evolution)).toEqual({ ok: false, transient: false, bridgeDown: true, detail });
   });
 
   it("treats an unreachable bridge as transient", async () => {
@@ -332,9 +454,21 @@ describe("Evolution API", () => {
 
     it.each([
       [json({ instance: { instanceName: "mane man", state: "open" } }), { open: true }],
-      [json({ instance: { instanceName: "mane man", state: "close" } }), { open: false, detail: "state close" }],
-      [json({ state: "connecting" }), { open: false, detail: "state connecting" }],
-      [json({ error: "Unauthorized" }, 401), { open: false, detail: "HTTP 401" }],
+      [
+        json({ instance: { instanceName: "mane man", state: "close" } }),
+        { open: false, fault: "logged_out", detail: "state close" },
+      ],
+      [json({ state: "connecting" }), { open: false, fault: "logged_out", detail: "state connecting" }],
+      [json({ error: "Unauthorized" }, 401), { open: false, fault: "key_refused", detail: "HTTP 401" }],
+      [
+        json({ status: 404, error: "Not Found" }, 404),
+        {
+          open: false,
+          fault: "no_instance",
+          detail: 'the bridge has no instance named "mane man": wrong URL or port, or the instance was deleted',
+        },
+      ],
+      [json({}, 502), { open: false, fault: "unreachable", detail: "HTTP 502" }],
     ])("is read, never written, from its connection state", async (answer, connection) => {
       const http = fakeFetch({ [STATE]: () => answer });
       const evolution = createEvolutionMessaging(settings, { fetch: http.fetch });
@@ -349,7 +483,11 @@ describe("Evolution API", () => {
         },
       });
       const evolution = createEvolutionMessaging(settings, { fetch: http.fetch });
-      expect(await evolution.connection()).toEqual({ open: false, detail: "unreachable: TypeError" });
+      expect(await evolution.connection()).toEqual({
+        open: false,
+        fault: "unreachable",
+        detail: "unreachable: TypeError",
+      });
     });
   });
 });

@@ -21,11 +21,11 @@
 // (docs/decisions/0065-a-technicians-writes-reach-fsm.md).
 
 import { cycleDaysFor, type Cycles } from "../config/pieces.ts";
-import { FSM_SERVICE_NAMES, type VisitType } from "../config/visit-types.ts";
+import { VISIT_TYPE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaIso } from "../lib/india-time.ts";
 import { STATUS_AFTER, type AppointmentTransition, type FsmProvider } from "../providers/fsm.ts";
 import { allConsumables } from "./consumables.ts";
-import { statusOf } from "./fsm-mirror.ts";
+import { statusOf } from "./visit-status.ts";
 import { eventsOf, type JobEvent } from "./job-events.ts";
 import { checklistOf, jobSheet } from "./job-sheet-settings.ts";
 import { recordFittedPiece, recordFailedPiece } from "./pieces.ts";
@@ -197,7 +197,7 @@ async function writePiece(deps: FsmWriteDeps, job: JobForFsm, event: JobEvent, n
  */
 export async function summaryOf(db: D1Database, job: JobForFsm, deps: { labelAsTest: boolean }): Promise<string> {
   const events = await eventsOf(db, job.id);
-  const name = job.oneVisit ? ONE_VISIT_NAME : FSM_SERVICE_NAMES[job.type];
+  const name = job.oneVisit ? ONE_VISIT_NAME : VISIT_TYPE_NAMES[job.type];
   const parts = [`${prefix(deps)}${name}`];
 
   // The words ops gave each item; one they have since taken off is still named, and not counted against the list.

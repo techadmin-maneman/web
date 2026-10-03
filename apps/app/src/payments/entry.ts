@@ -1,21 +1,31 @@
-// A payment or a refund, and a change to the service-visit credits, as the payments screens write them (boards E1
+// A payment or a refund, and a change to the free service visits, as the payments screens write them (boards E1
 // to E3).
 
 import { fullDate, indiaClock, indiaDate, listDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
-import type { CreditLine, Entry } from "../api.ts";
-import { payments } from "../content.ts";
+import type { CreditLine, Entry, EntryDetail } from "../api.ts";
+import { payments, VISIT_TYPES } from "../content.ts";
+import { priceFigures } from "../lib/money.ts";
 import { visitName } from "../lib/visit.ts";
 
-/** What it paid for: the visit's kind, or its late fee. */
+type PaymentEntry = Extract<Entry, { kind: "payment" }>;
+type PaymentDetail = Extract<EntryDetail, { kind: "payment" }>;
+
+/** The visit's kind, else the kind being booked while there is no visit yet, else only that it was a payment. */
+function paidFor(entry: Entry): string {
+  if (entry.visit !== null) return visitName(entry.visit.type);
+  if (entry.booking !== null) return VISIT_TYPES[entry.booking.type];
+  return payments.payment;
+}
+
+/** What it paid for, or its late fee. */
 export function entryWhat(entry: Entry): string {
-  const what = entry.visit === null ? payments.payment : visitName(entry.visit.type);
+  const what = paidFor(entry);
   return entry.kind === "payment" && entry.purpose === "late_fee" ? payments.lateFeeOf(what) : what;
 }
 
-/** The page's title: a refund says so. */
-export const entryTitle = (entry: Entry) =>
-  entry.kind === "refund" ? payments.refundOf(entryWhat(entry)) : entryWhat(entry);
+/** The row's name and the page's title: a refund is a refund, never another payment. */
+export const entryTitle = (entry: Entry) => (entry.kind === "refund" ? payments.refund : entryWhat(entry));
 
 /** A method as a list line writes it (short) or a detail row does (long): "card", "Card". */
 export function methodName(method: string | null, form: "short" | "long"): string | null {
@@ -25,15 +35,26 @@ export function methodName(method: string | null, form: "short" | "long"): strin
 }
 
 /**
- * The list's line under the name: "22 Aug · UPI", "14 Sep · refund to UPI", and for a visit the client was not
- * home for, "19 Sep · not home, we waited 16 min" (LIFE-07).
+ * The list's line under the name: "22 Aug · UPI"; for a refund what it gave back, "14 Sep · First fit"; and for a
+ * visit the client was not home for, "19 Sep · not home, we waited 16 min" (LIFE-07).
  */
 export function entryMeta(entry: Entry, thisYear: number): string {
   const date = listDate(entry.date, thisYear);
-  if (entry.kind === "payment" && entry.no_show !== null) return `${date} · ${payments.noShow.meta(entry.no_show)}`;
-  const method = methodName(entry.kind === "refund" ? entry.destination : entry.method, "short");
-  if (method === null) return date;
-  return `${date} · ${entry.kind === "refund" ? payments.refundTo(method) : method}`;
+  if (entry.kind === "refund") return `${date} · ${entryWhat(entry)}`;
+  if (entry.no_show !== null) return `${date} · ${payments.noShow.meta(entry.no_show)}`;
+  const method = methodName(entry.method, "short");
+  return method === null ? date : `${date} · ${method}`;
+}
+
+/** The main figure: what was paid, GST included, or for a refund the money coming back, "+ Rs. 30,000". */
+export const entryAmount = (entry: Entry) =>
+  entry.kind === "refund" ? payments.moneyBack(rupees(entry.amount)) : rupees(entry.amount);
+
+/** The list's line beneath the figure: where a refund goes, "back to your UPI", or a payment's GST split. */
+export function entryBeneath(entry: Entry): string | null {
+  if (entry.kind === "payment") return priceFigures(entry).split;
+  const method = methodName(entry.destination, "short");
+  return method === null ? null : payments.backTo(method);
 }
 
 /** A charge's evidence: "cancelled 9:14 am, visit was 10 am", with the dates on different days. */
@@ -77,26 +98,34 @@ export function refundIsLate(entry: Entry, today: string): boolean {
 
 /**
  * What a payment's missing invoice says, by where its visit stands (content.ts, payments.unavailable): an
- * invoice is raised once the visit is done, is usually there within the hour, and a day on is late.
+ * invoice is raised once the visit is done, is usually there within the hour, and a day on is late. A booking
+ * still being made has no visit yet, so its invoice comes after the visit.
  */
-export function missingInvoice(
-  entry: Extract<Entry, { kind: "payment" }>,
-  today: string,
-): "invoiceAfterVisit" | "invoice" | "invoiceLate" {
-  if (entry.visit === null) return "invoiceLate";
+export function missingInvoice(entry: PaymentEntry, today: string): "invoiceAfterVisit" | "invoice" | "invoiceLate" {
+  if (entry.visit === null) return entry.booking?.under_way === true ? "invoiceAfterVisit" : "invoiceLate";
   const since = daysFrom(entry.visit.date, today);
   if (since < 0) return "invoiceAfterVisit";
   return since <= 1 ? "invoice" : "invoiceLate";
 }
 
 /**
- * A payment's documents: the visit's invoice and the receipt. A charge was kept for a visit that did not happen,
- * as was a payment for a visit the client was not home for, and a late fee is not the visit, so none of them has
- * the visit's invoice: only the receipt.
+ * Whether the visit's invoice is this payment's, issued or still to come. It is never a charge's or a no-show's
+ * (the visit did not happen) or a late fee's (not the visit). One already issued stays, even once the payment is
+ * refunded in full under the guarantee. Otherwise none comes for a payment refunded in full, or for a booking
+ * refunded or let go before it became a visit.
  */
-export function documentsOf(entry: Extract<Entry, { kind: "payment" }>): ("invoice" | "receipt")[] {
-  if (entry.charge !== null || entry.no_show !== null || entry.purpose === "late_fee") return ["receipt"];
-  return ["invoice", "receipt"];
+function invoiceComes(entry: PaymentDetail): boolean {
+  if (entry.charge !== null || entry.no_show !== null) return false;
+  if (entry.purpose === "late_fee") return false;
+  if (entry.documents.invoice !== null) return true;
+  if (entry.status === "refunded") return false;
+  if (entry.visit === null && entry.booking !== null && !entry.booking.under_way) return false;
+  return true;
+}
+
+/** A payment's documents: the visit's invoice, where it is the payment's, and the receipt. */
+export function documentsOf(entry: PaymentDetail): ("invoice" | "receipt")[] {
+  return invoiceComes(entry) ? ["invoice", "receipt"] : ["receipt"];
 }
 
 /** A payment or refund, or a change to the credits, as one row of the Payments list. */
@@ -120,11 +149,17 @@ export function paymentsAndCredits(entries: readonly Entry[], credits: readonly 
 export const creditWhat = (line: CreditLine) =>
   line.visit === null ? payments.credits.title : visitName(line.visit.type);
 
-/** The list's line under the name: "25 Jul · visit credit", "19 Sep · a friend you invited was fitted". */
+/** Where visits added came from: an invite's by which side of it the client was, else the source. */
+function addedFrom(line: CreditLine): string {
+  if (line.referral_side !== null) return payments.credits.from[line.referral_side];
+  return payments.credits.from[line.source ?? "ops"];
+}
+
+/** The list's line under the name: "25 Jul · free service visit", "19 Sep · your friend was fitted". */
 export function creditMeta(line: CreditLine, thisYear: number): string {
   const date = listDate(line.date, thisYear);
   if (line.no_show !== null) return `${date} · ${payments.noShow.meta(line.no_show)}`;
-  if (line.event === "added") return `${date} · ${payments.credits.from[line.source ?? "ops"]}`;
+  if (line.event === "added") return `${date} · ${addedFrom(line)}`;
   return `${date} · ${payments.credits.meta[line.event]}`;
 }
 
@@ -139,7 +174,8 @@ export function creditAmount(line: CreditLine): { amount: string | null; count: 
 }
 
 /** What a WhatsApp asking for a document names: the reference, else the entry and its date. */
-export const entryNamed = (entry: Entry) =>
-  entry.kind === "payment" && entry.reference !== null
-    ? entry.reference
-    : `${entryTitle(entry).toLowerCase()} on ${fullDate(entry.date)}`;
+export function entryNamed(entry: Entry): string {
+  if (entry.kind === "payment" && entry.reference !== null) return entry.reference;
+  const what = entry.kind === "refund" ? payments.refundOf(entryWhat(entry)) : entryWhat(entry);
+  return `${what.toLowerCase()} on ${fullDate(entry.date)}`;
+}

@@ -8,7 +8,8 @@
 // with his number, and closed here once ops have called him.
 //
 // The drawer is also the keyboard way into a move: the design moves a block by
-// dragging it, and everything the drag does can be done from here.
+// dragging it, and everything the drag does can be done from here. A visit the
+// technician has begun has no move, and the drawer says why.
 
 import { ICONS } from "@maneman/brand/icons";
 import { Button, ButtonLink, buttonLook } from "@maneman/ui/Button";
@@ -21,11 +22,19 @@ import styles from "./dispatch.module.css";
 import { phoneWords } from "../lib/phone.ts";
 import { firstNameOf, isMovable, nameOf, type BlockJob } from "./job.ts";
 
+/** Each action is null when the person's access does not let them take it. */
 interface Props {
   readonly job: BlockJob;
-  readonly onMove: () => void;
-  readonly onTold: (moveId: string) => void;
+  readonly onMove: (() => void) | null;
+  readonly onTold: ((moveId: string) => void) | null;
   readonly onClose: () => void;
+}
+
+/** The State row: how far the technician has got, from his phone, until the visit is done. */
+function stateOf(block: BlockJob["block"]): string {
+  const copy = dispatch.drawer;
+  if (block.begun !== null && block.status !== "completed") return copy.begun[block.begun] ?? block.begun;
+  return copy.states[block.status] ?? block.status;
 }
 
 export function BlockDrawer({ job, onMove, onTold, onClose }: Props) {
@@ -40,9 +49,10 @@ export function BlockDrawer({ job, onMove, onTold, onClose }: Props) {
   const rows = [
     { key: copy.rows.type, value: copy.type(typeName, block.slots) },
     { key: copy.rows.area, value: block.sector === null ? dispatch.unknown : copy.area(block.sector, block.pincode) },
-    { key: copy.rows.state, value: copy.states[block.status] ?? block.status },
+    { key: copy.rows.state, value: stateOf(block) },
     ...(referredBy === null ? [] : [{ key: copy.rows.referred, value: referredBy }]),
   ];
+  const staysPut = !isMovable(block) && block.status !== "completed";
 
   return (
     <Dialog className={styles.panel} labelledBy="drawer-title" canClose onDismiss={onClose}>
@@ -73,17 +83,20 @@ export function BlockDrawer({ job, onMove, onTold, onClose }: Props) {
         {block.untold !== null && person !== null && (
           <div className={styles.untold}>
             <p className={styles.untoldLine}>{copy.untold(movedTo, phoneWords(person.mobile))}</p>
-            <Button
-              variant="outline"
-              size="small"
-              onClick={() => {
-                if (block.untold !== null) onTold(block.untold.move_id);
-              }}
-            >
-              {dispatch.landing.told}
-            </Button>
+            {onTold !== null && (
+              <Button
+                variant="outline"
+                size="small"
+                onClick={() => {
+                  if (block.untold !== null) onTold(block.untold.move_id);
+                }}
+              >
+                {dispatch.landing.told}
+              </Button>
+            )}
           </div>
         )}
+        {staysPut && <p className={styles.untoldLine}>{copy.stays}</p>}
         <div className={styles.drawerActions}>
           {person !== null && (
             <>
@@ -104,7 +117,7 @@ export function BlockDrawer({ job, onMove, onTold, onClose }: Props) {
               </OpsLink>
             </>
           )}
-          {isMovable(block) && (
+          {isMovable(block) && onMove !== null && (
             <Button variant="outline" size="small" onClick={onMove}>
               {copy.move}
             </Button>

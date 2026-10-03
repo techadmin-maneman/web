@@ -9,6 +9,7 @@ import { renderMessage } from "../../src/config/message-templates.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { readMeter } from "../../src/domain/storage-meter.ts";
 import { composeLaunchAlert } from "../../src/domain/waitlist.ts";
+import { INVITE_MISSES_PER_ADDRESS_HOURLY } from "../../src/policy/invites.ts";
 import { REFERRERS_PAGE, WAITLIST_AREAS } from "../../src/routes/ops-waitlist.ts";
 import {
   appFor,
@@ -108,6 +109,22 @@ describe("the referral card", () => {
     expect(house.headers.get("Location")).toBe(HOUSE_CARD);
   });
 
+  // PS-54: a preview reveals a referrer's card, so guessing codes through it spends the address's misses too.
+  it("gives the house card for every code to an address past its misses, and the card to anyone else", async () => {
+    await consent("photos_referral_cards", true);
+    await put(jpegOf(1200, 630));
+    const preview = (code: string, address: string) =>
+      request(site(), `/api/og/${code}.jpg`, { headers: { "CF-Connecting-IP": address } });
+
+    for (let guess = 0; guess < INVITE_MISSES_PER_ADDRESS_HOURLY; guess += 1) {
+      expect((await preview(`ZZ${String(guess).padStart(4, "0")}`, "203.0.113.7")).status).toBe(302);
+    }
+    const refused = await preview(CODE, "203.0.113.7");
+    expect(refused.status).toBe(302);
+    expect(refused.headers.get("Location")).toBe(HOUSE_CARD);
+    expect((await preview(CODE, "198.51.100.4")).status).toBe(200);
+  });
+
   it("refuses anything that is not a 1200 by 630 JPEG", async () => {
     await consent("photos_referral_cards", true);
     expect((await put(jpegOf(1080, 1080))).status).toBe(422);
@@ -198,15 +215,19 @@ describe("the client's own card, from the client app's host", () => {
 });
 
 describe("the waitlist and a launch", () => {
-  async function waiting(alert: boolean) {
+  /** Someone waiting in Bandra, whose area ops have named unless `named` is false. */
+  async function waiting(alert: boolean, named = true) {
     await env.DB.prepare(
       "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, '+919810000002', 'Karan Bhatia')",
     )
       .bind(FRIEND, NOW.toISOString())
       .run();
     await env.DB.prepare(
-      "INSERT INTO serviceable_pincodes (pincode, area, city, served) VALUES ('400050', 'Bandra', 'Mumbai', 0)",
-    ).run();
+      `INSERT INTO serviceable_pincodes (pincode, area, city, served, area_named_by)
+       VALUES ('400050', 'Bandra', 'Mumbai', 0, ?1)`,
+    )
+      .bind(named ? "ops@localhost" : null)
+      .run();
     await env.DB.prepare(
       `INSERT INTO waitlist_entries (id, pincode, person_id, referral_code, contact_consent_at, launch_alert, created_at)
        VALUES ('w1', '400050', ?1, ?2, ?3, ?4, ?3)`,
@@ -275,6 +296,19 @@ describe("the waitlist and a launch", () => {
     expect(second.sent).toEqual([]);
   });
 
+  // BK-27 and CP-25 of the audit, 2 October 2026: a launch named the area by its post office's name.
+  it("names the city in the launch alert, and to ops, until ops name the area", async () => {
+    await waiting(true, false);
+    expect(await (await request(ops(), "/api/waitlist")).json()).toMatchObject({
+      areas: [{ pincode: "400050", area: null, city: "Mumbai" }],
+    });
+    expect((await launch({ confirm: true })).status).toBe(200);
+    const composed = await composeLaunchAlert(env.DB, "400050", FRIEND, "local");
+    expect("skip" in composed ? composed : renderMessage(composed.template, composed.params)).toBe(
+      "Hello Karan, we now come to Mumbai. Your free consultation can be booked here: http://localhost:4321/book",
+    );
+  });
+
   // The waitlist was read whole, however many pincodes people were waiting in (FEO-16).
   it("lists the longest-waiting pincodes, a page at most, and says when there are more", async () => {
     await env.DB.prepare(
@@ -323,8 +357,9 @@ describe("ops' referrers", () => {
     )
       .bind(FRIEND, NOW.toISOString())
       .run();
-    await request(site(), `/api/r/${CODE}`);
-    await request(site(), `/api/r/${CODE}`);
+    for (const address of ["203.0.113.7", "198.51.100.4"]) {
+      await request(site(), `/api/r/${CODE}`, { headers: { "CF-Connecting-IP": address } });
+    }
     await env.DB.prepare(
       `INSERT INTO referral_attributions (id, code, referred_person_id, first_touch_at, via, grant_state, created_at,
          updated_at)

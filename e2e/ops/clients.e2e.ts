@@ -126,7 +126,7 @@ test("heads the page with the client's standing and the number to reach them on"
   await expect(page.getByRole("heading", NAME)).toBeVisible();
   // "Fitted" heads a column of the pieces table beneath, so the standing is read from its own list.
   // The replacement is the month the board's head writes, never the day the pieces table carries.
-  await expect(meta(page)).toHaveText(["Fitted", "2 · expire 3 Jan 2028", "Mar 2028", MOBILE]);
+  await expect(meta(page)).toHaveText(["Fitted", "2 · use by 3 Jan 2028", "Mar 2028", MOBILE]);
   await expect(page.getByRole("link", { name: `Call ${CLIENT.name} on ${MOBILE}` })).toHaveAttribute(
     "href",
     `tel:${CLIENT.mobile}`,
@@ -144,7 +144,7 @@ test("opens a WhatsApp chat with the client from beside their name, as the board
 
 test("says in words that a client wearing no piece falls due on no date", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}`, { [READ_RECORD]: json(NEW_RECORD) });
-  await expect(meta(page)).toHaveText(["Booked", "2 · expire 3 Jan 2028", "No piece fitted", MOBILE]);
+  await expect(meta(page)).toHaveText(["Booked", "2 · use by 3 Jan 2028", "No piece fitted", MOBILE]);
 });
 
 test("opens on the pieces, as the board draws the page, and lists them in the board's columns", async ({ page }) => {
@@ -462,13 +462,24 @@ test("lists what the client has paid, and what for", async ({ page }) => {
   await expect(payment).toContainText("Paid · Ref MM-2027-0841");
 });
 
+test("names the discount code a payment was made with, and what it took off", async ({ page }) => {
+  const [paid] = RECORD.payments;
+  const withCode = {
+    ...RECORD,
+    payments: paid === undefined ? [] : [{ ...paid, discount_code: { code: "AUDTEST", amount_off: 100_000 } }],
+  } satisfies OpsReply<"/api/clients/{id}">;
+  await openClient(page, `/clients/${CLIENT.id}/payments`, { [READ_RECORD]: json(withCode) });
+  const payment = page.getByRole("region", { name: "Payments and refunds" }).getByRole("row").nth(1);
+  await expect(payment).toContainText("Code AUDTEST, Rs. 1,000 off");
+});
+
 // A credit given or taken in error once needed SQL to put right (BIZ-15).
 test("puts a client's credits right, with the reason, and shows the balance it answers", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/payments`, {
     [ADD_CREDITS]: json({ visits: 1, earliest_expiry: "2028-01-03T06:00:00.000Z" }),
   });
-  const credits = page.getByRole("region", { name: "Service-visit credits" });
-  await expect(credits).toContainText("2 visits The soonest expires 3 Jan 2028.");
+  const credits = page.getByRole("region", { name: "Free service visits" });
+  await expect(credits).toContainText("2 visits · use by 3 Jan 2028");
   const save = credits.getByRole("button", { name: "Put the credits right" });
   await expect(save).toBeDisabled();
 
@@ -480,12 +491,12 @@ test("puts a client's credits right, with the reason, and shows the balance it a
 
   await expect(credits.getByRole("status")).toHaveText("Done. They now hold 1 visit.");
   // The head reads the balance the API answered, without the record being read again.
-  await expect(meta(page).nth(1)).toHaveText("1 · expire 3 Jan 2028");
+  await expect(meta(page).nth(1)).toHaveText("1 · use by 3 Jan 2028");
 });
 
 test("offers no change of nought, or of more than twelve visits either way", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/payments`);
-  const credits = page.getByRole("region", { name: "Service-visit credits" });
+  const credits = page.getByRole("region", { name: "Free service visits" });
   await credits.getByRole("radio", { name: "Goodwill: to make up for something" }).check();
   const field = credits.getByLabel("Visits to add, or to take away with a minus");
   const save = credits.getByRole("button", { name: "Put the credits right" });
@@ -501,7 +512,7 @@ test("says so when the API would take away more than the client holds", async ({
   await openClient(page, `/clients/${CLIENT.id}/payments`, {
     [ADD_CREDITS]: fails(400, "invalid_request"),
   });
-  const credits = page.getByRole("region", { name: "Service-visit credits" });
+  const credits = page.getByRole("region", { name: "Free service visits" });
   await credits.getByLabel("Visits to add, or to take away with a minus").fill("-5");
   await credits.getByRole("radio", { name: "Correction: given or taken in error" }).check();
   await credits.getByRole("button", { name: "Put the credits right" }).click();
@@ -694,7 +705,7 @@ test("lists every consent with its state, date and where it was given, and says 
   await openClient(page, `/clients/${CLIENT.id}/consents`);
   const row = (purpose: string) => page.getByRole("row").filter({ hasText: purpose });
   await expect(page.getByRole("columnheader", { name: "Source" })).toBeVisible();
-  await expect(row("Photographs for the client record")).toHaveText(/Given\s*14 Nov 2026\s*Profile$/);
+  await expect(row("Photographs taken for the visit record")).toHaveText(/Given\s*14 Nov 2026\s*Profile$/);
   await expect(row("Photographs on referral cards")).toContainText("Refer");
   await expect(row("Photographs in marketing")).toHaveText(/Not given\s*—\s*—$/);
   await expect(row("WhatsApp about visits")).toContainText("Site");
@@ -718,7 +729,7 @@ test("names a consent given by booking, and says where a place was not recorded"
   );
   await openClient(page, `/clients/${CLIENT.id}/consents`, { [READ_CONSENTS]: json({ ...CONSENTS, consents }) });
   const row = (purpose: string) => page.getByRole("row").filter({ hasText: purpose });
-  await expect(row("Photographs for the client record")).toContainText("Booking");
+  await expect(row("Photographs taken for the visit record")).toContainText("Booking");
   await expect(row("Photographs on referral cards")).toContainText("Not recorded");
   await expect(row("WhatsApp about visits")).toContainText("Invite");
   const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
@@ -834,7 +845,7 @@ test("meets WCAG 2.2 AA finding a client, and on every tab, locked and open", as
   await clean("visits");
 
   await page.getByRole("link", { name: "Payments" }).click();
-  await expect(page.getByRole("region", { name: "Service-visit credits" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Free service visits" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Invite" })).toBeVisible();
   await clean("payments");
 

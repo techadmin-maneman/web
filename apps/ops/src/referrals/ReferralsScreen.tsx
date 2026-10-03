@@ -18,6 +18,7 @@ import { api, type Held, type Referrer } from "../api.ts";
 import { DecisionQueue } from "../components/DecisionQueue.tsx";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { referrals } from "../content.ts";
+import { useAccess } from "../lib/access.ts";
 import { daysUntil } from "../lib/due.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./referrals.module.css";
@@ -39,7 +40,15 @@ function heldFor(since: string, now: Date): string {
   return hours < 24 ? referrals.queue.held(hours, "hour") : referrals.queue.held(Math.floor(hours / 24), "day");
 }
 
-function HeldGrant({ grant, now, onDecided }: { grant: Held; now: Date; onDecided: () => void }) {
+interface HeldGrantProps {
+  readonly grant: Held;
+  readonly now: Date;
+  /** Whether the person's access lets them approve or reject it. */
+  readonly mayDecide: boolean;
+  readonly onDecided: () => void;
+}
+
+function HeldGrant({ grant, now, mayDecide, onDecided }: HeldGrantProps) {
   const [decision, setDecision] = useState<Decision>({ step: "open" });
   const [reason, setReason] = useState("");
   const openers = { approve: useRef<HTMLButtonElement>(null), reject: useRef<HTMLButtonElement>(null) };
@@ -83,7 +92,7 @@ function HeldGrant({ grant, now, onDecided }: { grant: Held; now: Date; onDecide
           </li>
         ))}
       </ul>
-      {asking !== null ? (
+      {asking !== null && (
         <div className={styles.reason}>
           <Field label={copy.reason.label[asking.choice]} hint={copy.reason.hint}>
             {(control) => (
@@ -122,7 +131,8 @@ function HeldGrant({ grant, now, onDecided }: { grant: Held; now: Date; onDecide
             </Button>
           </div>
         </div>
-      ) : (
+      )}
+      {asking === null && mayDecide && (
         <div className={styles.actions}>
           <Button
             variant="primary"
@@ -160,9 +170,10 @@ function HeldGrant({ grant, now, onDecided }: { grant: Held; now: Date; onDecide
 /** Board C1's queue. A decision can change the referrers' figures beneath, so each one tells the page. */
 function ReviewQueue({ onDecided }: { onDecided: () => void }) {
   const [loaded, retry] = useLoad(api.held);
+  const mayDecide = useAccess().mayCall("POST /api/referrals/{id}/decision");
   const copy = referrals.queue;
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const now = new Date();
   return (
@@ -171,6 +182,7 @@ function ReviewQueue({ onDecided }: { onDecided: () => void }) {
         <HeldGrant
           grant={grant}
           now={now}
+          mayDecide={mayDecide}
           onDecided={() => {
             decided();
             onDecided();
@@ -184,7 +196,7 @@ function ReviewQueue({ onDecided }: { onDecided: () => void }) {
 /** The referrers read so far, a page at a time, and whether another follows. */
 type Pages =
   | { readonly state: "loading" }
-  | { readonly state: "failed" }
+  | { readonly state: "failed"; readonly requestId: string | null }
   | {
       readonly state: "loaded";
       readonly referrers: readonly Referrer[];
@@ -207,7 +219,7 @@ function useReferrers(version: number) {
       setPages(
         answer.ok
           ? { state: "loaded", referrers: answer.body.referrers, more: answer.body.more, fetching: false }
-          : { state: "failed" },
+          : { state: "failed", requestId: answer.requestId },
       );
     });
     return () => {
@@ -242,7 +254,7 @@ function ReferrersTable({ version }: { version: number }) {
   const copy = referrals.table;
 
   if (pages.state === "loading") return <Loading />;
-  if (pages.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (pages.state === "failed") return <PanelFailed onRetry={retry} requestId={pages.requestId} />;
 
   return (
     <section className={styles.panel} aria-labelledby="referrers">

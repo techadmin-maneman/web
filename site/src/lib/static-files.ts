@@ -109,12 +109,14 @@ export function robotsFile(environment: SiteEnvironment): string {
 }
 
 /**
- * The page a built file serves: index.html is /, try.html is /try. The 404 page
- * is not one, and neither is the referral landing: r.html answers every /r/:code,
- * each one a single person's invite, and none of them is indexed.
+ * The built pages no search engine is given: the 404, and the pages a single person's link opens. r.html answers
+ * every /r/:code, each one a person's invite; /stop is opened from a person's own message.
  */
+const UNLISTED_PAGES = new Set(["404.html", "r.html", "stop.html"]);
+
+/** The page a built file serves, for the sitemap: index.html is /, try.html is /try. */
 export function pagePath(file: string): string | null {
-  if (!file.endsWith(".html") || file === "404.html" || file === "r.html") return null;
+  if (!file.endsWith(".html") || UNLISTED_PAGES.has(file)) return null;
   return file === "index.html" ? "/" : `/${file.slice(0, -".html".length)}`;
 }
 

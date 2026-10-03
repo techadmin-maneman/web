@@ -14,9 +14,38 @@
   flex-direction: column;
   flex-shrink: 0;
   width: var(--ops-nav);
-  /* Eleven sections outgrow a short window, or one at 200% zoom: they scroll rather than run off the page. */
+  /* The sections outgrow a short window, or one at 200% zoom: they scroll rather than run off the page. */
   overflow-y: auto;
   background: var(--ink);
+}
+
+/* Out of sight until the keyboard reaches it, first on every page. */
+.skip {
+  position: absolute;
+  top: var(--sp-8);
+  left: var(--sp-8);
+  z-index: 4;
+  padding: var(--sp-8) var(--sp-14);
+  background: var(--paper);
+  color: var(--text);
+  transform: translateY(-200%);
+}
+
+.skip:focus {
+  transform: none;
+}
+
+.department {
+  padding-top: var(--sp-14);
+}
+
+.departmentName {
+  margin: 0;
+  padding: 0 var(--sp-20) var(--sp-4);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-12);
+  font-size: var(--fs-13);
+  color: var(--ink-muted);
 }
 
 .brand {
@@ -44,13 +73,15 @@
 
 .sections {
   margin: 0;
-  padding: var(--sp-14) 0;
+  padding: 0;
   list-style: none;
 }
 
 .section {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-8);
   min-height: var(--tap);
   padding: 0 var(--sp-20);
   border-left: var(--rule-strong) solid transparent;
@@ -68,6 +99,25 @@
 .section:focus-visible {
   outline: var(--focus-width) solid var(--paper);
   outline-offset: calc(-1 * var(--focus-width));
+}
+
+/* How many tasks wait in a section; filled where any of them is overdue. */
+.count,
+.overdue {
+  min-width: var(--sp-22);
+  padding: 0 var(--sp-6);
+  font-size: var(--fs-13);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.count {
+  color: var(--ink-tag);
+}
+
+.overdue {
+  background: var(--error-on-ink);
+  color: var(--ink);
 }
 
 .body {
@@ -164,6 +214,18 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+}
+
+.closed {
+  margin: 0;
+  font-size: var(--fs-15);
+  color: var(--text-muted);
+}
+
+/* The skip link's target: a region, not a control, so it has no ring. */
+.page:focus,
+.flushPage:focus {
+  outline: none;
 }
 
 .page {

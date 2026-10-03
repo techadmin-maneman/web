@@ -4,8 +4,10 @@
 // what a technician is trained for, so Leave stands there instead and a line
 // beneath the table says why (docs/open-points.md, item 59).
 //
-// A technician's name opens a panel over the roster with the phones they have
-// logged in on and their leave, which the board's rows have no room for.
+// A technician's name opens a panel over the roster with his details, the phones
+// he has logged in on and his leave, which the board's rows have no room for.
+// Ops add technicians, change them and switch them off and back on there too
+// (./TechnicianForms.tsx); those switched off are listed beneath the table.
 // Revoking a phone ends its session and makes it drop its cached jobs, so it
 // asks before it sends (src/domain/technicians.ts). Leave is recorded here
 // because FSM has nowhere to keep it (ADR 0062). It is not a note: the days it
@@ -14,14 +16,26 @@
 
 import { Button, buttonLook } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";
-import { useLoad } from "@maneman/ui/useLoad";
+import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { fullDate, indiaClock, indiaDate, listDate, longDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
-import { api, type Device, type JobOnLeave, type Leave, type Technician, type TechnicianWork } from "../api.ts";
+import {
+  api,
+  type Device,
+  type JobOnLeave,
+  type Leave,
+  type ReturnedVisit,
+  type Roster as RosterBook,
+  type Technician,
+  type TechnicianSummary,
+  type TechnicianWork,
+} from "../api.ts";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { technicians } from "../content.ts";
+import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
+import { AddTechnician, Details, Returned } from "./TechnicianForms.tsx";
 import styles from "./technicians.module.css";
 
 /** The route's period ends the day after the last one counted; the note names that last day. */
@@ -78,6 +92,7 @@ type Revoking =
 
 function Phone({ phone, technician }: { phone: Device; technician: Technician }) {
   const [revoking, setRevoking] = useState<Revoking>({ step: "listed" });
+  const mayRevoke = useAccess().mayCall("POST /api/technicians/{id}/devices/{device}/revoke");
   const copy = technicians.phones;
   const name = phoneName(phone);
 
@@ -94,7 +109,7 @@ function Phone({ phone, technician }: { phone: Device; technician: Technician })
   // A phone is offered, then asked about, then gone: one of the three at a time.
   const gone = revokedAt !== null;
   const asking = !gone && (revoking.step === "asking" || sending);
-  const offered = !gone && !asking;
+  const offered = mayRevoke && !gone && !asking;
 
   return (
     <li className={styles.phone}>
@@ -194,6 +209,9 @@ function LeaveBlock({ technician, onChange }: { technician: Technician; onChange
   const [sending, setSending] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
   const [stranded, setStranded] = useState<readonly JobOnLeave[]>([]);
+  const access = useAccess();
+  const mayRecord = access.mayCall("POST /api/technicians/{id}/leave");
+  const mayTakeBack = access.mayCall("POST /api/technicians/{id}/leave/{leave}/cancel");
   /** Why it was refused, in the console's words; nothing was recorded either way. */
   const refusal = (code: string): string => {
     const errors: Readonly<Record<string, string | undefined>> = copy.errors;
@@ -241,22 +259,24 @@ function LeaveBlock({ technician, onChange }: { technician: Technician; onChange
             <li className={styles.leaveRow} key={leave.id}>
               <span className={styles.leavePeriod}>{periodOf(leave)}</span>
               {leave.note !== null && <span className={styles.leaveNote}>{leave.note}</span>}
-              <Button
-                variant="outline"
-                size="small"
-                className={styles.quiet}
-                disabled={sending}
-                aria-label={copy.takeLabel(periodOf(leave), technician.name)}
-                onClick={() => void take(leave)}
-              >
-                {sending ? copy.taking : copy.take}
-              </Button>
+              {mayTakeBack && (
+                <Button
+                  variant="outline"
+                  size="small"
+                  className={styles.quiet}
+                  disabled={sending}
+                  aria-label={copy.takeLabel(periodOf(leave), technician.name)}
+                  onClick={() => void take(leave)}
+                >
+                  {sending ? copy.taking : copy.take}
+                </Button>
+              )}
             </li>
           ))}
         </ul>
       )}
 
-      {form === null ? (
+      {form === null && mayRecord && (
         <div className={styles.actions}>
           <Button
             variant="outline"
@@ -271,7 +291,8 @@ function LeaveBlock({ technician, onChange }: { technician: Technician; onChange
             {copy.add}
           </Button>
         </div>
-      ) : (
+      )}
+      {form !== null && (
         <form
           className={styles.leaveForm}
           onSubmit={(event) => {
@@ -350,49 +371,178 @@ function LeaveBlock({ technician, onChange }: { technician: Technician; onChange
   );
 }
 
+function Phones({ technician }: { technician: Technician }) {
+  const copy = technicians.phones;
+  return (
+    <section className={styles.section} aria-labelledby="phones-title">
+      <h3 className={styles.sectionTitle} id="phones-title">
+        {copy.title}
+      </h3>
+      {technician.devices.length === 0 ? (
+        <p className={styles.none}>{copy.none}</p>
+      ) : (
+        <ul className={styles.phoneList}>
+          {technician.devices.map((phone) => (
+            <Phone key={phone.device_id} phone={phone} technician={technician} />
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+/** A technician the panel shows: as both lists carry him, and his phones and leave while he is active. */
+interface Entry {
+  readonly summary: TechnicianSummary;
+  readonly active: Technician | null;
+}
+
+function entryOf(book: RosterBook, id: string | null): Entry | null {
+  const active = book.technicians.find((technician) => technician.id === id);
+  if (active !== undefined) return { summary: active, active };
+  const off = book.switched_off.find((technician) => technician.id === id);
+  return off === undefined ? null : { summary: off, active: null };
+}
+
+/** What the last switch in the panel did, said until the panel closes. */
+type Switched =
+  | { readonly technicianId: string; readonly to: "off"; readonly visits: readonly ReturnedVisit[] }
+  | { readonly technicianId: string; readonly to: "on" };
+
 /**
- * One technician's phones and leave, in a panel over the roster. It is a modal
- * dialog, so the roster behind it is inert and the keyboard stays inside, and
- * it hands the keyboard back to the name that opened it when it closes.
+ * One technician's details, phones and leave, in a panel over the roster. It is
+ * a modal dialog, so the roster behind it is inert and the keyboard stays
+ * inside, and it hands the keyboard back to the name that opened it when it
+ * closes. It stays open as he is switched off or back on, with what that did.
  */
 function TechnicianPanel({
-  technician,
+  entry,
+  switched,
   onChange,
+  onSwitched,
   onClose,
 }: {
-  technician: Technician;
+  entry: Entry;
+  switched: Switched | null;
   onChange: () => Promise<void>;
+  onSwitched: (switched: Switched) => void;
   onClose: () => void;
 }) {
-  const copy = technicians.phones;
+  const { summary, active } = entry;
   return (
     <Dialog className={styles.drawer} labelledBy="technician-title" canClose onDismiss={onClose}>
       <div className={styles.drawerHead}>
         <h2 className={styles.drawerTitle} id="technician-title">
-          {technician.name}
+          {summary.name}
         </h2>
         <Button variant="outline" size="small" className={styles.quiet} onClick={onClose}>
           {technicians.close}
         </Button>
       </div>
       <div className={styles.drawerBody}>
-        <section className={styles.section} aria-labelledby="phones-title">
-          <h3 className={styles.sectionTitle} id="phones-title">
-            {copy.title}
-          </h3>
-          {technician.devices.length === 0 ? (
-            <p className={styles.none}>{copy.none}</p>
-          ) : (
-            <ul className={styles.phoneList}>
-              {technician.devices.map((phone) => (
-                <Phone key={phone.device_id} phone={phone} technician={technician} />
-              ))}
-            </ul>
-          )}
-        </section>
-        <LeaveBlock technician={technician} onChange={onChange} />
+        <Details
+          technician={summary}
+          active={active !== null}
+          onChange={onChange}
+          onSwitchedOff={async (visits) => {
+            onSwitched({ technicianId: summary.id, to: "off", visits });
+            await onChange();
+          }}
+          onSwitchedOn={async () => {
+            onSwitched({ technicianId: summary.id, to: "on" });
+            await onChange();
+          }}
+        />
+        {switched?.to === "off" && <Returned visits={switched.visits} />}
+        {switched?.to === "on" && (
+          <p className={styles.notice} role="status">
+            {technicians.switchOn.done(summary.name)}
+          </p>
+        )}
+        {active !== null && <Phones technician={active} />}
+        {active !== null && <LeaveBlock technician={active} onChange={onChange} />}
       </div>
     </Dialog>
+  );
+}
+
+/** The technicians switched off, beneath the table: they cannot sign in, and nothing is booked on them. */
+function SwitchedOff({ list, onOpen }: { list: readonly TechnicianSummary[]; onOpen: (id: string) => void }) {
+  return (
+    <section className={styles.off} aria-labelledby="switched-off">
+      <h3 className={styles.sectionTitle} id="switched-off">
+        {technicians.switchedOff}
+      </h3>
+      <ul className={styles.offList}>
+        {list.map((technician) => (
+          <li className={styles.offRow} key={technician.id}>
+            <button
+              className={styles.choose}
+              type="button"
+              aria-label={technicians.openSwitchedOff(technician.name)}
+              onClick={() => {
+                onOpen(technician.id);
+              }}
+            >
+              {technician.name}
+            </button>
+            <span className={styles.offZone}>{technician.zone ?? technicians.unknown}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/** Board D3's table: the active technicians, one row each. */
+function RosterTable({
+  active,
+  figures,
+  onOpen,
+}: {
+  active: readonly Technician[];
+  figures: ReadonlyMap<string, TechnicianWork>;
+  onOpen: (id: string) => void;
+}) {
+  const today = indiaDate(new Date().toISOString());
+  return (
+    <table className={styles.table}>
+      <thead>
+        <tr>
+          {technicians.columns.map((column) => (
+            <th key={column} scope="col" className={styles.head}>
+              {column}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {active.map((technician) => (
+          <tr key={technician.id}>
+            <th scope="row" className={styles.name}>
+              <button
+                className={styles.choose}
+                type="button"
+                aria-label={technicians.open(technician.name)}
+                onClick={() => {
+                  onOpen(technician.id);
+                }}
+              >
+                {technician.name}
+              </button>
+            </th>
+            <td className={styles.zone}>{technician.zone ?? technicians.unknown}</td>
+            <td className={styles.jobs}>{figures.get(technician.id)?.jobs ?? technicians.unknown}</td>
+            <td className={styles.service}>
+              <Service figures={figures.get(technician.id)} />
+            </td>
+            <td className={styles.leaveCell}>
+              <LeaveCell leave={technician.leave} today={today} />
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 
@@ -401,9 +551,13 @@ function Roster() {
   // The roster carries no period, so the figures are a read of their own; the
   // table is one table either way, and waits for both.
   const [work, retryWork] = useLoad(api.technicianWork);
-  // The roster as read again after a change in the panel, which stays open over it meanwhile.
-  const [fresh, setFresh] = useState<readonly Technician[] | null>(null);
+  // The roster as read again after a change in a panel, which stays open over it meanwhile.
+  const [fresh, setFresh] = useState<RosterBook | null>(null);
   const [open, setOpen] = useState<string | null>(null);
+  const [switched, setSwitched] = useState<Switched | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [added, setAdded] = useState<string | null>(null);
+  const mayAdd = useAccess().mayCall("POST /api/technicians");
 
   if (loaded.state === "loading" || work.state === "loading") return <Loading />;
   if (loaded.state === "failed" || work.state === "failed") {
@@ -413,17 +567,17 @@ function Roster() {
           retry();
           retryWork();
         }}
+        requestId={failedRequestId(loaded) ?? failedRequestId(work)}
       />
     );
   }
 
-  const roster = fresh ?? loaded.value.technicians;
+  const book = fresh ?? loaded.value;
   const figures = new Map(work.value.technicians.map((each) => [each.technician_id, each]));
-  const today = indiaDate(new Date().toISOString());
-  const opened = roster.find((technician) => technician.id === open);
+  const opened = entryOf(book, open);
   const readAgain = async () => {
     const answer = await api.technicians();
-    if (answer.ok) setFresh(answer.body.technicians);
+    if (answer.ok) setFresh(answer.body);
   };
 
   return (
@@ -431,57 +585,57 @@ function Roster() {
       <VisuallyHidden as="h2" id="roster">
         {technicians.title}
       </VisuallyHidden>
-      {roster.length === 0 ? (
+      {mayAdd && (
+        <div className={styles.toolbar}>
+          <Button
+            variant="outline"
+            size="small"
+            className={styles.quiet}
+            onClick={() => {
+              setAdded(null);
+              setAdding(true);
+            }}
+          >
+            {technicians.add.open}
+          </Button>
+        </div>
+      )}
+      {added !== null && (
+        <p className={styles.notice} role="status">
+          {technicians.add.added(added)}
+        </p>
+      )}
+      {book.technicians.length === 0 ? (
         <p className={styles.empty}>{technicians.empty}</p>
       ) : (
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              {technicians.columns.map((column) => (
-                <th key={column} scope="col" className={styles.head}>
-                  {column}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {roster.map((technician) => (
-              <tr key={technician.id}>
-                <th scope="row" className={styles.name}>
-                  <button
-                    className={styles.choose}
-                    type="button"
-                    aria-label={technicians.open(technician.name)}
-                    onClick={() => {
-                      setOpen(technician.id);
-                    }}
-                  >
-                    {technician.name}
-                  </button>
-                </th>
-                <td className={styles.zone}>{technician.zone ?? technicians.unknown}</td>
-                <td className={styles.jobs}>{figures.get(technician.id)?.jobs ?? technicians.unknown}</td>
-                <td className={styles.service}>
-                  <Service figures={figures.get(technician.id)} />
-                </td>
-                <td className={styles.leaveCell}>
-                  <LeaveCell leave={technician.leave} today={today} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <RosterTable active={book.technicians} figures={figures} onOpen={setOpen} />
       )}
       <p className={styles.note}>
         {technicians.work.period(fullDate(work.value.from), fullDate(lastDay(work.value.to)))}
       </p>
       <p className={styles.note}>{technicians.work.skill}</p>
-      {opened !== undefined && (
+      {book.switched_off.length > 0 && <SwitchedOff list={book.switched_off} onOpen={setOpen} />}
+      {opened !== null && (
         <TechnicianPanel
-          technician={opened}
+          entry={opened}
+          switched={switched?.technicianId === opened.summary.id ? switched : null}
           onChange={readAgain}
+          onSwitched={setSwitched}
           onClose={() => {
             setOpen(null);
+            setSwitched(null);
+          }}
+        />
+      )}
+      {adding && (
+        <AddTechnician
+          onAdded={async (name) => {
+            await readAgain();
+            setAdding(false);
+            setAdded(name);
+          }}
+          onClose={() => {
+            setAdding(false);
           }}
         />
       )}

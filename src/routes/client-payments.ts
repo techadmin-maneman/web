@@ -8,11 +8,10 @@
 //   GET /api/documents/:id           a visit's invoice, as a PDF from Books
 //
 // Amounts are in paise, as Razorpay charged them, GST included; each carries
-// its ex-GST part, which the app shows as the main figure, at the rate it was
-// sold at: the hold's, kept on the payment when it was captured. A payment no
-// hold priced is split at GST_PERCENT. A failed attempt is not a payment and
-// is left out. A payment kept under the 24-hour rule is a
-// charge, and carries its evidence (docs/decisions/0046-moving-and-cancelling.md).
+// its ex-GST part at the rate it was sold at: the hold's or the link's, kept on
+// the payment when it was captured. A payment neither priced has no split. A
+// failed attempt is not a payment and is left out. A payment kept under the
+// 24-hour rule is a charge, and carries its evidence.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
@@ -24,6 +23,7 @@ import {
   paymentEntries,
   paymentEntry,
   receiptOf,
+  REFERRAL_SIDES,
 } from "../domain/client-payments.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
@@ -36,12 +36,30 @@ const VisitRefSchema = z
   ])
   .openapi({ description: "The visit it paid for, when known." });
 
+const BookingRefSchema = z
+  .union([
+    z
+      .object({
+        type: z.enum(VISIT_TYPES),
+        date: z.iso.date().openapi({ description: "India's day the visit was held for." }),
+        under_way: z.boolean().openapi({ description: "Still being booked; false once refunded or let go." }),
+      })
+      .strict(),
+    z.null(),
+  ])
+  .openapi({ description: "What it paid for while there is no visit yet: the booking its hold was making." });
+
 const money = {
   date: z.iso.date().openapi({ description: "India's calendar date it was made." }),
-  amount: z.number().int().openapi({ description: "In paise, GST included." }),
-  amount_ex_gst: z.number().int().openapi({ description: "In paise, before GST: the main figure." }),
-  gst_percent: z.number().openapi({ description: "The GST rate the amount includes." }),
+  amount: z.number().int().openapi({ description: "In paise, GST included: the main figure." }),
+  amount_ex_gst: z
+    .union([z.number().int(), z.null()])
+    .openapi({ description: "In paise, before GST; null where no rate was recorded for it." }),
+  gst_percent: z
+    .union([z.number(), z.null()])
+    .openapi({ description: "The GST rate the amount includes; null where none was recorded." }),
   visit: VisitRefSchema,
+  booking: BookingRefSchema,
 };
 
 const PaymentEntrySchema = z
@@ -73,6 +91,19 @@ const PaymentEntrySchema = z
       description:
         "The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07).",
     }),
+    discount_code: z
+      .union([
+        z
+          .object({
+            code: z.string(),
+            amount_off: z
+              .union([z.number().int(), z.null()])
+              .openapi({ description: "In paise before GST; null where the visit's price was not yet known." }),
+          })
+          .strict(),
+        z.null(),
+      ])
+      .openapi({ description: "The discount code the visit was paid with; null for none, and on a late fee." }),
   })
   .strict()
   .openapi("PaymentEntry");
@@ -111,6 +142,11 @@ const CreditLineSchema = z
     source: z
       .union([z.enum(["referral", "ops", "import"]), z.null()])
       .openapi({ description: "Where credits added came from; null for any other entry." }),
+    referral_side: z.union([z.enum(REFERRAL_SIDES), z.null()]).openapi({
+      description:
+        "For credits an invite added: referrer, for a friend this client invited being fitted; friend, for this " +
+        "client's own fit through an invite. Null for any other entry.",
+    }),
     no_show: z.union([NoShowNoteSchema, z.null()]),
   })
   .strict()

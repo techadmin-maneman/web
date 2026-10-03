@@ -4,7 +4,7 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  min-height: 100dvh;
+  padding-bottom: env(safe-area-inset-bottom);
   background: var(--ink-deep);
 }
 
@@ -141,6 +141,12 @@
   font-size: var(--fs-17);
   line-height: var(--lh-150);
   color: var(--paper);
+}
+
+.reference {
+  margin-bottom: var(--sp-14);
+  font-size: var(--fs-15);
+  color: var(--ink-muted);
 }
 
 .button {

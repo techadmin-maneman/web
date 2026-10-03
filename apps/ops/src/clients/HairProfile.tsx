@@ -17,7 +17,8 @@ import {
   type HairProfileVersion,
   type HairProfileView,
 } from "../api.ts";
-import { clients, dispatch } from "../content.ts";
+import { clients, dispatch, NOT_PERMITTED } from "../content.ts";
+import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./profile.module.css";
 
@@ -253,7 +254,8 @@ function CorrectionForm({
       }
       const fields = answer.status === 400 ? refusedFields(answer.fields) : [];
       setRefused(fields);
-      setProblem(fields.length > 0 ? copy.refused : copy.failed);
+      if (answer.code === "not_permitted") setProblem(NOT_PERMITTED);
+      else setProblem(fields.length > 0 ? copy.refused : copy.failed);
     });
 
   const select = (field: Code, options: readonly { value: string; label: string }[]) => (
@@ -394,7 +396,7 @@ function toggled(chosen: readonly Remedy[], remedy: Remedy): Remedy[] {
   return [...chosen.filter((each) => each !== "none"), remedy];
 }
 
-/** Every first-fit service, and the profile's product where it is one no longer held, so the form keeps it. */
+/** The hair systems offered today, and the profile's product where it is no longer one, so the form keeps it. */
 function productOptions(products: Products, latest: HairProfileView | null): { value: string; label: string }[] {
   const options = products.map((product) => ({ value: product.tier, label: product.name }));
   const kept = latest?.fit.product ?? null;
@@ -410,9 +412,10 @@ export function HairProfile({ clientId }: { clientId: string }) {
   const [correcting, setCorrecting] = useState(false);
   // A correction refused because another version became the latest meanwhile: the profile was read again.
   const [moved, setMoved] = useState(false);
+  const mayCorrect = useAccess().mayCall("POST /api/clients/{id}/hair-profile");
 
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const page = saved ?? loaded.value;
   return (
@@ -426,7 +429,7 @@ export function HairProfile({ clientId }: { clientId: string }) {
         </p>
       )}
       {page.latest === null ? <p className={styles.hint}>{copy.none}</p> : <ProfileRows profile={page.latest} />}
-      {correcting ? (
+      {correcting && (
         <CorrectionForm
           clientId={clientId}
           page={page}
@@ -445,7 +448,8 @@ export function HairProfile({ clientId }: { clientId: string }) {
             setCorrecting(false);
           }}
         />
-      ) : (
+      )}
+      {!correcting && mayCorrect && (
         <div className={styles.actions}>
           <Button
             variant="outline"

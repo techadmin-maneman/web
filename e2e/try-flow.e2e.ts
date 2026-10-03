@@ -12,6 +12,7 @@ import {
   expect,
   expectNoPersonalData,
   fakeTurnstile,
+  NUMBER_CODE,
   sendFromGate,
   test,
   throughToGate,
@@ -20,9 +21,21 @@ import {
 
 const JOB = "11111111-1111-4111-8111-111111111111";
 const LEAD = "22222222-2222-4222-8222-222222222222";
+const CODE_ID = "33333333-3333-4333-8333-333333333333";
 const MOBILE = "9810000000";
 
-type Call = "availability" | "look" | "uploadUrl" | "upload" | "copy" | "claim" | "generate" | "status" | "result";
+type Call =
+  | "availability"
+  | "look"
+  | "uploadUrl"
+  | "upload"
+  | "copy"
+  | "code"
+  | "verify"
+  | "claim"
+  | "generate"
+  | "status"
+  | "result";
 interface Answer {
   readonly status: number;
   readonly json?: unknown;
@@ -37,6 +50,8 @@ function callOf(request: Request): Call | null {
   if (path === "/api/tryon/upload-url") return "uploadUrl";
   if (path.startsWith("/api/tryon/upload/") && path.endsWith("/copy")) return "copy";
   if (path.startsWith("/api/tryon/upload/")) return "upload";
+  if (path === "/api/number-code") return "code";
+  if (path === "/api/number-code/verify") return "verify";
   if (path === "/api/tryon/claim") return "claim";
   if (path === "/api/tryon/generate") return "generate";
   if (path.startsWith("/api/tryon/status/")) return "status";
@@ -53,13 +68,15 @@ async function mockApi(page: Page, answers: Partial<Record<Call, Answer | Answer
   const later = new Date(Date.now() + 5 * 60_000).toISOString();
   const defaults: Record<Call, Answer | Answer[]> = {
     availability: { status: 200, json: { available: true } },
-    look: { status: 404, json: { error: { code: "not_found", request_id: "test" } } },
+    look: { status: 204 },
     uploadUrl: {
       status: 201,
       json: { job_id: JOB, upload_url: `/api/tryon/upload/${JOB}?token=signed`, expires_at: later },
     },
     upload: { status: 204 },
     copy: { status: 204 },
+    code: { status: 202, json: { code_id: CODE_ID } },
+    verify: { status: 200, json: { verified: true } },
     claim: { status: 201, json: { lead_id: LEAD } },
     generate: { status: 202, json: { job_id: JOB, state: "queued" } },
     status: [
@@ -130,21 +147,31 @@ test("the whole try-on: uploaded during the choices, the number given before the
   await sendFromGate(page, MOBILE);
   await screenIs(page, "sent");
   await expect(page.getByRole("heading", { name: "Your new look is on its way." })).toBeVisible();
-  await expect(page.getByText("Watch WhatsApp on +91 98100 00000", { exact: false })).toBeVisible();
+  await expect(page.getByText("It'll reach WhatsApp on +91 98100 00000", { exact: false })).toBeVisible();
 
+  // A WhatsApp code to the number first, with a fresh Turnstile token; the claim carries the code that proved it.
+  expect(named(seen, "code")[0]?.postDataJSON()).toEqual({
+    mobile: "9810000000",
+    name: "Test Visitor",
+    turnstile_token: DUMMY_TOKEN,
+  });
+  expect(named(seen, "verify")[0]?.postDataJSON()).toEqual({ code_id: CODE_ID, code: NUMBER_CODE });
   const [claim] = named(seen, "claim");
   expect(claim?.postDataJSON()).toEqual({
     job_id: JOB,
     name: "Test Visitor",
-    mobile: "98100 00000",
+    mobile: "9810000000",
+    number_code_id: CODE_ID,
     stage: "crown",
     notice_version: "gate-v3",
     attribution: { landing_path: "/try" },
   });
   expect(await claim?.headerValue("idempotency-key")).toMatch(/^[0-9a-f-]{36}$/);
-  // The look is asked for only once the claim is saved.
-  const gateCalls = seen.map((request) => callOf(request)).filter((call) => call === "claim" || call === "generate");
-  expect(gateCalls).toEqual(["claim", "generate"]);
+  // The look is asked for only once the claim is saved, and the claim only once the code proved the number.
+  const gateCalls = seen
+    .map((request) => callOf(request))
+    .filter((call) => call === "code" || call === "verify" || call === "claim" || call === "generate");
+  expect(gateCalls).toEqual(["code", "verify", "claim", "generate"]);
   // The stage is the claim's, so the look is made for the stage the lead records.
   expect(named(seen, "generate")[0]?.postDataJSON()).toEqual({
     job_id: JOB,
@@ -168,6 +195,46 @@ test("the whole try-on: uploaded during the choices, the number given before the
     "try_on_completed",
   ]);
   await expectNoPersonalData(page, ["Test Visitor", "98100", "9810000000"]);
+});
+
+// PS-10: the gate made a lead of any number typed, and sent its look there.
+test("the gate claims nothing until the WhatsApp code sent to the number is entered right", async ({ page }) => {
+  const seen = await mockApi(page, {
+    verify: [
+      { status: 200, json: { verified: false, attempts_left: 4 } },
+      { status: 200, json: { verified: true } },
+    ],
+  });
+  await visit(page, "/try");
+  await throughToGate(page);
+  await page.getByLabel("Name").fill("Test Visitor");
+  await page.getByLabel("Mobile").fill(MOBILE);
+  await page.getByRole("button", { name: "Send my look" }).click();
+
+  await expect(page.getByText("Sent on WhatsApp to +91 98100 00000.", { exact: false })).toBeVisible();
+  await expect(page.getByLabel("WhatsApp code")).toBeFocused();
+  await page.getByLabel("WhatsApp code").fill("111111");
+  await page.getByRole("button", { name: "Confirm and send my look" }).click();
+  await expect(page.getByText("That code is not right. 4 tries left.")).toBeVisible();
+  expect(named(seen, "claim")).toHaveLength(0);
+
+  await page.getByLabel("WhatsApp code").fill(NUMBER_CODE);
+  await page.getByRole("button", { name: "Confirm and send my look" }).click();
+  await screenIs(page, "sent");
+  expect(named(seen, "code")).toHaveLength(1);
+  expect(named(seen, "claim")).toHaveLength(1);
+});
+
+test("the gate says when a number has had its codes for today, and claims nothing", async ({ page }) => {
+  const seen = await mockApi(page, { code: refusal(429, "rate_limited") });
+  await visit(page, "/try");
+  await throughToGate(page);
+  await page.getByLabel("Name").fill("Test Visitor");
+  await page.getByLabel("Mobile").fill(MOBILE);
+  await page.getByRole("button", { name: "Send my look" }).click();
+  await expect(page.getByText("That is a few too many codes for this number today.", { exact: false })).toBeVisible();
+  await expect(page.getByLabel("WhatsApp code")).toHaveCount(0);
+  expect(named(seen, "claim")).toHaveLength(0);
 });
 
 test("a render that fails once the look is on its way shows the render's error, and another may be tried", async ({
@@ -240,7 +307,7 @@ test("a number that had its look in the last thirty days is told at the gate tha
 test("while WhatsApp cannot send a look, the visitor is told on arrival, and nothing is uploaded", async ({ page }) => {
   const seen = await mockApi(page, { availability: { status: 200, json: { available: false } } });
   await visit(page, "/try");
-  await expect(page.getByRole("heading", { name: "The try-on is not available right now." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "The try-on is paused." })).toBeVisible();
   await expect(page.getByRole("button", { name: "Choose another" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Book a visit instead" })).toHaveAttribute("href", "/book");
   expect(named(seen, "uploadUrl")).toHaveLength(0);
@@ -254,7 +321,7 @@ for (const [name, answers, heading] of [
   [
     "WhatsApp switched off since the page opened",
     { uploadUrl: refusal(503, "whatsapp_unavailable") },
-    "The try-on is not available right now.",
+    "The try-on is paused.",
   ],
 ] as const) {
   test(`the upload: ${name} shows "${heading}"`, async ({ page }) => {
@@ -273,11 +340,7 @@ for (const [name, answers, heading] of [
 for (const [name, answers, heading] of [
   ["the hourly render limit", { generate: refusal(429, "rate_limited") }, "The simulation is busy just now."],
   ["today's render ceiling", { generate: refusal(503, "busy") }, "The simulation is busy just now."],
-  [
-    "WhatsApp switched off at the gate",
-    { claim: refusal(503, "whatsapp_unavailable") },
-    "The try-on is not available right now.",
-  ],
+  ["WhatsApp switched off at the gate", { claim: refusal(503, "whatsapp_unavailable") }, "The try-on is paused."],
 ] as const) {
   test(`the gate: ${name} shows "${heading}"`, async ({ page }) => {
     await mockApi(page, answers);
@@ -290,12 +353,12 @@ for (const [name, answers, heading] of [
   });
 }
 
-test("the gate says when a number has had its looks today, and makes none", async ({ page }) => {
+test("the gate says when a number is out of tries for today, and makes none", async ({ page }) => {
   const seen = await mockApi(page, { claim: refusal(429, "rate_limited") });
   await visit(page, "/try");
   await throughToGate(page);
   await sendFromGate(page, MOBILE);
-  await expect(page.getByText("This number has had its looks for today. Please try again tomorrow.")).toBeVisible();
+  await expect(page.getByText("This number is out of tries for today. Try again tomorrow.")).toBeVisible();
   await screenIs(page, "gate");
   expect(named(seen, "generate")).toHaveLength(0);
 });
@@ -312,6 +375,22 @@ test("the gate says when the try-on is already another number's", async ({ page 
   await screenIs(page, "gate");
 });
 
+// UX-21: a refusal naming the number was said as "That did not go through", with nothing marked.
+test("the gate marks the field a claim's refusal names, and focuses it", async ({ page }) => {
+  const refused = { error: { code: "invalid_request", request_id: "test", fields: ["mobile"] } };
+  await mockApi(page, { claim: { status: 400, json: refused } });
+  await visit(page, "/try");
+  await throughToGate(page);
+  await sendFromGate(page, MOBILE);
+
+  const mobile = page.getByLabel("Mobile");
+  await expect(mobile).toHaveAttribute("aria-invalid", "true");
+  await expect(mobile).toHaveAccessibleDescription("Enter a valid 10-digit mobile number.");
+  await expect(mobile).toBeFocused();
+  await expect(page.getByText(/did not go through/)).toHaveCount(0);
+  await screenIs(page, "gate");
+});
+
 // FEO-21: pressing again after the answer was lost is the same claim, so it carries the same key.
 test("the gate pressed again after a lost answer sends the same request key", async ({ page }) => {
   const seen = await mockApi(page, {
@@ -320,7 +399,7 @@ test("the gate pressed again after a lost answer sends the same request key", as
   await visit(page, "/try");
   await throughToGate(page);
   await sendFromGate(page, MOBILE);
-  await expect(page.getByText("That did not go through. Please try again in a minute.")).toBeVisible();
+  await expect(page.getByText("That didn't go through. Try again in a minute.")).toBeVisible();
   await page.getByRole("button", { name: "Send my look" }).click();
   await screenIs(page, "sent");
   const keys = await Promise.all(named(seen, "claim").map((claim) => claim.headerValue("idempotency-key")));
@@ -339,7 +418,7 @@ test("a render request lost after the claim is asked again, with the same claim"
   await visit(page, "/try");
   await throughToGate(page);
   await sendFromGate(page, MOBILE);
-  await expect(page.getByText("That did not go through. Please try again in a minute.")).toBeVisible();
+  await expect(page.getByText("That didn't go through. Try again in a minute.")).toBeVisible();
   await page.getByRole("button", { name: "Send my look" }).click();
   await screenIs(page, "sent");
   const keys = await Promise.all(named(seen, "claim").map((claim) => claim.headerValue("idempotency-key")));
@@ -359,9 +438,9 @@ test("Back from the gate offers every look again, and nothing has been made", as
   await page.getByRole("button", { name: "Back", exact: true }).click();
 
   await screenIs(page, "looks");
-  await expect(page.getByRole("radio", { name: /^Preview Light density Natural/ })).toBeChecked();
+  await expect(page.getByRole("radio", { name: /^Light density Natural/ })).toBeChecked();
   await page.getByText("Full density").first().click();
-  await expect(page.getByRole("radio", { name: /^Preview Full density Natural/ })).toBeChecked();
+  await expect(page.getByRole("radio", { name: /^Full density Natural/ })).toBeChecked();
   await page.getByRole("button", { name: "Continue" }).click();
   await screenIs(page, "gate");
   expect(named(seen, "generate")).toHaveLength(0);

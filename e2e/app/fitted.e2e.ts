@@ -6,6 +6,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { fullDate, listMonth, shortDate } from "../../packages/web-kit/dates.ts";
+import { assertInContract } from "../contract.ts";
 import { expect, test } from "../support.ts";
 import { fittedClient } from "./fitted.ts";
 import { logIn } from "./signed-in.ts";
@@ -79,6 +80,43 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   await expect(sheet.getByRole("heading", { name: /^Saved\./ })).toBeVisible();
 });
 
+// A dropped signal unmounted the note sheet and its words, and Back left the page under it (UX-09).
+test("an open note sheet keeps its words through a dropped signal, and Back closes it on the page", async ({
+  page,
+}) => {
+  const client = fittedClient();
+  await logIn(page, client.mobile);
+  await tab(page, "Visits").click();
+  await expect(page.getByRole("heading", { level: 1, name: "Visits" })).toBeVisible();
+  await page.getByRole("main").getByRole("link").first().click();
+  const visitPage = page.getByRole("heading", { level: 1, name: fullDate(client.next.date) });
+  await expect(visitPage).toBeVisible();
+
+  await page.getByRole("button", { name: "Add a note" }).click();
+  const sheet = page.getByRole("dialog");
+  const note = sheet.getByRole("textbox", { name: "What should they know at the door?" });
+  const save = sheet.getByRole("button", { name: "Save the note" });
+  await note.fill("The lift is out");
+  await page.context().setOffline(true);
+  await expect(sheet.getByText("No connection. Your note stays here until you are back online.")).toBeVisible();
+  await expect(note).toHaveValue("The lift is out");
+  await expect(save).toBeDisabled();
+  await page.context().setOffline(false);
+  await expect(save).toBeEnabled();
+
+  await page.goBack();
+  await expect(sheet).toBeHidden();
+  await expect(visitPage).toBeVisible();
+
+  // Closed by its own button, the sheet leaves nothing behind in the history: Back goes to the list.
+  await page.getByRole("button", { name: "Add a note" }).click();
+  await sheet.getByRole("button", { name: "Close" }).click();
+  await expect(sheet).toBeHidden();
+  await expect.poll(() => page.evaluate(() => window.history.state as unknown)).toBeNull();
+  await page.goBack();
+  await expect(page.getByRole("heading", { level: 1, name: "Visits" })).toBeVisible();
+});
+
 // A visit that is not this client's, or a payment, says so rather than offering to try again for ever (CLI-33).
 test("a visit or a payment that is not the client's says it could not be found", async ({ page }) => {
   await logIn(page, fittedClient().mobile);
@@ -96,7 +134,9 @@ test("a visit or a payment that is not the client's says it could not be found",
 // Home as the API gives it: a visit FSM has not closed stays, saying where it stands, and nothing is booked in its
 // place (LIFE-03); the credit tile, and each prompt in its own words (LIFE-08). The API's answers are altered on
 // their way, since the shared client has none of these.
-test("Home keeps a visit being closed, and shows the credit tile and the prompt the API gives", async ({ page }) => {
+test("Home keeps a visit done but not yet closed, and shows the credit tile and the prompt the API gives", async ({
+  page,
+}) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
   await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
@@ -104,43 +144,48 @@ test("Home keeps a visit being closed, and shows the credit tile and the prompt 
   const read = (path: string) =>
     page.evaluate(async (url) => (await fetch(url)).json() as Promise<Record<string, unknown>>, path);
   const [me, visits] = [await read("/api/me"), await read("/api/visits")];
-  let prompt: object = { kind: "replacement_due", month: client.piece.due.slice(0, 7), bookable: false };
+  let prompt: object = { kind: "replacement_due", month: client.piece.due.slice(0, 7), tier: null };
+  let invoice: object | null = null;
   await page.route("**/api/me", (route) =>
     route.fulfill({
       json: {
         ...me,
-        next_visit: { ...(me.next_visit as object), stage: "closing" },
+        next_visit: { ...(me.next_visit as object), stage: "done" },
         credits: { visits: 2, earliest_expiry: "2028-01-03T00:00:00.000Z" },
         prompt,
+        invoice,
       },
     }),
   );
-  const upcoming = (visits.upcoming as object[]).map((visit) => ({ ...visit, stage: "closing" }));
+  const upcoming = (visits.upcoming as object[]).map((visit) => ({ ...visit, stage: "done" }));
   await page.route("**/api/visits", (route) => route.fulfill({ json: { ...visits, upcoming } }));
   await page.reload();
-  await expect(page.getByText("Being closed")).toBeVisible();
+  await expect(page.getByText("Done · notes on the way")).toBeVisible();
   await expect(page.getByRole("button", { name: "Reschedule" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Add a note" })).toBeVisible();
-  await expect(page.getByText("2 visit credits")).toBeVisible();
-  await expect(page.getByText("Expire 3 Jan 2028")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add a note" })).toHaveCount(0);
+  await expect(page.getByText("2 free service visits")).toBeVisible();
+  await expect(page.getByText("Use by 3 Jan 2028")).toBeVisible();
   const month = listMonth(client.piece.due.slice(0, 7), new Date().getFullYear());
   await expect(page.getByText(`Your replacement piece is due in ${month}.`)).toBeVisible();
-  // The app's own page on what a replacement involves, in place of WhatsApp (docs/decisions/0086-…); the month is
-  // past how far ahead a visit may be booked, so there is nothing to book yet.
+  // The API prompts the replacement only once its month may be booked, so the prompt always offers it, beside the
+  // app's own page on what a replacement involves.
   await expect(page.getByRole("link", { name: "See what that involves" })).toHaveAttribute("href", "/replacement");
-  await expect(page.getByRole("button", { name: "Book the replacement" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Book the replacement" })).toBeVisible();
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
 
   await tab(page, "Visits").click();
-  await expect(page.getByText("Service visit · Being closed · Imran")).toBeVisible();
+  await expect(page.getByText("Service visit · Done · notes on the way · Imran")).toBeVisible();
   await expect(page.getByRole("button", { name: "Book your next visit" })).toHaveCount(0);
 
-  prompt = { kind: "invoice_ready", visit_id: client.service.id, date: client.service.date, type: "service" };
+  // An invoice just issued is a line of its own, beneath whichever prompt leads.
+  prompt = { kind: "address" };
+  invoice = { visit_id: client.service.id, date: client.service.date, type: "service" };
   await tab(page, "Home").click();
   await page.reload();
+  await expect(page.getByText("Add your address, so your technician can find the door.")).toBeVisible();
   await expect(
     page.getByText(`The invoice for your service visit on ${shortDate(client.service.date)} is ready.`),
   ).toBeVisible();
@@ -162,9 +207,6 @@ test("Visits heads the client's own record with the month their replacement fall
   const record = page.getByRole("region", { name: "Your record" });
   const month = listMonth(client.piece.due.slice(0, 7), new Date().getFullYear());
   await expect(record.getByText(`Your replacement piece is due in ${month}.`)).toBeVisible();
-  await expect(
-    record.getByText("We give the month rather than a day, because the date can still change."),
-  ).toBeVisible();
   // Never the day, however the month is written.
   await expect(record).not.toContainText(fullDate(client.piece.due));
 
@@ -277,17 +319,24 @@ test("Payments: one list of payments and refunds, an entry's documents, and a do
   await tab(page, "Payments").click();
   const entries = page.getByRole("main").getByRole("link");
   await expect(entries).toHaveCount(3);
-  await expect(entries.nth(0)).toContainText("refund to UPI");
+  // A refund is titled a refund and reads as money coming back, never as a second charge (MON-19).
+  await expect(entries.nth(0)).toContainText("Refund");
+  await expect(entries.nth(0)).toContainText("Service visit");
+  await expect(entries.nth(0)).toContainText("+ Rs. 1,000");
+  await expect(entries.nth(0)).toContainText("back to your UPI");
   await expect(entries.nth(0)).toContainText("Refund processing");
+  await expect(entries.nth(1)).toContainText("Service visit");
   await expect(entries.nth(1)).toContainText("Rs. 2,000");
-  await expect(entries.nth(1)).toContainText("Rs. 2,000 incl.");
+  await expect(entries.nth(1)).not.toContainText("incl.");
   await expect(entries.nth(1)).toContainText("Paid");
   await expect(entries.nth(2)).toContainText("First fit");
   await expect(entries.nth(2)).toContainText("Rs. 30,000");
 
   await entries.nth(1).click();
   await expect(page.getByRole("heading", { level: 1, name: "Service visit" })).toBeVisible();
-  await expect(page.getByText("Rs. 2,000 including GST at 0%")).toBeVisible();
+  await expect(page.getByText("Rs. 2,000", { exact: true })).toBeVisible();
+  // No rate was recorded for this payment, so nothing is said of GST at all (MON-49).
+  await expect(page.getByText(/GST at/)).toHaveCount(0);
   await expect(page.getByText(client.reference)).toBeVisible();
   const documents = {
     "Tax invoice": `/api/documents/${client.service.id}`,
@@ -309,21 +358,38 @@ test("Payments: one list of payments and refunds, an entry's documents, and a do
   await page.getByRole("button", { name: "Receipt" }).click();
   const receipt = page.getByRole("status").filter({ hasText: "The receipt is not ready yet." });
   await expect(receipt).toBeVisible();
-  await expect(receipt.getByRole("link", { name: "Notify me" })).toHaveAttribute(
+  await expect(receipt.getByRole("link", { name: "Ask us for it" })).toHaveAttribute(
     "href",
     new RegExp(encodeURIComponent(`Please send me the receipt for first fit on ${fullDate(client.firstFit.date)}.`)),
   );
 
   await page.getByRole("link", { name: "Back to payments" }).click();
   await entries.nth(0).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Service visit · refund" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Refund", exact: true })).toBeVisible();
   // Begun eighteen days ago, it is past Razorpay's 5 to 7 working days, and the client is told so (CLI-25).
   await expect(page.getByText("Refund processing · taking longer than it should")).toBeVisible();
   await expect(page.getByRole("link", { name: "Message us" })).toHaveAttribute(
     "href",
     new RegExp(encodeURIComponent("My refund for service visit from")),
   );
-  await expect(page.getByText("Rs. 1,000", { exact: true })).toBeVisible();
+  await expect(page.getByText("+ Rs. 1,000", { exact: true })).toBeVisible();
+});
+
+// MON-22: after paying, the entry did not say the code the visit was booked with. No route puts a code on the seeded
+// payment, so its entry is answered with one, held to the API's contract.
+test("a payment made with a discount code names the code, and what it took off", async ({ page }) => {
+  const client = fittedClient();
+  await logIn(page, client.mobile);
+  await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
+  const path = `/api/payments/${client.servicePayment}`;
+  // Read by the page, whose app.localhost only the browser resolves.
+  const entry = await page.evaluate(async (url) => (await fetch(url)).json() as Promise<object>, path);
+  const body = { ...entry, discount_code: { code: "AUDTEST", amount_off: 100_000 } };
+  assertInContract("client", "GET", path, 200, body);
+  await page.route(`**${path}`, (route) => route.fulfill({ json: body }));
+  await page.goto(`/payments/${client.servicePayment}`);
+  await expect(page.getByRole("heading", { level: 1, name: "Service visit" })).toBeVisible();
+  await expect(page.getByText("AUDTEST: Rs. 1,000 off")).toBeVisible();
 });
 
 test("each read surface meets WCAG 2.2 AA", async ({ page }) => {
@@ -364,7 +430,7 @@ test("each read surface meets WCAG 2.2 AA", async ({ page }) => {
   // The first fit's payment, whose receipt Books has not issued yet.
   await page.getByRole("main").getByRole("link").nth(2).click();
   await page.getByRole("button", { name: "Receipt" }).click();
-  await expect(page.getByText("Notify me")).toBeVisible();
+  await expect(page.getByText("Ask us for it")).toBeVisible();
   await scan();
 });
 
@@ -376,7 +442,7 @@ test("Home says a paid visit FSM has not taken yet is being booked, with the pay
   await logIn(page, client.mobile);
   await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
   const me = await page.evaluate(async () => (await fetch("/api/me")).json() as Promise<Record<string, unknown>>);
-  const waiting = { type: "service", date: "2027-09-25", window: "morning", paid: true };
+  const waiting = { type: "service", date: "2027-09-25", window: "morning", paid: true, one_visit: false };
   await page.route("**/api/me", (route) =>
     route.fulfill({ json: { ...me, next_visit: null, prompt: null, being_booked: waiting } }),
   );
@@ -390,6 +456,36 @@ test("Home says a paid visit FSM has not taken yet is being booked, with the pay
   await expect(card).toContainText("We will message you on WhatsApp when the visit is booked.");
   await expect(page.getByRole("button", { name: "Reschedule" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Book your next visit" })).toHaveCount(0);
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+});
+
+// D-04: while FSM held a booking, Home said it was being booked and Visits said "Nothing booked yet.". Both answers
+// are altered on their way, as above.
+test("Visits lists a visit FSM has not taken yet as Home says it, a consultation and fit named as one", async ({
+  page,
+}) => {
+  const client = fittedClient();
+  await logIn(page, client.mobile);
+  await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
+  const me = await page.evaluate(async () => (await fetch("/api/me")).json() as Promise<Record<string, unknown>>);
+  const list = await page.evaluate(async () => (await fetch("/api/visits")).json() as Promise<Record<string, unknown>>);
+  const waiting = { type: "first_fit", date: "2027-09-25", window: "morning", paid: false, one_visit: true };
+  await page.route("**/api/me", (route) =>
+    route.fulfill({ json: { ...me, next_visit: null, prompt: null, being_booked: waiting } }),
+  );
+  await page.route("**/api/visits", (route) => route.fulfill({ json: { ...list, upcoming: [] } }));
+  await page.reload();
+  await expect(page.getByRole("region", { name: "Your next visit" })).toContainText("Consultation and fit");
+
+  await tab(page, "Visits").click();
+  const card = page.getByRole("main").getByRole("listitem").first();
+  await expect(card).toContainText(shortDate("2027-09-25"));
+  await expect(card).toContainText("Consultation and fit · 9 am to 12 pm");
+  await expect(card).toContainText("We are booking your visit.");
+  await expect(page.getByText("Nothing booked yet.")).toHaveCount(0);
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();

@@ -1,15 +1,17 @@
-// A client's rights over their data (docs/decisions/0049-dpdp.md): erasure reaching Phase 2's data and FSM, the
+// A client's rights over their data (docs/decisions/0049-dpdp.md): erasure reaching Phase 2's data, FSM and Books, the
 // data export, grievances, and the deletion window's alert. NOW is Monday 21 September 2026, 12 noon in India.
 // Every name and number here is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { eraseBooksCustomers } from "../../src/domain/books-erasure.ts";
 import { alertAgedDeletions } from "../../src/domain/deletion.ts";
 import { logPhotoView } from "../../src/domain/photo-views.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { createCallBudget } from "../../src/lib/call-budget.ts";
 import { createLogger } from "../../src/log.ts";
-import { createStubFsm } from "../../src/providers/fsm.ts";
+import { createStubBooks } from "../../src/providers/books.ts";
+import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
 import { MAX_SYNC_ATTEMPTS } from "../../src/queues/crm-sync.ts";
 import { handleFsmSyncBatch } from "../../src/queues/fsm-sync.ts";
 import { sweep } from "../../src/scheduled/sweeper.ts";
@@ -145,6 +147,31 @@ describe("erasure reaches Phase 2's data", () => {
         "attempts (FSM answered 500), and nothing will ask again. Anonymise it in FSM by hand, then record it " +
         '(runbook, "Erasure within the day"). http://ops.localhost:4323/tasks',
     ]);
+  });
+
+  // The Books customer FSM's own integration made for the client kept their name, mobile and addresses (PS-02).
+  it("keeps the Books customer FSM made for the contact, and the Books pass then erases it", async () => {
+    await eraseByMobile(MOBILE, NOW);
+    const fsm = createStubFsm({
+      ...EMPTY_FSM,
+      contacts: [
+        { id: "contact-1", name: "Rohit Malhotra", mobile: "+919810000001", email: null, booksCustomerId: "books-1" },
+      ],
+    });
+    const message = { id: "m1", body: { erase_person_id: PERSON, request_id: "sweeper" }, attempts: 1, ack: vi.fn() };
+    const batch = { queue: "mm-fsm-sync-local", messages: [message], ackAll: vi.fn(), retryAll: vi.fn() };
+
+    await handleFsmSyncBatch(batch as unknown as MessageBatch, env, fakeDependencies({ fsm }), createLogger());
+    const books = createStubBooks();
+    const erased = await eraseBooksCustomers(
+      env.DB,
+      { ...fakeDependencies({ books }), log: createLogger(), budget: createCallBudget(40) },
+      NOW,
+    );
+
+    expect(fsm.made.erased).toEqual(["contact-1"]);
+    expect(erased).toBe(1);
+    expect(books.made.erased).toEqual([{ customerId: "books-1", outcome: "deleted" }]);
   });
 
   it("leaves FSM alone where it is not connected", async () => {
