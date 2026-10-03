@@ -1668,6 +1668,7 @@ Request body:
             "out_of_order",
             "not_today",
             "already_started",
+            "piece_code",
             "technician_inactive",
             "managed_in_fsm",
             "clash",
@@ -1675,6 +1676,7 @@ Request body:
             "does_not_fit",
             "fsm_refused",
             "fsm_partly",
+            "in_progress",
             "too_early_to_close",
             "no_service_area",
             "service_exists",
@@ -2071,13 +2073,18 @@ Request body:
             "paid": {
               "type": "boolean",
               "description": "Paid for in money, rather than free or covered by a credit."
+            },
+            "one_visit": {
+              "type": "boolean",
+              "description": "A consultation and fit in one visit."
             }
           },
           "required": [
             "type",
             "date",
             "window",
-            "paid"
+            "paid",
+            "one_visit"
           ],
           "additionalProperties": false
         },
@@ -5540,7 +5547,7 @@ Request body:
         ]
       },
       "maxItems": 2,
-      "description": "The photograph purposes the pay step showed its lines for. Booking agrees to each the client has never decided on (ADR 0080); left out, none."
+      "description": "The photograph purposes the pay step showed its lines for. Booking agrees to each the client has never decided on, recorded once the booking is paid for, or at once for a free visit (ADR 0080); left out, none."
     }
   },
   "required": [

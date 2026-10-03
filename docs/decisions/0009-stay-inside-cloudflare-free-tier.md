@@ -59,3 +59,15 @@ D1's 5 million rows read a day had no budget, and the five-minute cron read whol
 ## Update, 2 October 2026: D1's size
 
 The table said 5 GB for D1. That is the account's total across its databases; one database may hold 500 MB, and past it every write fails, the audit entry each ops call writes first among them, so the console, booking and payments stop together. The hourly `storage_meter` cron job now reads the database's size, which D1 gives with any statement's answer, and tells ops once at 50%, 80% and 95% (`src/policy/database-size.ts`, the alerts `d1_size:<mark>`). Settings shows it beside the R2 meter. The runbook's "D1 growing" says what to do.
+
+## Update, 4 October 2026: a flood
+
+The table's first row is the account's, staging and production together, and every surface spends it: mm-api on every host, the site's pages that run its Worker first (`/`, `/book`, `/r/*`), the three apps, and the vendors' webhooks. A plain loop of about 100,000 requests, some eight minutes at 200 a second, spends the day's, and every surface then answers Cloudflare's error 1027 until 05:30 IST. No limit in the code can prevent it: Cloudflare counts a request before the Worker runs.
+
+The owner ruled on 2 October 2026 to keep one free account, with no Workers Paid, so an outage from a deliberate flood stays accepted, as Consequences says. What narrows it:
+
+- **The free plan's one rate-limiting rule** (`docs/runbook.md`, step 15): requests to `/api/*` other than `/api/hooks/*`, counted per address, at most 50 in 10 seconds, then the address is blocked for 10 seconds. A blocked request is refused at the edge, before any Worker, and is not counted. One address then gets about 2.5 requests a second through, so it needs some 11 hours rather than eight minutes to spend the day's. Many addresses together are not stopped. The webhooks are left out so that a burst of payments is never refused.
+- **What an anonymous request writes.** An invite's open counts once a day for each address and code, and an address guessing codes is refused every code for the rest of the hour (ADR 0048), so a loop over `/api/r/:code` no longer writes a row each time.
+- **The runbook's "Workers daily limit reached (1027)"** says how to tell and what to do.
+
+Workers requests are not yet among the allowances the hourly check tells ops about at 70% (the runbook's "The daily allowances").

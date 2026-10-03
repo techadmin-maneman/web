@@ -2,9 +2,10 @@
 // the colours the boards draw it in, and a size, which each app sets for
 // itself (./base.css): the client app's primary action is 56 px, the
 // technician app's 64. A screen's own class places the button -- its margin,
-// its width -- and wins over everything here (./README.md).
+// its width -- and wins over everything here, so it never colours one: that
+// would erase the button's states (./README.md).
 
-import type { AnchorHTMLAttributes, ButtonHTMLAttributes, Ref } from "react";
+import type { AnchorHTMLAttributes, ButtonHTMLAttributes, MouseEvent, Ref } from "react";
 import { classes } from "./classes.ts";
 import styles from "./button.module.css";
 
@@ -43,19 +44,27 @@ export function buttonLook({ variant, size, className }: Look): string {
 
 type ButtonProps = Look &
   Omit<ButtonHTMLAttributes<HTMLButtonElement>, "className"> & {
-    /** Working on what the tap asked for: said to a screen reader, and a second tap does nothing. */
+    /** Working on what the tap asked for: drawn dimmed, said to a screen reader, and a second tap does nothing. */
     readonly busy?: boolean;
     readonly ref?: Ref<HTMLButtonElement>;
   };
 
 export function Button({ variant, size, className, busy = false, type = "button", onClick, ...rest }: ButtonProps) {
+  const click = (event: MouseEvent<HTMLButtonElement>) => {
+    // Cancelled, a busy submit button does not send its form again.
+    if (busy) {
+      event.preventDefault();
+      return;
+    }
+    onClick?.(event);
+  };
   return (
     <button
       {...rest}
       type={type}
       className={buttonLook({ variant, size, className })}
       aria-busy={busy ? true : undefined}
-      onClick={busy ? undefined : onClick}
+      onClick={click}
     />
   );
 }

@@ -69,7 +69,7 @@ export function Waitlist(props: FormProps & { onListed: (listing: Listing) => vo
     area: area === null ? "" : `, ${area}`,
   });
   return (
-    <form class={styles.form} onSubmit={submit} noValidate>
+    <form ref={form.element} class={styles.form} onSubmit={submit} noValidate>
       <div>
         <h2 class={styles.waitlistTitle}>{waitlist.leave}</h2>
         <ForPincode text={forPincode} onChange={props.onChangePincode} />
@@ -79,7 +79,7 @@ export function Waitlist(props: FormProps & { onListed: (listing: Listing) => vo
 
       <PersonFieldset
         fields={form.fields}
-        touched={form.touched}
+        bad={form.personBad}
         idPrefix="invite-waitlist"
         consentLabel={waitlist.contactConsent}
         consentNote={waitlist.required}
@@ -113,7 +113,13 @@ export function Waitlist(props: FormProps & { onListed: (listing: Listing) => vo
       )}
 
       <div ref={form.box} class={styles.turnstile} />
-      <Send failure={form.failure} sending={form.sending} label={waitlist.submit} sendingLabel={waitlist.sending} />
+      <Send
+        failure={form.failure}
+        marked={form.personBad.length}
+        sending={form.sending}
+        label={waitlist.submit}
+        sendingLabel={waitlist.sending}
+      />
       {props.credits && (
         <p class={styles.told}>
           {props.name === null ? waitlist.holdsUnnamed : fill(waitlist.holds, { name: props.name })}

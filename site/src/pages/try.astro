@@ -3,9 +3,17 @@ import { pageDescriptions, pageTitles } from "../content/site.ts";
 import TryOn from "../islands/tryon/TryOn.tsx";
 import Site from "../layouts/Site.astro";
 import { ENVIRONMENT, IS_PRODUCTION } from "../lib/build.ts";
+import { lookThumbnails } from "../lib/look-thumbnails.ts";
 import { TURNSTILE_SITE_KEYS } from "../lib/turnstile.ts";
+
+const thumbnails = await lookThumbnails();
 ---
 
 <Site title={pageTitles.tryOn} description={pageDescriptions.tryOn}>
-  <TryOn client:load turnstileSiteKey={TURNSTILE_SITE_KEYS[ENVIRONMENT]} allowStateSwitch={!IS_PRODUCTION} />
+  <TryOn
+    client:load
+    turnstileSiteKey={TURNSTILE_SITE_KEYS[ENVIRONMENT]}
+    allowStateSwitch={!IS_PRODUCTION}
+    lookThumbnails={thumbnails}
+  />
 </Site>

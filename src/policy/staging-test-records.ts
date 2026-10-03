@@ -12,6 +12,7 @@ import type { EnvironmentName } from "../config/environments.ts";
 export const RULES = [
   "A record one of our own scripts made is messaged only if its number is on the allowlist, whatever the message's class.",
   "On staging, a test record signs in with the known code in STAGING_TEST_RECORD_CODE, and skips the limits per address.",
+  "A test record's name is shown without its mark, as a real person's name would be.",
 ] as const;
 
 /** The names our own scripts and fixtures give an invented client or technician, never a real one's. */
@@ -24,6 +25,17 @@ const STAGING_TEST_NAME_PREFIXES = ["Staging test", "Load test"] as const;
  */
 export function isStagingTestRecord(name: string): boolean {
   return STAGING_TEST_NAME_PREFIXES.some((prefix) => name === prefix || name.startsWith(`${prefix} `));
+}
+
+/**
+ * A name as a screen or message shows it: a test record's without its mark, so named copy can be judged on staging.
+ * A name that is only the mark keeps it, and a real name never carries it.
+ */
+export function withoutTestMark(name: string): string {
+  for (const prefix of STAGING_TEST_NAME_PREFIXES) {
+    if (name.startsWith(`${prefix} `)) return name.slice(prefix.length).trim();
+  }
+  return name;
 }
 
 /**

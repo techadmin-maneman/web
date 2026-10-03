@@ -108,7 +108,7 @@ describe("POST /api/consultation", () => {
     expect(booked).toEqual({
       name: "Karan Bhatia",
       purpose: "whatsapp_visits",
-      notice_version: "referral-consultation-v1",
+      notice_version: "site-consultation-v1",
       type: "consultation",
       amount: 0,
       source: "form",
@@ -883,7 +883,7 @@ describe("a consultation and fit in one visit", () => {
     // The consent recorded is the consultation's own; whether it covers the fit is counsel's to confirm.
     const consent = await env.DB.prepare("SELECT purpose, notice_version, source FROM consents").all();
     expect(consent.results).toEqual([
-      { purpose: "whatsapp_visits", notice_version: "referral-consultation-v1", source: "site_booking" },
+      { purpose: "whatsapp_visits", notice_version: "site-consultation-v1", source: "site_booking" },
     ]);
   });
 
@@ -915,6 +915,23 @@ describe("a consultation and fit in one visit", () => {
     const told = await env.DB.prepare("SELECT kind FROM outbound_messages").all();
     expect(told.results).toEqual([{ kind: "consultation_confirmation" }]);
     expect(messages.sent).toHaveLength(1);
+  });
+
+  // D-04: Home called the one visit, on its way to FSM, a first fit.
+  it("is on the client's Home as one visit while FSM does not have it yet", async () => {
+    await book({ one_visit: true });
+    const personId = await env.DB.prepare("SELECT person_id FROM slot_holds").first<string>("person_id");
+    const session = await openSession(env.DB, {
+      kind: "client",
+      subjectId: personId ?? "",
+      deviceLabel: null,
+      now: NOW,
+    });
+    const client = appFor("local", fakeDependencies(), {}, "client");
+    const me = await (await request(client, "/api/me", { headers: { Cookie: `mm_app=${session}` } })).json();
+    expect(me).toMatchObject({
+      being_booked: { type: "first_fit", date: "2026-09-23", window: "morning", paid: false, one_visit: true },
+    });
   });
 
   it("books the consultation alone when the one visit is not asked for", async () => {

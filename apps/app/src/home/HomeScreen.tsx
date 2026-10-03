@@ -8,6 +8,7 @@
 // beneath that (src/domain/home-prompt.ts). Where the prompt offers the next visit, it is Home's one way to book it,
 // with the sheet opened on its day and window; a replacement is booked here like any other visit.
 
+import { ButtonLink } from "@maneman/ui/Button";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { fullDate, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { documentUrl, type Me } from "../api.ts";
@@ -15,7 +16,7 @@ import { BOOKING_URL, home, messages, VISIT_TYPES, visits, windowText } from "..
 import { BookButton } from "../booking/BookButton.tsx";
 import { BookNext } from "../booking/BookNext.tsx";
 import type { ChangingVisit } from "../booking/ChangeSheet.tsx";
-import { visitName } from "../lib/visit.ts";
+import { bookingName, visitName } from "../lib/visit.ts";
 import { useSession } from "../session.ts";
 import { AppLink, Shell } from "./Shell.tsx";
 import { monthNow, nextVisitWords, replacementLine } from "./next-visit-words.ts";
@@ -141,7 +142,7 @@ function BeingBooked({ booking }: { booking: NonNullable<Me["being_booked"]> }) 
       <div className={styles.card}>
         <p className={styles.date}>{shortDate(booking.date)}</p>
         <p className={styles.window}>{windowText(booking.window)}</p>
-        <p className={styles.place}>{VISIT_TYPES[booking.type]}</p>
+        <p className={styles.place}>{bookingName(booking)}</p>
         <p className={styles.free}>{booking.paid ? copy.paid : copy.free}</p>
         <p className={styles.free}>{copy.told}</p>
       </div>
@@ -287,9 +288,14 @@ function NothingBooked({ me, offline }: { me: Me; offline: boolean }) {
       {me.booking.self_serve || offline ? (
         <BookButton className={styles.book} label={home.nothing.book} message={messages.book} />
       ) : (
-        <a className={styles.book} href={BOOKING_URL[import.meta.env.MM_ENV] ?? BOOKING_URL.production}>
+        <ButtonLink
+          variant="primary"
+          size="action"
+          className={styles.book}
+          href={BOOKING_URL[import.meta.env.MM_ENV] ?? BOOKING_URL.production}
+        >
           {home.nothing.book}
-        </a>
+        </ButtonLink>
       )}
     </section>
   );

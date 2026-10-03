@@ -16,6 +16,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
 import type { AlertOnce } from "../domain/alerts.ts";
+import { recordBookingConsents } from "../domain/booking-consents.ts";
 import { paymentStatusOf, recordPayment, recordRefund, recordRefundedPayment } from "../domain/payments.ts";
 import { bookHold } from "../http/book-hold.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
@@ -203,6 +204,8 @@ export function registerRazorpayHook(app: App): void {
       // hold that is still waiting (docs/decisions/0068-a-paid-hold-is-kept.md).
       const holdId = holdOfNotes(payment.notes);
       if (event === "payment.captured" && holdId !== null) await bookHold(c, holdId);
+      // Paid for, the booking gives the photograph consents its pay step showed.
+      if (status === "captured" && holdId !== null) await recordBookingConsents(db, { holdId, requestId, now });
     } else if (payload?.refund !== undefined) {
       const refund = RazorpayRefundSchema.parse(payload.refund.entity);
       const taken = await refundTaken(
