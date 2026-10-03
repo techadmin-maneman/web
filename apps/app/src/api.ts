@@ -113,7 +113,8 @@ const client = createClient<paths, ErrorCode>({
 });
 
 export const api = {
-  sendCode: (mobile: string) => client.post("/api/auth/otp", { body: { mobile } }),
+  sendCode: (mobile: string, turnstileToken: string) =>
+    client.post("/api/auth/otp", { body: { mobile, turnstile_token: turnstileToken } }),
   resendCode: (challengeId: string) => client.post("/api/auth/otp/resend", { body: { challenge_id: challengeId } }),
   smsCode: (challengeId: string) => client.post("/api/auth/otp/sms", { body: { challenge_id: challengeId } }),
   verify: (challengeId: string, code: string) =>

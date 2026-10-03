@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { mobileDigits } from "@maneman/web-kit/mobile";
+import { turnstileWidget, type TurnstileWidget } from "@maneman/web-kit/turnstile";
 import { referral } from "../../content/referral.ts";
 import type { Answer, ErrorCode } from "../../lib/api.ts";
 import { keyPerRequest } from "../../lib/idempotency.ts";
-import { turnstileWidget } from "../../lib/turnstile.ts";
 import { useInvalidFocus } from "../useInvalidFocus.ts";
 
 /** What both forms hold: the name, the number and the agreement. */
@@ -62,7 +62,7 @@ export function useTurnstileForm(siteKey: string, marks: readonly string[] = PER
   const [refusedFields, setRefusedFields] = useState<readonly string[]>([]);
   const box = useRef<HTMLDivElement>(null);
   const element = useRef<HTMLFormElement>(null);
-  const widget = useRef<ReturnType<typeof turnstileWidget> | null>(null);
+  const widget = useRef<TurnstileWidget | null>(null);
   const keyFor = useMemo(keyPerRequest, []);
   const showInvalid = useInvalidFocus(element);
 

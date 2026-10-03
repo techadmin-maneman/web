@@ -453,7 +453,7 @@ Indexes:
 
 One row: how far the pass that closes expired credits has got, so it reads only the grants that expired since.
 
-Made by `0079_credit_expiry_cursor.sql`.
+Made by `0083_credit_expiry_cursor.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1011,7 +1011,7 @@ Made by `0054_policies_in_the_console.sql`.
 
 Each one-time code sent, as a hash, with its sends and attempts (ADR 0030, ADR 0052).
 
-Made by `0007_login.sql`; changed by `0008_profile.sql`, `0027_pieces_and_zones.sql`, `0037_cron_indexes.sql`.
+Made by `0007_login.sql`; changed by `0008_profile.sql`, `0027_pieces_and_zones.sql`, `0037_cron_indexes.sql`, `0079_challenge_number.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1030,6 +1030,7 @@ Made by `0007_login.sql`; changed by `0008_profile.sql`, `0027_pieces_and_zones.
 | `number_change_id` | TEXT | yes |  | → `number_change_requests.id` |
 | `technician_login` | INTEGER | no | `0` |  |
 | `technician_id` | TEXT | yes |  | → `technicians.id` |
+| `mobile_hash` | TEXT | yes |  |  |
 
 Indexes:
 

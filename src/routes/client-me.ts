@@ -81,6 +81,7 @@ export const MeSchema = z
             date: z.iso.date(),
             window: z.enum(BOOKING_WINDOWS),
             paid: z.boolean().openapi({ description: "Paid for in money, rather than free or covered by a credit." }),
+            one_visit: z.boolean().openapi({ description: "A consultation and fit in one visit." }),
           })
           .strict(),
         z.null(),

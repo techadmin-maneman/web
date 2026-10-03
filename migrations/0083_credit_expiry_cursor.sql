@@ -1,4 +1,4 @@
--- Migration number: 0079
+-- Migration number: 0083
 -- How far the pass that closes expired credits has got (src/domain/credits.ts), so it reads only the grants that
 -- expired since instead of looking back a fixed week. It reads them by credit_ledger_grants_by_expiry (0037).
 --

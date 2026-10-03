@@ -5773,6 +5773,38 @@ Request body:
     "retrying": {
       "type": "boolean",
       "description": "Still tried every hour: inside its tries, and its visit to come."
+    },
+    "discount_code": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "amount_off": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "In paise before GST; null until the visit's price is known."
+            }
+          },
+          "required": [
+            "code",
+            "amount_off"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The discount code the client booked with (docs/decisions/0108-discount-codes.md)."
     }
   },
   "required": [
@@ -5787,7 +5819,8 @@ Request body:
     "held_at",
     "refusal",
     "retries_end",
-    "retrying"
+    "retrying",
+    "discount_code"
   ],
   "additionalProperties": false
 }
