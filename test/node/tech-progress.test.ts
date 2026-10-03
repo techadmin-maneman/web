@@ -39,6 +39,7 @@ const job = (over: Partial<Job> = {}, progress: Partial<Job["progress"]> = {}): 
     ...progress,
   },
   no_show_wait_min: 15,
+  checkin_from: "2030-09-19T03:00:00.000Z",
   pieces: [],
   last_visit: null,
   reminder: null,

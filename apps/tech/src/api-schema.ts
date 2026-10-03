@@ -488,7 +488,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day */
+                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day; too_early: before the earliest check-in, which error.earliest_at gives */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -567,7 +567,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day */
+                /** @description superseded: FSM moved the job; out_of_order: send the step before this one first; not_today: the job is on another day; too_early: before the earliest check-in, which error.earliest_at gives */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1568,6 +1568,11 @@ export interface components {
                     /** @description When ops moved the job to them; null when it was moved in FSM itself */
                     at: string | null;
                 };
+                /**
+                 * Format: date-time
+                 * @description too_early, to a technician's check-in or start: the earliest moment the job takes one.
+                 */
+                earliest_at?: string;
             };
         };
         Health: {
@@ -1727,6 +1732,11 @@ export interface components {
             progress: components["schemas"]["TechnicianJobProgress"];
             /** @description How long this visit's type waits before a no-show may be closed, so a phone with no signal can count it. */
             no_show_wait_min: number;
+            /**
+             * Format: date-time
+             * @description The earliest moment the job takes a check-in or a start: the booked start less the minutes ops allow.
+             */
+            checkin_from: string;
             /** @description The client's pieces, newest fit first. Null until the day before the visit. */
             pieces: components["schemas"]["Piece"][] | null;
             /** @description The client's latest earlier visit with after photographs; null for a first visit. */
@@ -1772,7 +1782,7 @@ export interface components {
         };
         TechnicianJobProgress: {
             checked_in_at: string | null;
-            /** @description When the job may close as a no-show, from the check-in we hold; null before one landed. */
+            /** @description When the job may close as a no-show, from the check-in we hold, or from the booked start for one before it; null before one landed. */
             wait_ends_at: string | null;
             /** @description How far from the address that check-in was; null when nothing could be measured. */
             distance_m: number | null;

@@ -11,6 +11,7 @@ import {
   OUT_OF_ORDER,
   pathFor,
   SUPERSEDED,
+  TOO_EARLY,
   TOO_EARLY_TO_CLOSE,
   unreachable,
   type Angle,
@@ -278,6 +279,11 @@ const early = new Set<string>();
 
 export const refusedAsEarly = (jobId: string): boolean => early.has(jobId);
 
+/** The jobs whose last check-in the API refused as before the earliest check-in, so the card can say when it opens. */
+const arrivedEarly = new Set<string>();
+
+export const checkInRefusedAsEarly = (jobId: string): boolean => arrivedEarly.has(jobId);
+
 async function run(): Promise<Replayed> {
   let sent = 0;
   let superseded = 0;
@@ -313,7 +319,10 @@ async function run(): Promise<Replayed> {
     });
     if (answer.ok) {
       // A check-in answers pass or fail with the distance; the job screen shows it.
-      if (event.kind === "check_in") await keepArrival(event.job_id, answer.body as CheckIn);
+      if (event.kind === "check_in") {
+        await keepArrival(event.job_id, answer.body as CheckIn);
+        arrivedEarly.delete(event.job_id);
+      }
       if (event.kind === "no_show") early.delete(event.job_id);
       await remove("outbox", event.seq);
       sent += 1;
@@ -334,6 +343,13 @@ async function run(): Promise<Replayed> {
     // The wait has not run out. Nothing is wrong with the job: the countdown goes on.
     if (answer.code === TOO_EARLY_TO_CLOSE) {
       early.add(event.job_id);
+      await remove("outbox", event.seq);
+      changed();
+      continue;
+    }
+    // Before the earliest check-in. Nothing is wrong with the job: he taps again once it comes.
+    if (answer.code === TOO_EARLY && event.kind === "check_in") {
+      arrivedEarly.add(event.job_id);
       await remove("outbox", event.seq);
       changed();
       continue;

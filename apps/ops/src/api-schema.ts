@@ -5955,6 +5955,11 @@ export interface components {
                     /** @description When ops moved the job to them; null when it was moved in FSM itself */
                     at: string | null;
                 };
+                /**
+                 * Format: date-time
+                 * @description too_early, to a technician's check-in or start: the earliest moment the job takes one.
+                 */
+                earliest_at?: string;
             };
         };
         Health: {
@@ -6602,6 +6607,11 @@ export interface components {
                     /** @description When ops moved the job to them; null when it was moved in FSM itself */
                     at: string | null;
                 };
+                /**
+                 * Format: date-time
+                 * @description too_early, to a technician's check-in or start: the earliest moment the job takes one.
+                 */
+                earliest_at?: string;
             };
             /** @description The invite the client came with first. */
             invite: {
@@ -7044,7 +7054,7 @@ export interface components {
             technician: string | null;
             /**
              * Format: date-time
-             * @description Fact one: when the technician arrived, by his phone, held within bounds. The wait ran from here.
+             * @description Fact one: when the technician arrived, by his phone, held within bounds. The wait ran from here, or from the booked start for an arrival before it.
              */
             checked_in_at: string;
             /** @description What the phone itself said, before the bounds; null when it said nothing. */
@@ -7072,6 +7082,8 @@ export interface components {
             message_delivered_at: string | null;
             /** Format: date-time */
             wait_ends_at: string;
+            /** @description The wait ran from a check-in before the booked start, so the case closed before the client's own wait had run: waive it, or give the reason to charge. */
+            closed_early: boolean;
             closed_at: string | null;
             /**
              * Format: date-time

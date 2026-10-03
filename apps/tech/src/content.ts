@@ -161,6 +161,7 @@ export const stopped: Readonly<Record<string, string>> = {
   status: "This job was cancelled while the phone was offline.",
   out_of_order: "A step reached us before the one ahead of it.",
   not_today: "This job is on another day. Arrive and start it on the day.",
+  too_early: "Too early for this job. Tap again from the time on its card.",
   already_started: "This job was started, so it cannot close as a no-show.",
   photo_rejected: "The photographs would not upload.",
   not_found: "This job is no longer on your list, so what it holds cannot reach us.",
@@ -281,6 +282,8 @@ export const notHome = {
     step: "1 · Arrived",
     body: "Tap at the door. We record the time and check you are within 200 m.",
     action: "I have arrived",
+    // PLACEHOLDER: the board draws no check-in before its time.
+    opensAt: (time: string) => `Check-in opens at ${time}.`,
     // PLACEHOLDER: the board draws no screen for a phone that will not give its position.
     noPosition: "This phone will not give its position. Check its permissions, then tap again.",
   },
@@ -295,6 +298,8 @@ export const notHome = {
   waiting: {
     step: "2 · Waiting",
     left: (minutes: number) => `left of ${String(minutes)} minutes`,
+    // PLACEHOLDER: the board draws no arrival before the booked start.
+    fromStart: (time: string) => `The wait starts at ${time}, the booked start.`,
     // PLACEHOLDER: the board draws the wait running, not the moment it ends.
     over: "The wait is over.",
     // PLACEHOLDER: the board draws the check running, not one waiting for signal. The API counts the wait from when

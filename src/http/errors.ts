@@ -37,6 +37,7 @@ export const ERROR_CODES = [
   // The ops surface: no valid Cloudflare Access token (docs/decisions/0031-access-and-audit.md).
   "access_required",
   // The client app's login (docs/decisions/0030-one-time-codes.md): the challenge is closed, or it is too soon to resend.
+  // A technician's check-in or start before the earliest check-in is too_early as well.
   "code_expired",
   "too_early",
   // A number change ops cannot confirm: another person holds the new number (docs/decisions/0042-client-profile.md).
@@ -146,6 +147,9 @@ export const ErrorResponseSchema = z
             description:
               "superseded, to a technician's phone, for a job given to another technician: whom, and when (docs/open-points.md, item 92).",
           }),
+        earliest_at: z.iso.datetime().optional().openapi({
+          description: "too_early, to a technician's check-in or start: the earliest moment the job takes one.",
+        }),
       })
       .strict(),
   })

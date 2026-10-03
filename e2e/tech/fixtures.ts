@@ -67,6 +67,9 @@ const at = (date: string, time: string) => `${date}T${time}:00.000Z`;
 /** 6 pm in India on the day before the visit, when its address unlocks (src/policy/job-visibility.ts). */
 const unlocksAt = (date: string) => at(dayBefore(date), "12:30");
 
+/** Midnight in India as the visit's day begins: a test taps I have arrived whenever on the day it runs. */
+const checkInOpens = (date: string) => at(dayBefore(date), "18:30");
+
 /** The slots each type takes (src/config/scheduling.ts). */
 const SLOTS: Readonly<Record<VisitType, number>> = { consultation: 1, service: 1, replacement: 1.5, first_fit: 2 };
 
@@ -311,6 +314,7 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
     client: { name: "Rohit M.", mobile: "+919810000000", note: null },
     progress,
     no_show_wait_min: options.waitMinutes ?? 15,
+    checkin_from: checkInOpens(date),
     pieces: [...(options.pieces ?? [])],
     last_visit:
       options.lastVisit === true
@@ -337,6 +341,7 @@ export function lockedCard(date: string): Card {
     client: null,
     progress: NOTHING_DONE,
     no_show_wait_min: 15,
+    checkin_from: checkInOpens(date),
     pieces: null,
     last_visit: null,
     reminder: null,

@@ -34,6 +34,7 @@ import { jobDay, paymentBadge, unlocked, unlocksAt, type JobDay, type PaymentBad
 import { slotsFor } from "../policy/dispatch.ts";
 import { noShowWaitEnds, type Waits } from "../policy/no-show.ts";
 import { paidAtTheVisit, type OneVisitState } from "../policy/one-visit.ts";
+import { earliestCheckIn, type PhoneClock } from "../policy/phone-clock.ts";
 import { unitsFor } from "../policy/visit-length.ts";
 import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
 import { latestArrival } from "./check-ins.ts";
@@ -138,6 +139,8 @@ export interface JobDetail extends JobSummary {
   readonly progress: JobProgress;
   /** How long this visit's type waits before a no-show may be closed, so a phone with no signal can count it. */
   readonly no_show_wait_min: number;
+  /** The earliest moment the job takes a check-in or a start. */
+  readonly checkin_from: string;
   /** The client's pieces, newest fit first; null while the job is locked. */
   readonly pieces: CardPiece[] | null;
   readonly last_visit: LastVisit | null;
@@ -259,19 +262,21 @@ export async function jobsOn(
 /** One job of this technician's, with everything the day-before unlock allows. */
 export async function jobDetail(
   db: D1Database,
-  options: { technicianId: string; jobId: string; now: Date; unlockHour: number; waits: Waits },
+  options: { technicianId: string; jobId: string; now: Date; unlockHour: number; waits: Waits; phoneClock: PhoneClock },
 ): Promise<JobDetail | null> {
   const row = await db.prepare(`${SELECT_JOB} AND a.id = ?2`).bind(options.technicianId, options.jobId).first<JobRow>();
   if (row === null) return null;
   const summary = summaryOf(row, options.now, options.unlockHour, await loadSlotSchedule(db));
   const type = row.type ?? "service";
+  const windowStart = new Date(row.window_start);
   const locked = {
     ...summary,
     address: null,
     access_notes: null,
     client: null,
-    progress: await progressOf(db, { id: row.id, type }, options.waits),
+    progress: await progressOf(db, { id: row.id, type, windowStart }, options.waits),
     no_show_wait_min: options.waits[type],
+    checkin_from: earliestCheckIn(windowStart, options.phoneClock).toISOString(),
     pieces: null,
     last_visit: null,
     reminder: null,
@@ -502,7 +507,7 @@ function badgeOf(row: JobRow): PaymentBadge {
 /** What the phone has already sent for this job, from the events it landed. */
 export async function progressOf(
   db: D1Database,
-  job: { id: string; type: VisitType },
+  job: { id: string; type: VisitType; windowStart: Date },
   waits: Waits,
 ): Promise<JobProgress> {
   const { results } = await db
@@ -518,7 +523,7 @@ export async function progressOf(
   const arrival = checkIn === undefined ? null : await latestArrival(db, job.id);
   return {
     checked_in_at: checkIn?.occurred_at ?? null,
-    wait_ends_at: arrival === null ? null : noShowWaitEnds(arrival, job.type, waits).toISOString(),
+    wait_ends_at: arrival === null ? null : noShowWaitEnds(arrival, job.windowStart, job.type, waits).toISOString(),
     distance_m: arrival?.distanceM ?? null,
     started_at: start?.occurred_at ?? null,
     steps_done: await stepsDone(db, job.id, results),

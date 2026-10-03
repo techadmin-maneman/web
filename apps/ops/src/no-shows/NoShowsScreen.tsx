@@ -238,6 +238,11 @@ function CaseFacts({ each, now }: { each: NoShowCase; now: Date }) {
         {each.technician !== null && ` · ${copy.attended(each.technician)}`}
       </p>
       <Facts each={each} />
+      {each.closed_early && (
+        <p className={styles.closedEarly} role="note">
+          {copy.closedEarly}
+        </p>
+      )}
     </>
   );
 }

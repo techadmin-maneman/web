@@ -54,7 +54,9 @@ const NoShowCaseSchema = z
     visit_date: z.union([z.string(), z.null()]),
     technician: z.union([z.string(), z.null()]),
     checked_in_at: z.iso.datetime().openapi({
-      description: "Fact one: when the technician arrived, by his phone, held within bounds. The wait ran from here.",
+      description:
+        "Fact one: when the technician arrived, by his phone, held within bounds. The wait ran from here, or from " +
+        "the booked start for an arrival before it.",
     }),
     phone_checked_in_at: z.union([z.iso.datetime(), z.null()]).openapi({
       description: "What the phone itself said, before the bounds; null when it said nothing.",
@@ -83,6 +85,11 @@ const NoShowCaseSchema = z
       .union([z.iso.datetime(), z.null()])
       .openapi({ description: "When WhatsApp reported it delivered; null if it never did." }),
     wait_ends_at: z.iso.datetime(),
+    closed_early: z.boolean().openapi({
+      description:
+        "The wait ran from a check-in before the booked start, so the case closed before the client's own wait had " +
+        "run: waive it, or give the reason to charge.",
+    }),
     closed_at: z.union([z.iso.datetime(), z.null()]),
     opened_at: z.iso.datetime().openapi({ description: "When the case opened, and started waiting for ops." }),
     due: z.iso.datetime().openapi({

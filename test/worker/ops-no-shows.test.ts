@@ -162,6 +162,25 @@ describe("GET /api/no-shows", () => {
     expect((await cases())[0]?.person).toBeNull();
   });
 
+  // The audit's B13: a 4 pm visit checked in at 11:31, closed at 11:36 and charged, with nothing to say so.
+  it("flags a case whose wait ran from a check-in before the booked start", async () => {
+    expect((await cases())[0]).toMatchObject({ minutes_late: 309, closed_early: false });
+
+    await env.DB.prepare(
+      `UPDATE checkins SET at = '2026-09-19T02:00:00.000Z', claimed_at = '2026-09-19T02:00:00.000Z',
+         created_at = '2026-09-19T02:00:00.000Z'`,
+    ).run();
+    await env.DB.prepare(
+      `UPDATE no_show_cases SET wait_started_at = '2026-09-19T02:00:00.000Z', wait_ends_at = '2026-09-19T02:15:00.000Z',
+         closed_at = '2026-09-19T02:16:00.000Z'`,
+    ).run();
+    expect((await cases())[0]).toMatchObject({
+      checked_in_at: "2026-09-19T02:00:00.000Z",
+      minutes_late: -90,
+      closed_early: true,
+    });
+  });
+
   it("gives the moment it opened and the day it falls due, as the Tasks board reads it", async () => {
     // The placeholder allowance is two days (src/policy/tasks.ts), from the moment the case opened.
     expect((await cases())[0]).toMatchObject({
