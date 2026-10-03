@@ -137,7 +137,7 @@
 }
 
 .numberInput::placeholder {
-  color: var(--paper-placeholder);
+  color: var(--paper-hint);
 }
 
 .error {

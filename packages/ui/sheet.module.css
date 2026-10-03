@@ -9,7 +9,7 @@
 @layer ui {
   .frame {
     width: 100%;
-    max-width: var(--app-column);
+    max-width: var(--column-max);
     height: 100dvh;
     max-height: 100dvh;
     margin: 0 auto;
