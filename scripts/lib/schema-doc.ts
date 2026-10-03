@@ -164,8 +164,11 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   tryon_sessions:
     "The try-on gate's session, which showed a visitor their result (ADR 0014); written no more since the look goes to WhatsApp only (ADR 0104).",
   visit_blackouts: "Days on which no visit is offered.",
-  visit_changes: "Each move or cancel a client made, with its notice and what it cost (ADR 0046).",
-  visits: "What an appointment became once FSM closed it: the outcome, its reason and its times (ADR 0032, ADR 0074).",
+  visit_changes:
+    "Each move or cancel a client made, and each cancel ops made, with its notice and what it cost (ADR 0046).",
+  visits:
+    "What an appointment became once it closed, or ops closed it by hand: the outcome, its reason and its times " +
+    "(ADR 0032, ADR 0074).",
   waitlist_entries: "Someone waiting for us to reach their pincode, and whether they were told it launched (ADR 0048).",
   webhook_inbox: "FSM's webhook deliveries, each kept once (ADR 0032).",
   zones: "A region made of cities, as NCR is, which a grant of staff access may name (ADR 0109).",

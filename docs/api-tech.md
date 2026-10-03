@@ -974,6 +974,7 @@ Request body:
             "fsm_refused",
             "fsm_partly",
             "too_early_to_close",
+            "already_closed",
             "no_service_area",
             "service_exists",
             "last_of_kind",

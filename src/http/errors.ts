@@ -78,8 +78,10 @@ export const ERROR_CODES = [
   "does_not_fit",
   "fsm_refused",
   "fsm_partly",
-  // The no-show wait has not run out yet (src/policy/no-show.ts).
+  // The no-show wait has not run out yet (src/policy/no-show.ts), or a visit ops would close by hand is still to come.
   "too_early_to_close",
+  // A visit ops would close by hand is closed or cancelled already, or the technician's phone closed it.
+  "already_closed",
   // A service-area change that would leave no pincode served at all, and every
   // client on the waitlist (docs/decisions/0061-ops-editable-inputs.md).
   "no_service_area",

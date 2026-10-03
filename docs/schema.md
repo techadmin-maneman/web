@@ -113,8 +113,8 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [tryon_jobs](#tryon_jobs): One try-on render: the photograph, the look, the provider's job and the result (ADR 0014, ADR 0015).
 - [tryon_sessions](#tryon_sessions): The try-on gate's session, which showed a visitor their result (ADR 0014); written no more since the look goes to WhatsApp only (ADR 0104).
 - [visit_blackouts](#visit_blackouts): Days on which no visit is offered.
-- [visit_changes](#visit_changes): Each move or cancel a client made, with its notice and what it cost (ADR 0046).
-- [visits](#visits): What an appointment became once FSM closed it: the outcome, its reason and its times (ADR 0032, ADR 0074).
+- [visit_changes](#visit_changes): Each move or cancel a client made, and each cancel ops made, with its notice and what it cost (ADR 0046).
+- [visits](#visits): What an appointment became once it closed, or ops closed it by hand: the outcome, its reason and its times (ADR 0032, ADR 0074).
 - [waitlist_entries](#waitlist_entries): Someone waiting for us to reach their pincode, and whether they were told it launched (ADR 0048).
 - [webhook_inbox](#webhook_inbox): FSM's webhook deliveries, each kept once (ADR 0032).
 - [zoho_access_tokens](#zoho_access_tokens): Each Zoho client's access token, the CRM's, FSM's and Books', and the lease one caller holds while it asks for a new one (ADR 0070, ADR 0110).
@@ -1841,9 +1841,9 @@ Made by `0002_lead_path.sql`; changed by `0054_policies_in_the_console.sql`.
 
 ## visit_changes
 
-Each move or cancel a client made, with its notice and what it cost (ADR 0046).
+Each move or cancel a client made, and each cancel ops made, with its notice and what it cost (ADR 0046).
 
-Made by `0020_visit_changes.sql`; changed by `0037_cron_indexes.sql`.
+Made by `0020_visit_changes.sql`; changed by `0037_cron_indexes.sql`, `0075_ops_cancel_and_close.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1860,6 +1860,9 @@ Made by `0020_visit_changes.sql`; changed by `0037_cron_indexes.sql`.
 | `razorpay_refund_id` | TEXT | yes |  |  |
 | `hold_id` | TEXT | yes |  | → `slot_holds.id` |
 | `created_at` | TEXT | no |  |  |
+| `cancelled_by` | TEXT | yes |  |  |
+| `cancel_reason` | TEXT | yes |  |  |
+| `ops_terms` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -1869,9 +1872,9 @@ Indexes:
 
 ## visits
 
-What an appointment became once FSM closed it: the outcome, its reason and its times (ADR 0032, ADR 0074).
+What an appointment became once it closed, or ops closed it by hand: the outcome, its reason and its times (ADR 0032, ADR 0074).
 
-Made by `0011_fsm_mirror.sql`; changed by `0044_hand_offs_and_messages.sql`, `0060_flat_task_reads.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0044_hand_offs_and_messages.sql`, `0060_flat_task_reads.sql`, `0075_ops_cancel_and_close.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1884,6 +1887,8 @@ Made by `0011_fsm_mirror.sql`; changed by `0044_hand_offs_and_messages.sql`, `00
 | `partial_reason` | TEXT | yes |  |  |
 | `updated_at` | TEXT | no |  |  |
 | `followed_up` | INTEGER | no | `0` |  |
+| `closed_by` | TEXT | yes |  |  |
+| `close_reason` | TEXT | yes |  |  |
 
 Indexes:
 
