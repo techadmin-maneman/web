@@ -4,7 +4,7 @@
 
 import { PaymentUnanswered, type PaymentsProvider, type RefundAsked } from "../providers/payments.ts";
 
-/** Asked once, and once more at once when the first gave no answer: the most calls a refund makes. */
+/** The most calls a refund makes: asked once, and once more at once when the first gave no answer. */
 export const ASKS = 2;
 
 /** What a refund is for: each has one receipt, so each is made once. */
@@ -40,14 +40,16 @@ export type RefundOutcome =
 
 /**
  * Asks for a refund, and asks once more at once if Razorpay gave no answer. A refusal after no answer is not taken
- * as one, since Razorpay may refuse a payment already refunded before it reads the receipt.
+ * as one, since Razorpay may refuse a payment already refunded before it reads the receipt. Nor is one when the
+ * refund was `askedBefore`, by a request whose outcome is not known.
  */
 export async function askRefund(
   payments: PaymentsProvider,
   paymentId: string,
   refund: RefundAsked,
+  options: { readonly askedBefore: boolean } = { askedBefore: false },
 ): Promise<RefundOutcome> {
-  let unanswered = false;
+  let unanswered = options.askedBefore;
   let lastError: unknown = null;
   for (let asked = 0; asked < ASKS; asked += 1) {
     try {
@@ -59,4 +61,23 @@ export async function askRefund(
     }
   }
   return { kind: "unanswered", error: lastError };
+}
+
+/**
+ * What ops are told to do with a refund Razorpay did not make, or would not say it made
+ * (docs/decisions/0100-a-refund-is-made-once.md). `what` is the amount and the visit, as "Rs. 500 for visit …".
+ */
+export function refundLeftToOps(
+  outcome: "refused" | "unanswered",
+  what: string,
+  paymentId: string,
+  amount: number,
+): string {
+  if (outcome === "refused") {
+    return `The refund of ${what}, failed (Razorpay payment ${paymentId}). Refund it by hand in Razorpay, once.`;
+  }
+  return (
+    `Razorpay did not answer the refund of ${what} (payment ${paymentId}), so it may have been made. Look at the ` +
+    `payment in Razorpay, and refund it by hand only if no refund of Rs. ${String(amount / 100)} is there.`
+  );
 }

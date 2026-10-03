@@ -3,9 +3,9 @@
 // The terms come from src/policy/moving-a-visit.ts and are shown before the
 // client confirms. A cancel is done here: FSM first where FSM holds the visit,
 // then the mirror, then the refund. A refund the request could not settle is
-// asked for by the cron's cancel_refunds job. A move is a hold like any booking: its price
-// is what the move costs now, and confirmBooking moves the visit once that is
-// paid (or at once, when free).
+// asked for again by the cron's cancel_refunds job. A move is a hold like any
+// booking: its price is what the move costs now, and confirmBooking moves the
+// visit once that is paid (or at once, when free).
 //
 // A late fee is the one the visit was booked under, kept on its hold, so a
 // price changed since does not change what moving it costs
@@ -18,8 +18,6 @@
 
 import type { FieldRecord } from "../config/field-record.ts";
 import { STANDARD_TIER, type VisitType } from "../config/visit-types.ts";
-import type { CallBudget } from "../lib/call-budget.ts";
-import { MINUTE_MS } from "../lib/durations.ts";
 import { addDays, indiaDate, indiaInstant } from "../lib/india-time.ts";
 import type { Logger } from "../log.ts";
 import { withGst } from "../config/gst.ts";
@@ -43,12 +41,10 @@ import {
 import { NO_SHOW_CHARGES } from "../policy/no-show.ts";
 import { ONE_VISIT_TERMS } from "../policy/one-visit.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
-import type { PaymentsProvider } from "../providers/payments.ts";
 import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
-import type { AlertOnce } from "./alerts.ts";
+import { refundAtOnce, type OwedRefund, type RefundDeps } from "./cancel-refunds.ts";
 import type { OpsInputs } from "./ops-settings.ts";
 import { lateFeeOn, priceOf, type Price } from "./price-book.ts";
-import { ASKS, askRefund, refundReceipt } from "./refunds.ts";
 import { bookedMinutes } from "./scheduling.ts";
 import { windowTimesOf } from "../policy/slot-times.ts";
 import { visitBegun } from "./visit-begun.ts";
@@ -366,25 +362,10 @@ function noticeWords(terms: ChangeTerms): string {
     : `more than ${hours} ahead`;
 }
 
-interface RefundDeps {
-  readonly payments: PaymentsProvider;
-  readonly alertOnce: AlertOnce;
-}
-
 interface CancelDeps extends RefundDeps {
   readonly fsm: FsmProvider;
   /** Queues the cancel's confirmation to the client. */
   readonly notify?: (messageId: string) => Promise<unknown>;
-}
-
-/** A cancel's refund still to be asked of Razorpay. */
-interface OwedRefund {
-  readonly changeId: string;
-  readonly appointmentId: string;
-  readonly personId: string;
-  readonly razorpayPaymentId: string;
-  /** In paise. */
-  readonly amount: number;
 }
 
 /** The refund the cancel owes the client; null when it gives nothing back. */
@@ -421,30 +402,10 @@ export async function cancelVisit(
       ? await cancelInOurDatabase(db, terms, changeId, now)
       : await cancelInFsm(db, deps.fsm, terms, { changeId, workOrderId }, now, options.labelAsTest);
   if (messageId === null) return { kind: "not_changeable" };
-  const settled = await refundAtOnce(db, deps, refundOwed(terms, changeId), now, options.log);
+  const owed = refundOwed(terms, changeId);
+  const settled = owed === null || (await refundAtOnce(db, deps, owed, now, options.log));
   await tellClient(deps, messageId, options.log);
   return { kind: "cancelled", refund: terms.cancel.refund, kept: terms.cancel.kept, refundPending: !settled };
-}
-
-/**
- * The refund asked for in the request that cancelled the visit. A failure is logged and the refund left owed, for the
- * cron's cancel_refunds job: false then.
- */
-async function refundAtOnce(
-  db: D1Database,
-  deps: RefundDeps,
-  owed: OwedRefund | null,
-  now: Date,
-  log: Logger,
-): Promise<boolean> {
-  if (owed === null) return true;
-  try {
-    await settleRefund(db, deps, owed, now, log);
-    return true;
-  } catch (error) {
-    log.error("cancel_refund_owed", { appointment_id: owed.appointmentId, error });
-    return false;
-  }
 }
 
 /** Queues the client's message. One the queue refuses is in the outbox, and the sweeper sends it minutes later. */
@@ -584,110 +545,4 @@ async function cancelInFsm(
     ...restoredCredit(db, terms, change.changeId, now),
   ]);
   return message.id;
-}
-
-/**
- * Asks Razorpay for the cancel's refund under the cancel's receipt, so it is made once however often it is asked, then
- * marks it settled. One Razorpay refuses, or will not say it made, is left to ops, who are told first.
- */
-async function settleRefund(
-  db: D1Database,
-  deps: RefundDeps,
-  owed: OwedRefund,
-  now: Date,
-  log: Logger,
-): Promise<void> {
-  const asked = await askRefund(deps.payments, owed.razorpayPaymentId, {
-    amount: owed.amount,
-    notes: { appointment_id: owed.appointmentId, reason: "cancelled by the client" },
-    receipt: refundReceipt({ kind: "cancel", appointmentId: owed.appointmentId }),
-  });
-  if (asked.kind !== "refunded") {
-    log.error("cancel_refund_failed", { appointment_id: owed.appointmentId, outcome: asked.kind, error: asked.error });
-    const what = `Rs. ${String(owed.amount / 100)} for visit ${owed.appointmentId}, cancelled by the client`;
-    // Keyed on the visit, so ops are told once and a second refund by hand is not asked for.
-    await deps.alertOnce({
-      key: `cancel_refund_failed:${owed.appointmentId}`,
-      message: refundLeftToOps(asked.kind, what, owed.razorpayPaymentId, owed.amount),
-      link: `/clients/${owed.personId}`,
-    });
-  }
-  const refundId = asked.kind === "refunded" ? asked.refundId : null;
-  await db
-    .prepare(
-      `UPDATE visit_changes SET razorpay_refund_id = COALESCE(?1, razorpay_refund_id), refund_settled_at = ?2
-       WHERE id = ?3`,
-    )
-    .bind(refundId, now.toISOString(), owed.changeId)
-    .run();
-}
-
-/** Long after the request that cancelled has finished asking: each ask of Razorpay gives up after 10 seconds. */
-const OWED_AFTER_MS = 10 * MINUTE_MS;
-const OWED_PER_PASS = 10;
-
-/**
- * Cancels whose refund the request that cancelled them did not settle, ten minutes on, oldest first: each is asked
- * for again, as many calls from the run's budget as a refund can make, and settled as the request would have. Only a
- * visit cancelled in our own record is refunded. Returns how many were settled.
- */
-export async function settleOwedRefunds(
-  db: D1Database,
-  deps: RefundDeps & { readonly budget: CallBudget; readonly log: Logger },
-  now: Date,
-): Promise<number> {
-  let settled = 0;
-  for (const owed of await owedRefunds(db, now)) {
-    if (!deps.budget.spend(ASKS)) break;
-    await settleRefund(db, deps, owed, now, deps.log);
-    settled += 1;
-  }
-  return settled;
-}
-
-async function owedRefunds(db: D1Database, now: Date): Promise<OwedRefund[]> {
-  const { results } = await db
-    .prepare(
-      `SELECT c.id, c.appointment_id, c.person_id, c.refund_amount, p.razorpay_payment_id
-       FROM visit_changes c
-         JOIN payments p ON p.id = c.payment_id
-         JOIN appointments a ON a.id = c.appointment_id
-       WHERE c.kind = 'cancelled' AND c.refund_settled_at IS NULL AND c.created_at <= ?1
-         AND c.refund_amount > 0 AND a.status = 'cancelled'
-       ORDER BY c.created_at LIMIT ?2`,
-    )
-    .bind(new Date(now.getTime() - OWED_AFTER_MS).toISOString(), OWED_PER_PASS)
-    .all<{
-      id: string;
-      appointment_id: string;
-      person_id: string;
-      refund_amount: number;
-      razorpay_payment_id: string;
-    }>();
-  return results.map((row) => ({
-    changeId: row.id,
-    appointmentId: row.appointment_id,
-    personId: row.person_id,
-    razorpayPaymentId: row.razorpay_payment_id,
-    amount: row.refund_amount,
-  }));
-}
-
-/**
- * What ops are told to do with a refund Razorpay did not make, or would not say it made
- * (docs/decisions/0100-a-refund-is-made-once.md). `what` is the amount and the visit, as "Rs. 500 for visit …".
- */
-export function refundLeftToOps(
-  outcome: "refused" | "unanswered",
-  what: string,
-  paymentId: string,
-  amount: number,
-): string {
-  if (outcome === "refused") {
-    return `The refund of ${what}, failed (Razorpay payment ${paymentId}). Refund it by hand in Razorpay, once.`;
-  }
-  return (
-    `Razorpay did not answer the refund of ${what} (payment ${paymentId}), so it may have been made. Look at the ` +
-    `payment in Razorpay, and refund it by hand only if no refund of Rs. ${String(amount / 100)} is there.`
-  );
 }
