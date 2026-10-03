@@ -2,6 +2,7 @@
 // to both numbers. The change then waits for ops to confirm, and takes effect
 // only after that confirmation." Each number's code is its own challenge.
 
+import { DECISION_SHOWN_DAYS } from "../policy/decision-reasons.ts";
 import { newLoginCode } from "../policy/one-time-code.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import { verifyCode, type Verification } from "./login.ts";
@@ -61,9 +62,6 @@ export async function openNumberChange(db: D1Database, personId: string): Promis
     .first<Row>();
   return row === null ? null : changeOf(row);
 }
-
-/** How long the profile shows ops' decision on a change. PLACEHOLDER, until the owner says otherwise. */
-export const DECISION_SHOWN_DAYS = 30;
 
 export interface DecidedChange {
   readonly state: "confirmed" | "rejected";

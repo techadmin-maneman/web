@@ -81,7 +81,7 @@ Each is written up in `docs/verification.md` when it passes. The payment run is 
 - [ ] The analytics IDs, and the consent banner they need (item 84).
 - [ ] The dedicated WhatsApp number (item 38) and `MESSAGING_ENABLED` `"true"` in production's vars (item 164): the try-on's look goes to WhatsApp only, so while it is off the try-on does not run (ADR 0104).
 - [ ] Production's AILabTools key and resources (section 1).
-- [ ] The outside watchers (RB, "The outside watchers"): production's healthchecks.io check as its `HEARTBEAT_URL`, and an uptime monitor on `https://maneman.in/api/health`. After the release, the check shows a ping every five minutes and `GET /api/health` a `cron_completed_at` minutes old.
+- [ ] The outside watchers (RB, "The outside watchers"): production's healthchecks.io check as its `HEARTBEAT_URL`, and an uptime monitor on `https://maneman.in/api/health`. After the release and `apply-triggers`, the check shows a ping every minute and `GET /api/health` a `cron_completed_at` a minute old.
 - [ ] The daily allowances watched from production (RB, "The daily allowances"): the analytics token put on production as `CLOUDFLARE_ANALYTICS_TOKEN` and deleted from staging (`W secret delete CLOUDFLARE_ANALYTICS_TOKEN --env staging`), so the alerts come once.
 - [ ] The zone's table in "The dashboards" (section 4) walked and recorded: this release is the first to need it.
 - [ ] **`www.maneman.in` sent to `maneman.in`.** On 2 October 2026 `www` still reached GoDaddy's parked page through an old proxied record: 200 over http, 525 over https. In the Cloudflare dashboard, on `maneman.in`:

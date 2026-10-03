@@ -22,7 +22,6 @@ import {
   removeServiceToken,
   saveStaffMember,
   setEnforced,
-  type CallerAccess,
   type StaffBook,
 } from "../domain/staff.ts";
 import {
@@ -36,6 +35,7 @@ import {
   maySee,
   NATIONAL,
   samePlace,
+  type CallerAccess,
   type Grant,
   type Place,
 } from "../policy/access.ts";

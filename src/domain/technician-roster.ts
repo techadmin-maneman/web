@@ -1,4 +1,5 @@
-// Ops add a technician, change his name, number or zone, and switch him off or back on (src/routes/ops-technicians.ts).
+// Ops add a technician, change his name, number, zone or city, and switch him off or back on
+// (src/routes/ops-technicians.ts).
 //
 // A technician added here gets an ID of our own, written as his FSM ID too, and is marked hand-written, so FSM's
 // sync leaves him alone (src/domain/fsm-mirror.ts). Two active technicians never share a number: the number is how
@@ -19,6 +20,8 @@ export interface RosterTechnician {
   readonly name: string;
   readonly initials: string;
   readonly zone: string | null;
+  /** One of our cities, which staff access by place reads; null for none, reached only nationally. */
+  readonly city: string | null;
   readonly mobile: string | null;
   readonly active: boolean;
   /** Ops added him, or a script wrote him: FSM's sync does not own him. */
@@ -30,6 +33,7 @@ interface RosterRow {
   name: string;
   initials: string;
   zone: string | null;
+  city: string | null;
   mobile_e164: string | null;
   active: number;
   hand_written: number;
@@ -40,12 +44,13 @@ const rosterTechnicianOf = (row: RosterRow): RosterTechnician => ({
   name: row.name,
   initials: row.initials,
   zone: row.zone,
+  city: row.city,
   mobile: row.mobile_e164,
   active: row.active === 1,
   handWritten: row.hand_written === 1,
 });
 
-const ROSTER_COLUMNS = "id, name, initials, zone, mobile_e164, active, hand_written";
+const ROSTER_COLUMNS = "id, name, initials, zone, city, mobile_e164, active, hand_written";
 
 /** Every technician, active or switched off, by name. */
 export async function roster(db: D1Database): Promise<RosterTechnician[]> {
@@ -66,6 +71,7 @@ export interface NewTechnician {
   readonly name: string;
   readonly mobileE164: string;
   readonly zone: string | null;
+  readonly city: string | null;
 }
 
 /** Adds an active technician, unless another active technician has his number. */
@@ -78,8 +84,8 @@ export async function addTechnician(
   await db.batch([
     db
       .prepare(
-        `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, mobile_e164, updated_at, hand_written)
-         SELECT ?1, ?1, ?3, ?4, 1, ?5, ?2, ?6, 1 WHERE NOT ${NUMBER_TAKEN}`,
+        `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, city, mobile_e164, updated_at, hand_written)
+         SELECT ?1, ?1, ?3, ?4, 1, ?5, ?7, ?2, ?6, 1 WHERE NOT ${NUMBER_TAKEN}`,
       )
       .bind(
         technician.id,
@@ -88,6 +94,7 @@ export async function addTechnician(
         initialsOf(technician.name),
         technician.zone,
         now.toISOString(),
+        technician.city,
       ),
     auditStatementIfWritten(db, audit, now, { table: "technicians", id: technician.id }),
   ]);
@@ -100,6 +107,7 @@ export interface TechnicianChange {
   readonly name?: string;
   readonly mobileE164?: string;
   readonly zone?: string | null;
+  readonly city?: string | null;
 }
 
 /** Changes what was sent, unless the new number is another active technician's. */
@@ -113,13 +121,15 @@ export async function changeTechnician(
   const name = change.name ?? current.name;
   const mobile = change.mobileE164 ?? current.mobile;
   const zone = change.zone === undefined ? current.zone : change.zone;
+  const city = change.city === undefined ? current.city : change.city;
   if (mobile !== null && (await numberTaken(db, current.id, mobile))) return "number_in_use";
   await db.batch([
     db
       .prepare(
-        "UPDATE technicians SET name = ?2, initials = ?3, mobile_e164 = ?4, zone = ?5, updated_at = ?6 WHERE id = ?1",
+        `UPDATE technicians SET name = ?2, initials = ?3, mobile_e164 = ?4, zone = ?5, city = ?6, updated_at = ?7
+         WHERE id = ?1`,
       )
-      .bind(current.id, name, initialsOf(name), mobile, zone, now.toISOString()),
+      .bind(current.id, name, initialsOf(name), mobile, zone, city, now.toISOString()),
     auditStatement(db, audit, now),
   ]);
   return "changed";
