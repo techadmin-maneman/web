@@ -306,10 +306,12 @@ export const notHome = {
     // PLACEHOLDER: the board draws no no-show refused.
     early: "Our clock says the wait has not run out yet. Try again in a minute.",
     close: "Close as no-show",
-    delivered: (who: string, time: string) => `${who} messaged on WhatsApp, delivered ${time}.`,
-    // PLACEHOLDER: the board draws the receipt delivered; these are the day-before WhatsApp not delivered, and none.
-    notDelivered: (who: string) => `${who} messaged on WhatsApp, not delivered.`,
-    evidence: "Ops get the check-in time and the distance.",
+    // PLACEHOLDER: the board's "Rohit messaged on WhatsApp" reads as if the client wrote, so the receipt names him
+    // as who it went to. The board draws only the delivered one.
+    delivered: (who: string, time: string) => `WhatsApp to ${who}: delivered ${time}.`,
+    notDelivered: (who: string) => `WhatsApp to ${who}: sent, not delivered.`,
+    noneSent: (who: string) => `No WhatsApp went to ${who}.`,
+    theClient: "the client",
   },
   // PLACEHOLDER: the board draws no confirmation. Closing as a no-show can bring the client a charge.
   confirm: {
@@ -450,7 +452,7 @@ export const closeOut = {
     whatsApp: "WhatsApp",
     delivered: (time: string) => `Delivered ${time}`,
     // PLACEHOLDER: the board draws the receipt delivered.
-    notDelivered: "Not delivered",
+    notDelivered: "Sent, not delivered",
     noneSent: "None sent",
     unmeasured: "Not measured",
   },

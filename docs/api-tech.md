@@ -1952,7 +1952,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The day-before or arrival WhatsApp to the client, and when it was delivered."
+      "description": "The day-before or arrival WhatsApp that went to the client, and when it was delivered; null when none went, as when one was skipped or failed."
     },
     "steps": {
       "type": "array",

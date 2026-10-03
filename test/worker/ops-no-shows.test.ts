@@ -10,7 +10,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/http/context.ts";
 import { refundNoShow } from "../../src/domain/after-a-ruling.ts";
-import { decideNoShow } from "../../src/domain/no-shows.ts";
+import { decideNoShow, openNoShowCase } from "../../src/domain/no-shows.ts";
 import { NO_VISITS_CONSENT } from "../../src/domain/visit-messages.ts";
 import { FREE_CHANGE_NOTICE_HOURS, LATE_CHANGE_CHARGES } from "../../src/policy/moving-a-visit.ts";
 import { NO_SHOW_CHARGES, WAIVER_GIVES_BACK, type Waiver } from "../../src/policy/no-show.ts";
@@ -192,6 +192,30 @@ describe("GET /api/no-shows", () => {
     it("it was sent, and no receipt came back", async () => {
       await reminder("sent");
       expect((await cases())[0]).toMatchObject({ message_state: "sent", message_delivered_at: null });
+    });
+
+    it("reads the reminder that went, not a later arrival notice that did not", async () => {
+      await env.DB.prepare(
+        `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, last_error)
+         VALUES ('reminder-1', '2026-09-18T12:30:00.000Z', ?1, 'visit_reminder', 'appointment', ?2, 'sent', NULL),
+                ('arrival-1', '2026-09-19T08:39:00.000Z', ?1, 'arrival_notice', 'appointment', ?2, 'skipped', 'test record')`,
+      )
+        .bind(PERSON, VISIT)
+        .run();
+      const checkIn = {
+        id: "checkin-1",
+        at: new Date("2026-09-19T08:38:59.000Z"),
+        receivedAt: new Date("2026-09-19T08:59:00.037Z"),
+        distanceM: 40,
+      };
+      await openNoShowCase(env.DB, {
+        appointmentId: VISIT,
+        checkIn,
+        waitEndsAt: new Date("2026-09-19T09:14:00.037Z"),
+        now: NOW,
+      });
+
+      expect((await cases())[0]?.message_state).toBe("sent");
     });
 
     it("it was delivered, and when, even when the receipt came after the case opened", async () => {

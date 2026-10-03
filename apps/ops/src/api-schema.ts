@@ -7010,12 +7010,14 @@ export interface components {
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
             /** @description The notice the visit was sold under, in hours, or the one in force for a visit ops booked in FSM: a change of the client's own inside it costs them, one ops make never does. */
             notice_hours: number;
-            /** @description The latest move of this visit its client has not heard of: he has not agreed to WhatsApp, or the message was never sent. Ops call him, then POST /api/dispatch/moves/{id}/told. */
+            /** @description The latest move of this visit its client has not heard of, and why. no_consent: he has not agreed to WhatsApp about his visits; not_sent: the WhatsApp was skipped or failed. Ops call him, then POST /api/dispatch/moves/{id}/told. */
             untold: {
                 /** Format: uuid */
                 move_id: string;
                 /** Format: date-time */
                 starts_at: string;
+                /** @enum {string} */
+                reason: "no_consent" | "not_sent";
             } | null;
             /** @description How far the technician has got, from the steps his phone sent: arrived (checked in), started, or closed (an outcome, a no-show among them). Null before he arrives. A visit he has begun, or one in progress, is not moved. */
             begun: ("arrived" | "started" | "closed") | null;
@@ -7323,7 +7325,7 @@ export interface components {
                 id: string;
                 name: string;
             } | null;
-            /** @description The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM contact; for a consultation asked for, its day and window and, where a first fit was asked for with it, "first_fit" and the window wanted ("any" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window wanted. */
+            /** @description The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM contact; for a move the client has not heard of, the start it moved to and why ("no_consent" or "not_sent", as the dispatch board's untold says); for a consultation asked for, its day and window and, where a first fit was asked for with it, "first_fit" and the window wanted ("any" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window wanted. */
             detail: string | null;
             /**
              * Format: date-time

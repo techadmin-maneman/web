@@ -1814,7 +1814,7 @@ export interface components {
                 /** @description Its after photograph, never to be kept on the phone. */
                 photo_url: string;
             } | null;
-            /** @description The day-before or arrival WhatsApp to the client, and when it was delivered. */
+            /** @description The day-before or arrival WhatsApp that went to the client, and when it was delivered; null when none went, as when one was skipped or failed. */
             reminder: {
                 delivered_at: string | null;
             } | null;

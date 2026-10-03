@@ -8703,11 +8703,19 @@ Request body:
             "starts_at": {
               "type": "string",
               "format": "date-time"
+            },
+            "reason": {
+              "type": "string",
+              "enum": [
+                "no_consent",
+                "not_sent"
+              ]
             }
           },
           "required": [
             "move_id",
-            "starts_at"
+            "starts_at",
+            "reason"
           ],
           "additionalProperties": false
         },
@@ -8715,7 +8723,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The latest move of this visit its client has not heard of: he has not agreed to WhatsApp, or the message was never sent. Ops call him, then POST /api/dispatch/moves/{id}/told."
+      "description": "The latest move of this visit its client has not heard of, and why. no_consent: he has not agreed to WhatsApp about his visits; not_sent: the WhatsApp was skipped or failed. Ops call him, then POST /api/dispatch/moves/{id}/told."
     },
     "begun": {
       "anyOf": [
@@ -10037,7 +10045,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM contact; for a consultation asked for, its day and window and, where a first fit was asked for with it, \"first_fit\" and the window wanted (\"any\" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window wanted."
+      "description": "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM contact; for a move the client has not heard of, the start it moved to and why (\"no_consent\" or \"not_sent\", as the dispatch board's untold says); for a consultation asked for, its day and window and, where a first fit was asked for with it, \"first_fit\" and the window wanted (\"any\" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window wanted."
     },
     "since": {
       "type": "string",
