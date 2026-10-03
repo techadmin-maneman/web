@@ -414,6 +414,36 @@ describe("POST /api/visits/:id/close", () => {
     expect(waiting).toMatchObject([{ id: VISIT, detail: reason }]);
   });
 
+  it("closes a one visit as done on the product chosen at its piece step, and sends its payment link", async () => {
+    await visit("ours", "first_fit", THIS_MORNING, "in_progress");
+    const piece = { piece_code: "MM-NAT-4417-A", base: "Lace", supplier_lot: "L-22", product: "natural" };
+    await env.DB.batch([
+      env.DB.prepare("UPDATE appointments SET one_visit = 'booked' WHERE id = ?1").bind(VISIT),
+      env.DB.prepare(
+        `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
+         VALUES ('first_fit', 'natural', 'Mane Man Natural', 180, 1, 'ops@localhost', ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from)
+         VALUES ('first_fit', 'natural', 4500000, 0, '2026-09-01')`,
+      ),
+      env.DB.prepare(
+        `INSERT INTO job_events (id, appointment_id, event_id, technician_id, kind, body, occurred_at, received_at,
+           updated_at)
+         VALUES ('event-1', ?1, 'event-piece-01', 't1', 'piece', ?2, ?3, ?3, ?3)`,
+      ).bind(VISIT, JSON.stringify(piece), THIS_MORNING),
+    ]);
+
+    const answer = await close(
+      { record: "ours" },
+      { outcome: "done", started_at: today("09:20"), ended_at: today("11:50"), reason: "Phone lost after the fit" },
+    );
+    expect(answer.status).toBe(200);
+    const fitted = await env.DB.prepare("SELECT tier, one_visit FROM appointments WHERE id = ?1").bind(VISIT).first();
+    expect(fitted).toEqual({ tier: "natural", one_visit: "fitted" });
+    expect(payments.made.links).toMatchObject([{ amount: 4_500_000, reference: VISIT }]);
+  });
+
   it("closes a visit once: a second close is refused, and the first stands", async () => {
     await visit("ours", "service", THIS_MORNING);
     const first = { outcome: "done", started_at: today("09:20"), ended_at: today("10:50"), reason: "Phone lost" };

@@ -1,9 +1,12 @@
 // Ops closing a visit by hand, for work that only lived on a technician's phone that was lost before it sent anything.
 // The visit moves to its outcome's status and its visits row is written in one batch with the audit entry, so a second
-// close, or the phone's own close landing first, leaves the first standing.
+// close, or the phone's own close landing first, leaves the first standing. A one visit closed as done is then decided
+// by the client's choice at its piece step, as the phone's own close decides it.
 
 import { indiaDate } from "../lib/india-time.ts";
 import { auditStatementIfClosed, type AuditEntry } from "./audit.ts";
+import { closeOneVisit } from "./one-visit.ts";
+import type { LinkDeps } from "./payment-links.ts";
 import { landedOutcome } from "./visit-begun.ts";
 import { closeVisit, durationOf, moveVisit, STEPS, type AppointmentStatus, type ClosedByHand } from "./visit-status.ts";
 
@@ -34,7 +37,9 @@ export type HandClosed =
 
 interface ClosingVisit {
   status: AppointmentStatus;
+  person_id: string | null;
   window_start: string | null;
+  one_visit: string | null;
   landed: string | null;
 }
 
@@ -47,10 +52,10 @@ function timesFit(times: { startedAt: string; endedAt: string }, visitStart: str
 }
 
 /** Closes the visit as ops say it went, once: refused for a visit already closed, still to come, or not ours. */
-export async function closeByHand(db: D1Database, close: HandClose, now: Date): Promise<HandClosed> {
+export async function closeByHand(db: D1Database, deps: LinkDeps, close: HandClose, now: Date): Promise<HandClosed> {
   const visit = await db
     .prepare(
-      `SELECT a.status, a.window_start, ${landedOutcome("a")} AS landed FROM appointments a
+      `SELECT a.status, a.person_id, a.window_start, a.one_visit, ${landedOutcome("a")} AS landed FROM appointments a
        WHERE a.id = ?1 AND a.deleted_at IS NULL`,
     )
     .bind(close.appointmentId)
@@ -71,5 +76,9 @@ export async function closeByHand(db: D1Database, close: HandClose, now: Date): 
   ]);
   // The count takes in what the appointments' triggers write as well, so any change at all means the visit moved.
   if (moved === undefined || moved.meta.changes === 0) return { kind: "refused", code: "already_closed" };
+  if (close.outcome === "done" && visit.one_visit !== null) {
+    const job = { id: close.appointmentId, personId: visit.person_id, windowStart: new Date(windowStart) };
+    await closeOneVisit(db, deps, job, now);
+  }
   return { kind: "closed", status: CLOSES_AS[close.outcome], durationMinutes: durationOf(times) };
 }
