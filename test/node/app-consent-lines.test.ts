@@ -4,7 +4,8 @@
 
 import { describe, expect, it } from "vitest";
 import { consentLines } from "../../apps/app/src/booking/consents.ts";
-import { BOOKING_NOTICES, CURRENT_NOTICE, findNotice } from "../../src/config/notices.ts";
+import { booking, profile } from "../../apps/app/src/content.ts";
+import { BOOKING_NOTICES, CURRENT_NOTICE, findNotice, REMINDER_NOTICE } from "../../src/config/notices.ts";
 
 const BOTH = ["photos_own_record", "photos_referral_cards"] as const;
 
@@ -22,5 +23,15 @@ describe("the pay step's consent lines", () => {
 
   it("are none when nothing is asked", () => {
     expect(consentLines([])).toEqual([]);
+  });
+});
+
+describe("the app's other consent lines", () => {
+  it("word the booking sheet's reminder box as the notice its yes is recorded under", () => {
+    expect([booking.pay.remind]).toEqual(findNotice(REMINDER_NOTICE)?.text);
+  });
+
+  it("word the profile's switch for the photographs taken for the visit record as its notice", () => {
+    expect([profile.purposes.photos_own_record]).toEqual(findNotice(CURRENT_NOTICE.photos_own_record)?.text);
   });
 });

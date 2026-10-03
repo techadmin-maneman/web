@@ -1,6 +1,6 @@
-// A client's customer in Zoho Books, where no FSM sync makes it. Books keys it by the person's ID in its "MM person
-// ID" field, so a write whose answer never came lands on the same customer. Never written for an erased person: their
-// customer still holds the ID, and a write would refill it.
+// A client's customer in Zoho Books, where no FSM sync makes it or keeps it up to date. Books keys it by the person's
+// ID in its "MM person ID" field, so a write whose answer never came lands on the same customer. Never written for an
+// erased person: their customer still holds the ID, and a write would refill it.
 
 import { placeOfSupply, stateOf, type GstRegistration } from "../config/gst.ts";
 import type { BooksProvider, NewBooksCustomer } from "../providers/books.ts";
@@ -79,4 +79,34 @@ export async function customerFor(
     .bind(customerId, personId)
     .run();
   return customerId;
+}
+
+/**
+ * Marks the client's number or address as changed, for the Books pass to write to their customer. Marked whether or
+ * not they have a customer yet, so one being made from their old details meanwhile still gets the change.
+ */
+export async function markCustomerChanged(db: D1Database, personId: string, now: Date): Promise<void> {
+  await db
+    .prepare("UPDATE people SET books_details_changed_at = ?2 WHERE id = ?1 AND erased_at IS NULL")
+    .bind(personId, now.toISOString())
+    .run();
+}
+
+/**
+ * Writes the person's details as they are now over their Books customer. One Books call at most. False for a person
+ * erased, or one with no customer.
+ */
+export async function updateCustomerOf(
+  db: D1Database,
+  books: BooksProvider,
+  personId: string,
+  gst: GstRegistration,
+): Promise<boolean> {
+  const person = await personRow(db, personId);
+  if (person === null) return false;
+  if (person.erased_at !== null) return false;
+  if (person.books_customer_id === null) return false;
+
+  await books.updateCustomer(person.books_customer_id, await customerFrom(db, personId, person, gst));
+  return true;
 }
