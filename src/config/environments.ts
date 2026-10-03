@@ -24,6 +24,18 @@ export const FSM_CATALOGUE_PUSH: Readonly<Record<EnvironmentName, boolean>> = {
   production: false,
 };
 
+/**
+ * Whether the hourly item check makes and writes Books' items from the console's services and the price book
+ * (src/domain/books-items.ts), where FSM's catalogue no longer is. Staging and production share one Books
+ * organisation, so only one writes: staging until production takes over in the release that launches it, which
+ * switches staging off. A constant, as FSM_CATALOGUE_PUSH is.
+ */
+export const BOOKS_ITEM_PUSH: Readonly<Record<EnvironmentName, boolean>> = {
+  local: false,
+  staging: true,
+  production: false,
+};
+
 /** The D1 database each environment must be bound to. */
 export const EXPECTED_DATABASE_NAME: Readonly<Record<EnvironmentName, string>> = {
   local: "maneman-local",

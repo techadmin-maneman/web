@@ -30,7 +30,6 @@ import {
   PRICE_TIER,
   type NumberSetting,
 } from "../config/ops-settings.ts";
-import { changesTheCatalogue, queueCatalogueSync } from "../domain/fsm-catalogue.ts";
 import { setOpsSetting, settingStates } from "../domain/ops-settings.ts";
 import {
   correctPrice,
@@ -193,15 +192,15 @@ const bookAnswer = {
 const setPriceRoute = createRoute({
   method: "post",
   path: "/api/prices",
-  summary: "A price from the date it applies. A change is a new row, so nothing already invoiced moves",
+  summary: "A price from the date it applies, tomorrow at the earliest. A change is a new row, so nothing sold moves",
   request: {
     body: { required: true, ...json(z.object(PriceFields).strict().openapi("PriceChange")) },
   },
   responses: {
     200: bookAnswer,
     400: errorResponse(
-      "invalid_request: fields names what was refused, tier where no service of the kind has it; service_retired: " +
-        "the service is retired by the day it would apply from",
+      "invalid_request: fields names what was refused, valid_from when it is before tomorrow, tier where no service " +
+        "of the kind has it; service_retired: the service is retired by the day it would apply from",
     ),
     403: errorResponse("access_required"),
   },
@@ -210,7 +209,7 @@ const setPriceRoute = createRoute({
 const correctPriceRoute = createRoute({
   method: "post",
   path: "/api/prices/correct",
-  summary: "Correct a price still to come: take it back and set its replacement, from any day from today, at once",
+  summary: "Correct a price still to come: take it back and set its replacement, from tomorrow or later, at once",
   request: {
     body: {
       required: true,
@@ -468,10 +467,6 @@ export function registerOpsSettings(app: App): void {
       return c.json(priceRefused(c.var.requestId, refusal), 400);
     }
     await setPrice(c.env.DB, { price, actor: staffOf(c), requestId: c.var.requestId, now });
-    // FSM's catalogue follows only while the owner has the push on (docs/decisions/0073-prices-from-the-price-book.md).
-    if (c.var.config.settings.fsmCataloguePush && changesTheCatalogue(price, today)) {
-      await queueCatalogueSync(c.env.FSM_QUEUE, c.var.requestId);
-    }
     return c.json({ prices: await priceBook(c.env.DB, today) }, 200);
   });
 
@@ -490,9 +485,6 @@ export function registerOpsSettings(app: App): void {
     if (result === "not_to_come") {
       c.var.log.warn("price_correction_refused", { item: price.item });
       return c.json(errorBody("invalid_request", c.var.requestId, ["was_valid_from"]), 400);
-    }
-    if (c.var.config.settings.fsmCataloguePush && changesTheCatalogue(price, today)) {
-      await queueCatalogueSync(c.env.FSM_QUEUE, c.var.requestId);
     }
     return c.json({ prices: await priceBook(c.env.DB, today) }, 200);
   });

@@ -130,7 +130,7 @@ export interface AuditEntry {
   readonly subject?: { readonly kind: string; readonly id: string };
   readonly requestId: string | null;
   /** IDs, counts and codes only. Never a name, a mobile number or an image reference. */
-  readonly detail?: Readonly<Record<string, string | number | boolean>>;
+  readonly detail?: Readonly<Record<string, string | number | boolean | null>>;
 }
 
 const COLUMNS = "at, surface, actor_kind, actor, action, subject_kind, subject_id, request_id, detail";
