@@ -805,6 +805,12 @@ describe("the name ops give an area", () => {
     )
       .bind(PERSON, NOW.toISOString())
       .run();
+    await env.DB.prepare(
+      `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at)
+       VALUES (?1, ?2, 'whatsapp_launches', 'waitlist-v1', 1, ?3)`,
+    )
+      .bind(crypto.randomUUID(), PERSON, NOW.toISOString())
+      .run();
     await env.DB.prepare("UPDATE serviceable_pincodes SET served = 1 WHERE pincode = '122018'").run();
     const composed = await composeLaunchAlert(env.DB, "122018", PERSON, "local");
     expect("skip" in composed ? composed : renderMessage(composed.template, composed.params)).toContain(

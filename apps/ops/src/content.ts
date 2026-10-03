@@ -945,6 +945,8 @@ export const clients = {
       app_share_sheet: "Refer",
       technician: "Technician",
       erasure: "Erasure",
+      message_link: "Stop link",
+      whatsapp_stop: "STOP reply",
     },
     /**
      * PLACEHOLDER: a consent with no place kept: given before this release on a notice several places showed, written

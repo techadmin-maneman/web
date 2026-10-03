@@ -33,6 +33,7 @@ export type TypedAddress = Schemas["TypedAddress"];
 export type NumberCodeRequest = Schemas["NumberCodeRequest"];
 export type NumberCode = Schemas["NumberCode"];
 export type NumberCodeVerify = Schemas["NumberCodeVerify"];
+export type StoppedMessages = Schemas["StoppedMessages"];
 export type PublicConsultationRequest = Body<"/api/consultation">;
 export type PublicWaitlistRequest = Body<"/api/waitlist">;
 export type ConsultationRequest = Body<"/api/r/{code}/consultation">;
@@ -187,4 +188,9 @@ export function bookPublicConsultation(
 
 export function joinPublicWaitlist(request: PublicWaitlistRequest, idempotencyKey: string): Promise<Answer<Waitlist>> {
   return post<Waitlist>("/api/waitlist", request, idempotencyKey);
+}
+
+/** The /stop page: withdraws the consent its link names. */
+export function stopMessages(token: string): Promise<Answer<StoppedMessages>> {
+  return post<StoppedMessages>("/api/stop", { token });
 }

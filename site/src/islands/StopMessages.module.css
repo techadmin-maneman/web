@@ -1,0 +1,34 @@
+.page {
+  max-width: var(--measure-column);
+  margin: 0 auto;
+  padding: var(--book-pad-top) var(--gutter) var(--section-gap);
+  min-height: calc(100vh - var(--header-h));
+}
+
+.page h1:focus {
+  outline: none;
+}
+
+.body {
+  margin: var(--sp-22) 0 var(--sp-32);
+}
+
+.note {
+  font-size: var(--fs-reading);
+  line-height: var(--lh-175);
+  text-wrap: pretty;
+}
+
+/* In the sentence's own colour, so underlined to be seen as a link. */
+.page a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: var(--sp-3);
+  white-space: nowrap;
+}
+
+.failure {
+  margin-top: var(--sp-16);
+  font-size: var(--fs-14);
+  color: var(--error-on-paper);
+}

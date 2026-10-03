@@ -1,12 +1,13 @@
 // Evolution's delivery receipts (docs/decisions/0041-outbound-messages-for-phase-2.md):
-// the webhook marks our messages delivered and read, refuses a wrong token, and
-// never logs the body, which names the recipient and carries Evolution's API key.
-// The payloads follow Evolution v2's messages.update; every value in them is made up.
+// the webhook marks our messages delivered and read, withdraws a sender's WhatsApp
+// consents on a STOP reply, refuses a wrong token, and never logs the body, which
+// names the recipient and carries Evolution's API key. The payloads follow
+// Evolution v2's messages.update and messages.upsert; every value in them is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Settings } from "../../src/config/settings.ts";
-import { appFor, captureLogs, fakeDependencies, LOCAL_SETTINGS, markDatabase, request } from "./helpers.ts";
+import { appFor, captureLogs, fakeDependencies, fakeQueue, LOCAL_SETTINGS, markDatabase, request } from "./helpers.ts";
 import { insertPerson } from "./tryon-fixtures.ts";
 
 const TOKEN = "a-webhook-token-of-at-least-thirty-two-chars";
@@ -114,7 +115,8 @@ describe("POST /api/hooks/evolution/:token", () => {
     ["a receipt that only says WhatsApp's servers have it", receipt("SERVER_ACK")],
     ["a receipt for a message someone sent us", receipt("READ", { fromMe: false })],
     ["a receipt for a message we did not send", receipt("READ", { keyId: "SOMEONE-ELSES" })],
-    ["another event", { ...receipt("READ"), event: "messages.upsert" }],
+    ["another event", { ...receipt("READ"), event: "contacts.update" }],
+    ["a receipt sent as a new message", { ...receipt("READ"), event: "messages.upsert" }],
     ["a body that is not Evolution's", { hello: "world" }],
   ])("takes %s, and changes nothing", async (_label, body) => {
     const res = await post(body);
@@ -167,6 +169,120 @@ describe("POST /api/hooks/evolution/:token", () => {
         body: JSON.stringify(receipt("READ")),
       });
       expect(res.status, surface).toBe(404);
+    }
+  });
+});
+
+/** A messages.upsert event: a message on our number, `text` from `from`'s chat. */
+function incoming(text: string, key: object = {}) {
+  return {
+    event: "messages.upsert",
+    instance: "maneman",
+    data: {
+      key: { remoteJid: "919810000001@s.whatsapp.net", fromMe: false, id: "3EB0INCOMING", ...key },
+      pushName: "Arjun",
+      message: { conversation: text },
+      messageType: "conversation",
+      messageTimestamp: 1758533405,
+    },
+    sender: "919999900000@s.whatsapp.net",
+    apikey: "evolution-instance-key",
+  };
+}
+
+describe("a STOP reply (messages.upsert)", () => {
+  let queue: ReturnType<typeof fakeQueue>;
+
+  beforeEach(async () => {
+    queue = fakeQueue();
+    for (const purpose of ["whatsapp_visits", "whatsapp_launches"]) {
+      await env.DB.prepare(
+        `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, source)
+         VALUES (?1, 'p1', ?2, 'v1', 1, '2026-09-01T00:00:00Z', 'app_profile')`,
+      )
+        .bind(crypto.randomUUID(), purpose)
+        .run();
+    }
+  });
+
+  function postWithQueue(body: unknown) {
+    return request(
+      app(),
+      `/api/hooks/evolution/${TOKEN}`,
+      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) },
+      { MESSAGE_QUEUE: queue },
+    );
+  }
+
+  async function latestConsents() {
+    const rows = await env.DB.prepare(
+      `SELECT purpose, granted, source FROM consents c WHERE person_id = 'p1' AND created_at = (
+         SELECT MAX(created_at) FROM consents WHERE person_id = 'p1' AND purpose = c.purpose)
+       ORDER BY purpose`,
+    ).all();
+    return rows.results;
+  }
+
+  const answers = async () =>
+    (await env.DB.prepare("SELECT state FROM outbound_messages WHERE kind = 'messages_stopped'").all()).results;
+
+  it.each(["STOP", "stop", "Stop.", " stop! ", "Unsubscribe"])(
+    "withdraws both WhatsApp consents on %j, and queues one answer",
+    async (text) => {
+      const res = await postWithQueue(incoming(text));
+
+      expect(res.status).toBe(204);
+      expect(await latestConsents()).toEqual([
+        { purpose: "whatsapp_launches", granted: 0, source: "whatsapp_stop" },
+        { purpose: "whatsapp_visits", granted: 0, source: "whatsapp_stop" },
+      ]);
+      expect(await answers()).toEqual([{ state: "queued" }]);
+      expect(queue.sent).toHaveLength(1);
+    },
+  );
+
+  it("answers a second STOP with nothing, and records nothing more", async () => {
+    await postWithQueue(incoming("STOP"));
+    await postWithQueue(incoming("STOP"));
+
+    expect(await answers()).toHaveLength(1);
+    expect(queue.sent).toHaveLength(1);
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM consents WHERE granted = 0").first("n")).toBe(2);
+  });
+
+  it("finds the sender's number where WhatsApp names the chat by its private address", async () => {
+    await postWithQueue(
+      incoming("STOP", { remoteJid: "84521796452451@lid", remoteJidAlt: MOBILE.slice(1) + "@s.whatsapp.net" }),
+    );
+    expect(await answers()).toHaveLength(1);
+  });
+
+  it.each<[string, unknown]>([
+    ["a sentence with stop in it", incoming("Please stop by at 5")],
+    ["our own message", incoming("STOP", { fromMe: true })],
+    ["a group's message", incoming("STOP", { remoteJid: "120363025000000000@g.us" })],
+    ["a number we do not know", incoming("STOP", { remoteJid: "919810000999@s.whatsapp.net" })],
+    ["a message with no text", { ...incoming("STOP"), data: { ...incoming("STOP").data, message: null } }],
+  ])("ignores %s", async (_label, body) => {
+    const res = await postWithQueue(body);
+    expect(res.status).toBe(204);
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM consents WHERE granted = 0").first("n")).toBe(0);
+    expect(await answers()).toEqual([]);
+  });
+
+  it("answers no one who had agreed to nothing", async () => {
+    await insertPerson("p2", "+919810000002");
+    await postWithQueue(incoming("STOP", { remoteJid: "919810000002@s.whatsapp.net" }));
+    expect(await answers()).toEqual([]);
+    expect(queue.sent).toEqual([]);
+  });
+
+  it("logs no number and no text", async () => {
+    await postWithQueue(incoming("STOP"));
+    const logged = JSON.stringify(logs.lines());
+    expect(logged).toContain("evolution_replies");
+    for (const secret of ["9810000001", "84521796452451", "evolution-instance-key", "STOP"]) {
+      expect(logged).not.toContain(secret);
     }
   });
 });
