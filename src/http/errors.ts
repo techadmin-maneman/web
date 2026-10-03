@@ -51,6 +51,8 @@ export const ERROR_CODES = [
   "hold_expired",
   // No slot is held for a client who has not given their address (docs/decisions/0079-an-address-before-a-slot.md).
   "address_required",
+  // An address in a pincode we do not come to: no visit is booked there, and the app saves no such address.
+  "not_served",
   // Ops booking a consultation or first fit for a client who has one still to come, or a payment link open for one.
   "already_booked",
   // Moving or cancelling a visit (docs/decisions/0046-moving-and-cancelling.md): it has started, passed or gone;
