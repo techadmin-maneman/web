@@ -1,4 +1,4 @@
--- Migration number: 0082
+-- Migration number: 0083
 -- When a client's cancel was done with its refund: Razorpay made it, it was left to ops, who were told, or there was
 -- nothing to give back. Null while the refund is owed; the cron's cancel_refunds job asks for it again under the
 -- cancel's own receipt, so Razorpay makes it once.

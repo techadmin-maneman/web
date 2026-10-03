@@ -1,6 +1,7 @@
-// The refund a client's cancel gives back (docs/decisions/0046-moving-and-cancelling.md). The request that cancels the
-// visit asks for it; one that request could not settle is asked for again by the cron's cancel_refunds job. Both ask
-// under the cancel's own receipt, so Razorpay makes it once (docs/decisions/0100-a-refund-is-made-once.md).
+// The refund a cancel gives back, the client's own or ops' (docs/decisions/0046-moving-and-cancelling.md). The
+// request that cancels the visit asks for it; one that request could not settle is asked for again by the cron's
+// cancel_refunds job. Both ask under the cancel's own receipt, so Razorpay makes it once
+// (docs/decisions/0100-a-refund-is-made-once.md).
 
 import type { CallBudget } from "../lib/call-budget.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
@@ -14,9 +15,13 @@ export interface RefundDeps {
   readonly alertOnce: AlertOnce;
 }
 
+/** Who cancelled, as a refund's note and ops' alert name them. */
+export type Canceller = "the client" | "ops";
+
 /** A cancel's refund still to be asked of Razorpay. */
 export interface OwedRefund {
   readonly changeId: string;
+  readonly cancelledBy: Canceller;
   readonly appointmentId: string;
   readonly personId: string;
   readonly razorpayPaymentId: string;
@@ -58,7 +63,7 @@ async function settleRefund(
 ): Promise<void> {
   const refund = {
     amount: owed.amount,
-    notes: { appointment_id: owed.appointmentId, reason: "cancelled by the client" },
+    notes: { appointment_id: owed.appointmentId, reason: `cancelled by ${owed.cancelledBy}` },
     receipt: refundReceipt({ kind: "cancel", appointmentId: owed.appointmentId }),
   };
   const asked = await askRefund(deps.payments, owed.razorpayPaymentId, refund, { askedBefore: asking.askedBefore });
@@ -68,7 +73,7 @@ async function settleRefund(
       outcome: asked.kind,
       error: asked.error,
     });
-    const what = `Rs. ${String(owed.amount / 100)} for visit ${owed.appointmentId}, cancelled by the client`;
+    const what = `Rs. ${String(owed.amount / 100)} for visit ${owed.appointmentId}, cancelled by ${owed.cancelledBy}`;
     // Keyed on the visit, so ops are told once and a second refund by hand is not asked for.
     await deps.alertOnce({
       key: `cancel_refund_failed:${owed.appointmentId}`,
@@ -117,7 +122,7 @@ export async function settleOwedRefunds(
 async function owedRefunds(db: D1Database, now: Date): Promise<OwedRefund[]> {
   const { results } = await db
     .prepare(
-      `SELECT c.id, c.appointment_id, c.person_id, c.refund_amount, p.razorpay_payment_id
+      `SELECT c.id, c.appointment_id, c.person_id, c.refund_amount, c.cancelled_by, p.razorpay_payment_id
        FROM visit_changes c
          JOIN payments p ON p.id = c.payment_id
          JOIN appointments a ON a.id = c.appointment_id
@@ -131,10 +136,12 @@ async function owedRefunds(db: D1Database, now: Date): Promise<OwedRefund[]> {
       appointment_id: string;
       person_id: string;
       refund_amount: number;
+      cancelled_by: string | null;
       razorpay_payment_id: string;
     }>();
   return results.map((row) => ({
     changeId: row.id,
+    cancelledBy: row.cancelled_by === null ? "the client" : "ops",
     appointmentId: row.appointment_id,
     personId: row.person_id,
     razorpayPaymentId: row.razorpay_payment_id,

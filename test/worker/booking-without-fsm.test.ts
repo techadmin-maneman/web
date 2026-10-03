@@ -643,6 +643,21 @@ describe("the cron's cancel_refunds job", () => {
     ]);
   });
 
+  it("names ops in the alert for a cancel ops made in the console", async () => {
+    await stoppedAfterCancelling();
+    await env.DB.prepare("UPDATE visit_changes SET cancelled_by = 'ops@localhost', ops_terms = 'free'").run();
+    const refusing: PaymentsProvider = {
+      ...createStubPayments(),
+      refund: () => Promise.reject(new Error("Razorpay 400 BAD_REQUEST_ERROR: the payment has been fully refunded")),
+    };
+    const deps = withoutFsm({ payments: refusing, now: () => at(11 * 60) });
+
+    await run(deps);
+
+    expect(deps.alerts).toHaveLength(1);
+    expect(deps.alerts[0]).toContain(`Rs. 2000 for visit ${VISIT}, cancelled by ops (payment pay_visit)`);
+  });
+
   it("leaves alone a claim whose visit was never cancelled, and one the Worker before it refunded", async () => {
     await stoppedAfterCancelling("scheduled");
     const payments = createStubPayments();
