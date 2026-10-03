@@ -1,21 +1,23 @@
 // Ops' side of grievances (docs/decisions/0049-dpdp.md), on the ops surface behind Access:
 //   GET  /api/grievances               open grievances, oldest first, with who raised them
 //   POST /api/grievances/:id/resolve   the answer ops gave, which closes it
-// Each answer is audited under the member of staff who gave it.
+// Each answer is audited under the member of staff who gave it. Both keep to the caller's cities.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import { staffOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
 import { auditStatement } from "../domain/audit.ts";
+import { reachBinding, withinReach } from "../domain/places.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
+import { routeReach, withinRouteReach } from "../http/staff-access.ts";
 import { dueAt } from "../policy/tasks.ts";
 
 const openRoute = createRoute({
   method: "get",
   path: "/api/grievances",
-  summary: "Open grievances, oldest first",
+  summary: "Open grievances in the caller's cities, oldest first",
   responses: {
     200: {
       description: "Open grievances",
@@ -63,16 +65,20 @@ const resolveRoute = createRoute({
   },
   responses: {
     200: { description: "Closed", ...json(z.object({ state: z.literal("resolved") }).strict()) },
-    404: errorResponse("not_found: no open grievance by that ID"),
+    404: errorResponse("not_found: no open grievance by that ID in the caller's cities"),
   },
 });
 
 export function registerOpsGrievances(app: App): void {
   app.openapi(openRoute, async (c) => {
+    const reached = await routeReach(c);
     const { results } = await c.env.DB.prepare(
       `SELECT g.id, g.person_id, p.name, p.mobile_e164, g.text, g.created_at FROM grievances g
-       JOIN people p ON p.id = g.person_id WHERE g.state = 'open' ORDER BY g.created_at`,
-    ).all<{ id: string; person_id: string; name: string; mobile_e164: string; text: string; created_at: string }>();
+       JOIN people p ON p.id = g.person_id
+       WHERE g.state = 'open' AND ${withinReach("grievance", "g", "?1")} ORDER BY g.created_at`,
+    )
+      .bind(reachBinding(reached))
+      .all<{ id: string; person_id: string; name: string; mobile_e164: string; text: string; created_at: string }>();
     const sla = (await opsInputs(c)).taskSlaHours;
     return c.json(
       {
@@ -96,7 +102,9 @@ export function registerOpsGrievances(app: App): void {
     const now = c.var.deps.now();
     const db = c.env.DB;
     const open = await db.prepare("SELECT 1 FROM grievances WHERE id = ?1 AND state = 'open'").bind(id).first();
-    if (open === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (open === null || !(await withinRouteReach(c, "grievance", id))) {
+      return c.json(errorBody("not_found", c.var.requestId), 404);
+    }
     // The answer and its audit entry, together or not at all (src/domain/audit.ts).
     await db.batch([
       db
