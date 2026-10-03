@@ -2798,6 +2798,11 @@ export interface components {
                 } | null;
             };
             referral_reward: components["schemas"]["ReferralReward"];
+            /** @description The invite a client not yet fitted came with, while its free service visits (referral_reward's friend_visits) wait on their first fit. Null once they are fitted, and where they came with none or it lapsed. */
+            pending_invite: {
+                /** @description Who sent it, exactly where the invite's own page names them; null where it does not. */
+                referrer_first_name: string | null;
+            } | null;
         };
         VisitSummary: {
             /** Format: uuid */

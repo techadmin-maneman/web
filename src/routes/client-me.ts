@@ -30,6 +30,7 @@ import { bookableTypes } from "../domain/scheduling.ts";
 import { offeredServices } from "../domain/services.ts";
 import { currentAddress, liveContact } from "../domain/profile.ts";
 import { hasFsmVisit, latestProposal, windowAskedFor } from "../domain/proposed-visits.ts";
+import { pendingInviteOf } from "../domain/referrals.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
@@ -226,6 +227,23 @@ export const MeSchema = z
         "What a referral earns now, as ops set it: the Refer tab's promise, for a lead as for a fitted client, and " +
         "the invite's preview say it (docs/decisions/0107-referral-rewards-in-the-console.md).",
     }),
+    pending_invite: z
+      .union([
+        z
+          .object({
+            referrer_first_name: z.string().nullable().openapi({
+              description: "Who sent it, exactly where the invite's own page names them; null where it does not.",
+            }),
+          })
+          .strict(),
+        z.null(),
+      ])
+      .openapi({
+        description:
+          "The invite a client not yet fitted came with, while its free service visits (referral_reward's " +
+          "friend_visits) wait on their first fit. Null once they are fitted, and where they came with none or it " +
+          "lapsed.",
+      }),
   })
   .strict()
   .openapi("Me");
@@ -282,6 +300,8 @@ export function registerClientMe(app: App): void {
     const booked = facts.booked || upcoming !== null || proposal !== null;
     const offer = booked ? null : facts.offer;
     const { prompt, invoice } = await homePrompts(db, session.subjectId, { booked, offer }, now, days);
+    const nameOnInvite = c.var.config.settings.referrerNameOnInvite;
+    const invite = fitted ? null : await pendingInviteOf(db, session.subjectId, now, nameOnInvite);
 
     return c.json(
       {
@@ -300,6 +320,7 @@ export function registerClientMe(app: App): void {
         invoice,
         booking: { self_serve: c.var.config.settings.selfServeBooking, types, services, next: offer },
         referral_reward: referralReward,
+        pending_invite: invite === null ? null : { referrer_first_name: invite.referrerFirstName },
       },
       200,
     );
