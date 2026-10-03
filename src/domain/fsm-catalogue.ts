@@ -15,9 +15,9 @@
 // The push makes an item FSM does not have and writes the console's name and the book's price over each that
 // differs, and only while the owner has FSM_CATALOGUE_PUSH switched on. Staging's FSM is the owner's real org and
 // its book holds placeholders (ADR 0025, "The Zoho org"), so the push is off everywhere until the owner switches it
-// on in production. A change in the console that FSM should follow today queues it at once; a price from a later
-// day is found by the check on its day, which queues it then. It is tried once: the next hour's check is its retry,
-// and tells ops if FSM still differs.
+// on in production. A service changed in the console queues it at once; a price, which applies from tomorrow at the
+// earliest, is found by the check on its day, which queues it then. It is tried once: the next hour's check is its
+// retry, and tells ops if FSM still differs.
 //
 // The same pass keeps ops' consumables in the catalogue as parts at Rs. 0 (docs/decisions/0087-consumables-and-stock.md).
 // It finds each one's part by our name, and remembers it by its ID, so the console can say where each stands. With
@@ -26,13 +26,7 @@
 // settle an hour on. It never touches a part's price, and a retired consumable's part is left as it is.
 
 import { rupees } from "@maneman/web-kit/money";
-import {
-  hasStandardService,
-  STANDARD_TIER,
-  VISIT_TYPE_NAMES,
-  VISIT_TYPES,
-  type VisitType,
-} from "../config/visit-types.ts";
+import { hasStandardService, STANDARD_TIER, VISIT_TYPE_NAMES, type VisitType } from "../config/visit-types.ts";
 import { createCallBudget, type CallBudget } from "../lib/call-budget.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { failureReason, type Logger } from "../log.ts";
@@ -40,7 +34,6 @@ import { FSM_ITEM_PAGES, FSM_ITEMS_A_PAGE, type FsmItem, type FsmProvider } from
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import type { AlertOnce, ResolveAlert } from "./alerts.ts";
 import { allConsumables, isOffered, type Consumable } from "./consumables.ts";
-import type { PriceItem } from "./price-book.ts";
 import {
   keepFsmItem,
   offeredAmong,
@@ -506,12 +499,6 @@ export async function pushCatalogue(db: D1Database, fsm: FsmProvider, today: str
     written += 1;
   }
   return { written, unreached: unreached.map((service) => `${service.kind}/${service.tier}`) };
-}
-
-/** Whether a price ops set changes what FSM's catalogue should hold today: a service's, from today or before. */
-export function changesTheCatalogue(price: { readonly item: PriceItem; readonly valid_from: string }, today: string) {
-  const isVisit = VISIT_TYPES.some((type) => type === price.item);
-  return isVisit && price.valid_from <= today;
 }
 
 export async function queueCatalogueSync(queue: Queue, requestId: string): Promise<void> {

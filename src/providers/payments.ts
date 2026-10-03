@@ -18,12 +18,17 @@ export interface RefundAsked {
 /** A payment link to make: what it asks for, our reference for it, and whom Razorpay texts it to. */
 export interface PaymentLinkRequest {
   readonly amount: number;
-  /** Ours, unique to the link, and shown on Razorpay's page: the reference its payment will have. */
+  /**
+   * Ours, unique to the link, and shown on Razorpay's page: a one visit's is the reference its payment will have, and
+   * a visit ops booked has the hold it waits on.
+   */
   readonly reference: string;
   /** What the client reads on Razorpay's page. */
   readonly description: string;
   readonly customer: { readonly name: string; readonly contact: string };
   readonly notes: Record<string, string>;
+  /** When it stops taking payment; left out, it stays open. */
+  readonly closesAt?: Date;
 }
 
 export interface PaymentsProvider {

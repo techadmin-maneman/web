@@ -131,7 +131,9 @@ describe("Razorpay: payment links", () => {
   }
 
   it("makes a link for the whole amount, under our reference, which Razorpay texts the client and reminds them of", async () => {
-    expect(await linkMade()).toMatchObject({
+    const made = await linkMade();
+    expect(made).not.toHaveProperty("expire_by");
+    expect(made).toMatchObject({
       amount: 4500000,
       currency: "INR",
       accept_partial: false,
@@ -151,6 +153,14 @@ describe("Razorpay: payment links", () => {
       checkout: { name: "Mane Man", prefill: { contact: "+919810000001" } },
       hosted_page: { label: { receipt: "REFERENCE" } },
     });
+  });
+
+  it("closes a link at the moment asked, in Unix seconds, where one is asked", async () => {
+    const { payments, calls } = razorpay({
+      [`${API}/payment_links`]: () => json({ id: "plink_9", short_url: "https://rzp.io/i/abc" }),
+    });
+    await payments.createPaymentLink({ ...LINK, closesAt: new Date("2026-09-22T06:30:00.000Z") });
+    expect(JSON.parse(calls[0]?.body ?? "")).toMatchObject({ expire_by: 1790058600 });
   });
 
   it("names Razorpay's refusal as a refusal, so ops are told rather than the close sent again", async () => {

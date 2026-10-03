@@ -47,8 +47,13 @@ export type RazorpayPayment = z.infer<typeof RazorpayPaymentSchema>;
 export const RazorpayPaymentLinkSchema = z.object({
   id: z.string(),
   status: z.string(),
-  /** Ours: the reference its payment will have, or the visit's ID on a link ops made by hand in Razorpay's dashboard. */
+  /**
+   * Ours: a one visit's payment reference, or the visit's ID on a link ops made by hand in Razorpay's dashboard; or the
+   * hold a visit ops booked waits on.
+   */
   reference_id: z.string().nullish(),
+  /** The order Razorpay made for the link, which its payment names too. */
+  order_id: z.string().nullish(),
 });
 
 export type RazorpayPaymentLink = z.infer<typeof RazorpayPaymentLinkSchema>;
@@ -158,6 +163,7 @@ export function createRazorpay(
           notify: { sms: true, email: false },
           reminder_enable: true,
           notes: link.notes,
+          ...(link.closesAt === undefined ? {} : { expire_by: Math.floor(link.closesAt.getTime() / 1000) }),
           options: linkPage(link.customer.contact),
         },
         LinkMade,

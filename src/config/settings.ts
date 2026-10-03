@@ -7,6 +7,7 @@ import { toE164 } from "../lib/mobile.ts";
 import type { EvolutionSettings } from "../providers/evolution.ts";
 import { RESULT_TEMPLATE } from "./message-templates.ts";
 import { ENABLED_SURFACES, FSM_CATALOGUE_PUSH, type EnvironmentName, type ProviderVar } from "./environments.ts";
+import { GSTIN_FORMAT, SAC_FORMAT, STATE_CODE_FORMAT, type GstRegistration } from "./gst.ts";
 import { FIXED_LIMITS, type FixedLimit } from "./limits.ts";
 import { UNKNOWN_COLOR_ROUTE, type UnknownColorRoute } from "./tryon.ts";
 
@@ -99,6 +100,8 @@ export interface ZohoBooksSettings {
    * in Books and their vouchers wait (docs/open-points.md).
    */
   readonly refundAccountId: string | null;
+  /** Empty while GST is off in Books; the CA's figures once it is on. */
+  readonly gst: GstRegistration;
 }
 
 /** Razorpay (docs/decisions/0044-payments-mirror.md). */
@@ -483,12 +486,35 @@ function readZohoBooks(read: Reader, providers: ProvidersRead): ZohoBooksSetting
     apiHost: read.text("ZOHO_BOOKS_API_HOST"),
     orgId: read.text("ZOHO_BOOKS_ORG_ID"),
     refundAccountId: read.optionalText("BOOKS_REFUND_ACCOUNT_ID"),
+    gst: readGstRegistration(read),
   };
   checkZohoHosts(read, [
     ["ZOHO_BOOKS_ACCOUNTS_HOST", zohoBooks.accountsHost],
     ["ZOHO_BOOKS_API_HOST", zohoBooks.apiHost],
   ]);
   return zohoBooks;
+}
+
+/** The GST registration, each part empty until the CA gives it. */
+function readGstRegistration(read: Reader): GstRegistration {
+  const gstin = read.optionalText("BOOKS_GSTIN");
+  const stateCode = read.optionalText("BOOKS_GST_STATE");
+  const sac = read.optionalText("BOOKS_SAC");
+  if (gstin !== null && !GSTIN_FORMAT.test(gstin)) {
+    read.problems.push("BOOKS_GSTIN is not a GSTIN: 15 characters, such as 06AAACM1234A1Z5");
+  }
+  if (stateCode !== null && !STATE_CODE_FORMAT.test(stateCode)) {
+    read.problems.push("BOOKS_GST_STATE must be the two-letter GST code of the state registered in, such as HR");
+  }
+  if (gstin !== null && stateCode === null) {
+    read.problems.push(
+      "BOOKS_GST_STATE must be set with BOOKS_GSTIN: it is the place of supply of a client whose city is not known",
+    );
+  }
+  if (sac !== null && !SAC_FORMAT.test(sac)) {
+    read.problems.push("BOOKS_SAC must be a SAC code of six digits, such as 999721");
+  }
+  return { gstin, stateCode, sac };
 }
 
 /** Razorpay's keys, when PAYMENTS_PROVIDER is razorpay; the stub's webhook secret, when it is the stub. */

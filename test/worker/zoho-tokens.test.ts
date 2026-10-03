@@ -6,6 +6,7 @@
 
 import { env } from "cloudflare:workers";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { NO_GST } from "../../src/config/gst.ts";
 import { productionDependencies } from "../../src/dependencies.ts";
 import { createLogger } from "../../src/log.ts";
 import { isRefusal } from "../../src/providers/provider-error.ts";
@@ -185,6 +186,7 @@ const connected = {
       refreshToken: "1000.books-refresh",
       orgId: "60088931635",
       refundAccountId: null,
+      gst: NO_GST,
     },
   },
 };

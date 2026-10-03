@@ -95,7 +95,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [services](#services): What clients may book: each kind of visit's services, their names, lengths and order, when each is retired, and its item in FSM's catalogue and in Books; the price book prices each by its kind and tier (ADR 0085, ADR 0110).
 - [sessions](#sessions): The client app's and the technician app's sessions: whose, from which device, and when each ends or was revoked (ADR 0029, ADR 0052).
 - [slot_claims](#slot_claims): What a hold or a visit takes of a technician's day, a row per half-slot and window, so no time is taken twice (ADR 0034, ADR 0069).
-- [slot_holds](#slot_holds): A slot held while a client pays, and what became of it (ADR 0045, ADR 0068).
+- [slot_holds](#slot_holds): A slot held while a client pays, at Checkout or by a payment link ops sent, and what became of it (ADR 0045, ADR 0068).
 - [slot_times](#slot_times): Each change of the day's half-slot times ops set, from the day it applies; never changed (ADR 0102).
 - [staff](#staff): Each member of staff on the console's Staff list, by their Access e-mail, and whether they are let in (ADR 0109).
 - [staff_access_mode](#staff_access_mode): One row: whether the console enforces the Staff list yet, and who last switched it (ADR 0109).
@@ -182,7 +182,7 @@ Indexes:
 
 Each visit, mirrored from FSM or booked without it: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice. `fsm_id` is FSM's ID for a visit FSM holds, otherwise the row's own (ADR 0032, ADR 0110).
 
-Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`, `0059_no_show_charges_and_disputes.sql`, `0060_flat_task_reads.sql`, `0061_one_visit.sql`, `0063_discount_codes.sql`, `0066_client_note_in_fsm.sql`, `0070_field_record_ours.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`, `0059_no_show_charges_and_disputes.sql`, `0060_flat_task_reads.sql`, `0061_one_visit.sql`, `0063_discount_codes.sql`, `0066_client_note_in_fsm.sql`, `0070_field_record_ours.sql`, `0076_books_without_fsm.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -225,7 +225,9 @@ Indexes:
 - `appointments_by_window_end`: on (`window_end`)
 - `appointments_by_window_start`: on (`window_start`)
 - `appointments_done_visits`: on (`window_start`), where `status = 'completed' AND type IN ('first_fit', 'service', 'replacement') AND deleted_at IS NULL`
+- `appointments_held_drafts`: on (`window_start`), where `status = 'completed' AND invoice_issued_at IS NULL AND fsm_invoice_id IS NOT NULL AND deleted_at IS NULL`
 - `appointments_live_by_person`: on (`person_id`), where `status IN ('scheduled', 'dispatched', 'in_progress') AND deleted_at IS NULL`
+- `appointments_to_bill`: on (`window_start`), where `status = 'completed' AND invoice_issued_at IS NULL AND deleted_at IS NULL AND type IN ('first_fit', 'service', 'replacement') AND one_visit IS NOT 'declined'`
 - `appointments_to_invoice`: on (`window_start`), where `status = 'completed' AND invoice_issued_at IS NULL AND fsm_work_order_id IS NOT NULL AND deleted_at IS NULL`
 - A `UNIQUE` constraint: unique on (`fsm_id`)
 
@@ -1072,7 +1074,7 @@ Made by `0049_consumables_and_stock.sql`.
 
 The Razorpay payment link a consultation and fit in one visit is paid by once the client is fitted: one a visit, the product and its price, when Razorpay made and texted it, and the payment that paid it (ADR 0105).
 
-Made by `0061_one_visit.sql`; changed by `0075_payment_link_references.sql`.
+Made by `0061_one_visit.sql`; changed by `0077_payment_link_references.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1152,7 +1154,7 @@ Indexes:
 
 One row per person, keyed by mobile number. D1 owns the identity; the CRM's and Books' IDs are only references (ADR 0011, ADR 0110).
 
-Made by `0002_lead_path.sql`; changed by `0004_erasure.sql`, `0011_fsm_mirror.sql`, `0023_dpdp.sql`, `0036_erased_files.sql`, `0037_cron_indexes.sql`, `0070_field_record_ours.sql`.
+Made by `0002_lead_path.sql`; changed by `0004_erasure.sql`, `0011_fsm_mirror.sql`, `0023_dpdp.sql`, `0036_erased_files.sql`, `0037_cron_indexes.sql`, `0070_field_record_ours.sql`, `0076_books_without_fsm.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1172,6 +1174,7 @@ Made by `0002_lead_path.sql`; changed by `0004_erasure.sql`, `0011_fsm_mirror.sq
 | `fsm_erasure_attempts` | INTEGER | no | `0` |  |
 | `files_erased_at` | TEXT | yes |  |  |
 | `books_customer_id` | TEXT | yes |  |  |
+| `books_checked_at` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -1453,9 +1456,9 @@ Indexes:
 
 ## slot_holds
 
-A slot held while a client pays, and what became of it (ADR 0045, ADR 0068).
+A slot held while a client pays, at Checkout or by a payment link ops sent, and what became of it (ADR 0045, ADR 0068).
 
-Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`, `0058_held_bookings.sql`, `0061_one_visit.sql`.
+Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`, `0058_held_bookings.sql`, `0061_one_visit.sql`, `0075_pay_by_link.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1497,10 +1500,14 @@ Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_chan
 | `fsm_held_at` | TEXT | yes |  |  |
 | `fsm_refusal` | TEXT | yes |  |  |
 | `one_visit` | INTEGER | no | `0` |  |
+| `pay_by_link` | INTEGER | no | `0` |  |
+| `payment_link_id` | TEXT | yes |  |  |
+| `payment_link_url` | TEXT | yes |  |  |
 
 Indexes:
 
 - `slot_holds_by_appointment`: on (`appointment_id`), where `appointment_id IS NOT NULL`
+- `slot_holds_by_payment_link`: unique on (`payment_link_id`), where `payment_link_id IS NOT NULL`
 - `slot_holds_by_person`: on (`person_id`, `created_at`)
 - `slot_holds_confirmed`: on (`queued_at`), where `state = 'held' AND confirmed_at IS NOT NULL`
 - `slot_holds_confirmed_by_person`: on (`person_id`), where `state = 'held' AND confirmed_at IS NOT NULL`
