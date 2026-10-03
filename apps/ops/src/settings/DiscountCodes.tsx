@@ -175,7 +175,7 @@ export function DiscountCodes() {
   };
 
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const { today, batch_most: most } = loaded.value;
   const codes = refreshed ?? loaded.value.codes;
 

@@ -49,6 +49,62 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/client-errors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Report an error in the app's own page */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ClientErrorReport"];
+                };
+            };
+            responses: {
+                /** @description Logged */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description rate_limited: this address has sent its reports for the hour, or every address has */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/otp": {
         parameters: {
             query?: never;
@@ -2578,6 +2634,26 @@ export interface components {
             d1: "ok" | "unmarked" | "mismatch" | "unreachable";
             /** @description When the five-minute cron last finished a run; null before its first, or when the database is not this environment's. Information only: status does not depend on it. */
             cron_completed_at: string | null;
+        };
+        ClientErrorReport: {
+            /** @enum {string} */
+            kind: "error" | "unhandled_rejection" | "render" | "outbox_gave_up";
+            message: string;
+            /** @description The page's path, with no query or fragment. */
+            path: string;
+            stack?: string;
+            /** @description The script the error was thrown in. */
+            source?: string;
+            line?: number;
+            column?: number;
+            /** @description outbox_gave_up: the write's kind, as `checklist`. */
+            step?: string;
+            /** @description outbox_gave_up: the code the API refused it with. */
+            code?: string;
+            /** @description outbox_gave_up: the refusal's HTTP status. */
+            status?: number;
+            /** @description outbox_gave_up: the refusal's request ID, which its own log lines carry. */
+            request_id?: string;
         };
         LoginChallenge: {
             /** Format: uuid */
