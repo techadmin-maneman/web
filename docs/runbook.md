@@ -517,7 +517,7 @@ Payments and refunds are mirrored from Razorpay's webhook (docs/decisions/0044-p
    W secret put RAZORPAY_KEY_SECRET --env <env>
    ```
 
-2. **The webhook secret.** Make one, set it on the Worker, and keep it to paste into Razorpay:
+2. **The webhook secret.** Make one, set it on the Worker, and keep it to paste into Razorpay. It must be at least 32 characters (the command below gives 48), and while `SELF_SERVE_BOOKING` is on the Worker refuses to start without it:
 
    ```sh
    openssl rand -hex 24
@@ -1086,11 +1086,11 @@ The cause, from Workers Logs:
 - the route answers 404: `RAZORPAY_WEBHOOK_SECRET` is not set on the Worker (step 11c, point 2);
 - `razorpay_hook_unauthorized`: the secret in Razorpay's webhook is not the Worker's;
 - nothing at all: Razorpay is not calling. The webhook is disabled (Razorpay disables one that has failed for 24 hours, and e-mails the account), its URL is wrong, it is set up in the other mode from the keys (test or live), or, on staging, Access is stopping `/api/hooks/` (step 12, point 3);
-- `razorpay_hook_refund_early`, answered 409: a refund came before its payment. Razorpay sends it again; nothing is wrong.
+- `razorpay_hook_refund_early`, answered 409: a refund came before its payment, in an event that does not carry the payment. Razorpay sends it again; nothing is wrong.
 
 Put the cause right, and re-enable the webhook in Razorpay's dashboard if it was disabled. Razorpay retries a delivery that failed for 24 hours. A capture that arrives late is judged by Razorpay's own time: paid within the hold's ten minutes and its two minutes' grace, the visit is booked; if the time has gone to another client meanwhile, the payment is refunded in full (ADR 0068).
 
-For a payment whose delivery Razorpay will not send again (past its 24 hours, or while the webhook was disabled), refund it in Razorpay's dashboard and ask the client to book again. That refund's own webhook is then answered 409, since its payment was never recorded; that is expected.
+For a payment whose delivery Razorpay will not send again (past its 24 hours, or while the webhook was disabled), refund it in Razorpay's dashboard and ask the client to book again. That refund's own event carries the payment, so both are recorded then, nothing is booked for it, and ops get one alert per payment ("Payment … was refunded in Razorpay before we heard it was paid", key `razorpay_refund_unheard:<payment ID>`). Close it once the client has been told. The same alert for a refund no one here made means the webhook is missing payments: work through this section.
 
 ### A refund that failed
 
