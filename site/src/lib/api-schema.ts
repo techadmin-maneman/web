@@ -589,6 +589,15 @@ export interface paths {
                         "application/json": components["schemas"]["Invite"];
                     };
                 };
+                /** @description rate_limited: this address looked up too many codes that are not there this hour */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         put?: never;
@@ -627,7 +636,7 @@ export interface paths {
                         "image/jpeg": string;
                     };
                 };
-                /** @description The house card, on the site */
+                /** @description The house card, on the site; for every code from an address past its misses this hour */
                 302: {
                     headers: {
                         [name: string]: unknown;

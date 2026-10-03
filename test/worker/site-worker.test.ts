@@ -202,6 +202,7 @@ describe("the site Worker at /r/:code", () => {
   // FEO-18: a failure is not an unknown code. The page is served as built and the island asks again.
   it.each([
     ["answers 503", () => Response.json({ error: { code: "unavailable" } }, { status: 503 })],
+    ["refuses an address past its misses", () => Response.json({ error: { code: "rate_limited" } }, { status: 429 })],
     [
       "throws",
       () => {
@@ -220,10 +221,14 @@ describe("the site Worker at /r/:code", () => {
   });
 
   // FEO-25: mm-api counts an open only for a person, so it needs to know who asked.
-  it("passes the visitor's user agent on to mm-api", async () => {
-    const page = await open(() => Response.json(VALID), { "User-Agent": "WhatsApp/2.23.20.0" });
+  it("passes the visitor's user agent and address on to mm-api", async () => {
+    const page = await open(() => Response.json(VALID), {
+      "User-Agent": "WhatsApp/2.23.20.0",
+      "CF-Connecting-IP": "203.0.113.7",
+    });
     const lookUp = page.asked.find((request) => new URL(request.url).pathname === "/api/r/RM4K7P");
     expect(lookUp?.headers.get("User-Agent")).toBe("WhatsApp/2.23.20.0");
+    expect(lookUp?.headers.get("CF-Connecting-IP")).toBe("203.0.113.7");
   });
 
   it("gives the landing's island the book's prices beside the invite", async () => {

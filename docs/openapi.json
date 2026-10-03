@@ -1998,6 +1998,16 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "rate_limited: this address looked up too many codes that are not there this hour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -2028,7 +2038,7 @@
             }
           },
           "302": {
-            "description": "The house card, on the site"
+            "description": "The house card, on the site; for every code from an address past its misses this hour"
           }
         }
       }
