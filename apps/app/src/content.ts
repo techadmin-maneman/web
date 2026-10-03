@@ -159,7 +159,8 @@ const PAID_IN = "Your payment is in. We are booking your visit.";
 const TOLD_WHEN_BOOKED = "We will message you on WhatsApp when the visit is booked.";
 
 export const home = {
-  profile: "Your profile",
+  /** The avatar's name begins with the initials it shows, so "tap RM" reaches it by voice. */
+  profile: (initials: string) => `${initials}, your profile`,
   reschedule: "Reschedule",
   note: "Add a note",
   consultation: {
