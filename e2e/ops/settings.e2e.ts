@@ -222,7 +222,7 @@ test.describe("the rules", () => {
     const reward = page.getByRole("group", { name: "What a referral earns" });
     await expect(reward.getByLabel("The client who sent the invite")).toHaveValue("3");
     await expect(reward.getByLabel("The friend they invited")).toHaveValue("3");
-    await expect(reward.getByLabel("The credits last")).toHaveValue("365");
+    await expect(reward.getByLabel("The free service visits last")).toHaveValue("365");
     await expect(reward).toContainText("0 to 12 service visits, a whole number");
     await expect(reward).toContainText("30 to 1095 days, a whole number");
 

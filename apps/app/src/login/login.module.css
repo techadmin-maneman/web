@@ -135,6 +135,11 @@
   color: var(--error-on-ink);
 }
 
+/* Turnstile's box takes no space unless Cloudflare shows its check. */
+.turnstile:not(:empty) {
+  margin-top: var(--sp-16);
+}
+
 .automatic {
   display: flex;
   align-items: center;

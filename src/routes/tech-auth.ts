@@ -11,10 +11,16 @@
 //
 // The phone sends its own ID, which it keeps in its storage: the session is
 // bound to it, so ops can revoke that phone and its cached jobs go with it.
+//
+// Technicians' codes have a day's ceiling of their own, so client traffic never
+// stops one signing in, and ops are told when an active technician is refused.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { App } from "../http/context.ts";
+import type { Context } from "hono";
+import type { LoginSettings } from "../config/settings.ts";
+import type { App, AppEnv } from "../http/context.ts";
 import { logDeactivated, syncTechnicians } from "../domain/fsm-mirror.ts";
+import { mobileHashOf } from "../domain/number-codes.ts";
 import { createChallenge } from "../domain/one-time-codes.ts";
 import { takeOne } from "../domain/rate-limit.ts";
 import { revokeSession, deviceLabel } from "../domain/sessions.ts";
@@ -27,7 +33,8 @@ import {
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { firstNameOf, initialsOf } from "../lib/names.ts";
-import { countCode, knownCode, mayAskForCode, sendCodeAfterResponse } from "../http/send-code.ts";
+import { afterResponse } from "../http/after-response.ts";
+import { countCode, knownCode, mayAskForCode, sendCodeAfterResponse, type CodeGate } from "../http/send-code.ts";
 import {
   clearTechnicianCookie,
   setTechnicianCookie,
@@ -45,6 +52,49 @@ import { newLoginCode } from "../policy/one-time-code.ts";
  */
 function mayReadFsm(db: D1Database, now: Date): Promise<boolean> {
   return takeOne(db, { scope: "tech:fsm_read", key: "all", window: now.toISOString().slice(0, 15), limit: 1 });
+}
+
+/** Why an active technician was refused a code, and what he can do, in ops' words. */
+function refusalReason(refusal: Exclude<CodeGate, "open">, login: LoginSettings): string {
+  if (refusal === "number_spent") {
+    return (
+      `his number has had its ${String(login.codeMobileDailyLimit)} codes for today, so he can sign in again after ` +
+      "midnight IST. If he did not ask for them all, someone else is asking for codes for his number."
+    );
+  }
+  if (refusal === "address_spent") {
+    return (
+      `his network has asked for ${String(login.codeIpHourlyLimit)} codes this hour. He can sign in on mobile data ` +
+      "now, or on this network from the next hour."
+    );
+  }
+  return (
+    `today's ${String(login.techCodeDailyCeiling)} technician login codes are spent, so no technician can sign in ` +
+    "on a new phone until midnight IST."
+  );
+}
+
+/**
+ * Ops' alert that an active technician was refused a code: raised when he is, and closed once he is given one.
+ * Kept after the response, so a technician's number is answered no slower than anyone else's.
+ */
+async function keepRefusalAlert(c: Context<AppEnv>, technicianId: string, asked: CodeGate): Promise<void> {
+  const { deps, log, config } = c.var;
+  const key = `technician_code_refused:${technicianId}`;
+  const work =
+    asked === "open"
+      ? deps.resolveAlert(key)
+      : deps.alertOnce({
+          key,
+          message: `Technician ${technicianId} was refused a login code: ${refusalReason(asked, config.settings.login)}`,
+          link: "/technicians",
+        });
+  await afterResponse(
+    c,
+    work.catch((error: unknown) => {
+      log.error("technician_refusal_alert_error", { error });
+    }),
+  );
 }
 
 /** The phone's own ID for itself, from its storage: never a hardware serial. */
@@ -155,7 +205,7 @@ export function registerTechAuth(app: App): void {
 
   app.openapi(otpRoute, async (c) => {
     const { requestId, deps, config } = c.var;
-    const { login: limits } = config.settings;
+    const { login: limits, ipHashSalt } = config.settings;
     const db = c.env.DB;
     const now = deps.now();
 
@@ -165,9 +215,11 @@ export function registerTechAuth(app: App): void {
     const visitor = await visitorOf(c);
     let technician = await findFieldTechnician(db, mobileE164);
     const known = technician?.name ?? null;
-    const asked = await mayAskForCode(c, { surface: "tech", mobileE164, ipHash: visitor.ipHash, now, name: known });
-    if (asked === "rate_limited") return c.json(errorBody("rate_limited", requestId), 429);
+    const mobileHash = await mobileHashOf(ipHashSalt, mobileE164);
+    const asked = await mayAskForCode(c, { surface: "tech", mobileHash, ipHash: visitor.ipHash, now, name: known });
+    if (technician !== null) await keepRefusalAlert(c, technician.id, asked);
     if (asked === "busy") return c.json(errorBody("busy", requestId), 503);
+    if (asked !== "open") return c.json(errorBody("rate_limited", requestId), 429);
 
     // A technician FSM listed since the last sync is unknown to the mirror; read it, then look again.
     if (technician === null && config.providers.FSM_PROVIDER !== "none" && (await mayReadFsm(db, now))) {
@@ -180,7 +232,7 @@ export function registerTechAuth(app: App): void {
     }
     const sendsTo = technician?.mobileE164 ?? null;
     const name = technician?.name ?? null;
-    if (!(await countCode(c, sendsTo, name, visitor.ipHash, now))) return c.json(errorBody("busy", requestId), 503);
+    if (!(await countCode(c, "tech", sendsTo, name, now))) return c.json(errorBody("busy", requestId), 503);
 
     const code = knownCode(limits, name) ?? newLoginCode();
     const challenge = await createChallenge(db, {

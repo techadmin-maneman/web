@@ -1,9 +1,13 @@
 // A visit as the screens write it: its kind, its technician's first name, and how long it took.
 
-import type { VisitDetail, VisitSummary } from "../api.ts";
-import { OTHER_VISIT, VISIT_TYPES } from "../content.ts";
+import type { Me, VisitDetail, VisitSummary } from "../api.ts";
+import { ONE_VISIT, OTHER_VISIT, VISIT_TYPES } from "../content.ts";
 
 export const visitName = (type: VisitSummary["type"]) => (type === null ? OTHER_VISIT : VISIT_TYPES[type]);
+
+/** A visit being booked, by its kind; a consultation and fit in one visit by that name. */
+export const bookingName = (booking: NonNullable<Me["being_booked"]>) =>
+  booking.one_visit ? ONE_VISIT : VISIT_TYPES[booking.type];
 
 /** "Imran Qureshi" → "Imran": the name Home and the lists use; the visit's detail gives it in full. */
 export const firstName = (name: string) => name.split(" ")[0] ?? name;

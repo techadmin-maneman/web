@@ -373,6 +373,13 @@ async function openApp(
   });
   await page.clock.install(now === undefined ? {} : { time: now });
   if (checkout !== undefined) await page.route("https://checkout.razorpay.com/v1/checkout.js", checkout);
+  // The login readies Turnstile on its first screen; here it gets one that passes at once.
+  await page.route("https://challenges.cloudflare.com/turnstile/**", (route) =>
+    route.fulfill({
+      contentType: "text/javascript",
+      body: 'window.turnstile = { render: (box, given) => { given.callback("token"); return "fake"; }, reset() {}, remove() {} };',
+    }),
+  );
   await page.route("**/api/**", (route) => {
     const answer = api[new URL(route.request().url()).pathname] ?? signedOut;
     return answer(route);
