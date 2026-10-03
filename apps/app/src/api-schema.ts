@@ -2840,6 +2840,8 @@ export interface components {
             visits: number;
             /** @description When the soonest expire. */
             earliest_expiry: string | null;
+            /** @description How many of them expire then. */
+            expiring_visits: number;
         };
         OfferedService: {
             /** @enum {string} */

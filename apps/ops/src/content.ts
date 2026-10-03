@@ -975,6 +975,8 @@ export const clients = {
   photos: {
     locked: "Locked",
     title: (name: string) => `Photographs of ${name}`,
+    /** Why a client's visits are photographed, which no consent switches off. */
+    basis: "Taken for the visit record, at every visit.",
     /** The board's words, with the client's first name where it writes "Rohit". */
     warning: (firstName: string) =>
       `Opening these records your name, the client and the time. The log is visible to the city head and to ${firstName} on request.`,

@@ -2684,11 +2684,16 @@ Request body:
         }
       ],
       "description": "When the soonest expire."
+    },
+    "expiring_visits": {
+      "type": "integer",
+      "description": "How many of them expire then."
     }
   },
   "required": [
     "visits",
-    "earliest_expiry"
+    "earliest_expiry",
+    "expiring_visits"
   ],
   "additionalProperties": false
 }
