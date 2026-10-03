@@ -10,12 +10,13 @@
 
 import { ButtonLink } from "@maneman/ui/Button";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { fullDate, indiaDate, shortDate } from "@maneman/web-kit/dates";
+import { indiaDate, listDate, shortDate } from "@maneman/web-kit/dates";
 import { documentUrl, type Me } from "../api.ts";
 import { BOOKING_URL, home, messages, VISIT_TYPES, visits, windowText } from "../content.ts";
 import { BookButton } from "../booking/BookButton.tsx";
 import { BookNext } from "../booking/BookNext.tsx";
 import type { ChangingVisit } from "../booking/ChangeSheet.tsx";
+import { apiNow } from "../lib/clock.ts";
 import { visitName } from "../lib/visit.ts";
 import { useSession } from "../session.ts";
 import { AppLink, Shell } from "./Shell.tsx";
@@ -150,20 +151,30 @@ function BeingBooked({ booking }: { booking: NonNullable<Me["being_booked"]> }) 
   );
 }
 
-/** Board B1's credit tile: the balance, and when the soonest of it expires. */
+/** Board B1's credit tile: the balance, and the day the soonest of it must be booked by. */
 function CreditTile({ credits }: { credits: NonNullable<Me["credits"]> }) {
   const expiry = credits.earliest_expiry;
   return (
     <div className={styles.credits}>
       <div>
         <p className={styles.creditsLabel}>{home.credits.count(credits.visits)}</p>
-        {expiry !== null && <p className={styles.creditsExpiry}>{home.credits.expire(fullDate(indiaDate(expiry)))}</p>}
+        {expiry !== null && <p className={styles.creditsExpiry}>{useByLine(credits, expiry)}</p>}
       </div>
       <p className={styles.creditsCount} aria-hidden="true">
         {credits.visits}
       </p>
     </div>
   );
+}
+
+/** "Use by 2 Oct", "Use by tonight" on the day, or "1 to use by 2 Oct" where only some of them end first. */
+function useByLine(credits: NonNullable<Me["credits"]>, expiry: string): string {
+  const today = indiaDate(new Date(apiNow()).toISOString());
+  const lastDay = indiaDate(expiry);
+  const when = lastDay === today ? home.credits.tonight : listDate(lastDay, Number(today.slice(0, 4)));
+  // False for a Home the phone kept from an earlier release, which does not say how many end first.
+  const someEndFirst = credits.expiring_visits < credits.visits;
+  return someEndFirst ? home.credits.someUseBy(credits.expiring_visits, when) : home.credits.useBy(when);
 }
 
 type PromptOf<Kind extends NonNullable<Me["prompt"]>["kind"]> = Extract<NonNullable<Me["prompt"]>, { kind: Kind }>;

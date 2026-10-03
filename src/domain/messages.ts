@@ -26,6 +26,7 @@ export const MESSAGE_KINDS = [
   "friend_fitted", // to the referrer
   "friend_credited", // to the friend: the invite's credits are theirs
   "referral_rejected", // to either side: ops refused a held grant
+  "credits_expiring", // free service visits run out: a month before their last day, and a week before
   "launch_alert", // the person's pincode went live
   // The site's booking form, for a number we know (src/domain/site-notices.ts): what the page tells no one.
   "consultation_exists",

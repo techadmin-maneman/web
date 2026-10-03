@@ -167,10 +167,13 @@ export const home = {
     label: "Your consultation",
     free: "Free",
   },
-  /** Board B1's credit tile: "2 visit credits", with when the soonest expire. */
+  /** Board B1's credit tile: "3 free service visits", with the day the soonest must be booked by. */
   credits: {
-    count: (visits: number) => (visits === 1 ? "1 visit credit" : `${String(visits)} visit credits`),
-    expire: (date: string) => `Expire ${date}`,
+    count: (visits: number) => (visits === 1 ? "1 free service visit" : `${String(visits)} free service visits`),
+    useBy: (when: string) => `Use by ${when}`,
+    /** Only some of them end first: "1 to use by 2 Oct". */
+    someUseBy: (visits: number, when: string) => `${String(visits)} to use by ${when}`,
+    tonight: "tonight",
   },
   /**
    * Board B1's one prompt, and the invoice line beneath it (src/domain/home-prompt.ts). The replacement's line and

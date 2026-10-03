@@ -32,6 +32,7 @@ import { takeOne, type Limit } from "../domain/rate-limit.ts";
 import { saltedHash } from "../lib/hash.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { signToken } from "../lib/signed-token.ts";
+import { composeCreditsExpiring } from "../domain/credit-reminders.ts";
 import { composeBookingRefunded } from "../domain/held-bookings.ts";
 import { composeNextServiceReminder } from "../domain/next-visit.ts";
 import { readOpsInputs } from "../domain/ops-settings.ts";
@@ -209,6 +210,7 @@ async function contentOf(db: D1Database, config: StaticConfig, row: MessageRow, 
   if (row.kind === "friend_fitted") return composeFriendFitted(db, row.subject_id, row.person_id);
   if (row.kind === "friend_credited") return composeFriendCredited(db, row.subject_id, row.person_id);
   if (row.kind === "referral_rejected") return composeReferralRejected(db, row.subject_id, row.person_id);
+  if (row.kind === "credits_expiring") return composeCreditsExpiring(db, row.subject_id, row.person_id, now);
   if (row.kind === "launch_alert") return composeLaunchAlert(db, row.subject_id, row.person_id, config.environment);
   if (row.kind === "waitlist_confirmation") return composeWaitlistConfirmation(db, row.subject_id, row.person_id);
   if (isSiteNoticeKind(row.kind)) return composeSiteNotice(db, row.kind, row.person_id);

@@ -369,6 +369,7 @@ describe("CRON_JOBS", () => {
       "referrals",
       "visit_reminders",
       "next_service_reminders",
+      "credit_reminders",
       "payment_links",
       "books_items",
       "invoices",
