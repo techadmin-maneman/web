@@ -26,7 +26,8 @@ export const SENSITIVE_PATHS = [
   "src/domain/referral-grants",
   "src/domain/price-book",
   "src/domain/fsm-invoices",
-  "src/domain/books-sync",
+  // Books' customers, invoices, items and the payments recorded there
+  "src/domain/books-",
   "src/policy/prices",
   "src/policy/prepayment",
   "src/policy/discount-codes",

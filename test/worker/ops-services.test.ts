@@ -73,6 +73,14 @@ const auditFor = (action: string) =>
 const price = (item: string, tier: string, validFrom: string, paise = 4_000_000) =>
   post("/api/prices", { item, tier, amount_ex_gst: paise, gst_percent: 0, valid_from: validFrom });
 
+/** A price in force since `validFrom`, as an earlier day's change leaves one: the console sets none from today. */
+const pricedSince = (item: string, tier: string, validFrom: string, paise = 4_000_000) =>
+  env.DB.prepare(
+    "INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from) VALUES (?1, ?2, ?3, 0, ?4)",
+  )
+    .bind(item, tier, paise, validFrom)
+    .run();
+
 beforeEach(async () => {
   await markDatabase();
   ops = appFor("local", fakeDependencies(), {}, "ops");
@@ -227,7 +235,7 @@ describe("retiring a service", () => {
   /** A premium first fit ops added and priced from today. */
   async function premium() {
     await post("/api/services", { kind: "first_fit", name: "Premium" });
-    await price("first_fit", "premium", "2026-09-21");
+    await pricedSince("first_fit", "premium", "2026-09-21");
   }
 
   it("stops offering it from the day given, and records it", async () => {
@@ -237,7 +245,7 @@ describe("retiring a service", () => {
     expect(answer.status).toBe(200);
     expect(await serviceNamed("First fit")).toMatchObject({ retired_date: "2026-10-01", offered: true });
     await post("/api/services", { kind: "service", name: "Premium service" });
-    await price("service", "premium_service", "2026-09-21", 250_000);
+    await pricedSince("service", "premium_service", "2026-09-21", 250_000);
     await post("/api/services/service/standard/retire", { from: "2026-09-21" });
     expect(await serviceNamed("Service visit")).toMatchObject({ retired_date: "2026-09-21", offered: false });
     const { results } = await auditFor("service.retire");
@@ -306,7 +314,7 @@ describe("retiring a service", () => {
 describe("a service's prices", () => {
   it("refuses a price for a service retired by the day it would apply from, and takes one from before", async () => {
     await post("/api/services", { kind: "first_fit", name: "Premium" });
-    await price("first_fit", "premium", "2026-09-21");
+    await pricedSince("first_fit", "premium", "2026-09-21");
     await post("/api/services/first_fit/premium/retire", { from: "2026-10-01" });
 
     const after = await price("first_fit", "premium", "2026-10-01", 4_500_000);
@@ -315,11 +323,13 @@ describe("a service's prices", () => {
     expect((await price("first_fit", "premium", "2026-09-30", 4_500_000)).status).toBe(200);
   });
 
-  it("still refuses a price dated before today, since a visit was invoiced under the old one", async () => {
+  it("still refuses a price from today or before: today's may be quoted already, an earlier one invoiced", async () => {
     await post("/api/services", { kind: "first_fit", name: "Premium" });
-    const answer = await price("first_fit", "premium", "2026-09-20");
-    expect(answer.status).toBe(400);
-    expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["valid_from"] } });
+    for (const validFrom of ["2026-09-20", "2026-09-21"]) {
+      const answer = await price("first_fit", "premium", validFrom);
+      expect(answer.status, validFrom).toBe(400);
+      expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["valid_from"] } });
+    }
   });
 });
 
@@ -364,8 +374,8 @@ describe("correcting a price still to come", () => {
   });
 
   it("refuses to correct the price in force or a spent one, which stay, and changes nothing", async () => {
+    await pricedSince("service", "standard", "2026-09-21", 250_000);
     for (const validFrom of ["2026-01-01", "2026-09-21"]) {
-      if (validFrom === "2026-09-21") await post("/api/prices", { ...OCTOBER, valid_from: validFrom });
       const answer = await correct({ was_valid_from: validFrom, valid_from: "2026-10-05" });
       expect(answer.status, validFrom).toBe(400);
       expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["was_valid_from"] } });
@@ -374,11 +384,14 @@ describe("correcting a price still to come", () => {
     expect((await serviceRows()).map(([from]) => from)).toContain("2026-01-01");
   });
 
-  it("refuses a correction dated before today, and answers not_found for a row the book does not hold", async () => {
+  it("refuses a correction from today or before, and answers not_found for a row the book does not hold", async () => {
     await post("/api/prices", OCTOBER);
-    const backDated = await correct({ was_valid_from: "2026-10-01", valid_from: "2026-09-20" });
-    expect(backDated.status).toBe(400);
-    expect(await backDated.json()).toMatchObject({ error: { fields: ["valid_from"] } });
+    for (const validFrom of ["2026-09-20", "2026-09-21"]) {
+      const backDated = await correct({ was_valid_from: "2026-10-01", valid_from: validFrom });
+      expect(backDated.status, validFrom).toBe(400);
+      expect(await backDated.json()).toMatchObject({ error: { fields: ["valid_from"] } });
+    }
+    expect((await serviceRows())[0]).toEqual(["2026-10-01", 250_000]);
     expect((await correct({ was_valid_from: "2026-12-01", valid_from: "2026-12-05" })).status).toBe(404);
   });
 });

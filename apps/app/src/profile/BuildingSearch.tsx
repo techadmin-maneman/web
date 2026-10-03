@@ -50,41 +50,54 @@ export function BuildingSearch({
   const [state, setState] = useState<"idle" | "searching" | "unavailable">("idle");
   // What the last answer was for, so a slow reply cannot overwrite a newer one.
   const asked = useRef("");
+  const typingPause = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
-    const query = value.trim();
+    return () => {
+      clearTimeout(typingPause.current);
+    };
+  }, []);
+
+  function ask(query: string) {
+    asked.current = query;
+    setState("searching");
+    void api.addressSuggestions(query, sessionToken).then((answer) => {
+      if (asked.current !== query) return;
+      if (answer.ok) {
+        setSuggestions(answer.body.suggestions);
+        setState("idle");
+        setOpen(true);
+      } else {
+        // Google is down, refused or over a ceiling. The form carries on.
+        setSuggestions([]);
+        setState("unavailable");
+      }
+      setActive(-1);
+    });
+  }
+
+  // Only typing searches: a building chosen from the list is not looked up again.
+  function searchAfterTyping(typed: string) {
+    clearTimeout(typingPause.current);
+    const query = typed.trim();
     if (query.length < SHORTEST_QUERY) {
+      asked.current = "";
       setSuggestions([]);
       setState("idle");
       return;
     }
-    const timer = setTimeout(() => {
-      asked.current = query;
-      setState("searching");
-      void api.addressSuggestions(query, sessionToken).then((answer) => {
-        if (asked.current !== query) return;
-        if (answer.ok) {
-          setSuggestions(answer.body.suggestions);
-          setState("idle");
-          setOpen(true);
-        } else {
-          // Google is down, refused or over a ceiling. The form carries on.
-          setSuggestions([]);
-          setState("unavailable");
-        }
-        setActive(-1);
-      });
+    typingPause.current = setTimeout(() => {
+      ask(query);
     }, TYPING_PAUSE_MS);
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [value, sessionToken]);
+  }
 
   const shown = open && suggestions.length > 0;
 
   function choose(index: number) {
     const picked = suggestions[index];
     if (picked === undefined) return;
+    clearTimeout(typingPause.current);
+    asked.current = "";
     onChoose({ placeId: picked.place_id, building: picked.primary });
     setSuggestions([]);
     setOpen(false);
@@ -130,6 +143,7 @@ export function BuildingSearch({
         onChange={(event) => {
           onClear();
           onChoose({ placeId: "", building: event.target.value });
+          searchAfterTyping(event.target.value);
         }}
       />
       {shown && (
