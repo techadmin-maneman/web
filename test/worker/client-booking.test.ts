@@ -158,7 +158,12 @@ describe("GET /api/availability", () => {
       [true, true, false],
     ]);
 
-    await opsSet("late_change_charge", { consultation: "nothing", first_fit: "late_fee", service: "nothing", replacement: "visit" });
+    await opsSet("late_change_charge", {
+      consultation: "nothing",
+      first_fit: "late_fee",
+      service: "nothing",
+      replacement: "visit",
+    });
     const neverCharged = await marks();
     expect(neverCharged.firstTwoDays.flat().map((each) => each.change_charged)).not.toContain(true);
   });

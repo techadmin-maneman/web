@@ -41,7 +41,8 @@ const LATE_FEE = { amount_ex_gst: 400000, amount: 472000, gst_percent: 18 };
 const LATE_FEE_LINE = "Moving inside 24 hours costs Rs. 4,720 (Rs. 4,000 + Rs. 720 GST). The balance carries over.";
 /** The pay step's promise for a visit ahead of its notice, and for one already inside it, whose payment is kept. */
 const FREE_UNTIL = /^Free to move or cancel until .+\. After that it is charged\.$/;
-const INSIDE_NOTICE = /^This visit is less than 24 hours away: if you move or cancel it, the Rs\. [\d,]+ paid is not refunded\.$/;
+const INSIDE_NOTICE =
+  /^This visit is less than 24 hours away: if you move or cancel it, the Rs\. [\d,]+ paid is not refunded\.$/;
 
 type Hold = Record<string, unknown>;
 
@@ -369,7 +370,10 @@ test("shows the price, and opens no Checkout, when the credit went on another bo
     route.request().method() === "GET" ? route.fulfill({ json: { ...hold(), credit: null } }) : route.fallback(),
   );
   await toPayment(page);
-  await page.getByRole("dialog", { name: "Confirm", exact: true }).getByRole("button", { name: "Confirm visit" }).click();
+  await page
+    .getByRole("dialog", { name: "Confirm", exact: true })
+    .getByRole("button", { name: "Confirm visit" })
+    .click();
 
   // Now there is a price to pay, the step is named for paying it.
   const pay = page.getByRole("dialog", { name: "Pay and confirm" });
@@ -679,7 +683,9 @@ test("says a visit sold inside its notice is charged to change from now, never f
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: "Pay and confirm" });
   await expect(
-    pay.getByText("This visit is less than 24 hours away: if you move or cancel it, the Rs. 2,000 paid is not refunded."),
+    pay.getByText(
+      "This visit is less than 24 hours away: if you move or cancel it, the Rs. 2,000 paid is not refunded.",
+    ),
   ).toBeVisible();
   await expect(pay.getByText(/Free to move/)).toHaveCount(0);
 });
@@ -776,7 +782,9 @@ test("says a credit is gone after a cancel inside the notice the booking is sold
   await holdAs(page, { credit: { remaining: 2 }, change_notice_hours: 48 });
   await toPayment(page);
   await expect(
-    page.getByRole("dialog", { name: "Confirm", exact: true }).getByText("Cancel inside 48 hours and the credit is gone."),
+    page
+      .getByRole("dialog", { name: "Confirm", exact: true })
+      .getByText("Cancel inside 48 hours and the credit is gone."),
   ).toBeVisible();
 });
 
