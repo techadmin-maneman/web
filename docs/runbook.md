@@ -822,15 +822,15 @@ Some jobs run only where what they need is switched on: FSM's jobs need `FSM_PRO
 
 Cloudflare stops a run that uses too much CPU time, and the free plan allows 10 ms an invocation. One run of every job took 30 to 60 ms, and on 3 October 2026 Cloudflare stopped every staging run for ten hours. So the cron runs every minute, each run only the few jobs due in that minute (`src/scheduled/cron.ts`; ADR 0009, "Update, 4 October 2026: the cron's CPU time").
 
-Each run notes when it starts, with the jobs it runs, and when it finishes (`cron_runs`). A run that finds the one before it never finished alerts once (`cron_run_cut_short`), naming that run's jobs, and pings the heartbeat's `/fail` with them ("The outside watchers"). The alert closes once runs have finished for an hour. Only that minute's jobs missed a turn, and each runs again at its next minute, so one alert is a blip. Where it stands:
+Each run notes when it starts and when it finishes (`cron_runs`). A run that finds the one before it never finished alerts once (`cron_run_cut_short`), and pings the heartbeat's `/fail` saying so ("The outside watchers"). The alert closes once runs have finished for an hour. Only that minute's jobs missed a turn, and each runs again at its next minute, so one alert is a blip. The minute of the run's start says which jobs it was running: those whose `every` and `at` fall on it, in `src/scheduled/cron.ts`. Where it stands:
 
 ```sql
-SELECT started_at, jobs, completed_at, failed_jobs, cut_short_at FROM cron_runs;
+SELECT started_at, completed_at, failed_jobs, cut_short_at FROM cron_runs;
 ```
 
 `GET /api/health` shows `cron_completed_at`, the last finished run, for information; its status does not depend on it.
 
-If the alert names the same jobs again and again, that minute's run is too heavy for the free plan: tell the developers which jobs, so they can be given a minute of their own. To see what Cloudflare charged each run, tail it across a few minutes and read `cpuTime` and `outcome` (`exceededCpu` is a run stopped):
+If the alert comes back for runs started in the same minute of the hour again and again, that minute's run is too heavy for the free plan: tell the developers which minute, so its jobs can be given minutes of their own. To see what Cloudflare charged each run, tail it across a few minutes and read `cpuTime` and `outcome` (`exceededCpu` is a run stopped):
 
 ```sh
 node node_modules/wrangler/bin/wrangler.js tail mm-api-<env> --format json
@@ -854,7 +854,7 @@ The chat shows the message; the `alerts` table keeps it under its key. Most aler
 | The alert says                                                                           | Key                                                                                                       | Closes                               | See                                                                     |
 | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------ | ----------------------------------------------------------------------- |
 | The cron's _job_ job has failed _n_ runs in a row                                        | `cron_job:<job>`                                                                                          | when a run works                     | the job's own section; `cron_jobs` above                                |
-| The cron run started at _time_ (_jobs_) never finished                                   | `cron_run_cut_short`                                                                                      | after an hour of finished runs       | "A cron run cut short"                                                  |
+| The cron run started at _time_ never finished                                            | `cron_run_cut_short`                                                                                      | after an hour of finished runs       | "A cron run cut short"                                                  |
 | Cloudflare's free _allowance_ are _n_% used today                                        | `daily_allowance:<allowance>`                                                                             | when a new day starts the figures    | "The daily allowances"                                                  |
 | Cloudflare's usage figures could not be read three hours running                         | `daily_allowances_unreadable`                                                                             | when they are read                   | "The daily allowances"                                                  |
 | The WhatsApp bridge is not connected                                                     | `whatsapp_bridge`                                                                                         | when it is open                      | "WhatsApp (Evolution) is down"                                          |

@@ -16,6 +16,7 @@ import {
   CRON_STATEMENTS_PER_RUN,
   TASKS_ROWS_READ_PER_LOOK,
 } from "../../scripts/lib/free-tier-budget.ts";
+import type { StaticConfig } from "../../src/guard.ts";
 import { meterDatabase } from "../../src/lib/d1-meter.ts";
 import { createLogger } from "../../src/log.ts";
 import { CRON_JOBS, EVERY_MINUTE, jobsDue, runCronJobs } from "../../src/scheduled/cron.ts";
@@ -258,16 +259,17 @@ describe("one cron run", () => {
 // D-01 of 4 October 2026: one run of every job took 34 to 61 ms of CPU on staging, past the free plan's 10, and
 // Cloudflare stopped every run for ten hours. Most of a run's CPU time goes on its calls to D1.
 describe("each minute's run", () => {
-  /** Where FSM is the record, as on staging, so the FSM mirror's repair runs too. */
-  const WITH_FSM = { ...LOCAL_CONFIG, providers: { ...LOCAL_CONFIG.providers, FSM_PROVIDER: "zoho" as const } };
+  /** Where FSM is the record, as on staging, so the FSM mirror's repair runs; and without FSM, Books' items. */
+  const WITH_FSM: StaticConfig = { ...LOCAL_CONFIG, providers: { ...LOCAL_CONFIG.providers, FSM_PROVIDER: "zoho" } };
+  const WITHOUT_FSM: StaticConfig = { ...LOCAL_CONFIG, providers: { ...LOCAL_CONFIG.providers, FSM_PROVIDER: "none" } };
 
-  async function statementsAt(minute: number): Promise<number> {
+  async function statementsAt(minute: number, config: StaticConfig): Promise<number> {
     const scheduled = Date.UTC(2026, 8, 21, 6, minute);
     const meter = meterDatabase(env.DB);
     await runCronJobs(jobsDue(CRON_JOBS, EVERY_MINUTE, scheduled), {
       env: { ...env, DB: meter.db, CRM_QUEUE: fakeQueue(), RENDER_QUEUE: fakeQueue(), MESSAGE_QUEUE: fakeQueue() },
       deps: fakeDependencies({ now: () => new Date(scheduled) }),
-      config: WITH_FSM,
+      config,
       log: createLogger(),
       meter,
     });
@@ -278,9 +280,14 @@ describe("each minute's run", () => {
     await history(1, 400);
     await rowsReadByOneRun(); // the day's once-only work: the reconciliation's pass, the utilisation
     const overBudget: string[] = [];
-    for (let minute = 0; minute < 60; minute += 1) {
-      const statements = await statementsAt(minute);
-      if (statements > CRON_STATEMENTS_PER_RUN) overBudget.push(`minute ${String(minute)}: ${String(statements)}`);
+    for (const [name, config] of [
+      ["with FSM", WITH_FSM],
+      ["without FSM", WITHOUT_FSM],
+    ] as const) {
+      for (let minute = 0; minute < 60; minute += 1) {
+        const statements = await statementsAt(minute, config);
+        if (statements > CRON_STATEMENTS_PER_RUN) overBudget.push(`${name}, minute ${String(minute)}: ${String(statements)}`);
+      }
     }
     expect(overBudget).toEqual([]);
   });

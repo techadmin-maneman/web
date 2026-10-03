@@ -208,18 +208,18 @@ describe("the run record", () => {
   }
 
   /** A run Cloudflare stopped: it noted its start, and never reached its end. */
-  async function cutShortAt(minutes: number, jobs: string[] = []) {
-    await startRun({ db: env.DB, alertOnce: fakeDependencies().alertOnce }, at(minutes).toISOString(), jobs);
+  async function cutShortAt(minutes: number) {
+    await startRun({ db: env.DB, alertOnce: fakeDependencies().alertOnce }, at(minutes).toISOString());
   }
 
   const record = () =>
-    env.DB.prepare("SELECT started_at, completed_at, failed_jobs, cut_short_at, jobs FROM cron_runs").first();
+    env.DB.prepare("SELECT started_at, completed_at, failed_jobs, cut_short_at FROM cron_runs").first();
   const openCutShortAlerts = () =>
     env.DB.prepare("SELECT COUNT(*) AS n FROM alerts WHERE key = ?1 AND resolved_at IS NULL")
       .bind(CUT_SHORT_ALERT)
       .first<number>("n");
 
-  it("notes when each run started and finished, its jobs, and how many of them failed", async () => {
+  it("notes when each run started and finished, and how many of its jobs failed", async () => {
     await runAt(0, [], [nothing, broken]);
 
     expect(await record()).toEqual({
@@ -227,7 +227,6 @@ describe("the run record", () => {
       completed_at: at(0).toISOString(),
       failed_jobs: 1,
       cut_short_at: null,
-      jobs: "nothing,broken",
     });
     expect(await lastCompletedAt(env.DB)).toBe(at(0).toISOString());
   });
@@ -245,18 +244,6 @@ describe("the run record", () => {
         `Cloudflare may have stopped it for its CPU time: runbook, "A cron run cut short".`,
     ]);
     expect(await record()).toMatchObject({ completed_at: at(15).toISOString(), cut_short_at: at(10).toISOString() });
-  });
-
-  // D-01 of 4 October 2026: staging's runs were stopped for ten hours, and nothing said which job they were in.
-  it("names the jobs the run that never finished was running", async () => {
-    await runAt(0);
-    await cutShortAt(1, ["requeue_tryons", "delete_photos"]);
-
-    const told = await runAt(2);
-
-    expect(told).toEqual([
-      expect.stringContaining(`started at ${at(1).toISOString()} (requeue_tryons, delete_photos)`),
-    ]);
   });
 
   it("says nothing on the first run, nor while every run finishes", async () => {
@@ -325,21 +312,19 @@ describe("the heartbeat after a run", () => {
     ]);
   });
 
-  it("pings /fail after a run that never finished, naming the jobs it did not finish", async () => {
+  // D-01 of 4 October 2026: Cloudflare stopped every staging run for ten hours, and nobody outside the Worker was told.
+  it("pings /fail after a run that never finished, saying when it started", async () => {
     const { job } = recorder();
     const outside = fakeFetch({ [CHECK]: () => new Response("OK") });
     const run = { env, deps: fakeDependencies({ fetch: outside.fetch }), config: WITH_CHECK, log: createLogger() };
-    await startRun(
-      { db: env.DB, alertOnce: fakeDependencies().alertOnce },
-      new Date(NOW.getTime() - MINUTE_MS).toISOString(),
-      ["requeue_tryons"],
-    );
+    const aMinuteAgo = new Date(NOW.getTime() - MINUTE_MS).toISOString();
+    await startRun({ db: env.DB, alertOnce: fakeDependencies().alertOnce }, aMinuteAgo);
 
     await runCron([job("first", "nothing")], run);
     await runCron([job("first", "nothing")], run);
 
     expect(outside.calls.map((call) => [call.url, call.body])).toEqual([
-      [`${CHECK}/fail`, "requeue_tryons (cut short)"],
+      [`${CHECK}/fail`, `the run started at ${aMinuteAgo} never finished`],
       [CHECK, ""],
     ]);
   });
@@ -473,6 +458,13 @@ describe("the schedule", () => {
   it("raises a finished job's invoice before the Books pass that sets the client's advance against it", () => {
     const minuteOfJob = (name: string) => CRON_JOBS.find((each) => each.name === name)?.at ?? -1;
     expect(minuteOfJob("invoices")).toBeLessThan(minuteOfJob("books_sync"));
+  });
+
+  // checkBooksItems does nothing after the hour's first five minutes (src/domain/books-items.ts).
+  it("checks Books' items in the hour's first five minutes, the only ones its check works in", () => {
+    const items = CRON_JOBS.find((each) => each.name === "books_items");
+    expect(items).toMatchObject({ every: 60 });
+    expect(items?.at).toBeLessThan(5);
   });
 });
 

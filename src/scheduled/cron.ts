@@ -5,9 +5,9 @@
 //
 // A job that throws is logged as `cron_job_failed` and the next one runs anyway, so one failing job never stops the
 // others. Each job's failed runs in a row are counted in `cron_jobs`, and a job that fails three in a row alerts
-// (docs/decisions/0067-alerts-and-silent-failures.md). Each run is noted as it starts, with its jobs, and as it
-// finishes, so a run Cloudflare stopped part-way is told by the next (src/domain/cron-runs.ts), and each ends with a
-// ping to an outside monitor (src/providers/heartbeat.ts).
+// (docs/decisions/0067-alerts-and-silent-failures.md). Each run is noted as it starts and as it finishes, so a run
+// Cloudflare stopped part-way is told by the next (src/domain/cron-runs.ts), and each ends with a ping to an outside
+// monitor (src/providers/heartbeat.ts).
 //
 // The jobs of a run share one budget of outside calls, so that together they stay under the free plan's 50 fetch
 // subrequests (src/lib/call-budget.ts). Their calls to D1, R2 and the queues are a separate allowance of 1,000 a run,
@@ -23,7 +23,7 @@ import { eraseBooksCustomers } from "../domain/books-erasure.ts";
 import { raiseBooksInvoices } from "../domain/books-invoices.ts";
 import { checkBooksItems } from "../domain/books-items.ts";
 import { syncBooks, type BooksSyncOptions } from "../domain/books-sync.ts";
-import { finishRun, startRun, type CutShortRun, type RunStart } from "../domain/cron-runs.ts";
+import { finishRun, startRun, type RunStart } from "../domain/cron-runs.ts";
 import { alertAgedDeletions } from "../domain/deletion.ts";
 import { checkCatalogue } from "../domain/fsm-catalogue.ts";
 import { recordUtilisation } from "../domain/dispatch.ts";
@@ -366,7 +366,9 @@ export const CRON_JOBS: readonly CronJob[] = [
   // An erased client's customer in Books, deleted, or blanked where an invoice names it.
   { name: "books_erasures", needs: "books", every: 15, at: 14, run: booksErasuresJob },
 
-  // Every hour.
+  // Every hour. Without FSM, the Books item each service is invoiced on, before the invoices that need one; its check
+  // still does nothing after the hour's first five minutes (src/domain/books-items.ts), so it runs in one of them.
+  { name: "books_items", needs: "books_without_fsm", every: 60, at: 4, run: booksItemsJob },
   { name: "ailab_credits", needs: "nothing", every: 60, at: 14, run: ailabCreditsJob },
   { name: "deletion_alerts", needs: "nothing", every: 60, at: 24, run: deletionAlertsJob },
   { name: "housekeeping", needs: "nothing", every: 60, at: 26, run: housekeep },
@@ -375,8 +377,6 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "storage_meter", needs: "nothing", every: 60, at: 39, run: storageMeterJob },
   // The operating figure behind the weekend-share assumption (src/policy/dispatch.ts): the day's board, read once.
   { name: "dispatch_utilisation", needs: "nothing", every: 60, at: 41, run: utilisationJob },
-  // Without FSM: the Books item each service is invoiced on, before the invoices that need one.
-  { name: "books_items", needs: "books_without_fsm", every: 60, at: 44, run: booksItemsJob },
   // What the account has used today of the free plan's daily allowances, told at 70%.
   { name: "daily_allowances", needs: "nothing", every: 60, at: 54, run: dailyAllowancesJob },
   // FSM's catalogue against the price book, which it prices invoices by (docs/decisions/0073-prices-from-the-price-book.md),
@@ -398,10 +398,10 @@ function sharedInputs({ env, deps, log }: CronRun): () => Promise<OpsInputs> {
   };
 }
 
-/** What a run did, and the run before it if that one never finished. */
+/** What a run did, and when the run before it started if that one never finished. */
 interface RunResult {
   readonly outcomes: CronOutcome[];
-  readonly cutShort: CutShortRun | null;
+  readonly cutShortAt: string | null;
 }
 
 /**
@@ -415,8 +415,7 @@ export async function runCronJobs(jobs: readonly CronJob[], given: CronRun): Pro
 async function runJobs(jobs: readonly CronJob[], given: CronRun): Promise<RunResult> {
   const { run, meter } = metered(given);
   const startedAt = run.deps.now();
-  const switchedOn = jobs.filter((job) => isSwitchedOn(job.needs, run.config));
-  const { cutShort, failing } = await recordStart(run, startedAt.toISOString(), switchedOn);
+  const { cutShortAt, failing } = await recordStart(run, startedAt.toISOString());
   const budget = createCallBudget(CRON_CALLS, {
     until: startedAt.getTime() + CRON_CALLS_FOR_MS,
     now: () => run.deps.now().getTime(),
@@ -424,7 +423,8 @@ async function runJobs(jobs: readonly CronJob[], given: CronRun): Promise<RunRes
   const inputs = sharedInputs(run);
   const outcomes: CronOutcome[] = [];
   const rowsReadByJob: Record<string, number> = {};
-  for (const job of switchedOn) {
+  for (const job of jobs) {
+    if (!isSwitchedOn(job.needs, run.config)) continue;
     const context = { ...run, log: run.log.child({ job: job.name }), budget, inputs };
     const before = meter.usage();
     try {
@@ -445,7 +445,7 @@ async function runJobs(jobs: readonly CronJob[], given: CronRun): Promise<RunRes
     ...usageFields(meter.usage()),
     d1_rows_read_by_job: rowsReadByJob,
   });
-  return { outcomes, cutShort };
+  return { outcomes, cutShortAt };
 }
 
 function metered(run: CronRun): { run: CronRun; meter: MeteredDatabase } {
@@ -456,13 +456,13 @@ function metered(run: CronRun): { run: CronRun; meter: MeteredDatabase } {
 
 /**
  * A whole scheduled run: the jobs, then the heartbeat that tells the outside monitor the cron is running. It pings
- * /fail when a job failed, or when the run before never finished, naming those jobs too.
+ * /fail when a job failed, or when the run before never finished, saying so.
  */
 export async function runCron(jobs: readonly CronJob[], run: CronRun): Promise<void> {
-  const { outcomes, cutShort } = await runJobs(jobs, run);
-  const notRun = cutShort === null ? [] : cutShort.jobs.map((job) => `${job} (cut short)`);
+  const { outcomes, cutShortAt } = await runJobs(jobs, run);
+  const notFinished = cutShortAt === null ? [] : [`the run started at ${cutShortAt} never finished`];
   const heartbeat = { url: run.config.settings.heartbeatUrl, fetch: run.deps.fetch, log: run.log };
-  await pingHeartbeat(heartbeat, [...notRun, ...failedJobs(outcomes)]);
+  await pingHeartbeat(heartbeat, [...notFinished, ...failedJobs(outcomes)]);
 }
 
 function failedJobs(outcomes: readonly CronOutcome[]): string[] {
@@ -470,17 +470,12 @@ function failedJobs(outcomes: readonly CronOutcome[]): string[] {
 }
 
 /** Keeping the run record must never stop the jobs, so a failure to is only logged. */
-async function recordStart(
-  { env, deps, log }: CronRun,
-  startedAt: string,
-  jobs: readonly CronJob[],
-): Promise<RunStart> {
-  const names = jobs.map((job) => job.name);
+async function recordStart({ env, deps, log }: CronRun, startedAt: string): Promise<RunStart> {
   try {
-    return await startRun({ db: env.DB, alertOnce: deps.alertOnce }, startedAt, names);
+    return await startRun({ db: env.DB, alertOnce: deps.alertOnce }, startedAt);
   } catch (error) {
     log.error("cron_run_not_recorded", { error });
-    return { cutShort: null, failing: new Set() };
+    return { cutShortAt: null, failing: new Set() };
   }
 }
 
