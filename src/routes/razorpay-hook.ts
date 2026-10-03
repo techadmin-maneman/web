@@ -143,7 +143,7 @@ async function refundTaken(
     message:
       `Payment ${payment.id} was refunded in Razorpay before we heard it was paid. The payment and its refund ` +
       `${refund.id} are recorded now; no visit was booked for it. If no one here refunded it, Razorpay's ` +
-      "payment messages are not reaching us: see the runbook.",
+      `payment messages are not reaching us (runbook, "Razorpay's webhook is not arriving").`,
     ...(personId === null ? {} : { link: `/clients/${personId}` }),
   });
   return true;
