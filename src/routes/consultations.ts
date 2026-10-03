@@ -42,7 +42,8 @@ import { LOSS_EXTENTS } from "../config/booking.ts";
 import { TOLD_NOTICES } from "../config/notices.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { openDays } from "../domain/open-windows.ts";
-import { bookConsultation, joinTheWaitlist, pincodeOf, type StandingCode } from "../domain/public-booking.ts";
+import { bookConsultation, joinTheWaitlist, type StandingCode } from "../domain/public-booking.ts";
+import { isServed } from "../domain/service-area.ts";
 import { DISCOUNT_KINDS } from "../policy/discount-codes.ts";
 import { PLANS, type Plan } from "../policy/one-visit.ts";
 import { CODE_PATTERN, inviteOf, type Invite } from "../domain/referrals.ts";
@@ -346,8 +347,7 @@ function rememberedInvite(
 export function registerConsultations(app: App): void {
   app.openapi(openWindowsRoute, async (c) => {
     const { pincode, plan } = c.req.valid("query");
-    const served = (await pincodeOf(c.env.DB, pincode))?.served === 1;
-    if (!served) return c.json(errorBody("not_bookable", c.var.requestId), 422);
+    if (!(await isServed(c.env.DB, pincode))) return c.json(errorBody("not_bookable", c.var.requestId), 422);
     const { settings } = c.var.config;
     const days = await openDays(c.env.DB, plan, settings.selfServeBooking, c.var.deps.now());
     return c.json({ plan, days }, 200, { "Cache-Control": "public, max-age=60" });

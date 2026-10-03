@@ -21,7 +21,9 @@
 //
 // No slot is held, for a new visit or a move, until the client has given the
 // address the visit goes to, and the hold carries its pincode
-// (docs/decisions/0079-an-address-before-a-slot.md). Booking a new visit also
+// (docs/decisions/0079-an-address-before-a-slot.md). An address in a pincode we
+// do not come to is answered not_served, with no days and no hold, whether the
+// client typed it, ops saved it, or ops stopped serving it. Booking a new visit also
 // agrees to the photograph purposes the pay step showed, each only while the
 // client has never decided on it, recorded once the booking is confirmed
 // (docs/decisions/0080-consents-given-by-booking.md).
@@ -50,6 +52,7 @@ import { spendableCredits } from "../domain/credits.ts";
 import { lateFeeOn, priceOf, type Price } from "../domain/price-book.ts";
 import { checkoutHold, clientHold, releaseHold } from "../domain/holds.ts";
 import { currentAddress } from "../domain/profile.ts";
+import { isServed } from "../domain/service-area.ts";
 import {
   activeTechnicians,
   availability,
@@ -263,7 +266,8 @@ const availabilityRoute = createRoute({
     409: errorResponse("ops_assisted: self-serve booking is off; or not_changeable: the visit can no longer be moved"),
     422: errorResponse(
       "not_bookable: the client may not book this kind of visit, or the service is not offered; no_product: a first " +
-        "fit, on a day the console offers no hair system",
+        "fit, on a day the console offers no hair system; not_served: the client's address is in a pincode we do not " +
+        "come to",
     ),
   },
 });
@@ -298,7 +302,8 @@ const holdRoute = createRoute({
     ),
     422: errorResponse(
       "not_bookable: this kind of visit, this service, or that day, is not open to the client; no_product: a first " +
-        "fit, on a day the console offers no hair system",
+        "fit, on a day the console offers no hair system; not_served: the client's address is in a pincode we do not " +
+        "come to",
     ),
   },
 });
@@ -381,6 +386,13 @@ async function bookable(
   if (service !== null) return service;
   const noProduct = wanted.type === "first_fit" && (await offeredProducts(db, on)).length === 0;
   return noProduct ? "no_product" : "not_bookable";
+}
+
+/** Whether the client's address is in a pincode we do not come to; false while they have given none. */
+async function addressOutsideArea(db: D1Database, personId: string): Promise<boolean> {
+  const address = await currentAddress(db, personId);
+  if (address === null) return false;
+  return !(await isServed(db, address.pincode));
 }
 
 /** A moved visit's own service, by its name as it is now, with the length the visit keeps. */
@@ -484,6 +496,7 @@ export function registerClientBooking(app: App): void {
     const price = move === null ? (offered?.price ?? null) : move.terms.move.price;
     if (service === null || price === null) return c.json(errorBody("not_bookable", c.var.requestId), 422);
     const db = c.env.DB;
+    if (await addressOutsideArea(db, session.subjectId)) return c.json(errorBody("not_served", c.var.requestId), 422);
     // A move in place keeps the visit's technician; a charged move books a new visit with anyone.
     const moving = move === null || move.terms.move.cost === "charged" ? null : move.moving;
     const until = offered?.retired_date ?? null;
@@ -535,6 +548,7 @@ export function registerClientBooking(app: App): void {
     }
     const address = await currentAddress(c.env.DB, session.subjectId);
     if (!isFullAddress(address)) return c.json(errorBody("address_required", c.var.requestId), 409);
+    if (!(await isServed(c.env.DB, address.pincode))) return c.json(errorBody("not_served", c.var.requestId), 422);
     const moves =
       move === null
         ? undefined

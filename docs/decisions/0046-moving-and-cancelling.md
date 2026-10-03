@@ -59,7 +59,15 @@ The late fees are the price book's `late_fee_first_fit` and `late_fee_replacemen
 3. The mirror marks the visit cancelled.
 4. Razorpay refunds what the terms give back, to the payment's source.
 
-If FSM fails, the claim is let go and nothing has changed (`503 unavailable`). If the refund fails, the visit stays cancelled and ops are alerted to refund it by hand.
+If FSM fails, the claim is let go and nothing has changed (`503 unavailable`). Where our own database holds the visit, steps 1 to 3 are one batch, so the same holds if it fails.
+
+Once the visit is cancelled it stays cancelled, whatever fails after:
+
+- A refund Razorpay refuses, or will not say it made, is left to ops, who are alerted to refund it by hand.
+- A refund the request could not ask for, or could not record, answers `202` with `refund_pending: true`. The app says the refund is on its way. At its first quarter-hourly run from ten minutes on, the cron's `cancel_refunds` job (`src/domain/cancel-refunds.ts`) asks for it again under the cancel's receipt, so Razorpay makes it once ([0100](0100-a-refund-is-made-once.md)). `visit_changes.refund_settled_at` stays empty until then. The job also finds a cancel whose Worker stopped before its refund. The request may have made the refund, so a refusal the job hears is told to ops as a refund that may have been made: look in Razorpay before refunding by hand.
+- A message the queue refuses is sent by the sweeper.
+
+Where FSM holds the visit, a failure after FSM has cancelled still answers `503`, and the visit's credit is not given back; the job refunds its payment once the mirror shows it cancelled. FSM is being removed, so that path is left as it is.
 
 **Every change is kept** in `visit_changes`: its kind (moved, replaced, cancelled), its notice, when the visit was to start and now starts, and what was refunded and kept. A kept payment is a charge. `GET /api/payments` gives it `charge: { change, at, visit_started_at, amount }`, and the app shows the design's evidence line ("cancelled 9:14 am, visit was 10 am"). A payment also says what it paid for, `purpose: visit | late_fee`.
 

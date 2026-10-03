@@ -81,6 +81,10 @@ export function changesTime(job: Job, to: Target): boolean {
 export const isMovable = (block: Block): boolean =>
   block.status !== "completed" && block.status !== "in_progress" && block.begun === null;
 
+/** A visit the technician has checked in at and gone no further: it moves once ops choose to clear the check-in. */
+export const movesIfCheckInCleared = (block: Block): boolean =>
+  block.begun === "arrived" && (block.status === "scheduled" || block.status === "dispatched");
+
 /** How far the technician has got on a visit not yet done, in the board's word; null before he arrives. */
 export function begunWord(block: Block): string | null {
   if (block.begun === null || block.status === "completed") return null;

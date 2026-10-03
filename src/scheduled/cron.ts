@@ -23,6 +23,7 @@ import { eraseBooksCustomers } from "../domain/books-erasure.ts";
 import { raiseBooksInvoices } from "../domain/books-invoices.ts";
 import { checkBooksItems } from "../domain/books-items.ts";
 import { syncBooks, type BooksSyncOptions } from "../domain/books-sync.ts";
+import { settleOwedRefunds } from "../domain/cancel-refunds.ts";
 import { finishRun, startRun, type RunStart } from "../domain/cron-runs.ts";
 import { alertAgedDeletions } from "../domain/deletion.ts";
 import { checkCatalogue } from "../domain/fsm-catalogue.ts";
@@ -192,6 +193,11 @@ async function bookUnbookedHoldsJob({ env, deps, config, log, budget }: CronCont
   const pass = { ...deps, notify, labelAsTest: config.environment !== "production", budget, log };
   const booked = await bookUnbookedHolds(env.DB, pass, deps.now());
   if (booked > 0) log.warn("unbooked_holds_booked", { count: booked });
+}
+
+async function cancelRefundsJob({ env, deps, log, budget }: CronContext): Promise<void> {
+  const settled = await settleOwedRefunds(env.DB, { ...deps, budget, log }, deps.now());
+  if (settled > 0) log.warn("cancel_refunds_settled", { count: settled });
 }
 
 async function erasedFilesJob({ env, deps, log }: CronContext): Promise<void> {
@@ -366,6 +372,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "asked_windows", needs: "nothing", every: 15, at: 9, run: askedWindowsJob },
   // The next service falling due with nothing booked (docs/decisions/0086-the-next-visit-is-offered.md).
   { name: "next_service_reminders", needs: "messaging", every: 15, at: 11, run: nextServiceRemindersJob },
+  // A cancel, the client's or ops', whose refund its request could not settle, asked for again under its receipt.
+  { name: "cancel_refunds", needs: "nothing", every: 15, at: 12, run: cancelRefundsJob },
   // What an erasure could not delete from R2 at the time (docs/decisions/0066-erasure-all-or-nothing.md).
   { name: "erased_files", needs: "nothing", every: 15, at: 12, run: erasedFilesJob },
   { name: "requeue_crm_erasures", needs: "nothing", every: 15, at: 13, run: requeueCrmErasures },
