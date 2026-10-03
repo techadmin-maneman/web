@@ -811,6 +811,27 @@ The provider's new calls, run through the real adapter against the owner's org w
 
 **Not proven by these two runs:** making an item, which only a first run does (`POST /items` answered 201 on the exploratory calls, making `4242595000000245041`); and GST's treatment and places, which wait for GST to be turned on in Books.
 
+## FSM removal, PR 10: staging off FSM
+
+Run once staging is switched (docs/runbook.md, "Switching staging off FSM"), as a real user with staging's test records, backdating rather than waiting. Not run yet.
+
+| #   | Check                                                                    | Answer |
+| --- | ------------------------------------------------------------------------ | ------ |
+| 1   | A consultation booked on the site                                        |        |
+| 2   | A paid first fit booked in the app                                       |        |
+| 3   | A visit booked by ops                                                    |        |
+| 4   | A dispatch move and a reassign                                           |        |
+| 5   | A technician's whole day on a phone                                      |        |
+| 6   | A partial job                                                            |        |
+| 7   | A no-show                                                                |        |
+| 8   | A cancel with a refund                                                   |        |
+| 9   | The invoice issued and the payment applied; the receipt and the PDF open |        |
+| 10  | The CRM Contact appears after Books' Instant Sync, with "MM person ID"   |        |
+| 11  | An erasure blanks the Books customer, and the CRM Contact follows        |        |
+| 12  | A technician added in the console signs in                               |        |
+
+If check 11 fails, the CRM Contact is blanked directly instead: CRM Contacts access (open point 21), about a day's work.
+
 ## Zoho's answers, read through the adapters, 4 October 2026
 
 Every read the Books and CRM adapters make, run through the adapters against the owner's org with the scripts' tokens, so each answer was read by the adapter's own schema: `node --env-file=.env.books-scripts --env-file=.env.crm-scripts scripts/zoho-contract-probe.ts --record` (RB, "Checking Zoho's answers before a release"). Nothing was written; 13 calls, 03:42 IST.
