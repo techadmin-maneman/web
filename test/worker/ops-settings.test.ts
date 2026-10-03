@@ -15,6 +15,7 @@ import { renderMessage } from "../../src/config/message-templates.ts";
 import { COMMITTED, createCachedOpsInputs, readOpsInputs, SETTINGS_TTL_MS } from "../../src/domain/ops-settings.ts";
 import { NEXT_VISIT_DAY_BOUNDS, NEXT_VISIT_DAYS } from "../../src/policy/next-visit.ts";
 import { REFERRAL_REWARD } from "../../src/policy/referral-reward.ts";
+import { lateFeeOn } from "../../src/domain/price-book.ts";
 import { composeLaunchAlert } from "../../src/domain/waitlist.ts";
 import { pincodeUpsert } from "../../scripts/lib/pincodes.ts";
 import { appFor, countRowsRead, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
@@ -470,10 +471,25 @@ describe("the price book", () => {
     expect(await answer.json()).toMatchObject({ error: { fields: ["valid_from"] } });
   });
 
+  // MON-34 of the audit, 2 October 2026: a price from today changed what a client had been quoted that day.
+  it("takes a new price from tomorrow at the earliest, and leaves today's as it was", async () => {
+    const change = { item: "late_fee_first_fit", tier: "standard", amount_ex_gst: 600_000, gst_percent: 0 };
+    const today = await post("/api/prices", { ...change, valid_from: "2026-09-21" });
+    expect(today.status).toBe(400);
+    expect(await today.json()).toMatchObject({ error: { code: "invalid_request", fields: ["valid_from"] } });
+    expect((await auditFor("price.set")).results).toHaveLength(0);
+
+    expect((await post("/api/prices", { ...change, valid_from: "2026-09-22" })).status).toBe(200);
+    expect(await lateFeeOn(env.DB, "late_fee_first_fit", "2026-09-21")).toMatchObject({ amount_ex_gst: 400_000 });
+    expect(await lateFeeOn(env.DB, "late_fee_first_fit", "2026-09-22")).toMatchObject({ amount_ex_gst: 600_000 });
+  });
+
   it("refuses part of a rupee, and a rate no GST slab reaches", async () => {
-    const base = { item: "service", tier: "standard", gst_percent: 0, valid_from: "2026-09-21" };
-    expect((await post("/api/prices", { ...base, amount_ex_gst: 250_050 })).status).toBe(400);
-    expect((await post("/api/prices", { ...base, amount_ex_gst: 250_000, gst_percent: 40 })).status).toBe(400);
+    const base = { item: "service", tier: "standard", gst_percent: 0, valid_from: "2026-09-22" };
+    const partRupee = await post("/api/prices", { ...base, amount_ex_gst: 250_050 });
+    expect(await partRupee.json()).toMatchObject({ error: { fields: ["amount_ex_gst"] } });
+    const noSlab = await post("/api/prices", { ...base, amount_ex_gst: 250_000, gst_percent: 40 });
+    expect(await noSlab.json()).toMatchObject({ error: { fields: ["gst_percent"] } });
   });
 
   // A tier is a service now, added in the console before it is priced (docs/decisions/0085-services-ops-can-edit.md).
@@ -484,7 +500,7 @@ describe("the price book", () => {
       tier: "lace",
       amount_ex_gst: 4_000_000,
       gst_percent: 0,
-      valid_from: "2026-09-21",
+      valid_from: "2026-09-22",
     });
     expect(answer.status).toBe(200);
     const body = await answer.json<{ prices: { item: string; tier: string; amount_ex_gst: number }[] }>();
@@ -500,7 +516,7 @@ describe("the price book", () => {
       tier: "lace",
       amount_ex_gst: 4_000_000,
       gst_percent: 0,
-      valid_from: "2026-09-21",
+      valid_from: "2026-09-22",
     });
     expect(answer.status).toBe(400);
     expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["tier"] } });
@@ -508,7 +524,7 @@ describe("the price book", () => {
   });
 
   it("keeps a late fee to one figure a kind, its standard tier's", async () => {
-    const fee = { item: "late_fee_first_fit", amount_ex_gst: 500_000, gst_percent: 0, valid_from: "2026-09-21" };
+    const fee = { item: "late_fee_first_fit", amount_ex_gst: 500_000, gst_percent: 0, valid_from: "2026-09-22" };
     expect((await post("/api/prices", { ...fee, tier: "standard" })).status).toBe(200);
     const answer = await post("/api/prices", { ...fee, tier: "premium" });
     expect(answer.status).toBe(400);
@@ -531,6 +547,20 @@ describe("the price book", () => {
       gst_percent: 0,
       valid_from: "2026-10-01",
     });
+  });
+
+  // MON-34 again: the first price of a service was recorded as from -1.
+  it("records from as null where the book had no price for it", async () => {
+    await post("/api/services", { kind: "first_fit", name: "Lace" });
+    await post("/api/prices", {
+      item: "first_fit",
+      tier: "lace",
+      amount_ex_gst: 4_000_000,
+      gst_percent: 0,
+      valid_from: "2026-09-22",
+    });
+    const { results } = await auditFor("price.set");
+    expect(JSON.parse(results[0]?.detail ?? "{}")).toMatchObject({ from: null, to: 4_000_000 });
   });
 });
 
@@ -647,7 +677,9 @@ describe("withdrawing a price still to come", () => {
   });
 
   it("refuses the price in force and a spent one, since a visit may have been invoiced under either", async () => {
-    await post("/api/prices", { ...OCTOBER, valid_from: "2026-09-21" });
+    await env.DB.prepare(
+      "INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from) VALUES ('service', 'standard', 250000, 18, '2026-09-21')",
+    ).run();
     for (const validFrom of ["2026-01-01", "2026-09-21"]) {
       const answer = await withdraw({ item: "service", tier: "standard", valid_from: validFrom });
       expect(answer.status, validFrom).toBe(400);

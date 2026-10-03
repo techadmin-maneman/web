@@ -1403,7 +1403,8 @@ Who is waiting, by pincode, the longest wait first
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The area's name once ops have named it; null until then, and for a pincode we do not know."
           },
           "city": {
             "anyOf": [
@@ -2576,7 +2577,7 @@ The price book: every price, past, present and scheduled
 
 ### POST /api/prices
 
-A price from the date it applies. A change is a new row, so nothing already invoiced moves
+A price from the date it applies, tomorrow at the earliest. A change is a new row, so nothing sold moves
 
 Request body:
 
@@ -2606,7 +2607,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names what was refused, tier where no service of the kind has it; service_retired: the service is retired by the day it would apply from
+**400**: invalid_request: fields names what was refused, valid_from when it is before tomorrow, tier where no service of the kind has it; service_retired: the service is retired by the day it would apply from
 
 ```json
 {
@@ -2624,7 +2625,7 @@ Request body:
 
 ### POST /api/prices/correct
 
-Correct a price still to come: take it back and set its replacement, from any day from today, at once
+Correct a price still to come: take it back and set its replacement, from tomorrow or later, at once
 
 Request body:
 
@@ -4201,6 +4202,7 @@ Request body:
             "look_limit_reached",
             "claim_required",
             "whatsapp_unavailable",
+            "number_not_proved",
             "unauthorized",
             "visit_booked",
             "payment_held",
@@ -5313,6 +5315,38 @@ Request body:
         }
       ],
       "description": "The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07)."
+    },
+    "discount_code": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "amount_off": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "In paise before GST; null where the visit's price was not yet known."
+            }
+          },
+          "required": [
+            "code",
+            "amount_off"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The discount code the visit was paid with; null for none, and on a late fee."
     }
   },
   "required": [
@@ -5330,7 +5364,8 @@ Request body:
     "refunded_amount",
     "purpose",
     "charge",
-    "no_show"
+    "no_show",
+    "discount_code"
   ],
   "additionalProperties": false
 }
@@ -7099,6 +7134,7 @@ Request body:
             "look_limit_reached",
             "claim_required",
             "whatsapp_unavailable",
+            "number_not_proved",
             "unauthorized",
             "visit_booked",
             "payment_held",

@@ -167,7 +167,7 @@ const OUTSTANDING = [
   SELECT 'draft_invoice', a.id, a.person_id, pe.name, a.fsm_invoice_id, COALESCE(a.window_end, a.synced_at), NULL,
          ''
     FROM appointments a JOIN people pe ON pe.id = a.person_id
-   WHERE a.status = 'completed' AND a.invoice_issued_at IS NULL AND a.fsm_work_order_id IS NOT NULL
+   WHERE a.status = 'completed' AND a.invoice_issued_at IS NULL
      AND a.deleted_at IS NULL AND a.fsm_invoice_id IS NOT NULL AND pe.erased_at IS NULL
   UNION ALL
   SELECT 'erasure_unfinished', p.id, NULL, NULL, p.fsm_contact_id, p.erased_at, NULL, ''

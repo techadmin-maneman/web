@@ -7,6 +7,7 @@ import { useRef, useState } from "react";
 import type { BookingWindow, Task, TaskGroup } from "../api.ts";
 import { BookVisit, type Prefill } from "../clients/BookVisit.tsx";
 import { tasks } from "../content.ts";
+import { useAccess } from "../lib/access.ts";
 import styles from "./tasks.module.css";
 
 type Group = TaskGroup["group"];
@@ -55,9 +56,10 @@ export function BookFromTask({
 }) {
   const [open, setOpen] = useState(false);
   const opener = useRef<HTMLButtonElement>(null);
+  const mayBook = useAccess().mayCall("POST /api/visits");
   const prefill = prefillOf(group, task.detail);
   const person = task.person;
-  if (prefill === null || person === null) return null;
+  if (!mayBook || prefill === null || person === null) return null;
   return (
     <span className={styles.acts}>
       <button

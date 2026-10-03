@@ -1,4 +1,4 @@
--- Migration number: 0075
+-- Migration number: 0077
 -- Ops cancelling a visit from the console, and closing one by hand whose technician's phone was lost before it sent
 -- anything. Only nullable columns are added, null for every change a client made and every visit the field closed, so
 -- the Worker already deployed is unaffected.

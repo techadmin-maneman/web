@@ -25,6 +25,8 @@ export const ERROR_CODES = [
   // gate's claim, and no try-on runs while WhatsApp cannot send its look.
   "claim_required",
   "whatsapp_unavailable",
+  // A site form that acts on a number only once its WhatsApp code was entered: the one visit, and the try-on's gate.
+  "number_not_proved",
   // Erasure (docs/decisions/0019-erasure.md), and what it waits for: a visit still booked, or a payment
   // held with no visit behind it (docs/decisions/0066-erasure-all-or-nothing.md).
   "unauthorized",

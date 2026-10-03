@@ -10,6 +10,7 @@ import type { App } from "../../src/http/context.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { loadJob } from "../../src/domain/tryon.ts";
 import { recordClaim, reserveJob } from "../../src/domain/tryon-claims.ts";
+import { signToken } from "../../src/lib/signed-token.ts";
 import { appFor, fakeDependencies, LOCAL_SETTINGS, markDatabase, NOW, request } from "./helpers.ts";
 import { insertJob, insertPerson, syntheticJpeg, syntheticPng } from "./tryon-fixtures.ts";
 
@@ -48,7 +49,10 @@ async function tryOns(): Promise<TryOn[]> {
   return (await response.json<{ try_ons: TryOn[] }>()).try_ons;
 }
 
-/** A look made from its own photograph, both still held: the photograph for an hour, the look for 14 days. */
+/**
+ * A look made from its own photograph, both still held: the photograph for an hour, the look for 14 days. Its claim
+ * came with the number proved by a code, as every claim does.
+ */
 async function madeLook(id: string, createdAgoMs: number, columns: Record<string, string | number | null> = {}) {
   await insertJob({
     id,
@@ -58,6 +62,7 @@ async function madeLook(id: string, createdAgoMs: number, columns: Record<string
     state: "ready",
     result_key: `results/${id}.png`,
     expires_at: at(14 * DAY - createdAgoMs),
+    number_proved_at: at(-createdAgoMs),
     ...columns,
   });
 }
@@ -80,6 +85,7 @@ describe("GET /api/photos's try-ons", () => {
       created_at: at(-5 * MINUTE),
       uploaded_at: at(-5 * MINUTE),
       state: "rendering",
+      number_proved_at: at(-5 * MINUTE),
     });
     await madeLook("job-someone-else", 10 * MINUTE, { person_id: "person-other" });
     await insertJob({ id: "job-unclaimed", created_at: at(-MINUTE), uploaded_at: at(-MINUTE), state: "ready" });
@@ -174,6 +180,21 @@ describe("GET /api/photos's try-ons", () => {
     });
 
     expect((await tryOns()).map((tryOn) => tryOn.id)).toEqual(["job-claimed"]);
+  });
+
+  // PS-10: anyone could type the client's number at the gate before it asked for a code, so such a try-on may hold a
+  // stranger's photograph.
+  it("leaves out a try-on whose claim no code proved, and opens none of its images", async () => {
+    await madeLook("job-unproved", 30 * MINUTE, { number_proved_at: null });
+    await env.RESULTS.put("results/job-unproved.png", syntheticPng(600, 800), {
+      httpMetadata: { contentType: "image/png" },
+    });
+    await madeLook("job-proved", 20 * MINUTE);
+
+    expect((await tryOns()).map((tryOn) => tryOn.id)).toEqual(["job-proved"]);
+    const expiresAt = new Date(NOW.getTime() + 10 * MINUTE);
+    const token = await signToken(LOCAL_SETTINGS.tryon.linkSigningKey, "tryon_look", "job-unproved", expiresAt);
+    expect((await get(`/api/photos/try-on/look/${token}`)).status).toBe(404);
   });
 });
 

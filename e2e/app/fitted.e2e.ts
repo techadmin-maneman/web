@@ -6,6 +6,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { fullDate, listMonth, shortDate } from "../../packages/web-kit/dates.ts";
+import { assertInContract } from "../contract.ts";
 import { expect, test } from "../support.ts";
 import { fittedClient } from "./fitted.ts";
 import { logIn } from "./signed-in.ts";
@@ -77,6 +78,43 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   await sheet.getByRole("textbox", { name: "What should they know at the door?" }).fill("The lift is out");
   await sheet.getByRole("button", { name: "Save the note" }).click();
   await expect(sheet.getByRole("heading", { name: /^Saved\./ })).toBeVisible();
+});
+
+// A dropped signal unmounted the note sheet and its words, and Back left the page under it (UX-09).
+test("an open note sheet keeps its words through a dropped signal, and Back closes it on the page", async ({
+  page,
+}) => {
+  const client = fittedClient();
+  await logIn(page, client.mobile);
+  await tab(page, "Visits").click();
+  await expect(page.getByRole("heading", { level: 1, name: "Visits" })).toBeVisible();
+  await page.getByRole("main").getByRole("link").first().click();
+  const visitPage = page.getByRole("heading", { level: 1, name: fullDate(client.next.date) });
+  await expect(visitPage).toBeVisible();
+
+  await page.getByRole("button", { name: "Add a note" }).click();
+  const sheet = page.getByRole("dialog");
+  const note = sheet.getByRole("textbox", { name: "What should they know at the door?" });
+  const save = sheet.getByRole("button", { name: "Save the note" });
+  await note.fill("The lift is out");
+  await page.context().setOffline(true);
+  await expect(sheet.getByText("No connection. Your note stays here until you are back online.")).toBeVisible();
+  await expect(note).toHaveValue("The lift is out");
+  await expect(save).toBeDisabled();
+  await page.context().setOffline(false);
+  await expect(save).toBeEnabled();
+
+  await page.goBack();
+  await expect(sheet).toBeHidden();
+  await expect(visitPage).toBeVisible();
+
+  // Closed by its own button, the sheet leaves nothing behind in the history: Back goes to the list.
+  await page.getByRole("button", { name: "Add a note" }).click();
+  await sheet.getByRole("button", { name: "Close" }).click();
+  await expect(sheet).toBeHidden();
+  await expect.poll(() => page.evaluate(() => window.history.state as unknown)).toBeNull();
+  await page.goBack();
+  await expect(page.getByRole("heading", { level: 1, name: "Visits" })).toBeVisible();
 });
 
 // A visit that is not this client's, or a payment, says so rather than offering to try again for ever (CLI-33).
@@ -335,6 +373,23 @@ test("Payments: one list of payments and refunds, an entry's documents, and a do
     new RegExp(encodeURIComponent("My refund for service visit from")),
   );
   await expect(page.getByText("+ Rs. 1,000", { exact: true })).toBeVisible();
+});
+
+// MON-22: after paying, the entry did not say the code the visit was booked with. No route puts a code on the seeded
+// payment, so its entry is answered with one, held to the API's contract.
+test("a payment made with a discount code names the code, and what it took off", async ({ page }) => {
+  const client = fittedClient();
+  await logIn(page, client.mobile);
+  await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
+  const path = `/api/payments/${client.servicePayment}`;
+  // Read by the page, whose app.localhost only the browser resolves.
+  const entry = await page.evaluate(async (url) => (await fetch(url)).json() as Promise<object>, path);
+  const body = { ...entry, discount_code: { code: "AUDTEST", amount_off: 100_000 } };
+  assertInContract("client", "GET", path, 200, body);
+  await page.route(`**${path}`, (route) => route.fulfill({ json: body }));
+  await page.goto(`/payments/${client.servicePayment}`);
+  await expect(page.getByRole("heading", { level: 1, name: "Service visit" })).toBeVisible();
+  await expect(page.getByText("AUDTEST: Rs. 1,000 off")).toBeVisible();
 });
 
 test("each read surface meets WCAG 2.2 AA", async ({ page }) => {

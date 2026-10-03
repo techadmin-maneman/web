@@ -13,6 +13,7 @@ import { requireStaffAccess } from "./http/staff-access.ts";
 import { REQUEST_ID_HEADER, type App, type AppEnv } from "./http/context.ts";
 import { ErrorResponseSchema, errorBody } from "./http/errors.ts";
 import { requireSameOrigin } from "./http/origin.ts";
+import { meterDatabase, usageFields } from "./lib/d1-meter.ts";
 import { createLogger } from "./log.ts";
 import { registerClientAuth } from "./routes/client-auth.ts";
 import { registerClientMe } from "./routes/client-me.ts";
@@ -50,6 +51,7 @@ import { registerOpsStaff } from "./routes/ops-staff.ts";
 import { registerOpsStock } from "./routes/ops-stock.ts";
 import { registerOpsWaitlist } from "./routes/ops-waitlist.ts";
 import { registerConsultations } from "./routes/consultations.ts";
+import { registerNumberCodes } from "./routes/number-codes.ts";
 import { registerReferralLanding } from "./routes/referral-landing.ts";
 import { registerClientPayments } from "./routes/client-payments.ts";
 import { registerClientVisits } from "./routes/client-visits.ts";
@@ -85,6 +87,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
   public: [
     registerHealth,
     registerPublishedPrices,
+    // A WhatsApp code that proves a number before /book's one visit or /try's gate acts on it.
+    registerNumberCodes,
     registerConsultations,
     registerReferralLanding,
     // What a referral earns, for the invite's page and /book (docs/decisions/0107-referral-rewards-in-the-console.md).
@@ -206,7 +210,10 @@ export function createApp(
   return app;
 }
 
-/** Gives each request an ID, a logger and its dependencies; sets common headers; logs the request. */
+/**
+ * Gives each request an ID, a logger, its dependencies and a metered database; sets common headers; logs the request
+ * with what it cost D1.
+ */
 function requestContext(
   config: StaticConfig,
   makeDependencies: DependencyFactory,
@@ -220,6 +227,8 @@ function requestContext(
     const started = Date.now();
     const requestId = crypto.randomUUID();
     const log = baseLog.child({ request_id: requestId });
+    const meter = meterDatabase(c.env.DB);
+    c.env = { ...c.env, DB: meter.db };
     c.set("requestId", requestId);
     c.set("log", log);
     c.set("config", config);
@@ -240,6 +249,7 @@ function requestContext(
       route: routePath(c, -1), // the pattern, e.g. /api/result/:token; never the path, which can hold a token
       status: c.res.status,
       duration_ms: Date.now() - started,
+      ...usageFields(meter.usage()),
     });
   });
 }

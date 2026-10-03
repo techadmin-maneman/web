@@ -4,18 +4,10 @@
 // they have; otherwise the street is confirmed with them. A contact FSM already
 // held is given the address as it is linked.
 
+import { stateOf } from "../config/gst.ts";
 import { createLogger, type Logger } from "../log.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
 import { currentAddress, streetOf, type Address } from "./profile.ts";
-
-/** The state each served city is in, with its GST code, for the contact's place of supply. */
-const STATES: Readonly<Record<string, { state: string; code: string }>> = {
-  Gurgaon: { state: "Haryana", code: "HR" },
-  Faridabad: { state: "Haryana", code: "HR" },
-  Delhi: { state: "Delhi", code: "DL" },
-  Noida: { state: "Uttar Pradesh", code: "UP" },
-  Ghaziabad: { state: "Uttar Pradesh", code: "UP" },
-};
 
 /** Where a booking says the person is: the city FSM files them under, and the pincode if the booking had one. */
 export interface Place {
@@ -132,7 +124,7 @@ async function addContact(
   if (city === null) throw new Error("the person has no city to give FSM");
   const address = saved === null ? null : inPlace(saved, city, place);
   const [first, ...rest] = person.name.trim().split(/\s+/);
-  const state = STATES[city];
+  const state = stateOf(city);
   return fsm.createContact({
     firstName: rest.length === 0 ? null : (first ?? null),
     lastName: rest.length === 0 ? person.name.trim() : rest.join(" "),
@@ -141,7 +133,7 @@ async function addContact(
     city,
     pincode: place?.pincode ?? address?.pincode ?? null,
     street: address === null ? null : streetOf(address),
-    state: state?.state ?? null,
+    state: state?.name ?? null,
     stateCode: state?.code ?? null,
   });
 }
