@@ -175,7 +175,8 @@ export async function composeLaunchAlert(
   personId: string,
   environment: EnvironmentName,
 ): Promise<{ template: string; params: string[] } | { skip: string }> {
-  if (!(await consentGiven(db, personId, "whatsapp_launches"))) return { skip: "no consent to WhatsApp about launches" };
+  const stillAgreed = await consentGiven(db, personId, "whatsapp_launches");
+  if (!stillAgreed) return { skip: "no consent to WhatsApp about launches" };
   const row = await db
     .prepare(
       `SELECT p.name, ${namedArea("s")} AS area, s.city, s.served FROM people p
