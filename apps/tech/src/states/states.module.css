@@ -10,6 +10,11 @@
   color: var(--paper);
 }
 
+.reference {
+  font-size: var(--fs-15);
+  color: var(--paper);
+}
+
 /* A screen that failed to draw: the ink ground, filling the column as every screen does. */
 .broken {
   flex: 1;

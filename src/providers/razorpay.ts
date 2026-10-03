@@ -49,8 +49,8 @@ export const RazorpayPaymentLinkSchema = z.object({
   id: z.string(),
   status: z.string(),
   /**
-   * Ours: the visit the link is for, which a link ops make by hand in Razorpay's dashboard carries too, or the hold
-   * a visit ops booked waits on.
+   * Ours: the reference the link's payment takes, or the visit's ID on a link ops made by hand in Razorpay's dashboard.
+   * A link made before links had a reference carries the visit's or the hold's ID.
    */
   reference_id: z.string().nullish(),
   /** The order Razorpay made for the link, which its payment names too. */
@@ -79,6 +79,16 @@ const Created = z.object({ id: z.string() });
 const OrderPayments = z.object({ items: z.array(z.object({ status: z.string() })) });
 const LinkMade = z.object({ id: z.string(), short_url: z.string() });
 const LinksFound = z.object({ payment_links: z.array(LinkMade) });
+
+/**
+ * How a link's page reads: in our name rather than the account's, and our reference labelled as one rather than as a
+ * receipt. Razorpay never fills in the client's number on a link's page, whatever it is sent.
+ */
+const LINK_PAGE = {
+  checkout: { name: "Mane Man" },
+  hosted_page: { label: { receipt: "REFERENCE" } },
+};
+
 /** Razorpay's reason for a refusal, as much of it as it gave. */
 const Refused = z.object({
   error: z.object({
@@ -161,6 +171,7 @@ export function createRazorpay(
           reminder_enable: true,
           notes: link.notes,
           ...(link.closesAt === undefined ? {} : { expire_by: Math.floor(link.closesAt.getTime() / 1000) }),
+          options: LINK_PAGE,
         },
         LinkMade,
       );

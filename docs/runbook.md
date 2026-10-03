@@ -23,6 +23,7 @@ An alert in the alert space names what went wrong with IDs only; "What each aler
 | Try-ons fail                                                | "Try-on and WhatsApp"                                               |
 | A technician lost a phone, or his work is stuck on it       | "A technician's lost phone", "Work stuck on a technician's phone"   |
 | Ops cannot get into the console                             | "Locked out of the ops console"                                     |
+| Someone says a screen failed, or quotes a Ref               | "Someone says a screen failed"                                      |
 | R2 storage is growing, or a usage e-mail came               | "Staying on the free tier"                                          |
 | A daily allowance is 70% used                               | "The daily allowances"                                              |
 | Every host answers Cloudflare's error 1027                  | "Workers daily limit reached (1027)"                                |
@@ -530,14 +531,14 @@ Payments and refunds are mirrored from Razorpay's webhook (docs/decisions/0044-p
    - Payment links on: the one visit's link is made through the API (`POST /v1/payment_links`), which the account must allow (open point 166).
    - On staging, the hooks path already has its Access bypass (step 12, point 3).
 
-### 12. WhatsApp delivery receipts (Evolution)
+### 12. WhatsApp delivery receipts and STOP replies (Evolution)
 
-Evolution reports each message as delivered and read to `POST /api/hooks/evolution/<token>` (docs/decisions/0041-outbound-messages-for-phase-2.md). The no-show evidence depends on these receipts. Until this is set up, the route answers 404 and no receipts are recorded.
+Evolution reports each message as delivered and read to `POST /api/hooks/evolution/<token>` (docs/decisions/0041-outbound-messages-for-phase-2.md), and passes on the messages people send us, where a STOP reply withdraws the sender's WhatsApp consents and is answered once. The no-show evidence depends on the receipts. Until this is set up, the route answers 404: no receipts are recorded and a STOP reply stops nothing (the link at the foot of a reminder still works).
 
 1. **The token.** Make a random value of at least 32 characters, e.g. `openssl rand -hex 24`, and set it on the Worker with `W secret put EVOLUTION_WEBHOOK_TOKEN --env <env>`. Use a different value in each environment.
 2. **Evolution's webhook**, on the instance the Worker sends from:
    - URL: `https://<host>/api/hooks/evolution/<token>`;
-   - events: **`MESSAGES_UPDATE` only**;
+   - events: **`MESSAGES_UPDATE` and `MESSAGES_UPSERT` only**;
    - "webhook by events": off.
 
    Every event is a request against the free plan's daily allowance, so send no others.
@@ -558,6 +559,8 @@ Evolution reports each message as delivered and read to `POST /api/hooks/evoluti
    `delivered_at` and `read_at` should be filled within seconds. If they stay empty, look in Workers Logs:
    - `evolution_hook_unauthorized`: the token in Evolution's URL is wrong;
    - no `evolution_receipts` line at all: Access or Bot Fight Mode is stopping the webhook.
+
+   Then reply STOP from that handset, if its person has agreed to WhatsApp about visits or launches. The handset gets one answer, the client's page in the console shows the consents withdrawn by "STOP reply", and Workers Logs has an `evolution_replies` line with `stopped: 1`. Switch the consents back on in the app afterwards.
 
 ---
 
@@ -1194,7 +1197,7 @@ The app sends the outbox one step at a time, oldest first, whenever it has signa
 
 - **No signal.** Nothing is wrong. Get to signal and open the app. The app warns when the phone has not promised to keep its store: an iPhone keeps it only with the app on its home screen (ADR 0053), so a technician on an iPhone should not leave work waiting for days.
 - **A job stopped because it changed** ("This job changed while the phone was offline", "Ops moved this job to another time", "Ops moved this job to Sameer at 10:40 am", "This job is someone else's now", "This job was cancelled…"): ops changed the job, and what is left of it cannot reach us from this phone. Agree with the technician what he did; ops enter it in FSM by hand; then he taps "Got it", which asks first and deletes that job's queue from the phone.
-- **A step refused** ("The piece's label was not accepted", and the like): "Correct it" takes him back to the step.
+- **A step refused** ("The piece's label was not accepted", and the like): "Correct it" takes him back to the step. The Ref under it finds the refusal in the logs ("Someone says a screen failed").
 - **Photographs failed**: "Retry".
 - **Never sign out or delete the app while work is waiting**: signing out wipes the phone. The app asks first, and offers "Send first".
 
@@ -1204,6 +1207,18 @@ A step that reached us and not FSM is on the server side: "FSM is down". What re
 SELECT kind, occurred_at, received_at, fsm_write_state, fsm_error FROM job_events
 WHERE appointment_id = '<visit id>' ORDER BY received_at;
 ```
+
+---
+
+## Someone says a screen failed
+
+The console and the technician app show a **Ref** under a page that did not load, and under a technician's step the API refused: the first eight characters of the call's request ID, and "Copy" copies the whole ID. Every line mm-api logged of that call carries it as `request_id`. In Workers Logs (the `mm-api` Worker → Logs), filter on `request_id` starting with the Ref, or equal to the copied ID. A change in the console that failed shows no Ref: every console call is in `audit_log` under the person, with its `request_id`.
+
+```sql
+SELECT at, action, request_id, detail FROM audit_log WHERE actor = '<their e-mail>' ORDER BY at DESC LIMIT 20;
+```
+
+The client app, the console and the technician app also report their own errors, each as one `client_error` line: `app` (client, ops or tech), `kind` (`error`, `unhandled_rejection`, `render`, or `outbox_gave_up` for a step the technician app stopped sending because the API refused it), `message`, `path`, and the outbox's `step`, `code` and `refused_request_id`. A page sends ten at most, and an address twenty an hour. A run of them after a release points at that release: tell the developers.
 
 ---
 

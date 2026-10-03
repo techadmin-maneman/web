@@ -77,7 +77,7 @@ function Money() {
   const copy = noShows.money;
 
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const day = loaded.value;
   return (
@@ -342,7 +342,7 @@ function Queue() {
   const [loaded, retry] = useLoad(api.noShows);
   const access = useAccess();
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const now = new Date();
   const charge = access.mayCall("POST /api/no-shows/{id}/decision");

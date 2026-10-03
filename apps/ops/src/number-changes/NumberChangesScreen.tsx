@@ -157,7 +157,7 @@ function Queue() {
   const [loaded, retry] = useLoad(api.numberChanges);
   const mayDecide = useAccess().mayCall("POST /api/number-changes/{id}/decision");
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const now = new Date();
   return (

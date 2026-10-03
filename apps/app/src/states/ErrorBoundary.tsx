@@ -5,6 +5,7 @@
 
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { ErrorBoundary as SharedBoundary } from "@maneman/ui/ErrorBoundary";
+import { reportRenderError } from "@maneman/web-kit/client-errors";
 import type { ReactNode } from "react";
 import { broken } from "../content.ts";
 import styles from "./states.module.css";
@@ -36,5 +37,9 @@ function Broken() {
 }
 
 export function ErrorBoundary({ children }: { children: ReactNode }) {
-  return <SharedBoundary fallback={<Broken />}>{children}</SharedBoundary>;
+  return (
+    <SharedBoundary fallback={<Broken />} onError={reportRenderError}>
+      {children}
+    </SharedBoundary>
+  );
 }

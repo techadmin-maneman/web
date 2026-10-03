@@ -432,7 +432,7 @@ export function Services() {
   const access = useAccess();
 
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const current = book ?? loaded.value;
   const opened: Opened = {
