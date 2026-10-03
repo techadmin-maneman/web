@@ -162,7 +162,7 @@ Indexes:
 
 One row per alert while it is open, kept once it is resolved; raising it again counts it (ADR 0067).
 
-Made by `0038_alerts.sql`; changed by `0083_alerts_told.sql`.
+Made by `0038_alerts.sql`; changed by `0084_alerts_told.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
