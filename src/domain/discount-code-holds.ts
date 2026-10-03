@@ -1,10 +1,11 @@
 // A discount code on a hold (docs/decisions/0108-discount-codes.md): the client's, entered at the app's pay step
-// before Checkout has its order, so the order is made for what is left; or the hold the site's form makes for a
+// before anything is paid, so Checkout's order is made for what is left; or the hold the site's form makes for a
 // consultation and fit in one visit, whose product, and so its price, is chosen only at the visit, so what the code
 // takes off waits for the payment link (src/domain/payment-links.ts). Uses are src/domain/discount-code-uses.ts.
 
 import type { VisitType } from "../config/visit-types.ts";
 import { amountOff, discounted, type DiscountTerms } from "../policy/discount-codes.ts";
+import type { PaymentsProvider } from "../providers/payments.ts";
 import { spendableCredits } from "./credits.ts";
 import { termsOf } from "./discount-codes.ts";
 import {
@@ -42,12 +43,50 @@ async function clientHoldOf(db: D1Database, holdId: string, personId: string): P
     .first<HoldRow>();
 }
 
-/** Why a hold's price can no longer change, or null while it can: before Checkout has an order for it. */
-function holdClosed(hold: HoldRow, now: Date): Extract<Entered, { kind: "price_settled" | "expired" }> | null {
-  if (hold.state !== "held" || hold.confirmed_at !== null || hold.razorpay_order_id !== null) {
+/**
+ * Why a hold's price can no longer change, or null while it can: while nothing is paid, and Checkout's order, where
+ * there is one, has no payment on it that can still go through, as when the client closed Checkout without paying.
+ */
+async function holdClosed(
+  hold: HoldRow,
+  payments: PaymentsProvider,
+  now: Date,
+): Promise<Extract<Entered, { kind: "price_settled" | "expired" }> | null> {
+  if (hold.state !== "held" || hold.confirmed_at !== null) return { kind: "price_settled" };
+  if (hold.expires_at <= now.toISOString()) return { kind: "expired" };
+  if (hold.razorpay_order_id !== null && !(await nothingPaidOn(payments, hold.razorpay_order_id))) {
     return { kind: "price_settled" };
   }
-  return hold.expires_at <= now.toISOString() ? { kind: "expired" } : null;
+  return null;
+}
+
+/**
+ * Whether no payment on the order can still go through: none was made, or each one failed. One still being made, or
+ * an order Razorpay cannot be asked about, keeps the order and its price.
+ */
+async function nothingPaidOn(payments: PaymentsProvider, orderId: string): Promise<boolean> {
+  try {
+    const statuses = await payments.orderPayments(orderId);
+    return statuses.every((status) => status === "failed");
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Lets the hold's Checkout order go, which nothing was paid on, so the next Pay makes one for the new price. It goes
+ * first in the batch that changes the code, since a use is written only on a hold with no order.
+ */
+function dropOrder(db: D1Database, hold: HoldRow, now: Date): D1PreparedStatement[] {
+  if (hold.razorpay_order_id === null) return [];
+  return [
+    db
+      .prepare(
+        `UPDATE slot_holds SET razorpay_order_id = NULL, updated_at = ?3
+         WHERE id = ?1 AND razorpay_order_id = ?2 AND state = 'held' AND confirmed_at IS NULL`,
+      )
+      .bind(hold.id, hold.razorpay_order_id, now.toISOString()),
+  ];
 }
 
 /** A hold's code: the use, the code's text and what it takes off. */
@@ -71,16 +110,18 @@ export async function codeOnHold(db: D1Database, holdId: string): Promise<HoldCo
 
 /**
  * The client enters a code on their hold at the pay step: the hold is priced again, the code taken off before GST,
- * so Checkout's order is made for what is left. Only before Checkout has the order.
+ * so Checkout's order is made for what is left. Only while nothing is paid: an order Checkout was closed on unpaid is
+ * let go, and the next Pay makes one for the new price.
  */
 export async function enterOnHold(
   db: D1Database,
+  payments: PaymentsProvider,
   entry: { readonly holdId: string; readonly personId: string; readonly text: string },
   now: Date,
 ): Promise<Entered> {
   const hold = await clientHoldOf(db, entry.holdId, entry.personId);
   if (hold === null) return { kind: "not_found" };
-  const closed = holdClosed(hold, now);
+  const closed = await holdClosed(hold, payments, now);
   if (closed !== null) return closed;
   if ((await codeOnHold(db, hold.id)) !== null) return { kind: "already_discounted" };
 
@@ -101,6 +142,7 @@ export async function enterOnHold(
     by: { kind: "client", id: entry.personId },
   } as const;
   await db.batch([
+    ...dropOrder(db, hold, now),
     useStatement(db, use, "unpaid_hold", now),
     db
       .prepare(
@@ -118,15 +160,19 @@ async function creditStillCovers(db: D1Database, hold: HoldRow, personId: string
   return (await spendableCredits(db, personId, now, hold.id)).visits > 0;
 }
 
-/** The client takes the code off their hold, before Checkout has the order: the hold is back at its price. */
+/**
+ * The client takes the code off their hold while nothing is paid: the hold is back at its price, and an order
+ * Checkout was closed on unpaid is let go.
+ */
 export async function removeFromHold(
   db: D1Database,
+  payments: PaymentsProvider,
   entry: { readonly holdId: string; readonly personId: string },
   now: Date,
 ): Promise<Removed> {
   const hold = await clientHoldOf(db, entry.holdId, entry.personId);
   if (hold === null) return "not_found";
-  const closed = holdClosed(hold, now);
+  const closed = await holdClosed(hold, payments, now);
   if (closed !== null) return closed.kind;
   const code = await codeOnHold(db, hold.id);
   if (code === null) return "none";
@@ -135,6 +181,7 @@ export async function removeFromHold(
   const listed = { amount_ex_gst: hold.amount_ex_gst + (code.amountOff ?? 0), gst_percent: hold.gst_percent };
   const restored = discounted(listed, 0);
   await db.batch([
+    ...dropOrder(db, hold, now),
     db
       .prepare(
         `UPDATE discount_code_uses SET removed_at = ?2, removed_by = 'client', removed_by_id = ?3
@@ -182,16 +229,20 @@ export interface OneVisitCode {
   readonly terms: DiscountTerms;
 }
 
-/** A code the site's form was given, checked for a consultation and fit in one visit: the code, or why not. */
+/**
+ * A code checked for a consultation and fit in one visit: the code, or why not. One typed on /book is judged as it
+ * stood at `typedAt`.
+ */
 export async function checkForOneVisit(
   db: D1Database,
   text: string,
   personId: string | null,
   now: Date,
+  typedAt: Date = now,
 ): Promise<OneVisitCode | { readonly ok: false; readonly reason: Refused }> {
   const booking = { type: "first_fit", onCredit: false, moves: false } as const;
   // Someone new has used nothing, which no person's ID matches.
-  const checked = await checkCode(db, text, booking, personId ?? "", now);
+  const checked = await checkCode(db, text, booking, personId ?? "", now, typedAt);
   if (!checked.ok) return checked;
   return { ok: true, codeId: checked.code.id, code: checked.code.code, terms: termsOf(checked.code) };
 }

@@ -4993,6 +4993,17 @@ Request body:
     "price_open": {
       "type": "boolean",
       "description": "Not yet paid for, linked or invoiced, so a discount code may still be entered on it or taken off."
+    },
+    "requested_code": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "For a consultation and fit in one visit, the code the client typed on /book for it, honoured as it stood then when entered on the visit; null for none."
     }
   },
   "required": [
@@ -5011,7 +5022,8 @@ Request body:
     "outcome",
     "closed_without_follow_up",
     "discount_code",
-    "price_open"
+    "price_open",
+    "requested_code"
   ],
   "additionalProperties": false
 }

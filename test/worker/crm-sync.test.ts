@@ -137,6 +137,33 @@ describe("crm-sync: syncing a lead", () => {
     expect(crm.calls[0]?.lead).toMatchObject({ inviteCode: "RM7K2Q", askedWindow: "afternoon" });
   });
 
+  // MON-23: while booking is off, the lead carried neither the one visit nor the code given for it.
+  it("sends the plan the request asked for, and the code given for a one visit", async () => {
+    const leadId = await phaseOneLead();
+    const person = await env.DB.prepare("SELECT id FROM people").first<string>("id");
+    await env.DB.prepare(
+      `INSERT INTO consultation_requests (id, person_id, pincode, requested_date, requested_window, created_at,
+         one_visit, discount_code)
+       VALUES ('request-1', ?1, '122018', '2026-09-23', 'morning', ?2, 1, 'TENPC')`,
+    )
+      .bind(person, NOW.toISOString())
+      .run();
+    const crm = recordingCrm();
+
+    await syncLead(env.DB, fakeDependencies({ crm }), log, leadId);
+
+    expect(crm.calls[0]?.lead).toMatchObject({ plan: "one_visit", discountCode: "TENPC" });
+  });
+
+  it("sends no plan for a lead no Phase 2 booking made", async () => {
+    const leadId = await phaseOneLead();
+    const crm = recordingCrm();
+
+    await syncLead(env.DB, fakeDependencies({ crm }), log, leadId);
+
+    expect(crm.calls[0]?.lead).toMatchObject({ plan: null, discountCode: null });
+  });
+
   it("posts a new-lead notice once the lead is in the CRM, with no personal data, and never twice", async () => {
     const leadId = await phaseOneLead();
     const deps = fakeDependencies({ crm: recordingCrm() });
