@@ -139,7 +139,7 @@ function CreditForm({
           <dt className={styles.metaKey}>{creditCopy.balance}</dt>
           <dd className={styles.addressValue}>
             {credits === null ? creditCopy.none : creditCopy.visits(credits.visits)}
-            {expiry !== null && ` ${creditCopy.expiry(longDate(expiry))}`}
+            {expiry !== null && ` · ${creditCopy.useBy(longDate(expiry))}`}
           </dd>
         </div>
       </dl>

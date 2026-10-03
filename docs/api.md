@@ -1227,9 +1227,45 @@ Request body:
 }
 ```
 
+### POST /api/stop
+
+Stops the messages a reminder's or alert's link names, by withdrawing the consent they were sent under
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/StopMessagesRequest"
+}
+```
+
+**200**: Stopped
+
+```json
+{
+  "$ref": "#/components/schemas/StoppedMessages"
+}
+```
+
+**400**: invalid_request: no token
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: the link is not ours, or has expired
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/hooks/evolution/{token}
 
-Evolution's delivery receipts (messages.update) for the WhatsApp messages we sent
+Evolution's delivery receipts (messages.update) for the WhatsApp messages we sent, and the messages on our number (messages.upsert), where a STOP reply stops our messages
 
 **204**: Taken, or ignored. Either way Evolution need not send it again
 
@@ -2752,6 +2788,47 @@ Razorpay's webhook: payments and refunds
   },
   "required": [
     "mobile"
+  ],
+  "additionalProperties": false
+}
+```
+
+### StoppedMessages
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "purpose": {
+      "type": "string",
+      "enum": [
+        "whatsapp_visits",
+        "whatsapp_launches"
+      ],
+      "description": "What is no longer sent. The same answer when it had been stopped already."
+    }
+  },
+  "required": [
+    "purpose"
+  ],
+  "additionalProperties": false
+}
+```
+
+### StopMessagesRequest
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "token": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 600
+    }
+  },
+  "required": [
+    "token"
   ],
   "additionalProperties": false
 }

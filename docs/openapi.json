@@ -1315,6 +1315,37 @@
           "mobile"
         ],
         "additionalProperties": false
+      },
+      "StoppedMessages": {
+        "type": "object",
+        "properties": {
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "whatsapp_visits",
+              "whatsapp_launches"
+            ],
+            "description": "What is no longer sent. The same answer when it had been stopped already."
+          }
+        },
+        "required": [
+          "purpose"
+        ],
+        "additionalProperties": false
+      },
+      "StopMessagesRequest": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 600
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "additionalProperties": false
       }
     },
     "parameters": {}
@@ -3029,9 +3060,56 @@
         }
       }
     },
+    "/api/stop": {
+      "post": {
+        "summary": "Stops the messages a reminder's or alert's link names, by withdrawing the consent they were sent under",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StopMessagesRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Stopped",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoppedMessages"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: no token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: the link is not ours, or has expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/hooks/evolution/{token}": {
       "post": {
-        "summary": "Evolution's delivery receipts (messages.update) for the WhatsApp messages we sent",
+        "summary": "Evolution's delivery receipts (messages.update) for the WhatsApp messages we sent, and the messages on our number (messages.upsert), where a STOP reply stops our messages",
         "parameters": [
           {
             "schema": {

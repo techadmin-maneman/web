@@ -1,0 +1,11 @@
+---
+// Stops a reminder or the launch alert from the link at its foot, without signing in. Never indexed: each link is
+// one person's.
+import { pageTitles } from "../content/site.ts";
+import StopMessages from "../islands/StopMessages.tsx";
+import Site from "../layouts/Site.astro";
+---
+
+<Site title={pageTitles.stop} noindex>
+  <StopMessages client:load />
+</Site>
