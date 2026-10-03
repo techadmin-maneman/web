@@ -275,6 +275,8 @@ export interface CardOptions {
   readonly pin?: boolean;
   readonly type?: VisitType;
   readonly waitMinutes?: number;
+  /** The booked start; the fixture's 9:30 am when null or left out. */
+  readonly startsAt?: string | null;
   readonly pieces?: readonly Piece[];
   readonly lastVisit?: boolean;
   readonly reminderDelivered?: string | null;
@@ -292,8 +294,10 @@ export interface CardOptions {
 export function card(date: string, progress: Progress, options: CardOptions = {}): Card {
   const type = options.type ?? "service";
   const oneVisit = options.oneVisit === true;
+  const job = firstJob(date, type, oneVisit);
   return {
-    ...firstJob(date, type, oneVisit),
+    ...job,
+    starts_at: options.startsAt ?? job.starts_at,
     address: {
       line1: "Tower C, 14th floor",
       line2: null,
@@ -407,6 +411,8 @@ export interface Fake {
   checkIn: { passed: boolean; distance_m: number | null };
   /** How long the no-show wait runs from the check-in, in whole minutes, as ops set it. */
   waitMinutes: number;
+  /** The card's booked start, for a test whose wait depends on it; the fixture's 9:30 am when null. */
+  startsAt: string | null;
   /**
    * Set to answer a passing check-in with only this many milliseconds of the wait
    * left, so a test need not wait whole minutes. The API answers so for a check-in
@@ -501,6 +507,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     tooEarly: false,
     checkIn: { passed: true, distance_m: 40 },
     waitMinutes: 15,
+    startsAt: null,
     waitLeftMs: null,
     pin: true,
     type: "service",
@@ -524,6 +531,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       pin: fake.pin,
       type: fake.type,
       waitMinutes: fake.waitMinutes,
+      startsAt: fake.startsAt,
       pieces: fake.pieces,
       lastVisit: fake.lastVisit,
       reminderDelivered: fake.reminderDelivered,
