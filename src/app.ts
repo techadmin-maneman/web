@@ -26,6 +26,7 @@ import { registerClientDiscountCodes } from "./routes/client-discount-codes.ts";
 import { registerOpsDiscountCodes } from "./routes/ops-discount-codes.ts";
 import { registerTechDiscountCodes } from "./routes/tech-discount-codes.ts";
 import { registerClientDisputes } from "./routes/client-disputes.ts";
+import { registerClientErrors } from "./routes/client-errors.ts";
 import { registerClientRefer } from "./routes/client-refer.ts";
 import { registerOpsBlackouts } from "./routes/ops-blackouts.ts";
 import { registerOpsBookings } from "./routes/ops-bookings.ts";
@@ -64,6 +65,7 @@ import { registerStopMessages } from "./routes/stop-messages.ts";
 import { registerHealth } from "./routes/health.ts";
 import { registerOpsProfile } from "./routes/ops-profile.ts";
 import { registerOpsStorage } from "./routes/ops-storage.ts";
+import { registerOpsVisitChanges } from "./routes/ops-visit-changes.ts";
 import { registerOpsVisits } from "./routes/ops-visits.ts";
 import { registerOpsWhoami } from "./routes/ops-whoami.ts";
 import { registerPublishedPrices } from "./routes/published-prices.ts";
@@ -107,6 +109,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
   ],
   client: [
     registerHealth,
+    // What goes wrong in the app's own page; the console and the technician app have it too.
+    registerClientErrors,
     registerClientAuth,
     registerClientMe,
     registerClientProfile,
@@ -125,12 +129,15 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
   ],
   ops: [
     registerHealth,
+    registerClientErrors,
     registerOpsClients,
     registerOpsCredits,
     // A booking FSM refused, held for ops to book or refund (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
     registerOpsBookings,
     // A visit ops book for a client: at once, or by a payment link.
     registerOpsVisits,
+    // A visit ops cancel for a client, or close by hand for a technician whose phone was lost.
+    registerOpsVisitChanges,
     registerOpsClientReferral,
     // An address a client gives ops on the phone (docs/decisions/0092-task-owners.md).
     registerOpsClientAddress,
@@ -166,7 +173,14 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsStaff,
   ],
   // The discount code after the jobs, which put the technician's session on every /api/tech/jobs/* route.
-  tech: [registerHealth, registerTechAuth, registerTechJobs, registerTechPieces, registerTechDiscountCodes],
+  tech: [
+    registerHealth,
+    registerClientErrors,
+    registerTechAuth,
+    registerTechJobs,
+    registerTechPieces,
+    registerTechDiscountCodes,
+  ],
 };
 
 export function createApp(

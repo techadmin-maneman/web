@@ -125,7 +125,9 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
     });
 
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} />;
+  if (loaded.state === "failed") {
+    return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} requestId={loaded.requestId} />;
+  }
 
   const all = angle === undefined;
   // A tap while a frame is being kept is ignored (`once`), not drawn dim: the key never flickers between angles.

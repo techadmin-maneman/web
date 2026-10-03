@@ -1,7 +1,8 @@
-// A client moving or cancelling a visit (docs/decisions/0046-moving-and-cancelling.md).
+// A client moving or cancelling a visit (docs/decisions/0046-moving-and-cancelling.md), and ops cancelling one for
+// them from the console.
 //
 // The terms come from src/policy/moving-a-visit.ts and are shown before the
-// client confirms. A cancel is done here: FSM first where FSM holds the visit,
+// client, or ops, confirm. A cancel is done here: FSM first where FSM holds the visit,
 // then the mirror, then the refund. A move is a hold like any booking: its price
 // is what the move costs now, and confirmBooking moves the visit once that is
 // paid (or at once, when free).
@@ -23,6 +24,7 @@ import { withGst } from "../config/gst.ts";
 import {
   cancelRefund,
   creditOnChange,
+  opsCancelCharged,
   FREE_CHANGE_NOTICE_HOURS,
   freeUntil,
   LATE_CHANGE_CHARGES,
@@ -43,6 +45,7 @@ import type { FsmProvider } from "../providers/fsm.ts";
 import type { PaymentsProvider } from "../providers/payments.ts";
 import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
 import type { AlertOnce } from "./alerts.ts";
+import { auditStatementIfWritten, type AuditEntry } from "./audit.ts";
 import type { OpsInputs } from "./ops-settings.ts";
 import { lateFeeOn, priceOf, type Price } from "./price-book.ts";
 import { askRefund, refundReceipt } from "./refunds.ts";
@@ -117,6 +120,17 @@ export async function changeableVisit(
   };
 }
 
+/** The visit, if it may still be changed, whoever's it is: for ops, who change it for the client. */
+export async function changeableVisitFor(db: D1Database, visitId: string, now: Date): Promise<ChangeableVisit | null> {
+  const owner = await db
+    .prepare("SELECT person_id FROM appointments WHERE id = ?1")
+    .bind(visitId)
+    .first<{ person_id: string | null }>();
+  const personId = owner?.person_id ?? null;
+  if (personId === null) return null;
+  return changeableVisit(db, personId, visitId, now);
+}
+
 /** When the visit's window starts, by the times in force on its day, which the 24 hours count back from. */
 export function windowStartOf(start: Date, schedule: SlotSchedule): Date {
   const { date, window } = schedule.at(start);
@@ -182,8 +196,11 @@ export interface ChangeTerms {
   readonly move: { readonly cost: MoveCost; readonly price: Price };
   /** In paise: what cancelling gives back, and what it keeps. */
   readonly cancel: { readonly refund: number; readonly kept: number };
-  /** For a visit paid with a credit: the grant it came from, and whether changing the visit now gives it back. */
-  readonly credit: { readonly grantId: string; readonly outcome: CreditOnChange } | null;
+  /**
+   * For a visit paid with a credit: the grant it came from, whether that grant can still take it back (it has not been
+   * clawed back or expired), and whether changing the visit now gives it back.
+   */
+  readonly credit: { readonly grantId: string; readonly live: boolean; readonly outcome: CreditOnChange } | null;
 }
 
 /** The terms a booking of this kind is sold under now, as ops set them. */
@@ -279,6 +296,10 @@ export async function termsOfVisit(
   return { terms: sold?.terms ?? inForce, lateFee };
 }
 
+/** Whether a change gives the credit back: only to a grant that can still take it, and only on the terms charged. */
+const creditOutcome = (live: boolean, notice: Notice, charge: Charge): CreditOnChange =>
+  live ? creditOnChange(notice, charge) : "lost";
+
 /** The credit a visit was paid with, if it was, and whether its grant could take it back now. */
 async function creditOf(
   db: D1Database,
@@ -297,9 +318,8 @@ async function creditOf(
     .bind(visitId)
     .first<{ grant_id: string; expires_at: string | null; clawed_back: number }>();
   if (redeemed === null) return null;
-  const grantLive =
-    redeemed.clawed_back === 0 && (redeemed.expires_at === null || redeemed.expires_at > now.toISOString());
-  return { grantId: redeemed.grant_id, outcome: grantLive ? creditOnChange(change.notice, change.charge) : "lost" };
+  const live = redeemed.clawed_back === 0 && (redeemed.expires_at === null || redeemed.expires_at > now.toISOString());
+  return { grantId: redeemed.grant_id, live, outcome: creditOutcome(live, change.notice, change.charge) };
 }
 
 /**
@@ -344,6 +364,30 @@ export async function changeTerms(
   };
 }
 
+/**
+ * The terms ops cancel the visit on: free to the client, the whole payment back and a credit given back, unless ops
+ * apply the client's own late terms (src/policy/moving-a-visit.ts, RULES[8]).
+ */
+export function opsCancelTerms(terms: ChangeTerms, onClientTerms: boolean): ChangeTerms {
+  const charged = opsCancelCharged(terms.notice, onClientTerms);
+  const paid = terms.payment?.paid ?? 0;
+  const refund = refundOf(cancelRefund(terms.visit.type, charged, terms.sold.lateCharge), paid, terms.lateFee);
+  const credit = terms.credit;
+  return {
+    ...terms,
+    cancel: { refund, kept: paid - refund },
+    credit: credit === null ? null : { ...credit, outcome: creditOutcome(credit.live, charged, terms.sold.lateCharge) },
+  };
+}
+
+/** A cancel ops make in the console: who made it, their reason, the terms they chose, and its audit entry. */
+export interface OpsCancel {
+  readonly staff: string;
+  readonly reason: string;
+  readonly terms: "free" | "client";
+  readonly audit: AuditEntry;
+}
+
 export type Cancelled =
   { readonly kind: "cancelled"; readonly refund: number; readonly kept: number } | { readonly kind: "not_changeable" };
 
@@ -375,34 +419,60 @@ export async function cancelVisit(
   deps: CancelDeps,
   terms: ChangeTerms,
   now: Date,
-  options: { labelAsTest: boolean; log: Logger; record: FieldRecord },
+  options: CancelOptions,
 ): Promise<Cancelled> {
-  const changeId = crypto.randomUUID();
+  const change: CancelOf = { changeId: crypto.randomUUID(), ops: options.ops ?? null };
   const workOrderId = options.record === "fsm" ? terms.visit.fsmWorkOrderId : null;
   const messageId =
     workOrderId === null
-      ? await cancelInOurDatabase(db, terms, changeId, now)
-      : await cancelInFsm(db, deps.fsm, terms, { changeId, workOrderId }, now, options.labelAsTest);
+      ? await cancelInOurDatabase(db, terms, change, now)
+      : await cancelInFsm(db, deps.fsm, terms, { ...change, workOrderId }, now, options.labelAsTest);
   if (messageId === null) return { kind: "not_changeable" };
-  await refundCancel(db, deps, terms, changeId, options.log);
+  await refundCancel(db, deps, terms, change, options.log);
   await deps.notify?.(messageId);
   return { kind: "cancelled", refund: terms.cancel.refund, kept: terms.cancel.kept };
 }
 
+interface CancelOptions {
+  readonly labelAsTest: boolean;
+  readonly log: Logger;
+  readonly record: FieldRecord;
+  /** Set when ops cancel the visit in the console; left out for the client's own cancel. */
+  readonly ops?: OpsCancel;
+}
+
+/** A cancel as it is written: its claim's ID, and ops' part in it, if it is theirs. */
+interface CancelOf {
+  readonly changeId: string;
+  readonly ops: OpsCancel | null;
+}
+
+/** Who the cancel is by, as a refund's note and ops' alert name them. */
+const cancelledBy = (change: CancelOf): string => (change.ops === null ? "the client" : "ops");
+
+/** The client's message: the answer to their own cancel, or the news of one ops made. */
+const messageKindOf = (change: CancelOf) => (change.ops === null ? "cancel_confirmation" : "visit_cancelled");
+
+/** Ops' cancel in the audit log, written only if the claim was; the client's own has none. */
+function auditedCancel(db: D1Database, change: CancelOf, now: Date): D1PreparedStatement[] {
+  if (change.ops === null) return [];
+  return [auditStatementIfWritten(db, change.ops.audit, now, { table: "visit_changes", id: change.changeId })];
+}
+
 /** The cancel claimed as the visit's one change that ends it, only while it is still to come and has not begun. */
-function claimCancel(db: D1Database, terms: ChangeTerms, changeId: string, now: Date): D1PreparedStatement {
+function claimCancel(db: D1Database, terms: ChangeTerms, change: CancelOf, now: Date): D1PreparedStatement {
   const { visit, notice, payment, cancel } = terms;
   return db
     .prepare(
       `INSERT INTO visit_changes (id, appointment_id, person_id, kind, notice, was_start, refund_amount, kept_amount,
-         payment_id, created_at)
-       SELECT ?1, ?2, ?3, 'cancelled', ?4, ?5, ?6, ?7, ?8, ?9 FROM appointments a
+         payment_id, created_at, cancelled_by, cancel_reason, ops_terms)
+       SELECT ?1, ?2, ?3, 'cancelled', ?4, ?5, ?6, ?7, ?8, ?9, ?11, ?12, ?13 FROM appointments a
        WHERE a.id = ?2 AND a.deleted_at IS NULL AND a.status IN (SELECT value FROM json_each(?10))
          AND NOT ${visitBegun("a")}
        ON CONFLICT DO NOTHING`,
     )
     .bind(
-      changeId,
+      change.changeId,
       visit.id,
       visit.personId,
       notice,
@@ -412,11 +482,14 @@ function claimCancel(db: D1Database, terms: ChangeTerms, changeId: string, now: 
       payment?.id ?? null,
       now.toISOString(),
       JSON.stringify(STEPS.cancel.from),
+      change.ops?.staff ?? null,
+      change.ops?.reason ?? null,
+      change.ops?.terms ?? null,
     );
 }
 
 /** A visit credit given back by the cancel. A clawback between the terms and the cancel still stops it coming back. */
-function restoredCredit(db: D1Database, terms: ChangeTerms, changeId: string, now: Date): D1PreparedStatement[] {
+function restoredCredit(db: D1Database, terms: ChangeTerms, change: CancelOf, now: Date): D1PreparedStatement[] {
   if (terms.credit?.outcome !== "restored") return [];
   return [
     db
@@ -432,40 +505,41 @@ function restoredCredit(db: D1Database, terms: ChangeTerms, changeId: string, no
         terms.credit.grantId,
         terms.visit.id,
         now.toISOString(),
-        changeId,
+        change.changeId,
       ),
   ];
 }
 
 /**
- * The cancel in our own database, in one batch: the change claimed, the visit cancelled, the client's message and any
- * credit given back, each written only if the claim was. The message's ID, or null when the visit could not be
- * cancelled.
+ * The cancel in our own database, in one batch: the change claimed, the visit cancelled, the client's message, any
+ * credit given back and ops' audit entry, each written only if the claim was. The message's ID, or null when the visit
+ * could not be cancelled.
  */
 async function cancelInOurDatabase(
   db: D1Database,
   terms: ChangeTerms,
-  changeId: string,
+  change: CancelOf,
   now: Date,
 ): Promise<string | null> {
   const { visit } = terms;
   const message = visitMessageOnChange(db, {
     personId: visit.personId,
     appointmentId: visit.id,
-    kind: "cancel_confirmation",
+    kind: messageKindOf(change),
     now,
-    changeId,
+    changeId: change.changeId,
   });
   const [claimed] = await db.batch([
-    claimCancel(db, terms, changeId, now),
+    claimCancel(db, terms, change, now),
     db
       .prepare(
         `UPDATE appointments SET status = 'cancelled', synced_at = ?2
          WHERE id = ?1 AND EXISTS (SELECT 1 FROM visit_changes WHERE id = ?3)`,
       )
-      .bind(visit.id, now.toISOString(), changeId),
+      .bind(visit.id, now.toISOString(), change.changeId),
     message.statement,
-    ...restoredCredit(db, terms, changeId, now),
+    ...restoredCredit(db, terms, change, now),
+    ...auditedCancel(db, change, now),
   ]);
   return claimed?.meta.changes === 1 ? message.id : null;
 }
@@ -478,15 +552,16 @@ async function cancelInFsm(
   db: D1Database,
   fsm: FsmProvider,
   terms: ChangeTerms,
-  change: { readonly changeId: string; readonly workOrderId: string },
+  change: CancelOf & { readonly workOrderId: string },
   now: Date,
   labelAsTest: boolean,
 ): Promise<string | null> {
   const { visit } = terms;
-  const claimed = await claimCancel(db, terms, change.changeId, now).run();
+  const claimed = await claimCancel(db, terms, change, now).run();
   if (claimed.meta.changes !== 1) return null;
 
-  const note = `${labelAsTest ? "Staging test: " : ""}Cancelled by the client in the app, ${noticeWords(terms)}.`;
+  const where = change.ops === null ? "the client in the app" : "ops in the console";
+  const note = `${labelAsTest ? "Staging test: " : ""}Cancelled by ${where}, ${noticeWords(terms)}.`;
   let done: boolean;
   try {
     done = await fsm.cancelVisit(change.workOrderId, note);
@@ -501,7 +576,7 @@ async function cancelInFsm(
   const message = visitMessage(db, {
     personId: visit.personId,
     appointmentId: visit.id,
-    kind: "cancel_confirmation",
+    kind: messageKindOf(change),
     now,
   });
   await db.batch([
@@ -509,7 +584,8 @@ async function cancelInFsm(
       .prepare("UPDATE appointments SET status = 'cancelled', fsm_status = 'Cancelled', synced_at = ?1 WHERE id = ?2")
       .bind(now.toISOString(), visit.id),
     message.statement,
-    ...restoredCredit(db, terms, change.changeId, now),
+    ...restoredCredit(db, terms, change, now),
+    ...auditedCancel(db, change, now),
   ]);
   return message.id;
 }
@@ -519,26 +595,26 @@ async function refundCancel(
   db: D1Database,
   deps: CancelDeps,
   terms: ChangeTerms,
-  changeId: string,
+  change: CancelOf,
   log: Logger,
 ): Promise<void> {
   const { visit, payment, cancel } = terms;
   if (payment === null || cancel.refund === 0) return;
   const asked = await askRefund(deps.payments, payment.razorpayPaymentId, {
     amount: cancel.refund,
-    notes: { appointment_id: visit.id, reason: "cancelled by the client" },
+    notes: { appointment_id: visit.id, reason: `cancelled by ${cancelledBy(change)}` },
     receipt: refundReceipt({ kind: "cancel", appointmentId: visit.id }),
   });
   if (asked.kind === "refunded") {
     if (asked.refundId === null) return;
     await db
       .prepare("UPDATE visit_changes SET razorpay_refund_id = ?1 WHERE id = ?2")
-      .bind(asked.refundId, changeId)
+      .bind(asked.refundId, change.changeId)
       .run();
     return;
   }
   log.error("cancel_refund_failed", { appointment_id: visit.id, outcome: asked.kind, error: asked.error });
-  const what = `Rs. ${String(cancel.refund / 100)} for visit ${visit.id}, cancelled by the client`;
+  const what = `Rs. ${String(cancel.refund / 100)} for visit ${visit.id}, cancelled by ${cancelledBy(change)}`;
   // Keyed on the visit, so ops are told once and a second refund by hand is not asked for.
   await deps.alertOnce({
     key: `cancel_refund_failed:${visit.id}`,

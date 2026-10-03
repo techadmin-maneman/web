@@ -106,6 +106,29 @@ describe("Razorpay: orders and refunds", () => {
     const { payments } = razorpay({ [`${API}/orders`]: () => json({ entity: "order" }) });
     await expect(payments.createOrder({ amount: 1, receipt: "r", notes: {} })).rejects.toThrow();
   });
+
+  it("answers the status of each payment on an order, by a GET that sends no body", async () => {
+    const { payments, calls } = razorpay({
+      [`${API}/orders/order_9/payments`]: () =>
+        json({
+          entity: "collection",
+          count: 2,
+          items: [
+            { id: "pay_1", entity: "payment", amount: 200000, status: "failed", order_id: "order_9" },
+            { id: "pay_2", entity: "payment", amount: 200000, status: "created", order_id: "order_9" },
+          ],
+        }),
+    });
+
+    expect(await payments.orderPayments("order_9")).toEqual(["failed", "created"]);
+    expect(calls[0]?.method).toBe("GET");
+    expect(calls[0]?.body).toBe("");
+  });
+
+  it("fails loudly on a list of an order's payments it cannot read, rather than say none was made", async () => {
+    const { payments } = razorpay({ [`${API}/orders/order_9/payments`]: () => json({ entity: "collection" }) });
+    await expect(payments.orderPayments("order_9")).rejects.toThrow();
+  });
 });
 
 // A consultation and fit in one visit is paid by a link, which Razorpay texts to the client itself
@@ -113,30 +136,44 @@ describe("Razorpay: orders and refunds", () => {
 describe("Razorpay: payment links", () => {
   const LINK = {
     amount: 4500000,
-    reference: "visit-1",
-    description: "Mane Man Natural, fitted Mon 21 Sep",
+    reference: "MM-2026-0841",
+    description: "Mane Man Natural hair system · fitted Mon 21 Sep",
     customer: { name: "Rohit Malhotra", contact: "+919810000001" },
     notes: { appointment_id: "visit-1", person_id: "person-1" },
   };
 
-  it("makes a link for the whole amount, under our reference, which Razorpay texts the client and reminds them of", async () => {
+  /** What the link was made with. */
+  async function linkMade(): Promise<Record<string, unknown>> {
     const { payments, calls } = razorpay({
       [`${API}/payment_links`]: () =>
-        json({ id: "plink_9", short_url: "https://rzp.io/i/abc", status: "created", reference_id: "visit-1" }),
+        json({ id: "plink_9", short_url: "https://rzp.io/i/abc", status: "created", reference_id: "MM-2026-0841" }),
     });
-
     expect(await payments.createPaymentLink(LINK)).toEqual({ id: "plink_9", shortUrl: "https://rzp.io/i/abc" });
     expect(calls[0]?.headers.get("Authorization")).toBe(`Basic ${btoa("rzp_test_abc:key-secret")}`);
-    expect(JSON.parse(calls[0]?.body ?? "")).toEqual({
+    return JSON.parse(calls[0]?.body ?? "") as Record<string, unknown>;
+  }
+
+  it("makes a link for the whole amount, under our reference, which Razorpay texts the client and reminds them of", async () => {
+    const made = await linkMade();
+    expect(made).not.toHaveProperty("expire_by");
+    expect(made).toMatchObject({
       amount: 4500000,
       currency: "INR",
       accept_partial: false,
-      reference_id: "visit-1",
-      description: "Mane Man Natural, fitted Mon 21 Sep",
+      reference_id: "MM-2026-0841",
+      description: "Mane Man Natural hair system · fitted Mon 21 Sep",
       customer: { name: "Rohit Malhotra", contact: "+919810000001" },
       notify: { sms: true, email: false },
       reminder_enable: true,
       notes: { appointment_id: "visit-1", person_id: "person-1" },
+    });
+  });
+
+  // MON-30: the page read "Payment Request from" the account holder's own name, and "RECEIPT" over our reference.
+  it("has Razorpay's page name us and label our reference as one", async () => {
+    expect((await linkMade()).options).toEqual({
+      checkout: { name: "Mane Man" },
+      hosted_page: { label: { receipt: "REFERENCE" } },
     });
   });
 
@@ -195,6 +232,7 @@ describe("payments where none is connected", () => {
       }),
     ).rejects.toThrow(/PAYMENTS_PROVIDER is none/);
     await expect(none.findPaymentLink("visit-1")).rejects.toThrow(/PAYMENTS_PROVIDER is none/);
+    await expect(none.orderPayments("order_9")).rejects.toThrow(/PAYMENTS_PROVIDER is none/);
     expect(calls).toEqual([]);
   });
 });

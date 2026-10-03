@@ -116,7 +116,7 @@ describe("the reminder that free service visits are running out", () => {
     expect(await queueCreditReminders(env.DB, evening("2026-09-21"))).toEqual([]);
   });
 
-  it("rides the five-minute cron, and the messaging consumer sends it", async () => {
+  it("rides the cron, and the messaging consumer sends it", async () => {
     await grant({ visits: 3, expiresAt: LAST_DAY_EXPIRY });
     const job = CRON_JOBS.filter((each) => each.name === "credit_reminders");
     const messages = fakeQueue();

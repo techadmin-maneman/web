@@ -1,6 +1,6 @@
 # 0044. The payments mirror
 
-- Status: accepted. Amended by ADR 0068: a refusal from Books is told to ops, once, as well as logged. Amended by ADR 0068: a capture confirms its hold, and a payment keeps its GST.
+- Status: accepted. Amended by ADR 0068: a refusal from Books is told to ops, once, as well as logged. Amended by ADR 0068: a capture confirms its hold, and a payment keeps its GST. Amended 2 October 2026: payment links number from the same series, and a link's payment takes the reference its link was made under.
 - Date: 2026-09-22
 
 ## Context
@@ -20,14 +20,14 @@ Checkout, orders and refunds from our side arrive with self-serve booking (P2-M5
 
 **`POST /api/hooks/razorpay`, on the public host with the other webhooks.**
 
-- It checks the signature over the raw body before anything else. Without `RAZORPAY_WEBHOOK_SECRET` the route answers 404, as the other hooks do without their secret.
+- It checks the signature over the raw body before anything else. Without `RAZORPAY_WEBHOOK_SECRET` the route answers 404, as the other hooks do without their secret. The secret must be at least 32 characters, and self-serve booking does not start without it.
 - Each event is kept once in `razorpay_events`, by its event ID. A repeat is acknowledged and changes nothing.
 
 **`payments` and `refunds` follow the events** (migration 0014, `src/domain/payments.ts`).
 
 - **A payment's state only moves forward:** failed, authorized, captured, partially refunded, refunded. An authorization arriving after its capture changes nothing. A late authorization does overtake a failure, as Razorpay's late authorisations can.
 - **A refund's processed amount** sets the payment's refunded total and state.
-  - A refund for a payment not yet recorded is answered 409 and not marked seen, so Razorpay's retry is applied once the payment has arrived.
+  - A refund for a payment not yet recorded records the payment from the refund's event, which carries it, then the refund. The payment's hold is not confirmed, so nothing is booked for money that has gone back, and ops are told once. Only an event that does not carry its payment is answered 409 and not marked seen, so Razorpay's retry is applied once the payment has arrived.
 - **A captured payment gets our reference,** "MM-2026-0841": the next number of its India year. It is given in one statement, so two captures at once cannot share a number.
 - **The person** is the one named in our order's notes (from P2-M5), or else the one whose mobile number paid. The mirror never creates a person from a payment. The appointment is the one named in the notes.
 - **A capture confirms the hold its order was for** (ADR 0068): the hold keeps its time from then until it is booked or refunded. Whether the payment was in time is judged on Razorpay's own time for it (`created_at`), not on `captured_at`, which is when its webhook reached us.

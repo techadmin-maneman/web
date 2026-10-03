@@ -1,13 +1,16 @@
 // The messaging consumer: the WhatsApp provider's caller for every message but
 // a login code, which src/http/send-code.ts hands to the provider itself once
-// the response has gone, never through this queue (ADR 0030). It sends a person
-// the result they asked for at the gate, as the result template with a signed
-// result link that expires an hour after sending; a client's messages about
-// their visits (src/domain/visit-messages.ts) and the reminder of their next one
+// the response has gone, never through this queue (ADR 0030), and the word that
+// an account is deleted, which goes the same way to a number the erasure has
+// just blanked (src/routes/ops-profile.ts). It sends a person the result they
+// asked for at the gate, as the result template with a signed result link that
+// expires an hour after sending; a client's messages about their visits
+// (src/domain/visit-messages.ts) and the reminder of their next one
 // (src/domain/next-visit.ts); the referral, waitlist and launch messages; the
-// booking form's notices to a number we know; and the answer to a STOP reply,
-// each composed where its subject lives. A reminder or the launch alert ends
-// with the signed link that stops them (src/domain/stop-messages.ts).
+// booking form's notices to a number we know; ops' rejection of a request to
+// delete an account; and the answer to a STOP reply, each composed where its
+// subject lives. A reminder or the launch alert ends with the signed link that
+// stops them (src/domain/stop-messages.ts).
 //
 // Skipped, never sent: messaging off, a person erased, an automatic kind to a
 // number outside the staging allowlist (a kind that answers the person who
@@ -34,6 +37,7 @@ import { saltedHash } from "../lib/hash.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { signToken } from "../lib/signed-token.ts";
 import { composeCreditsExpiring } from "../domain/credit-reminders.ts";
+import { composeDeletionRejected } from "../domain/deletion.ts";
 import { composeBookingRefunded } from "../domain/held-bookings.ts";
 import { composeNextServiceReminder } from "../domain/next-visit.ts";
 import { readOpsInputs } from "../domain/ops-settings.ts";
@@ -220,6 +224,7 @@ async function contentOf(db: D1Database, config: StaticConfig, row: MessageRow, 
   if (row.kind === "launch_alert") return composeLaunchAlert(db, row.subject_id, row.person_id, config.environment);
   if (row.kind === "waitlist_confirmation") return composeWaitlistConfirmation(db, row.subject_id, row.person_id);
   if (isSiteNoticeKind(row.kind)) return composeSiteNotice(db, row.kind, row.person_id);
+  if (row.kind === "deletion_rejected") return composeDeletionRejected(db, row.subject_id, row.person_id);
   if (row.kind === "messages_stopped") return composeMessagesStopped(db, row.person_id);
   return { skip: "unknown kind" };
 }

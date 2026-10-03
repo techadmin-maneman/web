@@ -13,13 +13,19 @@ import { forgetOld, keepDay, keepJob, keptDay, keptJob, keptNames } from "../sto
 import { unsentJobs } from "../store/outbox.ts";
 import { todayInIndia } from "./when.ts";
 
+interface Failed {
+  readonly state: "failed";
+  /** The API's ID for the call that failed, for the technician to quote; null when nothing answered. */
+  readonly requestId: string | null;
+}
+
 export type Loaded<T> =
   | { readonly state: "loading" }
-  | { readonly state: "failed" }
+  | Failed
   /** `fromPhone` is true when this is what the phone kept, not what the API just said. */
   | { readonly state: "loaded"; readonly value: T; readonly fromPhone: boolean };
 
-const FAILED = { state: "failed" } as const;
+const failed = (requestId: string | null): Failed => ({ state: "failed", requestId });
 
 /** Lets go of whatever the phone no longer needs, now that a fresh day says what that is. */
 async function forgetStale(): Promise<void> {
@@ -36,9 +42,9 @@ export async function loadDay(date: string): Promise<Loaded<readonly JobSummary[
     await forgetStale().catch(() => undefined);
     return { state: "loaded", value: answer.body.jobs, fromPhone: false };
   }
-  if (!unreachable(answer)) return FAILED;
+  if (!unreachable(answer)) return failed(answer.requestId);
   const kept = await keptDay(date).catch(() => null);
-  return kept === null ? FAILED : { state: "loaded", value: kept, fromPhone: true };
+  return kept === null ? failed(answer.requestId) : { state: "loaded", value: kept, fromPhone: true };
 }
 
 export async function loadJob(id: string): Promise<Loaded<Job>> {
@@ -47,9 +53,9 @@ export async function loadJob(id: string): Promise<Loaded<Job>> {
     await keepJob(answer.body).catch(() => undefined);
     return { state: "loaded", value: answer.body, fromPhone: false };
   }
-  if (!unreachable(answer)) return FAILED;
+  if (!unreachable(answer)) return failed(answer.requestId);
   const kept = await keptJob(id).catch(() => null);
-  return kept === null ? FAILED : { state: "loaded", value: kept, fromPhone: true };
+  return kept === null ? failed(answer.requestId) : { state: "loaded", value: kept, fromPhone: true };
 }
 
 function useKept<T>(load: () => Promise<Loaded<T>>, watch: unknown = null): readonly [Loaded<T>, () => void] {
@@ -63,7 +69,7 @@ function useKept<T>(load: () => Promise<Loaded<T>>, watch: unknown = null): read
         if (current) setLoaded(answer);
       },
       () => {
-        if (current) setLoaded(FAILED);
+        if (current) setLoaded(failed(null));
       },
     );
     return () => {

@@ -168,7 +168,7 @@ export function Consumables() {
   const may = useMayDo();
 
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const current = book ?? loaded.value;
 
   const saved = (next: Book, words: string) => {

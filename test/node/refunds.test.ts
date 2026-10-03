@@ -12,6 +12,7 @@ function razorpay(...answers: ("made" | "made before" | "refused" | "silent")[])
   const notAsked = () => Promise.reject(new Error("not asked"));
   const payments: PaymentsProvider = {
     createOrder: notAsked,
+    orderPayments: notAsked,
     createPaymentLink: notAsked,
     findPaymentLink: notAsked,
     refund: (_paymentId, refund) => {

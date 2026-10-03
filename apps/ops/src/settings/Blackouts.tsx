@@ -230,7 +230,7 @@ export function Blackouts() {
   const mayRemove = access.mayCall("POST /api/blackouts/remove");
 
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const periods = periodsOf(changed ?? loaded.value.blackouts);
 
   return (

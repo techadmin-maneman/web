@@ -18,7 +18,7 @@ export interface RouteNeed {
   readonly ownPlaces?: true;
 }
 
-/** Anyone Access lets in: the health check, and who is signed in, which says what they may do. */
+/** Anyone Access lets in: the health check, who is signed in and what they may do, and the console's own errors. */
 export const SIGNED_IN = "signed_in";
 
 const need = (department: Department, level: Level): RouteNeed => ({ department, level });
@@ -29,6 +29,7 @@ const inOwnDepartments = (level: Level): RouteNeed => ({ department: OWN_DEPARTM
 export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>> = {
   "GET /api/health": SIGNED_IN,
   "GET /api/whoami": SIGNED_IN,
+  "POST /api/client-errors": SIGNED_IN,
 
   // Operations: dispatch, today's tasks, visits, technicians, leave and stock.
   "GET /api/dispatch": need("operations", "view"),
@@ -45,6 +46,9 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/held-bookings/{id}/link": need("operations", "act"),
   "GET /api/visits/availability": need("operations", "view"),
   "POST /api/visits": need("operations", "act"),
+  // Free to the client unless ops apply the client's own terms, as an ops move is free: everyday work, not a waiver.
+  "POST /api/visits/{id}/cancel": need("operations", "act"),
+  "POST /api/visits/{id}/close": need("operations", "act"),
   "GET /api/technicians": need("operations", "view"),
   "GET /api/technicians/work": need("operations", "view"),
   // Who signs in to the technician app, and so sees clients' addresses: access, so MANAGE.
