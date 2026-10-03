@@ -21,16 +21,28 @@ const ERRORS: Readonly<Record<string, string | undefined>> = technicians.errors;
 /** Why the API refused, in the console's words; nothing changed either way. */
 const refusal = (code: string): string => ERRORS[code] ?? technicians.errors.unknown;
 
-/** The three fields as typed. */
+/** The fields as typed and chosen; a city of "" is none. */
 interface Typed {
   readonly name: string;
   readonly mobile: string;
   readonly zone: string;
+  readonly city: string;
 }
 
 const zoneOf = (typed: string): string | null => (typed.trim() === "" ? null : typed.trim());
+const cityOf = (chosen: string): string | null => (chosen === "" ? null : chosen);
 
-function Fields({ typed, onType, focusFirst }: { typed: Typed; onType: (typed: Typed) => void; focusFirst: boolean }) {
+function Fields({
+  typed,
+  cities,
+  onType,
+  focusFirst,
+}: {
+  typed: Typed;
+  cities: readonly string[];
+  onType: (typed: Typed) => void;
+  focusFirst: boolean;
+}) {
   const copy = technicians.fields;
   return (
     <>
@@ -79,14 +91,41 @@ function Fields({ typed, onType, focusFirst }: { typed: Typed; onType: (typed: T
           />
         )}
       </Field>
+      <Field label={copy.city} hint={copy.cityHint} className={styles.formField}>
+        {(control) => (
+          <select
+            {...control}
+            className={styles.select}
+            value={typed.city}
+            onChange={(event) => {
+              onType({ ...typed, city: event.target.value });
+            }}
+          >
+            <option value="">{copy.noCity}</option>
+            {cities.map((city) => (
+              <option key={city} value={city}>
+                {city}
+              </option>
+            ))}
+          </select>
+        )}
+      </Field>
     </>
   );
 }
 
 /** A new technician, in a panel over the roster. His number signs in to the technician app once he is added. */
-export function AddTechnician({ onAdded, onClose }: { onAdded: (name: string) => Promise<void>; onClose: () => void }) {
+export function AddTechnician({
+  cities,
+  onAdded,
+  onClose,
+}: {
+  cities: readonly string[];
+  onAdded: (name: string) => Promise<void>;
+  onClose: () => void;
+}) {
   const copy = technicians.add;
-  const [typed, setTyped] = useState<Typed>({ name: "", mobile: "", zone: "" });
+  const [typed, setTyped] = useState<Typed>({ name: "", mobile: "", zone: "", city: "" });
   const [sending, setSending] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
 
@@ -99,7 +138,7 @@ export function AddTechnician({ onAdded, onClose }: { onAdded: (name: string) =>
     setSending(true);
     setFailed(null);
     const name = typed.name.trim();
-    const answer = await api.addTechnician({ name, mobile, zone: zoneOf(typed.zone) });
+    const answer = await api.addTechnician({ name, mobile, zone: zoneOf(typed.zone), city: cityOf(typed.city) });
     if (!answer.ok) {
       setSending(false);
       setFailed(refusal(answer.code));
@@ -123,7 +162,7 @@ export function AddTechnician({ onAdded, onClose }: { onAdded: (name: string) =>
         }}
       >
         <p className={styles.warning}>{copy.effect}</p>
-        <Fields typed={typed} onType={setTyped} focusFirst={false} />
+        <Fields typed={typed} cities={cities} onType={setTyped} focusFirst={false} />
         <div className={styles.actions}>
           <Button variant="primary" size="small" className={styles.save} type="submit" disabled={sending}>
             {sending ? copy.saving : copy.save}
@@ -146,27 +185,32 @@ const typedOf = (technician: TechnicianSummary): Typed => ({
   name: technician.name,
   mobile: technician.mobile === null ? "" : phoneWords(technician.mobile),
   zone: technician.zone ?? "",
+  city: technician.city ?? "",
 });
 
 /** What ops changed, field by field: a field left as it was is not sent. */
 function changeOf(technician: TechnicianSummary, typed: Typed): TechnicianChange | "unreadable_mobile" {
   const mobile = mobileDigits(typed.mobile);
   if (mobile === null) return "unreadable_mobile";
-  const change: { name?: string; mobile?: string; zone?: string | null } = {};
+  const change: { name?: string; mobile?: string; zone?: string | null; city?: string | null } = {};
   const name = typed.name.trim();
   if (name !== technician.name) change.name = name;
   if (technician.mobile === null || mobile !== mobileDigits(technician.mobile)) change.mobile = mobile;
   const zone = zoneOf(typed.zone);
   if (zone !== technician.zone) change.zone = zone;
+  const city = cityOf(typed.city);
+  if (city !== technician.city) change.city = city;
   return change;
 }
 
 function ChangeForm({
   technician,
+  cities,
   onSaved,
   onCancel,
 }: {
   technician: TechnicianSummary;
+  cities: readonly string[];
   onSaved: () => Promise<void>;
   onCancel: () => void;
 }) {
@@ -204,7 +248,7 @@ function ChangeForm({
         void send();
       }}
     >
-      <Fields typed={typed} onType={setTyped} focusFirst />
+      <Fields typed={typed} cities={cities} onType={setTyped} focusFirst />
       <div className={styles.actions}>
         <Button variant="primary" size="small" className={styles.save} type="submit" disabled={sending}>
           {sending ? copy.saving : copy.save}
@@ -222,7 +266,7 @@ function ChangeForm({
   );
 }
 
-/** The number he signs in with, and his zone; a gap where none is recorded. */
+/** The number he signs in with, his zone and his city; a gap where none is recorded. */
 function Facts({ technician }: { technician: TechnicianSummary }) {
   const copy = technicians.details;
   return (
@@ -236,6 +280,10 @@ function Facts({ technician }: { technician: TechnicianSummary }) {
       <div className={styles.fact}>
         <dt className={styles.label}>{copy.zone}</dt>
         <dd className={styles.factValue}>{technician.zone ?? technicians.unknown}</dd>
+      </div>
+      <div className={styles.fact}>
+        <dt className={styles.label}>{copy.city}</dt>
+        <dd className={styles.factValue}>{technician.city ?? technicians.unknown}</dd>
       </div>
     </dl>
   );
@@ -357,12 +405,14 @@ function SwitchOn({ technician, onSwitchedOn }: { technician: TechnicianSummary;
  */
 export function Details({
   technician,
+  cities,
   active,
   onChange,
   onSwitchedOff,
   onSwitchedOn,
 }: {
   technician: TechnicianSummary;
+  cities: readonly string[];
   active: boolean;
   onChange: () => Promise<void>;
   onSwitchedOff: (visits: readonly ReturnedVisit[]) => Promise<void>;
@@ -387,6 +437,7 @@ export function Details({
       {changing ? (
         <ChangeForm
           technician={technician}
+          cities={cities}
           onSaved={async () => {
             await onChange();
             stopChanging();

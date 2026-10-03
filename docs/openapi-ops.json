@@ -5040,6 +5040,17 @@
                     }
                   ]
                 },
+                "city": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "The city he works in, which staff access by place reads; null for none."
+                },
                 "mobile": {
                   "anyOf": [
                     {
@@ -5111,6 +5122,7 @@
                 "name",
                 "initials",
                 "zone",
+                "city",
                 "mobile",
                 "editable",
                 "devices",
@@ -5141,6 +5153,17 @@
                     }
                   ]
                 },
+                "city": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "The city he works in, which staff access by place reads; null for none."
+                },
                 "mobile": {
                   "anyOf": [
                     {
@@ -5161,17 +5184,26 @@
                 "id",
                 "name",
                 "zone",
+                "city",
                 "mobile",
                 "editable"
               ],
               "additionalProperties": false
             },
             "description": "Technicians switched off, by name: they cannot sign in, and nothing is booked on them."
+          },
+          "cities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The cities a technician may be given, in display order."
           }
         },
         "required": [
           "technicians",
-          "switched_off"
+          "switched_off",
+          "cities"
         ],
         "additionalProperties": false
       },
@@ -5876,6 +5908,19 @@
               }
             ],
             "description": "Where he mostly works, in ops' words; null for none."
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The city he works in, one of GET /api/technicians' cities. Staff with a grant of that city or its zone see him; with none, only a national grant does."
           }
         },
         "required": [
@@ -5910,6 +5955,19 @@
               }
             ],
             "description": "Where he mostly works, in ops' words; null for none."
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The city he works in, one of GET /api/technicians' cities. Staff with a grant of that city or its zone see him; with none, only a national grant does."
           }
         },
         "additionalProperties": false,
@@ -11569,7 +11627,7 @@
             }
           },
           "400": {
-            "description": "invalid_request: no name, or not an Indian mobile",
+            "description": "invalid_request: no name, not an Indian mobile, or not one of our cities",
             "content": {
               "application/json": {
                 "schema": {
@@ -12165,7 +12223,7 @@
     },
     "/api/technicians/{id}": {
       "patch": {
-        "summary": "Change a technician's name, number or zone",
+        "summary": "Change a technician's name, number, zone or city",
         "parameters": [
           {
             "schema": {
@@ -12199,7 +12257,7 @@
             }
           },
           "400": {
-            "description": "invalid_request: nothing to change, no name, or not an Indian mobile",
+            "description": "invalid_request: nothing to change, no name, not an Indian mobile, or not one of our cities",
             "content": {
               "application/json": {
                 "schema": {
