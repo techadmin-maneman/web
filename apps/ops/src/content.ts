@@ -1060,6 +1060,44 @@ export const clients = {
       rejected: (date: string) => `Erasure requested ${date} and refused.`,
     },
   },
+  /**
+   * PLACEHOLDER, all of it: no board draws erasing a client from their page. It is for a request made outside the
+   * app, on WhatsApp or the phone; one made in the app is decided in Deletion requests, which tells the client.
+   */
+  erasure: {
+    title: "Erase this client",
+    note: "When they ask us, outside the app, to delete their data. It cannot be undone.",
+    open: "Erase",
+    openLabel: (name: string) => `Erase ${name}`,
+    confirmLabel: (name: string) => `Erasing ${name}`,
+    warning: "This erases them now. It cannot be undone, and there is no copy to put back.",
+    /** The runbook's first step, "Check the request comes from the number's owner". */
+    checked: "I have confirmed this request with them, on their own number.",
+    confirm: "Erase now",
+    cancel: "Keep them",
+    erasing: "Erasing",
+    /** Why nothing was erased, and what ops may do about it. */
+    owed: {
+      visit_booked: "They still have a visit booked, so nothing was erased. Cancel it and refund what they paid first.",
+      payment_held: "We hold a payment of theirs with no visit behind it, so nothing was erased. Refund it first.",
+    },
+    /** To erase today all the same, when what is owed cannot be settled first. */
+    settle: "I will cancel and refund it by hand today.",
+    anyway: "Erase anyway",
+    done: {
+      title: "Erased",
+      body:
+        "Their photographs and details are gone. Their records in the CRM, Books and FSM are blanked within a few " +
+        "minutes. Tell them it is done, in the chat they asked in.",
+      back: "Find another client",
+    },
+    errors: {
+      not_permitted: NOT_PERMITTED,
+      not_found: "They were erased already. Reload to see.",
+      offline: "You are offline. Connect, then try again.",
+      unknown: "That did not go through. They have not been erased.",
+    } as Readonly<Record<string, string>>,
+  },
   /*
    * The client's record in figures (src/domain/client-history.ts). The design
    * draws no such tab, so every line below is a placeholder; the figures

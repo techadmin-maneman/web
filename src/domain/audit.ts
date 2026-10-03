@@ -20,6 +20,8 @@ export const AUDIT_ACTIONS = [
   "number_change.decide",
   "deletion.request",
   "deletion.decide",
+  // Ops erasing a client from their page, the day they ask.
+  "person.erase",
   // A held referral grant (docs/decisions/0048-referrals.md), and an invite ops attach to a client who booked away
   // from its page (docs/decisions/0089-an-invite-is-not-lost.md).
   "referral.decide",
