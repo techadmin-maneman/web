@@ -14,6 +14,8 @@ import { PARTIAL_REASONS } from "../config/job-sheet.ts";
 import { addDays, indiaDate, indiaInstant } from "../lib/india-time.ts";
 import { UNTOLD_MOVE } from "./dispatch.ts";
 import { LEAVE_ON_THE_DAY } from "./leave.ts";
+import { citiesOf, type PlacedId, type PlacedRecord } from "./places.ts";
+import { reachesCity, type PlacesReached } from "../policy/access.ts";
 import {
   atRiskIfDoneBy,
   firstFitToBookIfConsultedBy,
@@ -386,6 +388,44 @@ function taskOf(row: Row, sla: Slas): Task {
     episode: row.episode,
     owner: row.owner,
   };
+}
+
+/** The record each group's task is read from, which its id names and which says where the task is. */
+const TASK_RECORDS: Readonly<Record<TaskGroup, PlacedRecord>> = {
+  untold_move: "move",
+  held_booking: "hold",
+  leave_conflict: "visit",
+  address_to_confirm: "visit",
+  consultation_request: "consultation_request",
+  first_fit_to_book: "first_fit_request",
+  replacement_order: "piece",
+  at_risk_client: "visit",
+  partial_visit: "visit",
+  referral_review: "referral",
+  no_show_decision: "no_show",
+  number_change: "number_change",
+  erasure_request: "deletion_request",
+  grievance: "grievance",
+  draft_invoice: "visit",
+  payment_owed: "payment_link",
+  erasure_unfinished: "client",
+};
+
+const recordOf = (task: Task): PlacedId => ({ kind: TASK_RECORDS[task.group], id: task.id });
+
+/**
+ * The tasks within reach: each group's where the caller's grants in the department that decides it reach its record's
+ * city. A city is looked up only for a task whose group is not reached everywhere.
+ */
+export async function tasksWithin(
+  db: D1Database,
+  tasks: readonly Task[],
+  reachOf: (group: TaskGroup) => PlacesReached,
+): Promise<Task[]> {
+  const toPlace = tasks.filter((task) => reachOf(task.group).kind !== "everywhere");
+  if (toPlace.length === 0) return [...tasks];
+  const cityOf = await citiesOf(db, toPlace.map(recordOf));
+  return tasks.filter((task) => reachesCity(reachOf(task.group), cityOf(recordOf(task))));
 }
 
 /** How many have waited past their day. The console reads the same day, so both agree. */

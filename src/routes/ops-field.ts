@@ -30,7 +30,8 @@ import { afterRuling } from "../domain/after-a-ruling.ts";
 import { decideNoShow, listNoShowCases, MESSAGE_STATES } from "../domain/no-shows.ts";
 import { piecesOf, syncPieces } from "../domain/pieces.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
-import { permits, withinRouteReach } from "../http/staff-access.ts";
+import { permits, reachOf, routeReach, withinRouteReach } from "../http/staff-access.ts";
+import { reachesCity } from "../policy/access.ts";
 import { WAIVING_A_NO_SHOW } from "../policy/console-routes.ts";
 import { devicesByTechnician, revokeDevice } from "../domain/technicians.ts";
 import { roster, type RosterTechnician } from "../domain/technician-roster.ts";
@@ -187,7 +188,10 @@ const TechniciansSchema = z
       .openapi({
         description: "Technicians switched off, by name: they cannot sign in, and nothing is booked on them.",
       }),
-    cities: z.array(z.string()).openapi({ description: "The cities a technician may be given, in display order." }),
+    cities: z.array(z.string()).openapi({
+      description:
+        "The cities the caller may give a technician, those their Operations MANAGE reaches, in display order.",
+    }),
   })
   .strict()
   .openapi("Technicians");
@@ -260,7 +264,8 @@ const piecesRoute = createRoute({
 const techniciansRoute = createRoute({
   method: "get",
   path: "/api/technicians",
-  summary: "Active technicians, the phones they have logged in on and their leave, and those switched off",
+  summary:
+    "Active technicians in the caller's cities, the phones they have logged in on and their leave, and those switched off",
   responses: {
     200: { description: "The technicians", ...json(TechniciansSchema) },
     403: errorResponse("access_required"),
@@ -276,7 +281,7 @@ const leaveRoute = createRoute({
     200: { description: "Recorded", ...json(LeaveRecordedSchema) },
     400: errorResponse(`invalid_request: to is before from, or more than ${String(LEAVE_MAX_DAYS)} days ahead`),
     403: errorResponse("access_required"),
-    404: errorResponse("not_found: no such active technician"),
+    404: errorResponse("not_found: no such active technician in the caller's cities"),
   },
 });
 
@@ -288,7 +293,7 @@ const cancelLeaveRoute = createRoute({
   responses: {
     200: { description: "Cancelled", ...json(z.object({ cancelled: z.boolean() }).strict()) },
     403: errorResponse("access_required"),
-    404: errorResponse("not_found: no such leave of that technician's"),
+    404: errorResponse("not_found: no such leave of that technician's, or he is not in the caller's cities"),
   },
 });
 
@@ -300,7 +305,7 @@ const revokeRoute = createRoute({
   responses: {
     200: { description: "Revoked", ...json(z.object({ revoked_at: z.iso.datetime() }).strict()) },
     403: errorResponse("access_required"),
-    404: errorResponse("not_found: no such phone of that technician's"),
+    404: errorResponse("not_found: no such phone of that technician's, or he is not in the caller's cities"),
   },
 });
 
@@ -394,12 +399,16 @@ export function registerOpsField(app: App): void {
 
   app.openapi(techniciansRoute, async (c) => {
     // The phones and the leave are one read each for the whole roster, not one per technician.
-    const [everyone, devices, leave, cities] = await Promise.all([
+    const [roll, devices, leave, cities, reach, managed] = await Promise.all([
       roster(c.env.DB),
       devicesByTechnician(c.env.DB),
       leaveFrom(c.env.DB, indiaDate(c.var.deps.now())),
       listCities(c.env.DB),
+      routeReach(c),
+      reachOf(c, "operations", "manage"),
     ]);
+    const everyone = roll.filter((technician) => reachesCity(reach, technician.city));
+    const given = cities.map((city) => city.name).filter((city) => reachesCity(managed, city));
     const record = fieldRecord(c.var.config.providers);
     const summaryOf = (technician: RosterTechnician) => ({
       id: technician.id,
@@ -420,7 +429,7 @@ export function registerOpsField(app: App): void {
           .map(({ id, from, to, note }) => ({ id, from, to, note })),
       }));
     const switchedOff = everyone.filter((technician) => !technician.active).map(summaryOf);
-    return c.json({ technicians, switched_off: switchedOff, cities: cities.map((city) => city.name) }, 200);
+    return c.json({ technicians, switched_off: switchedOff, cities: given }, 200);
   });
 
   app.openapi(leaveRoute, async (c) => {
@@ -428,6 +437,7 @@ export function registerOpsField(app: App): void {
     const { id } = c.req.valid("param");
     const { from, to, note } = c.req.valid("json");
     const now = c.var.deps.now();
+    if (!(await withinRouteReach(c, "technician", id))) return c.json(errorBody("not_found", c.var.requestId), 404);
 
     const outcome = await recordLeave(
       c.env.DB,
@@ -452,6 +462,7 @@ export function registerOpsField(app: App): void {
     const staff = staffOf(c);
     const { id, leave } = c.req.valid("param");
     const now = c.var.deps.now();
+    if (!(await withinRouteReach(c, "technician", id))) return c.json(errorBody("not_found", c.var.requestId), 404);
 
     const cancelled = await cancelLeave(
       c.env.DB,
@@ -478,6 +489,7 @@ export function registerOpsField(app: App): void {
     const staff = staffOf(c);
     const { id, device } = c.req.valid("param");
     const now = c.var.deps.now();
+    if (!(await withinRouteReach(c, "technician", id))) return c.json(errorBody("not_found", c.var.requestId), 404);
 
     const revoked = await revokeDevice(c.env.DB, {
       technicianId: id,

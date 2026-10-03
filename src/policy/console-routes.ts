@@ -7,7 +7,7 @@
 import { can, DEPARTMENTS, NATIONAL, type Caller, type Department, type Level, type ZoneOfCity } from "./access.ts";
 import type { TaskGroup } from "./tasks.ts";
 
-/** A route that keeps to the caller's own departments, as Tasks lists each department its own groups. */
+/** A route that keeps to the caller's own departments and places, as Tasks lists each department its own groups. */
 export const OWN_DEPARTMENTS = "own";
 
 export interface RouteNeed {
@@ -23,7 +23,7 @@ export const SIGNED_IN = "signed_in";
 
 const need = (department: Department, level: Level): RouteNeed => ({ department, level });
 const inOwnPlaces = (department: Department, level: Level): RouteNeed => ({ department, level, ownPlaces: true });
-const inOwnDepartments = (level: Level): RouteNeed => ({ department: OWN_DEPARTMENTS, level });
+const inOwnDepartments = (level: Level): RouteNeed => ({ department: OWN_DEPARTMENTS, level, ownPlaces: true });
 
 /** Every ops route, as "METHOD /path" with the OpenAPI document's placeholders. A route not here is refused. */
 export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>> = {
@@ -31,36 +31,38 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "GET /api/whoami": SIGNED_IN,
   "POST /api/client-errors": SIGNED_IN,
 
-  // Operations: dispatch, today's tasks, visits, technicians, leave and stock.
-  "GET /api/dispatch": need("operations", "view"),
-  "GET /api/dispatch/room": need("operations", "view"),
-  "POST /api/dispatch/assign": need("operations", "act"),
-  "POST /api/dispatch/move": need("operations", "act"),
-  "POST /api/dispatch/moves/{id}/told": need("operations", "act"),
+  // Operations: dispatch, today's tasks, visits, technicians, leave and stock, each kept to the caller's cities.
+  // Held bookings wait on FSM, which is leaving, so they stay national.
+  "GET /api/dispatch": inOwnPlaces("operations", "view"),
+  "GET /api/dispatch/room": inOwnPlaces("operations", "view"),
+  "POST /api/dispatch/assign": inOwnPlaces("operations", "act"),
+  "POST /api/dispatch/move": inOwnPlaces("operations", "act"),
+  "POST /api/dispatch/moves/{id}/told": inOwnPlaces("operations", "act"),
   // Each department sees its own groups of tasks, and Act takes one of them or gives it to someone (TASK_DEPARTMENTS).
   "GET /api/tasks": inOwnDepartments("view"),
   "PUT /api/tasks/{group}/{id}/owner": inOwnDepartments("act"),
-  "POST /api/tasks/{group}/{id}/close": need("operations", "act"),
+  "POST /api/tasks/{group}/{id}/close": inOwnPlaces("operations", "act"),
   "POST /api/held-bookings/{id}/retry": need("operations", "act"),
   "POST /api/held-bookings/{id}/stop": need("operations", "act"),
   "POST /api/held-bookings/{id}/link": need("operations", "act"),
-  "GET /api/visits/availability": need("operations", "view"),
-  "POST /api/visits": need("operations", "act"),
-  "GET /api/technicians": need("operations", "view"),
-  "GET /api/technicians/work": need("operations", "view"),
+  "GET /api/visits/availability": inOwnPlaces("operations", "view"),
+  "POST /api/visits": inOwnPlaces("operations", "act"),
+  "GET /api/technicians": inOwnPlaces("operations", "view"),
+  "GET /api/technicians/work": inOwnPlaces("operations", "view"),
   // Who signs in to the technician app, and so sees clients' addresses: access, so MANAGE.
-  "POST /api/technicians": need("operations", "manage"),
-  "PATCH /api/technicians/{id}": need("operations", "manage"),
-  "POST /api/technicians/{id}/deactivate": need("operations", "manage"),
-  "POST /api/technicians/{id}/reactivate": need("operations", "manage"),
-  "POST /api/technicians/{id}/leave": need("operations", "act"),
-  "POST /api/technicians/{id}/leave/{leave}/cancel": need("operations", "act"),
-  "POST /api/technicians/{id}/devices/{device}/revoke": need("operations", "act"),
-  "GET /api/stock": need("operations", "view"),
+  "POST /api/technicians": inOwnPlaces("operations", "manage"),
+  "PATCH /api/technicians/{id}": inOwnPlaces("operations", "manage"),
+  "POST /api/technicians/{id}/deactivate": inOwnPlaces("operations", "manage"),
+  "POST /api/technicians/{id}/reactivate": inOwnPlaces("operations", "manage"),
+  "POST /api/technicians/{id}/leave": inOwnPlaces("operations", "act"),
+  "POST /api/technicians/{id}/leave/{leave}/cancel": inOwnPlaces("operations", "act"),
+  "POST /api/technicians/{id}/devices/{device}/revoke": inOwnPlaces("operations", "act"),
+  // The central store is in no city, so a delivery into it needs a national grant.
+  "GET /api/stock": inOwnPlaces("operations", "view"),
   "POST /api/stock/deliveries": need("operations", "act"),
-  "POST /api/stock/transfers": need("operations", "act"),
-  "POST /api/stock/counts": need("operations", "act"),
-  "POST /api/stock/write-offs": need("operations", "act"),
+  "POST /api/stock/transfers": inOwnPlaces("operations", "act"),
+  "POST /api/stock/counts": inOwnPlaces("operations", "act"),
+  "POST /api/stock/write-offs": inOwnPlaces("operations", "act"),
 
   // Customer Care: clients, their requests, grievances, number changes and deletions, each kept to the caller's cities.
   "POST /api/clients/search": inOwnPlaces("customer_care", "view"),
@@ -148,6 +150,8 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
 export const WAIVING_A_NO_SHOW: RouteNeed = need("finance", "manage");
 /** Refunding a disputed charge, where upholding it keeps the money. */
 export const REFUNDING_A_DISPUTE: RouteNeed = need("finance", "manage");
+/** A technician with no city is seen only nationally, so leaving him without one asks Operations MANAGE nationally. */
+export const GIVING_NO_CITY: RouteNeed = need("operations", "manage");
 
 /** The department that decides each group of tasks: its people see the group on Tasks, and Act may take a task of it. */
 export const TASK_DEPARTMENTS: Readonly<Record<TaskGroup, Department>> = {
@@ -170,8 +174,8 @@ export const TASK_DEPARTMENTS: Readonly<Record<TaskGroup, Department>> = {
   erasure_unfinished: "customer_care",
 };
 
-/** What seeing a group of tasks, or taking a task of it, asks. */
-export const taskNeed = (group: TaskGroup, level: Level): RouteNeed => need(TASK_DEPARTMENTS[group], level);
+/** What seeing a group of tasks, or taking a task of it, asks: the board keeps each task to the caller's cities. */
+export const taskNeed = (group: TaskGroup, level: Level): RouteNeed => inOwnPlaces(TASK_DEPARTMENTS[group], level);
 
 /** Whether the caller's grants reach what a route asks: over any place if it keeps to their own, nationally if not. */
 export function meetsNeed(caller: Caller, need: RouteNeed, zoneOf: ZoneOfCity): boolean {

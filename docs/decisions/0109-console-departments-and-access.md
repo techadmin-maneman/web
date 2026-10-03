@@ -1,6 +1,6 @@
 # 0109. The console by departments, and who may do what in it
 
-- Status: accepted, on the owner's ruling of 2 October 2026 (audit decision 18, and its design answers); amended the same day for the navigation, for actions by level, and for where each record is; amended 4 October 2026 for Customer Care by place
+- Status: accepted, on the owner's ruling of 2 October 2026 (audit decision 18, and its design answers); amended the same day for the navigation, for actions by level, and for where each record is; amended 4 October 2026 for Customer Care and Operations by place
 - Date: 2026-10-02
 
 ## Context
@@ -42,7 +42,7 @@ Every route's department and lowest level is one table, `ROUTE_NEEDS` in `src/po
 
 - A person Access lets in who is not on the list, or is switched off, is refused everything (`403 not_permitted`) except `GET /api/whoami`, which tells the console to say so, and the health check.
 - A route `ROUTE_NEEDS` does not list is refused. HEAD asks what GET asks, as Hono answers it with the GET route.
-- A route needs a **national** grant until it keeps its lists and records to the caller's own places (`ownPlaces` in the table). Today the Staff routes and Customer Care's do (below, "Customer Care by place"). So a city or zone grant opens nothing else yet: it never shows a city lead another city's clients.
+- A route needs a **national** grant until it keeps its lists and records to the caller's own places (`ownPlaces` in the table). Today the Staff routes, Customer Care's and Operations' do (below, "Customer Care by place" and "Operations by place"). So a city or zone grant opens nothing else yet: it never shows a city lead another city's clients.
 
 **The owner is the national super-admin:** every department at Manage, nationally.
 
@@ -97,7 +97,16 @@ Migration 0069 lists every person in the ops audit log (Access e-mails, `actor_k
 - Every Customer Care route keeps to the caller's cities and is `ownPlaces`: finding a client by number or by part of a name or number, the client's record, photographs, consents, pieces, hair profile and an address given on the phone, and the lists and decisions of grievances, number changes and deletion requests.
 - The cities are those the caller's grants reach at the route's own level (`routeReach` in `src/http/staff-access.ts`). Customer Care View nationally with Act in Delhi reads every client but corrects, answers and decides only in Delhi.
 - A list leaves out what is elsewhere. A client or a request elsewhere is answered `404 not_found`, as one that does not exist, so a city lead cannot tell that it does.
-- Tasks still needs a national grant until Operations' lists keep to the caller's cities.
+
+## Operations by place (amended 4 October 2026)
+
+- Every Operations route keeps to the caller's cities and is `ownPlaces`, at the route's own level, as Customer Care's do: the dispatch board and its moves, Tasks, booking a visit, technicians, their leave and phones, and stock.
+- The dispatch board shows the visits in the caller's cities, and the technicians there or holding one of those visits; the cities it can be narrowed to are the caller's. A visit or a move elsewhere is `404 not_found`, and a job is given only to a technician in the caller's cities, or kept on the one the board showed it with.
+- Tasks shows each group's tasks where the caller's grants in the department that decides it reach the task's record (`tasksWithin` in `src/domain/tasks.ts`). Taking, giving or closing a task elsewhere is `404 not_found`.
+- A visit is booked only for a client in the caller's cities, and only the technicians there are offered.
+- A technician is seen, changed, switched off or on, given leave or a phone revoked only in the caller's cities. A technician is given only a city the caller's Operations Manage reaches; no city, only with a national grant.
+- Stock shows the kits of the technicians in the caller's cities. The central store is in no city: it, and a delivery into it, need a national grant.
+- Held bookings wait on FSM, which is leaving: retrying, stopping and linking one still need a national grant.
 
 ## Consequences
 
