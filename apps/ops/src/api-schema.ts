@@ -3309,7 +3309,7 @@ export interface paths {
                     };
                     content?: never;
                 };
-                /** @description not_permitted: it asks Act in the department the alert's kind belongs to */
+                /** @description not_permitted: it asks Act in the department the alert's kind belongs to, and Manage for a CRM erasure */
                 403: {
                     headers: {
                         [name: string]: unknown;

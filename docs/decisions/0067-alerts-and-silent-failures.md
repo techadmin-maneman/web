@@ -68,7 +68,7 @@ The 2 October audit found that failures needing a person still lived only in the
 
 - **"Needs a hand"** heads Tasks: every open alert ops have been told of (`alerts.told_at`: the first sighting, or the `after`-th for one that waits), the longest open first, with its message and its link (`GET /api/alerts`).
 - **Each department sees its own kinds** (`src/policy/alerts.ts`): a failed message, a CRM give-up or a deletion request is Customer Care's; refunds, invoices and Books are Finance's; stock, technicians and bookings are Operations'. Anything else, about the system itself, is Admin's.
-- **Mark done** (`POST /api/alerts/{id}/resolve`, Act, audited) closes one ops have put right by hand, which the runbook's SQL did before. For a CRM erasure it also records the person as erased there.
+- **Mark done** (`POST /api/alerts/{id}/resolve`, Act, audited) closes one ops have put right by hand, which the runbook's SQL did before. For a CRM erasure it also records the person as erased there, so it asks Manage, as every erasure does.
 - **Send again** (`POST /api/alerts/{id}/send-again`, Act, audited) puts a failed message, a lead the CRM gave up on, or a CRM erasure back on its queue with its tries counted afresh, and closes the alert. If it fails again, that is a new alert, told again.
 - **Kept now, not only posted:** a lead the CRM gave up on (`crm_lead`), an erasure there (`crm_erasure`) and a failed message (`message_failed`), each closed when it goes through; and a deletion request five days old (`deletion_waiting`), one alert per request, closed when it is decided. The request is marked alerted only once its alert is kept, and the message says "within 7 days" and the day it is due.
 

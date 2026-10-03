@@ -2326,7 +2326,7 @@ Mark an alert done: what it was about is put right
 
 **204**: Closed, under the member of staff who closed it
 
-**403**: not_permitted: it asks Act in the department the alert's kind belongs to
+**403**: not_permitted: it asks Act in the department the alert's kind belongs to, and Manage for a CRM erasure
 
 ```json
 {

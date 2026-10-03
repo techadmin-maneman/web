@@ -1,7 +1,7 @@
 // Who acts on an alert (src/domain/alerts.ts) on the Tasks board's "Needs a hand", and which alerts' work ops may
 // send again from there. An alert's kind is its key up to the first colon: "crm_lead:<leadId>" is a crm_lead.
 
-import type { Department } from "./access.ts";
+import type { Department, Level } from "./access.ts";
 
 export const alertKind = (key: string): string => key.split(":", 1)[0] ?? key;
 
@@ -82,6 +82,12 @@ const DEPARTMENT_OF_KIND: ReadonlyMap<string, Department> = new Map([
  * job, the WhatsApp bridge, Cloudflare's allowances), which is Admin's.
  */
 export const alertDepartment = (kind: string): Department => DEPARTMENT_OF_KIND.get(kind) ?? "admin";
+
+/**
+ * The level marking an alert done asks. Done on a CRM erasure records the person erased there, and erasures are
+ * Manage; any other alert only closes.
+ */
+export const markDoneLevel = (kind: string): Level => (kind === "crm_erasure" ? "manage" : "act");
 
 /** The kinds whose work can be sent again: the message, the lead to the CRM, or the erasure there. */
 export const SENT_AGAIN_KINDS = ["message_failed", "crm_lead", "crm_erasure"] as const;

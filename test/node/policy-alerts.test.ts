@@ -9,6 +9,7 @@ import {
   crmErasureKey,
   crmLeadKey,
   deletionWaitingKey,
+  markDoneLevel,
   maySendAgain,
   messageFailedKey,
 } from "../../src/policy/alerts.ts";
@@ -40,6 +41,14 @@ describe("the department that acts on an alert", () => {
     expect(alertDepartment("cron_job")).toBe("admin");
     expect(alertDepartment("whatsapp_bridge")).toBe("admin");
     expect(alertDepartment("constructor")).toBe("admin");
+  });
+});
+
+describe("what marking an alert done asks", () => {
+  it("is Manage for a CRM erasure, which it records as done, and Act for any other", () => {
+    expect(markDoneLevel("crm_erasure")).toBe("manage");
+    expect(markDoneLevel("message_failed")).toBe("act");
+    expect(markDoneLevel("cancel_refund_failed")).toBe("act");
   });
 });
 

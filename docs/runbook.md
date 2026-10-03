@@ -1272,7 +1272,7 @@ The photo notice promises that a person's data is deleted the same day they ask.
    SELECT erased_at, crm_erased_at, crm_erasure_attempts, crm_erasure_error FROM people WHERE id = '<person_id>';
    ```
 
-   If `crm_erased_at` stays empty, `crm_erasure_error` says why. The sweeper tries 10 times, then alerts, and the alert waits under Tasks' Needs a hand. Once Zoho is back, **Send again** there. To finish it by hand instead, find the record in Zoho by `D1_Person_ID`, blank those fields, then **Mark done**: that records the person as erased in the CRM.
+   If `crm_erased_at` stays empty, `crm_erasure_error` says why. The sweeper tries 10 times, then alerts, and the alert waits under Tasks' Needs a hand. Once Zoho is back, **Send again** there. To finish it by hand instead, find the record in Zoho by `D1_Person_ID`, blank those fields, then **Mark done** (Customer Care Manage): that records the person as erased in the CRM.
 
 4. **Delete the chat** with the number in the Mane Man WhatsApp account, if there is one.
 5. **Tell the person** it is done.

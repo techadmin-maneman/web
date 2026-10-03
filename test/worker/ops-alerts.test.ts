@@ -134,6 +134,23 @@ describe("marking an alert done", () => {
     ).toBe(NOW.toISOString());
   });
 
+  it("asks Manage to record an erasure as done in the CRM, as any erasure does", async () => {
+    await env.DB.prepare(
+      "INSERT INTO people (id, created_at, mobile_e164, name, erased_at) VALUES (?1, ?2, '', '', ?2)",
+    )
+      .bind(PERSON, NOW.toISOString())
+      .run();
+    await alertOnce({ key: `crm_erasure:${PERSON}`, message: "Erasing failed." });
+    const id = await idOf("crm_erasure");
+    await listStaff("asha@maneman.in", ["customer_care:act:national"]);
+    await listStaff("ravi@maneman.in", ["customer_care:manage:national"]);
+    await enforce();
+
+    expect((await post(`/api/alerts/${id}/resolve`, {}, opsAs(staffPerson("asha@maneman.in")))).status).toBe(403);
+    expect(await env.DB.prepare("SELECT crm_erased_at FROM people").first("crm_erased_at")).toBeNull();
+    expect((await post(`/api/alerts/${id}/resolve`, {}, opsAs(staffPerson("ravi@maneman.in")))).status).toBe(204);
+  });
+
   it("is refused to someone outside the alert's department", async () => {
     await failedMessage();
     const id = await idOf("message_failed");
