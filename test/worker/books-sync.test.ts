@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { FieldRecord } from "../../src/config/field-record.ts";
 import { NO_GST, type GstRegistration } from "../../src/config/gst.ts";
 import { createAlertOnce, createResolveAlert } from "../../src/domain/alerts.ts";
+import { markCustomerChanged } from "../../src/domain/books-customers.ts";
 import {
   CALLS_PER_CUSTOMER,
   CALLS_PER_RECORD,
@@ -161,6 +162,7 @@ function bothLooking() {
 /** A summary with only these counts. */
 const did = (counts: Partial<BooksSyncSummary>): BooksSyncSummary => ({
   customers: 0,
+  customersUpdated: 0,
   recorded: 0,
   applied: 0,
   refunded: 0,
@@ -868,5 +870,106 @@ describe("without FSM, the pass makes each client's Books customer", () => {
     expect(await pass(books, null, NOW, {}, budget)).toEqual(did({ customers: 1 }));
     expect(books.made.customers).toHaveLength(1);
     expect(budget.ranOut()).toBe(true);
+  });
+});
+
+describe("without FSM, a client's new number or address reaches their Books customer", () => {
+  beforeEach(async () => {
+    mode = "ours";
+    await env.DB.prepare("UPDATE people SET books_customer_id = 'books-customer-9' WHERE id = ?1").bind(PERSON).run();
+  });
+
+  const changed = (at = NOW) => markCustomerChanged(env.DB, PERSON, at);
+
+  const changedAt = async () =>
+    (
+      await env.DB.prepare("SELECT books_details_changed_at AS at FROM people WHERE id = ?1")
+        .bind(PERSON)
+        .first<{ at: string | null }>()
+    )?.at;
+
+  it("writes the client's details as they are now to their customer, once", async () => {
+    await changed();
+    await env.DB.prepare("UPDATE people SET mobile_e164 = '+919810000003' WHERE id = ?1").bind(PERSON).run();
+    const books = createStubBooks();
+
+    expect(await pass(books, null)).toEqual(did({ customersUpdated: 1 }));
+    expect(books.made.customerUpdates).toEqual([
+      {
+        customerId: "books-customer-9",
+        personId: PERSON,
+        name: "Rohit Malhotra",
+        mobile: "+919810000003",
+        email: null,
+        stateCode: null,
+        address: null,
+      },
+    ]);
+    expect(await changedAt()).toBeNull();
+
+    expect(await pass(books, null, later(RECHECK_AFTER_MS * 2))).toEqual(did({}));
+    expect(books.made.customerUpdates).toHaveLength(1);
+  });
+
+  it("writes a change made while Books was being written on the next pass", async () => {
+    await changed();
+    const stub = createStubBooks();
+    const racing: BooksProvider = {
+      ...stub,
+      updateCustomer: async (customerId, customer) => {
+        await changed(later(1000));
+        await stub.updateCustomer(customerId, customer);
+      },
+    };
+
+    await pass(racing, null);
+    expect(await changedAt()).toBe(later(1000).toISOString());
+    expect(await pass(stub, null, later(2000))).toEqual(did({ customersUpdated: 1 }));
+    expect(await changedAt()).toBeNull();
+  });
+
+  it("never writes a client who has been erased, since the erasure blanks their customer", async () => {
+    await changed();
+    await env.DB.prepare("UPDATE people SET erased_at = ?1 WHERE id = ?2").bind(NOW.toISOString(), PERSON).run();
+    const books = createStubBooks();
+    expect(await pass(books, null)).toEqual(did({}));
+    expect(books.made.customerUpdates).toEqual([]);
+  });
+
+  it("tells ops of an update Books refuses, and asks again an hour on", async () => {
+    await changed();
+    const books = createStubBooks();
+    books.refuseNext("updateCustomer", "4071");
+    const logs = captureLogs();
+
+    expect(await pass(books, null)).toEqual(did({}));
+    expect(logs.lines()).toContainEqual(
+      expect.objectContaining({ event: "books_customer_update_refused", person_id: PERSON }),
+    );
+    expect(told).toEqual([
+      `Books refused client ${PERSON}'s new number or address: 400 4071. It is asked again every hour. ${CLIENT_LINK}`,
+    ]);
+    expect(await changedAt()).toBe(NOW.toISOString());
+
+    expect(await pass(books, null, later(RECHECK_AFTER_MS / 2))).toEqual(did({}));
+    expect(await pass(books, null, later(RECHECK_AFTER_MS + 1000))).toEqual(did({ customersUpdated: 1 }));
+    expect(books.made.customerUpdates).toHaveLength(1);
+    expect(await openAlerts()).toEqual({ n: 0 });
+  });
+
+  it("writes nothing once the cron run's calls are spent", async () => {
+    await changed();
+    const books = createStubBooks();
+    expect(await pass(books, null, NOW, {}, createCallBudget(CALLS_PER_CUSTOMER - 1))).toEqual(did({}));
+    expect(books.made.customerUpdates).toEqual([]);
+    expect(await changedAt()).toBe(NOW.toISOString());
+  });
+
+  it("leaves the customer to FSM's own sync on FSM's path", async () => {
+    mode = "fsm";
+    await changed();
+    const books = createStubBooks();
+    expect(await pass(books, "books-customer-9")).toEqual(did({}));
+    expect(books.made.customerUpdates).toEqual([]);
   });
 });

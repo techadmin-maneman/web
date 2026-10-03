@@ -39,6 +39,7 @@ export function usePincode() {
     if (problem !== null) {
       setError(problem);
       setAnswer(null);
+      field.current?.focus();
       return;
     }
     setChecking(true);

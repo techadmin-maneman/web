@@ -50,7 +50,7 @@
 // after the pincode and the day, so a form refused for those costs neither.
 
 import type { LossExtent } from "../config/booking.ts";
-import { CURRENT_NOTICE, LANDING_NOTICES, type ToldNotice } from "../config/notices.ts";
+import { CONSULTATION_NOTICES, CURRENT_NOTICE, LANDING_NOTICES, type ToldNotice } from "../config/notices.ts";
 import { BOOKING_DAYS, HOLD_SECONDS, type BookingWindow } from "../config/scheduling.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
 import type { Logger } from "../log.ts";
@@ -454,7 +454,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     mobile: checked.mobile,
     name: request.name,
     purpose: "whatsapp_visits",
-    notice: LANDING_NOTICES.consultation,
+    notice: CONSULTATION_NOTICES[request.source],
     source: request.source,
     ipHash: checked.ipHash,
     now,

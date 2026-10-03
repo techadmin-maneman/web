@@ -26,7 +26,7 @@ import {
   withdrawNumberChange,
   type NumberChange,
 } from "../domain/number-change.ts";
-import { CURRENT_NOTICE } from "../config/notices.ts";
+import { switchNotice } from "../config/notices.ts";
 import { recordConsent } from "../domain/consents.ts";
 import { consentsOf, currentAddress, liveContact, maskedMobile, type Address } from "../domain/profile.ts";
 import { takeOne } from "../domain/rate-limit.ts";
@@ -473,7 +473,7 @@ export function registerClientProfile(app: App): void {
       person: { id: personId },
       purpose,
       granted,
-      notice: CURRENT_NOTICE[purpose],
+      notice: switchNotice(purpose, source),
       source,
       rule: "if_changed",
       ipHash: (await visitorOf(c)).ipHash,

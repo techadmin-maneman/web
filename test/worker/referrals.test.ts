@@ -88,11 +88,12 @@ beforeEach(async () => {
 });
 
 describe("referral codes", () => {
-  it("are the client's initials and four random characters, with none that look alike", () => {
+  // PS-54: six random characters, too many to guess.
+  it("are the client's initials and six random characters, with none that look alike", () => {
     const codes = Array.from({ length: 500 }, () => newReferralCode("Rohit Malhotra"));
-    expect(codes.every((code) => /^RM[A-HJ-NP-Z2-9]{4}$/.test(code))).toBe(true);
-    expect(new Set(codes).size).toBeGreaterThan(450);
-    expect(newReferralCode("")).toMatch(/^MM[A-HJ-NP-Z2-9]{4}$/);
+    expect(codes.every((code) => /^RM[A-HJ-NP-Z2-9]{6}$/.test(code))).toBe(true);
+    expect(new Set(codes).size).toBeGreaterThan(495);
+    expect(newReferralCode("")).toMatch(/^MM[A-HJ-NP-Z2-9]{6}$/);
     expect(newReferralCode("Ishaan Oberoi")).toMatch(/^XX/);
   });
 
