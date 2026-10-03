@@ -239,7 +239,7 @@ async function cancelForClient(c: Context<AppEnv>, visitId: string, asked: Cance
  * record, the visit is closed there.
  */
 async function closeForTechnician(c: Context<AppEnv>, visitId: string, asked: z.infer<typeof HandCloseSchema>) {
-  const { requestId } = c.var;
+  const { requestId, deps, log } = c.var;
   if (asked.reason === "") return c.json(errorBody("invalid_request", requestId, ["reason"]), 400);
   if (fieldRecord(c.var.config.providers) === "fsm") return c.json(errorBody("managed_in_fsm", requestId), 409);
 
@@ -251,9 +251,9 @@ async function closeForTechnician(c: Context<AppEnv>, visitId: string, asked: z.
     byHand: { by: staffOf(c).id, reason: asked.reason },
     audit: visitAudit(c, "visit.close", visitId, { outcome: asked.outcome }),
   };
-  const closed = await closeByHand(c.env.DB, close, c.var.deps.now());
+  const closed = await closeByHand(c.env.DB, { ...deps, log }, close, deps.now());
   if (closed.kind === "closed") {
-    c.var.log.info("visit_closed_by_hand", { appointment_id: visitId, outcome: asked.outcome });
+    log.info("visit_closed_by_hand", { appointment_id: visitId, outcome: asked.outcome });
     return c.json({ visit_id: visitId, status: closed.status, duration_minutes: closed.durationMinutes }, 200);
   }
   if (closed.code === "not_found") return c.json(errorBody("not_found", requestId), 404);
