@@ -48,8 +48,8 @@ export const RazorpayPaymentLinkSchema = z.object({
   id: z.string(),
   status: z.string(),
   /**
-   * Ours: a one visit's payment reference, or the visit's ID on a link ops made by hand in Razorpay's dashboard; or the
-   * hold a visit ops booked waits on.
+   * Ours: the reference the link's payment takes, or the visit's ID on a link ops made by hand in Razorpay's dashboard.
+   * A link made before links had a reference carries the visit's or the hold's ID.
    */
   reference_id: z.string().nullish(),
   /** The order Razorpay made for the link, which its payment names too. */

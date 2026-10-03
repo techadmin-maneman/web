@@ -25,7 +25,7 @@ import type { PaymentsProvider } from "../providers/payments.ts";
 import { isRefusal } from "../providers/provider-error.ts";
 import type { AlertOnce, ResolveAlert } from "./alerts.ts";
 import { codeAsRead, priceAfterCode } from "./discount-code-uses.ts";
-import { referenceLink } from "./payments.ts";
+import { reserveReference } from "./payments.ts";
 import { priceOf } from "./price-book.ts";
 import { serviceOf } from "./services.ts";
 import { visitMessage } from "./visit-messages.ts";
@@ -132,7 +132,7 @@ async function linkFor(db: D1Database, visit: FittedVisit, now: Date): Promise<L
           now.toISOString(),
           after.useId,
         ),
-      referenceLink(db, linkId, now),
+      reserveReference(db, "payment_links", linkId, now),
     ]);
   }
   const written = await current();

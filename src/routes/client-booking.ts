@@ -446,7 +446,7 @@ export async function startCheckout(c: Context<AppEnv>, holdId: string, personId
   }
   const row = await checkoutHold(c.env.DB, holdId);
   if (row === null) return null;
-  // "First fit · Sat 3 Oct", or "Moving your visit to Sat 3 Oct".
+  // "Mane Man Natural · Sat 3 Oct", or "Moving your visit to Sat 3 Oct".
   const day = shortDate(row.date);
   const name = row.service_name ?? VISIT_TYPE_NAMES[row.type];
   const description = row.move_kind === "move" ? `Moving your visit to ${day}` : `${name} · ${day}`;

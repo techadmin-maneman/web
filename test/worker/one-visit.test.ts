@@ -475,6 +475,18 @@ describe("Razorpay's word that a one visit's link is paid", () => {
     ]);
   });
 
+  // Razorpay sends payment.captured for a link's payment too, often first, with the link's notes.
+  it("gives the payment the link's reference though its capture arrives before the link's paid event", async () => {
+    const linkId = await fittedAndClosed(createStubPayments());
+    const paid = linkPaid({ id: linkId, reference_id: LINK_REFERENCE });
+    const payment = { ...paid.payload.payment.entity, notes: { appointment_id: JOB, person_id: PERSON } };
+    await deliver({ entity: "event", event: "payment.captured", payload: { payment: { entity: payment } } }, "evt-7");
+    await deliver(paid, "evt-8");
+
+    const { results } = await env.DB.prepare("SELECT reference FROM payments").all();
+    expect(results).toEqual([{ reference: LINK_REFERENCE }]);
+  });
+
   it("finds the visit by the link's reference where Razorpay's answer to the close never came", async () => {
     const stub = createStubPayments();
     const answerLost: StubPayments = {

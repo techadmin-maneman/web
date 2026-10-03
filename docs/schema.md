@@ -1458,7 +1458,7 @@ Indexes:
 
 A slot held while a client pays, at Checkout or by a payment link ops sent, and what became of it (ADR 0045, ADR 0068).
 
-Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`, `0058_held_bookings.sql`, `0061_one_visit.sql`, `0075_pay_by_link.sql`.
+Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`, `0058_held_bookings.sql`, `0061_one_visit.sql`, `0075_pay_by_link.sql`, `0077_payment_link_references.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1503,6 +1503,9 @@ Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_chan
 | `pay_by_link` | INTEGER | no | `0` |  |
 | `payment_link_id` | TEXT | yes |  |  |
 | `payment_link_url` | TEXT | yes |  |  |
+| `reference` | TEXT | yes |  |  |
+| `reference_year` | INTEGER | yes |  |  |
+| `reference_number` | INTEGER | yes |  |  |
 
 Indexes:
 
@@ -1512,6 +1515,8 @@ Indexes:
 - `slot_holds_confirmed`: on (`queued_at`), where `state = 'held' AND confirmed_at IS NOT NULL`
 - `slot_holds_confirmed_by_person`: on (`person_id`), where `state = 'held' AND confirmed_at IS NOT NULL`
 - `slot_holds_held`: on (`expires_at`), where `state = 'held'`
+- `slot_holds_reference`: unique on (`reference`)
+- `slot_holds_reference_number`: unique on (`reference_year`, `reference_number`)
 - A `UNIQUE` constraint: unique on (`razorpay_order_id`)
 
 ## slot_times
