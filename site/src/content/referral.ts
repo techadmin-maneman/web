@@ -17,7 +17,7 @@
 import type { Invite, ReferralReward } from "../lib/api.ts";
 import { fill } from "../lib/text.ts";
 import { capitalised, serviceArea, visitLength } from "./service.ts";
-import { notices, type Notice } from "./site.ts";
+import { notices, pageTitles, type Notice } from "./site.ts";
 
 /** A one-line notice's words, as the backend records them with the consent (src/config/notices.ts). */
 function lineOf(notice: Notice): string {
@@ -98,10 +98,11 @@ export const referral = {
     /**
      * A code we do not know: a typo, a revoked code, or one more than 12 months
      * old (board C4, "Code expired"). The API does not say which, so the page
-     * says only what is true of all three.
+     * says only what is true of all three, under /book's heading.
      */
     unknown: {
-      title: "We do not recognise this invite",
+      title: "Book a free consultation",
+      notice: "We do not recognise this invite",
       body: unknownBody,
     },
   },
@@ -357,6 +358,12 @@ export const referral = {
 /** The title a shared invite carries. */
 export function inviteTitle(name: string | null): string {
   return name === null ? referral.preview.titleUnnamed : fill(referral.preview.title, { name });
+}
+
+/** The browser tab's title: the invite's own, or /book's for a code we do not know, which the page is headed as. */
+export function invitePageTitle(invite: Invite | null): string {
+  if (invite?.state === "unknown") return pageTitles.book;
+  return inviteTitle(invite?.referrer_first_name ?? null);
 }
 
 /**
