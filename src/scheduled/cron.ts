@@ -375,8 +375,9 @@ export const CRON_JOBS: readonly CronJob[] = [
   // What the photographs and cards hold of R2, told at half, 80% and all of their share (docs/decisions/0093), and
   // the database against D1's limit, told at half, 80% and 95%.
   { name: "storage_meter", needs: "nothing", every: 60, at: 39, run: storageMeterJob },
-  // The operating figure behind the weekend-share assumption (src/policy/dispatch.ts): the day's board, read once.
-  { name: "dispatch_utilisation", needs: "nothing", every: 60, at: 41, run: utilisationJob },
+  // The operating figure behind the weekend-share assumption (src/policy/dispatch.ts). Once a day it reads the day's
+  // board, so it shares a minute with jobs that make no outside call.
+  { name: "dispatch_utilisation", needs: "nothing", every: 60, at: 47, run: utilisationJob },
   // What the account has used today of the free plan's daily allowances, told at 70%.
   { name: "daily_allowances", needs: "nothing", every: 60, at: 54, run: dailyAllowancesJob },
   // FSM's catalogue against the price book, which it prices invoices by (docs/decisions/0073-prices-from-the-price-book.md),
