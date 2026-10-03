@@ -161,6 +161,25 @@ describe.each(["fsm", "ours"] as const)("adding a technician, with %s as the rec
     expect(answer.status).toBe(201);
   });
 
+  it("gives him one of our cities, and refuses a city that is not one", async () => {
+    const answer = await send(ops, "POST", "/api/technicians", {
+      name: "Naveen Rao",
+      mobile: "9810000007",
+      city: "Gurgaon",
+    });
+    const unknown = await send(ops, "POST", "/api/technicians", {
+      name: "Vikram Seth",
+      mobile: "9810000006",
+      city: "Atlantis",
+    });
+
+    const { id } = await answer.json<{ id: string }>();
+    expect(await one("SELECT city FROM technicians WHERE id = ?1", id)).toEqual({ city: "Gurgaon" });
+    expect(unknown.status).toBe(400);
+    expect(await unknown.json()).toMatchObject({ error: { code: "invalid_request", fields: ["city"] } });
+    expect(await one("SELECT COUNT(*) AS technicians FROM technicians")).toEqual({ technicians: 3 });
+  });
+
   it("refuses a number that is not an Indian mobile, and a name of nothing but spaces", async () => {
     const badNumber = await send(ops, "POST", "/api/technicians", { name: "Naveen Rao", mobile: "12345" });
     const noName = await send(ops, "POST", "/api/technicians", { name: "   ", mobile: "9810000007" });
@@ -216,6 +235,27 @@ describe("changing a technician", () => {
       name: "Imran Qureshi",
       mobile_e164: "+919810000009",
     });
+  });
+
+  it("sets his city, takes it away, and refuses a city that is not one of ours", async () => {
+    const ops = appIn("ours", "ops");
+
+    const set = await send(ops, "PATCH", `/api/technicians/${IMRAN}`, { city: "Noida" });
+    const cityOf = () => one("SELECT city, zone FROM technicians WHERE id = ?1", IMRAN);
+    expect(set.status).toBe(200);
+    expect(await cityOf()).toEqual({ city: "Noida", zone: "Sec 40–65" });
+
+    const unknown = await send(ops, "PATCH", `/api/technicians/${IMRAN}`, { city: "Atlantis" });
+    expect(unknown.status).toBe(400);
+    expect(await cityOf()).toEqual({ city: "Noida", zone: "Sec 40–65" });
+
+    expect((await send(ops, "PATCH", `/api/technicians/${IMRAN}`, { city: null })).status).toBe(200);
+    expect(await cityOf()).toEqual({ city: null, zone: "Sec 40–65" });
+    const audit = await auditOf("technician.change");
+    expect(audit.results.map((entry) => entry.detail)).toEqual([
+      JSON.stringify({ fields: "city" }),
+      JSON.stringify({ fields: "city" }),
+    ]);
   });
 
   it("answers not found for a technician there is no record of, and refuses an empty change", async () => {
@@ -380,9 +420,18 @@ describe("switching a technician back on", () => {
 });
 
 describe("the roster", () => {
+  interface Technician {
+    id: string;
+    name: string;
+    zone: string | null;
+    city: string | null;
+    mobile: string | null;
+    editable: boolean;
+  }
   interface Roster {
-    technicians: { id: string; mobile: string | null; editable: boolean }[];
-    switched_off: { id: string; name: string; zone: string | null; mobile: string | null; editable: boolean }[];
+    technicians: Technician[];
+    switched_off: Technician[];
+    cities: string[];
   }
 
   const roster = async (record: FieldRecord) =>
@@ -395,8 +444,20 @@ describe("the roster", () => {
 
     expect(body.technicians).toEqual([expect.objectContaining({ id: IMRAN, mobile: "+919810000009", editable: true })]);
     expect(body.switched_off).toEqual([
-      { id: SAMEER, name: "Sameer Bhatt", zone: "Sec 1–39", mobile: "+919810000008", editable: true },
+      { id: SAMEER, name: "Sameer Bhatt", zone: "Sec 1–39", city: null, mobile: "+919810000008", editable: true },
     ]);
+  });
+
+  it("says each technician's city, and the cities one may be given", async () => {
+    await env.DB.prepare("UPDATE technicians SET city = 'Gurgaon' WHERE id = ?1").bind(IMRAN).run();
+
+    const body = await roster("ours");
+
+    expect(body.technicians.map(({ id, city }) => ({ id, city }))).toEqual([
+      { id: IMRAN, city: "Gurgaon" },
+      { id: SAMEER, city: null },
+    ]);
+    expect(body.cities).toEqual(["Gurgaon", "Delhi", "Noida", "Faridabad", "Ghaziabad", "Mumbai", "Bengaluru"]);
   });
 
   it("on FSM's path, marks only the technicians ops added as theirs to change", async () => {

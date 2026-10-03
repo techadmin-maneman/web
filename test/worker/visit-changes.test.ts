@@ -569,7 +569,7 @@ describe("moving a visit", () => {
     expect(held.price.amount).toBe(400000);
     const started = await post(app, `/api/appointments/${VISIT}/reschedule`, { hold_id: held.id });
     expect(await started.json()).toMatchObject({
-      checkout: { amount: 400000, description: "Moving your first fit to 2026-09-28" },
+      checkout: { amount: 400000, description: "Moving your visit to Mon 28 Sep" },
     });
 
     const fsm = createStubFsm(world());

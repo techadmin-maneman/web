@@ -6,7 +6,7 @@ import type { Surface } from "../config/environments.ts";
 import type { Dependencies } from "../dependencies.ts";
 import type { ReadOpsInputs } from "../domain/ops-settings.ts";
 import type { Session } from "../domain/sessions.ts";
-import type { CallerAccess } from "../domain/staff.ts";
+import type { CallerAccess } from "../policy/access.ts";
 import type { IdentityCheck, StaticConfig } from "../guard.ts";
 import type { Logger } from "../log.ts";
 import type { AccessIdentity } from "../providers/cloudflare-access.ts";

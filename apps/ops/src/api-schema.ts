@@ -49,6 +49,62 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/client-errors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Report an error in the app's own page */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ClientErrorReport"];
+                };
+            };
+            responses: {
+                /** @description Logged */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description rate_limited: this address has sent its reports for the hour, or every address has */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/clients/search": {
         parameters: {
             query?: never;
@@ -2656,7 +2712,7 @@ export interface paths {
                         "application/json": components["schemas"]["TechnicianId"];
                     };
                 };
-                /** @description invalid_request: no name, or not an Indian mobile */
+                /** @description invalid_request: no name, not an Indian mobile, or not one of our cities */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -3250,7 +3306,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Change a technician's name, number or zone */
+        /** Change a technician's name, number, zone or city */
         patch: {
             parameters: {
                 query?: never;
@@ -3275,7 +3331,7 @@ export interface paths {
                         "application/json": components["schemas"]["TechnicianId"];
                     };
                 };
-                /** @description invalid_request: nothing to change, no name, or not an Indian mobile */
+                /** @description invalid_request: nothing to change, no name, not an Indian mobile, or not one of our cities */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -6141,6 +6197,26 @@ export interface components {
             /** @description When the five-minute cron last finished a run; null before its first, or when the database is not this environment's. Information only: status does not depend on it. */
             cron_completed_at: string | null;
         };
+        ClientErrorReport: {
+            /** @enum {string} */
+            kind: "error" | "unhandled_rejection" | "render" | "outbox_gave_up";
+            message: string;
+            /** @description The page's path, with no query or fragment. */
+            path: string;
+            stack?: string;
+            /** @description The script the error was thrown in. */
+            source?: string;
+            line?: number;
+            column?: number;
+            /** @description outbox_gave_up: the write's kind, as `checklist`. */
+            step?: string;
+            /** @description outbox_gave_up: the code the API refused it with. */
+            code?: string;
+            /** @description outbox_gave_up: the refusal's HTTP status. */
+            status?: number;
+            /** @description outbox_gave_up: the refusal's request ID, which its own log lines carry. */
+            request_id?: string;
+        };
         ClientSearch: {
             mobile: string;
         };
@@ -6519,6 +6595,12 @@ export interface components {
             retries_end: string;
             /** @description Still tried every hour: inside its tries, and its visit to come. */
             retrying: boolean;
+            /** @description The discount code the client booked with (docs/decisions/0108-discount-codes.md). */
+            discount_code: {
+                code: string;
+                /** @description In paise before GST; null until the visit's price is known. */
+                amount_off: number | null;
+            } | null;
         };
         ClientPhotos: {
             visits: {
@@ -6577,7 +6659,7 @@ export interface components {
                 /** @description When they last switched it. */
                 at: string | null;
                 /** @description Where they last switched it. null when never switched, or when no place was kept: given before this release reached the environment on a notice shown in more than one place, written by the Worker it replaced between its migration and its deploy, or switched from a copy of the app loaded before it, which names no screen. */
-                source: ("site_booking" | "site_waitlist" | "referral_landing" | "try_on" | "app_booking" | "app_profile" | "app_share_sheet" | "technician" | "erasure") | null;
+                source: ("site_booking" | "site_waitlist" | "referral_landing" | "try_on" | "app_booking" | "app_profile" | "app_share_sheet" | "technician" | "erasure" | "message_link" | "whatsapp_stop") | null;
             }[];
             /** @description Their latest deletion request. A processed one leaves no client to read. */
             deletion: {
@@ -7017,7 +7099,7 @@ export interface components {
         NumberChangeDecision: {
             /** @enum {string} */
             decision: "confirm" | "reject";
-            /** @description Required to reject; kept with the decision (src/policy/decision-reasons.ts). */
+            /** @description Required to reject; kept with the decision, and the client reads it (src/policy/decision-reasons.ts). */
             reason: string | null;
         };
         ErasureRefused: {
@@ -7045,7 +7127,7 @@ export interface components {
         DeletionDecision: {
             /** @enum {string} */
             decision: "delete" | "reject";
-            /** @description Required to reject; kept with the decision (src/policy/decision-reasons.ts). */
+            /** @description Required to reject; kept with the decision, and the client reads it (src/policy/decision-reasons.ts). */
             reason: string | null;
         };
         ReferralDecision: {
@@ -7338,6 +7420,8 @@ export interface components {
                 name: string;
                 initials: string;
                 zone: string | null;
+                /** @description The city he works in, which staff access by place reads; null for none. */
+                city: string | null;
                 /** @description The number he signs in with, +91 and ten digits; null where none is recorded. */
                 mobile: string | null;
                 /** @description Whether ops change him here. While FSM is the record of field work, a technician FSM lists is changed in FSM; one ops added is theirs. */
@@ -7358,11 +7442,15 @@ export interface components {
                 id: string;
                 name: string;
                 zone: string | null;
+                /** @description The city he works in, which staff access by place reads; null for none. */
+                city: string | null;
                 /** @description The number he signs in with, +91 and ten digits; null where none is recorded. */
                 mobile: string | null;
                 /** @description Whether ops change him here. While FSM is the record of field work, a technician FSM lists is changed in FSM; one ops added is theirs. */
                 editable: boolean;
             }[];
+            /** @description The cities a technician may be given, in display order. */
+            cities: string[];
         };
         TechnicianLeave: {
             /** Format: uuid */
@@ -7557,6 +7645,8 @@ export interface components {
             mobile: string;
             /** @description Where he mostly works, in ops' words; null for none. */
             zone?: string | null;
+            /** @description The city he works in, one of GET /api/technicians' cities. Staff with a grant of that city or its zone see him; with none, only a national grant does. */
+            city?: string | null;
         };
         /** @description Only what is sent changes. */
         TechnicianChange: {
@@ -7566,6 +7656,8 @@ export interface components {
             mobile?: string;
             /** @description Where he mostly works, in ops' words; null for none. */
             zone?: string | null;
+            /** @description The city he works in, one of GET /api/technicians' cities. Staff with a grant of that city or its zone see him; with none, only a national grant does. */
+            city?: string | null;
         };
         TechnicianDeactivated: {
             /** @description His visits still to come, now unassigned: each waits in the dispatch board's tray for ops to give it to another. A visit already begun stays his. Empty when he was switched off already. */

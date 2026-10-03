@@ -2,6 +2,7 @@
 // {{1}}, {{2}}, … are the params, in order. PLACEHOLDER COPY, pending the owner's wording.
 
 import { MESSAGE_KINDS, type MessageKind } from "../domain/messages.ts";
+import type { MessagePurpose } from "../policy/consents.ts";
 
 export const TEMPLATES: Readonly<Record<string, string>> = {
   // The try-on's look, to the number that claimed it: {{1}} the first name. The second sentence is the design's own.
@@ -18,7 +19,7 @@ export const TEMPLATES: Readonly<Record<string, string>> = {
   visit_booked_v1:
     "Hello {{1}}, your {{2}} is booked for {{3}}, {{4}}, with {{5}}. Paid {{6}}, reference {{7}}. The receipt is in the app.",
   visit_booked_credit_v1:
-    "Hello {{1}}, your {{2}} is booked for {{3}}, {{4}}, with {{5}}. One of your visit credits covers it.",
+    "Hello {{1}}, your {{2}} is booked for {{3}}, {{4}}, with {{5}}. One of your free service visits covers it.",
   // A visit a discount code made free: booked with nothing to pay.
   visit_booked_code_v1:
     "Hello {{1}}, your {{2}} is booked for {{3}}, {{4}}, with {{5}}. Your discount code covers it, so there is nothing to pay.",
@@ -37,39 +38,39 @@ export const TEMPLATES: Readonly<Record<string, string>> = {
   no_show_charged_fee_v1:
     "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. {{6}} of what you paid is kept as the no-show charge, and {{10}} is on its way back to your {{8}}, in 5 to 7 working days. If you were home, you can dispute the charge in the Mane Man app.",
   no_show_charged_credit_v1:
-    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. The visit credit it used is spent as the no-show charge. If you were home, you can dispute it in the Mane Man app.",
+    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. The free service visit it used is spent as the no-show charge. If you were home, you can dispute it in the Mane Man app.",
   no_show_waived_v1:
     "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it. You can book again in the Mane Man app.",
   no_show_waived_paid_v1:
     "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it. Message us about the {{6}} you paid for it.",
   no_show_waived_credit_v1:
-    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it. Message us about the visit credit it used.",
+    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it. Message us about the free service visit it used.",
   no_show_waived_refund_v1:
     "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it: {{6}} is on its way back to your {{8}}, in 5 to 7 working days.",
   no_show_waived_credit_back_v1:
-    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it, and your visit credit is back.",
+    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it, and your free service visit is back.",
   // A credit given back to a grant that has since expired or been clawed back does not come back; ops are told.
   no_show_waived_credit_gone_v1:
-    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it, but the visit credit it used is no longer valid, so it cannot come back.",
+    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it, but the free service visit it used is no longer valid, so it cannot come back.",
   // Ops' ruling on a client's dispute of a no-show charge: refunded, credit back or gone, or upheld. Never ops' reason.
   no_show_dispute_refunded_v1:
     "Hello {{1}}, we have looked at your dispute of the no-show charge for your {{2}} on {{3}}, and we are refunding it: {{6}} is on its way back to your {{8}}, in 5 to 7 working days.",
   no_show_dispute_credit_back_v1:
-    "Hello {{1}}, we have looked at your dispute of the no-show charge for your {{2}} on {{3}}, and we are refunding it: your visit credit is back.",
+    "Hello {{1}}, we have looked at your dispute of the no-show charge for your {{2}} on {{3}}, and we are refunding it: your free service visit is back.",
   no_show_dispute_credit_gone_v1:
-    "Hello {{1}}, we have looked at your dispute of the no-show charge for your {{2}} on {{3}}, and we agree the charge should not stand, but the visit credit it used is no longer valid, so it cannot come back.",
+    "Hello {{1}}, we have looked at your dispute of the no-show charge for your {{2}} on {{3}}, and we agree the charge should not stand, but the free service visit it used is no longer valid, so it cannot come back.",
   no_show_dispute_upheld_v1:
     "Hello {{1}}, we have looked at your dispute of the no-show charge for your {{2}} on {{3}}. The charge stands. Message us if you would like to know why.",
   // Due in a few days with nothing booked: {{2}} "service visit" or "replacement", {{3}} the due day.
   next_visit_due_v1: "Hello {{1}}, your next {{2}} is due on {{3}}. You can book it in the Mane Man app.",
   visit_cancelled_v1: "Hello {{1}}, your {{2}} on {{3}} is cancelled.",
-  visit_cancelled_credit_v1: "Hello {{1}}, your {{2}} on {{3}} is cancelled. Your visit credit is back.",
+  visit_cancelled_credit_v1: "Hello {{1}}, your {{2}} on {{3}} is cancelled. Your free service visit is back.",
   // Cancelled too late, so the credit is spent, as the cancel sheet warned.
   visit_cancelled_credit_lost_v1:
-    "Hello {{1}}, your {{2}} on {{3}} is cancelled. It was too close to the visit, so the visit credit it used is gone.",
+    "Hello {{1}}, your {{2}} on {{3}} is cancelled. It was too close to the visit, so the free service visit it used is gone.",
   // Cancelled in time, but the credit's grant has since expired or been withdrawn.
   visit_cancelled_credit_gone_v1:
-    "Hello {{1}}, your {{2}} on {{3}} is cancelled. The visit credit it used has expired, so it cannot come back.",
+    "Hello {{1}}, your {{2}} on {{3}} is cancelled. The free service visit it used has expired, so it cannot come back.",
   // To someone on a pincode's waitlist, {{2}} the area ops named, else "pincode 400050"; only one who asked for the
   // launch alert is promised it.
   waitlist_listed_v1: "Hello {{1}}, you are on our list for {{2}}. We do not come there yet.",
@@ -113,6 +114,18 @@ export const TEMPLATES: Readonly<Record<string, string>> = {
     "Hello {{1}}, this number was just used to book on our site. As a Mane Man client, you book your next visit in the Mane Man app. Sign in with this number.",
   address_on_account_v1:
     "Hello {{1}}, we will come to the address already on your account, not the one typed on our site. You can change it in the Mane Man app.",
+  // Ops' decision on a client's request to delete their account. {{2}} is ops' reason, which they write knowing the
+  // client reads it.
+  deletion_rejected_v1:
+    "Hello {{1}}, we have not deleted your Mane Man account. Our reason: {{2}} Message us if you disagree.",
+  // Sent once the erasure is done, to the number it has just blanked.
+  deletion_done_v1:
+    "Hello {{1}}, as you asked, your Mane Man account is deleted. Your invoices are kept for eight years, as the law requires.",
+  // The line a reminder or alert ends with, {{1}} the link that stops them (STOP_LINKS below).
+  stop_link_v1: "Stop these messages: {{1}}",
+  // The answer to a STOP reply, once it has withdrawn something.
+  messages_stopped_v1:
+    "Done, {{1}}. We will no longer message you here about your visits, or when we come to a new area.",
 };
 
 /** The text with its params filled in, or null for an unknown template or a missing param. */
@@ -126,6 +139,29 @@ export function renderMessage(name: string, params: readonly string[]): string |
 }
 
 const PLACEHOLDER = /\{\{(\d+)\}\}/g;
+
+/** The text, ending with the line that stops it when the message carries a stop link. */
+export function renderWithStopLink(name: string, params: readonly string[], stopLink?: string): string | null {
+  const text = renderMessage(name, params);
+  if (text === null || stopLink === undefined) return text;
+  return `${text}\n\n${renderMessage("stop_link_v1", [stopLink]) ?? ""}`;
+}
+
+/**
+ * The messages that end with a link to stop them, and the consent the link withdraws: the reminders and the launch
+ * alert, sent on a schedule rather than in answer to anything the person just did. A STOP reply stops every kind
+ * sent under either consent.
+ */
+export const STOP_LINKS: Readonly<Partial<Record<MessageKind, MessagePurpose>>> = {
+  visit_reminder: "whatsapp_visits",
+  next_service_reminder: "whatsapp_visits",
+  launch_alert: "whatsapp_launches",
+};
+
+/** The consent a kind's stop link withdraws, or null for a kind that carries none. */
+export function stopLinkPurpose(kind: string): MessagePurpose | null {
+  return STOP_LINKS[kind as MessageKind] ?? null;
+}
 
 /** A count of service visits as the texts write it: "1 service visit", "3 service visits". */
 export const serviceVisits = (count: number): string =>
@@ -172,6 +208,8 @@ export const MESSAGE_CLASSES: Readonly<Record<MessageKind, MessageClass>> = {
   consultation_exists: "answering", // the site's booking form, just sent for this number
   book_in_app: "answering",
   address_on_account: "answering",
+  deletion_rejected: "automatic", // ops' ruling
+  messages_stopped: "answering", // their own STOP reply
 };
 
 /** A kind's class, defaulting to automatic for one this table does not name, so an unsure case is never open. */

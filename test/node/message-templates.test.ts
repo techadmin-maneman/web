@@ -2,7 +2,14 @@
 // automatic (src/config/message-templates.ts; ADR 0097, "Staging logins open, reminders fenced").
 
 import { describe, expect, it } from "vitest";
-import { MESSAGE_CLASSES, messageClass } from "../../src/config/message-templates.ts";
+import {
+  MESSAGE_CLASSES,
+  messageClass,
+  renderMessage,
+  renderWithStopLink,
+  STOP_LINKS,
+  stopLinkPurpose,
+} from "../../src/config/message-templates.ts";
 import { MESSAGE_KINDS } from "../../src/domain/messages.ts";
 
 describe("the message class table", () => {
@@ -47,5 +54,32 @@ describe("the message class table", () => {
   it("reads a real kind's class through the same helper", () => {
     expect(messageClass("tryon_result")).toBe("answering");
     expect(messageClass("visit_reminder")).toBe("automatic");
+  });
+
+  // PS-29: the answer to a STOP reply reaches the number that sent it, as any answer does.
+  it("classes the answer to a STOP reply as answering", () => {
+    expect(messageClass("messages_stopped")).toBe("answering");
+  });
+});
+
+// PS-29: a reminder or the launch alert gave no way to stop it without signing in.
+describe("the link that stops a message", () => {
+  it("ends the reminders and the launch alert, each withdrawing the consent it was sent under", () => {
+    expect(STOP_LINKS).toEqual({
+      visit_reminder: "whatsapp_visits",
+      next_service_reminder: "whatsapp_visits",
+      launch_alert: "whatsapp_launches",
+    });
+    for (const kind of Object.keys(STOP_LINKS)) expect(messageClass(kind), kind).toBe("automatic");
+    expect(stopLinkPurpose("tryon_result")).toBeNull();
+  });
+
+  it("goes on a line of its own at the end of the text, and only when there is one", () => {
+    const params = ["Arjun", "Sector 65", "https://maneman.in/book"];
+    expect(renderWithStopLink("launch_alert_v1", params)).toBe(renderMessage("launch_alert_v1", params));
+    expect(renderWithStopLink("launch_alert_v1", params, "https://maneman.in/stop#t")).toBe(
+      `${renderMessage("launch_alert_v1", params) ?? ""}\n\nStop these messages: https://maneman.in/stop#t`,
+    );
+    expect(renderWithStopLink("nope", params, "https://maneman.in/stop#t")).toBeNull();
   });
 });

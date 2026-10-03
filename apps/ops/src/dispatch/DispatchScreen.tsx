@@ -406,7 +406,7 @@ export function DispatchScreen() {
           )}
           {notice !== null && <NoticeLine notice={notice} onTold={told} />}
           {loaded.state === "loading" && <Loading />}
-          {loaded.state === "failed" && <PanelFailed onRetry={retry} />}
+          {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
           {board !== null && (
             <>
               <div className={styles.scroll}>

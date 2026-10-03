@@ -198,10 +198,10 @@ describe("cancelling a client's visit from the console", () => {
     answers.push(() => Response.json(terms));
     await show(cancelPanel());
 
-    expect(text()).toContain("Paid with a visit credit.");
-    expect(text()).toContain("Free to the client: their visit credit comes back.");
+    expect(text()).toContain("Paid with a free service visit.");
+    expect(text()).toContain("Free to the client: their free service visit comes back.");
     tick("Apply the client's late terms");
-    expect(text()).toContain("On their late terms: their visit credit is spent.");
+    expect(text()).toContain("On their late terms: their free service visit is spent.");
   });
 
   it("says why a visit cannot be cancelled, and changes nothing", async () => {

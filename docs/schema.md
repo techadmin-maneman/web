@@ -54,8 +54,8 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [consumables_used](#consumables_used): The consumables a technician recorded at a job's third step, with what its service expected and what one cost that day (ADR 0038, ADR 0087).
 - [counters](#counters): Fixed-window counters for the rate limits and the daily ceilings (ADR 0011).
 - [credit_ledger](#credit_ledger): Service-visit credits, entry by entry, each drawing on the grant it spends; a balance is summed, never kept (ADR 0033).
-- [cron_jobs](#cron_jobs): Each job of the five-minute cron, and how many runs in a row it has failed (ADR 0067).
-- [cron_runs](#cron_runs): One row: when the five-minute cron's latest run started and its last finished run ended, so a run cut short is told by the next.
+- [cron_jobs](#cron_jobs): Each job of the cron, and how many runs in a row it has failed (ADR 0067).
+- [cron_runs](#cron_runs): One row: when the cron's latest run started and its last finished run ended, so a run cut short is told by the next.
 - [deletion_requests](#deletion_requests): A client's request to be erased, waiting for ops, and what ops decided (ADR 0042, ADR 0078).
 - [deployment_identity](#deployment_identity): Which environment's database this is, so a Worker refuses to serve on another's (ADR 0003).
 - [discount_code_uses](#discount_code_uses): Each time a discount code was entered on a booking, its hold or its visit: by whom, and what it took off before GST once the price was known. Never deleted: one taken off is marked removed (ADR 0108).
@@ -110,7 +110,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [task_owners](#task_owners): The member of staff a task on the Tasks board is theirs, by Access e-mail, by the task's group, its row's id and, where that row can be a new task again, its episode; a task with no row for it is nobody's (ADR 0092).
 - [technician_devices](#technician_devices): The phones technicians work from, each bound to a session and revocable by ops (ADR 0052).
 - [technician_leave](#technician_leave): A technician's leave in whole days, which the clash check reads beside `slot_claims` (ADR 0062).
-- [technicians](#technicians): The mirror of FSM's technicians: name, initials, mobile number and zone; and on staging the few written by hand for a test, which the sync leaves alone. `fsm_id` is FSM's ID for a technician FSM holds, otherwise one of ours (ADR 0032, ADR 0052, ADR 0110).
+- [technicians](#technicians): The mirror of FSM's technicians: name, initials, mobile number and zone; and on staging the few written by hand for a test, which the sync leaves alone. `fsm_id` is FSM's ID for a technician FSM holds, otherwise one of ours. `city`, which ops set and the sync never writes, places him for staff access (ADR 0032, ADR 0052, ADR 0109, ADR 0110).
 - [tryon_jobs](#tryon_jobs): One try-on render: the photograph, the look, the provider's job and the result (ADR 0014, ADR 0015).
 - [tryon_sessions](#tryon_sessions): The try-on gate's session, which showed a visitor their result (ADR 0014); written no more since the look goes to WhatsApp only (ADR 0104).
 - [visit_blackouts](#visit_blackouts): Days on which no visit is offered.
@@ -479,7 +479,7 @@ Triggers: `credit_ledger_no_delete`, `credit_ledger_no_update`.
 
 ## cron_jobs
 
-Each job of the five-minute cron, and how many runs in a row it has failed (ADR 0067).
+Each job of the cron, and how many runs in a row it has failed (ADR 0067).
 
 Made by `0038_alerts.sql`.
 
@@ -492,7 +492,7 @@ Made by `0038_alerts.sql`.
 
 ## cron_runs
 
-One row: when the five-minute cron's latest run started and its last finished run ended, so a run cut short is told by the next.
+One row: when the cron's latest run started and its last finished run ended, so a run cut short is told by the next.
 
 Made by `0068_cron_runs.sql`.
 
@@ -1075,7 +1075,7 @@ Made by `0049_consumables_and_stock.sql`.
 
 The Razorpay payment link a consultation and fit in one visit is paid by once the client is fitted: one a visit, the product and its price, when Razorpay made and texted it, and the payment that paid it (ADR 0105).
 
-Made by `0061_one_visit.sql`.
+Made by `0061_one_visit.sql`; changed by `0080_payment_link_references.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1093,9 +1093,14 @@ Made by `0061_one_visit.sql`.
 | `paid_at` | TEXT | yes |  |  |
 | `created_at` | TEXT | no |  |  |
 | `updated_at` | TEXT | no |  |  |
+| `reference` | TEXT | yes |  |  |
+| `reference_year` | INTEGER | yes |  |  |
+| `reference_number` | INTEGER | yes |  |  |
 
 Indexes:
 
+- `payment_links_reference`: unique on (`reference`)
+- `payment_links_reference_number`: unique on (`reference_year`, `reference_number`)
 - `payment_links_unpaid`: on (`created_at`), where `paid_at IS NULL`
 - `payment_links_unsent`: on (`created_at`), where `sent_at IS NULL AND refused_at IS NULL`
 - A `UNIQUE` constraint: unique on (`appointment_id`)
@@ -1459,7 +1464,7 @@ Indexes:
 
 A slot held while a client pays, at Checkout or by a payment link ops sent, and what became of it (ADR 0045, ADR 0068).
 
-Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`, `0058_held_bookings.sql`, `0061_one_visit.sql`, `0075_pay_by_link.sql`, `0078_consents_shown.sql`.
+Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`, `0058_held_bookings.sql`, `0061_one_visit.sql`, `0075_pay_by_link.sql`, `0078_consents_shown.sql`, `0080_payment_link_references.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1506,6 +1511,9 @@ Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_chan
 | `payment_link_url` | TEXT | yes |  |  |
 | `consents_shown` | TEXT | yes |  |  |
 | `consents_ip_hash` | TEXT | yes |  |  |
+| `reference` | TEXT | yes |  |  |
+| `reference_year` | INTEGER | yes |  |  |
+| `reference_number` | INTEGER | yes |  |  |
 
 Indexes:
 
@@ -1515,6 +1523,8 @@ Indexes:
 - `slot_holds_confirmed`: on (`queued_at`), where `state = 'held' AND confirmed_at IS NOT NULL`
 - `slot_holds_confirmed_by_person`: on (`person_id`), where `state = 'held' AND confirmed_at IS NOT NULL`
 - `slot_holds_held`: on (`expires_at`), where `state = 'held'`
+- `slot_holds_reference`: unique on (`reference`)
+- `slot_holds_reference_number`: unique on (`reference_year`, `reference_number`)
 - A `UNIQUE` constraint: unique on (`razorpay_order_id`)
 
 ## slot_times
@@ -1765,9 +1775,9 @@ Indexes:
 
 ## technicians
 
-The mirror of FSM's technicians: name, initials, mobile number and zone; and on staging the few written by hand for a test, which the sync leaves alone. `fsm_id` is FSM's ID for a technician FSM holds, otherwise one of ours (ADR 0032, ADR 0052, ADR 0110).
+The mirror of FSM's technicians: name, initials, mobile number and zone; and on staging the few written by hand for a test, which the sync leaves alone. `fsm_id` is FSM's ID for a technician FSM holds, otherwise one of ours. `city`, which ops set and the sync never writes, places him for staff access (ADR 0032, ADR 0052, ADR 0109, ADR 0110).
 
-Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`, `0046_hand_written_technicians.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`, `0046_hand_written_technicians.sql`, `0081_technician_city.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1780,6 +1790,7 @@ Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`, `0046_han
 | `zone` | TEXT | yes |  |  |
 | `mobile_e164` | TEXT | yes |  |  |
 | `hand_written` | INTEGER | no | `0` |  |
+| `city` | TEXT | yes |  | → `cities.name` |
 
 Indexes:
 

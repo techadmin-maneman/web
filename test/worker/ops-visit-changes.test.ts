@@ -441,7 +441,7 @@ describe("POST /api/visits/:id/close", () => {
     expect(answer.status).toBe(200);
     const fitted = await env.DB.prepare("SELECT tier, one_visit FROM appointments WHERE id = ?1").bind(VISIT).first();
     expect(fitted).toEqual({ tier: "natural", one_visit: "fitted" });
-    expect(payments.made.links).toMatchObject([{ amount: 4_500_000, reference: VISIT }]);
+    expect(payments.made.links).toMatchObject([{ amount: 4_500_000, notes: { appointment_id: VISIT } }]);
   });
 
   it("closes a visit once: a second close is refused, and the first stands", async () => {

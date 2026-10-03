@@ -163,7 +163,7 @@ export function Disputes() {
   const [loaded, retry] = useLoad(api.disputes);
   const access = useAccess();
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const now = new Date();
   const { disputes } = loaded.value;

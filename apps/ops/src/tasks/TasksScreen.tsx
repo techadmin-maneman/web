@@ -261,7 +261,7 @@ function Queue() {
   const heading = useRef<HTMLHeadingElement>(null);
 
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const now = new Date();
   const me = signedIn.state === "loaded" ? signedIn.value.signed_in_as : null;

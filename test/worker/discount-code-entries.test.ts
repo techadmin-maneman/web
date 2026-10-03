@@ -6,11 +6,13 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import type { FieldRecord } from "../../src/config/field-record.ts";
 import { confirmBooking, startBooking } from "../../src/domain/bookings.ts";
 import { paymentEntries, paymentEntry } from "../../src/domain/client-payments.ts";
 import { grantCredits } from "../../src/domain/credits.ts";
 import { removeFromHold } from "../../src/domain/discount-code-holds.ts";
 import { priceAfterCode, removeFromVisit } from "../../src/domain/discount-code-uses.ts";
+import { holdForFsm } from "../../src/domain/held-bookings.ts";
 import { composeVisitMessage } from "../../src/domain/visit-messages.ts";
 import { listCodes, makeCodes, type NewCodes } from "../../src/domain/discount-codes.ts";
 import { openSession } from "../../src/domain/sessions.ts";
@@ -23,8 +25,10 @@ import {
   captureLogs,
   fakeDependencies,
   fakeQueue,
+  fsmSwitchedOff,
   markDatabase,
   NOW,
+  PROVIDERS_FOR,
   provedNumberCode,
   request,
   savedAddress,
@@ -122,6 +126,17 @@ const uses = () =>
   env.DB.prepare(
     "SELECT hold_id, appointment_id, amount_off, given_by, removed_at IS NOT NULL AS removed FROM discount_code_uses",
   ).all();
+
+/** The client's page in the console, as ops read it behind Access. */
+async function clientRecord(personId: string) {
+  const answer = await request(appFor("local", fakeDependencies(), {}, "ops"), `/api/clients/${personId}`);
+  expect(answer.status).toBe(200);
+  return answer.json<{ held_bookings: unknown[]; visits: { upcoming: unknown[] } }>();
+}
+
+/** Paid for, so the hold keeps its time until it is booked. */
+const paidFor = (holdId: string) =>
+  env.DB.prepare("UPDATE slot_holds SET confirmed_at = ?2 WHERE id = ?1").bind(holdId, NOW.toISOString()).run();
 
 /** The technician the app and the site book, where the technician's own tests bring theirs. */
 async function technician() {
@@ -394,6 +409,28 @@ describe("the client, at the app's pay step", () => {
     expect(entry).toMatchObject({ discount_code: code });
   });
 
+  // D-03: ops about to link or refund a booking FSM would not take could not see the code on it.
+  it("names the code, and what it took off, on the booking ops see while FSM will not take it", async () => {
+    await make();
+    const hold = await heldService(PERSON);
+    await enter(PERSON, hold.id, "TENPC");
+    await paidFor(hold.id);
+    await holdForFsm(env.DB, hold.id, NOW, "Zoho 400 INVALID_DATA");
+    const record = await clientRecord(PERSON);
+    expect(record.held_bookings).toMatchObject([{ id: hold.id, discount_code: { code: "TENPC", amount_off: 20_000 } }]);
+  });
+
+  it("names no code on a held booking whose code came off before it was paid for", async () => {
+    await make();
+    const hold = await heldService(PERSON);
+    await enter(PERSON, hold.id, "TENPC");
+    await removeFromHold(env.DB, { holdId: hold.id, personId: PERSON }, NOW);
+    await paidFor(hold.id);
+    await holdForFsm(env.DB, hold.id, NOW, "Zoho 400 INVALID_DATA");
+    const record = await clientRecord(PERSON);
+    expect(record.held_bookings).toMatchObject([{ id: hold.id, discount_code: null }]);
+  });
+
   it("refunds a discounted payment what was paid, and no more", async () => {
     await make();
     const hold = await heldService(PERSON);
@@ -479,11 +516,16 @@ describe("the site's form, for a consultation and fit in one visit", () => {
     pincode: "122018",
     access_notes: null,
   };
-  /** The one visit, booked with its number proved by a code. */
-  const book = async (body: { mobile?: string; [field: string]: unknown }, settings = {}) => {
+  /** The one visit, booked with its number proved by a code; where our own database holds the record, booked at once. */
+  const book = async (
+    body: { mobile?: string; [field: string]: unknown },
+    settings = {},
+    record: FieldRecord = "fsm",
+  ) => {
     const mobile = body.mobile ?? "9810000002";
+    const deps = record === "ours" ? fakeDependencies({ fsm: fsmSwitchedOff() }) : fakeDependencies();
     return request(
-      appFor("local", fakeDependencies(), settings, "public"),
+      appFor("local", deps, settings, "public", PROVIDERS_FOR[record]),
       "/api/consultation",
       {
         method: "POST",
@@ -626,6 +668,30 @@ describe("the site's form, for a consultation and fit in one visit", () => {
     expect(await theirs.json()).toMatchObject({ discount_code: { code: "UNQ5" } });
     const mine = await book({ mobile: "9810000003", discount_code: "UNQ5" });
     expect(mine.status).toBe(422);
+  });
+
+  // D-03, as staging found it: the site's one visit, booked with a code, then refused by FSM.
+  it("names the code on the booking ops see while FSM will not take it", async () => {
+    await make();
+    await book({ discount_code: "tenpc" });
+    const hold = await env.DB.prepare("SELECT id, person_id FROM slot_holds").first<{
+      id: string;
+      person_id: string;
+    }>();
+    await holdForFsm(env.DB, hold?.id ?? "", NOW, "Zoho 400 INVALID_DATA");
+    const record = await clientRecord(hold?.person_id ?? "");
+    expect(record.held_bookings).toMatchObject([{ discount_code: { code: "TENPC", amount_off: null } }]);
+  });
+
+  it("names the code on the visit ops see once our own database books it, with nothing left waiting", async () => {
+    await make();
+    expect((await book({ discount_code: "tenpc" }, {}, "ours")).status).toBe(201);
+    const personId = await env.DB.prepare("SELECT person_id FROM slot_holds").first<string>("person_id");
+    const record = await clientRecord(personId ?? "");
+    expect(record.held_bookings).toEqual([]);
+    expect(record.visits.upcoming).toMatchObject([
+      { type: "first_fit", discount_code: { code: "TENPC", amount_off: null, given_by: "client" } },
+    ]);
   });
 
   it("stays the visit's code once the booking is in FSM, and comes off the product's price there", async () => {

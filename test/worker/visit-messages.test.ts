@@ -181,7 +181,7 @@ describe("what a visit message says", () => {
         .bind(PERSON, VISIT, NOW.toISOString())
         .run();
       expect(await text("cancel_confirmation")).toBe(
-        "Hello Rohit, your service visit on Thu 24 Sep is cancelled. Your visit credit is back.",
+        "Hello Rohit, your service visit on Thu 24 Sep is cancelled. Your free service visit is back.",
       );
     });
 
@@ -189,8 +189,8 @@ describe("what a visit message says", () => {
     it("says the credit is gone, when it was cancelled inside the notice", async () => {
       await cancelledOnCredit("late");
       expect(await text("cancel_confirmation")).toBe(
-        "Hello Rohit, your service visit on Thu 24 Sep is cancelled. It was too close to the visit, so the visit " +
-          "credit it used is gone.",
+        "Hello Rohit, your service visit on Thu 24 Sep is cancelled. It was too close to the visit, so the free " +
+          "service visit it used is gone.",
       );
     });
 
@@ -199,8 +199,8 @@ describe("what a visit message says", () => {
       await cancelledOnCredit("late");
       await env.DB.prepare("UPDATE visit_changes SET cancelled_by = 'ops@localhost', ops_terms = 'free'").run();
       expect(await text("visit_cancelled")).toBe(
-        "Hello Rohit, your service visit on Thu 24 Sep is cancelled. The visit credit it used has expired, so it " +
-          "cannot come back.",
+        "Hello Rohit, your service visit on Thu 24 Sep is cancelled. The free service visit it used has expired, so " +
+          "it cannot come back.",
       );
     });
 
@@ -208,8 +208,8 @@ describe("what a visit message says", () => {
       await cancelledOnCredit("late");
       await env.DB.prepare("UPDATE visit_changes SET cancelled_by = 'ops@localhost', ops_terms = 'client'").run();
       expect(await text("visit_cancelled")).toBe(
-        "Hello Rohit, your service visit on Thu 24 Sep is cancelled. It was too close to the visit, so the visit " +
-          "credit it used is gone.",
+        "Hello Rohit, your service visit on Thu 24 Sep is cancelled. It was too close to the visit, so the free " +
+          "service visit it used is gone.",
       );
     });
   });

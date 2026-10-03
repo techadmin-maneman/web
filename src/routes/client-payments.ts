@@ -23,6 +23,7 @@ import {
   paymentEntries,
   paymentEntry,
   receiptOf,
+  REFERRAL_SIDES,
 } from "../domain/client-payments.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
@@ -141,6 +142,11 @@ const CreditLineSchema = z
     source: z
       .union([z.enum(["referral", "ops", "import"]), z.null()])
       .openapi({ description: "Where credits added came from; null for any other entry." }),
+    referral_side: z.union([z.enum(REFERRAL_SIDES), z.null()]).openapi({
+      description:
+        "For credits an invite added: referrer, for a friend this client invited being fitted; friend, for this " +
+        "client's own fit through an invite. Null for any other entry.",
+    }),
     no_show: z.union([NoShowNoteSchema, z.null()]),
   })
   .strict()

@@ -137,6 +137,7 @@ export const HELD_BOOKING = {
   refusal: "Zoho 400 INVALID_DATA",
   retries_end: "2027-09-23T06:00:00.000Z",
   retrying: true,
+  discount_code: null,
 } satisfies ClientRecord["held_bookings"][number];
 
 /** The same client before any of it: no visit done, no piece in wear, nothing paid. */
