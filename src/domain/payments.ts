@@ -158,17 +158,24 @@ async function giveReference(
   ]);
 }
 
-/** Where a link's reference is kept: a one visit's link, or the hold of a visit ops booked. */
-type ReferencedLink = "payment_links" | "slot_holds";
-
-/** Gives a link, before Razorpay is asked for it, the next reference of its India year, which its payment then takes. */
-export function reserveReference(db: D1Database, table: ReferencedLink, id: string, now: Date): D1PreparedStatement {
+/** Gives a one visit's payment link just written the next reference of its India year, which its payment then takes. */
+export function referenceLink(db: D1Database, linkId: string, now: Date): D1PreparedStatement {
   return db
     .prepare(
-      `UPDATE ${table} SET reference_year = ?2, reference_number = ${NEXT_NUMBER}, reference = ${NEXT_REFERENCE}
+      `UPDATE payment_links SET reference_year = ?2, reference_number = ${NEXT_NUMBER}, reference = ${NEXT_REFERENCE}
        WHERE id = ?1 AND reference IS NULL`,
     )
-    .bind(id, ...referenceYear(now));
+    .bind(linkId, ...referenceYear(now));
+}
+
+/** Gives the hold of a visit ops booked the next reference of its India year, for the link they send the client. */
+export function referenceHold(db: D1Database, holdId: string, now: Date): D1PreparedStatement {
+  return db
+    .prepare(
+      `UPDATE slot_holds SET reference_year = ?2, reference_number = ${NEXT_NUMBER}, reference = ${NEXT_REFERENCE}
+       WHERE id = ?1 AND reference IS NULL`,
+    )
+    .bind(holdId, ...referenceYear(now));
 }
 
 /** Our refund's state from Razorpay's: processed and failed as they are, anything earlier still created. */

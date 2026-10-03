@@ -28,7 +28,7 @@ import { checkForOneVisit, codeOnHold } from "./discount-code-holds.ts";
 import { checkCode, useStatement } from "./discount-code-uses.ts";
 import { termsOf } from "./discount-codes.ts";
 import type { OpsInputs } from "./ops-settings.ts";
-import { recordPayment, reserveReference } from "./payments.ts";
+import { recordPayment, referenceHold } from "./payments.ts";
 import { lateFeeOn, type Price } from "./price-book.ts";
 import { currentAddress } from "./profile.ts";
 import { graceEnds, holdSlot, liveVisitOf, ONE_AT_A_TIME, type Hold } from "./scheduling.ts";
@@ -316,7 +316,7 @@ async function linkMadeBefore(payments: PaymentsProvider, reference: string): Pr
 /** The hold's link's reference, "MM-2026-0841", which its payment then takes: given it now, or kept from a try before. */
 async function holdReference(db: D1Database, holdId: string, now: Date): Promise<string> {
   const [, kept] = await db.batch<{ reference: string | null }>([
-    reserveReference(db, "slot_holds", holdId, now),
+    referenceHold(db, holdId, now),
     db.prepare("SELECT reference FROM slot_holds WHERE id = ?1").bind(holdId),
   ]);
   return kept?.results[0]?.reference ?? holdId;
