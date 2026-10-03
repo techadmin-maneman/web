@@ -15,8 +15,8 @@ import { appFor, d1TripsOf, fakeDependencies, markDatabase, NOW, phaseOneLead, r
 import { syntheticJpeg } from "./tryon-fixtures.ts";
 
 const MOBILE = "+919810000001";
-/** The most round trips to D1 Home may wait on in turn: the session, then the client's facts and what they lead to. */
-const ME_TRIPS = 99;
+/** The most round trips to D1 Home may wait on in turn. It waited on 17 when each read waited for the one before. */
+const ME_TRIPS = 6;
 
 const fsmAppointment = (id: string, overrides: Partial<FsmAppointment> = {}): FsmAppointment => ({
   id,

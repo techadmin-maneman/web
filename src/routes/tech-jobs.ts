@@ -731,17 +731,19 @@ export function registerTechJobs(app: App): void {
   app.openapi(jobRoute, async (c) => {
     const { technicianId } = technicianOf(c);
     const inputs = await opsInputs(c);
-    const job = await jobDetail(c.env.DB, {
-      technicianId,
-      jobId: c.req.valid("param").id,
-      now: c.var.deps.now(),
-      unlockHour: inputs.addressUnlockHour,
-      waits: inputs.noShowWaitMin,
-    });
+    // The job sheet and the consumables as ops set them, which the phone keeps with the job for the day.
+    const [job, sheet] = await Promise.all([
+      jobDetail(c.env.DB, {
+        technicianId,
+        jobId: c.req.valid("param").id,
+        now: c.var.deps.now(),
+        unlockHour: inputs.addressUnlockHour,
+        waits: inputs.noShowWaitMin,
+      }),
+      jobSheet(c.env.DB),
+    ]);
     if (job === null) return c.json(errorBody("not_found", c.var.requestId), 404);
     const type: VisitType = job.type ?? "service";
-    // The job sheet and the consumables as ops set them, which the phone keeps with the job for the day.
-    const sheet = await jobSheet(c.env.DB);
     return c.json(
       {
         ...job,
