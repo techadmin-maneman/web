@@ -453,7 +453,7 @@ Indexes:
 
 One row: how far the pass that closes expired credits has got, so it reads only the grants that expired since.
 
-Made by `0078_credit_expiry_cursor.sql`.
+Made by `0079_credit_expiry_cursor.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
