@@ -146,6 +146,10 @@ export const dispatch = {
     block: (job: string, date: string, window: string) => `${job}, ${date}, ${window}`,
     /** A block for a visit already done, which stays where it was worked and cannot be moved. */
     doneBlock: (job: string, date: string, window: string) => `${job}, ${date}, ${window}, done`,
+    /** PLACEHOLDER: how far the technician has got, from his phone. A visit he has begun stays where it is. */
+    begun: { arrived: "Arrived", started: "Started", closed: "Closed" } as Readonly<Record<string, string>>,
+    begunBlock: (job: string, date: string, window: string, begun: string) =>
+      `${job}, ${date}, ${window}, ${begun.toLowerCase()}`,
     /** PLACEHOLDER: the board draws no board without technicians. */
     empty: "No technician is on this board.",
     /** A day ops recorded leave on: no job can be dropped there, and none is offered (ADR 0062). */
@@ -202,6 +206,14 @@ export const dispatch = {
       terminated: "Terminated",
       other: "Other",
     } as Readonly<Record<string, string>>,
+    /** PLACEHOLDER: the State row once the technician's phone says he has begun. */
+    begun: {
+      arrived: "Technician arrived",
+      started: "Technician started",
+      closed: "Closed by the technician",
+    } as Readonly<Record<string, string>>,
+    /** PLACEHOLDER: a visit the technician has begun has no move. */
+    stays: "Under way, so it stays where it is.",
     /** Board A3's two buttons: "WhatsApp Rohit" and "Open client". */
     whatsapp: (firstName: string) => `WhatsApp ${firstName}`,
     openClient: "Open client",
@@ -311,6 +323,8 @@ export const dispatch = {
       /** PLACEHOLDER: FSM took the new technician and not the new time; the board is read again. */
       fsm_partly:
         "Our scheduling system took the new technician but not the new time. The board now shows it as it stands.",
+      /** PLACEHOLDER: the technician began the visit after the board was read. */
+      in_progress: "The technician has begun this visit, so it stays where it is. Nothing was moved.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Nothing was moved.",
     },
@@ -1702,7 +1716,7 @@ export const deletions = {
       items: [
         "Their visits, payments, refunds and credits, as records",
         "Their invoices in Books, eight years, by law",
-        "Their Zoho record and their FSM contact, blanked within a few minutes",
+        "Their records in the CRM, Books and FSM, blanked within a few minutes",
       ],
     },
     /** The runbook's first step, "Check the request comes from the number's owner". */
