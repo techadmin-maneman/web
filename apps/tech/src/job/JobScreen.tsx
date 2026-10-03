@@ -104,7 +104,7 @@ export function JobScreen({ id }: { id: string }) {
   if (loaded.state === "failed") {
     return (
       <main className={styles.screen}>
-        <Failed message={copy.failed} retry={copy.retry} onRetry={retry} />
+        <Failed message={copy.failed} retry={copy.retry} onRetry={retry} requestId={loaded.requestId} />
       </main>
     );
   }

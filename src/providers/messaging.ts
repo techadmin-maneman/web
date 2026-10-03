@@ -29,6 +29,8 @@ export interface OutboundMessage {
   readonly params: readonly string[];
   /** A publicly reachable image to send with the text. */
   readonly mediaUrl?: string;
+  /** The link that stops messages of this kind, which the text ends with. */
+  readonly stopLink?: string;
 }
 
 /** Why the bridge cannot reach WhatsApp. Each has its own fix (src/scheduled/whatsapp-bridge.ts). */
@@ -54,8 +56,13 @@ export function createMessagingProvider(
 /** Local and test stand-in: sends nothing, logs no number, reports success. */
 export function createStubMessaging(log: Logger): MessagingProvider {
   return {
-    send: ({ template, params, mediaUrl }) => {
-      log.info("messaging_stub_send", { template, params: params.length, media: mediaUrl !== undefined });
+    send: ({ template, params, mediaUrl, stopLink }) => {
+      log.info("messaging_stub_send", {
+        template,
+        params: params.length,
+        media: mediaUrl !== undefined,
+        stop_link: stopLink !== undefined,
+      });
       return Promise.resolve({ ok: true, providerMessageId: `stub-${crypto.randomUUID()}` });
     },
     connection: () => Promise.resolve({ open: true }),

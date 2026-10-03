@@ -37,6 +37,36 @@ Environment, version and database reachability
 }
 ```
 
+### POST /api/client-errors
+
+Report an error in the app's own page
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ClientErrorReport"
+}
+```
+
+**204**: Logged
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**429**: rate_limited: this address has sent its reports for the hour, or every address has
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/clients/search
 
 Find a client by mobile number. A POST, so the number stays out of the URL
@@ -4258,6 +4288,76 @@ Request body:
 }
 ```
 
+### ClientErrorReport
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "error",
+        "unhandled_rejection",
+        "render",
+        "outbox_gave_up"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "path": {
+      "type": "string",
+      "maxLength": 300,
+      "description": "The page's path, with no query or fragment."
+    },
+    "stack": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "source": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "The script the error was thrown in."
+    },
+    "line": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "column": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "step": {
+      "type": "string",
+      "maxLength": 40,
+      "description": "outbox_gave_up: the write's kind, as `checklist`."
+    },
+    "code": {
+      "type": "string",
+      "maxLength": 60,
+      "description": "outbox_gave_up: the code the API refused it with."
+    },
+    "status": {
+      "type": "integer",
+      "description": "outbox_gave_up: the refusal's HTTP status."
+    },
+    "request_id": {
+      "type": "string",
+      "maxLength": 64,
+      "description": "outbox_gave_up: the refusal's request ID, which its own log lines carry."
+    }
+  },
+  "required": [
+    "kind",
+    "message",
+    "path"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### ClientSearch
 
 ```json
@@ -5773,6 +5873,38 @@ Request body:
     "retrying": {
       "type": "boolean",
       "description": "Still tried every hour: inside its tries, and its visit to come."
+    },
+    "discount_code": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "amount_off": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "In paise before GST; null until the visit's price is known."
+            }
+          },
+          "required": [
+            "code",
+            "amount_off"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The discount code the client booked with (docs/decisions/0108-discount-codes.md)."
     }
   },
   "required": [
@@ -5787,7 +5919,8 @@ Request body:
     "held_at",
     "refusal",
     "retries_end",
-    "retrying"
+    "retrying",
+    "discount_code"
   ],
   "additionalProperties": false
 }
@@ -6049,7 +6182,9 @@ Request body:
                   "app_profile",
                   "app_share_sheet",
                   "technician",
-                  "erasure"
+                  "erasure",
+                  "message_link",
+                  "whatsapp_stop"
                 ]
               },
               {
