@@ -94,6 +94,7 @@ Each is written up in `docs/verification.md` when it passes. The payment run is 
 **The release:**
 
 - [ ] **Pre-flight** (RB, "Rolling back a Worker version"; RB, "Restoring D1"): `node scripts/release.ts current --worker <mm-api|mm-site> --env production` for each (none mid-rollout), and the D1 bookmark written down: `W d1 time-travel info maneman-prod --env production --timestamp <now>`.
+- [ ] **Zoho's answers** (RB, "Checking Zoho's answers before a release"): `node --env-file=.env.books-scripts --env-file=.env.crm-scripts scripts/zoho-contract-probe.ts` ends with no FAIL, and its date and lines are in `docs/verification.md`.
 - [ ] **Run `deploy-production.yml`** on the commit that passed staging, with the full 40-character SHA, a canary of 10% and a soak of 300 seconds (ADR 0006). It records every Worker's version, checks the database is production's, uploads mm-api with no traffic, migrates, sends the canary its share and smokes it, soaks, promotes, then ships mm-site. A failure after the canary starts rolls every Worker back; migrations are never rolled back.
 - [ ] **After it:** `npm run apply-triggers -- --env production`, then `node --env-file=.env.cf-read scripts/check-triggers.ts production --strict` and the bucket check again (RB 9).
 - [ ] **Proofs:** `GET https://maneman.in/api/health` answers production and the release's SHA; `npm run smoke -- --base https://maneman.in --environment production`; a consultation booked on `/book` reaches the CRM as a lead, assigned (RB 8); Web Analytics counts the first day (item 144; RB 14).

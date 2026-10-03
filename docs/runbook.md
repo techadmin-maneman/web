@@ -313,7 +313,7 @@ Zoho names a new field from its label, so the script reads each one back: the sy
 
    It confirms every field, type and pick-list value the sync writes, and lists the Leads assignment rules with their IDs. Fill in `ZOHO_LAR_ID`, run it again until it passes, then `W secret bulk` the file and delete it. The next lead proves the setup end to end: it should reach Zoho within a minute, assigned and with its proposed date.
 
-7. **A refresh token for scripts.** Zoho mints at most ten access tokens in ten minutes from one refresh token, so a script run by hand must never share the Worker's: a proof that did took FSM down with it (`docs/open-points.md`, item 32). Repeat step 5.2 and 5.3 with the same Self Client to get a second refresh token, with only the scopes the scripts need (`ZohoCRM.settings.fields.ALL`, `ZohoCRM.settings.assignment_rules.READ`; for FSM and for Books, the same scopes as the Worker's FSM and Books tokens, step 11b). Keep it in the scripts' own git-ignored file, never in a Worker secret:
+7. **A refresh token for scripts.** Zoho mints at most ten access tokens in ten minutes from one refresh token, so a script run by hand must never share the Worker's: a proof that did took FSM down with it (`docs/open-points.md`, item 32). Repeat step 5.2 and 5.3 with the same Self Client to get a second refresh token, with only the scopes the scripts need (`ZohoCRM.settings.fields.ALL`, `ZohoCRM.settings.assignment_rules.READ`, and for the contract probe's reads `ZohoCRM.modules.leads.READ` and `ZohoSearch.securesearch.READ`; for FSM and for Books, the same scopes as the Worker's FSM and Books tokens, step 11b). Keep it in the scripts' own git-ignored file, never in a Worker secret:
    - the CRM's as `ZOHO_SCRIPTS_REFRESH_TOKEN`, beside `ZOHO_CLIENT_ID`, `ZOHO_CLIENT_SECRET` and the hosts;
    - FSM's as `ZOHO_FSM_SCRIPTS_REFRESH_TOKEN`, beside `ZOHO_FSM_CLIENT_ID`, `ZOHO_FSM_CLIENT_SECRET` and the hosts;
    - Books' as `ZOHO_BOOKS_SCRIPTS_REFRESH_TOKEN`, beside `ZOHO_BOOKS_CLIENT_ID`, `ZOHO_BOOKS_CLIENT_SECRET`, the hosts and `ZOHO_BOOKS_ORG_ID`, in `.env.books-scripts`.
@@ -517,7 +517,7 @@ Payments and refunds are mirrored from Razorpay's webhook (docs/decisions/0044-p
    W secret put RAZORPAY_KEY_SECRET --env <env>
    ```
 
-2. **The webhook secret.** Make one, set it on the Worker, and keep it to paste into Razorpay:
+2. **The webhook secret.** Make one, set it on the Worker, and keep it to paste into Razorpay. It must be at least 32 characters (the command below gives 48), and while `SELF_SERVE_BOOKING` is on the Worker refuses to start without it:
 
    ```sh
    openssl rand -hex 24
@@ -950,6 +950,16 @@ UPDATE leads SET sync_attempts = 0 WHERE sync_state = 'failed';
 
 The sweeper picks them up within five minutes. A replay never duplicates a Zoho record: the sync looks the person up by `D1_Person_ID` first, and Zoho refuses a second record with the same `D1_Person_ID`.
 
+### Checking Zoho's answers before a release
+
+The adapter tests read answers recorded from the org, so they pass only while Zoho answers as it did. Before every release, run each read the Books and CRM adapters make, through the adapters, against the owner's org. It writes nothing and makes about 15 calls:
+
+```sh
+node --env-file=.env.books-scripts --env-file=.env.crm-scripts scripts/zoho-contract-probe.ts
+```
+
+Each read prints `PASS`, `SKIP` when the org holds nothing for it to read (no invoice yet, say), or `FAIL`. A failure naming `UNEXPECTED_ANSWER` and a field means Zoho now answers in a shape the adapter does not read: change the adapter's schema in `src/providers/books-zoho.ts` or `zoho-crm.ts`, run the probe again with `--record` to write the answers the tests load (`test/fixtures/vendors`, with no one's details), and run those tests. `OAUTH_SCOPE_MISMATCH` means a scripts' token lacks a scope (Zoho, step 7 of "Provisioning an environment"). Record the date and the lines in `docs/verification.md`.
+
 ---
 
 ## FSM and Books
@@ -1129,11 +1139,11 @@ The cause, from Workers Logs:
 - the route answers 404: `RAZORPAY_WEBHOOK_SECRET` is not set on the Worker (step 11c, point 2);
 - `razorpay_hook_unauthorized`: the secret in Razorpay's webhook is not the Worker's;
 - nothing at all: Razorpay is not calling. The webhook is disabled (Razorpay disables one that has failed for 24 hours, and e-mails the account), its URL is wrong, it is set up in the other mode from the keys (test or live), or, on staging, Access is stopping `/api/hooks/` (step 12, point 3);
-- `razorpay_hook_refund_early`, answered 409: a refund came before its payment. Razorpay sends it again; nothing is wrong.
+- `razorpay_hook_refund_early`, answered 409: a refund came before its payment, in an event that does not carry the payment. Razorpay sends it again; nothing is wrong.
 
 Put the cause right, and re-enable the webhook in Razorpay's dashboard if it was disabled. Razorpay retries a delivery that failed for 24 hours. A capture that arrives late is judged by Razorpay's own time: paid within the hold's ten minutes and its two minutes' grace, the visit is booked; if the time has gone to another client meanwhile, the payment is refunded in full (ADR 0068).
 
-For a payment whose delivery Razorpay will not send again (past its 24 hours, or while the webhook was disabled), refund it in Razorpay's dashboard and ask the client to book again. That refund's own webhook is then answered 409, since its payment was never recorded; that is expected.
+For a payment whose delivery Razorpay will not send again (past its 24 hours, or while the webhook was disabled), refund it in Razorpay's dashboard and ask the client to book again. That refund's own event carries the payment, so both are recorded then, nothing is booked for it, and ops get one alert per payment ("Payment … was refunded in Razorpay before we heard it was paid", key `razorpay_refund_unheard:<payment ID>`). Close it once the client has been told. The same alert for a refund no one here made means the webhook is missing payments: work through this section.
 
 ### A refund that failed
 

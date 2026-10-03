@@ -9,14 +9,13 @@
 //
 // The scripts' scopes cannot delete an item, so every run reuses one, "Staging test: proof item", and leaves it.
 
-import { DatabaseSync } from "node:sqlite";
 import { parseArgs } from "node:util";
 import { NO_GST } from "../src/config/gst.ts";
 import type { ZohoBooksSettings } from "../src/config/settings.ts";
 import { indiaDate } from "../src/lib/india-time.ts";
-import type { Logger, LogFields } from "../src/log.ts";
 import { createBooksProvider, type NewBooksCustomer } from "../src/providers/books.ts";
 import { createZohoRequester, ZohoError } from "../src/providers/zoho-http.ts";
+import { callLogger, tokenTable } from "./lib/zoho-script-deps.ts";
 import { refreshTokenForScript } from "./lib/zoho-script-token.ts";
 
 // --use-worker-token is read by refreshTokenForScript; it is named here so the parser takes it.
@@ -44,33 +43,9 @@ const settings: ZohoBooksSettings = {
   gst: NO_GST,
 };
 
-/** The one table the requester keeps, in memory: the access token, minted once for the run. */
-function tokenTable(): D1Database {
-  const sqlite = new DatabaseSync(":memory:");
-  sqlite.exec(
-    `CREATE TABLE zoho_access_tokens (client TEXT PRIMARY KEY, access_token TEXT, expires_at TEXT,
-       refreshing_until TEXT, cool_down_until TEXT)`,
-  );
-  const prepare = (sql: string) => ({
-    bind: (...values: (string | null)[]) => ({
-      first: () => Promise.resolve(sqlite.prepare(sql).get(...values) ?? null),
-      run: () => Promise.resolve(sqlite.prepare(sql).run(...values)),
-    }),
-  });
-  return { prepare } as unknown as D1Database;
-}
-
-/** Each call the provider made, by step and status, for the record; nothing else it logs. */
+/** Each call the provider made, by step and status, for the record. */
 const callsMade: string[] = [];
-function callLogger(): Logger {
-  const note = (event: string, fields?: LogFields) => {
-    if (event === "zoho_call") callsMade.push(`${String(fields?.step)} ${String(fields?.status)}`);
-  };
-  const logger: Logger = { debug: note, info: note, warn: note, error: note, child: () => logger };
-  return logger;
-}
-
-const deps = { db: tokenTable(), fetch: globalThis.fetch, now: () => new Date(), log: callLogger() };
+const deps = { db: tokenTable(), fetch: globalThis.fetch, now: () => new Date(), log: callLogger(callsMade) };
 const books = createBooksProvider("zoho", settings, deps);
 const request = createZohoRequester("books", settings, deps);
 const org = `organization_id=${encodeURIComponent(settings.orgId)}`;

@@ -5,7 +5,7 @@
 //   GET  /api/deletion-requests               requests waiting for ops
 //   POST /api/deletion-requests/:id/decision  delete (the Phase 1 erasure) or reject
 // Each decision is audited under the member of staff who made it, in the same batch as the decision. Ops answer
-// all three in the console's own sections (apps/ops/src).
+// all three in the console's own sections (apps/ops/src). Each route keeps to the caller's cities.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
@@ -20,6 +20,7 @@ import { queueContactSync } from "../http/contact-sync.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
+import { routeReach, withinRouteReach } from "../http/staff-access.ts";
 import { needsReason, REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
 import { dueAt } from "../policy/tasks.ts";
 import type { CrmSyncMessage } from "../queues/crm-sync.ts";
@@ -38,7 +39,7 @@ const DueSchema = z.iso.datetime().openapi({
 export const numberChangesRoute = createRoute({
   method: "get",
   path: "/api/number-changes",
-  summary: "Number changes waiting for ops: both numbers proven by code",
+  summary: "Number changes waiting for ops in the caller's cities: both numbers proven by code",
   responses: {
     200: {
       description: "Oldest first",
@@ -84,7 +85,7 @@ export const numberChangeDecisionRoute = createRoute({
   responses: {
     200: { description: "Decided", ...json(z.object({ state: z.enum(["confirmed", "rejected"]) }).strict()) },
     400: errorResponse("invalid_request: a rejection needs a reason"),
-    404: errorResponse("not_found: no change waiting for ops by that ID"),
+    404: errorResponse("not_found: no change waiting for ops by that ID in the caller's cities"),
     409: errorResponse("number_in_use: another person holds the new number"),
   },
 });
@@ -92,7 +93,7 @@ export const numberChangeDecisionRoute = createRoute({
 export const deletionRequestsRoute = createRoute({
   method: "get",
   path: "/api/deletion-requests",
-  summary: "Deletion requests waiting for ops",
+  summary: "Deletion requests waiting for ops in the caller's cities",
   responses: {
     200: {
       description: "Oldest first",
@@ -137,7 +138,7 @@ export const deletionDecisionRoute = createRoute({
   responses: {
     200: { description: "Decided", ...json(z.object({ state: z.enum(["done", "rejected"]) }).strict()) },
     400: errorResponse("invalid_request: a rejection needs a reason"),
-    404: errorResponse("not_found: no request waiting for ops by that ID"),
+    404: errorResponse("not_found: no request waiting for ops by that ID in the caller's cities"),
     409: {
       description: "visit_booked or payment_held: cancel the visits and refund the payments it names first",
       ...json(ErasureRefusedSchema),
@@ -157,7 +158,7 @@ function decisionAudit(
 
 export function registerOpsProfile(app: App): void {
   app.openapi(numberChangesRoute, async (c) => {
-    const changes = await changesAwaitingOps(c.env.DB);
+    const changes = await changesAwaitingOps(c.env.DB, await routeReach(c));
     const [names, since, inputs] = await Promise.all([
       namesOf(
         c.env.DB,
@@ -190,6 +191,7 @@ export function registerOpsProfile(app: App): void {
     if (needsReason("number_change", decision) && (reason ?? "") === "") {
       return c.json(errorBody("invalid_request", c.var.requestId, ["reason"]), 400);
     }
+    if (!(await withinRouteReach(c, "number_change", id))) return c.json(errorBody("not_found", c.var.requestId), 404);
     const outcome = await decideNumberChange(c.env.DB, {
       id,
       decision,
@@ -206,7 +208,8 @@ export function registerOpsProfile(app: App): void {
   });
 
   app.openapi(deletionRequestsRoute, async (c) => {
-    const [requests, inputs] = await Promise.all([deletionsWaiting(c.env.DB), opsInputs(c)]);
+    const reached = await routeReach(c);
+    const [requests, inputs] = await Promise.all([deletionsWaiting(c.env.DB, reached), opsInputs(c)]);
     return c.json(
       {
         requests: requests.map((request) => ({
@@ -227,6 +230,9 @@ export function registerOpsProfile(app: App): void {
     const { decision, reason } = c.req.valid("json");
     if (needsReason("deletion", decision) && (reason ?? "") === "") {
       return c.json(errorBody("invalid_request", c.var.requestId, ["reason"]), 400);
+    }
+    if (!(await withinRouteReach(c, "deletion_request", id))) {
+      return c.json(errorBody("not_found", c.var.requestId), 404);
     }
     const now = c.var.deps.now();
     // Recorded in the same batch as the erasure: an erasure cannot be undone, and one that failed did not happen.
