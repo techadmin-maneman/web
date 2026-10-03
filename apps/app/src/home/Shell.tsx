@@ -42,7 +42,7 @@ function PageHeader({ header }: { header: Header }) {
       return (
         <header className={styles.header}>
           <Mark className={styles.mark} />
-          <Link className={styles.avatar} to="/profile" label={home.profile}>
+          <Link className={styles.avatar} to="/profile" label={home.profile(me.initials)}>
             {me.initials}
           </Link>
         </header>

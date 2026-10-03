@@ -517,7 +517,7 @@ test("puts Pay above what booking also agrees to, one tap away, while neither is
   const payButton = pay.getByRole("button", { name: "Pay Rs. 2,000" });
   const agrees = pay.getByText("What booking agrees to");
   const first = pay.getByText(
-    "By booking this visit, you also agree to photographs for your own record and on referral cards.",
+    "By booking this visit, you also agree to photographs taken for your visit record and used on referral cards.",
   );
   // MON-43, BK-63, UX-12, CP-42: on a 390 px phone the notice's six lines pushed Pay off the screen.
   await expect(payButton).toBeInViewport();
@@ -556,7 +556,7 @@ test("shows only the line of a purpose still undecided, and sends only that one"
   const pay = page.getByRole("dialog", { name: "Pay and confirm" });
   await pay.getByText("What booking agrees to").click();
   await expect(
-    pay.getByText("By booking this visit, you also agree to photographs for your own record."),
+    pay.getByText("By booking this visit, you also agree to photographs taken for your visit record."),
   ).toBeVisible();
   await expect(pay.getByText("You can switch it off in Profile.")).toBeVisible();
   await expect(pay.getByText("Your first name appears on your invite.")).toHaveCount(0);

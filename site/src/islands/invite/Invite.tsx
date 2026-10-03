@@ -22,7 +22,7 @@
 // if the friend leaves and books there later (site/src/lib/remembered-invite.ts).
 
 import { useEffect, useRef, useState } from "preact/hooks";
-import { referral } from "../../content/referral.ts";
+import { invitePageTitle, referral } from "../../content/referral.ts";
 import { booking, PRICES_SHOWN } from "../../content/site.ts";
 import {
   fetchInvite,
@@ -75,6 +75,12 @@ function bookingTitle(answer: PincodeAnswer | null, plan: Plan): string {
   return booking.title;
 }
 
+/** The invite's heading, which for a code we do not know promises nothing the invite would have. */
+function inviteHeading(invite: InviteAnswer | null): string {
+  if (invite?.state === "unknown") return referral.arrival.unknown.title;
+  return referral.arrival.title;
+}
+
 export default function Invite(props: Props) {
   // Null until the invite is known: the page then says only what is true of every invite.
   const [invite, setInvite] = useState<InviteAnswer | null>(null);
@@ -94,6 +100,7 @@ export default function Invite(props: Props) {
   const name = invited ? (invite?.referrer_first_name ?? null) : null;
   // Only a valid invite carries its visits; the API books any other without them.
   const credits = invited && invite?.state === "valid";
+  const unknown = invited && invite?.state === "unknown";
 
   // The invite: from the page where the Worker wrote it, otherwise from the API.
   useEffect(() => {
@@ -112,6 +119,11 @@ export default function Invite(props: Props) {
 
   useEffect(() => {
     if (invited && invite?.state === "valid") rememberInvite(codeInPath());
+  }, [invited, invite]);
+
+  // The Worker titles the tab; where it could not look the invite up, the island does once it has.
+  useEffect(() => {
+    if (invited && invite !== null) document.title = invitePageTitle(invite);
   }, [invited, invite]);
 
   // The prices: from the page where the Worker wrote them, otherwise from the API.
@@ -194,20 +206,20 @@ export default function Invite(props: Props) {
     <section class={styles.arrival}>
       <div class={`${styles.inner} ${styles.grid}`}>
         <div class={styles.lead}>
-          {invited && (
+          {invited && !unknown && (
             <div class={`caps ${styles.from}`}>
               {name === null ? referral.arrival.unnamed : fill(referral.arrival.invited, { name })}
             </div>
           )}
           <h1 ref={heading} tabIndex={-1} class={styles.title}>
-            {invited ? referral.arrival.title : bookingTitle(answer, plan)}
+            {invited ? inviteHeading(invite) : bookingTitle(answer, plan)}
           </h1>
           <div class={styles.offer}>
             {!invited && <p>{booking.intro}</p>}
             {offer !== null && <p>{offer}</p>}
-            {invited && invite !== null && !credits && (
+            {unknown && (
               <p>
-                <span class={styles.unknownTitle}>{referral.arrival.unknown.title}</span>
+                <span class={styles.unknownTitle}>{referral.arrival.unknown.notice}</span>
                 <span class={styles.unknownBody}>{referral.arrival.unknown.body(reward)}</span>
               </p>
             )}

@@ -149,38 +149,3 @@
 .tab:focus-visible {
   outline-offset: calc(-1 * var(--focus-width));
 }
-
-/*
- * On a phone wider than the design's column (a 414 or 430 px one), the frame's
- * grounds and rules run on to the screen's edges, where they would otherwise
- * stop short with a bare strip each side. Each is painted past its own box by
- * a border image, which never makes the page scroll sideways. Wider screens,
- * a tablet's or a desk's, keep the column as it is drawn.
- */
-@media (max-width: 480px) {
-  .header,
-  .offline,
-  .footer,
-  .tabs {
-    border-image-slice: 0 fill;
-    border-image-width: 0;
-    /* Far enough past the column to reach the edge of any screen. */
-    border-image-outset: 0 var(--reach-screen);
-  }
-
-  .header {
-    border-image-source: linear-gradient(to top, var(--paper-line) var(--hairline), var(--paper) 0);
-  }
-
-  .offline {
-    border-image-source: linear-gradient(var(--ink-deep), var(--ink-deep));
-  }
-
-  .footer {
-    border-image-source: linear-gradient(var(--paper-line) var(--hairline), var(--paper) 0);
-  }
-
-  .tabs {
-    border-image-source: linear-gradient(var(--paper-line) var(--hairline), var(--paper-light) 0);
-  }
-}
