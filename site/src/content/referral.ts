@@ -272,8 +272,10 @@ export const referral = {
     nameError: "Please tell us your name.",
     mobile: "Mobile",
     mobilePlaceholder: "Your number",
-    mobileError: "Please enter a ten-digit mobile number.",
+    mobileError: "Enter a valid 10-digit mobile number.",
     consentError: "We need this to contact you.",
+    // Not drawn: by the button once three or more fields are marked. The owner approves the words.
+    marked: "Check the {count} fields marked above.",
   },
   /**
    * What a booking answers (C4), the same for every number, since whoever typed it may not be its owner: the details
@@ -331,7 +333,7 @@ export const referral = {
   errors: {
     rateLimited: "That is a few too many tries. Please try again tomorrow.",
     turnstile: "We could not confirm you are a person. Please try again.",
-    taken: "That window is full. Please pick another.",
+    taken: "That time isn’t available. Pick another.",
     notBookable: "That day is no longer open. Please pick another.",
     other: "Something went wrong at our end. Please try again.",
     // Not drawn: the discount code given does not apply, whatever the reason (ADR 0108). The owner approves the words.

@@ -996,7 +996,7 @@ export const tryOn = {
     nameError: "Tell us what to call you.",
     mobile: "Mobile",
     mobilePlaceholder: "98100 00000",
-    mobileError: "Enter all ten digits so we can send your look.",
+    mobileError: "Enter a valid 10-digit mobile number.",
     submit: "Send my look",
     // Not drawn: once the WhatsApp code is on its way, the button confirms it and sends the look.
     confirm: "Confirm and send my look",

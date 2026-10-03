@@ -2,7 +2,13 @@
 
 import { describe, expect, it } from "vitest";
 import { stepOf } from "../../site/src/islands/invite/step.ts";
-import { addressToSend, emptyAddress, missingParts } from "../../site/src/lib/address.ts";
+import {
+  addressToSend,
+  emptyAddress,
+  missingParts,
+  partsToMark,
+  REQUIRED_API_FIELDS,
+} from "../../site/src/lib/address.ts";
 import { signInLink } from "../../site/src/lib/app-link.ts";
 import { attributionFrom } from "../../site/src/lib/attribution.ts";
 import { dayStrip, stripMonths } from "../../site/src/lib/dates.ts";
@@ -69,6 +75,15 @@ describe("the address a consultation is at", () => {
   it("counts a part filled with spaces as left out", () => {
     const typed = { ...emptyAddress("Gurgaon"), flat: " ", line1: "  ", locality: "Sector 65", city: " " };
     expect(missingParts(typed)).toEqual(["flat", "line1", "city"]);
+  });
+
+  // BK-28, UX-21: a refusal naming an address part was said by the button, with nothing marked.
+  it("marks the parts left out once the form is checked, and the parts the API refused by its names", () => {
+    const typed = { ...emptyAddress("Gurgaon"), flat: "Flat 402" };
+    expect(partsToMark(typed, false, [])).toEqual([]);
+    expect(partsToMark(typed, true, [])).toEqual(["line1", "locality"]);
+    expect(partsToMark(typed, false, ["address.flat", "mobile", "address.pincode"])).toEqual(["flat"]);
+    expect(REQUIRED_API_FIELDS).toEqual(["address.flat", "address.line1", "address.locality", "address.city"]);
   });
 
   it("is sent trimmed, in the pincode checked, with a part left blank as none", () => {
