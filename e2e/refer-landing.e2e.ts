@@ -380,7 +380,7 @@ test("a window found full says so, and the form stays", async ({ page }) => {
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: "Book the consultation" }).click();
 
-  await expect(page.getByText("That window is full. Please pick another.")).toBeVisible();
+  await expect(page.getByText("That time isn’t available. Pick another.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Book the consultation" })).toBeVisible();
 });
 
@@ -407,7 +407,7 @@ test("the form will not send without the address, a name, a number and the agree
   await page.getByRole("button", { name: "Book the consultation" }).click();
 
   await expect(page.getByText("Please tell us your name.")).toBeVisible();
-  await expect(page.getByText("Please enter a ten-digit mobile number.")).toBeVisible();
+  await expect(page.getByText("Enter a valid 10-digit mobile number.")).toBeVisible();
   await expect(page.getByText("We need this to contact you.")).toBeVisible();
   await expect(page.getByText("Please give the building or society.")).toBeVisible();
   await expect(page.getByText("Please give the sector or area.")).toBeVisible();
