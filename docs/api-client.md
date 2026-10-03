@@ -377,6 +377,22 @@ Request body:
 }
 ```
 
+**409**: visit_booked: a visit still to come is in another city, which the address may not leave
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**422**: not_served: the pincode is not one we come to
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### PATCH /api/consents/{purpose}
 
 Switch one consent on or off. Each switch is kept, with its date; a repeat is not a switch
@@ -1035,7 +1051,7 @@ The windows open for a service over 14 days
 }
 ```
 
-**422**: not_bookable: the client may not book this kind of visit, or the service is not offered; no_product: a first fit, on a day the console offers no hair system
+**422**: not_bookable: the client may not book this kind of visit, or the service is not offered; no_product: a first fit, on a day the console offers no hair system; not_served: the client's address is in a pincode we do not come to
 
 ```json
 {
@@ -1118,7 +1134,7 @@ Request body:
 }
 ```
 
-**422**: not_bookable: this kind of visit, this service, or that day, is not open to the client; no_product: a first fit, on a day the console offers no hair system
+**422**: not_bookable: this kind of visit, this service, or that day, is not open to the client; no_product: a first fit, on a day the console offers no hair system; not_served: the client's address is in a pincode we do not come to
 
 ```json
 {
@@ -1697,6 +1713,7 @@ Request body:
             "not_bookable",
             "hold_expired",
             "address_required",
+            "not_served",
             "already_booked",
             "not_changeable",
             "terms_changed",
@@ -2659,11 +2676,16 @@ Request body:
         }
       ],
       "description": "When the soonest expire."
+    },
+    "expiring_visits": {
+      "type": "integer",
+      "description": "How many of them expire then."
     }
   },
   "required": [
     "visits",
-    "earliest_expiry"
+    "earliest_expiry",
+    "expiring_visits"
   ],
   "additionalProperties": false
 }

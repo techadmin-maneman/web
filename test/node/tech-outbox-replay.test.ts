@@ -11,6 +11,7 @@ import { keptArrival } from "../../apps/tech/src/store/jobs.ts";
 import {
   correct,
   events,
+  forget,
   frames,
   keepFrame,
   queue,
@@ -245,6 +246,36 @@ describe("a write the job has moved under", () => {
     const sent = api(() => accepted);
     await replay();
     expect(sent.map((call) => call.startsAt)).toEqual(["2030-09-19T04:00:00.000Z"]);
+  });
+
+  // A card read again after ops moved the visit would otherwise carry the new start, and the move go unnoticed.
+  it("carries the start seen at check-in on every later step, however the card reads since", async () => {
+    const sent = api(() => accepted);
+    await queue("check_in", "a", { lat: 28.39, lng: 77.07 }, "2030-09-19T04:00:00.000Z");
+    await replay();
+    await queue("start", "a", null, "2030-09-20T03:30:00.000Z");
+    await queue("checklist", "a", { done: [] }, "2030-09-20T03:30:00.000Z");
+    await replay();
+    expect(sent.map((call) => call.startsAt)).toEqual([
+      "2030-09-19T04:00:00.000Z",
+      "2030-09-19T04:00:00.000Z",
+      "2030-09-19T04:00:00.000Z",
+    ]);
+  });
+
+  it("takes the card's start again once the technician has let go of the job's work and checks in afresh", async () => {
+    const sent = api(() => accepted);
+    await queue("check_in", "a", { lat: 28.39, lng: 77.07 }, "2030-09-19T04:00:00.000Z");
+    await replay();
+    await forget("a");
+    await queue("check_in", "a", { lat: 28.39, lng: 77.07 }, "2030-09-20T03:30:00.000Z");
+    await queue("start", "a", null, "2030-09-20T03:30:00.000Z");
+    await replay();
+    expect(sent.map((call) => call.startsAt)).toEqual([
+      "2030-09-19T04:00:00.000Z",
+      "2030-09-20T03:30:00.000Z",
+      "2030-09-20T03:30:00.000Z",
+    ]);
   });
 
   it("stops a job whose photographs' links are refused as no longer this technician's, as moved", async () => {

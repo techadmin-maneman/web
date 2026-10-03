@@ -208,6 +208,9 @@ describe("the client, afterwards", () => {
   });
 
   it("changes it as any address, which is then their own", async () => {
+    await env.DB.prepare(
+      "INSERT INTO serviceable_pincodes (pincode, area, city, served) VALUES ('122018', 'Sector 65', 'Gurgaon', 1)",
+    ).run();
     await save(GIVEN);
     const { session_token: _, ...theirs } = GIVEN;
     expect((await asClient("PATCH", "/api/profile/address", { ...theirs, flat: "Flat 1204" })).status).toBe(200);

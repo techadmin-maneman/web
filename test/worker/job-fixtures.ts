@@ -127,6 +127,7 @@ export async function working(type = "service", vendors: Partial<Dependencies> =
     await post(`/api/tech/jobs/${JOB}/checklist`, { done: [] }, "event-checklist-01");
     if (step === "consumables") return;
     await post(`/api/tech/jobs/${JOB}/consumables`, { items: [] }, "event-consumables-01");
+    if (type === "consultation") return;
     await post(`/api/tech/jobs/${JOB}/photos`, { phase: "after" }, "event-afterphotos-01");
   };
 

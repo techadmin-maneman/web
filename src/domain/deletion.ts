@@ -9,7 +9,7 @@ import { DELETION_DECIDED_WITHIN_DAYS, erasureRefusal, type ErasureRefusal } fro
 import { DECISION_SHOWN_DAYS } from "../policy/decision-reasons.ts";
 import type { OutboundMessage } from "../providers/messaging.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
-import { erasePerson, erasureBlockers, type ErasureBlockers, type ErasureEnv } from "./erasure.ts";
+import { eraseAndQueue, erasureBlockers, type ErasureBlockers, type ErasureQueueEnv } from "./erasure.ts";
 import { reachBinding, withinReach } from "./places.ts";
 import { liveContact } from "./profile.ts";
 import type { Composed } from "./visit-messages.ts";
@@ -58,7 +58,10 @@ export async function openDeletion(db: D1Database, personId: string): Promise<De
   return row === null ? null : { id: row.id, personId: row.person_id, state: row.state, createdAt: row.created_at };
 }
 
-/** The requests waiting for ops in the places reached, oldest first, with the number ops will reach the client on. */
+/**
+ * The requests waiting for ops in the places reached, oldest first, with the number ops will reach the client on. A
+ * client erased with a request still open, before an erasure closed it, waits for nothing.
+ */
 export async function deletionsWaiting(
   db: D1Database,
   reached: PlacesReached,
@@ -67,7 +70,8 @@ export async function deletionsWaiting(
     .prepare(
       `SELECT d.id, d.person_id, p.name, p.mobile_e164, d.created_at
        FROM deletion_requests d JOIN people p ON p.id = d.person_id
-       WHERE d.state = 'requested' AND ${withinReach("deletion_request", "d", "?1")} ORDER BY d.created_at`,
+       WHERE d.state = 'requested' AND p.erased_at IS NULL AND ${withinReach("deletion_request", "d", "?1")}
+       ORDER BY d.created_at`,
     )
     .bind(reachBinding(reached))
     .all<{ id: string; person_id: string; name: string; mobile_e164: string; created_at: string }>();
@@ -102,13 +106,15 @@ export type DeletionOutcome =
  * and the request waits.
  */
 export async function decideDeletion(
-  env: ErasureEnv,
+  env: ErasureQueueEnv,
   options: {
     id: string;
     decision: "delete" | "reject";
     staff: string;
     reason: string | null;
     audit: AuditEntry;
+    fsmConnected: boolean;
+    requestId: string;
     now: Date;
     log: Logger;
   },
@@ -144,9 +150,16 @@ export async function decideDeletion(
   const refusal = erasureRefusal(blockers);
   if (refusal !== null) return { kind: "refused", refusal, blockers };
   const told = await liveContact(db, personId);
-  const erased = await erasePerson(env, personId, options.now, options.log, [audit, decided]);
+  const erased = await eraseAndQueue(env, personId, {
+    audit: options.audit,
+    alongside: [decided],
+    fsmConnected: options.fsmConnected,
+    requestId: options.requestId,
+    now: options.now,
+    log: options.log,
+  });
   if (erased !== null) return { kind: "deleted", personId, told };
-  // Erased already, by the operators' endpoint: the request is done all the same.
+  // Erased already, before an erasure closed the requests it found open: this one is done all the same.
   await db.batch([audit, decided]);
   return { kind: "deleted", personId, told: null };
 }
@@ -225,7 +238,7 @@ export async function lastRejectedDeletion(
 const ALERT_AFTER_DAYS = 5;
 export const DELETION_ALERT_AFTER_MS = ALERT_AFTER_DAYS * DAY_MS;
 
-/** Alerts ops, once per request, about deletion requests nearing the end of their days. */
+/** Alerts ops, once per request, about deletion requests nearing the end of their days, but not an erased client's. */
 export async function alertAgedDeletions(
   db: D1Database,
   now: Date,
@@ -234,7 +247,9 @@ export async function alertAgedDeletions(
   const aged = await db
     .prepare(
       `UPDATE deletion_requests SET alerted_at = ?2
-       WHERE state = 'requested' AND alerted_at IS NULL AND created_at < ?1 RETURNING id`,
+       WHERE state = 'requested' AND alerted_at IS NULL AND created_at < ?1
+         AND NOT EXISTS (SELECT 1 FROM people p WHERE p.id = deletion_requests.person_id AND p.erased_at IS NOT NULL)
+       RETURNING id`,
     )
     .bind(new Date(now.getTime() - DELETION_ALERT_AFTER_MS).toISOString(), now.toISOString())
     .all<{ id: string }>();
