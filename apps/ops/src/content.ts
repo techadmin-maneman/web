@@ -630,6 +630,8 @@ export const clients = {
       paid: (amount: string) => `Paid ${amount}`,
       credit: "A visit credit covers it",
       free: "Nothing to pay",
+      /** "Code AUDTEST, Rs. 1,000 off": the code the client booked with. */
+      code: (applied: string) => `Code ${applied}`,
       refusal: (reason: string) => `FSM said: ${reason}`,
       noRefusal: "FSM gave no reason.",
       retrying: (until: string) => `Tried again automatically until ${until}.`,
