@@ -11,8 +11,8 @@ import { openTechnicianSession } from "../../src/domain/technicians.ts";
 import { appFor, d1TripsOf, fakeDependencies, markDatabase, NOW, request } from "./helpers.ts";
 import { syntheticJpeg } from "./tryon-fixtures.ts";
 
-/** The most round trips to D1 a card may wait on in turn. */
-const CARD_TRIPS = 99;
+/** The most round trips to D1 a card may wait on in turn. It waited on 15 when each read waited for the one before. */
+const CARD_TRIPS = 7;
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const TODAY_JOB = "22222222-2222-4222-8222-222222222221";
