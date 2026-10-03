@@ -731,7 +731,7 @@ Workers requests, 100,000 a day, are the account's too, staging and production t
 
 1. **Confirm it.** Cloudflare dashboard → **Workers & Pages** → **Overview** shows the day's requests near 100,000. A page that answers 1027 on one host answers it on all of them.
 2. **Find who is spending them.** `maneman.in` → **Security** → **Analytics** (or **Analytics & Logs** → **HTTP Traffic**): group by source IP, then by path and user agent. The rate-limiting rule's blocks (step 15) show there too. A test run on staging is the usual cause, as for the other allowances: stop it.
-3. **Block an attacker for the rest of the day.** **Security** → **Security rules** → **Create rule** → **Custom rules** (the free plan has five): match the addresses, their AS number or their country, action **Block**. This stops them spending tomorrow's allowance as well. Keep the rule until the traffic has stopped for a day, then delete it.
+3. **Block the attacker.** **Security** → **Security rules** → **Create rule** → **Custom rules** (the free plan has five): match the addresses, their AS number or their country, action **Block**. This stops them spending tomorrow's allowance as well. Keep the rule until the traffic has stopped for a day, then delete it.
 4. **Many addresses at once** cannot be held off by a rule per address. Lower the rate-limiting rule's **Requests** for the day, and tell the owner: the remaining answer is Workers Paid, which needs the owner's decision and a new ADR.
 5. **After the reset,** check the cron ran (the heartbeat, "The outside watchers") and that Razorpay's retried webhooks arrived ("Razorpay's webhook is not arriving").
 
