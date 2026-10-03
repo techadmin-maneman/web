@@ -5,12 +5,31 @@
 // its foot, over the ink the boards draw behind a sheet.
 //
 // It opens as it is drawn and closes as it leaves the page (./useModal.ts). A
-// caller that closes it itself -- Close, Done -- keeps a ref to it.
+// caller that closes it itself -- Close, Done -- keeps a ref to it. While it is
+// open it has its own entry in the history, so a phone's Back or the browser's
+// closes it rather than leaving the page (./sheetHistory.ts).
 
-import { useRef, type ReactNode, type RefObject } from "react";
+import { useLayoutEffect, useRef, type ReactNode, type RefObject } from "react";
 import { classes } from "./classes.ts";
+import { enterSheet } from "./sheetHistory.ts";
 import { useModal } from "./useModal.ts";
 import styles from "./sheet.module.css";
+
+/** Back closes the sheet, or answers it where Back is an answer, as Escape does. */
+function useBackCloses(dialog: RefObject<HTMLDialogElement | null>, onCancel: (() => void) | undefined): void {
+  const cancel = useRef(onCancel);
+  useLayoutEffect(() => {
+    cancel.current = onCancel;
+  });
+  useLayoutEffect(
+    () =>
+      enterSheet(() => {
+        if (cancel.current === undefined) dialog.current?.close();
+        else cancel.current();
+      }),
+    [dialog],
+  );
+}
 
 export function Sheet({
   ref,
@@ -44,6 +63,7 @@ export function Sheet({
   const own = useRef<HTMLDialogElement>(null);
   const dialog = ref ?? own;
   const leaving = useModal(dialog);
+  useBackCloses(dialog, onCancel);
 
   return (
     <dialog

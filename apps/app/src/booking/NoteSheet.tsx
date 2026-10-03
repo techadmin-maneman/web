@@ -10,6 +10,7 @@ import { api } from "../api.ts";
 import { booking, note as copy } from "../content.ts";
 import { focusIfLost } from "../lib/arrival.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
+import { useSession } from "../session.ts";
 import styles from "./booking.module.css";
 
 /** The most a note may hold, as the API takes it. */
@@ -29,6 +30,7 @@ export function NoteSheet(props: {
   message: string;
   onClose: () => void;
 }) {
+  const { offline } = useSession();
   const dialog = useRef<HTMLDialogElement>(null);
   const [text, setText] = useState("");
   const [step, setStep] = useState<Step>({ kind: "writing" });
@@ -78,12 +80,17 @@ export function NoteSheet(props: {
                 }}
               />
             </label>
+            {offline && (
+              <p className={styles.offlineLine} role="status">
+                {copy.offline}
+              </p>
+            )}
             <Button
               variant="primary"
               size="action"
               className={styles.primary}
               type="submit"
-              disabled={busy || text.trim() === ""}
+              disabled={busy || offline || text.trim() === ""}
               busy={busy}
             >
               {busy ? copy.saving : copy.save}

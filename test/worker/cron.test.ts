@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { NO_GST } from "../../src/config/gst.ts";
 import { CUT_SHORT_ALERT, finishRun, lastCompletedAt, startRun } from "../../src/domain/cron-runs.ts";
 import type { StaticConfig } from "../../src/guard.ts";
 import { createLogger } from "../../src/log.ts";
@@ -72,7 +73,12 @@ describe("runCronJobs", () => {
 
   it("skips a job whose provider is not connected here", async () => {
     const { ran, job } = recorder();
-    const jobs = [job("fsm", "fsm"), job("books", "fsm_and_books"), job("always", "nothing")];
+    const jobs = [
+      job("fsm", "fsm"),
+      job("fsm_and_books", "fsm_and_books"),
+      job("books", "books"),
+      job("always", "nothing"),
+    ];
 
     const outcomes = await runCronJobs(jobs, {
       env,
@@ -83,6 +89,17 @@ describe("runCronJobs", () => {
 
     expect(ran).toEqual(["fsm", "always"]);
     expect(outcomes.map((outcome) => outcome.job)).toEqual(["fsm", "always"]);
+  });
+
+  it("runs a job for Books without FSM only where D1, not FSM, is the record", async () => {
+    const { ran, job } = recorder();
+    const jobs = [job("books", "books"), job("books_without_fsm", "books_without_fsm")];
+    const ours: StaticConfig = { ...LOCAL_CONFIG, providers: { ...LOCAL_CONFIG.providers, FSM_PROVIDER: "none" } };
+
+    await runCronJobs(jobs, { env, deps: fakeDependencies(), config: LOCAL_CONFIG, log: createLogger() });
+    expect(ran).toEqual(["books"]);
+    await runCronJobs(jobs, { env, deps: fakeDependencies(), config: ours, log: createLogger() });
+    expect(ran).toEqual(["books", "books", "books_without_fsm"]);
   });
 
   // LIFE-17: the stub remembers no appointment, so locally the repair read every visit it looked at as one FSM had
@@ -352,10 +369,37 @@ describe("CRON_JOBS", () => {
       "visit_reminders",
       "next_service_reminders",
       "payment_links",
+      "books_items",
       "invoices",
       "asked_windows",
       "books_sync",
     ]);
+  });
+
+  it("without FSM, bills and settles in Books, checks its items and books unbooked holds, and runs none of FSM's jobs", async () => {
+    const ours: StaticConfig = {
+      ...LOCAL_CONFIG,
+      providers: { ...LOCAL_CONFIG.providers, FSM_PROVIDER: "none", BOOKS_PROVIDER: "stub" },
+    };
+    const outcomes = await runCronJobs(CRON_JOBS, { env, deps: fakeDependencies(), config: ours, log: createLogger() });
+    const ran = outcomes.map((outcome) => outcome.job);
+    expect(ran).toEqual(expect.arrayContaining(["unbooked_holds", "books_items", "invoices", "books_sync"]));
+    for (const fsmOnly of ["fsm_reconcile", "fsm_catalogue", "asked_windows"]) {
+      expect(ran, fsmOnly).not.toContain(fsmOnly);
+    }
+    expect(outcomes.filter((outcome) => !outcome.ok)).toEqual([]);
+  });
+
+  it("on FSM's path, raises invoices through FSM and leaves Books' items to FSM", async () => {
+    const outcomes = await runCronJobs(CRON_JOBS, {
+      env,
+      deps: fakeDependencies(),
+      config: LOCAL_CONFIG,
+      log: createLogger(),
+    });
+    const ran = outcomes.map((outcome) => outcome.job);
+    expect(ran).toEqual(expect.arrayContaining(["invoices", "books_sync", "fsm_catalogue"]));
+    expect(ran).not.toContain("books_items");
   });
 
   it("tells ops once when the photographs fill half their share of R2, however many runs see it", async () => {
@@ -446,24 +490,34 @@ describe("the Books pass's options", () => {
     apiHost: "www.zohoapis.in",
     orgId: "60088931635",
     refundAccountId: "bank-7",
+    gst: { gstin: "06AAACM1234A1Z5", stateCode: "HR", sac: "999721" },
   };
 
-  it("takes the refund account from Books' own settings, whatever FSM is", () => {
-    for (const FSM_PROVIDER of ["zoho", "none"] as const) {
+  it("takes the refund account and GST from Books' own settings, whatever FSM is, and makes customers only without it", () => {
+    for (const [FSM_PROVIDER, record] of [
+      ["zoho", "fsm"],
+      ["none", "ours"],
+    ] as const) {
       const config: StaticConfig = {
         ...LOCAL_CONFIG,
         environment: "staging",
         providers: { ...LOCAL_CONFIG.providers, FSM_PROVIDER, BOOKS_PROVIDER: "zoho" },
         settings: { ...LOCAL_CONFIG.settings, zohoBooks },
       };
-      expect(booksSyncOptions(config), FSM_PROVIDER).toEqual({ refundAccountId: "bank-7", labelAsTest: true });
+      expect(booksSyncOptions(config), FSM_PROVIDER).toEqual({
+        refundAccountId: "bank-7",
+        labelAsTest: true,
+        fieldRecord: record,
+        gst: zohoBooks.gst,
+      });
     }
   });
 
-  it("has no refund account without Books' settings, and labels nothing as a test in production", () => {
-    expect(booksSyncOptions({ ...LOCAL_CONFIG, environment: "production" })).toEqual({
+  it("has no refund account or GST without Books' settings, and labels nothing as a test in production", () => {
+    expect(booksSyncOptions({ ...LOCAL_CONFIG, environment: "production" })).toMatchObject({
       refundAccountId: null,
       labelAsTest: false,
+      gst: NO_GST,
     });
   });
 });

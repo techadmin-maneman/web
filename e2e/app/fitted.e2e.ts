@@ -80,6 +80,43 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   await expect(sheet.getByRole("heading", { name: /^Saved\./ })).toBeVisible();
 });
 
+// A dropped signal unmounted the note sheet and its words, and Back left the page under it (UX-09).
+test("an open note sheet keeps its words through a dropped signal, and Back closes it on the page", async ({
+  page,
+}) => {
+  const client = fittedClient();
+  await logIn(page, client.mobile);
+  await tab(page, "Visits").click();
+  await expect(page.getByRole("heading", { level: 1, name: "Visits" })).toBeVisible();
+  await page.getByRole("main").getByRole("link").first().click();
+  const visitPage = page.getByRole("heading", { level: 1, name: fullDate(client.next.date) });
+  await expect(visitPage).toBeVisible();
+
+  await page.getByRole("button", { name: "Add a note" }).click();
+  const sheet = page.getByRole("dialog");
+  const note = sheet.getByRole("textbox", { name: "What should they know at the door?" });
+  const save = sheet.getByRole("button", { name: "Save the note" });
+  await note.fill("The lift is out");
+  await page.context().setOffline(true);
+  await expect(sheet.getByText("No connection. Your note stays here until you are back online.")).toBeVisible();
+  await expect(note).toHaveValue("The lift is out");
+  await expect(save).toBeDisabled();
+  await page.context().setOffline(false);
+  await expect(save).toBeEnabled();
+
+  await page.goBack();
+  await expect(sheet).toBeHidden();
+  await expect(visitPage).toBeVisible();
+
+  // Closed by its own button, the sheet leaves nothing behind in the history: Back goes to the list.
+  await page.getByRole("button", { name: "Add a note" }).click();
+  await sheet.getByRole("button", { name: "Close" }).click();
+  await expect(sheet).toBeHidden();
+  await expect.poll(() => page.evaluate(() => window.history.state as unknown)).toBeNull();
+  await page.goBack();
+  await expect(page.getByRole("heading", { level: 1, name: "Visits" })).toBeVisible();
+});
+
 // A visit that is not this client's, or a payment, says so rather than offering to try again for ever (CLI-33).
 test("a visit or a payment that is not the client's says it could not be found", async ({ page }) => {
   await logIn(page, fittedClient().mobile);

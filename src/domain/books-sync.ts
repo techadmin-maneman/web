@@ -1,19 +1,24 @@
 // Payments and refunds written to Zoho Books, so Books issues their receipts
 // (docs/decisions/0044-payments-mirror.md, "Receipts in Books"). It runs on the
 // five-minute cron, not in the payment's path: Books is never on the way to a
-// booking, and a client's customer record reaches Books only when FSM's sync
-// next runs, every two to three hours.
+// booking.
 //
-// Each pass does a little of four things, oldest first:
+// Each pass does a little of five things, oldest first:
+//   - without FSM, makes the Books customer of each client with money or a
+//     finished visit to record (src/domain/books-customers.ts); on FSM's path,
+//     FSM's own sync makes it every two to three hours;
 //   - records each captured payment whose client Books has, once;
-//   - applies a recorded payment to its visit's invoice, once Books has sent it;
-//   - tells ops of a recorded payment kept as a charge on a cancelled visit,
-//     which no invoice will come to be set against;
+//   - applies a visit's payment to its invoice, once Books has sent it, and tells
+//     ops of any part the invoice did not owe;
+//   - tells ops of money kept that no invoice will come to be set against: what
+//     a late cancel or replacement kept, a no-show's charge, and a late fee;
 //   - records each processed refund of a recorded payment, from the account
 //     Razorpay settles into, when that account is set.
 //
-// A payment or a refund is looked for in Books by our reference before it is
-// recorded, so a try whose answer never came is not recorded a second time.
+// Each record is claimed before Books is asked, so a run that overlaps the one
+// before it leaves the records that one is on. A payment or a refund is also
+// looked for in Books by our reference before it is recorded, so a try whose
+// answer never came is not recorded a second time.
 //
 // Each record is handled on its own (docs/decisions/0067-alerts-and-silent-failures.md).
 // One found not ready, or that fails, waits an hour before Books is asked again,
@@ -22,6 +27,8 @@
 // happened three times. Each record is paid for from the cron run's outside
 // calls first, and the pass stops when they are spent.
 
+import type { FieldRecord } from "../config/field-record.ts";
+import type { GstRegistration } from "../config/gst.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
 import { failureReason, type Logger } from "../log.ts";
@@ -29,6 +36,7 @@ import type { BooksProvider } from "../providers/books.ts";
 import type { FsmProvider } from "../providers/fsm.ts";
 import { isRefusal } from "../providers/provider-error.ts";
 import type { AlertOnce, ResolveAlert } from "./alerts.ts";
+import { customerFor } from "./books-customers.ts";
 import { HOUR_MS } from "../lib/durations.ts";
 
 /** How many of each a pass handles at most. */
@@ -36,12 +44,17 @@ export const PER_PASS = 5;
 export const RECHECK_AFTER_MS = HOUR_MS;
 /** Outside calls one record may cost: FSM or Books, Books' look for it, Books' record, and the alert it may send. */
 export const CALLS_PER_RECORD = 4;
+/** Outside calls one customer may cost: Books' write, and the alert it may send. */
+export const CALLS_PER_CUSTOMER = 2;
 /** A failure other than a refusal is told once it has happened this many times, an hour apart. */
 const FAILURES_BEFORE_ALERT = 3;
 
 export interface BooksSyncOptions {
   readonly refundAccountId: string | null;
   readonly labelAsTest: boolean;
+  /** Whether FSM's sync makes each client's Books customer, or this pass does. */
+  readonly fieldRecord: FieldRecord;
+  readonly gst: GstRegistration;
 }
 
 export interface BooksSyncDeps {
@@ -51,16 +64,19 @@ export interface BooksSyncDeps {
   readonly resolveAlert: ResolveAlert;
 }
 
-export type BooksSyncSummary = { recorded: number; applied: number; refunded: number };
+export type BooksSyncSummary = { customers: number; recorded: number; applied: number; refunded: number };
 
 const describe = (error: unknown): string => failureReason(error, 200);
 
 interface Pass {
   readonly db: D1Database;
   readonly deps: BooksSyncDeps;
+  readonly options: BooksSyncOptions;
   readonly log: Logger;
   /** Now, as stored. */
   readonly at: string;
+  /** A record last tried before this is tried again. */
+  readonly recheck: string;
   readonly label: string;
 }
 
@@ -72,33 +88,98 @@ export async function syncBooks(
   log: Logger,
   budget: CallBudget,
 ): Promise<BooksSyncSummary> {
-  const pass: Pass = { db, deps, log, at: now.toISOString(), label: options.labelAsTest ? "Staging test: " : "" };
-  const recheck = new Date(now.getTime() - RECHECK_AFTER_MS).toISOString();
-  const summary: BooksSyncSummary = { recorded: 0, applied: 0, refunded: 0 };
+  const pass: Pass = {
+    db,
+    deps,
+    options,
+    log,
+    at: now.toISOString(),
+    recheck: new Date(now.getTime() - RECHECK_AFTER_MS).toISOString(),
+    label: options.labelAsTest ? "Staging test: " : "",
+  };
+  const summary: BooksSyncSummary = { customers: 0, recorded: 0, applied: 0, refunded: 0 };
 
-  for (const payment of await paymentsToRecord(db, recheck)) {
+  if (options.fieldRecord === "ours") {
+    for (const personId of await customersToAdd(pass)) {
+      if (!budget.spend(CALLS_PER_CUSTOMER)) return summary;
+      if (await addCustomer(pass, personId)) summary.customers += 1;
+    }
+  }
+  for (const payment of await paymentsToRecord(pass)) {
     if (!budget.spend(CALLS_PER_RECORD)) return summary;
     if (await recordPayment(pass, payment)) summary.recorded += 1;
   }
-  for (const payment of await paymentsToApply(db, recheck)) {
+  for (const payment of await paymentsToApply(pass)) {
     if (!budget.spend(CALLS_PER_RECORD)) return summary;
     if (await applyPayment(pass, payment)) summary.applied += 1;
   }
-  for (const charge of await keptCharges(db)) {
+  for (const kept of await keptMoney(pass)) {
     if (!budget.spend(1)) return summary;
-    await tellUnapplied(
-      pass,
-      charge,
-      `visit ${charge.appointment_id} was cancelled and ${rupees(charge.kept)} of it kept`,
-    );
-    await markApplied(pass, charge.id);
+    await tellKept(pass, kept);
   }
   if (options.refundAccountId === null) return summary;
-  for (const refund of await refundsToRecord(db, recheck)) {
+  for (const refund of await refundsToRecord(pass)) {
     if (!budget.spend(CALLS_PER_RECORD)) return summary;
     if (await recordRefund(pass, refund, options.refundAccountId)) summary.refunded += 1;
   }
   return summary;
+}
+
+// ---------------------------------------------------------------------------
+// Making a client's customer, without FSM
+// ---------------------------------------------------------------------------
+
+/**
+ * People with no customer yet and a captured payment not yet recorded, or a finished visit to invoice. Read from what
+ * waits on them, so only the waiting rows are read; one with two such rows is listed once.
+ */
+async function customersToAdd(pass: Pass): Promise<string[]> {
+  const { results } = await pass.db
+    .prepare(
+      `SELECT pe.id FROM (
+         SELECT p.person_id AS id FROM payments p WHERE p.books_payment_id IS NULL AND p.captured_at IS NOT NULL
+         UNION ALL
+         SELECT a.person_id AS id FROM appointments a
+         WHERE a.status = 'completed' AND a.invoice_issued_at IS NULL AND a.deleted_at IS NULL
+           AND a.type IN ('first_fit', 'service', 'replacement') AND a.one_visit IS NOT 'declined') waiting
+       JOIN people pe ON pe.id = waiting.id
+       WHERE pe.books_customer_id IS NULL AND pe.erased_at IS NULL
+         AND (pe.books_checked_at IS NULL OR pe.books_checked_at < ?1)
+       LIMIT ?2`,
+    )
+    .bind(pass.recheck, PER_PASS)
+    .all<{ id: string }>();
+  return [...new Set(results.map((row) => row.id))];
+}
+
+/** True when the person has a customer now. */
+async function addCustomer(pass: Pass, personId: string): Promise<boolean> {
+  const claimed = await pass.db
+    .prepare(
+      `UPDATE people SET books_checked_at = ?1
+       WHERE id = ?2 AND books_customer_id IS NULL AND (books_checked_at IS NULL OR books_checked_at < ?3)
+       RETURNING id`,
+    )
+    .bind(pass.at, personId, pass.recheck)
+    .first();
+  if (claimed === null) return false;
+
+  const failed = {
+    kind: "customer",
+    id: personId,
+    personId,
+    what: `client ${personId}'s customer record`,
+    then: "It is asked again every hour.",
+  } as const;
+  try {
+    const customerId = await customerFor(pass.db, pass.deps.books, personId, pass.options.gst);
+    if (customerId === null) return false;
+  } catch (error) {
+    await tellFailure(pass, failed, error);
+    return false;
+  }
+  await closeFailures(pass, failed);
+  return true;
 }
 
 // ---------------------------------------------------------------------------
@@ -112,26 +193,45 @@ interface PaymentToRecord {
   reference: string | null;
   amount: number;
   captured_at: string;
-  fsm_contact_id: string;
+  fsm_contact_id: string | null;
+  books_customer_id: string | null;
 }
 
-async function paymentsToRecord(db: D1Database, recheck: string): Promise<PaymentToRecord[]> {
-  const { results } = await db
-    .prepare(
-      `SELECT p.id, p.person_id, p.razorpay_payment_id, p.reference, p.amount, p.captured_at, pe.fsm_contact_id
-       FROM payments p JOIN people pe ON pe.id = p.person_id
-       WHERE p.books_payment_id IS NULL AND p.captured_at IS NOT NULL AND pe.fsm_contact_id IS NOT NULL
-         AND (p.books_checked_at IS NULL OR p.books_checked_at < ?1)
-       ORDER BY p.captured_at LIMIT ?2`,
-    )
-    .bind(recheck, PER_PASS)
-    .all<PaymentToRecord>();
+/** On FSM's path, payments of clients FSM has a contact for; without it, of clients with a Books customer. */
+async function paymentsToRecord(pass: Pass): Promise<PaymentToRecord[]> {
+  const statement =
+    pass.options.fieldRecord === "ours"
+      ? pass.db.prepare(
+          `SELECT p.id, p.person_id, p.razorpay_payment_id, p.reference, p.amount, p.captured_at, pe.fsm_contact_id,
+             pe.books_customer_id
+           FROM payments p JOIN people pe ON pe.id = p.person_id
+           WHERE p.books_payment_id IS NULL AND p.captured_at IS NOT NULL AND pe.books_customer_id IS NOT NULL
+             AND (p.books_checked_at IS NULL OR p.books_checked_at < ?1)
+           ORDER BY p.captured_at LIMIT ?2`,
+        )
+      : pass.db.prepare(
+          `SELECT p.id, p.person_id, p.razorpay_payment_id, p.reference, p.amount, p.captured_at, pe.fsm_contact_id,
+             pe.books_customer_id
+           FROM payments p JOIN people pe ON pe.id = p.person_id
+           WHERE p.books_payment_id IS NULL AND p.captured_at IS NOT NULL AND pe.fsm_contact_id IS NOT NULL
+             AND (p.books_checked_at IS NULL OR p.books_checked_at < ?1)
+           ORDER BY p.captured_at LIMIT ?2`,
+        );
+  const { results } = await statement.bind(pass.recheck, PER_PASS).all<PaymentToRecord>();
   return results;
+}
+
+/** The client's Books customer: kept on them without FSM; on FSM's path, the one FSM's contact names, if any yet. */
+async function customerOfPayment(pass: Pass, payment: PaymentToRecord): Promise<string | null> {
+  if (pass.options.fieldRecord === "ours") return payment.books_customer_id;
+  if (payment.fsm_contact_id === null) return null;
+  return (await pass.deps.fsm.contact(payment.fsm_contact_id))?.booksCustomerId ?? null;
 }
 
 /** True when Books has it now. */
 async function recordPayment(pass: Pass, payment: PaymentToRecord): Promise<boolean> {
   const { db, deps } = pass;
+  if (!(await claimToRecord(pass, payment.id))) return false;
   const failed = {
     kind: "payment",
     id: payment.id,
@@ -140,11 +240,9 @@ async function recordPayment(pass: Pass, payment: PaymentToRecord): Promise<bool
     then: "It is asked again every hour.",
   } as const;
   try {
-    const customerId = (await deps.fsm.contact(payment.fsm_contact_id))?.booksCustomerId ?? null;
-    if (customerId === null) {
-      await checkPaymentLater(pass, payment.id);
-      return false;
-    }
+    // Not yet in Books, the payment waits the hour its claim holds it for.
+    const customerId = await customerOfPayment(pass, payment);
+    if (customerId === null) return false;
     const reference = payment.reference ?? payment.razorpay_payment_id;
     // An earlier try whose answer never came may have recorded it already.
     const booksPaymentId =
@@ -161,7 +259,6 @@ async function recordPayment(pass: Pass, payment: PaymentToRecord): Promise<bool
       .bind(booksPaymentId, payment.id)
       .run();
   } catch (error) {
-    await checkPaymentLater(pass, payment.id);
     await tellFailure(pass, failed, error);
     return false;
   }
@@ -181,17 +278,21 @@ interface PaymentToApply {
   fsm_invoice_id: string;
 }
 
-/** A payment taken in advance, set against its visit's invoice once Books has sent it. */
-async function paymentsToApply(db: D1Database, recheck: string): Promise<PaymentToApply[]> {
-  const { results } = await db
+/**
+ * A visit's payment taken in advance, set against its invoice once Books has sent it. A late fee is not the visit's
+ * price, so it is never set against the visit's invoice: it is kept money (below).
+ */
+async function paymentsToApply(pass: Pass): Promise<PaymentToApply[]> {
+  const { results } = await pass.db
     .prepare(
       `SELECT p.id, p.person_id, p.books_payment_id, p.amount, a.fsm_invoice_id
        FROM payments p JOIN appointments a ON a.id = p.appointment_id
        WHERE p.books_payment_id IS NOT NULL AND p.books_applied_at IS NULL AND a.fsm_invoice_id IS NOT NULL
-         AND p.status = 'captured' AND (p.books_checked_at IS NULL OR p.books_checked_at < ?1)
+         AND p.status = 'captured' AND p.kind = 'visit'
+         AND (p.books_checked_at IS NULL OR p.books_checked_at < ?1)
        ORDER BY p.captured_at LIMIT ?2`,
     )
-    .bind(recheck, PER_PASS)
+    .bind(pass.recheck, PER_PASS)
     .all<PaymentToApply>();
   return results;
 }
@@ -199,6 +300,7 @@ async function paymentsToApply(db: D1Database, recheck: string): Promise<Payment
 /** True when it was set against its invoice now. */
 async function applyPayment(pass: Pass, payment: PaymentToApply): Promise<boolean> {
   const { deps } = pass;
+  if (!(await claimToApply(pass, payment.id))) return false;
   const failed = {
     kind: "apply",
     id: payment.id,
@@ -211,14 +313,11 @@ async function applyPayment(pass: Pass, payment: PaymentToApply): Promise<boolea
   try {
     invoice = await deps.books.invoice(payment.fsm_invoice_id);
   } catch (error) {
-    await checkPaymentLater(pass, payment.id);
     await tellFailure(pass, failed, error);
     return false;
   }
-  if (invoice?.status === "draft") {
-    await checkPaymentLater(pass, payment.id);
-    return false;
-  }
+  // A draft waits the hour its claim holds it for.
+  if (invoice?.status === "draft") return false;
   if (invoice === null || invoice.status === "void" || invoice.balance === 0) {
     pass.log.warn("books_apply_skipped", { payment_id: payment.id, invoice_status: invoice?.status ?? "missing" });
     await tellUnapplied(pass, payment, `invoice ${payment.fsm_invoice_id} is ${invoice?.status ?? "missing"}`);
@@ -226,53 +325,94 @@ async function applyPayment(pass: Pass, payment: PaymentToApply): Promise<boolea
     return false;
   }
 
+  const applied = Math.min(payment.amount, invoice.balance);
   try {
-    await deps.books.applyToInvoice(payment.books_payment_id, invoice.id, Math.min(payment.amount, invoice.balance));
+    await deps.books.applyToInvoice(payment.books_payment_id, invoice.id, applied);
   } catch (error) {
     await tellFailure(pass, failed, error);
     // A refusal is not asked again, and ops set it by hand; anything else is, in an hour.
     if (isRefusal(error)) await markApplied(pass, payment.id);
-    else await checkPaymentLater(pass, payment.id);
     return false;
   }
   await markApplied(pass, payment.id);
   await closeFailures(pass, failed);
+  if (applied < payment.amount) await tellLeftOver(pass, payment, invoice.balance);
   return true;
 }
 
+/** What the invoice did not owe of the payment stays in Books as the client's credit, and ops are told once. */
+async function tellLeftOver(pass: Pass, payment: PaymentToApply, owed: number): Promise<void> {
+  const left = payment.amount - owed;
+  await pass.deps.alertOnce({
+    key: `books_unapplied:${payment.id}`,
+    message:
+      `Payment ${payment.id} (Books ${payment.books_payment_id}) was ${rupees(payment.amount)}, and invoice ` +
+      `${payment.fsm_invoice_id} owed ${rupees(owed)} of it, so ${rupees(left)} has nothing to be set against. ` +
+      "It stays in Books as credit owed to the client until it is settled by hand.",
+    link: `/clients/${payment.person_id}`,
+  });
+}
+
 // ---------------------------------------------------------------------------
-// A charge kept, with nothing to set it against
+// Money kept, with nothing to set it against
 // ---------------------------------------------------------------------------
 
-interface KeptCharge {
+interface KeptRow {
   id: string;
   person_id: string;
   books_payment_id: string;
-  appointment_id: string;
-  kept: number;
+  appointment_id: string | null;
+  kind: "visit" | "late_fee";
+  amount: number;
+  refunded_amount: number;
+  change: "cancelled" | "replaced" | null;
+  change_kept: number | null;
+  no_show_kept: number | null;
 }
 
 /**
- * A payment Books has, on a visit cancelled or replaced late, with part of it
- * kept as the charge. The visit is never invoiced, so the payment is never
- * applied, and what was kept sits in Books as the client's credit.
+ * Payments Books has that no invoice will ever be set against, though some of the money is kept: a visit's payment
+ * part kept by a late cancel or replacement, or by a no-show's charge, and a late fee for moving a visit, which is
+ * not the visit's price. What is kept sits in Books as the client's credit.
  */
-async function keptCharges(db: D1Database): Promise<KeptCharge[]> {
-  const { results } = await db
+async function keptMoney(pass: Pass): Promise<KeptRow[]> {
+  const { results } = await pass.db
     .prepare(
-      `SELECT p.id, p.person_id, p.books_payment_id, c.appointment_id, c.kept_amount AS kept
-       FROM payments p JOIN visit_changes c ON c.payment_id = p.id
+      `SELECT p.id, p.person_id, p.books_payment_id, p.appointment_id, p.kind, p.amount, p.refunded_amount,
+         c.kind AS change, c.kept_amount AS change_kept, n.kept_amount AS no_show_kept
+       FROM payments p
+       LEFT JOIN visit_changes c ON c.payment_id = p.id AND c.kind IN ('cancelled', 'replaced') AND c.kept_amount > 0
+       LEFT JOIN no_show_cases n ON n.appointment_id = p.appointment_id AND p.kind = 'visit'
+         AND n.decision = 'charged' AND n.kept_amount > 0
        WHERE p.books_payment_id IS NOT NULL AND p.books_applied_at IS NULL
-         AND c.kind IN ('cancelled', 'replaced') AND c.kept_amount > 0
+         AND ((p.kind = 'late_fee' AND p.amount > p.refunded_amount) OR c.id IS NOT NULL OR n.id IS NOT NULL)
        ORDER BY p.captured_at LIMIT ?1`,
     )
     .bind(PER_PASS)
-    .all<KeptCharge>();
+    .all<KeptRow>();
   return results;
 }
 
+/** What was kept, and why, in the words ops read. */
+function keptFor(kept: KeptRow): string {
+  const visit = kept.appointment_id ?? "unknown";
+  if (kept.change !== null) return `visit ${visit} was ${kept.change} and ${rupees(kept.change_kept ?? 0)} of it kept`;
+  if (kept.no_show_kept !== null) return `visit ${visit} was a no-show and ${rupees(kept.no_show_kept)} of it kept`;
+  return `it is the late fee for moving visit ${visit}, and ${rupees(kept.amount - kept.refunded_amount)} of it kept`;
+}
+
+/** Told once: the payment is claimed as dealt with first, so an overlapping run does not tell it again. */
+async function tellKept(pass: Pass, kept: KeptRow): Promise<void> {
+  const claimed = await pass.db
+    .prepare("UPDATE payments SET books_applied_at = ?1 WHERE id = ?2 AND books_applied_at IS NULL RETURNING id")
+    .bind(pass.at, kept.id)
+    .first();
+  if (claimed === null) return;
+  await tellUnapplied(pass, kept, keptFor(kept));
+}
+
 /**
- * Ops settle it by hand. How a kept charge is invoiced, so that it does not
+ * Ops settle it by hand. How kept money is invoiced, so that it does not
  * stay the client's credit, waits for the CA (docs/open-points.md, item 16).
  */
 async function tellUnapplied(
@@ -304,8 +444,8 @@ interface RefundToRecord {
 }
 
 /** Refunds Razorpay has processed, of payments Books has. */
-async function refundsToRecord(db: D1Database, recheck: string): Promise<RefundToRecord[]> {
-  const { results } = await db
+async function refundsToRecord(pass: Pass): Promise<RefundToRecord[]> {
+  const { results } = await pass.db
     .prepare(
       `SELECT r.id, p.person_id, r.razorpay_refund_id, r.amount, r.processed_at, r.created_at, p.books_payment_id
        FROM refunds r JOIN payments p ON p.id = r.payment_id
@@ -313,7 +453,7 @@ async function refundsToRecord(db: D1Database, recheck: string): Promise<RefundT
          AND (r.books_checked_at IS NULL OR r.books_checked_at < ?1)
        ORDER BY r.created_at LIMIT ?2`,
     )
-    .bind(recheck, PER_PASS)
+    .bind(pass.recheck, PER_PASS)
     .all<RefundToRecord>();
   return results;
 }
@@ -321,6 +461,15 @@ async function refundsToRecord(db: D1Database, recheck: string): Promise<RefundT
 /** True when Books has it now. */
 async function recordRefund(pass: Pass, refund: RefundToRecord, fromAccountId: string): Promise<boolean> {
   const { db, deps } = pass;
+  const claimed = await db
+    .prepare(
+      `UPDATE refunds SET books_checked_at = ?1
+       WHERE id = ?2 AND books_refund_id IS NULL AND (books_checked_at IS NULL OR books_checked_at < ?3)
+       RETURNING id`,
+    )
+    .bind(pass.at, refund.id, pass.recheck)
+    .first();
+  if (claimed === null) return false;
   const failed = {
     kind: "refund",
     id: refund.id,
@@ -340,7 +489,6 @@ async function recordRefund(pass: Pass, refund: RefundToRecord, fromAccountId: s
       }));
     await db.prepare("UPDATE refunds SET books_refund_id = ?1 WHERE id = ?2").bind(booksRefundId, refund.id).run();
   } catch (error) {
-    await db.prepare("UPDATE refunds SET books_checked_at = ?1 WHERE id = ?2").bind(pass.at, refund.id).run();
     await tellFailure(pass, failed, error);
     return false;
   }
@@ -354,7 +502,7 @@ async function recordRefund(pass: Pass, refund: RefundToRecord, fromAccountId: s
 
 /** A record Books failed on, in the words its alert uses. */
 interface FailedRecord {
-  readonly kind: "payment" | "apply" | "refund";
+  readonly kind: "customer" | "payment" | "apply" | "refund";
   readonly id: string;
   readonly personId: string;
   /** "payment <id> (Razorpay <id>)", or what Books was asked to do with it. */
@@ -363,9 +511,17 @@ interface FailedRecord {
   readonly then: string;
 }
 
+/** The field of the log line that names the record. */
+const ID_FIELDS: Readonly<Record<FailedRecord["kind"], string>> = {
+  customer: "person_id",
+  payment: "payment_id",
+  apply: "payment_id",
+  refund: "refund_id",
+};
+
 /** Logs the failure, and tells ops of a refusal at once and of any other failure on its third time. */
 async function tellFailure(pass: Pass, record: FailedRecord, error: unknown): Promise<void> {
-  const idField = `${record.kind === "refund" ? "refund" : "payment"}_id`;
+  const idField = ID_FIELDS[record.kind];
   const link = `/clients/${record.personId}`;
   if (isRefusal(error)) {
     pass.log.warn(`books_${record.kind}_refused`, { [idField]: record.id, status: error.status, code: error.code });
@@ -391,8 +547,33 @@ async function closeFailures(pass: Pass, record: FailedRecord): Promise<void> {
   await pass.deps.resolveAlert(`books_${record.kind}_failed:${record.id}`);
 }
 
-async function checkPaymentLater(pass: Pass, paymentId: string): Promise<void> {
-  await pass.db.prepare("UPDATE payments SET books_checked_at = ?1 WHERE id = ?2").bind(pass.at, paymentId).run();
+/**
+ * Takes the payment for this pass, marking it tried now, so an overlapping run leaves it and a failure waits an hour;
+ * false where another run took it first, or has recorded it since.
+ */
+async function claimToRecord(pass: Pass, paymentId: string): Promise<boolean> {
+  const claimed = await pass.db
+    .prepare(
+      `UPDATE payments SET books_checked_at = ?1
+       WHERE id = ?2 AND books_payment_id IS NULL AND (books_checked_at IS NULL OR books_checked_at < ?3)
+       RETURNING id`,
+    )
+    .bind(pass.at, paymentId, pass.recheck)
+    .first();
+  return claimed !== null;
+}
+
+/** As claimToRecord, for setting the payment against its invoice. */
+async function claimToApply(pass: Pass, paymentId: string): Promise<boolean> {
+  const claimed = await pass.db
+    .prepare(
+      `UPDATE payments SET books_checked_at = ?1
+       WHERE id = ?2 AND books_applied_at IS NULL AND (books_checked_at IS NULL OR books_checked_at < ?3)
+       RETURNING id`,
+    )
+    .bind(pass.at, paymentId, pass.recheck)
+    .first();
+  return claimed !== null;
 }
 
 async function markApplied(pass: Pass, paymentId: string): Promise<void> {

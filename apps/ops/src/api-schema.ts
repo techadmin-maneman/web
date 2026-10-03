@@ -762,6 +762,170 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/visits/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A client's windows for a kind of visit over 14 days, and who is free in each */
+        get: {
+            parameters: {
+                query: {
+                    client: string;
+                    kind: "consultation" | "first_fit" | "service" | "replacement";
+                    /** @description The service; left out, the first offered. */
+                    tier?: string;
+                    /** @description The first day; tomorrow if left out, or if earlier. */
+                    from?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Each day's windows */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OpsAvailability"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such client, or one who has been erased */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_bookable: the kind offers no such service; no_product: a first fit, with no hair system on sale */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/visits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Book a visit for a client: at once when nothing is paid at booking, else by a payment link */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["VisitToBook"];
+                };
+            };
+            responses: {
+                /** @description Booked, on its way, or waiting for the link to be paid */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OpsBooking"];
+                    };
+                };
+                /** @description invalid_request: a one visit that is not a first fit, or in the evening */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such client, or one who has been erased */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description taken: nobody chosen is free in that window now; already_booked: a consultation or first fit is still to come, or a payment link for one is open; terms_changed: the client's last credit went on another booking a moment before */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_bookable: the day, the kind or the service cannot be booked; no_product: a first fit, with no hair system on sale that day; code_not_applicable: the code does not apply to this booking */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description unavailable: Razorpay could not make the payment link, so nothing is held */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/clients/{id}/referral": {
         parameters: {
             query?: never;
@@ -3327,7 +3491,7 @@ export interface paths {
             };
         };
         put?: never;
-        /** A price from the date it applies. A change is a new row, so nothing already invoiced moves */
+        /** A price from the date it applies, tomorrow at the earliest. A change is a new row, so nothing sold moves */
         post: {
             parameters: {
                 query?: never;
@@ -3352,7 +3516,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description invalid_request: fields names what was refused, tier where no service of the kind has it; service_retired: the service is retired by the day it would apply from */
+                /** @description invalid_request: fields names what was refused, valid_from when it is before tomorrow, tier where no service of the kind has it; service_retired: the service is retired by the day it would apply from */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -3387,7 +3551,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Correct a price still to come: take it back and set its replacement, from any day from today, at once */
+        /** Correct a price still to come: take it back and set its replacement, from tomorrow or later, at once */
         post: {
             parameters: {
                 query?: never;
@@ -5780,7 +5944,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -6319,10 +6483,109 @@ export interface components {
             /** @description In paise, where one was refunded. */
             amount: number | null;
         };
+        OpsAvailability: {
+            /** @enum {string} */
+            kind: "consultation" | "first_fit" | "service" | "replacement";
+            /** @description The kind's services offered on the first day. */
+            services: components["schemas"]["ServiceOffer"][];
+            service: components["schemas"]["VisitService"];
+            /**
+             * @description How the visit is paid for: nothing at booking (free, or a consultation and fit in one visit, paid by a link once fitted), a service-visit credit, or a payment link Razorpay texts the client.
+             * @enum {string}
+             */
+            pays: "nothing" | "credit" | "link";
+            /** @description The service-visit credits the client has to spend. */
+            credits: number;
+            days: {
+                /** Format: date */
+                date: string;
+                windows: {
+                    /** @enum {string} */
+                    window: "morning" | "afternoon" | "evening";
+                    /** @description When the window starts that day, in India's time. */
+                    start: string;
+                    end: string;
+                    /** @description Who is free for the visit, the client's regular technician first. */
+                    technicians: components["schemas"]["FreeTechnician"][];
+                }[];
+            }[];
+        };
+        ServiceOffer: {
+            tier: string;
+            name: string;
+            minutes: number;
+            price: components["schemas"]["VisitPrice"];
+        };
+        VisitPrice: {
+            /** @description In paise, before GST. */
+            amount_ex_gst: number;
+            /** @description In paise, GST included: what the client pays. */
+            amount: number;
+            gst_percent: number;
+        };
+        /** @description The service the windows are for: the one asked, else the first. */
+        VisitService: {
+            /** @description Its code within its kind, which never changes. */
+            tier: string;
+            name: string;
+            /** @description How long the visit is booked for. */
+            minutes: number;
+        };
+        FreeTechnician: {
+            id: string;
+            name: string;
+        };
+        OpsBooking: {
+            /** Format: uuid */
+            hold_id: string;
+            /**
+             * @description booked: the visit is written. being_booked: it is on its way to the field record, within a minute. awaiting_payment: the slot is held and the link sent; the visit is booked once the client pays.
+             * @enum {string}
+             */
+            outcome: "booked" | "being_booked" | "awaiting_payment";
+            /** @description The visit, once booked. */
+            visit_id: string | null;
+            /**
+             * @description How the visit is paid for: nothing at booking (free, or a consultation and fit in one visit, paid by a link once fitted), a service-visit credit, or a payment link Razorpay texts the client.
+             * @enum {string}
+             */
+            pays: "nothing" | "credit" | "link";
+            service: components["schemas"]["VisitService"];
+            price: components["schemas"]["VisitPrice"] & unknown;
+            /** Format: date */
+            date: string;
+            /** @enum {string} */
+            window: "morning" | "afternoon" | "evening";
+            technician: components["schemas"]["FreeTechnician"];
+            /** @description The payment link Razorpay texted the client, and when it closes and the slot goes. */
+            link: {
+                url: string;
+                /** Format: date-time */
+                open_until: string;
+            } | null;
+        };
+        VisitToBook: {
+            /** Format: uuid */
+            client: string;
+            /** @enum {string} */
+            kind: "consultation" | "first_fit" | "service" | "replacement";
+            /** @description The service; left out, the kind's standard one. A first fit names the hair system. */
+            tier?: string;
+            /** @description The technician ops chose; left out, whoever is free, the client's regular one first. */
+            technician?: string;
+            /** Format: date */
+            date: string;
+            /** @enum {string} */
+            window: "morning" | "afternoon" | "evening";
+            /** @description A consultation and fit in one visit: a first fit, morning or afternoon. */
+            one_visit?: boolean;
+            /** @description A discount code the client gave. */
+            code?: string;
+        };
         AlreadyInvited: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];

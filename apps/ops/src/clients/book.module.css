@@ -1,0 +1,122 @@
+/* Booking a visit for a client: a panel over the page, as a technician's details open on the roster. */
+
+.drawer {
+  position: fixed;
+  inset: var(--header-h) 0 auto auto;
+  width: var(--ops-panel);
+  max-width: 100%;
+  max-height: calc(100dvh - var(--header-h));
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  border: var(--hairline) solid var(--paper-line);
+  background: var(--paper);
+  color: var(--text);
+}
+
+.drawer::backdrop {
+  background: transparent;
+}
+
+.drawer:focus {
+  outline: none;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-14);
+  padding: var(--sp-12) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--text);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: var(--weight-regular);
+  font-size: var(--fs-22);
+}
+
+.body {
+  padding: var(--sp-6) var(--sp-20) var(--sp-20);
+}
+
+.field {
+  margin-top: var(--sp-14);
+}
+
+.select,
+.text {
+  display: block;
+  width: 100%;
+  min-height: var(--field-h);
+  margin-top: var(--sp-8);
+  padding: 0 var(--sp-14);
+  border: var(--hairline) solid var(--paper-control);
+  border-radius: 0;
+  background: var(--white);
+  font: inherit;
+  font-size: var(--fs-15);
+  color: var(--text);
+}
+
+.select:focus-visible,
+.text:focus-visible {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: calc(-1 * var(--focus-width));
+}
+
+/* Earlier and later days, either side of the day's box. */
+.days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-10);
+  margin-top: var(--sp-10);
+}
+
+.quiet {
+  padding: 0 var(--sp-14);
+  font-size: var(--fs-14);
+}
+
+.pays {
+  margin: var(--sp-16) 0 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-160);
+}
+
+.note {
+  margin: var(--sp-14) 0 0;
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-10);
+  margin-top: var(--sp-20);
+}
+
+.primary {
+  display: inline-flex;
+  padding: 0 var(--sp-20);
+}
+
+.done {
+  margin: var(--sp-14) 0 0;
+  font-size: var(--fs-15);
+  line-height: var(--lh-160);
+}
+
+/* The link Razorpay texted, whole, so ops can read it out or send it again. */
+.link {
+  overflow-wrap: anywhere;
+}
+
+.error {
+  margin: var(--sp-12) 0 0;
+  font-size: var(--fs-14);
+  color: var(--error-on-paper);
+}
