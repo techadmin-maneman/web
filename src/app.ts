@@ -13,6 +13,7 @@ import { requireStaffAccess } from "./http/staff-access.ts";
 import { REQUEST_ID_HEADER, type App, type AppEnv } from "./http/context.ts";
 import { ErrorResponseSchema, errorBody } from "./http/errors.ts";
 import { requireSameOrigin } from "./http/origin.ts";
+import { meterDatabase, usageFields } from "./lib/d1-meter.ts";
 import { createLogger } from "./log.ts";
 import { registerClientAuth } from "./routes/client-auth.ts";
 import { registerClientMe } from "./routes/client-me.ts";
@@ -62,6 +63,7 @@ import { registerRazorpayHook } from "./routes/razorpay-hook.ts";
 import { registerHealth } from "./routes/health.ts";
 import { registerOpsProfile } from "./routes/ops-profile.ts";
 import { registerOpsStorage } from "./routes/ops-storage.ts";
+import { registerOpsVisits } from "./routes/ops-visits.ts";
 import { registerOpsWhoami } from "./routes/ops-whoami.ts";
 import { registerPublishedPrices } from "./routes/published-prices.ts";
 import { registerReferralReward } from "./routes/referral-reward.ts";
@@ -124,6 +126,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsCredits,
     // A booking FSM refused, held for ops to book or refund (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
     registerOpsBookings,
+    // A visit ops book for a client: at once, or by a payment link.
+    registerOpsVisits,
     registerOpsClientReferral,
     // An address a client gives ops on the phone (docs/decisions/0092-task-owners.md).
     registerOpsClientAddress,
@@ -203,7 +207,10 @@ export function createApp(
   return app;
 }
 
-/** Gives each request an ID, a logger and its dependencies; sets common headers; logs the request. */
+/**
+ * Gives each request an ID, a logger, its dependencies and a metered database; sets common headers; logs the request
+ * with what it cost D1.
+ */
 function requestContext(
   config: StaticConfig,
   makeDependencies: DependencyFactory,
@@ -217,6 +224,8 @@ function requestContext(
     const started = Date.now();
     const requestId = crypto.randomUUID();
     const log = baseLog.child({ request_id: requestId });
+    const meter = meterDatabase(c.env.DB);
+    c.env = { ...c.env, DB: meter.db };
     c.set("requestId", requestId);
     c.set("log", log);
     c.set("config", config);
@@ -237,6 +246,7 @@ function requestContext(
       route: routePath(c, -1), // the pattern, e.g. /api/result/:token; never the path, which can hold a token
       status: c.res.status,
       duration_ms: Date.now() - started,
+      ...usageFields(meter.usage()),
     });
   });
 }
