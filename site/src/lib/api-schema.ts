@@ -1780,7 +1780,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_ready: a refund for a payment not yet recorded; Razorpay retries it */
+                /** @description not_ready: a refund of a payment not yet recorded, whose event does not carry it; Razorpay retries it */
                 409: {
                     headers: {
                         [name: string]: unknown;

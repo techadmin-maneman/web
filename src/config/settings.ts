@@ -109,7 +109,10 @@ export interface RazorpaySettings {
   /** Public: Checkout takes it in the browser. rzp_test_ on staging, rzp_live_ in production. */
   readonly keyId: string;
   readonly keySecret: string;
-  /** Signs the webhook's events. Without it the webhook answers 404. */
+  /**
+   * Signs the webhook's events: at least 32 characters, and required for self-serve booking. Without it the webhook
+   * answers 404.
+   */
   readonly webhookSecret: string | null;
 }
 
@@ -364,7 +367,7 @@ export function readSettings(
   const watchers = readWatchers(read);
 
   const zohoClients = readZohoClients(read, providers);
-  const razorpay = readRazorpay(read, providers, environment);
+  const razorpay = readRazorpay(read, providers, environment, selfServeBooking);
   const geocode = readGeocode(read, providers);
   const access = readAccess(read, providers, environment);
 
@@ -521,6 +524,7 @@ function readRazorpay(
   read: Reader,
   providers: ProvidersRead,
   environment: EnvironmentName | undefined,
+  selfServeBooking: boolean,
 ): RazorpaySettings | null {
   if (providers.PAYMENTS_PROVIDER === "stub") {
     return { keyId: "", keySecret: "", webhookSecret: read.optionalText("RAZORPAY_WEBHOOK_SECRET") };
@@ -529,7 +533,7 @@ function readRazorpay(
   const razorpay: RazorpaySettings = {
     keyId: read.text("RAZORPAY_KEY_ID"),
     keySecret: read.text("RAZORPAY_KEY_SECRET"),
-    webhookSecret: read.optionalText("RAZORPAY_WEBHOOK_SECRET"),
+    webhookSecret: readWebhookSecret(read, selfServeBooking),
   };
   // Test keys move no money; live keys must never be anywhere else.
   if (environment === "production" && !razorpay.keyId.startsWith("rzp_live_") && razorpay.keyId !== "") {
@@ -539,6 +543,22 @@ function readRazorpay(
     read.problems.push("RAZORPAY_KEY_ID is a live key outside production: it would take real money");
   }
   return razorpay;
+}
+
+/**
+ * The only proof a payment event is Razorpay's. Self-serve booking hears of every payment through it, so it must be
+ * set then; set, it must be long enough to sign with.
+ */
+function readWebhookSecret(read: Reader, selfServeBooking: boolean): string | null {
+  const secret = read.optionalText("RAZORPAY_WEBHOOK_SECRET");
+  if (secret === null) {
+    if (selfServeBooking) {
+      read.problems.push("RAZORPAY_WEBHOOK_SECRET is not set: self-serve booking would never hear that a client paid");
+    }
+    return null;
+  }
+  if (secret.length < 32) read.problems.push("RAZORPAY_WEBHOOK_SECRET must be at least 32 characters");
+  return secret;
 }
 
 /** The address search: its key when there is one, and its daily ceiling always. */

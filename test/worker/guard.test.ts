@@ -567,6 +567,23 @@ describe("validateStaticConfig: Razorpay", () => {
     ]);
   });
 
+  // MON-46, PS-50: self-serve booking started without the webhook secret, and a short one was taken.
+  it("requires a webhook secret of at least 32 characters for self-serve booking", () => {
+    const selfServe = { ...stagingBase, ...RAZORPAY, RAZORPAY_KEY_ID: "rzp_test_abc", SELF_SERVE_BOOKING: "true" };
+    expect(problemsOf(selfServe)).toEqual([
+      "RAZORPAY_WEBHOOK_SECRET is not set: self-serve booking would never hear that a client paid",
+    ]);
+    expect(problemsOf({ ...selfServe, RAZORPAY_WEBHOOK_SECRET: "too-short" })).toEqual([
+      "RAZORPAY_WEBHOOK_SECRET must be at least 32 characters",
+    ]);
+    expect(problemsOf({ ...selfServe, RAZORPAY_WEBHOOK_SECRET: "a-webhook-secret-of-at-least-32-chars" })).toEqual([]);
+  });
+
+  it("refuses a short webhook secret without self-serve booking too", () => {
+    const staging = { ...stagingBase, ...RAZORPAY, RAZORPAY_KEY_ID: "rzp_test_abc", RAZORPAY_WEBHOOK_SECRET: "short" };
+    expect(problemsOf(staging)).toEqual(["RAZORPAY_WEBHOOK_SECRET must be at least 32 characters"]);
+  });
+
   // LIFE-17: locally the webhook answered 404, so nothing past a booking's payment could be run there.
   it("reads the webhook secret for the local stub too, whose payments arrive by the same signed webhook", () => {
     const local = { ENVIRONMENT: "local", ...STUBS, ...SETTINGS, RAZORPAY_WEBHOOK_SECRET: "a-local-placeholder" };
