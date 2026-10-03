@@ -16,6 +16,8 @@ export const RULES = [
   "When ops move a visit, the client is never charged.",
   // The owner, 27 September 2026 (docs/owner-answers-2026-09-27.md, item 71).
   "after a move by ops, the client's notice counts from the visit's time before ops moved it.",
+  // The owner, 2 October 2026 (the audit's decision 5).
+  "When ops cancel a visit, the client is never charged, unless ops apply the client's late terms, with a reason.",
 ] as const;
 
 /** Moving or cancelling is free until this long before the window starts. */
@@ -37,6 +39,12 @@ export const noticeAt = (windowStarts: Date, now: Date, noticeHours: number = FR
  */
 export const noticeCountsFrom = (start: Date, startBeforeMove: Date | null): Date =>
   startBeforeMove !== null && startBeforeMove.getTime() > start.getTime() ? startBeforeMove : start;
+
+/**
+ * The notice an ops cancel is charged as (RULES[8]): free, unless ops apply the client's own terms, as when the client
+ * phones to cancel inside the notice.
+ */
+export const opsCancelCharged = (notice: Notice, onClientTerms: boolean): Notice => (onClientTerms ? notice : "free");
 
 /** The late fee a first fit or a replacement costs inside 24 hours. */
 export const LATE_FEES: Partial<Record<VisitType, "late_fee_first_fit" | "late_fee_replacement">> = {
