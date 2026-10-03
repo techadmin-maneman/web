@@ -1222,7 +1222,7 @@ Request body:
 
 ### POST /api/holds/{id}/discount-code
 
-Take a discount code off the hold's price, before Checkout has its order
+Take a discount code off the hold's price, while nothing is paid for it
 
 Request body:
 
@@ -1256,7 +1256,7 @@ Request body:
 }
 ```
 
-**409**: already_discounted: the hold carries a code; hold_expired; price_settled: Checkout has its order, or it is paid for; ops_assisted
+**409**: already_discounted: the hold carries a code; hold_expired; price_settled: it is paid for, or a payment on Checkout's order is under way; ops_assisted
 
 ```json
 {
@@ -1282,7 +1282,7 @@ Request body:
 
 ### DELETE /api/holds/{id}/discount-code
 
-Take the code off the hold again, before Checkout has its order
+Take the code off the hold again, while nothing is paid for it
 
 **200**: The hold, at its price again
 
@@ -1308,7 +1308,7 @@ Take the code off the hold again, before Checkout has its order
 }
 ```
 
-**409**: hold_expired: the hold ran out; price_settled: Checkout has its order, or it is paid for; ops_assisted
+**409**: hold_expired: the hold ran out; price_settled: it is paid for, or a payment on Checkout's order is under way; ops_assisted
 
 ```json
 {
@@ -1716,6 +1716,7 @@ Request body:
             "fsm_partly",
             "in_progress",
             "too_early_to_close",
+            "already_closed",
             "no_service_area",
             "service_exists",
             "last_of_kind",
@@ -2914,6 +2915,39 @@ Request body:
         "requested_at"
       ],
       "additionalProperties": false
+    },
+    "deletion_rejected": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "decided_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Ops' reason, which they write knowing the client reads it."
+            }
+          },
+          "required": [
+            "decided_at",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The client's latest request to delete their account that ops rejected, for 30 days after, while no other request is waiting."
     }
   },
   "required": [
@@ -2924,7 +2958,8 @@ Request body:
     "consents",
     "number_change",
     "number_change_decided",
-    "deletion"
+    "deletion",
+    "deletion_rejected"
   ],
   "additionalProperties": false
 }

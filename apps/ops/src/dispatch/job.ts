@@ -87,6 +87,23 @@ export function begunWord(block: Block): string | null {
   return dispatch.board.begun[block.begun] ?? null;
 }
 
+/** What ops may do to a visit for its client from the board, besides moving it. */
+export type VisitChange = "cancel" | "close";
+
+const NOT_BEGUN: readonly Block["status"][] = ["scheduled", "dispatched"];
+const OPEN: readonly Block["status"][] = ["scheduled", "dispatched", "in_progress"];
+
+/**
+ * Cancelled while it is still ahead and the technician has not begun it, or closed by hand once its time has come,
+ * while neither his phone nor anyone has closed it.
+ */
+export function changeOf(block: Block, now: number): VisitChange | null {
+  if (Date.parse(block.starts_at) > now) {
+    return NOT_BEGUN.includes(block.status) && block.begun === null ? "cancel" : null;
+  }
+  return OPEN.includes(block.status) && block.begun !== "closed" ? "close" : null;
+}
+
 /** "Rohit", as the drawer's WhatsApp button names him. */
 export const firstNameOf = (person: BoardClient): string => person.name.trim().split(/\s+/)[0] ?? person.name;
 

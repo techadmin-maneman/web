@@ -93,7 +93,7 @@ async function sweepLater(record: FieldRecord, deps = fakeDependencies({ now: ()
     { ...env, CRM_QUEUE: fakeQueue(), RENDER_QUEUE: fakeQueue(), MESSAGE_QUEUE: fakeQueue(), FSM_QUEUE: fsmQueue },
     deps,
     createLogger(),
-    { creditFloor: 0, budget: createCallBudget(Infinity), record },
+    { budget: createCallBudget(Infinity), record },
   );
   return fsmQueue;
 }
@@ -162,16 +162,17 @@ describe("a technician's step that landed before the switch and never reached FS
     ]);
   });
 
-  it("is given up on by the cron's sweep where FSM_PROVIDER is none", async () => {
+  it("is given up on by the cron's job where FSM_PROVIDER is none", async () => {
     await stepsWaitingForFsm();
-    const sweeper = CRON_JOBS.filter((job) => job.name === "sweeper");
+    const jobEvents = CRON_JOBS.filter((job) => job.name === "requeue_job_events");
     const withoutFsm: StaticConfig = {
       ...LOCAL_CONFIG,
       providers: { ...LOCAL_CONFIG.providers, FSM_PROVIDER: "none" },
     };
     const fsmQueue = fakeQueue();
 
-    await runCronJobs(sweeper, {
+    expect(jobEvents).toHaveLength(1);
+    await runCronJobs(jobEvents, {
       env: {
         ...env,
         CRM_QUEUE: fakeQueue(),

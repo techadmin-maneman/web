@@ -1403,6 +1403,7 @@ Razorpay's webhook: payments and refunds
             "fsm_partly",
             "in_progress",
             "too_early_to_close",
+            "already_closed",
             "no_service_area",
             "service_exists",
             "last_of_kind",

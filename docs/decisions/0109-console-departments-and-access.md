@@ -1,6 +1,6 @@
 # 0109. The console by departments, and who may do what in it
 
-- Status: accepted, on the owner's ruling of 2 October 2026 (audit decision 18, and its design answers); amended the same day for the navigation, and for actions by level
+- Status: accepted, on the owner's ruling of 2 October 2026 (audit decision 18, and its design answers); amended the same day for the navigation, for actions by level, and for where each record is
 - Date: 2026-10-02
 
 ## Context
@@ -50,15 +50,17 @@ Every route's department and lowest level is one table, `ROUTE_NEEDS` in `src/po
 
 **How geography will narrow every list and record.** Each record's place is a city, found through a pincode (`serviceable_pincodes.city`), then that city's zone:
 
-- a client: the pincode of their current address, or before they have one, the pincode they booked or joined the waitlist with;
-- a visit, a hold, a payment, a refund, a no-show and its dispute: the pincode of the visit's address;
+- a client: the pincode of their current address; before they have one, their latest visit's, then the pincode they last booked at, asked for a consultation at, or joined the waitlist with. The first of these in one of our cities wins;
+- a visit, a no-show and its dispute: the pincode of the visit's address;
+- a hold: the pincode it was booked at, else the visit it moves;
+- a payment: its visit's, else the hold it paid for, else its client's; a refund: its payment's;
 - a grievance, a number change, a deletion request, a referral: the client's;
-- a waitlist entry and a launch: its own pincode;
-- a technician and a kit: the city set on the technician (a column to add), until then national only;
+- a waitlist entry, a consultation asked for, and a launch: its own pincode;
+- a technician and a kit: the city ops set on the technician on the Technicians screen (`technicians.city`); none, national only;
 - a task: its group's department, and its record's city;
 - a setting, a price, a code, a service, a consumable, the job sheet, a blackout day, the day times: national. View may read them from any place; changing them needs a national grant.
 
-A record whose city cannot be found is shown only to national grants. Each route that narrows its reads and writes this way changes its line in `ROUTE_NEEDS` to `ownPlaces`, with a test that a city grant sees its own city's records and not another's.
+A record whose city cannot be found is shown only to national grants. `src/domain/places.ts` finds each record's city, for one record (`cityOf`) or as a condition a list's query keeps to (`withinReach`); `placesReached` in `src/policy/access.ts` names the cities a caller's grants reach in a department at a level: everywhere with a national grant, and for everyone while the list is not enforced. Each route that narrows its reads and writes this way changes its line in `ROUTE_NEEDS` to `ownPlaces`, with a test that a city grant sees its own city's records and not another's.
 
 **Enforcement is a switch.** `staff_access_mode` holds it, off to begin with. Off, nothing is refused but the switch, the tokens and a token's change to the list (above), and each call the list would have refused is logged (`staff_access_would_refuse`, with the route and what it asked; the call's `ops.call` audit entry, under the same request ID, names the person; a GET of a path the person looked at within the ten minutes before has none of its own, and the first look's entry names them, ADR 0031). On, it is refused (`staff_access_refused`) after its audit entry is written. Every change to the list, the switch or the tokens is audited under the person who made it (`staff.set`, `staff.enforce`, `staff.token_add`, `staff.token_remove`).
 

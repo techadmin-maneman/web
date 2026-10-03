@@ -31,6 +31,7 @@ export type VisitMessageKind = Extract<
   | "visit_reminder"
   | "reschedule_confirmation"
   | "cancel_confirmation"
+  | "visit_cancelled"
   | "visit_moved"
   | "arrival_notice"
   | "no_show_decided"
@@ -45,6 +46,8 @@ export const VISIT_MESSAGE_KINDS: readonly VisitMessageKind[] = [
   "visit_reminder",
   "reschedule_confirmation",
   "cancel_confirmation",
+  // Ops cancelled the visit from the console: the same words as the client's own cancel.
+  "visit_cancelled",
   // Ops moved the visit on the dispatch board; the client is told the new window and never charged.
   "visit_moved",
   // The technician checked in at the door: the no-show evidence reads its receipt (ADR 0047).
@@ -67,6 +70,7 @@ const STILL_TRUE_WHILE: Readonly<Record<VisitMessageKind, readonly AppointmentSt
   reschedule_confirmation: ["scheduled", "dispatched"],
   visit_moved: ["scheduled", "dispatched"],
   cancel_confirmation: "any",
+  visit_cancelled: "any",
   arrival_notice: ["scheduled", "dispatched", "in_progress"],
   no_show_decided: "any",
   no_show_dispute_ruled: "any",
@@ -299,22 +303,31 @@ export async function composeVisitMessage(
     params[6] = payment.reference;
     return { template: "visit_booked_v1", params };
   }
+  return cancelMessage(db, appointmentId, params);
+}
+
+/** A cancel, the client's own or one ops made: what goes back, and whether the credit it used comes back. */
+async function cancelMessage(db: D1Database, appointmentId: string, params: string[]): Promise<Composed> {
   const cancelled = await db
     .prepare(
-      `SELECT c.refund_amount, c.notice, p.method FROM visit_changes c LEFT JOIN payments p ON p.id = c.payment_id
+      `SELECT c.refund_amount, c.notice, c.ops_terms, p.method FROM visit_changes c
+       LEFT JOIN payments p ON p.id = c.payment_id
        WHERE c.appointment_id = ?1 AND c.kind = 'cancelled'`,
     )
     .bind(appointmentId)
-    .first<{ refund_amount: number; notice: "free" | "late"; method: string | null }>();
-  if (cancelled === null) return { skip: "the visit was not cancelled by the client" };
+    .first<{
+      refund_amount: number;
+      notice: "free" | "late";
+      ops_terms: "free" | "client" | null;
+      method: string | null;
+    }>();
+  if (cancelled === null) return { skip: "the visit was not cancelled" };
   const credit = await creditOfVisit(db, appointmentId);
   if (credit === "restored") return { template: "visit_cancelled_credit_v1", params };
-  // Kept under the 24-hour rule, or drawn on a grant that has since expired or been clawed back.
+  // Kept under the client's late terms, or drawn on a grant that has since expired or been clawed back.
   if (credit === "kept") {
-    return {
-      template: cancelled.notice === "late" ? "visit_cancelled_credit_lost_v1" : "visit_cancelled_credit_gone_v1",
-      params,
-    };
+    const keptAsLate = cancelled.notice === "late" && cancelled.ops_terms !== "free";
+    return { template: keptAsLate ? "visit_cancelled_credit_lost_v1" : "visit_cancelled_credit_gone_v1", params };
   }
   if (cancelled.refund_amount === 0) return { template: "visit_cancelled_v1", params };
   params[5] = rupees(cancelled.refund_amount);
