@@ -66,6 +66,18 @@ describe("migration check", () => {
     expect(checkMigrations([create("0001_a.sql", withdrawn.join("\n"))], { atBase })).toEqual([]);
   });
 
+  // Two pull requests that each took the next number can land together. One of the pair is withdrawn in place and
+  // its statements move to the next free number, so its number is shared with the live migration that kept it.
+  it("lets a withdrawn migration share its number with a live one, and nothing else", () => {
+    const withdrawnSql =
+      "-- withdrawn: deploy-staging run 1234 refused it, and it has been applied nowhere.\nSELECT 1;";
+    const pair = [create("0001_a.sql"), create("0002_b.sql", withdrawnSql), create("0002_c.sql"), create("0003_d.sql")];
+    expect(checkMigrations(pair)).toEqual([]);
+    expect(checkMigrations([create("0001_a.sql"), create("0002_b.sql"), create("0002_c.sql")])).toEqual([
+      "0002_c.sql: expected migration number 0003; numbers must be contiguous",
+    ]);
+  });
+
   it("refuses a withdrawal that still does something, or that names no run", () => {
     const atBase = new Map([["0001_a.sql", "CREATE TABLE a (id TEXT);"]]);
     const stillDoes = ["-- withdrawn: run 1234 refused it", "CREATE TABLE c (id TEXT);"].join("\n");

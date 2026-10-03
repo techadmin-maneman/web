@@ -55,8 +55,14 @@ const DESTRUCTIVE_STATEMENTS = [
 export function checkMigrations(files: readonly MigrationFile[], options: MigrationCheckOptions = {}): string[] {
   const sorted = [...files].sort((a, b) => a.name.localeCompare(b.name));
   const problems: string[] = [];
+  let expectedNumber = 0;
   for (const [index, file] of sorted.entries()) {
-    problems.push(...checkName(file, index + 1));
+    // A withdrawn migration may share its number with the live one after it: two that took the same number landed
+    // together, one was withdrawn in place and its statements moved on. The live one keeps the number.
+    const next = sorted[index + 1];
+    const sharesWithNext = next !== undefined && withdrawn(file.sql) && next.name.slice(0, 4) === file.name.slice(0, 4);
+    if (!sharesWithNext) expectedNumber += 1;
+    problems.push(...checkName(file, sharesWithNext ? expectedNumber + 1 : expectedNumber));
     problems.push(...checkDestructive(file, options.adrExists));
     problems.push(...checkTriggers(file));
   }
