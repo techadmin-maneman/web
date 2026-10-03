@@ -16,12 +16,19 @@ export interface CallBudget {
   ranOut(): boolean;
 }
 
-export function createCallBudget(calls: number): CallBudget {
+/** A time after which no call is granted, read from the given clock in milliseconds. */
+export interface CallDeadline {
+  readonly until: number;
+  readonly now: () => number;
+}
+
+export function createCallBudget(calls: number, deadline?: CallDeadline): CallBudget {
   let left = calls;
   let refused = false;
+  const pastDeadline = () => deadline !== undefined && deadline.now() >= deadline.until;
   return {
     spend(wanted) {
-      if (wanted > left) {
+      if (wanted > left || pastDeadline()) {
         refused = true;
         return false;
       }

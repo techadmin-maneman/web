@@ -184,8 +184,12 @@ describe("GET /api/whoami", () => {
     expect(routes).not.toContain("GET /api/settings");
   });
 
-  it("names nothing but who is signed in and the health check to a person not on the enforced list", async () => {
+  it("names nothing but who is signed in, the health check and the console's errors to a person not on the list", async () => {
     await enforce();
-    expect(await mayCall(person("stranger@maneman.in"))).toEqual(["GET /api/health", "GET /api/whoami"]);
+    expect(await mayCall(person("stranger@maneman.in"))).toEqual([
+      "GET /api/health",
+      "GET /api/whoami",
+      "POST /api/client-errors",
+    ]);
   });
 });

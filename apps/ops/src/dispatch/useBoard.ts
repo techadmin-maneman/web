@@ -37,7 +37,8 @@ export function useBoard(query: BoardQuery, paused: boolean): BoardData {
     const answer = await api.board({ from, city });
     if (mine !== reads.current) return null;
     if (!answer.ok) {
-      setLoaded((held) => (held.state === "loaded" ? held : { state: "failed", notFound: answer.status === 404 }));
+      const failed = { state: "failed", notFound: answer.status === 404, requestId: answer.requestId } as const;
+      setLoaded((held) => (held.state === "loaded" ? held : failed));
       return null;
     }
     setLoaded({ state: "loaded", value: answer.body });

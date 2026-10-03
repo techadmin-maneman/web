@@ -117,6 +117,13 @@ export const TEMPLATES: Readonly<Record<string, string>> = {
   // {{2}} the pincode of the address on the account.
   address_not_served_v1:
     "Hello {{1}}, this number was just used to book on our site. The address on your account is at pincode {{2}}, which we do not cover yet, so nothing was booked. If you have moved, change your address in the Mane Man app and book there.",
+  // Ops' decision on a client's request to delete their account. {{2}} is ops' reason, which they write knowing the
+  // client reads it.
+  deletion_rejected_v1:
+    "Hello {{1}}, we have not deleted your Mane Man account. Our reason: {{2}} Message us if you disagree.",
+  // Sent once the erasure is done, to the number it has just blanked.
+  deletion_done_v1:
+    "Hello {{1}}, as you asked, your Mane Man account is deleted. Your invoices are kept for eight years, as the law requires.",
   // The line a reminder or alert ends with, {{1}} the link that stops them (STOP_LINKS below).
   stop_link_v1: "Stop these messages: {{1}}",
   // The answer to a STOP reply, once it has withdrawn something.
@@ -204,6 +211,7 @@ export const MESSAGE_CLASSES: Readonly<Record<MessageKind, MessageClass>> = {
   book_in_app: "answering",
   address_on_account: "answering",
   address_not_served: "answering",
+  deletion_rejected: "automatic", // ops' ruling
   messages_stopped: "answering", // their own STOP reply
 };
 

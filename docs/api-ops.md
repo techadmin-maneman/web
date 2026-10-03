@@ -37,6 +37,36 @@ Environment, version and database reachability
 }
 ```
 
+### POST /api/client-errors
+
+Report an error in the app's own page
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ClientErrorReport"
+}
+```
+
+**204**: Logged
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**429**: rate_limited: this address has sent its reports for the hour, or every address has
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/clients/search
 
 Find a client by mobile number. A POST, so the number stays out of the URL
@@ -1828,7 +1858,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: no name, or not an Indian mobile
+**400**: invalid_request: no name, not an Indian mobile, or not one of our cities
 
 ```json
 {
@@ -2188,7 +2218,7 @@ A day's money: what was collected, what went back, and each charge kept or ruled
 
 ### PATCH /api/technicians/{id}
 
-Change a technician's name, number or zone
+Change a technician's name, number, zone or city
 
 Request body:
 
@@ -2206,7 +2236,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: nothing to change, no name, or not an Indian mobile
+**400**: invalid_request: nothing to change, no name, not an Indian mobile, or not one of our cities
 
 ```json
 {
@@ -4254,6 +4284,76 @@ Request body:
     "version_tag",
     "d1",
     "cron_completed_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ClientErrorReport
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "error",
+        "unhandled_rejection",
+        "render",
+        "outbox_gave_up"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "path": {
+      "type": "string",
+      "maxLength": 300,
+      "description": "The page's path, with no query or fragment."
+    },
+    "stack": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "source": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "The script the error was thrown in."
+    },
+    "line": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "column": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "step": {
+      "type": "string",
+      "maxLength": 40,
+      "description": "outbox_gave_up: the write's kind, as `checklist`."
+    },
+    "code": {
+      "type": "string",
+      "maxLength": 60,
+      "description": "outbox_gave_up: the code the API refused it with."
+    },
+    "status": {
+      "type": "integer",
+      "description": "outbox_gave_up: the refusal's HTTP status."
+    },
+    "request_id": {
+      "type": "string",
+      "maxLength": 64,
+      "description": "outbox_gave_up: the refusal's request ID, which its own log lines carry."
+    }
+  },
+  "required": [
+    "kind",
+    "message",
+    "path"
   ],
   "additionalProperties": false
 }
@@ -7920,7 +8020,7 @@ Request body:
         "null"
       ],
       "maxLength": 300,
-      "description": "Required to reject; kept with the decision (src/policy/decision-reasons.ts)."
+      "description": "Required to reject; kept with the decision, and the client reads it (src/policy/decision-reasons.ts)."
     }
   },
   "required": [
@@ -8059,7 +8159,7 @@ Request body:
         "null"
       ],
       "maxLength": 300,
-      "description": "Required to reject; kept with the decision (src/policy/decision-reasons.ts)."
+      "description": "Required to reject; kept with the decision, and the client reads it (src/policy/decision-reasons.ts)."
     }
   },
   "required": [
@@ -9353,6 +9453,17 @@ Request body:
               }
             ]
           },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The city he works in, which staff access by place reads; null for none."
+          },
           "mobile": {
             "anyOf": [
               {
@@ -9424,6 +9535,7 @@ Request body:
           "name",
           "initials",
           "zone",
+          "city",
           "mobile",
           "editable",
           "devices",
@@ -9454,6 +9566,17 @@ Request body:
               }
             ]
           },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The city he works in, which staff access by place reads; null for none."
+          },
           "mobile": {
             "anyOf": [
               {
@@ -9474,17 +9597,26 @@ Request body:
           "id",
           "name",
           "zone",
+          "city",
           "mobile",
           "editable"
         ],
         "additionalProperties": false
       },
       "description": "Technicians switched off, by name: they cannot sign in, and nothing is booked on them."
+    },
+    "cities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "The cities a technician may be given, in display order."
     }
   },
   "required": [
     "technicians",
-    "switched_off"
+    "switched_off",
+    "cities"
   ],
   "additionalProperties": false
 }
@@ -10259,6 +10391,19 @@ Request body:
         }
       ],
       "description": "Where he mostly works, in ops' words; null for none."
+    },
+    "city": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The city he works in, one of GET /api/technicians' cities. Staff with a grant of that city or its zone see him; with none, only a national grant does."
     }
   },
   "required": [
@@ -10298,6 +10443,19 @@ Request body:
         }
       ],
       "description": "Where he mostly works, in ops' words; null for none."
+    },
+    "city": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The city he works in, one of GET /api/technicians' cities. Staff with a grant of that city or its zone see him; with none, only a national grant does."
     }
   },
   "additionalProperties": false,

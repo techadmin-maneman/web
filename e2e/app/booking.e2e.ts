@@ -199,7 +199,13 @@ function profileOf({ reminders = false, undecided = [], address = true }: Standi
     return { purpose, granted: given, since: given ? at : null };
   });
   const answer = { name: "Rohit Malhotra", mobile: "+91 98xxx x4417", consents };
-  const rest = { address_given_to_ops: null, number_change: null, number_change_decided: null, deletion: null };
+  const rest = {
+    address_given_to_ops: null,
+    number_change: null,
+    number_change_decided: null,
+    deletion: null,
+    deletion_rejected: null,
+  };
   return { ...answer, address: address ? ADDRESS : null, ...rest };
 }
 
