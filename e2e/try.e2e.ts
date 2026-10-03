@@ -175,17 +175,25 @@ test.describe("gate", () => {
     await expect(page.getByLabel("Mobile")).toHaveAttribute("aria-required", "true");
     await page.getByRole("button", { name: "Send my look" }).click();
     await expect(page.getByText("Tell us what to call you.")).toBeVisible();
-    await expect(page.getByText("Enter all ten digits so we can send your look.")).toBeVisible();
+    await expect(page.getByText("Enter a valid 10-digit mobile number.")).toBeVisible();
+    await expect(page.getByLabel("Name")).toBeFocused();
     await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "gate");
   });
 
-  test("a gate half filled in says what is missing, then sends the look", async ({ page }) => {
+  // BK-28: a number starting with 5 is not a mobile, and the gate says so at the field.
+  test("a gate half filled in says what is missing, focused, then sends the look", async ({ page }) => {
     await open(page, "gate");
     await page.getByLabel("Mobile").fill("98100");
     await page.getByRole("button", { name: "Send my look" }).click();
     await expect(page.getByText("Tell us what to call you.")).toBeVisible();
     await expect(page.getByLabel("Name")).toHaveAttribute("aria-invalid", "true");
+    await expect(page.getByLabel("Name")).toBeFocused();
     await page.getByLabel("Name").fill("Test Visitor");
+    await page.getByLabel("Mobile").fill("5876543210");
+    await page.getByRole("button", { name: "Send my look" }).click();
+    await expect(page.getByLabel("Mobile")).toHaveAttribute("aria-invalid", "true");
+    await expect(page.getByLabel("Mobile")).toHaveAccessibleDescription("Enter a valid 10-digit mobile number.");
+    await expect(page.getByLabel("Mobile")).toBeFocused();
     await page.getByLabel("Mobile").fill("9810000000");
     await expect(page.getByLabel("Mobile")).toHaveValue("98100 00000");
     await page.getByRole("button", { name: "Send my look" }).click();

@@ -375,6 +375,22 @@ test("the gate says when the try-on is already another number's", async ({ page 
   await screenIs(page, "gate");
 });
 
+// UX-21: a refusal naming the number was said as "That did not go through", with nothing marked.
+test("the gate marks the field a claim's refusal names, and focuses it", async ({ page }) => {
+  const refused = { error: { code: "invalid_request", request_id: "test", fields: ["mobile"] } };
+  await mockApi(page, { claim: { status: 400, json: refused } });
+  await visit(page, "/try");
+  await throughToGate(page);
+  await sendFromGate(page, MOBILE);
+
+  const mobile = page.getByLabel("Mobile");
+  await expect(mobile).toHaveAttribute("aria-invalid", "true");
+  await expect(mobile).toHaveAccessibleDescription("Enter a valid 10-digit mobile number.");
+  await expect(mobile).toBeFocused();
+  await expect(page.getByText(/did not go through/)).toHaveCount(0);
+  await screenIs(page, "gate");
+});
+
 // FEO-21: pressing again after the answer was lost is the same claim, so it carries the same key.
 test("the gate pressed again after a lost answer sends the same request key", async ({ page }) => {
   const seen = await mockApi(page, {

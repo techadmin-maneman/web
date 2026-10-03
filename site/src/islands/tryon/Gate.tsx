@@ -3,6 +3,7 @@ import { formatMobileField } from "@maneman/web-kit/mobile";
 import { gateCopy, numberCode as numberCodeWords, tryOn, type Notice } from "../../content/site.ts";
 import { Icon } from "../Drawings.tsx";
 import { NumberCodeField, type CodeFieldClasses } from "../NumberCodeField.tsx";
+import type { FormRef } from "../useInvalidFocus.ts";
 import { Title, type HeadingRef } from "./Title.tsx";
 import styles from "./TryOn.module.css";
 
@@ -47,6 +48,7 @@ export function Gate(props: {
   /** Null until a code is on its way to the number typed. */
   code: GateCode | null;
   heading: HeadingRef;
+  form: FormRef;
   onName: (name: string) => void;
   onMobile: (mobile: string) => void;
   onSubmit: (event: Event) => void;
@@ -64,7 +66,7 @@ export function Gate(props: {
         </div>
         <p class={styles.gateCaption}>{words.caption}</p>
       </div>
-      <form onSubmit={props.onSubmit} noValidate>
+      <form ref={props.form} onSubmit={props.onSubmit} noValidate>
         <Title heading={props.heading}>{words.title}</Title>
         <p class={styles.body}>{words.body}</p>
         <div class={styles.fields}>
