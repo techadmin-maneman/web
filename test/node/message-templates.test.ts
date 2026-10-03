@@ -36,6 +36,7 @@ describe("the message class table", () => {
       "next_service_reminder",
       "launch_alert",
       "visit_moved", // ops moved it, not the client
+      "visit_cancelled", // ops cancelled it in the console
       "arrival_notice", // the technician's own action
       "no_show_decided", // ops ruled on it
       "friend_fitted", // the friend acted; the referrer is told

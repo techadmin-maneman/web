@@ -291,6 +291,30 @@ describe("booking a visit, for a grant of Operations in one city", () => {
     const holds = await env.DB.prepare("SELECT person_id FROM slot_holds").all();
     expect(holds.results).toEqual([{ person_id: ARJUN }]);
   });
+
+  it("shows what cancelling its own visit gives back, and cancels nothing elsewhere", async () => {
+    const terms = await post(delhi, `/api/visits/${DELHI_VISIT}/cancel`, { confirm: false });
+    expect(terms.status).toBe(200);
+
+    const cancel = { confirm: true, notice: "free", reason: "The client is travelling." };
+    const elsewhere = await post(delhi, `/api/visits/${GURGAON_VISIT}/cancel`, cancel);
+    expect(elsewhere.status).toBe(409);
+    expect((await errorOf(elsewhere)).code).toBe("not_changeable");
+    const statuses = await env.DB.prepare("SELECT status FROM appointments WHERE id = ?1").bind(GURGAON_VISIT).first();
+    expect(statuses).toEqual({ status: "scheduled" });
+  });
+
+  it("closes by hand no visit elsewhere", async () => {
+    const close = {
+      outcome: "done",
+      started_at: TUESDAY_MORNING,
+      ended_at: "2026-09-22T05:00:00.000Z",
+      reason: "His phone was lost.",
+    };
+    expect((await post(delhi, `/api/visits/${GURGAON_VISIT}/close`, close)).status).toBe(404);
+    // Its own visit gets past its city to the visit's own answer: its time has not come.
+    expect((await post(delhi, `/api/visits/${DELHI_VISIT}/close`, close)).status).toBe(425);
+  });
 });
 
 describe("technicians, for a grant of Operations in one city", () => {

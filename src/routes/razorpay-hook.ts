@@ -15,8 +15,9 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
+import type { AlertOnce } from "../domain/alerts.ts";
 import { recordBookingConsents } from "../domain/booking-consents.ts";
-import { paymentStatusOf, recordPayment, recordRefund } from "../domain/payments.ts";
+import { paymentStatusOf, recordPayment, recordRefund, recordRefundedPayment } from "../domain/payments.ts";
 import { bookHold } from "../http/book-hold.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { sha256Hex } from "../lib/hash.ts";
@@ -29,6 +30,7 @@ import {
   signedByRazorpay,
   type RazorpayPayment,
   type RazorpayPaymentLink,
+  type RazorpayRefund,
 } from "../providers/razorpay.ts";
 
 const EventSchema = z.object({
@@ -50,7 +52,9 @@ export const razorpayHookRoute = createRoute({
     200: { description: "Taken, or ignored. Either way Razorpay need not send it again" },
     401: errorResponse("unauthorized: the signature does not match"),
     404: errorResponse("not_found: the webhook is not switched on (no RAZORPAY_WEBHOOK_SECRET)"),
-    409: errorResponse("not_ready: a refund for a payment not yet recorded; Razorpay retries it"),
+    409: errorResponse(
+      "not_ready: a refund of a payment not yet recorded, whose event does not carry it; Razorpay retries it",
+    ),
   },
 });
 
@@ -117,6 +121,34 @@ function holdOfNotes(notes: RazorpayPayment["notes"]): string | null {
   return typeof holdId === "string" && /^[0-9a-f-]{36}$/.test(holdId) ? holdId : null;
 }
 
+/**
+ * A refund event kept against its payment. A payment we never heard of is kept from the event first, without booking
+ * anything for it, and ops are told. False when the event does not carry that payment, so Razorpay sends it again.
+ */
+async function refundTaken(
+  db: D1Database,
+  event: { readonly refund: RazorpayRefund; readonly paymentEntity: unknown },
+  deps: { readonly hashSalt: string; readonly alertOnce: AlertOnce; readonly now: Date },
+): Promise<boolean> {
+  const { refund, paymentEntity } = event;
+  if (await recordRefund(db, refund, deps.now)) return true;
+  if (paymentEntity === undefined) return false;
+  const payment = RazorpayPaymentSchema.parse(paymentEntity);
+  if (payment.id !== refund.payment_id) return false;
+
+  const personId = await recordRefundedPayment(db, payment, deps.hashSalt, deps.now);
+  await recordRefund(db, refund, deps.now);
+  await deps.alertOnce({
+    key: `razorpay_refund_unheard:${payment.id}`,
+    message:
+      `Payment ${payment.id} was refunded in Razorpay before we heard it was paid. The payment and its refund ` +
+      `${refund.id} are recorded now; no visit was booked for it. If no one here refunded it, Razorpay's ` +
+      `payment messages are not reaching us (runbook, "Razorpay's webhook is not arriving").`,
+    ...(personId === null ? {} : { link: `/clients/${personId}` }),
+  });
+  return true;
+}
+
 export function registerRazorpayHook(app: App): void {
   app.openapi(razorpayHookRoute, async (c) => {
     const { requestId, log, config, deps } = c.var;
@@ -175,9 +207,14 @@ export function registerRazorpayHook(app: App): void {
       // Paid for, the booking gives the photograph consents its pay step showed.
       if (status === "captured" && holdId !== null) await recordBookingConsents(db, { holdId, requestId, now });
     } else if (payload?.refund !== undefined) {
-      const recorded = await recordRefund(db, RazorpayRefundSchema.parse(payload.refund.entity), now);
-      // Its payment's event has not arrived yet. Not kept as seen, so Razorpay's retry is applied.
-      if (!recorded) {
+      const refund = RazorpayRefundSchema.parse(payload.refund.entity);
+      const taken = await refundTaken(
+        db,
+        { refund, paymentEntity: payload.payment?.entity },
+        { hashSalt: config.settings.ipHashSalt, alertOnce: deps.alertOnce, now },
+      );
+      // Not kept as seen, so Razorpay's retry is applied once the payment has arrived.
+      if (!taken) {
         log.info("razorpay_hook_refund_early", { event });
         return c.json(errorBody("not_ready", requestId), 409);
       }

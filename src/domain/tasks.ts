@@ -222,7 +222,8 @@ const OUTSTANDING = [
      AND NOT EXISTS (SELECT 1 FROM addresses d WHERE d.person_id = a.person_id AND d.replaced_at IS NULL)
   UNION ALL
   SELECT 'partial_visit', a.id, a.person_id, pe.name,
-         COALESCE((SELECT r.label FROM partial_reasons r WHERE r.code = v.partial_reason), v.partial_reason),
+         COALESCE((SELECT r.label FROM partial_reasons r WHERE r.code = v.partial_reason), v.partial_reason,
+           v.close_reason),
          COALESCE(v.ended_at, a.window_end, v.updated_at), NULL, ''
     FROM visits v JOIN appointments a ON a.id = v.appointment_id JOIN people pe ON pe.id = a.person_id
    WHERE v.outcome = 'partial' AND v.followed_up = 0 AND COALESCE(v.partial_reason, '') <> 'no_show'

@@ -103,7 +103,7 @@ Migration 0069 lists every person in the ops audit log (Access e-mails, `actor_k
 - Every Operations route keeps to the caller's cities and is `ownPlaces`, at the route's own level, as Customer Care's do: the dispatch board and its moves, Tasks, booking a visit, technicians, their leave and phones, and stock.
 - The dispatch board shows the visits in the caller's cities, and the technicians there or holding one of those visits; the cities it can be narrowed to are the caller's. A visit or a move elsewhere is `404 not_found`, and a job is given only to a technician in the caller's cities, or kept on the one the board showed it with.
 - Tasks shows each group's tasks where the caller's grants in the department that decides it reach the task's record (`tasksWithin` in `src/domain/tasks.ts`). Taking, giving or closing a task elsewhere is `404 not_found`.
-- A visit is booked only for a client in the caller's cities, and only the technicians there are offered.
+- A visit is booked only for a client in the caller's cities, and only the technicians there are offered. A visit elsewhere is not cancelled or closed by hand: it is answered as one that does not exist.
 - A technician is seen, changed, switched off or on, given leave or a phone revoked only in the caller's cities. A technician is given only a city the caller's Operations Manage reaches; no city, only with a national grant.
 - Stock shows the kits of the technicians in the caller's cities. The central store is in no city: it, and a delivery into it, need a national grant.
 - Held bookings wait on FSM, which is leaving: retrying, stopping and linking one still need a national grant.
