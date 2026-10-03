@@ -1436,6 +1436,12 @@ describe("where it waits for ops, and what the client sees meanwhile", () => {
       being_booked: unknown;
     }>();
     expect(me.next_visit).toBeNull();
-    expect(me.being_booked).toEqual({ type: "service", date: "2026-09-24", window: "afternoon", paid: true });
+    expect(me.being_booked).toEqual({
+      type: "service",
+      date: "2026-09-24",
+      window: "afternoon",
+      paid: true,
+      one_visit: false,
+    });
   });
 });

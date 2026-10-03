@@ -131,6 +131,8 @@ export const VISIT_TYPES = {
 } as const;
 // PLACEHOLDER: a visit whose FSM service item is none of the four.
 export const OTHER_VISIT = "Visit";
+// PLACEHOLDER: a consultation and fit in one visit, as the site and the technician's phone call it.
+export const ONE_VISIT = "Consultation and fit";
 
 /** A price's GST, beneath the amount charged once GST applies: "Rs. 30,000 + Rs. 5,400 GST". */
 export const gstSplit = (exGst: string, gst: string) => `${exGst} + ${gst} GST`;
