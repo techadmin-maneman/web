@@ -233,7 +233,7 @@
   cursor: grab;
 }
 
-/* A visit already done stays where it was worked, and opens its drawer rather than being dragged. */
+/* A visit done, or one the technician has begun, stays where it is, and opens its drawer rather than being dragged. */
 .finished {
   cursor: pointer;
 }

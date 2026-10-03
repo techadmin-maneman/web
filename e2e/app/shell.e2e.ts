@@ -109,11 +109,11 @@ test("shows board B3's loading on paper while it asks whether there is a session
   expect(await page.evaluate(() => document.body.dataset.ground)).toBe("ink");
 });
 
-test("keeps the design's column on a wide screen, centred", async ({ page }) => {
+test("keeps its column to a large phone's width on a wide screen, centred", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
   const box = await page.locator("#root").boundingBox();
-  expect(box?.width).toBe(390);
+  expect(box?.width).toBe(480);
   expect(Math.round((box?.x ?? 0) * 2 + (box?.width ?? 0))).toBe(1440);
 });
 
@@ -157,9 +157,10 @@ test("makes each tab a full 64 px target", async ({ page }) => {
   expect(tab?.height).toBeGreaterThanOrEqual(64);
 });
 
-test("runs the header's rule and the tab bar to the edges of a phone wider than the column", async ({ page }) => {
+test("fills a phone wider than the design, its header's rule and tab bar to the edges", async ({ page }) => {
   await page.setViewportSize({ width: 430, height: 932 });
   await home(page);
+  expect((await page.locator("#root").boundingBox())?.width).toBe(430);
   const { data, info } = await sharp(await page.screenshot())
     .raw()
     .toBuffer({ resolveWithObject: true });
@@ -171,7 +172,7 @@ test("runs the header's rule and the tab bar to the edges of a phone wider than 
   const tabs = await page.getByRole("navigation").boundingBox();
   const ruleY = Math.floor((header?.y ?? 0) + (header?.height ?? 0) - 1);
   const tabsY = Math.floor((tabs?.y ?? 0) + (tabs?.height ?? 0) / 2);
-  // Four pixels in from the screen's edge, outside the 390 px column: the rule's colour, and the tab bar's ground.
+  // Four pixels in from the screen's edge: the rule's colour, and the tab bar's ground.
   expect(at(4, ruleY)).toEqual(rgbOf("rgb(206, 198, 180)"));
   expect(at(info.width - 4, ruleY)).toEqual(rgbOf("rgb(206, 198, 180)"));
   expect(at(4, tabsY)).toEqual(rgbOf("rgb(244, 241, 233)"));

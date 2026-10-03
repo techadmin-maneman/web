@@ -17,6 +17,9 @@
 //
 // An event's time is the phone's, held within bounds (src/policy/phone-clock.ts),
 // so a job worked offline keeps its real durations; received_at is ours.
+//
+// Where our own database holds the record of field work, nothing waits for FSM:
+// what the step records is written in the event's own batch (src/domain/job-record.ts).
 
 import { firstNameOf } from "../lib/names.ts";
 import { isNoShow, stepBefore, type JobEventKind } from "../policy/in-job-steps.ts";
@@ -75,7 +78,16 @@ export interface EventInput {
   /** The job's start as the phone holds it, when the phone says; a different one means ops moved it. */
   readonly expectedStart: Date | null;
   readonly now: Date;
+  /** Where the step's work is recorded once it lands (src/config/field-record.ts). */
+  readonly recordedIn: StepRecord;
 }
+
+/**
+ * FSM's queue, which writes the step to FSM after it lands; or our own database, whose statements for it
+ * (src/domain/job-record.ts) are written in the event's own batch.
+ */
+export type StepRecord =
+  { readonly holder: "fsm" } | { readonly holder: "ours"; readonly statements: readonly D1PreparedStatement[] };
 
 /**
  * Records one event of the phone's outbox, once. A replay of an ID this job
@@ -330,9 +342,33 @@ function eventOf(row: EventRow): JobEvent {
   };
 }
 
+/**
+ * Writes the event, and where our own database holds the record, what the step records there, in one batch. A
+ * superseded write records nothing: it is kept only as the record that the phone tried.
+ */
 async function record(db: D1Database, input: EventInput, options: { superseded: boolean }): Promise<JobEvent | null> {
-  const at = input.now.toISOString();
-  const row = await db
+  const ours = !options.superseded && input.recordedIn.holder === "ours" ? input.recordedIn.statements : [];
+  const [inserted] = await db.batch<EventRow>([
+    eventStatement(db, input, writeStateOf(input.recordedIn, options.superseded), options.superseded),
+    ...ours,
+  ]);
+  const row = inserted?.results[0];
+  return row === undefined ? null : eventOf(row);
+}
+
+/** A superseded write reaches FSM never; one our own database records is written with the event. */
+function writeStateOf(recordedIn: StepRecord, superseded: boolean): FsmWriteState {
+  if (superseded) return "rejected";
+  return recordedIn.holder === "ours" ? "written" : "pending";
+}
+
+function eventStatement(
+  db: D1Database,
+  input: EventInput,
+  state: FsmWriteState,
+  superseded: boolean,
+): D1PreparedStatement {
+  return db
     .prepare(
       `INSERT INTO job_events
          (id, appointment_id, event_id, technician_id, device_id, kind, body, occurred_at, received_at,
@@ -350,11 +386,8 @@ async function record(db: D1Database, input: EventInput, options: { superseded: 
       input.kind,
       JSON.stringify(input.body),
       input.occurredAt.toISOString(),
-      at,
-      // A superseded write reaches FSM never; it is kept only as the record that the phone tried.
-      options.superseded ? "rejected" : "pending",
-      options.superseded ? 1 : 0,
-    )
-    .first<EventRow>();
-  return row === null ? null : eventOf(row);
+      input.now.toISOString(),
+      state,
+      superseded ? 1 : 0,
+    );
 }
