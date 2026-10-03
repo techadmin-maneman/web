@@ -7,7 +7,7 @@ import type { App } from "../http/context.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { visitorOf } from "../http/visitor.ts";
 import { readStopToken, withdraw } from "../domain/stop-messages.ts";
-import { CONSENT_PURPOSES } from "../policy/consents.ts";
+import { MESSAGE_PURPOSES } from "../policy/consents.ts";
 
 export const StopMessagesRequestSchema = z
   .object({ token: z.string().min(1).max(600) })
@@ -16,7 +16,7 @@ export const StopMessagesRequestSchema = z
 
 export const StoppedMessagesSchema = z
   .object({
-    purpose: z.enum(CONSENT_PURPOSES).openapi({
+    purpose: z.enum(MESSAGE_PURPOSES).openapi({
       description: "What is no longer sent. The same answer when it had been stopped already.",
     }),
   })

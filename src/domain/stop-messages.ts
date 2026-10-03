@@ -1,17 +1,12 @@
-// Stopping our WhatsApp messages without signing in, as easily as agreeing to them. A reminder or the launch alert
-// ends with a signed link (STOP_LINKS in src/config/message-templates.ts) that withdraws the consent it was sent
-// under, from the site's /stop page. A STOP reply on WhatsApp withdraws every consent we message under, and is
-// answered once. A withdrawal is written only while the purpose is given, with its audit entry in the same batch.
+// Stopping our WhatsApp messages without signing in, as easily as agreeing to them: the signed link a reminder or
+// the launch alert ends with withdraws the consent it was sent under, and a STOP reply withdraws both WhatsApp
+// consents and is answered once. A withdrawal is written only while the purpose is given, with its audit entry in
+// the same batch.
 
 import { DAY_MS } from "../lib/durations.ts";
 import { firstNameOf } from "../lib/names.ts";
 import { signToken, verifyToken } from "../lib/signed-token.ts";
-import {
-  isConsentPurpose,
-  STOPPED_BY_A_REPLY,
-  type ConsentPurpose,
-  type ConsentSource,
-} from "../policy/consents.ts";
+import { isMessagePurpose, MESSAGE_PURPOSES, type ConsentSource, type MessagePurpose } from "../policy/consents.ts";
 import { auditStatementIfWritten } from "./audit.ts";
 import { recordConsent } from "./consents.ts";
 
@@ -24,7 +19,7 @@ const WITHDRAWAL_NOTICE = "withdrawal";
 /** Whose consent a stop link withdraws, and which. */
 export interface StopLinkSubject {
   readonly personId: string;
-  readonly purpose: ConsentPurpose;
+  readonly purpose: MessagePurpose;
 }
 
 /** The link to the site's /stop page. The token goes in the fragment, which no server receives or logs. */
@@ -39,18 +34,18 @@ export async function stopLink(
   return `${origin}/stop#${token}`;
 }
 
-/** The subject of a stop link's token, or null when it is forged, expired or names no purpose. */
+/** The subject of a stop link's token, or null when it is forged, expired or names no purpose we message under. */
 export async function readStopToken(signingKey: string, token: string, now: Date): Promise<StopLinkSubject | null> {
   const subject = await verifyToken(signingKey, "stop_messages", token, now);
   if (subject === null) return null;
   const [purpose, personId] = subject.split(" ");
-  if (personId === undefined || !isConsentPurpose(purpose)) return null;
+  if (personId === undefined || !isMessagePurpose(purpose)) return null;
   return { personId, purpose };
 }
 
 export interface Withdrawal {
   readonly personId: string;
-  readonly purposes: readonly ConsentPurpose[];
+  readonly purposes: readonly MessagePurpose[];
   readonly source: Extract<ConsentSource, "message_link" | "whatsapp_stop">;
   readonly ipHash: string | null;
   readonly requestId: string | null;
@@ -58,7 +53,7 @@ export interface Withdrawal {
 }
 
 /** One purpose's withdrawal and its audit entry, each written only while the person still gives it. */
-function withdrawalStatements(db: D1Database, withdrawal: Withdrawal, purpose: ConsentPurpose) {
+function withdrawalStatements(db: D1Database, withdrawal: Withdrawal, purpose: MessagePurpose) {
   const consent = recordConsent(db, {
     person: { id: withdrawal.personId },
     purpose,
@@ -84,13 +79,15 @@ function withdrawalStatements(db: D1Database, withdrawal: Withdrawal, purpose: C
   return { consent, audit };
 }
 
-/** Withdraws each purpose the person still gives. Returns the IDs of the rows written, none if nothing was given. */
+/** Withdraws each purpose the person still gives. Returns the IDs of the rows written: none if nothing was given. */
 export async function withdraw(db: D1Database, withdrawal: Withdrawal): Promise<string[]> {
   const writes = withdrawal.purposes.map((purpose) => withdrawalStatements(db, withdrawal, purpose));
   const results = await db.batch(writes.flatMap(({ consent, audit }) => [consent.statement, audit]));
-  return writes
-    .filter((_write, index) => (results[index * 2]?.results.length ?? 0) > 0)
-    .map(({ consent }) => consent.id);
+  const written = writes.filter((_write, index) => {
+    const consentResult = results[index * 2];
+    return consentResult !== undefined && consentResult.results.length > 0;
+  });
+  return written.map(({ consent }) => consent.id);
 }
 
 /**
@@ -109,13 +106,14 @@ export async function stopByReply(
 
   const withdrawn = await withdraw(db, {
     personId: person.id,
-    purposes: STOPPED_BY_A_REPLY,
+    purposes: MESSAGE_PURPOSES,
     source: "whatsapp_stop",
     ipHash: null,
     requestId: input.requestId,
     now: input.now,
   });
-  if (withdrawn.length === 0) return null;
+  const [firstWithdrawal] = withdrawn;
+  if (firstWithdrawal === undefined) return null;
 
   const messageId = crypto.randomUUID();
   const at = input.now.toISOString();
@@ -124,7 +122,7 @@ export async function stopByReply(
       `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at)
        VALUES (?1, ?2, ?3, 'messages_stopped', 'consent', ?4, 'queued', ?2)`,
     )
-    .bind(messageId, at, person.id, withdrawn[0])
+    .bind(messageId, at, person.id, firstWithdrawal)
     .run();
   return messageId;
 }

@@ -26,8 +26,12 @@ export const CONSENT_PURPOSES = [
 ] as const;
 export type ConsentPurpose = (typeof CONSENT_PURPOSES)[number];
 
-export function isConsentPurpose(value: unknown): value is ConsentPurpose {
-  return (CONSENT_PURPOSES as readonly unknown[]).includes(value);
+/** The purposes we message a person under: what a STOP reply withdraws, and all a message's stop link can name. */
+export const MESSAGE_PURPOSES = ["whatsapp_visits", "whatsapp_launches"] as const satisfies readonly ConsentPurpose[];
+export type MessagePurpose = (typeof MESSAGE_PURPOSES)[number];
+
+export function isMessagePurpose(value: unknown): value is MessagePurpose {
+  return (MESSAGE_PURPOSES as readonly unknown[]).includes(value);
 }
 
 /**
@@ -50,9 +54,6 @@ export const CONSENT_SOURCES = [
   "whatsapp_stop",
 ] as const;
 export type ConsentSource = (typeof CONSENT_SOURCES)[number];
-
-/** What a STOP reply on WhatsApp withdraws: every purpose we message a person under. */
-export const STOPPED_BY_A_REPLY = ["whatsapp_visits", "whatsapp_launches"] as const satisfies readonly ConsentPurpose[];
 
 /** The replies that mean stop, as isStopReply reads them: in capitals, punctuation gone. */
 const STOP_REPLIES = new Set(["STOP", "STOP ALL", "UNSUBSCRIBE"]);

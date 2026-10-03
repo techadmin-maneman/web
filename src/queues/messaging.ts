@@ -268,6 +268,7 @@ export async function sendMessage(
   if (heldBackByAllowlist(messaging, row)) return skip("number not on the allowlist");
   const content = await contentOf(db, config, row, now);
   if ("skip" in content) return skip(content.skip);
+  const stopLink = await stopLinkOf(config, row, now);
 
   // Claim this send; another delivery of the same message now leaves it alone.
   const claim = await db
@@ -280,7 +281,7 @@ export async function sendMessage(
     .first<{ attempts: number }>();
   if (claim === null) return {};
 
-  const result = await sendContent(deps, row.mobile_e164, { ...content, stopLink: await stopLinkOf(config, row, now) });
+  const result = await sendContent(deps, row.mobile_e164, { ...content, stopLink });
 
   if (result.ok) {
     await db

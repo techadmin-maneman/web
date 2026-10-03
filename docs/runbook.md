@@ -528,14 +528,14 @@ Payments and refunds are mirrored from Razorpay's webhook (docs/decisions/0044-p
    - Payment links on: the one visit's link is made through the API (`POST /v1/payment_links`), which the account must allow (open point 166).
    - On staging, the hooks path already has its Access bypass (step 12, point 3).
 
-### 12. WhatsApp delivery receipts (Evolution)
+### 12. WhatsApp delivery receipts and STOP replies (Evolution)
 
-Evolution reports each message as delivered and read to `POST /api/hooks/evolution/<token>` (docs/decisions/0041-outbound-messages-for-phase-2.md). The no-show evidence depends on these receipts. Until this is set up, the route answers 404 and no receipts are recorded.
+Evolution reports each message as delivered and read to `POST /api/hooks/evolution/<token>` (docs/decisions/0041-outbound-messages-for-phase-2.md), and passes on the messages people send us, where a STOP reply withdraws the sender's WhatsApp consents and is answered once. The no-show evidence depends on the receipts. Until this is set up, the route answers 404: no receipts are recorded and a STOP reply stops nothing (the link at the foot of a reminder still works).
 
 1. **The token.** Make a random value of at least 32 characters, e.g. `openssl rand -hex 24`, and set it on the Worker with `W secret put EVOLUTION_WEBHOOK_TOKEN --env <env>`. Use a different value in each environment.
 2. **Evolution's webhook**, on the instance the Worker sends from:
    - URL: `https://<host>/api/hooks/evolution/<token>`;
-   - events: **`MESSAGES_UPDATE` only**;
+   - events: **`MESSAGES_UPDATE` and `MESSAGES_UPSERT` only**;
    - "webhook by events": off.
 
    Every event is a request against the free plan's daily allowance, so send no others.
@@ -556,6 +556,8 @@ Evolution reports each message as delivered and read to `POST /api/hooks/evoluti
    `delivered_at` and `read_at` should be filled within seconds. If they stay empty, look in Workers Logs:
    - `evolution_hook_unauthorized`: the token in Evolution's URL is wrong;
    - no `evolution_receipts` line at all: Access or Bot Fight Mode is stopping the webhook.
+
+   Then reply STOP from that handset, if its person has agreed to WhatsApp about visits or launches. The handset gets one answer, the client's page in the console shows the consents withdrawn by "STOP reply", and Workers Logs has an `evolution_replies` line with `stopped: 1`. Switch the consents back on in the app afterwards.
 
 ---
 

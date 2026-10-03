@@ -2792,9 +2792,6 @@ Razorpay's webhook: payments and refunds
     "purpose": {
       "type": "string",
       "enum": [
-        "photos_own_record",
-        "photos_referral_cards",
-        "photos_marketing",
         "whatsapp_visits",
         "whatsapp_launches"
       ],

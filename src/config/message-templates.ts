@@ -2,7 +2,7 @@
 // {{1}}, {{2}}, … are the params, in order. PLACEHOLDER COPY, pending the owner's wording.
 
 import { MESSAGE_KINDS, type MessageKind } from "../domain/messages.ts";
-import type { ConsentPurpose } from "../policy/consents.ts";
+import type { MessagePurpose } from "../policy/consents.ts";
 
 export const TEMPLATES: Readonly<Record<string, string>> = {
   // The try-on's look, to the number that claimed it: {{1}} the first name. The second sentence is the design's own.
@@ -117,7 +117,8 @@ export const TEMPLATES: Readonly<Record<string, string>> = {
   // The line a reminder or alert ends with, {{1}} the link that stops them (STOP_LINKS below).
   stop_link_v1: "Stop these messages: {{1}}",
   // The answer to a STOP reply, once it has withdrawn something.
-  messages_stopped_v1: "Done, {{1}}. We will no longer message you here about your visits or our launches.",
+  messages_stopped_v1:
+    "Done, {{1}}. We will no longer message you here about your visits, or when we come to a new area.",
 };
 
 /** The text with its params filled in, or null for an unknown template or a missing param. */
@@ -141,16 +142,17 @@ export function renderWithStopLink(name: string, params: readonly string[], stop
 
 /**
  * The messages that end with a link to stop them, and the consent the link withdraws: the reminders and the launch
- * alert, sent on a schedule rather than in answer to anything the person just did. A STOP reply stops every kind.
+ * alert, sent on a schedule rather than in answer to anything the person just did. A STOP reply stops every kind
+ * sent under either consent.
  */
-export const STOP_LINKS: Readonly<Partial<Record<MessageKind, ConsentPurpose>>> = {
+export const STOP_LINKS: Readonly<Partial<Record<MessageKind, MessagePurpose>>> = {
   visit_reminder: "whatsapp_visits",
   next_service_reminder: "whatsapp_visits",
   launch_alert: "whatsapp_launches",
 };
 
 /** The consent a kind's stop link withdraws, or null for a kind that carries none. */
-export function stopLinkPurpose(kind: string): ConsentPurpose | null {
+export function stopLinkPurpose(kind: string): MessagePurpose | null {
   return STOP_LINKS[kind as MessageKind] ?? null;
 }
 

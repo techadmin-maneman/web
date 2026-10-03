@@ -2240,7 +2240,7 @@ export interface components {
              * @description What is no longer sent. The same answer when it had been stopped already.
              * @enum {string}
              */
-            purpose: "photos_own_record" | "photos_referral_cards" | "photos_marketing" | "whatsapp_visits" | "whatsapp_launches";
+            purpose: "whatsapp_visits" | "whatsapp_launches";
         };
         StopMessagesRequest: {
             token: string;
