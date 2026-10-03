@@ -28,11 +28,8 @@ function CreditTile({ credits }: { credits: Refer["credits"] }) {
   const expiry = credits.earliest_expiry;
   return (
     <div className={styles.credit}>
-      <div>
-        <p className={styles.creditLabel}>{refer.credit.label}</p>
-        {expiry !== null && <p className={styles.creditExpiry}>{refer.credit.expire(fullDate(indiaDate(expiry)))}</p>}
-      </div>
-      <p className={styles.creditCount}>{credits.visits}</p>
+      <p className={styles.creditLabel}>{refer.credit.count(credits.visits)}</p>
+      {expiry !== null && <p className={styles.creditExpiry}>{refer.credit.useBy(fullDate(indiaDate(expiry)))}</p>}
     </div>
   );
 }

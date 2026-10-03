@@ -345,6 +345,20 @@ describe("Evolution API", () => {
     expect(http.calls).toHaveLength(1);
   });
 
+  it("ends the text with the link that stops it, when the message carries one", async () => {
+    const http = fakeFetch({ [SEND_TEXT]: () => json({ key: { id: "T1" } }) });
+    const evolution = createEvolutionMessaging(settings, { fetch: http.fetch });
+    await evolution.send({
+      to: "+919810000001",
+      template: "launch_alert_v1",
+      params: ["Arjun", "Sector 65", "https://maneman.in/book"],
+      stopLink: "https://maneman.in/stop#token",
+    });
+    const { text } = JSON.parse(http.calls[0]?.body ?? "{}") as { text: string };
+    expect(text).toMatch(/^Hello Arjun, we now come to Sector 65\./);
+    expect(text).toMatch(/\n\nStop these messages: https:\/\/maneman\.in\/stop#token$/);
+  });
+
   const sendImage = (evolution: MessagingProvider) =>
     evolution.send({
       to: "+919810000001",

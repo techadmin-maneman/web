@@ -151,18 +151,13 @@ function BeingBooked({ booking }: { booking: NonNullable<Me["being_booked"]> }) 
   );
 }
 
-/** Board B1's credit tile: the balance, and the day the soonest of it must be booked by. */
+/** Board B1's credit tile: how many free service visits, said once, and the day the soonest must be used by. */
 function CreditTile({ credits }: { credits: NonNullable<Me["credits"]> }) {
   const expiry = credits.earliest_expiry;
   return (
     <div className={styles.credits}>
-      <div>
-        <p className={styles.creditsLabel}>{home.credits.count(credits.visits)}</p>
-        {expiry !== null && <p className={styles.creditsExpiry}>{useByLine(credits, expiry)}</p>}
-      </div>
-      <p className={styles.creditsCount} aria-hidden="true">
-        {credits.visits}
-      </p>
+      <p className={styles.creditsLabel}>{home.credits.count(credits.visits)}</p>
+      {expiry !== null && <p className={styles.creditsExpiry}>{useByLine(credits, expiry)}</p>}
     </div>
   );
 }

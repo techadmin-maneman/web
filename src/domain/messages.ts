@@ -32,6 +32,7 @@ export const MESSAGE_KINDS = [
   "consultation_exists",
   "book_in_app",
   "address_on_account",
+  "messages_stopped", // the answer to a STOP reply (src/domain/stop-messages.ts)
 ] as const;
 export type MessageKind = (typeof MESSAGE_KINDS)[number];
 
