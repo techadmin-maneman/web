@@ -94,6 +94,9 @@ export const TEMPLATES: Readonly<Record<string, string>> = {
     "Hello {{1}}, we could not give the service visits for {{2}}'s first fit. Message us if you would like to know why.",
   referral_rejected_friend_v1:
     "Hello {{1}}, we could not give the service visits from your invite. Message us if you would like to know why.",
+  // A month, then a week, before free service visits run out: {{2}} how many end that day, {{3}} their last day.
+  credits_expiring_v1:
+    "Hello {{1}}, you have {{2}} free to book by {{3}}. A visit booked by then is covered, even one on a later date. Book in the Mane Man app.",
   visit_cancelled_refund_v1:
     "Hello {{1}}, your {{2}} on {{3}} is cancelled. {{6}} is on its way back to your {{8}}, in 5 to 7 working days.",
   // A booking FSM would not take, which ops refunded or let go, with a visit's params.
@@ -114,6 +117,9 @@ export const TEMPLATES: Readonly<Record<string, string>> = {
     "Hello {{1}}, this number was just used to book on our site. As a Mane Man client, you book your next visit in the Mane Man app. Sign in with this number.",
   address_on_account_v1:
     "Hello {{1}}, we will come to the address already on your account, not the one typed on our site. You can change it in the Mane Man app.",
+  // {{2}} the pincode of the address on the account.
+  address_not_served_v1:
+    "Hello {{1}}, this number was just used to book on our site. The address on your account is at pincode {{2}}, which we do not cover yet, so nothing was booked. If you have moved, change your address in the Mane Man app and book there.",
   // Ops' decision on a client's request to delete their account. {{2}} is ops' reason, which they write knowing the
   // client reads it.
   deletion_rejected_v1:
@@ -155,6 +161,7 @@ export function renderWithStopLink(name: string, params: readonly string[], stop
 export const STOP_LINKS: Readonly<Partial<Record<MessageKind, MessagePurpose>>> = {
   visit_reminder: "whatsapp_visits",
   next_service_reminder: "whatsapp_visits",
+  credits_expiring: "whatsapp_visits",
   launch_alert: "whatsapp_launches",
 };
 
@@ -204,10 +211,12 @@ export const MESSAGE_CLASSES: Readonly<Record<MessageKind, MessageClass>> = {
   friend_fitted: "automatic", // to the referrer, for the friend's action
   friend_credited: "automatic", // to the friend, for the job ops closed
   referral_rejected: "automatic", // ops' ruling
+  credits_expiring: "automatic", // scheduled
   launch_alert: "automatic", // scheduled, to someone who asked earlier
   consultation_exists: "answering", // the site's booking form, just sent for this number
   book_in_app: "answering",
   address_on_account: "answering",
+  address_not_served: "answering",
   deletion_rejected: "automatic", // ops' ruling
   messages_stopped: "answering", // their own STOP reply
 };

@@ -36,7 +36,7 @@ import { opsInputs } from "../http/ops-inputs.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
 import { firstNameOf, initialsOf } from "../lib/names.ts";
 import { PriceSchema } from "./client-booking.ts";
-import { CreditsSchema } from "./client-refer.ts";
+import { creditsBody, CreditsSchema } from "./client-refer.ts";
 import { VisitSummarySchema } from "./client-visits.ts";
 import { ReferralRewardSchema } from "./referral-reward.ts";
 
@@ -295,7 +295,7 @@ export function registerClientMe(app: App): void {
             : { date: proposal.proposed_visit_date, window, window_label: PHASE1_WORDS[window] ?? null, place },
         next_visit: upcoming,
         being_booked: underWay,
-        credits: credits.visits > 0 ? { visits: credits.visits, earliest_expiry: credits.earliestExpiry } : null,
+        credits: credits.visits > 0 ? creditsBody(credits) : null,
         prompt,
         invoice,
         booking: { self_serve: c.var.config.settings.selfServeBooking, types, services, next: offer },

@@ -1570,84 +1570,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/erasure": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Operators only: erase a person's photos, results and details, found by their number */
-        post: {
-            parameters: {
-                query?: never;
-                header?: {
-                    authorization?: string;
-                };
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["ErasureRequest"];
-                };
-            };
-            responses: {
-                /** @description Erased */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErasureResponse"];
-                    };
-                };
-                /** @description invalid_request: see error.fields */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description not_found: no one with this number, or already erased */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description visit_booked or payment_held: settle what it names first, or say it is settled */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErasureRefused"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/stop": {
         parameters: {
             query?: never;
@@ -1882,7 +1804,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "already_closed" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "already_closed" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -2201,48 +2123,6 @@ export interface components {
              * @enum {string}
              */
             failure_code?: "photo_unreadable" | "photo_invalid_file" | "render_failed" | "busy";
-        };
-        ErasureResponse: {
-            /** Format: uuid */
-            person_id: string;
-            /** Format: date-time */
-            erased_at: string;
-            photos_deleted: number;
-            results_deleted: number;
-            messages_cancelled: number;
-            /**
-             * @description The CRM record is blanked by the crm-sync queue, retried until done.
-             * @enum {string}
-             */
-            crm: "queued";
-        };
-        ErasureRefused: {
-            error: {
-                /** @enum {string} */
-                code: "visit_booked" | "payment_held";
-                request_id: string;
-            };
-            visits: {
-                id: string;
-                /** @enum {string|null} */
-                type: "consultation" | "first_fit" | "service" | "replacement" | null;
-                /** @enum {string} */
-                status: "scheduled" | "dispatched" | "in_progress";
-                /** Format: date-time */
-                window_start: string | null;
-            }[];
-            payments: {
-                id: string;
-                reference: string | null;
-                /** @description In paise. */
-                amount: number;
-            }[];
-        };
-        ErasureRequest: {
-            /** @example 98100 00000 */
-            mobile: string;
-            /** @description Erase even with a visit booked or a payment held: only once ops have cancelled and refunded them by hand (the runbook's "Erasure within the day"). */
-            override_open_bookings?: boolean;
         };
         StoppedMessages: {
             /**

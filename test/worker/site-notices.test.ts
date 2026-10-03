@@ -168,3 +168,36 @@ describe("an address already on the account", () => {
     expect(await send("address_on_account")).toEqual({ text: null, skipped: "no address on the account" });
   });
 });
+
+// BK-25: the visit goes to the address on the account, so where we do not come to it nothing is booked.
+describe("an address on the account in a pincode we do not come to", () => {
+  beforeEach(async () => {
+    await consentToVisitMessages();
+    await env.DB.prepare(
+      `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode)
+       VALUES ('old', ?1, '2026-09-01T00:00:00.000Z', 'House 12', 'Bandra West', 'Mumbai', '400050')`,
+    )
+      .bind(PERSON)
+      .run();
+  });
+
+  it("is why nothing was booked, which the number is told with its pincode alone", async () => {
+    const { text } = await send("address_not_served");
+    expect(text).toBe(
+      "Hello Karan, this number was just used to book on our site. The address on your account is at pincode " +
+        "400050, which we do not cover yet, so nothing was booked. If you have moved, change your address in the " +
+        "Mane Man app and book there.",
+    );
+    expect(text).not.toContain("House 12");
+  });
+
+  it("is not mentioned once we come there", async () => {
+    await env.DB.prepare(
+      "INSERT INTO serviceable_pincodes (pincode, area, city, served) VALUES ('400050', 'Bandra', 'Mumbai', 1)",
+    ).run();
+    expect(await send("address_not_served")).toEqual({
+      text: null,
+      skipped: "we come to the address on the account now",
+    });
+  });
+});

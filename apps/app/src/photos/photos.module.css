@@ -21,6 +21,12 @@
   padding: var(--sp-22) var(--sp-20);
 }
 
+.basis {
+  margin: 0;
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
 .group {
   display: flex;
   align-items: baseline;

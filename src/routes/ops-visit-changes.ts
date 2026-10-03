@@ -233,7 +233,12 @@ async function cancelForClient(c: Context<AppEnv>, visitId: string, asked: Cance
     return c.json(errorBody("unavailable", requestId), 503);
   }
   if (outcome.kind === "not_changeable") return c.json(errorBody("not_changeable", requestId), 409);
-  log.info("visit_cancelled_by_ops", { appointment_id: visit.id, terms: ops.terms, refund: outcome.refund });
+  log.info("visit_cancelled_by_ops", {
+    appointment_id: visit.id,
+    terms: ops.terms,
+    refund: outcome.refund,
+    refund_pending: outcome.refundPending,
+  });
   return c.json({ ...shown, cancelled: true }, 200);
 }
 
