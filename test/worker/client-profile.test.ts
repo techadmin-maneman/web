@@ -440,6 +440,16 @@ describe("PATCH /api/consents/:purpose", () => {
     ]);
   });
 
+  it("records the booking sheet's reminder under the box's own line, and the profile's switch under its own", async () => {
+    await send(client, "PATCH", "/api/consents/whatsapp_visits", { granted: true, source: "app_booking" });
+    await send(client, "PATCH", "/api/consents/whatsapp_visits", { granted: false, source: "app_profile" });
+    const rows = await env.DB.prepare("SELECT notice_version, granted FROM consents ORDER BY rowid").all();
+    expect(rows.results).toEqual([
+      { notice_version: "whatsapp-visits-booking-v1", granted: 1 },
+      { notice_version: "whatsapp-visits-v1", granted: 0 },
+    ]);
+  });
+
   it("records no place for a switch from an app that named none, and takes none but the app's own", async () => {
     await send(client, "PATCH", "/api/consents/photos_marketing", { granted: true });
     expect(await env.DB.prepare("SELECT source FROM consents").first()).toEqual({ source: null });

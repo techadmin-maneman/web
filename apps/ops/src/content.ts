@@ -907,7 +907,7 @@ export const clients = {
     /** The board's four columns. */
     columns: ["Purpose", "State", "Date", "Source"],
     purposes: {
-      photos_own_record: "Photographs for the client record",
+      photos_own_record: "Photographs taken for the visit record",
       photos_referral_cards: "Photographs on referral cards",
       photos_marketing: "Photographs in marketing",
       whatsapp_visits: "WhatsApp about visits",
