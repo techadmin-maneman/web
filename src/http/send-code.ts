@@ -6,9 +6,10 @@
 // by the hour, and the third in an hour tells ops; the next code that does go
 // closes the alert (docs/decisions/0067-alerts-and-silent-failures.md).
 //
-// Only a code that is sent counts against the day's ceiling, which clients,
-// technicians and number changes share. A number nobody here knows costs its
-// address instead, so asking for random numbers cannot lock everyone out.
+// Every code asked for, a first one or one sent again, counts against its number's day and its address's hour,
+// whoever holds the number. Only a code that is sent counts against the day's ceiling, so a number nobody here
+// knows costs nothing more and is answered like any other. The client app, the technician app and the site's
+// forms each have a ceiling of their own, so none of them can stop another's codes.
 //
 // A code is always asked for by the phone that receives it, so staging's messaging allowlist never holds one back
 // (docs/decisions/0025-phase-2-conflicts-register.md, item 84; ADR 0097) — unless the account is a test record one
@@ -20,8 +21,7 @@ import type { Context } from "hono";
 import type { AppEnv } from "./context.ts";
 import { onAllowlist, type LoginSettings } from "../config/settings.ts";
 import { alertCeilingReached, ceilingReached, takeFromCeiling, type Ceiling } from "../domain/ceilings.ts";
-import { countOne, isSpent, takeOne } from "../domain/rate-limit.ts";
-import { saltedHash } from "../lib/hash.ts";
+import { countOne, takeOne } from "../domain/rate-limit.ts";
 import { indiaDate, indiaHour } from "../lib/india-time.ts";
 import { scrubString } from "../log.ts";
 import { isStagingTestRecord, skipsAddressLimits } from "../policy/staging-test-records.ts";
@@ -31,65 +31,52 @@ import { afterResponse } from "./after-response.ts";
 /** Failed sends in one hour before ops are told: one is a mistyped number, three is the bridge. */
 const FAILURES_PER_HOUR_TO_ALERT = 3;
 
-/**
- * Numbers nobody here knows that one address may ask a code for in a day. Past
- * them the address is refused every number until midnight in India, so the
- * refusal never says whether the number asked for is a real one.
- */
-export const UNKNOWN_NUMBERS_PER_ADDRESS_DAILY = 20;
+/** Where a code is asked for: the client app's login, the technician app's, or a form on the site. */
+export type CodeSurface = "login" | "tech" | "form";
 
-const unknownNumbers = (ipHash: string, now: Date) => ({
-  scope: "login:unknown:ip",
-  key: ipHash,
-  window: indiaDate(now),
-  limit: UNKNOWN_NUMBERS_PER_ADDRESS_DAILY,
-});
+/** How a request for a code is answered: open, or refused because the address, the number or the day is spent. */
+export type CodeGate = "open" | "address_spent" | "number_spent" | "busy";
 
-/** How a request for a code is answered before anyone is looked up. */
-export type CodeGate = "open" | "rate_limited" | "busy";
+/** The day's ceiling a code counts against: each surface has its own. */
+export type CodeCeiling = Extract<Ceiling, "login_code" | "tech_code" | "form_code">;
 
-/** The day's ceiling a code counts against: the apps' logins share one, and the site's forms have their own. */
-export type CodeCeiling = Extract<Ceiling, "login_code" | "form_code">;
+const CEILING_OF: Readonly<Record<CodeSurface, CodeCeiling>> = {
+  login: "login_code",
+  tech: "tech_code",
+  form: "form_code",
+};
 
-/**
- * Asked before the number is looked up, so every number gets the same answer:
- * refused while the address has spent its day of unknown numbers, and busy
- * while the day's ceiling is reached.
- */
-export async function codeGate(
-  c: Context<AppEnv>,
-  ipHash: string,
-  now: Date,
-  ceiling: CodeCeiling = "login_code",
-): Promise<CodeGate> {
-  if (await isSpent(c.env.DB, unknownNumbers(ipHash, now))) return "rate_limited";
-  const { codeDailyCeiling } = c.var.config.settings.login;
-  if (!(await ceilingReached(c.env.DB, ceiling, codeDailyCeiling, now))) return "open";
-  await alertCeilingReached(c.env.DB, c.var.deps.alert, ceiling, codeDailyCeiling, now);
-  return "busy";
+function ceilingLimit(login: LoginSettings, ceiling: CodeCeiling): number {
+  return ceiling === "tech_code" ? login.techCodeDailyCeiling : login.codeDailyCeiling;
+}
+
+/** Whether today's ceiling is reached already; the first refusal of the day tells ops. Counts nothing. */
+async function ceilingSpent(c: Context<AppEnv>, ceiling: CodeCeiling, now: Date): Promise<boolean> {
+  const limit = ceilingLimit(c.var.config.settings.login, ceiling);
+  if (!(await ceilingReached(c.env.DB, ceiling, limit, now))) return false;
+  await alertCeilingReached(c.env.DB, c.var.deps.alert, ceiling, limit, now);
+  return true;
 }
 
 /**
- * Whether a new login code may be asked for this number: the gate above, then the address's codes this hour and the
- * number's today, each counted under its surface's own scope (docs/decisions/0030-one-time-codes.md). The answer is
- * the same whoever holds the number, except a staging test record, which skips the address's limit. A code resent
- * on its challenge answers to the gate alone.
+ * Whether one more code may be asked for this number: the surface's ceiling, then the address's codes this hour and
+ * the number's today, each counted under the surface's own scope. The answer is the same whoever holds the number,
+ * except a staging test record, which skips the address's limit.
  */
 export async function mayAskForCode(
   c: Context<AppEnv>,
   input: {
-    /** "form" is a code proving a number typed into the site. */
-    readonly surface: "login" | "tech" | "form";
-    readonly mobileE164: string;
+    readonly surface: CodeSurface;
+    /** The number as the limits key it (mobileHashOf). */
+    readonly mobileHash: string;
     readonly ipHash: string;
     readonly now: Date;
-    /** The name of whoever holds the number, where the mirror already knows them. */
+    /** The name of whoever holds the number, where it is already known. */
     readonly name: string | null;
   },
 ): Promise<CodeGate> {
-  const gate = await codeGate(c, input.ipHash, input.now, input.surface === "form" ? "form_code" : "login_code");
-  if (gate !== "open") return gate;
-  const { login: limits, ipHashSalt } = c.var.config.settings;
+  if (await ceilingSpent(c, CEILING_OF[input.surface], input.now)) return "busy";
+  const { login: limits } = c.var.config.settings;
   const db = c.env.DB;
   const withinAddress =
     skipsAddressLimits(c.var.config.environment, input.name) ||
@@ -99,15 +86,14 @@ export async function mayAskForCode(
       window: indiaHour(input.now),
       limit: limits.codeIpHourlyLimit,
     }));
-  const withinNumber =
-    withinAddress &&
-    (await takeOne(db, {
-      scope: `${input.surface}:code:mobile`,
-      key: await saltedHash(ipHashSalt, `mobile:${input.mobileE164}`),
-      window: indiaDate(input.now),
-      limit: limits.codeMobileDailyLimit,
-    }));
-  return withinNumber ? "open" : "rate_limited";
+  if (!withinAddress) return "address_spent";
+  const withinNumber = await takeOne(db, {
+    scope: `${input.surface}:code:mobile`,
+    key: input.mobileHash,
+    window: indiaDate(input.now),
+    limit: limits.codeMobileDailyLimit,
+  });
+  return withinNumber ? "open" : "number_spent";
 }
 
 /**
@@ -128,24 +114,19 @@ function heldBackByAllowlist(c: Context<AppEnv>, sendsTo: string, name: string):
 }
 
 /**
- * Counts what this request's code costs: one from the day's ceiling if it will
- * be sent, false once the ceiling is reached; one from its address's day if the
- * number is nobody's. A test record's code the allowlist holds back costs nothing.
+ * Counts this request's code against the surface's ceiling if it will be sent; false once the ceiling is reached.
+ * A number nobody holds is sent nothing and costs nothing, nor does a test record's code the allowlist holds back.
  */
 export async function countCode(
   c: Context<AppEnv>,
+  surface: CodeSurface,
   sendsTo: string | null,
   name: string | null,
-  ipHash: string,
   now: Date,
-  ceiling: CodeCeiling = "login_code",
 ): Promise<boolean> {
-  if (sendsTo === null) {
-    await countOne(c.env.DB, unknownNumbers(ipHash, now));
-    return true;
-  }
+  if (sendsTo === null) return true;
   if (name !== null && heldBackByAllowlist(c, sendsTo, name)) return true;
-  return withinCodeCeiling(c, now, ceiling);
+  return withinCodeCeiling(c, now, CEILING_OF[surface]);
 }
 
 /**
@@ -203,8 +184,8 @@ export async function withinCodeCeiling(
   now: Date,
   ceiling: CodeCeiling = "login_code",
 ): Promise<boolean> {
-  const { login } = c.var.config.settings;
-  if (await takeFromCeiling(c.env.DB, ceiling, login.codeDailyCeiling, now)) return true;
-  await alertCeilingReached(c.env.DB, c.var.deps.alert, ceiling, login.codeDailyCeiling, now);
+  const limit = ceilingLimit(c.var.config.settings.login, ceiling);
+  if (await takeFromCeiling(c.env.DB, ceiling, limit, now)) return true;
+  await alertCeilingReached(c.env.DB, c.var.deps.alert, ceiling, limit, now);
   return false;
 }
