@@ -25,11 +25,15 @@ body[data-ground="ink"] {
   --focus-colour: var(--paper);
 }
 
-/* On a wider screen the design's column is centred, not stretched. */
+/* The design's column fills a phone a little wider than it; on a wider screen it is centred, not stretched. */
+:root {
+  --column-max: var(--app-column-max);
+}
+
 #root {
   display: flex;
   flex-direction: column;
-  max-width: var(--app-column);
+  max-width: var(--column-max);
   min-height: 100dvh;
   margin: 0 auto;
 }
