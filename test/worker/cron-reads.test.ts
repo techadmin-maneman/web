@@ -286,7 +286,8 @@ describe("each minute's run", () => {
     ] as const) {
       for (let minute = 0; minute < 60; minute += 1) {
         const statements = await statementsAt(minute, config);
-        if (statements > CRON_STATEMENTS_PER_RUN) overBudget.push(`${name}, minute ${String(minute)}: ${String(statements)}`);
+        if (statements > CRON_STATEMENTS_PER_RUN)
+          overBudget.push(`${name}, minute ${String(minute)}: ${String(statements)}`);
       }
     }
     expect(overBudget).toEqual([]);
