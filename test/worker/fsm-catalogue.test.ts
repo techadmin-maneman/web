@@ -696,26 +696,11 @@ describe("a price set in the console", () => {
     return queue.sent;
   }
 
-  it("queues FSM's catalogue when the push is on and the price is in force today", async () => {
-    expect(await setPrice({ valid_from: "2026-09-26" }, true)).toEqual([
-      { catalogue_sync: true, request_id: expect.any(String) as unknown },
-    ]);
-  });
-
-  // Every service has its own item now, so a price for any of them is one FSM should carry.
-  it("queues it for a service ops added, as for a standard one", async () => {
-    await service("first_fit", "premium", "Premium first fit", 4_000_000);
-    expect(await setPrice({ valid_from: "2026-09-26", item: "first_fit", tier: "premium" }, true)).toHaveLength(1);
-  });
-
-  it("queues nothing while the push is off: the hourly check tells ops instead", async () => {
-    expect(await setPrice({ valid_from: "2026-09-26" }, false)).toEqual([]);
-  });
-
+  // A price applies from tomorrow at the earliest, so FSM never has to follow one the day it is set.
   it.each([
-    ["a price from a later day, which the hourly check pushes on its day", { valid_from: "2026-10-01" }],
-    ["a late fee, which is not a catalogue item", { valid_from: "2026-09-26", item: "late_fee_first_fit" }],
-  ])("queues nothing for %s", async (_, body) => {
+    ["a price from tomorrow", { valid_from: "2026-09-27" }],
+    ["a price from a later day", { valid_from: "2026-10-01" }],
+  ])("queues nothing for %s, which the hourly check pushes on its day", async (_, body) => {
     expect(await setPrice(body, true)).toEqual([]);
   });
 });

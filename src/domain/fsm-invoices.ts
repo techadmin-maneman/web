@@ -31,18 +31,15 @@
 // discount and the total (docs/decisions/0108-discount-codes.md).
 
 import { rupees } from "@maneman/web-kit/money";
-import { STANDARD_TIER, type VisitType } from "../config/visit-types.ts";
+import type { VisitType } from "../config/visit-types.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
-import { indiaDate } from "../lib/india-time.ts";
 import { failureReason, type Logger } from "../log.ts";
-import { discounted } from "../policy/discount-codes.ts";
 import { invoiceHold, type InvoiceHold, type SoldVisit } from "../policy/prepayment.ts";
 import type { BooksProvider } from "../providers/books.ts";
 import type { FsmInvoice, FsmProvider } from "../providers/fsm.ts";
 import { isRefusal } from "../providers/provider-error.ts";
 import type { AlertOnce, ResolveAlert } from "./alerts.ts";
-import { codeOnVisit, priceAfterCode } from "./discount-code-uses.ts";
-import { priceOf, type Price } from "./price-book.ts";
+import { codeOff, listPrice, soldVisit } from "./books-invoices.ts";
 import { HOUR_MS } from "../lib/durations.ts";
 
 /** How many a pass bills at most. */
@@ -156,7 +153,7 @@ async function invoiceVisit(pass: Pass, visit: Visit): Promise<{ raised: boolean
 
   // A discount code entered on the booking comes off the visit's line before GST, so the invoice shows the price,
   // the discount and the total (docs/decisions/0108-discount-codes.md).
-  const code = await codeOff(db, visit);
+  const code = await codeOff(db, visit.id, await listPrice(db, visit));
   let total = invoice.total;
   if (code !== null && code.off > 0) {
     try {
@@ -188,21 +185,6 @@ async function invoiceVisit(pass: Pass, visit: Visit): Promise<{ raised: boolean
   return { raised: true, issued: true };
 }
 
-/**
- * What the visit's discount code takes off before GST, fixed now where it was not yet; null for a visit with no code,
- * or one whose price the book does not have, which the check below then holds.
- */
-async function codeOff(db: D1Database, visit: Visit): Promise<{ code: string; off: number } | null> {
-  const code = await codeOnVisit(db, visit.id);
-  if (code === null) return null;
-  if (code.amountOff !== null) return { code: code.code, off: code.amountOff };
-  const price = await listPrice(db, visit);
-  if (price === null) return null;
-  const after = await priceAfterCode(db, visit.id, price);
-  await db.batch(after.fix);
-  return { code: code.code, off: after.off };
-}
-
 /** Books would not take the code's discount on the draft: it is held, and ops told what to set before sending it. */
 async function tellUndiscounted(
   pass: Pass,
@@ -220,36 +202,6 @@ async function tellUndiscounted(
       "Set it on the visit's line in Books and send the invoice there: nothing here sends it.",
     link: linkTo(visit),
   });
-}
-
-/**
- * What the client was sold the visit for: what they paid for it, or, for a
- * visit no payment names, the price book's price on the day it happened, less
- * the discount code entered on it. And whether a referral credit paid for it,
- * by the ledger or by the hold that booked it.
- */
-async function soldVisit(db: D1Database, visit: Visit, off: number): Promise<SoldVisit> {
-  const row = await db
-    .prepare(
-      `SELECT
-         (SELECT SUM(amount) FROM payments
-           WHERE appointment_id = ?1 AND kind = 'visit' AND status IN ('captured', 'partially_refunded')) AS paid,
-         EXISTS (SELECT 1 FROM credit_ledger WHERE kind = 'redeem' AND source_kind = 'appointment' AND source_id = ?1)
-           OR EXISTS (SELECT 1 FROM slot_holds WHERE appointment_id = ?1 AND use_credit = 1) AS with_credit`,
-    )
-    .bind(visit.id)
-    .first<{ paid: number | null; with_credit: number }>();
-  const paidWithCredit = row?.with_credit === 1;
-  const paid = row?.paid ?? null;
-  if (paid !== null) return { soldFor: paid, paidWithCredit };
-  const price = await listPrice(db, visit);
-  return { soldFor: price === null ? null : discounted(price, off).amount, paidWithCredit };
-}
-
-/** The price book's price for the visit's own service on the day it happened in India; null where there is none. */
-function listPrice(db: D1Database, visit: Visit): Promise<Price | null> {
-  if (visit.type === null || visit.window_start === null) return Promise.resolve(null);
-  return priceOf(db, visit.type, indiaDate(new Date(visit.window_start)), visit.tier ?? STANDARD_TIER);
 }
 
 /** The draft's alert, saying why it is held. It shares the draft's key, so a visit is told of once. */

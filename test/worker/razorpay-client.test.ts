@@ -140,6 +140,14 @@ describe("Razorpay: payment links", () => {
     });
   });
 
+  it("closes a link at the moment asked, in Unix seconds, where one is asked", async () => {
+    const { payments, calls } = razorpay({
+      [`${API}/payment_links`]: () => json({ id: "plink_9", short_url: "https://rzp.io/i/abc" }),
+    });
+    await payments.createPaymentLink({ ...LINK, closesAt: new Date("2026-09-22T06:30:00.000Z") });
+    expect(JSON.parse(calls[0]?.body ?? "")).toMatchObject({ expire_by: 1790058600 });
+  });
+
   it("names Razorpay's refusal as a refusal, so ops are told rather than the close sent again", async () => {
     const { payments } = razorpay({
       [`${API}/payment_links`]: () =>

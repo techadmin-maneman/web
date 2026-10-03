@@ -52,7 +52,8 @@ export function BookButton({
   if (kind === "first_fit" && !services.some((service) => service.type === "first_fit")) {
     return <p>{booking.firstFitNotYet}</p>;
   }
-  if (offline) {
+  // A sheet already open stays open when the connection drops, with its hold and any payment under way.
+  if (offline && !open) {
     return quiet ? (
       <button type="button" className={className} disabled>
         {words}

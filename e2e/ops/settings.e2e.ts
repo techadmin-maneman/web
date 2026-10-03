@@ -337,6 +337,15 @@ test.describe("the services and their prices", () => {
     await expect(page.getByLabel("GST", { exact: true })).toHaveValue("18");
   });
 
+  // MON-34: a new price once started from today, and changed what clients had been quoted that day.
+  test("starts a new price from tomorrow, and offers no earlier day", async ({ page }) => {
+    await open(page, "/prices");
+    await page.getByRole("button", { name: "Change the price of Service visit" }).click();
+    const from = page.getByLabel("Applies from");
+    await expect(from).toHaveValue("2027-09-22");
+    await expect(from).toHaveAttribute("min", "2027-09-22");
+  });
+
   test("shows the old price beside the new, and GST changing, before anything is sent", async ({ page }) => {
     let sent = 0;
     await open(page, "/prices", {
@@ -378,14 +387,14 @@ test.describe("the services and their prices", () => {
     await expect(page.getByRole("button", { name: "Check the change" })).toBeEnabled();
   });
 
-  test("says a price cannot be back-dated when the API refuses the date", async ({ page }) => {
+  test("says a price applies from tomorrow at the earliest when the API refuses the date", async ({ page }) => {
     await open(page, "/prices", {
       "POST /api/prices": fails(400, "invalid_request", ["valid_from"]),
     });
     await page.getByRole("button", { name: "Change the price of Service visit" }).click();
     await page.getByRole("button", { name: "Check the change" }).click();
     await page.getByRole("group", { name: "Check the change" }).getByRole("button", { name: "Set this price" }).click();
-    await expect(page.getByRole("alert")).toContainText("applies from today or a day after it");
+    await expect(page.getByRole("alert")).toContainText("applies from tomorrow at the earliest");
   });
 
   test("says why a price for a retired service is refused", async ({ page }) => {
