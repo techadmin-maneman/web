@@ -195,6 +195,8 @@ export function Consumables({ id }: { id: string }) {
   const { loaded, retry, refused, finish, back } = useStep(id, "consumables");
 
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} />;
+  if (loaded.state === "failed") {
+    return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} requestId={loaded.requestId} />;
+  }
   return <Counting job={loaded.value} refused={refused} onFinish={(body) => void finish(body)} onBack={back} />;
 }

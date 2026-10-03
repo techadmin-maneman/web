@@ -80,6 +80,8 @@ export const states = {
   loading: "Loading",
   failed: "We could not load this.",
   retry: "Try again",
+  /** The failed call's reference, to quote to the developers. */
+  ref: { label: "Ref", copy: "Copy", copied: "Copied" },
 } as const;
 
 export const dispatch = {
