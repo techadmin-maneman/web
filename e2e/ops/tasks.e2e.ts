@@ -11,9 +11,12 @@ import { answer, empty, fails, json, TASKS, TASKS_READ_ON, type OpsReply } from 
 
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
-async function open(page: Page, body: OpsReply<"/api/tasks"> = TASKS): Promise<void> {
+/** No alert open: "Needs a hand" draws nothing. */
+const NO_ALERTS: OpsReply<"/api/alerts"> = { count: 0, alerts: [] };
+
+async function open(page: Page, body: OpsReply<"/api/tasks"> = TASKS, alerts = NO_ALERTS): Promise<void> {
   await page.clock.setFixedTime(TASKS_READ_ON);
-  await answer(page, { "GET /api/tasks": json(body) });
+  await answer(page, { "GET /api/tasks": json(body), "GET /api/alerts": json(alerts) });
   await page.goto("/tasks");
   await expect(page.getByRole("heading", { level: 1, name: "Tasks" })).toBeVisible();
 }
@@ -480,13 +483,63 @@ test("says so when no queue holds anything", async ({ page }) => {
 
 test("says so when the list cannot be loaded, and loads it on Try again", async ({ page }) => {
   await page.clock.setFixedTime(TASKS_READ_ON);
-  await answer(page, { "GET /api/tasks": fails(503, "unavailable") });
+  await answer(page, { "GET /api/tasks": fails(503, "unavailable"), "GET /api/alerts": json(NO_ALERTS) });
   await page.goto("/tasks");
   await expect(page.getByRole("alert")).toContainText("We could not load this.");
 
   await answer(page, { "GET /api/tasks": json(TASKS) });
   await page.getByRole("button", { name: "Try again" }).click();
   await expect(page.getByRole("link", { name: "Kunal Mehta", exact: true })).toBeVisible();
+});
+
+// ADR 0067, "Alerts on Tasks": what ops were told of in the alert space waits here until it is put right.
+test("heads the board with the alerts that need a hand, and sends a failed message again", async ({ page }) => {
+  const alerts: OpsReply<"/api/alerts"> = {
+    count: 2,
+    alerts: [
+      {
+        id: "97000000-0000-4000-8000-000000000001",
+        kind: "message_failed",
+        message: "Message 98000000-0000-4000-8000-000000000001 (visit_confirmed) failed after 4 attempts: HTTP 503",
+        link: "/clients/22000000-0000-4000-8000-000000000007",
+        count: 1,
+        told_at: "2027-09-20T06:00:00.000Z",
+        last_seen_at: "2027-09-20T06:00:00.000Z",
+        send_again: true,
+      },
+      {
+        id: "97000000-0000-4000-8000-000000000002",
+        kind: "low_stock",
+        message: "Stock is low in the central store: 2 of base tape.",
+        link: "/stock",
+        count: 3,
+        told_at: "2027-09-21T06:00:00.000Z",
+        last_seen_at: "2027-09-21T09:00:00.000Z",
+        send_again: false,
+      },
+    ],
+  };
+  const sentAgain: string[] = [];
+  await open(page, TASKS, alerts);
+  await answer(page, {
+    "POST /api/alerts/{id}/send-again": (route) => {
+      sentAgain.push(new URL(route.request().url()).pathname);
+      return empty()(route);
+    },
+  });
+
+  const needsAHand = page.getByRole("region", { name: "Needs a hand" });
+  await expect(needsAHand.getByRole("listitem")).toHaveCount(2);
+  await expect(needsAHand.getByRole("listitem").first()).toContainText("A WhatsApp message did not go");
+  await expect(needsAHand.getByRole("listitem").nth(1)).toContainText("3 times since Tue 21 Sep");
+  await expect(needsAHand.getByRole("link", { name: "Open · Stock is low" })).toHaveAttribute("href", "/stock");
+  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+
+  await needsAHand.getByRole("button", { name: "Send again · A WhatsApp message did not go" }).click();
+  await expect(needsAHand.getByRole("listitem")).toHaveCount(1);
+  await expect(page.getByRole("heading", { level: 2, name: "Needs a hand" })).toBeFocused();
+  expect(sentAgain).toEqual(["/api/alerts/97000000-0000-4000-8000-000000000001/send-again"]);
 });
 
 test("meets WCAG 2.2 AA with a list, and with none", async ({ page }) => {

@@ -4,9 +4,12 @@
 
 import type { Logger } from "../log.ts";
 import { DELETION_DECIDED_WITHIN_DAYS, erasureRefusal, type ErasureRefusal } from "../policy/account-deletion.ts";
+import { deletionWaitingKey } from "../policy/alerts.ts";
+import { resolveAlertStatement, type AlertOnce } from "./alerts.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import { erasePerson, erasureBlockers, type ErasureBlockers, type ErasureEnv } from "./erasure.ts";
 import { DAY_MS } from "../lib/durations.ts";
+import { indiaDate } from "../lib/india-time.ts";
 
 export type DeletionState = "requested" | "done" | "rejected";
 
@@ -115,17 +118,19 @@ export async function decideDeletion(
       options.staff,
       options.reason,
     );
+  // A decided request needs nobody's hand any more.
+  const alertResolved = resolveAlertStatement(db, deletionWaitingKey(options.id), options.now);
   if (options.decision === "reject") {
-    await db.batch([audit, decided]);
+    await db.batch([audit, decided, alertResolved]);
     return { kind: "decided", personId };
   }
 
   const blockers = await erasureBlockers(db, personId);
   const refusal = erasureRefusal(blockers);
   if (refusal !== null) return { kind: "refused", refusal, blockers };
-  const erased = await erasePerson(env, personId, options.now, options.log, [audit, decided]);
+  const erased = await erasePerson(env, personId, options.now, options.log, [audit, decided, alertResolved]);
   // Erased already, by the operators' endpoint: the request is done all the same.
-  if (erased === null) await db.batch([audit, decided]);
+  if (erased === null) await db.batch([audit, decided, alertResolved]);
   return { kind: "decided", personId };
 }
 
@@ -133,25 +138,34 @@ export async function decideDeletion(
 const ALERT_AFTER_DAYS = 5;
 export const DELETION_ALERT_AFTER_MS = ALERT_AFTER_DAYS * DAY_MS;
 
-/** Alerts ops, once per request, about deletion requests nearing the end of their days. */
-export async function alertAgedDeletions(
-  db: D1Database,
-  now: Date,
-  alert: (message: string) => Promise<void>,
-): Promise<number> {
+/**
+ * Alerts ops, once per request, about each deletion request nearing the end of its days. The alert is kept, and waits
+ * on Tasks until the request is decided; a request is marked alerted only once its alert is.
+ */
+export async function alertAgedDeletions(db: D1Database, now: Date, alertOnce: AlertOnce): Promise<number> {
   const aged = await db
     .prepare(
-      `UPDATE deletion_requests SET alerted_at = ?2
-       WHERE state = 'requested' AND alerted_at IS NULL AND created_at < ?1 RETURNING id`,
+      `SELECT id, created_at FROM deletion_requests
+       WHERE state = 'requested' AND alerted_at IS NULL AND created_at < ?1 ORDER BY created_at`,
     )
-    .bind(new Date(now.getTime() - DELETION_ALERT_AFTER_MS).toISOString(), now.toISOString())
-    .all<{ id: string }>();
-  const count = aged.results.length;
-  if (count > 0) {
-    await alert(
-      `${String(count)} account deletion request(s) have waited ${String(ALERT_AFTER_DAYS)} days. Each must be ` +
-        `processed within ${String(DELETION_DECIDED_WITHIN_DAYS)} (ops console, deletion requests).`,
-    );
+    .bind(new Date(now.getTime() - DELETION_ALERT_AFTER_MS).toISOString())
+    .all<{ id: string; created_at: string }>();
+  for (const request of aged.results) {
+    await alertOnce({
+      key: deletionWaitingKey(request.id),
+      message:
+        `Deletion request ${request.id} has waited ${String(ALERT_AFTER_DAYS)} days. Decide it by ` +
+        `${decideBy(request.created_at)}, within ${String(DELETION_DECIDED_WITHIN_DAYS)} days of the request.`,
+      link: "/deletion-requests",
+    });
+    await db
+      .prepare("UPDATE deletion_requests SET alerted_at = ?2 WHERE id = ?1")
+      .bind(request.id, now.toISOString())
+      .run();
   }
-  return count;
+  return aged.results.length;
 }
+
+/** The day in India a request must be decided by: "2026-09-28". */
+const decideBy = (createdAt: string): string =>
+  indiaDate(new Date(Date.parse(createdAt) + DELETION_DECIDED_WITHIN_DAYS * DAY_MS));

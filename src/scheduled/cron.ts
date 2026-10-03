@@ -186,7 +186,7 @@ async function catalogueJob({ env, deps, config, log, budget }: CronContext): Pr
 }
 
 async function deletionAlertsJob({ env, deps }: CronContext): Promise<void> {
-  await alertAgedDeletions(env.DB, deps.now(), deps.alert);
+  await alertAgedDeletions(env.DB, deps.now(), deps.alertOnce);
 }
 
 /**

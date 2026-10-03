@@ -16,10 +16,11 @@
 // reached, or a reminder or arrival notice whose moment has passed.
 //
 // A transient failure is retried three times; then the message fails and an
-// alert names it. So does a message that throws on each of four deliveries,
-// such as one that cannot be composed. A bridge that cannot send at all leaves
-// the message queued: the sweeper sends it again once the bridge is open, and
-// fails it if it is still unsent a day on (src/scheduled/unsent-messages.ts).
+// alert names it, which ops may send again from Tasks. So does a message that
+// throws on each of four deliveries, such as one that cannot be composed. A
+// bridge that cannot send at all leaves the message queued: the sweeper sends
+// it again once the bridge is open, and fails it if it is still unsent a day on
+// (src/scheduled/unsent-messages.ts).
 
 import { z } from "zod";
 import { PUBLIC_ORIGIN } from "../config/environments.ts";
@@ -46,6 +47,7 @@ import {
   VISIT_MESSAGE_KINDS,
   type VisitMessageKind,
 } from "../domain/visit-messages.ts";
+import { messageFailedKey } from "../policy/alerts.ts";
 import { isStagingTestRecord } from "../policy/staging-test-records.ts";
 import type { SendResult } from "../providers/messaging.ts";
 import { scrubString, type Logger } from "../log.ts";
@@ -103,16 +105,32 @@ async function failAfterErrors(
     .prepare(
       `UPDATE outbound_messages SET state = 'failed', last_error = ?2, sending_at = NULL
        WHERE id = ?1 AND state = 'queued'
-       RETURNING kind`,
+       RETURNING kind, person_id`,
     )
     .bind(messageId, detail)
-    .first<{ kind: string }>();
+    .first<{ kind: string; person_id: string }>();
   if (failed === null) return {};
   log.error("message_failed", { attempts: MAX_SEND_ATTEMPTS, detail });
-  await deps.alert(
-    `Message ${messageId} (${failed.kind}) failed after ${String(MAX_SEND_ATTEMPTS)} attempts: ${detail}`,
-  );
+  await alertFailed(deps, {
+    messageId,
+    kind: failed.kind,
+    personId: failed.person_id,
+    attempts: MAX_SEND_ATTEMPTS,
+    detail,
+  });
   return {};
+}
+
+/** Ops are told of a message that failed for good, and may send it again from Tasks. */
+async function alertFailed(
+  deps: Dependencies,
+  failed: { messageId: string; kind: string; personId: string; attempts: number; detail: string },
+): Promise<void> {
+  await deps.alertOnce({
+    key: messageFailedKey(failed.messageId),
+    message: `Message ${failed.messageId} (${failed.kind}) failed after ${String(failed.attempts)} attempts: ${failed.detail}`,
+    link: `/clients/${failed.personId}`,
+  });
 }
 
 interface MessageRow {
@@ -313,7 +331,7 @@ export async function sendMessage(
     .bind(messageId, detail)
     .run();
   log.error("message_failed", { attempts: claim.attempts, detail });
-  await deps.alert(`Message ${messageId} (${row.kind}) failed after ${String(claim.attempts)} attempts: ${detail}`);
+  await alertFailed(deps, { messageId, kind: row.kind, personId: row.person_id, attempts: claim.attempts, detail });
   return {};
 }
 

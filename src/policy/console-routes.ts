@@ -5,6 +5,7 @@
 // record is narrowed to the caller's cities, a grant of one city or zone must not open it everywhere.
 
 import { can, DEPARTMENTS, NATIONAL, type Caller, type Department, type Level, type ZoneOfCity } from "./access.ts";
+import { alertDepartment } from "./alerts.ts";
 import type { TaskGroup } from "./tasks.ts";
 
 /** A route that keeps to the caller's own departments, as Tasks lists each department its own groups. */
@@ -41,6 +42,10 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "GET /api/tasks": inOwnDepartments("view"),
   "PUT /api/tasks/{group}/{id}/owner": inOwnDepartments("act"),
   "POST /api/tasks/{group}/{id}/close": need("operations", "act"),
+  // So with the alerts on Tasks' "Needs a hand": each department sees and acts on its own kinds (alertNeed).
+  "GET /api/alerts": inOwnDepartments("view"),
+  "POST /api/alerts/{id}/resolve": inOwnDepartments("act"),
+  "POST /api/alerts/{id}/send-again": inOwnDepartments("act"),
   "POST /api/held-bookings/{id}/retry": need("operations", "act"),
   "POST /api/held-bookings/{id}/stop": need("operations", "act"),
   "POST /api/held-bookings/{id}/link": need("operations", "act"),
@@ -172,6 +177,9 @@ export const TASK_DEPARTMENTS: Readonly<Record<TaskGroup, Department>> = {
 
 /** What seeing a group of tasks, or taking a task of it, asks. */
 export const taskNeed = (group: TaskGroup, level: Level): RouteNeed => need(TASK_DEPARTMENTS[group], level);
+
+/** What seeing a kind of alert, or acting on one, asks: the department its kind belongs to (src/policy/alerts.ts). */
+export const alertNeed = (kind: string, level: Level): RouteNeed => need(alertDepartment(kind), level);
 
 /** Whether the caller's grants reach what a route asks: over any place if it keeps to their own, nationally if not. */
 export function meetsNeed(caller: Caller, need: RouteNeed, zoneOf: ZoneOfCity): boolean {
