@@ -6,7 +6,7 @@ import {
   DEPARTMENTS,
   LEVELS,
   NATIONAL,
-  type Caller,
+  type CallerAccess,
   type Department,
   type Grant,
   type Level,
@@ -16,13 +16,6 @@ import {
 } from "../policy/access.ts";
 import type { AccessIdentity } from "../providers/cloudflare-access.ts";
 import { auditStatement, type AuditActor } from "./audit.ts";
-
-/** What one call is judged by: whether the list is enforced, who the caller is to it, and each city's zone. */
-export interface CallerAccess {
-  readonly enforced: boolean;
-  readonly caller: Caller;
-  readonly zoneOf: ZoneOfCity;
-}
 
 export interface StaffMember extends StaffEntry {
   readonly email: string;

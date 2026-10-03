@@ -138,6 +138,11 @@ const ClientVisitSchema = VisitSummarySchema.extend({
   price_open: z.boolean().openapi({
     description: "Not yet paid for, linked or invoiced, so a discount code may still be entered on it or taken off.",
   }),
+  requested_code: z.union([z.string(), z.null()]).openapi({
+    description:
+      "For a consultation and fit in one visit, the code the client typed on /book for it, honoured as it stood " +
+      "then when entered on the visit; null for none.",
+  }),
 }).openapi("ClientVisit");
 
 /**
@@ -556,6 +561,7 @@ export function registerOpsClients(app: App): void {
         closed_without_follow_up: closings.get(visit.id) ?? null,
         discount_code: codes.get(visit.id)?.code ?? null,
         price_open: codes.get(visit.id)?.open ?? false,
+        requested_code: codes.get(visit.id)?.requested ?? null,
       }));
 
     return c.json(

@@ -51,6 +51,7 @@ export const RECORD = {
         closed_without_follow_up: null,
         discount_code: null,
         price_open: false,
+        requested_code: null,
       },
     ],
     past: [
@@ -71,6 +72,7 @@ export const RECORD = {
         closed_without_follow_up: null,
         discount_code: null,
         price_open: false,
+        requested_code: null,
       },
     ],
   },

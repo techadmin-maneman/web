@@ -30,6 +30,7 @@ After every deploy, both workflows compare the triggers that are live with every
 
 - Triggers change rarely: M2 adds a cron and a consumer, and M3 adds the `render` and `messaging` consumers. Each is one command per environment.
 - Until an operator runs it, the new consumer does not run. The smoke suite does not cover queue consumers. The M2 staging proof does, since a lead only reaches Zoho through the consumer.
+- 4 October 2026: the cron moved from every five minutes to every minute (ADR 0009, "the cron's CPU time"). Until the new trigger is attached the old one fires, and the code runs every job on it, as it did before; the deploy's trigger check names the difference.
 
 ## Checking what is live (25 September 2026)
 

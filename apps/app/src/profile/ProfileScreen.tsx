@@ -57,7 +57,7 @@ export function ProfileScreen({ onChanged }: { onChanged: () => void }) {
         />
         <SupportCard />
         <DataCard />
-        <DeletionCard deletion={loaded.deletion} onRequested={() => void load()} />
+        <DeletionCard deletion={loaded.deletion} rejected={loaded.deletion_rejected} onRequested={() => void load()} />
         <LogOut className={styles.logout} />
       </div>
     );
