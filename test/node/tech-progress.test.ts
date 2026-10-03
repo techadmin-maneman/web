@@ -141,6 +141,14 @@ describe("the no-show wait", () => {
     expect(theWait(job(), [tapped], null)).toEqual({ endsAt: tapped.queued_at + 15 * 60_000, confirmed: false });
   });
 
+  it("counts from the booked start for a tap still on the phone that came before it", () => {
+    const early = queued("check_in", { queued_at: Date.parse("2030-09-19T03:20:00.000Z") });
+    expect(theWait(job(), [early], null)).toEqual({
+      endsAt: Date.parse("2030-09-19T04:15:00.000Z"),
+      confirmed: false,
+    });
+  });
+
   it("has no end before any check-in, and none from one that failed", () => {
     expect(theWait(job(), [], null)).toEqual({ endsAt: null, confirmed: false });
     expect(theWait(job(), [], { ...answered, passed: false, wait_ends_at: null })).toEqual({

@@ -97,7 +97,8 @@ export interface Wait {
 /**
  * The no-show wait: the end the check-in's answer gave, else the one the card
  * carries (a phone that lost its copy still knows), else, for a check-in still
- * on the phone, the wait counted from the tap.
+ * on the phone, the wait counted from the tap, or from the booked start for a
+ * tap before it.
  */
 export function theWait(job: Job, queued: readonly Queued[], arrival: CheckIn | null): Wait {
   const answered = arrival?.passed === true ? arrival.wait_ends_at : null;
@@ -108,5 +109,6 @@ export function theWait(job: Job, queued: readonly Queued[], arrival: CheckIn | 
     (event) => event.job_id === job.id && event.kind === "check_in" && event.state === "waiting",
   );
   if (tapped === undefined) return { endsAt: null, confirmed: false };
-  return { endsAt: tapped.queued_at + job.no_show_wait_min * 60_000, confirmed: false };
+  const startsAt = Math.max(tapped.queued_at, Date.parse(job.starts_at));
+  return { endsAt: startsAt + job.no_show_wait_min * 60_000, confirmed: false };
 }
