@@ -40,7 +40,6 @@ const SETTINGS = {
   RESULT_RETENTION_DAYS: "30",
   AILAB_CREDIT_FLOOR: "200",
   RESULT_SIGNING_KEY: "a-signing-key-of-at-least-thirty-two-characters",
-  ERASURE_SECRET: "an-erasure-secret-of-at-least-thirty-two-characters",
   MESSAGING_ENABLED: "false",
   ACCESS_TEAM_DOMAIN: "summer-math-0275.cloudflareaccess.com",
   ACCESS_OPS_AUD: "ops-audience-tag",
@@ -158,14 +157,6 @@ describe("validateStaticConfig: settings and secrets", () => {
     expect(problemsOf({ ENVIRONMENT: "local", ...STUBS, ...rest })).toEqual([
       "TURNSTILE_SECRET is not set",
       "IP_HASH_SALT is not set",
-    ]);
-  });
-
-  it("requires an erasure secret of at least 32 characters in every environment", () => {
-    const { ERASURE_SECRET: _e, ...rest } = SETTINGS;
-    expect(problemsOf({ ENVIRONMENT: "local", ...STUBS, ...rest })).toEqual(["ERASURE_SECRET is not set"]);
-    expect(problemsOf({ ENVIRONMENT: "local", ...STUBS, ...SETTINGS, ERASURE_SECRET: "short" })).toEqual([
-      "ERASURE_SECRET must be at least 32 characters",
     ]);
   });
 

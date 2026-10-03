@@ -81,6 +81,7 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/number-changes/{id}/decision": need("customer_care", "act"),
   "GET /api/deletion-requests": need("customer_care", "view"),
   "POST /api/deletion-requests/{id}/decision": need("customer_care", "manage"),
+  "POST /api/clients/{id}/erasure": need("customer_care", "manage"),
 
   // Finance: payments, refunds, no-show charges and their disputes, discount codes and prices. Waiving a charge and
   // refunding a disputed one ask MANAGE inside their routes (WAIVING_A_NO_SHOW, REFUNDING_A_DISPUTE). The price book

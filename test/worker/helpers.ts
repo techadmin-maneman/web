@@ -42,7 +42,6 @@ export const LOCAL_SETTINGS: Settings = {
   leadWebhookUrl: null,
   heartbeatUrl: null,
   analyticsToken: null,
-  erasureSecret: "test-erasure-secret-that-is-long-enough",
   zoho: null,
   zohoFsm: null,
   zohoBooks: null,
@@ -92,7 +91,7 @@ export const LOCAL_CONFIG: StaticConfig = {
   settings: LOCAL_SETTINGS,
 };
 
-/** Erases whoever has this number, as POST /api/erasure does, without the route's checks. */
+/** Erases whoever has this number, as ops do from their page, without the route's checks or queues. */
 export async function eraseByMobile(mobileE164: string, now: Date = NOW): Promise<ErasureSummary | null> {
   const personId = await personWithMobile(env.DB, mobileE164);
   return personId === null ? null : erasePerson(env, personId, now, createLogger());

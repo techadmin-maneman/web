@@ -192,8 +192,6 @@ export interface Settings {
    * the daily free allowances (src/scheduled/daily-allowances.ts). Optional; without it nobody is told.
    */
   readonly analyticsToken: string | null;
-  /** The operators' secret for POST /api/erasure (docs/decisions/0019-erasure.md). */
-  readonly erasureSecret: string;
   /** Present when CRM_PROVIDER is "zoho". */
   readonly zoho: ZohoSettings | null;
   /** Present when FSM_PROVIDER is "zoho". */
@@ -400,7 +398,6 @@ export function readSettings(
     alertWebhookUrl: alertWebhookUrl === "" ? null : alertWebhookUrl,
     leadWebhookUrl: leadWebhookUrl ?? (alertWebhookUrl === "" ? null : alertWebhookUrl),
     ...watchers,
-    erasureSecret: read.key("ERASURE_SECRET"),
     ...zohoClients,
     razorpay,
     access,

@@ -30,7 +30,7 @@ The audit of 24 September 2026 (findings LIFE-01, ARCH-02, OPS-02) found three w
 The answer names each visit and payment. A payment on a visit follows its visit: a live one is refused above, a done one was earned, and a cancelled one was refunded or kept under the cancellation rules (ADR 0046).
 
 - In the ops console, the deletion decision refuses, the request keeps waiting, and the console says which of the two it is.
-- `POST /api/erasure` refuses the same way, unless the operator sends `override_open_bookings: true` (the script's `--override-open-bookings`). The same-day promise can then still be kept. The Worker logs `erasure_override` with the counts, and the runbook's "Erasure within the day" has ops cancel and refund by hand that day. A refund needs none of the person's details.
+- Erasing from a person's page in the console refuses the same way, unless ops say they will cancel and refund by hand today (`override_open_bookings: true`). The same-day promise can then still be kept. The audit entry records it with the counts, the Worker logs `erasure_override`, and the runbook's "Erasure within the day" has ops cancel and refund by hand that day. A refund needs none of the person's details. (Until 4 October 2026 this was the operators' `POST /api/erasure` and its script.)
 
 The rule lives in `src/policy/account-deletion.ts`. It is ours, not the prompt's.
 

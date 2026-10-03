@@ -27,9 +27,10 @@ export const ERROR_CODES = [
   "whatsapp_unavailable",
   // A site form that acts on a number only once its WhatsApp code was entered: the one visit, and the try-on's gate.
   "number_not_proved",
-  // Erasure (docs/decisions/0019-erasure.md), and what it waits for: a visit still booked, or a payment
-  // held with no visit behind it (docs/decisions/0066-erasure-all-or-nothing.md).
+  // A webhook whose token or signature does not match.
   "unauthorized",
+  // What an erasure waits for: a visit still booked, or a payment held with no visit behind it
+  // (docs/decisions/0066-erasure-all-or-nothing.md).
   "visit_booked",
   "payment_held",
   // Phase 2 surfaces: a write from another page's origin (docs/decisions/0026-hosts-and-surfaces.md).
