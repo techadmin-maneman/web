@@ -18,7 +18,6 @@ import type { App } from "../http/context.ts";
 import { auditStatementIfWritten, type AuditEntry } from "../domain/audit.ts";
 import { lastRejectedDeletion, openDeletion, requestDeletion } from "../domain/deletion.ts";
 import {
-  DECISION_SHOWN_DAYS,
   lastDecidedChange,
   openNumberChange,
   startNumberChange,
@@ -39,6 +38,7 @@ import { visitorOf } from "../http/visitor.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import { APP_SWITCH_SOURCES, CONSENT_PURPOSES, screenAsks } from "../policy/consents.ts";
+import { DECISION_SHOWN_DAYS } from "../policy/decision-reasons.ts";
 import { revokeCard } from "../domain/referral-cards.ts";
 
 /** Number changes a client may start in a day. */

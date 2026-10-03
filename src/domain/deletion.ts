@@ -5,10 +5,10 @@
 
 import type { Logger } from "../log.ts";
 import { DELETION_DECIDED_WITHIN_DAYS, erasureRefusal, type ErasureRefusal } from "../policy/account-deletion.ts";
+import { DECISION_SHOWN_DAYS } from "../policy/decision-reasons.ts";
 import type { OutboundMessage } from "../providers/messaging.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import { erasePerson, erasureBlockers, type ErasureBlockers, type ErasureEnv } from "./erasure.ts";
-import { DECISION_SHOWN_DAYS } from "./number-change.ts";
 import { liveContact } from "./profile.ts";
 import type { Composed } from "./visit-messages.ts";
 import { DAY_MS } from "../lib/durations.ts";
