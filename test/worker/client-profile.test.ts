@@ -193,7 +193,7 @@ describe("PATCH /api/profile/address", () => {
     expect(await booksChangedAt()).toBeNull();
 
     client = appFor("local", deps, {}, "client", PROVIDERS_FOR.ours);
-    queues = { CRM_QUEUE: fakeQueue(), FSM_QUEUE: fakeQueue() };
+    queues = { CRM_QUEUE: fakeQueue(), FSM_QUEUE: fakeQueue(), MESSAGE_QUEUE: fakeQueue() };
     await send(client, "PATCH", "/api/profile/address", { ...address, line1: "Silver Oaks" });
     expect(contactSyncs()).toEqual({
       crm: [{ update_person_id: "p1", request_id: expect.any(String) as string }],
