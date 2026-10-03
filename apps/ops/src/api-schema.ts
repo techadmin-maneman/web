@@ -6352,6 +6352,12 @@ export interface components {
             retries_end: string;
             /** @description Still tried every hour: inside its tries, and its visit to come. */
             retrying: boolean;
+            /** @description The discount code the client booked with (docs/decisions/0108-discount-codes.md). */
+            discount_code: {
+                code: string;
+                /** @description In paise before GST; null until the visit's price is known. */
+                amount_off: number | null;
+            } | null;
         };
         ClientPhotos: {
             visits: {

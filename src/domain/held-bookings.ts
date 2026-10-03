@@ -185,6 +185,14 @@ export interface HeldBooking {
   readonly retriesEnd: string;
   /** Whether the cron still tries it: inside its retries, its visit still to come, and ops have not stopped them. */
   readonly retrying: boolean;
+  /** The discount code the client booked with; null for none. */
+  readonly discountCode: HeldCode | null;
+}
+
+/** A held booking's discount code, and what it takes off in paise before GST: null until the price is known. */
+interface HeldCode {
+  readonly code: string;
+  readonly amountOff: number | null;
 }
 
 interface HeldRow {
@@ -202,7 +210,12 @@ interface HeldRow {
   fsm_refusal: string | null;
   queued_at: string;
   paid: number | null;
+  code: string | null;
+  code_amount_off: number | null;
 }
+
+const codeOf = (row: HeldRow): HeldCode | null =>
+  row.code === null ? null : { code: row.code, amountOff: row.code_amount_off };
 
 /** The client's bookings held for ops, the soonest visit first. */
 export async function heldBookingsOf(
@@ -216,8 +229,11 @@ export async function heldBookingsOf(
       `SELECT h.id, h.type, h.tier, h.minutes, s.name AS service_name, h.date, h.window_label, h.start_unit,
               h.use_credit, h.move_kind, h.fsm_held_at, h.fsm_refusal, h.queued_at,
               (SELECT p.amount FROM payments p WHERE p.razorpay_order_id = h.razorpay_order_id AND p.status = 'captured'
-                ORDER BY p.created_at LIMIT 1) AS paid
+                ORDER BY p.created_at LIMIT 1) AS paid,
+              c.code, u.amount_off AS code_amount_off
        FROM slot_holds h LEFT JOIN services s ON s.kind = h.type AND s.tier = h.tier
+       LEFT JOIN discount_code_uses u ON u.hold_id = h.id AND u.removed_at IS NULL
+       LEFT JOIN discount_codes c ON c.id = u.code_id
        WHERE h.person_id = ?1 AND h.state = 'held' AND h.confirmed_at IS NOT NULL AND h.fsm_held_at IS NOT NULL
        ORDER BY h.date, h.start_unit`,
     )
@@ -241,6 +257,7 @@ export async function heldBookingsOf(
       refusal: row.fsm_refusal,
       retriesEnd: ends.toISOString(),
       retrying: now < ends && now < start && !triesStopped(new Date(row.queued_at)),
+      discountCode: codeOf(row),
     };
   });
 }

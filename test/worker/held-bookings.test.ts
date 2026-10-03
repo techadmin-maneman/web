@@ -1422,6 +1422,7 @@ describe("where it waits for ops, and what the client sees meanwhile", () => {
         refusal: "Zoho 400 INVALID_DATA",
         retries_end: afterHeld(24 * HOUR).toISOString(),
         retrying: true,
+        discount_code: null,
       },
     ]);
   });
