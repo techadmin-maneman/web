@@ -10,16 +10,17 @@ import type { FieldRecord } from "../../src/config/field-record.ts";
 import { confirmBooking, startBooking } from "../../src/domain/bookings.ts";
 import { paymentEntries, paymentEntry } from "../../src/domain/client-payments.ts";
 import { grantCredits } from "../../src/domain/credits.ts";
-import { removeFromHold } from "../../src/domain/discount-code-holds.ts";
+import { codeOnHold, removeFromHold } from "../../src/domain/discount-code-holds.ts";
 import { priceAfterCode, removeFromVisit } from "../../src/domain/discount-code-uses.ts";
 import { holdForFsm } from "../../src/domain/held-bookings.ts";
 import { composeVisitMessage } from "../../src/domain/visit-messages.ts";
 import { listCodes, makeCodes, type NewCodes } from "../../src/domain/discount-codes.ts";
+import { offeredProducts } from "../../src/domain/services.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { outstandingTasks } from "../../src/domain/tasks.ts";
 import { TASK_SLA_HOURS } from "../../src/policy/tasks.ts";
 import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
-import { createStubPayments, type PaymentsProvider } from "../../src/providers/payments.ts";
+import { createStubPayments, type PaymentsProvider, type StubPayments } from "../../src/providers/payments.ts";
 import {
   appFor,
   captureLogs,
@@ -239,16 +240,97 @@ describe("the client, at the app's pay step", () => {
     ]);
   });
 
-  it("is refused once Checkout has its order, so the order and the price never part", async () => {
-    await make();
-    await make({ code: "FVEPC", value: 5 });
-    const hold = await heldService(PERSON);
-    await enter(PERSON, hold.id, "TENPC");
-    await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: hold.id } });
-    const removing = await call(PERSON, `/api/holds/${hold.id}/discount-code`, { method: "DELETE" });
-    expect(await removing.json()).toMatchObject({ error: { code: "price_settled" } });
-    expect(removing.status).toBe(409);
-    expect((await call(PERSON, `/api/holds/${hold.id}`)).status).toBe(200);
+  describe("once Checkout has its order", () => {
+    let payments: StubPayments;
+
+    /** The client's app, with Razorpay as one stub throughout, so what it holds of an order carries over. */
+    const withRazorpay = (path: string, init: { method: string; body?: object }) =>
+      request(
+        appFor("local", fakeDependencies({ payments }), {}, "client"),
+        path,
+        {
+          method: init.method,
+          headers: {
+            Cookie: cookies.get(PERSON) ?? "",
+            "Content-Type": "application/json",
+            Origin: "https://maneman.test",
+          },
+          ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
+        },
+        { FSM_QUEUE: fakeQueue() },
+      );
+    const pay = async (holdId: string) => {
+      const started = await withRazorpay("/api/bookings", { method: "POST", body: { hold_id: holdId } });
+      return (await started.json<{ checkout: { order_id: string; amount: number } }>()).checkout;
+    };
+    const orderOf = (holdId: string) =>
+      env.DB.prepare("SELECT razorpay_order_id FROM slot_holds WHERE id = ?1").bind(holdId).first("razorpay_order_id");
+
+    beforeEach(() => {
+      payments = createStubPayments();
+    });
+
+    // MON-48: a client who closed Checkout without paying had to give up their hold to use a code.
+    it("takes a code after Checkout was closed unpaid, and the next Pay makes an order for what is left", async () => {
+      await make();
+      const hold = await heldService(PERSON);
+      const first = await pay(hold.id);
+      expect(first.amount).toBe(200_000);
+
+      const entered = await withRazorpay(`/api/holds/${hold.id}/discount-code`, {
+        method: "POST",
+        body: { code: "TENPC" },
+      });
+      expect(entered.status).toBe(200);
+      expect(await orderOf(hold.id)).toBeNull();
+
+      const second = await pay(hold.id);
+      expect(second.amount).toBe(180_000);
+      expect(second.order_id).not.toBe(first.order_id);
+      expect(payments.made.orders.map((order) => order.amount)).toEqual([200_000, 180_000]);
+    });
+
+    it("takes a code off after a payment on the order failed, and makes the order again at the full price", async () => {
+      await make();
+      const hold = await heldService(PERSON);
+      await enter(PERSON, hold.id, "TENPC");
+      const first = await pay(hold.id);
+      payments.paymentsOn.set(first.order_id, ["failed"]);
+
+      const removed = await withRazorpay(`/api/holds/${hold.id}/discount-code`, { method: "DELETE" });
+      expect(removed.status).toBe(200);
+      expect((await pay(hold.id)).amount).toBe(200_000);
+    });
+
+    it("is refused while a payment on the order may still go through, so the order and the price never part", async () => {
+      await make();
+      await make({ code: "FVEPC", value: 5 });
+      const hold = await heldService(PERSON);
+      await enter(PERSON, hold.id, "TENPC");
+      const first = await pay(hold.id);
+      for (const statuses of [["created"], ["failed", "authorized"], ["captured"]]) {
+        payments.paymentsOn.set(first.order_id, statuses);
+        const removing = await withRazorpay(`/api/holds/${hold.id}/discount-code`, { method: "DELETE" });
+        expect(removing.status).toBe(409);
+        expect(await removing.json()).toMatchObject({ error: { code: "price_settled" } });
+      }
+      expect(await orderOf(hold.id)).toBe(first.order_id);
+      expect((await uses()).results).toEqual([expect.objectContaining({ amount_off: 20_000, removed: 0 })]);
+    });
+
+    it("is refused when Razorpay cannot say what was paid on the order", async () => {
+      await make();
+      const hold = await heldService(PERSON);
+      const first = await pay(hold.id);
+      payments = { ...payments, orderPayments: () => Promise.reject(new Error("Razorpay 500 SERVER_ERROR")) };
+
+      const entered = await withRazorpay(`/api/holds/${hold.id}/discount-code`, {
+        method: "POST",
+        body: { code: "TENPC" },
+      });
+      expect(entered.status).toBe(409);
+      expect(await orderOf(hold.id)).toBe(first.order_id);
+    });
   });
 
   it("is never taken on a visit a referral credit pays for", async () => {
@@ -340,7 +422,7 @@ describe("the client, at the app's pay step", () => {
         const made = await stub.createOrder(order);
         if (first) {
           first = false;
-          await removeFromHold(env.DB, { holdId: hold.id, personId: PERSON }, NOW);
+          await removeFromHold(env.DB, stub, { holdId: hold.id, personId: PERSON }, NOW);
         }
         return made;
       },
@@ -424,7 +506,7 @@ describe("the client, at the app's pay step", () => {
     await make();
     const hold = await heldService(PERSON);
     await enter(PERSON, hold.id, "TENPC");
-    await removeFromHold(env.DB, { holdId: hold.id, personId: PERSON }, NOW);
+    await removeFromHold(env.DB, createStubPayments(), { holdId: hold.id, personId: PERSON }, NOW);
     await paidFor(hold.id);
     await holdForFsm(env.DB, hold.id, NOW, "Zoho 400 INVALID_DATA");
     const record = await clientRecord(PERSON);
@@ -660,6 +742,122 @@ describe("the site's form, for a consultation and fit in one visit", () => {
     expect(tasks.filter((task) => task.group === "consultation_request")).toMatchObject([
       { detail: "2026-09-23 morning one_visit TENPC" },
     ]);
+  });
+
+  describe("a code kept on the request while booking is off, which ops book the one visit from", () => {
+    const TOMORROW = at(24 * 60);
+
+    /** Ops book the one visit the request asked for, from the console, with the code they typed. */
+    const opsBook = async (personId: string, code: string | undefined, record: FieldRecord = "ours") => {
+      const fsm = record === "ours" ? { fsm: fsmSwitchedOff() } : {};
+      const deps = fakeDependencies({ now: () => TOMORROW, ...fsm });
+      const [product] = await offeredProducts(env.DB, "2026-09-23");
+      return request(
+        appFor("local", deps, {}, "ops", PROVIDERS_FOR[record]),
+        "/api/visits",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Origin: "https://maneman.test" },
+          body: JSON.stringify({
+            client: personId,
+            kind: "first_fit",
+            tier: product?.tier,
+            one_visit: true,
+            date: "2026-09-23",
+            window: "morning",
+            ...(code === undefined ? {} : { code }),
+          }),
+        },
+        { FSM_QUEUE: fakeQueue(), MESSAGE_QUEUE: fakeQueue() },
+      );
+    };
+
+    /** The client's one visit, asked for on /book with the code while booking is off. */
+    async function requested(code: string, mobile = "9810000002") {
+      const answer = await book({ mobile, discount_code: code }, { selfServeBooking: false });
+      expect(await answer.json()).toMatchObject({ state: "requested" });
+      const personId = await env.DB.prepare("SELECT id FROM people WHERE mobile_e164 = ?1")
+        .bind(`+91${mobile}`)
+        .first<string>("id");
+      return personId ?? "";
+    }
+
+    const auditDetail = async () =>
+      JSON.parse(
+        (await env.DB.prepare("SELECT detail FROM audit_log WHERE action = 'visit.book'").first<string>("detail")) ??
+          "{}",
+      ) as Record<string, string>;
+
+    // MON-23: the code was judged again when ops booked the visit, and refused once it had expired meanwhile.
+    it("books it with the code though its last day has passed since the client typed it", async () => {
+      await make({ expiresOn: "2026-09-21" });
+      const personId = await requested("TENPC");
+
+      const answer = await opsBook(personId, "tenpc");
+      expect(answer.status).toBe(201);
+      expect(await answer.json()).toMatchObject({ outcome: "booked" });
+      const record = await clientRecord(personId);
+      expect(record.visits.upcoming).toMatchObject([{ discount_code: { code: "TENPC", given_by: "ops" } }]);
+      expect(await auditDetail()).toMatchObject({ code: "TENPC", code_typed_at: NOW.toISOString() });
+    });
+
+    it("books it with the code though ops switched the code off since, on FSM's path too", async () => {
+      await make();
+      const personId = await requested("TENPC");
+      await env.DB.prepare("UPDATE discount_codes SET switched_off_at = ?1, switched_off_by = 'ops@localhost'")
+        .bind(at(60).toISOString())
+        .run();
+
+      const answer = await opsBook(personId, "TENPC", "fsm");
+      expect(answer.status).toBe(201);
+      const { hold_id: holdId } = await answer.json<{ hold_id: string }>();
+      expect(await codeOnHold(env.DB, holdId)).toMatchObject({ code: "TENPC", amountOff: null });
+    });
+
+    it("judges a code the client did not give on /book as it stands now", async () => {
+      await make();
+      await make({ code: "OLDPC", expiresOn: "2026-09-21" });
+      const personId = await requested("TENPC");
+
+      const answer = await opsBook(personId, "OLDPC");
+      expect(answer.status).toBe(422);
+      expect(await answer.json()).toMatchObject({ error: { code: "code_not_applicable" } });
+    });
+
+    // Typing it kept no use, so a code whose last use went to another booking meanwhile has none left for this one.
+    it("tells ops the code no longer applies once another booking took its last use, and holds nothing", async () => {
+      await make({ code: "UNQ5", maxUses: 1, oncePerClient: false });
+      const personId = await requested("UNQ5");
+      expect((await book({ mobile: "9810000003", discount_code: "UNQ5" })).status).toBe(201);
+
+      const answer = await opsBook(personId, "UNQ5");
+      expect(answer.status).toBe(422);
+      expect(await answer.json()).toMatchObject({ error: { code: "code_not_applicable" } });
+      const held = await env.DB.prepare("SELECT COUNT(*) AS n FROM slot_holds WHERE person_id = ?1 AND state = 'held'")
+        .bind(personId)
+        .first("n");
+      expect(held).toBe(0);
+    });
+
+    it("shows ops the code on the visit booked without it, and takes it there as it stood when typed", async () => {
+      await make({ expiresOn: "2026-09-21" });
+      const personId = await requested("TENPC");
+      const booked = await (await opsBook(personId, undefined)).json<{ visit_id: string }>();
+
+      const record = await clientRecord(personId);
+      expect(record.visits.upcoming).toMatchObject([{ discount_code: null, requested_code: "TENPC" }]);
+      const entered = await request(
+        appFor("local", fakeDependencies({ now: () => TOMORROW }), {}, "ops"),
+        `/api/visits/${booked.visit_id}/discount-code`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Origin: "https://maneman.test" },
+          body: JSON.stringify({ code: "TENPC" }),
+        },
+      );
+      expect(entered.status).toBe(200);
+      expect(await entered.json()).toMatchObject({ code: "TENPC", amount_off: null, given_by: "ops" });
+    });
   });
 
   it("refuses a single-use code another client's booking already stands on", async () => {

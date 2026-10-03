@@ -1329,7 +1329,7 @@ Razorpay's webhook: payments and refunds
 }
 ```
 
-**409**: not_ready: a refund for a payment not yet recorded; Razorpay retries it
+**409**: not_ready: a refund of a payment not yet recorded, whose event does not carry it; Razorpay retries it
 
 ```json
 {
@@ -1404,6 +1404,7 @@ Razorpay's webhook: payments and refunds
             "in_progress",
             "too_early_to_close",
             "too_early_to_arrive",
+            "already_closed",
             "no_service_area",
             "service_exists",
             "last_of_kind",

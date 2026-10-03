@@ -340,6 +340,25 @@ describe("Zoho record and note contents", () => {
     });
   });
 
+  // MON-23: while booking is off, the lead carried neither the one visit nor the code given for it.
+  describe("a consultation and fit in one visit, with a discount code", () => {
+    const oneVisit = crmLead({ firstChoiceWindow: null, plan: "one_visit", discountCode: "TENPC" });
+
+    it("says both in the record's Description", () => {
+      expect(recordFor(oneVisit, "New", true).Description).toBe(
+        "Consultation and fit in one visit. Discount code TENPC.",
+      );
+      expect(recordFor(crmLead({ plan: "consultation" }), "New", true).Description).toBe("Consultation.");
+      expect(recordFor(crmLead(), "New", true)).not.toHaveProperty("Description");
+    });
+
+    it("notes the plan on a record the CRM already has, and never the code, which an erasure would keep", () => {
+      expect(noteFor(oneVisit).content).toBe(
+        "Asked for a visit in Gurgaon, proposed 2026-09-23. Consultation and fit in one visit.",
+      );
+    });
+  });
+
   it("writes notes without personal data", () => {
     for (const source of ["form", "waitlist", "tryon"] as const) {
       const note = JSON.stringify(noteFor(crmLead({ source })));
@@ -419,7 +438,7 @@ describe("Zoho: erasing a person", () => {
       "POST /crm/v8/Leads/zoho-9/Notes",
     ]);
     expect(bodyOf(calls[1])).toEqual({
-      data: [{ Last_Name: "Erased", Mobile: null, Email: null, Contact_Consent: false }],
+      data: [{ Last_Name: "Erased", Mobile: null, Email: null, Contact_Consent: false, Description: null }],
       trigger: [],
     });
     expect(bodyOf(calls[2]).data).toEqual([

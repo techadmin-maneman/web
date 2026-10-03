@@ -1008,6 +1008,7 @@ Request body:
             "in_progress",
             "too_early_to_close",
             "too_early_to_arrive",
+            "already_closed",
             "no_service_area",
             "service_exists",
             "last_of_kind",

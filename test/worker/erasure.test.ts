@@ -497,6 +497,21 @@ describe("erasure blanks what ops wrote about the client", () => {
         `INSERT INTO task_closures (id, task_group, subject_id, reason, closed_by, closed_at)
          VALUES ('closing-9', 'partial_visit', 'visit-9', 'Moving to Pune, wants no more visits', 'ops@localhost', ?1)`,
       ).bind(at),
+      // The visit ops closed by hand when Imran's phone was lost, and another they cancelled for him.
+      env.DB.prepare(
+        `INSERT INTO visits (id, appointment_id, outcome, updated_at, closed_by, close_reason)
+         VALUES ('visit-row-9', 'visit-9', 'partial', ?1, 'ops@localhost', 'He had to leave for the hospital')`,
+      ).bind(at),
+      env.DB.prepare(
+        `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, synced_at)
+         VALUES ('visit-10', 'visit-10', ?1, 'service', 'cancelled', '2026-09-24T03:30:00.000Z', ?2)`,
+      ).bind(FRIEND, at),
+      env.DB.prepare(
+        `INSERT INTO visit_changes (id, appointment_id, person_id, kind, notice, was_start, created_at, cancelled_by,
+           cancel_reason, ops_terms)
+         VALUES ('change-10', 'visit-10', ?1, 'cancelled', 'late', '2026-09-24T03:30:00.000Z', ?2, 'ops@localhost',
+           'His mother is unwell', 'free')`,
+      ).bind(FRIEND, at),
     ]);
   }
 
@@ -505,15 +520,24 @@ describe("erasure blanks what ops wrote about the client", () => {
       `SELECT (SELECT review_reason FROM referral_attributions) AS review,
          (SELECT attach_reason FROM referral_attributions) AS attach,
          (SELECT decision_reason FROM no_show_cases) AS no_show,
-         (SELECT reason FROM task_closures) AS closed`,
+         (SELECT reason FROM task_closures) AS closed,
+         (SELECT close_reason FROM visits) AS closed_by_hand,
+         (SELECT cancel_reason FROM visit_changes) AS cancelled`,
     ).first();
 
-  it("blanks the reasons ops gave about the friend: the invite attached, the grant's review, the no-show ruling and a visit's task closed", async () => {
+  it("blanks the reasons ops gave about the friend: the invite attached, the grant's review, the no-show ruling, a visit's task closed, a visit closed by hand and one cancelled", async () => {
     await reasonsWritten();
 
     expect(await erasePerson(env, FRIEND, NOW, createLogger())).not.toBeNull();
 
-    expect(await reasons()).toEqual({ review: null, attach: null, no_show: null, closed: null });
+    expect(await reasons()).toEqual({
+      review: null,
+      attach: null,
+      no_show: null,
+      closed: null,
+      closed_by_hand: null,
+      cancelled: null,
+    });
     // The decisions themselves stay, as records.
     const ruled = await env.DB.prepare(
       "SELECT (SELECT grant_state FROM referral_attributions) AS grant_state, (SELECT decision FROM no_show_cases) AS decision",
@@ -558,6 +582,8 @@ describe("erasure blanks what ops wrote about the client", () => {
       attach: null,
       no_show: "His wife said he forgets",
       closed: "Moving to Pune, wants no more visits",
+      closed_by_hand: "He had to leave for the hospital",
+      cancelled: "His mother is unwell",
     });
   });
 
@@ -572,6 +598,8 @@ describe("erasure blanks what ops wrote about the client", () => {
       attach: "Named Vikram on WhatsApp",
       no_show: "His wife said he forgets",
       closed: "Moving to Pune, wants no more visits",
+      closed_by_hand: "He had to leave for the hospital",
+      cancelled: "His mother is unwell",
     });
   });
 });

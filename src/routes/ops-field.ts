@@ -24,6 +24,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import { staffOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
+import { listCities } from "../domain/cities.ts";
 import { cancelLeave, LEAVE_MAX_DAYS, leaveFrom, recordLeave } from "../domain/leave.ts";
 import { afterRuling } from "../domain/after-a-ruling.ts";
 import { decideNoShow, listNoShowCases, MESSAGE_STATES } from "../domain/no-shows.ts";
@@ -145,6 +146,9 @@ const EDITABLE = z.boolean().openapi({
     "Whether ops change him here. While FSM is the record of field work, a technician FSM lists is changed in FSM; " +
     "one ops added is theirs.",
 });
+const CITY = z
+  .union([z.string(), z.null()])
+  .openapi({ description: "The city he works in, which staff access by place reads; null for none." });
 
 const TechniciansSchema = z
   .object({
@@ -155,6 +159,7 @@ const TechniciansSchema = z
           name: z.string(),
           initials: z.string(),
           zone: z.union([z.string(), z.null()]),
+          city: CITY,
           mobile: MOBILE,
           editable: EDITABLE,
           devices: z.array(
@@ -180,6 +185,7 @@ const TechniciansSchema = z
             id: z.uuid(),
             name: z.string(),
             zone: z.union([z.string(), z.null()]),
+            city: CITY,
             mobile: MOBILE,
             editable: EDITABLE,
           })
@@ -188,6 +194,7 @@ const TechniciansSchema = z
       .openapi({
         description: "Technicians switched off, by name: they cannot sign in, and nothing is booked on them.",
       }),
+    cities: z.array(z.string()).openapi({ description: "The cities a technician may be given, in display order." }),
   })
   .strict()
   .openapi("Technicians");
@@ -392,16 +399,18 @@ export function registerOpsField(app: App): void {
 
   app.openapi(techniciansRoute, async (c) => {
     // The phones and the leave are one read each for the whole roster, not one per technician.
-    const [everyone, devices, leave] = await Promise.all([
+    const [everyone, devices, leave, cities] = await Promise.all([
       roster(c.env.DB),
       devicesByTechnician(c.env.DB),
       leaveFrom(c.env.DB, indiaDate(c.var.deps.now())),
+      listCities(c.env.DB),
     ]);
     const record = fieldRecord(c.var.config.providers);
     const summaryOf = (technician: RosterTechnician) => ({
       id: technician.id,
       name: technician.name,
       zone: technician.zone,
+      city: technician.city,
       mobile: technician.mobile,
       editable: isOursToChange(record, technician.handWritten),
     });
@@ -416,7 +425,7 @@ export function registerOpsField(app: App): void {
           .map(({ id, from, to, note }) => ({ id, from, to, note })),
       }));
     const switchedOff = everyone.filter((technician) => !technician.active).map(summaryOf);
-    return c.json({ technicians, switched_off: switchedOff }, 200);
+    return c.json({ technicians, switched_off: switchedOff, cities: cities.map((city) => city.name) }, 200);
   });
 
   app.openapi(leaveRoute, async (c) => {
