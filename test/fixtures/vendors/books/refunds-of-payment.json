@@ -1,0 +1,26 @@
+{
+  "code": 0,
+  "message": "success",
+  "payment_refunds": [
+    {
+      "payment_refund_id": "4242595000000247023",
+      "payment_id": "4242595000000250002",
+      "date": "2026-10-02",
+      "refund_mode": "Staging test",
+      "reference_number": "rfnd_TivlBz4BP8jIOZ",
+      "payment_number": "17",
+      "customer_name": "Staging test",
+      "description": "Staging test",
+      "amount_bcy": 30000,
+      "amount_fcy": 30000
+    }
+  ],
+  "page_context": {
+    "page": 1,
+    "per_page": 200,
+    "has_more_page": false,
+    "report_name": "Staging test",
+    "sort_column": "Staging test",
+    "sort_order": "Staging test"
+  }
+}
