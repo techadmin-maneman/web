@@ -16,6 +16,7 @@ import { whatsappWith } from "../lib/whatsapp.ts";
 import { methodName } from "../payments/entry.ts";
 import { useSession } from "../session.ts";
 import { BookingSheet } from "./BookingSheet.tsx";
+import { moveButton } from "./late-change.ts";
 import { LateFee } from "./steps.tsx";
 import styles from "./booking.module.css";
 
@@ -173,7 +174,7 @@ export function ChangeSheet(props: {
                   setStep({ kind: "picking", terms: step.terms });
                 }}
               >
-                {step.terms.notice === "free" ? change.move.pick : change.move.accept}
+                {moveButton(step.terms)}
               </Button>
               <Button variant="outline" size="control" className={styles.secondary} onClick={close}>
                 {change.move.keep}

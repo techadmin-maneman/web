@@ -18,6 +18,7 @@
     "test/dom/**/*.ts",
     "test/node/app-api.test.ts",
     "test/node/app-booking-days.test.ts",
+    "test/node/app-late-change.test.ts",
     "test/node/app-checkout.test.ts",
     "test/node/app-consent-lines.test.ts",
     "test/node/app-documents.test.ts",

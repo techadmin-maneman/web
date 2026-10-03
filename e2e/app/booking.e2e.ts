@@ -39,6 +39,10 @@ const REMINDED = "Imran messages you the day before.";
 const FIRST_FIT = { amount_ex_gst: 3000000, amount: 3540000, gst_percent: 18 };
 const LATE_FEE = { amount_ex_gst: 400000, amount: 472000, gst_percent: 18 };
 const LATE_FEE_LINE = "Moving inside 24 hours costs Rs. 4,720 (Rs. 4,000 + Rs. 720 GST). The balance carries over.";
+/** The pay step's promise for a visit ahead of its notice, and for one already inside it, whose payment is kept. */
+const FREE_UNTIL = /^Free to move or cancel until .+\. After that it is charged\.$/;
+const INSIDE_NOTICE =
+  /^This visit is less than 24 hours away: if you move or cancel it, the Rs\. [\d,]+ paid is not refunded\.$/;
 
 type Hold = Record<string, unknown>;
 
@@ -300,7 +304,8 @@ test("books and pays for a service visit through Razorpay Checkout", async ({ pa
   await expect(pay.getByText("Rs. 2,000", { exact: true })).toBeVisible();
   // GST is nothing here, so the figure is said once, with no "incl. GST" repeating it (MON-19).
   await expect(pay.getByText(/GST/)).toHaveCount(0);
-  await expect(pay.getByText(/^Free to move until .+\. After that it is charged\.$/)).toBeVisible();
+  // The first window open may already be inside the notice, by the time of day the test runs.
+  await expect(pay.getByText(new RegExp(`${FREE_UNTIL.source}|${INSIDE_NOTICE.source}`))).toBeVisible();
   // MON-44: Checkout lists the ways to pay, so the sheet offers no choice Checkout would ignore.
   await expect(pay.getByRole("radiogroup")).toHaveCount(0);
   await expect(pay.getByText("Imran never handles money.")).toBeVisible();
@@ -334,7 +339,7 @@ test("confirms a visit a credit covers as a credit used, never as a payment", as
   const hold = await holdAs(page, { credit: { remaining: 2 } });
   await bookedWithoutPaying(page, hold);
   await toPayment(page);
-  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
+  const pay = page.getByRole("dialog", { name: "Confirm", exact: true });
   await expect(pay.getByText("1 visit credit used")).toBeVisible();
   await pay.getByRole("button", { name: "Confirm visit" }).click();
 
@@ -365,9 +370,13 @@ test("shows the price, and opens no Checkout, when the credit went on another bo
     route.request().method() === "GET" ? route.fulfill({ json: { ...hold(), credit: null } }) : route.fallback(),
   );
   await toPayment(page);
-  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
-  await pay.getByRole("button", { name: "Confirm visit" }).click();
+  await page
+    .getByRole("dialog", { name: "Confirm", exact: true })
+    .getByRole("button", { name: "Confirm visit" })
+    .click();
 
+  // Now there is a price to pay, the step is named for paying it.
+  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
   await expect(
     pay.getByText("Your visit credit is already on another booking, so this visit is charged at the price below."),
   ).toBeVisible();
@@ -659,8 +668,97 @@ test("says a late change keeps the payment, never a late fee, where the booking 
   await holdAs(page, { type: "first_fit", price: FIRST_FIT, late_fee: null, late_change_charge: "visit" });
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: "Pay and confirm" });
-  await expect(pay.getByText(/^Free to move until .+\. After that it is charged\.$/)).toBeVisible();
+  await expect(pay.getByText(FREE_UNTIL)).toBeVisible();
   await expect(pay.getByText(/Moving inside/)).toHaveCount(0);
+});
+
+/** A free_until already past: the window starts inside the notice the visit is sold under. */
+const PASSED = () => new Date(Date.now() - 60 * 60 * 1000).toISOString();
+
+// MON-08, BK-11, CP-02: a visit sold inside its notice said "Free to move until" a time already gone.
+test("says a visit sold inside its notice is charged to change from now, never free until a time gone", async ({
+  page,
+}) => {
+  await holdAs(page, { free_until: PASSED() });
+  await toPayment(page);
+  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
+  await expect(
+    pay.getByText(
+      "This visit is less than 24 hours away: if you move or cancel it, the Rs. 2,000 paid is not refunded.",
+    ),
+  ).toBeVisible();
+  await expect(pay.getByText(/Free to move/)).toHaveCount(0);
+});
+
+test("says a first fit sold inside its notice costs its late fee to change from now", async ({ page }) => {
+  await holdAs(page, {
+    type: "first_fit",
+    price: FIRST_FIT,
+    late_fee: LATE_FEE,
+    late_change_charge: "late_fee",
+    free_until: PASSED(),
+  });
+  await toPayment(page);
+  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
+  await expect(
+    pay.getByText(
+      "This visit is less than 24 hours away: moving or cancelling it costs Rs. 4,720 (Rs. 4,000 + Rs. 720 GST).",
+    ),
+  ).toBeVisible();
+  await expect(pay.getByText(/Free to move/)).toHaveCount(0);
+});
+
+test("says a credit is not returned for a visit it covers that is sold inside its notice", async ({ page }) => {
+  await holdAs(page, { credit: { remaining: 2 }, free_until: PASSED() });
+  await toPayment(page);
+  const confirm = page.getByRole("dialog", { name: "Confirm", exact: true });
+  await expect(
+    confirm.getByText("This visit is less than 24 hours away: if you move or cancel it, the credit is not returned."),
+  ).toBeVisible();
+  await expect(confirm.getByText(/the credit is gone/)).toHaveCount(0);
+});
+
+// The windows inside the notice are still sold, and marked on the date and window steps.
+test("marks the days and windows inside the notice, which are still sold", async ({ page }) => {
+  await passedThrough(page, /\/api\/availability\?/, (days: { days: { windows: object[] }[] }) => ({
+    ...days,
+    days: days.days.map((day, index) => ({
+      ...day,
+      windows: day.windows.map((each) => ({ ...each, with: "regular", change_charged: index === 0 })),
+    })),
+  }));
+  await openSheet(page);
+  const dates = page.getByRole("dialog", { name: "Pick a date" });
+  const marked = dates.getByRole("radio", { name: /, Within 24 hours: changes are charged$/ });
+  await expect(marked).toHaveCount(1);
+  await expect(dates.getByText("Within 24 hours: changes are charged")).toBeVisible();
+  await marked.click();
+  await dates.getByRole("button", { name: "Continue" }).click();
+  const windows = page.getByRole("dialog", { name: "Pick a window" });
+  await expect(windows.getByRole("radio").first()).toBeVisible();
+  const open = await windows.getByRole("radio").count();
+  await expect(windows.getByText("Within 24 hours: changes are charged")).toHaveCount(open);
+  await scanOf(page);
+});
+
+// MON-33, BK-16, UX-06, CP-05: a free booking went through "Continue to payment" and "Pay and confirm" for Rs. 0.
+test("takes a visit that costs nothing to Confirm, never to a payment", async ({ page }) => {
+  const free = { amount_ex_gst: 0, amount: 0, gst_percent: 0 };
+  await passedThrough(page, /\/api\/availability\?/, (days: { days: object[] }) => ({
+    ...days,
+    price: free,
+    days: days.days.map((day) => ({ ...day, price: free })),
+  }));
+  await holdAs(page, { type: "consultation", price: free, late_change_charge: "nothing" });
+  await toWindows(page);
+  const windows = page.getByRole("dialog", { name: "Pick a window" });
+  await windows.getByRole("radio").and(page.locator(":enabled")).first().click();
+  await expect(windows.getByRole("button", { name: "Continue to payment" })).toHaveCount(0);
+  await windows.getByRole("button", { name: "Continue", exact: true }).click();
+  const confirm = page.getByRole("dialog", { name: "Confirm", exact: true });
+  await expect(confirm.getByText("Free", { exact: true })).toBeVisible();
+  await expect(confirm.getByRole("button", { name: "Confirm visit" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Pay and confirm" })).toHaveCount(0);
 });
 
 test("says a visit moves or cancels free at any time where the booking is sold so", async ({ page }) => {
@@ -674,7 +772,7 @@ test("says a visit moves or cancels free at any time where the booking is sold s
 test("says a credit is gone after a late cancel only where the booking is sold so", async ({ page }) => {
   await holdAs(page, { credit: { remaining: 2 }, late_change_charge: "nothing" });
   await toPayment(page);
-  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
+  const pay = page.getByRole("dialog", { name: "Confirm", exact: true });
   await expect(pay.getByText("1 visit credit used")).toBeVisible();
   await expect(pay.getByText(/the credit is gone/)).toHaveCount(0);
   await expect(pay.getByText("Free to move or cancel at any time.")).toBeVisible();
@@ -684,7 +782,9 @@ test("says a credit is gone after a cancel inside the notice the booking is sold
   await holdAs(page, { credit: { remaining: 2 }, change_notice_hours: 48 });
   await toPayment(page);
   await expect(
-    page.getByRole("dialog", { name: "Pay and confirm" }).getByText("Cancel inside 48 hours and the credit is gone."),
+    page
+      .getByRole("dialog", { name: "Confirm", exact: true })
+      .getByText("Cancel inside 48 hours and the credit is gone."),
   ).toBeVisible();
 });
 

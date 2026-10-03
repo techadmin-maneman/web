@@ -81,6 +81,16 @@ export interface SoldTerms {
 }
 
 /**
+ * Whether a visit sold under `terms` and booked now, at `now`, would already cost the client to move or cancel: it
+ * starts inside its notice, and its kind is charged there. The date picker marks such a window.
+ */
+export const changeChargedOnBooking = (
+  windowStarts: Date,
+  now: Date,
+  terms: Pick<SoldTerms, "noticeHours" | "lateCharge">,
+): boolean => terms.lateCharge !== "nothing" && noticeAt(windowStarts, now, terms.noticeHours) === "late";
+
+/**
  * What a move costs the client:
  *   free      the visit moves, and its payment carries over;
  *   late_fee  the late fee is paid now, then the visit moves with its payment;

@@ -3356,6 +3356,8 @@ export interface components {
                 name: string;
                 initials: string;
             } | null;
+            /** @description The notice a visit booked here is sold under: a move keeps its visit's own, else as ops set it. */
+            change_notice_hours: number;
             /**
              * Format: date
              * @description The last day this visit may be booked on: later days are asked for up to it.
@@ -3374,6 +3376,8 @@ export interface components {
                     end: string;
                     /** @description Who would come: the regular technician, another, or nobody (full). */
                     with: ("regular" | "another") | null;
+                    /** @description Booked now, moving or cancelling it would already cost the client: it starts inside the notice, and its kind is charged there. */
+                    change_charged: boolean;
                 }[];
             }[];
         };

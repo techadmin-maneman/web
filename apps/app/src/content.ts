@@ -383,6 +383,8 @@ export const booking = {
     title: "Pick a date",
     available: "Available",
     full: "Full",
+    // PLACEHOLDER: no board draws it. A day with a window already inside the notice is still sold, and marked.
+    within: (hours: number) => `Within ${String(hours)} hours: changes are charged`,
     continue: "Continue",
     // PLACEHOLDER: no board draws the day offered being full, nor the days past the first fortnight.
     offeredFull: (day: string) => `${day} is full. We have picked the next open day.`,
@@ -398,14 +400,32 @@ export const booking = {
     regularLine: (name: string) => `${name}, your regular technician, is free.`,
     // PLACEHOLDER: the design draws the window step with the regular technician free.
     anotherLine: (name: string) => `${name} is not free then. Another technician will come.`,
+    // PLACEHOLDER: a window already inside the notice, which no board draws.
+    within: (hours: number) => `Within ${String(hours)} hours: changes are charged`,
     continue: "Continue to payment",
+    // PLACEHOLDER: a visit that costs nothing has no payment to continue to.
+    continueFree: "Continue",
     // PLACEHOLDER
     taken: "That window has just gone. Pick another.",
   },
   pay: {
     title: "Pay and confirm",
+    // PLACEHOLDER: a visit that costs nothing to book, which no board draws.
+    titleFree: "Confirm",
     held: (time: string) => `Slot held ${time}`,
-    freeUntil: (when: string) => `Free to move until ${when}. After that it is charged.`,
+    // PLACEHOLDER: board C4 says "Free to move until"; cancelling is free until then too.
+    freeUntil: (when: string) => `Free to move or cancel until ${when}.`,
+    afterThat: " After that it is charged.",
+    /** PLACEHOLDER: no board draws it. A visit sold already inside its notice says what a change costs at once. */
+    insideNotice: {
+      /** Followed by the fee's GST split, where there is one, and a full stop. */
+      lateFee: (hours: number, amount: string) =>
+        `This visit is less than ${String(hours)} hours away: moving or cancelling it costs ${amount}`,
+      payment: (hours: number, amount: string) =>
+        `This visit is less than ${String(hours)} hours away: if you move or cancel it, the ${amount} paid is not refunded.`,
+      credit: (hours: number) =>
+        `This visit is less than ${String(hours)} hours away: if you move or cancel it, the credit is not returned.`,
+    },
     // PLACEHOLDER: a booking ops set to cost nothing when changed late (docs/decisions/0088-every-policy-in-the-console.md).
     freeAnyTime: "Free to move or cancel at any time.",
     pay: (amount: string) => `Pay ${amount}`,
@@ -560,6 +580,9 @@ export const change = {
     // PLACEHOLDER from here to the end of move: nothing paid, and the way to C8, which the design draws but does
     // not reach. A late fee's line is board C5's (booking.lateFee).
     freeNothingPaid: "Free to move.",
+    // What a move in place keeps, on its pay step.
+    carriesOver: (amount: string) => `Your ${amount} carries over.`,
+    creditCarriesOver: "Your credit carries over.",
     cancelInstead: "Cancel the visit instead",
     creditCharged: "Charged. The credit is not returned and the new visit is paid separately.",
   },
