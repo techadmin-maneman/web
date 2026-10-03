@@ -411,7 +411,7 @@ describe("a paid hold whose booking FSM refused once (W2)", () => {
 describe("the public form, with a client's number, while that client's hold is paid (W3)", () => {
   it("neither lets the hold go nor renames the client", async () => {
     await env.DB.prepare(
-      "INSERT INTO serviceable_pincodes (pincode, area, city, served, launched_at) VALUES ('122018', 'South City II', 'Gurgaon', 1, '2026-09-01T18:30:00.000Z')",
+      "INSERT OR REPLACE INTO serviceable_pincodes (pincode, area, city, served, launched_at) VALUES ('122018', 'South City II', 'Gurgaon', 1, '2026-09-01T18:30:00.000Z')",
     ).run();
     const ordered = await heldAndOrdered(PERSON);
     await webhook("payment.captured", "evt_w3", payment("pay_w3", ordered, at(59)), at(60));
@@ -766,7 +766,7 @@ describe.each(RECORDS)("GST once a price carries it (W7, BIZ-07), on %s's record
 describe("where a visit booked from the site is (LIFE-04, CLI-14)", () => {
   it("carries the pincode booked at onto the visit, and onto the contact FSM is given", async () => {
     await env.DB.prepare(
-      "INSERT INTO serviceable_pincodes (pincode, area, city, served, launched_at) VALUES ('122018', 'South City II', 'Gurgaon', 1, '2026-09-01T18:30:00.000Z')",
+      "INSERT OR REPLACE INTO serviceable_pincodes (pincode, area, city, served, launched_at) VALUES ('122018', 'South City II', 'Gurgaon', 1, '2026-09-01T18:30:00.000Z')",
     ).run();
     const site = appFor("local", fakeDependencies(), {}, "public");
     const queue = fakeQueue();

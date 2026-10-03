@@ -182,14 +182,22 @@ export async function provedNumberCode(mobileE164: string, now: Date = NOW): Pro
   return id;
 }
 
-/** The address a client saved in the app, which they must have before any slot is held (ADR 0079). */
+/**
+ * The address a client saved in the app, which they must have before any slot is held (ADR 0079). Its pincode is
+ * served, unless the test set it up otherwise first: no slot is held at an address we do not come to.
+ */
 export async function savedAddress(personId: string, pincode = "122018"): Promise<void> {
-  await env.DB.prepare(
-    `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode)
-     VALUES (?1, ?2, ?3, 'House 4417, Tower C', 'Sector 65', 'Gurgaon', ?4)`,
-  )
-    .bind(crypto.randomUUID(), personId, NOW.toISOString(), pincode)
-    .run();
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO serviceable_pincodes (pincode, area, city, served, launched_at)
+       VALUES (?1, 'Sector 65', 'Gurgaon', 1, '2026-09-01T18:30:00.000Z')
+       ON CONFLICT (pincode) DO NOTHING`,
+    ).bind(pincode),
+    env.DB.prepare(
+      `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode)
+       VALUES (?1, ?2, ?3, 'House 4417, Tower C', 'Sector 65', 'Gurgaon', ?4)`,
+    ).bind(crypto.randomUUID(), personId, NOW.toISOString(), pincode),
+  ]);
 }
 
 // ---------------------------------------------------------------------------

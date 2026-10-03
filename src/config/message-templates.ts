@@ -114,6 +114,9 @@ export const TEMPLATES: Readonly<Record<string, string>> = {
     "Hello {{1}}, this number was just used to book on our site. As a Mane Man client, you book your next visit in the Mane Man app. Sign in with this number.",
   address_on_account_v1:
     "Hello {{1}}, we will come to the address already on your account, not the one typed on our site. You can change it in the Mane Man app.",
+  // {{2}} the pincode of the address on the account.
+  address_not_served_v1:
+    "Hello {{1}}, this number was just used to book on our site. The address on your account is at pincode {{2}}, which we do not cover yet, so nothing was booked. If you have moved, change your address in the Mane Man app and book there.",
   // The line a reminder or alert ends with, {{1}} the link that stops them (STOP_LINKS below).
   stop_link_v1: "Stop these messages: {{1}}",
   // The answer to a STOP reply, once it has withdrawn something.
@@ -200,6 +203,7 @@ export const MESSAGE_CLASSES: Readonly<Record<MessageKind, MessageClass>> = {
   consultation_exists: "answering", // the site's booking form, just sent for this number
   book_in_app: "answering",
   address_on_account: "answering",
+  address_not_served: "answering",
   messages_stopped: "answering", // their own STOP reply
 };
 

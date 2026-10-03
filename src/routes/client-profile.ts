@@ -15,6 +15,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
+import { addressChangeRefusal } from "../domain/address-change.ts";
 import { auditStatementIfWritten, type AuditEntry } from "../domain/audit.ts";
 import { openDeletion, requestDeletion } from "../domain/deletion.ts";
 import {
@@ -229,6 +230,8 @@ export const addressRoute = createRoute({
   responses: {
     200: { description: "Saved", ...json(AddressSchema) },
     400: errorResponse("invalid_request"),
+    409: errorResponse("visit_booked: a visit still to come is in another city, which the address may not leave"),
+    422: errorResponse("not_served: the pincode is not one we come to"),
     ...signedIn,
   },
 });
@@ -434,6 +437,9 @@ export function registerClientProfile(app: App): void {
     const personId = clientOf(c).subjectId;
     const body = c.req.valid("json");
     const address = addressOf(body);
+    const refusal = await addressChangeRefusal(c.env.DB, personId, address.pincode);
+    if (refusal === "not_served") return c.json(errorBody("not_served", c.var.requestId), 422);
+    if (refusal === "visit_booked") return c.json(errorBody("visit_booked", c.var.requestId), 409);
     await saveClientAddress(c, {
       personId,
       address,

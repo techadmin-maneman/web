@@ -1,8 +1,9 @@
 // Where we go, and from when (serviceable_pincodes, migration 0021;
 // docs/decisions/0061-ops-editable-inputs.md).
 //
-// `served` decides whether the app offers a booking at a pincode at all; a
-// client at one we do not serve is offered the waitlist instead. `launched_at`
+// `served` decides whether a visit is booked at a pincode at all, on the site
+// or in the app; a pincode we do not hold is not served. A client at one we do
+// not serve is offered the waitlist instead. `launched_at`
 // is the day a technician started coming, and it is a promise: a referral
 // invite held for that area lapses twelve months from it, and the waitlist
 // alert goes out against it (ADR 0048). So it is dated and `served` is not.
@@ -17,8 +18,36 @@
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
 import { indiaDate, indiaInstant } from "../lib/india-time.ts";
+import { namedArea } from "./area-names.ts";
 import { auditStatement, type AuditActor } from "./audit.ts";
 import { launchAlerts, waitingByPincode, type LaunchAlert } from "./waitlist.ts";
+
+/** A pincode we hold, and whether a technician works there. */
+export interface Pincode {
+  readonly pincode: string;
+  /** Null until ops have named the area. */
+  readonly area: string | null;
+  readonly city: string;
+  readonly served: number;
+  /** When a technician started or starts coming; null where nobody has said. */
+  readonly launched_at: string | null;
+}
+
+/** The pincode as we hold it; null for one we do not. */
+export function pincodeOf(db: D1Database, pin: string): Promise<Pincode | null> {
+  return db
+    .prepare(
+      `SELECT pincode, ${namedArea("p")} AS area, city, served, launched_at FROM serviceable_pincodes p
+       WHERE pincode = ?1`,
+    )
+    .bind(pin)
+    .first<Pincode>();
+}
+
+/** Whether a technician comes to this pincode. */
+export async function isServed(db: D1Database, pin: string): Promise<boolean> {
+  return (await pincodeOf(db, pin))?.served === 1;
+}
 
 export interface AreaPincode {
   readonly pincode: string;

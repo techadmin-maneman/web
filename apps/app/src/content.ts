@@ -157,6 +157,8 @@ export const messages = {
   lateInvoice: (what: string, date: string) => `Please send me the invoice for my ${what.toLowerCase()} on ${date}.`,
   // PLACEHOLDER: a refund that has taken longer than Razorpay's working days.
   lateRefund: (what: string, date: string) => `My refund for ${what.toLowerCase()} from ${date} has not arrived.`,
+  // PLACEHOLDER: a client moving to another city while a visit is booked.
+  moveCity: "I am moving to another city and have a visit booked.",
 } as const;
 
 /**
@@ -388,6 +390,12 @@ export const booking = {
     why: "Your address first, so we know where to come. Then pick a date.",
     refused: "We need your address before we can hold a slot. Add it, then pick your window again.",
     save: "Save and continue",
+  },
+  /** PLACEHOLDER: no board draws it. The client's address is in a pincode we do not come to, so no day is offered. */
+  notServed: {
+    line: (pincode: string) => `We do not come to ${pincode} yet.`,
+    body: "Change the address below, or join the waitlist and we will message you the day we do.",
+    waitlist: "Join the waitlist",
   },
   date: {
     title: "Pick a date",
@@ -953,6 +961,11 @@ export const profile = {
     save: "Save",
     cancel: "Cancel",
     invalid: "Fill in the flat or house number, the building or street, the area, the city and a six-digit pincode.",
+    // PLACEHOLDER: a pincode we do not come to, and a move to another city while a visit is booked.
+    notServed: (pincode: string) => `We do not come to ${pincode} yet.`,
+    waitlist: "Join the waitlist",
+    visitBooked: "You have a visit booked in this city. To move to another, message us first.",
+    message: "Message us",
   },
   agreed: "What you have agreed to",
   purposes: {
