@@ -154,7 +154,9 @@ describe("the day's list", () => {
     const today = await (await get("/api/tech/jobs?date=2026-09-21")).json<{ jobs: Record<string, unknown>[] }>();
     const later = await (await get("/api/tech/jobs?date=2026-09-25")).json<{ jobs: Record<string, unknown>[] }>();
 
-    expect(today.jobs).toEqual([expect.objectContaining({ id: TODAY_JOB, unlocked: true, client_name: "Rohit Malhotra" })]);
+    expect(today.jobs).toEqual([
+      expect.objectContaining({ id: TODAY_JOB, unlocked: true, client_name: "Rohit Malhotra" }),
+    ]);
     expect(later.jobs).toEqual([expect.objectContaining({ id: LATER_JOB, unlocked: false, client_name: null })]);
   });
 });

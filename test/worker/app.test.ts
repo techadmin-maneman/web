@@ -1,6 +1,8 @@
 import { env } from "cloudflare:workers";
 import { describe, expect, it, vi } from "vitest";
-import { REQUEST_ID_HEADER, type App } from "../../src/http/context.ts";
+import { openSession } from "../../src/domain/sessions.ts";
+import { requireClientSession } from "../../src/http/client-session.ts";
+import { REQUEST_ID_HEADER } from "../../src/http/context.ts";
 import { ErrorResponseSchema } from "../../src/http/errors.ts";
 import {
   appFor,
@@ -9,6 +11,7 @@ import {
   d1TripsOf,
   fakeDependencies,
   markDatabase,
+  NOW,
   request,
 } from "./helpers.ts";
 
@@ -165,26 +168,33 @@ describe("access log", () => {
     expect(typeof access?.d1_wait_ms).toBe("number");
   });
 
-  // PLAT-15: how long a request waited on D1, in a browser's network panel. Not on the public host, where it could
-  // tell a number we know from a new one by the trips its answer took.
-  it("tells a signed-in host's browser how many round trips to D1 it waited on, and the public host's nothing", async () => {
+  // PLAT-15: how long a request waited on D1, in a browser's network panel. Only once the caller has signed in: before
+  // that, the trips an answer took could tell a number we know from a new one.
+  it("tells a signed-in caller's browser how many round trips to D1 it waited on, and nobody else", async () => {
     await markDatabase();
-    const waitTwice = (app: App) => {
-      app.get("/api/waits", async (c) => {
-        await Promise.all([c.env.DB.prepare("SELECT 1").first(), c.env.DB.prepare("SELECT 2").first()]);
-        await c.env.DB.prepare("SELECT 3").first();
-        return c.json({});
-      });
-      return app;
-    };
-    const signedIn = waitTwice(appFor("local", fakeDependencies(), {}, "client"));
-    const site = waitTwice(appFor());
+    await env.DB.prepare(
+      "INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p1', ?1, '+919810000001', 'Rohit Malhotra')",
+    )
+      .bind(NOW.toISOString())
+      .run();
+    const session = await openSession(env.DB, { kind: "client", subjectId: "p1", deviceLabel: null, now: NOW });
+    const app = appFor("local", fakeDependencies(), {}, "client");
+    app.use("/api/waits", requireClientSession);
+    app.get("/api/waits", async (c) => {
+      await Promise.all([c.env.DB.prepare("SELECT 1").first(), c.env.DB.prepare("SELECT 2").first()]);
+      await c.env.DB.prepare("SELECT 3").first();
+      return c.json({});
+    });
+    const waits = (cookie: string) => request(app, "/api/waits", { headers: { Cookie: cookie } });
 
-    await request(signedIn, "/api/waits");
-    const answer = await request(signedIn, "/api/waits");
+    await waits(`mm_app=${session}`);
+    const signedIn = await waits(`mm_app=${session}`);
+    const signedOut = await waits("mm_app=nobody");
 
-    expect(answer.headers.get("server-timing")).toMatch(/^d1;dur=\d+;desc="\d+ round trips"$/);
-    expect(d1TripsOf(answer)).toBe(2);
-    expect((await request(site, "/api/waits")).headers.get("server-timing")).toBeNull();
+    expect(signedIn.headers.get("server-timing")).toMatch(/^d1;dur=\d+;desc="\d+ round trips"$/);
+    // The session, then the two reads sent together, then the one after them.
+    expect(d1TripsOf(signedIn)).toBe(3);
+    expect(signedOut.status).toBe(401);
+    expect(signedOut.headers.get("server-timing")).toBeNull();
   });
 });

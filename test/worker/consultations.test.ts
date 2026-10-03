@@ -20,8 +20,11 @@ import {
   request,
 } from "./helpers.ts";
 
-/** The most round trips to D1 a booking from the site may wait on in turn. */
-const CONSULTATION_TRIPS = 0;
+/**
+ * The most round trips to D1 a booking from the site may wait on in turn. It waited on 14 when each read waited for the
+ * one before.
+ */
+const CONSULTATION_TRIPS = 9;
 
 const VISITOR = {
   name: "Karan Bhatia",

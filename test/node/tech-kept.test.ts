@@ -8,7 +8,7 @@
 import "fake-indexeddb/auto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CheckIn, Job, JobSummary, Me } from "../../apps/tech/src/api.ts";
-import { loadDay, loadJob } from "../../apps/tech/src/lib/useDay.ts";
+import { keepCards, loadDay, loadJob } from "../../apps/tech/src/lib/useDay.ts";
 import { dayAfter, todayInIndia } from "../../apps/tech/src/lib/when.ts";
 import { all, wipe } from "../../apps/tech/src/store/db.ts";
 import { deviceId, enrolled, enrolledAt, keepMe, keptMe } from "../../apps/tech/src/store/device.ts";
@@ -195,6 +195,34 @@ describe("a day's jobs", () => {
     await loadDay(TODAY);
 
     expect(await keptJob("old")).not.toBeNull();
+  });
+
+  // FLD-42: the cards were fetched one after another, so the last of a day's came seconds after the list.
+  it("asks for every unlocked card at once, and keeps each one", async () => {
+    const asked: string[] = [];
+    const askedByEachAnswer: number[] = [];
+    vi.stubGlobal("fetch", async (url: string) => {
+      asked.push(url);
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      askedByEachAnswer.push(asked.length);
+      const id = url.split("/").pop() ?? "";
+      return new Response(JSON.stringify(card(id, TODAY)), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+    const locked = { ...summary("c", TODAY), unlocked: false };
+
+    await keepCards([summary("a", TODAY), summary("b", TODAY), locked]);
+
+    expect(asked).toEqual(["/api/tech/jobs/a", "/api/tech/jobs/b"]);
+    expect(askedByEachAnswer).toEqual([2, 2]);
+    expect(await keptNames()).toEqual(
+      new Map([
+        ["a", "Client a"],
+        ["b", "Client b"],
+      ]),
+    );
   });
 
   it("with no signal, is what the phone kept, and says so", async () => {

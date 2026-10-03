@@ -30,12 +30,7 @@ import { nextVisitFacts } from "../domain/next-visit.ts";
 import { bookableTypes } from "../domain/scheduling.ts";
 import { offeredAmong, servicesOnDay } from "../domain/services.ts";
 import { currentAddress, liveContact } from "../domain/profile.ts";
-import {
-  hasFsmVisit,
-  latestProposal,
-  windowAskedFor,
-  type ProposedBooking,
-} from "../domain/proposed-visits.ts";
+import { hasFsmVisit, latestProposal, windowAskedFor, type ProposedBooking } from "../domain/proposed-visits.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
@@ -266,10 +261,7 @@ async function formBookingOf(c: Context<AppEnv>, personId: string): Promise<Form
   const proposal = inFsm ? null : booking;
   if (proposal === null) return { booking, proposal, card: null };
 
-  const [window, address] = await Promise.all([
-    windowAskedFor(db, personId, proposal),
-    currentAddress(db, personId),
-  ]);
+  const [window, address] = await Promise.all([windowAskedFor(db, personId, proposal), currentAddress(db, personId)]);
   if (window === null) {
     c.var.log.warn("consultation_window_unknown", { person_id: personId });
     return { booking, proposal, card: null };

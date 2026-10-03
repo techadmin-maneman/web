@@ -23,7 +23,7 @@ import {
   savedAddress,
 } from "./helpers.ts";
 
-/** The most round trips to D1 a hold may wait on in turn. */
+/** The most round trips to D1 a hold may wait on in turn. It waited on 17 when each read waited for the one before. */
 const HOLD_TRIPS = 9;
 const IMRAN = "t1";
 const SANDEEP = "t2";
@@ -223,7 +223,7 @@ describe("POST /api/holds", () => {
   });
 
   // PLAT-15: each D1 read is a round trip to the database's region, so the hold's reads that need nothing from each
-  // other go together. It waited on 17 when each read waited for the one before.
+  // other go together.
   it("waits on few round trips to D1", async () => {
     const rohit = await client();
     const answer = await hold(rohit, TUESDAY_AFTERNOON);

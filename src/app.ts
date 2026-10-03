@@ -1,5 +1,5 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
-import type { MiddlewareHandler } from "hono";
+import type { Context, MiddlewareHandler } from "hono";
 import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
 import { routePath } from "hono/route";
@@ -255,8 +255,8 @@ function requestContext(
     if (!c.res.headers.has("Cache-Control")) c.header("Cache-Control", "no-store");
     if (config.environment !== "production") c.header("X-Robots-Tag", "noindex, nofollow");
     const waits = meter.waits();
-    // Not on the public host, where how long D1 took could tell a number we know from a new one.
-    if (surface !== "public") c.header("Server-Timing", serverTiming(waits));
+    // Only to a caller who signed in: before that, how long D1 took could tell a number we know from a new one.
+    if (signedIn(c)) c.header("Server-Timing", serverTiming(waits));
 
     log.info("request", {
       method: c.req.method,
@@ -269,6 +269,10 @@ function requestContext(
     });
   });
 }
+
+/** A client or technician with a session, or staff through Cloudflare Access. */
+const signedIn = (c: Context<AppEnv>): boolean =>
+  c.var.clientSession !== undefined || c.var.technicianSession !== undefined || c.var.accessIdentity !== undefined;
 
 /** Answers 503 unless this Worker's database is marked as its own environment's. */
 const requireOwnDatabase = createMiddleware<AppEnv>(async (c, next) => {
