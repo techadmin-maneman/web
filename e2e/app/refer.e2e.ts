@@ -304,7 +304,12 @@ test("asks for the consent before choosing their own card, and records none when
   page,
 }) => {
   await firstFitPair(page, "/e2e/unreadable-before.jpg", "/e2e/unreadable-after.jpg");
-  await page.route("**/e2e/unreadable-*.jpg", (route) => route.fulfill({ status: 404 }));
+  // The photographs fetched to build the card are held until both taps are in, so the second lands mid-build.
+  const building = Promise.withResolvers<undefined>();
+  await page.route("**/e2e/unreadable-*.jpg", async (route) => {
+    if (route.request().resourceType() === "fetch") await building.promise;
+    await route.fulfill({ status: 404 });
+  });
   await toRefer(page);
   await page.getByRole("button", { name: "Share an invite" }).click();
   await page.getByRole("radio", { name: /My before and after/ }).click();
@@ -321,6 +326,7 @@ test("asks for the consent before choosing their own card, and records none when
   await allow.click();
   // Forced, because the tap this guards against is one the client makes whether it is taken or not.
   await allow.click({ force: true });
+  building.resolve(undefined);
 
   await expect(page.getByRole("heading", { name: "Preview · what your friend sees" })).toBeVisible();
   await expect(page.getByRole("alert")).toHaveText("We could not make your card. The house example is used instead.");
