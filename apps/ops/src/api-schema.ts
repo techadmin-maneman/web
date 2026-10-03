@@ -95,7 +95,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such client, or the client has been erased */
+                /** @description not_found: no such client, or the client has been erased or is outside the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -135,7 +135,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description The clients it matches, by name */
+                /** @description The clients it matches in the caller's cities, by name */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -189,7 +189,7 @@ export interface paths {
                         "application/json": components["schemas"]["ClientRecord"];
                     };
                 };
-                /** @description not_found: no such client, or the client has been erased */
+                /** @description not_found: no such client, or the client has been erased or is outside the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -236,7 +236,7 @@ export interface paths {
                         "application/json": components["schemas"]["ClientPhotos"];
                     };
                 };
-                /** @description not_found: no such client, or the client has been erased */
+                /** @description not_found: no such client, or the client has been erased or is outside the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -285,7 +285,7 @@ export interface paths {
                         "application/json": components["schemas"]["PhotoView"];
                     };
                 };
-                /** @description not_found: no such client, or the client has been erased */
+                /** @description not_found: no such client, or the client has been erased or is outside the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -397,7 +397,7 @@ export interface paths {
                         "application/json": components["schemas"]["ClientConsents"];
                     };
                 };
-                /** @description not_found: no such client, or the client has been erased */
+                /** @description not_found: no such client, or the client has been erased or is outside the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -1065,7 +1065,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such client, or the client has been erased */
+                /** @description not_found: no such client, or the client has been erased or is outside the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -1143,7 +1143,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such client, or the client has been erased */
+                /** @description not_found: no such client, or the client has been erased or is outside the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -1197,7 +1197,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such client, or the client has been erased */
+                /** @description not_found: no such client, or the client has been erased or is outside the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -1252,7 +1252,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such client, or the client has been erased */
+                /** @description not_found: no such client, or the client has been erased or is outside the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -1285,7 +1285,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Number changes waiting for ops: both numbers proven by code */
+        /** Number changes waiting for ops in the caller's cities: both numbers proven by code */
         get: {
             parameters: {
                 query?: never;
@@ -1377,7 +1377,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no change waiting for ops by that ID */
+                /** @description not_found: no change waiting for ops by that ID in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -1410,7 +1410,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Deletion requests waiting for ops */
+        /** Deletion requests waiting for ops in the caller's cities */
         get: {
             parameters: {
                 query?: never;
@@ -1501,7 +1501,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no request waiting for ops by that ID */
+                /** @description not_found: no request waiting for ops by that ID in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -1661,7 +1661,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Open grievances, oldest first */
+        /** Open grievances in the caller's cities, oldest first */
         get: {
             parameters: {
                 query?: never;
@@ -1743,7 +1743,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description not_found: no open grievance by that ID */
+                /** @description not_found: no open grievance by that ID in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2409,7 +2409,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such client */
+                /** @description not_found: no such client, or the client is outside the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;

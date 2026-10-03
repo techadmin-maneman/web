@@ -35,10 +35,15 @@ describe("what each ops route asks of its caller", () => {
   });
 
   it("is found from Hono's path, whose placeholders begin with a colon", () => {
-    expect(needOf("get", "/api/clients/:id/photos/:photo_id")).toEqual({ department: "customer_care", level: "view" });
+    expect(needOf("get", "/api/clients/:id/photos/:photo_id")).toEqual({
+      department: "customer_care",
+      level: "view",
+      ownPlaces: true,
+    });
     expect(needOf("POST", "/api/deletion-requests/:id/decision")).toEqual({
       department: "customer_care",
       level: "manage",
+      ownPlaces: true,
     });
     expect(needOf("GET", "/api/*")).toBeUndefined();
     expect(needOf("GET", "/constructor")).toBeUndefined();
@@ -46,7 +51,7 @@ describe("what each ops route asks of its caller", () => {
 
   it("asks of HEAD what it asks of GET, since Hono answers HEAD with the GET route", () => {
     expect(needOf("HEAD", "/api/health")).toBe(SIGNED_IN);
-    expect(needOf("HEAD", "/api/grievances")).toEqual({ department: "customer_care", level: "view" });
+    expect(needOf("HEAD", "/api/grievances")).toEqual({ department: "customer_care", level: "view", ownPlaces: true });
   });
 
   it("asks MANAGE of what gives money back, waives it, or sets prices, codes, settings, erasures and access", () => {
@@ -98,6 +103,21 @@ describe("the routes a caller's calls go ahead on", () => {
       "GET /api/whoami",
       "GET /api/staff",
     ]);
+  });
+
+  it("are, for Customer Care in one city, every Customer Care route up to the level granted", () => {
+    const careInDelhi: Caller = {
+      kind: "person",
+      active: true,
+      grants: [{ department: "customer_care", level: "act", place: { geography: "city", name: "Delhi" } }],
+    };
+    const routes = routesOpenTo(careInDelhi, true, NO_ZONES);
+
+    expect(routes).toEqual(
+      expect.arrayContaining(["GET /api/grievances", "POST /api/clients/find", "POST /api/clients/{id}/address"]),
+    );
+    expect(routes).not.toContain("POST /api/deletion-requests/{id}/decision");
+    expect(routes).not.toContain("GET /api/tasks");
   });
 
   it("are every route for a service token on the list, and none but the signed-in ones for one not on it", () => {
