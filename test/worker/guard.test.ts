@@ -266,7 +266,12 @@ describe("validateStaticConfig: the limits fixed in src/config", () => {
 
   it("reads each limit from src/config/limits.ts, not from a var", () => {
     const { settings } = validateStaticConfig(production);
-    expect(settings.login).toMatchObject({ codeMobileDailyLimit: 5, codeIpHourlyLimit: 10, codeDailyCeiling: 300 });
+    expect(settings.login).toMatchObject({
+      codeMobileDailyLimit: 5,
+      codeIpHourlyLimit: 10,
+      codeDailyCeiling: 300,
+      techCodeDailyCeiling: 100,
+    });
     expect(settings).toMatchObject({ leadMobileDailyLimit: 5, leadIpDailyLimit: 20 });
     expect(settings.tryon).toMatchObject({
       uploadIpHourlyLimit: 5,

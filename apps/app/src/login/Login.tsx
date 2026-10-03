@@ -16,6 +16,7 @@ import { focusIfLost, nameInTitle } from "../lib/arrival.ts";
 import { CodeScreen, type CodeProblem } from "./CodeScreen.tsx";
 import { HelpScreen } from "./HelpScreen.tsx";
 import { MobileScreen } from "./MobileScreen.tsx";
+import { useTurnstile } from "./turnstile.ts";
 
 type Step =
   | { readonly kind: "mobile" }
@@ -37,6 +38,13 @@ function stepInHistory(): Step["kind"] {
   if (typeof state !== "object" || state === null) return "mobile";
   const kind = (state as Record<string, unknown>)[STEP_IN_HISTORY];
   return kind === "code" || kind === "help" ? kind : "mobile";
+}
+
+/** What the code screen says when a code is not sent again: closed, refused for now, or a failure to try again. */
+function sendAgainProblem(status: number, code: string): CodeProblem {
+  if (status === 410) return { kind: "closed" };
+  if (code === "rate_limited") return { kind: "limited" };
+  return { kind: "failed" };
 }
 
 /** Back through the login's own entries to the number, or to the page the login stood on. */
@@ -93,14 +101,26 @@ export function Login({
   // One code at a time: a second send bills a second code, voids the first, and takes another
   // from this number's daily ceiling, which can leave a client unable to log in at all.
   const [busy, once] = useOneAtATime();
+  const turnstile = useTurnstile();
+
+  /** Back to the number, saying why no code was sent. */
+  const refused = (code: string) => {
+    setMobileError(MOBILE_ERRORS[code] ?? login.mobile.errors.unknown);
+    rewind();
+  };
 
   const send = (digits: string) =>
     once(async () => {
       setMobile(digits);
-      const answer = await api.sendCode(digits);
+      const token = await turnstile.token();
+      if (token === null) {
+        refused("turnstile_failed");
+        return;
+      }
+      const answer = await api.sendCode(digits, token);
+      turnstile.renew();
       if (!answer.ok) {
-        setMobileError(MOBILE_ERRORS[answer.code] ?? login.mobile.errors.unknown);
-        rewind();
+        refused(answer.code);
         return;
       }
       setMobileError(null);
@@ -121,7 +141,7 @@ export function Login({
         lastChallenge.current = answer.body;
         setStep({ kind: "code", challenge: answer.body });
       } else {
-        setProblem(answer.status === 410 ? { kind: "closed" } : { kind: "failed" });
+        setProblem(sendAgainProblem(answer.status, answer.code));
       }
     });
 
@@ -145,6 +165,7 @@ export function Login({
         busy={busy}
         error={mobileError}
         ended={ended}
+        turnstileBox={turnstile.box}
         onSubmit={(digits) => {
           void send(digits);
         }}
@@ -167,6 +188,7 @@ export function Login({
       challenge={challenge}
       busy={busy}
       problem={problem}
+      turnstileBox={turnstile.box}
       onVerify={(code) => {
         void verify(challenge, code);
       }}
