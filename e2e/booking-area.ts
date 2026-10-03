@@ -24,10 +24,11 @@ export async function fillAddress(page: Page): Promise<void> {
 export async function seedBookingArea(): Promise<void> {
   const now = new Date().toISOString();
   const sql = [
-    `INSERT OR REPLACE INTO serviceable_pincodes (pincode, area, city, served, launched_at)
-       VALUES ('${SERVED.pincode}', '${SERVED.area}', '${SERVED.city}', 1, '${now}');`,
-    `INSERT OR REPLACE INTO serviceable_pincodes (pincode, area, city, served, launched_at)
-       VALUES ('${UNSERVED.pincode}', '${UNSERVED.area}', '${UNSERVED.city}', 0, NULL);`,
+    // Both areas named, as ops name every area before launch: until then the page names the city instead.
+    `INSERT OR REPLACE INTO serviceable_pincodes (pincode, area, city, served, launched_at, area_named_by)
+       VALUES ('${SERVED.pincode}', '${SERVED.area}', '${SERVED.city}', 1, '${now}', 'ops@localhost');`,
+    `INSERT OR REPLACE INTO serviceable_pincodes (pincode, area, city, served, launched_at, area_named_by)
+       VALUES ('${UNSERVED.pincode}', '${UNSERVED.area}', '${UNSERVED.city}', 0, NULL, 'ops@localhost');`,
     // A technician for the slot to be claimed against; the booking holds one of their half-slots.
     ...technicianFor("booking", now),
   ].join("\n");

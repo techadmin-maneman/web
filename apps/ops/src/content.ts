@@ -519,6 +519,68 @@ export const clients = {
     },
     noUpcoming: "Nothing booked.",
     noPast: "No visit done yet.",
+    /**
+     * PLACEHOLDER, all of it: booking a visit for the client from the console, which no board draws. Every kind; a
+     * paid visit goes out as a payment link, and is booked once the client pays.
+     */
+    book: {
+      open: "Book a visit",
+      title: (name: string) => `Book a visit for ${name}`,
+      close: "Close",
+      kind: "Visit",
+      kinds: {
+        consultation: "Consultation",
+        one_visit: "Consultation and fit in one visit",
+        first_fit: "First fit",
+        service: "Service visit",
+        replacement: "Replacement",
+      },
+      service: "Service",
+      hairSystem: "Hair system",
+      day: "Day",
+      window: "Window",
+      technician: "Technician",
+      anyone: "Whoever is free",
+      earlier: "Earlier days",
+      later: "Later days",
+      noDays: "Nobody is free on these days.",
+      code: "Discount code (optional)",
+      codeHint: "One the client gave you. It comes off before GST.",
+      pays: {
+        nothing: "Nothing to pay.",
+        oneVisit: "Nothing to pay now. A payment link goes to them once they are fitted.",
+        credit: (left: number) => `Paid with a visit credit. ${String(left)} left.`,
+        link: (amount: string) =>
+          `${amount} before any code. A payment link goes to them by SMS; the visit is booked once they pay.`,
+      },
+      book: "Book it",
+      booking: "Booking…",
+      /** "Service visit, Wed 23 Sep, morning, with Sandeep Rawat." */
+      summary: (visit: string, day: string, window: string, technician: string) =>
+        `${visit}, ${day}, ${window}, with ${technician}.`,
+      outcomes: {
+        booked: "Booked.",
+        being_booked: "Booked. It reaches the dispatch board within a minute.",
+        awaiting_payment: (amount: string, until: string) =>
+          `Payment link sent for ${amount}. The slot is held until ${until}; the visit is booked once they pay.`,
+      },
+      link: "Payment link",
+      loading: "Finding free windows…",
+      unreadable: "The free windows could not be read.",
+      retry: "Try again",
+      errors: {
+        taken: "That window was taken a moment ago. Choose another.",
+        already_booked: "They already have one of these to come, or a payment link open for one.",
+        not_bookable: "That day or service cannot be booked.",
+        no_product: "No hair system is on sale that day.",
+        code_not_applicable: "That code does not apply to this visit.",
+        terms_changed: "Their last credit went on another booking a moment ago. Check, then book again.",
+        unavailable: "Razorpay could not make the payment link, so nothing was held. Try again in a minute.",
+        not_found: "This client cannot be booked.",
+        offline: "You are offline. Connect, then try again.",
+        unknown: "That did not go through. Nothing was booked.",
+      } as Readonly<Record<string, string>>,
+    },
     /** "9 am to 12", as the dispatch drawer writes a window. */
     time: (from: string, to: string) => `${from} to ${to}`,
     types: {
@@ -645,6 +707,9 @@ export const clients = {
     } as Readonly<Record<string, string>>,
     refundStates: { created: "Processing", processed: "Back", failed: "Failed" } as Readonly<Record<string, string>>,
     reference: (reference: string) => `Ref ${reference}`,
+    // PLACEHOLDER: a discount code on a payment, which no board draws (docs/decisions/0108-discount-codes.md).
+    /** "Code AUDTEST, Rs. 1,000 off", beneath what the payment was for. */
+    code: (applied: string) => `Code ${applied}`,
   },
   /** Putting a client's service-visit credits right by hand (POST /api/clients/{id}/credits). */
   credits: {
@@ -941,7 +1006,7 @@ export const waitlist = {
     date: "Launch date",
     dateHint: "The day a technician starts coming. A held referral invite lapses twelve months from it.",
     /** PLACEHOLDER: where the area's name in the message comes from, and where it is changed (OPS-13). */
-    named: "The message uses the area's name as Service area sets it.",
+    named: "The message names the area once Service area gives it a name, and its city until then.",
     rename: "Change the name",
     /**
      * What each of them gets. The words are launch_alert_v1's in
@@ -1253,6 +1318,8 @@ export const tasks = {
   } as Readonly<Record<string, string>>,
   /** PLACEHOLDER: a group longer than the board lists: its count is all of them. */
   shown: (shown: number, count: number) => `The ${String(shown)} longest waits of ${String(count)}.`,
+  /** PLACEHOLDER: what a consultation asked for, a first fit to book and a replacement due are done with. */
+  book: "Book a visit",
   /** PLACEHOLDER: more were waiting than one look reads. */
   truncated: "More are waiting than one look reads, so a count here may be short.",
   /** The second line, one per group: the one fact the group turns on. */
@@ -1274,13 +1341,13 @@ export const tasks = {
     /** "Asked for 23 Sep 2026, morning": the day nobody could book for them, self-serve booking being off. */
     consultation_request: (day: string, when: string) => `Asked for ${day}, ${when}`,
     /**
-     * PLACEHOLDER: "+ consultation and fit in one visit", after the day and window asked for: book the client's first
-     * fit in FSM for three hours, paid for at the visit (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+     * PLACEHOLDER: "+ consultation and fit in one visit", after the day and window asked for: book it from the row,
+     * paid for once the client is fitted (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
      */
     withOneVisit: "+ consultation and fit in one visit",
     /**
-     * PLACEHOLDER: ", code WEDDNG25", after the one visit: the discount code the client gave on the form, which ops
-     * enter on the visit once they have booked it (docs/decisions/0108-discount-codes.md).
+     * PLACEHOLDER: ", code WEDDNG25", after the one visit: the discount code the client gave on the form, which the
+     * booking from the row starts with (docs/decisions/0108-discount-codes.md).
      */
     withCode: (code: string) => `, code ${code}`,
     /**
@@ -1959,8 +2026,8 @@ export const settings = {
   services: {
     title: "Services and prices",
     note:
-      "What clients can book, kind by kind. A price applies from the day you give it and never before, so nothing " +
-      "already sold moves. Each service reaches FSM's catalogue as its own item.",
+      "What clients can book, kind by kind. A new price applies from tomorrow at the earliest, so a price already " +
+      "quoted never moves. Each service reaches FSM's catalogue as its own item.",
     /** The four kinds, as the rest of the console names them. */
     kinds: dispatch.typeNames,
     /** Under First fit: its services are the hair systems clients choose from, and nothing stands in for them. */
@@ -2024,7 +2091,7 @@ export const settings = {
       gst: "GST",
       gstHint: (max: number) => `A whole percentage, 0 to ${String(max)}.`,
       from: "Applies from",
-      fromHint: "Today or a day after it.",
+      fromHint: "Tomorrow or later.",
       setPrice: "Set this price",
       renameTitle: (name: string) => `Rename ${name}`,
       name: "Name",
@@ -2084,7 +2151,7 @@ export const settings = {
       order: "The order has changed since the page was read. Reload to see it as it stands.",
       amount_ex_gst: "A price is in whole rupees, inside the range under the field. Nothing was changed.",
       gst_percent: "GST is a whole percentage, inside the range under the field. Nothing was changed.",
-      valid_from: "A price applies from today or a day after it. Nothing was changed.",
+      valid_from: "A new price applies from tomorrow at the earliest. Nothing was changed.",
       was_valid_from: "That price applies already, so it stays in the book.",
       service_exists: "Another service already has that name, or this kind that code. Nothing was changed.",
       last_of_kind:

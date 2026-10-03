@@ -147,6 +147,12 @@ export interface Moving {
 export const graceEnds = (hold: string): string =>
   `strftime('%Y-%m-%dT%H:%M:%fZ', ${hold}.expires_at, '+' || COALESCE(${hold}.grace_seconds, ${String(PAYMENT_GRACE_SECONDS)}) || ' seconds')`;
 
+/** graceEnds, for a hold already read: the last moment a payment for it counts as made in time. */
+export function graceEndOf(hold: { readonly expires_at: string; readonly grace_seconds: number | null }): Date {
+  const graceSeconds = hold.grace_seconds ?? PAYMENT_GRACE_SECONDS;
+  return new Date(Date.parse(hold.expires_at) + graceSeconds * 1000);
+}
+
 /** A dispatch move opened before this, and still open, never finished. */
 export const movesOpenSince = (now: Date): string => new Date(now.getTime() - MOVE_CLAIM_SECONDS * 1000).toISOString();
 
@@ -300,11 +306,59 @@ export interface WindowOffer {
   readonly with: "regular" | "another" | null;
 }
 
+/** A window of a day, and the technicians free to take the visit in it, the client's regular technician first. */
+export interface WindowTechnicians {
+  readonly window: BookingWindow;
+  readonly technicians: Technician[];
+}
+
+/** A visit to place: how long it takes, and the day its service is retired from, if it is. */
+interface VisitToPlace {
+  readonly minutes: number;
+  readonly until?: string | null;
+}
+
 /** Whose time is offered first: a move's own technician, else the client's regular one; nobody's for no client. */
 function firstChoice(db: D1Database, personId: string | null, moving: Moving | null): Promise<string | null> {
   if (moving !== null) return Promise.resolve(moving.technicianId);
   if (personId === null) return Promise.resolve(null);
   return regularTechnician(db, personId);
+}
+
+/**
+ * Each window of each day from `from` that a visit this long can start in: the technicians free to take it, the
+ * regular technician first, and who the regular technician is. A window the visit is too long to start in, as a first
+ * fit's evening, is left out. A day ops black out, or from `until` on, is offered to nobody.
+ */
+async function windowsOf(
+  db: D1Database,
+  personId: string | null,
+  visit: VisitToPlace,
+  range: { readonly from: string; readonly days: number },
+  now: Date,
+  moving: Moving | null,
+): Promise<{ regular: string | null; days: { date: string; windows: WindowTechnicians[] }[] }> {
+  const units = unitsFor(visit.minutes);
+  const to = addDays(range.from, range.days - 1);
+  const [technicians, regular, held, closed] = await Promise.all([
+    techniciansFor(db, moving),
+    firstChoice(db, personId, moving),
+    occupancy(db, range.from, to, now, moving?.visitId ?? null),
+    loadBlackouts(db, range.from, to),
+  ]);
+  const retired = (date: string) => visit.until !== undefined && visit.until !== null && date >= visit.until;
+  const regularFirst = [...technicians].sort((a, b) => Number(b.id === regular) - Number(a.id === regular));
+  const startable = windowsFitting(units);
+  const days = Array.from({ length: range.days }, (_, index) => {
+    const date = addDays(range.from, index);
+    const windows = startable.map((window): WindowTechnicians => {
+      if (closed.has(date) || retired(date)) return { window, technicians: [] };
+      const free = regularFirst.filter((technician) => placement(held(technician.id, date), window, units) !== null);
+      return { window, technicians: free };
+    });
+    return { date, windows };
+  });
+  return { regular, days };
 }
 
 /**
@@ -316,32 +370,36 @@ function firstChoice(db: D1Database, personId: string | null, moving: Moving | n
 export async function availability(
   db: D1Database,
   personId: string | null,
-  visit: { readonly minutes: number; readonly until?: string | null },
+  visit: VisitToPlace,
   from: string,
   days: number,
   now: Date,
   moving: Moving | null = null,
 ): Promise<{ date: string; windows: WindowOffer[] }[]> {
-  const units = unitsFor(visit.minutes);
-  const to = addDays(from, days - 1);
-  const [technicians, regular, held, closed] = await Promise.all([
-    techniciansFor(db, moving),
-    firstChoice(db, personId, moving),
-    occupancy(db, from, to, now, moving?.visitId ?? null),
-    loadBlackouts(db, from, to),
-  ]);
-  const retired = (date: string) => visit.until !== undefined && visit.until !== null && date >= visit.until;
-  const startable = windowsFitting(units);
-  return Array.from({ length: days }, (_, index) => {
-    const date = addDays(from, index);
-    const windows = startable.map((window): WindowOffer => {
-      if (closed.has(date) || retired(date)) return { window, with: null };
-      const free = technicians.filter((technician) => placement(held(technician.id, date), window, units) !== null);
-      if (free.some((technician) => technician.id === regular)) return { window, with: "regular" };
-      return { window, with: free.length > 0 ? "another" : null };
-    });
-    return { date, windows };
-  });
+  const offered = await windowsOf(db, personId, visit, { from, days }, now, moving);
+  const whoComes = (free: readonly Technician[]): WindowOffer["with"] => {
+    if (free.some((technician) => technician.id === offered.regular)) return "regular";
+    return free.length > 0 ? "another" : null;
+  };
+  return offered.days.map(({ date, windows }) => ({
+    date,
+    windows: windows.map(({ window, technicians }) => ({ window, with: whoComes(technicians) })),
+  }));
+}
+
+/**
+ * Each window of each day from `from` that a visit this long can start in: the technicians free to take it, the
+ * client's regular technician first, for ops to choose from as they book.
+ */
+export async function freeTechnicians(
+  db: D1Database,
+  personId: string,
+  visit: VisitToPlace,
+  from: string,
+  days: number,
+  now: Date,
+): Promise<{ date: string; windows: WindowTechnicians[] }[]> {
+  return (await windowsOf(db, personId, visit, { from, days }, now, null)).days;
 }
 
 /**
@@ -367,11 +425,14 @@ export interface Hold {
 
 /**
  * Holds nobody is paying for any more at ?1: unpaid, and past their countdown and their grace. With ?3 = 1, the
- * client's own other unpaid holds too: in the app a client has one hold at a time. A paid hold is never here. A hold
- * past its grace is past its countdown too, which the index on expires_at finds.
+ * client's own other unpaid holds too, since in the app a client has one hold at a time; but not one with a Razorpay
+ * order, which a payment may still land on until its grace ends, nor one ops sent a payment link for, which stays open
+ * until the link closes. A paid hold is never here. A hold past its grace is past its countdown too, which the index on
+ * expires_at finds.
  */
 const LET_GO = `SELECT id FROM slot_holds WHERE state = 'held' AND confirmed_at IS NULL
-  AND ((expires_at <= ?1 AND ${graceEnds("slot_holds")} <= ?1) OR (?3 = 1 AND person_id = ?2))`;
+  AND ((expires_at <= ?1 AND ${graceEnds("slot_holds")} <= ?1)
+    OR (?3 = 1 AND person_id = ?2 AND razorpay_order_id IS NULL AND pay_by_link = 0))`;
 
 /**
  * Lets go of the holds nobody is paying for, and, given a client, that client's own other unpaid holds too. For
@@ -418,9 +479,14 @@ export async function holdSlot(
     moves?: { readonly visit: Moving; readonly kind: "move" | "replace" };
     /**
      * Where it is held. In the app the client's other unpaid holds are let go. The site lets none of theirs go,
-     * and books its free consultation at once, so its hold is confirmed as it is made.
+     * and books its free consultation at once, so its hold is confirmed as it is made. Ops let none go either, and
+     * confirm a hold nothing is paid for as they book it.
      */
-    from?: "app" | "site";
+    from?: "app" | "site" | "ops";
+    /** Only this technician may take it: the one ops chose. */
+    technicianId?: string;
+    /** Paid for by a payment link ops send, rather than at the app's Checkout. */
+    payByLink?: boolean;
     /** Written in the same batch, so they stand or fall with the hold: the person and their consent, from the site. */
     alongside?: readonly D1PreparedStatement[];
     /** Written after the hold, in its batch, given its ID: the site's discount code (docs/decisions/0108-discount-codes.md). */
@@ -439,7 +505,11 @@ export async function holdSlot(
     moving === null ? regularTechnician(db, personId) : moving.technicianId,
     occupancy(db, date, date, now, moving?.visitId ?? null),
   ]);
-  const candidates = technicians
+  const chosen =
+    input.technicianId === undefined
+      ? technicians
+      : technicians.filter((technician) => technician.id === input.technicianId);
+  const candidates = chosen
     .map((technician) => ({ technician, start: placement(held(technician.id, date), window, units) }))
     .filter((candidate): candidate is { technician: Technician; start: number } => candidate.start !== null)
     .sort(
@@ -462,9 +532,9 @@ export async function holdSlot(
             `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
                amount_ex_gst, gst_percent, state, expires_at, created_at, updated_at, moves_appointment_id, move_kind,
                use_credit, pincode, late_fee_ex_gst, late_fee_gst_percent, confirmed_at, queued_at, tier, minutes,
-               grace_seconds, change_notice_hours, late_change_charge, no_show_charge, one_visit)
+               grace_seconds, change_notice_hours, late_change_charge, no_show_charge, one_visit, pay_by_link)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, 'held', ?11, ?12, ?12, ?13, ?14, ?15, ?16, ?17, ?18,
-               ?19, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26)`,
+               ?19, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27)`,
           )
           .bind(
             id,
@@ -493,6 +563,7 @@ export async function holdSlot(
             input.terms?.lateCharge ?? null,
             input.terms?.noShowCharge ?? null,
             oneVisit ? 1 : 0,
+            input.payByLink === true ? 1 : 0,
           ),
         ...claimsOf(start, units, window).map((claim) =>
           db
@@ -508,6 +579,48 @@ export async function holdSlot(
     }
   }
   return null;
+}
+
+/** A hold's own time: its technician, day, window, and the half-slot its visit starts in. */
+interface HeldTime {
+  readonly id: string;
+  readonly type: VisitType;
+  readonly minutes: number | null;
+  readonly technician_id: string;
+  readonly date: string;
+  readonly window_label: BookingWindow;
+  readonly start_unit: number;
+}
+
+/**
+ * Takes a hold that was let go back to held, on its own time, where nothing has taken that time since. False while it
+ * stays let go; true once it is held again, here or by a try running alongside, or booked.
+ */
+export async function retakeSlot(db: D1Database, hold: HeldTime, now: Date): Promise<boolean> {
+  const units = unitsFor(heldMinutes(hold));
+  const day = (await occupancy(db, hold.date, hold.date, now))(hold.technician_id, hold.date);
+  if (day.onLeave || clashes(day, hold.window_label) || !fitsAt(day, hold.start_unit, units)) return false;
+  const isHeld = "EXISTS (SELECT 1 FROM slot_holds WHERE id = ?4 AND state = 'held')";
+  try {
+    await db.batch([
+      ...lettingGo(db, now),
+      db
+        .prepare("UPDATE slot_holds SET state = 'held', updated_at = ?2 WHERE id = ?1 AND state = 'released'")
+        .bind(hold.id, now.toISOString()),
+      ...claimsOf(hold.start_unit, units, hold.window_label).map((claim) =>
+        db
+          .prepare(
+            `INSERT INTO slot_claims (technician_id, date, claim, hold_id) SELECT ?1, ?2, ?3, ?4 WHERE ${isHeld}`,
+          )
+          .bind(hold.technician_id, hold.date, claim, hold.id),
+      ),
+    ]);
+  } catch (error) {
+    // The time went to another hold between the look and the write; or a try alongside took it back first.
+    if (!(error instanceof Error && error.message.includes("UNIQUE"))) throw error;
+  }
+  const after = await db.prepare("SELECT state FROM slot_holds WHERE id = ?1").bind(hold.id).first<{ state: string }>();
+  return after !== null && after.state !== "released";
 }
 
 /**

@@ -198,15 +198,19 @@ describe("the client's own card, from the client app's host", () => {
 });
 
 describe("the waitlist and a launch", () => {
-  async function waiting(alert: boolean) {
+  /** Someone waiting in Bandra, whose area ops have named unless `named` is false. */
+  async function waiting(alert: boolean, named = true) {
     await env.DB.prepare(
       "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, '+919810000002', 'Karan Bhatia')",
     )
       .bind(FRIEND, NOW.toISOString())
       .run();
     await env.DB.prepare(
-      "INSERT INTO serviceable_pincodes (pincode, area, city, served) VALUES ('400050', 'Bandra', 'Mumbai', 0)",
-    ).run();
+      `INSERT INTO serviceable_pincodes (pincode, area, city, served, area_named_by)
+       VALUES ('400050', 'Bandra', 'Mumbai', 0, ?1)`,
+    )
+      .bind(named ? "ops@localhost" : null)
+      .run();
     await env.DB.prepare(
       `INSERT INTO waitlist_entries (id, pincode, person_id, referral_code, contact_consent_at, launch_alert, created_at)
        VALUES ('w1', '400050', ?1, ?2, ?3, ?4, ?3)`,
@@ -273,6 +277,19 @@ describe("the waitlist and a launch", () => {
     const second = fakeQueue();
     expect(await (await launch({ confirm: true }, second)).json()).toMatchObject({ alerts: 0 });
     expect(second.sent).toEqual([]);
+  });
+
+  // BK-27 and CP-25 of the audit, 2 October 2026: a launch named the area by its post office's name.
+  it("names the city in the launch alert, and to ops, until ops name the area", async () => {
+    await waiting(true, false);
+    expect(await (await request(ops(), "/api/waitlist")).json()).toMatchObject({
+      areas: [{ pincode: "400050", area: null, city: "Mumbai" }],
+    });
+    expect((await launch({ confirm: true })).status).toBe(200);
+    const composed = await composeLaunchAlert(env.DB, "400050", FRIEND, "local");
+    expect("skip" in composed ? composed : renderMessage(composed.template, composed.params)).toBe(
+      "Hello Karan, we now come to Mumbai. Your free consultation can be booked here: http://localhost:4321/book",
+    );
   });
 
   // The waitlist was read whole, however many pincodes people were waiting in (FEO-16).

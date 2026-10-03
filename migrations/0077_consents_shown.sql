@@ -1,4 +1,4 @@
--- Migration number: 0074
+-- Migration number: 0077
 --
 -- The photograph consents the pay step showed when the client tapped Pay, kept
 -- on the hold and recorded only once the booking is confirmed, paid or free.

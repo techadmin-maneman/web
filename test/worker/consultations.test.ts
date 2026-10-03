@@ -9,7 +9,7 @@ import { openSession } from "../../src/domain/sessions.ts";
 import { createStubFsm, EMPTY_FSM } from "../../src/providers/fsm.ts";
 import { createStubPayments } from "../../src/providers/payments.ts";
 import { consultationBody, lastBookableDay } from "../../scripts/lib/test-booking.ts";
-import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "./helpers.ts";
+import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, provedNumberCode, request } from "./helpers.ts";
 
 const VISITOR = {
   name: "Karan Bhatia",
@@ -41,7 +41,7 @@ const BOOKED_MORNING = {
   credits: false,
   invite: "unknown",
   one_visit: false,
-  discount_code: false,
+  discount_code: null,
 };
 
 const site = (settings = {}) => appFor("local", fakeDependencies(), settings, "public");
@@ -51,11 +51,13 @@ const post = (body: unknown) => ({
   body: JSON.stringify(body),
 });
 
-async function pincode(pin: string, area: string, city: string, served: boolean) {
+/** A pincode whose area ops have named, unless `named` is false: its name is then still the post offices'. */
+async function pincode(pin: string, area: string, city: string, served: boolean, named = true) {
   await env.DB.prepare(
-    "INSERT INTO serviceable_pincodes (pincode, area, city, served, launched_at) VALUES (?1, ?2, ?3, ?4, ?5)",
+    `INSERT INTO serviceable_pincodes (pincode, area, city, served, launched_at, area_named_by)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6)`,
   )
-    .bind(pin, area, city, served ? 1 : 0, served ? "2026-09-01T18:30:00.000Z" : null)
+    .bind(pin, area, city, served ? 1 : 0, served ? "2026-09-01T18:30:00.000Z" : null, named ? "ops@localhost" : null)
     .run();
 }
 
@@ -89,7 +91,7 @@ describe("POST /api/consultation", () => {
       credits: false,
       invite: "unknown",
       one_visit: false,
-      discount_code: false,
+      discount_code: null,
     });
     expect(fsm.sent).toEqual([{ hold_id: expect.any(String) as string, request_id: expect.any(String) as string }]);
     expect(crm.sent).toEqual([{ lead_id: expect.any(String) as string, request_id: expect.any(String) as string }]);
@@ -180,7 +182,7 @@ describe("POST /api/consultation", () => {
       credits: false,
       invite: "unknown",
       one_visit: false,
-      discount_code: false,
+      discount_code: null,
     });
     expect(fsm.sent).toEqual([]);
     expect(crm.sent).toHaveLength(1);
@@ -416,6 +418,38 @@ describe("the address the consultation is at", () => {
   });
 });
 
+// BK-27 and CP-25 of the audit, 2 October 2026: an area nobody had named was called by its post office's name.
+describe("an area ops have not named yet", () => {
+  it("is booked as its city", async () => {
+    await pincode("110048", "Masjid Moth", "Delhi", true, false);
+    const answer = await request(
+      site(),
+      "/api/consultation",
+      post({
+        ...VISITOR,
+        pincode: "110048",
+        date: "2026-09-23",
+        window: "morning",
+        consent: true,
+        address: { ...ADDRESS, locality: "Greater Kailash II", city: "Delhi", pincode: "110048" },
+      }),
+      { FSM_QUEUE: fakeQueue(), CRM_QUEUE: fakeQueue() },
+    );
+    expect(await answer.json()).toMatchObject({ state: "booked", area: "Delhi" });
+  });
+
+  it("is not named to someone joining its waitlist", async () => {
+    await pincode("110048", "Masjid Moth", "Delhi", false, false);
+    const answer = await request(
+      site(),
+      "/api/waitlist",
+      post({ ...VISITOR, pincode: "110048", contact_consent: true, launch_alert: false }),
+      { CRM_QUEUE: fakeQueue() },
+    );
+    expect(await answer.json()).toEqual({ area: null, credits: false, invite: "unknown" });
+  });
+});
+
 describe("POST /api/waitlist", () => {
   it("takes the number for a pincode we do not serve, with the launch alert asked for", async () => {
     await pincode("400050", "Bandra", "Mumbai", false);
@@ -547,7 +581,7 @@ describe("an invite the browser remembered", () => {
       credits: true,
       invite: "valid",
       one_visit: false,
-      discount_code: false,
+      discount_code: null,
     });
     expect((await attributions()).results).toEqual([
       {
@@ -760,6 +794,7 @@ describe("a number the site already knows", () => {
 // nothing paid until the client is fitted. It replaces the consultation with the first fit to follow (item 68), whose
 // request the form no longer writes, so the tests of that request went with it.
 describe("a consultation and fit in one visit", () => {
+  let proved = "";
   const book = (body: object, settings = {}, queue = fakeQueue()) =>
     request(
       site(settings),
@@ -771,6 +806,7 @@ describe("a consultation and fit in one visit", () => {
         window: "morning",
         consent: true,
         address: ADDRESS,
+        number_code_id: proved,
         ...body,
       }),
       { FSM_QUEUE: queue, CRM_QUEUE: fakeQueue() },
@@ -779,6 +815,35 @@ describe("a consultation and fit in one visit", () => {
 
   beforeEach(async () => {
     await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
+    proved = await provedNumberCode("+919810000002");
+  });
+
+  // PS-10: the one visit sends a technician with stock, and recorded a consent and a person, for any number typed.
+  it("is refused, and writes nothing, without a code that proved the number in the last 30 minutes", async () => {
+    const other = await provedNumberCode("+919810000003");
+    const stale = await provedNumberCode("+919810000002", new Date(NOW.getTime() - 31 * 60_000));
+    const queue = fakeQueue();
+    for (const numberCode of [{ number_code_id: undefined }, { number_code_id: other }, { number_code_id: stale }]) {
+      const answer = await book({ one_visit: true, ...numberCode }, {}, queue);
+      expect(answer.status).toBe(403);
+      expect(await answer.json()).toMatchObject({ error: { code: "number_not_proved" } });
+    }
+    expect(queue.sent).toEqual([]);
+    for (const table of ["people", "consents", "slot_holds", "leads", "outbound_messages"]) {
+      expect(await count(`SELECT COUNT(*) AS n FROM ${table}`)).toBe(0);
+    }
+  });
+
+  it("refuses a number we know the same way, telling its owner nothing", async () => {
+    expect((await book({ one_visit: true })).status).toBe(201);
+    const answer = await book({ date: "2026-09-24", one_visit: true, number_code_id: undefined });
+    expect(answer.status).toBe(403);
+    expect(await count("SELECT COUNT(*) AS n FROM outbound_messages")).toBe(0);
+  });
+
+  it("asks no code of the consultation alone", async () => {
+    const answer = await book({ number_code_id: undefined });
+    expect(answer.status).toBe(201);
   });
 
   it("holds the first fit's three hours with nothing paid, sold to cost nothing if missed or moved", async () => {
@@ -793,7 +858,7 @@ describe("a consultation and fit in one visit", () => {
       credits: false,
       invite: "unknown",
       one_visit: true,
-      discount_code: false,
+      discount_code: null,
     });
     expect(fsm.sent).toHaveLength(1);
     const held = await env.DB.prepare(
@@ -1011,7 +1076,8 @@ describe("GET /api/availability/public", () => {
 
     expect(days[0]).toEqual({ date: "2026-09-22", windows: { morning: true, afternoon: true, evening: false } });
     expect(windowsOn(days, "2026-09-23")).toEqual(NONE_OPEN);
-    const refused = await book({ mobile: "9810000003", one_visit: true, window: "morning" });
+    const proved = await provedNumberCode("+919810000003");
+    const refused = await book({ mobile: "9810000003", one_visit: true, window: "morning", number_code_id: proved });
     expect(refused.status).toBe(409);
   });
 

@@ -31,6 +31,55 @@ export async function fakeCheckout(page: Page, outcome: "paid" | "failed"): Prom
   );
 }
 
+interface LeftOpen {
+  /** The timeout Checkout was opened with, in seconds, and when, on the page's clock. */
+  readonly timeout: number;
+  readonly openedAt: number;
+  pay(): void;
+  close(): void;
+}
+
+/** Checkout that stays open until the test pays in it (paidInCheckout) or closes it (closedCheckout). */
+export async function checkoutLeftOpen(page: Page): Promise<void> {
+  await page.route("https://checkout.razorpay.com/v1/checkout.js", (route) =>
+    route.fulfill({
+      contentType: "text/javascript",
+      body: `window.Razorpay = function (options) {
+        this.on = () => {};
+        this.open = () => {
+          window.__checkout = {
+            timeout: options.timeout,
+            openedAt: Date.now(),
+            pay: () => options.handler({ razorpay_payment_id: "pay_fake" }),
+            close: () => options.modal.ondismiss(),
+          };
+        };
+      };`,
+    }),
+  );
+}
+
+/** Waits for Checkout to open; its timeout, and when it opened. */
+export async function checkoutOpened(page: Page): Promise<{ timeout: number; openedAt: number }> {
+  await page.waitForFunction(() => (window as unknown as { __checkout?: LeftOpen }).__checkout !== undefined);
+  return page.evaluate(() => {
+    const checkout = (window as unknown as { __checkout: LeftOpen }).__checkout;
+    return { timeout: checkout.timeout, openedAt: checkout.openedAt };
+  });
+}
+
+export async function paidInCheckout(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    (window as unknown as { __checkout: LeftOpen }).__checkout.pay();
+  });
+}
+
+export async function closedCheckout(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    (window as unknown as { __checkout: LeftOpen }).__checkout.close();
+  });
+}
+
 /**
  * Checkout that paints a window of its own across the page, as Razorpay's iframe does, and records whether the page
  * let it through: `window.__checkoutOnTop`. A sheet left open with showModal() sits in the browser's top layer, above
@@ -65,6 +114,15 @@ export async function checkoutOnTop(page: Page): Promise<void> {
  * page was given; only the browser resolves app.localhost, so the test cannot fetch it again itself.
  */
 export async function confirmedByRazorpay(page: Page): Promise<void> {
+  await paidAndThen(page, { state: "booked", visit_id: crypto.randomUUID() });
+}
+
+/** The hold's poll answered as a paid hold that could not be booked: let go, and its payment refunded. */
+export async function refundedAfterPaying(page: Page): Promise<void> {
+  await paidAndThen(page, { state: "released" });
+}
+
+async function paidAndThen(page: Page, outcome: Record<string, unknown>): Promise<void> {
   let hold: Record<string, unknown> = {};
   page.on("response", (response) => {
     if (response.request().method() === "POST" && response.url().endsWith("/api/holds")) {
@@ -75,7 +133,7 @@ export async function confirmedByRazorpay(page: Page): Promise<void> {
   });
   await page.route(/\/api\/holds\/[0-9a-f-]{36}$/, (route) =>
     route.request().method() === "GET"
-      ? route.fulfill({ json: { ...hold, state: "booked", paid: true, visit_id: crypto.randomUUID() } })
+      ? route.fulfill({ json: { ...hold, paid: true, ...outcome } })
       : route.fallback(),
   );
 }

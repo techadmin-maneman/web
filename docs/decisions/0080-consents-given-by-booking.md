@@ -1,6 +1,6 @@
 # 0080. The photograph consents, given by booking
 
-- Status: accepted, for counsel to confirm before production (`docs/open-points.md`, item 148). Amended by ADR 0094: the console tells a consent given by booking by where it was given, not by its notice. Amended 2 October 2026 on the owner's decision (audit finding PS-28): the consents are recorded once the booking is confirmed, not at the tap; the photographs for the client's own record are worded as taken for their visit record; the reminder box and /book record notices of their own words.
+- Status: accepted, for counsel to confirm before production (`docs/open-points.md`, item 148). Amended by ADR 0094: the console tells a consent given by booking by where it was given, not by its notice. Amended 2 October 2026 by the owner's ruling on the audit: Pay comes first, and the lines sit one tap away beneath it under "What booking agrees to"; the tap still agrees. Amended 2 October 2026 on the owner's decision (audit finding PS-28): the consents are recorded once the booking is confirmed, not at the tap; the photographs for the client's own record are worded as taken for their visit record; the reminder box and /book record notices of their own words.
 - Date: 2026-09-27
 - Amends [0042](0042-client-profile.md), whose consents were given only by the profile's switch, and [0048](0048-referrals.md), whose invite named a referrer only on the profile's notice; follows [0049](0049-dpdp.md) and records the owner's ruling of 27 September 2026 (ADR 0025, item 61)
 

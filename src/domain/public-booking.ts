@@ -35,7 +35,8 @@
 // the slot are written in one batch: a slot that has gone leaves nothing behind
 // (docs/decisions/0068-a-paid-hold-is-kept.md).
 //
-// The form may book the consultation and the fit in one visit instead: a first
+// The form may book the consultation and the fit in one visit instead, for a
+// number proved with its WhatsApp code (src/policy/number-proof.ts): a first
 // fit marked as one, three hours, with nothing paid. The client chooses the
 // product with the technician and pays by a link once fitted, so the site still
 // takes no money (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
@@ -54,6 +55,7 @@ import { BOOKING_DAYS, HOLD_SECONDS, type BookingWindow } from "../config/schedu
 import { addDays, indiaDate } from "../lib/india-time.ts";
 import type { Logger } from "../log.ts";
 import type { SoldTerms } from "../policy/moving-a-visit.ts";
+import { bookingNeedsProof } from "../policy/number-proof.ts";
 import { ONE_VISIT_TERMS, planStartsIn, type Plan } from "../policy/one-visit.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 import type { Price } from "./price-book.ts";
@@ -62,27 +64,32 @@ import { bookableService, offeredProducts } from "./services.ts";
 import type { ConsentSource } from "../policy/consents.ts";
 import { notBookedFromSite, typedAddress, type NotBookedFromSite } from "../policy/site-booking.ts";
 import { currentAddress, firstAddressStatement, type Address } from "./profile.ts";
-import { checkForOneVisit, codeOnHold, useOnNewHold } from "./discount-code-holds.ts";
+import { checkForOneVisit, codeOnHold, useOnNewHold, type OneVisitCode } from "./discount-code-holds.ts";
 import { attribute, hasAskedForAVisit, type Invite, type InviteState, type Via } from "./referrals.ts";
 import { availability, bookableTypes, holdSlot, liveVisitOf, type HeldService } from "./scheduling.ts";
 import { saveBookingLead, type Attribution } from "./leads.ts";
 import { siteNotice, type SiteNoticeKind } from "./site-notices.ts";
 import { waitlistConfirmation } from "./waitlist.ts";
+import { namedArea } from "./area-names.ts";
 
 /** A pincode we know, and whether a technician works there. */
 export interface Pincode {
   readonly pincode: string;
-  readonly area: string;
+  /** Null until ops have named the area. */
+  readonly area: string | null;
   readonly city: string;
   readonly served: number;
 }
 
 export function pincodeOf(db: D1Database, pin: string): Promise<Pincode | null> {
   return db
-    .prepare("SELECT pincode, area, city, served FROM serviceable_pincodes WHERE pincode = ?1")
+    .prepare(`SELECT pincode, ${namedArea("p")} AS area, city, served FROM serviceable_pincodes p WHERE pincode = ?1`)
     .bind(pin)
     .first<Pincode>();
 }
+
+/** Where a booking is, as the client reads it: the area once ops have named it, its city until then. */
+const placeOf = (pincode: Pincode): string => pincode.area ?? pincode.city;
 
 /**
  * Why a submission was refused, in the codes the routes answer with. Each route
@@ -100,7 +107,8 @@ export interface Refusal<Status extends number = 400 | 403 | 409 | 422 | 429 | 5
     | "taken"
     | "not_bookable"
     | "code_not_applicable"
-    | "no_product";
+    | "no_product"
+    | "number_not_proved";
   /** For invalid_request: the field refused, where the request was well formed and did not add up. */
   readonly fields?: readonly string[];
 }
@@ -120,6 +128,8 @@ export interface FormRequest {
   readonly selfServeBooking: boolean;
   /** The number, the Turnstile token and the day's limits per number and address, the same for both pages. */
   readonly checkPerson: (mobile: string, turnstileToken: string, name: string) => Promise<Checked>;
+  /** Whether the WhatsApp code `codeId` proved this number (src/policy/number-proof.ts). */
+  readonly provedNumber: (codeId: string | null, mobileE164: string) => Promise<boolean>;
   /** Sends a person's first address on to their FSM contact and CRM lead, as saving it in the app does. */
   readonly syncContact: (personId: string) => Promise<void>;
   /** Sends a hold the form booked free to be booked (src/http/book-hold.ts). */
@@ -369,6 +379,8 @@ export interface ConsultationRequest {
    * payment link (docs/decisions/0108-discount-codes.md).
    */
   readonly discountCode: string | null;
+  /** The WhatsApp code that proved the number, which the one visit needs; null for none. */
+  readonly numberCodeId: string | null;
 }
 
 export interface Booked {
@@ -381,6 +393,7 @@ export interface Booked {
   readonly state: "booked" | "requested";
   readonly date: string;
   readonly window: BookingWindow;
+  /** The area once ops have named it, its city until then. */
   readonly area: string;
   /** Whether the invite's service visits apply. */
   readonly credits: boolean;
@@ -388,9 +401,15 @@ export interface Booked {
   readonly invite: InviteState;
   /** Whether it is the consultation and the first fit in one visit. */
   readonly oneVisit: boolean;
-  /** Whether the discount code given stands on the booking, or on the request ops book it from. */
-  readonly discountCode: boolean;
+  /**
+   * The discount code given, with what it takes off, while it stands on the booking or on the request ops book it
+   * from; null when none was given, or another booking took its last use a moment before.
+   */
+  readonly discountCode: StandingCode | null;
 }
+
+/** A code that stands on a site booking: the code, and what it takes off the hair system's price when they pay. */
+export type StandingCode = Pick<OneVisitCode, "code" | "terms">;
 
 /**
  * Books the free consultation, or the consultation and fit in one visit: the slot, the lead, and the invite's credits
@@ -418,6 +437,10 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   }
   const checked = await form.checkPerson(request.mobile, request.turnstileToken, request.name);
   if (!checked.ok) return checked;
+  // Nothing is looked up or written for a number the plan needs proved until its code was entered.
+  if (bookingNeedsProof(request.plan) && !(await form.provedNumber(request.numberCodeId, checked.mobile))) {
+    return { ok: false, status: 403, code: "number_not_proved" };
+  }
 
   const knownId = await personWithMobile(db, checked.mobile);
   if (knownId !== null) {
@@ -483,6 +506,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   // The code's use is written with the hold only while the code still has a use left for it, which another booking
   // may have taken a moment before.
   const codeStands = code !== null && (holdId === null || (await codeOnHold(db, holdId)) !== null);
+  const standingCode = codeStands ? { code: code.code, terms: code.terms } : null;
   // Someone we knew may be in FSM and the CRM already, with no address. Someone new is added to both with this
   // one, by the booking and its lead.
   if (knownId !== null && address === "saved") await form.syncContact(person.id);
@@ -522,11 +546,11 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
     state,
     date: request.date,
     window: request.window,
-    area: pincode.area,
+    area: placeOf(pincode),
     credits: invited.credits,
     invite: invited.invite,
     oneVisit,
-    discountCode: codeStands,
+    discountCode: standingCode,
   };
 }
 
@@ -553,12 +577,12 @@ async function answerAsForANewNumber(
     state,
     date: request.date,
     window: request.window,
-    area: pincode.area,
+    area: placeOf(pincode),
     // A new number carries a valid invite's credits.
     credits: request.invite !== null,
     invite: request.invite === null ? "unknown" : "valid",
     oneVisit,
-    discountCode: code !== null,
+    discountCode: code === null ? null : { code: code.code, terms: code.terms },
   };
 }
 
@@ -597,7 +621,7 @@ async function oneVisitCode(
   text: string,
   knownId: string | null,
   oneVisit: boolean,
-): Promise<{ readonly ok: true; readonly codeId: string; readonly code: string } | Refusal> {
+): Promise<OneVisitCode | Refusal> {
   const notApplicable = { ok: false, status: 422, code: "code_not_applicable", fields: ["discount_code"] } as const;
   if (!oneVisit) {
     form.log.info("discount_code_refused", { reason: "not_covered" });
@@ -629,6 +653,7 @@ export interface WaitlistRequest {
 
 export interface Listed {
   readonly ok: true;
+  /** Null until ops have named the area, and for a pincode we do not know. */
   readonly area: string | null;
   readonly credits: boolean;
   readonly invite: InviteState;

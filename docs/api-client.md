@@ -1128,7 +1128,7 @@ One of the client's holds
 
 Let a hold go
 
-**204**: Let go, or already gone
+**204**: Let go, or already gone; or kept, when it has a Razorpay order and its pay_by has not passed, since a payment may still land on it.
 
 **401**: session_required
 
@@ -1644,6 +1644,7 @@ Request body:
             "look_limit_reached",
             "claim_required",
             "whatsapp_unavailable",
+            "number_not_proved",
             "unauthorized",
             "visit_booked",
             "payment_held",
@@ -1658,6 +1659,7 @@ Request body:
             "not_bookable",
             "hold_expired",
             "address_required",
+            "already_booked",
             "not_changeable",
             "terms_changed",
             "consent_required",
@@ -4183,6 +4185,38 @@ Request body:
         }
       ],
       "description": "The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07)."
+    },
+    "discount_code": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "amount_off": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "In paise before GST; null where the visit's price was not yet known."
+            }
+          },
+          "required": [
+            "code",
+            "amount_off"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The discount code the visit was paid with; null for none, and on a late fee."
     }
   },
   "required": [
@@ -4200,7 +4234,8 @@ Request body:
     "refunded_amount",
     "purpose",
     "charge",
-    "no_show"
+    "no_show",
+    "discount_code"
   ],
   "additionalProperties": false
 }
@@ -4723,6 +4758,38 @@ Request body:
       ],
       "description": "The visit it paid for was one the client was not home for: how long we waited, and what ops ruled (LIFE-07)."
     },
+    "discount_code": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "amount_off": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "In paise before GST; null where the visit's price was not yet known."
+            }
+          },
+          "required": [
+            "code",
+            "amount_off"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The discount code the visit was paid with; null for none, and on a late fee."
+    },
     "documents": {
       "type": "object",
       "properties": {
@@ -4774,6 +4841,7 @@ Request body:
     "purpose",
     "charge",
     "no_show",
+    "discount_code",
     "documents"
   ],
   "additionalProperties": false
@@ -5238,6 +5306,11 @@ Request body:
       "type": "string",
       "format": "date-time"
     },
+    "pay_by": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The last moment a payment counts as made in time: expires_at and the grace after it. Checkout closes then."
+    },
     "state": {
       "type": "string",
       "enum": [
@@ -5356,6 +5429,7 @@ Request body:
     "change_notice_hours",
     "late_change_charge",
     "expires_at",
+    "pay_by",
     "state",
     "paid",
     "visit_id",

@@ -462,6 +462,17 @@ test("lists what the client has paid, and what for", async ({ page }) => {
   await expect(payment).toContainText("Paid · Ref MM-2027-0841");
 });
 
+test("names the discount code a payment was made with, and what it took off", async ({ page }) => {
+  const [paid] = RECORD.payments;
+  const withCode = {
+    ...RECORD,
+    payments: paid === undefined ? [] : [{ ...paid, discount_code: { code: "AUDTEST", amount_off: 100_000 } }],
+  } satisfies OpsReply<"/api/clients/{id}">;
+  await openClient(page, `/clients/${CLIENT.id}/payments`, { [READ_RECORD]: json(withCode) });
+  const payment = page.getByRole("region", { name: "Payments and refunds" }).getByRole("row").nth(1);
+  await expect(payment).toContainText("Code AUDTEST, Rs. 1,000 off");
+});
+
 // A credit given or taken in error once needed SQL to put right (BIZ-15).
 test("puts a client's credits right, with the reason, and shows the balance it answers", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/payments`, {

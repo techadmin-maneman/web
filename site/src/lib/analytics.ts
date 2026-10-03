@@ -25,7 +25,7 @@ export type AnalyticsEvent =
       readonly name: "lead_submitted";
       readonly page: BookingPage;
       readonly served: boolean;
-      /** The pincode's area, "Sector 65"; null for a pincode we do not know. */
+      /** The pincode's area, "Sector 65"; null until ops have named it, and for a pincode we do not know. */
       readonly area: string | null;
       /** Null on the waitlist, which asks for no window. */
       readonly window: BookingWindow | null;

@@ -35,7 +35,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Technicians, and FSM's catalogue | `technicians`, `fsm_items` | A technician added or changed since goes back | Where FSM still holds them, the cron reads them again; otherwise the rows since `<T>` |
 | Worked out from other tables | `last_visits`, `ops_settings_snapshot`, `stock_balances` | Nothing of their own: triggers keep each from the table it is worked out from | Putting back that table |
 | The storage meter | `stored_objects`, `storage_meter` | Objects stored or deleted since are counted wrongly, as R2 is not restored | The rows since `<T>` |
-| Housekeeping | `alerts`, `cron_jobs`, `cron_runs`, `counters`, `idempotency`, `otp_challenges`, `tryon_sessions`, `events`, `sync_cursors`, `webhook_inbox`, `zoho_access_tokens`, `zoho_token`, `zoho_tokens` | Nothing that lasts | Nothing |
+| Housekeeping | `alerts`, `cron_jobs`, `cron_runs`, `counters`, `idempotency`, `number_codes`, `otp_challenges`, `tryon_sessions`, `events`, `sync_cursors`, `webhook_inbox`, `zoho_access_tokens`, `zoho_token`, `zoho_tokens` | Nothing that lasts | Nothing |
 | The database's identity, and the restore's own switch | `deployment_identity`, `maintenance` | The identity is the same at every minute. Going back undoes the switch, so the steps turn it on again | Nothing |
 
 ## Tables
@@ -74,6 +74,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [no_show_cases](#no_show_cases): The evidence a no-show is ruled on, the ruling, and what a charge cost the client (ADR 0065, ADR 0072, ADR 0096).
 - [no_show_disputes](#no_show_disputes): A client's dispute of a no-show's charge, one a charge, and ops' ruling on it, refunded or upheld, with their reason (ADR 0096).
 - [number_change_requests](#number_change_requests): A client's change of mobile number: the codes proven on both numbers, and what ops decided (ADR 0042, ADR 0078).
+- [number_codes](#number_codes): Each WhatsApp code sent to prove a number typed into the site, with the number and the code only as hashes (ADR 0081, ADR 0104).
 - [ops_settings](#ops_settings): The business inputs ops set in the console, a row each; a row that is not there means the committed default (ADR 0061).
 - [ops_settings_snapshot](#ops_settings_snapshot): One row holding every `ops_settings` value, kept by that table's triggers: the one row a request reads (ADR 0088).
 - [otp_challenges](#otp_challenges): Each one-time code sent, as a hash, with its sends and attempts (ADR 0030, ADR 0052).
@@ -94,7 +95,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [services](#services): What clients may book: each kind of visit's services, their names, lengths and order, when each is retired, and its item in FSM's catalogue and in Books; the price book prices each by its kind and tier (ADR 0085, ADR 0110).
 - [sessions](#sessions): The client app's and the technician app's sessions: whose, from which device, and when each ends or was revoked (ADR 0029, ADR 0052).
 - [slot_claims](#slot_claims): What a hold or a visit takes of a technician's day, a row per half-slot and window, so no time is taken twice (ADR 0034, ADR 0069).
-- [slot_holds](#slot_holds): A slot held while a client pays, and what became of it (ADR 0045, ADR 0068).
+- [slot_holds](#slot_holds): A slot held while a client pays, at Checkout or by a payment link ops sent, and what became of it (ADR 0045, ADR 0068).
 - [slot_times](#slot_times): Each change of the day's half-slot times ops set, from the day it applies; never changed (ADR 0102).
 - [staff](#staff): Each member of staff on the console's Staff list, by their Access e-mail, and whether they are let in (ADR 0109).
 - [staff_access_mode](#staff_access_mode): One row: whether the console enforces the Staff list yet, and who last switched it (ADR 0109).
@@ -181,7 +182,7 @@ Indexes:
 
 Each visit, mirrored from FSM or booked without it: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice. `fsm_id` is FSM's ID for a visit FSM holds, otherwise the row's own (ADR 0032, ADR 0110).
 
-Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`, `0059_no_show_charges_and_disputes.sql`, `0060_flat_task_reads.sql`, `0061_one_visit.sql`, `0063_discount_codes.sql`, `0066_client_note_in_fsm.sql`, `0070_field_record_ours.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`, `0059_no_show_charges_and_disputes.sql`, `0060_flat_task_reads.sql`, `0061_one_visit.sql`, `0063_discount_codes.sql`, `0066_client_note_in_fsm.sql`, `0070_field_record_ours.sql`, `0076_books_without_fsm.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -224,7 +225,9 @@ Indexes:
 - `appointments_by_window_end`: on (`window_end`)
 - `appointments_by_window_start`: on (`window_start`)
 - `appointments_done_visits`: on (`window_start`), where `status = 'completed' AND type IN ('first_fit', 'service', 'replacement') AND deleted_at IS NULL`
+- `appointments_held_drafts`: on (`window_start`), where `status = 'completed' AND invoice_issued_at IS NULL AND fsm_invoice_id IS NOT NULL AND deleted_at IS NULL`
 - `appointments_live_by_person`: on (`person_id`), where `status IN ('scheduled', 'dispatched', 'in_progress') AND deleted_at IS NULL`
+- `appointments_to_bill`: on (`window_start`), where `status = 'completed' AND invoice_issued_at IS NULL AND deleted_at IS NULL AND type IN ('first_fit', 'service', 'replacement') AND one_visit IS NOT 'declined'`
 - `appointments_to_invoice`: on (`window_start`), where `status = 'completed' AND invoice_issued_at IS NULL AND fsm_work_order_id IS NOT NULL AND deleted_at IS NULL`
 - A `UNIQUE` constraint: unique on (`fsm_id`)
 
@@ -944,6 +947,27 @@ Indexes:
 - `number_change_requests_by_person`: on (`person_id`, `created_at`)
 - `number_change_requests_by_state`: on (`state`, `created_at`)
 
+## number_codes
+
+Each WhatsApp code sent to prove a number typed into the site, with the number and the code only as hashes (ADR 0081, ADR 0104).
+
+Made by `0074_number_codes.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `created_at` | TEXT | no |  |  |
+| `mobile_hash` | TEXT | no |  |  |
+| `code_hash` | TEXT | no |  |  |
+| `attempts` | INTEGER | no | `0` |  |
+| `expires_at` | TEXT | no |  |  |
+| `verified_at` | TEXT | yes |  |  |
+| `voided_at` | TEXT | yes |  |  |
+
+Indexes:
+
+- `number_codes_by_expiry`: on (`expires_at`)
+
 ## ops_settings
 
 The business inputs ops set in the console, a row each; a row that is not there means the committed default (ADR 0061).
@@ -1125,7 +1149,7 @@ Indexes:
 
 One row per person, keyed by mobile number. D1 owns the identity; the CRM's and Books' IDs are only references (ADR 0011, ADR 0110).
 
-Made by `0002_lead_path.sql`; changed by `0004_erasure.sql`, `0011_fsm_mirror.sql`, `0023_dpdp.sql`, `0036_erased_files.sql`, `0037_cron_indexes.sql`, `0070_field_record_ours.sql`.
+Made by `0002_lead_path.sql`; changed by `0004_erasure.sql`, `0011_fsm_mirror.sql`, `0023_dpdp.sql`, `0036_erased_files.sql`, `0037_cron_indexes.sql`, `0070_field_record_ours.sql`, `0076_books_without_fsm.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1145,6 +1169,7 @@ Made by `0002_lead_path.sql`; changed by `0004_erasure.sql`, `0011_fsm_mirror.sq
 | `fsm_erasure_attempts` | INTEGER | no | `0` |  |
 | `files_erased_at` | TEXT | yes |  |  |
 | `books_customer_id` | TEXT | yes |  |  |
+| `books_checked_at` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -1426,9 +1451,9 @@ Indexes:
 
 ## slot_holds
 
-A slot held while a client pays, and what became of it (ADR 0045, ADR 0068).
+A slot held while a client pays, at Checkout or by a payment link ops sent, and what became of it (ADR 0045, ADR 0068).
 
-Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`, `0058_held_bookings.sql`, `0061_one_visit.sql`, `0074_consents_shown.sql`.
+Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`, `0058_held_bookings.sql`, `0061_one_visit.sql`, `0075_pay_by_link.sql`, `0077_consents_shown.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1470,12 +1495,16 @@ Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_chan
 | `fsm_held_at` | TEXT | yes |  |  |
 | `fsm_refusal` | TEXT | yes |  |  |
 | `one_visit` | INTEGER | no | `0` |  |
+| `pay_by_link` | INTEGER | no | `0` |  |
+| `payment_link_id` | TEXT | yes |  |  |
+| `payment_link_url` | TEXT | yes |  |  |
 | `consents_shown` | TEXT | yes |  |  |
 | `consents_ip_hash` | TEXT | yes |  |  |
 
 Indexes:
 
 - `slot_holds_by_appointment`: on (`appointment_id`), where `appointment_id IS NOT NULL`
+- `slot_holds_by_payment_link`: unique on (`payment_link_id`), where `payment_link_id IS NOT NULL`
 - `slot_holds_by_person`: on (`person_id`, `created_at`)
 - `slot_holds_confirmed`: on (`queued_at`), where `state = 'held' AND confirmed_at IS NOT NULL`
 - `slot_holds_confirmed_by_person`: on (`person_id`), where `state = 'held' AND confirmed_at IS NOT NULL`
@@ -1755,7 +1784,7 @@ Indexes:
 
 One try-on render: the photograph, the look, the provider's job and the result (ADR 0014, ADR 0015).
 
-Made by `0003_tryon.sql`; changed by `0037_cron_indexes.sql`, `0045_kept_try_ons.sql`.
+Made by `0003_tryon.sql`; changed by `0037_cron_indexes.sql`, `0045_kept_try_ons.sql`, `0074_number_codes.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1796,6 +1825,7 @@ Made by `0003_tryon.sql`; changed by `0037_cron_indexes.sql`, `0045_kept_try_ons
 | `copy_key` | TEXT | yes |  |  |
 | `kept_at` | TEXT | yes |  |  |
 | `kept_look_key` | TEXT | yes |  |  |
+| `number_proved_at` | TEXT | yes |  |  |
 
 Indexes:
 

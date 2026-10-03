@@ -105,6 +105,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "The business inputs ops set in the console, a row each; a row that is not there means the committed default (ADR 0061).",
   ops_settings_snapshot:
     "One row holding every `ops_settings` value, kept by that table's triggers: the one row a request reads (ADR 0088).",
+  number_codes:
+    "Each WhatsApp code sent to prove a number typed into the site, with the number and the code only as hashes (ADR 0081, ADR 0104).",
   otp_challenges: "Each one-time code sent, as a hash, with its sends and attempts (ADR 0030, ADR 0052).",
   partial_reasons:
     "The reasons a job may be left partly done, as ops set them, one they took off kept as retired; none means the committed list (ADR 0087).",
@@ -133,7 +135,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "The client app's and the technician app's sessions: whose, from which device, and when each ends or was revoked (ADR 0029, ADR 0052).",
   slot_claims:
     "What a hold or a visit takes of a technician's day, a row per half-slot and window, so no time is taken twice (ADR 0034, ADR 0069).",
-  slot_holds: "A slot held while a client pays, and what became of it (ADR 0045, ADR 0068).",
+  slot_holds:
+    "A slot held while a client pays, at Checkout or by a payment link ops sent, and what became of it (ADR 0045, ADR 0068).",
   slot_times: "Each change of the day's half-slot times ops set, from the day it applies; never changed (ADR 0102).",
   staff:
     "Each member of staff on the console's Staff list, by their Access e-mail, and whether they are let in (ADR 0109).",
@@ -361,6 +364,7 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
       "cron_runs",
       "counters",
       "idempotency",
+      "number_codes",
       "otp_challenges",
       "tryon_sessions",
       "events",

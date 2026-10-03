@@ -30,6 +30,7 @@ import type {
   BooksErasure,
   BooksInvoice,
   BooksItem,
+  BooksItemDetails,
   BooksProvider,
   NewBooksCustomer,
   NewBooksInvoice,
@@ -110,6 +111,7 @@ const Invoice = z.object({
   total: z.number(),
   balance: z.number().optional(),
   status: z.string(),
+  reference_number: z.string().nullish(),
 });
 
 /** A draft with its lines, as a discount is written onto it: each line is sent back, or Books removes it. */
@@ -158,7 +160,14 @@ const booksInvoiceOf = (invoice: z.infer<typeof Invoice>): BooksInvoice => ({
   total: paise(invoice.total),
   balance: paise(invoice.balance ?? invoice.total),
   status: invoice.status,
+  reference: filledOrNull(invoice.reference_number),
 });
+
+/** A text field as Books gives it: empty, null or left out when there is nothing in it, which is null here. */
+function filledOrNull(text: string | null | undefined): string | null {
+  if (text === undefined || text === null || text.trim() === "") return null;
+  return text;
+}
 
 /** Books answers 404 for a record it does not have; that is "unavailable", not a failure. */
 async function orNull<T>(work: () => Promise<T>): Promise<T | null> {
@@ -431,7 +440,15 @@ function invoiceCalls({ at, read }: BooksApi): InvoicesWeRaise {
 // ---------------------------------------------------------------------------
 
 const ItemsPage = z.object({
-  items: z.array(z.object({ item_id: z.string(), name: z.string(), rate: z.number(), status: z.string() })),
+  items: z.array(
+    z.object({
+      item_id: z.string(),
+      name: z.string(),
+      rate: z.number(),
+      status: z.string(),
+      hsn_or_sac: z.string().nullish(),
+    }),
+  ),
   page_context: z.object({ has_more_page: z.boolean() }),
 });
 
@@ -440,7 +457,17 @@ const booksItemOf = (item: z.infer<typeof ItemsPage>["items"][number]): BooksIte
   name: item.name,
   rate: paise(item.rate),
   active: item.status === "active",
+  sac: filledOrNull(item.hsn_or_sac),
 });
+
+/** A service item as Books takes it; the SAC code only once there is one, as it is only once GST is on. */
+function itemBody(item: BooksItemDetails) {
+  return {
+    name: item.name,
+    rate: rupees(item.rate),
+    ...(item.sac === null ? {} : { hsn_or_sac: item.sac }),
+  };
+}
 
 type Items = Pick<BooksProvider, "items" | "createItem" | "updateItem">;
 
@@ -461,13 +488,13 @@ function itemCalls({ request, at, read }: BooksApi): Items {
     createItem: (item) =>
       read("create_item", at("/items"), z.string(), ["item", "item_id"], {
         method: "POST",
-        body: { name: item.name, rate: rupees(item.rate), product_type: "service" },
+        body: { ...itemBody(item), product_type: "service" },
       }),
 
     async updateItem(itemId, item) {
       await request("update_item", at(`/items/${encodeURIComponent(itemId)}`), {
         method: "PUT",
-        body: { name: item.name, rate: rupees(item.rate) },
+        body: itemBody(item),
       });
     },
   };

@@ -9,7 +9,9 @@
 // claimed before the render, and the look is checked on the handset, not here: the script follows the job until it
 // is ready. The gate uses the number in STAGING_TEST_MOBILE, as "Staging test", which is messaged only on the
 // allowlist (ADR 0097), so that number must be on it: off it, the claim is refused (whatsapp_unavailable). The
-// number is never printed in full. The photo is read from disk and never copied into the repository.
+// number is proved first with its WhatsApp code, which for a "Staging test" record is STAGING_TEST_RECORD_CODE, the
+// value staging's Worker holds. The number is never printed in full, nor the code. The photo is read from disk and
+// never copied into the repository.
 
 import { readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
@@ -26,9 +28,11 @@ const { values } = parseArgs({
   },
 });
 const mobile = process.env.STAGING_TEST_MOBILE;
-if (values.photo === undefined || mobile === undefined) {
+const testRecordCode = process.env.STAGING_TEST_RECORD_CODE;
+if (values.photo === undefined || mobile === undefined || testRecordCode === undefined) {
   console.error(
-    "usage: STAGING_TEST_MOBILE=<allowlisted number> staging-tryon.ts --photo <path> [--preset …] [--color …]",
+    "usage: STAGING_TEST_MOBILE=<allowlisted number> STAGING_TEST_RECORD_CODE=<staging's known code> " +
+      "staging-tryon.ts --photo <path> [--preset …] [--color …]",
   );
   process.exit(2);
 }
@@ -85,8 +89,25 @@ const photo = new Uint8Array(readFileSync(values.photo));
 const upload = await call(String(link.body.upload_url), { method: "PUT", body: photo });
 step("upload", { status: upload.status, bytes: photo.byteLength, ...inspectImage(photo) });
 
-// 3. The gate, where the look will go; 4. the look; 5. its render, whose message then goes to the handset.
-const gate = await post("/api/tryon/claim", { job_id: jobId, name: "Staging test", mobile, stage: values.stage });
+// 3. The number proved with its WhatsApp code: a "Staging test" record's is the known STAGING_TEST_RECORD_CODE.
+const sent = await post("/api/number-code", {
+  mobile,
+  name: "Staging test",
+  turnstile_token: TURNSTILE_TEST_TOKEN,
+});
+step("number code", { status: sent.status });
+const numberCodeId = String(sent.body.code_id);
+const entered = await post("/api/number-code/verify", { code_id: numberCodeId, code: testRecordCode });
+step("number proved", { status: entered.status, ...entered.body });
+
+// 4. The gate, where the look will go; 5. the look; 6. its render, whose message then goes to the handset.
+const gate = await post("/api/tryon/claim", {
+  job_id: jobId,
+  name: "Staging test",
+  mobile,
+  number_code_id: numberCodeId,
+  stage: values.stage,
+});
 step("claim", { status: gate.status, ...gate.body, mobile: `…${mobile.slice(-4)}` });
 const look = { job_id: jobId, preset: values.preset, hair_color: values.color };
 step("generate", await post("/api/tryon/generate", look));
