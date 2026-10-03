@@ -68,6 +68,9 @@ export const ERROR_CODES = [
   "out_of_order",
   "not_today",
   "already_started",
+  // A piece label already on record, for another client or as this client's piece from an earlier visit: the
+  // technician corrects it on the phone.
+  "piece_code",
   // Ops switched the technician off: the phone sets his unsent work aside rather than wiping it.
   "technician_inactive",
   // A technician FSM lists is changed in FSM, while FSM is the record of field work.
@@ -80,6 +83,8 @@ export const ERROR_CODES = [
   "does_not_fit",
   "fsm_refused",
   "fsm_partly",
+  // The technician has begun the visit, so a move would leave his work on another day or with another technician.
+  "in_progress",
   // The no-show wait has not run out yet (src/policy/no-show.ts), or a visit ops would close by hand is still to come.
   "too_early_to_close",
   // A visit ops would close by hand is closed or cancelled already, or the technician's phone closed it.

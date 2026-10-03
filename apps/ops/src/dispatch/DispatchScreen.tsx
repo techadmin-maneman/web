@@ -166,13 +166,14 @@ function staleWords(job: Job, code: string, now: Board | null): string {
   const copy = dispatch.landing;
   if (code === "not_found") return copy.errors.not_found;
   if (code === "fsm_partly") return copy.errors.fsm_partly;
+  if (code === "in_progress") return copy.errors.in_progress;
   const place = now === null ? null : placeOn(now, job);
   if (place?.unchanged === true) return copy.beingMoved(nameOf(job));
   return copy.superseded(nameOf(job), place?.words ?? copy.supersededGone);
 }
 
 /** Refusals that mean the job is no longer as the board had it: it is let go, and the board read again. */
-const STALE = new Set(["superseded", "not_found", "fsm_partly"]);
+const STALE = new Set(["superseded", "not_found", "fsm_partly", "in_progress"]);
 
 /** A visit being cancelled or closed by hand, in its own panel, opened from its drawer. */
 interface Changing {

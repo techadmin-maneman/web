@@ -549,13 +549,21 @@ An invite: valid or unknown
 }
 ```
 
+**429**: rate_limited: this address looked up too many codes that are not there this hour
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/og/{file}
 
 An invite's preview image
 
 **200**: The referrer's card
 
-**302**: The house card, on the site
+**302**: The house card, on the site; for every code from an address past its misses this hour
 
 ### GET /api/pincodes/{pin}
 
@@ -1349,6 +1357,7 @@ Razorpay's webhook: payments and refunds
             "out_of_order",
             "not_today",
             "already_started",
+            "piece_code",
             "technician_inactive",
             "managed_in_fsm",
             "clash",
@@ -1356,6 +1365,7 @@ Razorpay's webhook: payments and refunds
             "does_not_fit",
             "fsm_refused",
             "fsm_partly",
+            "in_progress",
             "too_early_to_close",
             "already_closed",
             "no_service_area",

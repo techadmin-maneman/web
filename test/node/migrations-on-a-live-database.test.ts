@@ -161,6 +161,24 @@ describe("the migrations, against a database that is in use", () => {
     db.close();
   });
 
+  it("counts an erased client's Books erasure from no tries, and keeps it once done", () => {
+    const db = migrate();
+    db.exec(`UPDATE people SET books_customer_id = 'customer-2', erased_at = '${AT}' WHERE id = 'p2'`);
+    const due = db.prepare("SELECT books_erased_at, books_erasure_attempts FROM people WHERE id = 'p2'").get();
+    expect(due).toEqual({ books_erased_at: null, books_erasure_attempts: 0 });
+    db.exec(`UPDATE people SET books_erased_at = '${AT}' WHERE id = 'p2'`);
+    const done = db.prepare("SELECT books_erased_at FROM people WHERE id = 'p2'").get();
+    expect(done).toEqual({ books_erased_at: AT });
+    db.close();
+  });
+
+  it("marks no client's Books customer as changed until their number or address changes", () => {
+    const db = migrate();
+    const person = db.prepare("SELECT books_details_changed_at FROM people WHERE id = 'p2'").get();
+    expect(person).toEqual({ books_details_changed_at: null });
+    db.close();
+  });
+
   it("takes a hold ops made that the client pays for by a link, and keeps every other hold paid as it was", () => {
     const db = migrate();
     const hold = (id: string) =>

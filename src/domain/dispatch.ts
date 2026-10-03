@@ -17,15 +17,22 @@
 // mirror, then the client's message. "The client's payment carries over and he
 // is never charged for a move ops make", so no amount is read or written here
 // at all: a visit carries a badge, never a figure.
+//
+// Where our own database holds the record of a visit (src/config/field-record.ts),
+// its move is one batch, and nothing goes to FSM. A visit the technician has
+// begun is not moved on either path.
 
+import { recordOfVisit, type FieldRecord } from "../config/field-record.ts";
 import { BOOKING_WINDOWS, SLOTS_PER_DAY, type BookingWindow } from "../config/scheduling.ts";
 import type { VisitType } from "../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaIso, indiaTime } from "../lib/india-time.ts";
 import {
+  begunFrom,
   clientNotice,
   keepsTheClientsNotice,
   moveRefusal,
   slotsFor,
+  type Begun,
   type ClientNotice,
   type MoveReason,
   type MoveRefusal,
@@ -53,6 +60,7 @@ import {
   type Day,
 } from "./scheduling.ts";
 import { latestConsentSql } from "./messages.ts";
+import { visitBegun } from "./visit-begun.ts";
 import { visitMessage } from "./visit-messages.ts";
 import { unitAt, type SlotTimes } from "../policy/slot-times.ts";
 import { loadSlotSchedule, type SlotSchedule } from "./slot-times.ts";
@@ -99,6 +107,8 @@ export interface Block extends Visit {
   readonly notice_hours: number;
   /** The latest move of this visit that its client has not heard of: ops call him (src/policy/dispatch.ts). */
   readonly untold: { readonly move_id: string; readonly starts_at: string } | null;
+  /** How far the technician has got, from his phone's steps; null before he arrives. A visit begun is not moved. */
+  readonly begun: Begun | null;
 }
 
 export interface BoardDay {
@@ -163,10 +173,14 @@ export const UNTOLD_MOVE = `m.fsm_write_state = 'written' AND m.was_start <> m.n
     WHERE later.appointment_id = m.appointment_id AND later.fsm_write_state = 'written'
       AND later.was_start <> later.now_start AND later.created_at > m.created_at)`;
 
-/** The statuses a job can still be moved in. */
+/** The statuses of a job still to finish. One under way is live, though it is not moved. */
 const LIVE = "('scheduled', 'dispatched', 'in_progress')";
 /** What a day on the board holds: its live jobs, and the ones already done, so a past day reads as it was worked. */
 const ON_THE_BOARD = "('scheduled', 'dispatched', 'in_progress', 'completed')";
+
+/** Whether the technician's phone has landed a step of this kind on job `a`, set-aside steps apart. */
+const landed = (kind: string): string =>
+  `EXISTS (SELECT 1 FROM job_events e WHERE e.appointment_id = a.id AND e.kind = '${kind}' AND e.superseded = 0)`;
 
 /**
  * Each job on the board, with its client, the area its pincode is in, its
@@ -191,7 +205,8 @@ const BOARD_JOBS = `
     COALESCE((SELECT b.amount_ex_gst = 0 FROM price_book b
               WHERE b.item = a.type AND b.tier = COALESCE(a.tier, 'standard')
                 AND b.valid_from <= date(a.window_start, '+330 minutes')
-              ORDER BY b.valid_from DESC LIMIT 1), 0) AS free
+              ORDER BY b.valid_from DESC LIMIT 1), 0) AS free,
+    ${landed("check_in")} AS checked_in, ${landed("start")} AS started, ${landed("outcome")} AS closed
   FROM appointments a
   LEFT JOIN people p ON p.id = a.person_id
   LEFT JOIN technicians t ON t.id = a.technician_id
@@ -305,6 +320,10 @@ interface BoardJobRow {
   one_visit: OneVisitState | null;
   /** Null where no hold sold the visit; the committed notice where one did and kept none. */
   sold_notice_hours: number | null;
+  /** 1 where the technician's phone has landed that step. */
+  checked_in: number;
+  started: number;
+  closed: number;
 }
 
 function visitOf(job: BoardJobRow): Visit {
@@ -346,6 +365,7 @@ function blockOf(job: BoardJobRow, untold: Block["untold"], noticeInForce: numbe
     status: job.status,
     notice_hours: job.sold_notice_hours ?? noticeInForce,
     untold,
+    begun: begunFrom({ checkIn: job.checked_in === 1, start: job.started === 1, outcome: job.closed === 1 }),
   };
 }
 
@@ -441,6 +461,8 @@ export type MoveOutcome =
   | { readonly kind: "superseded"; readonly changed: readonly Change[] }
   /** The move names the technician, day and window the job already has. */
   | { readonly kind: "nothing_to_move" }
+  /** The technician has begun the visit, so it stays where it is; nothing was written. */
+  | { readonly kind: "in_progress" }
   /** FSM would not take it: nothing moved, and the refusal is on the record. */
   | { readonly kind: "fsm_refused"; readonly moveId: string }
   /** FSM took the new technician and not the new time; the mirror now holds what FSM does. */
@@ -487,6 +509,8 @@ export interface MoveDeps {
   readonly labelAsTest: boolean;
   /** Queues the client's "your visit is now …" message. */
   readonly notify?: (messageId: string) => Promise<unknown>;
+  /** Who holds the record of field work: FSM, the default while its path stands, or our own database. */
+  readonly record?: FieldRecord;
 }
 
 interface LiveJob {
@@ -500,14 +524,16 @@ interface LiveJob {
   start_before_move: string | null;
   technician_id: string | null;
   service_minutes: number | null;
+  /** 1 once the technician has begun it (src/domain/visit-begun.ts). */
+  begun: number;
 }
 
-/** A job that can still be moved; null for one done, cancelled, gone from FSM, or with no type or time. */
+/** A job still to finish; null for one done, cancelled, gone from FSM, or with no type or time. */
 function liveJob(db: D1Database, appointmentId: string): Promise<LiveJob | null> {
   return db
     .prepare(
       `SELECT a.id, a.fsm_id, a.person_id, a.type, a.status, a.window_start, a.window_end, a.start_before_move,
-         a.technician_id, s.minutes AS service_minutes
+         a.technician_id, s.minutes AS service_minutes, ${visitBegun("a")} AS begun
        FROM appointments a LEFT JOIN services s ON s.kind = a.type AND s.tier = COALESCE(a.tier, 'standard')
        WHERE a.id = ?1 AND a.deleted_at IS NULL AND a.status IN ${LIVE} AND a.type IS NOT NULL
          AND a.window_start IS NOT NULL`,
@@ -515,6 +541,12 @@ function liveJob(db: D1Database, appointmentId: string): Promise<LiveJob | null>
     .bind(appointmentId)
     .first<LiveJob>();
 }
+
+/**
+ * A job the technician has begun, by his phone's steps or FSM's status, stays where he is working it: moved, his
+ * phone would carry on with a visit now on another day or another technician's.
+ */
+const isUnderWay = (job: LiveJob): boolean => job.status === "in_progress" || job.begun === 1;
 
 /** Where a move puts the job. A day and window that are the job's own keep its start: only the technician changes. */
 function targetOf(
@@ -533,17 +565,34 @@ function targetOf(
 const isWhereItIs = (job: LiveJob, target: Target): boolean =>
   target.keepsTime && target.technicianId === job.technician_id;
 
+/** A move that passed its checks: the job, where it goes, and the time it claims there. */
+interface PlannedMove {
+  readonly id: string;
+  readonly job: LiveJob;
+  readonly technicianId: string;
+  readonly reason: MoveReason;
+  /** The Access identity that made the move (ADR 0031). */
+  readonly actor: string;
+  /** When the visit starts and ends once moved. */
+  readonly start: Date;
+  readonly end: Date;
+  /** Only the technician changes. */
+  readonly keepsTime: boolean;
+  /** The India date of the technician's day the move claims, and its half-slots there. */
+  readonly date: string;
+  readonly claims: readonly string[];
+}
+
 /**
- * Assigns or moves one job: the checks, then the new time claimed, then FSM,
- * then the mirror and the client's message, with the claim let go in the same
- * batch. Assigning and moving are the same write; only what the caller changes
- * differs.
+ * Assigns or moves one job: the checks, then the move written, in FSM and then the mirror, or in our own database
+ * alone where it holds the visit. Assigning and moving are the same write; only what the caller changes differs.
  */
 export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, now: Date): Promise<MoveOutcome> {
   const job = await liveJob(db, input.appointmentId);
   if (job === null) return { kind: "not_found" };
   const changed = changedSince(job, input.expected);
   if (changed.length > 0) return { kind: "superseded", changed };
+  if (isUnderWay(job)) return { kind: "in_progress" };
 
   const wasStart = new Date(job.window_start);
   const technicianId = input.technicianId ?? job.technician_id;
@@ -563,85 +612,186 @@ export async function moveJob(db: D1Database, deps: MoveDeps, input: MoveInput, 
   if (landing.kind === "refused") return landing;
 
   const times = target.keepsTime ? null : visitTimes(date, landing.start, minutes, schedule);
-  const nowStart = times?.start ?? wasStart;
-  const moveId = crypto.randomUUID();
-  const opened = await openMove(
-    db,
-    {
-      id: moveId,
-      job,
-      technicianId,
-      nowStart: nowStart.toISOString(),
-      reason: input.reason,
-      actor: input.actor,
-    },
-    { date, claims: claimsOf(landing.start, unitsFor(minutes), window) },
-    now,
-  );
+  const start = times?.start ?? wasStart;
+  const move: PlannedMove = {
+    id: crypto.randomUUID(),
+    job,
+    technicianId,
+    reason: input.reason,
+    actor: input.actor,
+    start,
+    end: times?.end ?? new Date(start.getTime() + minutes * MINUTE_MS),
+    keepsTime: target.keepsTime,
+    date,
+    claims: claimsOf(landing.start, unitsFor(minutes), window),
+  };
+  if (recordOfVisit(deps.record ?? "fsm", { id: job.id, fsmId: job.fsm_id }) === "ours") {
+    return moveInOurRecord(db, deps, move, now);
+  }
+  return moveInFsm(db, deps, move, now);
+}
+
+/**
+ * Moves a job FSM holds: the new time claimed, then FSM, then the mirror and the client's message, with the claim let
+ * go in the same batch.
+ */
+async function moveInFsm(db: D1Database, deps: MoveDeps, move: PlannedMove, now: Date): Promise<MoveOutcome> {
+  const { job } = move;
+  const opened = await openMove(db, move, now);
   if (opened === "moving") return { kind: "superseded", changed: ["moving"] };
   if (opened === "taken") return { kind: "refused", reason: "clash" };
 
   // FSM takes a move in two writes, the technician and then the time, so one can land without the other.
   let assigned = false;
   try {
-    if (technicianId !== job.technician_id) {
-      await deps.fsm.assignVisit(job.fsm_id, await fsmResourceId(db, technicianId));
+    if (move.technicianId !== job.technician_id) {
+      await deps.fsm.assignVisit(job.fsm_id, await fsmResourceId(db, move.technicianId));
       assigned = true;
     }
-    if (times !== null) {
-      await deps.fsm.rescheduleVisit(job.fsm_id, { start: indiaIso(times.start), end: indiaIso(times.end) });
+    if (!move.keepsTime) {
+      await deps.fsm.rescheduleVisit(job.fsm_id, { start: indiaIso(move.start), end: indiaIso(move.end) });
     }
   } catch (error) {
     const reason = failureReason(error);
     await db.batch([
-      releasingClaims(db, moveId),
+      releasingClaims(db, move.id),
       db
         .prepare(
           "UPDATE dispatch_moves SET fsm_write_state = 'rejected', fsm_error = ?2, updated_at = ?3 WHERE id = ?1",
         )
-        .bind(moveId, assigned ? `the technician was changed, the time was not: ${reason}` : reason, now.toISOString()),
+        .bind(
+          move.id,
+          assigned ? `the technician was changed, the time was not: ${reason}` : reason,
+          now.toISOString(),
+        ),
     ]);
-    if (!assigned) return { kind: "fsm_refused", moveId };
+    if (!assigned) return { kind: "fsm_refused", moveId: move.id };
     // Half a move is not a refusal: the job is read again from FSM, so the board shows where it now is.
     await syncAppointment(db, deps.fsm, job.fsm_id, now).catch(() => null);
-    return { kind: "fsm_partly", moveId };
+    return { kind: "fsm_partly", moveId: move.id };
   }
 
   // FSM took it: the mirror follows, and the client is told his new window, if he has one.
   const at = now.toISOString();
-  const notice = clientNotice({
-    timeChanged: !target.keepsTime,
-    client: job.person_id === null ? null : { agreedToWhatsApp: await agreedToVisitMessages(db, job.id) },
-  });
-  const message =
-    notice === "messaged" && job.person_id !== null
-      ? visitMessage(db, { personId: job.person_id, appointmentId: job.id, kind: "visit_moved", now })
-      : null;
+  const told = await clientToldOf(db, move, now);
   await db.batch([
-    db
-      .prepare(
-        `UPDATE appointments SET technician_id = ?2, window_start = ?3, window_end = ?4, synced_at = ?5,
-           start_before_move = ?6
-         WHERE id = ?1`,
-      )
-      .bind(
-        job.id,
-        technicianId,
-        nowStart.toISOString(),
-        (times?.end ?? new Date(nowStart.getTime() + minutes * MINUTE_MS)).toISOString(),
-        at,
-        times === null ? job.start_before_move : startBeforeMoving(job, input.reason),
-      ),
+    movedVisit(db, move, at),
     // The mirror now holds the new time, so the claim on it goes in the same batch.
-    releasingClaims(db, moveId),
+    releasingClaims(db, move.id),
     // The message row is written before the move points at it.
-    ...(message === null ? [] : [message.statement]),
+    ...(told.message === null ? [] : [told.message.statement]),
     db
       .prepare("UPDATE dispatch_moves SET fsm_write_state = 'written', message_id = ?2, updated_at = ?3 WHERE id = ?1")
-      .bind(moveId, message?.id ?? null, at),
+      .bind(move.id, told.message?.id ?? null, at),
   ]);
-  if (message !== null) await deps.notify?.(message.id);
-  return { kind: "moved", moveId, clientNotice: notice };
+  if (told.message !== null) await deps.notify?.(told.message.id);
+  return { kind: "moved", moveId: move.id, clientNotice: told.notice };
+}
+
+/**
+ * Moves a job our own database holds, in one batch: the move, its claim on the new time, the visit and the client's
+ * message. The claim is the clash test: a hold or another move that took the time since it was checked fails the
+ * batch. It is let go in the same batch, since the visit's own row now holds the time. A visit changed or begun since
+ * it was read fails the batch as well, and nothing is written.
+ */
+async function moveInOurRecord(db: D1Database, deps: MoveDeps, move: PlannedMove, now: Date): Promise<MoveOutcome> {
+  const at = now.toISOString();
+  const told = await clientToldOf(db, move, now);
+  try {
+    await db.batch([
+      ...unfinishedMovesLetGo(db, now),
+      ...lettingGo(db, now),
+      // The message row is written before the move points at it.
+      ...(told.message === null ? [] : [told.message.statement]),
+      writtenMove(db, move, told.message?.id ?? null, at),
+      ...move.claims.map((claim) => claimOf(db, move, claim)),
+      movedVisit(db, move, at),
+      releasingClaims(db, move.id),
+    ]);
+  } catch (error) {
+    if (failedUniqueOn(error, "slot_claims")) return { kind: "refused", reason: "clash" };
+    if (failedNotNullOn(error, "dispatch_moves.appointment_id")) return changedUnder(db, move);
+    throw error;
+  }
+  if (told.message !== null) await deps.notify?.(told.message.id);
+  return { kind: "moved", moveId: move.id, clientNotice: told.notice };
+}
+
+/**
+ * The move, recorded as written. It names its visit only while the visit is as the move read it, not yet begun;
+ * otherwise its visit is empty, which the table refuses, and the batch it is in writes nothing.
+ */
+function writtenMove(db: D1Database, move: PlannedMove, messageId: string | null, at: string): D1PreparedStatement {
+  const { job } = move;
+  return db
+    .prepare(
+      `INSERT INTO dispatch_moves (id, appointment_id, was_technician_id, now_technician_id, was_start, now_start,
+         reason, actor, fsm_write_state, message_id, created_at, updated_at)
+       VALUES (?1,
+         (SELECT a.id FROM appointments a
+          WHERE a.id = ?2 AND a.technician_id IS ?3 AND a.window_start = ?5 AND a.deleted_at IS NULL
+            AND a.status IN ('scheduled', 'dispatched') AND NOT ${visitBegun("a")}),
+         ?3, ?4, ?5, ?6, ?7, ?8, 'written', ?9, ?10, ?10)`,
+    )
+    .bind(
+      move.id,
+      job.id,
+      job.technician_id,
+      move.technicianId,
+      job.window_start,
+      move.start.toISOString(),
+      move.reason,
+      move.actor,
+      messageId,
+      at,
+    );
+}
+
+/** Why a move found its visit changed under it, read again as the checks before the write read it. */
+async function changedUnder(db: D1Database, move: PlannedMove): Promise<MoveOutcome> {
+  const job = await liveJob(db, move.job.id);
+  if (job === null) return { kind: "not_found" };
+  const changed = changedSince(job, { technicianId: move.job.technician_id, startsAt: move.job.window_start });
+  if (changed.length > 0) return { kind: "superseded", changed };
+  if (isUnderWay(job)) return { kind: "in_progress" };
+  return { kind: "superseded", changed: ["moving"] };
+}
+
+/** The visit where the move puts it. */
+function movedVisit(db: D1Database, move: PlannedMove, at: string): D1PreparedStatement {
+  const { job } = move;
+  return db
+    .prepare(
+      `UPDATE appointments SET technician_id = ?2, window_start = ?3, window_end = ?4, synced_at = ?5,
+         start_before_move = ?6
+       WHERE id = ?1`,
+    )
+    .bind(
+      job.id,
+      move.technicianId,
+      move.start.toISOString(),
+      move.end.toISOString(),
+      at,
+      move.keepsTime ? job.start_before_move : startBeforeMoving(job, move.reason),
+    );
+}
+
+/** How the client hears of the move: the notice, and the message row where he is messaged. */
+async function clientToldOf(
+  db: D1Database,
+  move: PlannedMove,
+  now: Date,
+): Promise<{ notice: ClientNotice; message: { id: string; statement: D1PreparedStatement } | null }> {
+  const { job } = move;
+  const notice = clientNotice({
+    timeChanged: !move.keepsTime,
+    client: job.person_id === null ? null : { agreedToWhatsApp: await agreedToVisitMessages(db, job.id) },
+  });
+  if (notice !== "messaged" || job.person_id === null) return { notice, message: null };
+  return {
+    notice,
+    message: visitMessage(db, { personId: job.person_id, appointmentId: job.id, kind: "visit_moved", now }),
+  };
 }
 
 /**
@@ -670,15 +820,6 @@ async function agreedToVisitMessages(db: D1Database, appointmentId: string): Pro
   return latest?.granted === 1;
 }
 
-interface OpenMove {
-  readonly id: string;
-  readonly job: LiveJob;
-  readonly technicianId: string;
-  readonly nowStart: string;
-  readonly reason: MoveReason;
-  readonly actor: string;
-}
-
 /**
  * Opens the move and claims its new time on the technician's day, in one
  * batch, before FSM is written. The claims' key is the one holds use, so a
@@ -688,12 +829,7 @@ interface OpenMove {
  * claims are never let go here; only a hold nobody is paying for, or a move
  * that never finished.
  */
-async function openMove(
-  db: D1Database,
-  move: OpenMove,
-  time: { readonly date: string; readonly claims: readonly string[] },
-  now: Date,
-): Promise<"open" | "moving" | "taken"> {
+async function openMove(db: D1Database, move: PlannedMove, now: Date): Promise<"open" | "moving" | "taken"> {
   const at = now.toISOString();
   try {
     await db.batch([
@@ -711,16 +847,12 @@ async function openMove(
           move.job.technician_id,
           move.technicianId,
           move.job.window_start,
-          move.nowStart,
+          move.start.toISOString(),
           move.reason,
           move.actor,
           at,
         ),
-      ...time.claims.map((claim) =>
-        db
-          .prepare("INSERT INTO slot_claims (technician_id, date, claim, move_id) VALUES (?1, ?2, ?3, ?4)")
-          .bind(move.technicianId, time.date, claim, move.id),
-      ),
+      ...move.claims.map((claim) => claimOf(db, move, claim)),
     ]);
     return "open";
   } catch (error) {
@@ -730,9 +862,19 @@ async function openMove(
   }
 }
 
+/** One half-slot of the technician's day, claimed for the move under the key holds use. */
+const claimOf = (db: D1Database, move: PlannedMove, claim: string): D1PreparedStatement =>
+  db
+    .prepare("INSERT INTO slot_claims (technician_id, date, claim, move_id) VALUES (?1, ?2, ?3, ?4)")
+    .bind(move.technicianId, move.date, claim, move.id);
+
 /** Whether a write failed on one of this table's unique keys, as SQLite words it: "UNIQUE constraint failed: t.c". */
 const failedUniqueOn = (error: unknown, table: string): boolean =>
   error instanceof Error && error.message.includes(`UNIQUE constraint failed: ${table}.`);
+
+/** Whether a write failed on this column's NOT NULL, as SQLite words it: "NOT NULL constraint failed: t.c". */
+const failedNotNullOn = (error: unknown, column: string): boolean =>
+  error instanceof Error && error.message.includes(`NOT NULL constraint failed: ${column}`);
 
 const releasingClaims = (db: D1Database, moveId: string): D1PreparedStatement =>
   db.prepare("DELETE FROM slot_claims WHERE move_id = ?1").bind(moveId);
@@ -768,7 +910,7 @@ export interface Room {
  * Where a job in hand can go in the week from `from`: each technician's day
  * with a window the job would land in, by the same check a move runs, so the
  * board offers no window the move would be refused. Not where it already is.
- * Null for a job no longer live.
+ * Null for a job no longer live, or one the technician has begun.
  */
 export async function roomFor(
   db: D1Database,
@@ -776,7 +918,7 @@ export async function roomFor(
   now: Date,
 ): Promise<Room[] | null> {
   const job = await liveJob(db, input.appointmentId);
-  if (job === null) return null;
+  if (job === null || isUnderWay(job)) return null;
   const dates = weekFrom(input.from);
   const [technicians, held, schedule] = await Promise.all([
     activeTechnicians(db),

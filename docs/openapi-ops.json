@@ -68,6 +68,7 @@
                   "out_of_order",
                   "not_today",
                   "already_started",
+                  "piece_code",
                   "technician_inactive",
                   "managed_in_fsm",
                   "clash",
@@ -75,6 +76,7 @@
                   "does_not_fit",
                   "fsm_refused",
                   "fsm_partly",
+                  "in_progress",
                   "too_early_to_close",
                   "already_closed",
                   "no_service_area",
@@ -2795,6 +2797,7 @@
                   "out_of_order",
                   "not_today",
                   "already_started",
+                  "piece_code",
                   "technician_inactive",
                   "managed_in_fsm",
                   "clash",
@@ -2802,6 +2805,7 @@
                   "does_not_fit",
                   "fsm_refused",
                   "fsm_partly",
+                  "in_progress",
                   "too_early_to_close",
                   "already_closed",
                   "no_service_area",
@@ -4462,6 +4466,22 @@
               }
             ],
             "description": "The latest move of this visit its client has not heard of: he has not agreed to WhatsApp, or the message was never sent. Ops call him, then POST /api/dispatch/moves/{id}/told."
+          },
+          "begun": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "arrived",
+                  "started",
+                  "closed"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How far the technician has got, from the steps his phone sent: arrived (checked in), started, or closed (an outcome, a no-show among them). Null before he arrives. A visit he has begun, or one in progress, is not moved."
           }
         },
         "required": [
@@ -4477,7 +4497,8 @@
           "window",
           "status",
           "notice_hours",
-          "untold"
+          "untold",
+          "begun"
         ],
         "additionalProperties": false
       },
@@ -11339,7 +11360,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such live job",
+            "description": "not_found: no such live job, or one the technician has begun, which stays where it is",
             "content": {
               "application/json": {
                 "schema": {
@@ -11406,7 +11427,7 @@
             }
           },
           "409": {
-            "description": "clash: the technician already holds a job in that window on that date; on_leave: they are away that day; does_not_fit: the window is free but the visit has no room in it; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written)",
+            "description": "clash: the technician already holds a job in that window on that date; on_leave: they are away that day; does_not_fit: the window is free but the visit has no room in it; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit",
             "content": {
               "application/json": {
                 "schema": {
@@ -11483,7 +11504,7 @@
             }
           },
           "409": {
-            "description": "clash; on_leave; does_not_fit; superseded, with what changed in fields",
+            "description": "clash; on_leave; does_not_fit; superseded, with what changed in fields; in_progress: the technician has begun the visit, which stays where it is",
             "content": {
               "application/json": {
                 "schema": {

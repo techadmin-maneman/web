@@ -427,6 +427,7 @@ async function eraseContact(
   }
   try {
     await blankClientNotes(db, deps.fsm, personId);
+    await keepBooksCustomer(db, deps.fsm, personId, contactId);
     await deps.fsm.eraseContact(contactId);
     await db
       .prepare("UPDATE people SET fsm_erased_at = ?2 WHERE id = ?1")
@@ -457,6 +458,22 @@ async function eraseContact(
   message.ack();
 }
 
+/**
+ * The Books customer FSM's own integration made for the contact, kept on the person before the contact is blanked, so
+ * the Books erasure pass reaches it (src/domain/books-erasure.ts). Not where another person already holds it.
+ */
+async function keepBooksCustomer(db: D1Database, fsm: FsmProvider, personId: string, contactId: string) {
+  const customerId = (await fsm.contact(contactId))?.booksCustomerId ?? null;
+  if (customerId === null) return;
+  await db
+    .prepare(
+      `UPDATE people SET books_customer_id = ?2 WHERE id = ?1 AND books_customer_id IS NULL
+         AND NOT EXISTS (SELECT 1 FROM people other WHERE other.books_customer_id = ?2)`,
+    )
+    .bind(personId, customerId)
+    .run();
+}
+
 /** Blanks an erased client's notes on their appointments in FSM, which FSM's API cannot delete. */
 async function blankClientNotes(db: D1Database, fsm: FsmProvider, personId: string): Promise<void> {
   const noted = await db
@@ -471,8 +488,8 @@ async function blankClientNotes(db: D1Database, fsm: FsmProvider, personId: stri
 
 /**
  * Writes a client's note on their visit over the one on its FSM appointment, read afresh from D1, so a note sent
- * late never stands over a later one. Nothing is written for an erased client. The fifth failure tells ops; the
- * technician reads the note in their app whether or not FSM has it.
+ * late never stands over a later one. Nothing is written for an erased client, nor for a visit FSM never held. The
+ * fifth failure tells ops; the technician reads the note in their app whether or not FSM has it.
  */
 async function writeClientNote(
   message: Message,
@@ -484,7 +501,8 @@ async function writeClientNote(
   const visit = await db
     .prepare(
       `SELECT a.fsm_id, a.person_id, a.client_note FROM appointments a JOIN people p ON p.id = a.person_id
-       WHERE a.id = ?1 AND a.deleted_at IS NULL AND a.client_note IS NOT NULL AND p.erased_at IS NULL`,
+       WHERE a.id = ?1 AND a.deleted_at IS NULL AND a.client_note IS NOT NULL AND p.erased_at IS NULL
+         AND a.fsm_id <> a.id`,
     )
     .bind(visitId)
     .first<{ fsm_id: string; person_id: string; client_note: string }>();

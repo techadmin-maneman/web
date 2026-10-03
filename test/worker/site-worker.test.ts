@@ -10,6 +10,8 @@ import { createSiteWorker, type SiteEnv } from "../../site/src/worker.ts";
 
 /** The landing's head as the build writes it (site/src/layouts/Site.astro): the house card is its image. */
 const PAGE = `<!doctype html><html><head>
+<title>You have a Mane Man invite</title>
+<meta name="description" content="Home-fitted hair systems.">
 <meta property="og:title" content="You have a Mane Man invite">
 <meta property="og:description" content="Home-fitted hair systems.">
 <meta property="og:url" content="https://maneman.in/r">
@@ -111,7 +113,9 @@ async function open(api: Api, headers: HeadersInit = {}, origin = "https://manem
   const meta = (property: string) =>
     new RegExp(`<meta property="${property}" content="([^"]*)"`).exec(html)?.[1] ?? "(missing)";
   const invite = /data-invite="([^"]*)"/.exec(html)?.[1]?.replaceAll("&quot;", '"') ?? "(missing)";
-  return { response, html, meta, invite, asked };
+  const title = /<title>([^<]*)<\/title>/.exec(html)?.[1] ?? "(missing)";
+  const description = /<meta name="description" content="([^"]*)"/.exec(html)?.[1] ?? "(missing)";
+  return { response, html, meta, invite, title, description, asked };
 }
 
 /** A page with prices, read back: its figures, its structured data and what the booking form's island is given. */
@@ -175,6 +179,36 @@ describe("the site Worker at /r/:code", () => {
     expect((await visit()).asked.filter(isRewardRequest)).toHaveLength(1);
   });
 
+  // CP-24: the tab and search results read "You have a Mane Man invite" whatever the invite.
+  it("titles and describes the page as its preview, by the referrer's name", async () => {
+    const page = await open(withReward());
+    expect(page.title).toBe("Rohit sent you a Mane Man invite");
+    expect(page.description).toBe(page.meta("og:description"));
+    expect(page.description).toContain("3 service visits free");
+  });
+
+  // BK-62: a code we do not know is headed as /book is, so its tab does not say there is an invite.
+  it("titles a code we do not know as the booking page", async () => {
+    const page = await open(() => Response.json(UNKNOWN));
+    expect(page.title).toBe("Book a free consultation — Mane Man");
+    expect(page.description).not.toContain("service visits");
+  });
+
+  it("leaves the page's own title when mm-api cannot say what the invite is", async () => {
+    const page = await open(() => Response.json({ error: { code: "unavailable" } }, { status: 503 }));
+    expect(page.title).toBe("You have a Mane Man invite");
+  });
+
+  // BK-62: /r with no code answered 200 with a form that would post to /api/r//consultation.
+  it.each(["/r", "/r/"])("sends %s, which has no code, to /book", async (path) => {
+    const { env, asked, files } = siteEnv(withReward());
+    const response = await createSiteWorker().fetch(new Request(`https://maneman.in${path}?utm_source=wa`), env);
+    expect(response.status).toBe(301);
+    expect(response.headers.get("Location")).toBe("https://maneman.in/book?utm_source=wa");
+    expect(asked).toEqual([]);
+    expect(files).toEqual([]);
+  });
+
   // REQ-S8-01: a code the API does not know books without credits, so its preview must not promise them.
   it("promises no visits for an invite that is not valid, and versions the house card", async () => {
     const page = await open(() => Response.json(UNKNOWN));
@@ -202,6 +236,7 @@ describe("the site Worker at /r/:code", () => {
   // FEO-18: a failure is not an unknown code. The page is served as built and the island asks again.
   it.each([
     ["answers 503", () => Response.json({ error: { code: "unavailable" } }, { status: 503 })],
+    ["refuses an address past its misses", () => Response.json({ error: { code: "rate_limited" } }, { status: 429 })],
     [
       "throws",
       () => {
@@ -220,10 +255,14 @@ describe("the site Worker at /r/:code", () => {
   });
 
   // FEO-25: mm-api counts an open only for a person, so it needs to know who asked.
-  it("passes the visitor's user agent on to mm-api", async () => {
-    const page = await open(() => Response.json(VALID), { "User-Agent": "WhatsApp/2.23.20.0" });
+  it("passes the visitor's user agent and address on to mm-api", async () => {
+    const page = await open(() => Response.json(VALID), {
+      "User-Agent": "WhatsApp/2.23.20.0",
+      "CF-Connecting-IP": "203.0.113.7",
+    });
     const lookUp = page.asked.find((request) => new URL(request.url).pathname === "/api/r/RM4K7P");
     expect(lookUp?.headers.get("User-Agent")).toBe("WhatsApp/2.23.20.0");
+    expect(lookUp?.headers.get("CF-Connecting-IP")).toBe("203.0.113.7");
   });
 
   it("gives the landing's island the book's prices beside the invite", async () => {

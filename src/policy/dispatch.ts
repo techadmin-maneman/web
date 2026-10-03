@@ -59,6 +59,25 @@ export type MoveReason = (typeof MOVE_REASONS)[number];
 export const keepsTheClientsNotice = (reason: MoveReason): boolean => reason !== "client_asked";
 
 /**
+ * How far the technician has got on a visit, by the steps his phone has sent, which FSM's status can lag behind: he
+ * has arrived, started, or closed it (a no-show closes it too).
+ */
+export const BEGUN = ["arrived", "started", "closed"] as const;
+export type Begun = (typeof BEGUN)[number];
+
+/** The furthest of those steps the visit has; null before the technician arrives. */
+export function begunFrom(landed: {
+  readonly checkIn: boolean;
+  readonly start: boolean;
+  readonly outcome: boolean;
+}): Begun | null {
+  if (landed.outcome) return "closed";
+  if (landed.start) return "started";
+  if (landed.checkIn) return "arrived";
+  return null;
+}
+
+/**
  * Why a job cannot go to this window of this technician's day; null when it
  * can. The check runs on the server before any write to FSM, so a refusal
  * means nothing was written anywhere. (A move's reason is one of the list

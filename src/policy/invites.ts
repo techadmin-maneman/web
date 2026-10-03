@@ -16,3 +16,9 @@ export const INVITE_TTL_AFTER_LAUNCH_DAYS = 365;
 /** Whether an invite from a waitlist lapsed: its area launched more than the TTL before now. */
 export const inviteLapsed = (launchedAt: Date, now: Date): boolean =>
   now.getTime() > launchedAt.getTime() + INVITE_TTL_AFTER_LAUNCH_DAYS * DAY_MS;
+
+/**
+ * Codes that are not there an address may look up in an hour. Past them the address is refused every code, real or
+ * not, until the hour is out: a code cannot be found by guessing, and the refusal says nothing about the code.
+ */
+export const INVITE_MISSES_PER_ADDRESS_HOURLY = 20;

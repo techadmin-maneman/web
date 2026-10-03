@@ -22,13 +22,15 @@ The designs are "Referral and Waitlist" (the card, the chat preview, and the lan
 - Staging runs with every pincode served (`--all-served-from`, open point 48).
 - `GET /api/pincodes/:pin` says served or not, with the area, and refuses what is not an Indian pincode.
 
-**A client's code** (`referral_codes`) is their initials and four random characters from an alphabet without look-alikes (no 0, O, 1 or I). It is never taken from their mobile number, and is made the first time they open Refer (`GET /api/refer`). The code also holds the card's state (house or personal) and version.
+**A client's code** (`referral_codes`) is their initials and six random characters from an alphabet without look-alikes (no 0, O, 1 or I). Codes made before 4 October 2026 have four, and stay valid. It is never taken from their mobile number, and is made the first time they open Refer (`GET /api/refer`). The code also holds the card's state (house or personal) and version.
 
 **The invite** (`GET /api/r/:code`) is valid or unknown, with the card to show.
 
 - It names the referrer by first name only if their latest consent to photographs on referral cards was given on the notice that says so. That is `photos-referral-cards-v2`: the four lines, and "Your first name appears on your invite." (ruling 2). The app shows the same five lines. Since ADR 0080 it is any notice for cards that carries that line, the pay step's included (`NAMING_NOTICES`, `src/config/notices.ts`).
 - `REFERRER_NAME_ON_INVITE` switches the name off everywhere.
 - An erased referrer's invite stays valid, with the house card (ruling 1).
+- Since 4 October 2026 a code that is not there counts against the address that looked it up, as the invite or as its preview (`GET /api/og/:code.jpg`). Past 20 in an hour (`INVITE_MISSES_PER_ADDRESS_HOURLY`, `src/policy/invites.ts`) the address is refused every code until the hour is out: `429 rate_limited` for the invite, the house card for the preview. A refusal only for codes that are not there would tell a guesser which are real. The site's Worker passes the visitor's address on with the user agent.
+- An open counts once a day for each address and code (the counter `invite_open`), so a reload, or a loop, adds nothing to ops' funnel.
 
 **Attribution** (`referral_attributions`) happens once, to the first invite a person uses, and only while they are new: not the referrer, and not already fitted. It starts pending; the grant, holds and review arrive next.
 

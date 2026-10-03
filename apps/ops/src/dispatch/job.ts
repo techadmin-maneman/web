@@ -77,8 +77,15 @@ export function changesTime(job: Job, to: Target): boolean {
   return was.date !== to.date || was.window !== to.window;
 }
 
-/** A job done stays where it was worked: only one still to do, or under way, can move. */
-export const isMovable = (block: Block): boolean => block.status !== "completed";
+/** A visit done stays where it was worked, and one the technician has begun where he is working it. */
+export const isMovable = (block: Block): boolean =>
+  block.status !== "completed" && block.status !== "in_progress" && block.begun === null;
+
+/** How far the technician has got on a visit not yet done, in the board's word; null before he arrives. */
+export function begunWord(block: Block): string | null {
+  if (block.begun === null || block.status === "completed") return null;
+  return dispatch.board.begun[block.begun] ?? null;
+}
 
 /** What ops may do to a visit for its client from the board, besides moving it. */
 export type VisitChange = "cancel" | "close";
@@ -86,10 +93,15 @@ export type VisitChange = "cancel" | "close";
 const NOT_BEGUN: readonly Block["status"][] = ["scheduled", "dispatched"];
 const OPEN: readonly Block["status"][] = ["scheduled", "dispatched", "in_progress"];
 
-/** Cancelled while it is still ahead, or closed by hand once its time has come and it is not closed yet. */
+/**
+ * Cancelled while it is still ahead and the technician has not begun it, or closed by hand once its time has come,
+ * while neither his phone nor anyone has closed it.
+ */
 export function changeOf(block: Block, now: number): VisitChange | null {
-  if (Date.parse(block.starts_at) > now) return NOT_BEGUN.includes(block.status) ? "cancel" : null;
-  return OPEN.includes(block.status) ? "close" : null;
+  if (Date.parse(block.starts_at) > now) {
+    return NOT_BEGUN.includes(block.status) && block.begun === null ? "cancel" : null;
+  }
+  return OPEN.includes(block.status) && block.begun !== "closed" ? "close" : null;
 }
 
 /** "Rohit", as the drawer's WhatsApp button names him. */

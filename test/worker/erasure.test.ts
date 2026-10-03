@@ -645,6 +645,28 @@ describe("erasure blanks a check-in's coordinates", () => {
   });
 });
 
+describe("erasure blanks what a pay step kept on a hold", () => {
+  it("takes the purposes shown and the client's hashed address off their holds, and keeps the hold", async () => {
+    const personId = await clientWithEverything();
+    const at = NOW.toISOString();
+    await env.DB.prepare(
+      `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
+         amount_ex_gst, gst_percent, state, expires_at, created_at, updated_at, consents_shown, consents_ip_hash)
+       VALUES ('hold-1', ?1, 'service', '2026-09-24', 'afternoon', 't1', 2, 200000, 169492, 18, 'released', ?2, ?2,
+         ?2, 'photos_own_record,photos_referral_cards', 'a-hash')`,
+    )
+      .bind(personId, at)
+      .run();
+
+    expect((await erase({ mobile: MOBILE })).status).toBe(200);
+
+    const hold = await env.DB.prepare(
+      "SELECT state, consents_shown, consents_ip_hash FROM slot_holds WHERE id = 'hold-1'",
+    ).first();
+    expect(hold).toEqual({ state: "released", consents_shown: null, consents_ip_hash: null });
+  });
+});
+
 /** A visit still to happen, paid for, as a client's Monday service is. */
 async function bookedVisit(personId: string): Promise<void> {
   await env.DB.prepare(
