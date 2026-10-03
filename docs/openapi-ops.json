@@ -3901,28 +3901,44 @@
         "additionalProperties": false,
         "description": "The whole profile as it now stands, sent as a new version."
       },
-      "NumberChangeDecision": {
+      "Erased": {
         "type": "object",
         "properties": {
-          "decision": {
+          "erased_at": {
             "type": "string",
-            "enum": [
-              "confirm",
-              "reject"
-            ]
+            "format": "date-time"
           },
-          "reason": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "maxLength": 300,
-            "description": "Required to reject; kept with the decision, and the client reads it (src/policy/decision-reasons.ts)."
+          "photos_deleted": {
+            "type": "integer",
+            "description": "Try-on photographs."
+          },
+          "results_deleted": {
+            "type": "integer",
+            "description": "Try-on results."
+          },
+          "visit_photos_deleted": {
+            "type": "integer"
+          },
+          "messages_cancelled": {
+            "type": "integer",
+            "description": "Messages not yet sent."
+          },
+          "sessions_ended": {
+            "type": "integer",
+            "description": "App sessions signed out."
+          },
+          "addresses_removed": {
+            "type": "integer"
           }
         },
         "required": [
-          "decision",
-          "reason"
+          "erased_at",
+          "photos_deleted",
+          "results_deleted",
+          "visit_photos_deleted",
+          "messages_cancelled",
+          "sessions_ended",
+          "addresses_removed"
         ],
         "additionalProperties": false
       },
@@ -4027,6 +4043,41 @@
           "error",
           "visits",
           "payments"
+        ],
+        "additionalProperties": false
+      },
+      "Erasure": {
+        "type": "object",
+        "properties": {
+          "override_open_bookings": {
+            "type": "boolean",
+            "description": "Erase even with a visit booked or a payment held: only when ops will cancel and refund them today."
+          }
+        },
+        "additionalProperties": false
+      },
+      "NumberChangeDecision": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "confirm",
+              "reject"
+            ]
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 300,
+            "description": "Required to reject; kept with the decision, and the client reads it (src/policy/decision-reasons.ts)."
+          }
+        },
+        "required": [
+          "decision",
+          "reason"
         ],
         "additionalProperties": false
       },
@@ -10616,6 +10667,74 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/clients/{id}/erasure": {
+      "post": {
+        "summary": "Erase a client now: their photographs and details. The CRM, FSM and Books follow within minutes",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Erasure"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Erased",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erased"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required: a service token, which names no member of staff",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: nobody by that ID in the caller's cities, or erased already",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "visit_booked or payment_held: settle what it names first, or say it will be settled today",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErasureRefused"
                 }
               }
             }

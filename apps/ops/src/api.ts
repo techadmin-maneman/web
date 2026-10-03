@@ -354,6 +354,15 @@ export const api = {
    */
   decideDeletion: (id: string, decision: "delete" | "reject", reason: string | null) =>
     client.post("/api/deletion-requests/{id}/decision", { path: { id }, body: { decision, reason } }),
+  /**
+   * Erases a client now, from their page; it cannot be undone. `settledByHand` erases despite a visit booked or a
+   * payment held, which ops then cancel and refund themselves.
+   */
+  eraseClient: (id: string, settledByHand: boolean) =>
+    client.post("/api/clients/{id}/erasure", {
+      path: { id },
+      body: settledByHand ? { override_open_bookings: true } : {},
+    }),
   numberChanges: () => client.get("/api/number-changes"),
   /** Confirming moves the client to the new number; rejecting needs a reason. */
   decideNumberChange: (id: string, decision: "confirm" | "reject", reason: string | null) =>

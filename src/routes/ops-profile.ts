@@ -12,6 +12,7 @@ import type { Context } from "hono";
 import { afterResponse } from "../http/after-response.ts";
 import { staffOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
+import { fieldRecord } from "../config/field-record.ts";
 import { type AuditAction, type AuditEntry } from "../domain/audit.ts";
 import { decideDeletion, deletionDoneMessage, deletionsWaiting, type ErasedContact } from "../domain/deletion.ts";
 import { changesAwaitingOps, decideNumberChange } from "../domain/number-change.ts";
@@ -23,11 +24,9 @@ import { opsInputs } from "../http/ops-inputs.ts";
 import { routeReach, withinRouteReach } from "../http/staff-access.ts";
 import { needsReason, REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
 import { dueAt } from "../policy/tasks.ts";
-import type { CrmSyncMessage } from "../queues/crm-sync.ts";
-import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
 import { heldBackByAllowlist, type MessagingMessage } from "../queues/messaging.ts";
 import { scrubString } from "../log.ts";
-import { ErasureRefusedSchema, erasureRefused } from "./erasure.ts";
+import { ErasureRefusedSchema, erasureRefused } from "./ops-erasure.ts";
 
 const Reason = z.string().trim().max(REASON_MAX_CHARS).nullable().openapi({
   description: "Required to reject; kept with the decision, and the client reads it (src/policy/decision-reasons.ts).",
@@ -242,6 +241,8 @@ export function registerOpsProfile(app: App): void {
       staff: staffOf(c).id,
       reason,
       audit: decisionAudit(c, "deletion.decide", { kind: "deletion", id }, decision),
+      fsmConnected: fieldRecord(c.var.config.providers) === "fsm",
+      requestId: c.var.requestId,
       now,
       log: c.var.log,
     });
@@ -253,7 +254,6 @@ export function registerOpsProfile(app: App): void {
       await queueMessage(c, outcome.messageId);
       return c.json({ state: "rejected" as const }, 200);
     }
-    await queueOutsideErasure(c, outcome.personId);
     if (outcome.told !== null) await tellDeletionDone(c, outcome.told);
     return c.json({ state: "done" as const }, 200);
   });
@@ -294,22 +294,6 @@ async function tellDeletionDone(c: Context<AppEnv>, contact: ErasedContact): Pro
     log.error("deletion_done_error", { error });
   });
   await afterResponse(c, work);
-}
-
-/**
- * The blanking of the CRM record and the FSM contact, queued here rather than
- * left to the five-minute sweeper, so this door is as quick as the other one
- * (`POST /api/erasure`). Both consumers do nothing for a person already done,
- * so the sweeper finding them as well costs nothing.
- */
-async function queueOutsideErasure(c: Context<AppEnv>, personId: string): Promise<void> {
-  const message = { erase_person_id: personId, request_id: c.var.requestId };
-  try {
-    await c.env.CRM_QUEUE.send(message satisfies CrmSyncMessage);
-    if (c.var.config.providers.FSM_PROVIDER !== "none") await c.env.FSM_QUEUE.send(message satisfies FsmSyncMessage);
-  } catch (error) {
-    c.var.log.warn("erasure_enqueue_failed", { person_id: personId, error }); // the sweeper sends it on
-  }
 }
 
 /** When each change waiting for ops started waiting, by its ID, as the Tasks board counts it. */

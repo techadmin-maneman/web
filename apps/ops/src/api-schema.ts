@@ -1501,6 +1501,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/clients/{id}/erasure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Erase a client now: their photographs and details. The CRM, FSM and Books follow within minutes */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["Erasure"];
+                };
+            };
+            responses: {
+                /** @description Erased */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Erased"];
+                    };
+                };
+                /** @description access_required: a service token, which names no member of staff */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: nobody by that ID in the caller's cities, or erased already */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description visit_booked or payment_held: settle what it names first, or say it will be settled today */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErasureRefused"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/number-changes": {
         parameters: {
             query?: never;
@@ -7098,11 +7167,19 @@ export interface components {
             /** @description The id of the version the form started from: the latest as it was read; null where there was none. */
             based_on: string | null;
         };
-        NumberChangeDecision: {
-            /** @enum {string} */
-            decision: "confirm" | "reject";
-            /** @description Required to reject; kept with the decision, and the client reads it (src/policy/decision-reasons.ts). */
-            reason: string | null;
+        Erased: {
+            /** Format: date-time */
+            erased_at: string;
+            /** @description Try-on photographs. */
+            photos_deleted: number;
+            /** @description Try-on results. */
+            results_deleted: number;
+            visit_photos_deleted: number;
+            /** @description Messages not yet sent. */
+            messages_cancelled: number;
+            /** @description App sessions signed out. */
+            sessions_ended: number;
+            addresses_removed: number;
         };
         ErasureRefused: {
             error: {
@@ -7125,6 +7202,16 @@ export interface components {
                 /** @description In paise. */
                 amount: number;
             }[];
+        };
+        Erasure: {
+            /** @description Erase even with a visit booked or a payment held: only when ops will cancel and refund them today. */
+            override_open_bookings?: boolean;
+        };
+        NumberChangeDecision: {
+            /** @enum {string} */
+            decision: "confirm" | "reject";
+            /** @description Required to reject; kept with the decision, and the client reads it (src/policy/decision-reasons.ts). */
+            reason: string | null;
         };
         DeletionDecision: {
             /** @enum {string} */
