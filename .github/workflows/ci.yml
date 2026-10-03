@@ -171,7 +171,7 @@ jobs:
           fi
 
       - name: Dependency audit
-        run: npm audit --audit-level=high
+        run: npm run audit
       # npm now and then fails this with EMISSINGSIGNATUREKEY, a registry blip a later try clears; on 28 September
       # 2026 one more try 15 seconds on was not enough three runs in a row. So it tries four times, half a minute
       # apart, and fails the step only if every try fails. On 29 September four tries were not enough either, so it
