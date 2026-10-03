@@ -8,7 +8,7 @@
 // the instant the technician closed the job out, which board B4's duration runs
 // to.
 
-import type { CheckIn, Job, JobSummary } from "../api.ts";
+import type { CheckIn, Job, JobState, JobSummary } from "../api.ts";
 import { dayAfter } from "../lib/when.ts";
 import { all, get, put, remove } from "./db.ts";
 
@@ -28,7 +28,37 @@ export async function keepDay(date: string, jobs: readonly JobSummary[]): Promis
 
 export async function keptDay(date: string): Promise<readonly JobSummary[] | null> {
   const kept = await get<Kept>("jobs", dayKey(date));
-  return kept !== null && kept.kind === "day" ? kept.jobs : null;
+  return kept !== null && kept.kind === "day" ? kept.jobs.map(rowInTodaysShape) : null;
+}
+
+const NOTHING_LANDED: JobState = { started_at: null, outcome: null };
+
+/** A row an earlier build kept, before the day's list said where each job stood: begun and closed on neither. */
+function rowInTodaysShape(job: JobSummary): JobSummary {
+  const kept = job as Omit<JobSummary, "progress"> & { readonly progress?: JobState };
+  return { ...kept, progress: kept.progress ?? NOTHING_LANDED };
+}
+
+/**
+ * Where a job stands as the API answered a write of its, kept in the day that holds it: the list then says so with no
+ * signal, and before it is next read.
+ */
+export async function keepLanded(jobId: string, state: JobState): Promise<void> {
+  for (const kept of await all<Kept>("jobs")) {
+    if (kept.kind !== "day" || !kept.jobs.some((job) => job.id === jobId)) continue;
+    const jobs = kept.jobs.map((job) => (job.id === jobId ? { ...job, progress: state } : job));
+    await put("jobs", { ...kept, jobs } satisfies Kept);
+  }
+}
+
+/** Where each job of the days the phone holds stood when last heard of, by job. */
+export async function keptStates(): Promise<Map<string, JobState>> {
+  const states = new Map<string, JobState>();
+  for (const kept of await all<Kept>("jobs")) {
+    if (kept.kind !== "day") continue;
+    for (const job of kept.jobs) states.set(job.id, rowInTodaysShape(job).progress);
+  }
+  return states;
 }
 
 export async function keepJob(job: Job): Promise<void> {
@@ -94,10 +124,10 @@ export async function keptClosed(jobId: string): Promise<number | null> {
   return kept !== null && kept.kind === "closed" ? kept.at : null;
 }
 
-/** Every job the technician closed out on this phone, so the day's list can say so before FSM does. */
-export async function keptClosedJobs(): Promise<Set<string>> {
-  const kept = await all<Kept>("jobs");
-  return new Set(kept.flatMap((record) => (record.kind === "closed" ? [record.job_id] : [])));
+/** A job whose unsent work the technician let go of: its arrival and close-out go too, so only what landed speaks. */
+export async function forgetMarks(jobId: string): Promise<void> {
+  await remove("jobs", arrivalKey(jobId));
+  await remove("jobs", closedKey(jobId));
 }
 
 /** Every day the phone holds, for the screens that say what it is working from. */
