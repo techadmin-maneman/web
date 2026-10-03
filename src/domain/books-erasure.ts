@@ -1,7 +1,6 @@
-// An erased client's customer in Zoho Books (docs/decisions/0049-dpdp.md): deleted where no invoice or payment names
-// it, otherwise renamed "Erased client", blanked and made inactive, since Books keeps the invoices eight years
-// (src/providers/books.ts). The erasure itself never waits on Books: this pass, on the five-minute cron, finds the
-// erased people whose customer is still to be erased, a few a run.
+// An erased client's customer in Zoho Books: deleted where no invoice or payment names it, otherwise renamed "Erased
+// client", blanked and made inactive, since Books keeps the invoices eight years. The erasure itself never waits on
+// Books: this pass, on the five-minute cron, finds the erased people whose customer is still to be erased, a few a run.
 //
 // A payment the client made that is still on its way to Books is recorded first, for a day at most: Books deletes a
 // customer no payment names yet, and the payment could then never be recorded.

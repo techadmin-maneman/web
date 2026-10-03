@@ -1149,7 +1149,7 @@ Indexes:
 
 One row per person, keyed by mobile number. D1 owns the identity; the CRM's and Books' IDs are only references (ADR 0011, ADR 0110).
 
-Made by `0002_lead_path.sql`; changed by `0004_erasure.sql`, `0011_fsm_mirror.sql`, `0023_dpdp.sql`, `0036_erased_files.sql`, `0037_cron_indexes.sql`, `0070_field_record_ours.sql`, `0076_books_without_fsm.sql`, `0077_books_erasure.sql`.
+Made by `0002_lead_path.sql`; changed by `0004_erasure.sql`, `0011_fsm_mirror.sql`, `0023_dpdp.sql`, `0036_erased_files.sql`, `0037_cron_indexes.sql`, `0070_field_record_ours.sql`, `0076_books_without_fsm.sql`, `0077_books_customer_upkeep.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1172,10 +1172,12 @@ Made by `0002_lead_path.sql`; changed by `0004_erasure.sql`, `0011_fsm_mirror.sq
 | `books_checked_at` | TEXT | yes |  |  |
 | `books_erased_at` | TEXT | yes |  |  |
 | `books_erasure_attempts` | INTEGER | no | `0` |  |
+| `books_details_changed_at` | TEXT | yes |  |  |
 
 Indexes:
 
 - `people_books_erasure_due`: on (`erased_at`), where `erased_at IS NOT NULL AND books_customer_id IS NOT NULL AND books_erased_at IS NULL`
+- `people_books_update_due`: on (`books_details_changed_at`), where `books_details_changed_at IS NOT NULL AND books_customer_id IS NOT NULL AND erased_at IS NULL`
 - `people_by_books_customer`: unique on (`books_customer_id`), where `books_customer_id IS NOT NULL`
 - `people_by_fsm_contact`: unique on (`fsm_contact_id`), where `fsm_contact_id IS NOT NULL`
 - `people_crm_erasure_due`: on (`erased_at`), where `erased_at IS NOT NULL AND crm_erased_at IS NULL`
