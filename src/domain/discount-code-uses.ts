@@ -27,6 +27,7 @@ import { auditStatementIfStamped, auditStatementIfWritten, type AuditActor, type
 import { spendableCredits } from "./credits.ts";
 import { CODE_COLUMNS, coversOf, standing, termsOf, type CodeRow } from "./discount-codes.ts";
 import { priceOf, type Price } from "./price-book.ts";
+import { requestedCode, typedForVisit } from "./requested-codes.ts";
 
 /** Who entered a code on a booking. */
 type GivenBy = "client" | "technician" | "ops";
@@ -73,7 +74,9 @@ type Checked = { readonly ok: true; readonly code: CodeRow } | { readonly ok: fa
 
 /**
  * The code a text names, and whether it applies to the booking for this client, its limits read as they stand now.
- * Every entry point checks here, so a credit the client still holds is spent before any code at each of them.
+ * Whether it is switched off or past its last day is read as at `typedAt`: when a code typed on /book was typed
+ * (src/domain/requested-codes.ts), else now. Every entry point checks here, so a credit the client still holds is
+ * spent before any code at each of them.
  */
 export async function checkCode(
   db: D1Database,
@@ -81,6 +84,7 @@ export async function checkCode(
   booking: CodeBooking,
   personId: string,
   now: Date,
+  typedAt: Date = now,
 ): Promise<Checked> {
   const code = await db
     .prepare(`SELECT ${CODE_COLUMNS} FROM discount_codes c WHERE c.code = ?1`)
@@ -95,7 +99,7 @@ export async function checkCode(
     .bind(code.id, personId, now.toISOString())
     .first<{ uses: number; theirs: number }>();
   const state = {
-    switchedOff: code.switched_off_at !== null,
+    switchedOff: code.switched_off_at !== null && code.switched_off_at <= typedAt.toISOString(),
     expiresOn: code.expires_on,
     covers: coversOf(code),
     maxUses: code.max_uses,
@@ -105,7 +109,7 @@ export async function checkCode(
   };
   const credits = booking.onCredit ? 0 : (await spendableCredits(db, personId, now)).visits;
   const onCredit = booking.onCredit || creditComesFirst(booking.type, credits);
-  const refusal = codeRefusal(state, { ...booking, onCredit }, indiaDate(now));
+  const refusal = codeRefusal(state, { ...booking, onCredit }, indiaDate(typedAt));
   return refusal === null ? { ok: true, code } : { ok: false, reason: refusal };
 }
 
@@ -119,6 +123,8 @@ interface NewUse {
   /** Paise before GST; null while the booking's price is not known. */
   readonly amountOff: number | null;
   readonly by: EnteredBy;
+  /** When a code typed on /book was typed, which it is honoured as at; left out, now. */
+  readonly typedAt?: Date;
 }
 
 /** What must still be true of the booking a use is written on, in the use's own statement. */
@@ -133,7 +139,8 @@ const STILL_OPEN = {
 
 /**
  * The use, written only while the code is on and within its limits, the booking still open and carrying no other
- * code: each read again as it is written, so two entries at once cannot both take a code's last use.
+ * code: each read again as it is written, so two entries at once cannot both take a code's last use. A code typed on
+ * /book counts as on if it was on when typed.
  */
 export function useStatement(
   db: D1Database,
@@ -146,7 +153,7 @@ export function useStatement(
       `INSERT INTO discount_code_uses (id, code_id, person_id, hold_id, appointment_id, amount_off, given_by,
          given_by_id, created_at)
        SELECT ?1, c.id, ?3, ?4, ?5, ?6, ?7, ?8, ?9 FROM discount_codes c
-       WHERE c.id = ?2 AND c.switched_off_at IS NULL AND ${STILL_OPEN[onto]}
+       WHERE c.id = ?2 AND (c.switched_off_at IS NULL OR c.switched_off_at > ?10) AND ${STILL_OPEN[onto]}
          AND (c.max_uses IS NULL OR c.max_uses > (SELECT COUNT(*) FROM discount_code_uses u
            WHERE u.code_id = c.id AND ${standing("u", "?9")}))
          AND (c.once_per_client = 0 OR NOT EXISTS (SELECT 1 FROM discount_code_uses u
@@ -166,6 +173,7 @@ export function useStatement(
       use.by.kind,
       idOf(use.by),
       now.toISOString(),
+      (use.typedAt ?? now).toISOString(),
     );
 }
 
@@ -175,7 +183,10 @@ export type Entered =
   | { readonly kind: "not_applicable"; readonly reason: Refused | "taken_meanwhile" }
   /** The booking carries a code already: one code per booking. */
   | { readonly kind: "already_discounted" }
-  /** Its price is settled: Checkout has its order, it is paid for, its link is made, it is invoiced, or it is gone. */
+  /**
+   * Its price is settled: it is paid for, a payment on Checkout's order is under way, its link is made, it is
+   * invoiced, or it is gone.
+   */
   | { readonly kind: "price_settled" }
   /** The hold ran out of time before the code was entered. */
   | { readonly kind: "expired" }
@@ -330,7 +341,8 @@ async function priceOfVisit(db: D1Database, visit: VisitRow): Promise<Price | nu
 /**
  * The technician, on a one visit before its payment link is made, or ops, on any visit not yet paid for, linked or
  * invoiced, enter a code on the visit. What it takes off is fixed now where the visit's price is known, and at the
- * payment link for a one visit whose product is still to be chosen. Ops' entry is audited in the same batch.
+ * payment link for a one visit whose product is still to be chosen. The code the client typed on /book for a one
+ * visit is honoured as it stood when typed. Ops' entry is audited in the same batch.
  */
 export async function enterOnVisit(
   db: D1Database,
@@ -344,12 +356,14 @@ export async function enterOnVisit(
   if (visit.open !== 1 || !TAKES_A_CODE.has(visit.status)) return { kind: "price_settled" };
   if ((await codeOnVisit(db, visit.id)) !== null) return { kind: "already_discounted" };
 
+  const typedAt = visit.one_visit === null ? null : await typedForVisit(db, visit.id, entry.text);
   const checked = await checkCode(
     db,
     entry.text,
     { type, onCredit: visit.on_credit === 1, moves: false },
     personId,
     now,
+    typedAt ?? now,
   );
   if (!checked.ok) return { kind: "not_applicable", reason: checked.reason };
 
@@ -362,6 +376,7 @@ export async function enterOnVisit(
     visitId: visit.id,
     amountOff: price === null ? null : amountOff(termsOf(checked.code), price.amount_ex_gst),
     by: entry.by,
+    typedAt: typedAt ?? now,
   };
   const { by } = entry;
   const audit = by.kind === "ops" ? [visitAudit("discount_code.apply", by, entry, checked.code.code)] : [];
@@ -437,18 +452,23 @@ interface ClientVisitCode {
   readonly code: { readonly code: string; readonly amount_off: number | null; readonly given_by: GivenBy } | null;
   /** Not yet paid for, linked or invoiced. */
   readonly open: boolean;
+  /** For a one visit, the code the client typed on /book for it; null for none. */
+  readonly requested: string | null;
 }
 
-/** Every visit of the client's, by its ID, with its code and whether its price is still open. */
+/**
+ * Every visit of the client's, by its ID, with its code, whether its price is still open, and the code typed on /book
+ * for a one visit.
+ */
 export async function clientVisitCodes(db: D1Database, personId: string): Promise<Map<string, ClientVisitCode>> {
   const [visits, codes] = await Promise.all([
     db
       .prepare(
-        `SELECT a.id, (${openVisit("a.id")}) AS open FROM appointments a
+        `SELECT a.id, (${openVisit("a.id")}) AS open, ${requestedCode("a")} AS requested FROM appointments a
          WHERE a.person_id = ?1 AND a.deleted_at IS NULL`,
       )
       .bind(personId)
-      .all<{ id: string; open: number }>(),
+      .all<{ id: string; open: number; requested: string | null }>(),
     db
       .prepare(
         `SELECT COALESCE(u.appointment_id, h.appointment_id) AS visit_id, c.code, u.amount_off, u.given_by
@@ -463,7 +483,10 @@ export async function clientVisitCodes(db: D1Database, personId: string): Promis
     codes.results.map((row) => [row.visit_id, { code: row.code, amount_off: row.amount_off, given_by: row.given_by }]),
   );
   return new Map(
-    visits.results.map((visit) => [visit.id, { code: codeOf.get(visit.id) ?? null, open: visit.open === 1 }]),
+    visits.results.map((visit) => [
+      visit.id,
+      { code: codeOf.get(visit.id) ?? null, open: visit.open === 1, requested: visit.requested },
+    ]),
   );
 }
 

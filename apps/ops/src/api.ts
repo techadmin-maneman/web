@@ -34,6 +34,10 @@ export type VisitAvailability = Body<paths["/api/visits/availability"]["get"]>;
 export type AvailabilityQuery = NonNullable<paths["/api/visits/availability"]["get"]["parameters"]["query"]>;
 export type VisitToBook = Sent<paths["/api/visits"]["post"]>;
 export type VisitBooked = Body<paths["/api/visits"]["post"]>;
+/** What cancelling a client's visit gives back, free to the client and on their own late terms. */
+export type CancelTerms = Body<paths["/api/visits/{id}/cancel"]["post"]>;
+export type CancelOutcome = CancelTerms["free"];
+export type HandClose = Sent<paths["/api/visits/{id}/close"]["post"]>;
 export type CreditBalance = Body<paths["/api/clients/{id}/credits"]["post"]>;
 export type CreditAdjustment = Sent<paths["/api/clients/{id}/credits"]["post"]>;
 export type ClientInvite = NonNullable<ClientRecord["invite"]>;
@@ -275,6 +279,18 @@ export const api = {
   visitAvailability: (query: AvailabilityQuery) => client.get("/api/visits/availability", { query }),
   /** A visit booked for a client: at once when nothing is paid at booking, else a payment link goes to them. */
   bookVisit: (visit: VisitToBook) => client.post("/api/visits", { body: visit }),
+  /** What a cancel would give back, free to the client and on their own late terms. Changes nothing. */
+  cancelTerms: (visitId: string) =>
+    client.post("/api/visits/{id}/cancel", { path: { id: visitId }, body: { confirm: false } }),
+  /** The cancel, on the notice ops were shown: free to the client unless `onClientTerms`. */
+  cancelVisit: (visitId: string, notice: CancelTerms["notice"], onClientTerms: boolean, reason: string) =>
+    client.post("/api/visits/{id}/cancel", {
+      path: { id: visitId },
+      body: { confirm: true, notice, ...(onClientTerms ? { on_client_terms: true } : {}), reason },
+    }),
+  /** A visit whose technician's phone was lost before it sent the work, closed as ops say it went. */
+  closeVisit: (visitId: string, close: HandClose) =>
+    client.post("/api/visits/{id}/close", { path: { id: visitId }, body: close }),
   /** Visits added or taken away by hand, with the reason; the answer is the balance after it. */
   adjustCredits: (id: string, adjustment: CreditAdjustment) =>
     client.post("/api/clients/{id}/credits", { path: { id }, body: adjustment }),

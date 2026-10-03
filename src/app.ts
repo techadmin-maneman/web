@@ -65,6 +65,7 @@ import { registerStopMessages } from "./routes/stop-messages.ts";
 import { registerHealth } from "./routes/health.ts";
 import { registerOpsProfile } from "./routes/ops-profile.ts";
 import { registerOpsStorage } from "./routes/ops-storage.ts";
+import { registerOpsVisitChanges } from "./routes/ops-visit-changes.ts";
 import { registerOpsVisits } from "./routes/ops-visits.ts";
 import { registerOpsWhoami } from "./routes/ops-whoami.ts";
 import { registerPublishedPrices } from "./routes/published-prices.ts";
@@ -134,6 +135,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsBookings,
     // A visit ops book for a client: at once, or by a payment link.
     registerOpsVisits,
+    // A visit ops cancel for a client, or close by hand for a technician whose phone was lost.
+    registerOpsVisitChanges,
     registerOpsClientReferral,
     // An address a client gives ops on the phone (docs/decisions/0092-task-owners.md).
     registerOpsClientAddress,

@@ -86,8 +86,10 @@ export const ERROR_CODES = [
   "fsm_partly",
   // The technician has begun the visit, so a move would leave his work on another day or with another technician.
   "in_progress",
-  // The no-show wait has not run out yet (src/policy/no-show.ts).
+  // The no-show wait has not run out yet (src/policy/no-show.ts), or a visit ops would close by hand is still to come.
   "too_early_to_close",
+  // A visit ops would close by hand is closed or cancelled already, or the technician's phone closed it.
+  "already_closed",
   // A service-area change that would leave no pincode served at all, and every
   // client on the waitlist (docs/decisions/0061-ops-editable-inputs.md).
   "no_service_area",

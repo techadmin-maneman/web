@@ -338,8 +338,9 @@ async function personalDataStatements(db: D1Database, personId: string, at: stri
 /**
  * Ops' own words about the person, kept with a decision (docs/decisions/0072-ops-clients-and-queues.md): the review
  * of a grant they were either side of, why ops attached an invite they were either side of (ADR 0089), the ruling on
- * a visit of theirs they were not home for and on their dispute of its charge (ADR 0096), and why ops closed a visit
- * of theirs left partly done without a follow-up (ADR 0092). The decisions themselves stay, as records.
+ * a visit of theirs they were not home for and on their dispute of its charge (ADR 0096), why ops closed a visit
+ * of theirs left partly done without a follow-up (ADR 0092), and why ops cancelled a visit of theirs or closed one by
+ * hand. The decisions themselves stay, as records.
  */
 function opsWordsAbout(db: D1Database, personId: string): D1PreparedStatement[] {
   return [
@@ -358,6 +359,19 @@ function opsWordsAbout(db: D1Database, personId: string): D1PreparedStatement[] 
       )
       .bind(personId),
     db.prepare("UPDATE no_show_disputes SET ruling_reason = NULL WHERE person_id = ?1").bind(personId),
+    // Found through the visit, which each is keyed on, so the lookups are indexed.
+    db
+      .prepare(
+        `UPDATE visit_changes SET cancel_reason = NULL
+         WHERE appointment_id IN (SELECT id FROM appointments WHERE person_id = ?1)`,
+      )
+      .bind(personId),
+    db
+      .prepare(
+        `UPDATE visits SET close_reason = NULL
+         WHERE appointment_id IN (SELECT id FROM appointments WHERE person_id = ?1)`,
+      )
+      .bind(personId),
     db
       .prepare(
         `UPDATE task_closures SET reason = NULL
