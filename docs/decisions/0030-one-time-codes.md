@@ -49,7 +49,7 @@ The app's second screen then says a code is on its way if the number has a booki
 
 > **Amended 3 October 2026 (audit findings PS-12 and FLD-27).** Strangers could still spend the codes clients and technicians need: a resend skipped the number's and the address's limits, so one number got 25 codes a day, and 20 numbers nobody knows locked their whole address out until midnight. Now:
 >
-> - **Every code counts against its number's day and its address's hour**, a resend as much as a first code, whoever holds the number: a login challenge keeps the number's hash (`otp_challenges.mobile_hash`, migration 0078). A challenge sends at most three codes (`MAX_SENDS_PER_CHALLENGE`).
+> - **Every code counts against its number's day and its address's hour**, a resend as much as a first code, whoever holds the number: a login challenge keeps the number's hash (`otp_challenges.mobile_hash`, migration 0079). A challenge sends at most three codes (`MAX_SENDS_PER_CHALLENGE`).
 > - **A number nobody knows is answered like any other** and costs nothing more; its address is never refused for it.
 > - **Technicians have a ceiling of their own**, 100 a day (`OTP_TECH_DAILY_CEILING`), which only codes to active technicians count against; ops are told when an active technician is refused a code, and the alert closes once he is given one.
 > - **Asking for a client login code needs Turnstile**, which the app renders invisibly (`docs/turnstile.md`).

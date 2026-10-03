@@ -998,7 +998,7 @@ Made by `0054_policies_in_the_console.sql`.
 
 Each one-time code sent, as a hash, with its sends and attempts (ADR 0030, ADR 0052).
 
-Made by `0007_login.sql`; changed by `0008_profile.sql`, `0027_pieces_and_zones.sql`, `0037_cron_indexes.sql`, `0078_challenge_number.sql`.
+Made by `0007_login.sql`; changed by `0008_profile.sql`, `0027_pieces_and_zones.sql`, `0037_cron_indexes.sql`, `0079_challenge_number.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
