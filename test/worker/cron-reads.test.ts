@@ -180,8 +180,6 @@ const HISTORY = [
    SELECT 'nco-' || i, '${AGO}', 'mobile-hash-' || i, 'code-hash-' || i, '${IN_TWO_MONTHS}', '${AGO}' FROM n`,
   `INSERT INTO tryon_sessions (id, person_id, created_at, expires_at)
    SELECT 'ts-' || i, 'p-' || i, '${AGO}', '${IN_TWO_MONTHS}' FROM n`,
-  `INSERT INTO number_codes (id, created_at, mobile_hash, code_hash, expires_at, verified_at)
-   SELECT 'nc-' || i, '${AGO}', 'mobile-' || i, 'code-' || i, '${IN_TWO_MONTHS}', '${AGO}' FROM n`,
 ];
 
 /** The history of the people numbered `from` to `to`. */

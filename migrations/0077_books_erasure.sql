@@ -1,4 +1,4 @@
--- Migration number: 0076
+-- Migration number: 0077
 -- An erased client's customer in Zoho Books, blanked or deleted by the Books erasure pass
 -- (src/domain/books-erasure.ts), with the tries it took, as the CRM's and FSM's erasures keep theirs.
 --

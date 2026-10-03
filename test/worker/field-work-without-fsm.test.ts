@@ -558,6 +558,37 @@ describe("an erasure, without FSM", () => {
     expect(books.made.erased).toEqual([]);
   });
 
+  it("waits for a payment still on its way to Books, which must name the customer, for a day at most", async () => {
+    await env.DB.prepare(
+      `INSERT INTO payments (id, reference, person_id, razorpay_payment_id, amount, currency, status, captured_at,
+         created_at, updated_at)
+       VALUES ('payment-1', 'MM-2026-0842', ?1, 'pay_test42', 150000, 'INR', 'captured', ?2, ?2, ?2)`,
+    )
+      .bind(PERSON, NOW.toISOString())
+      .run();
+    const deps = withoutFsm({ books });
+
+    expect(await pass(deps)).toBe(0);
+
+    await env.DB.prepare("UPDATE payments SET books_payment_id = 'books-payment-1' WHERE id = 'payment-1'").run();
+    expect(await pass(deps)).toBe(1);
+    expect(books.made.erased).toEqual([{ customerId: "stub-customer-rohit", outcome: "deleted" }]);
+  });
+
+  it("erases a day after the erasure even when a payment never reached Books", async () => {
+    const twoDaysAgo = new Date(NOW.getTime() - 2 * 24 * 60 * 60_000).toISOString();
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO payments (id, reference, person_id, razorpay_payment_id, amount, currency, status, captured_at,
+           created_at, updated_at)
+         VALUES ('payment-1', 'MM-2026-0842', ?1, 'pay_test42', 150000, 'INR', 'captured', ?2, ?2, ?2)`,
+      ).bind(PERSON, twoDaysAgo),
+      env.DB.prepare("UPDATE people SET erased_at = ?2 WHERE id = ?1").bind(PERSON, twoDaysAgo),
+    ]);
+
+    expect(await pass(withoutFsm({ books }))).toBe(1);
+  });
+
   it("leaves a client nobody has erased, and one with no Books customer", async () => {
     await env.DB.prepare("UPDATE people SET books_customer_id = 'stub-customer-vikram' WHERE id = ?1")
       .bind(NEIGHBOUR)

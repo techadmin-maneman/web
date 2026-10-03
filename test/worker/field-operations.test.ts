@@ -1694,6 +1694,27 @@ describe.each(RECORDS)("a piece label already on record, on %s's record", (recor
     expect(corrected.status).toBe(202);
     expect(await pieceSteps()).toEqual({ n: 1 });
   });
+
+  // FSM's mirror can copy the new piece in before our own write gives it its visit.
+  it("answers a step sent again as it landed, though the piece is now on record with no visit", async () => {
+    const body = { piece_code: "MM-STD-5520-A", base: "Standard base" };
+    const eventId = uuidv7At(50);
+    const sendPiece = () => postAt(minutesAfterStart(60), `/api/tech/jobs/${REPLACEMENT}/piece`, body, eventId);
+    expect((await sendPiece()).status).toBe(202);
+    await env.DB.prepare("DELETE FROM pieces WHERE piece_code = 'MM-STD-5520-A'").run();
+    await env.DB.prepare(
+      `INSERT INTO pieces (id, fsm_id, person_id, piece_code, base, fitted_at, synced_at)
+       VALUES ('piece-new', 'asset-new', ?1, 'MM-STD-5520-A', 'Standard base', '2026-09-21', ?2)`,
+    )
+      .bind(PERSON, NOW.toISOString())
+      .run();
+
+    const replayed = await sendPiece();
+
+    expect(replayed.status).toBe(202);
+    expect(await replayed.json()).toMatchObject({ replayed: true });
+    expect(await pieceSteps()).toEqual({ n: 1 });
+  });
 });
 
 // Leave is ours because FSM has nowhere to keep it (ADR 0062). The point of
