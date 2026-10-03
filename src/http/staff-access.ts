@@ -5,7 +5,8 @@
 import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
 import { routePath } from "hono/route";
-import { callerAccessOf, type CallerAccess } from "../domain/staff.ts";
+import { callerAccessOf } from "../domain/staff.ts";
+import type { CallerAccess } from "../policy/access.ts";
 import { meetsNeed, needOf, SIGNED_IN, type RouteNeed } from "../policy/console-routes.ts";
 import type { AppEnv } from "./context.ts";
 import { errorBody } from "./errors.ts";

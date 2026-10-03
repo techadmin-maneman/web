@@ -1,7 +1,7 @@
 // The FSM reconciliation (docs/decisions/0032-fsm-mirror.md): the mirror's
-// repair for whatever FSM's webhooks missed. It runs with the sweeper, every
-// five minutes, and only ever puts appointments on the fsm-sync queue; the
-// consumer reads them afresh, as it does for a webhook.
+// repair for whatever FSM's webhooks missed. It runs every five minutes, and
+// only ever puts appointments on the fsm-sync queue; the consumer reads them
+// afresh, as it does for a webhook.
 //
 //   every run   the first page of FSM's appointments, latest change first; and
 //               a few upcoming visits, the longest unread first, since FSM

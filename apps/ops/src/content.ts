@@ -1591,7 +1591,14 @@ export const technicians = {
     },
   },
   // PLACEHOLDER: the board draws no way to add, change or switch off a technician, so every line below is ours.
-  fields: { name: "Name", mobile: "Mobile", zone: "Zone (optional)" },
+  fields: {
+    name: "Name",
+    mobile: "Mobile",
+    zone: "Zone (optional)",
+    city: "City",
+    cityHint: "Staff with access to this city see him. With no city, only national staff do.",
+    noCity: "No city",
+  },
   add: {
     open: "Add a technician",
     title: "Add a technician",
@@ -1605,6 +1612,7 @@ export const technicians = {
     title: "Details",
     mobile: "Mobile",
     zone: "Zone",
+    city: "City",
     change: "Change details",
     changeLabel: (name: string) => `Change ${name}'s details`,
     save: "Save changes",
@@ -1711,7 +1719,8 @@ export const deletions = {
     deleteLabel: (name: string) => `Delete the account of ${name}`,
     rejectLabel: (name: string) => `Reject the request of ${name}`,
     confirmLabel: (name: string) => `Deleting the account of ${name}`,
-    warning: "This erases the client now. It cannot be undone, and there is no copy to put back.",
+    warning:
+      "This erases the client now, and tells them on WhatsApp. It cannot be undone, and there is no copy to put back.",
     /** What the erasure destroys, in the order src/domain/erasure.ts destroys it. */
     deleted: {
       title: "Deleted",
@@ -1739,7 +1748,8 @@ export const deletions = {
     deleting: "Deleting",
     reason: {
       label: "Why you are rejecting it",
-      hint: "Kept with the decision, under your name.",
+      // PLACEHOLDER: the client is sent this reason on WhatsApp, and their app shows it for thirty days.
+      hint: "Kept with the decision, under your name. The client reads it on WhatsApp and in the app.",
       confirm: "Reject this request",
       cancel: "Leave it waiting",
     },

@@ -1858,7 +1858,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: no name, or not an Indian mobile
+**400**: invalid_request: no name, not an Indian mobile, or not one of our cities
 
 ```json
 {
@@ -2218,7 +2218,7 @@ A day's money: what was collected, what went back, and each charge kept or ruled
 
 ### PATCH /api/technicians/{id}
 
-Change a technician's name, number or zone
+Change a technician's name, number, zone or city
 
 Request body:
 
@@ -2236,7 +2236,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: nothing to change, no name, or not an Indian mobile
+**400**: invalid_request: nothing to change, no name, not an Indian mobile, or not one of our cities
 
 ```json
 {
@@ -8018,7 +8018,7 @@ Request body:
         "null"
       ],
       "maxLength": 300,
-      "description": "Required to reject; kept with the decision (src/policy/decision-reasons.ts)."
+      "description": "Required to reject; kept with the decision, and the client reads it (src/policy/decision-reasons.ts)."
     }
   },
   "required": [
@@ -8157,7 +8157,7 @@ Request body:
         "null"
       ],
       "maxLength": 300,
-      "description": "Required to reject; kept with the decision (src/policy/decision-reasons.ts)."
+      "description": "Required to reject; kept with the decision, and the client reads it (src/policy/decision-reasons.ts)."
     }
   },
   "required": [
@@ -9458,6 +9458,17 @@ Request body:
               }
             ]
           },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The city he works in, which staff access by place reads; null for none."
+          },
           "mobile": {
             "anyOf": [
               {
@@ -9529,6 +9540,7 @@ Request body:
           "name",
           "initials",
           "zone",
+          "city",
           "mobile",
           "editable",
           "devices",
@@ -9559,6 +9571,17 @@ Request body:
               }
             ]
           },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The city he works in, which staff access by place reads; null for none."
+          },
           "mobile": {
             "anyOf": [
               {
@@ -9579,17 +9602,26 @@ Request body:
           "id",
           "name",
           "zone",
+          "city",
           "mobile",
           "editable"
         ],
         "additionalProperties": false
       },
       "description": "Technicians switched off, by name: they cannot sign in, and nothing is booked on them."
+    },
+    "cities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "The cities a technician may be given, in display order."
     }
   },
   "required": [
     "technicians",
-    "switched_off"
+    "switched_off",
+    "cities"
   ],
   "additionalProperties": false
 }
@@ -10364,6 +10396,19 @@ Request body:
         }
       ],
       "description": "Where he mostly works, in ops' words; null for none."
+    },
+    "city": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The city he works in, one of GET /api/technicians' cities. Staff with a grant of that city or its zone see him; with none, only a national grant does."
     }
   },
   "required": [
@@ -10403,6 +10448,19 @@ Request body:
         }
       ],
       "description": "Where he mostly works, in ops' words; null for none."
+    },
+    "city": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The city he works in, one of GET /api/technicians' cities. Staff with a grant of that city or its zone see him; with none, only a national grant does."
     }
   },
   "additionalProperties": false,

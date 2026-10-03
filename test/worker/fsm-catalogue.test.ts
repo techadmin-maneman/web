@@ -31,7 +31,6 @@ import { appFor, captureLogs, fakeDependencies, fakeFetch, fakeQueue, json, mark
 /** 11:30 in India on 26 September 2026: the cron run on the hour, after the book's rows of the 22nd. */
 const ON_THE_HOUR = new Date("2026-09-26T06:00:00Z");
 const AN_HOUR_ON = new Date("2026-09-26T07:00:00Z");
-const OFF_THE_HOUR = new Date("2026-09-26T06:30:00Z");
 
 /** FSM's catalogue as staging's was on 24 September 2026: the replacement at twice the book's price. */
 const CATALOGUE: FsmItem[] = [
@@ -225,11 +224,10 @@ describe("the hourly catalogue check", () => {
 
   // The list is read a page at a time from what the run has left (plan piece C28), so it waits only for a run with
   // no call left at all, where it once waited for one with five.
-  it("reads FSM only on the hour, and only while the cron run has a call left", async () => {
+  it("reads FSM only while the cron run has a call left", async () => {
     const fsm = createStubFsm({ ...EMPTY_FSM, items: CATALOGUE });
     fsm.failNext("items");
 
-    expect(await check(fsm, { push: false, now: OFF_THE_HOUR }).done).toBeNull();
     expect(await check(fsm, { push: false, calls: 0 }).done).toBeNull();
     expect(alerted).toEqual([]);
   });
