@@ -517,7 +517,7 @@ Payments and refunds are mirrored from Razorpay's webhook (docs/decisions/0044-p
    W secret put RAZORPAY_KEY_SECRET --env <env>
    ```
 
-2. **The webhook secret.** Make one, set it on the Worker, and keep it to paste into Razorpay:
+2. **The webhook secret.** Make one, set it on the Worker, and keep it to paste into Razorpay. It must be at least 32 characters (the command below gives 48), and while `SELF_SERVE_BOOKING` is on the Worker refuses to start without it:
 
    ```sh
    openssl rand -hex 24
@@ -815,15 +815,17 @@ A daily alert (Google, Turnstile) and one ops settle by hand (a refund, a kept c
 SELECT job, failed_runs, last_failed_at, last_error FROM cron_jobs WHERE failed_runs > 0;
 ```
 
-The other jobs run regardless. A run shares 40 outside calls between its jobs; a job that finds them spent stops and leaves the rest to the next run, and the run logs `cron_calls_spent`. Seen now and then, that is a backlog clearing. Seen on every run, the passes cannot keep up within the free plan.
+The other jobs run regardless. The cron runs every minute, and each run only the jobs due in that minute: the table in `src/scheduled/cron.ts` gives each how often it runs (`every`: 5, 15 or 60 minutes) and in which minute (`at`). A run shares 40 outside calls between its jobs, and starts none after 30 seconds, so it ends before the next minute's; a job that finds them spent stops and leaves the rest to its next run, and the run logs `cron_calls_spent`. Seen now and then, that is a backlog clearing. Seen on every run, the passes cannot keep up within the free plan.
 
-Some jobs run only where what they need is switched on: FSM's jobs need `FSM_PROVIDER`, the invoices and Books need both FSM and Books, the FSM reconciliation needs the real FSM, and the visit reminders need `MESSAGING_ENABLED` (`src/scheduled/cron.ts`).
+Some jobs run only where what they need is switched on: FSM's jobs need `FSM_PROVIDER`, the invoices and Books need Books, the FSM reconciliation needs the real FSM, and the visit reminders need `MESSAGING_ENABLED` (`src/scheduled/cron.ts`).
 
 **The cron and the queue consumers have stood still for maintenance.** The switch a restore runs under has been on for an hour ("Restoring D1"). Once the restore is done, switch it off; the next run does its jobs, and the queues deliver what they hold. Then close the alert by hand.
 
 ### A cron run cut short
 
-Each run notes when it starts and when it finishes (`cron_runs`). A run that finds the one before it never finished alerts once (`cron_run_cut_short`), and the alert closes once runs have finished for an hour. The jobs after where the run stopped did not run that time; the next run does them, so one alert is a blip. Where it stands:
+Cloudflare stops a run that uses too much CPU time, and the free plan allows 10 ms an invocation. One run of every job took 30 to 60 ms, and on 3 October 2026 Cloudflare stopped every staging run for ten hours. So the cron runs every minute, each run only the few jobs due in that minute (`src/scheduled/cron.ts`; ADR 0009, "Update, 4 October 2026: the cron's CPU time").
+
+Each run notes when it starts and when it finishes (`cron_runs`). A run that finds the one before it never finished alerts once (`cron_run_cut_short`), and pings the heartbeat's `/fail` saying so ("The outside watchers"). The alert closes once runs have finished for an hour. Only that minute's jobs missed a turn, and each runs again at its next minute, so one alert is a blip. The minute of the run's start says which jobs it was running: those whose `every` and `at` fall on it, in `src/scheduled/cron.ts`. Where it stands:
 
 ```sql
 SELECT started_at, completed_at, failed_jobs, cut_short_at FROM cron_runs;
@@ -831,13 +833,21 @@ SELECT started_at, completed_at, failed_jobs, cut_short_at FROM cron_runs;
 
 `GET /api/health` shows `cron_completed_at`, the last finished run, for information; its status does not depend on it.
 
-Cloudflare stops a run that uses too much CPU time, and the free plan allows 10 ms an invocation. Every staging deploy reports mm-api's CPU over the last day in its last step, and `node --env-file=.env.cf-read scripts/cpu-report.ts production` reports production's (the token needs Account Analytics: Read). Workers Logs at the run's start time show the last job that logged before it stopped. If runs are cut again and again, tell the developers: the later jobs (invoices, Books, refunds owed, erasures) are not running.
+If the alert comes back for runs started in the same minute of the hour again and again, that minute's run is too heavy for the free plan: tell the developers which minute, so its jobs can be given minutes of their own. To see what Cloudflare charged each run, tail it across a few minutes and read `cpuTime` and `outcome` (`exceededCpu` is a run stopped):
+
+```sh
+node node_modules/wrangler/bin/wrangler.js tail mm-api-<env> --format json
+```
+
+Every staging deploy also reports mm-api's CPU over the last day in its last step, and `node --env-file=.env.cf-read scripts/cpu-report.ts production` reports production's (the token needs Account Analytics: Read).
+
+**After a deploy that changes the trigger.** Cloudflare attaches the trigger apart from the code (ADR 0010). Until an operator runs `npm run apply-triggers -- --env <env>`, the five-minute trigger fires, and each of its runs runs every job at once, as before, too heavy for the free plan. The deploy's trigger check names the difference.
 
 ### The outside watchers
 
 Every alert is sent from inside mm-api, so a cron that stops altogether, or an API that is down, tells nobody. Two free monitors outside Cloudflare watch for that:
 
-1. **The cron's heartbeat.** On healthchecks.io, a check for each environment (`mm-api-staging cron`, `mm-api-production cron`): period 5 minutes, grace 10 minutes, and its Google Chat integration on the alert space (or e-mail). Put its ping URL in the environment as `HEARTBEAT_URL` (`W secret put HEARTBEAT_URL --env <env>`). The cron pings it after every run, and pings `/fail` with the failed jobs' names when one failed. No ping for 15 minutes means the cron is not running: check the triggers (step 9), then Workers Logs for the scheduled event.
+1. **The cron's heartbeat.** On healthchecks.io, a check for each environment (`mm-api-staging cron`, `mm-api-production cron`): period 5 minutes, grace 10 minutes, and its Google Chat integration on the alert space (or e-mail). Put its ping URL in the environment as `HEARTBEAT_URL` (`W secret put HEARTBEAT_URL --env <env>`). The cron pings it after every run, every minute, and pings `/fail` with the jobs' names when one failed, or when the run before never finished ("A cron run cut short"). No ping for 15 minutes means the cron is not running: check the triggers (step 9), then Workers Logs for the scheduled event.
 2. **The API.** Any free uptime monitor checking `https://maneman.in/api/health` every 5 minutes for HTTP 200, telling the owner's e-mail. Production only: staging is behind Access. A 503 means the database is unreachable or not production's, and the answer's `d1` says which.
 
 ### What each alert means
@@ -867,7 +877,7 @@ The chat shows the message; the `alerts` table keeps it under its key. Most aler
 | Booking _id_ was not written to FSM: visit _id_ … reached FSM after the booking was held | `booking_to_link:<hold>`                                                                                  | when booked or refunded              | "A booking FSM would not take"                                          |
 | Booking _id_: an earlier try may have made its work order in FSM                         | `work_order_lookup_failed:<hold>`                                                                         | by hand                              | cancel all but one work order, as it says                               |
 | The client moved visit _id_ … and FSM would not cancel its work order                    | `replaced_not_cancelled:<visit>`                                                                          | by hand                              | cancel it in FSM, as it says                                            |
-| The refund … for visit _id_, cancelled by the client (or a no-show's), failed            | `cancel_refund_failed:<visit>`, `no_show_refund_failed:<why>:<visit>`                                     | by hand                              | "A refund that failed"                                                  |
+| The refund … for visit _id_, cancelled by the client or ops (or a no-show's), failed     | `cancel_refund_failed:<visit>`, `no_show_refund_failed:<why>:<visit>`                                     | by hand                              | "A refund that failed"                                                  |
 | The visit credit for visit _id_, a no-show _why_, could not come back                    | `no_show_credit_not_back:<why>:<visit>`                                                                   | by hand                              | "A credit that could not come back"                                     |
 | Invoice _id_ of visit _id_ is held as a draft, or is still a draft                       | `invoice_draft:<visit>`                                                                                   | when the invoice is issued           | "Invoices and Books"                                                    |
 | FSM refused to invoice, or the invoice pass has failed                                   | `invoice_refused:<visit>`, `invoice_failed:<visit>`                                                       | when the invoice is issued           | "Invoices and Books"                                                    |
@@ -1076,15 +1086,15 @@ The cause, from Workers Logs:
 - the route answers 404: `RAZORPAY_WEBHOOK_SECRET` is not set on the Worker (step 11c, point 2);
 - `razorpay_hook_unauthorized`: the secret in Razorpay's webhook is not the Worker's;
 - nothing at all: Razorpay is not calling. The webhook is disabled (Razorpay disables one that has failed for 24 hours, and e-mails the account), its URL is wrong, it is set up in the other mode from the keys (test or live), or, on staging, Access is stopping `/api/hooks/` (step 12, point 3);
-- `razorpay_hook_refund_early`, answered 409: a refund came before its payment. Razorpay sends it again; nothing is wrong.
+- `razorpay_hook_refund_early`, answered 409: a refund came before its payment, in an event that does not carry the payment. Razorpay sends it again; nothing is wrong.
 
 Put the cause right, and re-enable the webhook in Razorpay's dashboard if it was disabled. Razorpay retries a delivery that failed for 24 hours. A capture that arrives late is judged by Razorpay's own time: paid within the hold's ten minutes and its two minutes' grace, the visit is booked; if the time has gone to another client meanwhile, the payment is refunded in full (ADR 0068).
 
-For a payment whose delivery Razorpay will not send again (past its 24 hours, or while the webhook was disabled), refund it in Razorpay's dashboard and ask the client to book again. That refund's own webhook is then answered 409, since its payment was never recorded; that is expected.
+For a payment whose delivery Razorpay will not send again (past its 24 hours, or while the webhook was disabled), refund it in Razorpay's dashboard and ask the client to book again. That refund's own event carries the payment, so both are recorded then, nothing is booked for it, and ops get one alert per payment ("Payment … was refunded in Razorpay before we heard it was paid", key `razorpay_refund_unheard:<payment ID>`). Close it once the client has been told. The same alert for a refund no one here made means the webhook is missing payments: work through this section.
 
 ### A refund that failed
 
-"The refund of Rs. _n_ for visit _id_ … failed" (`cancel_refund_failed` for a client's cancel, `no_show_refund_failed` for a waived no-show). Nothing tries it again. In Razorpay's dashboard, find the payment the alert names, check it shows no refund of that amount, refund it once, and close the alert. The refund's webhook records it, and the client's Payments tab shows it.
+"The refund of Rs. _n_ for visit _id_ … failed" (`cancel_refund_failed` for a cancel, the client's or ops', `no_show_refund_failed` for a waived no-show). Nothing tries it again. In Razorpay's dashboard, find the payment the alert names, check it shows no refund of that amount, refund it once, and close the alert. The refund's webhook records it, and the client's Payments tab shows it.
 
 ---
 
@@ -1182,7 +1192,7 @@ A technician signs in on his phone with his number and a WhatsApp code; the sess
 
 1. **Revoke it.** In the ops console, Technicians, under Phones: each phone he has signed in on, and when it was last used. Revoke the lost one; its session ends at once. A technician who installed the app on an iPhone has two rows for one handset, the browser's copy and the installed app's (ADR 0053): revoke both.
 2. **What it still holds.** The phone keeps its jobs until it next reaches us: each client's name, number, address and gate code, and any photographs and steps not yet sent. At its next contact it wipes all of it, and `technician_devices.wiped_at` records that it has. A phone that never comes back online keeps it, and that is personal data on a lost device: follow "A personal data breach" to judge it.
-3. **What was only on the phone** is lost with it. Ops enter in FSM by hand what the technician did that did not reach us; what did reach us is in `job_events` ("Work stuck on a technician's phone", below).
+3. **What was only on the phone** is lost with it. What did reach us is in `job_events` ("Work stuck on a technician's phone", below). A visit he finished whose close never reached us is closed by hand in the console: on the client's Visits tab or the visit's drawer on the dispatch board, **Close by hand**, with how it went, when the work began and ended, and how you know. While FSM holds the record (`FSM_PROVIDER` is `zoho`), the console refuses and the visit is entered in FSM by hand instead.
 4. **A new phone.** He signs in on it with his number, and it enrols itself. If the number went with the phone, change it in FSM: a number we do not know is looked up in FSM at sign-in.
 
 ```sql
@@ -1196,7 +1206,7 @@ WHERE t.name LIKE '%<name>%' ORDER BY d.last_seen_at DESC;
 The app sends the outbox one step at a time, oldest first, whenever it has signal and whenever it comes to the front. Its "Waiting to reach us" screen (`/waiting`) lists, for each job, the photo sets and steps still on the phone, since when, and what stopped the job's queue.
 
 - **No signal.** Nothing is wrong. Get to signal and open the app. The app warns when the phone has not promised to keep its store: an iPhone keeps it only with the app on its home screen (ADR 0053), so a technician on an iPhone should not leave work waiting for days.
-- **A job stopped because it changed** ("This job changed while the phone was offline", "Ops moved this job to another time", "Ops moved this job to Sameer at 10:40 am", "This job is someone else's now", "This job was cancelled…"): ops changed the job, and what is left of it cannot reach us from this phone. Agree with the technician what he did; ops enter it in FSM by hand; then he taps "Got it", which asks first and deletes that job's queue from the phone.
+- **A job stopped because it changed** ("This job changed while the phone was offline", "Ops moved this job to another time", "Ops moved this job to Sameer at 10:40 am", "This job is someone else's now", "This job was cancelled…"): ops changed the job, and what is left of it cannot reach us from this phone. Agree with the technician what he did; ops close the visit by hand in the console (in FSM while FSM holds the record); then he taps "Got it", which asks first and deletes that job's queue from the phone.
 - **A step refused** ("The piece's label was not accepted", and the like): "Correct it" takes him back to the step. The Ref under it finds the refusal in the logs ("Someone says a screen failed").
 - **Photographs failed**: "Retry".
 - **Never sign out or delete the app while work is waiting**: signing out wipes the phone. The app asks first, and offers "Send first".
@@ -1252,7 +1262,7 @@ The photo notice promises that a person's data is deleted the same day they ask.
 
    The script asks for the number and for a confirmation, then prints the person's ID and what it deleted: photos, results, and messages not yet sent. It keeps the number out of shell history. Without the script, the call is `POST /api/erasure` with `Authorization: Bearer <ERASURE_SECRET>` and the body `{ "mobile": "98100 00000" }`.
 
-   **A visit booked, or a payment held.** The erasure is refused (`409`, `visit_booked` or `payment_held`) while the person has a visit still to happen, or a payment we captured with no visit behind it, and nothing is erased (`docs/decisions/0066-erasure-all-or-nothing.md`). The script lists each visit and payment. Cancel the visits in FSM and refund the payments in Razorpay, wait for the mirror to show them (a few minutes), then run it again. If they cannot be settled today, run it with `--override-open-bookings` (in the body, `"override_open_bookings": true`): the person is erased anyway, the Worker logs `erasure_override` with the counts, and the visits and payments must still be cancelled and refunded by hand the same day. A refund needs none of the person's details.
+   **A visit booked, or a payment held.** The erasure is refused (`409`, `visit_booked` or `payment_held`) while the person has a visit still to happen, or a payment we captured with no visit behind it, and nothing is erased (`docs/decisions/0066-erasure-all-or-nothing.md`). The script lists each visit and payment. Cancel each visit from the client's page in the ops console (Visits, **Cancel**): it refunds what was paid, gives a visit credit back and tells the client. Refund a payment with no visit behind it in Razorpay. Then run it again. If they cannot be settled today, run it with `--override-open-bookings` (in the body, `"override_open_bookings": true`): the person is erased anyway, the Worker logs `erasure_override` with the counts, and the visits and payments must still be cancelled and refunded by hand the same day. A refund needs none of the person's details.
 
    The files (photos, results, visit photographs, the referral card) are deleted just after the rest. If R2 fails, the person is erased all the same and the cron finishes the files within five minutes; `files_erased_at` on the person is set once they are gone.
 
@@ -1275,7 +1285,10 @@ The photo notice promises that a person's data is deleted the same day they ask.
 
 - deletes their visit photographs from the client-photos bucket;
 - deletes their saved addresses;
-- anonymises their FSM contact within a few minutes, through the fsm-sync queue (docs/decisions/0049-dpdp.md).
+- anonymises their FSM contact within a few minutes, through the fsm-sync queue (docs/decisions/0049-dpdp.md);
+- tells the client on WhatsApp that it is done (`deletion_done_v1`), so step 5 is not needed. It is sent once, straight after the erasure; the log's `deletion_done_failed` means it did not arrive, and with the number gone it cannot be sent again. Delete the chat (step 4) after it.
+
+Rejecting a request sends the client your reason on WhatsApp (`deletion_rejected_v1`), and their app shows it for 30 days, so write it for them to read.
 
 Check FSM as you check Zoho:
 

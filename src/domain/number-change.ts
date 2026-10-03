@@ -2,10 +2,13 @@
 // to both numbers. The change then waits for ops to confirm, and takes effect
 // only after that confirmation." Each number's code is its own challenge.
 
+import type { PlacesReached } from "../policy/access.ts";
+import { DECISION_SHOWN_DAYS } from "../policy/decision-reasons.ts";
 import { newLoginCode } from "../policy/one-time-code.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import { verifyCode, type Verification } from "./login.ts";
 import { createChallenge, type Challenge, type ChallengePurpose } from "./one-time-codes.ts";
+import { reachBinding, withinReach } from "./places.ts";
 import { DAY_MS } from "../lib/durations.ts";
 
 export type NumberChangeState = "verifying" | "awaiting_ops" | "confirmed" | "rejected" | "withdrawn";
@@ -61,9 +64,6 @@ export async function openNumberChange(db: D1Database, personId: string): Promis
     .first<Row>();
   return row === null ? null : changeOf(row);
 }
-
-/** How long the profile shows ops' decision on a change. PLACEHOLDER, until the owner says otherwise. */
-export const DECISION_SHOWN_DAYS = 30;
 
 export interface DecidedChange {
   readonly state: "confirmed" | "rejected";
@@ -221,15 +221,19 @@ export async function verifyNumberChange(
   return { verification, change: (await findNumberChange(db, change.id)) ?? change };
 }
 
-/** The changes waiting for ops, oldest first. */
-export async function changesAwaitingOps(db: D1Database): Promise<(NumberChange & { oldMobileE164: string })[]> {
+/** The changes waiting for ops in the places reached, oldest first. */
+export async function changesAwaitingOps(
+  db: D1Database,
+  reached: PlacesReached,
+): Promise<(NumberChange & { oldMobileE164: string })[]> {
   const rows = await db
     .prepare(
       `SELECT r.id, r.person_id, r.new_mobile_e164, r.state, r.old_verified_at, r.new_verified_at, r.created_at,
          p.mobile_e164 AS old_mobile_e164
        FROM number_change_requests r JOIN people p ON p.id = r.person_id
-       WHERE r.state = 'awaiting_ops' ORDER BY r.created_at`,
+       WHERE r.state = 'awaiting_ops' AND ${withinReach("number_change", "r", "?1")} ORDER BY r.created_at`,
     )
+    .bind(reachBinding(reached))
     .all<Row & { old_mobile_e164: string }>();
   return rows.results.map((row) => ({ ...changeOf(row), oldMobileE164: row.old_mobile_e164 }));
 }

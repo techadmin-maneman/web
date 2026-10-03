@@ -42,8 +42,8 @@
 // takes no money (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
 // The site's own form may carry a discount code for it, which stands on the
 // booking and comes off the product's price at the link; while booking is off,
-// it is kept on the request, for ops to enter on the visit they book
-// (docs/decisions/0108-discount-codes.md).
+// it is kept on the request, for ops to enter on the visit they book, as it
+// stood when typed (src/domain/requested-codes.ts).
 //
 // The number, the Turnstile token and the day's limits are checked by the
 // route's side (src/http/public-form.ts), which this is handed as checkPerson:

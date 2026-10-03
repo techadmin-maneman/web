@@ -5,32 +5,33 @@
 //   GET  /api/deletion-requests               requests waiting for ops
 //   POST /api/deletion-requests/:id/decision  delete (the Phase 1 erasure) or reject
 // Each decision is audited under the member of staff who made it, in the same batch as the decision. Ops answer
-// all three in the console's own sections (apps/ops/src).
+// all three in the console's own sections (apps/ops/src). Each route keeps to the caller's cities.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
+import { afterResponse } from "../http/after-response.ts";
 import { staffOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
 import { type AuditAction, type AuditEntry } from "../domain/audit.ts";
-import { decideDeletion, deletionsWaiting } from "../domain/deletion.ts";
+import { decideDeletion, deletionDoneMessage, deletionsWaiting, type ErasedContact } from "../domain/deletion.ts";
 import { changesAwaitingOps, decideNumberChange } from "../domain/number-change.ts";
 import { NUMBER_CHANGE_WAITING_SINCE } from "../domain/tasks.ts";
 import { queueContactSync } from "../http/contact-sync.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
+import { routeReach, withinRouteReach } from "../http/staff-access.ts";
 import { needsReason, REASON_MAX_CHARS } from "../policy/decision-reasons.ts";
 import { dueAt } from "../policy/tasks.ts";
 import type { CrmSyncMessage } from "../queues/crm-sync.ts";
 import type { FsmSyncMessage } from "../queues/fsm-sync.ts";
+import { heldBackByAllowlist, type MessagingMessage } from "../queues/messaging.ts";
+import { scrubString } from "../log.ts";
 import { ErasureRefusedSchema, erasureRefused } from "./erasure.ts";
 
-const Reason = z
-  .string()
-  .trim()
-  .max(REASON_MAX_CHARS)
-  .nullable()
-  .openapi({ description: "Required to reject; kept with the decision (src/policy/decision-reasons.ts)." });
+const Reason = z.string().trim().max(REASON_MAX_CHARS).nullable().openapi({
+  description: "Required to reject; kept with the decision, and the client reads it (src/policy/decision-reasons.ts).",
+});
 const DueSchema = z.iso.datetime().openapi({
   description: "When ops should have decided: the Tasks board's allowance for this queue, which ops set.",
 });
@@ -38,7 +39,7 @@ const DueSchema = z.iso.datetime().openapi({
 export const numberChangesRoute = createRoute({
   method: "get",
   path: "/api/number-changes",
-  summary: "Number changes waiting for ops: both numbers proven by code",
+  summary: "Number changes waiting for ops in the caller's cities: both numbers proven by code",
   responses: {
     200: {
       description: "Oldest first",
@@ -84,7 +85,7 @@ export const numberChangeDecisionRoute = createRoute({
   responses: {
     200: { description: "Decided", ...json(z.object({ state: z.enum(["confirmed", "rejected"]) }).strict()) },
     400: errorResponse("invalid_request: a rejection needs a reason"),
-    404: errorResponse("not_found: no change waiting for ops by that ID"),
+    404: errorResponse("not_found: no change waiting for ops by that ID in the caller's cities"),
     409: errorResponse("number_in_use: another person holds the new number"),
   },
 });
@@ -92,7 +93,7 @@ export const numberChangeDecisionRoute = createRoute({
 export const deletionRequestsRoute = createRoute({
   method: "get",
   path: "/api/deletion-requests",
-  summary: "Deletion requests waiting for ops",
+  summary: "Deletion requests waiting for ops in the caller's cities",
   responses: {
     200: {
       description: "Oldest first",
@@ -137,7 +138,7 @@ export const deletionDecisionRoute = createRoute({
   responses: {
     200: { description: "Decided", ...json(z.object({ state: z.enum(["done", "rejected"]) }).strict()) },
     400: errorResponse("invalid_request: a rejection needs a reason"),
-    404: errorResponse("not_found: no request waiting for ops by that ID"),
+    404: errorResponse("not_found: no request waiting for ops by that ID in the caller's cities"),
     409: {
       description: "visit_booked or payment_held: cancel the visits and refund the payments it names first",
       ...json(ErasureRefusedSchema),
@@ -157,7 +158,7 @@ function decisionAudit(
 
 export function registerOpsProfile(app: App): void {
   app.openapi(numberChangesRoute, async (c) => {
-    const changes = await changesAwaitingOps(c.env.DB);
+    const changes = await changesAwaitingOps(c.env.DB, await routeReach(c));
     const [names, since, inputs] = await Promise.all([
       namesOf(
         c.env.DB,
@@ -190,6 +191,7 @@ export function registerOpsProfile(app: App): void {
     if (needsReason("number_change", decision) && (reason ?? "") === "") {
       return c.json(errorBody("invalid_request", c.var.requestId, ["reason"]), 400);
     }
+    if (!(await withinRouteReach(c, "number_change", id))) return c.json(errorBody("not_found", c.var.requestId), 404);
     const outcome = await decideNumberChange(c.env.DB, {
       id,
       decision,
@@ -206,7 +208,8 @@ export function registerOpsProfile(app: App): void {
   });
 
   app.openapi(deletionRequestsRoute, async (c) => {
-    const [requests, inputs] = await Promise.all([deletionsWaiting(c.env.DB), opsInputs(c)]);
+    const reached = await routeReach(c);
+    const [requests, inputs] = await Promise.all([deletionsWaiting(c.env.DB, reached), opsInputs(c)]);
     return c.json(
       {
         requests: requests.map((request) => ({
@@ -228,6 +231,9 @@ export function registerOpsProfile(app: App): void {
     if (needsReason("deletion", decision) && (reason ?? "") === "") {
       return c.json(errorBody("invalid_request", c.var.requestId, ["reason"]), 400);
     }
+    if (!(await withinRouteReach(c, "deletion_request", id))) {
+      return c.json(errorBody("not_found", c.var.requestId), 404);
+    }
     const now = c.var.deps.now();
     // Recorded in the same batch as the erasure: an erasure cannot be undone, and one that failed did not happen.
     const outcome = await decideDeletion(c.env, {
@@ -243,9 +249,51 @@ export function registerOpsProfile(app: App): void {
     if (outcome.kind === "refused") {
       return c.json(erasureRefused(outcome.refusal, outcome.blockers, c.var.requestId), 409);
     }
-    if (decision === "delete") await queueOutsideErasure(c, outcome.personId);
-    return c.json({ state: decision === "delete" ? ("done" as const) : ("rejected" as const) }, 200);
+    if (outcome.kind === "rejected") {
+      await queueMessage(c, outcome.messageId);
+      return c.json({ state: "rejected" as const }, 200);
+    }
+    await queueOutsideErasure(c, outcome.personId);
+    if (outcome.told !== null) await tellDeletionDone(c, outcome.told);
+    return c.json({ state: "done" as const }, 200);
   });
+}
+
+/** Sends a message written with the decision's batch to the messaging queue. One the queue drops, the sweeper sends. */
+async function queueMessage(c: Context<AppEnv>, messageId: string): Promise<void> {
+  try {
+    await c.env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: c.var.requestId } satisfies MessagingMessage);
+  } catch (error) {
+    c.var.log.warn("message_enqueue_failed", { outbound_message_id: messageId, error });
+  }
+}
+
+/**
+ * Tells the client their account is deleted, once the response has gone. The erasure has already blanked their
+ * number, so this goes straight to the provider with the number read before it, and is not tried again. Staging's
+ * allowlist holds it back as it does any message ops' action sends.
+ */
+async function tellDeletionDone(c: Context<AppEnv>, contact: ErasedContact): Promise<void> {
+  const { config, deps, log } = c.var;
+  const { messaging } = config.settings;
+  const work = (async () => {
+    if (!messaging.enabled) {
+      log.info("deletion_done_not_sent", { reason: "messaging is off" });
+      return;
+    }
+    if (
+      heldBackByAllowlist(messaging, { mobile_e164: contact.mobileE164, name: contact.name, kind: "deletion_done" })
+    ) {
+      log.info("deletion_done_not_sent", { reason: "number not on the allowlist" });
+      return;
+    }
+    const result = await deps.messaging.send(deletionDoneMessage(contact));
+    if (result.ok) log.info("deletion_done_sent");
+    else log.warn("deletion_done_failed", { detail: scrubString(result.detail).slice(0, 200) });
+  })().catch((error: unknown) => {
+    log.error("deletion_done_error", { error });
+  });
+  await afterResponse(c, work);
 }
 
 /**

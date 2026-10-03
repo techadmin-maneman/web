@@ -114,6 +114,13 @@ export const TEMPLATES: Readonly<Record<string, string>> = {
     "Hello {{1}}, this number was just used to book on our site. As a Mane Man client, you book your next visit in the Mane Man app. Sign in with this number.",
   address_on_account_v1:
     "Hello {{1}}, we will come to the address already on your account, not the one typed on our site. You can change it in the Mane Man app.",
+  // Ops' decision on a client's request to delete their account. {{2}} is ops' reason, which they write knowing the
+  // client reads it.
+  deletion_rejected_v1:
+    "Hello {{1}}, we have not deleted your Mane Man account. Our reason: {{2}} Message us if you disagree.",
+  // Sent once the erasure is done, to the number it has just blanked.
+  deletion_done_v1:
+    "Hello {{1}}, as you asked, your Mane Man account is deleted. Your invoices are kept for eight years, as the law requires.",
   // The line a reminder or alert ends with, {{1}} the link that stops them (STOP_LINKS below).
   stop_link_v1: "Stop these messages: {{1}}",
   // The answer to a STOP reply, once it has withdrawn something.
@@ -185,6 +192,7 @@ export const MESSAGE_CLASSES: Readonly<Record<MessageKind, MessageClass>> = {
   nothing_to_pay: "automatic", // the technician's close of a one visit, not the client's own action
   reschedule_confirmation: "answering", // the client's own move
   cancel_confirmation: "answering", // the client's own cancel
+  visit_cancelled: "automatic", // ops cancelled it, in the console
   waitlist_confirmation: "answering", // their own place on the list, just joined
   visit_reminder: "automatic", // the day-before cron
   visit_moved: "automatic", // ops moved it, on the dispatch board
@@ -200,6 +208,7 @@ export const MESSAGE_CLASSES: Readonly<Record<MessageKind, MessageClass>> = {
   consultation_exists: "answering", // the site's booking form, just sent for this number
   book_in_app: "answering",
   address_on_account: "answering",
+  deletion_rejected: "automatic", // ops' ruling
   messages_stopped: "answering", // their own STOP reply
 };
 

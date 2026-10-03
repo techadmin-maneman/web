@@ -130,6 +130,8 @@ const UNPLANNED = [
   { file: "src/domain/hair-profiles.ts", source: "UPDATE hair_profiles SET ${blanked} WHERE person_id = ?1" },
   { file: "src/domain/hair-profiles.ts", source: "VALUES (${placeholders}) ON CONFLICT (appointment_id, event_id)" },
   { file: "src/domain/hair-profiles.ts", source: 'SELECT ${placeholders} WHERE (${latestIdQuery("?2")})' },
+  // A record's city, for the console: the record by its key, its city by indexed lookups. The cron never runs it.
+  { file: "src/domain/places.ts", source: "FROM ${table} record WHERE record.id = ?1" },
 ];
 
 /** Where test/worker/cron-reads.test.ts keeps the history a cron run is measured against. */

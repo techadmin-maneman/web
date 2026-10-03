@@ -1,7 +1,7 @@
 // A discount code at the pay step (docs/decisions/0108-discount-codes.md), which no board draws: a quiet link opens
 // a box, and a code that applies prices the hold again, the code taken off before GST, so Checkout's order is made for
-// what is left. A code that does not apply is told only that. Once the client taps pay, Checkout has its order and the
-// code can no longer change, so the box is shut while the sheet is busy.
+// what is left. A code that does not apply is told only that. The box is shut while the sheet is busy paying; once
+// Checkout is closed unpaid, the code may change again, and the next Pay makes a new order for the new price.
 
 import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
