@@ -28,6 +28,7 @@ import { queueNextServiceReminders } from "../domain/next-visit.ts";
 import { sendUnsentLinks } from "../domain/payment-links.ts";
 import { readOpsInputs, type OpsInputs } from "../domain/ops-settings.ts";
 import { readDatabaseBytes, tellOfDatabaseSize, tellOfStorage } from "../domain/storage-meter.ts";
+import { settleOwedRefunds } from "../domain/visit-changes.ts";
 import { queueReminders } from "../domain/visit-messages.ts";
 import type { StaticConfig } from "../guard.ts";
 import { createCallBudget, type CallBudget } from "../lib/call-budget.ts";
@@ -152,6 +153,11 @@ async function bookUnbookedHoldsJob({ env, deps, config, log, budget }: CronCont
   if (booked > 0) log.warn("unbooked_holds_booked", { count: booked });
 }
 
+async function cancelRefundsJob({ env, deps, log, budget }: CronContext): Promise<void> {
+  const settled = await settleOwedRefunds(env.DB, { ...deps, budget, log }, deps.now());
+  if (settled > 0) log.warn("cancel_refunds_settled", { count: settled });
+}
+
 async function erasedFilesJob({ env, deps, log }: CronContext): Promise<void> {
   const finished = await deleteLeftFiles(env, deps.now(), log);
   if (finished > 0) log.info("erased_files_deleted", { people: finished });
@@ -256,6 +262,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   // A hold paid for and neither booked nor refunded half an hour on (docs/decisions/0068-a-paid-hold-is-kept.md), and
   // one FSM refused five times running, tried every hour for a day (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
   { name: "unbooked_holds", needs: "nothing", run: unbookedHoldsJob },
+  // A client's cancel whose refund the request that cancelled it could not settle, asked for again under its receipt.
+  { name: "cancel_refunds", needs: "nothing", run: cancelRefundsJob },
   // What an erasure could not delete from R2 at the time (docs/decisions/0066-erasure-all-or-nothing.md).
   { name: "erased_files", needs: "nothing", run: erasedFilesJob },
   // The FSM mirror's repair (docs/decisions/0032-fsm-mirror.md).

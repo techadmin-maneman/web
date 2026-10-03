@@ -2134,6 +2134,15 @@ export interface paths {
                         "application/json": components["schemas"]["CancelTerms"];
                     };
                 };
+                /** @description The visit is cancelled, and its refund is on its way */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CancelTerms"];
+                    };
+                };
                 /** @description session_required */
                 401: {
                     headers: {
@@ -2152,7 +2161,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description unavailable: FSM did not answer; nothing changed */
+                /** @description unavailable: the visit could not be cancelled just now; nothing changed */
                 503: {
                     headers: {
                         [name: string]: unknown;
@@ -3514,6 +3523,8 @@ export interface components {
             destination: string | null;
             /** @description false: the terms only; true: the visit is cancelled. */
             cancelled: boolean;
+            /** @description true: the visit is cancelled, and its refund is still to be asked of Razorpay, which happens within minutes. */
+            refund_pending: boolean;
         };
         VisitNoted: {
             note: string;

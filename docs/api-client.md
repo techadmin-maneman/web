@@ -1375,6 +1375,14 @@ Request body:
 }
 ```
 
+**202**: The visit is cancelled, and its refund is on its way
+
+```json
+{
+  "$ref": "#/components/schemas/CancelTerms"
+}
+```
+
 **401**: session_required
 
 ```json
@@ -1391,7 +1399,7 @@ Request body:
 }
 ```
 
-**503**: unavailable: FSM did not answer; nothing changed
+**503**: unavailable: the visit could not be cancelled just now; nothing changed
 
 ```json
 {
@@ -5735,6 +5743,10 @@ Request body:
     "cancelled": {
       "type": "boolean",
       "description": "false: the terms only; true: the visit is cancelled."
+    },
+    "refund_pending": {
+      "type": "boolean",
+      "description": "true: the visit is cancelled, and its refund is still to be asked of Razorpay, which happens within minutes."
     }
   },
   "required": [
@@ -5748,7 +5760,8 @@ Request body:
     "refund",
     "kept",
     "destination",
-    "cancelled"
+    "cancelled",
+    "refund_pending"
   ],
   "additionalProperties": false
 }

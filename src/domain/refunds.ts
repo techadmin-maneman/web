@@ -4,8 +4,8 @@
 
 import { PaymentUnanswered, type PaymentsProvider, type RefundAsked } from "../providers/payments.ts";
 
-/** Asked once, and once more at once when the first gave no answer. */
-const ASKS = 2;
+/** Asked once, and once more at once when the first gave no answer: the most calls a refund makes. */
+export const ASKS = 2;
 
 /** What a refund is for: each has one receipt, so each is made once. */
 export type RefundFor =
