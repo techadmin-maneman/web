@@ -415,7 +415,7 @@ export function HairProfile({ clientId }: { clientId: string }) {
   const mayCorrect = useAccess().mayCall("POST /api/clients/{id}/hair-profile");
 
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const page = saved ?? loaded.value;
   return (

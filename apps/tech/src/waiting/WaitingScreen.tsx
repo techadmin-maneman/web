@@ -10,11 +10,12 @@
 
 import { ICONS, ICONS_P2 } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
+import { ErrorRef } from "@maneman/ui/ErrorRef";
 import { Icon } from "@maneman/ui/Icon";
 import { useState } from "react";
 import { Offline } from "../components/Banners.tsx";
 import { Confirm } from "../components/Confirm.tsx";
-import { atRisk as atRiskCopy, queue as copy, whatStopped } from "../content.ts";
+import { atRisk as atRiskCopy, queue as copy, reference, whatStopped } from "../content.ts";
 import { STROKE } from "../icons.ts";
 import { useNames } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
@@ -140,6 +141,9 @@ export function WaitingScreen() {
                   {stopped !== null && (
                     <div className={styles.stopped} role="alert">
                       <p className={styles.stoppedLine}>{whatStopped(stopped)}</p>
+                      {stopped.requestId !== null && (
+                        <ErrorRef requestId={stopped.requestId} words={reference} className={styles.reference} />
+                      )}
                       <div className={styles.buttons}>
                         {toCorrect !== null && (
                           <Button

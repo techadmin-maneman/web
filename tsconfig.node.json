@@ -61,6 +61,7 @@
     "test/node/ui-*.test.ts",
     "test/node/web-kit-api.test.ts",
     "packages/web-kit/api.ts",
+    "packages/web-kit/client-errors.ts",
     "packages/web-kit/small-jpeg.ts",
     "test/node/static-server.test.ts",
     "scripts/seed-local.ts",

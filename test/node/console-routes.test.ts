@@ -76,6 +76,8 @@ describe("what each ops route asks of its caller", () => {
 
 describe("the routes a caller's calls go ahead on", () => {
   const NO_ZONES = new Map<string, string>();
+  /** The health check, who is signed in, and the console's own errors: open to anyone Access lets in. */
+  const SIGNED_IN_ROUTES = ["GET /api/health", "GET /api/whoami", "POST /api/client-errors"];
   const financeInDelhi: Caller = {
     kind: "person",
     active: true,
@@ -92,20 +94,13 @@ describe("the routes a caller's calls go ahead on", () => {
   });
 
   it("are, once enforced, only those a city's grant reaches: the ones that keep to the caller's places", () => {
-    expect(routesOpenTo(financeInDelhi, true, NO_ZONES)).toEqual(["GET /api/health", "GET /api/whoami"]);
-    expect(routesOpenTo(adminInDelhi, true, NO_ZONES)).toEqual([
-      "GET /api/health",
-      "GET /api/whoami",
-      "GET /api/staff",
-    ]);
+    expect(routesOpenTo(financeInDelhi, true, NO_ZONES)).toEqual(SIGNED_IN_ROUTES);
+    expect(routesOpenTo(adminInDelhi, true, NO_ZONES)).toEqual([...SIGNED_IN_ROUTES, "GET /api/staff"]);
   });
 
   it("are every route for a service token on the list, and none but the signed-in ones for one not on it", () => {
     expect(routesOpenTo({ kind: "service", allowed: true }, true, NO_ZONES)).toEqual(Object.keys(ROUTE_NEEDS));
-    expect(routesOpenTo({ kind: "service", allowed: false }, true, NO_ZONES)).toEqual([
-      "GET /api/health",
-      "GET /api/whoami",
-    ]);
+    expect(routesOpenTo({ kind: "service", allowed: false }, true, NO_ZONES)).toEqual(SIGNED_IN_ROUTES);
   });
 });
 
