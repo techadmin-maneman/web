@@ -144,6 +144,8 @@ export interface LoginSettings {
   readonly codeIpHourlyLimit: number;
   /** Codes sent a day across every number: the hard limit on what a flood of requests can send. */
   readonly codeDailyCeiling: number;
+  /** The same limit for the technician app's codes, which only an active technician's number is sent. */
+  readonly techCodeDailyCeiling: number;
   /**
    * Locally only, every code is this one, so the browser tests can log in
    * through the stub messaging provider. The guard refuses it anywhere else.
@@ -587,6 +589,7 @@ function readLogin(read: Reader, environment: EnvironmentName | undefined, clien
     codeMobileDailyLimit: read.fixedLimit("OTP_MOBILE_DAILY_LIMIT", isLocal),
     codeIpHourlyLimit: read.fixedLimit("OTP_IP_HOURLY_LIMIT", isLocal),
     codeDailyCeiling: read.fixedLimit("OTP_DAILY_CEILING", isLocal),
+    techCodeDailyCeiling: read.fixedLimit("OTP_TECH_DAILY_CEILING", isLocal),
     fixedCode: read.optionalText("OTP_FIXED_CODE"),
     testRecordCode: read.optionalText("STAGING_TEST_RECORD_CODE"),
   };

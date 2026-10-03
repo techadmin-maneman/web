@@ -1,5 +1,6 @@
 // Shared helpers for the browser tests, and the `test` they all use: it fails
-// any test in which the page broke the site's content security policy.
+// any test in which the page broke the site's content security policy, and
+// gives every client app test the stand-in Turnstile its first screen needs.
 
 import { test as base, expect, type Page } from "@playwright/test";
 import sharp from "sharp";
@@ -7,7 +8,7 @@ import { drawnHead, HEAD_HEIGHT, HEAD_WIDTH, type Rgb } from "../test/node/drawn
 
 export { expect };
 
-export const test = base.extend<{ contentSecurityPolicy: undefined }>({
+export const test = base.extend<{ contentSecurityPolicy: undefined; appTurnstile: undefined }>({
   contentSecurityPolicy: [
     async ({ page }, use) => {
       const violations: string[] = [];
@@ -18,6 +19,13 @@ export const test = base.extend<{ contentSecurityPolicy: undefined }>({
       });
       await use(undefined);
       expect(violations, "the page broke the content security policy").toEqual([]);
+    },
+    { auto: true },
+  ],
+  appTurnstile: [
+    async ({ page }, use, testInfo) => {
+      if (testInfo.project.name === "app") await fakeTurnstile(page);
+      await use(undefined);
     },
     { auto: true },
   ],
@@ -40,6 +48,7 @@ export async function fakeTurnstile(page: Page): Promise<void> {
         window.turnstile = {
           render(container, given) { options = given; issue(); return "fake"; },
           reset() { issue(); },
+          remove() {},
         };
       })();`,
     }),

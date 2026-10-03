@@ -54,6 +54,7 @@ export const login = {
       invalid: "Enter the ten-digit mobile number you booked with.",
       rate_limited: "Too many codes for this number today. Try again tomorrow, or message us.",
       busy: "We cannot send codes just now. Please try again in a little while.",
+      turnstile_failed: "We could not confirm you are a person. Please try again.",
       offline: "You are offline. Connect, then try again.",
       unknown: "Something went wrong on our side. Please try again.",
     },
@@ -87,6 +88,8 @@ export const login = {
     expired: "This code no longer works.",
     fresh: "Send a new code",
     failed: "That did not go through. Please try again.",
+    // PLACEHOLDER: the design draws no resend that is refused.
+    limited: "We cannot send another code just now. Use the last one we sent, or message us.",
   },
   help: {
     back: "Back",
@@ -131,6 +134,8 @@ export const VISIT_TYPES = {
 } as const;
 // PLACEHOLDER: a visit whose FSM service item is none of the four.
 export const OTHER_VISIT = "Visit";
+// PLACEHOLDER: a consultation and fit in one visit, as the site and the technician's phone call it.
+export const ONE_VISIT = "Consultation and fit";
 
 /** A price's GST, beneath the amount charged once GST applies: "Rs. 30,000 + Rs. 5,400 GST". */
 export const gstSplit = (exGst: string, gst: string) => `${exGst} + ${gst} GST`;
