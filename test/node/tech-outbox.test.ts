@@ -88,7 +88,14 @@ describe("the account of what has not reached us", () => {
       {
         job_id: "a",
         waiting: 1,
-        stopped: { kind: "checklist", state: "superseded", note: "superseded", fields: ["technician"], moved: null },
+        stopped: {
+          kind: "checklist",
+          state: "superseded",
+          note: "superseded",
+          fields: ["technician"],
+          moved: null,
+          requestId: null,
+        },
       },
     ]);
   });
@@ -97,5 +104,11 @@ describe("the account of what has not reached us", () => {
     const moved = { technician: "Sameer", at: "2027-01-14T05:10:00.000Z" };
     const queue = [event(1, "a", { state: "superseded", note: "superseded", fields: ["technician"], moved })];
     expect(account(queue)[0]?.stopped?.moved).toEqual(moved);
+  });
+
+  // PLAT-43: the waiting screen shows it, for the technician to quote.
+  it("keeps the API's ID for a refusal", () => {
+    const refused = { state: "refused", note: "piece_code", fields: [], request_id: "0192a8e4-aaaa" } as const;
+    expect(account([event(1, "a", refused)])[0]?.stopped?.requestId).toBe("0192a8e4-aaaa");
   });
 });

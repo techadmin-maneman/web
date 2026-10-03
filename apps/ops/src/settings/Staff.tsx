@@ -373,7 +373,7 @@ export function Staff() {
   const [changed, setChanged] = useState<StaffBook | null>(null);
 
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const book = changed ?? loaded.value;
 
   return (

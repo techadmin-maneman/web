@@ -12,6 +12,7 @@
     "./cssToken": "./cssToken.ts",
     "./Dialog": "./Dialog.tsx",
     "./ErrorBoundary": "./ErrorBoundary.tsx",
+    "./ErrorRef": "./ErrorRef.tsx",
     "./Field": "./Field.tsx",
     "./Icon": "./Icon.tsx",
     "./Mark": "./Mark.tsx",

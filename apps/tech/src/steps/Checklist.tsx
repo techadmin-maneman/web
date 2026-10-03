@@ -26,7 +26,9 @@ export function Checklist({ id }: { id: string }) {
   const [done, setDone] = useState<readonly string[]>([]);
 
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} />;
+  if (loaded.state === "failed") {
+    return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} requestId={loaded.requestId} />;
+  }
 
   const job = loaded.value;
   const items = job.checklist;
