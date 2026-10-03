@@ -75,6 +75,14 @@
   color: var(--ink-soft);
 }
 
+/* A visit being booked: Home's line that it is, beneath what and when. */
+.cardNote {
+  display: block;
+  margin-top: var(--sp-7);
+  font-size: var(--fs-15);
+  color: var(--ink-soft);
+}
+
 .past {
   padding-bottom: var(--sp-22);
 }

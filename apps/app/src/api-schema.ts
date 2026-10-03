@@ -2634,6 +2634,8 @@ export interface components {
                 window: "morning" | "afternoon" | "evening";
                 /** @description Paid for in money, rather than free or covered by a credit. */
                 paid: boolean;
+                /** @description A consultation and fit in one visit. */
+                one_visit: boolean;
             } | null;
             /** @description The credit tile: balance and earliest expiry; null with none left. */
             credits: components["schemas"]["Credits"] | null;
