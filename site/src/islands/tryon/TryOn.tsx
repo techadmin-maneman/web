@@ -19,6 +19,7 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from "preact/hooks";
 import { ICONS } from "@maneman/brand/icons";
 import { mobileDigits } from "@maneman/web-kit/mobile";
+import { turnstileWidget, type TurnstileWidget } from "@maneman/web-kit/turnstile";
 import { looks, notices, stageOptions, tryOn, tryOnSendsCopy } from "../../content/site.ts";
 import { track } from "../../lib/analytics.ts";
 import { claimLook, jobStatus, type ErrorCode } from "../../lib/api.ts";
@@ -26,7 +27,6 @@ import { keyPerRequest } from "../../lib/idempotency.ts";
 import { preparePhoto, type PreparedPhoto } from "../../lib/photo.ts";
 import { onArrival, startRender, startUpload, type Arrival, type Outcome, type Uploaded } from "../../lib/tryon.ts";
 import { jobProblem, type Failure } from "../../lib/tryon-errors.ts";
-import { turnstileWidget } from "../../lib/turnstile.ts";
 import { readAttribution } from "../../lib/visit.ts";
 import { Icon } from "../Drawings.tsx";
 import { Consent } from "./Consent.tsx";
@@ -70,7 +70,7 @@ export default function TryOn(props: Props) {
   const heading = useRef<HTMLHeadingElement>(null);
   const firstRender = useRef(true);
   const turnstileBox = useRef<HTMLDivElement>(null);
-  const turnstile = useRef<ReturnType<typeof turnstileWidget> | null>(null);
+  const turnstile = useRef<TurnstileWidget | null>(null);
   const keyFor = useMemo(keyPerRequest, []);
   // The current photograph's work. Each is replaced when a new photograph is chosen.
   const preparing = useRef<Promise<PreparedPhoto> | null>(null);

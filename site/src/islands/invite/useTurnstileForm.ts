@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { mobileDigits } from "@maneman/web-kit/mobile";
+import { turnstileWidget, type TurnstileWidget } from "@maneman/web-kit/turnstile";
 import { referral } from "../../content/referral.ts";
 import type { Answer, ErrorCode } from "../../lib/api.ts";
 import { keyPerRequest } from "../../lib/idempotency.ts";
-import { turnstileWidget } from "../../lib/turnstile.ts";
 
 /** What both forms hold: the name, the number and the agreement. */
 export interface PersonFields {
@@ -44,7 +44,7 @@ export function useTurnstileForm(siteKey: string) {
   // The fields the last refusal named, so a form can say it beside the one at fault.
   const [refusedFields, setRefusedFields] = useState<readonly string[]>([]);
   const box = useRef<HTMLDivElement>(null);
-  const widget = useRef<ReturnType<typeof turnstileWidget> | null>(null);
+  const widget = useRef<TurnstileWidget | null>(null);
   const keyFor = useMemo(keyPerRequest, []);
 
   useEffect(() => {

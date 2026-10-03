@@ -245,7 +245,7 @@ A single secret: `W secret put ALERT_WEBHOOK_URL --env <env>` prompts for the va
 
 One space can serve both environments: every alert starts `[mm-api staging]` or `[mm-api production]`.
 
-The Turnstile widgets are `mm-staging` (hostname `staging.maneman.in`) and `mm-production` (`maneman.in`, `www.maneman.in`). The front-end needs their site keys, which are public: `docs/turnstile.md`.
+The Turnstile widgets are `mm-staging` (hostname `staging.maneman.in`) and `mm-production` (`maneman.in`, `www.maneman.in`, and `app.maneman.in` before the client app goes live there). The front ends need their site keys, which are public: `docs/turnstile.md`.
 
 ### 8. Zoho
 

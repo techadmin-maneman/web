@@ -1,5 +1,5 @@
-// What the lead and try-on routes check about the visitor: their address, kept
-// only as a salted hash, and their Turnstile token.
+// What the site's forms, the try-on and the client app's login check about the
+// visitor: their address, kept only as a salted hash, and their Turnstile token.
 
 import type { Context } from "hono";
 import type { AppEnv } from "./context.ts";
@@ -44,7 +44,7 @@ export async function checkTurnstile(c: Context<AppEnv>, token: string, visitor:
 const UNAVAILABLE_PER_HOUR_TO_ALERT = 5;
 
 /**
- * Turnstile unavailable turns every lead and try-on away (ADR 0011), so it is
+ * Turnstile unavailable turns every lead, try-on and client login away (ADR 0011), so it is
  * logged, counted by the hour, and told to ops once a day while it lasts
  * (docs/decisions/0067-alerts-and-silent-failures.md).
  */
@@ -57,7 +57,7 @@ async function countUnavailable(c: Context<AppEnv>, detail: string): Promise<voi
   await deps.alertOnce({
     key: `turnstile_unavailable:${indiaDate(now)}`,
     message:
-      `Turnstile could not check ${String(failed)} visitors in the last hour (${detail}), so their leads and ` +
-      "try-ons were turned away. Check Cloudflare's status, and TURNSTILE_SECRET on the Worker.",
+      `Turnstile could not check ${String(failed)} visitors in the last hour (${detail}), so their bookings, ` +
+      "try-ons and app logins were turned away. Check Cloudflare's status, and TURNSTILE_SECRET on the Worker.",
   });
 }

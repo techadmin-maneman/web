@@ -1,6 +1,6 @@
 # 0030. One-time codes for the client app's login
 
-- Status: accepted. Amended 30 September 2026 by [0097](0097-staging-logins-open-reminders-fenced.md): a code no longer checks staging's allowlist at all.
+- Status: accepted. Amended 30 September 2026 by [0097](0097-staging-logins-open-reminders-fenced.md): a code no longer checks staging's allowlist at all. Amended 3 October 2026: every code counts against its number and address, technicians have their own ceiling, and the client login needs Turnstile.
 - Date: 2026-09-22
 
 ## Context
@@ -39,13 +39,20 @@ The app's second screen then says a code is on its way if the number has a booki
 - **Generation:** six digits from `crypto.getRandomValues`, with no digit likelier than another.
 - **Storage:** only `HMAC-SHA256(OTP_PEPPER, challenge ID : code)` is stored, compared in constant time. It is never logged, and neither is the number.
 - **Checking:** each check counts the attempt before comparing, so parallel guesses cannot share one. The fifth wrong code voids the challenge. A right code closes it and opens a session (ADR 0029).
-- **Resending:** `POST /api/auth/otp/resend` (WhatsApp, 30 seconds after the last send) and `POST /api/auth/otp/sms` (30 seconds after the first) put a fresh code on the same challenge. Its count of wrong attempts carries on, so asking again gains a guesser nothing. A challenge sends at most five codes.
+- **Resending:** `POST /api/auth/otp/resend` (WhatsApp, 30 seconds after the last send) and `POST /api/auth/otp/sms` (30 seconds after the first) put a fresh code on the same challenge. Its count of wrong attempts carries on, so asking again gains a guesser nothing. A challenge sends at most three codes.
 
 **Limits.** Every number counts alike, booked or not. The three are fixed in `src/config/limits.ts` (ADR 0009, rule 6):
 
 - 5 codes per number per day (`OTP_MOBILE_DAILY_LIMIT`);
 - 10 codes per address per hour (`OTP_IP_HOURLY_LIMIT`);
 - 300 codes in all per day (`OTP_DAILY_CEILING`). Reaching it answers `503 busy` and alerts once.
+
+> **Amended 3 October 2026 (audit findings PS-12 and FLD-27).** Strangers could still spend the codes clients and technicians need: a resend skipped the number's and the address's limits, so one number got 25 codes a day, and 20 numbers nobody knows locked their whole address out until midnight. Now:
+>
+> - **Every code counts against its number's day and its address's hour**, a resend as much as a first code, whoever holds the number: a login challenge keeps the number's hash (`otp_challenges.mobile_hash`, migration 0077). A challenge sends at most three codes (`MAX_SENDS_PER_CHALLENGE`).
+> - **A number nobody knows is answered like any other** and costs nothing more; its address is never refused for it.
+> - **Technicians have a ceiling of their own**, 100 a day (`OTP_TECH_DAILY_CEILING`), which only codes to active technicians count against; ops are told when an active technician is refused a code, and the alert closes once he is given one.
+> - **Asking for a client login code needs Turnstile**, which the app renders invisibly (`docs/turnstile.md`).
 
 > **Amended 30 September 2026 ([ADR 0097](0097-staging-logins-open-reminders-fenced.md), the owner's ruling "logins open, reminders fenced").** A code is always asked for by the phone that receives it, so staging's allowlist (`MESSAGING_ALLOWLIST`) no longer holds one back: `countCode` and `sendCodeAfterResponse` (`src/http/send-code.ts`) do not call `onAllowlist`. Every number with a booking now has its code sent and counted against the day's ceiling below; only a number nobody here knows still costs its address instead of the ceiling.
 
@@ -58,7 +65,7 @@ The app's second screen then says a code is on its way if the number has a booki
 
 **SMS is off until DLT.** `SMS_PROVIDER` is `none` on staging and production; the app offers WhatsApp only (`sms_in_s` is null) and `POST /api/auth/otp/sms` answers `404`. Locally it is `stub`. "none" is not a stub, so production may hold it. The DLT provider (MSG91 is recommended) arrives as a third value, with its OTP template ending in the WebOTP line `@app.maneman.in #<code>`.
 
-**No Turnstile yet.** A code is sent only to a booked number, and each number and address is limited, so a flood of requests sends little and costs nothing. Turnstile comes with the SMS provider, since each SMS is paid for.
+**No Turnstile yet.** A code is sent only to a booked number, and each number and address is limited, so a flood of requests sends little and costs nothing. Turnstile comes with the SMS provider, since each SMS is paid for. (Superseded 3 October 2026: see the amendment above.)
 
 **The message text** is `login_code_v1` in `src/config/message-templates.ts`. It is placeholder copy until the owner approves the wording (plan input 5).
 
