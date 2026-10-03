@@ -101,8 +101,11 @@ export const AUDIT_ACTIONS = [
   "booking.refund",
   "booking.stop",
   "booking.give_back",
-  // A visit ops booked for a client from the console: its slot held, and booked at once or sent a payment link.
+  // A visit ops booked for a client from the console: its slot held, and booked at once or sent a payment link. One
+  // they cancelled for the client, and one they closed by hand whose technician's phone was lost.
   "visit.book",
+  "visit.cancel",
+  "visit.close",
   // Ops correcting a client's hair profile, which keeps every version (docs/decisions/0106-a-clients-hair-profile.md).
   // The entry names the client and the version, never a word of the profile.
   "hair_profile.correct",
@@ -179,7 +182,8 @@ export function auditStatementIfWritten(
       | "hair_profiles"
       | "discount_code_uses"
       | "slot_times"
-      | "technicians";
+      | "technicians"
+      | "visit_changes";
     readonly id: string;
   },
 ): D1PreparedStatement {
@@ -249,6 +253,25 @@ export function auditStatementIfStamped(
        WHERE EXISTS (SELECT 1 FROM ${stamped.table} WHERE id = ?10 AND ${stamped.column} = ?1)`,
     )
     .bind(...valuesOf(entry, now), stamped.id);
+}
+
+/**
+ * The entry for a visit closed by hand earlier in the same batch, by a statement that writes nothing when the visit was
+ * closed a moment before: written only if its visits row is this close's, by this entry's actor at this entry's time.
+ */
+export function auditStatementIfClosed(
+  db: D1Database,
+  entry: AuditEntry,
+  now: Date,
+  appointmentId: string,
+): D1PreparedStatement {
+  return db
+    .prepare(
+      `INSERT INTO audit_log (${COLUMNS})
+       SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9
+       WHERE EXISTS (SELECT 1 FROM visits WHERE appointment_id = ?10 AND closed_by = ?4 AND updated_at = ?1)`,
+    )
+    .bind(...valuesOf(entry, now), appointmentId);
 }
 
 /**
