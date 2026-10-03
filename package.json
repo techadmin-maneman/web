@@ -26,6 +26,7 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "audit": "node scripts/audit.ts",
     "verify": "npm run check:types && npm run typecheck && npm run lint && npm run format:check && npm run check:config && npm run check:migrations && npm run check:dead && npm test && npm run build",
     "check:config": "node scripts/check-wrangler-config.ts",
     "check:migrations": "node scripts/check-migrations.ts",
