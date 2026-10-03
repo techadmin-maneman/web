@@ -5,12 +5,19 @@
 //
 // Among them, as the board lists a visit a credit covered, every change to the
 // service-visit credits (LIFE-14): one about a visit opens that visit's page.
+//
+// Above them, a consultation and fit in one visit the client was fitted at and
+// has not paid for, opening the link Razorpay texted.
 
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useLoad } from "@maneman/ui/useLoad";
-import { api, type CreditLine, type Entry } from "../api.ts";
+import { listDate } from "@maneman/web-kit/dates";
+import { rupees } from "@maneman/web-kit/money";
+import { api, type CreditLine, type Entry, type Me, type OwedPayment } from "../api.ts";
 import { empty, payments } from "../content.ts";
 import { AppLink, Shell } from "../home/Shell.tsx";
 import { EmptyState } from "../home/TabScreens.tsx";
+import { oneVisitOf } from "../lib/visit.ts";
 import { useSession } from "../session.ts";
 import { Loading } from "../states/Loading.tsx";
 import { PageFailed } from "../states/PageFailed.tsx";
@@ -78,6 +85,58 @@ function CreditRow({ line, thisYear }: { line: CreditLine; thisYear: number }) {
   );
 }
 
+/** A payment owed: what for, when fitted, and the link to pay by, or that it is on its way. */
+function OwedRow({ owed, thisYear }: { owed: OwedPayment; thisYear: number }) {
+  const copy = payments.owed;
+  const body = (
+    <>
+      <span className={styles.entryText}>
+        <span className={styles.what}>{owed.product}</span>
+        <span className={styles.meta}>{copy.meta(listDate(owed.date, thisYear))}</span>
+        <span className={styles.status}>{owed.url === null ? copy.onItsWay : copy.pay}</span>
+      </span>
+      <span className={styles.money}>
+        <span className={styles.amount}>{rupees(owed.amount)}</span>
+      </span>
+    </>
+  );
+  return (
+    <li>
+      {owed.url === null ? (
+        <div className={styles.entry}>{body}</div>
+      ) : (
+        <a className={styles.entry} href={owed.url} target="_blank" rel="noopener">
+          {body}
+          <VisuallyHidden>{`, ${copy.newTab}`}</VisuallyHidden>
+        </a>
+      )}
+    </li>
+  );
+}
+
+function Owed({ owed, thisYear }: { owed: readonly OwedPayment[]; thisYear: number }) {
+  return (
+    <section aria-labelledby="owed">
+      <h2 className={styles.owedLabel} id="owed">
+        {payments.owed.label}
+      </h2>
+      <ul className={styles.list}>
+        {owed.map((each) => (
+          <OwedRow key={each.visit_id} owed={each} thisYear={thisYear} />
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/** Board E3's lines for a lead, a one visit's while one is booked, or a fitted client's. */
+function emptyLines(me: Me): readonly [string, string] {
+  if (me.state === "fitted") return empty.paymentsFitted.lines;
+  const next = me.next_visit;
+  if (next !== null && oneVisitOf(next) !== null) return empty.paymentsOneVisit.lines;
+  return empty.payments.lines;
+}
+
 export function PaymentsScreen() {
   const { me } = useSession();
   const [loaded, retry] = useLoad(api.payments);
@@ -97,11 +156,12 @@ export function PaymentsScreen() {
     );
   }
   const rows = paymentsAndCredits(loaded.value.entries, loaded.value.credits);
+  const { owed } = loaded.value;
   return (
     <Shell header={{ kind: "tab", title: payments.title }} tab="/payments">
-      {rows.length === 0 ? (
-        <EmptyState lines={(me.state === "fitted" ? empty.paymentsFitted : empty.payments).lines} tight />
-      ) : (
+      {owed.length > 0 && <Owed owed={owed} thisYear={thisYear} />}
+      {rows.length === 0 && owed.length === 0 && <EmptyState lines={emptyLines(me)} tight />}
+      {rows.length > 0 && (
         <ul className={styles.list}>
           {rows.map((row) =>
             row.kind === "entry" ? (

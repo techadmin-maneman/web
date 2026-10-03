@@ -531,6 +531,17 @@
             ],
             "description": "The soonest visit paid for, or booked free, that FSM does not have yet: neither booked nor refunded. It is on its way, or held after FSM refused it, and becomes a visit once FSM takes it (ADR 0095)."
           },
+          "payment_owed": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OwedPayment"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The oldest payment the client owes: a consultation and fit in one visit they were fitted at, paid by the link Razorpay texted. Null when nothing is owed."
+          },
           "credits": {
             "anyOf": [
               {
@@ -812,6 +823,7 @@
           "consultation",
           "next_visit",
           "being_booked",
+          "payment_owed",
           "credits",
           "prompt",
           "invoice",
@@ -913,6 +925,17 @@
           "place": {
             "type": "string",
             "description": "The saved address's area, city and pincode, else FSM's city and pincode."
+          },
+          "one_visit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OneVisitPrice"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit."
           }
         },
         "required": [
@@ -927,7 +950,8 @@
           "stage",
           "prepaid",
           "technician",
-          "place"
+          "place",
+          "one_visit"
         ],
         "additionalProperties": false
       },
@@ -947,6 +971,84 @@
         ],
         "additionalProperties": false,
         "description": "Display name and initials only."
+      },
+      "OneVisitPrice": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "In paise, GST included, after the visit's discount code: the least a hair system offered on the visit's day costs. Null while none is priced."
+          },
+          "from": {
+            "type": "boolean",
+            "description": "The hair systems differ in price, so the amount is where they start."
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The discount code on the visit; null for none."
+          }
+        },
+        "required": [
+          "amount",
+          "from",
+          "code"
+        ],
+        "additionalProperties": false
+      },
+      "OwedPayment": {
+        "type": "object",
+        "properties": {
+          "visit_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "India's date of the visit."
+          },
+          "amount": {
+            "type": "integer",
+            "description": "In paise, GST included, after any code: what the link asks for."
+          },
+          "product": {
+            "type": "string",
+            "description": "The hair system fitted: \"Mane Man Natural hair system\"."
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The payment link Razorpay texted the client; null until it has made one."
+          }
+        },
+        "required": [
+          "visit_id",
+          "date",
+          "amount",
+          "product",
+          "url"
+        ],
+        "additionalProperties": false
       },
       "Credits": {
         "type": "object",
@@ -1795,6 +1897,17 @@
             "type": "string",
             "description": "The saved address's area, city and pincode, else FSM's city and pincode."
           },
+          "one_visit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OneVisitPrice"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit."
+          },
           "duration_minutes": {
             "anyOf": [
               {
@@ -1895,6 +2008,7 @@
           "prepaid",
           "technician",
           "place",
+          "one_visit",
           "duration_minutes",
           "outcome",
           "what_was_done",
@@ -5455,6 +5569,13 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "owed": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/OwedPayment"
+                      },
+                      "description": "Payment links not yet paid, the oldest first: a one visit's, once the client is fitted."
+                    },
                     "entries": {
                       "type": "array",
                       "items": {
@@ -5484,6 +5605,7 @@
                     }
                   },
                   "required": [
+                    "owed",
                     "entries",
                     "credits"
                   ],

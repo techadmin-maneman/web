@@ -12,7 +12,8 @@
 //
 // Each task leads to where it is done: the client's page, and the row in the
 // section that decides it. A consultation asked for, a first fit to book and a
-// replacement due are booked from the row itself (BookFromTask.tsx). Each group's
+// replacement due are booked from the row itself (BookFromTask.tsx), and a payment
+// owed has its link copied or texted again there (PaymentLinkActions.tsx). Each group's
 // count is the whole queue's, and a group longer than the board lists says so.
 //
 // The board writes an owner in ops against every task, in its own column. Ops
@@ -36,6 +37,8 @@ import type { ClientTab } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { BookFromTask } from "./BookFromTask.tsx";
 import { DECIDED_IN } from "./decided.ts";
+import { owedLinkOf } from "./payment-link.ts";
+import { PaymentLinkActions } from "./PaymentLinkActions.tsx";
 import { TaskActions } from "./TaskActions.tsx";
 import styles from "./tasks.module.css";
 
@@ -142,10 +145,9 @@ function subOf(group: Group, task: Task, now: Date): string {
   if (group === "no_show_decision") return task.detail === null ? copy.unknown : copy.no_show_decision(task.detail);
   if (group === "draft_invoice") return copy.draft_invoice(shortDate(indiaDate(task.since)));
   if (group === "payment_owed") {
-    // Whether Razorpay sent the link, what it asks for in paise, and the product, by name.
-    const [sent = "", amount = "", ...product] = task.detail?.split(" ") ?? [];
-    if (amount === "") return tasks.unknown;
-    return copy.payment_owed(product.join(" "), rupees(Number(amount)), sent === "sent");
+    const link = owedLinkOf(task.detail);
+    if (link === null) return tasks.unknown;
+    return copy.payment_owed(link.product, rupees(link.amount), copy.paymentLink[link.state] ?? link.state);
   }
   if (group === "erasure_unfinished") return copy.erasure_unfinished(task.detail ?? tasks.unknown);
   if (group === "grievance") return copy.grievance;
@@ -221,6 +223,7 @@ function Row({ group, task, now, acting }: { group: Group; task: Task; now: Date
           </span>
         )}
         <BookFromTask group={group} task={task} subject={subject} onBooked={acting.onClosed} />
+        {group === "payment_owed" && <PaymentLinkActions task={task} subject={subject} />}
         <TaskActions group={group} task={task} subject={subject} {...acting} />
       </div>
       <span className={styles.owner}>

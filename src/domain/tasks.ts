@@ -266,8 +266,9 @@ const OUTSTANDING = [
   // in India. It goes once a try books it, ops link the visit they booked in FSM, or ops refund it.
   //
   // A one visit's payment link still unpaid (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md): whether
-  // Razorpay sent it, what it asks for in paise, and the product, by name. It waits from the close that asked for it,
-  // and goes once Razorpay's webhook says it is paid. The index on the links still unpaid reads only those.
+  // Razorpay sent it, has still to, or refused it; what it asks for in paise; its address, "-" until it has one; and
+  // the product, by name. It waits from the close that asked for it, and goes once Razorpay's webhook says it is
+  // paid. The index on the links still unpaid reads only those.
   withOwners(`
   SELECT 'held_booking' AS "group", h.id AS id, h.person_id AS person_id, pe.name AS person_name,
          h.type || ' ' || h.date || ' ' || h.window_label AS detail, h.fsm_held_at AS since,
@@ -276,8 +277,8 @@ const OUTSTANDING = [
    WHERE h.state = 'held' AND h.confirmed_at IS NOT NULL AND h.fsm_held_at IS NOT NULL AND pe.erased_at IS NULL
   UNION ALL
   SELECT 'payment_owed', l.id, a.person_id, pe.name,
-         CASE WHEN l.sent_at IS NULL THEN 'unsent' ELSE 'sent' END || ' ' || l.amount || ' '
-           || COALESCE(s.name, l.tier),
+         CASE WHEN l.refused_at IS NOT NULL THEN 'refused' WHEN l.sent_at IS NULL THEN 'unsent' ELSE 'sent' END
+           || ' ' || l.amount || ' ' || COALESCE(l.short_url, '-') || ' ' || COALESCE(s.name, l.tier),
          l.created_at, NULL, ''
     FROM payment_links l JOIN appointments a ON a.id = l.appointment_id JOIN people pe ON pe.id = a.person_id
     LEFT JOIN services s ON s.kind = 'first_fit' AND s.tier = l.tier

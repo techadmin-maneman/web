@@ -32,6 +32,19 @@ const TechnicianSchema = z
   .strict()
   .openapi("Technician", { description: "Display name and initials only." });
 
+const OneVisitPriceSchema = z
+  .object({
+    amount: z.union([z.number().int(), z.null()]).openapi({
+      description:
+        "In paise, GST included, after the visit's discount code: the least a hair system offered on the visit's " +
+        "day costs. Null while none is priced.",
+    }),
+    from: z.boolean().openapi({ description: "The hair systems differ in price, so the amount is where they start." }),
+    code: z.union([z.string(), z.null()]).openapi({ description: "The discount code on the visit; null for none." }),
+  })
+  .strict()
+  .openapi("OneVisitPrice");
+
 export const VisitSummarySchema = z
   .object({
     id: z.uuid(),
@@ -53,6 +66,11 @@ export const VisitSummarySchema = z
     place: z
       .string()
       .openapi({ description: "The saved address's area, city and pincode, else FSM's city and pincode." }),
+    one_visit: z.union([OneVisitPriceSchema, z.null()]).openapi({
+      description:
+        "A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by " +
+        "a link Razorpay texts them. Null for any other visit.",
+    }),
   })
   .strict()
   .openapi("VisitSummary");

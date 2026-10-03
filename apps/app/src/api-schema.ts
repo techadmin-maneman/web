@@ -1411,6 +1411,8 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
+                            /** @description Payment links not yet paid, the oldest first: a one visit's, once the client is fitted. */
+                            owed: components["schemas"]["OwedPayment"][];
                             entries: (components["schemas"]["PaymentEntry"] | components["schemas"]["RefundEntry"])[];
                             /** @description Every change to the service-visit credits, newest first, which the app lists among the payments. */
                             credits: components["schemas"]["CreditLine"][];
@@ -2723,6 +2725,8 @@ export interface components {
                 /** @description A consultation and fit in one visit. */
                 one_visit: boolean;
             } | null;
+            /** @description The oldest payment the client owes: a consultation and fit in one visit they were fitted at, paid by the link Razorpay texted. Null when nothing is owed. */
+            payment_owed: components["schemas"]["OwedPayment"] | null;
             /** @description The credit tile: balance and earliest expiry; null with none left. */
             credits: components["schemas"]["Credits"] | null;
             /** @description Board B1's one prompt, the first that applies, in the owner's order: no address given while something is booked; the next service due and not booked; then, once no invoice is ready, the month the piece in wear falls due, never the day, and only once that month may be booked. Null when none applies. */
@@ -2824,11 +2828,36 @@ export interface components {
             technician: components["schemas"]["Technician"] | null;
             /** @description The saved address's area, city and pincode, else FSM's city and pincode. */
             place: string;
+            /** @description A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit. */
+            one_visit: components["schemas"]["OneVisitPrice"] | null;
         };
         /** @description Display name and initials only. */
         Technician: {
             name: string;
             initials: string;
+        };
+        OneVisitPrice: {
+            /** @description In paise, GST included, after the visit's discount code: the least a hair system offered on the visit's day costs. Null while none is priced. */
+            amount: number | null;
+            /** @description The hair systems differ in price, so the amount is where they start. */
+            from: boolean;
+            /** @description The discount code on the visit; null for none. */
+            code: string | null;
+        };
+        OwedPayment: {
+            /** Format: uuid */
+            visit_id: string;
+            /**
+             * Format: date
+             * @description India's date of the visit.
+             */
+            date: string;
+            /** @description In paise, GST included, after any code: what the link asks for. */
+            amount: number;
+            /** @description The hair system fitted: "Mane Man Natural hair system". */
+            product: string;
+            /** @description The payment link Razorpay texted the client; null until it has made one. */
+            url: string | null;
         };
         Credits: {
             /** @description Service-visit credits left. */
@@ -3031,6 +3060,8 @@ export interface components {
             technician: components["schemas"]["Technician"] | null;
             /** @description The saved address's area, city and pincode, else FSM's city and pincode. */
             place: string;
+            /** @description A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit. */
+            one_visit: components["schemas"]["OneVisitPrice"] | null;
             /** @description From start to finish, once done. */
             duration_minutes: number | null;
             /** @description Done, partly done, or a no-show: the client was not home. Null until FSM closes it. */

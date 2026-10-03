@@ -708,6 +708,17 @@
             "type": "string",
             "description": "The saved address's area, city and pincode, else FSM's city and pincode."
           },
+          "one_visit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OneVisitPrice"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit."
+          },
           "outcome": {
             "anyOf": [
               {
@@ -832,6 +843,7 @@
           "prepaid",
           "technician",
           "place",
+          "one_visit",
           "outcome",
           "closed_without_follow_up",
           "discount_code",
@@ -856,6 +868,43 @@
         ],
         "additionalProperties": false,
         "description": "Display name and initials only."
+      },
+      "OneVisitPrice": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "In paise, GST included, after the visit's discount code: the least a hair system offered on the visit's day costs. Null while none is priced."
+          },
+          "from": {
+            "type": "boolean",
+            "description": "The hair systems differ in price, so the amount is where they start."
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The discount code on the visit; null for none."
+          }
+        },
+        "required": [
+          "amount",
+          "from",
+          "code"
+        ],
+        "additionalProperties": false
       },
       "VisitSummary": {
         "type": "object",
@@ -950,6 +999,17 @@
           "place": {
             "type": "string",
             "description": "The saved address's area, city and pincode, else FSM's city and pincode."
+          },
+          "one_visit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OneVisitPrice"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit."
           }
         },
         "required": [
@@ -964,7 +1024,8 @@
           "stage",
           "prepaid",
           "technician",
-          "place"
+          "place",
+          "one_visit"
         ],
         "additionalProperties": false
       },
@@ -5841,7 +5902,7 @@
                 "type": "null"
               }
             ],
-            "description": "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM contact; for a consultation asked for, its day and window and, where a first fit was asked for with it, \"first_fit\" and the window wanted (\"any\" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window wanted."
+            "description": "The one fact the group turns on: a piece's label, a fraud rule, a technician, a Books invoice, an FSM contact; for a consultation asked for, its day and window and, where a first fit was asked for with it, \"first_fit\" and the window wanted (\"any\" for either); for an at-risk client, the last visit's start and the day the next service fell due; for a first fit to book, the consultation's start and the window wanted; for a payment owed, the link's state (\"sent\", \"unsent\" or \"refused\"), its amount in paise, its address (\"-\" until Razorpay made it) and the product."
           },
           "since": {
             "type": "string",
@@ -6084,6 +6145,25 @@
           "visit_started_at",
           "change",
           "technician"
+        ],
+        "additionalProperties": false
+      },
+      "PaymentLinkResent": {
+        "type": "object",
+        "properties": {
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "resent",
+              "sent",
+              "paid",
+              "refused"
+            ],
+            "description": "resent: Razorpay texted the link again; sent: the link was never made, and now is and has been texted; paid: the client has paid, so nothing was sent; refused: Razorpay refused to make it, so ops send one from Razorpay's dashboard."
+          }
+        },
+        "required": [
+          "outcome"
         ],
         "additionalProperties": false
       },
@@ -12598,6 +12678,66 @@
           },
           "403": {
             "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/payment-links/{id}/resend": {
+      "post": {
+        "summary": "Text the client their payment link again",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The link's own ID, as the task names it."
+            },
+            "required": true,
+            "description": "The link's own ID, as the task names it.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What sending it again came to",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentLinkResent"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required, or not_permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such link, or its client is erased",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable: Razorpay did not answer; try again in a minute",
             "content": {
               "application/json": {
                 "schema": {

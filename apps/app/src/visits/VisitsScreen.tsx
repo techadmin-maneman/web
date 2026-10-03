@@ -21,7 +21,7 @@ import { home, VISIT_TYPES, visits, WINDOW_HOURS } from "../content.ts";
 import { AppLink, Shell } from "../home/Shell.tsx";
 import { hasBegun, stageText } from "../home/VisitCard.tsx";
 import { CHEVRON } from "../icons.ts";
-import { bookingName, technicianOf, visitName } from "../lib/visit.ts";
+import { bookingName, summaryName, technicianOf, visitName } from "../lib/visit.ts";
 import { useSession } from "../session.ts";
 import { Loading } from "../states/Loading.tsx";
 import { PageFailed } from "../states/PageFailed.tsx";
@@ -46,7 +46,7 @@ function UpcomingCard({ date, parts, prepaid }: { date: string; parts: readonly 
 /** A visit FSM has, which opens its own page; the window, or where one that has begun stands. */
 function Upcoming({ visit }: { visit: VisitSummary }) {
   const when = stageText(visit) ?? WINDOW_HOURS[visit.window_label];
-  const parts = [visitName(visit.type), when, ...technicianOf(visit)];
+  const parts = [summaryName(visit), when, ...technicianOf(visit)];
   return (
     <li>
       <AppLink className={styles.card} to={`/visits/${visit.id}`}>

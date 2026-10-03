@@ -328,6 +328,8 @@ export const api = {
   /** A visit left partly done, closed without a follow-up; the reason is kept with it, under the caller's name. */
   closeTask: (group: ClosableGroup, id: string, reason: string) =>
     client.post("/api/tasks/{group}/{id}/close", { path: { group, id }, body: { reason } }),
+  /** A one visit's payment link, texted to the client again by Razorpay, or made now where it never was. */
+  resendPaymentLink: (linkId: string) => client.post("/api/payment-links/{id}/resend", { path: { id: linkId } }),
   /** The cases nobody has ruled on yet. The route also answers the decided ones; the board draws a queue. */
   noShows: () => client.get("/api/no-shows", { query: { decision: "undecided" } }),
   /** Today's money, as board D1 heads it. The route takes a date; the board draws no way of asking for another. */

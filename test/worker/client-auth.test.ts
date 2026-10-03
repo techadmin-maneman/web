@@ -509,6 +509,7 @@ describe("the session", () => {
       next_visit: null,
       // Nothing paid for or booked in the app is waiting for FSM (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
       being_booked: null,
+      payment_owed: null,
       credits: null,
       // A consultation is booked and no address given: board B1's prompt asks for one.
       prompt: { kind: "address" },

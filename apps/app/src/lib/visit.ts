@@ -9,6 +9,12 @@ export const visitName = (type: VisitSummary["type"]) => (type === null ? OTHER_
 export const bookingName = (booking: NonNullable<Me["being_booked"]>) =>
   booking.one_visit ? ONE_VISIT : VISIT_TYPES[booking.type];
 
+/** A one visit's price; null for any other visit, and on a visit the phone kept from a release before it had one. */
+export const oneVisitOf = (visit: VisitSummary): VisitSummary["one_visit"] => visit.one_visit ?? null;
+
+/** A visit by its kind; a consultation and fit in one visit, still to happen, by that name. */
+export const summaryName = (visit: VisitSummary) => (oneVisitOf(visit) === null ? visitName(visit.type) : ONE_VISIT);
+
 /** "Imran Qureshi" → "Imran": the name Home and the lists use; the visit's detail gives it in full. */
 export const firstName = (name: string) => name.split(" ")[0] ?? name;
 

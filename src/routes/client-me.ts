@@ -26,6 +26,7 @@ import { bookingUnderWay } from "../domain/holds.ts";
 import { spendableCredits } from "../domain/credits.ts";
 import { homePrompts } from "../domain/home-prompt.ts";
 import { nextVisitFacts } from "../domain/next-visit.ts";
+import { owedPayments } from "../domain/one-visit-money.ts";
 import { bookableTypes } from "../domain/scheduling.ts";
 import { offeredServices } from "../domain/services.ts";
 import { currentAddress, liveContact } from "../domain/profile.ts";
@@ -36,6 +37,7 @@ import { opsInputs } from "../http/ops-inputs.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
 import { firstNameOf, initialsOf } from "../lib/names.ts";
 import { PriceSchema } from "./client-booking.ts";
+import { OwedPaymentSchema } from "./client-payments.ts";
 import { creditsBody, CreditsSchema } from "./client-refer.ts";
 import { VisitSummarySchema } from "./client-visits.ts";
 import { ReferralRewardSchema } from "./referral-reward.ts";
@@ -91,6 +93,11 @@ export const MeSchema = z
           "The soonest visit paid for, or booked free, that FSM does not have yet: neither booked nor refunded. It " +
           "is on its way, or held after FSM refused it, and becomes a visit once FSM takes it (ADR 0095).",
       }),
+    payment_owed: z.union([OwedPaymentSchema, z.null()]).openapi({
+      description:
+        "The oldest payment the client owes: a consultation and fit in one visit they were fitted at, paid by the " +
+        "link Razorpay texted. Null when nothing is owed.",
+    }),
     credits: z
       .union([CreditsSchema, z.null()])
       .openapi({ description: "The credit tile: balance and earliest expiry; null with none left." }),
@@ -257,6 +264,7 @@ export function registerClientMe(app: App): void {
     const upcoming = await nextVisit(db, session.subjectId, now);
     const underWay = await bookingUnderWay(db, session.subjectId);
     const credits = await spendableCredits(db, session.subjectId, now);
+    const [owed = null] = await owedPayments(db, session.subjectId);
     const fitted = await isFitted(db, session.subjectId);
     const booking = await latestProposal(db, session.subjectId);
     // A booking's proposal stands only until FSM has any visit for the person.
@@ -295,6 +303,7 @@ export function registerClientMe(app: App): void {
             : { date: proposal.proposed_visit_date, window, window_label: PHASE1_WORDS[window] ?? null, place },
         next_visit: upcoming,
         being_booked: underWay,
+        payment_owed: owed,
         credits: credits.visits > 0 ? creditsBody(credits) : null,
         prompt,
         invoice,

@@ -1500,10 +1500,14 @@ export const tasks = {
     draft_invoice: (visit: string) => `Visit of ${visit}, still a draft in Books`,
     /**
      * PLACEHOLDER: "Mane Man Natural, Rs. 45,000; link sent": a one visit's client was fitted and has not paid. A
-     * link not sent waits for ops to send one from Razorpay's dashboard (ADR 0105).
+     * link not sent yet is asked of Razorpay again every five minutes; one Razorpay refused is sent from its dashboard.
      */
-    payment_owed: (product: string, amount: string, sent: boolean) =>
-      `${product}, ${amount}; ${sent ? "link sent" : "link not sent"}`,
+    payment_owed: (product: string, amount: string, link: string) => `${product}, ${amount}; ${link}`,
+    paymentLink: {
+      sent: "link sent",
+      unsent: "link not sent yet",
+      refused: "Razorpay refused the link: send one from its dashboard",
+    } as Readonly<Record<string, string>>,
     // PLACEHOLDER: the sweeper has stopped asking FSM; the contact is anonymised by hand.
     erasure_unfinished: (contact: string) => `FSM contact ${contact} still holds their details`,
     // PLACEHOLDER: a held grant whose fraud signals were not recorded.
@@ -1556,6 +1560,28 @@ export const tasks = {
       not_found: "This task has left the list meanwhile: a visit was booked, or it was closed. Reload the page.",
       invalid_request: "Say why no visit is booked, in a sentence or two.",
       unknown: "That did not close. Try again.",
+    } as Readonly<Record<string, string>>,
+  },
+  /**
+   * PLACEHOLDER: a one visit's payment link, copied to send by hand, or texted to the client again by Razorpay. No
+   * board draws it.
+   */
+  link: {
+    copy: "Copy link",
+    copied: "Link copied",
+    resend: "Send again",
+    sending: "Sending…",
+    outcomes: {
+      resent: "Texted to them again.",
+      sent: "Razorpay made the link and texted it to them.",
+      paid: "Already paid. The task leaves when the list is read again.",
+      refused: "Razorpay refused this link. Send one from Razorpay's dashboard.",
+    } as Readonly<Record<string, string>>,
+    errors: {
+      not_permitted: NOT_PERMITTED,
+      not_found: "This link has gone meanwhile. Reload the page to see the list now.",
+      unavailable: "Razorpay did not answer. Try again in a minute.",
+      unknown: "That did not send. Try again.",
     } as Readonly<Record<string, string>>,
   },
   /** PLACEHOLDER: the board draws no note, and the list has to say where the work is done. */
