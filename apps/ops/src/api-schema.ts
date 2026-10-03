@@ -6169,6 +6169,8 @@ export interface components {
             } | null;
             /** @description Not yet paid for, linked or invoiced, so a discount code may still be entered on it or taken off. */
             price_open: boolean;
+            /** @description For a consultation and fit in one visit, the code the client typed on /book for it, honoured as it stood then when entered on the visit; null for none. */
+            requested_code: string | null;
         };
         /** @description Display name and initials only. */
         Technician: {

@@ -1109,6 +1109,7 @@ describe("ops refunding it from the console", () => {
     await refusedFiveTimes(holdId, fsm);
     const refusing: PaymentsProvider = {
       createOrder: () => Promise.reject(new Error("unused")),
+      orderPayments: () => Promise.reject(new Error("unused")),
       refund: () => Promise.reject(new Error("Razorpay 400 BAD_REQUEST_ERROR")),
       createPaymentLink: () => Promise.reject(new Error("unused")),
       findPaymentLink: () => Promise.reject(new Error("unused")),
@@ -1134,6 +1135,7 @@ describe("ops refunding it from the console", () => {
     await refusedFiveTimes(holdId);
     const payments: PaymentsProvider = {
       createOrder: () => Promise.reject(new Error("unused")),
+      orderPayments: () => Promise.reject(new Error("unused")),
       refund: () => Promise.reject(new Error("Razorpay 400 BAD_REQUEST_ERROR")),
       createPaymentLink: () => Promise.reject(new Error("unused")),
       findPaymentLink: () => Promise.reject(new Error("unused")),
