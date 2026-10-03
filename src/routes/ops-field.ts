@@ -30,7 +30,7 @@ import { afterRuling } from "../domain/after-a-ruling.ts";
 import { decideNoShow, listNoShowCases, MESSAGE_STATES } from "../domain/no-shows.ts";
 import { piecesOf, syncPieces } from "../domain/pieces.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
-import { permits } from "../http/staff-access.ts";
+import { permits, withinRouteReach } from "../http/staff-access.ts";
 import { WAIVING_A_NO_SHOW } from "../policy/console-routes.ts";
 import { devicesByTechnician, revokeDevice } from "../domain/technicians.ts";
 import { roster, type RosterTechnician } from "../domain/technician-roster.ts";
@@ -253,7 +253,7 @@ const piecesRoute = createRoute({
   responses: {
     200: { description: "The pieces, newest fit first", ...json(ClientPiecesSchema) },
     403: errorResponse("access_required"),
-    404: errorResponse("not_found: no such client"),
+    404: errorResponse("not_found: no such client, or the client is outside the caller's cities"),
   },
 });
 
@@ -358,7 +358,9 @@ export function registerOpsField(app: App): void {
     const client = await c.env.DB.prepare("SELECT id, fsm_contact_id FROM people WHERE id = ?1 AND erased_at IS NULL")
       .bind(id)
       .first<{ id: string; fsm_contact_id: string | null }>();
-    if (client === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if (client === null || !(await withinRouteReach(c, "client", id))) {
+      return c.json(errorBody("not_found", c.var.requestId), 404);
+    }
 
     // FSM is the record, so the copy is read afresh before it is shown.
     if (client.fsm_contact_id !== null && c.var.config.providers.FSM_PROVIDER !== "none") {

@@ -56,7 +56,7 @@ Staging's column is as its deploy of 27 September 2026 found it: all five Worker
 | 7. Worker secrets: alert webhook               | done (Google Chat)                                     | done (the same Google Chat space)                                                         |
 | 7. Worker secrets: AILabTools, link signing    | done                                                   | done (staging's AILabTools key, for now)                                                  |
 | 7. Worker secrets: Evolution, allowlist        | done (poker-settle's bridge, for now)                  | Evolution done (the same bridge; messaging off)                                           |
-| 7. Worker secrets: erasure                     | done                                                   | done                                                                                      |
+| 7. Worker secrets: erasure                     | retired: delete `ERASURE_SECRET` once this lands       | retired: delete `ERASURE_SECRET` with the release that carries it                         |
 | 7. Worker secrets: login code pepper           | done (22 September 2026)                               | not yet: with the client surface                                                          |
 | 7. Worker secrets: the cron's heartbeat        | not yet ("The outside watchers")                       | not yet ("The outside watchers")                                                          |
 | 7. Worker secrets: the analytics token         | not yet ("The daily allowances")                       | not yet: moves here from staging at go-live                                               |
@@ -222,7 +222,6 @@ Set these on the Worker, not in GitHub. `wrangler secret put` prompts for the va
 | `AILAB_API_KEY`                                                             | The environment's AILabTools API key, a separate key per environment where the dashboard allows.                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `RESULT_SIGNING_KEY`                                                        | 32 or more random characters, generated like `IP_HASH_SALT`. Signs upload and result links; changing it invalidates links already handed out.                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `EVOLUTION_API_URL`, `EVOLUTION_API_KEY`, `EVOLUTION_INSTANCE_NAME`         | The Evolution API bridge (`docs/decisions/0016-whatsapp-through-evolution.md`). The URL must be public `https://`, reachable from Cloudflare, and include the port if it is not 443: staging's ends in `ts.net:8443`, because port 443 on that host serves another app. `GET /` there should answer "Welcome to the Evolution API".                                                                                                                                                                                                                                      |
-| `ERASURE_SECRET`                                                            | 32 or more random characters, generated like `IP_HASH_SALT`. Authorises `POST /api/erasure`. Keep one copy, in the git-ignored `.env.erasure-<env>` file that ops use for erasures ("Erasure within the day").                                                                                                                                                                                                                                                                                                                                                           |
 | `MESSAGING_ALLOWLIST`                                                       | Staging: the founders' mobile numbers, comma-separated. Holds back an automatic message — a reminder, a launch alert, or one to someone other than who acted — and any message about a record one of our own scripts made ("Staging test", "Load test"), whatever its kind; a login code and a message that answers a real person who just acted (their booking, their move, their cancel, the try-on result they claimed) reach any number otherwise (ADR 0097; `isStagingTestRecord`, `src/policy/staging-test-records.ts`). A secret, so the numbers stay out of git. |
 | `STAGING_TEST_RECORD_CODE`                                                  | Staging only, optional: six digits that a "Staging test …" record signs in with, so an audit walks the real login screens; such records also skip the per-address limits on codes and the site's forms (`src/policy/staging-test-records.ts`). The guard refuses it anywhere else.                                                                                                                                                                                                                                                                                       |
 | `GOOGLE_MAPS_API_KEY`                                                       | The address search, once `GEOCODE_PROVIDER` is `google`. Make and restrict it in section 13 first: an unrestricted key is a key anyone can spend.                                                                                                                                                                                                                                                                                                                                                                                                                        |
@@ -313,7 +312,7 @@ Zoho names a new field from its label, so the script reads each one back: the sy
 
    It confirms every field, type and pick-list value the sync writes, and lists the Leads assignment rules with their IDs. Fill in `ZOHO_LAR_ID`, run it again until it passes, then `W secret bulk` the file and delete it. The next lead proves the setup end to end: it should reach Zoho within a minute, assigned and with its proposed date.
 
-7. **A refresh token for scripts.** Zoho mints at most ten access tokens in ten minutes from one refresh token, so a script run by hand must never share the Worker's: a proof that did took FSM down with it (`docs/open-points.md`, item 32). Repeat step 5.2 and 5.3 with the same Self Client to get a second refresh token, with only the scopes the scripts need (`ZohoCRM.settings.fields.ALL`, `ZohoCRM.settings.assignment_rules.READ`; for FSM and for Books, the same scopes as the Worker's FSM and Books tokens, step 11b). Keep it in the scripts' own git-ignored file, never in a Worker secret:
+7. **A refresh token for scripts.** Zoho mints at most ten access tokens in ten minutes from one refresh token, so a script run by hand must never share the Worker's: a proof that did took FSM down with it (`docs/open-points.md`, item 32). Repeat step 5.2 and 5.3 with the same Self Client to get a second refresh token, with only the scopes the scripts need (`ZohoCRM.settings.fields.ALL`, `ZohoCRM.settings.assignment_rules.READ`, and for the contract probe's reads `ZohoCRM.modules.leads.READ` and `ZohoSearch.securesearch.READ`; for FSM and for Books, the same scopes as the Worker's FSM and Books tokens, step 11b). Keep it in the scripts' own git-ignored file, never in a Worker secret:
    - the CRM's as `ZOHO_SCRIPTS_REFRESH_TOKEN`, beside `ZOHO_CLIENT_ID`, `ZOHO_CLIENT_SECRET` and the hosts;
    - FSM's as `ZOHO_FSM_SCRIPTS_REFRESH_TOKEN`, beside `ZOHO_FSM_CLIENT_ID`, `ZOHO_FSM_CLIENT_SECRET` and the hosts;
    - Books' as `ZOHO_BOOKS_SCRIPTS_REFRESH_TOKEN`, beside `ZOHO_BOOKS_CLIENT_ID`, `ZOHO_BOOKS_CLIENT_SECRET`, the hosts and `ZOHO_BOOKS_ORG_ID`, in `.env.books-scripts`.
@@ -517,7 +516,7 @@ Payments and refunds are mirrored from Razorpay's webhook (docs/decisions/0044-p
    W secret put RAZORPAY_KEY_SECRET --env <env>
    ```
 
-2. **The webhook secret.** Make one, set it on the Worker, and keep it to paste into Razorpay:
+2. **The webhook secret.** Make one, set it on the Worker, and keep it to paste into Razorpay. It must be at least 32 characters (the command below gives 48), and while `SELF_SERVE_BOOKING` is on the Worker refuses to start without it:
 
    ```sh
    openssl rand -hex 24
@@ -950,6 +949,16 @@ UPDATE leads SET sync_attempts = 0 WHERE sync_state = 'failed';
 
 The sweeper picks them up within five minutes. A replay never duplicates a Zoho record: the sync looks the person up by `D1_Person_ID` first, and Zoho refuses a second record with the same `D1_Person_ID`.
 
+### Checking Zoho's answers before a release
+
+The adapter tests read answers recorded from the org, so they pass only while Zoho answers as it did. Before every release, run each read the Books and CRM adapters make, through the adapters, against the owner's org. It writes nothing and makes about 15 calls:
+
+```sh
+node --env-file=.env.books-scripts --env-file=.env.crm-scripts scripts/zoho-contract-probe.ts
+```
+
+Each read prints `PASS`, `SKIP` when the org holds nothing for it to read (no invoice yet, say), or `FAIL`. A failure naming `UNEXPECTED_ANSWER` and a field means Zoho now answers in a shape the adapter does not read: change the adapter's schema in `src/providers/books-zoho.ts` or `zoho-crm.ts`, run the probe again with `--record` to write the answers the tests load (`test/fixtures/vendors`, with no one's details), and run those tests. `OAUTH_SCOPE_MISMATCH` means a scripts' token lacks a scope (Zoho, step 7 of "Provisioning an environment"). Record the date and the lines in `docs/verification.md`.
+
 ---
 
 ## FSM and Books
@@ -1129,11 +1138,11 @@ The cause, from Workers Logs:
 - the route answers 404: `RAZORPAY_WEBHOOK_SECRET` is not set on the Worker (step 11c, point 2);
 - `razorpay_hook_unauthorized`: the secret in Razorpay's webhook is not the Worker's;
 - nothing at all: Razorpay is not calling. The webhook is disabled (Razorpay disables one that has failed for 24 hours, and e-mails the account), its URL is wrong, it is set up in the other mode from the keys (test or live), or, on staging, Access is stopping `/api/hooks/` (step 12, point 3);
-- `razorpay_hook_refund_early`, answered 409: a refund came before its payment. Razorpay sends it again; nothing is wrong.
+- `razorpay_hook_refund_early`, answered 409: a refund came before its payment, in an event that does not carry the payment. Razorpay sends it again; nothing is wrong.
 
 Put the cause right, and re-enable the webhook in Razorpay's dashboard if it was disabled. Razorpay retries a delivery that failed for 24 hours. A capture that arrives late is judged by Razorpay's own time: paid within the hold's ten minutes and its two minutes' grace, the visit is booked; if the time has gone to another client meanwhile, the payment is refunded in full (ADR 0068).
 
-For a payment whose delivery Razorpay will not send again (past its 24 hours, or while the webhook was disabled), refund it in Razorpay's dashboard and ask the client to book again. That refund's own webhook is then answered 409, since its payment was never recorded; that is expected.
+For a payment whose delivery Razorpay will not send again (past its 24 hours, or while the webhook was disabled), refund it in Razorpay's dashboard and ask the client to book again. That refund's own event carries the payment, so both are recorded then, nothing is booked for it, and ops get one alert per payment ("Payment … was refunded in Razorpay before we heard it was paid", key `razorpay_refund_unheard:<payment ID>`). Close it once the client has been told. The same alert for a refund no one here made means the webhook is missing payments: work through this section.
 
 ### A refund that failed
 
@@ -1294,46 +1303,41 @@ While ops are locked out, nothing in the console can be done by SQL without losi
 
 ## Erasure within the day
 
-The photo notice promises that a person's data is deleted the same day they ask. Whoever takes the request erases it before the end of that day. What is erased, and what is not, is in `docs/decisions/0019-erasure.md`, `0049-dpdp.md` and `0066-erasure-all-or-nothing.md`. A request a client makes from their app is decided in the ops console's Deletion requests, which refuses for the same reasons as step 2 below and says which.
+The photo notice promises that a person's data is deleted the same day they ask. Whoever takes the request erases it before the end of that day, in the ops console; there is no other way. What is erased, and what is not, is in `docs/decisions/0019-erasure.md`, `0049-dpdp.md` and `0066-erasure-all-or-nothing.md`.
+
+The console has two doors, and both run the same erasure, written to `audit_log` under your Access identity in the erasure's own batch. Both need Customer Care at Manage, and a service token can use neither.
+
+- A request a client made in their app waits in **Deletion requests** ("A client's account" below).
+- A request made any other way, on WhatsApp, on the phone or in person, is erased from the person's own page (`person.erase`). Anyone who gave us a number has one, client or not.
 
 1. **Check the request comes from the number's owner.** Reply to that number on WhatsApp, or call it.
-2. **Erase.** With the environment's secret in a git-ignored file, `.env.erasure-production`, holding `ERASURE_SECRET="…"` (for staging, also `CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET`):
+2. **Erase.** Find them in **Clients** by name or number, open their **Consents** tab, and press **Erase**. The console says what is deleted and what is kept, and asks you to confirm you have checked the request with them on their own number. Someone with a request open from their app has no Erase button: decide it in Deletion requests, which tells them when it is done.
 
-   ```sh
-   node --env-file=.env.erasure-production scripts/erase-person.ts --environment production
-   ```
+   **A visit booked, or a payment held.** Nothing is erased while the person has a visit still to happen, or a payment we captured with no visit behind it, and the console says which (`docs/decisions/0066-erasure-all-or-nothing.md`). Cancel each visit on their page (Visits, **Cancel**): it refunds what was paid, gives a visit credit back and tells the client. Refund a payment with no visit behind it in Razorpay. Then erase. If they cannot be settled today, tick that you will cancel and refund it by hand today and press **Erase anyway**: the person is erased, the audit entry records it (`settled_by_hand`, with the number of visits and payments), the Worker logs `erasure_override`, and the visit and payment must still be cancelled and refunded the same day. A refund needs none of the person's details.
 
-   The script asks for the number and for a confirmation, then prints the person's ID and what it deleted: photos, results, and messages not yet sent. It keeps the number out of shell history. Without the script, the call is `POST /api/erasure` with `Authorization: Bearer <ERASURE_SECRET>` and the body `{ "mobile": "98100 00000" }`.
+   The files (photos, results, visit photographs, the referral card) are deleted just after the rest. If R2 fails, the person is erased all the same and the cron finishes the files within five minutes; `files_erased_at` on the person is set once they are gone. A deletion request of theirs still open is closed by the erasure, under your name, so it neither waits in the queue nor alerts.
 
-   **A visit booked, or a payment held.** The erasure is refused (`409`, `visit_booked` or `payment_held`) while the person has a visit still to happen, or a payment we captured with no visit behind it, and nothing is erased (`docs/decisions/0066-erasure-all-or-nothing.md`). The script lists each visit and payment. Cancel each visit from the client's page in the ops console (Visits, **Cancel**): it refunds what was paid, gives a visit credit back and tells the client. Refund a payment with no visit behind it in Razorpay. Then run it again. If they cannot be settled today, run it with `--override-open-bookings` (in the body, `"override_open_bookings": true`): the person is erased anyway, the Worker logs `erasure_override` with the counts, and the visits and payments must still be cancelled and refunded by hand the same day. A refund needs none of the person's details.
-
-   The files (photos, results, visit photographs, the referral card) are deleted just after the rest. If R2 fails, the person is erased all the same and the cron finishes the files within five minutes; `files_erased_at` on the person is set once they are gone.
-
-3. **Check Zoho within a few minutes.** The crm-sync queue blanks the record: the last name becomes "Erased", mobile and e-mail are emptied, and Contact Consent is unticked.
+3. **Check Zoho within a few minutes.** The erasure queues the CRM's blanking at once, and FSM's while FSM is connected: in the CRM the last name becomes "Erased", mobile and e-mail are emptied, and Contact Consent is unticked. Books' customer is erased by the cron's own pass: deleted where no invoice or payment names it, otherwise renamed "Erased client", blanked and made inactive. That pass waits up to a day for a payment of theirs still on its way to Books. The person's ID is in the address of their page.
 
    ```sql
-   SELECT erased_at, crm_erased_at, crm_erasure_attempts, crm_erasure_error FROM people WHERE id = '<person_id>';
+   SELECT erased_at, crm_erased_at, crm_erasure_attempts, crm_erasure_error, fsm_erased_at, books_erased_at
+   FROM people WHERE id = '<person_id>';
    ```
 
-   If `crm_erased_at` stays empty, `crm_erasure_error` says why. The sweeper tries 10 times, then alerts. To finish it by hand, find the record in Zoho by `D1_Person_ID` and blank those fields. Then run `UPDATE people SET crm_erased_at = '<now, ISO>' WHERE id = '<person_id>';`.
+   If `crm_erased_at` stays empty, `crm_erasure_error` says why. The sweeper tries 10 times, then alerts. To finish it by hand, find the record in Zoho by `D1_Person_ID` and blank those fields. Then run `UPDATE people SET crm_erased_at = '<now, ISO>' WHERE id = '<person_id>';`. If Books will not erase the customer after 10 tries, ops are alerted once with what to do by hand.
 
 4. **Delete the chat** with the number in the Mane Man WhatsApp account, if there is one.
-5. **Tell the person** it is done.
+5. **Tell the person** it is done, in the chat they asked in.
 
-`404` means no one has that number, or the person was erased already; check the number for typos. Someone who used the try-on but never passed the gate never gave a number, and their photo is deleted within the hour anyway.
+Someone who used the try-on but never passed the gate never gave a number, and their photo is deleted within the hour anyway.
 
 **Zoho's history.** Blanking the fields may leave the old values in the record's timeline. If the person or legal asks for full removal, delete the record in Zoho, then delete it from the recycle bin as well. D1's lead history is unaffected.
 
-**A client's account (Phase 2).** A request from the app waits in the ops console's **Deletion requests**, and is decided there rather than by API. Check it with the client on their own number first, as in step 1 above: the console asks you to confirm you have, and says what the deletion destroys and what it keeps before it will take it. Processing it runs the same erasure, and also:
-
-- deletes their visit photographs from the client-photos bucket;
-- deletes their saved addresses;
-- anonymises their FSM contact within a few minutes, through the fsm-sync queue (docs/decisions/0049-dpdp.md);
-- tells the client on WhatsApp that it is done (`deletion_done_v1`), so step 5 is not needed. It is sent once, straight after the erasure; the log's `deletion_done_failed` means it did not arrive, and with the number gone it cannot be sent again. Delete the chat (step 4) after it.
+**A client's account (Phase 2).** A request from the app waits in the ops console's **Deletion requests**. Check it with the client on their own number first, as in step 1 above: the console asks you to confirm you have, and says what the deletion destroys and what it keeps before it will take it. Processing it runs the same erasure, and also tells the client on WhatsApp that it is done (`deletion_done_v1`), so step 5 is not needed. It is sent once, straight after the erasure; the log's `deletion_done_failed` means it did not arrive, and with the number gone it cannot be sent again. Delete the chat (step 4) after it.
 
 Rejecting a request sends the client your reason on WhatsApp (`deletion_rejected_v1`), and their app shows it for 30 days, so write it for them to read.
 
-Check FSM as you check Zoho:
+While FSM is connected, check it as you check Zoho:
 
 ```sql
 SELECT erased_at, fsm_erased_at, fsm_erasure_attempts FROM people WHERE id = '<person_id>';

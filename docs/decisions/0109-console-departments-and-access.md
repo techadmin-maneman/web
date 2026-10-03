@@ -1,6 +1,6 @@
 # 0109. The console by departments, and who may do what in it
 
-- Status: accepted, on the owner's ruling of 2 October 2026 (audit decision 18, and its design answers); amended the same day for the navigation, for actions by level, and for where each record is
+- Status: accepted, on the owner's ruling of 2 October 2026 (audit decision 18, and its design answers); amended the same day for the navigation, for actions by level, and for where each record is; amended 4 October 2026 for Customer Care by place
 - Date: 2026-10-02
 
 ## Context
@@ -42,7 +42,7 @@ Every route's department and lowest level is one table, `ROUTE_NEEDS` in `src/po
 
 - A person Access lets in who is not on the list, or is switched off, is refused everything (`403 not_permitted`) except `GET /api/whoami`, which tells the console to say so, and the health check.
 - A route `ROUTE_NEEDS` does not list is refused. HEAD asks what GET asks, as Hono answers it with the GET route.
-- A route needs a **national** grant until it keeps its lists and records to the caller's own places (`ownPlaces` in the table). Today only the Staff routes do. So a city or zone grant opens nothing else yet: it never shows a city lead another city's clients.
+- A route needs a **national** grant until it keeps its lists and records to the caller's own places (`ownPlaces` in the table). Today the Staff routes and Customer Care's do (below, "Customer Care by place"). So a city or zone grant opens nothing else yet: it never shows a city lead another city's clients.
 
 **The owner is the national super-admin:** every department at Manage, nationally.
 
@@ -91,6 +91,13 @@ Migration 0069 lists every person in the ops audit log (Access e-mails, `actor_k
 - The console asks what the API asks. A button shows only where `may_call` names its route, and a choice inside a route that asks more (waiving a no-show, refunding a disputed charge) only where the caller's grants reach it by the same rules (`useAccess()` in `apps/ops/src/lib/access.ts`, which reuses `meetsNeed` and `can`). A View sees the data with no Act or Manage buttons; a settings panel shows its figures without a Save.
 - A refusal the API still makes, as when access changes while a page is open, reads "Your access doesn't include this. Ask an admin."
 - Tasks shows each department the groups it decides (`TASK_DEPARTMENTS` in `src/policy/console-routes.ts`): `GET /api/tasks` asks View in any department and returns only the caller's departments' groups, and taking or giving a task asks Act in the department of its group.
+
+## Customer Care by place (amended 4 October 2026)
+
+- Every Customer Care route keeps to the caller's cities and is `ownPlaces`: finding a client by number or by part of a name or number, the client's record, photographs, consents, pieces, hair profile and an address given on the phone, and the lists and decisions of grievances, number changes and deletion requests.
+- The cities are those the caller's grants reach at the route's own level (`routeReach` in `src/http/staff-access.ts`). Customer Care View nationally with Act in Delhi reads every client but corrects, answers and decides only in Delhi.
+- A list leaves out what is elsewhere. A client or a request elsewhere is answered `404 not_found`, as one that does not exist, so a city lead cannot tell that it does.
+- Tasks still needs a national grant until Operations' lists keep to the caller's cities.
 
 ## Consequences
 

@@ -21,6 +21,10 @@ beforeEach(async () => {
   captureLogs();
   await markDatabase();
   job = await working("service");
+  // The client's address is somewhere we come, so the days to move the visit to are offered.
+  await env.DB.prepare(
+    "INSERT INTO serviceable_pincodes (pincode, area, city, served) VALUES ('122018', 'Sector 65', 'Gurgaon', 1)",
+  ).run();
   client = appFor("local", job.deps, {}, "client");
   cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: PERSON, deviceLabel: null, now: NOW })}`;
 });

@@ -113,7 +113,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such client, or the client has been erased
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
 
 ```json
 {
@@ -133,7 +133,7 @@ Request body:
 }
 ```
 
-**200**: The clients it matches, by name
+**200**: The clients it matches in the caller's cities, by name
 
 ```json
 {
@@ -161,7 +161,7 @@ The client's record: who they are, their address, their visits, their payments, 
 }
 ```
 
-**404**: not_found: no such client, or the client has been erased
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
 
 ```json
 {
@@ -181,7 +181,7 @@ Which photographs the client has, by visit, newest first. No image is served her
 }
 ```
 
-**404**: not_found: no such client, or the client has been erased
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
 
 ```json
 {
@@ -201,7 +201,7 @@ Open the client's photographs: one audit entry, written before any image is serv
 }
 ```
 
-**404**: not_found: no such client, or the client has been erased
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
 
 ```json
 {
@@ -251,7 +251,7 @@ The client's consents and any deletion request. Ops read them and never grant on
 }
 ```
 
-**404**: not_found: no such client, or the client has been erased
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
 
 ```json
 {
@@ -782,7 +782,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such client, or the client has been erased
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
 
 ```json
 {
@@ -834,7 +834,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such client, or the client has been erased
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
 
 ```json
 {
@@ -862,7 +862,7 @@ The client's hair profile, and every version of it
 }
 ```
 
-**404**: not_found: no such client, or the client has been erased
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
 
 ```json
 {
@@ -906,7 +906,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such client, or the client has been erased
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
 
 ```json
 {
@@ -922,9 +922,53 @@ Request body:
 }
 ```
 
+### POST /api/clients/{id}/erasure
+
+Erase a client now: their photographs and details. The CRM, FSM and Books follow within minutes
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/Erasure"
+}
+```
+
+**200**: Erased
+
+```json
+{
+  "$ref": "#/components/schemas/Erased"
+}
+```
+
+**403**: access_required: a service token, which names no member of staff
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: nobody by that ID in the caller's cities, or erased already
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: visit_booked or payment_held: settle what it names first, or say it will be settled today
+
+```json
+{
+  "$ref": "#/components/schemas/ErasureRefused"
+}
+```
+
 ### GET /api/number-changes
 
-Number changes waiting for ops: both numbers proven by code
+Number changes waiting for ops in the caller's cities: both numbers proven by code
 
 **200**: Oldest first
 
@@ -1025,7 +1069,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no change waiting for ops by that ID
+**404**: not_found: no change waiting for ops by that ID in the caller's cities
 
 ```json
 {
@@ -1043,7 +1087,7 @@ Request body:
 
 ### GET /api/deletion-requests
 
-Deletion requests waiting for ops
+Deletion requests waiting for ops in the caller's cities
 
 **200**: Oldest first
 
@@ -1140,7 +1184,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no request waiting for ops by that ID
+**404**: not_found: no request waiting for ops by that ID in the caller's cities
 
 ```json
 {
@@ -1308,7 +1352,7 @@ Request body:
 
 ### GET /api/grievances
 
-Open grievances, oldest first
+Open grievances in the caller's cities, oldest first
 
 **200**: Open grievances
 
@@ -1399,7 +1443,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no open grievance by that ID
+**404**: not_found: no open grievance by that ID in the caller's cities
 
 ```json
 {
@@ -1661,7 +1705,7 @@ Where a job in hand can go in the board's week, before ops pick a reason. Writes
 }
 ```
 
-**404**: not_found: no such live job, or one the technician has begun, which stays where it is
+**404**: not_found: no such live job, or one the technician has started or closed, which stays where it is
 
 ```json
 {
@@ -1773,7 +1817,7 @@ Request body:
 }
 ```
 
-**409**: clash; on_leave; does_not_fit; superseded, with what changed in fields; in_progress: the technician has begun the visit, which stays where it is
+**409**: clash; on_leave; does_not_fit; superseded, with what changed in fields; in_progress: the technician has begun the visit. One he has only checked in at moves with clear_check_in; one he has started or closed stays where it is
 
 ```json
 {
@@ -1922,7 +1966,7 @@ A client's pieces: code, base, fitted date, supplier lot, replacement due and an
 }
 ```
 
-**404**: not_found: no such client
+**404**: not_found: no such client, or the client is outside the caller's cities
 
 ```json
 {
@@ -4247,6 +4291,7 @@ Request body:
             "not_bookable",
             "hold_expired",
             "address_required",
+            "not_served",
             "already_booked",
             "not_changeable",
             "terms_changed",
@@ -7298,6 +7343,7 @@ Request body:
             "not_bookable",
             "hold_expired",
             "address_required",
+            "not_served",
             "already_booked",
             "not_changeable",
             "terms_changed",
@@ -8354,31 +8400,47 @@ Request body:
 }
 ```
 
-### NumberChangeDecision
+### Erased
 
 ```json
 {
   "type": "object",
   "properties": {
-    "decision": {
+    "erased_at": {
       "type": "string",
-      "enum": [
-        "confirm",
-        "reject"
-      ]
+      "format": "date-time"
     },
-    "reason": {
-      "type": [
-        "string",
-        "null"
-      ],
-      "maxLength": 300,
-      "description": "Required to reject; kept with the decision, and the client reads it (src/policy/decision-reasons.ts)."
+    "photos_deleted": {
+      "type": "integer",
+      "description": "Try-on photographs."
+    },
+    "results_deleted": {
+      "type": "integer",
+      "description": "Try-on results."
+    },
+    "visit_photos_deleted": {
+      "type": "integer"
+    },
+    "messages_cancelled": {
+      "type": "integer",
+      "description": "Messages not yet sent."
+    },
+    "sessions_ended": {
+      "type": "integer",
+      "description": "App sessions signed out."
+    },
+    "addresses_removed": {
+      "type": "integer"
     }
   },
   "required": [
-    "decision",
-    "reason"
+    "erased_at",
+    "photos_deleted",
+    "results_deleted",
+    "visit_photos_deleted",
+    "messages_cancelled",
+    "sessions_ended",
+    "addresses_removed"
   ],
   "additionalProperties": false
 }
@@ -8488,6 +8550,51 @@ Request body:
     "error",
     "visits",
     "payments"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Erasure
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "override_open_bookings": {
+      "type": "boolean",
+      "description": "Erase even with a visit booked or a payment held: only when ops will cancel and refund them today."
+    }
+  },
+  "additionalProperties": false
+}
+```
+
+### NumberChangeDecision
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "decision": {
+      "type": "string",
+      "enum": [
+        "confirm",
+        "reject"
+      ]
+    },
+    "reason": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 300,
+      "description": "Required to reject; kept with the decision, and the client reads it (src/policy/decision-reasons.ts)."
+    }
+  },
+  "required": [
+    "decision",
+    "reason"
   ],
   "additionalProperties": false
 }
@@ -9355,6 +9462,13 @@ Request body:
       "type": "string",
       "format": "date-time",
       "description": "The start the board showed the job with."
+    },
+    "clear_check_in": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "Ops were warned that the technician has checked in, and move the visit anyway: his check-in is cleared, and he checks in again at the new time. The audit log names who chose it. Without it, a visit he has checked in at answers 409 in_progress."
     }
   },
   "required": [
