@@ -67,12 +67,11 @@ export const LOCAL_SETTINGS: Settings = {
     uploadDailyCeiling: 40,
     resultReadDailyCeiling: 400,
     resultRetentionDays: 30,
-    unknownColorRoute: "premium_original",
     creditFloor: 200,
     linkSigningKey: "test-link-signing-key-that-is-long-enough",
     ailabApiKey: null,
   },
-  messaging: { enabled: true, resultTemplate: "tryon_result_v1", allowlist: [], evolution: null },
+  messaging: { enabled: true, allowlist: [], evolution: null },
   devRoutes: false,
 };
 

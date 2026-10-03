@@ -58,12 +58,11 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
       uploadDailyCeiling: 0,
       resultReadDailyCeiling: 0,
       resultRetentionDays: 30,
-      unknownColorRoute: "premium_original",
       creditFloor: 0,
       linkSigningKey: "",
       ailabApiKey: null,
     },
-    messaging: { enabled: false, resultTemplate: "", allowlist: [], evolution: null },
+    messaging: { enabled: false, allowlist: [], evolution: null },
     devRoutes: false,
   },
 };
