@@ -3,6 +3,7 @@
 // docs/decisions/0010-applying-triggers.md), against a fake account.
 
 import { describe, expect, it } from "vitest";
+import { EVERY_MINUTE } from "../../src/scheduled/cron.ts";
 import { readJsonc } from "../../scripts/lib/jsonc.ts";
 import type { Finding } from "../../scripts/lib/findings.ts";
 import { checkTriggers, configuredTriggers } from "../../scripts/lib/triggers.ts";
@@ -13,9 +14,10 @@ const APP = readJsonc("apps/app/wrangler.jsonc");
 const CONSUMERS = ["mm-crm-sync-staging", "mm-render-staging", "mm-messaging-staging", "mm-fsm-sync-staging"];
 
 describe("what each Worker's config attaches", () => {
-  it("mm-api: the sweeper's cron and a consumer for each queue it reads", () => {
+  it("mm-api: the every-minute cron and a consumer for each queue it reads", () => {
     const triggers = configuredTriggers(API, "staging");
-    expect(triggers.crons).toEqual(["*/5 * * * *"]);
+    expect(triggers.crons).toEqual([EVERY_MINUTE]);
+    expect(configuredTriggers(API, "production").crons).toEqual([EVERY_MINUTE]);
     expect([...triggers.consumers].sort()).toEqual([...CONSUMERS].sort());
     expect(configuredTriggers(API, "production").consumers).toContain("mm-fsm-sync-prod");
   });
@@ -72,7 +74,7 @@ async function check(answers: Record<string, Answer>): Promise<Finding[]> {
 const outcomes = (findings: Finding[]) => findings.map((finding) => `${finding.subject}: ${finding.outcome}`);
 
 describe("the live account against the configs", () => {
-  const cron = ok({ schedules: [{ cron: "*/5 * * * *" }] });
+  const cron = ok({ schedules: [{ cron: EVERY_MINUTE }] });
 
   it("matches when every cron and consumer the configs ask for is attached, and nothing else", async () => {
     const findings = await check({
@@ -100,14 +102,16 @@ describe("the live account against the configs", () => {
     expect(consumers?.detail).toContain("npm run apply-triggers -- --env staging");
   });
 
+  // The five-minute cron stays attached after the deploy that moved to every minute, until an operator applies it.
   it("names a cron still attached that the config no longer has", async () => {
     const findings = await check({
       [QUEUES]: queuesConsumedBy("mm-api-staging", CONSUMERS),
-      "/workers/scripts/mm-api-staging/schedules": ok({ schedules: [{ cron: "*/5 * * * *" }, { cron: "0 3 * * *" }] }),
+      "/workers/scripts/mm-api-staging/schedules": ok({ schedules: [{ cron: "*/5 * * * *" }] }),
       "/workers/scripts/mm-app-staging/schedules": ok({ schedules: [] }),
     });
     expect(findings[0]?.outcome).toBe("differs");
-    expect(findings[0]?.detail).toContain("attached but not configured: 0 3 * * *");
+    expect(findings[0]?.detail).toContain("configured but not attached: * * * * *");
+    expect(findings[0]?.detail).toContain("attached but not configured: */5 * * * *");
   });
 
   it("says plainly what it could not read, rather than calling it a match or a failure", async () => {

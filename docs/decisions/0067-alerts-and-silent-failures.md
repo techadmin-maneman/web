@@ -66,7 +66,7 @@ Alerts that already fire once per record, and name it, still post directly: a tr
 
 The 2 October audit found that failures needing a person still lived only in the chat (PLAT-40, OIA-06, PS-20). The owner ruled that rejected work and open alerts belong on Tasks, with "Send again".
 
-- **"Needs a hand"** heads Tasks: every open alert ops have been told of (`alerts.told_at`, migration 0081: the first sighting, or the `after`-th for one that waits), the longest open first, with its message and its link (`GET /api/alerts`).
+- **"Needs a hand"** heads Tasks: every open alert ops have been told of (`alerts.told_at`: the first sighting, or the `after`-th for one that waits), the longest open first, with its message and its link (`GET /api/alerts`).
 - **Each department sees its own kinds** (`src/policy/alerts.ts`): a failed message, a CRM give-up or a deletion request is Customer Care's; refunds, invoices and Books are Finance's; stock, technicians and bookings are Operations'. Anything else, about the system itself, is Admin's.
 - **Mark done** (`POST /api/alerts/{id}/resolve`, Act, audited) closes one ops have put right by hand, which the runbook's SQL did before. For a CRM erasure it also records the person as erased there.
 - **Send again** (`POST /api/alerts/{id}/send-again`, Act, audited) puts a failed message, a lead the CRM gave up on, or a CRM erasure back on its queue with its tries counted afresh, and closes the alert. If it fails again, that is a new alert, told again.

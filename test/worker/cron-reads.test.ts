@@ -1,10 +1,11 @@
-// What one cron run reads from D1. It runs every five minutes in each
-// environment, and past 5 million rows read a day D1 refuses every query until
-// midnight UTC (ADR 0009). So a run must read about what it has to do, not the
-// history its tables have gathered: every try-on job, visit, payment and
+// What the cron reads from D1. Each job runs as often as every five minutes in
+// each environment, and past 5 million rows read a day D1 refuses every query
+// until midnight UTC (ADR 0009). So a job must read about what it has to do, not
+// the history its tables have gathered: every try-on job, visit, payment and
 // person ever made stays in D1. This seeds a finished history, runs every job,
-// doubles the history, and runs them again. The console's Tasks board and Stock
-// page, read all day, are held to the same below.
+// doubles the history, and runs them again. Each minute's run is held to a
+// number of statements, which is what its CPU time goes on. The console's Tasks
+// board and Stock page, read all day, are held to the same below.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -12,10 +13,13 @@ import {
   BOARD_ROWS_READ_FIXED,
   BOARD_ROWS_READ_PER_VISIT,
   CRON_ROWS_READ_PER_QUIET_RUN,
+  CRON_STATEMENTS_PER_RUN,
   TASKS_ROWS_READ_PER_LOOK,
 } from "../../scripts/lib/free-tier-budget.ts";
+import type { StaticConfig } from "../../src/guard.ts";
+import { meterDatabase } from "../../src/lib/d1-meter.ts";
 import { createLogger } from "../../src/log.ts";
-import { CRON_JOBS, runCronJobs } from "../../src/scheduled/cron.ts";
+import { CRON_JOBS, EVERY_MINUTE, jobsDue, runCronJobs } from "../../src/scheduled/cron.ts";
 import {
   LOCAL_CONFIG,
   NOW,
@@ -249,6 +253,44 @@ describe("one cron run", () => {
       "SELECT COUNT(*) AS n FROM outbound_messages WHERE kind = 'next_service_reminder'",
     ).first<{ n: number }>();
     expect(reminders?.n).toBe(3);
+  });
+});
+
+// D-01 of 4 October 2026: one run of every job took 34 to 61 ms of CPU on staging, past the free plan's 10, and
+// Cloudflare stopped every run for ten hours. Most of a run's CPU time goes on its calls to D1.
+describe("each minute's run", () => {
+  /** Where FSM is the record, as on staging, so the FSM mirror's repair runs; and without FSM, Books' items. */
+  const WITH_FSM: StaticConfig = { ...LOCAL_CONFIG, providers: { ...LOCAL_CONFIG.providers, FSM_PROVIDER: "zoho" } };
+  const WITHOUT_FSM: StaticConfig = { ...LOCAL_CONFIG, providers: { ...LOCAL_CONFIG.providers, FSM_PROVIDER: "none" } };
+
+  async function statementsAt(minute: number, config: StaticConfig): Promise<number> {
+    const scheduled = Date.UTC(2026, 8, 21, 6, minute);
+    const meter = meterDatabase(env.DB);
+    await runCronJobs(jobsDue(CRON_JOBS, EVERY_MINUTE, scheduled), {
+      env: { ...env, DB: meter.db, CRM_QUEUE: fakeQueue(), RENDER_QUEUE: fakeQueue(), MESSAGE_QUEUE: fakeQueue() },
+      deps: fakeDependencies({ now: () => new Date(scheduled) }),
+      config,
+      log: createLogger(),
+      meter,
+    });
+    return meter.usage().queries;
+  }
+
+  it("sends D1 no more than its budget of statements in any minute of the hour, over a history", async () => {
+    await history(1, 400);
+    await rowsReadByOneRun(); // the day's once-only work: the reconciliation's pass, the utilisation
+    const overBudget: string[] = [];
+    for (const [name, config] of [
+      ["with FSM", WITH_FSM],
+      ["without FSM", WITHOUT_FSM],
+    ] as const) {
+      for (let minute = 0; minute < 60; minute += 1) {
+        const statements = await statementsAt(minute, config);
+        if (statements > CRON_STATEMENTS_PER_RUN)
+          overBudget.push(`${name}, minute ${String(minute)}: ${String(statements)}`);
+      }
+    }
+    expect(overBudget).toEqual([]);
   });
 });
 

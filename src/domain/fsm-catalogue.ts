@@ -237,7 +237,7 @@ const PRICES_LINK = "/settings/prices";
 
 /**
  * FSM's catalogue list, a page of 200 items at a time while FSM says there are more, each page from the cron run's
- * budget, once an hour. Null when this run is not the one, or has no call left for the first page.
+ * budget; the cron runs it once an hour. Null when the run has no call left for the first page.
  *
  * Where the budget ends before FSM's last page, the check speaks only for what it read: a service or a consumable
  * whose item was not on those pages is neither told missing nor made, added or unlinked, and ops hear if the next
@@ -249,8 +249,6 @@ export async function checkCatalogue(
   options: { readonly push: boolean; readonly now: Date; readonly budget: CallBudget },
 ): Promise<CatalogueCheck | null> {
   const { push, now, budget } = options;
-  if (now.getUTCMinutes() >= 5) return null;
-
   const catalogue = await readCatalogue(deps.fsm, budget);
   if (catalogue.pages === 0) return null;
   await tellIfUnread(deps, catalogue);
