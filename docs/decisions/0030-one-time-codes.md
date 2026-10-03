@@ -58,7 +58,7 @@ The app's second screen then says a code is on its way if the number has a booki
 
 **SMS is off until DLT.** `SMS_PROVIDER` is `none` on staging and production; the app offers WhatsApp only (`sms_in_s` is null) and `POST /api/auth/otp/sms` answers `404`. Locally it is `stub`. "none" is not a stub, so production may hold it. The DLT provider (MSG91 is recommended) arrives as a third value, with its OTP template ending in the WebOTP line `@app.maneman.in #<code>`.
 
-**No Turnstile yet.** A code is sent only to a booked number, and each number and address is limited, so a flood of requests sends little and costs nothing. Turnstile comes with the SMS provider, since each SMS is paid for.
+**No Turnstile yet.** A code is sent only to a booked number, and each number and address is limited, so a flood of requests sends few codes and charges nothing. It still spends the account's 100,000 Workers requests a day, which every surface shares, and the limits here act only once a request is counted (corrected 4 October 2026; ADR 0009, "Update, 4 October 2026: a flood"). Turnstile comes with the SMS provider, since each SMS is paid for.
 
 **The message text** is `login_code_v1` in `src/config/message-templates.ts`. It is placeholder copy until the owner approves the wording (plan input 5).
 

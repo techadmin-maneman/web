@@ -9,6 +9,7 @@ import { renderMessage } from "../../src/config/message-templates.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { readMeter } from "../../src/domain/storage-meter.ts";
 import { composeLaunchAlert } from "../../src/domain/waitlist.ts";
+import { INVITE_MISSES_PER_ADDRESS_HOURLY } from "../../src/policy/invites.ts";
 import { REFERRERS_PAGE, WAITLIST_AREAS } from "../../src/routes/ops-waitlist.ts";
 import {
   appFor,
@@ -106,6 +107,22 @@ describe("the referral card", () => {
     const house = await request(site(), `/api/og/${CODE}.jpg?v=3`);
     expect(house.status).toBe(302);
     expect(house.headers.get("Location")).toBe(HOUSE_CARD);
+  });
+
+  // PS-54: a preview reveals a referrer's card, so guessing codes through it spends the address's misses too.
+  it("gives the house card for every code to an address past its misses, and the card to anyone else", async () => {
+    await consent("photos_referral_cards", true);
+    await put(jpegOf(1200, 630));
+    const preview = (code: string, address: string) =>
+      request(site(), `/api/og/${code}.jpg`, { headers: { "CF-Connecting-IP": address } });
+
+    for (let guess = 0; guess < INVITE_MISSES_PER_ADDRESS_HOURLY; guess += 1) {
+      expect((await preview(`ZZ${String(guess).padStart(4, "0")}`, "203.0.113.7")).status).toBe(302);
+    }
+    const refused = await preview(CODE, "203.0.113.7");
+    expect(refused.status).toBe(302);
+    expect(refused.headers.get("Location")).toBe(HOUSE_CARD);
+    expect((await preview(CODE, "198.51.100.4")).status).toBe(200);
   });
 
   it("refuses anything that is not a 1200 by 630 JPEG", async () => {
@@ -340,8 +357,9 @@ describe("ops' referrers", () => {
     )
       .bind(FRIEND, NOW.toISOString())
       .run();
-    await request(site(), `/api/r/${CODE}`);
-    await request(site(), `/api/r/${CODE}`);
+    for (const address of ["203.0.113.7", "198.51.100.4"]) {
+      await request(site(), `/api/r/${CODE}`, { headers: { "CF-Connecting-IP": address } });
+    }
     await env.DB.prepare(
       `INSERT INTO referral_attributions (id, code, referred_person_id, first_touch_at, via, grant_state, created_at,
          updated_at)

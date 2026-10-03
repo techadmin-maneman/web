@@ -57,10 +57,13 @@ const KEPT_MS = 60_000;
 
 /** The invite, or null when mm-api could not say: down, refusing, or answering a shape we do not know. */
 async function lookUp(env: SiteEnv, visit: Request, origin: string, code: string): Promise<Invite | null> {
-  // The visitor's user agent goes along, so mm-api does not count a link preview's fetch as an open.
+  // The visitor's user agent goes along, so mm-api does not count a link preview's fetch as an open; and their
+  // address, which mm-api counts opens and misses by. A request through the binding carries only what is set here.
   const headers = new Headers();
-  const agent = visit.headers.get("User-Agent");
-  if (agent !== null) headers.set("User-Agent", agent);
+  for (const name of ["User-Agent", "CF-Connecting-IP"]) {
+    const value = visit.headers.get(name);
+    if (value !== null) headers.set(name, value);
+  }
   try {
     const answer = await env.API.fetch(new Request(`${origin}/api/r/${code}`, { headers }));
     if (!answer.ok) return null;
