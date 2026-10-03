@@ -6,7 +6,7 @@
 import { describe, expect, it } from "vitest";
 import { forOtherApps, inviteFile, withCard, type Phone } from "../../apps/app/src/refer/share.ts";
 
-const TEXT = "Had my hair system fitted at home by these people. Worth a look — https://maneman.in/r/RM4K7P";
+const TEXT = "Got my hair system fitted at home by Mane Man. Worth a look: https://maneman.in/r/RM4K7P";
 const CARD = inviteFile(new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xd9])]));
 
 const share = () => Promise.resolve();
