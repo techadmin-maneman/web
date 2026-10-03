@@ -2,7 +2,7 @@
 // the whole story of a visit can be run on a laptop (docs/getting-started.md).
 // Each works against the stack npm run dev:all starts.
 //
-//   npm run tick                              the cron, which on staging runs every five minutes
+//   npm run tick                              every cron job at once; staging runs a few each minute
 //   npm run pay:local [-- <hold-id>]          Razorpay's signed webhook for the last booking held, as if paid by UPI
 //   npm run close:local [-- <visit-id> [--partial]]   FSM closing a visit, as its technician would; alone, lists them
 

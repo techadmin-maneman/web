@@ -142,7 +142,7 @@ export function StockScreen() {
   return (
     <Shell section="/stock" title={copy.title} sub={copy.sub}>
       {loaded.state === "loading" && <Loading />}
-      {loaded.state === "failed" && <PanelFailed onRetry={retry} />}
+      {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && (
         <div className={styles.screen}>
           <section className={form.panel} aria-labelledby="stock-on-hand">

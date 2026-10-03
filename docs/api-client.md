@@ -37,6 +37,36 @@ Environment, version and database reachability
 }
 ```
 
+### POST /api/client-errors
+
+Report an error in the app's own page
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ClientErrorReport"
+}
+```
+
+**204**: Logged
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**429**: rate_limited: this address has sent its reports for the hour, or every address has
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/auth/otp
 
 Send a login code on WhatsApp. The answer is the same whether or not the number has a booking
@@ -1820,6 +1850,76 @@ Request body:
 }
 ```
 
+### ClientErrorReport
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "error",
+        "unhandled_rejection",
+        "render",
+        "outbox_gave_up"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "path": {
+      "type": "string",
+      "maxLength": 300,
+      "description": "The page's path, with no query or fragment."
+    },
+    "stack": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "source": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "The script the error was thrown in."
+    },
+    "line": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "column": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "step": {
+      "type": "string",
+      "maxLength": 40,
+      "description": "outbox_gave_up: the write's kind, as `checklist`."
+    },
+    "code": {
+      "type": "string",
+      "maxLength": 60,
+      "description": "outbox_gave_up: the code the API refused it with."
+    },
+    "status": {
+      "type": "integer",
+      "description": "outbox_gave_up: the refusal's HTTP status."
+    },
+    "request_id": {
+      "type": "string",
+      "maxLength": 64,
+      "description": "outbox_gave_up: the refusal's request ID, which its own log lines carry."
+    }
+  },
+  "required": [
+    "kind",
+    "message",
+    "path"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### LoginChallenge
 
 ```json
@@ -2814,6 +2914,39 @@ Request body:
         "requested_at"
       ],
       "additionalProperties": false
+    },
+    "deletion_rejected": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "decided_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Ops' reason, which they write knowing the client reads it."
+            }
+          },
+          "required": [
+            "decided_at",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The client's latest request to delete their account that ops rejected, for 30 days after, while no other request is waiting."
     }
   },
   "required": [
@@ -2824,7 +2957,8 @@ Request body:
     "consents",
     "number_change",
     "number_change_decided",
-    "deletion"
+    "deletion",
+    "deletion_rejected"
   ],
   "additionalProperties": false
 }
@@ -4533,6 +4667,21 @@ Request body:
       ],
       "description": "Where credits added came from; null for any other entry."
     },
+    "referral_side": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "referrer",
+            "friend"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "For credits an invite added: referrer, for a friend this client invited being fitted; friend, for this client's own fit through an invite. Null for any other entry."
+    },
     "no_show": {
       "anyOf": [
         {
@@ -4551,6 +4700,7 @@ Request body:
     "visits",
     "visit",
     "source",
+    "referral_side",
     "no_show"
   ],
   "additionalProperties": false

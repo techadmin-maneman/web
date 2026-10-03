@@ -197,7 +197,9 @@ export function TodayScreen() {
       )}
 
       {day.state === "loading" && <Loading />}
-      {day.state === "failed" && <Failed message={copy.failed} retry={copy.retry} onRetry={retry} />}
+      {day.state === "failed" && (
+        <Failed message={copy.failed} retry={copy.retry} onRetry={retry} requestId={day.requestId} />
+      )}
 
       {day.state === "loaded" && jobs.length === 0 && (
         <div className={styles.empty}>

@@ -199,7 +199,13 @@ function profileOf({ reminders = false, undecided = [], address = true }: Standi
     return { purpose, granted: given, since: given ? at : null };
   });
   const answer = { name: "Rohit Malhotra", mobile: "+91 98xxx x4417", consents };
-  const rest = { address_given_to_ops: null, number_change: null, number_change_decided: null, deletion: null };
+  const rest = {
+    address_given_to_ops: null,
+    number_change: null,
+    number_change_decided: null,
+    deletion: null,
+    deletion_rejected: null,
+  };
   return { ...answer, address: address ? ADDRESS : null, ...rest };
 }
 
@@ -335,12 +341,12 @@ test("confirms a visit a credit covers as a credit used, never as a payment", as
   await bookedWithoutPaying(page, hold);
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: "Pay and confirm" });
-  await expect(pay.getByText("1 visit credit used")).toBeVisible();
+  await expect(pay.getByText("1 free service visit used")).toBeVisible();
   await pay.getByRole("button", { name: "Confirm visit" }).click();
 
   const confirmed = page.getByRole("dialog").getByRole("status");
   await expect(confirmed.getByText("Confirmed")).toBeVisible();
-  await expect(confirmed.getByText("1 visit credit used")).toBeVisible();
+  await expect(confirmed.getByText("1 free service visit used")).toBeVisible();
   await expect(confirmed.getByText("2 remaining")).toBeVisible();
   await expect(confirmed.getByText("Paid", { exact: true })).toHaveCount(0);
   await expect(confirmed.getByText("Rs. 2,000")).toHaveCount(0);
@@ -369,9 +375,11 @@ test("shows the price, and opens no Checkout, when the credit went on another bo
   await pay.getByRole("button", { name: "Confirm visit" }).click();
 
   await expect(
-    pay.getByText("Your visit credit is already on another booking, so this visit is charged at the price below."),
+    pay.getByText(
+      "Your free service visit is already on another booking, so this visit is charged at the price below.",
+    ),
   ).toBeVisible();
-  await expect(pay.getByText("1 visit credit used")).toHaveCount(0);
+  await expect(pay.getByText("1 free service visit used")).toHaveCount(0);
   await expect(pay.getByRole("button", { name: "Pay Rs. 2,000" })).toBeVisible();
 });
 
@@ -675,8 +683,8 @@ test("says a credit is gone after a late cancel only where the booking is sold s
   await holdAs(page, { credit: { remaining: 2 }, late_change_charge: "nothing" });
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: "Pay and confirm" });
-  await expect(pay.getByText("1 visit credit used")).toBeVisible();
-  await expect(pay.getByText(/the credit is gone/)).toHaveCount(0);
+  await expect(pay.getByText("1 free service visit used")).toBeVisible();
+  await expect(pay.getByText(/the free service visit is gone/)).toHaveCount(0);
   await expect(pay.getByText("Free to move or cancel at any time.")).toBeVisible();
 });
 
@@ -684,7 +692,9 @@ test("says a credit is gone after a cancel inside the notice the booking is sold
   await holdAs(page, { credit: { remaining: 2 }, change_notice_hours: 48 });
   await toPayment(page);
   await expect(
-    page.getByRole("dialog", { name: "Pay and confirm" }).getByText("Cancel inside 48 hours and the credit is gone."),
+    page
+      .getByRole("dialog", { name: "Pay and confirm" })
+      .getByText("Cancel inside 48 hours and the free service visit is gone."),
   ).toBeVisible();
 });
 

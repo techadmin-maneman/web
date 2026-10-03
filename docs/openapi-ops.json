@@ -205,6 +205,71 @@
         ],
         "additionalProperties": false
       },
+      "ClientErrorReport": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "error",
+              "unhandled_rejection",
+              "render",
+              "outbox_gave_up"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "path": {
+            "type": "string",
+            "maxLength": 300,
+            "description": "The page's path, with no query or fragment."
+          },
+          "stack": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "The script the error was thrown in."
+          },
+          "line": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "column": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "step": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "outbox_gave_up: the write's kind, as `checklist`."
+          },
+          "code": {
+            "type": "string",
+            "maxLength": 60,
+            "description": "outbox_gave_up: the code the API refused it with."
+          },
+          "status": {
+            "type": "integer",
+            "description": "outbox_gave_up: the refusal's HTTP status."
+          },
+          "request_id": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "outbox_gave_up: the refusal's request ID, which its own log lines carry."
+          }
+        },
+        "required": [
+          "kind",
+          "message",
+          "path"
+        ],
+        "additionalProperties": false
+      },
       "ClientSearch": {
         "type": "object",
         "properties": {
@@ -1652,6 +1717,38 @@
           "retrying": {
             "type": "boolean",
             "description": "Still tried every hour: inside its tries, and its visit to come."
+          },
+          "discount_code": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "amount_off": {
+                    "anyOf": [
+                      {
+                        "type": "integer"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "In paise before GST; null until the visit's price is known."
+                  }
+                },
+                "required": [
+                  "code",
+                  "amount_off"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The discount code the client booked with (docs/decisions/0108-discount-codes.md)."
           }
         },
         "required": [
@@ -1666,7 +1763,8 @@
           "held_at",
           "refusal",
           "retries_end",
-          "retrying"
+          "retrying",
+          "discount_code"
         ],
         "additionalProperties": false
       },
@@ -1908,7 +2006,9 @@
                         "app_profile",
                         "app_share_sheet",
                         "technician",
-                        "erasure"
+                        "erasure",
+                        "message_link",
+                        "whatsapp_stop"
                       ]
                     },
                     {
@@ -3597,7 +3697,7 @@
               "null"
             ],
             "maxLength": 300,
-            "description": "Required to reject; kept with the decision (src/policy/decision-reasons.ts)."
+            "description": "Required to reject; kept with the decision, and the client reads it (src/policy/decision-reasons.ts)."
           }
         },
         "required": [
@@ -3726,7 +3826,7 @@
               "null"
             ],
             "maxLength": 300,
-            "description": "Required to reject; kept with the decision (src/policy/decision-reasons.ts)."
+            "description": "Required to reject; kept with the decision, and the client reads it (src/policy/decision-reasons.ts)."
           }
         },
         "required": [
@@ -4940,6 +5040,17 @@
                     }
                   ]
                 },
+                "city": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "The city he works in, which staff access by place reads; null for none."
+                },
                 "mobile": {
                   "anyOf": [
                     {
@@ -5011,6 +5122,7 @@
                 "name",
                 "initials",
                 "zone",
+                "city",
                 "mobile",
                 "editable",
                 "devices",
@@ -5041,6 +5153,17 @@
                     }
                   ]
                 },
+                "city": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "The city he works in, which staff access by place reads; null for none."
+                },
                 "mobile": {
                   "anyOf": [
                     {
@@ -5061,17 +5184,26 @@
                 "id",
                 "name",
                 "zone",
+                "city",
                 "mobile",
                 "editable"
               ],
               "additionalProperties": false
             },
             "description": "Technicians switched off, by name: they cannot sign in, and nothing is booked on them."
+          },
+          "cities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The cities a technician may be given, in display order."
           }
         },
         "required": [
           "technicians",
-          "switched_off"
+          "switched_off",
+          "cities"
         ],
         "additionalProperties": false
       },
@@ -5776,6 +5908,19 @@
               }
             ],
             "description": "Where he mostly works, in ops' words; null for none."
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The city he works in, one of GET /api/technicians' cities. Staff with a grant of that city or its zone see him; with none, only a national grant does."
           }
         },
         "required": [
@@ -5810,6 +5955,19 @@
               }
             ],
             "description": "Where he mostly works, in ops' words; null for none."
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The city he works in, one of GET /api/technicians' cities. Staff with a grant of that city or its zone see him; with none, only a national grant does."
           }
         },
         "additionalProperties": false,
@@ -8835,6 +8993,46 @@
         }
       }
     },
+    "/api/client-errors": {
+      "post": {
+        "summary": "Report an error in the app's own page",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientErrorReport"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Logged"
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited: this address has sent its reports for the hour, or every address has",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/clients/search": {
       "post": {
         "summary": "Find a client by mobile number. A POST, so the number stays out of the URL",
@@ -11429,7 +11627,7 @@
             }
           },
           "400": {
-            "description": "invalid_request: no name, or not an Indian mobile",
+            "description": "invalid_request: no name, not an Indian mobile, or not one of our cities",
             "content": {
               "application/json": {
                 "schema": {
@@ -12025,7 +12223,7 @@
     },
     "/api/technicians/{id}": {
       "patch": {
-        "summary": "Change a technician's name, number or zone",
+        "summary": "Change a technician's name, number, zone or city",
         "parameters": [
           {
             "schema": {
@@ -12059,7 +12257,7 @@
             }
           },
           "400": {
-            "description": "invalid_request: nothing to change, no name, or not an Indian mobile",
+            "description": "invalid_request: nothing to change, no name, not an Indian mobile, or not one of our cities",
             "content": {
               "application/json": {
                 "schema": {

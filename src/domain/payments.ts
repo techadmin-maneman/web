@@ -43,7 +43,7 @@ export async function recordPayment(
 ): Promise<void> {
   await writePayment(db, payment, status, hashSalt, now);
   if (status !== "captured") return;
-  await giveReference(db, payment.id, now);
+  await giveReference(db, payment.id, holdIdOf(payment), now);
   // The hold it paid for keeps its time from here until it is booked or refunded (src/domain/bookings.ts).
   const madeAt = new Date(payment.created_at * 1000).toISOString();
   if (typeof payment.order_id === "string") await confirmPaidHold(db, payment.order_id, madeAt, now).run();
@@ -62,8 +62,19 @@ export async function recordRefundedPayment(
 ): Promise<string | null> {
   const status = payment.captured === false ? "authorized" : "captured";
   const personId = await writePayment(db, payment, status, hashSalt, now);
-  if (status === "captured") await giveReference(db, payment.id, now);
+  if (status === "captured") await giveReference(db, payment.id, holdIdOf(payment), now);
   return personId;
+}
+
+/** The notes we put on a payment we asked for; none on one made elsewhere. */
+function notesOf(payment: RazorpayPayment): Record<string, unknown> {
+  return payment.notes !== null && payment.notes !== undefined && !Array.isArray(payment.notes) ? payment.notes : {};
+}
+
+/** The hold the payment was asked for, from its notes. */
+function holdIdOf(payment: RazorpayPayment): string | null {
+  const holdId = notesOf(payment).hold_id;
+  return typeof holdId === "string" ? holdId : null;
 }
 
 /** The payment, if new, and its state, if `status` moves it forward. Our person for it, if we know them. */
@@ -75,8 +86,7 @@ async function writePayment(
   now: Date,
 ): Promise<string | null> {
   const at = now.toISOString();
-  const notes =
-    payment.notes !== null && payment.notes !== undefined && !Array.isArray(payment.notes) ? payment.notes : {};
+  const notes = notesOf(payment);
   const personId = await personOf(db, notes.person_id, payment.contact ?? null);
   const appointmentId = await appointmentOf(db, notes.appointment_id);
   const vpa = payment.vpa ?? null;
@@ -131,21 +141,80 @@ async function writePayment(
 }
 
 /**
- * A captured payment's reference, "MM-2026-0841": the next number of its India
- * year. One statement, so two captures at once cannot take the same number.
+ * The next number of the year ?2. Payments and payment links, a one visit's and a held visit's, number from one
+ * series, so a link can carry the reference its payment will have.
  */
-async function giveReference(db: D1Database, razorpayPaymentId: string, now: Date): Promise<void> {
+const NEXT_NUMBER = `(SELECT COALESCE(MAX(number), 0) + 1 FROM (
+  SELECT reference_number AS number FROM payments WHERE reference_year = ?2
+  UNION ALL SELECT reference_number FROM payment_links WHERE reference_year = ?2
+  UNION ALL SELECT reference_number FROM slot_holds WHERE reference_year = ?2))`;
+
+/** "MM-2026-0841": the year ?3, as text, and the next number. */
+const NEXT_REFERENCE = `'MM-' || ?3 || '-' || printf('%04d', ${NEXT_NUMBER})`;
+
+/** The year of India's date, as a number and again as text: D1 binds a number as a decimal, which prints "2026.0". */
+function referenceYear(now: Date): [number, string] {
   const year = Number(indiaDate(now).slice(0, 4));
-  const next = "(SELECT COALESCE(MAX(reference_number), 0) + 1 FROM payments WHERE reference_year = ?2)";
-  await db
+  return [year, String(year)];
+}
+
+/**
+ * A captured payment's reference: the one its link was made under, which the client read on Razorpay's page, else the
+ * next of its India year. Each is one statement, so two captures at once cannot take the same number. The link is the
+ * visit's, or that of the hold named in the payment's notes, and only where the amounts agree.
+ */
+async function giveReference(
+  db: D1Database,
+  razorpayPaymentId: string,
+  holdId: string | null,
+  now: Date,
+): Promise<void> {
+  await db.batch([
+    db
+      .prepare(
+        `UPDATE payments SET (reference_year, reference_number, reference) = (
+           SELECT l.reference_year, l.reference_number, l.reference FROM payment_links l
+           WHERE l.appointment_id = payments.appointment_id AND l.amount = payments.amount
+             AND NOT EXISTS (SELECT 1 FROM payments taken WHERE taken.reference = l.reference))
+         WHERE razorpay_payment_id = ?1 AND reference IS NULL`,
+      )
+      .bind(razorpayPaymentId),
+    db
+      .prepare(
+        `UPDATE payments SET (reference_year, reference_number, reference) = (
+           SELECT h.reference_year, h.reference_number, h.reference FROM slot_holds h
+           WHERE h.id = ?2 AND h.reference IS NOT NULL AND h.amount = payments.amount
+             AND NOT EXISTS (SELECT 1 FROM payments taken WHERE taken.reference = h.reference))
+         WHERE razorpay_payment_id = ?1 AND reference IS NULL`,
+      )
+      .bind(razorpayPaymentId, holdId),
+    db
+      .prepare(
+        `UPDATE payments SET reference_year = ?2, reference_number = ${NEXT_NUMBER}, reference = ${NEXT_REFERENCE}
+         WHERE razorpay_payment_id = ?1 AND reference IS NULL`,
+      )
+      .bind(razorpayPaymentId, ...referenceYear(now)),
+  ]);
+}
+
+/** Gives a one visit's payment link just written the next reference of its India year, which its payment then takes. */
+export function referenceLink(db: D1Database, linkId: string, now: Date): D1PreparedStatement {
+  return db
     .prepare(
-      `UPDATE payments SET reference_year = ?2, reference_number = ${next},
-         reference = 'MM-' || ?3 || '-' || printf('%04d', ${next})
-       WHERE razorpay_payment_id = ?1 AND reference IS NULL`,
+      `UPDATE payment_links SET reference_year = ?2, reference_number = ${NEXT_NUMBER}, reference = ${NEXT_REFERENCE}
+       WHERE id = ?1 AND reference IS NULL`,
     )
-    // The year again as text: D1 binds a number as a decimal, which would print "2026.0".
-    .bind(razorpayPaymentId, year, String(year))
-    .run();
+    .bind(linkId, ...referenceYear(now));
+}
+
+/** Gives the hold of a visit ops booked the next reference of its India year, for the link they send the client. */
+export function referenceHold(db: D1Database, holdId: string, now: Date): D1PreparedStatement {
+  return db
+    .prepare(
+      `UPDATE slot_holds SET reference_year = ?2, reference_number = ${NEXT_NUMBER}, reference = ${NEXT_REFERENCE}
+       WHERE id = ?1 AND reference IS NULL`,
+    )
+    .bind(holdId, ...referenceYear(now));
 }
 
 /** Our refund's state from Razorpay's: processed and failed as they are, anything earlier still created. */

@@ -13,11 +13,13 @@ const technician = (
   zone: string | null,
   devices: Technician["devices"],
   leave: Technician["leave"] = [],
+  city: string | null = "Gurgaon",
 ): Technician => ({
   id: `88000000-0000-4000-8000-00000000000${String(n)}`,
   name,
   initials,
   zone,
+  city,
   mobile: `+9198100000${String(n).padStart(2, "0")}`,
   editable: true,
   devices,
@@ -49,9 +51,11 @@ export const TECHNICIANS = {
       // Leave ops recorded here, which the dispatch board reads from the same rows (ADR 0062).
       [{ id: "89000000-0000-4000-8000-000000000001", from: "2027-10-02", to: "2027-10-06", note: "Family wedding" }],
     ),
-    technician(3, "Faizan Ali", "FA", null, []),
+    // Nobody has given him a city yet, so only national staff see him.
+    technician(3, "Faizan Ali", "FA", null, [], [], null),
   ],
   switched_off: [],
+  cities: ["Gurgaon", "Delhi", "Noida", "Faridabad", "Ghaziabad", "Mumbai", "Bengaluru"],
 } satisfies Roster;
 
 /** A technician ops switched off, who cannot sign in and is booked for nothing. */
@@ -59,6 +63,7 @@ export const RAVI = {
   id: "88000000-0000-4000-8000-000000000004",
   name: "Ravi Kumar",
   zone: "Sec 66–80",
+  city: "Gurgaon",
   mobile: "+919810000004",
   editable: true,
 } satisfies Roster["switched_off"][number];

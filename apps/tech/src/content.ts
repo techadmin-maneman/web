@@ -97,6 +97,9 @@ export const broken = {
   reload: "Reload",
 } as const;
 
+/** A failed call's reference, to quote to ops. */
+export const reference = { label: "Ref", copy: "Copy", copied: "Copied" } as const;
+
 /**
  * When the phone would not promise to keep what the outbox holds: a warning,
  * not an error. Nothing is lost yet, and getting to signal is what saves it

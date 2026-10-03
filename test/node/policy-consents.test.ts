@@ -6,6 +6,7 @@ import {
   APP_SWITCH_SOURCES,
   CONSENT_PURPOSES,
   CONSENT_SOURCES,
+  isStopReply,
   screenAsks,
   SOURCE_RULE,
 } from "../../src/policy/consents.ts";
@@ -32,5 +33,16 @@ describe("where a consent was given", () => {
     expect(askedOn("app_profile")).toEqual(CONSENT_PURPOSES);
     expect(askedOn("app_booking")).toEqual(["whatsapp_visits"]);
     expect(askedOn("app_share_sheet")).toEqual(["photos_referral_cards"]);
+  });
+});
+
+// PS-29: a person who replied "stop" kept getting messages.
+describe("a WhatsApp reply that asks us to stop", () => {
+  it.each(["STOP", "stop", "Stop.", " STOP! ", "stop all", "Unsubscribe"])("is %j", (text) => {
+    expect(isStopReply(text)).toBe(true);
+  });
+
+  it.each(["Please stop by at 5", "Don't stop", "stopped", "", "OK"])("is not %j", (text) => {
+    expect(isStopReply(text)).toBe(false);
   });
 });

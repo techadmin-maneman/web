@@ -36,3 +36,9 @@ export const REASON_MAX_CHARS = 300;
 
 export const needsReason = (queue: ReasonedQueue, decision: string): boolean =>
   (NEEDS_A_REASON[queue] as readonly string[]).includes(decision);
+
+/**
+ * How long the client's profile shows ops' decision on a change of number, or their rejection of a request to delete
+ * the account, with its reason. PLACEHOLDER, until the owner says otherwise.
+ */
+export const DECISION_SHOWN_DAYS = 30;
