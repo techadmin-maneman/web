@@ -110,7 +110,7 @@ describe("referral codes", () => {
       // Locally the site, where /r/:code is served, is on :4321; mm-api on :8787 has no such page (LIFE-17).
       link: `http://localhost:4321/r/${first.code}`,
       named: false,
-      credits: { visits: 0, earliest_expiry: null },
+      credits: { visits: 0, earliest_expiry: null, expiring_visits: 0 },
       card: { state: "house", version: 1, consented: false },
       fitted: [],
       invite_credits: null,
@@ -714,7 +714,11 @@ describe("the credit ledger", () => {
       now: NOW,
       expiresAt: soon,
     }).run();
-    expect(await creditBalance(db, REFERRER, NOW)).toEqual({ visits: 5, earliestExpiry: soon.toISOString() });
+    expect(await creditBalance(db, REFERRER, NOW)).toEqual({
+      visits: 5,
+      earliestExpiry: soon.toISOString(),
+      expiringFirst: 2,
+    });
 
     await redeemCredit(db, REFERRER, "visit-1", NOW).run();
     const drawn = await db
@@ -741,6 +745,15 @@ describe("the credit ledger", () => {
     expect(await me()).toBeNull();
     await grantCredits(env.DB, { personId: REFERRER, visits: 3, source: "ops", sourceId: "o1", now: NOW }).run();
     // To the end of 21 September 2027 in India, a year on (BIZ-14).
-    expect(await me()).toEqual({ visits: 3, earliest_expiry: "2027-09-21T18:29:59.999Z" });
+    expect(await me()).toEqual({ visits: 3, earliest_expiry: "2027-09-21T18:29:59.999Z", expiring_visits: 3 });
+    // A later grant ends later, so Home can say how many end first.
+    await grantCredits(env.DB, {
+      personId: REFERRER,
+      visits: 2,
+      source: "ops",
+      sourceId: "o2",
+      now: new Date(NOW.getTime() + 86_400_000),
+    }).run();
+    expect(await me()).toEqual({ visits: 5, earliest_expiry: "2027-09-21T18:29:59.999Z", expiring_visits: 3 });
   });
 });
