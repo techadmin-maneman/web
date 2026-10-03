@@ -10,7 +10,7 @@
 
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
-import { useLoad, whenLoaded } from "@maneman/ui/useLoad";
+import { failedRequestId, useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { indiaDate, listDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type Area, type Launch } from "../api.ts";
@@ -266,7 +266,7 @@ export function WaitlistScreen() {
         )}
         {whenLoaded(loaded, {
           loading: <Loading />,
-          failed: <PanelFailed onRetry={retry} />,
+          failed: <PanelFailed onRetry={retry} requestId={failedRequestId(loaded)} />,
           loaded: ({ areas, more }) => (
             <Pincodes
               areas={areas}

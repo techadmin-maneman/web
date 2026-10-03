@@ -55,7 +55,7 @@ function PieceTable({ clientId }: { clientId: string }) {
   const [loaded, retry] = useLoad(load);
 
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const { pieces } = loaded.value;
   return (

@@ -512,6 +512,6 @@ function Area({ pincodes: loadedPincodes }: { pincodes: readonly ServedPincode[]
 export function ServiceArea() {
   const [loaded, retry] = useLoad(api.serviceArea);
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   return <Area pincodes={loaded.value.pincodes} />;
 }

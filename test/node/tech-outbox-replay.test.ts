@@ -319,6 +319,35 @@ describe("a step the API refused", () => {
     expect(sent.map((call) => call.url)).toEqual(["/api/tech/jobs/a/piece", "/api/tech/jobs/a/outcome"]);
     expect(await events()).toEqual([]);
   });
+
+  // PLAT-43: without the report, nobody but the technician would know the write never landed.
+  it("keeps the refusal's request ID for the waiting screen, and reports the give-up", async () => {
+    await queue("piece", "a", { piece_code: "MM-STD-0000-A" });
+    const refusal = { error: { code: "piece_code", request_id: "0192a8e4-0000-7000-8000-0000000000aa" } };
+    const reports: unknown[] = [];
+    vi.stubGlobal("window", { location: { pathname: "/jobs/a/piece" } });
+    vi.stubGlobal("fetch", (url: string, init: RequestInit = {}) => {
+      if (url === "/api/client-errors") reports.push(JSON.parse(init.body as string));
+      const body = JSON.stringify(refusal);
+      return Promise.resolve(new Response(body, { status: 422, headers: { "Content-Type": "application/json" } }));
+    });
+
+    expect(await replay()).toMatchObject({ refused: 1 });
+    expect(await events()).toMatchObject([
+      { state: "refused", note: "piece_code", request_id: refusal.error.request_id },
+    ]);
+    expect(reports).toEqual([
+      {
+        kind: "outbox_gave_up",
+        message: "piece refused: piece_code",
+        step: "piece",
+        code: "piece_code",
+        status: 422,
+        request_id: refusal.error.request_id,
+        path: "/jobs/a/piece",
+      },
+    ]);
+  });
 });
 
 describe("a no-show the API says is early", () => {

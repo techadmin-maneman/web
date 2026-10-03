@@ -383,7 +383,9 @@ export function Profile({ id }: { id: string }) {
   const { loaded, retry, refused, finish, back } = useStep(id, "profile");
 
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} />;
+  if (loaded.state === "failed") {
+    return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} requestId={loaded.requestId} />;
+  }
   return (
     <ProfileForm
       key={loaded.value.id}
