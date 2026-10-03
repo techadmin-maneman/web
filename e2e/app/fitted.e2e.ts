@@ -163,8 +163,8 @@ test("Home keeps a visit done but not yet closed, and shows the credit tile and 
   await expect(page.getByText("Done · notes on the way")).toBeVisible();
   await expect(page.getByRole("button", { name: "Reschedule" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Add a note" })).toHaveCount(0);
-  await expect(page.getByText("2 visit credits")).toBeVisible();
-  await expect(page.getByText("Expire 3 Jan 2028")).toBeVisible();
+  await expect(page.getByText("2 free service visits")).toBeVisible();
+  await expect(page.getByText("Use by 3 Jan 2028")).toBeVisible();
   const month = listMonth(client.piece.due.slice(0, 7), new Date().getFullYear());
   await expect(page.getByText(`Your replacement piece is due in ${month}.`)).toBeVisible();
   // The API prompts the replacement only once its month may be booked, so the prompt always offers it, beside the

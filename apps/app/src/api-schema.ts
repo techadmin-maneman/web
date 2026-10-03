@@ -3198,6 +3198,8 @@ export interface components {
             } | null;
             /** @description Where credits added came from; null for any other entry. */
             source: ("referral" | "ops" | "import") | null;
+            /** @description For credits an invite added: referrer, for a friend this client invited being fitted; friend, for this client's own fit through an invite. Null for any other entry. */
+            referral_side: ("referrer" | "friend") | null;
             no_show: components["schemas"]["NoShowNote"] | null;
         };
         PaymentDetail: {

@@ -4512,6 +4512,21 @@ Request body:
       ],
       "description": "Where credits added came from; null for any other entry."
     },
+    "referral_side": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "referrer",
+            "friend"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "For credits an invite added: referrer, for a friend this client invited being fitted; friend, for this client's own fit through an invite. Null for any other entry."
+    },
     "no_show": {
       "anyOf": [
         {
@@ -4530,6 +4545,7 @@ Request body:
     "visits",
     "visit",
     "source",
+    "referral_side",
     "no_show"
   ],
   "additionalProperties": false
