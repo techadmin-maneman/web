@@ -2905,6 +2905,13 @@ export interface components {
                 /** Format: date-time */
                 requested_at: string;
             } | null;
+            /** @description The client's latest request to delete their account that ops rejected, for 30 days after, while no other request is waiting. */
+            deletion_rejected: {
+                /** Format: date-time */
+                decided_at: string;
+                /** @description Ops' reason, which they write knowing the client reads it. */
+                reason: string | null;
+            } | null;
         };
         Address: {
             line1: string;

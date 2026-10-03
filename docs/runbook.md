@@ -815,15 +815,17 @@ A daily alert (Google, Turnstile) and one ops settle by hand (a refund, a kept c
 SELECT job, failed_runs, last_failed_at, last_error FROM cron_jobs WHERE failed_runs > 0;
 ```
 
-The other jobs run regardless. A run shares 40 outside calls between its jobs; a job that finds them spent stops and leaves the rest to the next run, and the run logs `cron_calls_spent`. Seen now and then, that is a backlog clearing. Seen on every run, the passes cannot keep up within the free plan.
+The other jobs run regardless. The cron runs every minute, and each run only the jobs due in that minute: the table in `src/scheduled/cron.ts` gives each how often it runs (`every`: 5, 15 or 60 minutes) and in which minute (`at`). A run shares 40 outside calls between its jobs, and starts none after 30 seconds, so it ends before the next minute's; a job that finds them spent stops and leaves the rest to its next run, and the run logs `cron_calls_spent`. Seen now and then, that is a backlog clearing. Seen on every run, the passes cannot keep up within the free plan.
 
-Some jobs run only where what they need is switched on: FSM's jobs need `FSM_PROVIDER`, the invoices and Books need both FSM and Books, the FSM reconciliation needs the real FSM, and the visit reminders need `MESSAGING_ENABLED` (`src/scheduled/cron.ts`).
+Some jobs run only where what they need is switched on: FSM's jobs need `FSM_PROVIDER`, the invoices and Books need Books, the FSM reconciliation needs the real FSM, and the visit reminders need `MESSAGING_ENABLED` (`src/scheduled/cron.ts`).
 
 **The cron and the queue consumers have stood still for maintenance.** The switch a restore runs under has been on for an hour ("Restoring D1"). Once the restore is done, switch it off; the next run does its jobs, and the queues deliver what they hold. Then close the alert by hand.
 
 ### A cron run cut short
 
-Each run notes when it starts and when it finishes (`cron_runs`). A run that finds the one before it never finished alerts once (`cron_run_cut_short`), and the alert closes once runs have finished for an hour. The jobs after where the run stopped did not run that time; the next run does them, so one alert is a blip. Where it stands:
+Cloudflare stops a run that uses too much CPU time, and the free plan allows 10 ms an invocation. One run of every job took 30 to 60 ms, and on 3 October 2026 Cloudflare stopped every staging run for ten hours. So the cron runs every minute, each run only the few jobs due in that minute (`src/scheduled/cron.ts`; ADR 0009, "Update, 4 October 2026: the cron's CPU time").
+
+Each run notes when it starts and when it finishes (`cron_runs`). A run that finds the one before it never finished alerts once (`cron_run_cut_short`), and pings the heartbeat's `/fail` saying so ("The outside watchers"). The alert closes once runs have finished for an hour. Only that minute's jobs missed a turn, and each runs again at its next minute, so one alert is a blip. The minute of the run's start says which jobs it was running: those whose `every` and `at` fall on it, in `src/scheduled/cron.ts`. Where it stands:
 
 ```sql
 SELECT started_at, completed_at, failed_jobs, cut_short_at FROM cron_runs;
@@ -831,13 +833,21 @@ SELECT started_at, completed_at, failed_jobs, cut_short_at FROM cron_runs;
 
 `GET /api/health` shows `cron_completed_at`, the last finished run, for information; its status does not depend on it.
 
-Cloudflare stops a run that uses too much CPU time, and the free plan allows 10 ms an invocation. Every staging deploy reports mm-api's CPU over the last day in its last step, and `node --env-file=.env.cf-read scripts/cpu-report.ts production` reports production's (the token needs Account Analytics: Read). Workers Logs at the run's start time show the last job that logged before it stopped. If runs are cut again and again, tell the developers: the later jobs (invoices, Books, refunds owed, erasures) are not running.
+If the alert comes back for runs started in the same minute of the hour again and again, that minute's run is too heavy for the free plan: tell the developers which minute, so its jobs can be given minutes of their own. To see what Cloudflare charged each run, tail it across a few minutes and read `cpuTime` and `outcome` (`exceededCpu` is a run stopped):
+
+```sh
+node node_modules/wrangler/bin/wrangler.js tail mm-api-<env> --format json
+```
+
+Every staging deploy also reports mm-api's CPU over the last day in its last step, and `node --env-file=.env.cf-read scripts/cpu-report.ts production` reports production's (the token needs Account Analytics: Read).
+
+**After a deploy that changes the trigger.** Cloudflare attaches the trigger apart from the code (ADR 0010). Until an operator runs `npm run apply-triggers -- --env <env>`, the five-minute trigger fires, and each of its runs runs every job at once, as before, too heavy for the free plan. The deploy's trigger check names the difference.
 
 ### The outside watchers
 
 Every alert is sent from inside mm-api, so a cron that stops altogether, or an API that is down, tells nobody. Two free monitors outside Cloudflare watch for that:
 
-1. **The cron's heartbeat.** On healthchecks.io, a check for each environment (`mm-api-staging cron`, `mm-api-production cron`): period 5 minutes, grace 10 minutes, and its Google Chat integration on the alert space (or e-mail). Put its ping URL in the environment as `HEARTBEAT_URL` (`W secret put HEARTBEAT_URL --env <env>`). The cron pings it after every run, and pings `/fail` with the failed jobs' names when one failed. No ping for 15 minutes means the cron is not running: check the triggers (step 9), then Workers Logs for the scheduled event.
+1. **The cron's heartbeat.** On healthchecks.io, a check for each environment (`mm-api-staging cron`, `mm-api-production cron`): period 5 minutes, grace 10 minutes, and its Google Chat integration on the alert space (or e-mail). Put its ping URL in the environment as `HEARTBEAT_URL` (`W secret put HEARTBEAT_URL --env <env>`). The cron pings it after every run, every minute, and pings `/fail` with the jobs' names when one failed, or when the run before never finished ("A cron run cut short"). No ping for 15 minutes means the cron is not running: check the triggers (step 9), then Workers Logs for the scheduled event.
 2. **The API.** Any free uptime monitor checking `https://maneman.in/api/health` every 5 minutes for HTTP 200, telling the owner's e-mail. Production only: staging is behind Access. A 503 means the database is unreachable or not production's, and the answer's `d1` says which.
 
 ### What each alert means
@@ -1086,7 +1096,7 @@ For a payment whose delivery Razorpay will not send again (past its 24 hours, or
 
 "The refund of Rs. _n_ for visit _id_ … failed" (`cancel_refund_failed` for a client's cancel, `no_show_refund_failed` for a waived no-show). Nothing tries it again. In Razorpay's dashboard, find the payment the alert names, check it shows no refund of that amount, refund it once, and close the alert. The refund's webhook records it, and the client's Payments tab shows it.
 
-A client's cancel whose refund was never asked for, or never recorded (D1 lost, or the Worker stopped, once the visit was cancelled), is no alert: the cron's `cancel_refunds` job asks for it again ten minutes on, under the cancel's receipt. If Razorpay refuses that, the alert is the "may have been made" one, since the first ask may have refunded it: refund by hand only if the payment shows no refund of that amount.
+A client's cancel whose refund was never asked for, or never recorded (D1 lost, or the Worker stopped, once the visit was cancelled), is no alert: the cron's `cancel_refunds` job asks for it again at its first quarter-hourly run from ten minutes on, under the cancel's receipt. If Razorpay refuses that, the alert is the "may have been made" one, since the first ask may have refunded it: refund by hand only if the payment shows no refund of that amount.
 
 ---
 
@@ -1277,7 +1287,10 @@ The photo notice promises that a person's data is deleted the same day they ask.
 
 - deletes their visit photographs from the client-photos bucket;
 - deletes their saved addresses;
-- anonymises their FSM contact within a few minutes, through the fsm-sync queue (docs/decisions/0049-dpdp.md).
+- anonymises their FSM contact within a few minutes, through the fsm-sync queue (docs/decisions/0049-dpdp.md);
+- tells the client on WhatsApp that it is done (`deletion_done_v1`), so step 5 is not needed. It is sent once, straight after the erasure; the log's `deletion_done_failed` means it did not arrive, and with the number gone it cannot be sent again. Delete the chat (step 4) after it.
+
+Rejecting a request sends the client your reason on WhatsApp (`deletion_rejected_v1`), and their app shows it for 30 days, so write it for them to read.
 
 Check FSM as you check Zoho:
 

@@ -1,5 +1,6 @@
-// WhatsApp messaging, behind an interface. The messaging consumer is the only
-// caller; nothing else knows which BSP is behind it.
+// WhatsApp messaging, behind an interface. Its callers are the messaging
+// consumer, the login codes and the word that an account is deleted
+// (src/queues/messaging.ts); none of them knows which BSP is behind it.
 
 import type { Logger } from "../log.ts";
 import { createEvolutionMessaging, type EvolutionSettings } from "./evolution.ts";

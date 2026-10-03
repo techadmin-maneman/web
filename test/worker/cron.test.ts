@@ -6,8 +6,12 @@ import type { StaticConfig } from "../../src/guard.ts";
 import { createLogger } from "../../src/log.ts";
 import {
   CRON_CALLS,
+  CRON_CALLS_FOR_MS,
   CRON_JOBS,
+  EVERY_MINUTE,
   booksSyncOptions,
+  isDueAt,
+  jobsDue,
   runCron,
   runCronJobs,
   type CronJob,
@@ -19,23 +23,35 @@ beforeEach(() => {
   logs = captureLogs();
 });
 
+const MINUTE_MS = 60_000;
+
 const WITHOUT_BOOKS: StaticConfig = {
   ...LOCAL_CONFIG,
   providers: { ...LOCAL_CONFIG.providers, BOOKS_PROVIDER: "none" },
 };
 
+/** A job that runs every five minutes, in the first of them. */
+const job = (name: string, run: CronJob["run"], needs: CronJob["needs"] = "nothing"): CronJob => ({
+  name,
+  needs,
+  every: 5,
+  at: 0,
+  run,
+});
+
 function recorder() {
   const ran: string[] = [];
-  const job = (name: string, needs: CronJob["needs"], fails = false): CronJob => ({
-    name,
-    needs,
-    run: ({ log }) => {
-      ran.push(name);
-      log.info("ran");
-      return fails ? Promise.reject(new Error(`${name} broke`)) : Promise.resolve();
-    },
-  });
-  return { ran, job };
+  const recorded = (name: string, needs: CronJob["needs"], fails = false): CronJob =>
+    job(
+      name,
+      ({ log }) => {
+        ran.push(name);
+        log.info("ran");
+        return fails ? Promise.reject(new Error(`${name} broke`)) : Promise.resolve();
+      },
+      needs,
+    );
+  return { ran, job: recorded };
 }
 
 describe("runCronJobs", () => {
@@ -73,12 +89,7 @@ describe("runCronJobs", () => {
 
   it("skips a job whose provider is not connected here", async () => {
     const { ran, job } = recorder();
-    const jobs = [
-      job("fsm", "fsm"),
-      job("fsm_and_books", "fsm_and_books"),
-      job("books", "books"),
-      job("always", "nothing"),
-    ];
+    const jobs = [job("fsm", "fsm"), job("books", "books"), job("always", "nothing")];
 
     const outcomes = await runCronJobs(jobs, {
       env,
@@ -119,12 +130,8 @@ describe("runCronJobs", () => {
 });
 
 describe("a job that keeps failing", () => {
-  const failing = (): CronJob => ({
-    name: "books_sync",
-    needs: "nothing",
-    run: () => Promise.reject(new Error("Books 500")),
-  });
-  const working = (): CronJob => ({ name: "books_sync", needs: "nothing", run: () => Promise.resolve() });
+  const failing = (): CronJob => job("books_sync", () => Promise.reject(new Error("Books 500")));
+  const working = (): CronJob => job("books_sync", () => Promise.resolve());
 
   const failedRuns = () =>
     env.DB.prepare("SELECT failed_runs, last_error FROM cron_jobs WHERE job = 'books_sync'").first<{
@@ -132,9 +139,9 @@ describe("a job that keeps failing", () => {
       last_error: string | null;
     }>();
 
-  async function runs(times: number, job: CronJob, deps = fakeDependencies()) {
+  async function runs(times: number, each: CronJob, deps = fakeDependencies()) {
     for (let run = 0; run < times; run += 1) {
-      await runCronJobs([job], { env, deps, config: LOCAL_CONFIG, log: createLogger() });
+      await runCronJobs([each], { env, deps, config: LOCAL_CONFIG, log: createLogger() });
     }
     return deps;
   }
@@ -180,10 +187,9 @@ describe("a job that keeps failing", () => {
 });
 
 describe("the run record", () => {
-  const MINUTE_MS = 60_000;
   const at = (minutes: number) => new Date(NOW.getTime() + minutes * MINUTE_MS);
-  const nothing: CronJob = { name: "nothing", needs: "nothing", run: () => Promise.resolve() };
-  const broken: CronJob = { name: "broken", needs: "nothing", run: () => Promise.reject(new Error("down")) };
+  const nothing = job("nothing", () => Promise.resolve());
+  const broken = job("broken", () => Promise.reject(new Error("down")));
 
   /** A run at `minutes` past NOW; what it tells the chat joins `told`. */
   async function runAt(minutes: number, told: string[] = [], jobs = [nothing]) {
@@ -237,7 +243,7 @@ describe("the run record", () => {
 
   it("says nothing on the first run, nor while every run finishes", async () => {
     const told: string[] = [];
-    for (const minutes of [0, 5, 10]) await runAt(minutes, told);
+    for (const minutes of [0, 1, 2]) await runAt(minutes, told);
     expect(told).toEqual([]);
   });
 
@@ -301,6 +307,23 @@ describe("the heartbeat after a run", () => {
     ]);
   });
 
+  // D-01 of 4 October 2026: Cloudflare stopped every staging run for ten hours, and nobody outside the Worker was told.
+  it("pings /fail after a run that never finished, saying when it started", async () => {
+    const { job } = recorder();
+    const outside = fakeFetch({ [CHECK]: () => new Response("OK") });
+    const run = { env, deps: fakeDependencies({ fetch: outside.fetch }), config: WITH_CHECK, log: createLogger() };
+    const aMinuteAgo = new Date(NOW.getTime() - MINUTE_MS).toISOString();
+    await startRun({ db: env.DB, alertOnce: fakeDependencies().alertOnce }, aMinuteAgo);
+
+    await runCron([job("first", "nothing")], run);
+    await runCron([job("first", "nothing")], run);
+
+    expect(outside.calls.map((call) => [call.url, call.body])).toEqual([
+      [`${CHECK}/fail`, `the run started at ${aMinuteAgo} never finished`],
+      [CHECK, ""],
+    ]);
+  });
+
   it("pings nothing where no monitor is set", async () => {
     const { job } = recorder();
     const outside = fakeFetch({});
@@ -317,17 +340,15 @@ describe("the heartbeat after a run", () => {
 });
 
 describe("the run's outside calls", () => {
+  const spender = (name: string, calls: number, seen: { job: string; granted: boolean; left: number }[]) =>
+    job(name, ({ budget }) => {
+      seen.push({ job: name, granted: budget.spend(calls), left: budget.left() });
+      return Promise.resolve();
+    });
+
   it("are one budget, shared by every job in the run and fresh for the next", async () => {
     const seen: { job: string; granted: boolean; left: number }[] = [];
-    const spender = (name: string, calls: number): CronJob => ({
-      name,
-      needs: "nothing",
-      run: ({ budget }) => {
-        seen.push({ job: name, granted: budget.spend(calls), left: budget.left() });
-        return Promise.resolve();
-      },
-    });
-    const jobs = [spender("first", CRON_CALLS - 5), spender("second", 10), spender("third", 5)];
+    const jobs = [spender("first", CRON_CALLS - 5, seen), spender("second", 10, seen), spender("third", 5, seen)];
 
     await runCronJobs(jobs, { env, deps: fakeDependencies(), config: LOCAL_CONFIG, log: createLogger() });
     expect(seen).toEqual([
@@ -338,7 +359,7 @@ describe("the run's outside calls", () => {
     expect(logs.lines()).toContainEqual(expect.objectContaining({ event: "cron_calls_spent" }));
 
     seen.length = 0;
-    await runCronJobs([spender("next run", CRON_CALLS)], {
+    await runCronJobs([spender("next run", CRON_CALLS, seen)], {
       env,
       deps: fakeDependencies(),
       config: LOCAL_CONFIG,
@@ -350,34 +371,99 @@ describe("the run's outside calls", () => {
   it("leave room under the free plan's 50 for token refreshes and alerts", () => {
     expect(CRON_CALLS).toBeLessThanOrEqual(40);
   });
+
+  // A run still waiting on a slow vendor when the next minute's starts would be taken by the next for one cut short.
+  it("are refused once the run is half a minute old, so it ends before the next minute's run", async () => {
+    const seen: { job: string; granted: boolean; left: number }[] = [];
+    let now = NOW;
+    const slow = job("slow vendor", () => {
+      now = new Date(NOW.getTime() + CRON_CALLS_FOR_MS);
+      return Promise.resolve();
+    });
+
+    await runCronJobs([spender("first", 1, seen), slow, spender("after", 1, seen)], {
+      env,
+      deps: fakeDependencies({ now: () => now }),
+      config: LOCAL_CONFIG,
+      log: createLogger(),
+    });
+
+    expect(seen.map((each) => [each.job, each.granted])).toEqual([
+      ["first", true],
+      ["after", false],
+    ]);
+    expect(CRON_CALLS_FOR_MS).toBeLessThan(MINUTE_MS);
+  });
+});
+
+describe("the schedule", () => {
+  /** The scheduled time of the run at `minute` past the hour. */
+  const minuteOf = (minute: number) => Date.UTC(2026, 9, 4, 6, minute);
+  const namesAt = (minute: number, jobs: readonly CronJob[] = CRON_JOBS) =>
+    jobsDue(jobs, EVERY_MINUTE, minuteOf(minute)).map((each) => each.name);
+  const HOUR = Array.from({ length: 60 }, (_, minute) => minute);
+
+  it("gives every job a minute inside its period", () => {
+    for (const each of CRON_JOBS) {
+      expect(Number.isInteger(each.at), each.name).toBe(true);
+      expect(each.at, each.name).toBeGreaterThanOrEqual(0);
+      expect(each.at, each.name).toBeLessThan(each.every);
+    }
+    expect(new Set(CRON_JOBS.map((each) => each.name)).size).toBe(CRON_JOBS.length);
+  });
+
+  // PLAT-30: hourly jobs once ran only when the run's own clock said the first five minutes, so a late run skipped the
+  // hour. A run is now due by the minute Cloudflare scheduled it for, however late it starts.
+  it("runs each job as often as it says, in the same minutes every hour", () => {
+    const runs = new Map<string, number[]>();
+    for (const minute of HOUR) {
+      for (const name of namesAt(minute)) runs.set(name, [...(runs.get(name) ?? []), minute]);
+    }
+    for (const each of CRON_JOBS) {
+      const minutes = runs.get(each.name) ?? [];
+      expect(minutes, each.name).toHaveLength(60 / each.every);
+      expect(
+        minutes.every((minute) => isDueAt(each, minute)),
+        each.name,
+      ).toBe(true);
+    }
+    expect(runs.get("visit_reminders")).toEqual([8, 23, 38, 53]);
+  });
+
+  it("is due by the minute scheduled, not when the run starts", () => {
+    const scheduled = minuteOf(8);
+    expect(jobsDue(CRON_JOBS, EVERY_MINUTE, scheduled + 59_000)).toEqual(jobsDue(CRON_JOBS, EVERY_MINUTE, scheduled));
+  });
+
+  // The five-minute trigger stays attached until an operator applies this one (docs/decisions/0010): until then each
+  // of its runs does what a run did before, every job.
+  it("runs every job on any other schedule: npm run tick, or the five-minute trigger", () => {
+    expect(jobsDue(CRON_JOBS, "*/5 * * * *", minuteOf(3))).toEqual(CRON_JOBS);
+  });
+
+  // D-01 of 4 October 2026: one run of every job took 34 to 61 ms of CPU on staging, the free plan allows 10.
+  it("gives no minute more than four jobs, and the FSM mirror's repair a minute alone", () => {
+    for (const minute of HOUR) {
+      const names = namesAt(minute);
+      expect(names.length, `minute ${String(minute)}: ${names.join(", ")}`).toBeLessThanOrEqual(4);
+      if (names.includes("fsm_reconcile")) expect(names, `minute ${String(minute)}`).toEqual(["fsm_reconcile"]);
+    }
+  });
+
+  it("raises a finished job's invoice before the Books pass that sets the client's advance against it", () => {
+    const minuteOfJob = (name: string) => CRON_JOBS.find((each) => each.name === name)?.at ?? -1;
+    expect(minuteOfJob("invoices")).toBeLessThan(minuteOfJob("books_sync"));
+  });
+
+  // checkBooksItems does nothing after the hour's first five minutes (src/domain/books-items.ts).
+  it("checks Books' items in the hour's first five minutes, the only ones its check works in", () => {
+    const items = CRON_JOBS.find((each) => each.name === "books_items");
+    expect(items).toMatchObject({ every: 60 });
+    expect(items?.at).toBeLessThan(5);
+  });
 });
 
 describe("CRON_JOBS", () => {
-  it("sweeps first and settles Books last, after the invoices it applies advances to", () => {
-    expect(CRON_JOBS.map((job) => job.name)).toEqual([
-      "sweeper",
-      "unbooked_holds",
-      "cancel_refunds",
-      "erased_files",
-      "books_erasures",
-      "fsm_reconcile",
-      "fsm_catalogue",
-      "deletion_alerts",
-      "storage_meter",
-      "daily_allowances",
-      "whatsapp_bridge",
-      "dispatch_utilisation",
-      "referrals",
-      "visit_reminders",
-      "next_service_reminders",
-      "payment_links",
-      "books_items",
-      "invoices",
-      "asked_windows",
-      "books_sync",
-    ]);
-  });
-
   it("without FSM, bills and settles in Books, checks its items and books unbooked holds, and runs none of FSM's jobs", async () => {
     const ours: StaticConfig = {
       ...LOCAL_CONFIG,
@@ -385,8 +471,10 @@ describe("CRON_JOBS", () => {
     };
     const outcomes = await runCronJobs(CRON_JOBS, { env, deps: fakeDependencies(), config: ours, log: createLogger() });
     const ran = outcomes.map((outcome) => outcome.job);
-    expect(ran).toEqual(expect.arrayContaining(["unbooked_holds", "books_items", "invoices", "books_sync"]));
-    for (const fsmOnly of ["fsm_reconcile", "fsm_catalogue", "asked_windows"]) {
+    expect(ran).toEqual(
+      expect.arrayContaining(["unbooked_holds", "books_items", "invoices", "books_sync", "asked_windows"]),
+    );
+    for (const fsmOnly of ["fsm_reconcile", "fsm_catalogue", "requeue_fsm_erasures"]) {
       expect(ran, fsmOnly).not.toContain(fsmOnly);
     }
     expect(outcomes.filter((outcome) => !outcome.ok)).toEqual([]);
@@ -407,60 +495,39 @@ describe("CRON_JOBS", () => {
   it("tells ops once when the photographs fill half their share of R2, however many runs see it", async () => {
     await env.DB.prepare("UPDATE storage_meter SET bytes = 2.1e9").run();
     const deps = fakeDependencies();
-    const job = CRON_JOBS.filter((cronJob) => cronJob.name === "storage_meter");
+    const meter = CRON_JOBS.filter((cronJob) => cronJob.name === "storage_meter");
     for (let run = 0; run < 3; run += 1) {
-      await runCronJobs(job, { env, deps, config: LOCAL_CONFIG, log: createLogger() });
+      await runCronJobs(meter, { env, deps, config: LOCAL_CONFIG, log: createLogger() });
     }
     expect(deps.alerts).toEqual([expect.stringContaining("2.10 GB in R2, half of their 4 GB share")]);
-  });
-
-  // NOW is half past the hour in UTC. The share fills over months; the hour's other checks run on the hour.
-  it("looks at the storage meter once an hour, on the half hour, and reads nothing on the other runs", async () => {
-    await env.DB.prepare("UPDATE storage_meter SET bytes = 2.1e9").run();
-    const job = CRON_JOBS.filter((cronJob) => cronJob.name === "storage_meter");
-    const at = (minutes: number) => fakeDependencies({ now: () => new Date(NOW.getTime() + minutes * 60_000) });
-
-    for (const minutes of [-30, 5, 25]) {
-      const deps = at(minutes);
-      await runCronJobs(job, { env, deps, config: LOCAL_CONFIG, log: createLogger() });
-      expect(deps.alerts, `${String(minutes)} minutes from half past`).toEqual([]);
-    }
-    const onTheHalfHour = at(0);
-    await runCronJobs(job, { env, deps: onTheHalfHour, config: LOCAL_CONFIG, log: createLogger() });
-    expect(onTheHalfHour.alerts).toHaveLength(1);
   });
 
   // PLAT-16 of the audit, 2 October 2026: nothing read the database's size before D1's limit stopped every write.
   it("tells ops once when the database reaches half of D1's limit, in the same hourly look", async () => {
     const deps = fakeDependencies();
-    const job = CRON_JOBS.filter((cronJob) => cronJob.name === "storage_meter");
+    const meter = CRON_JOBS.filter((cronJob) => cronJob.name === "storage_meter");
     const halfFull = { ...env, DB: holding(env.DB, 260e6) };
     for (let run = 0; run < 2; run += 1) {
-      await runCronJobs(job, { env: halfFull, deps, config: LOCAL_CONFIG, log: createLogger() });
+      await runCronJobs(meter, { env: halfFull, deps, config: LOCAL_CONFIG, log: createLogger() });
     }
     expect(deps.alerts).toEqual([expect.stringContaining("The database holds 260 MB, 50% of the 500 MB")]);
   });
 
-  // NOW is half past the hour in UTC, so a quarter past is 15 minutes before it.
-  it("reads the account's usage once an hour, at a quarter past, and only where the analytics token is set", async () => {
-    const job = CRON_JOBS.filter((cronJob) => cronJob.name === "daily_allowances");
+  it("reads the account's usage only where the analytics token is set", async () => {
+    const allowances = CRON_JOBS.filter((cronJob) => cronJob.name === "daily_allowances");
     const graphql = "https://api.cloudflare.com/client/v4/graphql";
     const withToken: StaticConfig = {
       ...LOCAL_CONFIG,
       settings: { ...LOCAL_CONFIG.settings, analyticsToken: "token" },
     };
-    const runAt = async (minutes: number, config: StaticConfig) => {
+    const callsMade = async (config: StaticConfig) => {
       const { fetch, calls } = fakeFetch({ [graphql]: () => new Response("Bad Gateway", { status: 502 }) });
-      const now = new Date(NOW.getTime() + minutes * 60_000);
-      await runCronJobs(job, { env, deps: fakeDependencies({ fetch, now: () => now }), config, log: createLogger() });
+      await runCronJobs(allowances, { env, deps: fakeDependencies({ fetch }), config, log: createLogger() });
       return calls.length;
     };
 
-    expect(await runAt(-15, LOCAL_CONFIG)).toBe(0);
-    for (const minutes of [-16, -10, 0, 25]) {
-      expect(await runAt(minutes, withToken), `${String(minutes)} minutes from half past`).toBe(0);
-    }
-    expect(await runAt(-15, withToken)).toBe(1);
+    expect(await callsMade(LOCAL_CONFIG)).toBe(0);
+    expect(await callsMade(withToken)).toBe(1);
   });
 });
 

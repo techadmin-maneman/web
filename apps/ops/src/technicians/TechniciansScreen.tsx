@@ -417,12 +417,14 @@ type Switched =
  */
 function TechnicianPanel({
   entry,
+  cities,
   switched,
   onChange,
   onSwitched,
   onClose,
 }: {
   entry: Entry;
+  cities: readonly string[];
   switched: Switched | null;
   onChange: () => Promise<void>;
   onSwitched: (switched: Switched) => void;
@@ -442,6 +444,7 @@ function TechnicianPanel({
       <div className={styles.drawerBody}>
         <Details
           technician={summary}
+          cities={cities}
           active={active !== null}
           onChange={onChange}
           onSwitchedOff={async (visits) => {
@@ -618,6 +621,7 @@ function Roster() {
       {opened !== null && (
         <TechnicianPanel
           entry={opened}
+          cities={book.cities}
           switched={switched?.technicianId === opened.summary.id ? switched : null}
           onChange={readAgain}
           onSwitched={setSwitched}
@@ -629,6 +633,7 @@ function Roster() {
       )}
       {adding && (
         <AddTechnician
+          cities={book.cities}
           onAdded={async (name) => {
             await readAgain();
             setAdding(false);
