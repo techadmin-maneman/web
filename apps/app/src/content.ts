@@ -129,6 +129,8 @@ export const VISIT_TYPES = {
   service: "Service visit",
   replacement: "Replacement piece",
 } as const;
+/** The consultation and the first fit in one visit, as the site's /book names it. */
+export const CONSULTATION_AND_FIT = "Consultation and fit";
 // PLACEHOLDER: a visit whose FSM service item is none of the four.
 export const OTHER_VISIT = "Visit";
 
@@ -165,7 +167,10 @@ export const home = {
   note: "Add a note",
   consultation: {
     label: "Your consultation",
+    labelOneVisit: "Your consultation and fit",
     free: "Free",
+    /** Asked for on the site, not yet booked. */
+    requested: "Requested · we confirm the time on WhatsApp",
   },
   /** Board B1's credit tile: "2 visit credits", with when the soonest expire. */
   credits: {
@@ -261,6 +266,8 @@ export const visits = {
   none: "Nothing booked yet.",
   /** Board C1: a visit paid for ahead, or covered by a credit. */
   prepaid: "Prepaid",
+  /** A consultation asked for on the site, which ops have yet to confirm. */
+  requested: "Requested",
   // PLACEHOLDER: a visit that is not this client's, or no longer exists.
   notFound: "We could not find this visit.",
   // PLACEHOLDER: offline, the visits are not kept on the phone.

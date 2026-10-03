@@ -29,7 +29,13 @@ import { nextVisitFacts } from "../domain/next-visit.ts";
 import { bookableTypes } from "../domain/scheduling.ts";
 import { offeredServices } from "../domain/services.ts";
 import { currentAddress, liveContact } from "../domain/profile.ts";
-import { hasFsmVisit, latestProposal, windowAskedFor } from "../domain/proposed-visits.ts";
+import {
+  askedFor,
+  latestProposal,
+  standingProposal,
+  type Asked,
+  type ProposedBooking,
+} from "../domain/proposed-visits.ts";
 import { clientOf, requireClientSession } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
@@ -63,12 +69,19 @@ export const MeSchema = z
         place: z.string().openapi({
           description: "Where it is: the saved address (locality, city and pincode), else the booking's city.",
         }),
+        requested: z.boolean().openapi({
+          description:
+            "Asked for with no slot held, as while self-serve booking is off or by a Phase 1 booking: ops confirm " +
+            "the time on WhatsApp.",
+        }),
+        one_visit: z.boolean().openapi({ description: "The consultation and the first fit in one visit." }),
       })
       .strict()
       .nullable()
       .openapi({
         description:
-          "A booking's proposed consultation, before FSM has the visit: from the site's form, or a Phase 1 booking to be confirmed on WhatsApp. Null once the mirror has the visit.",
+          "A booking's consultation from the site's form, or a Phase 1 booking, before any visit of the client's is " +
+          "on record. Null once one is, and once its day has passed.",
       }),
     next_visit: z
       .union([VisitSummarySchema, z.null()])
@@ -232,6 +245,19 @@ export const MeSchema = z
 /** The words the Phase 1 booked page had for a window. It had none for the afternoon. */
 const PHASE1_WORDS: Partial<Record<BookingWindow, WindowLabel>> = { morning: "before noon", evening: "after four" };
 
+type Consultation = NonNullable<z.infer<typeof MeSchema>["consultation"]>;
+
+function consultationOf(proposal: ProposedBooking, asked: Asked, place: string): Consultation {
+  return {
+    date: proposal.proposed_visit_date,
+    window: asked.window,
+    window_label: PHASE1_WORDS[asked.window] ?? null,
+    place,
+    requested: asked.requested,
+    one_visit: asked.oneVisit,
+  };
+}
+
 export const meRoute = createRoute({
   method: "get",
   path: "/api/me",
@@ -258,10 +284,9 @@ export function registerClientMe(app: App): void {
     const credits = await spendableCredits(db, session.subjectId, now);
     const fitted = await isFitted(db, session.subjectId);
     const booking = await latestProposal(db, session.subjectId);
-    // A booking's proposal stands only until FSM has any visit for the person.
-    const proposal = (await hasFsmVisit(db, session.subjectId)) ? null : booking;
-    const window = proposal === null ? null : await windowAskedFor(db, session.subjectId, proposal);
-    if (proposal !== null && window === null) {
+    const proposal = await standingProposal(db, session.subjectId, booking, indiaDate(now));
+    const asked = proposal === null ? null : await askedFor(db, session.subjectId, proposal);
+    if (proposal !== null && asked === null) {
       c.var.log.warn("consultation_window_unknown", { person_id: session.subjectId });
     }
     const address = proposal === null ? null : await currentAddress(db, session.subjectId);
@@ -277,7 +302,7 @@ export function registerClientMe(app: App): void {
     }));
     const { nextVisitDays: days, referralReward } = await opsInputs(c);
     const facts = await nextVisitFacts(db, session.subjectId, now, days);
-    // A booking's consultation, not yet in FSM, is booked as much as a visit FSM has.
+    // A form's consultation counts as booked while it stands, asked for or held.
     const booked = facts.booked || upcoming !== null || proposal !== null;
     const offer = booked ? null : facts.offer;
     const { prompt, invoice } = await homePrompts(db, session.subjectId, { booked, offer }, now, days);
@@ -288,10 +313,7 @@ export function registerClientMe(app: App): void {
         name,
         first_name: firstNameOf(name),
         initials: initialsOf(name),
-        consultation:
-          proposal === null || window === null
-            ? null
-            : { date: proposal.proposed_visit_date, window, window_label: PHASE1_WORDS[window] ?? null, place },
+        consultation: proposal === null || asked === null ? null : consultationOf(proposal, asked, place),
         next_visit: upcoming,
         being_booked: underWay,
         credits: credits.visits > 0 ? { visits: credits.visits, earliest_expiry: credits.earliestExpiry } : null,

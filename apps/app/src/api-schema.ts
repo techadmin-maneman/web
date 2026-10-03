@@ -2605,7 +2605,7 @@ export interface components {
             first_name: string;
             /** @description For the profile's button: the first letters of the first and last names. */
             initials: string;
-            /** @description A booking's proposed consultation, before FSM has the visit: from the site's form, or a Phase 1 booking to be confirmed on WhatsApp. Null once the mirror has the visit. */
+            /** @description A booking's consultation from the site's form, or a Phase 1 booking, before any visit of the client's is on record. Null once one is, and once its day has passed. */
             consultation: {
                 /** Format: date */
                 date: string;
@@ -2621,6 +2621,10 @@ export interface components {
                 window_label: "before noon" | "after four" | null;
                 /** @description Where it is: the saved address (locality, city and pincode), else the booking's city. */
                 place: string;
+                /** @description Asked for with no slot held, as while self-serve booking is off or by a Phase 1 booking: ops confirm the time on WhatsApp. */
+                requested: boolean;
+                /** @description The consultation and the first fit in one visit. */
+                one_visit: boolean;
             } | null;
             /** @description The next visit that has not happened, from FSM: a consultation for a lead. */
             next_visit: components["schemas"]["VisitSummary"] | null;

@@ -16,7 +16,7 @@ import { fullDate, listMonth, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { api, type Me, type VisitSummary, type Visits } from "../api.ts";
 import { BookNext } from "../booking/BookNext.tsx";
-import { VISIT_TYPES, visits, WINDOW_HOURS } from "../content.ts";
+import { CONSULTATION_AND_FIT, VISIT_TYPES, visits, WINDOW_HOURS } from "../content.ts";
 import { AppLink, Shell } from "../home/Shell.tsx";
 import { hasBegun, stageText } from "../home/VisitCard.tsx";
 import { CHEVRON } from "../icons.ts";
@@ -93,6 +93,14 @@ function Record({ history }: { history: Visits["history"] }) {
   );
 }
 
+/** A consultation from the site: what it is, its window, and whether it is only asked for. */
+function proposedParts(consultation: NonNullable<Me["consultation"]>): string[] {
+  const what = consultation.one_visit ? CONSULTATION_AND_FIT : VISIT_TYPES.consultation;
+  const parts = [what, WINDOW_HOURS[consultation.window]];
+  if (consultation.requested) parts.push(visits.requested);
+  return parts;
+}
+
 /** A past visit's line: what it was and who did it, or that it was cancelled. */
 function pastLine(visit: VisitSummary): string {
   const after = visit.status === "cancelled" ? [visits.cancelled] : technicianOf(visit);
@@ -120,14 +128,10 @@ function VisitList({ list, consultation }: { list: Visits; consultation: Me["con
         <p className={styles.none}>{visits.none}</p>
       ) : (
         <ul className={styles.upcoming}>
-          {/* A booking's consultation, not yet in FSM, has no page of its own to open. */}
+          {/* A consultation from the site has no page of its own to open. */}
           {upcoming.length === 0 && consultation !== null && (
             <li className={styles.card}>
-              <UpcomingCard
-                date={consultation.date}
-                parts={[VISIT_TYPES.consultation, WINDOW_HOURS[consultation.window]]}
-                prepaid={false}
-              />
+              <UpcomingCard date={consultation.date} parts={proposedParts(consultation)} prepaid={false} />
             </li>
           )}
           {upcoming.map((visit) => (
