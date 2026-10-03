@@ -1,9 +1,12 @@
+import { reportUncaughtErrors } from "@maneman/web-kit/client-errors";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App.tsx";
 import { carriesMobile, mobileInLink } from "./login/linked-mobile.ts";
 import { ErrorBoundary } from "./states/ErrorBoundary.tsx";
 import "./styles/global.css";
+
+reportUncaughtErrors();
 
 /** The number the app was opened with, taken off the address at once so it is not left in the browser's history. */
 function takeLinkedMobile(): string {

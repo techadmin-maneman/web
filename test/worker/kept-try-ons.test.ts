@@ -55,7 +55,7 @@ async function sweepNow(): Promise<void> {
     MESSAGE_QUEUE: fakeQueue(),
     FSM_QUEUE: fakeQueue(),
   };
-  await sweep(bindings, fakeDependencies(), createLogger(), { creditFloor: 200, budget: createCallBudget(Infinity) });
+  await sweep(bindings, fakeDependencies(), createLogger(), { budget: createCallBudget(Infinity) });
 }
 
 /** A try-on whose photograph, small copy and look are in their buckets, as the site and the render left them. */

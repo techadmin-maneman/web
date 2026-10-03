@@ -346,7 +346,27 @@ export function DataCard() {
   );
 }
 
-export function DeletionCard({ deletion, onRequested }: { deletion: Profile["deletion"]; onRequested: () => void }) {
+/** The client's last request to delete their account, which ops rejected, with their reason. */
+function Rejected({ rejected }: { rejected: NonNullable<Profile["deletion_rejected"]> }) {
+  const copy = profile.deletion;
+  return (
+    <>
+      <p className={styles.cardBody}>{copy.rejected(longDate(rejected.decided_at))}</p>
+      {rejected.reason !== null && <p className={styles.cardBody}>{copy.why(rejected.reason)}</p>}
+      <p className={styles.cardBody}>{copy.disagree}</p>
+    </>
+  );
+}
+
+export function DeletionCard({
+  deletion,
+  rejected,
+  onRequested,
+}: {
+  deletion: Profile["deletion"];
+  rejected: Profile["deletion_rejected"];
+  onRequested: () => void;
+}) {
   const copy = profile.deletion;
   const [confirming, setConfirming] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -426,6 +446,7 @@ export function DeletionCard({ deletion, onRequested }: { deletion: Profile["del
         {copy.label}
       </h2>
       <p className={styles.cardBody}>{copy.body}</p>
+      {rejected !== null && <Rejected rejected={rejected} />}
       {current()}
     </section>
   );
