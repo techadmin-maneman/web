@@ -89,12 +89,7 @@ describe("runCronJobs", () => {
 
   it("skips a job whose provider is not connected here", async () => {
     const { ran, job } = recorder();
-    const jobs = [
-      job("fsm", "fsm"),
-      job("fsm_and_books", "fsm_and_books"),
-      job("books", "books"),
-      job("always", "nothing"),
-    ];
+    const jobs = [job("fsm", "fsm"), job("books", "books"), job("always", "nothing")];
 
     const outcomes = await runCronJobs(jobs, {
       env,

@@ -102,7 +102,7 @@ const ALERT_AFTER_FAILED_RUNS = 3;
  * no appointment, so a job that trusts FSM's word on what exists would take it that every visit had been deleted.
  * "books_without_fsm" is Books where D1, not FSM, is the record of field work (src/config/field-record.ts).
  */
-type Needs = "nothing" | "fsm" | "fsm_record" | "fsm_and_books" | "books" | "books_without_fsm" | "messaging";
+type Needs = "nothing" | "fsm" | "fsm_record" | "books" | "books_without_fsm" | "messaging";
 
 /** How often a job runs, in minutes. Each divides an hour, so a job runs in the same minutes every hour. */
 export type Every = 5 | 15 | 60;
@@ -131,8 +131,6 @@ function isSwitchedOn(needs: Needs, config: StaticConfig): boolean {
       return fsm;
     case "fsm_record":
       return config.providers.FSM_PROVIDER === "zoho";
-    case "fsm_and_books":
-      return fsm && books;
     case "books":
       return books;
     case "books_without_fsm":
