@@ -7,14 +7,17 @@
 //   POST /api/dispatch/moves/:id/told   ops called a client who had not heard of a move
 //
 // Both writes run the clash check before anything reaches FSM, write to FSM,
-// then the mirror, then message the client with his new window. "The client's
-// payment carries over and he is never charged for a move ops make", so no
-// amount appears anywhere below.
+// then the mirror, then message the client with his new window; where our own
+// database holds the record of field work, all of it is one write there. A
+// visit the technician has begun is not moved. "The client's payment carries
+// over and he is never charged for a move ops make", so no amount appears
+// anywhere below.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { staffOf } from "../http/audit.ts";
 import type { App, AppEnv } from "../http/context.ts";
+import { fieldRecord } from "../config/field-record.ts";
 import { BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { BOARD_DAYS, dispatchBoard, moveJob, recordToldByPhone, roomFor, type MoveInput } from "../domain/dispatch.ts";
@@ -22,7 +25,7 @@ import { errorBody, errorResponse } from "../http/errors.ts";
 import { opsInputs } from "../http/ops-inputs.ts";
 import { json } from "../http/openapi.ts";
 import { indiaDate } from "../lib/india-time.ts";
-import { CLIENT_NOTICES, MOVE_REASONS } from "../policy/dispatch.ts";
+import { BEGUN, CLIENT_NOTICES, MOVE_REASONS } from "../policy/dispatch.ts";
 import { PAYMENT_BADGES } from "../policy/job-visibility.ts";
 import type { MessagingMessage } from "../queues/messaging.ts";
 
@@ -70,6 +73,10 @@ const BlockSchema = z
     untold: z.union([z.object({ move_id: z.uuid(), starts_at: z.iso.datetime() }).strict(), z.null()]).openapi({
       description:
         "The latest move of this visit its client has not heard of: he has not agreed to WhatsApp, or the message was never sent. Ops call him, then POST /api/dispatch/moves/{id}/told.",
+    }),
+    begun: z.union([z.enum(BEGUN), z.null()]).openapi({
+      description:
+        "How far the technician has got, from the steps his phone sent: arrived (checked in), started, or closed (an outcome, a no-show among them). Null before he arrives. A visit he has begun, or one in progress, is not moved.",
     }),
   })
   .strict()
@@ -201,7 +208,7 @@ const assignRoute = createRoute({
     403: errorResponse("access_required"),
     404: errorResponse("not_found: no such live job"),
     409: errorResponse(
-      "clash: the technician already holds a job in that window on that date; on_leave: they are away that day; does_not_fit: the window is free but the visit has no room in it; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written)",
+      "clash: the technician already holds a job in that window on that date; on_leave: they are away that day; does_not_fit: the window is free but the visit has no room in it; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit",
     ),
     502: errorResponse(
       "fsm_refused: FSM would not take it; nothing moved. fsm_partly: FSM took the technician and not the time; the job is read again from FSM",
@@ -219,7 +226,9 @@ const moveRoute = createRoute({
     400: errorResponse("invalid_request, including a move to the technician, day and window the job already has"),
     403: errorResponse("access_required"),
     404: errorResponse("not_found: no such live job"),
-    409: errorResponse("clash; on_leave; does_not_fit; superseded, with what changed in fields"),
+    409: errorResponse(
+      "clash; on_leave; does_not_fit; superseded, with what changed in fields; in_progress: the technician has begun the visit, which stays where it is",
+    ),
     502: errorResponse("fsm_refused; fsm_partly: FSM took the technician and not the time"),
   },
 });
@@ -251,7 +260,7 @@ const roomRoute = createRoute({
   responses: {
     200: { description: "Where it would land", ...json(RoomSchema) },
     403: errorResponse("access_required"),
-    404: errorResponse("not_found: no such live job"),
+    404: errorResponse("not_found: no such live job, or one the technician has begun, which stays where it is"),
   },
 });
 
@@ -333,6 +342,7 @@ async function write(c: Context<AppEnv>, request: MoveRequest) {
       labelAsTest: config.environment !== "production",
       notify: (messageId) =>
         c.env.MESSAGE_QUEUE.send({ message_id: messageId, request_id: requestId } satisfies MessagingMessage),
+      record: fieldRecord(config.providers),
     },
     input,
     deps.now(),
@@ -340,6 +350,7 @@ async function write(c: Context<AppEnv>, request: MoveRequest) {
 
   if (outcome.kind === "not_found") return c.json(errorBody("not_found", requestId), 404);
   if (outcome.kind === "superseded") return c.json(errorBody("superseded", requestId, outcome.changed), 409);
+  if (outcome.kind === "in_progress") return c.json(errorBody("in_progress", requestId), 409);
   if (outcome.kind === "nothing_to_move") {
     return c.json(errorBody("invalid_request", requestId, ["technician_id", "date", "window"]), 400);
   }
