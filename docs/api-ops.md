@@ -6082,7 +6082,9 @@ Request body:
                   "app_profile",
                   "app_share_sheet",
                   "technician",
-                  "erasure"
+                  "erasure",
+                  "message_link",
+                  "whatsapp_stop"
                 ]
               },
               {
