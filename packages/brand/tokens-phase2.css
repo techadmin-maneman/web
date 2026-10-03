@@ -22,7 +22,7 @@
   --wa-dark-text: #e9edef; /* and the words in it */
 
   /* The apps' sizes (docs/prompts/phase2-frontend.md, "Layout and targets"). */
-  --app-column: 390px; /* the design's width; wider screens centre it */
+  --app-column: 390px; /* the design's width */
   --fs-app-title: var(--fs-34); /* a screen's title */
   --fs-app-title-long: 32px; /* a longer title, as board A3's */
   --fs-19: 19px; /* a day's number in the date strip (board C2) */

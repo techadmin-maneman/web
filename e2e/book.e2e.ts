@@ -671,7 +671,8 @@ test("booking through WhatsApp for now is confirmed as a request, not refused", 
   await expect(page.getByRole("button", { name: "Book the consultation" })).toBeHidden();
 });
 
-test("an empty submit shows each error, announced, and sends nothing", async ({ page }) => {
+// UX-21: an empty submit left focus on the button, with the first errors two or three screens above it.
+test("an empty submit shows each error, announced, brings the first into view, and sends nothing", async ({ page }) => {
   const requests = await mockApi(page);
   await visit(page, "/book");
 
@@ -680,10 +681,73 @@ test("an empty submit shows each error, announced, and sends nothing", async ({ 
   await page.getByRole("button", { name: "Book the consultation" }).click();
 
   await expect(page.getByText("Please tell us your name.")).toBeVisible();
-  await expect(page.getByText("Please enter a ten-digit mobile number.")).toBeVisible();
+  await expect(page.getByText("Enter a valid 10-digit mobile number.")).toBeVisible();
   await expect(page.getByText("We need this to contact you.")).toBeVisible();
   await expect(page.getByText("Please give the building or society.")).toBeVisible();
   await expect(page.getByText("Please give the sector or area.")).toBeVisible();
+  const flat = page.getByLabel("Flat or house number");
+  await expect(flat).toBeFocused();
+  await expect(flat).toBeInViewport();
+  // The city is the pincode's, so six fields are marked: three of the address, and the name, number and agreement.
+  await expect(page.getByText("Check the 6 fields marked above.")).toBeVisible();
+  expect(requests).toHaveLength(0);
+});
+
+// BK-28, CP-22: a number starting with 5 passed the form, and the API's refusal read "Something went wrong at our end".
+test("a number that is not a mobile is marked at its field, focused, and not sent", async ({ page }) => {
+  const requests = await mockApi(page);
+  await openForm(page);
+  await fillAddress(page);
+  await page.getByLabel("Name").fill("Test Visitor");
+  await page.getByLabel("Mobile").fill("5876543210");
+  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByRole("button", { name: "Book the consultation" }).click();
+
+  const mobile = page.getByLabel("Mobile");
+  await expect(mobile).toHaveAttribute("aria-invalid", "true");
+  await expect(mobile).toHaveAccessibleDescription("Enter a valid 10-digit mobile number.");
+  await expect(mobile).toBeFocused();
+  await expect(page.getByText(/fields marked above/)).toHaveCount(0);
+  expect(requests).toHaveLength(0);
+});
+
+// BK-28, UX-21: a refusal naming fields was said by the button as our fault, with nothing marked.
+test("the fields the API refuses are marked where they are, the first focused, and not blamed on us", async ({
+  page,
+}) => {
+  const refused = { error: { code: "invalid_request", request_id: "r", fields: ["address.flat", "mobile"] } };
+  const requests = await mockApi(page, { consultation: { status: 400, body: refused } });
+  await bookHere(page);
+
+  const flat = page.getByLabel("Flat or house number");
+  const mobile = page.getByLabel("Mobile");
+  await expect(flat).toHaveAttribute("aria-invalid", "true");
+  await expect(flat).toBeFocused();
+  await expect(flat).toBeInViewport();
+  await expect(mobile).toHaveAttribute("aria-invalid", "true");
+  await expect(mobile).toHaveAccessibleDescription("Enter a valid 10-digit mobile number.");
+  await expect(page.getByText(/at our end/)).toHaveCount(0);
+  expect(requests).toHaveLength(1);
+
+  await mobile.fill("9810000001");
+  await expect(mobile).toHaveAttribute("aria-invalid", "false");
+});
+
+test("an empty waitlist submit marks all three fields, focuses the name, and counts them", async ({ page }) => {
+  const requests = await mockApi(page);
+  await visit(page, "/book");
+  await page.getByLabel("Pincode").fill(UNSERVED.pincode);
+  await page.getByRole("button", { name: "Check" }).click();
+  await page.getByRole("button", { name: "Add me to the list" }).click();
+
+  await expect(page.getByLabel("Name")).toBeFocused();
+  await expect(page.getByText("Enter a valid 10-digit mobile number.")).toBeVisible();
+  await expect(page.getByText("Check the 3 fields marked above.")).toBeVisible();
+
+  await page.getByLabel("Name").fill("Test Visitor");
+  await page.getByRole("button", { name: "Add me to the list" }).click();
+  await expect(page.getByLabel("Mobile")).toBeFocused();
+  await expect(page.getByText(/fields marked above/)).toHaveCount(0);
   expect(requests).toHaveLength(0);
 });
 
@@ -746,7 +810,7 @@ test("a window found full on booking says so, and the strip is drawn afresh", as
 
   await fillAndBook(page);
 
-  await expect(page.getByText("That window is full. Please pick another.")).toBeVisible();
+  await expect(page.getByText("That time isn’t available. Pick another.")).toBeVisible();
   await expect(windows.getByRole("radio", { name: /^Morning/ })).toBeDisabled();
   await expect(windows.getByRole("radio", { name: /^Afternoon/ })).toBeChecked();
   expect(calls).toBe(2);

@@ -119,12 +119,20 @@ function withdrawn(sql: string): boolean {
   return WITHDRAWN_ANNOTATION.test(sql) && doesNothing(sql);
 }
 
-/** Every migration on the base branch is still here, byte for byte, unless it was withdrawn. */
+/**
+ * Migrations given a new number before any environment applied them, old name to new. Two pull requests landed a
+ * 0077 together while staging stood at 0076.
+ */
+const RENUMBERED: ReadonlyMap<string, string> = new Map([["0077_consents_shown.sql", "0078_consents_shown.sql"]]);
+
+/** Every migration on the base branch is still here, byte for byte, unless it was withdrawn or renumbered. */
 function checkUnchanged(files: readonly MigrationFile[], atBase: ReadonlyMap<string, string>): string[] {
   const current = new Map(files.map((file) => [file.name, file.sql]));
   const problems: string[] = [];
   for (const [name, sqlAtBase] of atBase) {
     const sqlNow = current.get(name);
+    const renumberedAs = RENUMBERED.get(name);
+    if (sqlNow === undefined && renumberedAs !== undefined && current.has(renumberedAs)) continue;
     if (sqlNow === undefined) {
       problems.push(`${name}: applied migrations must not be deleted`);
     } else if (sqlNow !== sqlAtBase && !withdrawn(sqlNow)) {

@@ -74,7 +74,7 @@ function AddressField(props: {
 
 export function AddressFieldset(props: {
   address: AddressFields;
-  /** The required parts to mark as left out: none until the form has been sent once. */
+  /** The required parts to mark as wrong: none until the form has been sent once. */
   missing: readonly RequiredPart[];
   pincode: string;
   idPrefix: string;

@@ -159,7 +159,8 @@ const PAID_IN = "Your payment is in. We are booking your visit.";
 const TOLD_WHEN_BOOKED = "We will message you on WhatsApp when the visit is booked.";
 
 export const home = {
-  profile: "Your profile",
+  /** The avatar's name begins with the initials it shows, so "tap RM" reaches it by voice. */
+  profile: (initials: string) => `${initials}, your profile`,
   reschedule: "Reschedule",
   note: "Add a note",
   consultation: {
@@ -418,7 +419,7 @@ export const booking = {
     },
     /**
      * PLACEHOLDER: the design never asks. Ticked, it records the client's yes to WhatsApp about their
-     * visits (the purpose the day-before reminder is sent under), on that purpose's own notice.
+     * visits (the purpose the day-before reminder is sent under), on a notice of this line alone.
      */
     remind: "Remind me on WhatsApp the day before",
     /**
@@ -428,9 +429,9 @@ export const booking = {
      */
     consents: {
       open: "What booking agrees to",
-      both: "By booking this visit, you also agree to photographs for your own record and on referral cards.",
+      both: "By booking this visit, you also agree to photographs taken for your visit record and used on referral cards.",
       alone: {
-        photos_own_record: "By booking this visit, you also agree to photographs for your own record.",
+        photos_own_record: "By booking this visit, you also agree to photographs taken for your visit record.",
         photos_referral_cards: "By booking this visit, you also agree to photographs on referral cards.",
       },
       switchEither: "You can switch either off in Profile.",
@@ -930,7 +931,7 @@ export const profile = {
   },
   agreed: "What you have agreed to",
   purposes: {
-    photos_own_record: "Photographs for your own record",
+    photos_own_record: "Photographs taken for your visit record",
     photos_referral_cards: "Photographs on referral cards",
     photos_marketing: "Photographs in our marketing",
     whatsapp_visits: "WhatsApp about your visits",
