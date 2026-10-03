@@ -2914,6 +2914,39 @@ Request body:
         "requested_at"
       ],
       "additionalProperties": false
+    },
+    "deletion_rejected": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "decided_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Ops' reason, which they write knowing the client reads it."
+            }
+          },
+          "required": [
+            "decided_at",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The client's latest request to delete their account that ops rejected, for 30 days after, while no other request is waiting."
     }
   },
   "required": [
@@ -2924,7 +2957,8 @@ Request body:
     "consents",
     "number_change",
     "number_change_decided",
-    "deletion"
+    "deletion",
+    "deletion_rejected"
   ],
   "additionalProperties": false
 }
