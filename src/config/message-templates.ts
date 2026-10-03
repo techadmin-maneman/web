@@ -18,7 +18,7 @@ export const TEMPLATES: Readonly<Record<string, string>> = {
   visit_booked_v1:
     "Hello {{1}}, your {{2}} is booked for {{3}}, {{4}}, with {{5}}. Paid {{6}}, reference {{7}}. The receipt is in the app.",
   visit_booked_credit_v1:
-    "Hello {{1}}, your {{2}} is booked for {{3}}, {{4}}, with {{5}}. One of your visit credits covers it.",
+    "Hello {{1}}, your {{2}} is booked for {{3}}, {{4}}, with {{5}}. One of your free service visits covers it.",
   // A visit a discount code made free: booked with nothing to pay.
   visit_booked_code_v1:
     "Hello {{1}}, your {{2}} is booked for {{3}}, {{4}}, with {{5}}. Your discount code covers it, so there is nothing to pay.",
@@ -37,39 +37,39 @@ export const TEMPLATES: Readonly<Record<string, string>> = {
   no_show_charged_fee_v1:
     "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. {{6}} of what you paid is kept as the no-show charge, and {{10}} is on its way back to your {{8}}, in 5 to 7 working days. If you were home, you can dispute the charge in the Mane Man app.",
   no_show_charged_credit_v1:
-    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. The visit credit it used is spent as the no-show charge. If you were home, you can dispute it in the Mane Man app.",
+    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. The free service visit it used is spent as the no-show charge. If you were home, you can dispute it in the Mane Man app.",
   no_show_waived_v1:
     "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it. You can book again in the Mane Man app.",
   no_show_waived_paid_v1:
     "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it. Message us about the {{6}} you paid for it.",
   no_show_waived_credit_v1:
-    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it. Message us about the visit credit it used.",
+    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it. Message us about the free service visit it used.",
   no_show_waived_refund_v1:
     "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it: {{6}} is on its way back to your {{8}}, in 5 to 7 working days.",
   no_show_waived_credit_back_v1:
-    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it, and your visit credit is back.",
+    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it, and your free service visit is back.",
   // A credit given back to a grant that has since expired or been clawed back does not come back; ops are told.
   no_show_waived_credit_gone_v1:
-    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it, but the visit credit it used is no longer valid, so it cannot come back.",
+    "Hello {{1}}, we came for your {{2}} on {{3}} and waited {{9}} minutes, but nobody was home. We are not charging you for it, but the free service visit it used is no longer valid, so it cannot come back.",
   // Ops' ruling on a client's dispute of a no-show charge: refunded, credit back or gone, or upheld. Never ops' reason.
   no_show_dispute_refunded_v1:
     "Hello {{1}}, we have looked at your dispute of the no-show charge for your {{2}} on {{3}}, and we are refunding it: {{6}} is on its way back to your {{8}}, in 5 to 7 working days.",
   no_show_dispute_credit_back_v1:
-    "Hello {{1}}, we have looked at your dispute of the no-show charge for your {{2}} on {{3}}, and we are refunding it: your visit credit is back.",
+    "Hello {{1}}, we have looked at your dispute of the no-show charge for your {{2}} on {{3}}, and we are refunding it: your free service visit is back.",
   no_show_dispute_credit_gone_v1:
-    "Hello {{1}}, we have looked at your dispute of the no-show charge for your {{2}} on {{3}}, and we agree the charge should not stand, but the visit credit it used is no longer valid, so it cannot come back.",
+    "Hello {{1}}, we have looked at your dispute of the no-show charge for your {{2}} on {{3}}, and we agree the charge should not stand, but the free service visit it used is no longer valid, so it cannot come back.",
   no_show_dispute_upheld_v1:
     "Hello {{1}}, we have looked at your dispute of the no-show charge for your {{2}} on {{3}}. The charge stands. Message us if you would like to know why.",
   // Due in a few days with nothing booked: {{2}} "service visit" or "replacement", {{3}} the due day.
   next_visit_due_v1: "Hello {{1}}, your next {{2}} is due on {{3}}. You can book it in the Mane Man app.",
   visit_cancelled_v1: "Hello {{1}}, your {{2}} on {{3}} is cancelled.",
-  visit_cancelled_credit_v1: "Hello {{1}}, your {{2}} on {{3}} is cancelled. Your visit credit is back.",
+  visit_cancelled_credit_v1: "Hello {{1}}, your {{2}} on {{3}} is cancelled. Your free service visit is back.",
   // Cancelled too late, so the credit is spent, as the cancel sheet warned.
   visit_cancelled_credit_lost_v1:
-    "Hello {{1}}, your {{2}} on {{3}} is cancelled. It was too close to the visit, so the visit credit it used is gone.",
+    "Hello {{1}}, your {{2}} on {{3}} is cancelled. It was too close to the visit, so the free service visit it used is gone.",
   // Cancelled in time, but the credit's grant has since expired or been withdrawn.
   visit_cancelled_credit_gone_v1:
-    "Hello {{1}}, your {{2}} on {{3}} is cancelled. The visit credit it used has expired, so it cannot come back.",
+    "Hello {{1}}, your {{2}} on {{3}} is cancelled. The free service visit it used has expired, so it cannot come back.",
   // To someone on a pincode's waitlist, {{2}} the area ops named, else "pincode 400050"; only one who asked for the
   // launch alert is promised it.
   waitlist_listed_v1: "Hello {{1}}, you are on our list for {{2}}. We do not come there yet.",

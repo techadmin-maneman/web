@@ -61,7 +61,7 @@ function post(app: ReturnType<typeof appFor>, path: string, body: unknown) {
 }
 
 async function askForCode(app: ReturnType<typeof appFor>, mobile: string) {
-  const res = await post(app, "/api/auth/otp", { mobile });
+  const res = await post(app, "/api/auth/otp", { mobile, turnstile_token: "token" });
   return { status: res.status, challengeId: (await res.json<{ challenge_id?: string }>()).challenge_id ?? "" };
 }
 

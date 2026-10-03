@@ -116,6 +116,7 @@ With self-serve booking off, a consultation booked on the site is a request: the
 **Provisioning** (RB 7, 11, 11a, 11b, 11c, 12 and 13):
 
 - [ ] DNS and Access for `app.maneman.in`, `ops.maneman.in` and `tech.maneman.in`, with `mm-ci-production` on each (RB 11, points 1 and 2); `ACCESS_OPS_AUD` for the ops console (RB 11, point 3).
+- [ ] Turnstile for the client app's login: add `app.maneman.in` to the hostnames of the `mm-production` widget (Cloudflare dashboard → Turnstile → mm-production → Hostname management). Until then no one can ask for a login code there (`docs/turnstile.md`).
 - [ ] FSM and Books: each one's client and its secrets, `setup-fsm.ts --check`, the providers `zoho`, the hosts and `ZOHO_BOOKS_ORG_ID`, and `BOOKS_REFUND_ACCOUNT_ID` of the account "Razorpay" (RB 11b, points 1 to 7).
 - [ ] FSM's two webhooks for production, the second for deletion, with a token you keep (item 31; RB 11b, point 6).
 - [ ] The rest of production's secrets, each before the release that needs it (RB 7): `OTP_PEPPER` (`openssl rand -hex 32`; the site's WhatsApp codes need it too, so without it the one visit and `/try` cannot prove a number), `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `EVOLUTION_WEBHOOK_TOKEN`, and `GOOGLE_MAPS_API_KEY` once production has its own restricted key (RB 13). A required secret left empty stops every request, so check `GET /api/health` after each.

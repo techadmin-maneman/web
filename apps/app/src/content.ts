@@ -54,6 +54,7 @@ export const login = {
       invalid: "Enter the ten-digit mobile number you booked with.",
       rate_limited: "Too many codes for this number today. Try again tomorrow, or message us.",
       busy: "We cannot send codes just now. Please try again in a little while.",
+      turnstile_failed: "We could not confirm you are a person. Please try again.",
       offline: "You are offline. Connect, then try again.",
       unknown: "Something went wrong on our side. Please try again.",
     },
@@ -87,6 +88,8 @@ export const login = {
     expired: "This code no longer works.",
     fresh: "Send a new code",
     failed: "That did not go through. Please try again.",
+    // PLACEHOLDER: the design draws no resend that is refused.
+    limited: "We cannot send another code just now. Use the last one we sent, or message us.",
   },
   help: {
     back: "Back",
@@ -156,6 +159,19 @@ export const messages = {
   lateRefund: (what: string, date: string) => `My refund for ${what.toLowerCase()} from ${date} has not arrived.`,
 } as const;
 
+/**
+ * PLACEHOLDER: the referral reward has this one name wherever the client reads it: "1 free service visit", "3 free
+ * service visits".
+ */
+const freeServiceVisits = (count: number): string =>
+  count === 1 ? "1 free service visit" : `${String(count)} free service visits`;
+
+/** Home's and Refer's tile: how many free service visits, and the day the soonest must be used by. */
+const freeVisitsTile = {
+  count: freeServiceVisits,
+  useBy: (date: string) => `Use by ${date}`,
+};
+
 /** The booking sheet's words for a paid visit still being written to FSM, which Home repeats while it waits. */
 const PAID_IN = "Your payment is in. We are booking your visit.";
 const TOLD_WHEN_BOOKED = "We will message you on WhatsApp when the visit is booked.";
@@ -169,11 +185,8 @@ export const home = {
     label: "Your consultation",
     free: "Free",
   },
-  /** Board B1's credit tile: "2 visit credits", with when the soonest expire. */
-  credits: {
-    count: (visits: number) => (visits === 1 ? "1 visit credit" : `${String(visits)} visit credits`),
-    expire: (date: string) => `Expire ${date}`,
-  },
+  /** Board B1's credit tile: "2 free service visits", and "Use by 3 Jan 2028". */
+  credits: freeVisitsTile,
   /**
    * Board B1's one prompt, and the invoice line beneath it (src/domain/home-prompt.ts). The replacement's line and
    * "See what that involves" are the board's own, and Visits' record words the line the same way. PLACEHOLDER:
@@ -329,7 +342,7 @@ export const visits = {
       },
       /** What the charge took, as the booking was sold to cost a no-show. */
       kept: (amount: string) => `Charged: we kept ${amount} of what you paid.`,
-      creditSpent: "Charged: the visit credit it used is spent.",
+      creditSpent: "Charged: the free service visit it used is spent.",
       dispute: "Dispute this charge",
       disputed: {
         open: "You disputed this charge. We are looking at it.",
@@ -411,13 +424,13 @@ export const booking = {
     // PLACEHOLDER: a free consultation has no payment; the design draws the credit board's button.
     free: "Free",
     confirm: "Confirm visit",
-    // Board C5: a service-visit credit covers it.
+    // Board C5: a free service visit covers it. PLACEHOLDER: the reward's name, in place of the board's.
     credit: {
       zero: "Rs. 0",
-      used: "1 visit credit used",
+      used: "1 free service visit used",
       remaining: (left: number) => `${String(left)} remaining`,
       /** The notice the hold is sold under, which ops set: 24 hours to begin with. */
-      note: (hours: number) => `Cancel inside ${String(hours)} hours and the credit is gone.`,
+      note: (hours: number) => `Cancel inside ${String(hours)} hours and the free service visit is gone.`,
     },
     /**
      * PLACEHOLDER: the design never asks. Ticked, it records the client's yes to WhatsApp about their
@@ -500,7 +513,7 @@ export const booking = {
   slow: `This is taking longer than usual. ${TOLD_WHEN_BOOKED}`,
   refunded: "We could not book that visit, so your payment is being refunded in full.",
   failedToStart: "That did not go through. Please try again.",
-  creditGone: "Your visit credit is already on another booking, so this visit is charged at the price below.",
+  creditGone: "Your free service visit is already on another booking, so this visit is charged at the price below.",
   close: "Close",
 } as const;
 
@@ -558,7 +571,7 @@ export const change = {
     // not reach. A late fee's line is board C5's (booking.lateFee).
     freeNothingPaid: "Free to move.",
     cancelInstead: "Cancel the visit instead",
-    creditCharged: "Charged. The credit is not returned and the new visit is paid separately.",
+    creditCharged: "Charged. The free service visit is not returned and the new visit is paid separately.",
   },
   cancel: {
     title: (visit: string) => `Cancel ${visit}`,
@@ -571,11 +584,13 @@ export const change = {
     charged: (amount: string) => `Charged. The ${amount} is not refunded.`,
     nothingPaid: "Nothing was paid, so nothing is charged.",
     accept: "Cancel and accept charge",
-    creditBack: "Your credit comes back.",
-    // Board C8, inside 24 hours, for a credit booking.
+    creditBack: "Your free service visit comes back.",
+    // Board C8, inside 24 hours, for a booking a free service visit covers. PLACEHOLDER: the reward's name in it.
     creditUsed: (left: string | null, expiry: string) =>
-      left === null ? "Your credit is used." : `Your credit is used. ${left} left, expiring ${expiry}.`,
-    acceptCredit: "Cancel and use credit",
+      left === null
+        ? "Your free service visit is used."
+        : `Your free service visit is used. ${left} left, to use by ${expiry}.`,
+    acceptCredit: "Cancel and use it",
     done: "Cancelled",
     doneLine: (visit: string) => `${visit} is cancelled.`,
     close: "Done",
@@ -620,11 +635,12 @@ function promiseOf(reward: Reward | null): string {
 export const refer = {
   title: "Refer",
   promise: promiseOf,
-  credit: { label: "Your credit", expire: (date: string) => `Expire ${date}` },
+  /** Board F1's credit tile, as Home's. */
+  credit: freeVisitsTile,
   // PLACEHOLDER: the board draws no line for the credits of the invite a client came with while ops review them.
   inviteCredits: {
-    checking: "The service visits from the invite you came with are being checked. We will message you.",
-    refused: "We could not give the service visits from the invite you came with. Message us to know why.",
+    checking: "The free service visits from the invite you came with are being checked. We will message you.",
+    refused: "We could not give the free service visits from the invite you came with. Message us to know why.",
   },
   noOther: "No other discount applies.",
   share: "Share an invite",
@@ -773,13 +789,14 @@ export const payments = {
     fact: (code: string, off: string | null) => (off === null ? code : `${code}: ${off} off`),
   },
   /**
-   * The service-visit credits among the payments (LIFE-14). Board E1 draws a visit a credit covered: "Service
-   * visit · 25 Jul · visit credit · Covered by credit · Rs. 0 · 1 credit used". PLACEHOLDER: every other line.
+   * The free service visits among the payments (LIFE-14). Board E1 draws a visit one covered: "Service visit ·
+   * 25 Jul · visit credit · Covered by credit · Rs. 0 · 1 credit used". PLACEHOLDER: all of it, in the reward's
+   * one name, which the row's name or meta says, so its status and count need not.
    */
   credits: {
-    title: "Visit credits",
+    title: "Free service visits",
     meta: {
-      used: "visit credit",
+      used: "free service visit",
       lost: "cancelled late",
       returned: "cancelled in time",
       expired: "past their date",
@@ -787,22 +804,29 @@ export const payments = {
       corrected: "corrected by us",
       added: "added",
     },
-    from: { referral: "a friend you invited was fitted", ops: "from us", import: "carried over" },
+    /** Where visits added came from; an invite's by which side of it the client was. */
+    from: {
+      referrer: "your friend was fitted",
+      friend: "from your invite",
+      referral: "from an invite",
+      ops: "from us",
+      import: "carried over",
+    },
     status: {
-      used: "Covered by credit",
-      lost: "Credit lost",
-      returned: "Credit returned",
-      expired: "Credits expired",
-      withdrawn: "Credits withdrawn",
-      corrected: "Credits corrected",
-      added: "Credits added",
+      used: "Covered",
+      lost: "Not returned",
+      returned: "Returned",
+      expired: "Expired",
+      withdrawn: "Withdrawn",
+      corrected: "Corrected",
+      added: "Added",
     },
     count: (event: string, visits: number) => {
-      const credits = `${String(visits)} ${visits === 1 ? "credit" : "credits"}`;
-      if (event === "used") return `${credits} used`;
-      if (event === "lost") return `${credits} lost`;
-      if (event === "returned") return `${credits} back`;
-      return credits;
+      const counted = visits === 1 ? "1 visit" : `${String(visits)} visits`;
+      if (event === "used") return `${counted} used`;
+      if (event === "lost") return `${counted} lost`;
+      if (event === "returned") return `${counted} back`;
+      return counted;
     },
   },
   /** A payment's status, and a refund's. */

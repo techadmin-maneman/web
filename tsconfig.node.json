@@ -63,6 +63,7 @@
     "test/node/web-kit-api.test.ts",
     "packages/web-kit/api.ts",
     "packages/web-kit/small-jpeg.ts",
+    "packages/web-kit/turnstile.ts",
     "test/node/static-server.test.ts",
     "scripts/seed-local.ts",
     "scripts/fidelity.ts",

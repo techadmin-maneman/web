@@ -8,6 +8,7 @@ import {
   creditAmount,
   creditMeta,
   creditStatus,
+  creditWhat,
   documentsOf,
   entryAmount,
   entryBeneath,
@@ -101,6 +102,7 @@ const credit = (overrides: Partial<CreditLine>): CreditLine => ({
   visits: -1,
   visit: { id: "v", date: "2030-09-19", type: "service" },
   source: null,
+  referral_side: null,
   no_show: null,
   ...overrides,
 });
@@ -134,27 +136,37 @@ describe("a visit's payment the client was not home for", () => {
 });
 
 describe("the credits among the payments", () => {
-  it("say a visit a credit covered as the board does, with Rs. 0 and the credit used", () => {
+  it("say a visit a free service visit covered, with Rs. 0 and the visit used, naming the reward once", () => {
     const line = credit({});
-    expect(creditMeta(line, 2030)).toBe("19 Sep · visit credit");
-    expect(creditStatus(line)).toBe("Covered by credit");
-    expect(creditAmount(line)).toEqual({ amount: "Rs. 0", count: "1 credit used" });
+    expect(creditMeta(line, 2030)).toBe("19 Sep · free service visit");
+    expect(creditStatus(line)).toBe("Covered");
+    expect(creditAmount(line)).toEqual({ amount: "Rs. 0", count: "1 visit used" });
   });
 
-  it("say a credit is lost on a late cancel or a charged no-show, and back after a cancel in time", () => {
-    expect(creditStatus(credit({ event: "lost" }))).toBe("Credit lost");
+  it("say a free service visit is lost on a late cancel or a charged no-show, and back after a cancel in time", () => {
+    expect(creditStatus(credit({ event: "lost" }))).toBe("Not returned");
     expect(creditMeta(credit({ event: "lost", no_show: noShow("charged") }), 2030)).toBe(
       "19 Sep · not home, we waited 16 min",
     );
-    expect(creditStatus(credit({ event: "returned", visits: 1 }))).toBe("Credit returned");
-    expect(creditAmount(credit({ event: "returned", visits: 1 }))).toEqual({ amount: "Rs. 0", count: "1 credit back" });
+    expect(creditStatus(credit({ event: "returned", visits: 1 }))).toBe("Returned");
+    expect(creditAmount(credit({ event: "returned", visits: 1 }))).toEqual({ amount: "Rs. 0", count: "1 visit back" });
   });
 
-  it("say where credits added came from, and how many", () => {
-    const added = credit({ event: "added", visits: 3, visit: null, source: "referral" });
-    expect(creditMeta(added, 2030)).toBe("19 Sep · a friend you invited was fitted");
-    expect(creditStatus(added)).toBe("Credits added");
-    expect(creditAmount(added)).toEqual({ amount: null, count: "3 credits" });
+  it("say where free service visits added came from, and how many", () => {
+    const added = credit({ event: "added", visits: 3, visit: null, source: "ops" });
+    expect(creditWhat(added)).toBe("Free service visits");
+    expect(creditMeta(added, 2030)).toBe("19 Sep · from us");
+    expect(creditStatus(added)).toBe("Added");
+    expect(creditAmount(added)).toEqual({ amount: null, count: "3 visits" });
+  });
+
+  // MON-36: an invited friend read that "a friend you invited was fitted", which was the referrer's line.
+  it("say an invite's visits by which side of it the client was", () => {
+    const fromInvite = (side: CreditLine["referral_side"]) =>
+      creditMeta(credit({ event: "added", visits: 3, visit: null, source: "referral", referral_side: side }), 2030);
+    expect(fromInvite("referrer")).toBe("19 Sep · your friend was fitted");
+    expect(fromInvite("friend")).toBe("19 Sep · from your invite");
+    expect(fromInvite(null)).toBe("19 Sep · from an invite");
   });
 
   it("are listed among the payments by date, newest first", () => {

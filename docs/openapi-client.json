@@ -251,10 +251,16 @@
             "type": "string",
             "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
             "example": "98100 00000"
+          },
+          "turnstile_token": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
           }
         },
         "required": [
-          "mobile"
+          "mobile",
+          "turnstile_token"
         ],
         "additionalProperties": false
       },
@@ -2734,6 +2740,21 @@
             ],
             "description": "Where credits added came from; null for any other entry."
           },
+          "referral_side": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "referrer",
+                  "friend"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For credits an invite added: referrer, for a friend this client invited being fitted; friend, for this client's own fit through an invite. Null for any other entry."
+          },
           "no_show": {
             "anyOf": [
               {
@@ -2752,6 +2773,7 @@
           "visits",
           "visit",
           "source",
+          "referral_side",
           "no_show"
         ],
         "additionalProperties": false
@@ -4143,6 +4165,16 @@
               }
             }
           },
+          "403": {
+            "description": "turnstile_failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "429": {
             "description": "rate_limited: too many codes for this number today, or from this address this hour",
             "content": {
@@ -4154,7 +4186,7 @@
             }
           },
           "503": {
-            "description": "busy: today's ceiling on codes is reached",
+            "description": "busy: today's ceiling on codes is reached; unavailable: Turnstile could not be reached",
             "content": {
               "application/json": {
                 "schema": {
@@ -4201,7 +4233,7 @@
             }
           },
           "429": {
-            "description": "too_early, or rate_limited",
+            "description": "too_early; or rate_limited: this challenge has sent its 3 codes, or too many codes for this number today, or from this address this hour",
             "content": {
               "application/json": {
                 "schema": {
@@ -4268,7 +4300,7 @@
             }
           },
           "429": {
-            "description": "too_early, or rate_limited",
+            "description": "too_early; or rate_limited: this challenge has sent its 3 codes, or too many codes for this number today, or from this address this hour",
             "content": {
               "application/json": {
                 "schema": {
