@@ -113,7 +113,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such client, or the client has been erased
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
 
 ```json
 {
@@ -133,7 +133,7 @@ Request body:
 }
 ```
 
-**200**: The clients it matches, by name
+**200**: The clients it matches in the caller's cities, by name
 
 ```json
 {
@@ -161,7 +161,7 @@ The client's record: who they are, their address, their visits, their payments, 
 }
 ```
 
-**404**: not_found: no such client, or the client has been erased
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
 
 ```json
 {
@@ -181,7 +181,7 @@ Which photographs the client has, by visit, newest first. No image is served her
 }
 ```
 
-**404**: not_found: no such client, or the client has been erased
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
 
 ```json
 {
@@ -201,7 +201,7 @@ Open the client's photographs: one audit entry, written before any image is serv
 }
 ```
 
-**404**: not_found: no such client, or the client has been erased
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
 
 ```json
 {
@@ -251,7 +251,7 @@ The client's consents and any deletion request. Ops read them and never grant on
 }
 ```
 
-**404**: not_found: no such client, or the client has been erased
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
 
 ```json
 {
@@ -782,7 +782,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such client, or the client has been erased
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
 
 ```json
 {
@@ -834,7 +834,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such client, or the client has been erased
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
 
 ```json
 {
@@ -862,7 +862,7 @@ The client's hair profile, and every version of it
 }
 ```
 
-**404**: not_found: no such client, or the client has been erased
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
 
 ```json
 {
@@ -906,7 +906,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no such client, or the client has been erased
+**404**: not_found: no such client, or the client has been erased or is outside the caller's cities
 
 ```json
 {
@@ -950,7 +950,7 @@ Request body:
 }
 ```
 
-**404**: not_found: nobody by that ID, or erased already
+**404**: not_found: nobody by that ID in the caller's cities, or erased already
 
 ```json
 {
@@ -968,7 +968,7 @@ Request body:
 
 ### GET /api/number-changes
 
-Number changes waiting for ops: both numbers proven by code
+Number changes waiting for ops in the caller's cities: both numbers proven by code
 
 **200**: Oldest first
 
@@ -1069,7 +1069,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no change waiting for ops by that ID
+**404**: not_found: no change waiting for ops by that ID in the caller's cities
 
 ```json
 {
@@ -1087,7 +1087,7 @@ Request body:
 
 ### GET /api/deletion-requests
 
-Deletion requests waiting for ops
+Deletion requests waiting for ops in the caller's cities
 
 **200**: Oldest first
 
@@ -1184,7 +1184,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no request waiting for ops by that ID
+**404**: not_found: no request waiting for ops by that ID in the caller's cities
 
 ```json
 {
@@ -1352,7 +1352,7 @@ Request body:
 
 ### GET /api/grievances
 
-Open grievances, oldest first
+Open grievances in the caller's cities, oldest first
 
 **200**: Open grievances
 
@@ -1443,7 +1443,7 @@ Request body:
 }
 ```
 
-**404**: not_found: no open grievance by that ID
+**404**: not_found: no open grievance by that ID in the caller's cities
 
 ```json
 {
@@ -1966,7 +1966,7 @@ A client's pieces: code, base, fitted date, supplier lot, replacement due and an
 }
 ```
 
-**404**: not_found: no such client
+**404**: not_found: no such client, or the client is outside the caller's cities
 
 ```json
 {

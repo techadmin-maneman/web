@@ -14,14 +14,16 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../http/context.ts";
 import { memberOfStaffOf, staffOf } from "../http/audit.ts";
 import { saveClientAddress, suggestBuildings } from "../http/address-save.ts";
-import { currentAddress, liveContact } from "../domain/profile.ts";
+import { currentAddress } from "../domain/profile.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { AddressSaveSchema, addressOf, SuggestionsSchema } from "./client-profile.ts";
-import { ClientAddressSchema, clientAddressOf } from "./ops-clients.ts";
+import { ClientAddressSchema, clientAddressOf, clientInReach } from "./ops-clients.ts";
 
 const clientId = z.object({ id: z.uuid() });
-const unknownClient = errorResponse("not_found: no such client, or the client has been erased");
+const unknownClient = errorResponse(
+  "not_found: no such client, or the client has been erased or is outside the caller's cities",
+);
 
 const suggestionsRoute = createRoute({
   method: "post",
@@ -73,7 +75,7 @@ export function registerOpsClientAddress(app: App): void {
   app.openapi(suggestionsRoute, async (c) => {
     const { id } = c.req.valid("param");
     const { q, session } = c.req.valid("json");
-    if ((await liveContact(c.env.DB, id)) === null) return c.json(errorBody("not_found", c.var.requestId), 404);
+    if ((await clientInReach(c, id)) === null) return c.json(errorBody("not_found", c.var.requestId), 404);
 
     // Each member of staff has a day's suggestions of their own, as each client has.
     const answer = await suggestBuildings(c, { limitScope: "ops_address_suggest", asker: staffOf(c).id, q, session });
@@ -88,7 +90,7 @@ export function registerOpsClientAddress(app: App): void {
     const db = c.env.DB;
     const staff = memberOfStaffOf(c);
     if (staff === null) return c.json(errorBody("access_required", requestId), 403);
-    if ((await liveContact(db, id)) === null) return c.json(errorBody("not_found", requestId), 404);
+    if ((await clientInReach(c, id)) === null) return c.json(errorBody("not_found", requestId), 404);
 
     await saveClientAddress(c, {
       personId: id,

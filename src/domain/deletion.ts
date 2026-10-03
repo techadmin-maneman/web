@@ -4,11 +4,13 @@
 // Either way the client is told on WhatsApp, as their app promises.
 
 import type { Logger } from "../log.ts";
+import type { PlacesReached } from "../policy/access.ts";
 import { DELETION_DECIDED_WITHIN_DAYS, erasureRefusal, type ErasureRefusal } from "../policy/account-deletion.ts";
 import { DECISION_SHOWN_DAYS } from "../policy/decision-reasons.ts";
 import type { OutboundMessage } from "../providers/messaging.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
 import { eraseAndQueue, erasureBlockers, type ErasureBlockers, type ErasureQueueEnv } from "./erasure.ts";
+import { reachBinding, withinReach } from "./places.ts";
 import { liveContact } from "./profile.ts";
 import type { Composed } from "./visit-messages.ts";
 import { DAY_MS } from "../lib/durations.ts";
@@ -57,18 +59,21 @@ export async function openDeletion(db: D1Database, personId: string): Promise<De
 }
 
 /**
- * The requests waiting for ops, oldest first, with the number ops will reach the client on. A client erased with a
- * request still open, before an erasure closed it, waits for nothing.
+ * The requests waiting for ops in the places reached, oldest first, with the number ops will reach the client on. A
+ * client erased with a request still open, before an erasure closed it, waits for nothing.
  */
 export async function deletionsWaiting(
   db: D1Database,
+  reached: PlacesReached,
 ): Promise<{ id: string; personId: string; name: string; mobileE164: string; createdAt: string }[]> {
   const rows = await db
     .prepare(
       `SELECT d.id, d.person_id, p.name, p.mobile_e164, d.created_at
        FROM deletion_requests d JOIN people p ON p.id = d.person_id
-       WHERE d.state = 'requested' AND p.erased_at IS NULL ORDER BY d.created_at`,
+       WHERE d.state = 'requested' AND p.erased_at IS NULL AND ${withinReach("deletion_request", "d", "?1")}
+       ORDER BY d.created_at`,
     )
+    .bind(reachBinding(reached))
     .all<{ id: string; person_id: string; name: string; mobile_e164: string; created_at: string }>();
   return rows.results.map((row) => ({
     id: row.id,

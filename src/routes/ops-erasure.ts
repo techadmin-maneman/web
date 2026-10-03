@@ -1,8 +1,8 @@
 // POST /api/clients/:id/erasure: ops erase a client the day they ask, from the client's page
 // (docs/decisions/0019-erasure.md). A request the client made in their app is decided in Deletion requests instead
-// (src/routes/ops-profile.ts); both erase through eraseAndQueue, audited under the member of staff who did it.
-// Refused while the client has a visit booked or a payment held, unless ops say they will settle both by hand today
-// (docs/decisions/0066-erasure-all-or-nothing.md).
+// (src/routes/ops-profile.ts); both erase through eraseAndQueue, audited under the member of staff who did it, and
+// keep to the caller's cities. Refused while the client has a visit booked or a payment held, unless ops say they will
+// settle both by hand today (docs/decisions/0066-erasure-all-or-nothing.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import { fieldRecord } from "../config/field-record.ts";
@@ -19,6 +19,7 @@ import { memberOfStaffOf } from "../http/audit.ts";
 import type { App } from "../http/context.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
+import { withinRouteReach } from "../http/staff-access.ts";
 import { erasureRefusal, LIVE_VISIT_STATUSES, type ErasureRefusal } from "../policy/account-deletion.ts";
 
 /** Why an erasure waits, and what ops must settle first: the visits to cancel and the payments to refund. */
@@ -89,7 +90,7 @@ export const erasureRoute = createRoute({
   responses: {
     200: { description: "Erased", ...json(ErasedSchema) },
     403: errorResponse("access_required: a service token, which names no member of staff"),
-    404: errorResponse("not_found: nobody by that ID, or erased already"),
+    404: errorResponse("not_found: nobody by that ID in the caller's cities, or erased already"),
     409: {
       description: "visit_booked or payment_held: settle what it names first, or say it will be settled today",
       ...json(ErasureRefusedSchema),
@@ -116,7 +117,8 @@ export function registerOpsErasure(app: App): void {
     const { requestId, log } = c.var;
     const staff = memberOfStaffOf(c);
     if (staff === null) return c.json(errorBody("access_required", requestId), 403);
-    if (!(await stillToErase(c.env.DB, id))) return c.json(errorBody("not_found", requestId), 404);
+    const erasable = (await stillToErase(c.env.DB, id)) && (await withinRouteReach(c, "client", id));
+    if (!erasable) return c.json(errorBody("not_found", requestId), 404);
 
     const blockers = await erasureBlockers(c.env.DB, id);
     const refusal = erasureRefusal(blockers);

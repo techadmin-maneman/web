@@ -8,6 +8,7 @@ import type { Providers } from "../../src/config/environments.ts";
 import type { Dependencies } from "../../src/dependencies.ts";
 import { secretsMatch } from "../../src/lib/hash.ts";
 import { createLogger } from "../../src/log.ts";
+import type { PlacesReached } from "../../src/policy/access.ts";
 import { STUB_IDENTITY } from "../../src/providers/cloudflare-access.ts";
 import { CRON_JOBS, runCronJobs } from "../../src/scheduled/cron.ts";
 import {
@@ -25,6 +26,7 @@ import { insertJob, syntheticJpeg, syntheticPng } from "./tryon-fixtures.ts";
 
 const MOBILE_E164 = "+919810000001";
 const STAFF = STUB_IDENTITY.kind === "staff" ? STUB_IDENTITY.email : "";
+const EVERYWHERE: PlacesReached = { kind: "everywhere" };
 
 /** A person with a booking, as Phase 1's form left one, and an e-mail address. */
 async function book(): Promise<string> {
@@ -289,7 +291,7 @@ describe("a client erased with a deletion request open", () => {
 
     const closed = await env.DB.prepare("SELECT state, decided_at, decided_by FROM deletion_requests").first();
     expect(closed).toEqual({ state: "done", decided_at: NOW.toISOString(), decided_by: STAFF });
-    expect(await deletionsWaiting(env.DB)).toEqual([]);
+    expect(await deletionsWaiting(env.DB, EVERYWHERE)).toEqual([]);
     expect(await alertsNow()).toBe(0);
   });
 
@@ -298,7 +300,7 @@ describe("a client erased with a deletion request open", () => {
     await openRequest(personId);
     await erasePerson(env, personId, NOW, createLogger());
 
-    expect(await deletionsWaiting(env.DB)).toEqual([]);
+    expect(await deletionsWaiting(env.DB, EVERYWHERE)).toEqual([]);
     expect(await alertsNow()).toBe(0);
   });
 });
