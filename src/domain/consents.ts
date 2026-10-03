@@ -8,9 +8,10 @@ import type { ConsentSource } from "../policy/consents.ts";
  * Whether a write adds a row:
  * - "always": an agreement given just now, on the page that asked for it;
  * - "if_changed": unless the person's latest row for the purpose gives the same answer under the same notice;
- * - "if_undecided": only while the person has no row for the purpose, so a decision they made stands.
+ * - "if_undecided": only while the person has no row for the purpose, so a decision they made stands;
+ * - "if_granted": only while the person's latest row for the purpose is a yes, so a withdrawal is recorded once.
  */
-export type ConsentRule = "always" | "if_changed" | "if_undecided";
+export type ConsentRule = "always" | "if_changed" | "if_undecided" | "if_granted";
 
 /** Whose consent it is: by ID, or by number where the same batch writes the person. */
 export type ConsentPerson = { readonly id: string } | { readonly mobileE164: string };
@@ -51,6 +52,10 @@ function ruleCondition(rule: ConsentRule, person: string): string {
   if (rule === "always") return "";
   if (rule === "if_undecided") {
     return `WHERE NOT EXISTS (SELECT 1 FROM consents WHERE person_id = ${person} AND purpose = ?3)`;
+  }
+  if (rule === "if_granted") {
+    return `WHERE (SELECT granted FROM consents WHERE person_id = ${person} AND purpose = ?3
+                   ORDER BY created_at DESC, rowid DESC LIMIT 1) = 1`;
   }
   return `WHERE NOT EXISTS (
          SELECT 1 FROM (SELECT granted, notice_version FROM consents WHERE person_id = ${person} AND purpose = ?3

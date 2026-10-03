@@ -183,6 +183,19 @@ const HeldBookingSchema = z
     refusal: z.union([z.string(), z.null()]).openapi({ description: "FSM's latest refusal, as the log gives it." }),
     retries_end: z.iso.datetime().openapi({ description: "When the hourly tries end, or ended, as ops set them." }),
     retrying: z.boolean().openapi({ description: "Still tried every hour: inside its tries, and its visit to come." }),
+    discount_code: z
+      .union([
+        z
+          .object({
+            code: z.string(),
+            amount_off: z
+              .union([z.number().int(), z.null()])
+              .openapi({ description: "In paise before GST; null until the visit's price is known." }),
+          })
+          .strict(),
+        z.null(),
+      ])
+      .openapi({ description: "The discount code the client booked with (docs/decisions/0108-discount-codes.md)." }),
   })
   .strict()
   .openapi("HeldBooking");
@@ -200,6 +213,10 @@ const heldBookingOf = (booking: HeldBooking) => ({
   refusal: booking.refusal,
   retries_end: booking.retriesEnd,
   retrying: booking.retrying,
+  discount_code:
+    booking.discountCode === null
+      ? null
+      : { code: booking.discountCode.code, amount_off: booking.discountCode.amountOff },
 });
 
 const ClientRecordSchema = z

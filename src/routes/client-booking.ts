@@ -37,6 +37,7 @@
 // (docs/decisions/0085-services-ops-can-edit.md). A move keeps its visit's own.
 
 import { createRoute, z } from "@hono/zod-openapi";
+import { shortDate } from "@maneman/web-kit/dates";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
 import { PRICE_TIER } from "../config/ops-settings.ts";
@@ -445,9 +446,10 @@ export async function startCheckout(c: Context<AppEnv>, holdId: string, personId
   }
   const row = await checkoutHold(c.env.DB, holdId);
   if (row === null) return null;
+  // "Mane Man Natural · Sat 3 Oct", or "Moving your visit to Sat 3 Oct".
+  const day = shortDate(row.date);
   const name = row.service_name ?? VISIT_TYPE_NAMES[row.type];
-  const description =
-    row.move_kind === "move" ? `Moving your ${name.toLowerCase()} to ${row.date}` : `${name}, ${row.date}`;
+  const description = row.move_kind === "move" ? `Moving your visit to ${day}` : `${name} · ${day}`;
   return {
     hold_id: holdId,
     checkout: {
