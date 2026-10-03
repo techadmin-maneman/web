@@ -3,7 +3,7 @@
 import { Button } from "@maneman/ui/Button";
 import { Mark } from "@maneman/ui/Mark";
 import { mobileDigits } from "@maneman/web-kit/mobile";
-import { useState } from "react";
+import { useState, type RefCallback } from "react";
 import { login } from "../content.ts";
 import styles from "./login.module.css";
 
@@ -13,10 +13,12 @@ interface Props {
   readonly error: string | null;
   /** The session ended while the app was open, so the client is told why they are here. */
   readonly ended: boolean;
+  /** Where Turnstile renders: invisible unless Cloudflare needs the client to act. */
+  readonly turnstileBox: RefCallback<HTMLDivElement>;
   readonly onSubmit: (digits: string) => void;
 }
 
-export function MobileScreen({ initial, busy, error, ended, onSubmit }: Props) {
+export function MobileScreen({ initial, busy, error, ended, turnstileBox, onSubmit }: Props) {
   const copy = login.mobile;
   const [typed, setTyped] = useState(initial);
   const [invalid, setInvalid] = useState(false);
@@ -66,6 +68,7 @@ export function MobileScreen({ initial, busy, error, ended, onSubmit }: Props) {
               {shown}
             </p>
           )}
+          <div ref={turnstileBox} className={styles.turnstile} />
           <div className={styles.foot}>
             <Button variant="light" size="action" className={styles.primary} type="submit" disabled={busy} busy={busy}>
               {copy.send}

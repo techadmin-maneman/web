@@ -22,12 +22,17 @@ const POLICIES = [
 describe("the client app's policy", () => {
   const policy = contentSecurityPolicy(CLIENT_APP_POLICY);
 
-  it("loads Checkout and the risk-detection script it pulls in", () => {
+  it("loads Checkout and the risk-detection script it pulls in, and Turnstile for the login", () => {
     expect(sourcesOf(policy, "script-src")).toEqual([
       "'self'",
       "https://checkout.razorpay.com",
       "https://cdn.razorpay.com",
+      "https://challenges.cloudflare.com",
     ]);
+  });
+
+  it("frames Turnstile's check, which asking for a login code needs", () => {
+    expect(sourcesOf(policy, "frame-src")).toContain("https://challenges.cloudflare.com");
   });
 
   it("lets Checkout send its logs and open its payment frame", () => {

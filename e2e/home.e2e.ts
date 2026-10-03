@@ -1,7 +1,7 @@
 // The home page and the chrome every page shares (docs/feature-inventory.md, items 1–21).
 
 import type { Page } from "@playwright/test";
-import { expect, test } from "./support.ts";
+import { expect, test, visit } from "./support.ts";
 
 const narrow = (width: number | undefined) => (width ?? 0) <= 760;
 
@@ -383,10 +383,12 @@ test.describe("other pages", () => {
     await page.goto("/privacy");
     await expect(page.locator("article h2")).toHaveCount(6);
     await expect(page.getByRole("heading", { name: "Your rights" })).toBeVisible();
-    await expect(page.locator("article a", { hasText: "+91 90079 73247" })).toHaveAttribute(
-      "href",
-      "https://wa.me/919007973247",
-    );
+    // Twice: to withdraw an agreement, and to ask for erasure.
+    const privacyLinks = page.locator("article a", { hasText: "+91 90079 73247" });
+    await expect(privacyLinks).toHaveCount(2);
+    for (const link of await privacyLinks.all()) {
+      await expect(link).toHaveAttribute("href", "https://wa.me/919007973247");
+    }
     await expect(page.locator(".label", { hasText: "Placeholder" })).toHaveCount(0);
     await page.goto("/terms");
     await expect(page.locator("article h2")).toHaveCount(8);
@@ -408,8 +410,40 @@ test.describe("other pages", () => {
     await expect(page.locator('footer a[href^="tel:"]')).toHaveCount(0);
   });
 
+  // PS-29: a reminder or the launch alert could be stopped only from the app.
+  test("/stop stops the messages its link names in one tap, and forgets the link", async ({ page }) => {
+    const sent: unknown[] = [];
+    await page.route("**/api/stop", (route) => {
+      sent.push(route.request().postDataJSON());
+      return route.fulfill({ json: { purpose: "whatsapp_launches" } });
+    });
+    await visit(page, "/stop#the-token");
+    await page.getByRole("button", { name: "Stop them" }).click();
+
+    await expect(page.getByRole("heading", { name: "Done." })).toBeFocused();
+    await expect(page.getByText("We will no longer message you when we come to a new area.")).toBeVisible();
+    expect(sent).toEqual([{ token: "the-token" }]);
+    expect(new URL(page.url()).hash).toBe("");
+  });
+
+  test("/stop says a refused or missing link no longer works, and how else to stop", async ({ page }) => {
+    await page.route("**/api/stop", (route) =>
+      route.fulfill({ status: 404, json: { error: { code: "not_found", request_id: "r" } } }),
+    );
+    await visit(page, "/stop#forged");
+    await page.getByRole("button", { name: "Stop them" }).click();
+    await expect(page.getByRole("heading", { name: "This link no longer works." })).toBeVisible();
+
+    await visit(page, "/stop");
+    await expect(page.getByRole("heading", { name: "This link no longer works." })).toBeVisible();
+    await expect(page.getByRole("link", { name: "+91 90079 73247" })).toHaveAttribute(
+      "href",
+      "https://wa.me/919007973247",
+    );
+  });
+
   test("every page says it is mm-site, and is not indexed outside production", async ({ page }) => {
-    for (const path of ["/", "/try", "/book", "/privacy", "/terms"]) {
+    for (const path of ["/", "/try", "/book", "/privacy", "/terms", "/stop"]) {
       await page.goto(path);
       await expect(page.locator('meta[name="mm-worker"]')).toHaveAttribute("content", "mm-site");
       await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex, nofollow");

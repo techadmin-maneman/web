@@ -192,7 +192,7 @@ describe("the no-show ruling (LIFE-07)", () => {
 
   // A ruling that gives the credit back finds its grant expired or clawed back since, and nothing comes back: the
   // message says what the ledger holds, not what the ruling meant to give (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
-  const CREDIT_GONE = "the visit credit it used is no longer valid, so it cannot come back.";
+  const CREDIT_GONE = "the free service visit it used is no longer valid, so it cannot come back.";
 
   it("says a charge ruled before charges were recorded kept what was paid", async () => {
     expect((await send(await ruled("charged", "payment"))).text).toBe(
@@ -204,7 +204,7 @@ describe("the no-show ruling (LIFE-07)", () => {
     const message = await ruled("charged", "credit");
     await recorded("visit", 0, 0);
     expect((await send(message)).text).toBe(
-      `${MISSED} The visit credit it used is spent as the no-show charge. ${DISPUTE}`,
+      `${MISSED} The free service visit it used is spent as the no-show charge. ${DISPUTE}`,
     );
   });
 
@@ -237,7 +237,9 @@ describe("the no-show ruling (LIFE-07)", () => {
     const message = await ruled("charged", "credit");
     await recorded("nothing", 0, 0);
     await creditRestored();
-    expect((await send(message)).text).toBe(`${MISSED} We are not charging you for it, and your visit credit is back.`);
+    expect((await send(message)).text).toBe(
+      `${MISSED} We are not charging you for it, and your free service visit is back.`,
+    );
   });
 
   it("says the credit cannot come back, where a charge of nothing found nothing to give it back to", async () => {
@@ -262,7 +264,9 @@ describe("the no-show ruling (LIFE-07)", () => {
   it("says a waiver of a credit visit gives the credit back", async () => {
     const message = await ruled("waived", "credit");
     await creditRestored();
-    expect((await send(message)).text).toBe(`${MISSED} We are not charging you for it, and your visit credit is back.`);
+    expect((await send(message)).text).toBe(
+      `${MISSED} We are not charging you for it, and your free service visit is back.`,
+    );
   });
 
   it("says the credit cannot come back, where a waiver found nothing to give it back to", async () => {
@@ -283,7 +287,7 @@ describe("the no-show ruling (LIFE-07)", () => {
   it("says a waiver of a credit visit kept the credit where the ruling kept it", async () => {
     const credit = await ruled("waived", "credit");
     await env.DB.prepare("UPDATE no_show_cases SET waiver_payment = 'refunded', waiver_credit = 'spent'").run();
-    expect((await send(credit)).text).not.toContain("your visit credit is back");
+    expect((await send(credit)).text).not.toContain("your free service visit is back");
   });
 
   it("says a waiver of a visit nothing was paid for charges nothing", async () => {
@@ -332,7 +336,9 @@ describe("the no-show ruling (LIFE-07)", () => {
     it("says the credit is back, where the charge spent it", async () => {
       const message = await disputed("credit", "refunded");
       await creditRestored();
-      expect((await send(message)).text).toBe(`${LOOKED_AT}, and we are refunding it: your visit credit is back.`);
+      expect((await send(message)).text).toBe(
+        `${LOOKED_AT}, and we are refunding it: your free service visit is back.`,
+      );
     });
 
     it("says the credit cannot come back, where the refund found nothing to give it back to", async () => {

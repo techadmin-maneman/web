@@ -998,7 +998,7 @@ Made by `0054_policies_in_the_console.sql`.
 
 Each one-time code sent, as a hash, with its sends and attempts (ADR 0030, ADR 0052).
 
-Made by `0007_login.sql`; changed by `0008_profile.sql`, `0027_pieces_and_zones.sql`, `0037_cron_indexes.sql`.
+Made by `0007_login.sql`; changed by `0008_profile.sql`, `0027_pieces_and_zones.sql`, `0037_cron_indexes.sql`, `0079_challenge_number.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1017,6 +1017,7 @@ Made by `0007_login.sql`; changed by `0008_profile.sql`, `0027_pieces_and_zones.
 | `number_change_id` | TEXT | yes |  | → `number_change_requests.id` |
 | `technician_login` | INTEGER | no | `0` |  |
 | `technician_id` | TEXT | yes |  | → `technicians.id` |
+| `mobile_hash` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -1074,7 +1075,7 @@ Made by `0049_consumables_and_stock.sql`.
 
 The Razorpay payment link a consultation and fit in one visit is paid by once the client is fitted: one a visit, the product and its price, when Razorpay made and texted it, and the payment that paid it (ADR 0105).
 
-Made by `0061_one_visit.sql`.
+Made by `0061_one_visit.sql`; changed by `0080_payment_link_references.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1092,9 +1093,14 @@ Made by `0061_one_visit.sql`.
 | `paid_at` | TEXT | yes |  |  |
 | `created_at` | TEXT | no |  |  |
 | `updated_at` | TEXT | no |  |  |
+| `reference` | TEXT | yes |  |  |
+| `reference_year` | INTEGER | yes |  |  |
+| `reference_number` | INTEGER | yes |  |  |
 
 Indexes:
 
+- `payment_links_reference`: unique on (`reference`)
+- `payment_links_reference_number`: unique on (`reference_year`, `reference_number`)
 - `payment_links_unpaid`: on (`created_at`), where `paid_at IS NULL`
 - `payment_links_unsent`: on (`created_at`), where `sent_at IS NULL AND refused_at IS NULL`
 - A `UNIQUE` constraint: unique on (`appointment_id`)
@@ -1458,7 +1464,7 @@ Indexes:
 
 A slot held while a client pays, at Checkout or by a payment link ops sent, and what became of it (ADR 0045, ADR 0068).
 
-Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`, `0058_held_bookings.sql`, `0061_one_visit.sql`, `0075_pay_by_link.sql`, `0078_consents_shown.sql`.
+Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`, `0058_held_bookings.sql`, `0061_one_visit.sql`, `0075_pay_by_link.sql`, `0078_consents_shown.sql`, `0080_payment_link_references.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1505,6 +1511,9 @@ Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_chan
 | `payment_link_url` | TEXT | yes |  |  |
 | `consents_shown` | TEXT | yes |  |  |
 | `consents_ip_hash` | TEXT | yes |  |  |
+| `reference` | TEXT | yes |  |  |
+| `reference_year` | INTEGER | yes |  |  |
+| `reference_number` | INTEGER | yes |  |  |
 
 Indexes:
 
@@ -1514,6 +1523,8 @@ Indexes:
 - `slot_holds_confirmed`: on (`queued_at`), where `state = 'held' AND confirmed_at IS NOT NULL`
 - `slot_holds_confirmed_by_person`: on (`person_id`), where `state = 'held' AND confirmed_at IS NOT NULL`
 - `slot_holds_held`: on (`expires_at`), where `state = 'held'`
+- `slot_holds_reference`: unique on (`reference`)
+- `slot_holds_reference_number`: unique on (`reference_year`, `reference_number`)
 - A `UNIQUE` constraint: unique on (`razorpay_order_id`)
 
 ## slot_times

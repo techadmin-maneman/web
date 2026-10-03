@@ -8,19 +8,21 @@
 // Every answer is the same whether or not the number has a booking, and takes
 // the same time: a number without one gets a challenge that sends nothing and
 // that no code opens, and a real code is sent after the response has gone.
+// Asking for a code needs Turnstile, which the app renders invisibly.
 
 import { createRoute, z, type RouteHandler } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
 import { findEligiblePerson, openChallenge, replaceCode, verifyCode } from "../domain/login.ts";
+import { mobileHashOf } from "../domain/number-codes.ts";
 import { createChallenge, type Challenge } from "../domain/one-time-codes.ts";
 import { liveContact } from "../domain/profile.ts";
 import { deviceLabel, openSession, revokeSession } from "../domain/sessions.ts";
 import { clearClientCookie, clientSessionOf, setClientCookie } from "../http/client-session.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
-import { codeGate, countCode, knownCode, mayAskForCode, sendCodeAfterResponse } from "../http/send-code.ts";
-import { visitorOf } from "../http/visitor.ts";
+import { countCode, knownCode, mayAskForCode, sendCodeAfterResponse } from "../http/send-code.ts";
+import { checkTurnstile, visitorOf } from "../http/visitor.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../lib/mobile.ts";
 import { MAX_SENDS_PER_CHALLENGE, newLoginCode, smsOfferedAt, whatsappResendAt } from "../policy/one-time-code.ts";
 import type { CodeChannel } from "../providers/codes.ts";
@@ -41,8 +43,11 @@ export const LoginChallengeSchema = z
   .strict()
   .openapi("LoginChallenge");
 
-const MobileSchema = z
-  .object({ mobile: z.string().regex(INDIAN_MOBILE_PATTERN).openapi({ example: "98100 00000" }) })
+const LoginRequestSchema = z
+  .object({
+    mobile: z.string().regex(INDIAN_MOBILE_PATTERN).openapi({ example: "98100 00000" }),
+    turnstile_token: z.string().min(1).max(2048),
+  })
   .strict()
   .openapi("LoginRequest");
 const ChallengeRequestSchema = z.object({ challenge_id: z.uuid() }).strict().openapi("LoginChallengeRequest");
@@ -72,14 +77,20 @@ export const loginRoute = createRoute({
   method: "post",
   path: "/api/auth/otp",
   summary: "Send a login code on WhatsApp. The answer is the same whether or not the number has a booking",
-  request: { body: { required: true, ...json(MobileSchema) } },
+  request: { body: { required: true, ...json(LoginRequestSchema) } },
   responses: {
     202: challengeAnswer,
     400: errorResponse("invalid_request"),
+    403: errorResponse("turnstile_failed"),
     429: errorResponse("rate_limited: too many codes for this number today, or from this address this hour"),
-    503: errorResponse("busy: today's ceiling on codes is reached"),
+    503: errorResponse("busy: today's ceiling on codes is reached; unavailable: Turnstile could not be reached"),
   },
 });
+
+/** Each code sent again counts against the number's day and the address's hour, as a first one does. */
+const SENT_AGAIN_REFUSED =
+  `too_early; or rate_limited: this challenge has sent its ${String(MAX_SENDS_PER_CHALLENGE)} codes, or too many ` +
+  "codes for this number today, or from this address this hour";
 
 export const resendRoute = createRoute({
   method: "post",
@@ -89,7 +100,7 @@ export const resendRoute = createRoute({
   responses: {
     202: challengeAnswer,
     410: errorResponse("code_expired: start again"),
-    429: errorResponse("too_early, or rate_limited"),
+    429: errorResponse(SENT_AGAIN_REFUSED),
     503: errorResponse("busy"),
   },
 });
@@ -103,7 +114,7 @@ export const smsRoute = createRoute({
     202: challengeAnswer,
     404: errorResponse("not_found: SMS is not available"),
     410: errorResponse("code_expired: start again"),
-    429: errorResponse("too_early, or rate_limited"),
+    429: errorResponse(SENT_AGAIN_REFUSED),
     503: errorResponse("busy"),
   },
 });
@@ -150,27 +161,33 @@ async function contactOf(
 
 const login: RouteHandler<typeof loginRoute, AppEnv> = async (c) => {
   const { requestId, deps, config } = c.var;
-  const { login: limits } = config.settings;
+  const { login: limits, ipHashSalt } = config.settings;
   const db = c.env.DB;
   const now = deps.now();
 
-  const mobileE164 = toE164(c.req.valid("json").mobile);
+  const body = c.req.valid("json");
+  const mobileE164 = toE164(body.mobile);
   if (mobileE164 === null) return c.json(errorBody("invalid_request", requestId, ["mobile"]), 400);
-
   const visitor = await visitorOf(c);
+  const turnstile = await checkTurnstile(c, body.turnstile_token, visitor);
+  if (turnstile === "rejected") return c.json(errorBody("turnstile_failed", requestId), 403);
+  if (turnstile === "unavailable") return c.json(errorBody("unavailable", requestId), 503);
+
   const person = await findEligiblePerson(db, mobileE164);
   const sendsTo = person?.mobileE164 ?? null;
   const name = person?.name ?? null;
-  const asked = await mayAskForCode(c, { surface: "login", mobileE164, ipHash: visitor.ipHash, now, name });
-  if (asked === "rate_limited") return c.json(errorBody("rate_limited", requestId), 429);
+  const mobileHash = await mobileHashOf(ipHashSalt, mobileE164);
+  const asked = await mayAskForCode(c, { surface: "login", mobileHash, ipHash: visitor.ipHash, now, name });
   if (asked === "busy") return c.json(errorBody("busy", requestId), 503);
+  if (asked !== "open") return c.json(errorBody("rate_limited", requestId), 429);
 
-  if (!(await countCode(c, sendsTo, name, visitor.ipHash, now))) return c.json(errorBody("busy", requestId), 503);
+  if (!(await countCode(c, "login", sendsTo, name, now))) return c.json(errorBody("busy", requestId), 503);
 
   const code = knownCode(limits, name) ?? newLoginCode();
   const challenge = await createChallenge(db, {
     holder: "person",
     holderId: person?.id ?? null,
+    mobileHash,
     code,
     pepper: limits.codePepper,
     now,
@@ -179,7 +196,10 @@ const login: RouteHandler<typeof loginRoute, AppEnv> = async (c) => {
   return c.json(challengeBody(c, challenge, now), 202);
 };
 
-/** A fresh code on the same challenge: its wrong attempts carry on, so asking again gains a guesser nothing. */
+/**
+ * A fresh code on the same challenge: its wrong attempts carry on, so asking again gains a guesser nothing, and it
+ * counts against the number's day and the address's hour like a first code, whoever holds the number.
+ */
 async function sendAgain(c: Ctx, challengeId: string, channel: CodeChannel) {
   const { requestId, deps, config } = c.var;
   const db = c.env.DB;
@@ -190,15 +210,18 @@ async function sendAgain(c: Ctx, challengeId: string, channel: CodeChannel) {
   const allowedAt = channel === "sms" ? smsOfferedAt(challenge.createdAt) : whatsappResendAt(challenge.lastSentAt);
   if (now < allowedAt) return c.json(errorBody("too_early", requestId), 429);
   if (challenge.sends >= MAX_SENDS_PER_CHALLENGE) return c.json(errorBody("rate_limited", requestId), 429);
-  const { ipHash } = await visitorOf(c);
-  const gate = await codeGate(c, ipHash, now);
-  if (gate === "rate_limited") return c.json(errorBody("rate_limited", requestId), 429);
-  if (gate === "busy") return c.json(errorBody("busy", requestId), 503);
+  // A challenge that does not keep its number cannot count a code against it, so the client starts again.
+  if (challenge.mobileHash === null) return c.json(errorBody("code_expired", requestId), 410);
 
   const contact = await contactOf(db, challenge.holderId);
   const sendsTo = contact?.mobileE164 ?? null;
   const name = contact?.name ?? null;
-  if (!(await countCode(c, sendsTo, name, ipHash, now))) return c.json(errorBody("busy", requestId), 503);
+  const { ipHash } = await visitorOf(c);
+  const asked = await mayAskForCode(c, { surface: "login", mobileHash: challenge.mobileHash, ipHash, now, name });
+  if (asked === "busy") return c.json(errorBody("busy", requestId), 503);
+  if (asked !== "open") return c.json(errorBody("rate_limited", requestId), 429);
+
+  if (!(await countCode(c, "login", sendsTo, name, now))) return c.json(errorBody("busy", requestId), 503);
 
   const code = knownCode(config.settings.login, name) ?? newLoginCode();
   await replaceCode(db, challenge, { channel, code, pepper: config.settings.login.codePepper, now });

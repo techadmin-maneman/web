@@ -278,7 +278,7 @@ export const legalPages: { readonly privacy: LegalPage; readonly terms: LegalPag
         heading: "Who holds it",
         paragraphs: [
           "Your details are held in our own database, hosted by Cloudflare, and in the customer system our team works from, Zoho CRM; your name, number and address also go to Zoho FSM, where our technicians' visits are arranged, so that the technician finds your door. Your hair profile stays in our own database. Payments are made through Razorpay, and our invoices are kept in Zoho Books.",
-          "We use your details to arrange and look after your visits, and for anything else only with your agreement, which you can withdraw in the app. We never sell them.",
+          "We use your details to arrange and look after your visits, and for anything else only with your agreement, which you can withdraw in the app or by messaging us at {whatsapp}. To stop our WhatsApp messages, reply STOP to any of them. We never sell your details.",
         ],
       },
       {
@@ -1124,6 +1124,29 @@ export const notFound = {
   home: "Back to the site",
 };
 
+/**
+ * PLACEHOLDER COPY: the page the link at the foot of a reminder or the launch alert opens. "Done" names what
+ * stopped. "{whatsapp}" is the business number, as a chat link.
+ */
+export const stopMessages = {
+  ask: {
+    title: "Stop these messages",
+    body: "One tap, and we stop sending them on WhatsApp.",
+    button: "Stop them",
+  },
+  done: {
+    title: "Done.",
+    whatsapp_visits: "We will no longer message you on WhatsApp about your visits. We will call you about any change.",
+    whatsapp_launches: "We will no longer message you when we come to a new area.",
+    again: "Changed your mind? Switch them back on in the Mane Man app, or message us at {whatsapp}.",
+  },
+  expired: {
+    title: "This link no longer works.",
+    body: "Reply STOP to any of our WhatsApp messages, or message us at {whatsapp}, and we will stop them.",
+  },
+  offline: "We could not reach Mane Man. Check your connection and try again.",
+};
+
 export const pageTitles = {
   home: `Mane Man — hair systems, fitted at your home across ${serviceArea}`,
   tryOn: "Try a new look — Mane Man",
@@ -1131,6 +1154,7 @@ export const pageTitles = {
   privacy: "Privacy — Mane Man",
   terms: "Terms — Mane Man",
   notFound: "Not found — Mane Man",
+  stop: "Stop messages — Mane Man",
 };
 
 /** Each page's description, for search results and shared links. */

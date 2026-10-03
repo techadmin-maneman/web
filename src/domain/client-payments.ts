@@ -10,6 +10,9 @@ import { noShowNotes, type NoShowNote } from "./no-shows.ts";
 export const CREDIT_EVENTS = ["added", "used", "lost", "returned", "expired", "withdrawn", "corrected"] as const;
 type CreditEvent = (typeof CREDIT_EVENTS)[number];
 
+export const REFERRAL_SIDES = ["referrer", "friend"] as const;
+type ReferralSide = (typeof REFERRAL_SIDES)[number];
+
 interface VisitColumns {
   appointment_id: string | null;
   window_start: string | null;
@@ -212,6 +215,7 @@ interface CreditRow extends VisitColumns {
   kind: "grant" | "redeem" | "restore" | "expire" | "clawback" | "adjust";
   visits: number;
   source_kind: "referral" | "appointment" | "ops" | "import";
+  referral_side: ReferralSide | null;
   created_at: string;
   cancelled_late: number;
   restored: number;
@@ -220,15 +224,19 @@ interface CreditRow extends VisitColumns {
 /**
  * The ledger's entries for the person, newest first, with the visit each was for. An entry that changed nothing,
  * a spent grant closed at its expiry, is left out. A cancel inside 24 hours is read from the visit's own change,
- * and a credit given back from the ledger's own restore.
+ * and a credit given back from the ledger's own restore. A grant from an invite says which side of it the person
+ * was: the friend who was fitted through it, or the referrer who sent it.
  */
 const CREDIT_QUERY = `SELECT l.id, l.kind, l.visits, l.source_kind, l.created_at,
+    CASE WHEN r.id IS NULL THEN NULL WHEN r.referred_person_id = l.person_id THEN 'friend' ELSE 'referrer' END
+      AS referral_side,
     a.id AS appointment_id, a.window_start, a.type,
     EXISTS (SELECT 1 FROM visit_changes c
       WHERE c.appointment_id = l.source_id AND c.kind = 'cancelled' AND c.notice = 'late') AS cancelled_late,
     EXISTS (SELECT 1 FROM credit_ledger x WHERE x.kind = 'restore' AND x.source_id = l.source_id) AS restored
   FROM credit_ledger l
   LEFT JOIN appointments a ON l.source_kind = 'appointment' AND a.id = l.source_id AND a.deleted_at IS NULL
+  LEFT JOIN referral_attributions r ON l.kind = 'grant' AND l.source_kind = 'referral' AND r.id = l.source_id
   WHERE l.person_id = ?1 AND l.visits <> 0
   ORDER BY l.created_at DESC, l.rowid DESC`;
 
@@ -263,6 +271,7 @@ export async function creditLines(db: D1Database, personId: string, now: Date) {
       visits: row.visits,
       visit: visitRefOf(row),
       source: row.kind === "grant" && row.source_kind !== "appointment" ? row.source_kind : null,
+      referral_side: row.referral_side,
       no_show: noShow,
     };
   });

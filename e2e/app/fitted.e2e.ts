@@ -163,8 +163,8 @@ test("Home keeps a visit done but not yet closed, and shows the credit tile and 
   await expect(page.getByText("Done · notes on the way")).toBeVisible();
   await expect(page.getByRole("button", { name: "Reschedule" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Add a note" })).toHaveCount(0);
-  await expect(page.getByText("2 visit credits")).toBeVisible();
-  await expect(page.getByText("Expire 3 Jan 2028")).toBeVisible();
+  await expect(page.getByText("2 free service visits")).toBeVisible();
+  await expect(page.getByText("Use by 3 Jan 2028")).toBeVisible();
   const month = listMonth(client.piece.due.slice(0, 7), new Date().getFullYear());
   await expect(page.getByText(`Your replacement piece is due in ${month}.`)).toBeVisible();
   // The API prompts the replacement only once its month may be booked, so the prompt always offers it, beside the
@@ -442,7 +442,7 @@ test("Home says a paid visit FSM has not taken yet is being booked, with the pay
   await logIn(page, client.mobile);
   await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
   const me = await page.evaluate(async () => (await fetch("/api/me")).json() as Promise<Record<string, unknown>>);
-  const waiting = { type: "service", date: "2027-09-25", window: "morning", paid: true };
+  const waiting = { type: "service", date: "2027-09-25", window: "morning", paid: true, one_visit: false };
   await page.route("**/api/me", (route) =>
     route.fulfill({ json: { ...me, next_visit: null, prompt: null, being_booked: waiting } }),
   );
@@ -456,6 +456,36 @@ test("Home says a paid visit FSM has not taken yet is being booked, with the pay
   await expect(card).toContainText("We will message you on WhatsApp when the visit is booked.");
   await expect(page.getByRole("button", { name: "Reschedule" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Book your next visit" })).toHaveCount(0);
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(results.violations.map((violation) => violation.id)).toEqual([]);
+});
+
+// D-04: while FSM held a booking, Home said it was being booked and Visits said "Nothing booked yet.". Both answers
+// are altered on their way, as above.
+test("Visits lists a visit FSM has not taken yet as Home says it, a consultation and fit named as one", async ({
+  page,
+}) => {
+  const client = fittedClient();
+  await logIn(page, client.mobile);
+  await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
+  const me = await page.evaluate(async () => (await fetch("/api/me")).json() as Promise<Record<string, unknown>>);
+  const list = await page.evaluate(async () => (await fetch("/api/visits")).json() as Promise<Record<string, unknown>>);
+  const waiting = { type: "first_fit", date: "2027-09-25", window: "morning", paid: false, one_visit: true };
+  await page.route("**/api/me", (route) =>
+    route.fulfill({ json: { ...me, next_visit: null, prompt: null, being_booked: waiting } }),
+  );
+  await page.route("**/api/visits", (route) => route.fulfill({ json: { ...list, upcoming: [] } }));
+  await page.reload();
+  await expect(page.getByRole("region", { name: "Your next visit" })).toContainText("Consultation and fit");
+
+  await tab(page, "Visits").click();
+  const card = page.getByRole("main").getByRole("listitem").first();
+  await expect(card).toContainText(shortDate("2027-09-25"));
+  await expect(card).toContainText("Consultation and fit · 9 am to 12 pm");
+  await expect(card).toContainText("We are booking your visit.");
+  await expect(page.getByText("Nothing booked yet.")).toHaveCount(0);
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();
