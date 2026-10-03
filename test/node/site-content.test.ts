@@ -232,7 +232,7 @@ describe("the second copy round", () => {
     expect(site.tryOn.stage.body).not.toMatch(/\bHe\b/);
   });
 
-  // CP-07: every try-on screen said again that the look is never shown here; the gate's notice says it once.
+  // CP-07: only the gate's notice says where the look goes.
   it("leaves where the look goes to the gate, and points to a privacy notice /try has", () => {
     const screens = JSON.stringify(site.tryOn);
     expect(screens).not.toMatch(/never shown|privately|for your privacy/i);
@@ -241,7 +241,7 @@ describe("the second copy round", () => {
     expect(before + link + after).toBe("Read the full privacy notice.");
   });
 
-  // CP-07, UX-22: the look picker showed six empty boxes labelled "Preview".
+  // CP-07, UX-22: no empty "Preview" box stands in for a look's picture.
   it("draws the looks' pictures only once all six have one, and labels no empty box", () => {
     expect(site.tryOn.looks).not.toHaveProperty("preview");
     expect(site.lookPictures()).toBeNull();

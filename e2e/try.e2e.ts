@@ -132,7 +132,7 @@ test.describe("consent", () => {
     await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "stage");
   });
 
-  // CP-07: the line pointed to a footer /try does not have.
+  // CP-07: /try has no footer, so the line names none.
   test("the words privacy notice link to /privacy, and nothing else is added", async ({ page }) => {
     await open(page, "consent");
     await expect(page.getByRole("link", { name: "privacy notice" })).toHaveAttribute("href", "/privacy");
