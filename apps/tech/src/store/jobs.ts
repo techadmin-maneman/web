@@ -6,7 +6,8 @@
 // Two answers of the API's are kept beside them, because no later call gives
 // them back: what a check-in measured (board B5's distance and its wait), and
 // the instant the technician closed the job out, which board B4's duration runs
-// to.
+// to. So is the job's start as the card showed it at check-in, which every
+// later step is sent with.
 
 import type { CheckIn, Job, JobSummary } from "../api.ts";
 import { dayAfter } from "../lib/when.ts";
@@ -16,11 +17,13 @@ type Kept =
   | { readonly id: string; readonly kind: "day"; readonly date: string; readonly jobs: readonly JobSummary[] }
   | { readonly id: string; readonly kind: "job"; readonly job: Job }
   | { readonly id: string; readonly kind: "arrival"; readonly job_id: string; readonly arrival: CheckIn }
-  | { readonly id: string; readonly kind: "closed"; readonly job_id: string; readonly at: number };
+  | { readonly id: string; readonly kind: "closed"; readonly job_id: string; readonly at: number }
+  | { readonly id: string; readonly kind: "start_at_check_in"; readonly job_id: string; readonly starts_at: string };
 
 const dayKey = (date: string) => `day:${date}`;
 const arrivalKey = (jobId: string) => `arrival:${jobId}`;
 const closedKey = (jobId: string) => `closed:${jobId}`;
+const startAtCheckInKey = (jobId: string) => `start_at_check_in:${jobId}`;
 
 export async function keepDay(date: string, jobs: readonly JobSummary[]): Promise<void> {
   await put("jobs", { id: dayKey(date), kind: "day", date, jobs } satisfies Kept);
@@ -94,6 +97,29 @@ export async function keptClosed(jobId: string): Promise<number | null> {
   return kept !== null && kept.kind === "closed" ? kept.at : null;
 }
 
+/**
+ * The job's start as the card showed it when the technician checked in. Every later step is sent with it, so a move
+ * made after he arrived is refused, not taken in by a card read again since.
+ */
+export async function keepStartAtCheckIn(jobId: string, startsAt: string): Promise<void> {
+  await put("jobs", {
+    id: startAtCheckInKey(jobId),
+    kind: "start_at_check_in",
+    job_id: jobId,
+    starts_at: startsAt,
+  } satisfies Kept);
+}
+
+export async function keptStartAtCheckIn(jobId: string): Promise<string | null> {
+  const kept = await get<Kept>("jobs", startAtCheckInKey(jobId));
+  return kept !== null && kept.kind === "start_at_check_in" ? kept.starts_at : null;
+}
+
+/** Once the technician lets go of a job's work: a check-in on it again keeps the start the card then has. */
+export async function forgetStartAtCheckIn(jobId: string): Promise<void> {
+  await remove("jobs", startAtCheckInKey(jobId));
+}
+
 /** Every job the technician closed out on this phone, so the day's list can say so before FSM does. */
 export async function keptClosedJobs(): Promise<Set<string>> {
   const kept = await all<Kept>("jobs");
@@ -134,6 +160,7 @@ function stillNeeded(kept: Kept, days: ReadonlySet<string>, jobs: ReadonlySet<st
       return jobs.has(kept.id);
     case "arrival":
     case "closed":
+    case "start_at_check_in":
       return jobs.has(kept.job_id);
   }
 }

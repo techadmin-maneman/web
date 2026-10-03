@@ -162,7 +162,7 @@ Indexes:
 
 One row per alert while it is open, kept once it is resolved; raising it again counts it (ADR 0067).
 
-Made by `0038_alerts.sql`; changed by `0084_alerts_told.sql`.
+Made by `0038_alerts.sql`; changed by `0085_alerts_told.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1903,7 +1903,7 @@ Made by `0002_lead_path.sql`; changed by `0054_policies_in_the_console.sql`.
 
 Each move or cancel a client made, and each cancel ops made, with its notice and what it cost (ADR 0046).
 
-Made by `0020_visit_changes.sql`; changed by `0037_cron_indexes.sql`, `0082_ops_cancel_and_close.sql`.
+Made by `0020_visit_changes.sql`; changed by `0037_cron_indexes.sql`, `0082_ops_cancel_and_close.sql`, `0084_cancel_refund_settled.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1923,12 +1923,14 @@ Made by `0020_visit_changes.sql`; changed by `0037_cron_indexes.sql`, `0082_ops_
 | `cancelled_by` | TEXT | yes |  |  |
 | `cancel_reason` | TEXT | yes |  |  |
 | `ops_terms` | TEXT | yes |  |  |
+| `refund_settled_at` | TEXT | yes |  |  |
 
 Indexes:
 
 - `visit_changes_by_appointment`: on (`appointment_id`, `created_at`)
 - `visit_changes_by_payment`: on (`payment_id`)
 - `visit_changes_one_end`: unique on (`appointment_id`), where `kind IN ('replaced', 'cancelled')`
+- `visit_changes_refund_owed`: on (`created_at`), where `kind = 'cancelled' AND refund_settled_at IS NULL`
 
 ## visits
 

@@ -17,6 +17,9 @@ export const RULES = [
   "Duration runs from Start job to the outcome. The technician never types a time.",
 ] as const;
 
+/** The owner's ruling on what a consultation photographs. */
+export const CONSULTATION_PHOTOS_RULE = "A consultation takes the five before photographs and no after set.";
+
 /** The five angles of a before or after set, in the order they are taken. */
 export const PHOTO_ANGLES = ["front", "top", "left", "right", "hair"] as const;
 export type PhotoAngle = (typeof PHOTO_ANGLES)[number];
@@ -43,11 +46,22 @@ export const PIECE_STEP_TYPES = ["replacement", "first_fit"] as const;
 /**
  * The steps this visit type runs, in order. A consultation and fit in one visit runs the first fit's, whose piece
  * step records the product the client chose, or that they decided against it, which ends the visit as a
- * consultation; so it keeps them however it closed (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+ * consultation; so it keeps them however it closed.
  */
 export function stepsFor(type: VisitType, oneVisit = false): JobStep[] {
-  const takesPiece = oneVisit || (PIECE_STEP_TYPES as readonly string[]).includes(type);
-  return JOB_STEPS.filter((step) => step !== "piece" || takesPiece);
+  if (oneVisit) return [...JOB_STEPS];
+  const takesPiece = (PIECE_STEP_TYPES as readonly string[]).includes(type);
+  const takesAfterPhotos = type !== "consultation";
+  return JOB_STEPS.filter((step) => {
+    if (step === "piece") return takesPiece;
+    if (step === "after_photos") return takesAfterPhotos;
+    return true;
+  });
+}
+
+/** Whether this visit's job takes the step at all. */
+export function takesStep(step: JobStep, type: VisitType, oneVisit = false): boolean {
+  return stepsFor(type, oneVisit).includes(step);
 }
 
 /**
@@ -62,14 +76,16 @@ export const CARD_STEPS = [...JOB_EVENT_KINDS, PROFILE_STEP] as const;
 export type CardStep = (typeof CARD_STEPS)[number];
 
 /**
- * The screens the card runs, in order: the visit type's steps, with the profile just before the after photographs. A
- * job with no client of ours has nobody to keep a profile for, so its card has no profile step.
+ * The screens the card runs, in order: the visit type's steps, with the profile just before the after photographs,
+ * or before the outcome where there are none. A job with no client of ours has nobody to keep a profile for, so its
+ * card has no profile step.
  */
 export function cardStepsFor(type: VisitType, oneVisit = false, hasClient = true): (JobStep | typeof PROFILE_STEP)[] {
   const steps: (JobStep | typeof PROFILE_STEP)[] = stepsFor(type, oneVisit);
   if (!hasClient || !takesProfile(type, oneVisit)) return steps;
-  const afterPhotos = steps.indexOf("after_photos");
-  return [...steps.slice(0, afterPhotos), PROFILE_STEP, ...steps.slice(afterPhotos)];
+  const profileBefore = steps.includes("after_photos") ? "after_photos" : "outcome";
+  const position = steps.indexOf(profileBefore);
+  return [...steps.slice(0, position), PROFILE_STEP, ...steps.slice(position)];
 }
 
 /** Whether an event closes the job as a no-show (src/policy/no-show.ts). */

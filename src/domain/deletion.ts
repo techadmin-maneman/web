@@ -11,7 +11,7 @@ import { DECISION_SHOWN_DAYS } from "../policy/decision-reasons.ts";
 import type { OutboundMessage } from "../providers/messaging.ts";
 import { resolveAlertStatement, type AlertOnce } from "./alerts.ts";
 import { auditStatement, type AuditEntry } from "./audit.ts";
-import { erasePerson, erasureBlockers, type ErasureBlockers, type ErasureEnv } from "./erasure.ts";
+import { eraseAndQueue, erasureBlockers, type ErasureBlockers, type ErasureQueueEnv } from "./erasure.ts";
 import { reachBinding, withinReach } from "./places.ts";
 import { liveContact } from "./profile.ts";
 import type { Composed } from "./visit-messages.ts";
@@ -61,7 +61,10 @@ export async function openDeletion(db: D1Database, personId: string): Promise<De
   return row === null ? null : { id: row.id, personId: row.person_id, state: row.state, createdAt: row.created_at };
 }
 
-/** The requests waiting for ops in the places reached, oldest first, with the number ops will reach the client on. */
+/**
+ * The requests waiting for ops in the places reached, oldest first, with the number ops will reach the client on. A
+ * client erased with a request still open, before an erasure closed it, waits for nothing.
+ */
 export async function deletionsWaiting(
   db: D1Database,
   reached: PlacesReached,
@@ -70,7 +73,8 @@ export async function deletionsWaiting(
     .prepare(
       `SELECT d.id, d.person_id, p.name, p.mobile_e164, d.created_at
        FROM deletion_requests d JOIN people p ON p.id = d.person_id
-       WHERE d.state = 'requested' AND ${withinReach("deletion_request", "d", "?1")} ORDER BY d.created_at`,
+       WHERE d.state = 'requested' AND p.erased_at IS NULL AND ${withinReach("deletion_request", "d", "?1")}
+       ORDER BY d.created_at`,
     )
     .bind(reachBinding(reached))
     .all<{ id: string; person_id: string; name: string; mobile_e164: string; created_at: string }>();
@@ -105,13 +109,15 @@ export type DeletionOutcome =
  * and the request waits.
  */
 export async function decideDeletion(
-  env: ErasureEnv,
+  env: ErasureQueueEnv,
   options: {
     id: string;
     decision: "delete" | "reject";
     staff: string;
     reason: string | null;
     audit: AuditEntry;
+    fsmConnected: boolean;
+    requestId: string;
     now: Date;
     log: Logger;
   },
@@ -149,9 +155,16 @@ export async function decideDeletion(
   const refusal = erasureRefusal(blockers);
   if (refusal !== null) return { kind: "refused", refusal, blockers };
   const told = await liveContact(db, personId);
-  const erased = await erasePerson(env, personId, options.now, options.log, [audit, decided, alertResolved]);
+  const erased = await eraseAndQueue(env, personId, {
+    audit: options.audit,
+    alongside: [decided, alertResolved],
+    fsmConnected: options.fsmConnected,
+    requestId: options.requestId,
+    now: options.now,
+    log: options.log,
+  });
   if (erased !== null) return { kind: "deleted", personId, told };
-  // Erased already, by the operators' endpoint: the request is done all the same.
+  // Erased already, before an erasure closed the requests it found open: this one is done all the same.
   await db.batch([audit, decided, alertResolved]);
   return { kind: "deleted", personId, told: null };
 }
@@ -231,14 +244,16 @@ const ALERT_AFTER_DAYS = 5;
 export const DELETION_ALERT_AFTER_MS = ALERT_AFTER_DAYS * DAY_MS;
 
 /**
- * Alerts ops, once per request, about each deletion request nearing the end of its days. The alert is kept, and waits
+ * Alerts ops, once per request, about each deletion request nearing the end of its days, but not an erased client's. The alert is kept, and waits
  * on Tasks until the request is decided; a request is marked alerted only once its alert is.
  */
 export async function alertAgedDeletions(db: D1Database, now: Date, alertOnce: AlertOnce): Promise<number> {
   const aged = await db
     .prepare(
-      `SELECT id, created_at FROM deletion_requests
-       WHERE state = 'requested' AND alerted_at IS NULL AND created_at < ?1 ORDER BY created_at`,
+      `SELECT d.id, d.created_at FROM deletion_requests d
+       WHERE d.state = 'requested' AND d.alerted_at IS NULL AND d.created_at < ?1
+         AND NOT EXISTS (SELECT 1 FROM people p WHERE p.id = d.person_id AND p.erased_at IS NOT NULL)
+       ORDER BY d.created_at`,
     )
     .bind(new Date(now.getTime() - DELETION_ALERT_AFTER_MS).toISOString())
     .all<{ id: string; created_at: string }>();

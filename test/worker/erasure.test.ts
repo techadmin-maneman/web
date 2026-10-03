@@ -1,13 +1,18 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import { alertAgedDeletions, deletionsWaiting } from "../../src/domain/deletion.ts";
 import { erasePerson } from "../../src/domain/erasure.ts";
+import { openSession } from "../../src/domain/sessions.ts";
 import { putCounted, readMeter } from "../../src/domain/storage-meter.ts";
+import type { Providers } from "../../src/config/environments.ts";
+import type { Dependencies } from "../../src/dependencies.ts";
 import { secretsMatch } from "../../src/lib/hash.ts";
 import { createLogger } from "../../src/log.ts";
+import type { PlacesReached } from "../../src/policy/access.ts";
+import { STUB_IDENTITY } from "../../src/providers/cloudflare-access.ts";
 import { CRON_JOBS, runCronJobs } from "../../src/scheduled/cron.ts";
 import {
   LOCAL_CONFIG,
-  LOCAL_SETTINGS,
   NOW,
   appFor,
   captureLogs,
@@ -19,9 +24,9 @@ import {
 } from "./helpers.ts";
 import { insertJob, syntheticJpeg, syntheticPng } from "./tryon-fixtures.ts";
 
-const MOBILE = "9810000001";
 const MOBILE_E164 = "+919810000001";
-const AUTHORIZED = { Authorization: `Bearer ${LOCAL_SETTINGS.erasureSecret}` };
+const STAFF = STUB_IDENTITY.kind === "staff" ? STUB_IDENTITY.email : "";
+const EVERYWHERE: PlacesReached = { kind: "everywhere" };
 
 /** A person with a booking, as Phase 1's form left one, and an e-mail address. */
 async function book(): Promise<string> {
@@ -66,14 +71,29 @@ async function personWithHistory(): Promise<string> {
   return personId;
 }
 
-function erase(body: unknown, headers: Record<string, string> = AUTHORIZED, queue = fakeQueue()) {
+interface Erasing {
+  readonly body?: Record<string, unknown>;
+  readonly queues?: Partial<Env>;
+  readonly deps?: Dependencies;
+  readonly surface?: "ops" | "public";
+  readonly providers?: Partial<Providers>;
+}
+
+/** Ops erasing the client from their page in the console. */
+function erase(personId: string, erasing: Erasing = {}) {
   return request(
-    appFor(),
-    "/api/erasure",
-    { method: "POST", headers: { "Content-Type": "application/json", ...headers }, body: JSON.stringify(body) },
-    { CRM_QUEUE: queue },
+    appFor("local", erasing.deps ?? fakeDependencies(), {}, erasing.surface ?? "ops", erasing.providers),
+    `/api/clients/${personId}/erasure`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: "https://maneman.test" },
+      body: JSON.stringify(erasing.body ?? {}),
+    },
+    erasing.queues ?? { CRM_QUEUE: fakeQueue(), FSM_QUEUE: fakeQueue() },
   );
 }
+
+const statusOf = async (personId: string, erasing: Erasing = {}) => (await erase(personId, erasing)).status;
 
 let logs: ReturnType<typeof captureLogs>;
 beforeEach(async () => {
@@ -81,23 +101,26 @@ beforeEach(async () => {
   logs = captureLogs();
 });
 
-describe("POST /api/erasure", () => {
-  it("deletes the photos and results, blanks the person, cancels unsent messages and queues the CRM", async () => {
+describe("POST /api/clients/:id/erasure", () => {
+  it("deletes the photos and results, blanks the person, cancels unsent messages and queues the CRM and FSM", async () => {
     const personId = await personWithHistory();
-    const crmQueue = fakeQueue();
+    const queues = { CRM_QUEUE: fakeQueue(), FSM_QUEUE: fakeQueue() };
 
-    const response = await erase({ mobile: "98100 00001" }, AUTHORIZED, crmQueue);
+    const response = await erase(personId, { queues });
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
-      person_id: personId,
       erased_at: NOW.toISOString(),
       photos_deleted: 2,
       results_deleted: 1,
+      visit_photos_deleted: 0,
       messages_cancelled: 2,
-      crm: "queued",
+      sessions_ended: 0,
+      addresses_removed: 0,
     });
-    expect(crmQueue.sent).toEqual([{ erase_person_id: personId, request_id: expect.any(String) as string }]);
+    const queued = [{ erase_person_id: personId, request_id: expect.any(String) as string }];
+    expect(queues.CRM_QUEUE.sent).toEqual(queued);
+    expect(queues.FSM_QUEUE.sent).toEqual(queued);
 
     expect(await env.UPLOADS.head("uploads/ready")).toBeNull();
     expect(await env.UPLOADS.head("uploads/running")).toBeNull();
@@ -150,23 +173,69 @@ describe("POST /api/erasure", () => {
   });
 
   it("never writes the person's name, number or e-mail to the logs", async () => {
-    await personWithHistory();
-    await erase({ mobile: MOBILE });
+    const personId = await personWithHistory();
+    await erase(personId);
     const written = JSON.stringify(logs.lines());
     expect(written).toContain("person_erased");
     for (const secret of ["Arjun", "9810000001", "arjun@example.com"]) expect(written).not.toContain(secret);
   });
 
-  it("answers 404 for a number it does not know, including one already erased", async () => {
-    expect((await erase({ mobile: MOBILE })).status).toBe(404);
-    await book();
-    expect((await erase({ mobile: MOBILE })).status).toBe(200);
-    expect((await erase({ mobile: MOBILE })).status).toBe(404);
+  // PS-16: the operators' door took one shared secret and left nothing in the audit log.
+  it("audits the erasure under the member of staff who did it", async () => {
+    const personId = await book();
+
+    expect(await statusOf(personId)).toBe(200);
+
+    const entries = await env.DB.prepare(
+      "SELECT actor_kind, actor, subject_kind, subject_id, detail FROM audit_log WHERE action = 'person.erase'",
+    ).all();
+    expect(entries.results).toEqual([
+      {
+        actor_kind: "staff",
+        actor: STAFF,
+        subject_kind: "person",
+        subject_id: personId,
+        detail: JSON.stringify({ settled_by_hand: false, visits: 0, payments: 0 }),
+      },
+    ]);
+  });
+
+  it("refuses a service token, which names no member of staff, and erases nothing", async () => {
+    const personId = await book();
+    const deps = fakeDependencies({
+      access: { verify: () => Promise.resolve({ ok: true, identity: { kind: "service", clientId: "ci.access" } }) },
+    });
+
+    expect(await statusOf(personId, { deps })).toBe(403);
+
+    const person = await env.DB.prepare("SELECT erased_at FROM people WHERE id = ?1").bind(personId).first();
+    expect(person).toEqual({ erased_at: null });
+  });
+
+  it("is not on the public host, where a shared secret once opened it", async () => {
+    const personId = await book();
+    const byNumber = await request(appFor(), "/api/erasure", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer a-secret-of-at-least-thirty-two-chars" },
+      body: JSON.stringify({ mobile: "98100 00001" }),
+    });
+
+    expect(byNumber.status).toBe(404);
+    expect(await statusOf(personId, { surface: "public" })).toBe(404);
+    const person = await env.DB.prepare("SELECT erased_at FROM people WHERE id = ?1").bind(personId).first();
+    expect(person).toEqual({ erased_at: null });
+  });
+
+  it("answers 404 for someone it does not know, and for someone already erased", async () => {
+    expect(await statusOf(crypto.randomUUID())).toBe(404);
+    const personId = await book();
+    expect(await statusOf(personId)).toBe(200);
+    expect(await statusOf(personId)).toBe(404);
   });
 
   it("lets the number book again afterwards, as a new person needing a new consent", async () => {
     const erased = await book();
-    await erase({ mobile: MOBILE });
+    await erase(erased);
     const again = await book();
     expect(again).not.toBe(erased);
     const consents = await env.DB.prepare("SELECT COUNT(*) AS n FROM consents WHERE person_id = ?")
@@ -175,39 +244,77 @@ describe("POST /api/erasure", () => {
     expect(consents?.n).toBe(1);
   });
 
-  it("refuses a missing, wrong or unprefixed secret", async () => {
-    await book();
-    const refused: Record<string, string>[] = [
-      {},
-      { Authorization: "Bearer not-the-erasure-secret-at-all-00000000" },
-      { Authorization: LOCAL_SETTINGS.erasureSecret },
-      { Authorization: "Bearer " },
-    ];
-    for (const headers of refused) {
-      const response = await erase({ mobile: MOBILE }, headers);
-      expect(response.status).toBe(401);
-      expect((await response.json<{ error: { code: string } }>()).error.code).toBe("unauthorized");
-    }
-    const person = await env.DB.prepare("SELECT erased_at FROM people WHERE mobile_e164 = ?")
-      .bind(MOBILE_E164)
-      .first<{ erased_at: string | null }>();
-    expect(person?.erased_at).toBeNull();
+  it("refuses a body with anything but whether to erase despite what is owed", async () => {
+    const personId = await book();
+    expect(await statusOf(personId, { body: { mobile: "98100 00001" } })).toBe(400);
   });
 
-  it("refuses a body that is not one Indian mobile number", async () => {
-    for (const body of [{}, { mobile: "12345" }, { mobile: MOBILE, name: "Arjun" }]) {
-      expect((await erase(body)).status).toBe(400);
-    }
+  it("still erases when the queues are down, leaving the CRM and FSM to the sweeper", async () => {
+    const personId = await book();
+    const down = { send: () => Promise.reject(new Error("queue unavailable")) } as unknown as Queue;
+
+    expect(await statusOf(personId, { queues: { CRM_QUEUE: down, FSM_QUEUE: down } })).toBe(200);
+
+    expect(logs.lines().some((line) => line.event === "erasure_enqueue_failed")).toBe(true);
   });
 
-  it("still erases when the CRM queue is down, leaving the CRM to the sweeper", async () => {
-    await book();
-    const downQueue = { send: () => Promise.reject(new Error("queue unavailable")) } as unknown as ReturnType<
-      typeof fakeQueue
-    >;
-    const response = await erase({ mobile: MOBILE }, AUTHORIZED, downQueue);
-    expect(response.status).toBe(200);
-    expect(logs.lines().some((line) => line.event === "crm_enqueue_failed")).toBe(true);
+  it("leaves FSM alone where it is not connected", async () => {
+    const personId = await book();
+    const queues = { CRM_QUEUE: fakeQueue(), FSM_QUEUE: fakeQueue() };
+
+    expect(await statusOf(personId, { queues, providers: { FSM_PROVIDER: "none" } })).toBe(200);
+
+    expect(queues.CRM_QUEUE.sent).toHaveLength(1);
+    expect(queues.FSM_QUEUE.sent).toEqual([]);
+  });
+});
+
+/** A deletion request the client made in their app, six days ago, still waiting for ops. */
+async function openRequest(personId: string): Promise<void> {
+  const sixDaysAgo = new Date(NOW.getTime() - 6 * 86_400_000).toISOString();
+  await env.DB.prepare(
+    "INSERT INTO deletion_requests (id, person_id, created_at, state) VALUES ('request-1', ?1, ?2, 'requested')",
+  )
+    .bind(personId, sixDaysAgo)
+    .run();
+}
+
+const alertsNow = () => alertAgedDeletions(env.DB, NOW, fakeDependencies().alertOnce);
+
+// PS-17: the operators' door left the client's own request listed as waiting, and alerting.
+describe("a client erased with a deletion request open", () => {
+  it("has the request closed by the erasure, under whoever erased them", async () => {
+    const personId = await book();
+    await openRequest(personId);
+
+    expect(await statusOf(personId)).toBe(200);
+
+    const closed = await env.DB.prepare("SELECT state, decided_at, decided_by FROM deletion_requests").first();
+    expect(closed).toEqual({ state: "done", decided_at: NOW.toISOString(), decided_by: STAFF });
+    expect(await deletionsWaiting(env.DB, EVERYWHERE)).toEqual([]);
+    expect(await alertsNow()).toBe(0);
+  });
+
+  it("closes the request's alert on Tasks with it", async () => {
+    const personId = await book();
+    await openRequest(personId);
+    expect(await alertsNow()).toBe(1);
+
+    expect(await statusOf(personId)).toBe(200);
+
+    const open = await env.DB.prepare(
+      "SELECT key FROM alerts WHERE resolved_at IS NULL AND key LIKE 'deletion_waiting:%'",
+    ).all();
+    expect(open.results).toEqual([]);
+  });
+
+  it("is left out of the queue and its alert when an earlier erasure left the request open", async () => {
+    const personId = await book();
+    await openRequest(personId);
+    await erasePerson(env, personId, NOW, createLogger());
+
+    expect(await deletionsWaiting(env.DB, EVERYWHERE)).toEqual([]);
+    expect(await alertsNow()).toBe(0);
   });
 });
 
@@ -312,12 +419,14 @@ async function databaseRefusesErasure(): Promise<void> {
 }
 
 describe("erasure, all or nothing", () => {
-  it("erases a client with something in every table it deletes from", async () => {
+  it("erases a client with something in every table it deletes from, and counts what went", async () => {
     const personId = await clientWithEverything();
+    await openSession(env.DB, { kind: "client", subjectId: personId, deviceLabel: null, now: NOW });
 
-    const response = await erase({ mobile: MOBILE });
+    const response = await erase(personId);
 
     expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ visit_photos_deleted: 1, sessions_ended: 1, addresses_removed: 2 });
     expect(await filesLeft()).toEqual({ upload: false, result: false, visitPhoto: false, card: false });
     const left = await env.DB.prepare(
       `SELECT (SELECT COUNT(*) FROM number_change_requests) AS changes, (SELECT COUNT(*) FROM otp_challenges) AS codes,
@@ -394,13 +503,16 @@ describe("erasure, all or nothing", () => {
     expect(left.results.map((row) => row.key)).toEqual([`visits/${VISIT}0/after-front-9.jpg`]);
   });
 
-  it("changes nothing, and deletes no file, when the database refuses the erasure", async () => {
-    await clientWithEverything();
+  it("changes nothing, deletes no file and audits nothing, when the database refuses the erasure", async () => {
+    const personId = await clientWithEverything();
     await databaseRefusesErasure();
 
-    const response = await erase({ mobile: MOBILE });
+    const response = await erase(personId);
 
     expect(response.status).toBe(500);
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM audit_log WHERE action = 'person.erase'").first()).toEqual({
+      n: 0,
+    });
     expect(await filesLeft()).toEqual({ upload: true, result: true, visitPhoto: true, card: true });
     const person = await env.DB.prepare("SELECT name, erased_at FROM people WHERE mobile_e164 = ?1")
       .bind(MOBILE_E164)
@@ -410,7 +522,7 @@ describe("erasure, all or nothing", () => {
     expect(await env.DB.prepare("SELECT lat, lng FROM checkins").first()).toEqual({ lat: 28.39, lng: 77.06 });
     // So it can simply be asked for again.
     await env.DB.prepare("DROP TRIGGER refuse_erasure").run();
-    expect((await erase({ mobile: MOBILE })).status).toBe(200);
+    expect(await statusOf(personId)).toBe(200);
   });
 
   it("erases the person when R2 fails, and the cron deletes the files left", async () => {
@@ -612,7 +724,7 @@ describe("erasure blanks a check-in's coordinates", () => {
     ).all();
 
   it("takes where the technician's phone was off each of the client's check-ins, and keeps whether it passed", async () => {
-    await clientWithEverything();
+    const personId = await clientWithEverything();
     const at = NOW.toISOString();
     // A second check-in of theirs, with nothing to measure against, and another client's, at their own door.
     await env.DB.batch([
@@ -634,7 +746,7 @@ describe("erasure blanks a check-in's coordinates", () => {
       ).bind(at),
     ]);
 
-    expect((await erase({ mobile: MOBILE })).status).toBe(200);
+    expect(await statusOf(personId)).toBe(200);
 
     const kept = { at, radius_m: 200, passed: 1 };
     expect((await checkins()).results).toEqual([
@@ -658,7 +770,7 @@ describe("erasure blanks what a pay step kept on a hold", () => {
       .bind(personId, at)
       .run();
 
-    expect((await erase({ mobile: MOBILE })).status).toBe(200);
+    expect(await statusOf(personId)).toBe(200);
 
     const hold = await env.DB.prepare(
       "SELECT state, consents_shown, consents_ip_hash FROM slot_holds WHERE id = 'hold-1'",
@@ -693,7 +805,7 @@ describe("erasure while something is still owed", () => {
     const personId = await book();
     await bookedVisit(personId);
 
-    const response = await erase({ mobile: MOBILE });
+    const response = await erase(personId);
 
     expect(response.status).toBe(409);
     expect(await response.json()).toEqual({
@@ -710,7 +822,7 @@ describe("erasure while something is still owed", () => {
     const personId = await book();
     await paymentHeld(personId);
 
-    const response = await erase({ mobile: MOBILE });
+    const response = await erase(personId);
 
     expect(response.status).toBe(409);
     expect(await response.json()).toMatchObject({
@@ -720,14 +832,15 @@ describe("erasure while something is still owed", () => {
     });
   });
 
-  it("erases anyway when the operator says they have settled both by hand", async () => {
+  it("erases anyway when ops say they will settle both by hand today, and the log says so", async () => {
     const personId = await book();
     await bookedVisit(personId);
     await paymentHeld(personId);
 
-    const response = await erase({ mobile: MOBILE, override_open_bookings: true });
+    expect(await statusOf(personId, { body: { override_open_bookings: true } })).toBe(200);
 
-    expect(response.status).toBe(200);
+    const entry = await env.DB.prepare("SELECT detail FROM audit_log WHERE action = 'person.erase'").first("detail");
+    expect(entry).toBe(JSON.stringify({ settled_by_hand: true, visits: 1, payments: 1 }));
   });
 });
 

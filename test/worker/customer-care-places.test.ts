@@ -237,6 +237,15 @@ describe("a grant of Customer Care in one city", () => {
     expect(given.results).toEqual([{ person_id: IN_DELHI.id }]);
   });
 
+  it("erases a client only in its city", async () => {
+    expect((await post(delhi, `/api/clients/${IN_GURGAON.id}/erasure`)).status).toBe(404);
+    expect((await post(delhi, `/api/clients/${NOWHERE.id}/erasure`)).status).toBe(404);
+    expect((await post(delhi, `/api/clients/${IN_DELHI.id}/erasure`)).status).toBe(200);
+
+    const erased = await env.DB.prepare("SELECT id FROM people WHERE erased_at IS NOT NULL").all();
+    expect(erased.results).toEqual([{ id: IN_DELHI.id }]);
+  });
+
   it("lists and answers only its city's grievances", async () => {
     expect(await idsIn(await get(delhi, "/api/grievances"), "grievances")).toEqual([IN_DELHI.grievance]);
 
