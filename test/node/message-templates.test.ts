@@ -68,6 +68,7 @@ describe("the link that stops a message", () => {
     expect(STOP_LINKS).toEqual({
       visit_reminder: "whatsapp_visits",
       next_service_reminder: "whatsapp_visits",
+      credits_expiring: "whatsapp_visits",
       launch_alert: "whatsapp_launches",
     });
     for (const kind of Object.keys(STOP_LINKS)) expect(messageClass(kind), kind).toBe("automatic");

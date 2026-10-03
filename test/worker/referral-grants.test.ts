@@ -103,8 +103,8 @@ describe("the grant", () => {
     expect(await state()).toEqual({ grant_state: "granted", fraud_signals: null });
     // 365 days on, to the end of that day in India: the date the referrer is told (BIZ-14).
     const expiry = "2027-09-21T18:29:59.999Z";
-    expect(await creditBalance(env.DB, FRIEND, NOW)).toEqual({ visits: 3, earliestExpiry: expiry });
-    expect(await creditBalance(env.DB, REFERRER, NOW)).toEqual({ visits: 3, earliestExpiry: expiry });
+    expect(await creditBalance(env.DB, FRIEND, NOW)).toEqual({ visits: 3, earliestExpiry: expiry, expiringFirst: 3 });
+    expect(await creditBalance(env.DB, REFERRER, NOW)).toEqual({ visits: 3, earliestExpiry: expiry, expiringFirst: 3 });
 
     expect(await messagesWritten()).toEqual([
       { person_id: FRIEND, kind: "friend_credited", subject_id: ATTRIBUTION },
