@@ -67,6 +67,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   counters: "Fixed-window counters for the rate limits and the daily ceilings (ADR 0011).",
   credit_ledger:
     "Service-visit credits, entry by entry, each drawing on the grant it spends; a balance is summed, never kept (ADR 0033).",
+  credit_expiry_cursor:
+    "One row: how far the pass that closes expired credits has got, so it reads only the grants that expired since.",
   cron_jobs: "Each job of the cron, and how many runs in a row it has failed (ADR 0067).",
   cron_runs:
     "One row: when the cron's latest run started and its last finished run ended, so a run cut short is told by the next.",
@@ -365,6 +367,7 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
       "alerts",
       "cron_jobs",
       "cron_runs",
+      "credit_expiry_cursor",
       "counters",
       "idempotency",
       "number_codes",

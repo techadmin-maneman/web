@@ -31,6 +31,7 @@ import { recordUtilisation } from "../domain/dispatch.ts";
 import { deleteLeftFiles } from "../domain/erasure.ts";
 import { raiseInvoices } from "../domain/fsm-invoices.ts";
 import { anyHeldBooking, retryHeldBookings } from "../domain/held-bookings.ts";
+import { queueCreditReminders } from "../domain/credit-reminders.ts";
 import { queueNextServiceReminders } from "../domain/next-visit.ts";
 import { sendUnsentLinks } from "../domain/payment-links.ts";
 import { readOpsInputs, type OpsInputs } from "../domain/ops-settings.ts";
@@ -269,6 +270,12 @@ async function nextServiceRemindersJob({ env, deps, log, inputs }: CronContext):
   if (reminders.length > 0) log.info("next_service_reminders_queued", { count: reminders.length });
 }
 
+async function creditRemindersJob({ env, deps, log, inputs }: CronContext): Promise<void> {
+  const reminders = await queueCreditReminders(env.DB, deps.now(), (await inputs()).reminderHour);
+  await queueMessages(env.MESSAGE_QUEUE, reminders, "credit-reminders");
+  if (reminders.length > 0) log.info("credit_reminders_queued", { count: reminders.length });
+}
+
 async function paymentLinksJob({ env, deps, log, budget }: CronContext): Promise<void> {
   const sent = await sendUnsentLinks(env.DB, { ...deps, log }, deps.now(), budget);
   if (sent > 0) log.info("payment_links_sent", { count: sent });
@@ -358,13 +365,15 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "expire_tryons", needs: "nothing", every: 15, at: 4, run: expireTryOns },
   { name: "books_sync", needs: "books", every: 15, at: 6, run: booksJob },
   { name: "kept_looks", needs: "nothing", every: 15, at: 7, run: letKeptLooksGo },
-  // A client's cancel whose refund the request that cancelled it could not settle, asked for again under its receipt.
-  { name: "cancel_refunds", needs: "nothing", every: 15, at: 7, run: cancelRefundsJob },
+  // Free service visits running out: a month, then a week, before their last day.
+  { name: "credit_reminders", needs: "messaging", every: 15, at: 7, run: creditRemindersJob },
   { name: "visit_reminders", needs: "messaging", every: 15, at: 8, run: remindersJob },
   // What the client asked for, beside what the board offers them (ADR 0063).
   { name: "asked_windows", needs: "nothing", every: 15, at: 9, run: askedWindowsJob },
   // The next service falling due with nothing booked (docs/decisions/0086-the-next-visit-is-offered.md).
   { name: "next_service_reminders", needs: "messaging", every: 15, at: 11, run: nextServiceRemindersJob },
+  // A cancel, the client's or ops', whose refund its request could not settle, asked for again under its receipt.
+  { name: "cancel_refunds", needs: "nothing", every: 15, at: 12, run: cancelRefundsJob },
   // What an erasure could not delete from R2 at the time (docs/decisions/0066-erasure-all-or-nothing.md).
   { name: "erased_files", needs: "nothing", every: 15, at: 12, run: erasedFilesJob },
   { name: "requeue_crm_erasures", needs: "nothing", every: 15, at: 13, run: requeueCrmErasures },

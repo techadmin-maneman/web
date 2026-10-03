@@ -169,7 +169,10 @@ const freeServiceVisits = (count: number): string =>
 /** Home's and Refer's tile: how many free service visits, and the day the soonest must be used by. */
 const freeVisitsTile = {
   count: freeServiceVisits,
-  useBy: (date: string) => `Use by ${date}`,
+  useBy: (when: string) => `Use by ${when}`,
+  /** Only some of them end first: "1 to use by 2 Oct". */
+  someUseBy: (visits: number, when: string) => `${String(visits)} to use by ${when}`,
+  tonight: "tonight",
 };
 
 /** The booking sheet's words for a paid visit still being written to FSM, which Home repeats while it waits. */
@@ -185,7 +188,7 @@ export const home = {
     label: "Your consultation",
     free: "Free",
   },
-  /** Board B1's credit tile: "2 free service visits", and "Use by 3 Jan 2028". */
+  /** Board B1's credit tile: "3 free service visits", and "Use by 2 Oct", or "Use by tonight" on the last day. */
   credits: freeVisitsTile,
   /**
    * Board B1's one prompt, and the invoice line beneath it (src/domain/home-prompt.ts). The replacement's line and

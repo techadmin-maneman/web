@@ -2,7 +2,13 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { ZohoSettings } from "../../src/config/settings.ts";
 import { createLogger } from "../../src/log.ts";
-import { contactRecordFor, createZohoCrm, noteFor, recordFor } from "../../src/providers/zoho-crm.ts";
+import {
+  contactRecordFor,
+  createZohoCrm,
+  createZohoLeadFinder,
+  noteFor,
+  recordFor,
+} from "../../src/providers/zoho-crm.ts";
 import { crmLead } from "./crm-rules.test.ts";
 import { NOW, captureLogs, fakeFetch, json, type RecordedCall } from "./helpers.ts";
 
@@ -461,5 +467,27 @@ describe("Zoho: erasing a person", () => {
     const { crm, calls } = zoho({ [TOKEN_URL]: () => tokenIssued(), [SEARCH_URL]: noMatch });
     expect(await crm.erasePerson("person-1", null)).toEqual({ found: false });
     expect(calls).toHaveLength(2);
+  });
+});
+
+describe("Zoho: the CRM's one read on its own", () => {
+  it("finds a person's Lead by their person ID, answers null for one it does not have, and only reads", async () => {
+    const http = fakeFetch({
+      [TOKEN_URL]: () => tokenIssued(),
+      [SEARCH_URL]: (call) =>
+        decodeURIComponent(call.url).includes("(D1_Person_ID:equals:person-1)")
+          ? json({ data: [{ id: "zoho-existing" }], info: { count: 1 } })
+          : noMatch(),
+    });
+    const deps = { db: env.DB, fetch: http.fetch, now: () => NOW, log: createLogger() };
+    const findLead = createZohoLeadFinder(SETTINGS, deps);
+
+    expect(await findLead("person-1")).toBe("zoho-existing");
+    expect(await findLead("person-2")).toBeNull();
+    expect(http.calls.map((call) => `${call.method} ${new URL(call.url).pathname}`)).toEqual([
+      "POST /oauth/v2/token",
+      "GET /crm/v8/Leads/search",
+      "GET /crm/v8/Leads/search",
+    ]);
   });
 });
