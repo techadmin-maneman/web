@@ -80,6 +80,8 @@ export const states = {
   loading: "Loading",
   failed: "We could not load this.",
   retry: "Try again",
+  /** The failed call's reference, to quote to the developers. */
+  ref: { label: "Ref", copy: "Copy", copied: "Copied" },
 } as const;
 
 export const dispatch = {
@@ -1711,7 +1713,8 @@ export const deletions = {
     deleteLabel: (name: string) => `Delete the account of ${name}`,
     rejectLabel: (name: string) => `Reject the request of ${name}`,
     confirmLabel: (name: string) => `Deleting the account of ${name}`,
-    warning: "This erases the client now. It cannot be undone, and there is no copy to put back.",
+    warning:
+      "This erases the client now, and tells them on WhatsApp. It cannot be undone, and there is no copy to put back.",
     /** What the erasure destroys, in the order src/domain/erasure.ts destroys it. */
     deleted: {
       title: "Deleted",
@@ -1739,7 +1742,8 @@ export const deletions = {
     deleting: "Deleting",
     reason: {
       label: "Why you are rejecting it",
-      hint: "Kept with the decision, under your name.",
+      // PLACEHOLDER: the client is sent this reason on WhatsApp, and their app shows it for thirty days.
+      hint: "Kept with the decision, under your name. The client reads it on WhatsApp and in the app.",
       confirm: "Reject this request",
       cancel: "Leave it waiting",
     },
