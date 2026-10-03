@@ -157,6 +157,8 @@ export interface BookingUnderWay {
   readonly window: BookingWindow;
   /** Paid for in money, rather than free or covered by a credit. */
   readonly paid: boolean;
+  /** A consultation and fit in one visit. */
+  readonly one_visit: boolean;
 }
 
 /**
@@ -167,14 +169,27 @@ export interface BookingUnderWay {
 export async function bookingUnderWay(db: D1Database, personId: string): Promise<BookingUnderWay | null> {
   const row = await db
     .prepare(
-      `SELECT type, date, window_label, amount, use_credit FROM slot_holds
+      `SELECT type, date, window_label, amount, use_credit, one_visit FROM slot_holds
        WHERE person_id = ?1 AND state = 'held' AND confirmed_at IS NOT NULL AND moves_appointment_id IS NULL
        ORDER BY date, start_unit LIMIT 1`,
     )
     .bind(personId)
-    .first<{ type: VisitType; date: string; window_label: BookingWindow; amount: number; use_credit: number }>();
+    .first<{
+      type: VisitType;
+      date: string;
+      window_label: BookingWindow;
+      amount: number;
+      use_credit: number;
+      one_visit: number;
+    }>();
   if (row === null) return null;
-  return { type: row.type, date: row.date, window: row.window_label, paid: row.amount > 0 && row.use_credit !== 1 };
+  return {
+    type: row.type,
+    date: row.date,
+    window: row.window_label,
+    paid: row.amount > 0 && row.use_credit !== 1,
+    one_visit: row.one_visit === 1,
+  };
 }
 
 /** What Checkout names a hold's payment with, and prefills. */

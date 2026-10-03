@@ -2073,13 +2073,18 @@ Request body:
             "paid": {
               "type": "boolean",
               "description": "Paid for in money, rather than free or covered by a credit."
+            },
+            "one_visit": {
+              "type": "boolean",
+              "description": "A consultation and fit in one visit."
             }
           },
           "required": [
             "type",
             "date",
             "window",
-            "paid"
+            "paid",
+            "one_visit"
           ],
           "additionalProperties": false
         },
