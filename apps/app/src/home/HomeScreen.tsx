@@ -16,7 +16,7 @@ import { BOOKING_URL, home, messages, VISIT_TYPES, visits, windowText } from "..
 import { BookButton } from "../booking/BookButton.tsx";
 import { BookNext } from "../booking/BookNext.tsx";
 import type { ChangingVisit } from "../booking/ChangeSheet.tsx";
-import { visitName } from "../lib/visit.ts";
+import { bookingName, visitName } from "../lib/visit.ts";
 import { useSession } from "../session.ts";
 import { AppLink, Shell } from "./Shell.tsx";
 import { monthNow, nextVisitWords, replacementLine } from "./next-visit-words.ts";
@@ -142,7 +142,7 @@ function BeingBooked({ booking }: { booking: NonNullable<Me["being_booked"]> }) 
       <div className={styles.card}>
         <p className={styles.date}>{shortDate(booking.date)}</p>
         <p className={styles.window}>{windowText(booking.window)}</p>
-        <p className={styles.place}>{VISIT_TYPES[booking.type]}</p>
+        <p className={styles.place}>{bookingName(booking)}</p>
         <p className={styles.free}>{booking.paid ? copy.paid : copy.free}</p>
         <p className={styles.free}>{copy.told}</p>
       </div>

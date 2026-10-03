@@ -998,7 +998,7 @@ Made by `0054_policies_in_the_console.sql`.
 
 Each one-time code sent, as a hash, with its sends and attempts (ADR 0030, ADR 0052).
 
-Made by `0007_login.sql`; changed by `0008_profile.sql`, `0027_pieces_and_zones.sql`, `0037_cron_indexes.sql`.
+Made by `0007_login.sql`; changed by `0008_profile.sql`, `0027_pieces_and_zones.sql`, `0037_cron_indexes.sql`, `0079_challenge_number.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1017,6 +1017,7 @@ Made by `0007_login.sql`; changed by `0008_profile.sql`, `0027_pieces_and_zones.
 | `number_change_id` | TEXT | yes |  | → `number_change_requests.id` |
 | `technician_login` | INTEGER | no | `0` |  |
 | `technician_id` | TEXT | yes |  | → `technicians.id` |
+| `mobile_hash` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -1876,7 +1877,7 @@ Made by `0002_lead_path.sql`; changed by `0054_policies_in_the_console.sql`.
 
 Each move or cancel a client made, and each cancel ops made, with its notice and what it cost (ADR 0046).
 
-Made by `0020_visit_changes.sql`; changed by `0037_cron_indexes.sql`, `0079_ops_cancel_and_close.sql`.
+Made by `0020_visit_changes.sql`; changed by `0037_cron_indexes.sql`, `0082_ops_cancel_and_close.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1907,7 +1908,7 @@ Indexes:
 
 What an appointment became once it closed, or ops closed it by hand: the outcome, its reason and its times (ADR 0032, ADR 0074).
 
-Made by `0011_fsm_mirror.sql`; changed by `0044_hand_offs_and_messages.sql`, `0060_flat_task_reads.sql`, `0079_ops_cancel_and_close.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0044_hand_offs_and_messages.sql`, `0060_flat_task_reads.sql`, `0082_ops_cancel_and_close.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
