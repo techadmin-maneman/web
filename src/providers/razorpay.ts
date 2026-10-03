@@ -79,13 +79,13 @@ const LinkMade = z.object({ id: z.string(), short_url: z.string() });
 const LinksFound = z.object({ payment_links: z.array(LinkMade) });
 
 /**
- * How a link's page reads: in our name rather than the account's, with the client's number already in its Checkout so
- * it is not asked for again, and our reference labelled as one rather than as a receipt.
+ * How a link's page reads: in our name rather than the account's, and our reference labelled as one rather than as a
+ * receipt. Razorpay never fills in the client's number on a link's page, whatever it is sent.
  */
-const linkPage = (contact: string) => ({
-  checkout: { name: "Mane Man", prefill: { contact } },
+const LINK_PAGE = {
+  checkout: { name: "Mane Man" },
   hosted_page: { label: { receipt: "REFERENCE" } },
-});
+};
 
 /** Razorpay's reason for a refusal, as much of it as it gave. */
 const Refused = z.object({
@@ -164,7 +164,7 @@ export function createRazorpay(
           reminder_enable: true,
           notes: link.notes,
           ...(link.closesAt === undefined ? {} : { expire_by: Math.floor(link.closesAt.getTime() / 1000) }),
-          options: linkPage(link.customer.contact),
+          options: LINK_PAGE,
         },
         LinkMade,
       );

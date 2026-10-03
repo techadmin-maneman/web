@@ -146,11 +146,10 @@ describe("Razorpay: payment links", () => {
     });
   });
 
-  // MON-30: the page read "Payment Request from" the account holder's own name, "RECEIPT" over our reference, and
-  // asked the client for the number the link was texted to.
-  it("has Razorpay's page name us, label our reference as one, and already hold the client's number", async () => {
+  // MON-30: the page read "Payment Request from" the account holder's own name, and "RECEIPT" over our reference.
+  it("has Razorpay's page name us and label our reference as one", async () => {
     expect((await linkMade()).options).toEqual({
-      checkout: { name: "Mane Man", prefill: { contact: "+919810000001" } },
+      checkout: { name: "Mane Man" },
       hosted_page: { label: { receipt: "REFERENCE" } },
     });
   });
