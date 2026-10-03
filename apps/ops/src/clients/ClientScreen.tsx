@@ -105,7 +105,7 @@ function Tab({
   onAttached,
   address,
   onAddress,
-  onBooked,
+  onChanged,
   photos,
 }: {
   clientId: string;
@@ -117,11 +117,11 @@ function Tab({
   onAttached: (attached: Attached) => void;
   address: Address;
   onAddress: (address: NonNullable<Address>) => void;
-  onBooked: () => void;
+  onChanged: () => void;
   photos: ReturnType<typeof usePhotos>;
 }) {
   if (tab === "visits") {
-    return <Visits clientId={clientId} record={record} address={address} onAddress={onAddress} onBooked={onBooked} />;
+    return <Visits clientId={clientId} record={record} address={address} onAddress={onAddress} onChanged={onChanged} />;
   }
   if (tab === "pieces") return <Pieces clientId={clientId} />;
   if (tab === "payments") {
@@ -197,7 +197,7 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
                 onAddress={(address) => {
                   setGiven({ address });
                 }}
-                onBooked={retry}
+                onChanged={retry}
                 photos={photos}
               />
             </div>

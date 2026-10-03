@@ -79,6 +79,7 @@
                   "fsm_partly",
                   "in_progress",
                   "too_early_to_close",
+                  "already_closed",
                   "no_service_area",
                   "service_exists",
                   "last_of_kind",
@@ -6036,7 +6037,7 @@
     },
     "/api/holds/{id}/discount-code": {
       "post": {
-        "summary": "Take a discount code off the hold's price, before Checkout has its order",
+        "summary": "Take a discount code off the hold's price, while nothing is paid for it",
         "parameters": [
           {
             "schema": {
@@ -6090,7 +6091,7 @@
             }
           },
           "409": {
-            "description": "already_discounted: the hold carries a code; hold_expired; price_settled: Checkout has its order, or it is paid for; ops_assisted",
+            "description": "already_discounted: the hold carries a code; hold_expired; price_settled: it is paid for, or a payment on Checkout's order is under way; ops_assisted",
             "content": {
               "application/json": {
                 "schema": {
@@ -6122,7 +6123,7 @@
         }
       },
       "delete": {
-        "summary": "Take the code off the hold again, before Checkout has its order",
+        "summary": "Take the code off the hold again, while nothing is paid for it",
         "parameters": [
           {
             "schema": {
@@ -6166,7 +6167,7 @@
             }
           },
           "409": {
-            "description": "hold_expired: the hold ran out; price_settled: Checkout has its order, or it is paid for; ops_assisted",
+            "description": "hold_expired: the hold ran out; price_settled: it is paid for, or a payment on Checkout's order is under way; ops_assisted",
             "content": {
               "application/json": {
                 "schema": {

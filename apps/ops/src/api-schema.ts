@@ -151,7 +151,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such client, or the client has been erased */
+                /** @description not_found: no such client, or the client has been erased or is outside the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -191,7 +191,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description The clients it matches, by name */
+                /** @description The clients it matches in the caller's cities, by name */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -245,7 +245,7 @@ export interface paths {
                         "application/json": components["schemas"]["ClientRecord"];
                     };
                 };
-                /** @description not_found: no such client, or the client has been erased */
+                /** @description not_found: no such client, or the client has been erased or is outside the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -292,7 +292,7 @@ export interface paths {
                         "application/json": components["schemas"]["ClientPhotos"];
                     };
                 };
-                /** @description not_found: no such client, or the client has been erased */
+                /** @description not_found: no such client, or the client has been erased or is outside the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -341,7 +341,7 @@ export interface paths {
                         "application/json": components["schemas"]["PhotoView"];
                     };
                 };
-                /** @description not_found: no such client, or the client has been erased */
+                /** @description not_found: no such client, or the client has been erased or is outside the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -453,7 +453,7 @@ export interface paths {
                         "application/json": components["schemas"]["ClientConsents"];
                     };
                 };
-                /** @description not_found: no such client, or the client has been erased */
+                /** @description not_found: no such client, or the client has been erased or is outside the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -982,6 +982,173 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/visits/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** What cancelling a client's visit gives back, or cancel it: free to the client unless ops choose otherwise */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The visit's ID. */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["OpsCancel"];
+                };
+            };
+            responses: {
+                /** @description The terms, or the cancelled visit */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OpsCancelTerms"];
+                    };
+                };
+                /** @description invalid_request: a cancel with no reason */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_changeable: the visit has begun, passed or gone, or is no client's; terms_changed: the notice is not the one shown, so show the terms again */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description unavailable: FSM did not answer; nothing changed */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/visits/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close a visit by hand, as done or partly done, for work whose technician's phone was lost */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The visit's ID. */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["HandClose"];
+                };
+            };
+            responses: {
+                /** @description Closed */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["HandClosed"];
+                    };
+                };
+                /** @description invalid_request: no reason, or times that do not fit the visit's day or end after now */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such visit */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description already_closed: the visit is closed or cancelled, or the technician's phone closed it; managed_in_fsm: FSM holds the record, so the visit is closed there */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description too_early_to_close: the visit's time has not come */
+                425: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/clients/{id}/referral": {
         parameters: {
             query?: never;
@@ -1121,7 +1288,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such client, or the client has been erased */
+                /** @description not_found: no such client, or the client has been erased or is outside the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -1199,7 +1366,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such client, or the client has been erased */
+                /** @description not_found: no such client, or the client has been erased or is outside the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -1253,7 +1420,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such client, or the client has been erased */
+                /** @description not_found: no such client, or the client has been erased or is outside the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -1308,7 +1475,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such client, or the client has been erased */
+                /** @description not_found: no such client, or the client has been erased or is outside the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -1341,7 +1508,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Number changes waiting for ops: both numbers proven by code */
+        /** Number changes waiting for ops in the caller's cities: both numbers proven by code */
         get: {
             parameters: {
                 query?: never;
@@ -1433,7 +1600,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no change waiting for ops by that ID */
+                /** @description not_found: no change waiting for ops by that ID in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -1466,7 +1633,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Deletion requests waiting for ops */
+        /** Deletion requests waiting for ops in the caller's cities */
         get: {
             parameters: {
                 query?: never;
@@ -1557,7 +1724,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no request waiting for ops by that ID */
+                /** @description not_found: no request waiting for ops by that ID in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -1717,7 +1884,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Open grievances, oldest first */
+        /** Open grievances in the caller's cities, oldest first */
         get: {
             parameters: {
                 query?: never;
@@ -1799,7 +1966,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description not_found: no open grievance by that ID */
+                /** @description not_found: no open grievance by that ID in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2465,7 +2632,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such client */
+                /** @description not_found: no such client, or the client is outside the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -6000,7 +6167,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "already_closed" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -6169,6 +6336,8 @@ export interface components {
             } | null;
             /** @description Not yet paid for, linked or invoiced, so a discount code may still be entered on it or taken off. */
             price_open: boolean;
+            /** @description For a consultation and fit in one visit, the code the client typed on /book for it, honoured as it stood then when entered on the visit; null for none. */
+            requested_code: string | null;
         };
         /** @description Display name and initials only. */
         Technician: {
@@ -6664,10 +6833,75 @@ export interface components {
             /** @description A discount code the client gave. */
             code?: string;
         };
+        OpsCancelTerms: {
+            /** Format: uuid */
+            visit_id: string;
+            /** @enum {string} */
+            type: "consultation" | "first_fit" | "service" | "replacement";
+            /**
+             * @description free: before the notice the visit was booked under starts; late: inside it.
+             * @enum {string}
+             */
+            notice: "free" | "late";
+            /** @description The notice the visit was booked under, in hours. */
+            notice_hours: number;
+            /** @description In paise: what the visit's payment holds. */
+            paid: number;
+            /** @description The payment's method: upi, card and so on. */
+            destination: string | null;
+            free: components["schemas"]["OpsCancelOutcome"];
+            client_terms: components["schemas"]["OpsCancelOutcome"] & unknown;
+            /** @description false: the terms only; true: the visit is cancelled. */
+            cancelled: boolean;
+        };
+        /** @description Free to the client: what ops cancel on unless they choose. */
+        OpsCancelOutcome: {
+            /** @description In paise: what goes back to the payment's source. */
+            refund: number;
+            /** @description In paise: what is kept as a charge. */
+            kept: number;
+            /** @description For a visit paid with a credit: whether it comes back. Lost on the client's late terms, or where its grant has been taken back or has expired; null for a visit paid otherwise. */
+            credit: ("restored" | "lost") | null;
+        };
+        OpsCancel: {
+            confirm: boolean;
+            /**
+             * @description With confirm: the notice ops were shown.
+             * @enum {string}
+             */
+            notice?: "free" | "late";
+            /** @description With confirm: apply the client's own late terms. Left out, the cancel is free to the client. */
+            on_client_terms?: boolean;
+            /** @description With confirm, required: why, kept with the cancel and never written to the audit log. */
+            reason?: string;
+        };
+        HandClosed: {
+            /** Format: uuid */
+            visit_id: string;
+            /** @enum {string} */
+            status: "completed" | "terminated";
+            duration_minutes: number | null;
+        };
+        HandClose: {
+            /** @enum {string} */
+            outcome: "done" | "partial";
+            /**
+             * Format: date-time
+             * @description When the work began, on the visit's own day.
+             */
+            started_at: string;
+            /**
+             * Format: date-time
+             * @description When it ended: after it began, and not later than now.
+             */
+            ended_at: string;
+            /** @description Why it is closed by hand, and, for a visit partly done, why: kept with the visit. */
+            reason: string;
+        };
         AlreadyInvited: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "device_revoked" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "managed_in_fsm" | "clash" | "on_leave" | "does_not_fit" | "fsm_refused" | "fsm_partly" | "in_progress" | "too_early_to_close" | "already_closed" | "no_service_area" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "code_not_applicable" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];

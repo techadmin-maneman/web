@@ -31,6 +31,8 @@ export interface PaymentLinkRequest {
 export interface PaymentsProvider {
   /** An order for Checkout to pay; its notes come back on the payment. */
   createOrder(order: { amount: number; receipt: string; notes: Record<string, string> }): Promise<{ id: string }>;
+  /** The status of each payment made on an order, as Razorpay holds it now: "created" while one is still being made. */
+  orderPayments(orderId: string): Promise<readonly string[]>;
   /**
    * Gives a payment back, in full or part, to where it came from; answers the refund's ID, or null where a refund
    * under the same receipt was made before. Throws PaymentUnanswered where it cannot say whether it was made.
@@ -70,7 +72,7 @@ export function createPaymentsProvider(
   if (provider === "razorpay" && settings !== null) return createRazorpay(settings, deps);
   if (provider === "stub") return createStubPayments();
   const off = () => Promise.reject(new Error("payments are not connected here (PAYMENTS_PROVIDER is none)"));
-  return { createOrder: off, refund: off, createPaymentLink: off, findPaymentLink: off };
+  return { createOrder: off, orderPayments: off, refund: off, createPaymentLink: off, findPaymentLink: off };
 }
 
 /** The stub, and what it was asked, for tests to read. */
@@ -80,6 +82,8 @@ export interface StubPayments extends PaymentsProvider {
     readonly refunds: { paymentId: string; amount: number }[];
     readonly links: PaymentLinkRequest[];
   };
+  /** The payments a test says were made on an order, by status; none on an order it names nothing for. */
+  readonly paymentsOn: Map<string, string[]>;
 }
 
 /**
@@ -95,12 +99,15 @@ export function createStubPayments(): StubPayments {
   };
   const receipts = new Set<string>();
   const linksByReference = new Map<string, MadeLink>();
+  const paymentsOn = new Map<string, string[]>();
   return {
     made,
+    paymentsOn,
     createOrder: (order) => {
       made.orders.push(order);
       return Promise.resolve({ id: `order_stub_${crypto.randomUUID()}` });
     },
+    orderPayments: (orderId) => Promise.resolve(paymentsOn.get(orderId) ?? []),
     refund: (paymentId, refund) => {
       const receipt = `${paymentId} ${refund.receipt}`;
       if (receipts.has(receipt)) return Promise.resolve({ id: null });
