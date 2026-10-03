@@ -721,6 +721,8 @@ export const refer = {
 
 export const photos = {
   title: "Photos",
+  /** Why the visits' photographs are kept, said above them. */
+  basis: "Taken for your visit record.",
   compare: "Compare",
   angles: { front: "Front", top: "Top", left: "Left", right: "Right", hair: "Hair" },
   /** The compare's three angles, as board D2 names them. */
@@ -896,7 +898,7 @@ export const payments = {
 export const empty = {
   photos: {
     title: "Photos",
-    lines: ["Your photographs start at your first fit.", "Five angles, before and after each visit."],
+    lines: ["Your photographs start at your first visit.", "Five angles at every visit, taken for your visit record."],
   },
   payments: {
     title: "Payments",
@@ -970,6 +972,8 @@ export const profile = {
   notGiven: "Not given",
   // PLACEHOLDER: what switching off visit messages means, since ops then call instead.
   visitsOff: "No visit updates on WhatsApp. We will call you about any change.",
+  // PLACEHOLDER until counsel rules what this switch means: switched off, visits are photographed all the same.
+  ownRecordOff: "Each visit is still photographed for your visit record.",
   // PLACEHOLDER: a switch the API did not answer stays as it was.
   switchFailed: "That did not go through, so nothing has changed. Please try again.",
   /**

@@ -72,13 +72,13 @@ describe("a client's hair profile", () => {
     expect(takesProfile("first_fit", false)).toBe(false);
     expect(takesProfile("service", false)).toBe(false);
     expect(takesProfile("replacement", false)).toBe(false);
-    // The card puts it just before the after photographs: on a one visit, once the product is chosen and fitted.
+    // The card puts it just before the after photographs: on a one visit, once the product is chosen and fitted. A
+    // consultation takes no after set, so there it comes just before the outcome.
     expect(cardStepsFor("consultation", false)).toEqual([
       "before_photos",
       "checklist",
       "consumables",
       "profile",
-      "after_photos",
       "outcome",
     ]);
     expect(cardStepsFor("first_fit", true)).toEqual([

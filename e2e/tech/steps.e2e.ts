@@ -583,7 +583,8 @@ test.describe("the client's hair profile", () => {
     expect((await wcag(page)).violations).toEqual([]);
     await next(page).click();
 
-    await expect(page.getByRole("heading", { level: 1, name: "After photos" })).toBeVisible();
+    // A consultation takes no after photographs, so the outcome follows.
+    await expect(page.getByRole("heading", { level: 1, name: "Outcome" })).toBeVisible();
     await expect.poll(() => writesTo(fake, "profile").length).toBe(1);
     expect(writesTo(fake, "profile")[0]?.body).toEqual({
       fit: {
