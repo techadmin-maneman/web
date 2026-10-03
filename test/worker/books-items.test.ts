@@ -183,9 +183,8 @@ describe("each service's Books item", () => {
     expect(open).toEqual({ n: 0 });
   });
 
-  it("runs on the hour, and only with calls enough left to read Books' list", async () => {
+  it("runs only with calls enough left to read Books' list", async () => {
     const books = createStubBooks({ draftTotal: 0, items: AGREEING });
-    expect(await check(books, { now: new Date("2026-09-23T05:10:00.000Z") })).toBeNull();
     expect(await check(books, { budget: createCallBudget(BOOKS_ITEM_PAGES - 1) })).toBeNull();
     expect(await check(books, { budget: createCallBudget(BOOKS_ITEM_PAGES) })).toEqual({ differs: [], written: 0 });
   });

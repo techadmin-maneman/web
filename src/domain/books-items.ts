@@ -64,8 +64,8 @@ const alertKey = (service: { readonly kind: string; readonly tier: string }) =>
 const sameName = (a: string, b: string): boolean => a.trim().toLowerCase() === b.trim().toLowerCase();
 
 /**
- * Each service offered today against Books' items, on the hour, from the cron run's budget. Null when this run is not
- * the one, or has too few calls left to read the list.
+ * Each service offered today against Books' items, from the cron run's budget; the cron runs it once an hour. Null when
+ * the run has too few calls left to read the list.
  */
 export async function checkBooksItems(
   db: D1Database,
@@ -73,7 +73,6 @@ export async function checkBooksItems(
   options: BooksItemsOptions,
 ): Promise<ItemsCheck | null> {
   const { now, budget } = options;
-  if (now.getUTCMinutes() >= 5) return null;
   if (!budget.spend(BOOKS_ITEM_PAGES)) return null;
 
   const items = await deps.books.items();

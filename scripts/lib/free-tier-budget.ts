@@ -48,21 +48,22 @@ export const PHASE_2_ALLOWANCE = {
 } as const;
 
 /**
- * The five-minute cron's D1 reads. Every query on its path searches an index
- * that holds only the rows still waiting (test/node/query-plans.test.ts), so a
- * run reads about the rows it handles and none of the history behind them
- * (test/worker/cron-reads.test.ts measures a run against a history, and against
- * twice that history).
+ * The cron's D1 reads. Every query on its path searches an index that holds
+ * only the rows still waiting (test/node/query-plans.test.ts), so a job reads
+ * about the rows it handles and none of the history behind them
+ * (test/worker/cron-reads.test.ts measures every job against a history, and
+ * against twice that history). No job runs more often than every five minutes,
+ * so a day reads at most 288 times what one turn of every job reads.
  */
 export const CRON_RUNS_PER_DAY = 24 * 12;
 /**
- * A run with nothing to do: measured at about 70 rows, and 100 in the evening, when the reminders look for tomorrow's
- * visits and the next services falling due, however long the tables grow. Taken as 150, so a statement added to the
- * cron is measured against the day's reads, not failed for the one row it reads.
+ * Every job with nothing to do: measured at about 70 rows, and 100 in the evening, when the reminders look for
+ * tomorrow's visits and the next services falling due, however long the tables grow. Taken as 150, so a statement
+ * added to the cron is measured against the day's reads, not failed for the one row it reads.
  */
 export const CRON_ROWS_READ_PER_QUIET_RUN = 150;
 /**
- * A run at its busiest, every lookup coming back full: the sweep's eight
+ * Every job at its busiest, every lookup coming back full: the sweep's eight
  * lookups of 100 and what it expires and deletes (about 1,600); the
  * reconciliation's page of 50, and on the hour the photographs of three days'
  * visits (about 1,700); erased people's files, 5 at a time (about 150); and
@@ -70,13 +71,29 @@ export const CRON_ROWS_READ_PER_QUIET_RUN = 150;
  * Books passes of 5 to 20 each, with their joins (about 700).
  */
 export const CRON_ROWS_READ_PER_BUSY_RUN = 5_000;
+/**
+ * The cron runs every minute, each run a few jobs (src/scheduled/cron.ts), and each run reads its own record: the
+ * maintenance switch, the run record and the failing jobs, a few rows.
+ */
+export const CRON_TICKS_PER_DAY = 24 * 60;
+export const CRON_ROWS_READ_PER_TICK = 5;
 /** The cron's share of the daily reads. The rest of the 80% is for requests. */
 export const CRON_READ_SHARE = 0.4;
 
 /** Production's cron as busy as it can be on every run, and staging's at rest. */
 export function cronRowsReadPerDay(perBusyRun: number = CRON_ROWS_READ_PER_BUSY_RUN): number {
-  return CRON_RUNS_PER_DAY * (perBusyRun + CRON_ROWS_READ_PER_QUIET_RUN);
+  const jobs = CRON_RUNS_PER_DAY * (perBusyRun + CRON_ROWS_READ_PER_QUIET_RUN);
+  const records = 2 * CRON_TICKS_PER_DAY * CRON_ROWS_READ_PER_TICK;
+  return jobs + records;
 }
+
+/**
+ * The most statements one minute's run may send D1, its own record's included. The free plan stops a run past 10 ms of
+ * CPU, and on staging an invocation cost about 1 ms and 0.35 ms more for each statement (docs/decisions/0009, "Update,
+ * 4 October 2026"). 16 come to about 6.6 ms, leaving a third of the 10 for code a run meets for the first time.
+ * test/worker/cron-reads.test.ts holds every minute of the hour to it, over a history.
+ */
+export const CRON_STATEMENTS_PER_RUN = 16;
 
 /** The requests' share of the daily reads: what the 80% leaves after the cron's. */
 export const REQUEST_READ_SHARE = HEADROOM - CRON_READ_SHARE;
