@@ -1,19 +1,28 @@
 // What the site's booking form tells a number we already know, privately on WhatsApp, since the page tells every
 // number the same thing (src/policy/site-booking.ts): that it has a consultation still to happen, that it books in
-// the app, or that the visit goes to the address already on its account. Each is composed as it is sent, from how
-// the person stands then.
+// the app, that the visit goes to the address already on its account, or that we do not come to that address yet.
+// Each is composed as it is sent, from how the person stands then.
 
 import { shortDate } from "@maneman/web-kit/dates";
 import { firstNameOf } from "../lib/names.ts";
 import { consentGiven, type MessageKind } from "./messages.ts";
 import { currentAddress } from "./profile.ts";
+import { isServed } from "./service-area.ts";
 import { bookableTypes, liveVisitOf, type LiveVisit } from "./scheduling.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
 import { hoursOfWindow, NO_VISITS_CONSENT, type Composed } from "./visit-messages.ts";
 
-export type SiteNoticeKind = Extract<MessageKind, "consultation_exists" | "book_in_app" | "address_on_account">;
+export type SiteNoticeKind = Extract<
+  MessageKind,
+  "consultation_exists" | "book_in_app" | "address_on_account" | "address_not_served"
+>;
 
-const SITE_NOTICE_KINDS: readonly SiteNoticeKind[] = ["consultation_exists", "book_in_app", "address_on_account"];
+const SITE_NOTICE_KINDS: readonly SiteNoticeKind[] = [
+  "consultation_exists",
+  "book_in_app",
+  "address_on_account",
+  "address_not_served",
+];
 
 export const isSiteNoticeKind = (kind: string): kind is SiteNoticeKind =>
   (SITE_NOTICE_KINDS as readonly string[]).includes(kind);
@@ -64,6 +73,13 @@ async function addressOnAccount(db: D1Database, personId: string, firstName: str
   return { template: "address_on_account_v1", params: [firstName] };
 }
 
+async function addressNotServed(db: D1Database, personId: string, firstName: string): Promise<Composed> {
+  const address = await currentAddress(db, personId);
+  if (address === null) return { skip: "no address on the account" };
+  if (await isServed(db, address.pincode)) return { skip: "we come to the address on the account now" };
+  return { template: "address_not_served_v1", params: [firstName, address.pincode] };
+}
+
 /** What a queued notice says, as the person stands now; or why it is not sent. */
 export async function composeSiteNotice(db: D1Database, kind: SiteNoticeKind, personId: string): Promise<Composed> {
   if (!(await consentGiven(db, personId, "whatsapp_visits"))) return { skip: NO_VISITS_CONSENT };
@@ -72,5 +88,6 @@ export async function composeSiteNotice(db: D1Database, kind: SiteNoticeKind, pe
   const firstName = firstNameOf(name);
   if (kind === "consultation_exists") return consultationExists(db, personId, firstName);
   if (kind === "book_in_app") return bookInApp(db, personId, firstName);
+  if (kind === "address_not_served") return addressNotServed(db, personId, firstName);
   return addressOnAccount(db, personId, firstName);
 }

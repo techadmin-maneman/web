@@ -20,6 +20,8 @@ export const AUDIT_ACTIONS = [
   "number_change.decide",
   "deletion.request",
   "deletion.decide",
+  // Ops erasing a client from their page, the day they ask.
+  "person.erase",
   // A held referral grant (docs/decisions/0048-referrals.md), and an invite ops attach to a client who booked away
   // from its page (docs/decisions/0089-an-invite-is-not-lost.md).
   "referral.decide",
@@ -72,6 +74,8 @@ export const AUDIT_ACTIONS = [
   "credit.adjust",
   // Ops calling a client about a move he had not heard of (docs/decisions/0069-dispatch-under-concurrency.md).
   "dispatch.client_told",
+  // Ops moving a visit the technician had checked in at, which clears his check-in.
+  "dispatch.check_in_cleared",
   // The consumables ops keep and what each service is expected to use, the job sheet the technician
   // app reads, and the stock in each kit and the central store (docs/decisions/0087-consumables-and-stock.md).
   "consumable.add",

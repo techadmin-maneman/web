@@ -33,7 +33,6 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
     leadWebhookUrl: null,
     heartbeatUrl: null,
     analyticsToken: null,
-    erasureSecret: "",
     zoho: null,
     zohoFsm: null,
     zohoBooks: null,
