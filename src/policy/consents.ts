@@ -26,10 +26,15 @@ export const CONSENT_PURPOSES = [
 ] as const;
 export type ConsentPurpose = (typeof CONSENT_PURPOSES)[number];
 
+export function isConsentPurpose(value: unknown): value is ConsentPurpose {
+  return (CONSENT_PURPOSES as readonly unknown[]).includes(value);
+}
+
 /**
  * Every place a consent is given, kept on its row. The owner's four, split where one screen or page is several:
  * the site's booking form, its waitlist and an invite's page; the site's try-on; the app's booking, profile and share
- * sheet; the technician, where nothing asks for one yet; and the withdrawal an erasure records.
+ * sheet; the technician, where nothing asks for one yet; and the withdrawals: an erasure's, the link a reminder or
+ * alert ends with, and a STOP reply on WhatsApp.
  */
 export const CONSENT_SOURCES = [
   "site_booking",
@@ -41,8 +46,25 @@ export const CONSENT_SOURCES = [
   "app_share_sheet",
   "technician",
   "erasure",
+  "message_link",
+  "whatsapp_stop",
 ] as const;
 export type ConsentSource = (typeof CONSENT_SOURCES)[number];
+
+/** What a STOP reply on WhatsApp withdraws: every purpose we message a person under. */
+export const STOPPED_BY_A_REPLY = ["whatsapp_visits", "whatsapp_launches"] as const satisfies readonly ConsentPurpose[];
+
+/** The replies that mean stop, as isStopReply reads them: in capitals, punctuation gone. */
+const STOP_REPLIES = new Set(["STOP", "STOP ALL", "UNSUBSCRIBE"]);
+
+/** Whether a WhatsApp reply asks us to stop: "stop", "Stop." or "STOP!" on its own, never a sentence with it in. */
+export function isStopReply(text: string): boolean {
+  const words = text
+    .toUpperCase()
+    .replace(/[^A-Z]+/g, " ")
+    .trim();
+  return STOP_REPLIES.has(words);
+}
 
 /** The screens of the client app that switch a consent through the profile's own route. */
 export const APP_SWITCH_SOURCES = [

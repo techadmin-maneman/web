@@ -59,6 +59,7 @@ import { registerErasure } from "./routes/erasure.ts";
 import { registerEvolutionHook } from "./routes/evolution-hook.ts";
 import { registerFsmHook } from "./routes/fsm-hook.ts";
 import { registerRazorpayHook } from "./routes/razorpay-hook.ts";
+import { registerStopMessages } from "./routes/stop-messages.ts";
 import { registerHealth } from "./routes/health.ts";
 import { registerOpsProfile } from "./routes/ops-profile.ts";
 import { registerOpsStorage } from "./routes/ops-storage.ts";
@@ -95,6 +96,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerTryonClaim,
     registerTryonResult,
     registerErasure,
+    // The page a reminder's or alert's link opens, which stops them without signing in.
+    registerStopMessages,
     // Webhooks sit on the public host (ADR 0026).
     registerEvolutionHook,
     registerFsmHook,

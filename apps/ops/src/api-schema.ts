@@ -6246,7 +6246,7 @@ export interface components {
                 /** @description When they last switched it. */
                 at: string | null;
                 /** @description Where they last switched it. null when never switched, or when no place was kept: given before this release reached the environment on a notice shown in more than one place, written by the Worker it replaced between its migration and its deploy, or switched from a copy of the app loaded before it, which names no screen. */
-                source: ("site_booking" | "site_waitlist" | "referral_landing" | "try_on" | "app_booking" | "app_profile" | "app_share_sheet" | "technician" | "erasure") | null;
+                source: ("site_booking" | "site_waitlist" | "referral_landing" | "try_on" | "app_booking" | "app_profile" | "app_share_sheet" | "technician" | "erasure" | "message_link" | "whatsapp_stop") | null;
             }[];
             /** @description Their latest deletion request. A processed one leaves no client to read. */
             deletion: {

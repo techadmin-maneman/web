@@ -1112,6 +1112,31 @@ export const notFound = {
   home: "Back to the site",
 };
 
+/**
+ * PLACEHOLDER COPY: the page the link at the foot of a reminder or the launch alert opens, which stops them in one
+ * tap. "Done" names what stopped, by the consent withdrawn. "{whatsapp}" is the business number, as a chat link.
+ */
+export const stopMessages = {
+  ask: {
+    title: "Stop these messages",
+    body: "One tap, and we stop sending them on WhatsApp.",
+    button: "Stop them",
+    busy: "Stopping",
+  },
+  done: {
+    title: "Done.",
+    whatsapp_visits: "We will no longer message you on WhatsApp about your visits.",
+    whatsapp_launches: "We will no longer message you when we come to a new area.",
+    other: "We will no longer send you these messages.",
+    again: "Changed your mind? Clients can switch them back on in the Mane Man app, under Profile.",
+  },
+  expired: {
+    title: "This link no longer works.",
+    body: "Reply STOP to any of our WhatsApp messages, or message us at {whatsapp}, and we will stop them.",
+  },
+  offline: "We could not reach Mane Man. Check your connection and try again.",
+};
+
 export const pageTitles = {
   home: `Mane Man — hair systems, fitted at your home across ${serviceArea}`,
   tryOn: "Try a new look — Mane Man",
@@ -1119,6 +1144,7 @@ export const pageTitles = {
   privacy: "Privacy — Mane Man",
   terms: "Terms — Mane Man",
   notFound: "Not found — Mane Man",
+  stop: "Stop messages — Mane Man",
 };
 
 /** Each page's description, for search results and shared links. */
