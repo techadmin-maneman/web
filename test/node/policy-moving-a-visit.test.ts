@@ -10,6 +10,7 @@ import {
   moveCost,
   noticeAt,
   noticeCountsFrom,
+  opsCancelCharged,
   RULES,
 } from "../../src/policy/moving-a-visit.ts";
 
@@ -61,6 +62,16 @@ describe("moving a visit", () => {
     expect(noticeCountsFrom(movedSooner, before)).toEqual(before);
     expect(noticeAt(noticeCountsFrom(movedSooner, before), new Date("2026-09-22T00:00:00Z"))).toBe("free");
     expect(noticeCountsFrom(movedSooner, null)).toEqual(movedSooner);
+  });
+
+  it(RULES[8], () => {
+    expect(opsCancelCharged("late", false)).toBe("free");
+    expect(cancelRefund("service", opsCancelCharged("late", false))).toBe("all");
+    expect(creditOnChange(opsCancelCharged("late", false))).toBe("restored");
+    expect(cancelRefund("service", opsCancelCharged("late", true))).toBe("none");
+    expect(cancelRefund("first_fit", opsCancelCharged("late", true))).toBe("all_but_fee");
+    expect(creditOnChange(opsCancelCharged("late", true))).toBe("lost");
+    expect(opsCancelCharged("free", true)).toBe("free");
   });
 
   it("counts from the visit's own time where ops moved it later, so a move by ops never takes a free change away", () => {

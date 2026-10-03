@@ -76,10 +76,16 @@ const CLOSED_AS: Readonly<Record<VisitOutcome, AppointmentStatus>> = {
   no_show: "terminated",
 };
 
+/** Ops closing a visit by hand, for work whose phone was lost before it sent anything: who, and why, as they typed it. */
+export interface ClosedByHand {
+  readonly by: string;
+  readonly reason: string;
+}
+
 /**
- * The visits row a closed job becomes, from the job's own event times. It is written only once the visit has been
- * moved to its outcome's status, so in a batch after a refused move it writes nothing, and a second close keeps the
- * first.
+ * The visits row a closed job becomes, from the job's own event times, or the times ops give when they close it by
+ * hand. It is written only once the visit has been moved to its outcome's status, so in a batch after a refused move it
+ * writes nothing, and a second close keeps the first.
  */
 export function closeVisit(
   db: D1Database,
@@ -88,12 +94,13 @@ export function closeVisit(
   times: VisitTimes,
   partialReason: string | null,
   at: string,
+  byHand: ClosedByHand | null = null,
 ): D1PreparedStatement {
   return db
     .prepare(
       `INSERT INTO visits (id, appointment_id, started_at, ended_at, duration_minutes, outcome, partial_reason,
-         updated_at)
-       SELECT ?1, id, ?3, ?4, ?5, ?6, ?7, ?8 FROM appointments
+         updated_at, closed_by, close_reason)
+       SELECT ?1, id, ?3, ?4, ?5, ?6, ?7, ?8, ?10, ?11 FROM appointments
        WHERE id = ?2 AND deleted_at IS NULL AND status = ?9
        ON CONFLICT (appointment_id) DO NOTHING`,
     )
@@ -107,10 +114,12 @@ export function closeVisit(
       partialReason,
       at,
       CLOSED_AS[outcome],
+      byHand?.by ?? null,
+      byHand?.reason ?? null,
     );
 }
 
-function durationOf(times: VisitTimes): number | null {
+export function durationOf(times: VisitTimes): number | null {
   if (times.startedAt === null || times.endedAt === null) return null;
   return minutesBetween(times.startedAt, times.endedAt);
 }

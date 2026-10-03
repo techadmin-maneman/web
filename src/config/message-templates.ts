@@ -192,6 +192,7 @@ export const MESSAGE_CLASSES: Readonly<Record<MessageKind, MessageClass>> = {
   nothing_to_pay: "automatic", // the technician's close of a one visit, not the client's own action
   reschedule_confirmation: "answering", // the client's own move
   cancel_confirmation: "answering", // the client's own cancel
+  visit_cancelled: "automatic", // ops cancelled it, in the console
   waitlist_confirmation: "answering", // their own place on the list, just joined
   visit_reminder: "automatic", // the day-before cron
   visit_moved: "automatic", // ops moved it, on the dispatch board
