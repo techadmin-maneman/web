@@ -8,9 +8,11 @@
 
 export const FIXED_LIMITS = {
   // Login codes (docs/decisions/0030-one-time-codes.md): per number a day, per address an hour, and in all a day.
+  // Technicians' codes have a day's ceiling of their own, so client traffic never stops a technician signing in.
   OTP_MOBILE_DAILY_LIMIT: 5,
   OTP_IP_HOURLY_LIMIT: 10,
   OTP_DAILY_CEILING: 300,
+  OTP_TECH_DAILY_CEILING: 100,
   // Leads and bookings from the site (docs/decisions/0011-lead-api.md): per number and per address, a day.
   LEAD_MOBILE_DAILY_LIMIT: 5,
   LEAD_IP_DAILY_LIMIT: 20,
