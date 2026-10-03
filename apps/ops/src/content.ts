@@ -80,6 +80,8 @@ export const states = {
   loading: "Loading",
   failed: "We could not load this.",
   retry: "Try again",
+  /** The failed call's reference, to quote to the developers. */
+  ref: { label: "Ref", copy: "Copy", copied: "Copied" },
 } as const;
 
 export const dispatch = {
@@ -419,7 +421,7 @@ export const clients = {
    * the piece in wear's, as a month, exactly as the board writes it. The
    * mobile is ours: the board draws a WhatsApp button and no number to call.
    */
-  meta: { state: "Status", credits: "Credits", replacement: "Replacement due", mobile: "Mobile" },
+  meta: { state: "Status", credits: "Free service visits", replacement: "Replacement due", mobile: "Mobile" },
   /** Board B1's button beside the name, which opens a chat with the client. */
   whatsapp: "WhatsApp",
   whatsappLabel: (name: string) => `WhatsApp ${name}`,
@@ -427,9 +429,9 @@ export const clients = {
   callLabel: (name: string, mobile: string) => `Call ${name} on ${mobile}`,
   // PLACEHOLDER: the board writes "Active"; the API's three states are these.
   states: { fitted: "Fitted", lead: "Booked", nothing_booked: "Nothing booked" },
-  /** The head's credits, as the board writes them: "2 · expire 3 Jan 2028". */
+  /** The head's free service visits, as the client's Home writes them: "2 · use by 3 Jan 2028". */
   creditLine: (visits: number, expiry: string | null) =>
-    expiry === null ? String(visits) : `${String(visits)} · expire ${expiry}`,
+    expiry === null ? String(visits) : `${String(visits)} · use by ${expiry}`,
   /**
    * PLACEHOLDER: the board draws no client without a piece. A client wearing
    * none falls due on no date at all, so the head says so rather than drawing
@@ -563,7 +565,7 @@ export const clients = {
       pays: {
         nothing: "Nothing to pay.",
         oneVisit: "Nothing to pay now. A payment link goes to them once they are fitted.",
-        credit: (left: number) => `Paid with a visit credit. ${String(left)} left.`,
+        credit: (left: number) => `Paid with a free service visit. ${String(left)} left.`,
         link: (amount: string) =>
           `${amount} before any code. A payment link goes to them by SMS; the visit is booked once they pay.`,
       },
@@ -628,8 +630,10 @@ export const clients = {
       /** "Service visit, Thu 24 Sep, 12:00". */
       what: (visit: string, when: string) => `${visit}, ${when}`,
       paid: (amount: string) => `Paid ${amount}`,
-      credit: "A visit credit covers it",
+      credit: "A free service visit covers it",
       free: "Nothing to pay",
+      /** "Code AUDTEST, Rs. 1,000 off": the code the client booked with. */
+      code: (applied: string) => `Code ${applied}`,
       refusal: (reason: string) => `FSM said: ${reason}`,
       noRefusal: "FSM gave no reason.",
       retrying: (until: string) => `Tried again automatically until ${until}.`,
@@ -725,13 +729,14 @@ export const clients = {
     /** "Code AUDTEST, Rs. 1,000 off", beneath what the payment was for. */
     code: (applied: string) => `Code ${applied}`,
   },
-  /** Putting a client's service-visit credits right by hand (POST /api/clients/{id}/credits). */
+  /** Putting a client's free service visits right by hand (POST /api/clients/{id}/credits). */
   credits: {
-    title: "Service-visit credits",
+    title: "Free service visits",
     balance: "They hold",
     none: "None",
     visits: (count: number) => `${String(count)} ${Math.abs(count) === 1 ? "visit" : "visits"}`,
-    expiry: (date: string) => `The soonest expires ${date}.`,
+    /** After the count, as the head writes it: "2 visits · use by 3 Jan 2028". */
+    useBy: (date: string) => `use by ${date}`,
     change: "Visits to add, or to take away with a minus",
     changeHint: "A whole number from -12 to 12, never 0.",
     reason: "Why",
@@ -921,7 +926,7 @@ export const clients = {
     /** The board's four columns. */
     columns: ["Purpose", "State", "Date", "Source"],
     purposes: {
-      photos_own_record: "Photographs for the client record",
+      photos_own_record: "Photographs taken for the visit record",
       photos_referral_cards: "Photographs on referral cards",
       photos_marketing: "Photographs in marketing",
       whatsapp_visits: "WhatsApp about visits",
@@ -942,6 +947,8 @@ export const clients = {
       app_share_sheet: "Refer",
       technician: "Technician",
       erasure: "Erasure",
+      message_link: "Stop link",
+      whatsapp_stop: "STOP reply",
     },
     /**
      * PLACEHOLDER: a consent with no place kept: given before this release on a notice several places showed, written
@@ -1245,7 +1252,7 @@ export const noShows = {
     wordsErased: "Their words were erased with them.",
     /** PLACEHOLDER: what the charge took, and when the visit was. */
     took: (what: string, day: string) => `The charge kept ${what}, for the visit of ${day}.`,
-    credit: "a visit credit",
+    credit: "a free service visit",
     /** The board's four rows. */
     facts: { checkIn: "Check-in", distance: "Distance", whatsapp: "WhatsApp", waited: "Waited" },
     /** PLACEHOLDER: no receipt came back for the reminder or the arrival notice. */
@@ -1818,8 +1825,8 @@ export const settings = {
     title: "Discount codes",
     note:
       "A code takes money off a first fit, a service visit or a replacement, before GST. The client enters it where " +
-      "they pay or book, the technician before sending a payment link, ops on a visit. It is never taken on a visit " +
-      "a referral credit pays for, and once a visit is paid for or invoiced its code stays as it is.",
+      "they pay or book, the technician before sending a payment link, ops on a visit. It is never taken on a free " +
+      "service visit, and once a visit is paid for or invoiced its code stays as it is.",
     make: "Make codes",
     how: "The code",
     typed: "Type one",
@@ -1919,7 +1926,7 @@ export const settings = {
       late_change_charge: dispatch.typeNames,
       no_show_charge: dispatch.typeNames,
       // PLACEHOLDER: what a waiver gives back (docs/decisions/0088-every-policy-in-the-console.md).
-      no_show_waiver: { payment: "The visit's payment", credit: "The visit credit it used" },
+      no_show_waiver: { payment: "The visit's payment", credit: "The free service visit it used" },
       task_sla_hours: tasks.groups,
       // PLACEHOLDER: the phone's two bounds (docs/decisions/0088-every-policy-in-the-console.md).
       phone_clock: {
@@ -1955,7 +1962,7 @@ export const settings = {
       referral_reward: {
         referrer_visits: "The client who sent the invite",
         friend_visits: "The friend they invited",
-        valid_days: "The credits last",
+        valid_days: "The free service visits last",
       },
     } as Readonly<Record<string, Readonly<Record<string, string>>>>,
     /**
@@ -2040,8 +2047,8 @@ export const settings = {
   services: {
     title: "Services and prices",
     note:
-      "What clients can book, kind by kind. A price applies from the day you give it and never before, so nothing " +
-      "already sold moves. Each service reaches FSM's catalogue as its own item.",
+      "What clients can book, kind by kind. A new price applies from tomorrow at the earliest, so a price already " +
+      "quoted never moves. Each service reaches FSM's catalogue as its own item.",
     /** The four kinds, as the rest of the console names them. */
     kinds: dispatch.typeNames,
     /** Under First fit: its services are the hair systems clients choose from, and nothing stands in for them. */
@@ -2105,7 +2112,7 @@ export const settings = {
       gst: "GST",
       gstHint: (max: number) => `A whole percentage, 0 to ${String(max)}.`,
       from: "Applies from",
-      fromHint: "Today or a day after it.",
+      fromHint: "Tomorrow or later.",
       setPrice: "Set this price",
       renameTitle: (name: string) => `Rename ${name}`,
       name: "Name",
@@ -2165,7 +2172,7 @@ export const settings = {
       order: "The order has changed since the page was read. Reload to see it as it stands.",
       amount_ex_gst: "A price is in whole rupees, inside the range under the field. Nothing was changed.",
       gst_percent: "GST is a whole percentage, inside the range under the field. Nothing was changed.",
-      valid_from: "A price applies from today or a day after it. Nothing was changed.",
+      valid_from: "A new price applies from tomorrow at the earliest. Nothing was changed.",
       was_valid_from: "That price applies already, so it stays in the book.",
       service_exists: "Another service already has that name, or this kind that code. Nothing was changed.",
       last_of_kind:

@@ -4,9 +4,10 @@
 // the result they asked for at the gate, as the result template with a signed
 // result link that expires an hour after sending; a client's messages about
 // their visits (src/domain/visit-messages.ts) and the reminder of their next one
-// (src/domain/next-visit.ts); the referral, waitlist and launch messages; and
-// the booking form's notices to a number we know, each composed where its
-// subject lives.
+// (src/domain/next-visit.ts); the referral, waitlist and launch messages; the
+// booking form's notices to a number we know; and the answer to a STOP reply,
+// each composed where its subject lives. A reminder or the launch alert ends
+// with the signed link that stops them (src/domain/stop-messages.ts).
 //
 // Skipped, never sent: messaging off, a person erased, an automatic kind to a
 // number outside the staging allowlist (a kind that answers the person who
@@ -22,7 +23,7 @@
 
 import { z } from "zod";
 import { PUBLIC_ORIGIN } from "../config/environments.ts";
-import { messageClass } from "../config/message-templates.ts";
+import { messageClass, stopLinkPurpose } from "../config/message-templates.ts";
 import { MAX_SEND_ATTEMPTS } from "../config/pipeline.ts";
 import { onAllowlist, type MessagingSettings } from "../config/settings.ts";
 import { RESULT_LINK_MESSAGE_TTL_MS } from "../config/tryon.ts";
@@ -37,6 +38,7 @@ import { composeNextServiceReminder } from "../domain/next-visit.ts";
 import { readOpsInputs } from "../domain/ops-settings.ts";
 import { composeFriendCredited, composeFriendFitted, composeReferralRejected } from "../domain/referral-grants.ts";
 import { composeSiteNotice, isSiteNoticeKind } from "../domain/site-notices.ts";
+import { composeMessagesStopped, stopLink } from "../domain/stop-messages.ts";
 import { composeLaunchAlert, composeWaitlistConfirmation } from "../domain/waitlist.ts";
 import {
   composeVisitMessage,
@@ -125,11 +127,15 @@ interface MessageRow {
   erased_at: string | null;
 }
 
-/** What to send: a template, its params, and for the try-on result its image's link, made fresh for each try. */
+/**
+ * What to send: a template, its params, for the try-on result its image's link, made fresh for each try, and for a
+ * reminder or alert the link that stops them.
+ */
 interface Sendable {
   readonly template: string;
   readonly params: string[];
   readonly mediaUrl?: () => Promise<string>;
+  readonly stopLink?: string;
 }
 
 type Content = Sendable | { readonly skip: string };
@@ -212,7 +218,16 @@ async function contentOf(db: D1Database, config: StaticConfig, row: MessageRow, 
   if (row.kind === "launch_alert") return composeLaunchAlert(db, row.subject_id, row.person_id, config.environment);
   if (row.kind === "waitlist_confirmation") return composeWaitlistConfirmation(db, row.subject_id, row.person_id);
   if (isSiteNoticeKind(row.kind)) return composeSiteNotice(db, row.kind, row.person_id);
+  if (row.kind === "messages_stopped") return composeMessagesStopped(db, row.person_id);
   return { skip: "unknown kind" };
+}
+
+/** The link a reminder or the launch alert ends with, which stops them; none on any other kind. */
+async function stopLinkOf(config: StaticConfig, row: MessageRow, now: Date): Promise<string | undefined> {
+  const purpose = stopLinkPurpose(row.kind);
+  if (purpose === null) return undefined;
+  const origin = PUBLIC_ORIGIN[config.environment];
+  return stopLink(origin, config.settings.tryon.linkSigningKey, { personId: row.person_id, purpose }, now);
 }
 
 export async function sendMessage(
@@ -253,6 +268,7 @@ export async function sendMessage(
   if (heldBackByAllowlist(messaging, row)) return skip("number not on the allowlist");
   const content = await contentOf(db, config, row, now);
   if ("skip" in content) return skip(content.skip);
+  const stopLink = await stopLinkOf(config, row, now);
 
   // Claim this send; another delivery of the same message now leaves it alone.
   const claim = await db
@@ -265,7 +281,7 @@ export async function sendMessage(
     .first<{ attempts: number }>();
   if (claim === null) return {};
 
-  const result = await sendContent(deps, row.mobile_e164, content);
+  const result = await sendContent(deps, row.mobile_e164, { ...content, stopLink });
 
   if (result.ok) {
     await db
@@ -318,6 +334,7 @@ async function sendContent(deps: Dependencies, to: string, content: Sendable): P
       template: content.template,
       params: content.params,
       ...(mediaUrl === undefined ? {} : { mediaUrl }),
+      ...(content.stopLink === undefined ? {} : { stopLink: content.stopLink }),
     });
   } catch (error) {
     return { ok: false, transient: true, detail: `threw ${error instanceof Error ? error.name : "error"}` };

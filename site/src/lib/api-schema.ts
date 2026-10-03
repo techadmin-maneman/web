@@ -589,6 +589,15 @@ export interface paths {
                         "application/json": components["schemas"]["Invite"];
                     };
                 };
+                /** @description rate_limited: this address looked up too many codes that are not there this hour */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         put?: never;
@@ -627,7 +636,7 @@ export interface paths {
                         "image/jpeg": string;
                     };
                 };
-                /** @description The house card, on the site */
+                /** @description The house card, on the site; for every code from an address past its misses this hour */
                 302: {
                     headers: {
                         [name: string]: unknown;
@@ -1639,6 +1648,64 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stops the messages a reminder's or alert's link names, by withdrawing the consent they were sent under */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["StopMessagesRequest"];
+                };
+            };
+            responses: {
+                /** @description Stopped */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StoppedMessages"];
+                    };
+                };
+                /** @description invalid_request: no token */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: the link is not ours, or has expired */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/hooks/evolution/{token}": {
         parameters: {
             query?: never;
@@ -1648,7 +1715,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Evolution's delivery receipts (messages.update) for the WhatsApp messages we sent */
+        /** Evolution's delivery receipts (messages.update) for the WhatsApp messages we sent, and the messages on our number (messages.upsert), where a STOP reply stops our messages */
         post: {
             parameters: {
                 query?: never;
@@ -2176,6 +2243,16 @@ export interface components {
             mobile: string;
             /** @description Erase even with a visit booked or a payment held: only once ops have cancelled and refunded them by hand (the runbook's "Erasure within the day"). */
             override_open_bookings?: boolean;
+        };
+        StoppedMessages: {
+            /**
+             * @description What is no longer sent. The same answer when it had been stopped already.
+             * @enum {string}
+             */
+            purpose: "whatsapp_visits" | "whatsapp_launches";
+        };
+        StopMessagesRequest: {
+            token: string;
         };
     };
     responses: never;

@@ -169,17 +169,17 @@ const HISTORY = [
   `INSERT INTO audit_log (at, surface, actor_kind, actor, action, subject_kind, subject_id, request_id, detail)
    SELECT '${AGO}', 'ops', 'staff', 'ops@localhost', 'client.view', 'person', 'p-' || i, 'r-' || i, '{}' FROM n`,
   `INSERT INTO stored_objects (key, bytes) SELECT 'visits/a-' || i || '/before-front.jpg', 250000 FROM n`,
-  // What the sweeper deletes once it has outlived its use, still in use: today's counts, the day's keys, a code
-  // proved and a try-on session still open.
+  // What the sweeper deletes once it has outlived its use, still in use: today's counts, the day's keys, a login code
+  // and a site's number code proved, and a try-on session still open.
   `INSERT INTO counters (scope, key, window_start, count) SELECT 'login_code', 'k-' || i, '${TODAY}', 1 FROM n`,
   `INSERT INTO idempotency (key, route, request_hash, created_at)
    SELECT 'key-' || i, 'POST /api/book/hold', 'hash', '${NOW.toISOString()}' FROM n`,
   `INSERT INTO otp_challenges (id, created_at, person_id, purpose, channel, last_sent_at, expires_at, verified_at)
    SELECT 'otp-' || i, '${AGO}', 'p-' || i, 'login', 'whatsapp', '${AGO}', '${IN_TWO_MONTHS}', '${AGO}' FROM n`,
+  `INSERT INTO number_codes (id, created_at, mobile_hash, code_hash, expires_at, verified_at)
+   SELECT 'nco-' || i, '${AGO}', 'mobile-hash-' || i, 'code-hash-' || i, '${IN_TWO_MONTHS}', '${AGO}' FROM n`,
   `INSERT INTO tryon_sessions (id, person_id, created_at, expires_at)
    SELECT 'ts-' || i, 'p-' || i, '${AGO}', '${IN_TWO_MONTHS}' FROM n`,
-  `INSERT INTO number_codes (id, created_at, mobile_hash, code_hash, expires_at, verified_at)
-   SELECT 'nc-' || i, '${AGO}', 'mobile-' || i, 'code-' || i, '${IN_TWO_MONTHS}', '${AGO}' FROM n`,
 ];
 
 /** The history of the people numbered `from` to `to`. */

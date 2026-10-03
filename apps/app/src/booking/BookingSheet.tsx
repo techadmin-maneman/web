@@ -41,7 +41,7 @@ import {
 import { booking } from "../content.ts";
 import { focusIfLost } from "../lib/arrival.ts";
 import { apiNow } from "../lib/clock.ts";
-import { loadCheckout, pay, type Paid, type PayMethod } from "./checkout.ts";
+import { loadCheckout, pay, type Paid } from "./checkout.ts";
 import { undecidedOf } from "./consents.ts";
 import { dayAfter, firstOpenFrom, hasLaterDays, openWindow, withDays } from "./days.ts";
 import {
@@ -84,6 +84,9 @@ const POLL_FOR_MS = 60_000;
 
 /** Whether the hold's countdown has run out, by the API's clock. */
 const hasRunOut = (hold: Hold) => apiNow() >= Date.parse(hold.expires_at);
+
+/** The steps that end the sheet with a Close of their own, where the one above the sheet would be a second. */
+const drawsItsOwnClose = (step: Step) => step.kind === "broken" || step.kind === "slow" || step.kind === "refunded";
 
 /** Whether the client has switched on WhatsApp about their visits, the purpose the day-before reminder is sent under. */
 const remindersOn = (profile: Profile) =>
@@ -154,7 +157,6 @@ export function BookingSheet({
   const [laterAsk, setLaterAsk] = useState<LaterAsk>("idle");
   const [date, setDate] = useState<string | null>(null);
   const [chosenWindow, setChosenWindow] = useState<BookingWindow | null>(null);
-  const [method, setMethod] = useState<PayMethod>("upi");
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   /** Whether reminders are on: null when the profile could not say, and the sheet asks. */
@@ -358,11 +360,7 @@ export function BookingSheet({
    * waited for first, with the sheet still up and busy, so a script that
    * never comes ends on the sheet's own payment-failed step.
    */
-  const throughCheckout = async (
-    checkout: NonNullable<Booking["checkout"]>,
-    how: PayMethod,
-    payBy: string,
-  ): Promise<Paid> => {
+  const throughCheckout = async (checkout: NonNullable<Booking["checkout"]>, payBy: string): Promise<Paid> => {
     const ready = await loadCheckout().then(
       () => true,
       () => false,
@@ -370,13 +368,13 @@ export function BookingSheet({
     if (!ready) return "failed";
     paying.current = true;
     dialog.current?.close();
-    const outcome = await pay(checkout, how, payBy).catch(() => "failed" as const);
+    const outcome = await pay(checkout, payBy).catch(() => "failed" as const);
     dialog.current?.showModal();
     paying.current = false;
     return outcome;
   };
 
-  /** The client ticked "Remind me": their yes to WhatsApp about their visits, on that purpose's own notice. */
+  /** The client ticked "Remind me": their yes to WhatsApp about their visits, recorded under the box's own line. */
   const switchOnReminders = async () => {
     const answer = await api.switchConsent("whatsapp_visits", true, "app_booking");
     if (answer.ok) setReminders(true);
@@ -395,7 +393,7 @@ export function BookingSheet({
   };
 
   /** The booking started, and Checkout's answer; null when the API would not start it, or the price must show first. */
-  const startPaying = async (hold: Hold, how: PayMethod): Promise<Paid | null> => {
+  const startPaying = async (hold: Hold): Promise<Paid | null> => {
     if (remind && reminders !== true) await switchOnReminders();
     const started =
       movingId === undefined ? await api.book(hold.id, undecided) : await api.startMove(movingId, hold.id);
@@ -411,15 +409,15 @@ export function BookingSheet({
       await showPriceInstead(hold.id);
       return null;
     }
-    return throughCheckout(checkout, how, hold.pay_by);
+    return throughCheckout(checkout, hold.pay_by);
   };
 
-  const payFor = async (hold: Hold, how: PayMethod) => {
+  const payFor = async (hold: Hold) => {
     if (starting.current) return;
     starting.current = true;
     setBusy(true);
     setProblem(null);
-    const outcome = await startPaying(hold, how).finally(() => {
+    const outcome = await startPaying(hold).finally(() => {
       starting.current = false;
       setBusy(false);
     });
@@ -450,9 +448,11 @@ export function BookingSheet({
         onClose(changed.current);
       }}
     >
-      <button className={styles.close} type="button" onClick={close}>
-        {booking.close}
-      </button>
+      {!drawsItsOwnClose(step) && (
+        <button className={styles.close} type="button" onClick={close}>
+          {booking.close}
+        </button>
+      )}
       <div className={styles.sheet}>
         {step.kind === "loading" && <LoadingStep />}
         {step.kind === "broken" && <WaitStep text={booking.failedToStart} onClose={close} />}
@@ -512,32 +512,19 @@ export function BookingSheet({
           <PayStep
             hold={step.hold}
             moving={moving}
-            method={method}
             busy={busy}
             problem={problem}
             askToRemind={reminders !== true}
             consents={movingId === undefined ? undecided : []}
             remind={remind}
             onRemind={setRemind}
-            onMethod={setMethod}
-            onPay={() => void payFor(step.hold, method)}
+            onPay={() => void payFor(step.hold)}
             onHold={(hold) => {
               setStep({ kind: "pay", hold });
             }}
           />
         )}
-        {step.kind === "failed" && (
-          <FailedStep
-            hold={step.hold}
-            busy={busy}
-            onRetry={() => void payFor(step.hold, method)}
-            onAnother={() => {
-              const other = method === "upi" ? "card" : "upi";
-              setMethod(other);
-              void payFor(step.hold, other);
-            }}
-          />
-        )}
+        {step.kind === "failed" && <FailedStep hold={step.hold} busy={busy} onRetry={() => void payFor(step.hold)} />}
         {step.kind === "expired" && <ExpiredStep onPickAgain={() => void load(wanted)} />}
         {step.kind === "confirming" && <WaitStep text={step.paidIn === true ? booking.paidIn : booking.confirming} />}
         {step.kind === "confirmed" && (

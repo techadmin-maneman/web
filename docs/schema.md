@@ -182,7 +182,7 @@ Indexes:
 
 Each visit, mirrored from FSM or booked without it: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice. `fsm_id` is FSM's ID for a visit FSM holds, otherwise the row's own (ADR 0032, ADR 0110).
 
-Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`, `0059_no_show_charges_and_disputes.sql`, `0060_flat_task_reads.sql`, `0061_one_visit.sql`, `0063_discount_codes.sql`, `0066_client_note_in_fsm.sql`, `0070_field_record_ours.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`, `0059_no_show_charges_and_disputes.sql`, `0060_flat_task_reads.sql`, `0061_one_visit.sql`, `0063_discount_codes.sql`, `0066_client_note_in_fsm.sql`, `0070_field_record_ours.sql`, `0076_books_without_fsm.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -225,7 +225,9 @@ Indexes:
 - `appointments_by_window_end`: on (`window_end`)
 - `appointments_by_window_start`: on (`window_start`)
 - `appointments_done_visits`: on (`window_start`), where `status = 'completed' AND type IN ('first_fit', 'service', 'replacement') AND deleted_at IS NULL`
+- `appointments_held_drafts`: on (`window_start`), where `status = 'completed' AND invoice_issued_at IS NULL AND fsm_invoice_id IS NOT NULL AND deleted_at IS NULL`
 - `appointments_live_by_person`: on (`person_id`), where `status IN ('scheduled', 'dispatched', 'in_progress') AND deleted_at IS NULL`
+- `appointments_to_bill`: on (`window_start`), where `status = 'completed' AND invoice_issued_at IS NULL AND deleted_at IS NULL AND type IN ('first_fit', 'service', 'replacement') AND one_visit IS NOT 'declined'`
 - `appointments_to_invoice`: on (`window_start`), where `status = 'completed' AND invoice_issued_at IS NULL AND fsm_work_order_id IS NOT NULL AND deleted_at IS NULL`
 - A `UNIQUE` constraint: unique on (`fsm_id`)
 
@@ -996,7 +998,7 @@ Made by `0054_policies_in_the_console.sql`.
 
 Each one-time code sent, as a hash, with its sends and attempts (ADR 0030, ADR 0052).
 
-Made by `0007_login.sql`; changed by `0008_profile.sql`, `0027_pieces_and_zones.sql`, `0037_cron_indexes.sql`.
+Made by `0007_login.sql`; changed by `0008_profile.sql`, `0027_pieces_and_zones.sql`, `0037_cron_indexes.sql`, `0079_challenge_number.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1015,6 +1017,7 @@ Made by `0007_login.sql`; changed by `0008_profile.sql`, `0027_pieces_and_zones.
 | `number_change_id` | TEXT | yes |  | → `number_change_requests.id` |
 | `technician_login` | INTEGER | no | `0` |  |
 | `technician_id` | TEXT | yes |  | → `technicians.id` |
+| `mobile_hash` | TEXT | yes |  |  |
 
 Indexes:
 
@@ -1072,7 +1075,7 @@ Made by `0049_consumables_and_stock.sql`.
 
 The Razorpay payment link a consultation and fit in one visit is paid by once the client is fitted: one a visit, the product and its price, when Razorpay made and texted it, and the payment that paid it (ADR 0105).
 
-Made by `0061_one_visit.sql`.
+Made by `0061_one_visit.sql`; changed by `0080_payment_link_references.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1090,9 +1093,14 @@ Made by `0061_one_visit.sql`.
 | `paid_at` | TEXT | yes |  |  |
 | `created_at` | TEXT | no |  |  |
 | `updated_at` | TEXT | no |  |  |
+| `reference` | TEXT | yes |  |  |
+| `reference_year` | INTEGER | yes |  |  |
+| `reference_number` | INTEGER | yes |  |  |
 
 Indexes:
 
+- `payment_links_reference`: unique on (`reference`)
+- `payment_links_reference_number`: unique on (`reference_year`, `reference_number`)
 - `payment_links_unpaid`: on (`created_at`), where `paid_at IS NULL`
 - `payment_links_unsent`: on (`created_at`), where `sent_at IS NULL AND refused_at IS NULL`
 - A `UNIQUE` constraint: unique on (`appointment_id`)
@@ -1147,7 +1155,7 @@ Indexes:
 
 One row per person, keyed by mobile number. D1 owns the identity; the CRM's and Books' IDs are only references (ADR 0011, ADR 0110).
 
-Made by `0002_lead_path.sql`; changed by `0004_erasure.sql`, `0011_fsm_mirror.sql`, `0023_dpdp.sql`, `0036_erased_files.sql`, `0037_cron_indexes.sql`, `0070_field_record_ours.sql`, `0076_books_erasure.sql`.
+Made by `0002_lead_path.sql`; changed by `0004_erasure.sql`, `0011_fsm_mirror.sql`, `0023_dpdp.sql`, `0036_erased_files.sql`, `0037_cron_indexes.sql`, `0070_field_record_ours.sql`, `0076_books_without_fsm.sql`, `0077_books_customer_upkeep.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1167,12 +1175,15 @@ Made by `0002_lead_path.sql`; changed by `0004_erasure.sql`, `0011_fsm_mirror.sq
 | `fsm_erasure_attempts` | INTEGER | no | `0` |  |
 | `files_erased_at` | TEXT | yes |  |  |
 | `books_customer_id` | TEXT | yes |  |  |
+| `books_checked_at` | TEXT | yes |  |  |
 | `books_erased_at` | TEXT | yes |  |  |
 | `books_erasure_attempts` | INTEGER | no | `0` |  |
+| `books_details_changed_at` | TEXT | yes |  |  |
 
 Indexes:
 
 - `people_books_erasure_due`: on (`erased_at`), where `erased_at IS NOT NULL AND books_customer_id IS NOT NULL AND books_erased_at IS NULL`
+- `people_books_update_due`: on (`books_details_changed_at`), where `books_details_changed_at IS NOT NULL AND books_customer_id IS NOT NULL AND erased_at IS NULL`
 - `people_by_books_customer`: unique on (`books_customer_id`), where `books_customer_id IS NOT NULL`
 - `people_by_fsm_contact`: unique on (`fsm_contact_id`), where `fsm_contact_id IS NOT NULL`
 - `people_crm_erasure_due`: on (`erased_at`), where `erased_at IS NOT NULL AND crm_erased_at IS NULL`
@@ -1453,7 +1464,7 @@ Indexes:
 
 A slot held while a client pays, at Checkout or by a payment link ops sent, and what became of it (ADR 0045, ADR 0068).
 
-Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`, `0058_held_bookings.sql`, `0061_one_visit.sql`, `0075_pay_by_link.sql`.
+Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`, `0058_held_bookings.sql`, `0061_one_visit.sql`, `0075_pay_by_link.sql`, `0078_consents_shown.sql`, `0080_payment_link_references.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1498,6 +1509,11 @@ Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_chan
 | `pay_by_link` | INTEGER | no | `0` |  |
 | `payment_link_id` | TEXT | yes |  |  |
 | `payment_link_url` | TEXT | yes |  |  |
+| `consents_shown` | TEXT | yes |  |  |
+| `consents_ip_hash` | TEXT | yes |  |  |
+| `reference` | TEXT | yes |  |  |
+| `reference_year` | INTEGER | yes |  |  |
+| `reference_number` | INTEGER | yes |  |  |
 
 Indexes:
 
@@ -1507,6 +1523,8 @@ Indexes:
 - `slot_holds_confirmed`: on (`queued_at`), where `state = 'held' AND confirmed_at IS NOT NULL`
 - `slot_holds_confirmed_by_person`: on (`person_id`), where `state = 'held' AND confirmed_at IS NOT NULL`
 - `slot_holds_held`: on (`expires_at`), where `state = 'held'`
+- `slot_holds_reference`: unique on (`reference`)
+- `slot_holds_reference_number`: unique on (`reference_year`, `reference_number`)
 - A `UNIQUE` constraint: unique on (`razorpay_order_id`)
 
 ## slot_times

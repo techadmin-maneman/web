@@ -1,7 +1,9 @@
-// An erased client's customer in Zoho Books (docs/decisions/0049-dpdp.md): deleted where no invoice or payment names
-// it, otherwise renamed "Erased client", blanked and made inactive, since Books keeps the invoices eight years
-// (src/providers/books.ts). The erasure itself never waits on Books: this pass, on the five-minute cron, finds the
-// erased people whose customer is still to be erased, a few a run.
+// An erased client's customer in Zoho Books: deleted where no invoice or payment names it, otherwise renamed "Erased
+// client", blanked and made inactive, since Books keeps the invoices eight years. The erasure itself never waits on
+// Books: this pass, on the five-minute cron, finds the erased people whose customer is still to be erased, a few a run.
+//
+// A payment the client made that is still on its way to Books is recorded first, for a day at most: Books deletes a
+// customer no payment names yet, and the payment could then never be recorded.
 //
 // A failure is counted and tried again on the next run. The last try tells ops, once, to erase it by hand.
 
@@ -15,6 +17,8 @@ import type { AlertOnce } from "./alerts.ts";
 const PER_RUN = 5;
 /** Erasing a customer Books will not delete takes a delete, a blank and a deactivation. */
 const CALLS_PER_CUSTOMER = 3;
+/** How long an erasure waits for the client's payments to reach Books. */
+const PAYMENT_WAIT_MS = 24 * 60 * 60 * 1000;
 
 export interface BooksErasurePass {
   readonly books: BooksProvider;
@@ -31,22 +35,26 @@ interface DueErasure {
 /** Erases the Books customers of erased people that are still to be erased. Returns how many it erased. */
 export async function eraseBooksCustomers(db: D1Database, pass: BooksErasurePass, now: Date): Promise<number> {
   let erased = 0;
-  for (const person of await dueErasures(db)) {
+  for (const person of await dueErasures(db, now)) {
     if (!pass.budget.spend(CALLS_PER_CUSTOMER)) break;
     if (await eraseCustomer(db, pass, person, now)) erased += 1;
   }
   return erased;
 }
 
-async function dueErasures(db: D1Database): Promise<DueErasure[]> {
+async function dueErasures(db: D1Database, now: Date): Promise<DueErasure[]> {
+  const paymentsWaitedFor = new Date(now.getTime() - PAYMENT_WAIT_MS).toISOString();
   const { results } = await db
     .prepare(
-      `SELECT id, books_customer_id FROM people
-       WHERE erased_at IS NOT NULL AND books_customer_id IS NOT NULL AND books_erased_at IS NULL
-         AND books_erasure_attempts < ?1
-       ORDER BY erased_at LIMIT ?2`,
+      `SELECT pe.id, pe.books_customer_id FROM people pe
+       WHERE pe.erased_at IS NOT NULL AND pe.books_customer_id IS NOT NULL AND pe.books_erased_at IS NULL
+         AND pe.books_erasure_attempts < ?1
+         AND (pe.erased_at < ?3 OR NOT EXISTS (
+           SELECT 1 FROM payments p
+           WHERE p.person_id = pe.id AND p.captured_at IS NOT NULL AND p.books_payment_id IS NULL))
+       ORDER BY pe.erased_at LIMIT ?2`,
     )
-    .bind(MAX_SYNC_ATTEMPTS, PER_RUN)
+    .bind(MAX_SYNC_ATTEMPTS, PER_RUN, paymentsWaitedFor)
     .all<DueErasure>();
   return results;
 }

@@ -58,6 +58,13 @@ test("heads the Visits tab with the booking, what was paid, what FSM said and un
   expect(results.violations.map((violation) => violation.id)).toEqual([]);
 });
 
+// D-03: ops about to link or refund it could not see the code it was booked with.
+test("names the discount code the booking was made with, and what it takes off", async ({ page }) => {
+  const withCode = { ...HELD_BOOKING, discount_code: { code: "STGCHECK", amount_off: 50_000 } };
+  await openVisits(page, { [`GET /api/clients/${CLIENT.id}`]: json({ ...RECORD, held_bookings: [withCode] }) });
+  await expect(held(page).getByRole("listitem")).toContainText("Code STGCHECK, Rs. 500 off");
+});
+
 test("tries FSM again, and says it is booked and the client told", async ({ page }) => {
   await openVisits(page, { [RETRY]: json({ outcome: "booked", refusal: null }) });
   await held(page)

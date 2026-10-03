@@ -11,7 +11,7 @@
 // The bridge downloads the image itself, so mediaUrl must be publicly reachable.
 
 import { z } from "zod";
-import { renderMessage } from "../config/message-templates.ts";
+import { renderWithStopLink } from "../config/message-templates.ts";
 import type { Connection, MessagingProvider, SendResult } from "./messaging.ts";
 
 export interface EvolutionSettings {
@@ -38,8 +38,8 @@ export function createEvolutionMessaging(
   deps: { fetch: typeof fetch },
 ): MessagingProvider {
   return {
-    async send({ to, template, params, mediaUrl }): Promise<SendResult> {
-      const text = renderMessage(template, params);
+    async send({ to, template, params, mediaUrl, stopLink }): Promise<SendResult> {
+      const text = renderWithStopLink(template, params, stopLink);
       if (text === null) return { ok: false, transient: false, detail: `unknown template ${template}` };
 
       const number = to.replace(/\D/g, ""); // "+919810000000" -> "919810000000"

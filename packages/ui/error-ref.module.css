@@ -1,0 +1,28 @@
+/* A failed call's reference (./ErrorRef.tsx): small, in the colour of the words round it, its copy button a link. */
+
+@layer base, ui;
+
+@layer ui {
+  .ref {
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-10);
+    margin: 0;
+    font-size: var(--fs-13);
+  }
+
+  .id {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: var(--tracking-number);
+  }
+
+  .copy {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+}

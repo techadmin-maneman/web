@@ -37,6 +37,36 @@ Environment, version and database reachability
 }
 ```
 
+### POST /api/client-errors
+
+Report an error in the app's own page
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ClientErrorReport"
+}
+```
+
+**204**: Logged
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**429**: rate_limited: this address has sent its reports for the hour, or every address has
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/auth/otp
 
 Send a login code on WhatsApp. The answer is the same whether or not the number has a booking
@@ -65,6 +95,14 @@ Request body:
 }
 ```
 
+**403**: turnstile_failed
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 **429**: rate_limited: too many codes for this number today, or from this address this hour
 
 ```json
@@ -73,7 +111,7 @@ Request body:
 }
 ```
 
-**503**: busy: today's ceiling on codes is reached
+**503**: busy: today's ceiling on codes is reached; unavailable: Turnstile could not be reached
 
 ```json
 {
@@ -109,7 +147,7 @@ Request body:
 }
 ```
 
-**429**: too_early, or rate_limited
+**429**: too_early; or rate_limited: this challenge has sent its 3 codes, or too many codes for this number today, or from this address this hour
 
 ```json
 {
@@ -161,7 +199,7 @@ Request body:
 }
 ```
 
-**429**: too_early, or rate_limited
+**429**: too_early; or rate_limited: this challenge has sent its 3 codes, or too many codes for this number today, or from this address this hour
 
 ```json
 {
@@ -1812,6 +1850,76 @@ Request body:
 }
 ```
 
+### ClientErrorReport
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "error",
+        "unhandled_rejection",
+        "render",
+        "outbox_gave_up"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "path": {
+      "type": "string",
+      "maxLength": 300,
+      "description": "The page's path, with no query or fragment."
+    },
+    "stack": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "source": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "The script the error was thrown in."
+    },
+    "line": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "column": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "step": {
+      "type": "string",
+      "maxLength": 40,
+      "description": "outbox_gave_up: the write's kind, as `checklist`."
+    },
+    "code": {
+      "type": "string",
+      "maxLength": 60,
+      "description": "outbox_gave_up: the code the API refused it with."
+    },
+    "status": {
+      "type": "integer",
+      "description": "outbox_gave_up: the refusal's HTTP status."
+    },
+    "request_id": {
+      "type": "string",
+      "maxLength": 64,
+      "description": "outbox_gave_up: the refusal's request ID, which its own log lines carry."
+    }
+  },
+  "required": [
+    "kind",
+    "message",
+    "path"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### LoginChallenge
 
 ```json
@@ -1866,10 +1974,16 @@ Request body:
       "type": "string",
       "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$",
       "example": "98100 00000"
+    },
+    "turnstile_token": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
     }
   },
   "required": [
-    "mobile"
+    "mobile",
+    "turnstile_token"
   ],
   "additionalProperties": false
 }
@@ -2073,13 +2187,18 @@ Request body:
             "paid": {
               "type": "boolean",
               "description": "Paid for in money, rather than free or covered by a credit."
+            },
+            "one_visit": {
+              "type": "boolean",
+              "description": "A consultation and fit in one visit."
             }
           },
           "required": [
             "type",
             "date",
             "window",
-            "paid"
+            "paid",
+            "one_visit"
           ],
           "additionalProperties": false
         },
@@ -4514,6 +4633,21 @@ Request body:
       ],
       "description": "Where credits added came from; null for any other entry."
     },
+    "referral_side": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "referrer",
+            "friend"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "For credits an invite added: referrer, for a friend this client invited being fitted; friend, for this client's own fit through an invite. Null for any other entry."
+    },
     "no_show": {
       "anyOf": [
         {
@@ -4532,6 +4666,7 @@ Request body:
     "visits",
     "visit",
     "source",
+    "referral_side",
     "no_show"
   ],
   "additionalProperties": false
@@ -5542,7 +5677,7 @@ Request body:
         ]
       },
       "maxItems": 2,
-      "description": "The photograph purposes the pay step showed its lines for. Booking agrees to each the client has never decided on (ADR 0080); left out, none."
+      "description": "The photograph purposes the pay step showed its lines for. Booking agrees to each the client has never decided on, recorded once the booking is paid for, or at once for a free visit (ADR 0080); left out, none."
     }
   },
   "required": [

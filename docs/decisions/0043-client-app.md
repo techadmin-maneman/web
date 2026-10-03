@@ -1,6 +1,6 @@
 # 0043. The client app: build, Worker and policy
 
-- Status: accepted
+- Status: accepted. Amended 2 October 2026: Checkout lists the ways to pay, so the pay step chooses none first and C6 offers "Try again" alone.
 - Date: 2026-09-22
 
 ## Context
@@ -10,7 +10,7 @@ The Phase 2 front-end prompt sets the client app's stack and bars:
 - **Stack:** "React with Vite, as a single-page PWA … TypeScript strict. No UI framework", on `app.maneman.in` as the Worker `mm-app` with static assets.
 - **Performance:** a first load under 150 KB of gzipped JavaScript.
 - **Security:** a content security policy of its own, allowing the backend and Razorpay's hosts, and no analytics. (Corrected 27 September 2026: this said Cloudflare Web Analytics was allowed. The policy has never named its hosts, `apps/app/headers.ts`, so the app counts no visits; whether it should is `docs/open-points.md`, item 144.)
-- **Layout:** the design is drawn at 390 px, and wider screens centre that column.
+- **Layout:** the design is drawn at 390 px. The column fills a phone up to 480 px wide, and wider screens centre it.
 
 The API it calls is mm-api's client surface on the same host (ADR 0026). Only the public site and the staging surfaces are live.
 
@@ -151,7 +151,7 @@ The audit of 24 September found the client stuck, or misled, in places this ADR 
 - **The reminder and the tier** are ADR 0025, items 37 and 35: the sheet asks for the day-before reminder when it is off and promises it only when it is on, and books the standard tier, with premium on WhatsApp.
 - **By keyboard and screen reader.** Each page and login screen names itself in the browser's title, and its heading takes the focus the tap that changed it left on nothing, as each sheet's step does. The date strip, the windows and the ways to pay are each one group of native radio buttons: one tab stop, arrow keys between. Every step of the sheets has a heading that names the sheet. The hold's count is outside C6's alert, which a screen reader would otherwise read again every second; a minute before it lapses, and when a new code can be asked for, a status says so once. "Read automatically" is shown only for a code sent by SMS, the one WebOTP reads.
 - **One focus rule, one motion rule, one heading weight** in `styles/global.css`, as the public site has: a ring in ink on paper and paper on ink; nothing moves under reduced motion, the share sheet included; headings in the serif's one loaded weight. The departures from the boards this takes are ADR 0025, item 36: fields and switches edged at 3:1, Close standing visible above a sheet, and full targets.
-- **The frame runs to the edges** of a 414 or 430 px phone: the header's rule, the offline banner, the footer and the tab bar are painted past the 390 px column to the screen's edges.
+- **The frame runs to the edges** of a 414 or 430 px phone: the column fills it, so the header's rule, the offline banner, the footer, the tab bar and every sheet meet the screen's edges.
 - **Tests.** `e2e/app/` covers each of these, and `test/node/app-*.test.ts` the calls, the routes, the money line and the service worker's table.
 
 ## Second update of 25 September 2026: the client's screens say what happened and what comes next

@@ -23,8 +23,10 @@ An alert in the alert space names what went wrong with IDs only; "What each aler
 | Try-ons fail                                                | "Try-on and WhatsApp"                                               |
 | A technician lost a phone, or his work is stuck on it       | "A technician's lost phone", "Work stuck on a technician's phone"   |
 | Ops cannot get into the console                             | "Locked out of the ops console"                                     |
+| Someone says a screen failed, or quotes a Ref               | "Someone says a screen failed"                                      |
 | R2 storage is growing, or a usage e-mail came               | "Staying on the free tier"                                          |
 | A daily allowance is 70% used                               | "The daily allowances"                                              |
+| Every host answers Cloudflare's error 1027                  | "Workers daily limit reached (1027)"                                |
 | Data is wrong or gone in D1                                 | "Restoring D1"                                                      |
 | The heartbeat or the uptime monitor says mm-api is down     | "The outside watchers", "A cron run cut short"                      |
 | A release is misbehaving                                    | "Rolling back a Worker version"                                     |
@@ -72,6 +74,7 @@ Staging's column is as its deploy of 27 September 2026 found it: all five Worker
 | 12. Evolution receipts: the webhook            | open: the shared instance's webhook                    | not yet                                                                                   |
 | 13. The address search (Google)                | `google`, and Google refuses the key (open point 54)   | not yet: `none`                                                                           |
 | 14. Cloudflare's edge scripts                  | owed: both reach every host (step 14)                  | owed: the same zone settings (step 14)                                                    |
+| 15. The rate-limiting rule                     | owed: the owner's (step 15)                            | the same rule: it is the zone's                                                           |
 
 ### 1. Resources
 
@@ -245,7 +248,7 @@ A single secret: `W secret put ALERT_WEBHOOK_URL --env <env>` prompts for the va
 
 One space can serve both environments: every alert starts `[mm-api staging]` or `[mm-api production]`.
 
-The Turnstile widgets are `mm-staging` (hostname `staging.maneman.in`) and `mm-production` (`maneman.in`, `www.maneman.in`). The front-end needs their site keys, which are public: `docs/turnstile.md`.
+The Turnstile widgets are `mm-staging` (hostname `staging.maneman.in`) and `mm-production` (`maneman.in`, `www.maneman.in`, and `app.maneman.in` before the client app goes live there). The front ends need their site keys, which are public: `docs/turnstile.md`.
 
 ### 8. Zoho
 
@@ -528,14 +531,14 @@ Payments and refunds are mirrored from Razorpay's webhook (docs/decisions/0044-p
    - Payment links on: the one visit's link is made through the API (`POST /v1/payment_links`), which the account must allow (open point 166).
    - On staging, the hooks path already has its Access bypass (step 12, point 3).
 
-### 12. WhatsApp delivery receipts (Evolution)
+### 12. WhatsApp delivery receipts and STOP replies (Evolution)
 
-Evolution reports each message as delivered and read to `POST /api/hooks/evolution/<token>` (docs/decisions/0041-outbound-messages-for-phase-2.md). The no-show evidence depends on these receipts. Until this is set up, the route answers 404 and no receipts are recorded.
+Evolution reports each message as delivered and read to `POST /api/hooks/evolution/<token>` (docs/decisions/0041-outbound-messages-for-phase-2.md), and passes on the messages people send us, where a STOP reply withdraws the sender's WhatsApp consents and is answered once. The no-show evidence depends on the receipts. Until this is set up, the route answers 404: no receipts are recorded and a STOP reply stops nothing (the link at the foot of a reminder still works).
 
 1. **The token.** Make a random value of at least 32 characters, e.g. `openssl rand -hex 24`, and set it on the Worker with `W secret put EVOLUTION_WEBHOOK_TOKEN --env <env>`. Use a different value in each environment.
 2. **Evolution's webhook**, on the instance the Worker sends from:
    - URL: `https://<host>/api/hooks/evolution/<token>`;
-   - events: **`MESSAGES_UPDATE` only**;
+   - events: **`MESSAGES_UPDATE` and `MESSAGES_UPSERT` only**;
    - "webhook by events": off.
 
    Every event is a request against the free plan's daily allowance, so send no others.
@@ -556,6 +559,8 @@ Evolution reports each message as delivered and read to `POST /api/hooks/evoluti
    `delivered_at` and `read_at` should be filled within seconds. If they stay empty, look in Workers Logs:
    - `evolution_hook_unauthorized`: the token in Evolution's URL is wrong;
    - no `evolution_receipts` line at all: Access or Bot Fight Mode is stopping the webhook.
+
+   Then reply STOP from that handset, if its person has agreed to WhatsApp about visits or launches. The handset gets one answer, the client's page in the console shows the consents withdrawn by "STOP reply", and Workers Logs has an `evolution_replies` line with `stopped: 1`. Switch the consents back on in the app afterwards.
 
 ---
 
@@ -636,6 +641,27 @@ On 2 October 2026 both reached every staging host: the beacon reached the app, o
 
 If the site's pages carry no beacon once the rules are in, the automatic setup is not reaching the pages the Worker serves. The manual snippet, a `<script defer>` from `static.cloudflareinsights.com` with the site's token, then goes in `site/src/layouts/Site.astro`; the policy already allows its host.
 
+### 15. The rate-limiting rule
+
+The free plan gives the zone one rate-limiting rule. It keeps one address from spending the account's 100,000 Workers requests a day in minutes (ADR 0009, "Update, 4 October 2026: a flood"). A request it blocks is refused at the edge and never reaches a Worker, so it costs nothing. It covers every host in the zone, staging's and production's alike.
+
+1. Cloudflare dashboard → `maneman.in` → **Security** → **Security rules** (on the older dashboard, **Security** → **WAF** → **Rate limiting rules**) → **Create rule** → **Rate limiting rules**.
+2. **Rule name:** `API, per address`.
+3. **If incoming requests match:** choose **Edit expression** and paste:
+
+   ```
+   (starts_with(http.request.uri.path, "/api/") and not starts_with(http.request.uri.path, "/api/hooks/"))
+   ```
+
+   The webhooks (`/api/hooks/razorpay`, `/api/hooks/evolution/…`) stay out, so a burst of payments is never refused. If the editor will not take the expression, build it instead: **URI Path** _starts with_ `/api/`, **And** **URI Path** _does not start with_ `/api/hooks/`.
+
+4. **With the same characteristics:** IP, the only one the free plan offers.
+5. **When rate exceeds:** **Requests** `50`, **Period** 10 seconds.
+6. **Then take action:** **Block**, **Duration** 10 seconds. Then **Deploy**.
+7. **Check.** From a terminal, `for i in $(seq 1 60); do curl -s -o /dev/null -w "%{http_code} " https://maneman.in/api/health; done`: the first 50 or so answer `200`, then `429`, and ten seconds later `200` again. **Security** → **Analytics** → **Events** shows the blocks under the rule's name. Write the date in the table above.
+
+Anything that sends more than 50 API requests in 10 seconds from one address is blocked too. The load test (`scripts/load-test-leads.ts`) sends 50 at once: run it with `--people 20`, or switch the rule off for its run and on again after. If ops working from one office are shown Cloudflare's block page, raise **Requests** rather than delete the rule.
+
 ### Before the first production release of Phase 2
 
 Production runs 268eaa4, of 21 September 2026. The next release carries every migration since, and a Worker that binds what production has never had. Before starting `deploy-production.yml`:
@@ -701,6 +727,16 @@ When one is told:
 1. See what is spending it: the dashboard's D1 and Queues pages, each database's and each queue's Metrics. Staging's names carry `staging`, production's `prod`. For D1's rows, Workers Logs says which work read them: every `request` line carries `d1_rows_read`, `d1_rows_written` and `d1_queries`, as does each cron run's `cron_run` line (with `d1_rows_read_by_job`) and each queue batch's `queue_batch` line. In the Query Builder, sum `d1_rows_read` grouped by `route`.
 2. A test run on staging (a load test, a soak, browser tests in a loop) is the usual cause: stop it. A job retrying the same thing again and again shows in Workers Logs as one event repeating; tell the developers.
 3. If it is production's own traffic, tell the developers the same day. More of these allowances means Workers Paid, which needs the owner's decision and a new ADR (step 3 above).
+
+### Workers daily limit reached (1027)
+
+Workers requests, 100,000 a day, are the account's too, staging and production together, and every surface spends them: the API on every host, the site's home, `/book` and `/r/*` pages, and the three apps. Past them Cloudflare answers every request a Worker would have served with its own error page, **error 1027**, until midnight UTC, 05:30 IST. Clients cannot book or pay, technicians cannot send their steps, ops cannot use the console, and Razorpay's webhooks are refused (Razorpay retries them for a day, so payments catch up after the reset). Nothing is lost from D1, and nothing in the code can lift it before the reset: the owner ruled on 2 October 2026 to stay on Workers Free (ADR 0009, "Update, 4 October 2026: a flood").
+
+1. **Confirm it.** Cloudflare dashboard → **Workers & Pages** → **Overview** shows the day's requests near 100,000. A page that answers 1027 on one host answers it on all of them.
+2. **Find who is spending them.** `maneman.in` → **Security** → **Analytics** (or **Analytics & Logs** → **HTTP Traffic**): group by source IP, then by path and user agent. The rate-limiting rule's blocks (step 15) show there too. A test run on staging is the usual cause, as for the other allowances: stop it.
+3. **Block the attacker.** **Security** → **Security rules** → **Create rule** → **Custom rules** (the free plan has five): match the addresses, their AS number or their country, action **Block**. This stops them spending tomorrow's allowance as well. Keep the rule until the traffic has stopped for a day, then delete it.
+4. **Many addresses at once** cannot be held off by a rule per address. Lower the rate-limiting rule's **Requests** for the day, and tell the owner: the remaining answer is Workers Paid, which needs the owner's decision and a new ADR.
+5. **After the reset,** check the cron ran (the heartbeat, "The outside watchers") and that Razorpay's retried webhooks arrived ("Razorpay's webhook is not arriving").
 
 ### R2 storage growing
 
@@ -1161,7 +1197,7 @@ The app sends the outbox one step at a time, oldest first, whenever it has signa
 
 - **No signal.** Nothing is wrong. Get to signal and open the app. The app warns when the phone has not promised to keep its store: an iPhone keeps it only with the app on its home screen (ADR 0053), so a technician on an iPhone should not leave work waiting for days.
 - **A job stopped because it changed** ("This job changed while the phone was offline", "Ops moved this job to another time", "Ops moved this job to Sameer at 10:40 am", "This job is someone else's now", "This job was cancelled…"): ops changed the job, and what is left of it cannot reach us from this phone. Agree with the technician what he did; ops enter it in FSM by hand; then he taps "Got it", which asks first and deletes that job's queue from the phone.
-- **A step refused** ("The piece's label was not accepted", and the like): "Correct it" takes him back to the step.
+- **A step refused** ("The piece's label was not accepted", and the like): "Correct it" takes him back to the step. The Ref under it finds the refusal in the logs ("Someone says a screen failed").
 - **Photographs failed**: "Retry".
 - **Never sign out or delete the app while work is waiting**: signing out wipes the phone. The app asks first, and offers "Send first".
 
@@ -1171,6 +1207,18 @@ A step that reached us and not FSM is on the server side: "FSM is down". What re
 SELECT kind, occurred_at, received_at, fsm_write_state, fsm_error FROM job_events
 WHERE appointment_id = '<visit id>' ORDER BY received_at;
 ```
+
+---
+
+## Someone says a screen failed
+
+The console and the technician app show a **Ref** under a page that did not load, and under a technician's step the API refused: the first eight characters of the call's request ID, and "Copy" copies the whole ID. Every line mm-api logged of that call carries it as `request_id`. In Workers Logs (the `mm-api` Worker → Logs), filter on `request_id` starting with the Ref, or equal to the copied ID. A change in the console that failed shows no Ref: every console call is in `audit_log` under the person, with its `request_id`.
+
+```sql
+SELECT at, action, request_id, detail FROM audit_log WHERE actor = '<their e-mail>' ORDER BY at DESC LIMIT 20;
+```
+
+The client app, the console and the technician app also report their own errors, each as one `client_error` line: `app` (client, ops or tech), `kind` (`error`, `unhandled_rejection`, `render`, or `outbox_gave_up` for a step the technician app stopped sending because the API refused it), `message`, `path`, and the outbox's `step`, `code` and `refused_request_id`. A page sends ten at most, and an address twenty an hour. A run of them after a release points at that release: tell the developers.
 
 ---
 

@@ -201,7 +201,15 @@ describe("GET /api/payments, a booking paid for and not yet a visit", () => {
 describe("GET /api/payments, what else a visit took", () => {
   interface Body {
     entries: { id: string; no_show: unknown }[];
-    credits: { event: string; visits: number; visit: { id: string } | null; source: string | null; no_show: unknown }[];
+    credits: {
+      id: string;
+      event: string;
+      visits: number;
+      visit: { id: string } | null;
+      source: string | null;
+      referral_side: string | null;
+      no_show: unknown;
+    }[];
   }
   const payments = async () => (await get("/api/payments")).json<Body>();
 
@@ -271,9 +279,49 @@ describe("GET /api/payments, what else a visit took", () => {
         visits: -1,
         visit: { id: VISIT, date: "2026-09-10", type: "first_fit" },
         source: null,
+        referral_side: null,
         no_show: null,
       },
-      { id: "grant-1", date: "2026-09-01", event: "added", visits: 3, visit: null, source: "referral", no_show: null },
+      {
+        id: "grant-1",
+        date: "2026-09-01",
+        event: "added",
+        visits: 3,
+        visit: null,
+        source: "referral",
+        referral_side: null,
+        no_show: null,
+      },
+    ]);
+  });
+
+  // MON-36: an invited friend read the referrer's line, "a friend you invited was fitted", for their own visits.
+  it("says which side of an invite its visits were for: the friend fitted through it, or the referrer", async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO people (id, created_at, mobile_e164, name) VALUES
+           ('referrer-1', ?1, '+919810000009', 'Arjun Mehta'), ('friend-1', ?1, '+919810000008', 'Kabir Singh')`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO referral_codes (code, person_id, created_at, updated_at)
+         VALUES ('AM7K2Q', 'referrer-1', ?1, ?1), ('RM4P9X', ?2, ?1, ?1)`,
+      ).bind(NOW.toISOString(), P1),
+      env.DB.prepare(
+        `INSERT INTO referral_attributions (id, code, referred_person_id, first_touch_at, via, created_at, updated_at)
+         VALUES ('came-with', 'AM7K2Q', ?1, ?2, 'consultation', ?2, ?2),
+           ('sent', 'RM4P9X', 'friend-1', ?2, 'consultation', ?2, ?2)`,
+      ).bind(P1, NOW.toISOString()),
+    ]);
+    await credits(
+      ["grant-1", "grant", 3, "referral", "came-with"],
+      ["grant-2", "grant", 3, "referral", "sent"],
+      ["grant-3", "grant", 1, "ops", "goodwill-1"],
+    );
+    const sides = (await payments()).credits.map((line) => [line.id, line.source, line.referral_side]);
+    expect(sides).toEqual([
+      ["grant-3", "ops", null],
+      ["grant-2", "referral", "referrer"],
+      ["grant-1", "referral", "friend"],
     ]);
   });
 

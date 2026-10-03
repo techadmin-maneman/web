@@ -28,7 +28,7 @@ import { checkForOneVisit, codeOnHold } from "./discount-code-holds.ts";
 import { checkCode, useStatement } from "./discount-code-uses.ts";
 import { termsOf } from "./discount-codes.ts";
 import type { OpsInputs } from "./ops-settings.ts";
-import { recordPayment } from "./payments.ts";
+import { recordPayment, referenceHold } from "./payments.ts";
 import { lateFeeOn, type Price } from "./price-book.ts";
 import { currentAddress } from "./profile.ts";
 import { graceEnds, holdSlot, liveVisitOf, ONE_AT_A_TIME, type Hold } from "./scheduling.ts";
@@ -300,17 +300,26 @@ export async function codeStands(db: D1Database, asked: VisitAsked, holdId: stri
   return (await codeOnHold(db, holdId)) !== null;
 }
 
-/** What the client reads on Razorpay's page: "Mane Man Natural, Fri 25 Sep, morning". */
+/** What the client reads on Razorpay's page: "Mane Man Natural · Fri 25 Sep, morning", as Checkout writes it. */
 const linkDescription = (sale: Sale, asked: VisitAsked) =>
-  `${sale.service.name}, ${shortDate(asked.date)}, ${asked.window}`;
+  `${sale.service.name} · ${shortDate(asked.date)}, ${asked.window}`;
 
 /** The link Razorpay made under the hold, if a try whose answer never came made one; null where none or unknown. */
-async function linkMadeBefore(payments: PaymentsProvider, holdId: string): Promise<MadeLink | null> {
+async function linkMadeBefore(payments: PaymentsProvider, reference: string): Promise<MadeLink | null> {
   try {
-    return await payments.findPaymentLink(holdId);
+    return await payments.findPaymentLink(reference);
   } catch {
     return null;
   }
+}
+
+/** The hold's link's reference, "MM-2026-0841", which its payment then takes: given it now, or kept from a try before. */
+async function holdReference(db: D1Database, holdId: string, now: Date): Promise<string> {
+  const [, kept] = await db.batch<{ reference: string | null }>([
+    referenceHold(db, holdId, now),
+    db.prepare("SELECT reference FROM slot_holds WHERE id = ?1").bind(holdId),
+  ]);
+  return kept?.results[0]?.reference ?? holdId;
 }
 
 /**
@@ -328,11 +337,12 @@ export async function sendHoldLink(
     .prepare("SELECT name, mobile_e164 FROM people WHERE id = ?1")
     .bind(asked.personId)
     .first<{ name: string; mobile_e164: string }>();
+  const reference = await holdReference(db, hold.id, now);
   let made: MadeLink | null;
   try {
     made = await deps.payments.createPaymentLink({
       amount: sale.price.amount,
-      reference: hold.id,
+      reference,
       description: linkDescription(sale, asked),
       customer: { name: client?.name ?? "", contact: client?.mobile_e164 ?? "" },
       notes: { hold_id: hold.id, person_id: asked.personId },
@@ -340,7 +350,7 @@ export async function sendHoldLink(
     });
   } catch (error) {
     deps.log.warn("hold_link_failed", { hold_id: hold.id, reason: failureReason(error) });
-    made = await linkMadeBefore(deps.payments, hold.id);
+    made = await linkMadeBefore(deps.payments, reference);
   }
   if (made === null) return null;
   await db
@@ -365,7 +375,10 @@ export interface LinkHold {
   readonly personId: string;
 }
 
-/** The hold a paid link was for: by the link's ID, or by its reference, the hold's own ID. Null for no hold of ours. */
+/**
+ * The hold a paid link was for: by the link's ID, or by its reference, which is the hold's, or the hold's own ID on a
+ * link made before holds had one. Null for no hold of ours.
+ */
 export async function holdOfLink(
   db: D1Database,
   link: { readonly razorpayLinkId: string; readonly reference: string | null },
@@ -373,7 +386,7 @@ export async function holdOfLink(
   return db
     .prepare(
       `SELECT id, person_id AS personId FROM slot_holds
-       WHERE pay_by_link = 1 AND (payment_link_id = ?1 OR id = ?2) LIMIT 1`,
+       WHERE pay_by_link = 1 AND (payment_link_id = ?1 OR reference = ?2 OR id = ?2) LIMIT 1`,
     )
     .bind(link.razorpayLinkId, link.reference)
     .first<LinkHold>();

@@ -21,8 +21,8 @@ export const ONE_TIME_CODE = {
 
 /** A code works for ten minutes ("Endpoints": "code lifetime of 10 minutes"). */
 export const CODE_TTL_MS = 10 * MINUTE_MS;
-/** One challenge sends at most this many codes, whichever channel asks. */
-export const MAX_SENDS_PER_CHALLENGE = 5;
+/** One challenge sends at most this many codes, whichever channel asks; each also counts against the number's day. */
+export const MAX_SENDS_PER_CHALLENGE = 3;
 
 /** Six random digits, each equally likely. */
 export function newLoginCode(): string {

@@ -46,7 +46,7 @@ export function Consents({ clientId }: { clientId: string }) {
   const [loaded, retry] = useLoad(load);
 
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
   const { consents, deletion } = loaded.value;
   return (

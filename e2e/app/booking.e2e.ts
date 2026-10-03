@@ -19,6 +19,7 @@ import {
   fakeCheckout,
   noRealCheckout,
   paidInCheckout,
+  refundedAfterPaying,
 } from "./checkout-fakes.ts";
 import { fittedClient } from "./fitted.ts";
 import { continueToPayment, TAKEN } from "./picking.ts";
@@ -300,11 +301,13 @@ test("books and pays for a service visit through Razorpay Checkout", async ({ pa
   // GST is nothing here, so the figure is said once, with no "incl. GST" repeating it (MON-19).
   await expect(pay.getByText(/GST/)).toHaveCount(0);
   await expect(pay.getByText(/^Free to move until .+\. After that it is charged\.$/)).toBeVisible();
-  await expect(pay.getByRole("radio", { name: "UPI · any app" })).toBeChecked();
+  // MON-44: Checkout lists the ways to pay, so the sheet offers no choice Checkout would ignore.
+  await expect(pay.getByRole("radiogroup")).toHaveCount(0);
   await expect(pay.getByText("Imran never handles money.")).toBeVisible();
   // Already switched on, so the sheet does not ask again.
   await expect(pay.getByRole("checkbox", { name: REMIND })).toHaveCount(0);
   // Both photograph consents are decided, so booking asks for neither, as board C4 draws it.
+  await expect(pay.getByText("What booking agrees to")).toHaveCount(0);
   await expect(pay.getByText(/^By booking this visit/)).toHaveCount(0);
 
   await pay.getByRole("button", { name: "Pay Rs. 2,000" }).click();
@@ -332,12 +335,12 @@ test("confirms a visit a credit covers as a credit used, never as a payment", as
   await bookedWithoutPaying(page, hold);
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: "Pay and confirm" });
-  await expect(pay.getByText("1 visit credit used")).toBeVisible();
+  await expect(pay.getByText("1 free service visit used")).toBeVisible();
   await pay.getByRole("button", { name: "Confirm visit" }).click();
 
   const confirmed = page.getByRole("dialog").getByRole("status");
   await expect(confirmed.getByText("Confirmed")).toBeVisible();
-  await expect(confirmed.getByText("1 visit credit used")).toBeVisible();
+  await expect(confirmed.getByText("1 free service visit used")).toBeVisible();
   await expect(confirmed.getByText("2 remaining")).toBeVisible();
   await expect(confirmed.getByText("Paid", { exact: true })).toHaveCount(0);
   await expect(confirmed.getByText("Rs. 2,000")).toHaveCount(0);
@@ -366,9 +369,11 @@ test("shows the price, and opens no Checkout, when the credit went on another bo
   await pay.getByRole("button", { name: "Confirm visit" }).click();
 
   await expect(
-    pay.getByText("Your visit credit is already on another booking, so this visit is charged at the price below."),
+    pay.getByText(
+      "Your free service visit is already on another booking, so this visit is charged at the price below.",
+    ),
   ).toBeVisible();
-  await expect(pay.getByText("1 visit credit used")).toHaveCount(0);
+  await expect(pay.getByText("1 free service visit used")).toHaveCount(0);
   await expect(pay.getByRole("button", { name: "Pay Rs. 2,000" })).toBeVisible();
 });
 
@@ -495,25 +500,49 @@ test("goes back to the address, saying why, when the API holds no slot for want 
   await expect(where.getByRole("button", { name: "Save and continue" })).toBeVisible();
 });
 
-// The owner's ruling of 27 September 2026 (ADR 0080): booking agrees to the photograph purposes never decided on.
-test("says on the pay step what booking also agrees to, while neither is decided, and sends both", async ({ page }) => {
+// The owner's rulings of 27 September 2026 (booking agrees to the photograph purposes never decided on) and of
+// 2 October 2026 (what booking agrees to sits one tap away beneath Pay).
+test("puts Pay above what booking also agrees to, one tap away, while neither is decided, and sends both", async ({
+  page,
+}) => {
   await fakeCheckout(page, "paid");
   await confirmedByRazorpay(page);
   await profileAs(page, { reminders: true, undecided: PHOTOS });
   const sent = bookingsSent(page);
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: "Pay and confirm" });
-  await expect(
-    pay.getByText("By booking this visit, you also agree to photographs for your own record and on referral cards."),
-  ).toBeVisible();
+  const payButton = pay.getByRole("button", { name: "Pay Rs. 2,000" });
+  const agrees = pay.getByText("What booking agrees to");
+  const first = pay.getByText(
+    "By booking this visit, you also agree to photographs taken for your visit record and used on referral cards.",
+  );
+  // MON-43, BK-63, UX-12, CP-42: on a 390 px phone the notice's six lines pushed Pay off the screen.
+  await expect(payButton).toBeInViewport();
+  await expect(agrees).toBeInViewport();
+  expect(await bottomOf(payButton)).toBeLessThanOrEqual(await topOf(agrees));
+  await expect(first).toBeHidden();
+
+  await agrees.click();
+  await expect(first).toBeVisible();
   await expect(pay.getByText("Anyone you send this card to can see your photographs.")).toBeVisible();
   await expect(pay.getByText("Your first name appears on your invite.")).toBeVisible();
   await expect(pay.getByText("You can switch either off in Profile.")).toBeVisible();
   await scanOf(page);
 
-  await pay.getByRole("button", { name: "Pay Rs. 2,000" }).click();
+  await payButton.click();
   await expect(page.getByRole("dialog").getByRole("status").getByText("Confirmed")).toBeVisible();
   expect(sent).toMatchObject([{ consents: PHOTOS }]);
+});
+
+test("sends what booking agrees to with Pay, whether or not the client opened it", async ({ page }) => {
+  await fakeCheckout(page, "paid");
+  await profileAs(page, { reminders: true, undecided: PHOTOS });
+  const sent = bookingsSent(page);
+  await toPayment(page);
+  const pay = page.getByRole("dialog", { name: "Pay and confirm" });
+  await expect(pay.getByText("What booking agrees to")).toBeVisible();
+  await pay.getByRole("button", { name: "Pay Rs. 2,000" }).click();
+  await expect.poll(() => sent).toMatchObject([{ consents: PHOTOS }]);
 });
 
 test("shows only the line of a purpose still undecided, and sends only that one", async ({ page }) => {
@@ -522,8 +551,9 @@ test("shows only the line of a purpose still undecided, and sends only that one"
   const sent = bookingsSent(page);
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: "Pay and confirm" });
+  await pay.getByText("What booking agrees to").click();
   await expect(
-    pay.getByText("By booking this visit, you also agree to photographs for your own record."),
+    pay.getByText("By booking this visit, you also agree to photographs taken for your visit record."),
   ).toBeVisible();
   await expect(pay.getByText("You can switch it off in Profile.")).toBeVisible();
   await expect(pay.getByText("Your first name appears on your invite.")).toHaveCount(0);
@@ -647,8 +677,8 @@ test("says a credit is gone after a late cancel only where the booking is sold s
   await holdAs(page, { credit: { remaining: 2 }, late_change_charge: "nothing" });
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: "Pay and confirm" });
-  await expect(pay.getByText("1 visit credit used")).toBeVisible();
-  await expect(pay.getByText(/the credit is gone/)).toHaveCount(0);
+  await expect(pay.getByText("1 free service visit used")).toBeVisible();
+  await expect(pay.getByText(/the free service visit is gone/)).toHaveCount(0);
   await expect(pay.getByText("Free to move or cancel at any time.")).toBeVisible();
 });
 
@@ -656,7 +686,9 @@ test("says a credit is gone after a cancel inside the notice the booking is sold
   await holdAs(page, { credit: { remaining: 2 }, change_notice_hours: 48 });
   await toPayment(page);
   await expect(
-    page.getByRole("dialog", { name: "Pay and confirm" }).getByText("Cancel inside 48 hours and the credit is gone."),
+    page
+      .getByRole("dialog", { name: "Pay and confirm" })
+      .getByText("Cancel inside 48 hours and the free service visit is gone."),
   ).toBeVisible();
 });
 
@@ -705,7 +737,7 @@ test("says so when the payment fails, with the hold counting outside the alert",
   const alert = sheet.getByRole("alert");
   await expect(alert).toContainText("The payment did not go through.");
   await expect(sheet.getByText(/^Slot held \d:\d\d more\.$/)).toBeVisible();
-  await expect(sheet.getByRole("button", { name: "Another method" })).toBeVisible();
+  await expect(sheet.getByRole("button", { name: "Try again" })).toBeVisible();
   // A screen reader reads an alert again whenever it changes: the ticking count is kept out of it.
   const said = await alert.textContent();
   await ticked(sheet);
@@ -799,13 +831,11 @@ test("starts one payment, and one order, when the failed step is tapped twice", 
     await route.continue();
   });
 
-  await failed.getByRole("button", { name: "Try again" }).click();
+  const tryAgain = failed.getByRole("button", { name: "Try again" });
+  await tryAgain.click();
   // Forced, because the tap this guards against is one the client makes whether the button takes it or not.
-  await failed.getByRole("button", { name: "Another method" }).click({ force: true });
-  const liveWhileBusy = await Promise.all([
-    failed.getByRole("button", { name: "Try again" }).isEnabled(),
-    failed.getByRole("button", { name: "Another method" }).isEnabled(),
-  ]);
+  await tryAgain.click({ force: true });
+  const liveWhileBusy = await tryAgain.isEnabled();
 
   await expect.poll(() => orders.length, { timeout: 15_000 }).toBeGreaterThan(0);
   // Every order asked for has come back: a second one is let go with the first (e2e/app/one-tap.ts).
@@ -813,7 +843,7 @@ test("starts one payment, and one order, when the failed step is tapped twice", 
   expect({ asked, distinctOrders: new Set(orders).size, liveWhileBusy }).toEqual({
     asked: 1,
     distinctOrders: 1,
-    liveWhileBusy: [false, false],
+    liveWhileBusy: false,
   });
 });
 
@@ -850,6 +880,21 @@ test("fetches Home again when the sheet is closed after paying, before the booki
   await confirming.getByRole("button", { name: "Close" }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
   await home;
+});
+
+// MON-43, BK-63, UX-12: a step that ends with a Close of its own showed the sheet's as well, two of one name.
+test("shows one Close, its own, when a paid visit could not be booked", async ({ page }) => {
+  await fakeCheckout(page, "paid");
+  await refundedAfterPaying(page);
+  await toPayment(page);
+  await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
+  const refunded = page.getByRole("dialog", {
+    name: "We could not book that visit, so your payment is being refunded in full.",
+  });
+  await expect(refunded).toBeVisible();
+  await expect(refunded.getByRole("button", { name: "Close" })).toHaveCount(1);
+  await refunded.getByRole("button", { name: "Close" }).click();
+  await expect(page.getByRole("dialog")).toBeHidden();
 });
 
 test("lets a lapsed hold go the moment the phone sees it lapse, and picks again", async ({ page }) => {
@@ -962,8 +1007,7 @@ test("takes focus to each step's heading as the sheet moves on", async ({ page }
   await expect(sheet.getByRole("heading", { name: "Pay and confirm" })).toBeFocused();
 });
 
-test("makes the days, the windows and the ways to pay one tab stop each, with arrow keys between", async ({ page }) => {
-  await fakeCheckout(page, "paid");
+test("makes the days one tab stop, with arrow keys between", async ({ page }) => {
   await openSheet(page);
   const dates = page.getByRole("dialog", { name: "Pick a date" }).getByRole("radio").and(page.locator(":enabled"));
   await dates.first().click();
@@ -975,14 +1019,6 @@ test("makes the days, the windows and the ways to pay one tab stop each, with ar
   await expect(page.getByRole("button", { name: "Later dates" })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(page.getByRole("button", { name: "Continue" })).toBeFocused();
-
-  await page.keyboard.press("Enter");
-  await continueToPayment(page);
-  const upi = page.getByRole("radio", { name: "UPI · any app" });
-  await upi.focus();
-  await page.keyboard.press("ArrowDown");
-  await expect(page.getByRole("radio", { name: "Card" })).toBeChecked();
-  await expect(page.getByRole("radio", { name: "Card" })).toBeFocused();
 });
 
 test("fits all fourteen days on a 320 px screen", async ({ page }) => {
@@ -1024,6 +1060,18 @@ test("has a Close anyone can see, a full target, ringed in paper on the ground i
     await page.evaluate(() => document.activeElement && getComputedStyle(document.activeElement).outlineColor),
   ).toBe("rgb(22, 35, 58)");
 });
+
+/** Where an element begins down the page; NaN for one not drawn, which no comparison passes. */
+async function topOf(element: Locator): Promise<number> {
+  const box = await element.boundingBox();
+  return box === null ? Number.NaN : box.y;
+}
+
+/** Where an element ends down the page; NaN for one not drawn. */
+async function bottomOf(element: Locator): Promise<number> {
+  const box = await element.boundingBox();
+  return box === null ? Number.NaN : box.y + box.height;
+}
 
 /** axe on the page as it stands, against WCAG 2.2 AA. */
 async function scanOf(page: Page): Promise<void> {

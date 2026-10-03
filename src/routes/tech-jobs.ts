@@ -52,6 +52,7 @@ import { latestArrival, recordArrival } from "../domain/check-ins.ts";
 import { allConsumables, offeredForJob, serviceOfJob } from "../domain/consumables.ts";
 import { profileLanded, recordAtVisit } from "../domain/hair-profiles.ts";
 import {
+  eventByClientId,
   kindsLanded,
   landJobEvent,
   wasTheirs,
@@ -928,6 +929,8 @@ export function registerTechJobs(app: App): void {
     return step(c, "piece", async (job) => {
       const built = await pieceBody(c, job, body);
       if ("invalid" in built) return built;
+      // A step sent again is answered as it landed the first time, whatever has been recorded since.
+      if (await isReplay(c, job)) return built;
       const taken = await pieceLabelTaken(c.env.DB, job, pieceStepOf(built));
       return taken === null ? built : { labelTaken: taken };
     });
@@ -1101,6 +1104,12 @@ async function pieceBody(c: Ctx, job: WorkableJob, body: PieceBody): Promise<Ste
   if ("declined" in body || body.product !== undefined) return { invalid: ["product"] };
   if (!(stepsFor(job.type) as string[]).includes("piece")) return { invalid: ["piece_code"] };
   return fittedPiece(body);
+}
+
+/** Whether this step's event ID has already landed on the job. */
+async function isReplay(c: Ctx, job: WorkableJob): Promise<boolean> {
+  const eventId = c.req.header(EVENT_ID_HEADER) ?? "";
+  return (await eventByClientId(c.env.DB, job.id, eventId)) !== null;
 }
 
 /** A piece fitted, or the one that failed, as any job's piece step records it. */

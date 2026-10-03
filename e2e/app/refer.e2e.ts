@@ -68,7 +68,7 @@ const HOUSE_CARD = readFileSync("apps/app/src/refer/invite-house.jpg");
 /** The invite's own card sent as a photograph, with the invite's words as its caption. */
 const cardWithInvite = (size: number) => ({
   files: [{ name: "mane-man-invite.jpg", type: "image/jpeg", size }],
-  text: expect.stringMatching(/Worth a look — .*\/r\/[A-Z0-9]{6}$/) as unknown as string,
+  text: expect.stringMatching(/Worth a look — .*\/r\/[A-Z0-9]{8}$/) as unknown as string,
 });
 
 const scan = async (page: Page) => {
@@ -100,14 +100,14 @@ test("Refer: the invite, the house card, the preview, and the empty tracker", as
   const preview = page.getByRole("dialog", { name: "Preview · what your friend sees" });
   await expect(preview.getByText("You have a Mane Man invite")).toBeVisible();
   await expect(
-    preview.getByText(/Had my hair system fitted at home by these people\. Worth a look — .*\/r\/[A-Z0-9]{6}/),
+    preview.getByText(/Had my hair system fitted at home by these people\. Worth a look — .*\/r\/[A-Z0-9]{8}/),
   ).toBeVisible();
   await expect(preview.locator("img").first()).toHaveAttribute("src", /invite-house/);
   await expect(preview.getByRole("link", { name: "WhatsApp" })).toHaveAttribute("href", /^https:\/\/wa\.me\/\?text=/);
   await preview.getByRole("button", { name: "Copy link" }).click();
   await expect(preview.getByRole("button", { name: "Link copied" })).toBeVisible();
   const copied = await page.evaluate(() => navigator.clipboard.readText());
-  expect(copied).toMatch(/\/r\/[A-Z0-9]{6}$/);
+  expect(copied).toMatch(/\/r\/[A-Z0-9]{8}$/);
   await scan(page);
 
   await preview.getByRole("button", { name: "Close" }).click();
@@ -181,12 +181,12 @@ test("keeps WhatsApp's link, with the words alone, where the phone shares no fil
   await whatsapp.click();
   const opened = await opening;
   await opened.waitForLoadState();
-  expect(opened.url()).toMatch(/^https:\/\/wa\.me\/\?text=Had%20my%20hair.*%2Fr%2F[A-Z0-9]{6}$/);
+  expect(opened.url()).toMatch(/^https:\/\/wa\.me\/\?text=Had%20my%20hair.*%2Fr%2F[A-Z0-9]{8}$/);
 
   await preview.getByRole("button", { name: "Other apps" }).click();
   await expect
     .poll(() => sharedSoFar(page))
-    .toEqual([{ files: [], text: expect.stringMatching(/\/r\/[A-Z0-9]{6}$/) as unknown as string }]);
+    .toEqual([{ files: [], text: expect.stringMatching(/\/r\/[A-Z0-9]{8}$/) as unknown as string }]);
 });
 
 // A client who made their card earlier sees it, and sends it: the preview's own route answers only on the public

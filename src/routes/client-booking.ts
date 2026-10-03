@@ -21,9 +21,9 @@
 //
 // No slot is held, for a new visit or a move, until the client has given the
 // address the visit goes to, and the hold carries its pincode
-// (docs/decisions/0079-an-address-before-a-slot.md). The tap that books a new
-// visit also agrees to the photograph purposes the pay step showed, each only
-// while the client has never decided on it
+// (docs/decisions/0079-an-address-before-a-slot.md). Booking a new visit also
+// agrees to the photograph purposes the pay step showed, each only while the
+// client has never decided on it, recorded once the booking is confirmed
 // (docs/decisions/0080-consents-given-by-booking.md).
 //
 // Once paid for, a hold keeps its time until it is booked or refunded, and the
@@ -37,12 +37,13 @@
 // (docs/decisions/0085-services-ops-can-edit.md). A move keeps its visit's own.
 
 import { createRoute, z } from "@hono/zod-openapi";
+import { shortDate } from "@maneman/web-kit/dates";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../http/context.ts";
 import { PRICE_TIER } from "../config/ops-settings.ts";
 import { BOOKING_DAYS, BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { VISIT_TYPE_NAMES, VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
-import { recordBookingConsents } from "../domain/booking-consents.ts";
+import { keepShownConsents, recordBookingConsents } from "../domain/booking-consents.ts";
 import { startBooking } from "../domain/bookings.ts";
 import { codeToCarry } from "../domain/discount-code-uses.ts";
 import { spendableCredits } from "../domain/credits.ts";
@@ -325,7 +326,7 @@ const BookingStartSchema = z
       .openapi({
         description:
           "The photograph purposes the pay step showed its lines for. Booking agrees to each the client has never " +
-          "decided on (ADR 0080); left out, none.",
+          "decided on, recorded once the booking is paid for, or at once for a free visit (ADR 0080); left out, none.",
       }),
   })
   .strict()
@@ -445,9 +446,10 @@ export async function startCheckout(c: Context<AppEnv>, holdId: string, personId
   }
   const row = await checkoutHold(c.env.DB, holdId);
   if (row === null) return null;
+  // "Mane Man Natural · Sat 3 Oct", or "Moving your visit to Sat 3 Oct".
+  const day = shortDate(row.date);
   const name = row.service_name ?? VISIT_TYPE_NAMES[row.type];
-  const description =
-    row.move_kind === "move" ? `Moving your ${name.toLowerCase()} to ${row.date}` : `${name}, ${row.date}`;
+  const description = row.move_kind === "move" ? `Moving your visit to ${day}` : `${name} · ${day}`;
   return {
     hold_id: holdId,
     checkout: {
@@ -584,14 +586,15 @@ export function registerClientBooking(app: App): void {
     const { hold_id: holdId, consents = [] } = c.req.valid("json");
     const booking = await startCheckout(c, holdId, session.subjectId);
     if (booking === null) return c.json(errorBody("hold_expired", c.var.requestId), 409);
-    await recordBookingConsents(c.env.DB, {
+    const db = c.env.DB;
+    await keepShownConsents(db, {
       personId: session.subjectId,
       holdId,
       shown: consents,
       ipHash: (await visitorOf(c)).ipHash,
-      requestId: c.var.requestId,
-      now: c.var.deps.now(),
     });
+    // A free visit is confirmed already; a paid one is once Razorpay's webhook says so.
+    await recordBookingConsents(db, { holdId, requestId: c.var.requestId, now: c.var.deps.now() });
     return c.json(booking, 201);
   });
 

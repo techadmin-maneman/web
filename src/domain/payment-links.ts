@@ -4,7 +4,8 @@
 // It is made when the technician closes the visit as done, for the product the client chose, at its price in the
 // price book on the visit's day, less any discount code entered on the booking before GST
 // (docs/decisions/0108-discount-codes.md), and Razorpay texts it to the client itself. A visit has one link, and its row is
-// written before Razorpay is asked. The close asks once and lands whatever Razorpay answers, so a phone is never held
+// written before Razorpay is asked, with the reference its payment will have (src/domain/payments.ts), which the client
+// reads on Razorpay's page. The close asks once and lands whatever Razorpay answers, so a phone is never held
 // up by it; a link the close could not have made, for a timeout, a 5xx or a missing key, is asked for again by the
 // five-minute cron, a few a run. Razorpay refuses a second link under the same reference, which is what a try whose
 // answer never came leaves behind, so a refusal first looks for the link by its reference and keeps it if it is
@@ -13,7 +14,7 @@
 //
 // Paid, Razorpay's webhook says so (src/routes/razorpay-hook.ts): the payment is the visit's, as a payment made
 // ahead is, and follows the same path to Books (src/domain/books-sync.ts). A link ops made by hand finds the visit
-// by its reference.
+// by its reference, the visit's ID.
 
 import { shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
@@ -24,6 +25,7 @@ import type { PaymentsProvider } from "../providers/payments.ts";
 import { isRefusal } from "../providers/provider-error.ts";
 import type { AlertOnce, ResolveAlert } from "./alerts.ts";
 import { codeAsRead, priceAfterCode } from "./discount-code-uses.ts";
+import { referenceLink } from "./payments.ts";
 import { priceOf } from "./price-book.ts";
 import { serviceOf } from "./services.ts";
 import { visitMessage } from "./visit-messages.ts";
@@ -51,6 +53,8 @@ export interface FittedVisit {
 interface LinkRow {
   id: string;
   amount: number;
+  /** Null on a link written before links carried their payment's reference. */
+  reference: string | null;
   sent_at: string | null;
   refused_at: string | null;
 }
@@ -67,7 +71,16 @@ const FAILURES_BEFORE_ALERT = 3;
 const refusedKey = (appointmentId: string) => `payment_link:${appointmentId}`;
 const failedKey = (appointmentId: string) => `payment_link_failed:${appointmentId}`;
 
-const LINK_COLUMNS = "id, amount, sent_at, refused_at";
+const LINK_COLUMNS = "id, amount, reference, sent_at, refused_at";
+
+/** The link's reference at Razorpay: its payment's, or the visit's ID on a link written before links had one. */
+const referenceOf = (link: LinkRow, visit: FittedVisit) => link.reference ?? visit.appointmentId;
+
+/** What the client reads they are paying for: "Mane Man Natural hair system". */
+function hairSystemName(product: string | undefined): string {
+  if (product === undefined) return "Hair system";
+  return /hair system$/i.test(product) ? product : `${product} hair system`;
+}
 
 /** What the visit's link came to: the row, nothing to pay, no price in the book, or a code changing as it was made. */
 type LinkFor =
@@ -99,6 +112,7 @@ async function linkFor(db: D1Database, visit: FittedVisit, now: Date): Promise<L
       return { kind: "free" };
     }
     // Another close of the same visit may write it first; either way the row is the visit's one.
+    const linkId = crypto.randomUUID();
     await db.batch([
       ...after.fix,
       db
@@ -109,7 +123,7 @@ async function linkFor(db: D1Database, visit: FittedVisit, now: Date): Promise<L
            ON CONFLICT (appointment_id) DO NOTHING`,
         )
         .bind(
-          crypto.randomUUID(),
+          linkId,
           visit.appointmentId,
           visit.tier,
           after.price.amount,
@@ -118,6 +132,7 @@ async function linkFor(db: D1Database, visit: FittedVisit, now: Date): Promise<L
           now.toISOString(),
           after.useId,
         ),
+      referenceLink(db, linkId, now),
     ]);
   }
   const written = await current();
@@ -200,7 +215,8 @@ interface UnsentRow extends LinkRow {
 export async function sendUnsentLinks(db: D1Database, deps: LinkDeps, now: Date, budget: CallBudget): Promise<number> {
   const { results } = await db
     .prepare(
-      `SELECT l.id, l.amount, l.sent_at, l.refused_at, l.appointment_id, l.tier, a.person_id, a.window_start
+      `SELECT l.id, l.amount, l.reference, l.sent_at, l.refused_at, l.appointment_id, l.tier, a.person_id,
+         a.window_start
        FROM payment_links l JOIN appointments a ON a.id = l.appointment_id
        WHERE l.sent_at IS NULL AND l.refused_at IS NULL
        ORDER BY l.created_at LIMIT ?1`,
@@ -238,8 +254,8 @@ async function askRazorpay(
   try {
     const made = await deps.payments.createPaymentLink({
       amount: link.amount,
-      reference: visit.appointmentId,
-      description: `${product?.name ?? "Your hair system"}, fitted ${shortDate(visit.day)}`,
+      reference: referenceOf(link, visit),
+      description: `${hairSystemName(product?.name)} · fitted ${shortDate(visit.day)}`,
       customer: { name: client?.name ?? "", contact: client?.mobile_e164 ?? "" },
       notes: { appointment_id: visit.appointmentId, person_id: visit.personId },
     });
@@ -268,7 +284,7 @@ async function refusedOrMadeBefore(
   const { link, visit, reason } = refused;
   let madeBefore: { id: string; shortUrl: string } | null;
   try {
-    madeBefore = await deps.payments.findPaymentLink(visit.appointmentId);
+    madeBefore = await deps.payments.findPaymentLink(referenceOf(link, visit));
   } catch (error) {
     await tellFailure(deps, visit, failureReason(error));
     return "unavailable";
@@ -321,7 +337,7 @@ async function tellFailure(deps: LinkDeps, visit: FittedVisit, reason: string): 
   });
 }
 
-/** The link a payment paid, by Razorpay's ID for it, and its reference, which is the visit's ID. */
+/** The link a payment paid, by Razorpay's ID for it, and its reference: ours, or the visit's ID on one made by hand. */
 export interface PaidLink {
   readonly razorpayLinkId: string;
   readonly reference: string | null;
@@ -335,13 +351,14 @@ export interface PaidVisit {
 }
 
 /**
- * The visit a link was for: the one whose row the link is, else the one its reference names, as a link ops made by
- * hand in Razorpay's dashboard does. Null for a link that names no visit of ours.
+ * The visit a link was for: the one whose row the link is, by Razorpay's ID for it or by its reference, else the one
+ * its reference names, as a link ops made by hand in Razorpay's dashboard does. Null for a link that names no visit
+ * of ours.
  */
 export async function visitOfLink(db: D1Database, link: PaidLink): Promise<PaidVisit | null> {
   const made = await db
-    .prepare("SELECT appointment_id FROM payment_links WHERE razorpay_link_id = ?1")
-    .bind(link.razorpayLinkId)
+    .prepare("SELECT appointment_id FROM payment_links WHERE razorpay_link_id = ?1 OR reference = ?2")
+    .bind(link.razorpayLinkId, link.reference)
     .first<{ appointment_id: string }>();
   const appointmentId = made?.appointment_id ?? link.reference;
   if (appointmentId === null) return null;

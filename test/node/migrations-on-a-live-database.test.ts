@@ -172,6 +172,13 @@ describe("the migrations, against a database that is in use", () => {
     db.close();
   });
 
+  it("marks no client's Books customer as changed until their number or address changes", () => {
+    const db = migrate();
+    const person = db.prepare("SELECT books_details_changed_at FROM people WHERE id = 'p2'").get();
+    expect(person).toEqual({ books_details_changed_at: null });
+    db.close();
+  });
+
   it("takes a hold ops made that the client pays for by a link, and keeps every other hold paid as it was", () => {
     const db = migrate();
     const hold = (id: string) =>

@@ -31,7 +31,7 @@ export function JobSheet() {
   const mayChangeReasons = access.mayCall("POST /api/job-sheet/partial-reasons");
 
   if (loaded.state === "loading") return <Loading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const current = sheet ?? loaded.value;
   const checklist = current.checklists.find((each) => each.visit_type === kind);
 
