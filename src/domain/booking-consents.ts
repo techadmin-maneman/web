@@ -9,6 +9,7 @@ import { agreedByBooking, GIVEN_BY_BOOKING, type GivenByBooking } from "../polic
 import { auditStatementIfWritten } from "./audit.ts";
 import { recordConsent } from "./consents.ts";
 import { consentRecordsOf } from "./profile.ts";
+import { graceEnds } from "./scheduling.ts";
 
 export interface BookingTap {
   readonly personId: string;
@@ -46,13 +47,16 @@ export async function keepShownConsents(db: D1Database, tap: BookingTap): Promis
     .run();
 }
 
-/** The hold, once confirmed, while it has not been let go: a payment made too late is refunded, and books nothing. */
+/**
+ * The hold, once confirmed in time, while it has not been let go. A payment made after the hold and its grace ran out
+ * is refunded and books nothing, even while the hold waits on FSM's queue to find that out.
+ */
 async function confirmedHold(db: D1Database, holdId: string): Promise<ConfirmedHold | null> {
   return db
     .prepare(
       `SELECT person_id, confirmed_at, consents_shown, consents_ip_hash FROM slot_holds
-       WHERE id = ?1 AND confirmed_at IS NOT NULL AND state <> 'released'
-         AND consents_shown IS NOT NULL AND moves_appointment_id IS NULL`,
+       WHERE id = ?1 AND confirmed_at IS NOT NULL AND confirmed_at <= ${graceEnds("slot_holds")}
+         AND state <> 'released' AND consents_shown IS NOT NULL AND moves_appointment_id IS NULL`,
     )
     .bind(holdId)
     .first<ConfirmedHold>();

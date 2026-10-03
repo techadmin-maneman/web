@@ -252,6 +252,22 @@ describe("a paid visit's consents", () => {
     expect(await audited()).toEqual([]);
   });
 
+  it("are not recorded for a payment made too late while its hold still waits on FSM's queue to refund it", async () => {
+    const ordered = await tappedToPay();
+    const tooLate = new Date(NOW.getTime() + (HOLD_SECONDS + PAYMENT_GRACE_SECONDS + 5) * 1000);
+    await paid(ordered, tooLate);
+    expect(await holdState(ordered.holdId)).toBe("held");
+    expect(await ledger()).toEqual([]);
+    expect(await audited()).toEqual([]);
+  });
+
+  it("are recorded for a payment made in the hold's last moment of grace", async () => {
+    const ordered = await tappedToPay();
+    const lastMoment = new Date(NOW.getTime() + (HOLD_SECONDS + PAYMENT_GRACE_SECONDS) * 1000);
+    await paid(ordered, lastMoment);
+    expect(await ledger()).toHaveLength(2);
+  });
+
   it("leave a purpose the client switched between the tap and the payment as they left it", async () => {
     const ordered = await tappedToPay();
     await decided("photos_referral_cards", false, "photos-referral-cards-v2", minutes(1).toISOString());
