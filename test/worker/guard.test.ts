@@ -37,7 +37,7 @@ const SETTINGS = {
   UPLOAD_DAILY_CEILING: "40",
   RESULT_READ_DAILY_CEILING: "400",
   GEOCODE_DAILY_CEILING: "200",
-  RESULT_RETENTION_DAYS: "30",
+  RESULT_RETENTION_DAYS: "14",
   AILAB_CREDIT_FLOOR: "200",
   RESULT_SIGNING_KEY: "a-signing-key-of-at-least-thirty-two-characters",
   MESSAGING_ENABLED: "false",
@@ -326,9 +326,9 @@ describe("validateStaticConfig: try-on and messaging", () => {
   });
 
   it("refuses a short signing key or retention", () => {
-    expect(problemsOf({ ...local, RESULT_SIGNING_KEY: "short", RESULT_RETENTION_DAYS: "45" })).toEqual([
+    expect(problemsOf({ ...local, RESULT_SIGNING_KEY: "short", RESULT_RETENTION_DAYS: "15" })).toEqual([
       "RESULT_SIGNING_KEY must be at least 32 characters",
-      "RESULT_RETENTION_DAYS must be 1 to 30: the photo notice promises deletion within thirty days",
+      "RESULT_RETENTION_DAYS must be 1 to 14: the photo notice promises the look is deleted within fourteen days",
     ]);
   });
 

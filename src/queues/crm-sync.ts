@@ -197,6 +197,10 @@ export async function syncLead(
       .run();
     return { retrySoon: false };
   }
+  if (row.source === "tryon") {
+    await keepOutOfCrm(db, deps, log, row);
+    return { retrySoon: false };
+  }
 
   const attempt = await db
     .prepare("UPDATE leads SET sync_attempts = sync_attempts + 1 WHERE id = ?1 RETURNING sync_attempts")
@@ -247,6 +251,22 @@ export async function syncLead(
     }
     return { retrySoon: attempts === 1 };
   }
+}
+
+/**
+ * A try-on never goes to the CRM, so no sales view can list it: the gate promises no marketing. The lead is closed
+ * here, and the chat hears of it once.
+ */
+async function keepOutOfCrm(db: D1Database, deps: Dependencies, log: Logger, row: LeadRow): Promise<void> {
+  const closed = await db
+    .prepare(
+      "UPDATE leads SET sync_state = 'synced', last_sync_error = NULL WHERE id = ?1 AND sync_state != 'synced' RETURNING id",
+    )
+    .bind(row.lead_id)
+    .first();
+  if (closed === null) return;
+  log.info("crm_kept_out", { lead_id: row.lead_id });
+  await deps.notifyLead(leadNotice(row));
 }
 
 /** What a Phase 2 booking asked for on the lead's day, and the code given for a one visit. */

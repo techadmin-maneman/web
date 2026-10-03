@@ -2041,7 +2041,7 @@ export interface components {
             photo_consent: true;
             /**
              * @description The photo notice shown: the current one, the only one recorded.
-             * @example photo-v3
+             * @example photo-v4
              */
             notice_version: string;
             turnstile_token: string;
@@ -2092,7 +2092,7 @@ export interface components {
             stage: "crown" | "receding" | "advanced";
             /**
              * @description The gate's notice the page showed: the current one, the only one a claim may record, when left out (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md).
-             * @example gate-v3
+             * @example gate-v4
              */
             notice_version?: string;
             attribution?: components["schemas"]["Attribution"];

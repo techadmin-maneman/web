@@ -239,6 +239,69 @@ describe("crm-sync: syncing a lead", () => {
   });
 });
 
+// PS-26, CP-03: the try-on's gate promises no marketing, so its leads stay out of the CRM, where sales work.
+describe("crm-sync: a try-on", () => {
+  /** The lead the gate leaves for this number, the person made if they are new. */
+  async function tryOnLead(mobileE164 = "+919810000001"): Promise<string> {
+    const leadId = crypto.randomUUID();
+    const at = NOW.toISOString();
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES (?1, ?2, ?3, 'Arjun Mehta', 0)
+         ON CONFLICT (mobile_e164) DO NOTHING`,
+      ).bind(crypto.randomUUID(), at, mobileE164),
+      env.DB.prepare(
+        `INSERT INTO leads (id, person_id, created_at, source, loss_extent, request_id)
+         VALUES (?1, (SELECT id FROM people WHERE mobile_e164 = ?2), ?3, 'tryon', 'crown', 'test')`,
+      ).bind(leadId, mobileE164, at),
+    ]);
+    return leadId;
+  }
+
+  it("never reaches the CRM: its lead is closed, and the chat is told once that it is not to be chased", async () => {
+    const leadId = await tryOnLead();
+    const crm = recordingCrm();
+    const deps = fakeDependencies({ crm });
+
+    expect(await syncLead(env.DB, deps, log, leadId)).toEqual({ retrySoon: false });
+    await syncLead(env.DB, deps, log, leadId); // a duplicate message
+
+    expect(crm.calls).toEqual([]);
+    expect(await leadRow(leadId)).toMatchObject({ sync_state: "synced", sync_attempts: 0, last_sync_error: null });
+    expect(deps.leadNotices).toEqual([
+      `New try-on lead: WhatsApp copy only, not to be chased. Lead ${leadId.slice(0, 8)}.`,
+    ]);
+  });
+
+  it("keeps a client's try-on out too, leaving their record as their bookings made it", async () => {
+    const booking = await phaseOneLead();
+    const crm = recordingCrm();
+    await syncLead(env.DB, fakeDependencies({ crm }), log, booking);
+    const tryOn = await tryOnLead();
+    const deps = fakeDependencies({ crm });
+
+    await syncLead(env.DB, deps, log, tryOn);
+
+    expect(crm.calls.map((call) => call.lead.leadId)).toEqual([booking]);
+    expect(deps.leadNotices).toEqual([
+      `New try-on lead: WhatsApp copy only, not to be chased. Lead ${tryOn.slice(0, 8)}.`,
+    ]);
+  });
+
+  it("is ticked on the person's first CRM record, which a later booking makes", async () => {
+    const tryOn = await tryOnLead();
+    const crm = recordingCrm();
+    await syncLead(env.DB, fakeDependencies({ crm }), log, tryOn);
+    const booking = await phaseOneLead();
+
+    await syncLead(env.DB, fakeDependencies({ crm }), log, booking);
+
+    expect(crm.calls).toHaveLength(1);
+    expect(crm.calls[0]?.knownId).toBeNull();
+    expect(crm.calls[0]?.lead).toMatchObject({ leadId: booking, source: "form", contactable: true, tryOn: true });
+  });
+});
+
 describe("crm-sync: the queue batch", () => {
   function batchOf(bodies: unknown[]) {
     const messages = bodies.map((body, index) => ({

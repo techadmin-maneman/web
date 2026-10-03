@@ -73,7 +73,7 @@ function visitor(
       cookies.set(name, value);
     },
     uploadLink: (body: Record<string, unknown> = {}) =>
-      post("/api/tryon/upload-url", { photo_consent: true, notice_version: "photo-v3", turnstile_token: "t", ...body }),
+      post("/api/tryon/upload-url", { photo_consent: true, notice_version: "photo-v4", turnstile_token: "t", ...body }),
     put: (path: string, bytes: Uint8Array, contentType = "image/jpeg") =>
       call(path, { method: "PUT", headers: { "Content-Type": contentType }, body: bytes }),
     async uploaded(bytes: Uint8Array = syntheticJpeg(800, 800)): Promise<string> {
@@ -147,14 +147,14 @@ describe("POST /api/tryon/upload-url", () => {
     expect(await jobRow(body.job_id)).toMatchObject({
       state: "awaiting_upload",
       upload_key: `uploads/${body.job_id}`,
-      photo_consent_version: "photo-v3",
+      photo_consent_version: "photo-v4",
       photo_consent_at: NOW.toISOString(),
       session_id: null,
       person_id: null,
     });
   });
 
-  // ADR 0104: every photo notice before v3 promised the look on screen, which the site no longer shows.
+  // Every earlier photo notice says something no longer true: the look on screen, or who sees the photograph.
   it("refuses consent that is not literally true, and any notice but the current photo notice", async () => {
     const browser = visitor();
     for (const body of [
@@ -162,6 +162,7 @@ describe("POST /api/tryon/upload-url", () => {
       { notice_version: "booking-v1" },
       { notice_version: "photo-v1" },
       { notice_version: "photo-v2" },
+      { notice_version: "photo-v3" },
       { extra: 1 },
     ]) {
       expect((await browser.uploadLink(body)).status).toBe(400);
@@ -274,8 +275,8 @@ describe("POST /api/tryon/claim, before the look is made", () => {
       "SELECT purpose, notice_version, created_at, source FROM consents ORDER BY purpose",
     ).all();
     expect(consents.results).toEqual([
-      { purpose: "result_delivery", notice_version: "gate-v3", created_at: NOW.toISOString(), source: "try_on" },
-      { purpose: "tryon_photo", notice_version: "photo-v3", created_at: NOW.toISOString(), source: "try_on" },
+      { purpose: "result_delivery", notice_version: "gate-v4", created_at: NOW.toISOString(), source: "try_on" },
+      { purpose: "tryon_photo", notice_version: "photo-v4", created_at: NOW.toISOString(), source: "try_on" },
     ]);
     // The job keeps the claim's stage, which its render is made for.
     expect(await jobRow(jobId)).toMatchObject({
@@ -309,20 +310,20 @@ describe("POST /api/tryon/claim, before the look is made", () => {
     expect(await count("leads")).toBe(0);
   });
 
-  // ADR 0104: the gate's earlier notices said the result opens on the next screen.
+  // The gate's earlier notices said the result opens on the next screen, or that the photograph is kept thirty days.
   it("records the gate's current notice, and refuses any other", async () => {
     const browser = visitor();
     const jobId = await browser.uploaded();
-    for (const version of ["gate-v1", "gate-v2", "photo-v3"]) {
+    for (const version of ["gate-v1", "gate-v2", "gate-v3", "photo-v4"]) {
       const refused = await browser.claim(jobId, "98100 00001", {}, { notice_version: version });
       expect(refused.status).toBe(400);
       expect(await refused.json()).toMatchObject({ error: { code: "invalid_request", fields: ["notice_version"] } });
     }
-    expect((await browser.claim(jobId, "98100 00001", {}, { notice_version: "gate-v3" })).status).toBe(201);
+    expect((await browser.claim(jobId, "98100 00001", {}, { notice_version: "gate-v4" })).status).toBe(201);
     const consents = await env.DB.prepare("SELECT purpose, notice_version FROM consents ORDER BY purpose").all();
     expect(consents.results).toEqual([
-      { purpose: "result_delivery", notice_version: "gate-v3" },
-      { purpose: "tryon_photo", notice_version: "photo-v3" },
+      { purpose: "result_delivery", notice_version: "gate-v4" },
+      { purpose: "tryon_photo", notice_version: "photo-v4" },
     ]);
   });
 

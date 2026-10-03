@@ -139,7 +139,6 @@ describe("lead notices", () => {
     city: "Gurgaon",
     first_choice_window: "weekday_am" as const,
     proposed_visit_date: "2026-09-23",
-    contactable: 1,
   };
 
   it("names the city, window and proposed day of a booking, and never the person", () => {
@@ -151,15 +150,12 @@ describe("lead notices", () => {
     );
   });
 
-  it("names a waitlist's city, and says whether a try-on lead may be chased", () => {
+  it("names a waitlist's city, and says a try-on lead is not to be chased", () => {
     expect(leadNotice({ ...lead, source: "waitlist", city: "Mumbai" })).toBe(
       "New waitlist sign-up: Mumbai. Lead 0b9f1a52.",
     );
-    expect(leadNotice({ ...lead, source: "tryon", city: null, contactable: 0 })).toBe(
-      "New try-on lead: WhatsApp copy only, not to be chased. Lead 0b9f1a52.",
-    );
     expect(leadNotice({ ...lead, source: "tryon", city: null })).toBe(
-      "New try-on lead, from someone who has booked before. Lead 0b9f1a52.",
+      "New try-on lead: WhatsApp copy only, not to be chased. Lead 0b9f1a52.",
     );
   });
 });

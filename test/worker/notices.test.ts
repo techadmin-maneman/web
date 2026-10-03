@@ -42,12 +42,22 @@ describe("consent notices", () => {
   it("shows the try-on's notices that send the look to WhatsApp, which keep a client's try-on", () => {
     const photo = findNotice(CURRENT_NOTICE.tryon_photo);
     const gate = findNotice(CURRENT_NOTICE.result_delivery);
-    expect([photo?.version, gate?.version]).toEqual(["photo-v3", "gate-v3"]);
+    expect([photo?.version, gate?.version]).toEqual(["photo-v4", "gate-v4"]);
     expect(photo?.text.join(" ")).toContain("sent to your WhatsApp and never shown on this site");
     expect(gate?.text.join(" ")).toContain("never shown on this site");
     expect(gate?.text.join(" ")).not.toContain("next screen");
     expect(KEEPING_NOTICES).toContain(CURRENT_NOTICE.tryon_photo);
     expect(Object.keys(PUBLISHED)).not.toContain(CURRENT_NOTICE.tryon_photo);
+  });
+
+  // PS-26, CP-03: v3 said the photograph reached nobody outside Mane Man and was kept thirty days.
+  it("names who the try-on's photograph reaches, and says it goes within the hour", () => {
+    const photo = findNotice(CURRENT_NOTICE.tryon_photo)?.text ?? [];
+    const gate = findNotice(CURRENT_NOTICE.result_delivery)?.text ?? [];
+    expect(photo).toContain("Shared with: AILabTools, which makes the look, and WhatsApp, which delivers it.");
+    expect(photo.find((line) => line.startsWith("Kept for: "))).toMatch(/^Kept for: An hour, then deleted/);
+    expect(gate.at(-1)).toContain("Your photograph is deleted within the hour.");
+    expect([...photo, ...gate].join(" ")).not.toMatch(/thirty days|Nobody outside Mane Man/);
   });
 
   it("records a consent given by booking on its own purpose's notice, and names a referrer on each card notice that says so", () => {
