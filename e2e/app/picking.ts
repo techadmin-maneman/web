@@ -13,7 +13,7 @@ import { expect } from "../support.ts";
 export const TAKEN = "That window has just gone. Pick another.";
 
 /** The pay step: "Pay and confirm", or "Confirm" for a visit that costs nothing. */
-export const PAY_STEP = /^(Pay and confirm|Confirm)$/;
+const PAY_STEP = /^(Pay and confirm|Confirm)$/;
 
 /** Picks a free window on the day the sheet is showing, and continues to the pay step. */
 export async function continueToPayment(page: Page): Promise<void> {
