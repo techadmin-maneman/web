@@ -95,6 +95,8 @@ export const ERROR_CODES = [
   "in_progress",
   // The no-show wait has not run out yet (src/policy/no-show.ts), or a visit ops would close by hand is still to come.
   "too_early_to_close",
+  // A check-in or a start before the earliest check-in (src/policy/phone-clock.ts).
+  "too_early_to_arrive",
   // A visit ops would close by hand is closed or cancelled already, or the technician's phone closed it.
   "already_closed",
   // A service-area change that would leave no pincode served at all, and every
@@ -156,6 +158,10 @@ export const ErrorResponseSchema = z
             description:
               "superseded, to a technician's phone, for a job given to another technician: whom, and when (docs/open-points.md, item 92).",
           }),
+        earliest_at: z.iso.datetime().optional().openapi({
+          description:
+            "too_early_to_arrive, to a technician's check-in or start: the earliest moment the job takes one.",
+        }),
       })
       .strict(),
   })

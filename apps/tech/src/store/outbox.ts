@@ -12,6 +12,7 @@ import {
   OUT_OF_ORDER,
   pathFor,
   SUPERSEDED,
+  TOO_EARLY_TO_ARRIVE,
   TOO_EARLY_TO_CLOSE,
   unreachable,
   type Angle,
@@ -25,6 +26,7 @@ import {
   forgetMarks,
   forgetStartAtCheckIn,
   keepArrival,
+  keepJob,
   keepLanded,
   keepStartAtCheckIn,
   keptStartAtCheckIn,
@@ -227,6 +229,13 @@ async function markStopped(
   await put("outbox", { ...current, state, note, fields, moved, request_id: requestId });
 }
 
+/** A job ops moved to another time is read again, so the phone holds the start it moved to and can say so. */
+async function readAgainIfMoved(jobId: string, fields: readonly string[]): Promise<void> {
+  if (!fields.includes("time")) return;
+  const answer = await api.job(jobId);
+  if (answer.ok) await keepJob(answer.body).catch(() => undefined);
+}
+
 /**
  * A write the API refused: its job stops there for the technician to put right, and the refusal is reported, since
  * nothing else would tell anyone but him.
@@ -337,6 +346,11 @@ const early = new Set<string>();
 
 export const refusedAsEarly = (jobId: string): boolean => early.has(jobId);
 
+/** The jobs whose last check-in the API refused as before the earliest check-in, so the card can say when it opens. */
+const arrivedEarly = new Set<string>();
+
+export const checkInRefusedAsEarly = (jobId: string): boolean => arrivedEarly.has(jobId);
+
 async function run(): Promise<Replayed> {
   let sent = 0;
   let superseded = 0;
@@ -360,6 +374,7 @@ async function run(): Promise<Replayed> {
       }
       if (trouble !== null) {
         await markStopped(event, "superseded", trouble.note, trouble.fields, trouble.moved);
+        await readAgainIfMoved(event.job_id, trouble.fields);
         superseded += 1;
         changed();
         continue;
@@ -372,7 +387,10 @@ async function run(): Promise<Replayed> {
     });
     if (answer.ok) {
       // A check-in answers pass or fail with the distance; the job screen shows it.
-      if (event.kind === "check_in") await keepArrival(event.job_id, answer.body as CheckIn);
+      if (event.kind === "check_in") {
+        await keepArrival(event.job_id, answer.body as CheckIn);
+        arrivedEarly.delete(event.job_id);
+      }
       const landed = stateIn(answer.body);
       if (landed !== null) await keepLanded(event.job_id, landed);
       if (event.kind === "no_show") early.delete(event.job_id);
@@ -388,6 +406,7 @@ async function run(): Promise<Replayed> {
     // it, or the job is no longer this technician's at all.
     if (answer.code === SUPERSEDED || answer.code === OUT_OF_ORDER || answer.status === 404) {
       await markStopped(event, "superseded", answer.code, answer.fields, answer.moved);
+      await readAgainIfMoved(event.job_id, answer.fields);
       superseded += 1;
       changed();
       continue;
@@ -395,6 +414,13 @@ async function run(): Promise<Replayed> {
     // The wait has not run out. Nothing is wrong with the job: the countdown goes on.
     if (answer.code === TOO_EARLY_TO_CLOSE) {
       early.add(event.job_id);
+      await remove("outbox", event.seq);
+      changed();
+      continue;
+    }
+    // Before the earliest check-in. Nothing is wrong with the job: he taps again once it comes.
+    if (answer.code === TOO_EARLY_TO_ARRIVE && event.kind === "check_in") {
+      arrivedEarly.add(event.job_id);
       await remove("outbox", event.seq);
       changed();
       continue;

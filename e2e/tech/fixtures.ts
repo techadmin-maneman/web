@@ -67,6 +67,9 @@ const at = (date: string, time: string) => `${date}T${time}:00.000Z`;
 /** 6 pm in India on the day before the visit, when its address unlocks (src/policy/job-visibility.ts). */
 const unlocksAt = (date: string) => at(dayBefore(date), "12:30");
 
+/** Midnight in India as the visit's day begins: a test taps I have arrived whenever on the day it runs. */
+const checkInOpens = (date: string) => at(dayBefore(date), "18:30");
+
 /** The slots each type takes (src/config/scheduling.ts). */
 const SLOTS: Readonly<Record<VisitType, number>> = { consultation: 1, service: 1, replacement: 1.5, first_fit: 2 };
 
@@ -115,7 +118,7 @@ const secondJob = (date: string): Job => ({
   progress: NOT_BEGUN,
 });
 
-/** This afternoon's first fit, its card still locked as the list shows it. */
+/** This afternoon's first fit, its card still locked as the list shows it, until 6 pm tomorrow. */
 const lockedJob = (date: string): Job => ({
   id: LOCKED_JOB_ID,
   day: "later",
@@ -131,7 +134,7 @@ const lockedJob = (date: string): Job => ({
   badge: "prepaid",
   slots: 2,
   unlocked: false,
-  unlocks_at: unlocksAt(date),
+  unlocks_at: at(dayAfter(date), "12:30"),
   progress: NOT_BEGUN,
 });
 
@@ -284,6 +287,8 @@ export interface CardOptions {
   readonly pin?: boolean;
   readonly type?: VisitType;
   readonly waitMinutes?: number;
+  /** The booked start; the fixture's 9:30 am when null or left out. */
+  readonly startsAt?: string | null;
   readonly pieces?: readonly Piece[];
   readonly lastVisit?: boolean;
   readonly reminderDelivered?: string | null;
@@ -301,8 +306,10 @@ export interface CardOptions {
 export function card(date: string, progress: Progress, options: CardOptions = {}): Card {
   const type = options.type ?? "service";
   const oneVisit = options.oneVisit === true;
+  const job = firstJob(date, type, oneVisit);
   return {
-    ...firstJob(date, type, oneVisit),
+    ...job,
+    starts_at: options.startsAt ?? job.starts_at,
     address: {
       line1: "Tower C, 14th floor",
       line2: null,
@@ -323,6 +330,7 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
     client: { name: "Rohit M.", mobile: "+919810000000", note: null },
     progress,
     no_show_wait_min: options.waitMinutes ?? 15,
+    checkin_from: checkInOpens(date),
     pieces: [...(options.pieces ?? [])],
     last_visit:
       options.lastVisit === true
@@ -349,6 +357,7 @@ export function lockedCard(date: string): Card {
     client: null,
     progress: NOTHING_DONE,
     no_show_wait_min: 15,
+    checkin_from: checkInOpens(date),
     pieces: null,
     last_visit: null,
     reminder: null,
@@ -404,8 +413,8 @@ export interface Fake {
   moved: boolean;
   /**
    * Set to move the job to another time: a write that holds any other answers
-   * `409 superseded`, field time. The card goes on answering the old time, as
-   * the copy the phone holds does until it asks again.
+   * `409 superseded`, field time, and the card answers the new time, as the
+   * API does once the phone asks again.
    */
   movedTo: string | null;
   /** Set to make the no-show refuse with `425 too_early_to_close`, as it does before the wait runs. */
@@ -414,6 +423,8 @@ export interface Fake {
   checkIn: { passed: boolean; distance_m: number | null };
   /** How long the no-show wait runs from the check-in, in whole minutes, as ops set it. */
   waitMinutes: number;
+  /** The card's booked start, for a test whose wait depends on it; the fixture's 9:30 am when null. */
+  startsAt: string | null;
   /**
    * Set to answer a passing check-in with only this many milliseconds of the wait
    * left, so a test need not wait whole minutes. The API answers so for a check-in
@@ -508,6 +519,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     tooEarly: false,
     checkIn: { passed: true, distance_m: 40 },
     waitMinutes: 15,
+    startsAt: null,
     waitLeftMs: null,
     pin: true,
     type: "service",
@@ -531,6 +543,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       pin: fake.pin,
       type: fake.type,
       waitMinutes: fake.waitMinutes,
+      startsAt: fake.startsAt,
       pieces: fake.pieces,
       lastVisit: fake.lastVisit,
       reminderDelivered: fake.reminderDelivered,
@@ -683,7 +696,9 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       return route.fulfill({ contentType: "image/png", body: LAST_VISIT_PHOTO });
     }
     if (path === `/api/tech/jobs/${JOB_ID}`) {
-      return fake.moved ? refuse(route, 404, "not_found") : reply(route, 200, jobCard(today));
+      if (fake.moved) return refuse(route, 404, "not_found");
+      const answered = jobCard(today);
+      return reply(route, 200, fake.movedTo === null ? answered : { ...answered, starts_at: fake.movedTo });
     }
     if (path === `/api/tech/jobs/${LOCKED_JOB_ID}`) return reply(route, 200, lockedCard(today));
     if (path === `/api/tech/jobs/${TOMORROW_JOB_ID}` && fake.tomorrow) {

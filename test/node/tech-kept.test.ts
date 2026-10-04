@@ -23,6 +23,7 @@ import {
   keptClosed,
   keptDay,
   keptJob,
+  keptJobs,
   keptNames,
   keptStates,
 } from "../../apps/tech/src/store/jobs.ts";
@@ -87,6 +88,7 @@ const card = (id: string, date: string) =>
       outcome: null,
     },
     no_show_wait_min: 15,
+    checkin_from: `${date}T03:00:00.000Z`,
     pieces: [],
     last_visit: null,
     reminder: null,
@@ -169,6 +171,31 @@ describe("what the phone lets go of", () => {
 
     expect(await keptJob("old")).not.toBeNull();
     expect(await keptArrival("old")).not.toBeNull();
+  });
+});
+
+// BK-43: a job whose card locked again has no client left on the phone, and is still named by what it does hold.
+describe("what the phone holds of each job", () => {
+  it("is the card where there is one, else the day's list, whether or not the card is open", async () => {
+    const moved = { ...card("a", TOMORROW), starts_at: `${TOMORROW}T03:30:00.000Z`, client: null };
+    await keepDay(TODAY, [summary("a", TODAY), summary("b", TODAY)]);
+    await keepJob(moved);
+    await keepJob(card("b", TODAY));
+
+    const held = await keptJobs();
+    expect(held.get("a")).toEqual({
+      starts_at: moved.starts_at,
+      type: "service",
+      one_visit: false,
+      sector: "Sector 65",
+      client: null,
+    });
+    expect(held.get("b")).toMatchObject({ starts_at: `${TODAY}T04:00:00.000Z`, client: "Client b" });
+  });
+
+  it("names a job on the day's list whose card the phone never fetched", async () => {
+    await keepDay(TOMORROW, [{ ...summary("c", TOMORROW), unlocked: false }]);
+    expect((await keptJobs()).get("c")).toMatchObject({ type: "service", sector: "Sector 65", client: null });
   });
 });
 
