@@ -6,6 +6,7 @@
 // in every place, as prices are, any place's View may read; changing it needs a national grant.
 
 import { can, DEPARTMENTS, NATIONAL, type Caller, type Department, type Level, type ZoneOfCity } from "./access.ts";
+import { alertDepartment, markDoneLevel } from "./alerts.ts";
 import type { TaskGroup } from "./tasks.ts";
 
 /** A route that keeps to the caller's own departments and places, as Tasks lists each department its own groups. */
@@ -47,6 +48,10 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "GET /api/tasks": inOwnDepartments("view"),
   "PUT /api/tasks/{group}/{id}/owner": inOwnDepartments("act"),
   "POST /api/tasks/{group}/{id}/close": inOwnPlaces("operations", "act"),
+  // So with the alerts on Tasks' "Needs a hand": each department sees and acts on its own kinds (alertNeed).
+  "GET /api/alerts": inOwnDepartments("view"),
+  "POST /api/alerts/{id}/resolve": inOwnDepartments("act"),
+  "POST /api/alerts/{id}/send-again": inOwnDepartments("act"),
   "POST /api/held-bookings/{id}/retry": need("operations", "act"),
   "POST /api/held-bookings/{id}/stop": need("operations", "act"),
   "POST /api/held-bookings/{id}/link": need("operations", "act"),
@@ -103,6 +108,8 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "GET /api/payments": inOwnPlaces("finance", "view"),
   "GET /api/no-shows": inOwnPlaces("finance", "view"),
   "POST /api/no-shows/{id}/decision": inOwnPlaces("finance", "act"),
+  "GET /api/no-shows/{id}/charge": inOwnPlaces("finance", "act"),
+  "GET /api/no-shows/decided": inOwnPlaces("finance", "view"),
   "GET /api/no-shows/disputes": inOwnPlaces("finance", "view"),
   "POST /api/no-shows/disputes/{id}/ruling": inOwnPlaces("finance", "act"),
   "POST /api/held-bookings/{id}/refund": need("finance", "manage"),
@@ -118,13 +125,14 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/prices/withdraw": need("finance", "manage"),
   "GET /api/services": readFromAnyPlace("finance"),
 
-  // Growth: referrals, the waitlist, and launching areas.
-  "GET /api/referrals/held": need("growth", "view"),
-  "POST /api/referrals/{id}/decision": need("growth", "act"),
-  "GET /api/referrers": need("growth", "view"),
-  "POST /api/clients/{id}/referral": need("growth", "act"),
-  "GET /api/waitlist": need("growth", "view"),
-  "POST /api/pincodes/{pin}/launch": need("growth", "manage"),
+  // Growth: referrals, the waitlist and launching a pincode, each kept to the caller's cities. The service area lists
+  // every pincode we know, in every city, with how many wait in each, so it stays national.
+  "GET /api/referrals/held": inOwnPlaces("growth", "view"),
+  "POST /api/referrals/{id}/decision": inOwnPlaces("growth", "act"),
+  "GET /api/referrers": inOwnPlaces("growth", "view"),
+  "POST /api/clients/{id}/referral": inOwnPlaces("growth", "act"),
+  "GET /api/waitlist": inOwnPlaces("growth", "view"),
+  "POST /api/pincodes/{pin}/launch": inOwnPlaces("growth", "manage"),
   "GET /api/service-area": need("growth", "view"),
   "POST /api/service-area": need("growth", "manage"),
 
@@ -179,6 +187,7 @@ export const TASK_DEPARTMENTS: Readonly<Record<TaskGroup, Department>> = {
   partial_visit: "operations",
   referral_review: "growth",
   no_show_decision: "finance",
+  no_show_dispute: "finance",
   number_change: "customer_care",
   erasure_request: "customer_care",
   grievance: "customer_care",
@@ -189,6 +198,15 @@ export const TASK_DEPARTMENTS: Readonly<Record<TaskGroup, Department>> = {
 
 /** What seeing a group of tasks, or taking a task of it, asks: the board keeps each task to the caller's cities. */
 export const taskNeed = (group: TaskGroup, level: Level): RouteNeed => inOwnPlaces(TASK_DEPARTMENTS[group], level);
+
+/**
+ * What seeing a kind of alert, or acting on one, asks: the department its kind belongs to (src/policy/alerts.ts),
+ * nationally, since an alert names no city.
+ */
+export const alertNeed = (kind: string, level: Level): RouteNeed => need(alertDepartment(kind), level);
+
+/** What marking a kind of alert done asks: Act in its department, or Manage where done records an erasure. */
+export const markDoneNeed = (kind: string): RouteNeed => alertNeed(kind, markDoneLevel(kind));
 
 /** Whether the caller's grants reach what a route asks: over any place if it keeps to their own, nationally if not. */
 export function meetsNeed(caller: Caller, need: RouteNeed, zoneOf: ZoneOfCity): boolean {

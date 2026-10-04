@@ -62,6 +62,32 @@ export function outcomeOf(job: Tracked, queued: readonly Queued[]): Outcome | nu
 
 export const closed = (job: Tracked, queued: readonly Queued[]): boolean => outcomeOf(job, queued) !== null;
 
+/** What a one visit's client decided at the piece step: the product's tier, or that they decided against the fit. */
+export type ClientChoice = NonNullable<Job["client_choice"]>;
+
+/** The choice a piece step's body records; null for one that records neither. */
+function choiceIn(body: unknown): ClientChoice | null {
+  const sent = body as { declined?: unknown; product?: unknown } | null;
+  if (sent?.declined === true) return { declined: true };
+  return typeof sent?.product === "string" ? { product: sent.product } : null;
+}
+
+/** A one visit's choice: the piece step still on the phone, else the one that reached us; null before either. */
+export function choiceOf(job: Job, queued: readonly Queued[]): ClientChoice | null {
+  const held = queued
+    .filter((event) => event.job_id === job.id && event.kind === "piece" && event.state !== "superseded")
+    .at(-1);
+  const heldChoice = held === undefined ? null : choiceIn(held.body);
+  return heldChoice ?? job.client_choice;
+}
+
+/** Whether a one visit's client decided against the fit, so nothing is fitted and nothing is paid. */
+export const declinedTheFit = (job: Job, queued: readonly Queued[]): boolean => {
+  if (!job.one_visit) return false;
+  const choice = choiceOf(job, queued);
+  return choice !== null && "declined" in choice;
+};
+
 /** Where a row of the day's list stands once its job has begun. */
 export type RowState = "closed" | "in_progress";
 

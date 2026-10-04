@@ -69,6 +69,25 @@ describe("the steps of a job", () => {
     expect(stepBefore("after_photos", "replacement", toConsumables, {})).toBe("piece");
   });
 
+  // FLD-37: a declined one visit's checklist asked for the fit's items, since the choice came after it.
+  it("takes a one visit's choice, at the piece, before its checklist, and then the rest in order", () => {
+    expect(stepsFor("first_fit", true)).toEqual([
+      "before_photos",
+      "piece",
+      "checklist",
+      "consumables",
+      "after_photos",
+      "outcome",
+    ]);
+    const photographed = done("check_in", "start", "before_photos");
+    expect(stepBefore("checklist", "first_fit", photographed, {}, true)).toBe("piece");
+    expect(stepBefore("piece", "first_fit", photographed, {}, true)).toBeNull();
+    // Declined, the visit is a consultation by its close, and its steps stay the one visit's.
+    expect(stepBefore("checklist", "consultation", done("check_in", "start", "before_photos", "piece"), {}, true)).toBe(
+      null,
+    );
+  });
+
   it("closes a no-show from the check-in alone: the job was never started (src/policy/no-show.ts)", () => {
     expect(stepBefore("outcome", "service", done("check_in"), { outcome: "no_show" })).toBeNull();
     expect(stepBefore("outcome", "service", done(), { outcome: "no_show" })).toBe("check_in");

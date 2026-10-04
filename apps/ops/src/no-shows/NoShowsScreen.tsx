@@ -2,24 +2,26 @@
 // kept on, today unless ops pick another day, then each charge a client
 // disputed, refunded or upheld here (Disputes.tsx), then each no-show case
 // with the evidence ops rule on, charged or waived here
-// (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
+// (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md), then the cases
+// ruled on today. A ruling reads the day's money again.
 //
 // A case is evidence a client may be charged on, so it names the client and
 // says when the visit was booked for, when the technician's phone says he
 // arrived and when that reached us, and what became of the reminder. A ruling
 // carries its reason, which the server refuses to go without, and a charge is
-// asked about once more before it is sent.
+// asked about once more, with what it keeps and refunds, before it is sent.
 //
 // The server never charges by itself: a charge costs what the booking was sold
 // to cost a no-show once ops rule, under whoever Access says is signed in
 // (src/policy/no-show.ts, docs/decisions/0031-access-and-audit.md).
 
 import { Button } from "@maneman/ui/Button";
-import { useLoad } from "@maneman/ui/useLoad";
+import { Panel } from "@maneman/ui/Panel";
+import { type Loaded, useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
-import { api, type Charge, type NoShowCase } from "../api.ts";
+import { api, type Charge, type ChargePreview, type DecidedNoShow, type NoShowCase } from "../api.ts";
 import { DecisionQueue } from "../components/DecisionQueue.tsx";
 import { OpsLink, Shell } from "../components/Shell.tsx";
 import { noShows } from "../content.ts";
@@ -234,20 +236,61 @@ type Ruling =
   | { readonly step: "sending" }
   | { readonly step: "failed"; readonly code: string };
 
-/** The charge, asked about once more; it takes the keyboard as it opens, where the buttons stood. */
+/** What charging keeps of what was paid and what it refunds, as one question: "Keep Rs. 2,000 of the Rs. 2,000 paid?" */
+function chargeQuestion(preview: ChargePreview): string {
+  const confirm = copy.confirm;
+  const { paid, kept } = preview;
+  if (paid === 0) return preview.credit_kept ? confirm.keepsCredit : confirm.nothingPaid;
+  if (kept === paid) return confirm.keepsAll(rupees(paid));
+  if (kept === 0) return confirm.keepsNone(rupees(paid));
+  return confirm.keepsPart(rupees(kept), rupees(paid), rupees(paid - kept));
+}
+
+function questionOf(preview: Loaded<ChargePreview>): string {
+  if (preview.state === "loading") return copy.confirm.working;
+  if (preview.state === "failed") return copy.confirm.failed;
+  return chargeQuestion(preview.value);
+}
+
+/** A charge on a visit paid for in money and with a credit keeps both, and the question names only the money. */
+const keepsCreditToo = (preview: Loaded<ChargePreview>): boolean =>
+  preview.state === "loaded" && preview.value.paid > 0 && preview.value.credit_kept;
+
+/**
+ * The charge, asked about once more with what it keeps and refunds; it takes the keyboard as it opens, where the
+ * buttons stood. It cannot be sent until the figures are in.
+ */
 function ConfirmCharge({ each, onCharge, onBack }: { each: NoShowCase; onCharge: () => void; onBack: () => void }) {
   const panel = useRef<HTMLDivElement>(null);
+  const [preview] = useLoad(useCallback(() => api.chargePreview(each.id), [each.id]));
   useEffect(() => {
     panel.current?.focus();
   }, []);
   const day = each.visit_date === null ? copy.noDay : shortDate(each.visit_date);
   return (
-    <div className={styles.confirm} ref={panel} tabIndex={-1} role="group" aria-labelledby={`confirm-${each.id}`}>
+    <div
+      className={styles.confirm}
+      ref={panel}
+      tabIndex={-1}
+      role="group"
+      aria-labelledby={`confirm-${each.id}`}
+      aria-describedby={`confirm-who-${each.id}`}
+    >
       <p className={styles.confirmLine} id={`confirm-${each.id}`}>
-        {copy.confirm(each.person?.name ?? copy.erased, day)}
+        {questionOf(preview)}
+      </p>
+      {keepsCreditToo(preview) && <p className={styles.confirmNote}>{copy.confirm.creditToo}</p>}
+      <p className={styles.confirmNote} id={`confirm-who-${each.id}`}>
+        {copy.confirm.who(each.person?.name ?? copy.erased, day)}
       </p>
       <div className={styles.actions}>
-        <Button variant="primary" size="small" className={styles.charge} onClick={onCharge}>
+        <Button
+          variant="primary"
+          size="small"
+          className={styles.charge}
+          disabled={preview.state !== "loaded"}
+          onClick={onCharge}
+        >
           {copy.confirmCharge}
         </Button>
         <Button variant="outline" size="small" className={styles.waive} onClick={onBack}>
@@ -376,7 +419,7 @@ function Case({ each, now, may, onDecided }: CaseProps) {
   );
 }
 
-function Queue() {
+function Queue({ onDecided }: { onDecided: () => void }) {
   const [loaded, retry] = useLoad(api.noShows);
   const access = useAccess();
   if (loaded.state === "loading") return <Loading />;
@@ -394,18 +437,74 @@ function Queue() {
       empty={copy.empty}
       note={copy.note(loaded.value.waiver)}
     >
-      {(each, ruled) => <Case each={each} now={now} may={may} onDecided={ruled} />}
+      {(each, ruled) => (
+        <Case
+          each={each}
+          now={now}
+          may={may}
+          onDecided={() => {
+            ruled();
+            onDecided();
+          }}
+        />
+      )}
     </DecisionQueue>
   );
 }
 
+/** What a ruling did: a charge, with what it kept, or a waiver. */
+function rulingOf(each: DecidedNoShow): string {
+  const decided = noShows.decided;
+  if (each.decision === "waived") return decided.waived;
+  if (each.charge === null) return decided.chargedUnrecorded;
+  if (each.charge.kept > 0) return decided.charged(rupees(each.charge.kept));
+  return each.charge.credit_spent ? decided.chargedCredit : decided.chargedNothing;
+}
+
+/** The cases ruled on today, the latest first, so a case ops have just charged or waived can still be seen. */
+function DecidedToday() {
+  const [loaded, retry] = useLoad(api.decidedNoShows);
+  const decided = noShows.decided;
+  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
+
+  const { cases } = loaded.value;
+  return (
+    <Panel titleId="decided-today" title={decided.title}>
+      {cases.length === 0 ? (
+        <p className={styles.empty}>{decided.empty}</p>
+      ) : (
+        <ul className={styles.charges}>
+          {cases.map((each) => (
+            <li className={styles.chargeRow} key={each.id}>
+              <div className={styles.chargeLine}>
+                <span className={styles.who}>{each.person?.name ?? copy.erased}</span>
+                <span className={styles.ruling}>{decided.at(rulingOf(each), indiaClock(each.decided_at))}</span>
+              </div>
+              <p className={styles.evidence}>
+                {each.visit_date === null ? copy.undated : copy.visit(shortDate(each.visit_date))}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Panel>
+  );
+}
+
 export function NoShowsScreen() {
+  // Each ruling reads the day's money and today's rulings again, so neither stands as it was before it.
+  const [rulings, setRulings] = useState(0);
+  const ruled = useCallback(() => {
+    setRulings((count) => count + 1);
+  }, []);
   return (
     <Shell section="/no-shows" title={noShows.title}>
       <div className={styles.column}>
-        <Money />
-        <Disputes />
-        <Queue />
+        <Money key={`money-${String(rulings)}`} />
+        <Disputes onRuled={ruled} />
+        <Queue onDecided={ruled} />
+        <DecidedToday key={`decided-${String(rulings)}`} />
       </div>
     </Shell>
   );

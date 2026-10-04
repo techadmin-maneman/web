@@ -751,7 +751,7 @@ R2's 10 GB a month is the account's, both environments together, and past it R2 
 
 ADR 0039 gives the photographs and the cards 4 GB. At 250 KB a photograph and 32 KB its thumbnail, which is what the technician app sends, that is about 1,312 visits. A client's kept try-on is paid from the same share, and while its look is kept at full size, the share holds about 444 visits at worst (ADR 0084, ADR 0093). A photograph copied from FSM keeps FSM's size, several MB (open point 125), and spends it faster. One from the technician app is at most 2 MB.
 
-**The storage meter** (ADR 0093) is a running figure of what this environment's `client-photos` and `referral-cards` hold. It tells ops once at 50%, 80% and 100% of the share (the alerts `r2_share:50`, `r2_share:80` and `r2_share:100`), and Settings shows it. **Past the share R2 bills, as the owner accepted** (open point 151): nothing is refused. Past the runaway ceiling, 20 GB, the technician app's uploads answer `503 busy` and wait on the phones, and ops are told (`r2_runaway_ceiling`): something is writing far more than the business makes. Find it before anything else. The usage notifications above, at 5 GB for the account, stay as the backstop.
+**The storage meter** (ADR 0093) is a running figure of what this environment's `client-photos` and `referral-cards` hold. It tells ops once at 50%, 80% and 100% of the share (the alerts `r2_share:50`, `r2_share:80` and `r2_share:100`), and Settings › Rules shows it under The console. **Past the share R2 bills, as the owner accepted** (open point 151): nothing is refused. Past the runaway ceiling, 20 GB, the technician app's uploads answer `503 busy` and wait on the phones, and ops are told (`r2_runaway_ceiling`): something is writing far more than the business makes. Find it before anything else. The usage notifications above, at 5 GB for the account, stay as the backstop.
 
 Each environment's meter counts its own buckets against the whole share, which staging and production share. Staging holds little, but read both on the dashboard before trusting one.
 
@@ -800,13 +800,9 @@ A mark is told once for good; to hear of one again after the database shrank bel
 
 Every alert says what went wrong with IDs only, and most link to the place in the ops console to act on it. Most are kept in D1 and told once, then again when they have happened 10, 100 and 1,000 times ("Still happening, 10 times: …"), and closed when what they were about is put right. What is told, and when, is the table in `docs/decisions/0067-alerts-and-silent-failures.md`. Without `ALERT_WEBHOOK_URL` they are logged as `alert` and still kept.
 
-What is still open:
+What is still open is at the top of the console's **Tasks**, under **Needs a hand**: each alert ops were told of, with its message, a link to where to act, and how often it has happened. Each department sees its own kinds; Admin sees those about the system itself (ADR 0067, "Alerts on Tasks").
 
-```sql
-SELECT key, message, link, count, first_seen_at, last_seen_at FROM alerts WHERE resolved_at IS NULL ORDER BY last_seen_at DESC;
-```
-
-A daily alert (Google, Turnstile) and one ops settle by hand (a refund, a kept charge, an FSM erasure) stay open once dealt with. Close one with `UPDATE alerts SET resolved_at = '<now, ISO>' WHERE key = '<key>' AND resolved_at IS NULL;`.
+A daily alert (Google, Turnstile) and one ops settle by hand (a refund, a kept charge, an FSM erasure) stay open once dealt with: **Mark done** closes it, under your name. A failed message, a lead the CRM gave up on and a CRM erasure have **Send again**, which puts it back on its queue and closes the alert; if it fails again, a new alert says so.
 
 **A cron job keeps failing.** The alert names the job and its last error. Where each job stands:
 
@@ -861,10 +857,10 @@ The chat shows the message; the `alerts` table keeps it under its key. Most aler
 | Cloudflare's usage figures could not be read three hours running                         | `daily_allowances_unreadable`                                                                             | when they are read                   | "The daily allowances"                                                  |
 | The WhatsApp bridge is not connected                                                     | `whatsapp_bridge`                                                                                         | when it is open                      | "WhatsApp (Evolution) is down"                                          |
 | _n_ login codes failed to send in the last hour                                          | `login_codes_failing`                                                                                     | when a code goes                     | "WhatsApp (Evolution) is down"                                          |
-| Message _id_ (_kind_) failed after _n_ attempts                                          | none: told for each                                                                                       | not kept                             | "Replaying a failed message"                                            |
+| Message _id_ (_kind_) failed after _n_ attempts                                          | `message_failed:<message>`                                                                                | on Send again, or by hand            | "Replaying a failed message"                                            |
 | Messages queued over a day ago were never sent, and are now failed                       | `messages_unsent:<date>`                                                                                  | by hand                              | "WhatsApp (Evolution) is down", then "Replaying a failed message"       |
-| Lead _id_ did not reach the CRM                                                          | none                                                                                                      | not kept                             | "Replaying failed leads"                                                |
-| Erasing person _id_ in the CRM failed                                                    | none                                                                                                      | not kept                             | "Erasure within the day", step 3                                        |
+| Lead _id_ did not reach the CRM                                                          | `crm_lead:<lead>`                                                                                         | when it reaches the CRM              | "Replaying failed leads"                                                |
+| Erasing person _id_ in the CRM failed                                                    | `crm_erasure:<person>`                                                                                    | when it is blanked, or by hand       | "Erasure within the day", step 3                                        |
 | FSM would not anonymise contact _id_                                                     | `fsm_erasure:<person>`                                                                                    | by hand                              | "Erasure within the day"                                                |
 | Payment link _id_, of a client erased since, could not be cancelled                      | `erased_link:<link>`                                                                                      | by hand                              | cancel it in Razorpay's dashboard                                       |
 | Visit _id_ was paid by another link, and its own payment link could not be cancelled     | `paid_elsewhere_link:<link>`                                                                              | by hand                              | "A payment link"                                                        |
@@ -896,7 +892,7 @@ The chat shows the message; the `alerts` table keeps it under its key. Most aler
 | The daily _name_ ceiling is reached                                                      | none: told once a day                                                                                     | not kept                             | "A ceiling was reached"; section 13 for geocode                         |
 | Google refused the address search                                                        | `google_refused:<date>`                                                                                   | by hand                              | section 13                                                              |
 | Turnstile could not check _n_ visitors                                                   | `turnstile_unavailable:<date>`                                                                            | by hand                              | Cloudflare's status, and `TURNSTILE_SECRET`                             |
-| _n_ account deletion request(s) have waited 5 days                                       | none                                                                                                      | not kept                             | the console's Deletion requests                                         |
+| Deletion request _id_ has waited 5 days                                                  | `deletion_waiting:<request>`                                                                              | when it is decided                   | the console's Deletion requests                                         |
 | A client raised grievance _id_                                                           | none                                                                                                      | not kept                             | the console's Grievances                                                |
 
 ---
@@ -945,11 +941,13 @@ Symptoms: calls fail with `Zoho 400 Access Denied: could not refresh the access 
 
 ### Replaying failed leads
 
+One lead: **Send again** on its alert, under Tasks' Needs a hand. Many, after an outage:
+
 ```sql
 UPDATE leads SET sync_attempts = 0 WHERE sync_state = 'failed';
 ```
 
-The sweeper picks them up within five minutes. A replay never duplicates a Zoho record: the sync looks the person up by `D1_Person_ID` first, and Zoho refuses a second record with the same `D1_Person_ID`.
+The sweeper picks them up within fifteen minutes, and each lead's alert closes as it reaches the CRM. A replay never duplicates a Zoho record: the sync looks the person up by `D1_Person_ID` first, and Zoho refuses a second record with the same `D1_Person_ID`.
 
 ### Checking Zoho's answers before a release
 
@@ -1238,6 +1236,8 @@ The lasting answers are a number of Mane Man's own (open point 38) and SMS (open
 
 ### Replaying a failed message
 
+One message: **Send again** on its alert, under Tasks' Needs a hand. Many, after an outage:
+
 ```sql
 UPDATE outbound_messages
 SET state = 'queued', attempts = 0, sending_at = NULL,
@@ -1343,7 +1343,7 @@ The console has two doors, and both run the same erasure, written to `audit_log`
    FROM people WHERE id = '<person_id>';
    ```
 
-   If `crm_erased_at` stays empty, `crm_erasure_error` says why. The sweeper tries 10 times, then alerts. To finish it by hand, find the record in Zoho by `D1_Person_ID` and blank those fields. Then run `UPDATE people SET crm_erased_at = '<now, ISO>' WHERE id = '<person_id>';`. If Books will not erase the customer after 10 tries, ops are alerted once with what to do by hand.
+   If `crm_erased_at` stays empty, `crm_erasure_error` says why. The sweeper tries 10 times, then alerts, and the alert waits under Tasks' Needs a hand. Once Zoho is back, **Send again** there. To finish it by hand instead, find the record in Zoho by `D1_Person_ID`, blank those fields, then **Mark done** (Customer Care Manage): that records the person as erased in the CRM. If Books will not erase the customer after 10 tries, ops are alerted once with what to do by hand.
 
 4. **Delete the chat** with the number in the Mane Man WhatsApp account, if there is one.
 5. **Tell the person** it is done, in the chat they asked in.

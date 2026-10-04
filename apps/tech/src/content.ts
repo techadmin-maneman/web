@@ -480,6 +480,8 @@ export const closeOut = {
   label: "Closed out",
   who: (name: string, outcome: string) => `${name} · ${outcome}`,
   outcomes: { done: "done", partial: "partial", no_show: "no-show" },
+  // PLACEHOLDER: no board draws a consultation and fit in one visit closed as done once the client declined.
+  freeConsultation: "free consultation",
   duration: "Duration",
   // PLACEHOLDER: the board writes "1 h 22 m"; the phone times it from Start job (open point 60).
   length: (hours: number, minutes: number) =>
@@ -519,8 +521,8 @@ export const badges = {
 /**
  * PLACEHOLDER: no board draws a consultation and fit in one visit
  * (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). The client chooses the product with the technician
- * at the piece step, or decides against it; closing the visit as done then texts them a payment link, or ends it as
- * a consultation. Never an amount.
+ * at the piece step, before the checklist, or decides against it; closing the visit as done then texts them a payment
+ * link, or ends it as a free consultation. Never an amount.
  */
 export const oneVisit = {
   name: "Consultation and fit",
@@ -531,9 +533,16 @@ export const oneVisit = {
   // PLACEHOLDER: ops offer no hair system for the visit's day, so there is nothing to choose from.
   noProducts: "No hair system is offered for this visit. Speak to ops before you fit anything.",
   chooseFirst: "Choose the hair system, or that the client decided against it",
-  declinedNote: "Nothing is fitted. Closing as done ends the visit as a consultation, with nothing to pay.",
+  declinedNote: "Nothing is fitted. The visit ends as a free consultation.",
+  /** Closing as done, once the client decided against the fit. */
+  endsAsConsultation: "Ends as a free consultation. Nothing to pay.",
+  /** Closing as done, once the client chose a hair system: by its name in the console. */
+  linkFor: (product: string) => `Closing texts the client a payment link for ${product}.`,
+  /** A product the card no longer names, for linkFor. */
+  chosenProduct: "the hair system they chose",
+  /** Closing as done on a phone that does not know the client's choice, from a card kept by an earlier build. */
   closeNote:
-    "Closing as done texts the client a payment link for the product they chose. If they decided against it, the visit ends as a consultation.",
+    "Closing texts the client a payment link for their hair system, or ends a declined visit as a free consultation.",
   payment: "Payment",
   linkSent: "Link texted to the client",
   linkPaid: "Paid",
