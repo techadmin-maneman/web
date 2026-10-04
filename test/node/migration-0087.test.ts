@@ -1,4 +1,4 @@
-// Migration 0086: when the chat was last told of each alert, and the open alerts whose subject is gone closed, applied
+// Migration 0087: when the chat was last told of each alert, and the open alerts whose subject is gone closed, applied
 // to a database that already holds alerts as staging's does. Every ID is made up.
 
 import { readdirSync, readFileSync } from "node:fs";
@@ -64,7 +64,7 @@ const openKeys = (db: DatabaseSync) =>
     .all()
     .map((row) => row.key);
 
-describe("migration 0086", () => {
+describe("migration 0087", () => {
   it("counts an open alert as last told when it was first told", () => {
     const db = migrated();
     expect(db.prepare("SELECT last_told_at FROM alerts WHERE key = 'whatsapp_bridge'").get()).toEqual({

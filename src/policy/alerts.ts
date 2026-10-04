@@ -56,6 +56,7 @@ const FINANCE_KINDS = [
   "books_apply_failed",
   "books_refund_refused",
   "books_refund_failed",
+  "razorpay_refund_unheard",
 ];
 
 const OPERATIONS_KINDS = [

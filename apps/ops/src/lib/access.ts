@@ -13,6 +13,7 @@ import type { MayCall } from "../route.ts";
 export {
   alertNeed,
   GIVING_NO_CITY,
+  markDoneNeed,
   REFUNDING_A_DISPUTE,
   taskNeed,
   WAIVING_A_NO_SHOW,

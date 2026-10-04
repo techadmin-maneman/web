@@ -945,7 +945,7 @@ One lead: **Send again** on its alert, under Tasks' Needs a hand. Many, after an
 UPDATE leads SET sync_attempts = 0 WHERE sync_state = 'failed';
 ```
 
-The sweeper picks them up within five minutes, and each lead's alert closes as it reaches the CRM. A replay never duplicates a Zoho record: the sync looks the person up by `D1_Person_ID` first, and Zoho refuses a second record with the same `D1_Person_ID`.
+The sweeper picks them up within fifteen minutes, and each lead's alert closes as it reaches the CRM. A replay never duplicates a Zoho record: the sync looks the person up by `D1_Person_ID` first, and Zoho refuses a second record with the same `D1_Person_ID`.
 
 ### Checking Zoho's answers before a release
 

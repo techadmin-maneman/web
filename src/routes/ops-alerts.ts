@@ -14,8 +14,8 @@ import { json } from "../http/openapi.ts";
 import { callerAccess, permits } from "../http/staff-access.ts";
 import { markDone, openAlert, openAlerts, sendAgain, type OpenAlert } from "../domain/needs-a-hand.ts";
 import type { AuditAction, AuditEntry } from "../domain/audit.ts";
-import { markDoneLevel, maySendAgain } from "../policy/alerts.ts";
-import { alertNeed, meetsNeed } from "../policy/console-routes.ts";
+import { maySendAgain } from "../policy/alerts.ts";
+import { alertNeed, markDoneNeed, meetsNeed } from "../policy/console-routes.ts";
 
 /** The alerts the list shows, the longest open; its count is all of them. */
 export const ALERTS_SHOWN = 50;
@@ -125,8 +125,7 @@ export function registerOpsAlerts(app: App): void {
     const { requestId } = c.var;
     const alert = await openAlert(c.env.DB, c.req.valid("param").id);
     if (alert === null) return c.json(errorBody("not_found", requestId), 404);
-    const need = alertNeed(alert.kind, markDoneLevel(alert.kind));
-    if (!(await permits(c, need))) return c.json(errorBody("not_permitted", requestId), 403);
+    if (!(await permits(c, markDoneNeed(alert.kind)))) return c.json(errorBody("not_permitted", requestId), 403);
 
     await markDone(c.env.DB, alert, { now: c.var.deps.now(), audit: auditOf(c, alert, "alert.resolve") });
     return c.body(null, 204);

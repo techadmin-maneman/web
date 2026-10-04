@@ -1,4 +1,4 @@
--- Migration number: 0086
+-- Migration number: 0087
 --
 -- When the chat was last told of an alert, so an alert that stays open is told
 -- again on a clock and not only as its count grows. Then the open alerts whose
