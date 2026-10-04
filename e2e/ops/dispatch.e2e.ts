@@ -466,7 +466,7 @@ test("opens the visit a link names, in its drawer, on the week the link asks for
   await page.goto(`/dispatch?from=2025-09-19&visit=${ROHIT_JOB?.appointment_id ?? ""}`);
 
   await expect(page.getByRole("dialog", { name: "Rohit Malhotra" })).toBeVisible();
-  await page.getByRole("dialog").getByRole("button", { name: "Close" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Close", exact: true }).click();
   await expect(page.getByRole("button", { name: ROHIT_BLOCK })).toBeFocused();
   await expect(page).toHaveURL(/\/dispatch\?from=2025-09-19$/);
 });

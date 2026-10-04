@@ -244,17 +244,16 @@ export function DispatchScreen() {
   const showVisit = useCallback((on: Board, visit: string) => {
     const element = area.current?.querySelector<HTMLElement>(`[data-appointment="${visit}"]`) ?? null;
     element?.scrollIntoView({ block: "center", inline: "nearest" });
+    // The keyboard goes to the visit first, so the browser gives it back there when the drawer closes.
+    element?.focus();
     const job = blockOn(on, visit);
     if (job !== null) {
       opener.current = element;
       setOpened(job);
       return;
     }
-    if (on.unassigned.some((each) => each.appointment_id === visit)) {
-      element?.focus();
-      return;
-    }
-    setNotice({ tone: "refusal", text: dispatch.landing.notOnBoard, call: null });
+    const inTray = on.unassigned.some((each) => each.appointment_id === visit);
+    if (!inTray) setNotice({ tone: "refusal", text: dispatch.landing.notOnBoard, call: null });
   }, []);
 
   useEffect(() => {
