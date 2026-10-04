@@ -3,7 +3,7 @@
 // docs/decisions/0010-applying-triggers.md), against a fake account.
 
 import { describe, expect, it } from "vitest";
-import { EVERY_MINUTE } from "../../src/scheduled/cron.ts";
+import { EVERY_MINUTE } from "../../src/scheduled/schedule.ts";
 import { readJsonc } from "../../scripts/lib/jsonc.ts";
 import type { Finding } from "../../scripts/lib/findings.ts";
 import { checkTriggers, configuredTriggers } from "../../scripts/lib/triggers.ts";

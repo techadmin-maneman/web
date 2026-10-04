@@ -2176,16 +2176,26 @@ Request body:
         "place": {
           "type": "string",
           "description": "Where it is: the saved address (locality, city and pincode), else the booking's city."
+        },
+        "requested": {
+          "type": "boolean",
+          "description": "Asked for with no slot held, as while self-serve booking is off or by a Phase 1 booking: ops confirm the time on WhatsApp."
+        },
+        "one_visit": {
+          "type": "boolean",
+          "description": "The consultation and the first fit in one visit."
         }
       },
       "required": [
         "date",
         "window",
         "window_label",
-        "place"
+        "place",
+        "requested",
+        "one_visit"
       ],
       "additionalProperties": false,
-      "description": "A booking's proposed consultation, before FSM has the visit: from the site's form, or a Phase 1 booking to be confirmed on WhatsApp. Null once the mirror has the visit."
+      "description": "A booking's consultation from the site's form, or a Phase 1 booking, before any visit of the client's is on record. Null once one is, and once its day has passed."
     },
     "next_visit": {
       "anyOf": [
