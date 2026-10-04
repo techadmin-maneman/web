@@ -1591,6 +1591,14 @@ The client's own card while it is live: the JPEG the invite shows
 }
 ```
 
+**403**: not_fitted: Refer opens once the client's first fit is done
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 **404**: not_found: no card of theirs is live: none made, taken down, the consent off, or erased
 
 ```json
@@ -1621,6 +1629,14 @@ Upload the client's referral card: the body is the JPEG itself
 ```
 
 **401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: not_fitted: Refer opens once the client's first fit is done, or no photograph of their first fit is stored
 
 ```json
 {
@@ -1671,6 +1687,14 @@ The client's code, credits and fitted friends
 ```
 
 **401**: session_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: not_fitted: Refer opens once the client's first fit is done
 
 ```json
 {
@@ -1813,6 +1837,8 @@ Request body:
             "not_changeable",
             "terms_changed",
             "consent_required",
+            "not_fitted",
+            "not_paid",
             "device_revoked",
             "sign_in_stopped",
             "superseded",

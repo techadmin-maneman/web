@@ -5,13 +5,12 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { renderMessage } from "../../src/config/message-templates.ts";
 import { creditBalance, expireCredits, grantCredits } from "../../src/domain/credits.ts";
+import { clawBackRefunded, decideHeldReferral, settleReferrals } from "../../src/domain/referral-grants.ts";
 import {
-  clawBackRefunded,
   composeFriendCredited,
   composeFriendFitted,
   composeReferralRejected,
-  settleReferrals,
-} from "../../src/domain/referral-grants.ts";
+} from "../../src/domain/referral-messages.ts";
 import { erasePerson } from "../../src/domain/erasure.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { createLogger } from "../../src/log.ts";
@@ -23,6 +22,7 @@ import {
   fakeDependencies,
   fakeQueue,
   LOCAL_CONFIG,
+  fittedAndPhotographed,
   markDatabase,
   NOW,
   request,
@@ -87,6 +87,22 @@ beforeEach(async () => {
     .run();
   await attribution(ATTRIBUTION, FRIEND);
 });
+
+/** env.DB, with `before` run ahead of each batch: another request's write landing between a read and its batch. */
+function racedBy(before: () => Promise<void>): D1Database {
+  return new Proxy(env.DB, {
+    get(target, key) {
+      if (key === "batch") {
+        return async (statements: D1PreparedStatement[]) => {
+          await before();
+          return target.batch(statements);
+        };
+      }
+      const value: unknown = Reflect.get(target, key);
+      return typeof value === "function" ? (value as (...args: unknown[]) => unknown).bind(target) : value;
+    },
+  });
+}
 
 const messagesWritten = async () =>
   (await env.DB.prepare("SELECT person_id, kind, subject_id FROM outbound_messages ORDER BY kind, person_id").all())
@@ -474,6 +490,62 @@ describe("a friend with two first fits done (BIZ-13)", () => {
   });
 });
 
+// PS-62: the grant's state was written without asking what it was, so a second pass, or a second decision, wrote
+// its credits and messages again over the first.
+describe("a grant settled twice at once", () => {
+  it("settles once when two passes of the cron take the same referral, telling each side once", async () => {
+    await firstFit(FIT, FRIEND);
+    let raced = false;
+    const racing = racedBy(async () => {
+      if (raced) return;
+      raced = true;
+      await settleReferrals(env.DB, new Date(NOW.getTime() + 1000), REFERRAL_REWARD);
+    });
+
+    expect(await settleReferrals(racing, NOW, REFERRAL_REWARD)).toMatchObject({ granted: 0, messageIds: [] });
+
+    expect(await messagesWritten()).toEqual([
+      { person_id: FRIEND, kind: "friend_credited", subject_id: ATTRIBUTION },
+      { person_id: REFERRER, kind: "friend_fitted", subject_id: ATTRIBUTION },
+    ]);
+    expect((await creditBalance(env.DB, REFERRER, NOW)).visits).toBe(3);
+  });
+
+  it("writes nothing for an approval another member of staff rejected between its read and its write", async () => {
+    await firstFit(FIT, FRIEND);
+    await env.DB.prepare("UPDATE referral_attributions SET grant_state = 'held', first_fit_appointment_id = ?1")
+      .bind(FIT)
+      .run();
+    const racing = racedBy(async () => {
+      await env.DB.prepare(
+        "UPDATE referral_attributions SET grant_state = 'rejected', updated_at = '2026-09-21T06:00:00.000Z'",
+      ).run();
+    });
+
+    const decided = await decideHeldReferral(racing, {
+      id: ATTRIBUTION,
+      decision: "approve",
+      staff: "ops@localhost",
+      reason: "Two households",
+      audit: {
+        surface: "ops",
+        actor: { kind: "staff", id: "ops@localhost" },
+        action: "referral.decide",
+        subject: { kind: "referral", id: ATTRIBUTION },
+        requestId: "r",
+      },
+      rewardNow: REFERRAL_REWARD,
+      now: NOW,
+    });
+
+    expect(decided).toBeNull();
+    expect((await state())?.grant_state).toBe("rejected");
+    expect((await creditBalance(env.DB, REFERRER, NOW)).visits).toBe(0);
+    expect(await messagesWritten()).toEqual([]);
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM audit_log").first()).toEqual({ n: 0 });
+  });
+});
+
 describe("ops' review", () => {
   async function held() {
     await firstFit(FIT, FRIEND);
@@ -555,6 +627,20 @@ describe("ops' review", () => {
     expect((await creditBalance(env.DB, FRIEND, NOW)).visits).toBe(0);
   });
 
+  // PS-60: a grant held for a consultation and fit never paid answered 404 to either decision, and sat on Tasks for ever.
+  it("rejects a held grant whose consultation and fit is not paid, and approves it only once it is", async () => {
+    await held();
+    await env.DB.prepare("UPDATE appointments SET one_visit = 'fitted' WHERE id = ?1").bind(FIT).run();
+
+    const refused = await decide({ decision: "approve", reason: "Two households" });
+    expect(refused.status).toBe(409);
+    expect(await refused.json()).toMatchObject({ error: { code: "not_paid" } });
+    expect((await state())?.grant_state).toBe("held");
+    expect((await creditBalance(env.DB, REFERRER, NOW)).visits).toBe(0);
+
+    expect(await (await decide({ decision: "reject", reason: "Never paid" })).json()).toEqual({ state: "rejected" });
+  });
+
   // A rejected grant reached neither of them (LIFE-10).
   it("tells them both of a rejection, and never the reason ops gave", async () => {
     await held();
@@ -597,6 +683,11 @@ async function told(kind: "friend_credited" | "referral_rejected", personId: str
 // The tracker read the friend's name from their record, so once they were erased it read "Erased · Sep 2026" and told
 // the referrer something about the friend they had no business knowing (LIFE-13).
 describe("the referrer's tracker, after the friend is erased", () => {
+  // Refer, the tracker with it, is a fitted client's.
+  beforeEach(async () => {
+    await fittedAndPhotographed(REFERRER);
+  });
+
   const tracker = async () => {
     const client = appFor("local", fakeDependencies(), {}, "client");
     const cookie = `mm_app=${await openClientSession(REFERRER)}`;
@@ -669,8 +760,9 @@ describe("what the friend is told (LIFE-10)", () => {
       (await (await request(client, "/api/refer", { headers: { Cookie: cookie } })).json<{ invite_credits: unknown }>())
         .invite_credits;
 
-    expect(await invite()).toBeNull();
+    // Refer is the fitted client's, so the friend reads it once their first fit is done.
     await firstFit(FIT, FRIEND);
+    expect(await invite()).toBeNull();
     await env.DB.prepare("UPDATE referral_attributions SET grant_state = 'held'").run();
     expect(await invite()).toBe("checking");
     await env.DB.prepare("UPDATE referral_attributions SET grant_state = 'rejected'").run();

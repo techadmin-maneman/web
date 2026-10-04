@@ -448,6 +448,9 @@ export const referrals = {
     errors: {
       not_permitted: NOT_PERMITTED,
       not_found: "Someone has decided this one already. Reload to see the queue as it stands.",
+      // A consultation and fit is sold only once paid, so its grant waits for the payment; it can be rejected now.
+      not_paid:
+        "The friend has not paid for their consultation and fit yet. Approve it once they have, or reject it now.",
       offline: "You are offline. Connect, then try again.",
       unknown: "That did not go through. Please try again.",
     } as Readonly<Record<string, string>>,

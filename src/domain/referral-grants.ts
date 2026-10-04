@@ -15,17 +15,13 @@
 // item 93). One a discount code left nothing to pay is settled by the fit itself, as the owner ruled on 1 October
 // 2026, "Yes, once fitted" (docs/decisions/0108-discount-codes.md).
 
-import type { Composed } from "./visit-messages.ts";
-import { fullDate } from "@maneman/web-kit/dates";
-import { serviceVisits, type TemplateName } from "../config/message-templates.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import { FRAUD_SIGNALS, REFERRAL_MONTHLY_CAP, type FraudSignal } from "../policy/fraud-holds.ts";
 import { inviteLapsed } from "../policy/invites.ts";
 import { creditExpiry, type ReferralReward } from "../policy/referral-reward.ts";
-import { auditStatement, type AuditEntry } from "./audit.ts";
-import { clawBack, grantCredits } from "./credits.ts";
-import { consentGiven, type MessageKind } from "./messages.ts";
-import { NO_VISITS_CONSENT } from "./visit-messages.ts";
+import { auditStatementIfStamped, type AuditEntry } from "./audit.ts";
+import { clawBack } from "./credits.ts";
+import type { MessageKind } from "./messages.ts";
 import { firstNameOf } from "../lib/names.ts";
 
 /** "Karan Bhatia" → "Karan": all the messages and the tracker name a person by. */
@@ -104,19 +100,57 @@ async function numbersHeld(db: D1Database, personId: string): Promise<string[]> 
 
 type ReferralMessageKind = Extract<MessageKind, "friend_fitted" | "friend_credited" | "referral_rejected">;
 
-/** A message to one side of a referral, about it; for the batch that decides the grant. */
+/**
+ * A grant as one batch settled it: the state it wrote, and when. What the batch writes beside the state, the credits,
+ * the messages and the audit entry, checks for it, so a grant decided twice at once, an approve racing a reject or two
+ * passes of the cron, writes them once, for the decision that stood.
+ */
+interface Settled {
+  readonly state: "granted" | "approved" | "rejected";
+  readonly at: string;
+}
+
+/** True only after the statement that wrote referral ?1 to state ?2 at ?3, in the same batch. */
+const SETTLED_HERE = `EXISTS (SELECT 1 FROM referral_attributions WHERE id = ?1 AND grant_state = ?2 AND updated_at = ?3)`;
+
+/** A message to one side of a referral, about it, written only by the batch that settled the grant. */
 function referralMessage(
   db: D1Database,
   input: { personId: string; kind: ReferralMessageKind; attributionId: string; now: Date },
+  settled: Settled,
 ): { id: string; statement: D1PreparedStatement } {
   const id = crypto.randomUUID();
   const statement = db
     .prepare(
       `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at)
-       VALUES (?1, ?2, ?3, ?4, 'referral', ?5, 'queued', ?2)`,
+       SELECT ?4, ?5, ?6, ?7, 'referral', ?1, 'queued', ?5 WHERE ${SETTLED_HERE}`,
     )
-    .bind(id, input.now.toISOString(), input.personId, input.kind, input.attributionId);
+    .bind(input.attributionId, settled.state, settled.at, id, input.now.toISOString(), input.personId, input.kind);
   return { id, statement };
+}
+
+/** A side's credits under the grant, written only by the batch that settled it, and once, as every grant is. */
+function referralCredits(
+  db: D1Database,
+  input: { personId: string; visits: number; attributionId: string; expiresAt: Date; now: Date },
+  settled: Settled,
+): D1PreparedStatement {
+  return db
+    .prepare(
+      `INSERT INTO credit_ledger (id, person_id, kind, visits, source_kind, source_id, expires_at, created_at)
+       SELECT ?4, ?5, 'grant', ?6, 'referral', ?1, ?7, ?8 WHERE ${SETTLED_HERE}
+       ON CONFLICT DO NOTHING`,
+    )
+    .bind(
+      input.attributionId,
+      settled.state,
+      settled.at,
+      crypto.randomUUID(),
+      input.personId,
+      input.visits,
+      input.expiresAt.toISOString(),
+      input.now.toISOString(),
+    );
 }
 
 /**
@@ -134,9 +168,10 @@ export function grantStatements(
   review: { staff: string; reason: string | null } | null = null,
 ): { statements: D1PreparedStatement[]; messageIds: string[] } {
   const expiresAt = creditExpiry(now, reward.valid_days);
-  const grant = (personId: string, visits: number) =>
-    grantCredits(db, { personId, visits, source: "referral", sourceId: attribution.id, now, expiresAt });
   const at = now.toISOString();
+  const settled: Settled = { state, at };
+  const grant = (personId: string, visits: number) =>
+    referralCredits(db, { personId, visits, attributionId: attribution.id, expiresAt, now }, settled);
   const statements = [
     db
       .prepare(
@@ -145,7 +180,7 @@ export function grantStatements(
            reviewed_at = CASE WHEN ?5 IS NULL THEN reviewed_at ELSE ?4 END,
            friend_first_name = COALESCE(?7, friend_first_name),
            referrer_visits = ?8, friend_visits = ?9, credit_valid_days = ?10
-         WHERE id = ?1`,
+         WHERE id = ?1 AND grant_state = ?11`,
       )
       .bind(
         attribution.id,
@@ -158,54 +193,60 @@ export function grantStatements(
         reward.referrer_visits,
         reward.friend_visits,
         reward.valid_days,
+        // The cron settles a grant from pending, and ops from held; nothing settles it from any other state.
+        state === "granted" ? "pending" : "held",
       ),
   ];
   const messageIds: string[] = [];
   if (reward.friend_visits > 0) {
-    const toFriend = referralMessage(db, {
-      personId: attribution.referredId,
-      kind: "friend_credited",
-      attributionId: attribution.id,
-      now,
-    });
+    const toFriend = referralMessage(
+      db,
+      { personId: attribution.referredId, kind: "friend_credited", attributionId: attribution.id, now },
+      settled,
+    );
     statements.push(grant(attribution.referredId, reward.friend_visits), toFriend.statement);
     messageIds.push(toFriend.id);
   }
   if (attribution.referrerErased) return { statements, messageIds };
-  const toReferrer = referralMessage(db, {
-    personId: attribution.referrerId,
-    kind: "friend_fitted",
-    attributionId: attribution.id,
-    now,
-  });
+  const toReferrer = referralMessage(
+    db,
+    { personId: attribution.referrerId, kind: "friend_fitted", attributionId: attribution.id, now },
+    settled,
+  );
   if (reward.referrer_visits > 0) statements.push(grant(attribution.referrerId, reward.referrer_visits));
   statements.push(toReferrer.statement);
   messageIds.push(toReferrer.id);
   return { statements, messageIds };
 }
 
-// Each referral with its friend's first fit done; a one visit counts once it is paid or owes nothing.
+/** A first fit that counts: any but a one visit, and a one visit once it is paid or owes nothing. */
+const PAID = `(a.one_visit IS NULL OR a.nothing_owed_at IS NOT NULL OR EXISTS (SELECT 1 FROM payments p
+      WHERE p.appointment_id = a.id AND p.kind = 'visit' AND p.status IN ('captured', 'partially_refunded')))`;
+
+// Each referral with its friend's first fit done.
 // CROSS JOIN keeps the referrals as the outer loop. Left to itself, SQLite walks every visit ever made to
 // save sorting the few pending referrals, and the five-minute cron would read them all on each run.
 const ATTRIBUTION = `SELECT r.id, r.code, rc.person_id AS referrer_id, rp.erased_at AS referrer_erased,
     r.referred_person_id, fp.name AS friend_name, fp.erased_at AS friend_erased, a.id AS first_fit_id,
-    a.window_start, r.via, pin.launched_at, r.referrer_visits, r.friend_visits, r.credit_valid_days
+    a.window_start, r.via, pin.launched_at, r.referrer_visits, r.friend_visits, r.credit_valid_days, ${PAID} AS paid
   FROM referral_attributions r
   JOIN referral_codes rc ON rc.code = r.code JOIN people rp ON rp.id = rc.person_id
   JOIN people fp ON fp.id = r.referred_person_id
   CROSS JOIN appointments a ON a.person_id = r.referred_person_id AND a.type = 'first_fit' AND a.status = 'completed'
-    AND a.deleted_at IS NULL
-    AND (a.one_visit IS NULL OR a.nothing_owed_at IS NOT NULL OR EXISTS (SELECT 1 FROM payments p
-      WHERE p.appointment_id = a.id AND p.kind = 'visit' AND p.status IN ('captured', 'partially_refunded')))
-  JOIN visits v ON v.appointment_id = a.id AND v.outcome = 'done'
+    AND a.deleted_at IS NULL`;
+
+const FIT_DONE = `JOIN visits v ON v.appointment_id = a.id AND v.outcome = 'done'
   LEFT JOIN serviceable_pincodes pin ON pin.pincode = r.pincode`;
 
-/** The pending referrals one pass settles, the earliest first fit first. */
-const PENDING_SETTLEMENTS = `${ATTRIBUTION}
+/** The pending referrals one pass settles, the earliest first fit that counts first. */
+const PENDING_SETTLEMENTS = `${ATTRIBUTION} AND ${PAID} ${FIT_DONE}
   WHERE r.grant_state = 'pending' AND fp.erased_at IS NULL ORDER BY a.window_start LIMIT ?1`;
 
-/** One held referral, for ops to approve or reject. */
-const HELD_FOR_REVIEW = `${ATTRIBUTION} WHERE r.id = ?1 AND r.grant_state = 'held'`;
+/**
+ * One held referral, for ops to approve or reject: found whether its one visit is paid or not, so a grant held for a
+ * consultation and fit never paid can still be rejected, and is approved only once it is.
+ */
+const HELD_FOR_REVIEW = `${ATTRIBUTION} ${FIT_DONE} WHERE r.id = ?1 AND r.grant_state = 'held'`;
 
 interface AttributionRow {
   id: string;
@@ -222,6 +263,8 @@ interface AttributionRow {
   referrer_visits: number | null;
   friend_visits: number | null;
   credit_valid_days: number | null;
+  /** 1 once the first fit counts (PAID). */
+  paid: number;
 }
 
 /** The reward a referral was held under, or null where it was held before rewards were kept. */
@@ -266,7 +309,9 @@ export async function settleReferrals(
     // An invite from a waitlist holds until 12 months after its area launched.
     if (row.via === "waitlist" && row.launched_at !== null && inviteLapsed(new Date(row.launched_at), now)) {
       await db
-        .prepare("UPDATE referral_attributions SET grant_state = 'expired', updated_at = ?2 WHERE id = ?1")
+        .prepare(
+          "UPDATE referral_attributions SET grant_state = 'expired', updated_at = ?2 WHERE id = ?1 AND grant_state = 'pending'",
+        )
         .bind(row.id, at)
         .run();
       outcome.expired += 1;
@@ -279,7 +324,7 @@ export async function settleReferrals(
         .prepare(
           `UPDATE referral_attributions SET grant_state = 'held', fraud_signals = ?2, first_fit_appointment_id = ?3,
              updated_at = ?4, referrer_visits = ?5, friend_visits = ?6, credit_valid_days = ?7
-           WHERE id = ?1`,
+           WHERE id = ?1 AND grant_state = 'pending'`,
         )
         .bind(
           row.id,
@@ -295,7 +340,9 @@ export async function settleReferrals(
       continue;
     }
     const { statements, messageIds } = grantStatements(db, attribution, reward, "granted", now);
-    await db.batch(statements);
+    const [granted] = await db.batch(statements);
+    // Another pass settled it first, and its messages are that pass's to send.
+    if (granted?.meta.changes !== 1) continue;
     outcome.granted += 1;
     outcome.messageIds.push(...messageIds);
   }
@@ -327,34 +374,43 @@ export async function decideHeldReferral(
     rewardNow: ReferralReward;
     now: Date;
   },
-): Promise<{ state: "approved" | "rejected"; messageIds: string[] } | null> {
+): Promise<{ state: "approved" | "rejected"; messageIds: string[] } | "not_paid" | null> {
   const row = await db.prepare(HELD_FOR_REVIEW).bind(input.id).first<AttributionRow>();
   if (row === null) return null;
+  if (input.decision === "approve" && row.paid !== 1) return "not_paid";
   const attribution = attributionFrom(row);
   const reward = attribution.keptReward ?? input.rewardNow;
-  const audit = auditStatement(db, input.audit, input.now);
+  const audit = auditStatementIfStamped(db, input.audit, input.now, {
+    table: "referral_attributions",
+    column: "updated_at",
+    id: input.id,
+  });
   if (input.decision === "reject") {
+    const rejected: Settled = { state: "rejected", at: input.now.toISOString() };
     const told = toldOfRejection(attribution, reward).map((personId) =>
-      referralMessage(db, { personId, kind: "referral_rejected", attributionId: input.id, now: input.now }),
+      referralMessage(db, { personId, kind: "referral_rejected", attributionId: input.id, now: input.now }, rejected),
     );
-    await db.batch([
+    const [decided] = await db.batch([
       db
         .prepare(
           `UPDATE referral_attributions SET grant_state = 'rejected', reviewed_by = ?2, review_reason = ?3,
              reviewed_at = ?4, updated_at = ?4
            WHERE id = ?1 AND grant_state = 'held'`,
         )
-        .bind(input.id, input.staff, input.reason, input.now.toISOString()),
+        .bind(input.id, input.staff, input.reason, rejected.at),
       ...told.map((message) => message.statement),
       audit,
     ]);
+    // Decided by another member of staff between the read and the batch: theirs stands, and this wrote nothing.
+    if (decided?.meta.changes !== 1) return null;
     return { state: "rejected", messageIds: told.map((message) => message.id) };
   }
   const { statements, messageIds } = grantStatements(db, attribution, reward, "approved", input.now, {
     staff: input.staff,
     reason: input.reason,
   });
-  await db.batch([...statements, audit]);
+  const [decided] = await db.batch([...statements, audit]);
+  if (decided?.meta.changes !== 1) return null;
   return { state: "approved", messageIds };
 }
 
@@ -376,114 +432,4 @@ export async function clawBackRefunded(db: D1Database, now: Date): Promise<numbe
       .run();
   }
   return results.length;
-}
-
-/** The referrer's text, by what each side was given: the same, different, nothing to the friend. */
-function friendFittedTemplate(referrerVisits: number, friendVisits: number): TemplateName {
-  if (friendVisits === 0) return "friend_fitted_yours_v1";
-  if (friendVisits === referrerVisits) return "friend_fitted_v2";
-  return "friend_fitted_each_v1";
-}
-
-/**
- * The referrer's message: their friend was fitted, and what they each now have, as the ledger holds what each was
- * given. A referrer given nothing is thanked for the introduction.
- */
-export async function composeFriendFitted(
-  db: D1Database,
-  attributionId: string,
-  referrerId: string,
-): Promise<Composed> {
-  const row = await db
-    .prepare(
-      `SELECT rp.name AS referrer, fp.name AS friend, mine.visits AS referrer_visits, mine.expires_at,
-         theirs.visits AS friend_visits
-       FROM referral_attributions r
-       JOIN referral_codes rc ON rc.code = r.code JOIN people rp ON rp.id = rc.person_id
-       JOIN people fp ON fp.id = r.referred_person_id
-       LEFT JOIN credit_ledger mine ON mine.kind = 'grant' AND mine.source_kind = 'referral' AND mine.source_id = r.id
-         AND mine.person_id = rc.person_id
-       LEFT JOIN credit_ledger theirs ON theirs.kind = 'grant' AND theirs.source_kind = 'referral'
-         AND theirs.source_id = r.id AND theirs.person_id = r.referred_person_id
-       WHERE r.id = ?1 AND rc.person_id = ?2 AND r.grant_state IN ('granted', 'approved')`,
-    )
-    .bind(attributionId, referrerId)
-    .first<{
-      referrer: string;
-      friend: string;
-      referrer_visits: number | null;
-      expires_at: string | null;
-      friend_visits: number | null;
-    }>();
-  if (row === null) return { skip: "no grant for the referrer" };
-  const names = [firstNameOf(row.referrer), firstNameOf(row.friend)];
-  if (row.referrer_visits === null || row.expires_at === null) {
-    return { template: "friend_fitted_thanks_v1", params: names };
-  }
-  const friendVisits = row.friend_visits ?? 0;
-  return {
-    template: friendFittedTemplate(row.referrer_visits, friendVisits),
-    params: [
-      ...names,
-      serviceVisits(row.referrer_visits),
-      fullDate(indiaDate(new Date(row.expires_at))),
-      serviceVisits(friendVisits),
-    ],
-  };
-}
-
-/**
- * The friend's message: the invite's credits are theirs, and until when. It does not name the referrer, whose
- * name the invite itself shows only with their consent (ADR 0048). Sent with the friend's consent to WhatsApp
- * about visits, which the landing's consultation line records; the credits are service visits.
- */
-export async function composeFriendCredited(
-  db: D1Database,
-  attributionId: string,
-  friendId: string,
-): Promise<Composed> {
-  if (!(await consentGiven(db, friendId, "whatsapp_visits"))) return { skip: NO_VISITS_CONSENT };
-  const row = await db
-    .prepare(
-      `SELECT fp.name, g.visits, g.expires_at FROM referral_attributions r
-       JOIN people fp ON fp.id = r.referred_person_id
-       JOIN credit_ledger g ON g.kind = 'grant' AND g.source_kind = 'referral' AND g.source_id = r.id
-         AND g.person_id = r.referred_person_id AND g.expires_at IS NOT NULL
-       WHERE r.id = ?1 AND r.referred_person_id = ?2 AND r.grant_state IN ('granted', 'approved')`,
-    )
-    .bind(attributionId, friendId)
-    .first<{ name: string; visits: number; expires_at: string }>();
-  if (row === null) return { skip: "no grant for the friend" };
-  return {
-    template: "friend_credited_v2",
-    params: [firstNameOf(row.name), serviceVisits(row.visits), fullDate(indiaDate(new Date(row.expires_at)))],
-  };
-}
-
-/**
- * A rejected grant, told to each side without ops' reason, which stays with the decision. The friend's goes with
- * their consent to WhatsApp about visits. The referrer's, like the message of a fit, needs none of its own: an
- * interim reading of the owner's ruling that the referrer is told (ADR 0025, "The messages people are owed").
- */
-export async function composeReferralRejected(
-  db: D1Database,
-  attributionId: string,
-  personId: string,
-): Promise<Composed> {
-  const row = await db
-    .prepare(
-      `SELECT r.referred_person_id AS friend_id, fp.name AS friend, rc.person_id AS referrer_id, rp.name AS referrer
-       FROM referral_attributions r JOIN people fp ON fp.id = r.referred_person_id
-       JOIN referral_codes rc ON rc.code = r.code JOIN people rp ON rp.id = rc.person_id
-       WHERE r.id = ?1 AND r.grant_state = 'rejected'`,
-    )
-    .bind(attributionId)
-    .first<{ friend_id: string; friend: string; referrer_id: string; referrer: string }>();
-  if (row === null) return { skip: "the grant was not rejected" };
-  if (personId === row.referrer_id) {
-    return { template: "referral_rejected_referrer_v1", params: [firstNameOf(row.referrer), firstNameOf(row.friend)] };
-  }
-  if (personId !== row.friend_id) return { skip: "not a party to the referral" };
-  if (!(await consentGiven(db, personId, "whatsapp_visits"))) return { skip: NO_VISITS_CONSENT };
-  return { template: "referral_rejected_friend_v1", params: [firstNameOf(row.friend)] };
 }

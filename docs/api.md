@@ -1320,6 +1320,8 @@ Razorpay's webhook: payments and refunds
             "not_changeable",
             "terms_changed",
             "consent_required",
+            "not_fitted",
+            "not_paid",
             "device_revoked",
             "sign_in_stopped",
             "superseded",

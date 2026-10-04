@@ -15,6 +15,7 @@ import {
   NOW,
   provedNumberCode,
   request,
+  fittedAndPhotographed,
 } from "./helpers.ts";
 
 const REFERRER = "11111111-1111-4111-8111-111111111111";
@@ -49,6 +50,7 @@ const client = () => appFor("local", fakeDependencies(), {}, "client");
 const site = (settings = {}) => appFor("local", fakeDependencies(), settings, "public");
 
 async function codeOf(): Promise<string> {
+  await fittedAndPhotographed(REFERRER);
   const cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: REFERRER, deviceLabel: null, now: NOW })}`;
   const answer = await request(client(), "/api/refer", { headers: { Cookie: cookie } });
   return (await answer.json<{ code: string }>()).code;
@@ -94,7 +96,27 @@ describe("referral codes", () => {
     expect(newReferralCode("Ishaan Oberoi")).toMatch(/^XX/);
   });
 
+  // PS-61: the app showed Refer to the fitted alone, but the API made a code for any client signed in.
+  it("are a fitted client's alone: before a first fit, Refer and the card answer not_fitted", async () => {
+    const cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: REFERRER, deviceLabel: null, now: NOW })}`;
+    for (const [method, path] of [
+      ["GET", "/api/refer"],
+      ["GET", "/api/refer/card"],
+      ["PUT", "/api/refer/card"],
+    ] as const) {
+      const answer = await request(client(), path, {
+        method,
+        headers: { Cookie: cookie, Origin: "https://maneman.test" },
+        ...(method === "PUT" ? { body: new Uint8Array(10) } : {}),
+      });
+      expect(answer.status).toBe(403);
+      expect(await answer.json()).toMatchObject({ error: { code: "not_fitted" } });
+    }
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM referral_codes").first()).toEqual({ n: 0 });
+  });
+
   it("are made once, and give the invite link, the balance and the fitted friends", async () => {
+    await fittedAndPhotographed(REFERRER);
     const cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: REFERRER, deviceLabel: null, now: NOW })}`;
     const first = await (
       await request(client(), "/api/refer", { headers: { Cookie: cookie } })
@@ -117,6 +139,7 @@ describe("referral codes", () => {
   // The app's preview (board F4) says what the friend will see, so it names the client exactly when the landing
   // does; and its card sheet asks for the consent (F3) exactly when the current lines have not been agreed to.
   it("say whether the invite names the client, and whether they agreed to the cards' current lines", async () => {
+    await fittedAndPhotographed(REFERRER);
     const cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: REFERRER, deviceLabel: null, now: NOW })}`;
     const read = async (settings = {}) =>
       (
@@ -349,7 +372,10 @@ describe("POST /api/r/:code/consultation", () => {
         address: ADDRESS,
       }),
     );
-    expect(await self.json()).toMatchObject({ credits: false });
+    // Refer is a fitted client's, so the referrer is a number we know: told what a new number would be, so the page
+    // never says it is known, and attributed nothing.
+    expect(self.status).toBe(201);
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM referral_attributions").first()).toEqual({ n: 0 });
     const unknown = await request(
       site(),
       "/api/r/ZZ9999/consultation",

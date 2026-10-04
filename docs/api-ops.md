@@ -1253,7 +1253,15 @@ Request body:
 }
 ```
 
-**404**: not_found: no held grant by that ID in the caller's cities
+**404**: not_found: no held grant by that ID in the caller's cities, or another decision came first
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**409**: not_paid: the friend's consultation and fit is not paid yet, so the grant can be rejected but not approved
 
 ```json
 {
@@ -4582,6 +4590,8 @@ Request body:
             "not_changeable",
             "terms_changed",
             "consent_required",
+            "not_fitted",
+            "not_paid",
             "device_revoked",
             "sign_in_stopped",
             "superseded",
@@ -7812,6 +7822,8 @@ Request body:
             "not_changeable",
             "terms_changed",
             "consent_required",
+            "not_fitted",
+            "not_paid",
             "device_revoked",
             "sign_in_stopped",
             "superseded",

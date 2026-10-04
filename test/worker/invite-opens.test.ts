@@ -8,7 +8,7 @@ import { beforeEach, expect, it } from "vitest";
 import { openSession } from "../../src/domain/sessions.ts";
 import { DAY_MS, HOUR_MS } from "../../src/lib/durations.ts";
 import { INVITE_MISSES_PER_ADDRESS_HOURLY } from "../../src/policy/invites.ts";
-import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "./helpers.ts";
+import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request, fittedAndPhotographed } from "./helpers.ts";
 
 const REFERRER = "11111111-1111-4111-8111-111111111111";
 const BROWSER =
@@ -21,6 +21,7 @@ async function inviteCode(): Promise<string> {
   await env.DB.prepare("INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, ?3, ?4)")
     .bind(REFERRER, NOW.toISOString(), "+919810000001", "Rohit Malhotra")
     .run();
+  await fittedAndPhotographed(REFERRER);
   const session = await openSession(env.DB, { kind: "client", subjectId: REFERRER, deviceLabel: null, now: NOW });
   const answer = await request(client(), "/api/refer", { headers: { Cookie: `mm_app=${session}` } });
   return (await answer.json<{ code: string }>()).code;

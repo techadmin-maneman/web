@@ -49,7 +49,7 @@ import { composeDeletionRejected } from "../domain/deletion.ts";
 import { composeNextServiceReminder } from "../domain/next-visit.ts";
 import { composeLinkPaid } from "../domain/payment-links.ts";
 import { readOpsInputs } from "../domain/ops-settings.ts";
-import { composeFriendCredited, composeFriendFitted, composeReferralRejected } from "../domain/referral-grants.ts";
+import { composeFriendCredited, composeFriendFitted, composeReferralRejected } from "../domain/referral-messages.ts";
 import { composeSiteNotice, isSiteNoticeKind } from "../domain/site-notices.ts";
 import { composeMessagesStopped, stopLink } from "../domain/stop-messages.ts";
 import { composeLaunchAlert, composeWaitlistConfirmation } from "../domain/waitlist.ts";
