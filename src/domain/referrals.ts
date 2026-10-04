@@ -17,9 +17,6 @@ const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 /** About a billion codes for each pair of initials: too many to guess. */
 const RANDOM_LENGTH = 6;
 
-/** What the landing's link, the site's form and the console accept as a code, in either case. */
-export const CODE_PATTERN = /^[A-Za-z0-9]{4,12}$/;
-
 export function newReferralCode(name: string): string {
   const initials =
     name

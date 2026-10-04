@@ -16,7 +16,6 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { CONSUMABLE_BOUNDS, CONSUMABLE_NAME, CONSUMABLE_UNIT } from "../config/consumables.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
-import { PRICE_TIER } from "../config/ops-settings.ts";
 import {
   addConsumable,
   allConsumables,
@@ -34,6 +33,7 @@ import type { App, AppEnv } from "../http/context.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { indiaDate } from "../lib/india-time.ts";
+import { PRICE_TIER } from "../policy/services.ts";
 
 const Name = z.string().trim().regex(CONSUMABLE_NAME).openapi({
   description: "A letter or a digit first, then letters, digits, spaces and . , ' ( ) & / + % -; at most 60.",

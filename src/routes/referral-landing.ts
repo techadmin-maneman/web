@@ -29,7 +29,8 @@ import { countInviteMiss, countInviteOpen, inviteMissesSpent } from "../domain/i
 import { bookConsultation, joinTheWaitlist } from "../domain/public-booking.ts";
 import { pincodeOf } from "../domain/service-area.ts";
 import { liveCard } from "../domain/referral-cards.ts";
-import { CODE_PATTERN, inviteOf, type Invite } from "../domain/referrals.ts";
+import { CODE_PATTERN } from "../config/invite-codes.ts";
+import { inviteOf, type Invite } from "../domain/referrals.ts";
 import { errorBody, errorResponse } from "../http/errors.ts";
 import { IdempotencyKeyHeaderSchema, onceForKey } from "../http/idempotency.ts";
 import { PersonNameSchema } from "../http/openapi.ts";

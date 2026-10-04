@@ -9,7 +9,6 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import { PRICE_TIER } from "../config/ops-settings.ts";
 import { BOOKING_DAYS, BOOKING_WINDOWS } from "../config/scheduling.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 import { auditStatement } from "../domain/audit.ts";
@@ -44,6 +43,7 @@ import { routeReach, withinRouteReach } from "../http/staff-access.ts";
 import { stripStart } from "../policy/next-visit.ts";
 import { windowTimesOf } from "../policy/slot-times.ts";
 import { ServiceSchema } from "./client-booking.ts";
+import { PRICE_TIER } from "../policy/services.ts";
 
 /** A visit's price, as the client's app gives it; the console's own "Price" is a row of the price book. */
 const PriceSchema = z

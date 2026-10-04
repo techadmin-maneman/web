@@ -9,10 +9,16 @@
 
 import { failedUniqueOn } from "../lib/d1-errors.ts";
 import { withGst } from "../config/gst.ts";
-import { PRICE_TIER } from "../config/ops-settings.ts";
 import { VISIT_BLOCKS } from "../config/scheduling.ts";
 import { hasStandardService, STANDARD_TIER, VISIT_TYPES, type VisitType } from "../config/visit-types.ts";
-import { isOffered, isServiceDescription, retireRefusal, SERVICE_NAME, tierCodeOf } from "../policy/services.ts";
+import {
+  isOffered,
+  isServiceDescription,
+  retireRefusal,
+  SERVICE_NAME,
+  tierCodeOf,
+  PRICE_TIER,
+} from "../policy/services.ts";
 import { isServiceLength } from "../policy/visit-length.ts";
 import { auditStatement, type AuditActor } from "./audit.ts";
 import type { Price } from "./price-book.ts";

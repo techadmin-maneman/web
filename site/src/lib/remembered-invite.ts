@@ -3,9 +3,10 @@
 // remembered, the latest replacing any other, and it is forgotten once a booking has used it. Whether it applies is
 // the API's to say, by the rules the landing's own booking follows.
 
+import { CODE_PATTERN } from "../../../src/config/invite-codes.ts";
+
 const KEY = "mm_invite";
 const DAY_MS = 86_400_000;
-const CODE = /^[A-Z0-9]{4,12}$/;
 
 /**
  * How long this browser remembers an invite once it is opened. It decides only that: who is attributed is the API's
@@ -21,7 +22,7 @@ interface Remembered {
 function isRemembered(value: unknown): value is Remembered {
   if (typeof value !== "object" || value === null) return false;
   const { code, saved_at: savedAt } = value as Record<string, unknown>;
-  return typeof code === "string" && CODE.test(code) && typeof savedAt === "string";
+  return typeof code === "string" && CODE_PATTERN.test(code) && typeof savedAt === "string";
 }
 
 function read(stored: string | null): Remembered | null {

@@ -4,12 +4,11 @@
 // photographs of it stored, which is all a card can be made from. Each upload or revoke is a new version, since
 // WhatsApp caches a link's preview by its URL: a revoke only reaches new shares.
 
+import { CARD_HEIGHT, CARD_WIDTH } from "../config/referral-cards.ts";
 import { inspectImage } from "../lib/image-bytes.ts";
 import { consentGiven } from "./consents.ts";
 import { deleteCounted, putCounted } from "./storage-meter.ts";
 
-export const CARD_WIDTH = 1200;
-export const CARD_HEIGHT = 630;
 /** WhatsApp's preview wants an image under 300 KB. */
 export const MAX_CARD_BYTES = 300 * 1024;
 
