@@ -48,8 +48,6 @@ interface Described {
   readonly title: string;
   /** Why it matters, in the words a non-developer needs to set it. */
   readonly note: string;
-  /** The module the fallback lives in, so the figure can be found in the code. */
-  readonly source: string;
 }
 
 /** A rule whose figures are numbers: a radius, a wait, an hour, a number of days. */
@@ -103,7 +101,6 @@ export const OPS_SETTINGS = [
     max: 1000,
     keys: null,
     fallback: CHECKIN_RADIUS_M,
-    source: "src/policy/check-in.ts",
   },
   {
     name: "no_show_wait_min",
@@ -114,7 +111,6 @@ export const OPS_SETTINGS = [
     max: 120,
     keys: VISIT_TYPES,
     fallback: NO_SHOW_WAIT_MIN,
-    source: "src/policy/no-show.ts",
   },
   {
     // The owner's terms of 27 September 2026 (docs/open-points.md, item 7), which a booking keeps as it was made under.
@@ -126,7 +122,6 @@ export const OPS_SETTINGS = [
     max: 168,
     keys: null,
     fallback: FREE_CHANGE_NOTICE_HOURS,
-    source: "src/policy/moving-a-visit.ts",
   },
   {
     name: "late_change_charge",
@@ -135,7 +130,6 @@ export const OPS_SETTINGS = [
     keys: VISIT_TYPES,
     choices: Object.fromEntries(VISIT_TYPES.map((type) => [type, chargesFor(type)])),
     fallback: LATE_CHANGE_CHARGES,
-    source: "src/policy/moving-a-visit.ts",
   },
   {
     // Item 60 of docs/open-points.md: set apart from the late-cancel terms, so either can change alone.
@@ -145,7 +139,6 @@ export const OPS_SETTINGS = [
     keys: VISIT_TYPES,
     choices: Object.fromEntries(VISIT_TYPES.map((type) => [type, chargesFor(type)])),
     fallback: NO_SHOW_CHARGES,
-    source: "src/policy/no-show.ts",
   },
   {
     name: "no_show_waiver",
@@ -154,7 +147,6 @@ export const OPS_SETTINGS = [
     keys: WAIVER_KEYS,
     choices: { payment: ["refunded", "kept"], credit: ["returned", "spent"] },
     fallback: WAIVER_GIVES_BACK,
-    source: "src/policy/no-show.ts",
   },
   {
     name: "address_unlock_hour",
@@ -165,7 +157,6 @@ export const OPS_SETTINGS = [
     max: 23,
     keys: null,
     fallback: UNLOCK_HOUR,
-    source: "src/policy/job-visibility.ts",
   },
   {
     name: "reminder_hour",
@@ -177,7 +168,6 @@ export const OPS_SETTINGS = [
     max: 21,
     keys: null,
     fallback: DAY_BEFORE_REMINDER_HOUR,
-    source: "src/policy/job-visibility.ts",
   },
   {
     // The owner's three bounds on the phone's clock (docs/open-points.md, item 58). The third, that the no-show wait
@@ -195,7 +185,6 @@ export const OPS_SETTINGS = [
       held_offline: { min: 1, max: 72, unit: "hours" },
     },
     fallback: PHONE_CLOCK,
-    source: "src/policy/phone-clock.ts",
   },
   {
     name: "task_sla_hours",
@@ -207,7 +196,6 @@ export const OPS_SETTINGS = [
     max: 720,
     keys: TASK_GROUPS,
     fallback: TASK_SLA_HOURS,
-    source: "src/policy/tasks.ts",
   },
   {
     name: "piece_cycle_days",
@@ -218,7 +206,6 @@ export const OPS_SETTINGS = [
     max: 1095,
     keys: "open",
     fallback: { ...PIECE_CYCLE_DAYS, [DEFAULT_KEY]: DEFAULT_PIECE_CYCLE_DAYS },
-    source: "src/config/pieces.ts",
   },
   {
     // Board C4's ten minutes, and the two minutes' grace of ADR 0025, ruling 42 (docs/decisions/0068-a-paid-hold-is-kept.md).
@@ -234,7 +221,6 @@ export const OPS_SETTINGS = [
       grace: { min: 1, max: 10 },
     },
     fallback: PAYMENT_HOLD,
-    source: "src/config/scheduling.ts",
   },
   {
     // The owner's ruling of 27 September 2026 on a booking FSM refuses (docs/open-points.md, item 141).
@@ -251,7 +237,6 @@ export const OPS_SETTINGS = [
       for: { min: 1, max: 168 },
     },
     fallback: FSM_RETRY,
-    source: "src/policy/held-bookings.ts",
   },
   {
     // The owner's ruling of 30 September 2026 (docs/open-points.md, item 60; ADR 0025, item 85).
@@ -263,7 +248,6 @@ export const OPS_SETTINGS = [
     max: 365,
     keys: null,
     fallback: DISPUTE_WINDOW_DAYS,
-    source: "src/policy/no-show.ts",
   },
   {
     // Board D3's two figures, the owner's of 27 September 2026 (docs/open-points.md, item 59).
@@ -279,7 +263,6 @@ export const OPS_SETTINGS = [
       over_by: { min: 1, max: 120, unit: "minutes" },
     },
     fallback: TECHNICIAN_WORK,
-    source: "src/policy/technician-work.ts",
   },
   {
     // One input for the seven figures the next visit turns on (docs/decisions/0086-the-next-visit-is-offered.md).
@@ -292,7 +275,6 @@ export const OPS_SETTINGS = [
     keys: NEXT_VISIT_DAY_KEYS,
     bounds: NEXT_VISIT_DAY_BOUNDS,
     fallback: NEXT_VISIT_DAYS,
-    source: "src/policy/next-visit.ts",
   },
   {
     // The owner's ruling of 1 October 2026: each side's visits, and how long they last (ADR 0025, item 94).
@@ -310,7 +292,6 @@ export const OPS_SETTINGS = [
       valid_days: { min: 30, max: 1095, unit: "days" },
     },
     fallback: REFERRAL_REWARD,
-    source: "src/policy/referral-reward.ts",
   },
 ] as const satisfies readonly OpsSetting[];
 

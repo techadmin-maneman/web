@@ -1560,6 +1560,9 @@ Request body:
     "unlocks_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "progress": {
+      "$ref": "#/components/schemas/TechnicianJobState"
     }
   },
   "required": [
@@ -1577,9 +1580,47 @@ Request body:
     "badge",
     "slots",
     "unlocked",
-    "unlocks_at"
+    "unlocks_at",
+    "progress"
   ],
   "additionalProperties": false
+}
+```
+
+### TechnicianJobState
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "started_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "outcome": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "started_at",
+    "outcome"
+  ],
+  "additionalProperties": false,
+  "description": "When the job began and how it closed, from the steps that reached us, whatever the visit's status says yet."
 }
 ```
 
@@ -1709,6 +1750,9 @@ Request body:
     "unlocks_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "progress": {
+      "$ref": "#/components/schemas/TechnicianJobProgress"
     },
     "address": {
       "anyOf": [
@@ -1874,9 +1918,6 @@ Request body:
         }
       ],
       "description": "Null until the day before the visit."
-    },
-    "progress": {
-      "$ref": "#/components/schemas/TechnicianJobProgress"
     },
     "no_show_wait_min": {
       "type": "integer",
@@ -2103,10 +2144,10 @@ Request body:
     "slots",
     "unlocked",
     "unlocks_at",
+    "progress",
     "address",
     "access_notes",
     "client",
-    "progress",
     "no_show_wait_min",
     "checkin_from",
     "pieces",

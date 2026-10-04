@@ -1751,6 +1751,12 @@ export interface components {
             unlocked: boolean;
             /** Format: date-time */
             unlocks_at: string;
+            progress: components["schemas"]["TechnicianJobState"];
+        };
+        /** @description When the job began and how it closed, from the steps that reached us, whatever the visit's status says yet. */
+        TechnicianJobState: {
+            started_at: string | null;
+            outcome: string | null;
         };
         TechnicianJobDetail: {
             /** Format: uuid */
@@ -1783,6 +1789,7 @@ export interface components {
             unlocked: boolean;
             /** Format: date-time */
             unlocks_at: string;
+            progress: components["schemas"]["TechnicianJobProgress"];
             /** @description Null until the day before the visit; the API enforces it, not the screen. */
             address: {
                 line1: string;
@@ -1805,7 +1812,6 @@ export interface components {
                 mobile: string;
                 note: string | null;
             } | null;
-            progress: components["schemas"]["TechnicianJobProgress"];
             /** @description How long this visit's type waits before a no-show may be closed, so a phone with no signal can count it. */
             no_show_wait_min: number;
             /**

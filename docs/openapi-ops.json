@@ -6460,10 +6460,6 @@
           "note": {
             "type": "string"
           },
-          "source": {
-            "type": "string",
-            "description": "The module the default lives in."
-          },
           "set_by": {
             "anyOf": [
               {
@@ -6583,7 +6579,6 @@
           "name",
           "title",
           "note",
-          "source",
           "set_by",
           "set_at",
           "kind",
@@ -6627,10 +6622,6 @@
           },
           "note": {
             "type": "string"
-          },
-          "source": {
-            "type": "string",
-            "description": "The module the default lives in."
           },
           "set_by": {
             "anyOf": [
@@ -6693,7 +6684,6 @@
           "name",
           "title",
           "note",
-          "source",
           "set_by",
           "set_at",
           "kind",

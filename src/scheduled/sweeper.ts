@@ -6,7 +6,7 @@
 //   erasures    a person erased whose CRM record is not yet blanked     -> crm-sync
 //               or whose FSM contact is not yet anonymised              -> fsm-sync
 //   job steps   a technician's step not written to FSM for 15 minutes -> fsm-sync
-//               and after an hour, an alert naming it
+//               and after an hour, an alert naming it; once FSM is switched off, given up on, one alert a visit
 //   messages    queued but unsent for over 5 minutes, while WhatsApp is up -> messaging
 //               and failed after a day (src/scheduled/unsent-messages.ts)
 //   renders     queued but never started, or rendering past the give-up time -> render
@@ -20,10 +20,12 @@
 //   cleanup     idempotency keys after a day, login codes a day past expiry, rate counters after 3 days,
 //               try-on sessions once expired, and app sessions 30 days after they ended
 
+import type { FieldRecord } from "../config/field-record.ts";
 import { DOWNLOAD_QUEUE_RETRIES, RENDER_GIVE_UP_MS } from "../config/pipeline.ts";
 import { PHOTO_RETENTION_MS } from "../config/tryon.ts";
 import type { Dependencies } from "../dependencies.ts";
 import { unfinishedMovesLetGo } from "../domain/dispatch.ts";
+import { rejectAllPending } from "../domain/job-events.ts";
 import { keepOrLetGo, letCopiesGoWith, letFittedLooksGo, type ExpiringTryOn } from "../domain/kept-try-ons.ts";
 import { failJob } from "../domain/tryon.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
@@ -41,6 +43,7 @@ const PENDING_GRACE_MS = 2 * MINUTE_MS;
 const JOB_EVENT_GRACE_MS = 15 * MINUTE_MS;
 /** A step still not in FSM after this has outlived several sends, and ops are told. */
 const JOB_EVENT_ALERT_AFTER_MS = 60 * MINUTE_MS;
+const NEVER_WRITTEN = "FSM was switched off before it was written";
 /** A submit that started this long ago and never recorded a task died part-way. */
 const SUBMIT_ABANDONED_MS = 10 * MINUTE_MS;
 /** Downloads are retried every sweep at first, then hourly until the URL expires. */
@@ -121,6 +124,8 @@ export async function sweep(
   options: {
     /** Whether FSM is connected, so an erased person's contact is anonymised there. */
     readonly fsmConnected?: boolean;
+    /** Who holds the record of field work, FSM unless said: a step still waiting for FSM is sent there only on its path. */
+    readonly record?: FieldRecord;
     readonly budget: CallBudget;
   },
 ): Promise<SweepSummary> {
@@ -128,7 +133,8 @@ export async function sweep(
   const leads = await requeueLeads(context);
   const erasures = await requeueCrmErasures(context);
   if (options.fsmConnected === true) await requeueFsmErasures(context);
-  await requeueJobEvents(context);
+  if (options.record === "ours") await giveUpOnFsmSteps(context);
+  else await requeueJobEvents(context);
   const messages = await requeueMessages(context);
   const { renders, downloads } = await requeueTryons(context);
   const { expired: jobsExpired, kept: tryOnsKept } = await expireTryOns(context);
@@ -207,6 +213,35 @@ export async function requeueFsmErasures(context: SweepContext): Promise<void> {
     fsmErasures.map((id) => ({ erase_person_id: id, request_id: "sweeper" }) satisfies FsmSyncMessage),
   );
   logCount(log, "fsm_erasures_requeued", fsmErasures.length);
+}
+
+/**
+ * Steps that landed before FSM was switched off and never reached it: each visit's are marked never written, and ops
+ * are told once a visit to check it, since its status in our database may not show the work.
+ */
+export async function giveUpOnFsmSteps(context: SweepContext): Promise<void> {
+  const { db, deps, now, log } = sweepRun(context);
+  const { results: visits } = await db
+    .prepare(
+      `SELECT DISTINCT e.appointment_id, a.person_id FROM job_events e
+       LEFT JOIN appointments a ON a.id = e.appointment_id
+       WHERE e.fsm_write_state = 'pending' AND e.superseded = 0
+       LIMIT ?1`,
+    )
+    .bind(BATCH_LIMIT)
+    .all<{ appointment_id: string; person_id: string | null }>();
+  for (const visit of visits) {
+    const steps = await rejectAllPending(db, visit.appointment_id, now, NEVER_WRITTEN);
+    for (const id of steps) await deps.resolveAlert(`job_event_pending:${id}`);
+    log.warn("job_events_never_written", { appointment_id: visit.appointment_id, steps: steps.length });
+    await deps.alertOnce({
+      key: `job_event_unwritten:${visit.appointment_id}`,
+      message:
+        `A technician's steps on visit ${visit.appointment_id} were never written to FSM, which is now switched off. ` +
+        "Check the visit, and close it from the console if the work was done.",
+      link: visit.person_id === null ? "/dispatch" : `/clients/${visit.person_id}`,
+    });
+  }
 }
 
 /** A technician's steps not written to FSM, sent to fsm-sync again, and ops told of one stuck an hour. */

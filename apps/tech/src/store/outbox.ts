@@ -18,10 +18,18 @@ import {
   type Angle,
   type CheckIn,
   type EventKind,
+  type JobState,
   type Phase,
 } from "../api.ts";
 import { add, all, get, put, remove } from "./db.ts";
-import { forgetStartAtCheckIn, keepArrival, keepStartAtCheckIn, keptStartAtCheckIn } from "./jobs.ts";
+import {
+  forgetMarks,
+  forgetStartAtCheckIn,
+  keepArrival,
+  keepLanded,
+  keepStartAtCheckIn,
+  keptStartAtCheckIn,
+} from "./jobs.ts";
 import { account, nextToSend, type JobAccount, type Queued } from "./replay.ts";
 import { uuidv7 } from "./uuidv7.ts";
 
@@ -202,6 +210,7 @@ export async function forget(jobId: string): Promise<void> {
   for (const frame of await frames()) {
     if (frame.job_id === jobId) await remove("frames", frame.id);
   }
+  await forgetMarks(jobId);
   await forgetStartAtCheckIn(jobId);
   changed();
 }
@@ -313,6 +322,14 @@ function failureOf(answer: Refused): Trouble {
   return { kind: "rejected", answer };
 }
 
+/** Where the job stands as a landed write answered: its own progress, or that of the step a check-in or no-show made. */
+function stateIn(body: unknown): JobState | null {
+  const answer = body as { progress?: Partial<JobState>; accepted?: { progress?: Partial<JobState> } | null } | null;
+  const progress = answer?.progress ?? answer?.accepted?.progress;
+  if (progress === undefined) return null;
+  return { started_at: progress.started_at ?? null, outcome: progress.outcome ?? null };
+}
+
 /**
  * The jobs whose last no-show the API refused as early, so the card can say so
  * and not move to a close-out. A no-show that lands takes its job off.
@@ -365,6 +382,8 @@ async function run(): Promise<Replayed> {
         await keepArrival(event.job_id, answer.body as CheckIn);
         arrivedEarly.delete(event.job_id);
       }
+      const landed = stateIn(answer.body);
+      if (landed !== null) await keepLanded(event.job_id, landed);
       if (event.kind === "no_show") early.delete(event.job_id);
       await remove("outbox", event.seq);
       sent += 1;
