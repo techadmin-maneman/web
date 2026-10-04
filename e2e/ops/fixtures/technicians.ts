@@ -21,6 +21,7 @@ const technician = (
   zone,
   city,
   mobile: `+9198100000${String(n).padStart(2, "0")}`,
+  sign_in_stopped_at: null,
   devices,
   leave,
 });

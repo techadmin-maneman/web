@@ -1820,7 +1820,7 @@ Triggers: `technician_leave_board_added`, `technician_leave_board_changed`.
 
 The mirror of FSM's technicians: name, initials, mobile number and zone; and on staging the few written by hand for a test, which the sync leaves alone. `fsm_id` is FSM's ID for a technician FSM holds, otherwise one of ours. `city`, which ops set and the sync never writes, places him for staff access (ADR 0032, ADR 0052, ADR 0109, ADR 0110).
 
-Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`, `0046_hand_written_technicians.sql`, `0081_technician_city.sql`, `0090_board_version.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`, `0046_hand_written_technicians.sql`, `0081_technician_city.sql`, `0090_board_version.sql`, `0097_technician_sign_in_stopped.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1834,6 +1834,7 @@ Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`, `0046_han
 | `mobile_e164` | TEXT | yes |  |  |
 | `hand_written` | INTEGER | no | `0` |  |
 | `city` | TEXT | yes |  | → `cities.name` |
+| `sign_in_stopped_at` | TEXT | yes |  |  |
 
 Indexes:
 

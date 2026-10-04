@@ -1758,6 +1758,7 @@ Request body:
             "terms_changed",
             "consent_required",
             "device_revoked",
+            "sign_in_stopped",
             "superseded",
             "out_of_order",
             "not_today",

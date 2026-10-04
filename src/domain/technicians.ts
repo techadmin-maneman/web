@@ -156,9 +156,11 @@ export async function touchDevice(db: D1Database, deviceRowId: string, now: Date
 
 /**
  * Ops revoke a phone: its session ends, and the row records that the device was
- * told to drop its cached jobs the next time it called. The revoke's audit
- * entry goes in the same batch (src/domain/audit.ts). Null when there is no
- * such device of that technician's.
+ * told to drop its cached jobs the next time it called. No phone of his signs in
+ * again until ops let him (allowSignIn): the lost phone still gets his code on
+ * WhatsApp, so a code alone must not undo the revoke. The revoke's audit entry
+ * goes in the same batch (src/domain/audit.ts). Null when there is no such
+ * device of that technician's.
  */
 export async function revokeDevice(
   db: D1Database,
@@ -177,6 +179,9 @@ export async function revokeDevice(
          WHERE id = ?1`,
       )
       .bind(device.id, at, options.actor),
+    db
+      .prepare("UPDATE technicians SET sign_in_stopped_at = COALESCE(sign_in_stopped_at, ?2) WHERE id = ?1")
+      .bind(options.technicianId, at),
     ...(device.session_id === null
       ? []
       : [
@@ -192,6 +197,25 @@ export async function revokeDevice(
     deviceId: options.deviceId,
     revokedAt: device.revoked_at ?? at,
   };
+}
+
+/** Ops let a technician sign in again after a revoke, with their audit entry. False when he was not stopped. */
+export async function allowSignIn(
+  db: D1Database,
+  technicianId: string,
+  audit: AuditEntry,
+  now: Date,
+): Promise<boolean> {
+  const stopped = await db
+    .prepare("SELECT 1 FROM technicians WHERE id = ?1 AND sign_in_stopped_at IS NOT NULL")
+    .bind(technicianId)
+    .first();
+  if (stopped === null) return false;
+  await db.batch([
+    db.prepare("UPDATE technicians SET sign_in_stopped_at = NULL WHERE id = ?1").bind(technicianId),
+    auditStatement(db, audit, now),
+  ]);
+  return true;
 }
 
 /** Records that a revoked device has dropped its cached jobs. Written once, on its next contact. */

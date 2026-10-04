@@ -23,6 +23,8 @@ export interface RosterTechnician {
   readonly city: string | null;
   readonly mobile: string | null;
   readonly active: boolean;
+  /** When a revoked phone stopped him signing in; null while he may (src/domain/technicians.ts). */
+  readonly signInStoppedAt: string | null;
 }
 
 interface RosterRow {
@@ -33,6 +35,7 @@ interface RosterRow {
   city: string | null;
   mobile_e164: string | null;
   active: number;
+  sign_in_stopped_at: string | null;
 }
 
 const rosterTechnicianOf = (row: RosterRow): RosterTechnician => ({
@@ -43,9 +46,10 @@ const rosterTechnicianOf = (row: RosterRow): RosterTechnician => ({
   city: row.city,
   mobile: row.mobile_e164,
   active: row.active === 1,
+  signInStoppedAt: row.sign_in_stopped_at,
 });
 
-const ROSTER_COLUMNS = "id, name, initials, zone, city, mobile_e164, active";
+const ROSTER_COLUMNS = "id, name, initials, zone, city, mobile_e164, active, sign_in_stopped_at";
 
 /** Every technician, active or switched off, by name. */
 export async function roster(db: D1Database): Promise<RosterTechnician[]> {

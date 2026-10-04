@@ -9,6 +9,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../src/http/context.ts";
 import { takeFromCeiling } from "../../src/domain/ceilings.ts";
+import { allowSignIn, revokeDevice } from "../../src/domain/technicians.ts";
 import { buildOpenApiDocument } from "../../src/openapi.ts";
 import {
   appFor,
@@ -370,5 +371,50 @@ describe("the two logins", () => {
 
     expect(answer.status).toBe(410);
     expect(answer.headers.get("Set-Cookie")).toBeNull();
+  });
+});
+
+// FLD-25, PS-13: a revoke did not stick. The lost phone still gets his code on WhatsApp, and signing in again with it
+// undid the revoke.
+describe("after ops revoke a phone of his", () => {
+  const staff = { kind: "staff", id: "ops@maneman.test" } as const;
+  const signIn = async (deviceId: string) => {
+    const { id, code } = await challengeFor("98100 00009");
+    return post("/api/tech/auth/verify", { challenge_id: id, code, device_id: deviceId });
+  };
+
+  it("no phone of his signs in, even with the right code, until ops let him", async () => {
+    expect((await signIn(DEVICE)).status).toBe(200);
+    await revokeDevice(env.DB, {
+      technicianId: IMRAN,
+      deviceId: DEVICE,
+      actor: staff.id,
+      audit: {
+        surface: "ops",
+        actor: staff,
+        action: "technician_device.revoke",
+        subject: { kind: "technician", id: IMRAN },
+        requestId: null,
+      },
+      now: NOW,
+    });
+
+    for (const phone of [DEVICE, "a-new-phone"]) {
+      const refused = await signIn(phone);
+      expect(refused.status).toBe(403);
+      expect(await refused.json()).toMatchObject({ error: { code: "sign_in_stopped" } });
+      expect(refused.headers.get("Set-Cookie")).toBeNull();
+    }
+
+    const allow = {
+      surface: "ops",
+      actor: staff,
+      action: "technician.allow_sign_in",
+      subject: { kind: "technician", id: IMRAN },
+      requestId: null,
+    } as const;
+    expect(await allowSignIn(env.DB, IMRAN, allow, NOW)).toBe(true);
+    expect(await allowSignIn(env.DB, IMRAN, allow, NOW)).toBe(false);
+    expect((await signIn("a-new-phone")).status).toBe(200);
   });
 });

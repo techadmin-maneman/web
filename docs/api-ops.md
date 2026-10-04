@@ -2060,6 +2060,46 @@ Revoke a phone. Its session ends, and it drops its cached jobs on its next conta
 }
 ```
 
+### POST /api/technicians/{id}/allow-sign-in
+
+Let a technician sign in again, on any phone, after ops revoked one of his
+
+**200**: He may sign in again
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "allowed": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
+    }
+  },
+  "required": [
+    "allowed"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such technician stopped signing in, or he is not in the caller's cities
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/no-shows/{id}/charge
 
 What charging an undecided no-show would keep of the visit's payment, and refund
@@ -4473,6 +4513,7 @@ Request body:
             "terms_changed",
             "consent_required",
             "device_revoked",
+            "sign_in_stopped",
             "superseded",
             "out_of_order",
             "not_today",
@@ -7636,6 +7677,7 @@ Request body:
             "terms_changed",
             "consent_required",
             "device_revoked",
+            "sign_in_stopped",
             "superseded",
             "out_of_order",
             "not_today",
@@ -10418,6 +10460,18 @@ Request body:
             ],
             "description": "The number he signs in with, +91 and ten digits; null where none is recorded."
           },
+          "sign_in_stopped_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When revoking a phone of his stopped him signing in; null while he may. Ops let him again."
+          },
           "devices": {
             "type": "array",
             "items": {
@@ -10481,6 +10535,7 @@ Request body:
           "zone",
           "city",
           "mobile",
+          "sign_in_stopped_at",
           "devices",
           "leave"
         ],
