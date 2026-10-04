@@ -564,7 +564,7 @@ test("opens on the week and the search a link asks for", async ({ page }) => {
   await answer(page, { [READ_BOARD]: json(BOARD), [READ_ROOM]: json(ROOM) });
   await page.goto("/dispatch?from=2025-09-19&find=Sohna");
 
-  await expect(page.getByLabel("Find a technician, zone or client")).toHaveValue("Sohna");
+  await expect(page.getByLabel("Find a technician, client or area")).toHaveValue("Sohna");
   await expect(page.getByRole("rowheader")).toHaveText(["Faizan AliSohna Rd"]);
   await expect.poll(() => asked[0]).toBe("?from=2025-09-19");
 });
@@ -586,7 +586,7 @@ test("keeps its week, city, search and open visit in the address, so Back from a
   await open(page);
   await page.getByRole("button", { name: "Next week" }).click();
   await page.getByLabel("City", { exact: true }).selectOption("Delhi");
-  await page.getByLabel("Find a technician, zone or client").fill("Rohit");
+  await page.getByLabel("Find a technician, client or area").fill("Rohit");
   await press(page, ROHIT_BLOCK);
   const kept = `?from=2025-09-26&city=Delhi&find=Rohit&visit=${ROHIT_JOB?.appointment_id ?? ""}`;
   await expect.poll(() => new URL(page.url()).search).toBe(kept);
@@ -597,7 +597,7 @@ test("keeps its week, city, search and open visit in the address, so Back from a
 
   await expect(page.getByRole("dialog", { name: "Rohit Malhotra" })).toBeVisible();
   await expect(page.getByLabel("City", { exact: true })).toHaveValue("Delhi");
-  await expect(page.getByLabel("Find a technician, zone or client")).toHaveValue("Rohit");
+  await expect(page.getByLabel("Find a technician, client or area")).toHaveValue("Rohit");
 });
 
 // OPS-10: 168 technicians made a board 15,000 px tall whose day headers scrolled away, with no way to find a row.
@@ -609,13 +609,43 @@ test("keeps its header row and technicians' column in place, and finds a row by 
   expect(await page.getByRole("columnheader").first().evaluate(position)).toBe("sticky");
   expect(await page.getByRole("rowheader").first().evaluate(position)).toBe("sticky");
 
-  const find = page.getByLabel("Find a technician, zone or client");
+  const find = page.getByLabel("Find a technician, client or area");
   await find.fill("Sohna");
   await expect(page.getByRole("rowheader")).toHaveText(["Faizan AliSohna Rd"]);
   await find.fill("kabir");
   await expect(page.getByRole("rowheader")).toHaveText(["Arjun NegiDLF 1–5"]);
   await find.fill("nobody");
-  await expect(page.getByText("No technician, zone or client this week matches “nobody”.")).toBeVisible();
+  await expect(page.getByText("Nothing on this week's board matches “nobody”.")).toBeVisible();
+});
+
+// BK-22 and OIA-05: an area on a block found nothing, and a client found left a row of eight with no sign of his.
+test("finds a visit by its area or its client, and outlines the blocks it found", async ({ page }) => {
+  await open(page);
+  const find = page.getByLabel("Find a technician, client or area");
+  const found = page.locator("[data-match]");
+
+  await find.fill("dlf 4");
+  await expect(page.getByRole("rowheader")).toHaveCount(2);
+  await expect(found).toHaveCount(2);
+  await expect(found.first()).toHaveAccessibleName("Vikram S., Fri 19 Sep, afternoon");
+
+  await find.fill("Sanjay");
+  await expect(found).toHaveCount(1);
+  await expect(found).toHaveAccessibleName("Sanjay B., Sat 20 Sep, morning");
+
+  // A technician found by name has no one block to point at.
+  await find.fill("Faizan");
+  await expect(page.getByRole("rowheader")).toHaveCount(1);
+  await expect(found).toHaveCount(0);
+});
+
+// BK-54: an empty tray kept its 236 px, so a 1024 px laptop showed five of the week's seven days.
+test("folds an empty tray to a rail, so the week has the width", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await open(page, { [READ_BOARD]: json({ ...BOARD, unassigned: [] }) });
+  const tray = page.getByRole("complementary", { name: "Unassigned" });
+  expect((await tray.boundingBox())?.width ?? 0).toBeLessThanOrEqual(41);
+  await expect(tray).toContainText("Nothing is waiting for a technician.");
 });
 
 // VIS-22: at 1280 wide and 200% zoom the days shrank to 15 px and the navigation ran off the page.
