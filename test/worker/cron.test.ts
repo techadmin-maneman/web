@@ -520,14 +520,14 @@ describe("CRON_JOBS", () => {
   });
 
   it("tells ops once when the photographs fill half their share of R2, however many runs see it", async () => {
-    await env.DB.prepare("UPDATE storage_meter SET bytes = 2.1e9").run();
+    await env.DB.prepare("UPDATE storage_meter SET bytes = 0.21e9").run();
     const deps = fakeDependencies();
     const meter = CRON_JOBS.filter((cronJob) => cronJob.name === "storage_meter");
     for (let run = 0; run < 3; run += 1) {
       await runCronJobs(meter, { env, deps, config: LOCAL_CONFIG, log: createLogger() });
     }
     expect(deps.alerts).toEqual([
-      expect.stringContaining("Photos and referral cards use 2.10 GB, half of their 4 GB of free storage"),
+      expect.stringContaining("Photos and referral cards use 0.21 GB, half of their 0.4 GB of free storage"),
     ]);
   });
 

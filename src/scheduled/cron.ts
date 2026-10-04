@@ -160,8 +160,8 @@ async function grievanceAlertsJob({ env, deps, config }: CronContext): Promise<v
 }
 
 /** R2's share and the database fill over months, so an hourly look is enough. */
-async function storageMeterJob({ env, deps }: CronContext): Promise<void> {
-  await tellOfStorage(env.DB, deps.alertOnce);
+async function storageMeterJob({ env, deps, config }: CronContext): Promise<void> {
+  await tellOfStorage(env.DB, deps.alertOnce, config.environment);
   await tellOfDatabaseSize(env.DB, deps.alertOnce, await readDatabaseBytes(env.DB));
 }
 
