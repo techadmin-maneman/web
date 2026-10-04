@@ -932,7 +932,8 @@ export const clients = {
       codeHint: "The letters and digits after maneman.in/r/ in the friend's link.",
       reason: "Why",
       reasonHint: "What the client or their friend told you.",
-      note: "The reason is kept with the invite; the attach is in the audit log under your name. The invite's own rules apply: never the code's own referrer, never a client who came with an invite already, and never one already fitted.",
+      /** The rules the API holds an attach to (src/routes/ops-client-referral.ts), the late one the owner's (src/policy/fraud-holds.ts). */
+      note: "Logged under your name. Not allowed: the code's own referrer, or a client who already came with an invite. Attached after their first fit, it waits for your review in Referrals.",
       save: "Attach the invite",
       saving: "Attaching",
       errors: {
@@ -1130,7 +1131,8 @@ export const clients = {
     erasing: "Erasing",
     /** Why nothing was erased, and what ops may do about it. */
     owed: {
-      visit_booked: "They still have a visit booked, so nothing was erased. Cancel it and refund what they paid first.",
+      visit_booked:
+        "They still have a visit booked, so nothing was erased. Cancel it on their Visits tab, which refunds what they paid, then erase.",
       payment_held:
         "We still owe them money back, so nothing was erased. Erase once their Payments tab shows it refunded.",
       payment_owed: "A payment link of theirs is still unpaid, so nothing was erased.",
