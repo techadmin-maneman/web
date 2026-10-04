@@ -23,6 +23,8 @@ import {
  * one before.
  */
 const CONSULTATION_TRIPS = 9;
+/** The round trips of the free booking written in the same request (src/http/book-hold.ts), which the form waits on. */
+const BOOKING_TRIPS = 8;
 
 const VISITOR = {
   name: "Karan Bhatia",
@@ -151,7 +153,7 @@ describe("POST /api/consultation", () => {
     vi.restoreAllMocks();
 
     expect(answer.status).toBe(201);
-    expect(line?.d1_trips).toBeLessThanOrEqual(CONSULTATION_TRIPS);
+    expect(line?.d1_trips).toBeLessThanOrEqual(CONSULTATION_TRIPS + BOOKING_TRIPS);
   });
 
   // The staging check and the load test book this way (scripts/staging-lead.ts, scripts/load-test-leads.ts).
