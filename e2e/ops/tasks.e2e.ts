@@ -142,8 +142,8 @@ test("names the day and window a consultation was asked for", async ({ page }) =
   await expect(row(page, "Neha Kapoor")).toContainText("Asked for 24 Sep 2027, afternoon");
 });
 
-// The next visit (docs/decisions/0086-the-next-visit-is-offered.md): board D2's own At-risk client, a first fit asked
-// for on the site and not booked, and a consultation asked for with the first fit to follow.
+// The next visit (docs/decisions/0086-the-next-visit-is-offered.md): board D2's own At-risk client, a client consulted
+// and not fitted, and a consultation asked for with the first fit to follow.
 test("names an At-risk client's weeks since the last visit, a first fit to book, and a fit asked for", async ({
   page,
 }) => {
@@ -173,9 +173,9 @@ test("names an At-risk client's weeks since the last visit, a first fit to book,
         closable: false,
         tasks: [
           {
-            id: "96000000-0000-4000-8000-000000000012",
+            id: "22000000-0000-4000-8000-000000000012",
             person: { id: "22000000-0000-4000-8000-000000000012", name: "Sanjay Arora" },
-            detail: "2027-09-10T04:30:00.000Z afternoon",
+            detail: "2027-09-10T08:00:00.000Z afternoon",
             since: "2027-09-16T18:30:00.000Z",
             due: "2027-09-18T18:30:00.000Z",
             owner: null,
@@ -202,9 +202,7 @@ test("names an At-risk client's weeks since the last visit, a first fit to book,
   await open(page, body);
   await expect(groupNames(page)).toHaveText(["Consultation request", "First fit to book", "At-risk client"]);
   await expect(row(page, "Neha Kapoor")).toContainText("Asked for 24 Sep 2027, afternoon + first fit, morning");
-  await expect(row(page, "Sanjay Arora")).toContainText(
-    "Consultation Fri 10 Sep; first fit asked for in the afternoon",
-  );
+  await expect(row(page, "Sanjay Arora")).toContainText("Consultation Fri 10 Sep, afternoon · not fitted");
   await expect(row(page, "Deepak Rao")).toContainText("9 weeks since the last visit · due Fri 20 Aug");
   await expect(row(page, "Deepak Rao")).toContainText("24 days overdue");
   // The client books; ops reach them from their page, on their visits.

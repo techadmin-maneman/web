@@ -16,6 +16,7 @@ import {
   nextVisitAfter,
   nextVisitType,
   offeredDay,
+  offeredWindow,
   remindedIfDoneBetween,
   RULES,
   serviceDue,
@@ -111,6 +112,14 @@ describe("the next visit", () => {
       from: "2026-09-07",
       to: "2026-09-20",
     });
+  });
+
+  it("offers the next visit in the window of the one it follows, where a visit of its kind can start in it", () => {
+    expect(offeredWindow("first_fit", "afternoon")).toBe("afternoon");
+    expect(offeredWindow("service", "evening")).toBe("evening");
+    // A first fit's two slots and a replacement's slot and a half do not fit in the evening.
+    expect(offeredWindow("first_fit", "evening")).toBeNull();
+    expect(offeredWindow("replacement", "evening")).toBeNull();
   });
 
   it("makes a client at risk the day that is a week past their due day", () => {

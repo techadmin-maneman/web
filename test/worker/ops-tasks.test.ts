@@ -652,8 +652,8 @@ describe("GET /api/tasks", () => {
 });
 
 // The next visit, offered to the client and booked by them (docs/decisions/0086-the-next-visit-is-offered.md): ops
-// step in when a fitted client is days past their next service with nothing booked, and when a first fit asked for
-// on the site's form is still not booked days after the consultation. Both are counted from the figures ops set.
+// step in when a fitted client is days past their next service with nothing booked, and when a client consulted and
+// not fitted has nothing booked days after the consultation. Both are counted from the figures ops set.
 describe("GET /api/tasks, the next visit", () => {
   /** A visit of Rohit's; 04:30 UTC is 10 am in India. */
   async function visitOf(id: string, type: string, start: string, status: string) {
@@ -727,22 +727,23 @@ describe("GET /api/tasks, the next visit", () => {
     expect(groupNames(await tasks())).toEqual([]);
   });
 
-  it("counts from the cadence and the days ops set, and never lists a client who has not been fitted", async () => {
+  it("counts from the cadence and the days ops set, and never lists a client who has not been fitted as at risk", async () => {
     await visitOf(VISIT, "service", "2026-08-01T04:30:00.000Z", "completed");
     expect((await opsSet({ service_cadence: 45 })).groups).toEqual([]);
     await env.DB.prepare("DELETE FROM ops_settings").run();
+    // Only consulted, they are a First fit to book instead.
     await env.DB.prepare("UPDATE appointments SET type = 'consultation'").run();
-    expect(groupNames(await tasks())).toEqual([]);
+    expect(groupNames(await tasks())).toEqual(["first_fit_to_book"]);
   });
 
-  it("lists a First fit to book a week after the consultation, with the window asked for, until the fit is booked", async () => {
-    await firstFitAsked("afternoon");
+  // The site's form asks for no first fit since 1 October 2026, so a consultation done is enough.
+  it("lists a client consulted a week ago and not fitted, in the consultation's window, until the fit is booked", async () => {
     await visitOf(CONSULTATION, "consultation", "2026-09-10T04:30:00.000Z", "completed");
     expect(tasksIn(await tasks(), "first_fit_to_book")).toEqual([
       {
-        id: REQUEST,
+        id: PERSON,
         person: { id: PERSON, name: "Rohit Malhotra" },
-        detail: "2026-09-10T04:30:00.000Z afternoon",
+        detail: "2026-09-10T04:30:00.000Z morning",
         since: "2026-09-16T18:30:00.000Z",
         due: "2026-09-18T18:30:00.000Z",
         owner: null,
@@ -752,12 +753,33 @@ describe("GET /api/tasks, the next visit", () => {
     expect(groupNames(await tasks())).toEqual(["address_to_confirm"]);
   });
 
-  it("waits the days ops set after the consultation, and lists no fit asked for before one is done", async () => {
-    await firstFitAsked(null);
+  it("waits the days ops set after the consultation, and lists nobody before it is done", async () => {
+    await visitOf(CONSULTATION, "consultation", "2026-09-10T04:30:00.000Z", "scheduled");
     expect(groupNames(await tasks())).toEqual([]);
-    await visitOf(CONSULTATION, "consultation", "2026-09-10T04:30:00.000Z", "completed");
-    expect(tasksIn(await tasks(), "first_fit_to_book")[0]?.detail).toBe("2026-09-10T04:30:00.000Z any");
+    await env.DB.prepare("UPDATE appointments SET status = 'completed'").run();
+    expect(groupNames(await tasks())).toEqual(["first_fit_to_book"]);
     expect((await opsSet({ first_fit_to_book: 14 })).groups).toEqual([]);
+  });
+
+  it("names no window after a consultation in the evening, which a first fit cannot start in", async () => {
+    // 6 pm in India.
+    await visitOf(CONSULTATION, "consultation", "2026-09-10T12:30:00.000Z", "completed");
+    expect(tasksIn(await tasks(), "first_fit_to_book")[0]?.detail).toBe("2026-09-10T12:30:00.000Z any");
+  });
+
+  it("lists a client who declined the fit at a one visit, which ends as a consultation", async () => {
+    await visitOf(CONSULTATION, "first_fit", "2026-09-10T04:30:00.000Z", "in_progress");
+    await env.DB.prepare(
+      "UPDATE appointments SET one_visit = 'declined', type = 'consultation', status = 'completed'",
+    ).run();
+    expect(tasksIn(await tasks(), "first_fit_to_book")).toMatchObject([{ id: PERSON }]);
+  });
+
+  it("lists a fitted client consulted again and not fitted since, and not as at risk", async () => {
+    await visitOf(VISIT, "first_fit", "2026-07-01T04:30:00.000Z", "completed");
+    expect(groupNames(await tasks())).toEqual(["at_risk_client"]);
+    await visitOf(CONSULTATION, "consultation", "2026-09-10T04:30:00.000Z", "completed");
+    expect(groupNames(await tasks())).toEqual(["first_fit_to_book"]);
   });
 
   it("says a consultation asked for came with a first fit asked for, and its window", async () => {
@@ -969,27 +991,22 @@ describe("PUT /api/tasks/{group}/{id}/owner", () => {
       expect(await ownersIn("leave_conflict")).toEqual([null]);
     });
 
-    // A lead who fills the site's form in again, while ops are working them, is the same lead to follow up.
-    it("keeps the owner of a first fit asked again while its task waits", async () => {
-      await env.DB.prepare(
-        "INSERT INTO first_fit_requests (id, person_id, preferred_window, created_at) VALUES (?1, ?2, 'afternoon', ?3)",
-      )
-        .bind(REQUEST, PERSON, "2026-09-01T06:00:00.000Z")
-        .run();
+    // Its start moves with the days ops set, and it is still the same consultation to follow up.
+    it("keeps the owner of a first fit to book when ops change the days it waits", async () => {
       await visitOf(CONSULTATION, "consultation", "2026-09-10T04:30:00.000Z");
-      await ownerOf("first_fit_to_book", REQUEST, ME);
+      await ownerOf("first_fit_to_book", PERSON, ME);
       expect(await ownersIn("first_fit_to_book")).toEqual([ME]);
 
-      // Asked again: the latest request stands, on the row of the one before, as the site's form wrote it until the
-      // owner's ruling of 1 October 2026 took the choice off the form (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
       await env.DB.prepare(
-        `INSERT INTO first_fit_requests (id, person_id, preferred_window, created_at) VALUES (?1, ?2, 'morning', ?3)
-         ON CONFLICT (person_id) DO UPDATE SET preferred_window = excluded.preferred_window,
-           created_at = excluded.created_at`,
+        "INSERT INTO ops_settings (name, value, set_by, set_at) VALUES ('booking_days', ?1, 'ops@localhost', ?2)",
       )
-        .bind(crypto.randomUUID(), PERSON, NOW.toISOString())
+        .bind(JSON.stringify({ ...NEXT_VISIT_DAYS, first_fit_to_book: 3 }), NOW.toISOString())
         .run();
-      expect(tasksIn(await tasks(), "first_fit_to_book")).toMatchObject([{ id: REQUEST, owner: ME }]);
+      const freshConsole = appFor("local", fakeDependencies(), {}, "ops");
+      const board = await (await request(freshConsole, "/api/tasks")).json<Body>();
+      expect(tasksIn(board, "first_fit_to_book")).toMatchObject([
+        { id: PERSON, owner: ME, since: "2026-09-12T18:30:00.000Z" },
+      ]);
     });
 
     // Moved to another time or another day under the same leave, the job still clashes with it: the same conflict.
@@ -1023,19 +1040,14 @@ describe("PUT /api/tasks/{group}/{id}/owner", () => {
     });
 
     it("a first fit to book after a later consultation has no owner", async () => {
-      await env.DB.prepare(
-        "INSERT INTO first_fit_requests (id, person_id, preferred_window, created_at) VALUES (?1, ?2, NULL, ?3)",
-      )
-        .bind(REQUEST, PERSON, "2026-07-25T06:00:00.000Z")
-        .run();
       await visitOf(CONSULTATION, "consultation", "2026-08-01T04:30:00.000Z");
-      await ownerOf("first_fit_to_book", REQUEST, ME);
+      await ownerOf("first_fit_to_book", PERSON, ME);
 
-      // Fitted, the task leaves; consulted again, the request still standing makes a new one.
+      // Fitted, the task leaves; consulted again and not fitted since, the client is a new task.
       await visitOf("the-fit", "first_fit", "2026-08-10T04:30:00.000Z");
       expect(groupNames(await tasks())).not.toContain("first_fit_to_book");
       await visitOf("consulted-again", "consultation", "2026-09-10T04:30:00.000Z");
-      expect(tasksIn(await tasks(), "first_fit_to_book")).toMatchObject([{ id: REQUEST, owner: null }]);
+      expect(tasksIn(await tasks(), "first_fit_to_book")).toMatchObject([{ id: PERSON, owner: null }]);
     });
 
     // Its thing undone, a task comes back as it was: a booking called off leaves the client at risk from the same visit.

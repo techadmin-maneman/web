@@ -87,7 +87,6 @@ const RECORD_PLACES = {
   move: { table: "dispatch_moves", city: (row) => pincodeCity(visitPincode(`${row}.appointment_id`)) },
   payment_link: { table: "payment_links", city: (row) => pincodeCity(visitPincode(`${row}.appointment_id`)) },
   piece: { table: "pieces", city: (row) => clientCity(`${row}.person_id`) },
-  first_fit_request: { table: "first_fit_requests", city: (row) => clientCity(`${row}.person_id`) },
   no_show: { table: "no_show_cases", city: (row) => pincodeCity(visitPincode(`${row}.appointment_id`)) },
   dispute: { table: "no_show_disputes", city: (row) => pincodeCity(visitPincode(caseVisit(`${row}.case_id`))) },
   grievance: { table: "grievances", city: (row) => clientCity(`${row}.person_id`) },

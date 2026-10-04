@@ -5,8 +5,8 @@
 // replacement date, an invoice still a draft, a moved visit whose client has not
 // heard of it, a visit left partly done, a
 // visit to come with no address, a job on its technician's day off, a client
-// past their next service with nothing booked, a first fit asked for and not
-// booked, a one visit's payment still owed — so it leaves the list when that row
+// past their next service with nothing booked, a client consulted and not
+// fitted, a one visit's payment still owed — so it leaves the list when that row
 // is decided, on the section that decides it, when the client books, or when
 // they pay (src/policy/tasks.ts).
 //
@@ -64,7 +64,7 @@ const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 /** The fraud rules, as board C1 letters them: a held grant is the same grant on both boards. */
 const SIGNALS: Readonly<Record<string, string>> = referrals.queue.signals;
 
-/** A window's name, as the dispatch board writes it, for the window a first fit was asked for in; null for either. */
+/** A window's name, as the dispatch board writes it, for the window a first fit is wanted in; null for either. */
 const fitWindow = (window: string | undefined): string | null =>
   window === undefined || window === "any" ? null : (dispatch.windows[window] ?? window);
 
@@ -98,7 +98,7 @@ function subOf(group: Group, task: Task, now: Date): string {
     return plan === "first_fit" ? `${asked} ${copy.withFirstFit(fitWindow(fitInOrCode))}` : asked;
   }
   if (group === "first_fit_to_book") {
-    // The consultation's start, and the window the fit was asked for in.
+    // The consultation's start, and the window the fit is offered in.
     const [consulted = "", fitIn] = task.detail?.split(" ") ?? [];
     if (consulted === "") return tasks.unknown;
     return copy.first_fit_to_book(shortDate(indiaDate(consulted)), fitWindow(fitIn));
