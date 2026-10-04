@@ -81,7 +81,7 @@ test("says what photos and referral cards hold, and the database, under The cons
   await expect(theConsole.getByText("Database: 212 MB of 500 MB", { exact: true })).toBeVisible();
 
   await open(page, "/settings/blackouts", { "GET /api/storage": storage });
-  await expect(page.getByRole("heading", { name: "Blackout days" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Closed days" })).toBeVisible();
   await expect(page.getByText("Photos and referral cards")).toHaveCount(0);
 });
 
@@ -214,7 +214,7 @@ test.describe("the rules", () => {
   // OIA-12 of the audit, 2 October 2026: seventeen rules on one page, each with its own Save, in no order.
   test("groups the rules by subject, each section a link away", async ({ page }) => {
     await open(page);
-    const jump = page.getByRole("navigation", { name: "Rules by subject" });
+    const jump = page.getByRole("navigation", { name: "Policies by subject" });
     await expect(jump.getByRole("link")).toHaveText([
       "Moves, cancels and no-shows",
       "Booking and payment",

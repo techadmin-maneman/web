@@ -41,7 +41,7 @@ test("opens on Tasks, with the sections under their departments and what waits i
   await expectNames(department("Operations"), ["Tasks, 8 waiting, some overdue", "Dispatch", "Technicians", "Stock"]);
   await expectNames(department("Customer Care"), [
     "Clients",
-    "Grievances",
+    "Concerns",
     "Number changes, 1 waiting, some overdue",
     "Deletion requests, 1 waiting",
   ]);

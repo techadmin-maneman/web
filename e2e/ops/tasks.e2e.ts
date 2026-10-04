@@ -460,11 +460,11 @@ test("counts an open grievance down, and leads to it in Grievances", async ({ pa
       },
     ],
   });
-  await expect(groupNames(page)).toHaveText(["Grievance"]);
+  await expect(groupNames(page)).toHaveText(["Concern"]);
   const grievance = row(page, "Neha Kapoor");
   await expect(grievance).toContainText("Raised in the client's own app");
   await expect(grievance).toContainText("22 days left");
-  await expect(grievance.getByRole("link", { name: /^Answer it in Grievances/ })).toHaveAttribute(
+  await expect(grievance.getByRole("link", { name: /^Answer it in Concerns/ })).toHaveAttribute(
     "href",
     "/grievances#grievance-97000000-0000-4000-8000-000000000001",
   );
