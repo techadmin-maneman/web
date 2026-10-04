@@ -275,6 +275,53 @@ test("names the client of a no-show, and leads to their visits and to the case",
   expect(new URL(page.url()).hash).toBe("#case-66000000-0000-4000-8000-000000000001");
 });
 
+// A client's claim for money back once waited on No-shows alone: no row here, no count, no link (OIA-07).
+test("names a disputed charge and what it kept, and leads to the dispute in Payments", async ({ page }) => {
+  const dispute = (id: string, person: { id: string; name: string } | null, kept: string) => ({
+    id,
+    person,
+    detail: kept,
+    since: "2027-09-21T06:00:00.000Z",
+    due: "2027-09-23T06:00:00.000Z",
+    owner: null,
+  });
+  await open(page, {
+    overdue: 0,
+    truncated: false,
+    staff: [],
+    groups: [
+      {
+        group: "no_show_dispute",
+        count: 2,
+        closable: false,
+        tasks: [
+          dispute(
+            "dd000000-0000-4000-8000-000000000001",
+            { id: "22000000-0000-4000-8000-000000000030", name: "Vikram Sethi" },
+            "236000",
+          ),
+          dispute("dd000000-0000-4000-8000-000000000002", null, "0"),
+        ],
+      },
+    ],
+  });
+  await expect(page.getByRole("heading", { level: 3 })).toHaveText(["Disputed charge"]);
+  const vikram = row(page, "Vikram Sethi");
+  await expect(vikram).toContainText("Disputes the charge that kept Rs. 2,360");
+  await expect(vikram.getByRole("link", { name: "Vikram Sethi", exact: true })).toHaveAttribute(
+    "href",
+    "/clients/22000000-0000-4000-8000-000000000030/visits",
+  );
+  await expect(
+    vikram.getByRole("link", { name: "Rule on it in Payments · Vikram Sethi", exact: true }),
+  ).toHaveAttribute("href", "/no-shows#dispute-dd000000-0000-4000-8000-000000000001");
+  // A client since erased still has their charge ruled on.
+  await expect(row(page, "A client since erased")).toContainText("Disputes the charge that kept a free service visit");
+  await expect(
+    page.getByRole("navigation", { name: "Console" }).getByRole("link", { name: /^Payments, 2 waiting/ }),
+  ).toBeVisible();
+});
+
 test("reaches the client's page from the task that is about them, on the tab it is about", async ({ page }) => {
   await open(page);
   await row(page, "Rohit Malhotra").getByRole("link", { name: "Rohit Malhotra" }).click();

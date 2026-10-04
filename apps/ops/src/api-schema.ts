@@ -3053,6 +3053,109 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/no-shows/{id}/charge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What charging an undecided no-show would keep of the visit's payment, and refund */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description What a charge would do */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["NoShowChargePreview"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such case in the caller's cities, or it was ruled on already */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/no-shows/decided": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The no-shows in the caller's cities ruled on today in India, the latest first, each with its ruling */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The day's rulings */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            cases: components["schemas"]["NoShowDecided"][];
+                        };
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/no-shows/disputes": {
         parameters: {
             query?: never;
@@ -3230,7 +3333,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    group: "untold_move" | "held_booking" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "erasure_unfinished";
+                    group: "untold_move" | "held_booking" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "erasure_unfinished";
                     id: string;
                 };
                 cookie?: never;
@@ -6596,6 +6699,8 @@ export interface components {
             dispute: ("open" | "refunded" | "upheld") | null;
             /** @description Whether the client may dispute the charge now: one that took something, not disputed yet. */
             disputable: boolean;
+            /** @description When the days to dispute the charge ran out, once they have, for a charge that took something and was never disputed; null otherwise. */
+            dispute_closed_at: string | null;
         };
         RefundEntry: {
             /**
@@ -7741,6 +7846,37 @@ export interface components {
             /** @description Why, in ops' words. Never a medical detail. */
             note?: string;
         };
+        /** @description What charging the case would do, worked out as charging does. */
+        NoShowChargePreview: {
+            /** @description In paise: what was paid for the visit and not refunded. */
+            paid: number;
+            /** @description In paise: what charging keeps of it. The rest is refunded. */
+            kept: number;
+            /** @description Whether charging keeps the credit the visit was paid with. */
+            credit_kept: boolean;
+        };
+        NoShowDecided: {
+            /** Format: uuid */
+            id: string;
+            /** @description Whose visit it was; null once they have been erased. */
+            person: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+            } | null;
+            visit_date: string | null;
+            /** @enum {string} */
+            decision: "charged" | "waived";
+            /** Format: date-time */
+            decided_at: string;
+            /** @description What a charge took; null for a waiver, and for a charge ruled before it was recorded. */
+            charge: {
+                /** @description In paise: what the charge kept of the visit's payment. */
+                kept: number;
+                /** @description Whether the charge spent the credit the visit used. */
+                credit_spent: boolean;
+            } | null;
+        };
         /** @description A disputed charge, with the evidence its no-show was ruled on. */
         NoShowDispute: {
             /** Format: uuid */
@@ -7761,7 +7897,7 @@ export interface components {
             raised_at: string;
             /**
              * Format: date-time
-             * @description When ops should have ruled: the Tasks board's allowance for a no-show, from raised_at.
+             * @description When ops should have ruled: the Tasks board's allowance for a disputed charge, from raised_at.
              */
             due: string;
             /** @description In paise: what the charge kept of the visit's payment. */
@@ -7796,7 +7932,7 @@ export interface components {
             staff: string[];
             groups: {
                 /** @enum {string} */
-                group: "untold_move" | "held_booking" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "erasure_unfinished";
+                group: "untold_move" | "held_booking" | "leave_conflict" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "at_risk_client" | "partial_visit" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "erasure_unfinished";
                 /** @description How many are waiting in the group in the caller's cities, all of them. */
                 count: number;
                 /** @description Ops may close a task of the group without doing its thing, with a reason. */

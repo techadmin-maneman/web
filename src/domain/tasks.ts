@@ -36,7 +36,7 @@ export interface Task {
    * the piece's label, the fraud rule met, the technician who attended, the
    * invoice in Books, the contact in FSM, the last visit and the day its next
    * service fell due, the consultation and the window a first fit was asked
-   * for in, a payment link's state, amount and product.
+   * for in, a payment link's state, amount and product, what a disputed charge kept.
    */
   readonly detail: string | null;
   readonly since: string;
@@ -90,18 +90,18 @@ const FIRST_FIT_EPISODE = "s.consulted_start";
  * Every queue, in three statements sent together. D1 takes at most five arms in one
  * compound SELECT, so the queues are split between statements; a batch is still
  * one round trip. A person who has been erased is left out everywhere: their
- * record is gone, and a task about them could not be done. Two things still
- * wait without them: a no-show, which still needs a ruling, and an erasure FSM
- * would not finish, which names FSM's contact and not the person.
+ * record is gone, and a task about them could not be done. Three things still
+ * wait without them: a no-show and a disputed charge, which still need a ruling,
+ * and an erasure FSM would not finish, which names FSM's contact and not the person.
  *
  * The first statement is the one that needs today's date, as `?1`: a move is
  * still to be told of while its visit is today or later. The second
  * needs the attempts after which the sweeper stops asking FSM, as `?1`. The third
  * holds the visits whose booking or closing left ops something to do, and needs
  * the moment ops look, as `?1`, and what the next visit's days make of it (`?3`
- * to `?7`, below). The fourth holds the bookings FSM refused and the one
- * visits' payments still owed, and needs nothing but READ_CAP. Each takes READ_CAP as `?2`, which bounds what one look at the
- * board can cost. The first three hold five arms each; the fourth has room.
+ * to `?7`, below). The fourth holds the bookings FSM refused, the one
+ * visits' payments still owed and the disputed no-show charges, and needs nothing but READ_CAP. Each takes READ_CAP as
+ * `?2`, which bounds what one look at the board can cost. The first three hold five arms each; the fourth has room.
  *
  * A consultation asked for is read only while the client has no consultation
  * booked or done, `booked`, which the database keeps as their consultations are
@@ -270,6 +270,9 @@ const OUTSTANDING = [
   // A one visit's payment link still unpaid (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md): whether
   // Razorpay sent it, what it asks for in paise, and the product, by name. It waits from the close that asked for it,
   // and goes once Razorpay's webhook says it is paid. The index on the links still unpaid reads only those.
+  //
+  // A client's dispute of a no-show's charge, still to rule on: what the charge kept, in paise. It waits from when the
+  // client raised it. The index on the open disputes reads only those.
   withOwners(`
   SELECT 'held_booking' AS "group", h.id AS id, h.person_id AS person_id, pe.name AS person_name,
          h.type || ' ' || h.date || ' ' || h.window_label AS detail, h.fsm_held_at AS since,
@@ -284,6 +287,11 @@ const OUTSTANDING = [
     FROM payment_links l JOIN appointments a ON a.id = l.appointment_id JOIN people pe ON pe.id = a.person_id
     LEFT JOIN services s ON s.kind = 'first_fit' AND s.tier = l.tier
    WHERE l.paid_at IS NULL AND pe.erased_at IS NULL
+  UNION ALL
+  SELECT 'no_show_dispute', d.id, pe.id, pe.name, CAST(n.kept_amount AS TEXT), d.created_at, NULL, ''
+    FROM no_show_disputes d JOIN no_show_cases n ON n.id = d.case_id
+    LEFT JOIN people pe ON pe.id = d.person_id AND pe.erased_at IS NULL
+   WHERE d.ruling IS NULL
 `),
 ] as const;
 
@@ -404,6 +412,7 @@ const TASK_RECORDS: Readonly<Record<TaskGroup, PlacedRecord>> = {
   partial_visit: "visit",
   referral_review: "referral",
   no_show_decision: "no_show",
+  no_show_dispute: "dispute",
   number_change: "number_change",
   erasure_request: "deletion_request",
   grievance: "grievance",

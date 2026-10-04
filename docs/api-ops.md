@@ -2193,6 +2193,66 @@ Revoke a phone. Its session ends, and it drops its cached jobs on its next conta
 }
 ```
 
+### GET /api/no-shows/{id}/charge
+
+What charging an undecided no-show would keep of the visit's payment, and refund
+
+**200**: What a charge would do
+
+```json
+{
+  "$ref": "#/components/schemas/NoShowChargePreview"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such case in the caller's cities, or it was ruled on already
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### GET /api/no-shows/decided
+
+The no-shows in the caller's cities ruled on today in India, the latest first, each with its ruling
+
+**200**: The day's rulings
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "cases": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/NoShowDecided"
+      }
+    }
+  },
+  "required": [
+    "cases"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### GET /api/no-shows/disputes
 
 Disputed no-show charges in the caller's cities still to rule on, oldest first, each with its evidence
@@ -5661,6 +5721,18 @@ Request body:
     "disputable": {
       "type": "boolean",
       "description": "Whether the client may dispute the charge now: one that took something, not disputed yet."
+    },
+    "dispute_closed_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "When the days to dispute the charge ran out, once they have, for a charge that took something and was never disputed; null otherwise."
     }
   },
   "required": [
@@ -5668,7 +5740,8 @@ Request body:
     "waited_minutes",
     "charge",
     "dispute",
-    "disputable"
+    "disputable",
+    "dispute_closed_at"
   ],
   "additionalProperties": false
 }
@@ -10673,6 +10746,131 @@ Request body:
 }
 ```
 
+### NoShowChargePreview
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "paid": {
+      "type": "integer",
+      "description": "In paise: what was paid for the visit and not refunded."
+    },
+    "kept": {
+      "type": "integer",
+      "description": "In paise: what charging keeps of it. The rest is refunded."
+    },
+    "credit_kept": {
+      "type": "boolean",
+      "description": "Whether charging keeps the credit the visit was paid with."
+    }
+  },
+  "required": [
+    "paid",
+    "kept",
+    "credit_kept"
+  ],
+  "additionalProperties": false,
+  "description": "What charging the case would do, worked out as charging does."
+}
+```
+
+### NoShowDecided
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "person": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Whose visit it was; null once they have been erased."
+    },
+    "visit_date": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "decision": {
+      "type": "string",
+      "enum": [
+        "charged",
+        "waived"
+      ]
+    },
+    "decided_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "charge": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kept": {
+              "type": "integer",
+              "description": "In paise: what the charge kept of the visit's payment."
+            },
+            "credit_spent": {
+              "type": "boolean",
+              "description": "Whether the charge spent the credit the visit used."
+            }
+          },
+          "required": [
+            "kept",
+            "credit_spent"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What a charge took; null for a waiver, and for a charge ruled before it was recorded."
+    }
+  },
+  "required": [
+    "id",
+    "person",
+    "visit_date",
+    "decision",
+    "decided_at",
+    "charge"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### NoShowDispute
 
 ```json
@@ -10734,7 +10932,7 @@ Request body:
     "due": {
       "type": "string",
       "format": "date-time",
-      "description": "When ops should have ruled: the Tasks board's allowance for a no-show, from raised_at."
+      "description": "When ops should have ruled: the Tasks board's allowance for a disputed charge, from raised_at."
     },
     "kept": {
       "type": "integer",
@@ -10894,6 +11092,7 @@ Request body:
               "partial_visit",
               "referral_review",
               "no_show_decision",
+              "no_show_dispute",
               "number_change",
               "erasure_request",
               "grievance",
