@@ -145,24 +145,24 @@ test("keeps today's and tomorrow's jobs and lets go of every older day and card 
   await fakeTech(page);
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
-  await expect.poll(() => keptOnPhone(page)).toContain(JOB_ID);
+  await expect.poll(() => keptOnPhone(page)).toContain(`cards:${JOB_ID}`);
 
   // What a week-old day left behind: its list, a client's card and what the check-in measured.
   const old = "a0000000-0000-4000-8000-00000000000f";
-  await leftOnPhone(page, [
-    { id: "day:2020-01-01", kind: "day", date: "2020-01-01", jobs: [] },
-    { id: old, kind: "job", job: { ...card("2020-01-01", NOTHING_DONE), id: old } },
-    { id: `arrival:${old}`, kind: "arrival", job_id: old, arrival: { passed: true } },
-  ]);
+  await leftOnPhone(page, {
+    days: [{ date: "2020-01-01", jobs: [] }],
+    cards: [{ ...card("2020-01-01", NOTHING_DONE), id: old }],
+    arrivals: [{ job_id: old, arrival: { passed: true } }],
+  });
 
   await page.reload();
   await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
-  await expect.poll(() => keptOnPhone(page)).not.toContain(old);
+  await expect.poll(() => keptOnPhone(page)).not.toContain(`cards:${old}`);
   const kept = await keptOnPhone(page);
-  expect(kept).not.toContain("day:2020-01-01");
-  expect(kept).not.toContain(`arrival:${old}`);
-  expect(kept).toContain(`day:${todayInIndia()}`);
-  expect(kept).toContain(JOB_ID);
+  expect(kept).not.toContain("days:2020-01-01");
+  expect(kept).not.toContain(`arrivals:${old}`);
+  expect(kept).toContain(`days:${todayInIndia()}`);
+  expect(kept).toContain(`cards:${JOB_ID}`);
 });
 
 test("opens a job's card with its address, access notes and the way in (board A3)", async ({ page }) => {

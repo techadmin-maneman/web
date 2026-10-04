@@ -27,28 +27,13 @@ import {
   keepStartAtCheckIn,
   keptStartAtCheckIn,
 } from "./jobs.ts";
+import type { Frame } from "./records.ts";
 import { account, nextToSend, type EventState, type JobAccount, type Queued } from "./replay.ts";
 import { uuidv7 } from "./uuidv7.ts";
 import { classify, type Verdict } from "./verdict.ts";
 
-export type { EventKind, JobAccount, Queued };
+export type { EventKind, Frame, JobAccount, Queued };
 export { account, checkInRefusedAsEarly, refusedAsEarly } from "./replay.ts";
-
-/** One photograph waiting on the phone, held until the API confirms its upload. */
-export interface Frame {
-  readonly id: string;
-  readonly job_id: string;
-  readonly angle: Angle;
-  readonly phase: Phase;
-  readonly frame: Blob;
-  /** Its thumbnail, for the client app's rows; missing from a frame kept before the phone made them. */
-  readonly small?: Blob;
-  /** The take the API answered once the photograph was up; only its thumbnail is still to go. */
-  readonly take?: string;
-  /** True once the API refused the file itself. The angle is taken again, which replaces this frame. */
-  readonly refused?: true;
-  readonly kept_at: number;
-}
 
 /** Why a replay stopped short, so the screen can say it plainly. */
 export type Stopped = "offline" | "signed-out" | null;
@@ -75,7 +60,7 @@ function changed(): void {
 }
 
 export function events(): Promise<Queued[]> {
-  return all<Queued>("outbox");
+  return all("outbox");
 }
 
 /** The plain account of what has not yet reached us, one line per job. */
@@ -103,7 +88,7 @@ export async function queue<K extends EventKind>(
   startsAt: string | null = null,
 ): Promise<Queued> {
   const waiting = stepIn(jobId, kind, "waiting");
-  const already = await firstIn<Queued>("outbox", STEP_INDEX, waiting);
+  const already = await firstIn("outbox", STEP_INDEX, waiting);
   if (already !== null) return already;
 
   const event = {
@@ -124,7 +109,7 @@ export async function queue<K extends EventKind>(
     return { ...event, seq: kept.key };
   }
   // Another screen queued the same step a moment before this one.
-  return (await get<Queued>("outbox", kept.key)) ?? { ...event, seq: kept.key };
+  return (await get("outbox", kept.key)) ?? { ...event, seq: kept.key };
 }
 
 /**
@@ -145,7 +130,7 @@ async function startSentWith(kind: EventKind, jobId: string, startsAt: string | 
  * under a new event ID, since the API recorded nothing of the refused one.
  */
 export async function correct(seq: number, body: EventBody<EventKind>): Promise<void> {
-  const refused = await get<Queued>("outbox", seq);
+  const refused = await get("outbox", seq);
   if (refused === null) return;
   await put("outbox", { ...refused, id: uuidv7(), body, state: "waiting", note: null, fields: [], request_id: null });
   changed();
@@ -182,7 +167,7 @@ export async function dropFrame(id: string): Promise<void> {
 }
 
 export function frames(): Promise<Frame[]> {
-  return all<Frame>("frames");
+  return all("frames");
 }
 
 /** Every job with a write or a photograph that has not reached us: the phone keeps its card until they have. */
@@ -212,7 +197,7 @@ async function markAs(
   moved: Moved | null = null,
   requestId: string | null = null,
 ): Promise<void> {
-  const current = await get<Queued>("outbox", event.seq);
+  const current = await get("outbox", event.seq);
   if (current === null) return;
   await put("outbox", { ...current, state, note, fields, moved, request_id: requestId });
 }
@@ -243,7 +228,7 @@ async function giveUp(event: Queued, refusal: Refusal): Promise<void> {
 
 /** The job's step refused as early before this one, if any: one at a time is kept. */
 async function dropEarlier(event: Queued): Promise<void> {
-  const earlier = await firstIn<Queued>("outbox", STEP_INDEX, stepIn(event.job_id, event.kind, "early"));
+  const earlier = await firstIn("outbox", STEP_INDEX, stepIn(event.job_id, event.kind, "early"));
   if (earlier !== null) await remove("outbox", earlier.seq);
 }
 

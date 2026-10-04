@@ -8,37 +8,26 @@
 // User-Agent at sign-in; the app never sends one.
 
 import type { Me } from "../api.ts";
-import { get, put } from "./db.ts";
+import { deviceRecord, put } from "./db.ts";
 import { uuidv7 } from "./uuidv7.ts";
-
-interface Kept {
-  readonly key: "device";
-  readonly id: string;
-  readonly enrolled_at: number | null;
-}
-
-interface KeptMe {
-  readonly key: "me";
-  readonly me: Me;
-}
 
 /** This phone's device ID, made the first time it is asked for. */
 export async function deviceId(): Promise<string> {
-  const kept = await get<Kept>("device", "device");
+  const kept = await deviceRecord("device");
   if (kept !== null) return kept.id;
-  const made: Kept = { key: "device", id: uuidv7(), enrolled_at: null };
-  await put("device", made);
-  return made.id;
+  const id = uuidv7();
+  await put("device", { key: "device", id, enrolled_at: null });
+  return id;
 }
 
 /** Records that the backend accepted this device, so the screens can say since when. */
 export async function enrolled(at: number = Date.now()): Promise<void> {
-  const kept = await get<Kept>("device", "device");
+  const kept = await deviceRecord("device");
   if (kept !== null) await put("device", { ...kept, enrolled_at: at });
 }
 
 export async function enrolledAt(): Promise<number | null> {
-  return (await get<Kept>("device", "device"))?.enrolled_at ?? null;
+  return (await deviceRecord("device"))?.enrolled_at ?? null;
 }
 
 /**
@@ -47,9 +36,9 @@ export async function enrolledAt(): Promise<number | null> {
  * client's, and it goes with everything else at sign-out or revocation.
  */
 export async function keepMe(me: Me): Promise<void> {
-  await put("device", { key: "me", me } satisfies KeptMe);
+  await put("device", { key: "me", me });
 }
 
 export async function keptMe(): Promise<Me | null> {
-  return (await get<KeptMe>("device", "me"))?.me ?? null;
+  return (await deviceRecord("me"))?.me ?? null;
 }

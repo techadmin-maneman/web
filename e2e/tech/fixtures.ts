@@ -844,9 +844,15 @@ export async function storeOnPhone(page: Page): Promise<boolean> {
   return names.includes("mm-tech");
 }
 
-/** The keys of what the phone keeps of the API, sorted: its days, its cards, and each job's arrival and close-out. */
+/** The stores of what the phone keeps of the jobs (apps/tech/src/store/db.ts). */
+const JOB_STORES = ["days", "cards", "arrivals", "closures", "starts"] as const;
+
+/**
+ * What the phone keeps of the jobs, sorted, each as its store and key: its days ("days:<date>"), its cards
+ * ("cards:<job>"), and each job's arrival, close-out and start at check-in.
+ */
 export function keptOnPhone(page: Page): Promise<string[]> {
-  return page.evaluate(async () => {
+  return page.evaluate(async (stores) => {
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open("mm-tech");
       request.onsuccess = () => {
@@ -856,19 +862,26 @@ export function keptOnPhone(page: Page): Promise<string[]> {
         reject(new Error("no store"));
       };
     });
-    const keys = await new Promise<IDBValidKey[]>((resolve) => {
-      const request = db.transaction("jobs", "readonly").objectStore("jobs").getAllKeys();
-      request.onsuccess = () => {
-        resolve(request.result);
-      };
-    });
+    const kept: string[] = [];
+    for (const name of stores) {
+      const keys = await new Promise<IDBValidKey[]>((resolve) => {
+        const request = db.transaction(name, "readonly").objectStore(name).getAllKeys();
+        request.onsuccess = () => {
+          resolve(request.result);
+        };
+      });
+      kept.push(...keys.filter((key) => typeof key === "string").map((key) => `${name}:${key}`));
+    }
     db.close();
-    return keys.map(String).sort();
-  });
+    return kept.sort();
+  }, JOB_STORES);
 }
 
-/** Puts records straight into what the phone keeps, as an older day's work would have left them. */
-export async function leftOnPhone(page: Page, records: readonly object[]): Promise<void> {
+/** Puts records straight into what the phone keeps of the jobs, by store, as an older day's work would have left them. */
+export async function leftOnPhone(
+  page: Page,
+  records: Partial<Record<(typeof JOB_STORES)[number], readonly object[]>>,
+): Promise<void> {
   await page.evaluate(async (kept) => {
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open("mm-tech");
@@ -880,8 +893,10 @@ export async function leftOnPhone(page: Page, records: readonly object[]): Promi
       };
     });
     await new Promise<void>((resolve) => {
-      const transaction = db.transaction("jobs", "readwrite");
-      for (const record of kept) transaction.objectStore("jobs").put(record);
+      const transaction = db.transaction(Object.keys(kept), "readwrite");
+      for (const [name, list] of Object.entries(kept)) {
+        for (const record of list) transaction.objectStore(name).put(record);
+      }
       transaction.oncomplete = () => {
         resolve();
       };

@@ -29,6 +29,7 @@ import {
 } from "../../../apps/tech/src/store/jobs.ts";
 import { queue } from "../../../apps/tech/src/store/outbox.ts";
 import { askToKeep } from "../../../apps/tech/src/store/persist.ts";
+import { firstRelease } from "./tech-first-release.ts";
 
 afterEach(async () => {
   vi.unstubAllGlobals();
@@ -311,7 +312,7 @@ describe("a day's jobs", () => {
 
   it("kept by an earlier build, before the list said where a job stood, reads as begun on neither", async () => {
     const { progress: _none, ...earlier } = summary("a", TODAY);
-    await keepDay(TODAY, [earlier as unknown as JobSummary]);
+    await firstRelease([{ id: `day:${TODAY}`, kind: "day", date: TODAY, jobs: [earlier] }]);
 
     expect((await keptDay(TODAY))?.[0]?.progress).toEqual({ started_at: null, outcome: null });
     expect((await keptStates()).get("a")).toEqual({ started_at: null, outcome: null });
@@ -319,7 +320,7 @@ describe("a day's jobs", () => {
 
   it("kept before the list said how long each visit is, says nothing of it", async () => {
     const { minutes: _none, ...earlier } = summary("a", TODAY);
-    await keepDay(TODAY, [earlier as unknown as JobSummary]);
+    await firstRelease([{ id: `day:${TODAY}`, kind: "day", date: TODAY, jobs: [earlier] }]);
 
     expect((await keptDay(TODAY))?.[0]?.minutes).toBeNull();
   });
@@ -348,7 +349,9 @@ describe("a job's card", () => {
   // its reasons were ids alone and it carried no consumables. With no signal after the update, it still closes.
   it("kept by an earlier build, is read in today's shape: each reason worded, and no consumables", async () => {
     const { consumables: _none, ...earlier } = card("a", TODAY);
-    await keepJob({ ...earlier, partial_reasons: ["piece_not_ready", "client_unwell"] } as unknown as Job);
+    await firstRelease([
+      { id: "a", kind: "job", job: { ...earlier, partial_reasons: ["piece_not_ready", "client_unwell"] } },
+    ]);
 
     const kept = await keptJob("a");
     expect(kept?.partial_reasons).toEqual([
@@ -360,7 +363,7 @@ describe("a job's card", () => {
 
   it("kept before a one visit's code was on the card, reads as having none, so the outcome asks", async () => {
     const { discount_code: _none, ...earlier } = card("a", TODAY);
-    await keepJob(earlier as unknown as Job);
+    await firstRelease([{ id: "a", kind: "job", job: earlier }]);
     expect((await keptJob("a"))?.discount_code).toBeNull();
   });
 
@@ -371,7 +374,7 @@ describe("a job's card", () => {
       client_choice: _choice,
       ...earlier
     } = { ...card("a", TODAY), checklist: whole };
-    await keepJob(earlier as unknown as Job);
+    await firstRelease([{ id: "a", kind: "job", job: earlier }]);
     const kept = await keptJob("a");
     expect(kept?.client_choice).toBeNull();
     expect(kept?.checklist_if_declined).toEqual(whole);
@@ -379,7 +382,7 @@ describe("a job's card", () => {
 
   it("kept before the card carried the visit's length and the check-in radius, says neither", async () => {
     const { minutes: _length, checkin_radius_m: _radius, ...earlier } = card("a", TODAY);
-    await keepJob(earlier as unknown as Job);
+    await firstRelease([{ id: "a", kind: "job", job: earlier }]);
     const kept = await keptJob("a");
     expect(kept?.minutes).toBeNull();
     expect(kept?.checkin_radius_m).toBeNull();
