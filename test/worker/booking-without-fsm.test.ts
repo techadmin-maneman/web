@@ -5,7 +5,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { bookUnbookedHolds, confirmBooking } from "../../src/domain/bookings.ts";
-import { creditBalance, grantCredits, redeemCredit } from "../../src/domain/credits.ts";
+import { clawBack, creditBalance, grantCredits, redeemCredit } from "../../src/domain/credits.ts";
 import { resolveAskedWindows } from "../../src/domain/asked-windows.ts";
 import { openSession } from "../../src/domain/sessions.ts";
 import { settleOwedRefunds } from "../../src/domain/cancel-refunds.ts";
@@ -349,6 +349,119 @@ describe("a free booking", () => {
     ).first();
     expect(visit).toEqual({ own_fsm_id: 1, status: "scheduled", service_city: "Gurgaon", service_pincode: "122018" });
     expect(fsmQueue.sent).toEqual([]);
+  });
+});
+
+describe("one credit pays for one visit, without FSM", () => {
+  const hold = async (date: string) => {
+    const held = await call(PERSON, "/api/holds", {
+      method: "POST",
+      body: { type: "service", date, window: "afternoon" },
+    });
+    expect(held.status).toBe(201);
+    return (await held.json<{ id: string }>()).id;
+  };
+  const book = async (holdId: string) => {
+    const started = await call(PERSON, "/api/bookings", { method: "POST", body: { hold_id: holdId } });
+    // A call that finds its hold booked already answers 409, with no checkout.
+    return started.json<{ checkout?: { amount: number } | null }>();
+  };
+  const redeems = async () =>
+    (await env.DB.prepare("SELECT source_id FROM credit_ledger WHERE kind = 'redeem'").all()).results;
+
+  /** The one service visit booked, its credit redeemed, and nothing left to spend. */
+  async function oneVisitOnTheCredit() {
+    const visits = (await visitsOf(PERSON, "service")).results;
+    expect(visits).toHaveLength(1);
+    expect(await redeems()).toEqual([{ source_id: visits[0]?.id }]);
+    expect((await creditBalance(env.DB, PERSON, NOW)).visits).toBe(0);
+  }
+
+  beforeEach(async () => {
+    await fittedClient();
+    await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "ops", sourceId: "o1", now: NOW }).run();
+  });
+
+  it("books one of two visits booked in two tabs at the same moment on it, and asks payment for the other", async () => {
+    const first = await hold("2026-09-24");
+    const second = await hold("2026-09-25");
+    // Each tab held its visit on the credit before either was booked.
+    await env.DB.prepare("UPDATE slot_holds SET state = 'held', use_credit = 1").run();
+
+    const answers = await Promise.all([book(first), book(second)]);
+
+    const onCredit = answers.filter((answer) => answer.checkout === null);
+    const paid = answers.filter((answer) => answer.checkout?.amount === 200000);
+    expect([onCredit.length, paid.length]).toEqual([1, 1]);
+    await oneVisitOnTheCredit();
+  });
+
+  it("books a booking call sent twice at once as one visit, on one credit", async () => {
+    const first = await hold("2026-09-24");
+
+    const answers = await Promise.all([book(first), book(first)]);
+
+    for (const answer of answers) expect(answer.checkout ?? null).toBeNull();
+    await oneVisitOnTheCredit();
+  });
+
+  it("books only the first of three visits booked back to back on it, and asks payment for the others", async () => {
+    const answers = [];
+    for (const date of ["2026-09-24", "2026-09-25", "2026-09-28"]) answers.push(await book(await hold(date)));
+
+    expect(answers.map((answer) => answer.checkout?.amount ?? 0)).toEqual([0, 200000, 200000]);
+    await oneVisitOnTheCredit();
+  });
+
+  /** The booking confirmed on the credit, and its request stopped before the visit was written. */
+  const confirmedButUnwritten = (holdId: string) =>
+    env.DB.prepare("UPDATE slot_holds SET confirmed_at = ?2, queued_at = ?2 WHERE id = ?1")
+      .bind(holdId, NOW.toISOString())
+      .run();
+
+  const halfHourPass = (deps: TestDependencies) =>
+    bookUnbookedHolds(
+      env.DB,
+      {
+        ...deps,
+        notify: () => Promise.resolve(),
+        labelAsTest: true,
+        budget: createCallBudget(40),
+        log: createLogger(),
+      },
+      at(32 * 60),
+    );
+
+  it("asks payment on another device's visit while the credit waits on a booking not yet written", async () => {
+    const first = await hold("2026-09-24");
+    await confirmedButUnwritten(first);
+    const second = await hold("2026-09-25");
+    // The second device read the balance just before the first booking was confirmed.
+    await env.DB.prepare("UPDATE slot_holds SET use_credit = 1 WHERE id = ?1").bind(second).run();
+
+    expect(await book(second)).toMatchObject({ checkout: { amount: 200000 } });
+    const secondHold = await env.DB.prepare("SELECT use_credit, confirmed_at FROM slot_holds WHERE id = ?1")
+      .bind(second)
+      .first();
+    expect(secondHold).toEqual({ use_credit: 0, confirmed_at: null });
+
+    expect(await halfHourPass(withoutFsm())).toBe(1);
+    await oneVisitOnTheCredit();
+  });
+
+  it("books a credit visit whose credit was taken back before it was written, and tells ops nothing paid for it", async () => {
+    const first = await hold("2026-09-24");
+    await confirmedButUnwritten(first);
+    await clawBack(env.DB, "ops", "o1", NOW);
+    const deps = withoutFsm();
+
+    expect(await halfHourPass(deps)).toBe(1);
+
+    expect((await visitsOf(PERSON, "service")).results).toHaveLength(1);
+    expect(await redeems()).toEqual([]);
+    expect(deps.alerts).toEqual([
+      expect.stringContaining("had none left by then, so nothing has paid for it. Decide whether to charge"),
+    ]);
   });
 });
 
