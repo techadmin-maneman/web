@@ -3345,6 +3345,168 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The open alerts ops have been told of, the longest open first */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Of the caller's own departments once the Staff list is enforced */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OpenAlerts"];
+                    };
+                };
+                /** @description access_required, or not_permitted: no View in any department */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/alerts/{id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark an alert done: what it was about is put right */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Closed, under the member of staff who closed it */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description not_permitted: it asks Act in the department the alert's kind belongs to, and Manage for a CRM erasure */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such open alert; it may be closed already */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/alerts/{id}/send-again": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send again the message, lead or CRM erasure an alert gave up on, and close the alert */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Sent again, and the alert closed: a new alert follows if it fails again */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description invalid_request: this kind of alert has nothing to send again */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_permitted: it asks Act in the department the alert's kind belongs to */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: no such open alert; it may be closed already */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/payments": {
         parameters: {
             query?: never;
@@ -7810,6 +7972,33 @@ export interface components {
         TaskClosing: {
             /** @description Why no follow-up is booked, in ops' words: kept with the closing, blanked if the client is erased. */
             reason: string;
+        };
+        OpenAlerts: {
+            /** @description How many are open, all of them. */
+            count: number;
+            /** @description The longest open first, at most 50. */
+            alerts: components["schemas"]["OpenAlert"][];
+        };
+        OpenAlert: {
+            /** Format: uuid */
+            id: string;
+            /** @description What went wrong: the alert's key up to its first colon, "crm_lead". */
+            kind: string;
+            /** @description What happened and what to do, with IDs only, as the chat was told. */
+            message: string;
+            /** @description Where in the console to act on it, as a path: "/clients/<personId>". */
+            link: string | null;
+            /** @description How many times it has happened. */
+            count: number;
+            /**
+             * Format: date-time
+             * @description When ops were first told.
+             */
+            told_at: string;
+            /** Format: date-time */
+            last_seen_at: string;
+            /** @description Its work can be sent again from here: a message, a lead to the CRM, or an erasure there. */
+            send_again: boolean;
         };
         /** @description Derived at read time from the payments themselves; no total is kept. */
         OpsDayMoney: {

@@ -61,6 +61,9 @@ export type TaskGroup = Tasks["groups"][number];
 export type Task = TaskGroup["tasks"][number];
 /** The groups ops may close a task of without doing its thing (docs/decisions/0092-task-owners.md). */
 export type ClosableGroup = paths["/api/tasks/{group}/{id}/close"]["post"]["parameters"]["path"]["group"];
+/** The alerts on Tasks' "Needs a hand". */
+export type OpenAlerts = Body<paths["/api/alerts"]["get"]>;
+export type OpenAlert = OpenAlerts["alerts"][number];
 /** An address a client gives ops on the phone, as the page sends it. */
 export type AddressGiven = Sent<paths["/api/clients/{id}/address"]["post"]>;
 export type Suggestion = Body<paths["/api/clients/{id}/address/suggestions"]["post"]>["suggestions"][number];
@@ -335,6 +338,12 @@ export const api = {
   /** A visit left partly done, closed without a follow-up; the reason is kept with it, under the caller's name. */
   closeTask: (group: ClosableGroup, id: string, reason: string) =>
     client.post("/api/tasks/{group}/{id}/close", { path: { group, id }, body: { reason } }),
+  /** The open alerts ops have been told of, of the caller's own departments. */
+  alerts: () => client.get("/api/alerts"),
+  /** An alert marked done, under the caller's name. */
+  resolveAlert: (id: string) => client.post("/api/alerts/{id}/resolve", { path: { id } }),
+  /** The message, lead or CRM erasure an alert gave up on, sent again; the alert closes. */
+  sendAlertAgain: (id: string) => client.post("/api/alerts/{id}/send-again", { path: { id } }),
   /** The cases nobody has ruled on yet. The route also answers the decided ones; the board draws a queue. */
   noShows: () => client.get("/api/no-shows", { query: { decision: "undecided" } }),
   /** A day's money, as board D1 heads it: India's date, or today with null. */
