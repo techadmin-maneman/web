@@ -178,7 +178,10 @@ test("opens a block's drawer with the client, the badge, and both ways to reach 
     "href",
     "https://wa.me/919810000001",
   );
-  await expect(drawer.getByRole("link", { name: "Open client" })).toHaveAttribute("href", `/clients/${ROHIT.id}/visits`);
+  await expect(drawer.getByRole("link", { name: "Open client" })).toHaveAttribute(
+    "href",
+    `/clients/${ROHIT.id}/visits`,
+  );
 
   await page.keyboard.press("Escape");
   await expect(drawer).toBeHidden();

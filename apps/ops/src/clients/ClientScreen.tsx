@@ -4,9 +4,9 @@
 // history. It opens on Visits.
 //
 // The record is read once for the page. Visits, Payments, Referrals and History
-// are drawn from it, so moving between them costs no request. The photographs' opening
-// is held here too, so leaving their tab and coming back is the same view and
-// not a second entry in the log.
+// are drawn from it, so moving between them costs no request. The photographs'
+// opening is held here too, so leaving their tab and coming back is the same
+// view and not a second entry in the log.
 
 import { ICONS } from "@maneman/brand/icons";
 import { Tabs, TAB } from "@maneman/ui/Tabs";

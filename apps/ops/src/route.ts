@@ -81,7 +81,8 @@ export type Route =
   | { readonly page: "technicians"; readonly technicianId: string | null; readonly tab: TechnicianTab };
 
 const TASKS: Route = { page: "tasks" };
-const CLIENT_PATH = /^\/clients(?:\/([0-9a-f-]{36})(?:\/(visits|pieces|payments|referrals|consents|photos|history))?)?$/;
+const CLIENT_PATH =
+  /^\/clients(?:\/([0-9a-f-]{36})(?:\/(visits|pieces|payments|referrals|consents|photos|history))?)?$/;
 const SETTINGS_PATH = /^\/settings(?:\/(blackouts|consumables|job-sheet))?$/;
 const TECHNICIAN_PATH = /^\/technicians(?:\/([0-9a-f-]{36})(?:\/(week|leave|phones|kit))?)?$/;
 

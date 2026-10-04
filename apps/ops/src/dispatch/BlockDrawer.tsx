@@ -130,7 +130,10 @@ export function BlockDrawer({ job, onMove, onMoveAnyway, onTold, change, onChang
                 </svg>
                 {copy.whatsapp(firstNameOf(person))}
               </ButtonLink>
-              <OpsLink className={buttonLook({ variant: "outline", size: "small" })} to={clientPath(person.id, "visits")}>
+              <OpsLink
+                className={buttonLook({ variant: "outline", size: "small" })}
+                to={clientPath(person.id, "visits")}
+              >
                 {copy.openClient}
               </OpsLink>
             </>

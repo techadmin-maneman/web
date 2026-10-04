@@ -217,8 +217,7 @@ describe("GET /api/clients/{id}", () => {
     )
       .bind(PERSON, NOW.toISOString())
       .run();
-    const stateNow = async () =>
-      (await (await request(ops, `/api/clients/${PERSON}`)).json<{ state: string }>()).state;
+    const stateNow = async () => (await (await request(ops, `/api/clients/${PERSON}`)).json<{ state: string }>()).state;
     expect(await stateNow()).toBe("nothing_booked");
 
     await env.DB.prepare(

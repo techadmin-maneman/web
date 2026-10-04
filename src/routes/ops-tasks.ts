@@ -247,8 +247,7 @@ function personBody(person: Task["person"]) {
 }
 
 /** Whether the task is about the client asked for; every task is, when none was. */
-const isAbout = (task: Task, person: string | undefined): boolean =>
-  person === undefined || task.person?.id === person;
+const isAbout = (task: Task, person: string | undefined): boolean => person === undefined || task.person?.id === person;
 
 /** The members of staff a task may be given to: those who have used the console lately (src/policy/tasks.ts). */
 const staffNow = (c: Context<AppEnv>): Promise<string[]> =>
