@@ -70,6 +70,9 @@ export const VisitSummarySchema = z
     place: z
       .string()
       .openapi({ description: "The saved address's area, city and pincode, else the visit's city and pincode." }),
+    client_note: z.union([z.string(), z.null()]).openapi({
+      description: "The client's note to the technician on this visit, as they last wrote it; null for none.",
+    }),
     one_visit: z.union([OneVisitPriceSchema, z.null()]).openapi({
       description:
         "A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by " +

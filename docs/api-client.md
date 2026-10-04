@@ -2781,6 +2781,17 @@ Request body:
       "type": "string",
       "description": "The saved address's area, city and pincode, else the visit's city and pincode."
     },
+    "client_note": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The client's note to the technician on this visit, as they last wrote it; null for none."
+    },
     "one_visit": {
       "anyOf": [
         {
@@ -2807,6 +2818,7 @@ Request body:
     "prepaid",
     "technician",
     "place",
+    "client_note",
     "one_visit"
   ],
   "additionalProperties": false
@@ -3888,6 +3900,17 @@ Request body:
       "type": "string",
       "description": "The saved address's area, city and pincode, else the visit's city and pincode."
     },
+    "client_note": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The client's note to the technician on this visit, as they last wrote it; null for none."
+    },
     "one_visit": {
       "anyOf": [
         {
@@ -4000,6 +4023,7 @@ Request body:
     "prepaid",
     "technician",
     "place",
+    "client_note",
     "one_visit",
     "duration_minutes",
     "outcome",

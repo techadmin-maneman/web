@@ -244,7 +244,10 @@ function VisitTable({
                   {onBoard && <ShowOnBoard visit={visit} />}
                 </td>
                 <td className={styles.cell}>{copy.time(indiaClock(visit.starts_at), indiaClock(visit.ends_at))}</td>
-                <td className={styles.cell}>{whatOf(visit)}</td>
+                <td className={styles.cell}>
+                  {whatOf(visit)}
+                  {visit.client_note !== null && <p className={styles.note}>{copy.clientNote(visit.client_note)}</p>}
+                </td>
                 <td className={styles.quietCell}>{visit.technician?.name ?? clients.unknown}</td>
                 <td className={styles.cell}>
                   {stateOf(visit)}

@@ -6746,6 +6746,8 @@ export interface components {
             technician: components["schemas"]["Technician"] | null;
             /** @description The saved address's area, city and pincode, else the visit's city and pincode. */
             place: string;
+            /** @description The client's note to the technician on this visit, as they last wrote it; null for none. */
+            client_note: string | null;
             /** @description A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit. */
             one_visit: components["schemas"]["OneVisitPrice"] | null;
             /** @description What the visit was closed as, a no-show being its own; null until it is closed. */
@@ -6812,6 +6814,8 @@ export interface components {
             technician: components["schemas"]["Technician"] | null;
             /** @description The saved address's area, city and pincode, else the visit's city and pincode. */
             place: string;
+            /** @description The client's note to the technician on this visit, as they last wrote it; null for none. */
+            client_note: string | null;
             /** @description A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit. */
             one_visit: components["schemas"]["OneVisitPrice"] | null;
         };
@@ -7665,6 +7669,8 @@ export interface components {
                 badge: "prepaid" | "credit" | "free" | "at_visit";
                 /** @description Consultation 1, service 1, replacement 1.5, first fit 2. */
                 slots: number;
+                /** @description The client's note to the technician, as they last wrote it; null for none. */
+                client_note: string | null;
                 /** Format: date-time */
                 starts_at: string;
                 /** @description The window the client asked for, from the Request behind the visit; null where nothing recorded one. */
@@ -7715,6 +7721,8 @@ export interface components {
             badge: "prepaid" | "credit" | "free" | "at_visit";
             /** @description Consultation 1, service 1, replacement 1.5, first fit 2. */
             slots: number;
+            /** @description The client's note to the technician, as they last wrote it; null for none. */
+            client_note: string | null;
             /** Format: date-time */
             starts_at: string;
             /** @enum {string} */

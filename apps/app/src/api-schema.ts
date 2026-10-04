@@ -2935,6 +2935,8 @@ export interface components {
             technician: components["schemas"]["Technician"] | null;
             /** @description The saved address's area, city and pincode, else the visit's city and pincode. */
             place: string;
+            /** @description The client's note to the technician on this visit, as they last wrote it; null for none. */
+            client_note: string | null;
             /** @description A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit. */
             one_visit: components["schemas"]["OneVisitPrice"] | null;
         };
@@ -3176,6 +3178,8 @@ export interface components {
             technician: components["schemas"]["Technician"] | null;
             /** @description The saved address's area, city and pincode, else the visit's city and pincode. */
             place: string;
+            /** @description The client's note to the technician on this visit, as they last wrote it; null for none. */
+            client_note: string | null;
             /** @description A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit. */
             one_visit: components["schemas"]["OneVisitPrice"] | null;
             /** @description From start to finish, once done. */

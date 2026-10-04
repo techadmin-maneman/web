@@ -79,6 +79,28 @@ describe("POST /api/appointments/:id/note", () => {
   });
 
   // ADR 0043 sanctions WhatsApp for the note only while self-serve booking is off.
+  // BK-40, UX-10, OIA-11: the note went on the visit and nobody could read it back, the client nor ops.
+  it("is shown back to the client on their visit, and to ops on the client's page and the dispatch board", async () => {
+    await note({ note: "Ring twice" });
+
+    const visits = await request(appFor("local", fakeDependencies(), {}, "client"), "/api/visits", {
+      headers: { Cookie: cookie },
+    });
+    const mine = await visits.json<{ upcoming: { id: string; client_note: string | null }[] }>();
+    expect(mine.upcoming).toEqual([expect.objectContaining({ id: VISIT, client_note: "Ring twice" })]);
+
+    const ops = appFor("local", fakeDependencies(), {}, "ops");
+    const record = await (await request(ops, `/api/clients/${PERSON}`)).json<{ visits: { upcoming: unknown[] } }>();
+    expect(record.visits.upcoming).toEqual([expect.objectContaining({ client_note: "Ring twice" })]);
+    const board = await (
+      await request(ops, "/api/dispatch?from=2026-09-21")
+    ).json<{
+      technicians: { days: { blocks: { appointment_id: string; client_note: string | null }[] }[] }[];
+    }>();
+    const blocks = board.technicians.flatMap((row) => row.days.flatMap((day) => day.blocks));
+    expect(blocks).toEqual([expect.objectContaining({ appointment_id: VISIT, client_note: "Ring twice" })]);
+  });
+
   it("sends the client to WhatsApp while self-serve booking is off", async () => {
     const answer = await note({ note: "Ring twice" }, { selfServeBooking: false });
     expect(answer.status).toBe(409);

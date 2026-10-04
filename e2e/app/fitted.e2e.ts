@@ -73,6 +73,13 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   await sheet.getByRole("textbox", { name: "What should they know at the door?" }).fill("The lift is out");
   await sheet.getByRole("button", { name: "Save the note" }).click();
   await expect(sheet.getByRole("heading", { name: /^Saved\./ })).toBeVisible();
+
+  // And shown back: on the card, and in the sheet when it opens again (BK-40).
+  await sheet.getByRole("button", { name: "Close" }).first().click();
+  await expect(page.getByText("Your note: “The lift is out”")).toBeVisible();
+  await page.getByRole("button", { name: "Add a note" }).click();
+  await expect(page.getByRole("dialog").getByRole("heading", { name: /^Your note for / })).toBeVisible();
+  await expect(page.getByRole("dialog").getByRole("textbox")).toHaveValue("The lift is out");
 });
 
 // A dropped signal unmounted the note sheet and its words, and Back left the page under it (UX-09).

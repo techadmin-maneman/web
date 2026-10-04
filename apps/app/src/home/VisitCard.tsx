@@ -13,7 +13,7 @@ import { Button, ButtonLink } from "@maneman/ui/Button";
 import { shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import type { OneVisitPrice, VisitSummary } from "../api.ts";
-import { home, messages, windowText } from "../content.ts";
+import { home, messages, note, windowText } from "../content.ts";
 import { ChangeSheet, type ChangingVisit } from "../booking/ChangeSheet.tsx";
 import { NoteSheet } from "../booking/NoteSheet.tsx";
 import { firstName, oneVisitOf, summaryName, visitTitle } from "../lib/visit.ts";
@@ -37,6 +37,7 @@ export function changingOf(visit: VisitSummary, what: string): ChangingVisit | n
 export const notingOf = (visit: VisitSummary): NotingVisit => ({
   visitId: visit.id,
   technician: visit.technician === null ? null : firstName(visit.technician.name),
+  note: visit.client_note,
 });
 
 /** Under way, done or being closed: the visit has begun, and there is nothing left to move or add. */
@@ -85,6 +86,8 @@ export interface NotingVisit {
   readonly visitId: string;
   /** The technician's first name; null while none is assigned. */
   readonly technician: string | null;
+  /** The note the client left on it already; null for none. */
+  readonly note: string | null;
 }
 
 function NoteOnWhatsApp({ message }: { message: string }) {
@@ -106,7 +109,7 @@ function NoteOnWhatsApp({ message }: { message: string }) {
  * on WhatsApp. Tapped offline, it opens WhatsApp, which keeps the note until the phone is back online. A sheet
  * already open stays open when the connection drops, with what the client has written.
  */
-function AddNote(props: { what: string; date: string; noting: NotingVisit | null }) {
+function AddNote(props: { what: string; date: string; noting: NotingVisit | null; onNoted?: (note: string) => void }) {
   const { me, offline } = useSession();
   const [open, setOpen] = useState(false);
   const message = messages.note(props.what, props.date);
@@ -132,7 +135,9 @@ function AddNote(props: { what: string; date: string; noting: NotingVisit | null
         <NoteSheet
           visitId={noting.visitId}
           technician={noting.technician}
+          initial={noting.note}
           message={message}
+          onSaved={props.onNoted}
           onClose={() => {
             setOpen(false);
           }}
@@ -147,6 +152,7 @@ export function Actions(props: {
   date: string;
   changing: ChangingVisit | null;
   noting: NotingVisit | null;
+  onNoted?: (note: string) => void;
 }) {
   const { what, date, changing } = props;
   const { refresh } = useSession();
@@ -161,7 +167,7 @@ export function Actions(props: {
           setOpen(true);
         }}
       />
-      <AddNote what={what} date={date} noting={props.noting} />
+      <AddNote what={what} date={date} noting={props.noting} onNoted={props.onNoted} />
       {open && changing !== null && (
         <ChangeSheet
           visit={changing}
@@ -196,6 +202,9 @@ export function VisitCard({ visit }: { visit: VisitSummary }) {
   const date = shortDate(visit.date);
   const what = summaryName(visit);
   const oneVisit = oneVisitOf(visit);
+  // A note just saved, shown before the visit is read again.
+  const [noted, setNoted] = useState<string | null>(null);
+  const clientNote = noted ?? visit.client_note;
   return (
     <div className={styles.card}>
       <p className={styles.date}>{date}</p>
@@ -215,8 +224,15 @@ export function VisitCard({ visit }: { visit: VisitSummary }) {
       </div>
       {visit.place !== "" && <p className={styles.place}>{visit.place}</p>}
       {oneVisit !== null && <OneVisitTerms price={oneVisit} />}
+      {clientNote !== null && <p className={styles.place}>{note.shown(clientNote)}</p>}
       {!hasBegun(visit) && (
-        <Actions what={what} date={date} changing={changingOf(visit, what)} noting={notingOf(visit)} />
+        <Actions
+          what={what}
+          date={date}
+          changing={changingOf(visit, what)}
+          noting={{ ...notingOf(visit), note: clientNote }}
+          onNoted={setNoted}
+        />
       )}
     </div>
   );

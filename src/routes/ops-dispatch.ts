@@ -78,6 +78,9 @@ const VISIT = {
   }),
   badge: z.enum(PAYMENT_BADGES).openapi({ description: "Never an amount: prepaid, credit, or free." }),
   slots: z.number().openapi({ description: "Consultation 1, service 1, replacement 1.5, first fit 2." }),
+  client_note: z
+    .union([z.string(), z.null()])
+    .openapi({ description: "The client's note to the technician, as they last wrote it; null for none." }),
   starts_at: z.iso.datetime(),
 };
 
